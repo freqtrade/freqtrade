@@ -6,8 +6,7 @@ import logging
 import os
 import sys
 from argparse import Namespace
-from logging.handlers import RotatingFileHandler
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Optional
 
 from jsonschema import Draft4Validator, validators
 from jsonschema.exceptions import ValidationError, best_match
@@ -15,23 +14,12 @@ from jsonschema.exceptions import ValidationError, best_match
 from freqtrade import OperationalException, constants
 from freqtrade.exchange import (is_exchange_bad, is_exchange_available,
                                 is_exchange_officially_supported, available_exchanges)
+from freqtrade.loggers import setup_logging
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.state import RunMode
 
+
 logger = logging.getLogger(__name__)
-
-
-def set_loggers(log_level: int = 0) -> None:
-    """
-    Set the logger level for Third party libs
-    :return: None
-    """
-
-    logging.getLogger('requests').setLevel(logging.INFO if log_level <= 1 else logging.DEBUG)
-    logging.getLogger("urllib3").setLevel(logging.INFO if log_level <= 1 else logging.DEBUG)
-    logging.getLogger('ccxt.base.exchange').setLevel(
-        logging.INFO if log_level <= 2 else logging.DEBUG)
-    logging.getLogger('telegram').setLevel(logging.INFO)
 
 
 def _extend_validator(validator_class):
@@ -135,32 +123,18 @@ class Configuration(object):
     def _load_logging_config(self, config: Dict[str, Any]) -> None:
         """
         Extract information for sys.argv and load logging configuration:
-        the --loglevel, --logfile options
+        the -v/--verbose, --logfile options
         """
         # Log level
-        if 'loglevel' in self.args and self.args.loglevel:
-            config.update({'verbosity': self.args.loglevel})
+        if 'verbosity' in self.args and self.args.verbosity:
+            config.update({'verbosity': self.args.verbosity})
         else:
             config.update({'verbosity': 0})
 
-        # Log to stdout, not stderr
-        log_handlers: List[logging.Handler] = [logging.StreamHandler(sys.stdout)]
         if 'logfile' in self.args and self.args.logfile:
             config.update({'logfile': self.args.logfile})
 
-        # Allow setting this as either configuration or argument
-        if 'logfile' in config:
-            log_handlers.append(RotatingFileHandler(config['logfile'],
-                                                    maxBytes=1024 * 1024,  # 1Mb
-                                                    backupCount=10))
-
-        logging.basicConfig(
-            level=logging.INFO if config['verbosity'] < 1 else logging.DEBUG,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            handlers=log_handlers
-        )
-        set_loggers(config['verbosity'])
-        logger.info('Verbosity set to %s', config['verbosity'])
+        setup_logging(config)
 
     def _load_common_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """

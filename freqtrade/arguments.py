@@ -1,7 +1,6 @@
 """
 This module contains the argument manager class
 """
-
 import argparse
 import os
 import re
@@ -29,10 +28,10 @@ class Arg:
         self.kwargs = kwargs
 
 
-# List of available command line arguments
+# List of available command line options
 AVAILABLE_CLI_OPTIONS = {
-    # Common arguments
-    "loglevel": Arg(
+    # Common options
+    "verbosity": Arg(
         '-v', '--verbose',
         help='Verbose mode (-vv for more, -vvv to get all messages).',
         action='count',
@@ -43,11 +42,10 @@ AVAILABLE_CLI_OPTIONS = {
         help='Log to the file specified.',
         metavar='FILE',
     ),
-
     "version": Arg(
         '--version',
         action='version',
-        version=f'%(prog)s {__version__}'
+        version=f'%(prog)s {__version__}',
     ),
     "config": Arg(
         '-c', '--config',
@@ -55,17 +53,19 @@ AVAILABLE_CLI_OPTIONS = {
         f'Multiple --config options may be used. '
         f'Can be set to `-` to read config from stdin.',
         action='append',
-        metavar='PATH',),
+        metavar='PATH',
+    ),
     "datadir": Arg(
         '-d', '--datadir',
         help='Path to backtest data.',
-        metavar='PATH',),
+        metavar='PATH',
+    ),
     # Main options
     "strategy": Arg(
         '-s', '--strategy',
         help='Specify strategy class name (default: `%(default)s`).',
-        default='DefaultStrategy',
         metavar='NAME',
+        default='DefaultStrategy',
     ),
     "strategy_path": Arg(
         '--strategy-path',
@@ -107,6 +107,7 @@ AVAILABLE_CLI_OPTIONS = {
         '--max_open_trades',
         help='Specify max_open_trades to use.',
         type=int,
+        metavar='INT',
     ),
     "stake_amount": Arg(
         '--stake_amount',
@@ -120,19 +121,19 @@ AVAILABLE_CLI_OPTIONS = {
         'up-to-date data.',
         action='store_true',
     ),
-    # backtesting
+    # Backtesting
     "position_stacking": Arg(
         '--eps', '--enable-position-stacking',
         help='Allow buying the same pair multiple times (position stacking).',
         action='store_true',
-        default=False
+        default=False,
     ),
     "use_max_market_positions": Arg(
         '--dmmp', '--disable-max-market-positions',
         help='Disable applying `max_open_trades` during backtest '
         '(same as setting `max_open_trades` to a very high number).',
         action='store_false',
-        default=True
+        default=True,
     ),
     "live": Arg(
         '-l', '--live',
@@ -158,9 +159,9 @@ AVAILABLE_CLI_OPTIONS = {
         help='Save backtest results to the file with this filename (default: `%(default)s`). '
         'Requires `--export` to be set as well. '
         'Example: `--export-filename=user_data/backtest_data/backtest_today.json`',
+        metavar='PATH',
         default=os.path.join('user_data', 'backtest_data',
                              'backtest-result.json'),
-        metavar='PATH',
     ),
     # Edge
     "stoploss_range": Arg(
@@ -169,33 +170,33 @@ AVAILABLE_CLI_OPTIONS = {
         'The format is "min,max,step" (without any space). '
         'Example: `--stoplosses=-0.01,-0.1,-0.001`',
     ),
-    # hyperopt
+    # Hyperopt
     "hyperopt": Arg(
         '--customhyperopt',
         help='Specify hyperopt class name (default: `%(default)s`).',
-        default=constants.DEFAULT_HYPEROPT,
         metavar='NAME',
+        default=constants.DEFAULT_HYPEROPT,
     ),
     "epochs": Arg(
         '-e', '--epochs',
         help='Specify number of epochs (default: %(default)d).',
-        default=constants.HYPEROPT_EPOCH,
-        type=int,
+        type=check_int_positive,
         metavar='INT',
+        default=constants.HYPEROPT_EPOCH,
     ),
     "spaces": Arg(
         '-s', '--spaces',
         help='Specify which parameters to hyperopt. Space-separated list. '
         'Default: `%(default)s`.',
         choices=['all', 'buy', 'sell', 'roi', 'stoploss'],
-        default='all',
         nargs='+',
+        default='all',
     ),
     "print_all": Arg(
         '--print-all',
         help='Print all results, not only the best ones.',
         action='store_true',
-        default=False
+        default=False,
     ),
     "hyperopt_jobs": Arg(
         '-j', '--job-workers',
@@ -203,9 +204,9 @@ AVAILABLE_CLI_OPTIONS = {
         '(hyperopt worker processes). '
         'If -1 (default), all CPUs are used, for -2, all CPUs but one are used, etc. '
         'If 1 is given, no parallel computing code is used at all.',
-        default=-1,
         type=int,
         metavar='JOBS',
+        default=-1,
     ),
     "hyperopt_random_state": Arg(
         '--random-state',
@@ -217,23 +218,22 @@ AVAILABLE_CLI_OPTIONS = {
         '--min-trades',
         help="Set minimal desired number of trades for evaluations in the hyperopt "
         "optimization path (default: 1).",
-        default=1,
         type=check_int_positive,
         metavar='INT',
+        default=1,
     ),
-    # List_exchange
+    # List exchanges
     "print_one_column": Arg(
         '-1', '--one-column',
         help='Print exchanges in one column.',
         action='store_true',
     ),
-    # script_options
+    # Script options
     "pairs": Arg(
         '-p', '--pairs',
         help='Show profits for only these pairs. Pairs are comma-separated.',
     ),
     # Download data
-
     "pairs_file": Arg(
         '--pairs-file',
         help='File containing a list of pairs to download.',
@@ -263,7 +263,7 @@ AVAILABLE_CLI_OPTIONS = {
         help='Clean all existing data for the selected exchange/pairs/timeframes.',
         action='store_true',
     ),
-    # Plot_df_options
+    # Plot dataframe
     "indicators1": Arg(
         '--indicators1',
         help='Set indicators from your strategy you want in the first row of the graph. '
@@ -280,24 +280,27 @@ AVAILABLE_CLI_OPTIONS = {
         '--plot-limit',
         help='Specify tick limit for plotting. Notice: too high values cause huge files. '
         'Default: %(default)s.',
+        type=check_int_positive,
+        metavar='INT',
         default=750,
-        type=int,
     ),
     "trade_source": Arg(
         '--trade-source',
         help='Specify the source for trades (Can be DB or file (backtest file)) '
         'Default: %(default)s',
+        choices=["DB", "file"],
         default="file",
-        choices=["DB", "file"]
-    )
+    ),
 }
 
-ARGS_COMMON = ["loglevel", "logfile", "version", "config", "datadir"]
+
+ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir"]
+
 ARGS_STRATEGY = ["strategy", "strategy_path"]
 
 ARGS_MAIN = ARGS_COMMON + ARGS_STRATEGY + ["dynamic_whitelist", "db_url", "sd_notify"]
 
-ARGS_COMMON_OPTIMIZE = ["loglevel", "ticker_interval", "timerange",
+ARGS_COMMON_OPTIMIZE = ["ticker_interval", "timerange",
                         "max_open_trades", "stake_amount", "refresh_pairs"]
 
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
@@ -309,8 +312,7 @@ ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "position_stacking", "epochs
 
 ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
 
-
-ARGS_LIST_EXCHANGE = ["print_one_column"]
+ARGS_LIST_EXCHANGES = ["print_one_column"]
 
 ARGS_DOWNLOADER = ARGS_COMMON + ["pairs", "pairs_file", "days", "exchange", "timeframes", "erase"]
 
@@ -325,9 +327,9 @@ ARGS_PLOT_PROFIT = (ARGS_COMMON + ARGS_STRATEGY +
 
 class TimeRange(NamedTuple):
     """
-    NamedTuple Defining timerange inputs.
+    NamedTuple defining timerange inputs.
     [start/stop]type defines if [start/stop]ts shall be used.
-    if *type is none, don't use corresponding startvalue.
+    if *type is None, don't use corresponding startvalue.
     """
     starttype: Optional[str] = None
     stoptype: Optional[str] = None
@@ -339,7 +341,6 @@ class Arguments(object):
     """
     Arguments Class. Manage the arguments received by the cli
     """
-
     def __init__(self, args: Optional[List[str]], description: str) -> None:
         self.args = args
         self.parsed_arg: Optional[argparse.Namespace] = None
@@ -412,7 +413,7 @@ class Arguments(object):
             help='Print available exchanges.'
         )
         list_exchanges_cmd.set_defaults(func=start_list_exchanges)
-        self.build_args(optionlist=ARGS_LIST_EXCHANGE, parser=list_exchanges_cmd)
+        self.build_args(optionlist=ARGS_LIST_EXCHANGES, parser=list_exchanges_cmd)
 
     @staticmethod
     def parse_timerange(text: Optional[str]) -> TimeRange:
