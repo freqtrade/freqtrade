@@ -319,6 +319,9 @@ class Backtesting(object):
             position_stacking: do we allow position stacking? (default: False)
         :return: DataFrame
         """
+        # Arguments are long and noisy, so this is commented out.
+        # Uncomment if you need to debug the backtest() method.
+#        logger.debug(f"Start backtest, args: {args}")
         processed = args['processed']
         stake_amount = args['stake_amount']
         max_open_trades = args.get('max_open_trades', 0)

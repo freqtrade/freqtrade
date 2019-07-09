@@ -195,7 +195,7 @@ class Hyperopt(Backtesting):
             {
                 'stake_amount': self.config['stake_amount'],
                 'processed': processed,
-                'position_stacking': self.config.get('position_stacking', True),
+                'position_stacking': self.config.get('position_stacking', False),
                 'start_date': min_date,
                 'end_date': max_date,
             }
