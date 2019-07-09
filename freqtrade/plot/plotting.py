@@ -42,7 +42,7 @@ def init_plotscript(config):
         pairs = config["exchange"]["pair_whitelist"]
 
     # Set timerange to use
-    timerange = Arguments.parse_timerange(config["timerange"])
+    timerange = Arguments.parse_timerange(config.get("timerange"))
 
     tickers = history.load_data(
         datadir=Path(str(config.get("datadir"))),
