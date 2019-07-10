@@ -16,10 +16,10 @@ Sample configuration:
     },
 ```
 
-!!! Danger: Security warning
+!!! Danger Security warning
   By default, the configuration listens on localhost only (so it's not reachable from other systems). We strongly recommend to not expose this API to the internet and choose a strong, unique password, since others will potentially be able to control your bot.
 
-!!! Danger: Password selection
+!!! Danger Password selection
   Please make sure to select a very strong, unique password to protect your bot from unauthorized access.
 
 You can then access the API by going to `http://127.0.0.1:8080/api/v1/version` to check if the API is running correctly.
@@ -62,7 +62,7 @@ docker run -d \
 ```
 
 !!! Danger "Security warning"
-  By using `-p 8080:8080` the API is available to everyone connecting to the server under the correct port, so others may be able to control your bot.
+    By using `-p 8080:8080` the API is available to everyone connecting to the server under the correct port, so others may be able to control your bot.
 
 ## Consuming the API
 
