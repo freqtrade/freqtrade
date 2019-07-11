@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 
-from freqtrade.arguments import Arguments
+from freqtrade.configuration import Arguments
 from freqtrade.data import history
 from freqtrade.data.btanalysis import (combine_tickers_with_mean,
                                        create_cum_profit, load_trades)

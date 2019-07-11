@@ -8,8 +8,10 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
-from freqtrade.arguments import Arguments, TimeRange, ARGS_DOWNLOADER
+from freqtrade.configuration import Arguments, TimeRange
+from freqtrade.configuration import ARGS_DOWNLOADER
 from freqtrade.configuration import Configuration
+from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.data.history import download_pair_history
 from freqtrade.exchange import Exchange
 from freqtrade.misc import deep_merge_dicts
@@ -79,7 +81,7 @@ if args.config and args.exchange:
                    "using exchange settings from the configuration file.")
 
 # Check if the exchange set by the user is supported
-configuration.check_exchange(config)
+check_exchange(config)
 
 configuration._load_datadir_config(config)
 

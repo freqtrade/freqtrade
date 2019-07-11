@@ -12,7 +12,7 @@ import pytest
 from pandas import DataFrame
 
 from freqtrade import OperationalException
-from freqtrade.arguments import TimeRange
+from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.history import (download_pair_history,
                                     load_cached_data_for_updating,

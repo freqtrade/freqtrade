@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from freqtrade import OperationalException
-from freqtrade.arguments import Arguments
+from freqtrade.configuration import Arguments
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.main import main
 from freqtrade.state import State

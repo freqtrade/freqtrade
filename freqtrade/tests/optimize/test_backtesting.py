@@ -11,7 +11,7 @@ import pytest
 from arrow import Arrow
 
 from freqtrade import DependencyException, constants
-from freqtrade.arguments import TimeRange
+from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import evaluate_result_multi
 from freqtrade.data.converter import parse_ticker_dataframe

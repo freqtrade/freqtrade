@@ -11,8 +11,9 @@ import pytest
 from jsonschema import Draft4Validator, ValidationError, validate
 
 from freqtrade import OperationalException, constants
-from freqtrade.arguments import Arguments
-from freqtrade.configuration import Configuration
+from freqtrade.configuration import Arguments, Configuration
+from freqtrade.configuration.check_exchange import check_exchange
+from freqtrade.configuration.json_schema import validate_config_schema
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.loggers import _set_loggers
 from freqtrade.state import RunMode
@@ -32,24 +33,21 @@ def test_load_config_invalid_pair(default_conf) -> None:
     default_conf['exchange']['pair_whitelist'].append('ETH-BTC')
 
     with pytest.raises(ValidationError, match=r'.*does not match.*'):
-        configuration = Configuration(Namespace())
-        configuration._validate_config_schema(default_conf)
+        validate_config_schema(default_conf)
 
 
 def test_load_config_missing_attributes(default_conf) -> None:
     default_conf.pop('exchange')
 
     with pytest.raises(ValidationError, match=r'.*\'exchange\' is a required property.*'):
-        configuration = Configuration(Namespace())
-        configuration._validate_config_schema(default_conf)
+        validate_config_schema(default_conf)
 
 
 def test_load_config_incorrect_stake_amount(default_conf) -> None:
     default_conf['stake_amount'] = 'fake'
 
     with pytest.raises(ValidationError, match=r'.*\'fake\' does not match \'unlimited\'.*'):
-        configuration = Configuration(Namespace())
-        configuration._validate_config_schema(default_conf)
+        validate_config_schema(default_conf)
 
 
 def test_load_config_file(default_conf, mocker, caplog) -> None:
@@ -469,25 +467,23 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
 
 
 def test_check_exchange(default_conf, caplog) -> None:
-    configuration = Configuration(Namespace())
-
     # Test an officially supported by Freqtrade team exchange
     default_conf.get('exchange').update({'name': 'BITTREX'})
-    assert configuration.check_exchange(default_conf)
+    assert check_exchange(default_conf)
     assert log_has_re(r"Exchange .* is officially supported by the Freqtrade development team\.",
                       caplog.record_tuples)
     caplog.clear()
 
     # Test an officially supported by Freqtrade team exchange
     default_conf.get('exchange').update({'name': 'binance'})
-    assert configuration.check_exchange(default_conf)
+    assert check_exchange(default_conf)
     assert log_has_re(r"Exchange .* is officially supported by the Freqtrade development team\.",
                       caplog.record_tuples)
     caplog.clear()
 
     # Test an available exchange, supported by ccxt
     default_conf.get('exchange').update({'name': 'kraken'})
-    assert configuration.check_exchange(default_conf)
+    assert check_exchange(default_conf)
     assert log_has_re(r"Exchange .* is supported by ccxt and .* not officially supported "
                       r"by the Freqtrade development team\. .*",
                       caplog.record_tuples)
@@ -495,7 +491,7 @@ def test_check_exchange(default_conf, caplog) -> None:
 
     # Test a 'bad' exchange, which known to have serious problems
     default_conf.get('exchange').update({'name': 'bitmex'})
-    assert not configuration.check_exchange(default_conf)
+    assert not check_exchange(default_conf)
     assert log_has_re(r"Exchange .* is known to not work with the bot yet\. "
                       r"Use it only for development and testing purposes\.",
                       caplog.record_tuples)
@@ -503,7 +499,7 @@ def test_check_exchange(default_conf, caplog) -> None:
 
     # Test a 'bad' exchange with check_for_bad=False
     default_conf.get('exchange').update({'name': 'bitmex'})
-    assert configuration.check_exchange(default_conf, False)
+    assert check_exchange(default_conf, False)
     assert log_has_re(r"Exchange .* is supported by ccxt and .* not officially supported "
                       r"by the Freqtrade development team\. .*",
                       caplog.record_tuples)
@@ -511,14 +507,13 @@ def test_check_exchange(default_conf, caplog) -> None:
 
     # Test an invalid exchange
     default_conf.get('exchange').update({'name': 'unknown_exchange'})
-    configuration.config = default_conf
 
     with pytest.raises(
         OperationalException,
         match=r'.*Exchange "unknown_exchange" is not supported by ccxt '
               r'and therefore not available for the bot.*'
     ):
-        configuration.check_exchange(default_conf)
+        check_exchange(default_conf)
 
 
 def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
@@ -656,8 +651,7 @@ def test_load_config_default_exchange(all_conf) -> None:
 
     with pytest.raises(ValidationError,
                        match=r'\'exchange\' is a required property'):
-        configuration = Configuration(Namespace())
-        configuration._validate_config_schema(all_conf)
+        validate_config_schema(all_conf)
 
 
 def test_load_config_default_exchange_name(all_conf) -> None:
@@ -671,8 +665,7 @@ def test_load_config_default_exchange_name(all_conf) -> None:
 
     with pytest.raises(ValidationError,
                        match=r'\'name\' is a required property'):
-        configuration = Configuration(Namespace())
-        configuration._validate_config_schema(all_conf)
+        validate_config_schema(all_conf)
 
 
 @pytest.mark.parametrize("keys", [("exchange", "sandbox", False),
@@ -695,7 +688,6 @@ def test_load_config_default_subkeys(all_conf, keys) -> None:
 
     assert subkey not in all_conf[key]
 
-    configuration = Configuration(Namespace())
-    configuration._validate_config_schema(all_conf)
+    validate_config_schema(all_conf)
     assert subkey in all_conf[key]
     assert all_conf[key][subkey] == keys[2]

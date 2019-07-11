@@ -8,7 +8,7 @@ import logging
 import sys
 from typing import Any, Dict, List
 
-from freqtrade.arguments import ARGS_PLOT_PROFIT, Arguments
+from freqtrade.configuration import Arguments, ARGS_PLOT_PROFIT
 from freqtrade.optimize import setup_configuration
 from freqtrade.plot.plotting import init_plotscript, generate_profit_graph, store_plot_file
 from freqtrade.state import RunMode

@@ -18,7 +18,7 @@ from typing import Any, Dict, List
 
 import pandas as pd
 
-from freqtrade.arguments import ARGS_PLOT_DATAFRAME, Arguments
+from freqtrade.configuration import Arguments, ARGS_PLOT_DATAFRAME
 from freqtrade.data.btanalysis import extract_trades_of_period
 from freqtrade.optimize import setup_configuration
 from freqtrade.plot.plotting import (init_plotscript, generate_candlestick_graph,

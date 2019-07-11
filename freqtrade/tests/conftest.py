@@ -14,13 +14,14 @@ import pytest
 from telegram import Chat, Message, Update
 
 from freqtrade import constants, persistence
-from freqtrade.arguments import Arguments
+from freqtrade.configuration import Arguments
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
+
 
 logging.getLogger('').setLevel(logging.INFO)
 
@@ -39,7 +40,7 @@ def log_has_re(line, logs):
                   False)
 
 
-def get_args(args) -> List[str]:
+def get_args(args):
     return Arguments(args, '').get_parsed_arg()
 
 

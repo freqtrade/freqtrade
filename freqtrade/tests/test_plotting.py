@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import plotly.graph_objs as go
 from plotly import tools
 
-from freqtrade.arguments import Arguments, TimeRange
+from freqtrade.configuration import Arguments, TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import create_cum_profit, load_backtest_data
 from freqtrade.plot.plotting import (add_indicators, add_profit,

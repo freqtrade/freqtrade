@@ -5,6 +5,7 @@ import argparse
 import os
 import re
 from typing import List, NamedTuple, Optional
+
 import arrow
 from freqtrade import __version__, constants
 
