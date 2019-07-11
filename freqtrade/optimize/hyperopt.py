@@ -288,9 +288,8 @@ class Hyperopt(Backtesting):
             (max_date - min_date).days
         )
 
-        if self.has_space('buy') or self.has_space('sell'):
-            self.strategy.advise_indicators = \
-                self.custom_hyperopt.populate_indicators  # type: ignore
+        self.strategy.advise_indicators = \
+            self.custom_hyperopt.populate_indicators  # type: ignore
 
         preprocessed = self.strategy.tickerdata_to_dataframe(data)
 
