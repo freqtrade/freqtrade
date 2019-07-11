@@ -10,7 +10,8 @@ from freqtrade.configuration import Arguments
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.main import main
 from freqtrade.state import State
-from freqtrade.tests.conftest import log_has, patch_exchange
+from freqtrade.tests.conftest import (log_has, patch_exchange,
+        patched_configuration_load_config_file)
 from freqtrade.worker import Worker
 
 
@@ -50,10 +51,7 @@ def test_main_fatal_exception(mocker, default_conf, caplog) -> None:
     patch_exchange(mocker)
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.cleanup', MagicMock())
     mocker.patch('freqtrade.worker.Worker._worker', MagicMock(side_effect=Exception))
-    mocker.patch(
-        'freqtrade.configuration.Configuration._load_config_file',
-        lambda *args, **kwargs: default_conf
-    )
+    patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
 
@@ -70,10 +68,7 @@ def test_main_keyboard_interrupt(mocker, default_conf, caplog) -> None:
     patch_exchange(mocker)
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.cleanup', MagicMock())
     mocker.patch('freqtrade.worker.Worker._worker', MagicMock(side_effect=KeyboardInterrupt))
-    mocker.patch(
-        'freqtrade.configuration.Configuration._load_config_file',
-        lambda *args, **kwargs: default_conf
-    )
+    patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
 
@@ -93,10 +88,7 @@ def test_main_operational_exception(mocker, default_conf, caplog) -> None:
         'freqtrade.worker.Worker._worker',
         MagicMock(side_effect=OperationalException('Oh snap!'))
     )
-    mocker.patch(
-        'freqtrade.configuration.Configuration._load_config_file',
-        lambda *args, **kwargs: default_conf
-    )
+    patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
 
@@ -118,10 +110,7 @@ def test_main_reload_conf(mocker, default_conf, caplog) -> None:
                                          State.RUNNING,
                                          OperationalException("Oh snap!")])
     mocker.patch('freqtrade.worker.Worker._worker', worker_mock)
-    mocker.patch(
-        'freqtrade.configuration.Configuration._load_config_file',
-        lambda *args, **kwargs: default_conf
-    )
+    patched_configuration_load_config_file(mocker, default_conf)
     reconfigure_mock = mocker.patch('freqtrade.main.Worker._reconfigure', MagicMock())
 
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
@@ -145,10 +134,7 @@ def test_reconfigure(mocker, default_conf) -> None:
         'freqtrade.worker.Worker._worker',
         MagicMock(side_effect=OperationalException('Oh snap!'))
     )
-    mocker.patch(
-        'freqtrade.configuration.Configuration._load_config_file',
-        lambda *args, **kwargs: default_conf
-    )
+    patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
 
@@ -159,10 +145,7 @@ def test_reconfigure(mocker, default_conf) -> None:
     # Renew mock to return modified data
     conf = deepcopy(default_conf)
     conf['stake_amount'] += 1
-    mocker.patch(
-        'freqtrade.configuration.Configuration._load_config_file',
-        lambda *args, **kwargs: conf
-    )
+    patched_configuration_load_config_file(mocker, conf)
 
     worker._config = conf
     # reconfigure should return a new instance

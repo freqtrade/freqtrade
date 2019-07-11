@@ -8,13 +8,12 @@ from freqtrade.edge import PairInfo
 from freqtrade.optimize import setup_configuration, start_edge
 from freqtrade.optimize.edge_cli import EdgeCli
 from freqtrade.state import RunMode
-from freqtrade.tests.conftest import get_args, log_has, log_has_re, patch_exchange
+from freqtrade.tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
+        patched_configuration_open)
 
 
 def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> None:
-    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
-        read_data=json.dumps(default_conf)
-    ))
+    patched_configuration_open(mocker, default_conf)
 
     args = [
         '--config', 'config.json',
@@ -46,10 +45,8 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
 
 
 def test_setup_edge_configuration_with_arguments(mocker, edge_conf, caplog) -> None:
-    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
-        read_data=json.dumps(edge_conf)
-    ))
-    mocker.patch('freqtrade.configuration.Configuration._create_datadir', lambda s, c, x: x)
+    patched_configuration_open(mocker, edge_conf)
+    mocker.patch('freqtrade.configuration.configuration.Configuration._create_datadir', lambda s, c, x: x)
 
     args = [
         '--config', 'config.json',
@@ -92,9 +89,8 @@ def test_start(mocker, fee, edge_conf, caplog) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.edge_cli.EdgeCli.start', start_mock)
-    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
-        read_data=json.dumps(edge_conf)
-    ))
+    patched_configuration_open(mocker, edge_conf)
+
     args = [
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
