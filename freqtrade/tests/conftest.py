@@ -6,7 +6,6 @@ from copy import deepcopy
 from datetime import datetime
 from functools import reduce
 from pathlib import Path
-from typing import List
 from unittest.mock import MagicMock, PropertyMock
 
 import arrow

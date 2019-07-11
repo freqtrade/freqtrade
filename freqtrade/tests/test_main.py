@@ -11,7 +11,7 @@ from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.main import main
 from freqtrade.state import State
 from freqtrade.tests.conftest import (log_has, patch_exchange,
-        patched_configuration_load_config_file)
+                                      patched_configuration_load_config_file)
 from freqtrade.worker import Worker
 
 

@@ -1,6 +1,5 @@
 # pragma pylint: disable=missing-docstring, protected-access, invalid-name
 
-import json
 import logging
 from argparse import Namespace
 from copy import deepcopy
@@ -83,7 +82,10 @@ def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
     config_files = [conf1, conf2]
 
     configsmock = MagicMock(side_effect=config_files)
-    mocker.patch('freqtrade.configuration.configuration.Configuration._load_config_file', configsmock)
+    mocker.patch(
+        'freqtrade.configuration.configuration.Configuration._load_config_file',
+        configsmock
+    )
 
     arg_list = ['-c', 'test_conf.json', '--config', 'test2_conf.json', ]
     args = Arguments(arg_list, '').get_parsed_arg()
@@ -305,7 +307,10 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
 
 def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_open(mocker, default_conf)
-    mocker.patch('freqtrade.configuration.configuration.Configuration._create_datadir', lambda s, c, x: x)
+    mocker.patch(
+        'freqtrade.configuration.configuration.Configuration._create_datadir',
+        lambda s, c, x: x
+    )
 
     arglist = [
         '--config', 'config.json',

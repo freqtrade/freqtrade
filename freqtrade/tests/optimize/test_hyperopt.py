@@ -1,5 +1,4 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
-import json
 import os
 from datetime import datetime
 from unittest.mock import MagicMock
@@ -17,7 +16,8 @@ from freqtrade.optimize import setup_configuration, start_hyperopt
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
 from freqtrade.state import RunMode
 from freqtrade.tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
-        patched_configuration_load_config_file, patched_configuration_open)
+                                      patched_configuration_load_config_file,
+                                      patched_configuration_open)
 
 
 @pytest.fixture(scope='function')
@@ -82,7 +82,10 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
 
 def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_open(mocker, default_conf)
-    mocker.patch('freqtrade.configuration.configuration.Configuration._create_datadir', lambda s, c, x: x)
+    mocker.patch(
+        'freqtrade.configuration.configuration.Configuration._create_datadir',
+        lambda s, c, x: x
+    )
 
     args = [
         '--config', 'config.json',

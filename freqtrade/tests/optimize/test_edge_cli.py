@@ -1,7 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103, C0330
 # pragma pylint: disable=protected-access, too-many-lines, invalid-name, too-many-arguments
 
-import json
 from unittest.mock import MagicMock
 
 from freqtrade.edge import PairInfo
@@ -9,7 +8,7 @@ from freqtrade.optimize import setup_configuration, start_edge
 from freqtrade.optimize.edge_cli import EdgeCli
 from freqtrade.state import RunMode
 from freqtrade.tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
-        patched_configuration_open)
+                                      patched_configuration_open)
 
 
 def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> None:
@@ -46,7 +45,10 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
 
 def test_setup_edge_configuration_with_arguments(mocker, edge_conf, caplog) -> None:
     patched_configuration_open(mocker, edge_conf)
-    mocker.patch('freqtrade.configuration.configuration.Configuration._create_datadir', lambda s, c, x: x)
+    mocker.patch(
+        'freqtrade.configuration.configuration.Configuration._create_datadir',
+        lambda s, c, x: x
+    )
 
     args = [
         '--config', 'config.json',
