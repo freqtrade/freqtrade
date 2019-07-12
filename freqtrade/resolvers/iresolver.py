@@ -7,7 +7,7 @@ import importlib.util
 import inspect
 import logging
 from pathlib import Path
-from typing import Optional, Type, Any
+from typing import Any, Optional, Tuple, Type, Union
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class IResolver(object):
 
     @staticmethod
     def _search_object(directory: Path, object_type, object_name: str,
-                       kwargs: dict = {}) -> Optional[Any]:
+                       kwargs: dict = {}) -> Union[Tuple[Any, Path], Tuple[None, None]]:
         """
         Search for the objectname in the given directory
         :param directory: relative or absolute directory path
@@ -57,9 +57,10 @@ class IResolver(object):
             if not str(entry).endswith('.py'):
                 logger.debug('Ignoring %s', entry)
                 continue
+            module_path = Path.resolve(directory.joinpath(entry))
             obj = IResolver._get_valid_object(
-                object_type, Path.resolve(directory.joinpath(entry)), object_name
+                object_type, module_path, object_name
             )
             if obj:
-                return obj(**kwargs)
-        return None
+                return (obj(**kwargs), module_path)
+        return (None, None)

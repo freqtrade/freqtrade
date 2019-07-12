@@ -11,7 +11,7 @@ from inspect import getfullargspec
 from pathlib import Path
 from typing import Dict, Optional
 
-from freqtrade import constants
+from freqtrade import constants, OperationalException
 from freqtrade.resolvers import IResolver
 from freqtrade.strategy import import_strategy
 from freqtrade.strategy.interface import IStrategy
@@ -149,10 +149,12 @@ class StrategyResolver(IResolver):
 
         for _path in abs_paths:
             try:
-                strategy = self._search_object(directory=_path, object_type=IStrategy,
-                                               object_name=strategy_name, kwargs={'config': config})
+                (strategy, module_path) = self._search_object(directory=_path,
+                                                              object_type=IStrategy,
+                                                              object_name=strategy_name,
+                                                              kwargs={'config': config})
                 if strategy:
-                    logger.info("Using resolved strategy %s from '%s'", strategy_name, _path)
+                    logger.info(f"Using resolved strategy {strategy_name} from '{module_path}'...")
                     strategy._populate_fun_len = len(
                         getfullargspec(strategy.populate_indicators).args)
                     strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
@@ -161,11 +163,12 @@ class StrategyResolver(IResolver):
                         return import_strategy(strategy, config=config)
                     except TypeError as e:
                         logger.warning(
-                            f"Impossible to load strategy '{strategy}' from {_path}. Error: {e}")
+                            f"Impossible to load strategy '{strategy_name}' from {module_path}. "
+                            f"Error: {e}")
             except FileNotFoundError:
-                logger.warning('Path "%s" does not exist', _path.relative_to(Path.cwd()))
+                logger.warning('Path "%s" does not exist.', _path.relative_to(Path.cwd()))
 
-        raise ImportError(
-            f"Impossible to load Strategy '{strategy_name}'. This class does not exist"
-            " or contains Python code errors"
+        raise OperationalException(
+            f"Impossible to load Strategy '{strategy_name}'. This class does not exist "
+            "or contains Python code errors."
         )

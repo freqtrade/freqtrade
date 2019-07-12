@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 from typing import Optional, Dict
 
+from freqtrade import OperationalException
 from freqtrade.constants import DEFAULT_HYPEROPT
 from freqtrade.optimize.hyperopt_interface import IHyperOpt
 from freqtrade.resolvers import IResolver
@@ -63,15 +64,16 @@ class HyperOptResolver(IResolver):
 
         for _path in abs_paths:
             try:
-                hyperopt = self._search_object(directory=_path, object_type=IHyperOpt,
-                                               object_name=hyperopt_name)
+                (hyperopt, module_path) = self._search_object(directory=_path,
+                                                              object_type=IHyperOpt,
+                                                              object_name=hyperopt_name)
                 if hyperopt:
-                    logger.info("Using resolved hyperopt %s from '%s'", hyperopt_name, _path)
+                    logger.info(f"Using resolved hyperopt {hyperopt_name} from '{module_path}'...")
                     return hyperopt
             except FileNotFoundError:
-                logger.warning('Path "%s" does not exist', _path.relative_to(Path.cwd()))
+                logger.warning('Path "%s" does not exist.', _path.relative_to(Path.cwd()))
 
-        raise ImportError(
-            "Impossible to load Hyperopt '{}'. This class does not exist"
-            " or contains Python code errors".format(hyperopt_name)
+        raise OperationalException(
+            f"Impossible to load Hyperopt '{hyperopt_name}'. This class does not exist "
+            "or contains Python code errors."
         )

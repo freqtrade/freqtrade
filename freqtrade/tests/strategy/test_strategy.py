@@ -9,6 +9,7 @@ from unittest.mock import Mock
 import pytest
 from pandas import DataFrame
 
+from freqtrade import OperationalException
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy import import_strategy
 from freqtrade.strategy.default_strategy import DefaultStrategy
@@ -44,21 +45,22 @@ def test_import_strategy(caplog):
 def test_search_strategy():
     default_config = {}
     default_location = Path(__file__).parent.parent.joinpath('strategy').resolve()
-    assert isinstance(
-        StrategyResolver._search_object(
-            directory=default_location,
-            object_type=IStrategy,
-            kwargs={'config': default_config},
-            object_name='DefaultStrategy'
-        ),
-        IStrategy
+
+    s, _ = StrategyResolver._search_object(
+        directory=default_location,
+        object_type=IStrategy,
+        kwargs={'config': default_config},
+        object_name='DefaultStrategy'
     )
-    assert StrategyResolver._search_object(
+    assert isinstance(s, IStrategy)
+
+    s, _ = StrategyResolver._search_object(
         directory=default_location,
         object_type=IStrategy,
         kwargs={'config': default_config},
         object_name='NotFoundStrategy'
-    ) is None
+    )
+    assert s is None
 
 
 def test_load_strategy(result):
@@ -85,18 +87,18 @@ def test_load_strategy_invalid_directory(result, caplog):
 
 def test_load_not_found_strategy():
     strategy = StrategyResolver()
-    with pytest.raises(ImportError,
-                       match=r"Impossible to load Strategy 'NotFoundStrategy'."
-                             r" This class does not exist or contains Python code errors"):
+    with pytest.raises(OperationalException,
+                       match=r"Impossible to load Strategy 'NotFoundStrategy'. "
+                             r"This class does not exist or contains Python code errors."):
         strategy._load_strategy(strategy_name='NotFoundStrategy', config={})
 
 
 def test_load_staticmethod_importerror(mocker, caplog):
     mocker.patch("freqtrade.resolvers.strategy_resolver.import_strategy", Mock(
         side_effect=TypeError("can't pickle staticmethod objects")))
-    with pytest.raises(ImportError,
-                       match=r"Impossible to load Strategy 'DefaultStrategy'."
-                             r" This class does not exist or contains Python code errors"):
+    with pytest.raises(OperationalException,
+                       match=r"Impossible to load Strategy 'DefaultStrategy'. "
+                             r"This class does not exist or contains Python code errors."):
         StrategyResolver()
     assert log_has_re(r".*Error: can't pickle staticmethod objects", caplog.record_tuples)
 

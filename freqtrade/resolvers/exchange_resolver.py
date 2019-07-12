@@ -45,13 +45,13 @@ class ExchangeResolver(IResolver):
 
             exchange = ex_class(kwargs['config'])
             if exchange:
-                logger.info("Using resolved exchange %s", exchange_name)
+                logger.info(f"Using resolved exchange '{exchange_name}'...")
                 return exchange
         except AttributeError:
-            # Pass and raise ImportError instead
+            # Pass and raise OperationalException instead
             pass
 
         raise ImportError(
-            "Impossible to load Exchange '{}'. This class does not exist"
-            " or contains Python code errors".format(exchange_name)
+            f"Impossible to load Exchange '{exchange_name}'. This class does not exist "
+            "or contains Python code errors."
         )

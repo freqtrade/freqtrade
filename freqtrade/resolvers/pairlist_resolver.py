@@ -6,6 +6,7 @@ This module load custom hyperopts
 import logging
 from pathlib import Path
 
+from freqtrade import OperationalException
 from freqtrade.pairlist.IPairList import IPairList
 from freqtrade.resolvers import IResolver
 
@@ -44,16 +45,17 @@ class PairListResolver(IResolver):
 
         for _path in abs_paths:
             try:
-                pairlist = self._search_object(directory=_path, object_type=IPairList,
-                                               object_name=pairlist_name,
-                                               kwargs=kwargs)
+                (pairlist, module_path) = self._search_object(directory=_path,
+                                                              object_type=IPairList,
+                                                              object_name=pairlist_name,
+                                                              kwargs=kwargs)
                 if pairlist:
-                    logger.info("Using resolved pairlist %s from '%s'", pairlist_name, _path)
+                    logger.info(f"Using resolved pairlist {pairlist_name} from '{module_path}'...")
                     return pairlist
             except FileNotFoundError:
-                logger.warning('Path "%s" does not exist', _path.relative_to(Path.cwd()))
+                logger.warning('Path "%s" does not exist.', _path.relative_to(Path.cwd()))
 
-        raise ImportError(
-            "Impossible to load Pairlist '{}'. This class does not exist"
-            " or contains Python code errors".format(pairlist_name)
+        raise OperationalException(
+            f"Impossible to load Pairlist '{pairlist_name}'. This class does not exist "
+            "or contains Python code errors."
         )
