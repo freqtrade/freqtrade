@@ -3,13 +3,13 @@ This module contains the configuration class
 """
 import json
 import logging
-import os
 import sys
 from argparse import Namespace
 from typing import Any, Callable, Dict, Optional
 
 from freqtrade import OperationalException, constants
 from freqtrade.configuration.check_exchange import check_exchange
+from freqtrade.configuration.create_datadir import create_datadir
 from freqtrade.configuration.json_schema import validate_config_schema
 from freqtrade.loggers import setup_logging
 from freqtrade.misc import deep_merge_dicts
@@ -171,17 +171,6 @@ class Configuration(object):
 
         return config
 
-    def _create_datadir(self, config: Dict[str, Any], datadir: Optional[str] = None) -> str:
-        if not datadir:
-            # set datadir
-            exchange_name = config.get('exchange', {}).get('name').lower()
-            datadir = os.path.join('user_data', 'data', exchange_name)
-
-        if not os.path.isdir(datadir):
-            os.makedirs(datadir)
-            logger.info(f'Created data directory: {datadir}')
-        return datadir
-
     def _args_to_config(self, config: Dict[str, Any], argname: str,
                         logstring: str, logfun: Optional[Callable] = None) -> None:
         """
@@ -207,9 +196,9 @@ class Configuration(object):
         the --datadir option
         """
         if 'datadir' in self.args and self.args.datadir:
-            config.update({'datadir': self._create_datadir(config, self.args.datadir)})
+            config.update({'datadir': create_datadir(config, self.args.datadir)})
         else:
-            config.update({'datadir': self._create_datadir(config, None)})
+            config.update({'datadir': create_datadir(config, None)})
         logger.info('Using data directory: %s ...', config.get('datadir'))
 
     def _load_optimize_config(self, config: Dict[str, Any]) -> Dict[str, Any]:

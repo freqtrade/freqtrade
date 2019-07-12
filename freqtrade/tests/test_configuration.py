@@ -12,6 +12,7 @@ from jsonschema import Draft4Validator, ValidationError, validate
 from freqtrade import OperationalException, constants
 from freqtrade.configuration import Arguments, Configuration
 from freqtrade.configuration.check_exchange import check_exchange
+from freqtrade.configuration.create_datadir import create_datadir
 from freqtrade.configuration.json_schema import validate_config_schema
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.loggers import _set_loggers
@@ -308,8 +309,8 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
 def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_open(mocker, default_conf)
     mocker.patch(
-        'freqtrade.configuration.configuration.Configuration._create_datadir',
-        lambda s, c, x: x
+        'freqtrade.configuration.configuration.create_datadir',
+        lambda c, x: x
     )
 
     arglist = [
@@ -580,12 +581,11 @@ def test_validate_default_conf(default_conf) -> None:
     validate(default_conf, constants.CONF_SCHEMA, Draft4Validator)
 
 
-def test__create_datadir(mocker, default_conf, caplog) -> None:
+def test_create_datadir(mocker, default_conf, caplog) -> None:
     mocker.patch('os.path.isdir', MagicMock(return_value=False))
     md = MagicMock()
     mocker.patch('os.makedirs', md)
-    cfg = Configuration(Namespace())
-    cfg._create_datadir(default_conf, '/foo/bar')
+    create_datadir(default_conf, '/foo/bar')
     assert md.call_args[0][0] == "/foo/bar"
     assert log_has('Created data directory: /foo/bar', caplog.record_tuples)
 

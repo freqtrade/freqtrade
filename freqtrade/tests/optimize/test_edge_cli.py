@@ -46,8 +46,8 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
 def test_setup_edge_configuration_with_arguments(mocker, edge_conf, caplog) -> None:
     patched_configuration_open(mocker, edge_conf)
     mocker.patch(
-        'freqtrade.configuration.configuration.Configuration._create_datadir',
-        lambda s, c, x: x
+        'freqtrade.configuration.configuration.create_datadir',
+        lambda c, x: x
     )
 
     args = [
