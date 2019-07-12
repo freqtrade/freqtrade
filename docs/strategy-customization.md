@@ -13,7 +13,7 @@ Let assume you have a class called `AwesomeStrategy` in the file `awesome-strate
 2. Start the bot with the param `--strategy AwesomeStrategy` (the parameter is the class name)
 
 ```bash
-python3 freqtrade --strategy AwesomeStrategy
+freqtrade --strategy AwesomeStrategy
 ```
 
 ## Change your strategy
@@ -40,7 +40,7 @@ The bot also include a sample strategy called `TestStrategy` you can update: `us
 You can test it with the parameter: `--strategy TestStrategy`
 
 ```bash
-python3 freqtrade --strategy AwesomeStrategy
+freqtrade --strategy AwesomeStrategy
 ```
 
 **For the following section we will use the [user_data/strategies/test_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py)
@@ -400,7 +400,7 @@ The default buy strategy is located in the file
 If you want to use a strategy from a different directory you can pass `--strategy-path`
 
 ```bash
-python3 freqtrade --strategy AwesomeStrategy --strategy-path /some/directory
+freqtrade --strategy AwesomeStrategy --strategy-path /some/directory
 ```
 
 ### Further strategy ideas

@@ -158,7 +158,7 @@ Because hyperopt tries a lot of combinations to find the best parameters it will
 We strongly recommend to use `screen` or `tmux` to prevent any connection loss.
 
 ```bash
-python3 freqtrade -c config.json hyperopt --customhyperopt <hyperoptname> -e 5000 --spaces all
+freqtrade -c config.json hyperopt --customhyperopt <hyperoptname> -e 5000 --spaces all
 ```
 
 Use  `<hyperoptname>` as the name of the custom hyperopt used.
@@ -184,7 +184,7 @@ you want to use. The last N ticks/timeframes will be used.
 Example:
 
 ```bash
-python3 freqtrade hyperopt --timerange -200
+freqtrade hyperopt --timerange -200
 ```
 
 ### Running Hyperopt with Smaller Search Space
