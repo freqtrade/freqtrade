@@ -552,6 +552,7 @@ def test_dry_run_order(default_conf, mocker, side, exchange_name):
 def test_create_order(default_conf, mocker, side, ordertype, rate, exchange_name):
     api_mock = MagicMock()
     order_id = 'test_prod_{}_{}'.format(side, randint(0, 10 ** 6))
+    api_mock.options = {}
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
         'info': {
@@ -592,6 +593,7 @@ def test_buy_prod(default_conf, mocker, exchange_name):
     order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
     order_type = 'market'
     time_in_force = 'gtc'
+    api_mock.options = {}
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
         'info': {
@@ -659,6 +661,7 @@ def test_buy_prod(default_conf, mocker, exchange_name):
 def test_buy_considers_time_in_force(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
     order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
+    api_mock.options = {}
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
         'info': {
@@ -719,6 +722,7 @@ def test_sell_prod(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
     order_id = 'test_prod_sell_{}'.format(randint(0, 10 ** 6))
     order_type = 'market'
+    api_mock.options = {}
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
         'info': {
@@ -783,6 +787,7 @@ def test_sell_considers_time_in_force(default_conf, mocker, exchange_name):
             'foo': 'bar'
         }
     })
+    api_mock.options = {}
     default_conf['dry_run'] = False
     mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
     mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
