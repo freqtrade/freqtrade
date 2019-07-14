@@ -22,7 +22,7 @@ from freqtrade.state import RunMode
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import SellType
 from freqtrade.tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
-                                      patched_configuration_open)
+                                      patched_configuration_load_config_file)
 
 
 def trim_dictlist(dict_list, num):
@@ -165,7 +165,7 @@ def _trend_alternate(dataframe=None, metadata=None):
 
 # Unit tests
 def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> None:
-    patched_configuration_open(mocker, default_conf)
+    patched_configuration_load_config_file(mocker, default_conf)
 
     args = [
         '--config', 'config.json',
@@ -203,7 +203,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
 
 
 def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> None:
-    patched_configuration_open(mocker, default_conf)
+    patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch(
         'freqtrade.configuration.configuration.create_datadir',
         lambda c, x: x
@@ -275,7 +275,7 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
 def test_setup_configuration_unlimited_stake_amount(mocker, default_conf, caplog) -> None:
     default_conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
 
-    patched_configuration_open(mocker, default_conf)
+    patched_configuration_load_config_file(mocker, default_conf)
 
     args = [
         '--config', 'config.json',
@@ -292,7 +292,7 @@ def test_start(mocker, fee, default_conf, caplog) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.start', start_mock)
-    patched_configuration_open(mocker, default_conf)
+    patched_configuration_load_config_file(mocker, default_conf)
 
     args = [
         '--config', 'config.json',
@@ -824,7 +824,7 @@ def test_backtest_start_live(default_conf, mocker, caplog):
     patch_exchange(mocker, api_mock)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', MagicMock())
     mocker.patch('freqtrade.optimize.backtesting.Backtesting._generate_text_table', MagicMock())
-    patched_configuration_open(mocker, default_conf)
+    patched_configuration_load_config_file(mocker, default_conf)
 
     args = [
         '--config', 'config.json',
@@ -874,7 +874,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog):
     gen_strattable_mock = MagicMock()
     mocker.patch('freqtrade.optimize.backtesting.Backtesting._generate_text_table_strategy',
                  gen_strattable_mock)
-    patched_configuration_open(mocker, default_conf)
+    patched_configuration_load_config_file(mocker, default_conf)
 
     args = [
         '--config', 'config.json',

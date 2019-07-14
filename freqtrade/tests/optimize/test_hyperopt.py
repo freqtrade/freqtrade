@@ -16,8 +16,7 @@ from freqtrade.optimize import setup_configuration, start_hyperopt
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
 from freqtrade.state import RunMode
 from freqtrade.tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
-                                      patched_configuration_load_config_file,
-                                      patched_configuration_open)
+                                      patched_configuration_load_config_file)
 
 
 @pytest.fixture(scope='function')
@@ -45,7 +44,7 @@ def create_trials(mocker, hyperopt) -> None:
 
 
 def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, caplog) -> None:
-    patched_configuration_open(mocker, default_conf)
+    patched_configuration_load_config_file(mocker, default_conf)
 
     args = [
         '--config', 'config.json',
@@ -81,7 +80,7 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
 
 
 def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplog) -> None:
-    patched_configuration_open(mocker, default_conf)
+    patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch(
         'freqtrade.configuration.configuration.create_datadir',
         lambda c, x: x

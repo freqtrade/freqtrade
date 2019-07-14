@@ -43,13 +43,6 @@ def get_args(args):
     return Arguments(args, '').get_parsed_arg()
 
 
-def patched_configuration_open(mocker, config):
-    file_mock = mocker.patch('freqtrade.configuration.configuration.open', mocker.mock_open(
-        read_data=json.dumps(config)
-    ))
-    return file_mock
-
-
 def patched_configuration_load_config_file(mocker, config) -> None:
     mocker.patch(
         'freqtrade.configuration.configuration.Configuration._load_config_file',
