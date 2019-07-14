@@ -204,6 +204,27 @@ Legal values are:
 - `stoploss`: search for the best stoploss value
 - space-separated list of any of the above values for example `--spaces roi stoploss`
 
+### Position stacking and disabling max market positions.
+
+In some situations, you may need to run Hyperopt (and Backtesting) with the 
+`--eps`/`--enable-position-staking` and `--dmmp`/`--disable-max-market-positions` arguments.
+
+By default, hyperopt emulates the behavior of the Freqtrade Live Run/Dry Run, where only one
+open trade is allowed for every traded pair. The total number of trades open for all pairs 
+is also limited by the `max_open_trades` setting. During Hyperopt/Backtesting this may lead to
+some potential trades to be hidden (or masked) by previosly open trades.
+
+The `--eps`/`--enable-position-stacking` argument allows emulation of buying the same pair multiple times,
+while `--dmmp`/`--disable-max-market-positions` disables applying `max_open_trades` 
+during Hyperopt/Backtesting (which is same as setting `max_open_trades` to a very high
+number).
+
+!!! Note
+    Dry/live runs will **NOT** use position stacking - therefore it does make sense to also validate the strategy without this as it's closer to reality.
+
+You can also enable position stacking in the configuration file by explicitly setting 
+`"position_stacking"=true`.
+
 ## Understand the Hyperopt Result
 
 Once Hyperopt is completed you can use the result to create a new strategy.
@@ -288,19 +309,11 @@ This would translate to the following ROI table:
     }
 ```
 
-### Validate backtest result
+### Validate backtesting results
 
 Once the optimized strategy has been implemented into your strategy, you should backtest this strategy to make sure everything is working as expected.
-To archive the same results (number of trades, ...) than during hyperopt, please use the command line flags `--disable-max-market-positions` and `--enable-position-stacking` for backtesting.
 
-This configuration is the default in hyperopt for performance reasons.
-
-You can overwrite position stacking in the configuration by explicitly setting `"position_stacking"=false` or by changing the relevant line in your hyperopt file [here](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L191).
-
-Enabling the market-position for hyperopt is currently not possible.
-
-!!! Note
-    Dry/live runs will **NOT** use position stacking - therefore it does make sense to also validate the strategy without this as it's closer to reality.
+To achieve same results (number of trades, their durations, profit, etc.) than during Hyperopt, please use same set of arguments `--dmmp`/`--disable-max-market-positions` and `--eps`/`--enable-position-stacking` for Backtesting.
 
 ## Next Step
 
