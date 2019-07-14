@@ -195,7 +195,7 @@ class Hyperopt(Backtesting):
         if self.config.get('use_max_market_positions', True):
             max_open_trades = self.config['max_open_trades']
         else:
-            logger.info('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
+            logger.debug('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
             max_open_trades = 0
 
         min_date, max_date = get_timeframe(processed)
