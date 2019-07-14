@@ -543,16 +543,17 @@ def test_dry_run_order(default_conf, mocker, side, exchange_name):
     ("buy"),
     ("sell")
 ])
-@pytest.mark.parametrize("ordertype,rate", [
-    ("market", None),
-    ("limit", 200),
-    ("stop_loss_limit", 200)
+@pytest.mark.parametrize("ordertype,rate,marketprice", [
+    ("market", None, None),
+    ("market", 200, True),
+    ("limit", 200, None),
+    ("stop_loss_limit", 200, None)
 ])
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_create_order(default_conf, mocker, side, ordertype, rate, exchange_name):
+def test_create_order(default_conf, mocker, side, ordertype, rate, marketprice, exchange_name):
     api_mock = MagicMock()
     order_id = 'test_prod_{}_{}'.format(side, randint(0, 10 ** 6))
-    api_mock.options = {}
+    api_mock.options = {} if not marketprice else {"createMarketBuyOrderRequiresPrice": True}
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
         'info': {
