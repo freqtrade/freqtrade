@@ -387,7 +387,9 @@ class Exchange(object):
         try:
             # Set the precision for amount and price(rate) as accepted by the exchange
             amount = self.symbol_amount_prec(pair, amount)
-            rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
+            needs_price = (ordertype != 'market'
+                           or self._api.options.get("createMarketBuyOrderRequiresPrice", False))
+            rate = self.symbol_price_prec(pair, rate) if needs_price else None
 
             return self._api.create_order(pair, ordertype, side,
                                           amount, rate, params)
@@ -395,12 +397,12 @@ class Exchange(object):
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
                 f'Insufficient funds to create {ordertype} {side} order on market {pair}.'
-                f'Tried to {side} amount {amount} at rate {rate} (total {rate*amount}).'
+                f'Tried to {side} amount {amount} at rate {rate} (total {rate * amount}).'
                 f'Message: {e}')
         except ccxt.InvalidOrder as e:
             raise DependencyException(
                 f'Could not create {ordertype} {side} order on market {pair}.'
-                f'Tried to {side} amount {amount} at rate {rate} (total {rate*amount}).'
+                f'Tried to {side} amount {amount} at rate {rate} (total {rate * amount}).'
                 f'Message: {e}')
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
