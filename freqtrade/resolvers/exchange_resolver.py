@@ -48,7 +48,7 @@ class ExchangeResolver(IResolver):
                 logger.info(f"Using resolved exchange '{exchange_name}'...")
                 return exchange
         except AttributeError:
-            # Pass and raise OperationalException instead
+            # Pass and raise ImportError instead
             pass
 
         raise ImportError(
