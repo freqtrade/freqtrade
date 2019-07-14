@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from freqtrade.configuration import Arguments, TimeRange
-from freqtrade.configuration import ARGS_DOWNLOADER
 from freqtrade.configuration import Configuration
+from freqtrade.configuration.arguments import ARGS_DOWNLOADER
 from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.data.history import download_pair_history
 from freqtrade.exchange import Exchange

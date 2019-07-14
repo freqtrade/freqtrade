@@ -4,7 +4,7 @@ import argparse
 import pytest
 
 from freqtrade.configuration import Arguments, TimeRange
-from freqtrade.configuration import ARGS_DOWNLOADER, ARGS_PLOT_DATAFRAME
+from freqtrade.configuration.arguments import ARGS_DOWNLOADER, ARGS_PLOT_DATAFRAME
 from freqtrade.configuration.arguments import check_int_positive
 
 
