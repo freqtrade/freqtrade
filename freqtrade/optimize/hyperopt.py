@@ -190,11 +190,21 @@ class Hyperopt(Backtesting):
             self.strategy.stoploss = params['stoploss']
 
         processed = load(TICKERDATA_PICKLE)
+
+        # Use max_open_trades for hyperopt as well, except --disable-max-market-positions is set
+        if self.config.get('use_max_market_positions', True):
+            max_open_trades = self.config['max_open_trades']
+        else:
+            logger.info('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
+            max_open_trades = 0
+
         min_date, max_date = get_timeframe(processed)
+
         results = self.backtest(
             {
                 'stake_amount': self.config['stake_amount'],
                 'processed': processed,
+                'max_open_trades': max_open_trades,
                 'position_stacking': self.config.get('position_stacking', False),
                 'start_date': min_date,
                 'end_date': max_date,
