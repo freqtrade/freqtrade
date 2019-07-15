@@ -216,7 +216,7 @@ some potential trades to be hidden (or masked) by previosly open trades.
 
 The `--eps`/`--enable-position-stacking` argument allows emulation of buying the same pair multiple times,
 while `--dmmp`/`--disable-max-market-positions` disables applying `max_open_trades` 
-during Hyperopt/Backtesting (which is same as setting `max_open_trades` to a very high
+during Hyperopt/Backtesting (which is equal to setting `max_open_trades` to a very high
 number).
 
 !!! Note
