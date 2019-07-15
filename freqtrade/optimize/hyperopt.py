@@ -63,9 +63,21 @@ class Hyperopt(Backtesting):
         # Note, this is ratio. 3.85 stated above means 385Σ%.
         self.expected_max_profit = 3.0
 
+        if self.config['hyperopt_clean_state']:
+            self.clean_hyperopt()
         # Previous evaluations
         self.trials_file = TRIALSDATA_PICKLE
         self.trials: List = []
+
+    def clean_hyperopt(self):
+        """
+        Remove hyperopt pickle files to restart hyperopt.
+        """
+        for f in [TICKERDATA_PICKLE, TRIALSDATA_PICKLE]:
+            p = Path(f)
+            if p.is_file():
+                logger.info(f"Removing `{p}`.")
+                p.unlink()
 
     def get_args(self, params):
         dimensions = self.hyperopt_space()
