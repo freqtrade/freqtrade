@@ -2,20 +2,24 @@
 import os
 from datetime import datetime
 from unittest.mock import MagicMock
-from filelock import Timeout
 
 import pandas as pd
 import pytest
+from arrow import Arrow
+from filelock import Timeout
 
 from freqtrade import DependencyException
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.history import load_tickerdata_file
-from freqtrade.optimize.default_hyperopt import DefaultHyperOpts
-from freqtrade.optimize.hyperopt import Hyperopt, HYPEROPT_LOCKFILE, TICKERDATA_PICKLE
 from freqtrade.optimize import setup_configuration, start_hyperopt
+from freqtrade.optimize.default_hyperopt import DefaultHyperOpts
+from freqtrade.optimize.hyperopt import (HYPEROPT_LOCKFILE, TICKERDATA_PICKLE,
+                                         Hyperopt)
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
 from freqtrade.state import RunMode
-from freqtrade.tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
+from freqtrade.strategy.interface import SellType
+from freqtrade.tests.conftest import (get_args, log_has, log_has_re,
+                                      patch_exchange,
                                       patched_configuration_load_config_file)
 
 
@@ -23,6 +27,21 @@ from freqtrade.tests.conftest import (get_args, log_has, log_has_re, patch_excha
 def hyperopt(default_conf, mocker):
     patch_exchange(mocker)
     return Hyperopt(default_conf)
+
+
+@pytest.fixture(scope='function')
+def hyperopt_results():
+    return pd.DataFrame(
+        {
+            'pair': ['ETH/BTC', 'ETH/BTC', 'ETH/BTC'],
+            'profit_percent': [0.1, 0.2, 0.3],
+            'profit_abs': [0.2, 0.4, 0.5],
+            'trade_duration': [10, 30, 10],
+            'profit': [2, 0, 0],
+            'loss': [0, 0, 1],
+            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
+        }
+    )
 
 
 # Functions for recurrent object patching
@@ -254,26 +273,33 @@ def test_start_filelock(mocker, default_conf, caplog) -> None:
     )
 
 
-def test_loss_calculation_prefer_correct_trade_count(hyperopt) -> None:
-
-    correct = hyperopt.calculate_loss(1, hyperopt.target_trades, 20)
-    over = hyperopt.calculate_loss(1, hyperopt.target_trades + 100, 20)
-    under = hyperopt.calculate_loss(1, hyperopt.target_trades - 100, 20)
+def test_loss_calculation_prefer_correct_trade_count(hyperopt, hyperopt_results) -> None:
+    correct = hyperopt.calculate_loss(hyperopt_results, hyperopt.target_trades)
+    over = hyperopt.calculate_loss(hyperopt_results, hyperopt.target_trades + 100)
+    under = hyperopt.calculate_loss(hyperopt_results, hyperopt.target_trades - 100)
     assert over > correct
     assert under > correct
 
 
-def test_loss_calculation_prefer_shorter_trades(hyperopt) -> None:
-    shorter = hyperopt.calculate_loss(1, 100, 20)
-    longer = hyperopt.calculate_loss(1, 100, 30)
+def test_loss_calculation_prefer_shorter_trades(hyperopt, hyperopt_results) -> None:
+    resultsb = hyperopt_results.copy()
+    resultsb['trade_duration'][1] = 20
+
+    longer = hyperopt.calculate_loss(hyperopt_results, 100)
+    shorter = hyperopt.calculate_loss(resultsb, 100)
     assert shorter < longer
 
 
-def test_loss_calculation_has_limited_profit(hyperopt) -> None:
-    correct = hyperopt.calculate_loss(hyperopt.expected_max_profit, hyperopt.target_trades, 20)
-    over = hyperopt.calculate_loss(hyperopt.expected_max_profit * 2, hyperopt.target_trades, 20)
-    under = hyperopt.calculate_loss(hyperopt.expected_max_profit / 2, hyperopt.target_trades, 20)
-    assert over == correct
+def test_loss_calculation_has_limited_profit(hyperopt, hyperopt_results) -> None:
+    results_over = hyperopt_results.copy()
+    results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
+    results_under = hyperopt_results.copy()
+    results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
+
+    correct = hyperopt.calculate_loss(hyperopt_results, hyperopt.target_trades)
+    over = hyperopt.calculate_loss(results_over, hyperopt.target_trades)
+    under = hyperopt.calculate_loss(results_under, hyperopt.target_trades)
+    assert over < correct
     assert under > correct
 
 
@@ -472,7 +498,7 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     )
     mocker.patch(
         'freqtrade.optimize.hyperopt.get_timeframe',
-        MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
+        MagicMock(return_value=(Arrow(2017, 12, 10), Arrow(2017, 12, 13)))
     )
     patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.hyperopt.load', MagicMock())

@@ -18,6 +18,7 @@ from pandas import DataFrame
 from skopt import Optimizer
 from skopt.space import Dimension
 
+from freqtrade import OperationalException
 from freqtrade.configuration import Arguments
 from freqtrade.data.history import load_data, get_timeframe
 from freqtrade.optimize.backtesting import Backtesting
@@ -71,18 +72,17 @@ class Hyperopt(Backtesting):
         self.trials: List = []
 
         # Assign loss function
-        if self.config['loss_function'] == 'legacy':
+        if self.config.get('loss_function', 'legacy') == 'legacy':
             self.calculate_loss = hyperopt_loss_legacy
         elif (self.config['loss_function'] == 'custom' and
               hasattr(self.custom_hyperopt, 'hyperopt_loss_custom')):
             self.calculate_loss = self.custom_hyperopt.hyperopt_loss_custom  # type: ignore
 
         # Implement fallback to avoid odd crashes when custom-hyperopt fails to load.
-        # TODO: Maybe this should just stop hyperopt completely?
         if not hasattr(self.custom_hyperopt, 'hyperopt_loss_custom'):
             logger.warning("Could not load hyperopt configuration. "
                            "Falling back to legacy configuration.")
-            self.calculate_loss = hyperopt_loss_legacy
+            raise OperationalException("Could not load hyperopt loss function.")
 
         # Populate functions here (hasattr is slow so should not be run during "regular" operations)
         if hasattr(self.custom_hyperopt, 'populate_buy_trend'):
