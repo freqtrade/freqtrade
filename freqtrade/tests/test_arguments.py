@@ -3,8 +3,9 @@ import argparse
 
 import pytest
 
-from freqtrade.arguments import (ARGS_DOWNLOADER, ARGS_PLOT_DATAFRAME,
-                                 Arguments, TimeRange, check_int_positive)
+from freqtrade.configuration import Arguments, TimeRange
+from freqtrade.configuration.arguments import ARGS_DOWNLOADER, ARGS_PLOT_DATAFRAME
+from freqtrade.configuration.arguments import check_int_positive
 
 
 # Parse common command-line-arguments. Used for all tools

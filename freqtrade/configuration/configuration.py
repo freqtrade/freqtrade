@@ -3,48 +3,20 @@ This module contains the configuration class
 """
 import json
 import logging
-import os
 import sys
 from argparse import Namespace
 from typing import Any, Callable, Dict, Optional
 
-from jsonschema import Draft4Validator, validators
-from jsonschema.exceptions import ValidationError, best_match
-
 from freqtrade import OperationalException, constants
-from freqtrade.exchange import (is_exchange_bad, is_exchange_available,
-                                is_exchange_officially_supported, available_exchanges)
+from freqtrade.configuration.check_exchange import check_exchange
+from freqtrade.configuration.create_datadir import create_datadir
+from freqtrade.configuration.json_schema import validate_config_schema
 from freqtrade.loggers import setup_logging
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.state import RunMode
 
 
 logger = logging.getLogger(__name__)
-
-
-def _extend_validator(validator_class):
-    """
-    Extended validator for the Freqtrade configuration JSON Schema.
-    Currently it only handles defaults for subschemas.
-    """
-    validate_properties = validator_class.VALIDATORS['properties']
-
-    def set_defaults(validator, properties, instance, schema):
-        for prop, subschema in properties.items():
-            if 'default' in subschema:
-                instance.setdefault(prop, subschema['default'])
-
-        for error in validate_properties(
-            validator, properties, instance, schema,
-        ):
-            yield error
-
-    return validators.extend(
-        validator_class, {'properties': set_defaults}
-    )
-
-
-FreqtradeValidator = _extend_validator(Draft4Validator)
 
 
 class Configuration(object):
@@ -57,6 +29,16 @@ class Configuration(object):
         self.args = args
         self.config: Optional[Dict[str, Any]] = None
         self.runmode = runmode
+
+    def get_config(self) -> Dict[str, Any]:
+        """
+        Return the config. Use this method to get the bot config
+        :return: Dict: Bot config
+        """
+        if self.config is None:
+            self.config = self.load_config()
+
+        return self.config
 
     def load_config(self) -> Dict[str, Any]:
         """
@@ -75,7 +57,7 @@ class Configuration(object):
             config['internals'] = {}
 
         logger.info('Validating configuration ...')
-        self._validate_config_schema(config)
+        validate_config_schema(config)
         self._validate_config_consistency(config)
 
         # Set strategy if not specified in config and or if it's non default
@@ -185,20 +167,9 @@ class Configuration(object):
         logger.info(f'Using DB: "{config["db_url"]}"')
 
         # Check if the exchange set by the user is supported
-        self.check_exchange(config)
+        check_exchange(config)
 
         return config
-
-    def _create_datadir(self, config: Dict[str, Any], datadir: Optional[str] = None) -> str:
-        if not datadir:
-            # set datadir
-            exchange_name = config.get('exchange', {}).get('name').lower()
-            datadir = os.path.join('user_data', 'data', exchange_name)
-
-        if not os.path.isdir(datadir):
-            os.makedirs(datadir)
-            logger.info(f'Created data directory: {datadir}')
-        return datadir
 
     def _args_to_config(self, config: Dict[str, Any], argname: str,
                         logstring: str, logfun: Optional[Callable] = None) -> None:
@@ -225,9 +196,9 @@ class Configuration(object):
         the --datadir option
         """
         if 'datadir' in self.args and self.args.datadir:
-            config.update({'datadir': self._create_datadir(config, self.args.datadir)})
+            config.update({'datadir': create_datadir(config, self.args.datadir)})
         else:
-            config.update({'datadir': self._create_datadir(config, None)})
+            config.update({'datadir': create_datadir(config, None)})
         logger.info('Using data directory: %s ...', config.get('datadir'))
 
     def _load_optimize_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
@@ -337,24 +308,6 @@ class Configuration(object):
                              logstring='Using trades from: {}')
         return config
 
-    def _validate_config_schema(self, conf: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Validate the configuration follow the Config Schema
-        :param conf: Config in JSON format
-        :return: Returns the config if valid, otherwise throw an exception
-        """
-        try:
-            FreqtradeValidator(constants.CONF_SCHEMA).validate(conf)
-            return conf
-        except ValidationError as exception:
-            logger.critical(
-                'Invalid configuration. See config.json.example. Reason: %s',
-                exception
-            )
-            raise ValidationError(
-                best_match(Draft4Validator(constants.CONF_SCHEMA).iter_errors(conf)).message
-            )
-
     def _validate_config_consistency(self, conf: Dict[str, Any]) -> None:
         """
         Validate the configuration consistency
@@ -383,51 +336,3 @@ class Configuration(object):
             raise OperationalException(
                 f'The config trailing_stop_positive_offset needs '
                 'to be greater than trailing_stop_positive_offset in your config.')
-
-    def get_config(self) -> Dict[str, Any]:
-        """
-        Return the config. Use this method to get the bot config
-        :return: Dict: Bot config
-        """
-        if self.config is None:
-            self.config = self.load_config()
-
-        return self.config
-
-    def check_exchange(self, config: Dict[str, Any], check_for_bad: bool = True) -> bool:
-        """
-        Check if the exchange name in the config file is supported by Freqtrade
-        :param check_for_bad: if True, check the exchange against the list of known 'bad'
-                              exchanges
-        :return: False if exchange is 'bad', i.e. is known to work with the bot with
-                 critical issues or does not work at all, crashes, etc. True otherwise.
-                 raises an exception if the exchange if not supported by ccxt
-                 and thus is not known for the Freqtrade at all.
-        """
-        logger.info("Checking exchange...")
-
-        exchange = config.get('exchange', {}).get('name').lower()
-        if not is_exchange_available(exchange):
-            raise OperationalException(
-                    f'Exchange "{exchange}" is not supported by ccxt '
-                    f'and therefore not available for the bot.\n'
-                    f'The following exchanges are supported by ccxt: '
-                    f'{", ".join(available_exchanges())}'
-            )
-
-        if check_for_bad and is_exchange_bad(exchange):
-            logger.warning(f'Exchange "{exchange}" is known to not work with the bot yet. '
-                           f'Use it only for development and testing purposes.')
-            return False
-
-        if is_exchange_officially_supported(exchange):
-            logger.info(f'Exchange "{exchange}" is officially supported '
-                        f'by the Freqtrade development team.')
-        else:
-            logger.warning(f'Exchange "{exchange}" is supported by ccxt '
-                           f'and therefore available for the bot but not officially supported '
-                           f'by the Freqtrade development team. '
-                           f'It may work flawlessly (please report back) or have serious issues. '
-                           f'Use it at your own discretion.')
-
-        return True

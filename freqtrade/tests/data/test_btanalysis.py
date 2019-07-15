@@ -4,7 +4,7 @@ import pytest
 from arrow import Arrow
 from pandas import DataFrame, to_datetime
 
-from freqtrade.arguments import Arguments, TimeRange
+from freqtrade.configuration import Arguments, TimeRange
 from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
                                        combine_tickers_with_mean,
                                        create_cum_profit,

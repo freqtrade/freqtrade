@@ -1,5 +1,4 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
-import json
 import os
 from datetime import datetime
 from unittest.mock import MagicMock
@@ -16,7 +15,8 @@ from freqtrade.optimize.hyperopt import Hyperopt, HYPEROPT_LOCKFILE
 from freqtrade.optimize import setup_configuration, start_hyperopt
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
 from freqtrade.state import RunMode
-from freqtrade.tests.conftest import get_args, log_has, log_has_re, patch_exchange
+from freqtrade.tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
+                                      patched_configuration_load_config_file)
 
 
 @pytest.fixture(scope='function')
@@ -44,9 +44,7 @@ def create_trials(mocker, hyperopt) -> None:
 
 
 def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, caplog) -> None:
-    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
-        read_data=json.dumps(default_conf)
-    ))
+    patched_configuration_load_config_file(mocker, default_conf)
 
     args = [
         '--config', 'config.json',
@@ -82,10 +80,11 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
 
 
 def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplog) -> None:
-    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
-        read_data=json.dumps(default_conf)
-    ))
-    mocker.patch('freqtrade.configuration.Configuration._create_datadir', lambda s, c, x: x)
+    patched_configuration_load_config_file(mocker, default_conf)
+    mocker.patch(
+        'freqtrade.configuration.configuration.create_datadir',
+        lambda c, x: x
+    )
 
     args = [
         '--config', 'config.json',
@@ -148,11 +147,8 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
 
 
 def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
+    patched_configuration_load_config_file(mocker, default_conf)
 
-    mocker.patch(
-        'freqtrade.configuration.Configuration._load_config_file',
-        lambda *args, **kwargs: default_conf
-    )
     hyperopts = DefaultHyperOpts
     delattr(hyperopts, 'populate_buy_trend')
     delattr(hyperopts, 'populate_sell_trend')
@@ -172,10 +168,7 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
 
 def test_start(mocker, default_conf, caplog) -> None:
     start_mock = MagicMock()
-    mocker.patch(
-        'freqtrade.configuration.Configuration._load_config_file',
-        lambda *args, **kwargs: default_conf
-    )
+    patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.start', start_mock)
     patch_exchange(mocker)
 
@@ -198,10 +191,7 @@ def test_start(mocker, default_conf, caplog) -> None:
 
 
 def test_start_no_data(mocker, default_conf, caplog) -> None:
-    mocker.patch(
-        'freqtrade.configuration.Configuration._load_config_file',
-        lambda *args, **kwargs: default_conf
-    )
+    patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock(return_value={}))
     mocker.patch(
         'freqtrade.optimize.hyperopt.get_timeframe',
@@ -226,10 +216,7 @@ def test_start_no_data(mocker, default_conf, caplog) -> None:
 
 def test_start_failure(mocker, default_conf, caplog) -> None:
     start_mock = MagicMock()
-    mocker.patch(
-        'freqtrade.configuration.Configuration._load_config_file',
-        lambda *args, **kwargs: default_conf
-    )
+    patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.start', start_mock)
     patch_exchange(mocker)
 
@@ -250,10 +237,7 @@ def test_start_failure(mocker, default_conf, caplog) -> None:
 
 def test_start_filelock(mocker, default_conf, caplog) -> None:
     start_mock = MagicMock(side_effect=Timeout(HYPEROPT_LOCKFILE))
-    mocker.patch(
-        'freqtrade.configuration.Configuration._load_config_file',
-        lambda *args, **kwargs: default_conf
-    )
+    patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.start', start_mock)
     patch_exchange(mocker)
 

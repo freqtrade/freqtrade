@@ -12,7 +12,7 @@ from typing import Any, Dict, List, NamedTuple, Optional
 from pandas import DataFrame
 from tabulate import tabulate
 
-from freqtrade.arguments import Arguments
+from freqtrade.configuration import Arguments
 from freqtrade.data import history
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exchange import timeframe_to_minutes

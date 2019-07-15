@@ -15,7 +15,7 @@ from argparse import Namespace
 from typing import Any, List
 
 from freqtrade import OperationalException
-from freqtrade.arguments import Arguments
+from freqtrade.configuration import Arguments
 from freqtrade.worker import Worker
 
 

@@ -18,7 +18,7 @@ from pandas import DataFrame
 from skopt import Optimizer
 from skopt.space import Dimension
 
-from freqtrade.arguments import Arguments
+from freqtrade.configuration import Arguments
 from freqtrade.data.history import load_data, get_timeframe
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver

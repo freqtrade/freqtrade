@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import arrow
 from pandas import DataFrame
 
-from freqtrade.arguments import TimeRange
+from freqtrade.configuration import TimeRange
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.history import load_tickerdata_file
 from freqtrade.persistence import Trade

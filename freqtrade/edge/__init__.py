@@ -10,8 +10,7 @@ import utils_find_1st as utf1st
 from pandas import DataFrame
 
 from freqtrade import constants, OperationalException
-from freqtrade.arguments import Arguments
-from freqtrade.arguments import TimeRange
+from freqtrade.configuration import Arguments, TimeRange
 from freqtrade.data import history
 from freqtrade.strategy.interface import SellType
 

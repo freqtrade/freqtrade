@@ -6,7 +6,6 @@ from copy import deepcopy
 from datetime import datetime
 from functools import reduce
 from pathlib import Path
-from typing import List
 from unittest.mock import MagicMock, PropertyMock
 
 import arrow
@@ -14,13 +13,14 @@ import pytest
 from telegram import Chat, Message, Update
 
 from freqtrade import constants, persistence
-from freqtrade.arguments import Arguments
+from freqtrade.configuration import Arguments
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
+
 
 logging.getLogger('').setLevel(logging.INFO)
 
@@ -39,8 +39,15 @@ def log_has_re(line, logs):
                   False)
 
 
-def get_args(args) -> List[str]:
+def get_args(args):
     return Arguments(args, '').get_parsed_arg()
+
+
+def patched_configuration_load_config_file(mocker, config) -> None:
+    mocker.patch(
+        'freqtrade.configuration.configuration.Configuration._load_config_file',
+        lambda *args, **kwargs: config
+    )
 
 
 def patch_exchange(mocker, api_mock=None, id='bittrex') -> None:
