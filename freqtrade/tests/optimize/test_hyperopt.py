@@ -11,7 +11,7 @@ from freqtrade import DependencyException
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.history import load_tickerdata_file
 from freqtrade.optimize.default_hyperopt import DefaultHyperOpts
-from freqtrade.optimize.hyperopt import Hyperopt, HYPEROPT_LOCKFILE
+from freqtrade.optimize.hyperopt import Hyperopt, HYPEROPT_LOCKFILE, TICKERDATA_PICKLE
 from freqtrade.optimize import setup_configuration, start_hyperopt
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
 from freqtrade.state import RunMode
@@ -510,3 +510,20 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     hyperopt = Hyperopt(default_conf)
     generate_optimizer_value = hyperopt.generate_optimizer(list(optimizer_param.values()))
     assert generate_optimizer_value == response_expected
+
+
+def test_clean_hyperopt(mocker, default_conf, caplog):
+    patch_exchange(mocker)
+    default_conf.update({'config': 'config.json.example',
+                         'epochs': 1,
+                         'timerange': None,
+                         'spaces': 'all',
+                         'hyperopt_jobs': 1,
+                         })
+    mocker.patch("freqtrade.optimize.hyperopt.Path.is_file", MagicMock(return_value=True))
+    unlinkmock = mocker.patch("freqtrade.optimize.hyperopt.Path.unlink", MagicMock())
+    hyp = Hyperopt(default_conf)
+
+    hyp.clean_hyperopt()
+    assert unlinkmock.call_count == 2
+    assert log_has(f"Removing `{TICKERDATA_PICKLE}`.", caplog.record_tuples)

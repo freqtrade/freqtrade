@@ -63,7 +63,7 @@ class Hyperopt(Backtesting):
         # Note, this is ratio. 3.85 stated above means 385Σ%.
         self.expected_max_profit = 3.0
 
-        if self.config['hyperopt_clean_state']:
+        if self.config.get('hyperopt_clean_state'):
             self.clean_hyperopt()
         # Previous evaluations
         self.trials_file = TRIALSDATA_PICKLE
