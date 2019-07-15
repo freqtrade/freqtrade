@@ -151,6 +151,20 @@ The above setup expects to find ADX, RSI and Bollinger Bands in the populated in
 When you want to test an indicator that isn't used by the bot currently, remember to
 add it to the `populate_indicators()` method in `hyperopt.py`.
 
+## Loss-functions
+
+Each hyperparameter tuning requires a target. This is usually defined as a function, which get's closer to 0 for increasing values.
+
+By default, freqtrade uses a loss function we call `legacy` - since it's been with freqtrade since the beginning and optimizes for short trade duration.
+
+This can be configured by using the `--loss <value>` argument.
+Possible options are:
+
+* `legacy` - The default option, optimizing for short trades and few losses.
+* `sharpe` - using the sharpe-ratio to determine the quality of results
+* `custom` - Custom defined loss-function [see next section](#using-a-custom-loss-function)
+
+
 ### Using a custom loss function
 
 To use a custom loss function, make sure that the function `hyperopt_loss_custom` is defined in your custom hyperopt class.

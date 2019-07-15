@@ -23,7 +23,7 @@ from freqtrade.configuration import Arguments
 from freqtrade.data.history import load_data, get_timeframe
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
-from freqtrade.optimize.hyperopt_loss import hyperopt_loss_legacy
+from freqtrade.optimize.hyperopt_loss import hyperopt_loss_legacy, hyperopt_loss_sharpe
 
 
 logger = logging.getLogger(__name__)
@@ -74,6 +74,8 @@ class Hyperopt(Backtesting):
         # Assign loss function
         if self.config.get('loss_function', 'legacy') == 'legacy':
             self.calculate_loss = hyperopt_loss_legacy
+        elif self.config.get('loss_function', 'sharpe') == 'sharpe':
+            self.calculate_loss = hyperopt_loss_sharpe
         elif (self.config['loss_function'] == 'custom' and
               hasattr(self.custom_hyperopt, 'hyperopt_loss_custom')):
             self.calculate_loss = self.custom_hyperopt.hyperopt_loss_custom  # type: ignore

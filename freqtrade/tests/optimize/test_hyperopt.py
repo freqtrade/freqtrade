@@ -15,6 +15,7 @@ from freqtrade.optimize import setup_configuration, start_hyperopt
 from freqtrade.optimize.default_hyperopt import DefaultHyperOpts
 from freqtrade.optimize.hyperopt import (HYPEROPT_LOCKFILE, TICKERDATA_PICKLE,
                                          Hyperopt)
+from freqtrade.optimize.hyperopt_loss import hyperopt_loss_legacy, hyperopt_loss_sharpe
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
 from freqtrade.state import RunMode
 from freqtrade.strategy.interface import SellType
@@ -273,32 +274,48 @@ def test_start_filelock(mocker, default_conf, caplog) -> None:
     )
 
 
-def test_loss_calculation_prefer_correct_trade_count(hyperopt, hyperopt_results) -> None:
-    correct = hyperopt.calculate_loss(hyperopt_results, hyperopt.target_trades)
-    over = hyperopt.calculate_loss(hyperopt_results, hyperopt.target_trades + 100)
-    under = hyperopt.calculate_loss(hyperopt_results, hyperopt.target_trades - 100)
+def test_loss_calculation_prefer_correct_trade_count(hyperopt_results) -> None:
+    correct = hyperopt_loss_legacy(hyperopt_results, 600)
+    over = hyperopt_loss_legacy(hyperopt_results, 600 + 100)
+    under = hyperopt_loss_legacy(hyperopt_results, 600 - 100)
     assert over > correct
     assert under > correct
 
 
-def test_loss_calculation_prefer_shorter_trades(hyperopt, hyperopt_results) -> None:
+def test_loss_calculation_prefer_shorter_trades(hyperopt_results) -> None:
     resultsb = hyperopt_results.copy()
     resultsb['trade_duration'][1] = 20
 
-    longer = hyperopt.calculate_loss(hyperopt_results, 100)
-    shorter = hyperopt.calculate_loss(resultsb, 100)
+    longer = hyperopt_loss_legacy(hyperopt_results, 100)
+    shorter = hyperopt_loss_legacy(resultsb, 100)
     assert shorter < longer
 
 
-def test_loss_calculation_has_limited_profit(hyperopt, hyperopt_results) -> None:
+def test_loss_calculation_has_limited_profit(hyperopt_results) -> None:
     results_over = hyperopt_results.copy()
     results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
     results_under = hyperopt_results.copy()
     results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
 
-    correct = hyperopt.calculate_loss(hyperopt_results, hyperopt.target_trades)
-    over = hyperopt.calculate_loss(results_over, hyperopt.target_trades)
-    under = hyperopt.calculate_loss(results_under, hyperopt.target_trades)
+    correct = hyperopt_loss_legacy(hyperopt_results, 600)
+    over = hyperopt_loss_legacy(results_over, 600)
+    under = hyperopt_loss_legacy(results_under, 600)
+    assert over < correct
+    assert under > correct
+    
+
+def test_sharpe_loss_prefers_higher_profits(hyperopt_results) -> None:
+    results_over = hyperopt_results.copy()
+    results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
+    results_under = hyperopt_results.copy()
+    results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
+
+    correct = hyperopt_loss_sharpe(hyperopt_results, len(
+        hyperopt_results), datetime(2019, 1, 1), datetime(2019, 5, 1))
+    over = hyperopt_loss_sharpe(results_over, len(hyperopt_results),
+                                datetime(2019, 1, 1), datetime(2019, 5, 1))
+    under = hyperopt_loss_sharpe(results_under, len(hyperopt_results),
+                                 datetime(2019, 1, 1), datetime(2019, 5, 1))
     assert over < correct
     assert under > correct
 

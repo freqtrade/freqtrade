@@ -235,7 +235,7 @@ AVAILABLE_CLI_OPTIONS = {
         help='Define the loss-function to use for hyperopt.'
         'Possibilities are `legacy`, and `custom` (providing a custom loss-function).'
         'Default: `%(default)s`.',
-        choices=['legacy', 'custom'],
+        choices=['legacy', 'sharpe', 'custom'],
         default='legacy',
     ),
     # List exchanges

@@ -1,4 +1,7 @@
+from datetime import datetime
 from math import exp
+
+import numpy as np
 from pandas import DataFrame
 
 # Define some constants:
@@ -35,3 +38,27 @@ def hyperopt_loss_legacy(results: DataFrame, trade_count: int,
     duration_loss = 0.4 * min(trade_duration / MAX_ACCEPTED_TRADE_DURATION, 1)
     result = trade_loss + profit_loss + duration_loss
     return result
+
+
+def hyperopt_loss_sharpe(results: DataFrame, trade_count: int,
+                         min_date: datetime, max_date: datetime, *args, **kwargs) -> float:
+    """
+    Objective function, returns smaller number for more optimal results
+    Using sharpe ratio calculation
+    """
+    total_profit = results.profit_percent
+    days_period = (max_date - min_date).days
+
+    # adding slippage of 0.1% per trade
+    total_profit = total_profit - 0.0005
+    expected_yearly_return = total_profit.sum() / days_period
+
+    if (np.std(total_profit) != 0.):
+        sharp_ratio = expected_yearly_return / np.std(total_profit) * np.sqrt(365)
+    else:
+        sharp_ratio = 1.
+
+    # print(expected_yearly_return, np.std(total_profit), sharp_ratio)
+
+    # Negate sharp-ratio so lower is better (??)
+    return -sharp_ratio
