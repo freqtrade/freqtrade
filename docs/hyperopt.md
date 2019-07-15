@@ -31,6 +31,7 @@ Depending on the space you want to optimize, only some of the below are required
 * Optional but recommended
   * copy `populate_buy_trend` from your strategy - otherwise default-strategy will be used
   * copy `populate_sell_trend` from your strategy - otherwise default-strategy will be used
+* Add custom loss-function `hyperopt_loss_custom` (Details below)
 
 ### 1. Install a Custom Hyperopt File
 
@@ -150,6 +151,45 @@ The above setup expects to find ADX, RSI and Bollinger Bands in the populated in
 When you want to test an indicator that isn't used by the bot currently, remember to
 add it to the `populate_indicators()` method in `hyperopt.py`.
 
+### Using a custom loss function
+
+To use a custom loss function, make sure that the function `hyperopt_loss_custom` is defined in your custom hyperopt class.
+You then need to add the command line parameter `--loss custom` to your hyperopt call so this fuction is being used.
+
+A sample of this can be found below.
+
+``` python
+    @staticmethod
+    def hyperopt_loss_custom(results: DataFrame, trade_count: int,
+                             min_date: datetime, max_date: datetime, *args, **kwargs) -> float:
+        """
+        Objective function, returns smaller number for more optimal results
+        """
+        total_profit = results.profit_percent.sum()
+        trade_duration = results.trade_duration.mean()
+
+        trade_loss = 1 - 0.25 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.8)
+        profit_loss = max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)
+        duration_loss = 0.4 * min(trade_duration / MAX_ACCEPTED_TRADE_DURATION, 1)
+        result = trade_loss + profit_loss + duration_loss
+        return result
+```
+
+Currently, the arguments are:
+
+* `results`: DataFrame containing the result
+* `trade_count`: Amount of trades (identical to `len(results)`)
+* `min_date`: Start date of the hyperopting TimeFrame
+* `min_date`: End date of the hyperopting TimeFrame
+
+This function needs to return a floating point number (`float`). The smaller that number, the better is the result. The parameters and balancing for this are up to you.
+
+!!! Note
+    This function is called once per iteration - so please make sure to have this as optimized as possible to now slow hyperopt down unnecessarily.
+
+!!! Note
+    The last 2 arguments, `*args` and `**kwargs` are not strictly necessary but ensure compatibility for the future, so we can easily enable more parameters once we discover what could be usefull without breaking your custom hyperopt file.
+
 ## Execute Hyperopt
 
 Once you have updated your hyperopt configuration you can run it.
@@ -197,14 +237,14 @@ new buy strategy you have.
 
 Legal values are:
 
-- `all`: optimize everything
-- `buy`: just search for a new buy strategy
-- `sell`: just search for a new sell strategy
-- `roi`: just optimize the minimal profit table for your strategy
-- `stoploss`: search for the best stoploss value
-- space-separated list of any of the above values for example `--spaces roi stoploss`
+* `all`: optimize everything
+* `buy`: just search for a new buy strategy
+* `sell`: just search for a new sell strategy
+* `roi`: just optimize the minimal profit table for your strategy
+* `stoploss`: search for the best stoploss value
+* space-separated list of any of the above values for example `--spaces roi stoploss`
 
-### Position stacking and disabling max market positions.
+### Position stacking and disabling max market positions
 
 In some situations, you may need to run Hyperopt (and Backtesting) with the 
 `--eps`/`--enable-position-staking` and `--dmmp`/`--disable-max-market-positions` arguments.

@@ -75,7 +75,7 @@ class Hyperopt(Backtesting):
             self.calculate_loss = hyperopt_loss_legacy
         elif (self.config['loss_function'] == 'custom' and
               hasattr(self.custom_hyperopt, 'hyperopt_loss_custom')):
-            self.calculate_loss = self.custom_hyperopt.hyperopt_loss_custom
+            self.calculate_loss = self.custom_hyperopt.hyperopt_loss_custom  # type: ignore
 
         # Implement fallback to avoid odd crashes when custom-hyperopt fails to load.
         # TODO: Maybe this should just stop hyperopt completely?
