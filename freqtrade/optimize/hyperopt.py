@@ -80,11 +80,11 @@ class Hyperopt(Backtesting):
               hasattr(self.custom_hyperopt, 'hyperopt_loss_custom')):
             self.calculate_loss = self.custom_hyperopt.hyperopt_loss_custom  # type: ignore
 
-        # Implement fallback to avoid odd crashes when custom-hyperopt fails to load.
-        if not hasattr(self.custom_hyperopt, 'hyperopt_loss_custom'):
-            logger.warning("Could not load hyperopt configuration. "
-                           "Falling back to legacy configuration.")
-            raise OperationalException("Could not load hyperopt loss function.")
+            # Implement fallback to avoid odd crashes when custom-hyperopt fails to load.
+            if not hasattr(self.custom_hyperopt, 'hyperopt_loss_custom'):
+                logger.warning("Could not load hyperopt configuration. "
+                               "Falling back to legacy configuration.")
+                raise OperationalException("Could not load hyperopt loss function.")
 
         # Populate functions here (hasattr is slow so should not be run during "regular" operations)
         if hasattr(self.custom_hyperopt, 'populate_buy_trend'):
