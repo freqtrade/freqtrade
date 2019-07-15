@@ -7,7 +7,7 @@ This module contains the hyperopt logic
 import logging
 import os
 import sys
-from math import exp
+
 from operator import itemgetter
 from pathlib import Path
 from pprint import pprint
@@ -22,6 +22,7 @@ from freqtrade.configuration import Arguments
 from freqtrade.data.history import load_data, get_timeframe
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
+from freqtrade.optimize.hyperopt_loss import hyperopt_loss_legacy
 
 
 logger = logging.getLogger(__name__)
@@ -68,6 +69,20 @@ class Hyperopt(Backtesting):
         # Previous evaluations
         self.trials_file = TRIALSDATA_PICKLE
         self.trials: List = []
+
+        # Assign loss function
+        if self.config['loss_function'] == 'legacy':
+            self.calculate_loss = hyperopt_loss_legacy
+        elif (self.config['loss_function'] == 'custom' and
+              hasattr(self.custom_hyperopt, 'hyperopt_loss_custom')):
+            self.calculate_loss = self.custom_hyperopt.hyperopt_loss_custom
+
+        # Implement fallback to avoid odd crashes when custom-hyperopt fails to load.
+        # TODO: Maybe this should just stop hyperopt completely?
+        if not hasattr(self.custom_hyperopt, 'hyperopt_loss_custom'):
+            logger.warning("Could not load hyperopt configuration. "
+                           "Falling back to legacy configuration.")
+            self.calculate_loss = hyperopt_loss_legacy
 
         # Populate functions here (hasattr is slow so should not be run during "regular" operations)
         if hasattr(self.custom_hyperopt, 'populate_buy_trend'):
@@ -160,16 +175,6 @@ class Hyperopt(Backtesting):
             print('.', end='')
             sys.stdout.flush()
 
-    def calculate_loss(self, total_profit: float, trade_count: int, trade_duration: float) -> float:
-        """
-        Objective function, returns smaller number for more optimal results
-        """
-        trade_loss = 1 - 0.25 * exp(-(trade_count - self.target_trades) ** 2 / 10 ** 5.8)
-        profit_loss = max(0, 1 - total_profit / self.expected_max_profit)
-        duration_loss = 0.4 * min(trade_duration / self.max_accepted_trade_duration, 1)
-        result = trade_loss + profit_loss + duration_loss
-        return result
-
     def has_space(self, space: str) -> bool:
         """
         Tell if a space value is contained in the configuration
@@ -231,9 +236,7 @@ class Hyperopt(Backtesting):
         )
         result_explanation = self.format_results(results)
 
-        total_profit = results.profit_percent.sum()
         trade_count = len(results.index)
-        trade_duration = results.trade_duration.mean()
 
         # If this evaluation contains too short amount of trades to be
         # interesting -- consider it as 'bad' (assigned max. loss value)
@@ -246,7 +249,8 @@ class Hyperopt(Backtesting):
                 'result': result_explanation,
             }
 
-        loss = self.calculate_loss(total_profit, trade_count, trade_duration)
+        loss = self.calculate_loss(results=results, trade_count=trade_count,
+                                   min_date=min_date.datetime, max_date=max_date.datetime)
 
         return {
             'loss': loss,
