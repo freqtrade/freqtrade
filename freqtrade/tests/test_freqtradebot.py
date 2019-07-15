@@ -2,7 +2,6 @@
 # pragma pylint: disable=protected-access, too-many-lines, invalid-name, too-many-arguments
 
 import logging
-import re
 import time
 from copy import deepcopy
 from unittest.mock import MagicMock, PropertyMock
@@ -1419,8 +1418,7 @@ def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> No
     # Assert we call handle_trade() if trade is feasible for execution
     freqtrade.update_trade_state(trade)
 
-    regexp = re.compile('Found open order for.*')
-    assert filter(regexp.match, caplog.record_tuples)
+    assert log_has_re('Found open order for.*', caplog.record_tuples)
 
 
 def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_buy_order, mocker):
@@ -1941,14 +1939,11 @@ def test_check_handle_timedout_exception(default_conf, ticker, mocker, caplog) -
     )
 
     Trade.session.add(trade_buy)
-    regexp = re.compile(
-        'Cannot query order for Trade(id=1, pair=ETH/BTC, amount=90.99181073, '
-        'open_rate=0.00001099, open_since=10 hours ago) due to Traceback (most '
-        'recent call last):\n.*'
-    )
 
     freqtrade.check_handle_timedout()
-    assert filter(regexp.match, caplog.record_tuples)
+    assert log_has_re(r'Cannot query order for Trade\(id=1, pair=ETH/BTC, amount=90.99181073, '
+                      r'open_rate=0.00001099, open_since=10 hours ago\) due to Traceback \(most '
+                      r'recent call last\):\n.*', caplog.record_tuples)
 
 
 def test_handle_timedout_limit_buy(mocker, default_conf) -> None:

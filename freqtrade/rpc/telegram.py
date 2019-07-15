@@ -217,7 +217,8 @@ class Telegram(RPC):
 
                     "*Open Order:* `{open_order}`" if r['open_order'] else ""
                 ]
-                messages.append("\n".join(filter(None, lines)).format(**r))
+                # Filter empty lines using list-comprehension
+                messages.append("\n".join([l for l in lines if l]).format(**r))
 
             for msg in messages:
                 self._send_msg(msg, bot=bot)

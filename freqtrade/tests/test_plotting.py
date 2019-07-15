@@ -23,7 +23,7 @@ def fig_generating_mock(fig, *args, **kwargs):
 
 
 def find_trace_in_fig_data(data, search_string: str):
-    matches = filter(lambda x: x.name == search_string, data)
+    matches = (d for d in data if d.name == search_string)
     return next(matches)
 
 
