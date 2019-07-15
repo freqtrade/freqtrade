@@ -371,6 +371,10 @@ def test_start_calls_optimizer(mocker, default_conf, caplog) -> None:
     assert dumper.called
     # Should be called twice, once for tickerdata, once to save evaluations
     assert dumper.call_count == 2
+    assert hasattr(hyperopt, "advise_sell")
+    assert hasattr(hyperopt, "advise_buy")
+    assert hasattr(hyperopt, "max_open_trades")
+    assert hyperopt.max_open_trades == default_conf['max_open_trades']
 
 
 def test_format_results(hyperopt):

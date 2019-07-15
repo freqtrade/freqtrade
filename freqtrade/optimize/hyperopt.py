@@ -69,6 +69,20 @@ class Hyperopt(Backtesting):
         self.trials_file = TRIALSDATA_PICKLE
         self.trials: List = []
 
+        # Populate functions here (hasattr is slow so should not be run during "regular" operations)
+        if hasattr(self.custom_hyperopt, 'populate_buy_trend'):
+            self.advise_buy = self.custom_hyperopt.populate_buy_trend  # type: ignore
+
+        if hasattr(self.custom_hyperopt, 'populate_sell_trend'):
+            self.advise_sell = self.custom_hyperopt.populate_sell_trend  # type: ignore
+
+            # Use max_open_trades for hyperopt as well, except --disable-max-market-positions is set
+        if self.config.get('use_max_market_positions', True):
+            self.max_open_trades = self.config['max_open_trades']
+        else:
+            logger.debug('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
+            self.max_open_trades = 0
+
     def clean_hyperopt(self):
         """
         Remove hyperopt pickle files to restart hyperopt.
@@ -184,31 +198,24 @@ class Hyperopt(Backtesting):
         return spaces
 
     def generate_optimizer(self, _params: Dict) -> Dict:
+        """
+        Used Optimize function. Called once per epoch to optimize whatever is configured.
+        Keep this function as optimized as possible!
+        """
         params = self.get_args(_params)
         if self.has_space('roi'):
             self.strategy.minimal_roi = self.custom_hyperopt.generate_roi_table(params)
 
         if self.has_space('buy'):
             self.advise_buy = self.custom_hyperopt.buy_strategy_generator(params)
-        elif hasattr(self.custom_hyperopt, 'populate_buy_trend'):
-            self.advise_buy = self.custom_hyperopt.populate_buy_trend  # type: ignore
 
         if self.has_space('sell'):
             self.advise_sell = self.custom_hyperopt.sell_strategy_generator(params)
-        elif hasattr(self.custom_hyperopt, 'populate_sell_trend'):
-            self.advise_sell = self.custom_hyperopt.populate_sell_trend  # type: ignore
 
         if self.has_space('stoploss'):
             self.strategy.stoploss = params['stoploss']
 
         processed = load(TICKERDATA_PICKLE)
-
-        # Use max_open_trades for hyperopt as well, except --disable-max-market-positions is set
-        if self.config.get('use_max_market_positions', True):
-            max_open_trades = self.config['max_open_trades']
-        else:
-            logger.debug('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
-            max_open_trades = 0
 
         min_date, max_date = get_timeframe(processed)
 
@@ -216,7 +223,7 @@ class Hyperopt(Backtesting):
             {
                 'stake_amount': self.config['stake_amount'],
                 'processed': processed,
-                'max_open_trades': max_open_trades,
+                'max_open_trades': self.max_open_trades,
                 'position_stacking': self.config.get('position_stacking', False),
                 'start_date': min_date,
                 'end_date': max_date,
