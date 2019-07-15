@@ -73,9 +73,9 @@ class Hyperopt(Backtesting):
 
         # Assign loss function
         if self.config.get('loss_function', 'legacy') == 'legacy':
-            self.calculate_loss = hyperopt_loss_legacy
+            self.calculate_loss = hyperopt_loss_legacy  # type: ignore
         elif self.config.get('loss_function', 'sharpe') == 'sharpe':
-            self.calculate_loss = hyperopt_loss_sharpe
+            self.calculate_loss = hyperopt_loss_sharpe  # type: ignore
         elif (self.config['loss_function'] == 'custom' and
               hasattr(self.custom_hyperopt, 'hyperopt_loss_custom')):
             self.calculate_loss = self.custom_hyperopt.hyperopt_loss_custom  # type: ignore

@@ -302,7 +302,7 @@ def test_loss_calculation_has_limited_profit(hyperopt_results) -> None:
     under = hyperopt_loss_legacy(results_under, 600)
     assert over < correct
     assert under > correct
-    
+
 
 def test_sharpe_loss_prefers_higher_profits(hyperopt_results) -> None:
     results_over = hyperopt_results.copy()
