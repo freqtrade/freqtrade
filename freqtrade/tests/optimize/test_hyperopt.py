@@ -13,6 +13,7 @@ from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.history import load_tickerdata_file
 from freqtrade.optimize import setup_configuration, start_hyperopt
 from freqtrade.optimize.default_hyperopt import DefaultHyperOpts
+from freqtrade.optimize.default_hyperopt_loss import DefaultHyperOptLoss
 from freqtrade.optimize.hyperopt import (HYPEROPT_LOCKFILE, TICKERDATA_PICKLE,
                                          Hyperopt)
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver, HyperOptLossResolver
@@ -182,6 +183,18 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
                    "Using populate_sell_trend from DefaultStrategy.", caplog.record_tuples)
     assert log_has("Custom Hyperopt does not provide populate_buy_trend. "
                    "Using populate_buy_trend from DefaultStrategy.", caplog.record_tuples)
+    assert hasattr(x, "ticker_interval")
+
+
+def test_hyperoptlossresolver(mocker, default_conf, caplog) -> None:
+
+    hl = DefaultHyperOptLoss
+    mocker.patch(
+        'freqtrade.resolvers.hyperopt_resolver.HyperOptLossResolver._load_hyperoptloss',
+        MagicMock(return_value=hl)
+    )
+    x = HyperOptResolver(default_conf, ).hyperopt
+    assert hasattr(x, "populate_indicators")
     assert hasattr(x, "ticker_interval")
 
 
