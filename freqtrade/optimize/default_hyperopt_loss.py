@@ -1,6 +1,7 @@
 """
-IHyperOptLoss interface
-This module defines the interface for the loss-function for hyperopts
+DefaultHyperOptLoss
+This module defines the default HyperoptLoss class which is being used for
+Hyperoptimization.
 """
 
 from math import exp

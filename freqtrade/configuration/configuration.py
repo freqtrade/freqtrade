@@ -288,7 +288,7 @@ class Configuration(object):
         self._args_to_config(config, argname='hyperopt_continue',
                              logstring='Hyperopt continue: {}')
 
-        self._args_to_config(config, argname='loss_function',
+        self._args_to_config(config, argname='hyperopt_loss',
                              logstring='Using loss function: {}')
 
         return config
