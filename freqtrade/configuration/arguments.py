@@ -230,13 +230,12 @@ AVAILABLE_CLI_OPTIONS = {
         default=False,
         action='store_true',
     ),
-    "loss_function": Arg(
-        '--loss-function',
-        help='Define the loss-function to use for hyperopt.'
-        'Possibilities are `legacy`, and `custom` (providing a custom loss-function).'
-        'Default: `%(default)s`.',
-        choices=['legacy', 'sharpe', 'custom'],
-        default='legacy',
+    "hyperopt_loss": Arg(
+        '--hyperopt-loss-class',
+        help='Specify hyperopt loss class name. Can generate completely different results, '
+        'since the target for optimization is different. (default: `%(default)s`).',
+        metavar='NAME',
+        default=constants.DEFAULT_HYPEROPT_LOSS,
     ),
     # List exchanges
     "print_one_column": Arg(
@@ -325,7 +324,7 @@ ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_pos
 ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "position_stacking", "epochs", "spaces",
                                         "use_max_market_positions", "print_all", "hyperopt_jobs",
                                         "hyperopt_random_state", "hyperopt_min_trades",
-                                        "hyperopt_continue", "loss_function"]
+                                        "hyperopt_continue", "hyperopt_loss"]
 
 ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
 

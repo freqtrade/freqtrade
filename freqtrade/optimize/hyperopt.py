@@ -18,12 +18,10 @@ from pandas import DataFrame
 from skopt import Optimizer
 from skopt.space import Dimension
 
-from freqtrade import OperationalException
 from freqtrade.configuration import Arguments
 from freqtrade.data.history import load_data, get_timeframe
 from freqtrade.optimize.backtesting import Backtesting
-from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
-from freqtrade.optimize.hyperopt_loss import hyperopt_loss_legacy, hyperopt_loss_sharpe
+from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver, HyperOptLossResolver
 
 
 logger = logging.getLogger(__name__)
@@ -47,6 +45,9 @@ class Hyperopt(Backtesting):
     def __init__(self, config: Dict[str, Any]) -> None:
         super().__init__(config)
         self.custom_hyperopt = HyperOptResolver(self.config).hyperopt
+
+        self.custom_hyperoptloss = HyperOptLossResolver(self.config).hyperoptloss
+        self.calculate_loss = self.custom_hyperoptloss.hyperopt_loss_function
 
         # set TARGET_TRADES to suit your number concurrent trades so its realistic
         # to the number of days
@@ -73,21 +74,6 @@ class Hyperopt(Backtesting):
         # Previous evaluations
         self.trials_file = TRIALSDATA_PICKLE
         self.trials: List = []
-
-        # Assign loss function
-        if self.config.get('loss_function', 'legacy') == 'legacy':
-            self.calculate_loss = hyperopt_loss_legacy  # type: ignore
-        elif self.config.get('loss_function', 'sharpe') == 'sharpe':
-            self.calculate_loss = hyperopt_loss_sharpe  # type: ignore
-        elif (self.config['loss_function'] == 'custom' and
-              hasattr(self.custom_hyperopt, 'hyperopt_loss_custom')):
-            self.calculate_loss = self.custom_hyperopt.hyperopt_loss_custom  # type: ignore
-
-            # Implement fallback to avoid odd crashes when custom-hyperopt fails to load.
-            if not hasattr(self.custom_hyperopt, 'hyperopt_loss_custom'):
-                logger.warning("Could not load hyperopt configuration. "
-                               "Falling back to legacy configuration.")
-                raise OperationalException("Could not load hyperopt loss function.")
 
         # Populate functions here (hasattr is slow so should not be run during "regular" operations)
         if hasattr(self.custom_hyperopt, 'populate_buy_trend'):

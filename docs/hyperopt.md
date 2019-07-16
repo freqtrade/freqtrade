@@ -153,31 +153,40 @@ add it to the `populate_indicators()` method in `hyperopt.py`.
 
 ## Loss-functions
 
-Each hyperparameter tuning requires a target. This is usually defined as a function, which get's closer to 0 for increasing values.
+Each hyperparameter tuning requires a target. This is usually defined as a loss function, which get's closer to 0 for increasing values.
 
-By default, freqtrade uses a loss function we call `legacy` - since it's been with freqtrade since the beginning and optimizes for short trade duration.
+FreqTrade uses a default loss function, which has been with freqtrade since the beginning and optimizes mostly for short trade duration and avoiding losses.
 
-This can be configured by using the `--loss <value>` argument.
-Possible options are:
-
-* `legacy` - The default option, optimizing for short trades and few losses.
-* `sharpe` - using the sharpe-ratio to determine the quality of results
-* `custom` - Custom defined loss-function [see next section](#using-a-custom-loss-function)
-
+A different version this can be used by using the `--hyperopt-loss <Class-name>` argument.
+This class should be in it's own file within the `user_data/hyperopts/` directory.
 
 ### Using a custom loss function
 
-To use a custom loss function, make sure that the function `hyperopt_loss_custom` is defined in your custom hyperopt class.
-You then need to add the command line parameter `--loss custom` to your hyperopt call so this fuction is being used.
+To use a custom loss Class, make sure that the function `hyperopt_loss_function` is defined in your custom hyperopt class.
+For the sample below, you then need to add the command line parameter `--hyperoptloss SuperDuperHyperOptLoss` to your hyperopt call so this fuction is being used.
 
-A sample of this can be found below.
+A sample of this can be found below, which is identical to the Default Hyperopt loss implementation.
 
 ``` python
+TARGET_TRADES = 600
+EXPECTED_MAX_PROFIT = 3.0
+MAX_ACCEPTED_TRADE_DURATION = 300
+
+class SuperDuperHyperOptLoss(IHyperOptLoss):
+    """
+    Defines the default loss function for hyperopt
+    """
+
     @staticmethod
-    def hyperopt_loss_custom(results: DataFrame, trade_count: int,
-                             min_date: datetime, max_date: datetime, *args, **kwargs) -> float:
+    def hyperopt_loss_function(results: DataFrame, trade_count: int,
+                               min_date: datetime, max_date: datetime,
+                               *args, **kwargs) -> float:
         """
-        Objective function, returns smaller number for more optimal results
+        Objective function, returns smaller number for better results
+        This is the legacy algorithm (used until now in freqtrade).
+        Weights are distributed as follows:
+        * 0.4 to trade duration
+        * 0.25: Avoiding trade loss
         """
         total_profit = results.profit_percent.sum()
         trade_duration = results.trade_duration.mean()
