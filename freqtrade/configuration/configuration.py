@@ -94,23 +94,20 @@ class Configuration(object):
 
         logger.info('Validating configuration ...')
         validate_config_schema(config)
+
         self._validate_config_consistency(config)
 
-        # Load Common configuration
-        self._load_common_config(config)
+        self._process_common_options(config)
 
-        # Load Optimize configurations
-        self._load_optimize_config(config)
+        self._process_optimize_options(config)
 
-        # Add plotting options if available
-        self._load_plot_config(config)
+        self._process_plot_options(config)
 
-        # Set runmode
-        self._load_runmode_config(config)
+        self._process_runmode(config)
 
         return config
 
-    def _load_logging_config(self, config: Dict[str, Any]) -> None:
+    def _process_logging_options(self, config: Dict[str, Any]) -> None:
         """
         Extract information for sys.argv and load logging configuration:
         the -v/--verbose, --logfile options
@@ -126,7 +123,7 @@ class Configuration(object):
 
         setup_logging(config)
 
-    def _load_strategy_config(self, config: Dict[str, Any]) -> None:
+    def _process_strategy_options(self, config: Dict[str, Any]) -> None:
 
         # Set strategy if not specified in config and or if it's non default
         if self.args.strategy != constants.DEFAULT_STRATEGY or not config.get('strategy'):
@@ -135,13 +132,10 @@ class Configuration(object):
         if self.args.strategy_path:
             config.update({'strategy_path': self.args.strategy_path})
 
-    def _load_common_config(self, config: Dict[str, Any]) -> None:
-        """
-        Extract information for sys.argv and load common configuration
-        :return: configuration as dictionary
-        """
-        self._load_logging_config(config)
-        self._load_strategy_config(config)
+    def _process_common_options(self, config: Dict[str, Any]) -> None:
+
+        self._process_logging_options(config)
+        self._process_strategy_options(config)
 
         # Add dynamic_whitelist if found
         if 'dynamic_whitelist' in self.args and self.args.dynamic_whitelist:
@@ -187,7 +181,7 @@ class Configuration(object):
         # Check if the exchange set by the user is supported
         check_exchange(config)
 
-    def _load_datadir_config(self, config: Dict[str, Any]) -> None:
+    def _process_datadir_options(self, config: Dict[str, Any]) -> None:
         """
         Extract information for sys.argv and load datadir configuration:
         the --datadir option
@@ -198,11 +192,8 @@ class Configuration(object):
             config.update({'datadir': create_datadir(config, None)})
         logger.info('Using data directory: %s ...', config.get('datadir'))
 
-    def _load_optimize_config(self, config: Dict[str, Any]) -> None:
-        """
-        Extract information for sys.argv and load Optimize configuration
-        :return: configuration as dictionary
-        """
+    def _process_optimize_options(self, config: Dict[str, Any]) -> None:
+
         # This will override the strategy configuration
         self._args_to_config(config, argname='ticker_interval',
                              logstring='Parameter -i/--ticker-interval detected ... '
@@ -232,7 +223,7 @@ class Configuration(object):
         self._args_to_config(config, argname='timerange',
                              logstring='Parameter --timerange detected: {} ...')
 
-        self._load_datadir_config(config)
+        self._process_datadir_options(config)
 
         self._args_to_config(config, argname='refresh_pairs',
                              logstring='Parameter -r/--refresh-pairs-cached detected ...')
@@ -281,11 +272,8 @@ class Configuration(object):
         self._args_to_config(config, argname='hyperopt_min_trades',
                              logstring='Parameter --min-trades detected: {}')
 
-    def _load_plot_config(self, config: Dict[str, Any]) -> None:
-        """
-        Extract information for sys.argv Plotting configuration
-        :return: configuration as dictionary
-        """
+    def _process_plot_options(self, config: Dict[str, Any]) -> None:
+
         self._args_to_config(config, argname='pairs',
                              logstring='Using pairs {}')
 
@@ -300,7 +288,8 @@ class Configuration(object):
         self._args_to_config(config, argname='trade_source',
                              logstring='Using trades from: {}')
 
-    def _load_runmode_config(self, config: Dict[str, Any]) -> None:
+    def _process_runmode(self, config: Dict[str, Any]) -> None:
+
         if not self.runmode:
             # Handle real mode, infer dry/live from config
             self.runmode = RunMode.DRY_RUN if config.get('dry_run', True) else RunMode.LIVE
@@ -314,11 +303,11 @@ class Configuration(object):
         :param conf: Config in JSON format
         :return: Returns None if everything is ok, otherwise throw an OperationalException
         """
-
         # validating trailing stoploss
         self._validate_trailing_stoploss(conf)
 
     def _validate_trailing_stoploss(self, conf: Dict[str, Any]) -> None:
+
         # Skip if trailing stoploss is not activated
         if not conf.get('trailing_stop', False):
             return
