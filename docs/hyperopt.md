@@ -199,10 +199,10 @@ Currently, the arguments are:
 This function needs to return a floating point number (`float`). The smaller that number, the better is the result. The parameters and balancing for this are up to you.
 
 !!! Note
-    This function is called once per iteration - so please make sure to have this as optimized as possible to now slow hyperopt down unnecessarily.
+    This function is called once per iteration - so please make sure to have this as optimized as possible to not slow hyperopt down unnecessarily.
 
 !!! Note
-    The last 2 arguments, `*args` and `**kwargs` are not strictly necessary but ensure compatibility for the future, so we can easily enable more parameters once we discover what could be usefull without breaking your custom hyperopt file.
+    Please keep the arguments `*args` and `**kwargs` in the interface to allow us to extend this interface later.
 
 ## Execute Hyperopt
 
