@@ -200,8 +200,8 @@ class SuperDuperHyperOptLoss(IHyperOptLoss):
 Currently, the arguments are:
 
 * `results`: DataFrame containing the result  
-    The following columns are available in results (corresponds to the output of backtesting):  
-    `pair, profit_percent, profit_abs, open_time, close_time, open_index, close_index, trade_duration, open_at_end, open_rate, close_rate, sell_reason` 
+    The following columns are available in results (corresponds to the output-file of backtesting when used with `--export trades`):  
+    `pair, profit_percent, profit_abs, open_time, close_time, open_index, close_index, trade_duration, open_at_end, open_rate, close_rate, sell_reason`
 * `trade_count`: Amount of trades (identical to `len(results)`)
 * `min_date`: Start date of the hyperopting TimeFrame
 * `min_date`: End date of the hyperopting TimeFrame
