@@ -285,8 +285,8 @@ class Configuration(object):
         self._args_to_config(config, argname='hyperopt_min_trades',
                              logstring='Parameter --min-trades detected: {}')
 
-        self._args_to_config(config, argname='hyperopt_clean_state',
-                             logstring='Removing hyperopt temp files')
+        self._args_to_config(config, argname='hyperopt_continue',
+                             logstring='Hyperopt continue: {}')
 
         self._args_to_config(config, argname='loss_function',
                              logstring='Using loss function: {}')

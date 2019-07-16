@@ -65,8 +65,11 @@ class Hyperopt(Backtesting):
         # Note, this is ratio. 3.85 stated above means 385Σ%.
         self.expected_max_profit = 3.0
 
-        if self.config.get('hyperopt_clean_state'):
+        if not self.config.get('hyperopt_continue'):
             self.clean_hyperopt()
+        else:
+            logger.info("Continuing on previous hyperopt results.")
+
         # Previous evaluations
         self.trials_file = TRIALSDATA_PICKLE
         self.trials: List = []
@@ -99,6 +102,7 @@ class Hyperopt(Backtesting):
         else:
             logger.debug('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
             self.max_open_trades = 0
+        self.position_stacking = self.config.get('position_stacking', False),
 
     def clean_hyperopt(self):
         """
@@ -231,7 +235,7 @@ class Hyperopt(Backtesting):
                 'stake_amount': self.config['stake_amount'],
                 'processed': processed,
                 'max_open_trades': self.max_open_trades,
-                'position_stacking': self.config.get('position_stacking', False),
+                'position_stacking': self.position_stacking,
                 'start_date': min_date,
                 'end_date': max_date,
             }

@@ -418,6 +418,7 @@ def test_start_calls_optimizer(mocker, default_conf, caplog) -> None:
     assert hasattr(hyperopt, "advise_buy")
     assert hasattr(hyperopt, "max_open_trades")
     assert hyperopt.max_open_trades == default_conf['max_open_trades']
+    assert hasattr(hyperopt, "position_stacking")
 
 
 def test_format_results(hyperopt):
@@ -569,8 +570,24 @@ def test_clean_hyperopt(mocker, default_conf, caplog):
                          })
     mocker.patch("freqtrade.optimize.hyperopt.Path.is_file", MagicMock(return_value=True))
     unlinkmock = mocker.patch("freqtrade.optimize.hyperopt.Path.unlink", MagicMock())
-    hyp = Hyperopt(default_conf)
+    Hyperopt(default_conf)
 
-    hyp.clean_hyperopt()
     assert unlinkmock.call_count == 2
     assert log_has(f"Removing `{TICKERDATA_PICKLE}`.", caplog.record_tuples)
+
+
+def test_continue_hyperopt(mocker, default_conf, caplog):
+    patch_exchange(mocker)
+    default_conf.update({'config': 'config.json.example',
+                         'epochs': 1,
+                         'timerange': None,
+                         'spaces': 'all',
+                         'hyperopt_jobs': 1,
+                         'hyperopt_continue': True
+                         })
+    mocker.patch("freqtrade.optimize.hyperopt.Path.is_file", MagicMock(return_value=True))
+    unlinkmock = mocker.patch("freqtrade.optimize.hyperopt.Path.unlink", MagicMock())
+    Hyperopt(default_conf)
+
+    assert unlinkmock.call_count == 0
+    assert log_has(f"Continuing on previous hyperopt results.", caplog.record_tuples)

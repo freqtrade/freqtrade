@@ -223,10 +223,10 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='INT',
         default=1,
     ),
-    "hyperopt_clean_state": Arg(
-        "--clean",
-        help="Remove temporary hyperopt files (should be used when the custom hyperopt file "
-        "was changed, or when changing the arguments for --min-trades or spaces.",
+    "hyperopt_continue": Arg(
+        "--continue",
+        help="Continue hyperopt from previous runs. "
+        "By default, temporary files will be removed and hyperopt will start from scratch.",
         default=False,
         action='store_true',
     ),
@@ -325,7 +325,7 @@ ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_pos
 ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "position_stacking", "epochs", "spaces",
                                         "use_max_market_positions", "print_all", "hyperopt_jobs",
                                         "hyperopt_random_state", "hyperopt_min_trades",
-                                        "hyperopt_clean_state", "loss_function"]
+                                        "hyperopt_continue", "loss_function"]
 
 ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
 
