@@ -40,48 +40,19 @@ class Configuration(object):
 
         return self.config
 
-    def load_config(self) -> Dict[str, Any]:
+    def _load_config_files(self) -> Dict[str, Any]:
         """
-        Extract information for sys.argv and load the bot configuration
-        :return: Configuration dictionary
+        Iterate through the config files passed in the args,
+        loading all of them and merging their contents.
         """
         config: Dict[str, Any] = {}
-        # Now expecting a list of config filenames here, not a string
+
+        # We expect here a list of config filenames
         for path in self.args.config:
             logger.info('Using config: %s ...', path)
 
             # Merge config options, overwriting old values
             config = deep_merge_dicts(self._load_config_file(path), config)
-
-        if 'internals' not in config:
-            config['internals'] = {}
-
-        logger.info('Validating configuration ...')
-        validate_config_schema(config)
-        self._validate_config_consistency(config)
-
-        # Set strategy if not specified in config and or if it's non default
-        if self.args.strategy != constants.DEFAULT_STRATEGY or not config.get('strategy'):
-            config.update({'strategy': self.args.strategy})
-
-        if self.args.strategy_path:
-            config.update({'strategy_path': self.args.strategy_path})
-
-        # Load Common configuration
-        config = self._load_common_config(config)
-
-        # Load Optimize configurations
-        config = self._load_optimize_config(config)
-
-        # Add plotting options if available
-        config = self._load_plot_config(config)
-
-        # Set runmode
-        if not self.runmode:
-            # Handle real mode, infer dry/live from config
-            self.runmode = RunMode.DRY_RUN if config.get('dry_run', True) else RunMode.LIVE
-
-        config.update({'runmode': self.runmode})
 
         return config
 
@@ -94,15 +65,49 @@ class Configuration(object):
         try:
             # Read config from stdin if requested in the options
             with open(path) if path != '-' else sys.stdin as file:
-                conf = json.load(file)
+                config = json.load(file)
         except FileNotFoundError:
             raise OperationalException(
                 f'Config file "{path}" not found!'
                 ' Please create a config file or check whether it exists.')
 
-        return conf
+        return config
 
-    def _load_logging_config(self, config: Dict[str, Any]) -> None:
+    def _normalize_config(self, config: Dict[str, Any]) -> None:
+        """
+        Make config more canonical -- i.e. for example add missing parts that we expect
+        to be normally in it...
+        """
+        if 'internals' not in config:
+            config['internals'] = {}
+
+    def load_config(self) -> Dict[str, Any]:
+        """
+        Extract information for sys.argv and load the bot configuration
+        :return: Configuration dictionary
+        """
+        # Load all configs
+        config: Dict[str, Any] = self._load_config_files()
+
+        # Make resulting config more canonical
+        self._normalize_config(config)
+
+        logger.info('Validating configuration ...')
+        validate_config_schema(config)
+
+        self._validate_config_consistency(config)
+
+        self._process_common_options(config)
+
+        self._process_optimize_options(config)
+
+        self._process_plot_options(config)
+
+        self._process_runmode(config)
+
+        return config
+
+    def _process_logging_options(self, config: Dict[str, Any]) -> None:
         """
         Extract information for sys.argv and load logging configuration:
         the -v/--verbose, --logfile options
@@ -118,16 +123,19 @@ class Configuration(object):
 
         setup_logging(config)
 
-    def _load_common_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Extract information for sys.argv and load common configuration
-        :return: configuration as dictionary
-        """
-        self._load_logging_config(config)
+    def _process_strategy_options(self, config: Dict[str, Any]) -> None:
 
-        # Support for sd_notify
-        if 'sd_notify' in self.args and self.args.sd_notify:
-            config['internals'].update({'sd_notify': True})
+        # Set strategy if not specified in config and or if it's non default
+        if self.args.strategy != constants.DEFAULT_STRATEGY or not config.get('strategy'):
+            config.update({'strategy': self.args.strategy})
+
+        if self.args.strategy_path:
+            config.update({'strategy_path': self.args.strategy_path})
+
+    def _process_common_options(self, config: Dict[str, Any]) -> None:
+
+        self._process_logging_options(config)
+        self._process_strategy_options(config)
 
         # Add dynamic_whitelist if found
         if 'dynamic_whitelist' in self.args and self.args.dynamic_whitelist:
@@ -157,6 +165,8 @@ class Configuration(object):
                 config['db_url'] = constants.DEFAULT_DB_PROD_URL
             logger.info('Dry run is disabled')
 
+        logger.info(f'Using DB: "{config["db_url"]}"')
+
         if config.get('forcebuy_enable', False):
             logger.warning('`forcebuy` RPC message enabled.')
 
@@ -164,33 +174,14 @@ class Configuration(object):
         if config.get('max_open_trades') == -1:
             config['max_open_trades'] = float('inf')
 
-        logger.info(f'Using DB: "{config["db_url"]}"')
+        # Support for sd_notify
+        if 'sd_notify' in self.args and self.args.sd_notify:
+            config['internals'].update({'sd_notify': True})
 
         # Check if the exchange set by the user is supported
         check_exchange(config)
 
-        return config
-
-    def _args_to_config(self, config: Dict[str, Any], argname: str,
-                        logstring: str, logfun: Optional[Callable] = None) -> None:
-        """
-        :param config: Configuration dictionary
-        :param argname: Argumentname in self.args - will be copied to config dict.
-        :param logstring: Logging String
-        :param logfun: logfun is applied to the configuration entry before passing
-                        that entry to the log string using .format().
-                        sample: logfun=len (prints the length of the found
-                        configuration instead of the content)
-        """
-        if argname in self.args and getattr(self.args, argname):
-
-            config.update({argname: getattr(self.args, argname)})
-            if logfun:
-                logger.info(logstring.format(logfun(config[argname])))
-            else:
-                logger.info(logstring.format(config[argname]))
-
-    def _load_datadir_config(self, config: Dict[str, Any]) -> None:
+    def _process_datadir_options(self, config: Dict[str, Any]) -> None:
         """
         Extract information for sys.argv and load datadir configuration:
         the --datadir option
@@ -201,11 +192,7 @@ class Configuration(object):
             config.update({'datadir': create_datadir(config, None)})
         logger.info('Using data directory: %s ...', config.get('datadir'))
 
-    def _load_optimize_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Extract information for sys.argv and load Optimize configuration
-        :return: configuration as dictionary
-        """
+    def _process_optimize_options(self, config: Dict[str, Any]) -> None:
 
         # This will override the strategy configuration
         self._args_to_config(config, argname='ticker_interval',
@@ -236,7 +223,7 @@ class Configuration(object):
         self._args_to_config(config, argname='timerange',
                              logstring='Parameter --timerange detected: {} ...')
 
-        self._load_datadir_config(config)
+        self._process_datadir_options(config)
 
         self._args_to_config(config, argname='refresh_pairs',
                              logstring='Parameter -r/--refresh-pairs-cached detected ...')
@@ -285,13 +272,7 @@ class Configuration(object):
         self._args_to_config(config, argname='hyperopt_min_trades',
                              logstring='Parameter --min-trades detected: {}')
 
-        return config
-
-    def _load_plot_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Extract information for sys.argv Plotting configuration
-        :return: configuration as dictionary
-        """
+    def _process_plot_options(self, config: Dict[str, Any]) -> None:
 
         self._args_to_config(config, argname='pairs',
                              logstring='Using pairs {}')
@@ -306,7 +287,15 @@ class Configuration(object):
                              logstring='Limiting plot to: {}')
         self._args_to_config(config, argname='trade_source',
                              logstring='Using trades from: {}')
-        return config
+
+    def _process_runmode(self, config: Dict[str, Any]) -> None:
+
+        if not self.runmode:
+            # Handle real mode, infer dry/live from config
+            self.runmode = RunMode.DRY_RUN if config.get('dry_run', True) else RunMode.LIVE
+            logger.info("Runmode set to {self.runmode}.")
+
+        config.update({'runmode': self.runmode})
 
     def _validate_config_consistency(self, conf: Dict[str, Any]) -> None:
         """
@@ -314,11 +303,11 @@ class Configuration(object):
         :param conf: Config in JSON format
         :return: Returns None if everything is ok, otherwise throw an OperationalException
         """
-
         # validating trailing stoploss
         self._validate_trailing_stoploss(conf)
 
     def _validate_trailing_stoploss(self, conf: Dict[str, Any]) -> None:
+
         # Skip if trailing stoploss is not activated
         if not conf.get('trailing_stop', False):
             return
@@ -336,3 +325,22 @@ class Configuration(object):
             raise OperationalException(
                 f'The config trailing_stop_positive_offset needs '
                 'to be greater than trailing_stop_positive_offset in your config.')
+
+    def _args_to_config(self, config: Dict[str, Any], argname: str,
+                        logstring: str, logfun: Optional[Callable] = None) -> None:
+        """
+        :param config: Configuration dictionary
+        :param argname: Argumentname in self.args - will be copied to config dict.
+        :param logstring: Logging String
+        :param logfun: logfun is applied to the configuration entry before passing
+                        that entry to the log string using .format().
+                        sample: logfun=len (prints the length of the found
+                        configuration instead of the content)
+        """
+        if argname in self.args and getattr(self.args, argname):
+
+            config.update({argname: getattr(self.args, argname)})
+            if logfun:
+                logger.info(logstring.format(logfun(config[argname])))
+            else:
+                logger.info(logstring.format(config[argname]))

@@ -74,7 +74,7 @@ else:
     }
     timeframes = args.timeframes or ['1m', '5m']
 
-configuration._load_logging_config(config)
+configuration._process_logging_options(config)
 
 if args.config and args.exchange:
     logger.warning("The --exchange option is ignored, "
@@ -83,7 +83,7 @@ if args.config and args.exchange:
 # Check if the exchange set by the user is supported
 check_exchange(config)
 
-configuration._load_datadir_config(config)
+configuration._process_datadir_options(config)
 
 dl_path = Path(config['datadir'])
 
