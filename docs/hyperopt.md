@@ -161,12 +161,14 @@ This class should be in it's own file within the `user_data/hyperopts/` director
 
 ### Using a custom loss function
 
-To use a custom loss Class, make sure that the function `hyperopt_loss_function` is defined in your custom hyperopt class.
+To use a custom loss Class, make sure that the function `hyperopt_loss_function` is defined in your custom hyperopt loss class.
 For the sample below, you then need to add the command line parameter `--hyperoptloss SuperDuperHyperOptLoss` to your hyperopt call so this fuction is being used.
 
-A sample of this can be found below, which is identical to the Default Hyperopt loss implementation.
+A sample of this can be found below, which is identical to the Default Hyperopt loss implementation. A full sample can be found [user_data/hyperopts/](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/sample_hyperopt_loss.py)
 
 ``` python
+from freqtrade.optimize.hyperopt import IHyperOptLoss
+
 TARGET_TRADES = 600
 EXPECTED_MAX_PROFIT = 3.0
 MAX_ACCEPTED_TRADE_DURATION = 300

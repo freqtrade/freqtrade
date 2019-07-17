@@ -8,7 +8,7 @@ from datetime import datetime
 from pandas import DataFrame
 import numpy as np
 
-from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss
+from freqtrade.optimize.hyperopt import IHyperOptLoss
 
 
 class SharpeHyperOptLoss(IHyperOptLoss):

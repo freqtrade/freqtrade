@@ -21,6 +21,8 @@ from skopt.space import Dimension
 from freqtrade.configuration import Arguments
 from freqtrade.data.history import load_data, get_timeframe
 from freqtrade.optimize.backtesting import Backtesting
+# Import IHyperOptLoss to allow users import from this file
+from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F4
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver, HyperOptLossResolver
 
 
