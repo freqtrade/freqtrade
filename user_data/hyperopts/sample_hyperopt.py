@@ -43,21 +43,6 @@ class SampleHyperOpts(IHyperOpt):
     """
 
     @staticmethod
-    def hyperopt_loss_custom(results: DataFrame, trade_count: int,
-                             min_date: datetime, max_date: datetime, *args, **kwargs) -> float:
-        """
-        Objective function, returns smaller number for more optimal results
-        """
-        total_profit = results.profit_percent.sum()
-        trade_duration = results.trade_duration.mean()
-
-        trade_loss = 1 - 0.25 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.8)
-        profit_loss = max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)
-        duration_loss = 0.4 * min(trade_duration / MAX_ACCEPTED_TRADE_DURATION, 1)
-        result = trade_loss + profit_loss + duration_loss
-        return result
-
-    @staticmethod
     def populate_indicators(dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe['adx'] = ta.ADX(dataframe)
         macd = ta.MACD(dataframe)

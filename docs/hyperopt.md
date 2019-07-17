@@ -186,6 +186,7 @@ class SuperDuperHyperOptLoss(IHyperOptLoss):
         Weights are distributed as follows:
         * 0.4 to trade duration
         * 0.25: Avoiding trade loss
+        * 1.0 to total profit, compared to the expected value (`EXPECTED_MAX_PROFIT`) defined above
         """
         total_profit = results.profit_percent.sum()
         trade_duration = results.trade_duration.mean()
