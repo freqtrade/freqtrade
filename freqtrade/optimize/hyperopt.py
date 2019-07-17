@@ -49,22 +49,8 @@ class Hyperopt(Backtesting):
         self.custom_hyperoptloss = HyperOptLossResolver(self.config).hyperoptloss
         self.calculate_loss = self.custom_hyperoptloss.hyperopt_loss_function
 
-        # set TARGET_TRADES to suit your number concurrent trades so its realistic
-        # to the number of days
-        self.target_trades = 600
         self.total_tries = config.get('epochs', 0)
         self.current_best_loss = 100
-
-        # max average trade duration in minutes
-        # if eval ends with higher value, we consider it a failed eval
-        self.max_accepted_trade_duration = 300
-
-        # This is assumed to be expected avg profit * expected trade count.
-        # For example, for 0.35% avg per trade (or 0.0035 as ratio) and 1100 trades,
-        # self.expected_max_profit = 3.85
-        # Check that the reported Σ% values do not exceed this!
-        # Note, this is ratio. 3.85 stated above means 385Σ%.
-        self.expected_max_profit = 3.0
 
         if not self.config.get('hyperopt_continue'):
             self.clean_hyperopt()
