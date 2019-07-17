@@ -55,7 +55,7 @@ class HyperOptResolver(IResolver):
         current_path = Path(__file__).parent.parent.joinpath('optimize').resolve()
 
         abs_paths = [
-            current_path.parent.parent.joinpath('user_data/hyperopts'),
+            Path.cwd().joinpath('user_data/hyperopts'),
             current_path,
         ]
 
@@ -117,7 +117,7 @@ class HyperOptLossResolver(IResolver):
         current_path = Path(__file__).parent.parent.joinpath('optimize').resolve()
 
         abs_paths = [
-            current_path.parent.parent.joinpath('user_data/hyperopts'),
+            Path.cwd().joinpath('user_data/hyperopts'),
             current_path,
         ]
 
