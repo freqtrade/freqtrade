@@ -44,8 +44,8 @@ Mandatory Parameters are marked as **Required**.
 | `exchange.sandbox` | false | Use the 'sandbox' version of the exchange, where the exchange provides a sandbox for risk-free integration. See [here](sandbox-testing.md) in more details.
 | `exchange.key` | '' | API key to use for the exchange. Only required when you are in production mode.
 | `exchange.secret` | '' | API secret to use for the exchange. Only required when you are in production mode.
-| `exchange.pair_whitelist` | [] | List of currency to use by the bot.
-| `exchange.pair_blacklist` | [] | List of currency the bot must avoid.
+| `exchange.pair_whitelist` | [] | List of pairs to use by the bot for trading and to check for potential trades during backtesting. Can be overriden by dynamic pairlists (see [below](#dynamic-pairlists)).
+| `exchange.pair_blacklist` | [] | List of pairs the bot must absolutely avoid for trading and backtesting. Can be overriden by dynamic pairlists (see [below](#dynamic-pairlists)).
 | `exchange.ccxt_config` | None | Additional CCXT parameters passed to the regular ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
 | `exchange.ccxt_async_config` | None | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
 | `exchange.markets_refresh_interval` | 60 | The interval in minutes in which markets are reloaded.
