@@ -73,16 +73,6 @@ AVAILABLE_CLI_OPTIONS = {
         help='Specify additional strategy lookup path.',
         metavar='PATH',
     ),
-    "dynamic_whitelist": Arg(
-        '--dynamic-whitelist',
-        help='Dynamically generate and update whitelist '
-        'based on 24h BaseVolume (default: %(const)s). '
-        'DEPRECATED.',
-        const=constants.DYNAMIC_WHITELIST,
-        type=int,
-        metavar='INT',
-        nargs='?',
-    ),
     "db_url": Arg(
         '--db-url',
         help=f'Override trades database URL, this is useful in custom deployments '
@@ -299,7 +289,7 @@ ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir"]
 
 ARGS_STRATEGY = ["strategy", "strategy_path"]
 
-ARGS_MAIN = ARGS_COMMON + ARGS_STRATEGY + ["dynamic_whitelist", "db_url", "sd_notify"]
+ARGS_MAIN = ARGS_COMMON + ARGS_STRATEGY + ["db_url", "sd_notify"]
 
 ARGS_COMMON_OPTIMIZE = ["ticker_interval", "timerange",
                         "max_open_trades", "stake_amount", "refresh_pairs"]

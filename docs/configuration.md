@@ -44,8 +44,8 @@ Mandatory Parameters are marked as **Required**.
 | `exchange.sandbox` | false | Use the 'sandbox' version of the exchange, where the exchange provides a sandbox for risk-free integration. See [here](sandbox-testing.md) in more details.
 | `exchange.key` | '' | API key to use for the exchange. Only required when you are in production mode.
 | `exchange.secret` | '' | API secret to use for the exchange. Only required when you are in production mode.
-| `exchange.pair_whitelist` | [] | List of currency to use by the bot. Can be overrided with `--dynamic-whitelist` param.
-| `exchange.pair_blacklist` | [] | List of currency the bot must avoid. Useful when using `--dynamic-whitelist` param.
+| `exchange.pair_whitelist` | [] | List of currency to use by the bot.
+| `exchange.pair_blacklist` | [] | List of currency the bot must avoid.
 | `exchange.ccxt_config` | None | Additional CCXT parameters passed to the regular ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
 | `exchange.ccxt_async_config` | None | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
 | `exchange.markets_refresh_interval` | 60 | The interval in minutes in which markets are reloaded.
@@ -53,8 +53,8 @@ Mandatory Parameters are marked as **Required**.
 | `experimental.use_sell_signal` | false | Use your sell strategy in addition of the `minimal_roi`. [Strategy Override](#parameters-in-the-strategy).
 | `experimental.sell_profit_only` | false | Waits until you have made a positive profit before taking a sell decision. [Strategy Override](#parameters-in-the-strategy).
 | `experimental.ignore_roi_if_buy_signal` | false | Does not sell if the buy-signal is still active. Takes preference over `minimal_roi` and `use_sell_signal`. [Strategy Override](#parameters-in-the-strategy).
-| `pairlist.method` | StaticPairList | Use Static whitelist. [More information below](#dynamic-pairlists).
-| `pairlist.config` | None | Additional configuration for dynamic pairlists. [More information below](#dynamic-pairlists).
+| `pairlist.method` | StaticPairList | Use static or dynamic volume-based pairlist.
+| `pairlist.config` | None | Additional configuration for dynamic pairlists.
 | `telegram.enabled` | true | **Required.** Enable or not the usage of Telegram.
 | `telegram.token` | token | Your Telegram bot token. Only required if `telegram.enabled` is `true`.
 | `telegram.chat_id` | chat_id | Your personal Telegram account id. Only required if `telegram.enabled` is `true`.
@@ -381,7 +381,7 @@ section of the configuration.
   * It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklist`.
 * `VolumePairList`
   * Formerly available as `--dynamic-whitelist [<number_assets>]`. This command line
-option is deprecated and should no longer be used.
+option was removed and can no longer be used.
   * It selects `number_assets` top pairs based on `sort_key`, which can be one of
 `askVolume`, `bidVolume` and `quoteVolume`, defaults to `quoteVolume`.
   * There is a possibility to filter low-value coins that would not allow setting a stop loss
