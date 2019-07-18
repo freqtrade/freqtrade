@@ -144,7 +144,7 @@ it will end with telling you which paramter combination produced the best profit
 
 The search for best parameters starts with a few random combinations and then uses a
 regressor algorithm (currently ExtraTreesRegressor) to quickly find a parameter combination
-that minimizes the value of the objective function `calculate_loss` in `hyperopt.py`.
+that minimizes the value of the [loss function](#loss-functions).
 
 The above setup expects to find ADX, RSI and Bollinger Bands in the populated indicators.
 When you want to test an indicator that isn't used by the bot currently, remember to
@@ -152,17 +152,19 @@ add it to the `populate_indicators()` method in `hyperopt.py`.
 
 ## Loss-functions
 
-Each hyperparameter tuning requires a target. This is usually defined as a loss function, which get's closer to 0 for increasing values.
+Each hyperparameter tuning requires a target. This is usually defined as a loss function (sometimes also called objective function), which should decrease for more desirable results, and increase for bad results.
 
-FreqTrade uses a default loss function, which has been with freqtrade since the beginning and optimizes mostly for short trade duration and avoiding losses.
+By default, FreqTrade uses a loss function, which has been with freqtrade since the beginning and optimizes mostly for short trade duration and avoiding losses.
 
-A different version this can be used by using the `--hyperopt-loss <Class-name>` argument.
+A different version this can be used by using the `--hyperopt-loss-class <Class-name>` argument.
 This class should be in it's own file within the `user_data/hyperopts/` directory.
 
-### Using a custom loss function
+Currently, the following loss-functions are builtin: `SharpeHyperOptLoss` and `DefaultHyperOptLoss`.
 
-To use a custom loss Class, make sure that the function `hyperopt_loss_function` is defined in your custom hyperopt loss class.
-For the sample below, you then need to add the command line parameter `--hyperoptloss SuperDuperHyperOptLoss` to your hyperopt call so this fuction is being used.
+### Creating and using a custom loss function
+
+To use a custom loss function class, make sure that the function `hyperopt_loss_function` is defined in your custom hyperopt loss class.
+For the sample below, you then need to add the command line parameter `--hyperopt-loss-class SuperDuperHyperOptLoss` to your hyperopt call so this fuction is being used.
 
 A sample of this can be found below, which is identical to the Default Hyperopt loss implementation. A full sample can be found [user_data/hyperopts/](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/sample_hyperopt_loss.py)
 
@@ -209,7 +211,7 @@ Currently, the arguments are:
 * `min_date`: Start date of the hyperopting TimeFrame
 * `min_date`: End date of the hyperopting TimeFrame
 
-This function needs to return a floating point number (`float`). The smaller that number, the better is the result. The parameters and balancing for this are up to you.
+This function needs to return a floating point number (`float`). Smaller numbers will be interpreted as better results. The parameters and balancing for this is up to you.
 
 !!! Note
     This function is called once per iteration - so please make sure to have this as optimized as possible to not slow hyperopt down unnecessarily.
@@ -220,7 +222,7 @@ This function needs to return a floating point number (`float`). The smaller tha
 ## Execute Hyperopt
 
 Once you have updated your hyperopt configuration you can run it.
-Because hyperopt tries a lot of combinations to find the best parameters it will take time you will have the result (more than 30 mins).
+Because hyperopt tries a lot of combinations to find the best parameters it will take time to get a good result. More time usually results in better results.
 
 We strongly recommend to use `screen` or `tmux` to prevent any connection loss.
 
@@ -235,8 +237,11 @@ running at least several thousand evaluations.
 
 The `--spaces all` flag determines that all possible parameters should be optimized. Possibilities are listed below.
 
+!!! Note
+    By default, hyperopt will erase previous results and start from scratch. Continuation can be archived by using `--continue`.
+
 !!! Warning
-    When switching parameters or changing configuration options, the file `user_data/hyperopt_results.pickle` should be removed. It's used to be able to continue interrupted calculations, but does not detect changes to settings or the hyperopt file.
+    When switching parameters or changing configuration options, make sure to not use the argument `--continue` so temporary results can be removed.
 
 ### Execute Hyperopt with Different Ticker-Data Source
 
@@ -246,12 +251,11 @@ use data from directory `user_data/data`.
 
 ### Running Hyperopt with Smaller Testset
 
-Use the `--timerange` argument to change how much of the testset
-you want to use. The last N ticks/timeframes will be used.
-Example:
+Use the `--timerange` argument to change how much of the testset you want to use.
+To use one month of data, use the following parameter:
 
 ```bash
-freqtrade hyperopt --timerange -200
+freqtrade hyperopt --timerange 20180401-20180501
 ```
 
 ### Running Hyperopt with Smaller Search Space
@@ -319,7 +323,7 @@ method, what those values match to.
 
 So for example you had `rsi-value: 29.0` so we would look at `rsi`-block, that translates to the following code block:
 
-```
+``` python
 (dataframe['rsi'] < 29.0)
 ```
 

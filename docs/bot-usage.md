@@ -213,19 +213,22 @@ to find optimal parameter values for your stategy.
 
 ```
 usage: freqtrade hyperopt [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
-                        [--max_open_trades MAX_OPEN_TRADES]
-                        [--stake_amount STAKE_AMOUNT] [-r]
-                        [--customhyperopt NAME] [--eps] [--dmmp] [-e INT]
-                        [-s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
-                        [--print-all] [-j JOBS]
+                          [--max_open_trades INT]
+                          [--stake_amount STAKE_AMOUNT] [-r]
+                          [--customhyperopt NAME] [--eps] [-e INT]
+                          [-s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
+                          [--dmmp] [--print-all] [-j JOBS]
+                          [--random-state INT] [--min-trades INT] [--continue]
+                          [--hyperopt-loss-class NAME]
 
 optional arguments:
   -h, --help            show this help message and exit
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
-                        Specify ticker interval (1m, 5m, 30m, 1h, 1d).
+                        Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
+                        `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
-  --max_open_trades MAX_OPEN_TRADES
+  --max_open_trades INT
                         Specify max_open_trades to use.
   --stake_amount STAKE_AMOUNT
                         Specify stake_amount.
@@ -235,18 +238,18 @@ optional arguments:
                         run your optimization commands with up-to-date data.
   --customhyperopt NAME
                         Specify hyperopt class name (default:
-                        DefaultHyperOpts).
+                        `DefaultHyperOpts`).
   --eps, --enable-position-stacking
                         Allow buying the same pair multiple times (position
                         stacking).
+  -e INT, --epochs INT  Specify number of epochs (default: 100).
+  -s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...], --spaces {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]
+                        Specify which parameters to hyperopt. Space-separated
+                        list. Default: `all`.
   --dmmp, --disable-max-market-positions
                         Disable applying `max_open_trades` during backtest
                         (same as setting `max_open_trades` to a very high
                         number).
-  -e INT, --epochs INT  Specify number of epochs (default: 100).
-  -s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...], --spaces {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]
-                        Specify which parameters to hyperopt. Space separate
-                        list. Default: all.
   --print-all           Print all results, not only the best ones.
   -j JOBS, --job-workers JOBS
                         The number of concurrently running jobs for
@@ -254,6 +257,19 @@ optional arguments:
                         (default), all CPUs are used, for -2, all CPUs but one
                         are used, etc. If 1 is given, no parallel computing
                         code is used at all.
+  --random-state INT    Set random state to some positive integer for
+                        reproducible hyperopt results.
+  --min-trades INT      Set minimal desired number of trades for evaluations
+                        in the hyperopt optimization path (default: 1).
+  --continue            Continue hyperopt from previous runs. By default,
+                        temporary files will be removed and hyperopt will
+                        start from scratch.
+  --hyperopt-loss-class NAME
+                        Specify the class name of the hyperopt loss function
+                        class (IHyperOptLoss). Different functions can
+                        generate completely different results, since the
+                        target for optimization is different. (default:
+                        `DefaultHyperOptLoss`).
 ```
 
 ## Edge commands
