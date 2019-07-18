@@ -380,8 +380,6 @@ section of the configuration.
 * `StaticPairList`
   * It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklist`.
 * `VolumePairList`
-  * Formerly available as `--dynamic-whitelist [<number_assets>]`. This command line
-option was removed and can no longer be used.
   * It selects `number_assets` top pairs based on `sort_key`, which can be one of
 `askVolume`, `bidVolume` and `quoteVolume`, defaults to `quoteVolume`.
   * There is a possibility to filter low-value coins that would not allow setting a stop loss
