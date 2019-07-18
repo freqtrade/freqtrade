@@ -23,7 +23,7 @@ optional arguments:
   -h, --help            show this help message and exit
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
   --logfile FILE        Log to the file specified
-  --version             show program's version number and exit
+  -V, --version         show program's version number and exit
   -c PATH, --config PATH
                         Specify configuration file (default: None). Multiple
                         --config options may be used. Can be set to '-' to
