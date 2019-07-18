@@ -44,7 +44,7 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='FILE',
     ),
     "version": Arg(
-        '--version',
+        '-V', '--version',
         action='version',
         version=f'%(prog)s {__version__}',
     ),
