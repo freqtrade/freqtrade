@@ -42,9 +42,8 @@ def plot_parse_args(args: List[str]) -> Dict[str, Any]:
     :return: args: Array with all arguments
     """
     arguments = Arguments(args, 'Graph profits')
-    arguments.build_args(optionlist=ARGS_PLOT_PROFIT)
-
-    parsed_args = arguments.parse_args()
+    arguments._build_args(optionlist=ARGS_PLOT_PROFIT)
+    parsed_args = arguments._parse_args()
 
     # Load the configuration
     config = setup_configuration(parsed_args, RunMode.OTHER)

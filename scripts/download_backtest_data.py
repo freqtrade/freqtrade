@@ -22,12 +22,12 @@ logger = logging.getLogger('download_backtest_data')
 
 DEFAULT_DL_PATH = 'user_data/data'
 
-arguments = Arguments(sys.argv[1:], 'Download backtest data')
-arguments.build_args(ARGS_DOWNLOADER)
-
 # Do not read the default config if config is not specified
 # in the command line options explicitely
-args = arguments.parse_args(no_default_config=True)
+arguments = Arguments(sys.argv[1:], 'Download backtest data',
+                      no_default_config=True)
+arguments._build_args(optionlist=ARGS_DOWNLOADER)
+args = arguments._parse_args()
 
 # Use bittrex as default exchange
 exchange_name = args.exchange or 'bittrex'

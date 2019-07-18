@@ -342,14 +342,15 @@ class Arguments(object):
     """
     Arguments Class. Manage the arguments received by the cli
     """
-    def __init__(self, args: Optional[List[str]], description: str) -> None:
+    def __init__(self, args: Optional[List[str]], description: str,
+                 no_default_config: bool = False) -> None:
         self.args = args
-        self.parsed_arg: Optional[argparse.Namespace] = None
+        self._parsed_arg: Optional[argparse.Namespace] = None
         self.parser = argparse.ArgumentParser(description=description)
+        self._no_default_config = no_default_config
 
     def _load_args(self) -> None:
-        self.build_args(optionlist=ARGS_MAIN)
-
+        self._build_args(optionlist=ARGS_MAIN)
         self._build_subcommands()
 
     def get_parsed_arg(self) -> argparse.Namespace:
@@ -357,13 +358,13 @@ class Arguments(object):
         Return the list of arguments
         :return: List[str] List of arguments
         """
-        if self.parsed_arg is None:
+        if self._parsed_arg is None:
             self._load_args()
-            self.parsed_arg = self.parse_args()
+            self._parsed_arg = self._parse_args()
 
-        return self.parsed_arg
+        return self._parsed_arg
 
-    def parse_args(self, no_default_config: bool = False) -> argparse.Namespace:
+    def _parse_args(self) -> argparse.Namespace:
         """
         Parses given arguments and returns an argparse Namespace instance.
         """
@@ -371,12 +372,12 @@ class Arguments(object):
 
         # Workaround issue in argparse with action='append' and default value
         # (see https://bugs.python.org/issue16399)
-        if not no_default_config and parsed_arg.config is None:
+        if not self._no_default_config and parsed_arg.config is None:
             parsed_arg.config = [constants.DEFAULT_CONFIG]
 
         return parsed_arg
 
-    def build_args(self, optionlist, parser=None):
+    def _build_args(self, optionlist, parser=None):
         parser = parser or self.parser
 
         for val in optionlist:
@@ -396,17 +397,17 @@ class Arguments(object):
         # Add backtesting subcommand
         backtesting_cmd = subparsers.add_parser('backtesting', help='Backtesting module.')
         backtesting_cmd.set_defaults(func=start_backtesting)
-        self.build_args(optionlist=ARGS_BACKTEST, parser=backtesting_cmd)
+        self._build_args(optionlist=ARGS_BACKTEST, parser=backtesting_cmd)
 
         # Add edge subcommand
         edge_cmd = subparsers.add_parser('edge', help='Edge module.')
         edge_cmd.set_defaults(func=start_edge)
-        self.build_args(optionlist=ARGS_EDGE, parser=edge_cmd)
+        self._build_args(optionlist=ARGS_EDGE, parser=edge_cmd)
 
         # Add hyperopt subcommand
         hyperopt_cmd = subparsers.add_parser('hyperopt', help='Hyperopt module.')
         hyperopt_cmd.set_defaults(func=start_hyperopt)
-        self.build_args(optionlist=ARGS_HYPEROPT, parser=hyperopt_cmd)
+        self._build_args(optionlist=ARGS_HYPEROPT, parser=hyperopt_cmd)
 
         # Add list-exchanges subcommand
         list_exchanges_cmd = subparsers.add_parser(
@@ -414,7 +415,7 @@ class Arguments(object):
             help='Print available exchanges.'
         )
         list_exchanges_cmd.set_defaults(func=start_list_exchanges)
-        self.build_args(optionlist=ARGS_LIST_EXCHANGES, parser=list_exchanges_cmd)
+        self._build_args(optionlist=ARGS_LIST_EXCHANGES, parser=list_exchanges_cmd)
 
     @staticmethod
     def parse_timerange(text: Optional[str]) -> TimeRange:
