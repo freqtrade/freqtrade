@@ -51,8 +51,8 @@ def test_parse_args_verbose() -> None:
 
 def test_common_scripts_options() -> None:
     arguments = Arguments(['-p', 'ETH/BTC'], '')
-    arguments.build_args(ARGS_DOWNLOADER)
-    args = arguments.parse_args()
+    arguments._build_args(ARGS_DOWNLOADER)
+    args = arguments._parse_args()
     assert args.pairs == 'ETH/BTC'
 
 
@@ -180,9 +180,8 @@ def test_download_data_options() -> None:
         '--exchange', 'binance'
     ]
     arguments = Arguments(args, '')
-    arguments.build_args(ARGS_DOWNLOADER)
-
-    args = arguments.parse_args()
+    arguments._build_args(ARGS_DOWNLOADER)
+    args = arguments._parse_args()
     assert args.pairs_file == 'file_with_pairs'
     assert args.datadir == 'datadir/directory'
     assert args.days == 30
@@ -197,8 +196,8 @@ def test_plot_dataframe_options() -> None:
         '-p', 'UNITTEST/BTC',
     ]
     arguments = Arguments(args, '')
-    arguments.build_args(ARGS_PLOT_DATAFRAME)
-    pargs = arguments.parse_args(True)
+    arguments._build_args(ARGS_PLOT_DATAFRAME)
+    pargs = arguments._parse_args()
     assert pargs.indicators1 == "sma10,sma100"
     assert pargs.indicators2 == "macd,fastd,fastk"
     assert pargs.plot_limit == 30
@@ -206,7 +205,6 @@ def test_plot_dataframe_options() -> None:
 
 
 def test_check_int_positive() -> None:
-
     assert check_int_positive("3") == 3
     assert check_int_positive("1") == 1
     assert check_int_positive("100") == 100
