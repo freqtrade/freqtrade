@@ -53,8 +53,8 @@ Mandatory Parameters are marked as **Required**.
 | `experimental.use_sell_signal` | false | Use your sell strategy in addition of the `minimal_roi`. [Strategy Override](#parameters-in-the-strategy).
 | `experimental.sell_profit_only` | false | Waits until you have made a positive profit before taking a sell decision. [Strategy Override](#parameters-in-the-strategy).
 | `experimental.ignore_roi_if_buy_signal` | false | Does not sell if the buy-signal is still active. Takes preference over `minimal_roi` and `use_sell_signal`. [Strategy Override](#parameters-in-the-strategy).
-| `pairlist.method` | StaticPairList | Use static or dynamic volume-based pairlist.
-| `pairlist.config` | None | Additional configuration for dynamic pairlists.
+| `pairlist.method` | StaticPairList | Use static or dynamic volume-based pairlist. [More information below](#dynamic-pairlists).
+| `pairlist.config` | None | Additional configuration for dynamic pairlists. [More information below](#dynamic-pairlists).
 | `telegram.enabled` | true | **Required.** Enable or not the usage of Telegram.
 | `telegram.token` | token | Your Telegram bot token. Only required if `telegram.enabled` is `true`.
 | `telegram.chat_id` | chat_id | Your personal Telegram account id. Only required if `telegram.enabled` is `true`.
