@@ -25,7 +25,7 @@ MAX_ACCEPTED_TRADE_DURATION = 300
 class SampleHyperOptLoss(IHyperOptLoss):
     """
     Defines the default loss function for hyperopt
-    This is intendet to give you some inspiration for your own loss function.
+    This is intended to give you some inspiration for your own loss function.
 
     The Function needs to return a number (float) - which becomes for better backtest results.
     """
