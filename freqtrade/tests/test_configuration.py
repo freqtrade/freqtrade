@@ -585,11 +585,11 @@ def test_validate_default_conf(default_conf) -> None:
 
 
 def test_create_datadir(mocker, default_conf, caplog) -> None:
-    mocker.patch('os.path.isdir', MagicMock(return_value=False))
-    md = MagicMock()
-    mocker.patch('os.makedirs', md)
+    mocker.patch.object(Path, "is_dir", MagicMock(return_value=False))
+    md = mocker.patch.object(Path, 'mkdir', MagicMock())
+
     create_datadir(default_conf, '/foo/bar')
-    assert md.call_args[0][0] == "/foo/bar"
+    assert md.call_args[1]['parents'] is True
     assert log_has('Created data directory: /foo/bar', caplog.record_tuples)
 
 

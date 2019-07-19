@@ -39,7 +39,7 @@ class PairListResolver(IResolver):
         current_path = Path(__file__).parent.parent.joinpath('pairlist').resolve()
 
         abs_paths = [
-            current_path.parent.parent.joinpath('user_data/pairlist'),
+            Path.cwd().joinpath('user_data/pairlist'),
             current_path,
         ]
 
