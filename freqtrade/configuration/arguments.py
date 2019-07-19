@@ -231,7 +231,7 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_true',
     ),
     "hyperopt_loss": Arg(
-        '--hyperopt-loss-class',
+        '--hyperopt-loss',
         help='Specify the class name of the hyperopt loss function class (IHyperOptLoss). '
         'Different functions can generate completely different results, '
         'since the target for optimization is different. (default: `%(default)s`).',

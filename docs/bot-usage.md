@@ -219,7 +219,7 @@ usage: freqtrade hyperopt [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
                           [-s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
                           [--dmmp] [--print-all] [-j JOBS]
                           [--random-state INT] [--min-trades INT] [--continue]
-                          [--hyperopt-loss-class NAME]
+                          [--hyperopt-loss NAME]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -264,7 +264,7 @@ optional arguments:
   --continue            Continue hyperopt from previous runs. By default,
                         temporary files will be removed and hyperopt will
                         start from scratch.
-  --hyperopt-loss-class NAME
+  --hyperopt-loss       NAME
                         Specify the class name of the hyperopt loss function
                         class (IHyperOptLoss). Different functions can
                         generate completely different results, since the

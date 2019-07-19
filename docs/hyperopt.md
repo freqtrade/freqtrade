@@ -156,15 +156,15 @@ Each hyperparameter tuning requires a target. This is usually defined as a loss 
 
 By default, FreqTrade uses a loss function, which has been with freqtrade since the beginning and optimizes mostly for short trade duration and avoiding losses.
 
-A different version this can be used by using the `--hyperopt-loss-class <Class-name>` argument.
+A different version this can be used by using the `--hyperopt-loss <Class-name>` argument.
 This class should be in it's own file within the `user_data/hyperopts/` directory.
 
-Currently, the following loss-functions are builtin: `SharpeHyperOptLoss` and `DefaultHyperOptLoss`.
+Currently, the following loss functions are builtin: `SharpeHyperOptLoss` and `DefaultHyperOptLoss`.
 
 ### Creating and using a custom loss function
 
 To use a custom loss function class, make sure that the function `hyperopt_loss_function` is defined in your custom hyperopt loss class.
-For the sample below, you then need to add the command line parameter `--hyperopt-loss-class SuperDuperHyperOptLoss` to your hyperopt call so this fuction is being used.
+For the sample below, you then need to add the command line parameter `--hyperopt-loss SuperDuperHyperOptLoss` to your hyperopt call so this fuction is being used.
 
 A sample of this can be found below, which is identical to the Default Hyperopt loss implementation. A full sample can be found [user_data/hyperopts/](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/sample_hyperopt_loss.py)
 
@@ -252,7 +252,7 @@ use data from directory `user_data/data`.
 ### Running Hyperopt with Smaller Testset
 
 Use the `--timerange` argument to change how much of the testset you want to use.
-To use one month of data, use the following parameter:
+For example, to use one month of data, pass the following parameter to the hyperopt call:
 
 ```bash
 freqtrade hyperopt --timerange 20180401-20180501
