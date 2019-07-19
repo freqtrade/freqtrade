@@ -149,7 +149,6 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
 
     arglist = [
-        '--dynamic-whitelist', '10',
         '--strategy', 'TestStrategy',
         '--strategy-path', '/some/path',
         '--db-url', 'sqlite:///someurl',
@@ -158,8 +157,6 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
-    assert validated_conf.get('pairlist', {}).get('method') == 'VolumePairList'
-    assert validated_conf.get('pairlist', {}).get('config').get('number_assets') == 10
     assert validated_conf.get('strategy') == 'TestStrategy'
     assert validated_conf.get('strategy_path') == '/some/path'
     assert validated_conf.get('db_url') == 'sqlite:///someurl'
@@ -250,7 +247,6 @@ def test_show_info(default_conf, mocker, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
 
     arglist = [
-        '--dynamic-whitelist', '10',
         '--strategy', 'TestStrategy',
         '--db-url', 'sqlite:///tmp/testdb',
     ]
@@ -259,13 +255,6 @@ def test_show_info(default_conf, mocker, caplog) -> None:
     configuration = Configuration(args)
     configuration.get_config()
 
-    assert log_has(
-        'Parameter --dynamic-whitelist has been deprecated, '
-        'and will be completely replaced by the whitelist dict in the future. '
-        'For now: using dynamically generated whitelist based on VolumePairList. '
-        '(not applicable with Backtesting and Hyperopt)',
-        caplog.record_tuples
-    )
     assert log_has('Using DB: "sqlite:///tmp/testdb"', caplog.record_tuples)
     assert log_has('Dry run is enabled', caplog.record_tuples)
 

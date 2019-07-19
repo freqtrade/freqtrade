@@ -7,8 +7,8 @@ This page explains the different parameters of the bot and how to run it.
 
 ```
 usage: freqtrade [-h] [-v] [--logfile FILE] [--version] [-c PATH] [-d PATH]
-                 [-s NAME] [--strategy-path PATH] [--dynamic-whitelist [INT]]
-                 [--db-url PATH] [--sd-notify]
+                 [-s NAME] [--strategy-path PATH] [--db-url PATH]
+                 [--sd-notify]
                  {backtesting,edge,hyperopt} ...
 
 Free, open source crypto trading bot
@@ -34,9 +34,6 @@ optional arguments:
                         Specify strategy class name (default:
                         DefaultStrategy).
   --strategy-path PATH  Specify additional strategy lookup path.
-  --dynamic-whitelist [INT]
-                        Dynamically generate and update whitelist based on 24h
-                        BaseVolume (default: 20). DEPRECATED.
   --db-url PATH         Override trades database URL, this is useful if
                         dry_run is enabled or in custom deployments (default:
                         None).
@@ -118,17 +115,6 @@ freqtrade --strategy AwesomeStrategy --strategy-path /some/directory
 
 This is very simple. Copy paste your strategy file into the directory
 `user_data/strategies` or use `--strategy-path`. And voila, the bot is ready to use it.
-
-### How to use **--dynamic-whitelist**?
-
-!!! danger "DEPRECATED"
-    This command line option is deprecated. Please move your configurations using it
-to the configurations that utilize the `StaticPairList` or `VolumePairList` methods set
-in the configuration file
-as outlined [here](configuration/#dynamic-pairlists)
-
-Description of this deprecated feature was moved to [here](deprecated.md).
-Please no longer use it.
 
 ### How to use **--db-url**?
 

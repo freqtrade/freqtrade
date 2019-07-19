@@ -86,21 +86,6 @@ def test_parse_args_strategy_path_invalid() -> None:
         Arguments(['--strategy-path'], '').get_parsed_arg()
 
 
-def test_parse_args_dynamic_whitelist() -> None:
-    args = Arguments(['--dynamic-whitelist'], '').get_parsed_arg()
-    assert args.dynamic_whitelist == 20
-
-
-def test_parse_args_dynamic_whitelist_10() -> None:
-    args = Arguments(['--dynamic-whitelist', '10'], '').get_parsed_arg()
-    assert args.dynamic_whitelist == 10
-
-
-def test_parse_args_dynamic_whitelist_invalid_values() -> None:
-    with pytest.raises(SystemExit, match=r'2'):
-        Arguments(['--dynamic-whitelist', 'abc'], '').get_parsed_arg()
-
-
 def test_parse_timerange_incorrect() -> None:
     assert TimeRange(None, 'line', 0, -200) == Arguments.parse_timerange('-200')
     assert TimeRange('line', None, 200, 0) == Arguments.parse_timerange('200-')
