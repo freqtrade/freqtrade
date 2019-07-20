@@ -14,6 +14,7 @@ class ExchangeResolver(IResolver):
     """
     This class contains all the logic to load a custom exchange class
     """
+    type_name = "Exchange"
 
     __slots__ = ['exchange']
 

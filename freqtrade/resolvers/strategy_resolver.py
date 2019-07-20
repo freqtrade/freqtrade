@@ -23,6 +23,7 @@ class StrategyResolver(IResolver):
     """
     This class contains all the logic to load custom strategy class
     """
+    type_name = "Strategy"
 
     __slots__ = ['strategy']
 

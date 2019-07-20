@@ -19,6 +19,7 @@ class HyperOptResolver(IResolver):
     """
     This class contains all the logic to load custom hyperopt class
     """
+    type_name = "Hyperopt"
 
     __slots__ = ['hyperopt']
 

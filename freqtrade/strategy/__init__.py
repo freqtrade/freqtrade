@@ -2,9 +2,8 @@ import logging
 import sys
 from copy import deepcopy
 
+from freqtrade import constants
 from freqtrade.strategy.interface import IStrategy
-# Import Default-Strategy to have hyperopt correctly resolve
-from freqtrade.strategy.default_strategy import DefaultStrategy  # noqa: F401
 
 
 logger = logging.getLogger(__name__)
@@ -28,7 +27,10 @@ def import_strategy(strategy: IStrategy, config: dict) -> IStrategy:
     attr = deepcopy(comb)
 
     # Adjust module name
-    attr['__module__'] = 'freqtrade.strategy'
+    attr['__module__'] = (
+            'freqtrade.strategy.default_strategy'
+            if config.get('strategy') == constants.DEFAULT_STRATEGY
+            else 'freqtrade.strategy')
 
     name = strategy.__class__.__name__
     clazz = type(name, (IStrategy,), attr)

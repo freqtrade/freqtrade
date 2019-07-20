@@ -9,6 +9,9 @@ import logging
 from pathlib import Path
 from typing import Any, Optional, Tuple, Type, Union
 
+from freqtrade import OperationalException
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,6 +19,7 @@ class IResolver(object):
     """
     This class contains all the logic to load custom classes
     """
+    type_name = "Unknown"
 
     @staticmethod
     def _get_valid_object(object_type, module_path: Path,
@@ -43,8 +47,8 @@ class IResolver(object):
         )
         return next(valid_objects_gen, None)
 
-    @staticmethod
-    def _search_object(directory: Path, object_type, object_name: str,
+    @classmethod
+    def _search_object(self, directory: Path, object_type, object_name: str,
                        kwargs: dict = {}) -> Union[Tuple[Any, Path], Tuple[None, None]]:
         """
         Search for the objectname in the given directory
@@ -52,6 +56,7 @@ class IResolver(object):
         :return: object instance
         """
         logger.debug("Searching for %s %s in '%s'", object_type.__name__, object_name, directory)
+        objs = []
         for entry in directory.iterdir():
             # Only consider python files
             if not str(entry).endswith('.py'):
@@ -62,5 +67,16 @@ class IResolver(object):
                 object_type, module_path, object_name
             )
             if obj:
-                return (obj(**kwargs), module_path)
-        return (None, None)
+                objs.append((obj, module_path))
+        if len(objs) == 0:
+            return (None, None)
+        elif len(objs) == 1:
+            obj, module_path = objs[0]
+            return (obj(**kwargs), module_path)
+        else:
+            raise OperationalException(
+                    f"Cannot resolve object: found more than one objects of type "
+                    f"`{self.type_name}` with name `{object_name}`. "
+                    "Use unique names for custom strategies, hyperopts and other custom objects "
+                    "so that Freqtrade can be able to resolve them. "
+                    f"Found in modules: {[str(m) for (_, m) in objs]}")

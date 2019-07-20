@@ -44,7 +44,8 @@ def test_import_strategy(caplog):
 
 def test_search_strategy():
     default_config = {}
-    default_location = Path(__file__).parent.parent.joinpath('strategy').resolve()
+    # Use default strategy from freqtrade/strategy, not from freqtrade/tests/strategy
+    default_location = Path(__file__).parent.parent.parent.joinpath('strategy').resolve()
 
     s, _ = StrategyResolver._search_object(
         directory=default_location,

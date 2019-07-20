@@ -17,6 +17,7 @@ class PairListResolver(IResolver):
     """
     This class contains all the logic to load custom hyperopt class
     """
+    type_name = "PairList"
 
     __slots__ = ['pairlist']
 
