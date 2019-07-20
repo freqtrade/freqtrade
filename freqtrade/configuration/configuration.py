@@ -259,6 +259,12 @@ class Configuration(object):
         self._args_to_config(config, argname='hyperopt_min_trades',
                              logstring='Parameter --min-trades detected: {}')
 
+        self._args_to_config(config, argname='hyperopt_continue',
+                             logstring='Hyperopt continue: {}')
+
+        self._args_to_config(config, argname='hyperopt_loss',
+                             logstring='Using loss function: {}')
+
     def _process_plot_options(self, config: Dict[str, Any]) -> None:
 
         self._args_to_config(config, argname='pairs',

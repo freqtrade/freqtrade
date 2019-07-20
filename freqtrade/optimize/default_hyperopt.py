@@ -1,16 +1,14 @@
 # pragma pylint: disable=missing-docstring, invalid-name, pointless-string-statement
 
+from functools import reduce
+from typing import Any, Callable, Dict, List
+
 import talib.abstract as ta
 from pandas import DataFrame
-from typing import Dict, Any, Callable, List
-from functools import reduce
-
 from skopt.space import Categorical, Dimension, Integer, Real
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.optimize.hyperopt_interface import IHyperOpt
-
-class_name = 'DefaultHyperOpts'
 
 
 class DefaultHyperOpts(IHyperOpt):
