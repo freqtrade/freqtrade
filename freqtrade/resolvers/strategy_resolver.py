@@ -155,18 +155,22 @@ class StrategyResolver(IResolver):
                                                               kwargs={'config': config})
                 if strategy:
                     logger.info(f"Using resolved strategy {strategy_name} from '{module_path}'...")
-                    strategy._populate_fun_len = len(
-                        getfullargspec(strategy.populate_indicators).args)
-                    strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
-                    strategy._sell_fun_len = len(getfullargspec(strategy.populate_sell_trend).args)
-                    try:
-                        return import_strategy(strategy, config=config)
-                    except TypeError as e:
-                        logger.warning(
-                            f"Impossible to load strategy '{strategy_name}' from {module_path}. "
-                            f"Error: {e}")
+                    break
+
             except FileNotFoundError:
                 logger.warning('Path "%s" does not exist.', _path.relative_to(Path.cwd()))
+
+        if strategy:
+            strategy._populate_fun_len = len(getfullargspec(strategy.populate_indicators).args)
+            strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
+            strategy._sell_fun_len = len(getfullargspec(strategy.populate_sell_trend).args)
+
+            try:
+                return import_strategy(strategy, config=config)
+            except TypeError as e:
+                logger.warning(
+                    f"Impossible to load strategy '{strategy_name}'. "
+                    f"Error: {e}")
 
         raise OperationalException(
             f"Impossible to load Strategy '{strategy_name}'. This class does not exist "
