@@ -43,10 +43,8 @@ class PairListResolver(IResolver):
             current_path,
         ]
 
-        (pairlist, module_path) = self._load_object(paths=abs_paths,
-                                                    object_type=IPairList,
-                                                    object_name=pairlist_name,
-                                                    kwargs=kwargs)
+        pairlist = self._load_object(paths=abs_paths, object_type=IPairList,
+                                     object_name=pairlist_name, kwargs=kwargs)
         if pairlist:
             return pairlist
         raise OperationalException(

@@ -67,7 +67,7 @@ class IResolver(object):
 
     @staticmethod
     def _load_object(paths: List[Path], object_type, object_name: str,
-                     kwargs: dict = {}) -> Union[Tuple[Any, Path], Tuple[None, None]]:
+                     kwargs: dict = {}) -> Union[Any, None]:
         """
         Try to load object from path list.
         """
@@ -82,8 +82,8 @@ class IResolver(object):
                     logger.info(
                         f"Using resolved {object_type.__name__.lower()[1:]} {object_name} "
                         f"from '{module_path}'...")
-                    return (module, module_path)
+                    return module
             except FileNotFoundError:
                 logger.warning('Path "%s" does not exist.', _path.relative_to(Path.cwd()))
 
-        return (None, None)
+        return None
