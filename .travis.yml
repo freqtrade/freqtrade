@@ -32,11 +32,11 @@ jobs:
       name: pytest
     - script:
       - cp config.json.example config.json
-      - python freqtrade --datadir freqtrade/tests/testdata backtesting
+      - freqtrade --datadir freqtrade/tests/testdata backtesting
       name: backtest
     - script:
       - cp config.json.example config.json
-      - python freqtrade --datadir freqtrade/tests/testdata hyperopt -e 5
+      - freqtrade --datadir freqtrade/tests/testdata hyperopt -e 5
       name: hyperopt
     - script: flake8 freqtrade scripts
       name: flake8
