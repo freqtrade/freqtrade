@@ -1,8 +1,12 @@
-from freqtrade.utils import setup_utils_configuration, start_list_exchanges
-from freqtrade.tests.conftest import get_args
-from freqtrade.state import RunMode
-
 import re
+from unittest.mock import MagicMock
+
+import pytest
+
+from freqtrade.state import RunMode
+from freqtrade.tests.conftest import get_args, log_has
+from freqtrade.utils import (setup_utils_configuration, start_create_userdir,
+                             start_list_exchanges)
 
 
 def test_setup_utils_configuration():
@@ -40,3 +44,26 @@ def test_list_exchanges(capsys):
     assert not re.match(r"Exchanges supported by ccxt and available.*", captured.out)
     assert re.search(r"^binance$", captured.out, re.MULTILINE)
     assert re.search(r"^bittrex$", captured.out, re.MULTILINE)
+
+
+def test_create_datadir_failed(caplog):
+
+    args = [
+        "create-userdir",
+    ]
+    with pytest.raises(SystemExit):
+        start_create_userdir(get_args(args))
+    assert log_has("`create-userdir` requires --userdir to be set.", caplog.record_tuples)
+
+
+def test_create_datadir(caplog, mocker):
+    cud = mocker.patch("freqtrade.utils.create_userdata_dir", MagicMock())
+    args = [
+        "create-userdir",
+        "--userdir",
+        "/temp/freqtrade/test"
+    ]
+    start_create_userdir(get_args(args))
+
+    assert cud.call_count == 1
+    assert len(caplog.record_tuples) == 0
