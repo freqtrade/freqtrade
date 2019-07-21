@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 import logging
+import tempfile
 import warnings
 from base64 import urlsafe_b64encode
 from os import path
@@ -68,11 +69,15 @@ def test_load_strategy(result):
     assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 
 
-def test_load_strategy_base64(result):
-    with open("freqtrade/tests/strategy/test_strategy.py", "rb") as file:
+def test_load_strategy_base64(result, caplog):
+    with open("user_data/strategies/test_strategy.py", "rb") as file:
         encoded_string = urlsafe_b64encode(file.read()).decode("utf-8")
     resolver = StrategyResolver({'strategy': 'TestStrategy:{}'.format(encoded_string)})
     assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
+    # Make sure strategy was loaded from base64 (using temp directory)!!
+    assert log_has_re(r"Using resolved strategy TestStrategy from '"
+                      + tempfile.gettempdir() + r"/.*/TestStrategy\.py'\.\.\.",
+                      caplog.record_tuples)
 
 
 def test_load_strategy_invalid_directory(result, caplog):
