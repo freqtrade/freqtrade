@@ -33,4 +33,4 @@ def create_userdata_dir(directory: str) -> str:
         if not subfolder.is_dir():
             subfolder.mkdir(parents=False)
     # TODO: convert this to return Path
-    return str(folder.resolve())
+    return folder

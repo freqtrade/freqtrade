@@ -308,7 +308,7 @@ def generate_plot_filename(pair, ticker_interval) -> str:
     return file_name
 
 
-def store_plot_file(fig, filename: str, auto_open: bool = False) -> None:
+def store_plot_file(fig, filename: str, folder: Path, auto_open: bool = False) -> None:
     """
     Generate a plot html file from pre populated fig plotly object
     :param fig: Plotly Figure to plot
@@ -317,7 +317,7 @@ def store_plot_file(fig, filename: str, auto_open: bool = False) -> None:
     :return: None
     """
 
-    Path("user_data/plots").mkdir(parents=True, exist_ok=True)
+    folder.mkdir(parents=True, exist_ok=True)
 
-    plot(fig, filename=str(Path('user_data/plots').joinpath(filename)),
+    plot(fig, filename=str(folder.joinpath(filename)),
          auto_open=auto_open)
