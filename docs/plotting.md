@@ -64,7 +64,7 @@ python3 scripts/plot_dataframe.py --db-url sqlite:///tradesv3.dry_run.sqlite -p 
 To plot trades from a backtesting result, use `--export-filename <filename>`
 
 ``` bash
-python3 scripts/plot_dataframe.py --export-filename user_data/backtest_data/backtest-result.json -p BTC/ETH
+python3 scripts/plot_dataframe.py --export-filename user_data/backtest_results/backtest-result.json -p BTC/ETH
 ```
 
 To plot a custom strategy the strategy should have first be backtested.

@@ -176,8 +176,8 @@ optional arguments:
   --export-filename PATH
                         Save backtest results to this filename requires
                         --export to be set as well Example --export-
-                        filename=user_data/backtest_data/backtest_today.json
-                        (default: user_data/backtest_data/backtest-
+                        filename=user_data/backtest_results/backtest_today.json
+                        (default: user_data/backtest_results/backtest-
                         result.json)
 ```
 
