@@ -20,8 +20,6 @@ import logging
 
 logger = logging.getLogger('download_backtest_data')
 
-DEFAULT_DL_PATH = 'user_data/data'
-
 # Do not read the default config if config is not specified
 # in the command line options explicitely
 arguments = Arguments(sys.argv[1:], 'Download backtest data',
