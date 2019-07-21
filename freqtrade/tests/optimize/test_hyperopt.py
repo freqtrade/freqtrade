@@ -1,12 +1,13 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
 import os
 from datetime import datetime
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 
 import pandas as pd
 import pytest
 from arrow import Arrow
 from filelock import Timeout
+from pathlib import Path
 
 from freqtrade import DependencyException
 from freqtrade.data.converter import parse_ticker_dataframe
@@ -53,11 +54,14 @@ def create_trials(mocker, hyperopt) -> None:
       - we might have a pickle'd file so make sure that we return
         false when looking for it
     """
-    hyperopt.trials_file = os.path.join('freqtrade', 'tests', 'optimize', 'ut_trials.pickle')
+    hyperopt.trials_file = Path('freqtrade/tests/optimize/ut_trials.pickle')
 
-    mocker.patch('freqtrade.optimize.hyperopt.os.path.exists', return_value=False)
-    mocker.patch('freqtrade.optimize.hyperopt.os.path.getsize', return_value=1)
-    mocker.patch('freqtrade.optimize.hyperopt.os.remove', return_value=True)
+    mocker.patch.object(Path, "is_file", MagicMock(return_value=False))
+    stat_mock = MagicMock()
+    stat_mock.st_size = PropertyMock(return_value=1)
+    mocker.patch.object(Path, "stat", MagicMock(return_value=False))
+
+    mocker.patch.object(Path, "unlink", MagicMock(return_value=True))
     mocker.patch('freqtrade.optimize.hyperopt.dump', return_value=None)
 
     return [{'loss': 1, 'result': 'foo', 'params': {}}]

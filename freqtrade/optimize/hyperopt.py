@@ -5,7 +5,6 @@ This module contains the hyperopt logic
 """
 
 import logging
-import os
 import sys
 
 from operator import itemgetter
@@ -31,9 +30,9 @@ logger = logging.getLogger(__name__)
 
 INITIAL_POINTS = 30
 MAX_LOSS = 100000  # just a big enough number to be bad result in loss optimization
-TICKERDATA_PICKLE = os.path.join('user_data', 'hyperopt_tickerdata.pkl')
-TRIALSDATA_PICKLE = os.path.join('user_data', 'hyperopt_results.pickle')
-HYPEROPT_LOCKFILE = os.path.join('user_data', 'hyperopt.lock')
+TICKERDATA_PICKLE = Path.cwd() / 'user_data' / 'hyperopt_tickerdata.pkl'
+TRIALSDATA_PICKLE = Path.cwd() / 'user_data' / 'hyperopt_results.pickle'
+HYPEROPT_LOCKFILE = Path.cwd() / 'user_data' / 'hyperopt.lock'
 
 
 class Hyperopt(Backtesting):
@@ -115,7 +114,7 @@ class Hyperopt(Backtesting):
         """
         logger.info('Reading Trials from \'%s\'', self.trials_file)
         trials = load(self.trials_file)
-        os.remove(self.trials_file)
+        self.trials_file.unlink()
         return trials
 
     def log_trials_result(self) -> None:
@@ -269,7 +268,7 @@ class Hyperopt(Backtesting):
 
     def load_previous_results(self):
         """ read trials file if we have one """
-        if os.path.exists(self.trials_file) and os.path.getsize(self.trials_file) > 0:
+        if self.trials_file.is_file() and self.trials_file.stat().st_size > 0:
             self.trials = self.read_trials()
             logger.info(
                 'Loaded %d previous evaluations from disk.',
