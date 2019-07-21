@@ -176,9 +176,13 @@ class Configuration(object):
         """
         if 'user_data_dir' in self.args and self.args.user_data_dir:
             config.update({'user_data_dir': self.args.user_data_dir})
-            create_userdata_dir(config['user_data_dir'])
         elif 'user_data_dir' not in config:
+            # Default to cwd/user_data (legacy option ...)
             config.update({'user_data_dir': str(Path.cwd() / "user_data")})
+        # reset to user_data_dir so this contains the absolute path.
+        config['user_data_dir'] = create_userdata_dir(config['user_data_dir'])
+
+        logger.info('Using user-data directory: %s ...', config['user_data_dir'])
 
         if 'datadir' in self.args and self.args.datadir:
             config.update({'datadir': create_datadir(config, self.args.datadir)})

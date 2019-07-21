@@ -331,11 +331,15 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         'freqtrade.configuration.configuration.create_datadir',
         lambda c, x: x
     )
-
+    mocker.patch(
+        'freqtrade.configuration.configuration.create_userdata_dir',
+        lambda x: x
+    )
     arglist = [
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
         '--datadir', '/foo/bar',
+        '--userdir', "/tmp/freqtrade",
         'backtesting',
         '--ticker-interval', '1m',
         '--live',
@@ -357,7 +361,11 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert log_has(
-        'Using data directory: {} ...'.format(config['datadir']),
+        'Using data directory: {} ...'.format("/foo/bar"),
+        caplog.record_tuples
+    )
+    assert log_has(
+        'Using user-data directory: {} ...'.format("/tmp/freqtrade"),
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
@@ -613,10 +621,12 @@ def test_create_userdata_dir(mocker, default_conf, caplog) -> None:
     mocker.patch.object(Path, "is_dir", MagicMock(return_value=False))
     md = mocker.patch.object(Path, 'mkdir', MagicMock())
 
-    create_userdata_dir('/tmp/bar')
+    x = create_userdata_dir('/tmp/bar')
     assert md.call_count == 6
     assert md.call_args[1]['parents'] is False
     assert log_has('Created user-data directory: /tmp/bar', caplog.record_tuples)
+    assert isinstance(x, str)
+    assert x == "/tmp/bar"
 
 
 def test_create_userdata_dir_exists(mocker, default_conf, caplog) -> None:

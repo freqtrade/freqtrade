@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 def create_datadir(config: Dict[str, Any], datadir: Optional[str] = None) -> str:
 
-    folder = Path(datadir) if datadir else Path('user_data/data')
+    folder = Path(datadir) if datadir else Path(f"{config['user_data_dir']}/data")
     if not datadir:
         # set datadir
         exchange_name = config.get('exchange', {}).get('name').lower()
@@ -20,7 +20,7 @@ def create_datadir(config: Dict[str, Any], datadir: Optional[str] = None) -> str
     return str(folder)
 
 
-def create_userdata_dir(directory: str):
+def create_userdata_dir(directory: str) -> str:
     sub_dirs = ["backtest_results", "data", "hyperopts", "plots", "strategies", ]
     folder = Path(directory)
     if not folder.is_dir():
@@ -32,3 +32,5 @@ def create_userdata_dir(directory: str):
         subfolder = folder / f
         if not subfolder.is_dir():
             subfolder.mkdir(parents=False)
+    # TODO: convert this to return Path
+    return str(folder.resolve())

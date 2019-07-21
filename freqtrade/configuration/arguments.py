@@ -9,7 +9,7 @@ import arrow
 from freqtrade.configuration.cli_options import AVAILABLE_CLI_OPTIONS
 from freqtrade import constants
 
-ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir"]
+ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_data_dir"]
 
 ARGS_STRATEGY = ["strategy", "strategy_path"]
 
