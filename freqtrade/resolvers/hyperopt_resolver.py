@@ -26,7 +26,7 @@ class HyperOptResolver(IResolver):
     def __init__(self, config: Dict) -> None:
         """
         Load the custom class from config parameter
-        :param config: configuration dictionary or None
+        :param config: configuration dictionary
         """
 
         # Verify the hyperopt is in the configuration, otherwise fallback to the default hyperopt

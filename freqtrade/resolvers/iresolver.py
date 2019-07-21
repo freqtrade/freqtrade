@@ -67,7 +67,7 @@ class IResolver(object):
 
     @staticmethod
     def _load_object(paths: List[Path], object_type, object_name: str,
-                     kwargs: dict = {}) -> Union[Any, None]:
+                     kwargs: dict = {}) -> Optional[Any]:
         """
         Try to load object from path list.
         """
