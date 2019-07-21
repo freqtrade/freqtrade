@@ -147,19 +147,10 @@ class StrategyResolver(IResolver):
                 # register temp path with the bot
                 abs_paths.insert(0, temp.resolve())
 
-        for _path in abs_paths:
-            try:
-                (strategy, module_path) = self._search_object(directory=_path,
-                                                              object_type=IStrategy,
-                                                              object_name=strategy_name,
-                                                              kwargs={'config': config})
-                if strategy:
-                    logger.info(f"Using resolved strategy {strategy_name} from '{module_path}'...")
-                    break
-
-            except FileNotFoundError:
-                logger.warning('Path "%s" does not exist.', _path.relative_to(Path.cwd()))
-
+        (strategy, module_path) = self._load_object(paths=abs_paths,
+                                                    object_type=IStrategy,
+                                                    object_name=strategy_name,
+                                                    kwargs={'config': config})
         if strategy:
             strategy._populate_fun_len = len(getfullargspec(strategy.populate_indicators).args)
             strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)

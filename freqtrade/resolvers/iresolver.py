@@ -7,7 +7,7 @@ import importlib.util
 import inspect
 import logging
 from pathlib import Path
-from typing import Any, Optional, Tuple, Type, Union
+from typing import Any, List, Optional, Tuple, Type, Union
 
 logger = logging.getLogger(__name__)
 
@@ -63,4 +63,27 @@ class IResolver(object):
             )
             if obj:
                 return (obj(**kwargs), module_path)
+        return (None, None)
+
+    @staticmethod
+    def _load_object(paths: List[Path], object_type, object_name: str,
+                     kwargs: dict = {}) -> Union[Tuple[Any, Path], Tuple[None, None]]:
+        """
+        Try to load object from path list.
+        """
+
+        for _path in paths:
+            try:
+                (module, module_path) = IResolver._search_object(directory=_path,
+                                                                 object_type=object_type,
+                                                                 object_name=object_name,
+                                                                 kwargs=kwargs)
+                if module:
+                    logger.info(
+                        f"Using resolved {object_type.__name__.lower()[1:]} {object_name} "
+                        f"from '{module_path}'...")
+                    return (module, module_path)
+            except FileNotFoundError:
+                logger.warning('Path "%s" does not exist.', _path.relative_to(Path.cwd()))
+
         return (None, None)
