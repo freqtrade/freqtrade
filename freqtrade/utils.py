@@ -1,11 +1,12 @@
 import logging
+import sys
 from argparse import Namespace
 from typing import Any, Dict
 
 from freqtrade.configuration import Configuration
+from freqtrade.configuration.folder_operations import create_userdata_dir
 from freqtrade.exchange import available_exchanges
 from freqtrade.state import RunMode
-
 
 logger = logging.getLogger(__name__)
 
@@ -39,3 +40,16 @@ def start_list_exchanges(args: Namespace) -> None:
     else:
         print(f"Exchanges supported by ccxt and available for Freqtrade: "
               f"{', '.join(available_exchanges())}")
+
+
+def start_create_userdir(args: Namespace) -> None:
+    """
+    Create "user_data" directory to contain user data strategies, hyperopts, ...)
+    :param args: Cli args from Arguments()
+    :return: None
+    """
+    if "user_data_dir" in args and args.user_data_dir:
+        create_userdata_dir(args.user_data_dir)
+    else:
+        logger.warning("`create-userdir` requires --userdir to be set.")
+        sys.exit(1)

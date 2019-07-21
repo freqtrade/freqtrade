@@ -31,6 +31,8 @@ ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
 
 ARGS_LIST_EXCHANGES = ["print_one_column"]
 
+ARGS_CREATE_USERDIR = ["user_data_dir"]
+
 ARGS_DOWNLOADER = ARGS_COMMON + ["pairs", "pairs_file", "days", "exchange", "timeframes", "erase"]
 
 ARGS_PLOT_DATAFRAME = (ARGS_COMMON + ARGS_STRATEGY +
@@ -106,8 +108,7 @@ class Arguments(object):
         :return: None
         """
         from freqtrade.optimize import start_backtesting, start_hyperopt, start_edge
-        from freqtrade.utils import start_list_exchanges
-
+        from freqtrade.utils import start_create_userdir, start_list_exchanges
         subparsers = self.parser.add_subparsers(dest='subparser')
 
         # Add backtesting subcommand
@@ -124,6 +125,11 @@ class Arguments(object):
         hyperopt_cmd = subparsers.add_parser('hyperopt', help='Hyperopt module.')
         hyperopt_cmd.set_defaults(func=start_hyperopt)
         self._build_args(optionlist=ARGS_HYPEROPT, parser=hyperopt_cmd)
+
+        create_userdir_cmd = subparsers.add_parser('create-userdir',
+                                                   help="Create user-data directory.")
+        create_userdir_cmd.set_defaults(func=start_create_userdir)
+        self._build_args(optionlist=ARGS_CREATE_USERDIR, parser=create_userdir_cmd)
 
         # Add list-exchanges subcommand
         list_exchanges_cmd = subparsers.add_parser(

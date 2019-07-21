@@ -6,11 +6,12 @@ import logging
 import sys
 import warnings
 from argparse import Namespace
+from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
 from freqtrade import OperationalException, constants
 from freqtrade.configuration.check_exchange import check_exchange
-from freqtrade.configuration.folder_operations import create_datadir
+from freqtrade.configuration.folder_operations import create_datadir, create_userdata_dir
 from freqtrade.configuration.json_schema import validate_config_schema
 from freqtrade.loggers import setup_logging
 from freqtrade.misc import deep_merge_dicts
@@ -173,6 +174,12 @@ class Configuration(object):
         Extract information for sys.argv and load datadir configuration:
         the --datadir option
         """
+        if 'user_data_dir' in self.args and self.args.user_data_dir:
+            config.update({'user_data_dir': self.args.user_data_dir})
+            create_userdata_dir(config['user_data_dir'])
+        elif 'user_data_dir' not in config:
+            config.update({'user_data_dir': str(Path.cwd() / "user_data")})
+
         if 'datadir' in self.args and self.args.datadir:
             config.update({'datadir': create_datadir(config, self.args.datadir)})
         else:

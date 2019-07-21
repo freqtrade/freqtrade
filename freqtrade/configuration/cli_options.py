@@ -58,6 +58,11 @@ AVAILABLE_CLI_OPTIONS = {
         help='Path to backtest data.',
         metavar='PATH',
     ),
+    "user_data_dir": Arg(
+        '--userdir', '--user-data-dir',
+        help='Path to Userdata Directory.',
+        metavar='PATH',
+    ),
     # Main options
     "strategy": Arg(
         '-s', '--strategy',
