@@ -23,12 +23,11 @@ class HyperOptResolver(IResolver):
 
     __slots__ = ['hyperopt']
 
-    def __init__(self, config: Optional[Dict] = None) -> None:
+    def __init__(self, config: Dict) -> None:
         """
         Load the custom class from config parameter
         :param config: configuration dictionary or None
         """
-        config = config or {}
 
         # Verify the hyperopt is in the configuration, otherwise fallback to the default hyperopt
         hyperopt_name = config.get('hyperopt') or DEFAULT_HYPEROPT
