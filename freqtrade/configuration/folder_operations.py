@@ -18,3 +18,17 @@ def create_datadir(config: Dict[str, Any], datadir: Optional[str] = None) -> str
         folder.mkdir(parents=True)
         logger.info(f'Created data directory: {datadir}')
     return str(folder)
+
+
+def create_userdata_dir(directory: str):
+    sub_dirs = ["backtest_results", "data", "hyperopts", "plots", "strategies", ]
+    folder = Path(directory)
+    if not folder.is_dir():
+        folder.mkdir(parents=True)
+        logger.info(f'Created user-data directory: {folder}')
+
+    # Create required subdirectories
+    for f in sub_dirs:
+        subfolder = folder / f
+        if not subfolder.is_dir():
+            subfolder.mkdir(parents=False)

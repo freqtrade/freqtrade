@@ -13,7 +13,7 @@ from jsonschema import Draft4Validator, ValidationError, validate
 from freqtrade import OperationalException, constants
 from freqtrade.configuration import Arguments, Configuration
 from freqtrade.configuration.check_exchange import check_exchange
-from freqtrade.configuration.create_datadir import create_datadir
+from freqtrade.configuration.folder_operations import create_datadir, create_userdata_dir
 from freqtrade.configuration.json_schema import validate_config_schema
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.loggers import _set_loggers
@@ -607,6 +607,24 @@ def test_create_datadir(mocker, default_conf, caplog) -> None:
     create_datadir(default_conf, '/foo/bar')
     assert md.call_args[1]['parents'] is True
     assert log_has('Created data directory: /foo/bar', caplog.record_tuples)
+
+
+def test_create_userdata_dir(mocker, default_conf, caplog) -> None:
+    mocker.patch.object(Path, "is_dir", MagicMock(return_value=False))
+    md = mocker.patch.object(Path, 'mkdir', MagicMock())
+
+    create_userdata_dir('/tmp/bar')
+    assert md.call_count == 6
+    assert md.call_args[1]['parents'] is False
+    assert log_has('Created user-data directory: /tmp/bar', caplog.record_tuples)
+
+
+def test_create_userdata_dir_exists(mocker, default_conf, caplog) -> None:
+    mocker.patch.object(Path, "is_dir", MagicMock(return_value=True))
+    md = mocker.patch.object(Path, 'mkdir', MagicMock())
+
+    create_userdata_dir('/tmp/bar')
+    assert md.call_count == 0
 
 
 def test_validate_tsl(default_conf):

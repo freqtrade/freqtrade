@@ -10,7 +10,7 @@ from typing import Any, Callable, Dict, Optional
 
 from freqtrade import OperationalException, constants
 from freqtrade.configuration.check_exchange import check_exchange
-from freqtrade.configuration.create_datadir import create_datadir
+from freqtrade.configuration.folder_operations import create_datadir
 from freqtrade.configuration.json_schema import validate_config_schema
 from freqtrade.loggers import setup_logging
 from freqtrade.misc import deep_merge_dicts
