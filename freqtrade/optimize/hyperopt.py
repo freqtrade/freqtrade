@@ -30,9 +30,6 @@ logger = logging.getLogger(__name__)
 
 INITIAL_POINTS = 30
 MAX_LOSS = 100000  # just a big enough number to be bad result in loss optimization
-TICKERDATA_PICKLE = Path.cwd() / 'user_data' / 'hyperopt_tickerdata.pkl'
-TRIALSDATA_PICKLE = Path.cwd() / 'user_data' / 'hyperopt_results.pickle'
-HYPEROPT_LOCKFILE = Path.cwd() / 'user_data' / 'hyperopt.lock'
 
 
 class Hyperopt(Backtesting):
@@ -50,6 +47,8 @@ class Hyperopt(Backtesting):
         self.custom_hyperoptloss = HyperOptLossResolver(self.config).hyperoptloss
         self.calculate_loss = self.custom_hyperoptloss.hyperopt_loss_function
 
+        self.trials_file = self.config['user_data_dir'] / 'hyperopt_results.pickle'
+        self.tickerdata_pickle = self.config['user_data_dir'] / 'hyperopt_tickerdata.pkl'
         self.total_tries = config.get('epochs', 0)
         self.current_best_loss = 100
 
@@ -59,7 +58,6 @@ class Hyperopt(Backtesting):
             logger.info("Continuing on previous hyperopt results.")
 
         # Previous evaluations
-        self.trials_file = TRIALSDATA_PICKLE
         self.trials: List = []
 
         # Populate functions here (hasattr is slow so should not be run during "regular" operations)
@@ -77,11 +75,16 @@ class Hyperopt(Backtesting):
             self.max_open_trades = 0
         self.position_stacking = self.config.get('position_stacking', False),
 
+    @staticmethod
+    def get_lock_filename(config) -> str:
+
+        return str(config['user_data_dir'] / 'hyperopt.lock')
+
     def clean_hyperopt(self):
         """
         Remove hyperopt pickle files to restart hyperopt.
         """
-        for f in [TICKERDATA_PICKLE, TRIALSDATA_PICKLE]:
+        for f in [self.tickerdata_pickle, self.trials_file]:
             p = Path(f)
             if p.is_file():
                 logger.info(f"Removing `{p}`.")
@@ -199,7 +202,7 @@ class Hyperopt(Backtesting):
         if self.has_space('stoploss'):
             self.strategy.stoploss = params['stoploss']
 
-        processed = load(TICKERDATA_PICKLE)
+        processed = load(self.tickerdata_pickle)
 
         min_date, max_date = get_timeframe(processed)
 
@@ -305,7 +308,7 @@ class Hyperopt(Backtesting):
 
         preprocessed = self.strategy.tickerdata_to_dataframe(data)
 
-        dump(preprocessed, TICKERDATA_PICKLE)
+        dump(preprocessed, self.tickerdata_pickle)
 
         # We don't need exchange instance anymore while running hyperopt
         self.exchange = None  # type: ignore

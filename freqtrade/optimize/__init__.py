@@ -64,14 +64,14 @@ def start_hyperopt(args: Namespace) -> None:
     :return: None
     """
     # Import here to avoid loading hyperopt module when it's not used
-    from freqtrade.optimize.hyperopt import Hyperopt, HYPEROPT_LOCKFILE
+    from freqtrade.optimize.hyperopt import Hyperopt
 
     # Initialize configuration
     config = setup_configuration(args, RunMode.HYPEROPT)
 
     logger.info('Starting freqtrade in Hyperopt mode')
 
-    lock = FileLock(HYPEROPT_LOCKFILE)
+    lock = FileLock(Hyperopt.get_lock_filename(config))
 
     try:
         with lock.acquire(timeout=1):
