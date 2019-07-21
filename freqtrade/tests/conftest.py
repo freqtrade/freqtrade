@@ -234,7 +234,7 @@ def default_conf():
         },
         "initial_state": "running",
         "db_url": "sqlite://",
-        "user_data_dir": "user_data",
+        "user_data_dir": Path("user_data"),
         "verbosity": 3,
     }
     return configuration

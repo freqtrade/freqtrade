@@ -53,6 +53,7 @@ def test_load_config_incorrect_stake_amount(default_conf) -> None:
 
 
 def test_load_config_file(default_conf, mocker, caplog) -> None:
+    del default_conf['user_data_dir']
     file_mock = mocker.patch('freqtrade.configuration.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
