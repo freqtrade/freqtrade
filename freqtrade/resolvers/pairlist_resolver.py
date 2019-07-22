@@ -43,18 +43,10 @@ class PairListResolver(IResolver):
             current_path,
         ]
 
-        for _path in abs_paths:
-            try:
-                (pairlist, module_path) = self._search_object(directory=_path,
-                                                              object_type=IPairList,
-                                                              object_name=pairlist_name,
-                                                              kwargs=kwargs)
-                if pairlist:
-                    logger.info(f"Using resolved pairlist {pairlist_name} from '{module_path}'...")
-                    return pairlist
-            except FileNotFoundError:
-                logger.warning('Path "%s" does not exist.', _path.relative_to(Path.cwd()))
-
+        pairlist = self._load_object(paths=abs_paths, object_type=IPairList,
+                                     object_name=pairlist_name, kwargs=kwargs)
+        if pairlist:
+            return pairlist
         raise OperationalException(
             f"Impossible to load Pairlist '{pairlist_name}'. This class does not exist "
             "or contains Python code errors."

@@ -147,26 +147,19 @@ class StrategyResolver(IResolver):
                 # register temp path with the bot
                 abs_paths.insert(0, temp.resolve())
 
-        for _path in abs_paths:
+        strategy = self._load_object(paths=abs_paths, object_type=IStrategy,
+                                     object_name=strategy_name, kwargs={'config': config})
+        if strategy:
+            strategy._populate_fun_len = len(getfullargspec(strategy.populate_indicators).args)
+            strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
+            strategy._sell_fun_len = len(getfullargspec(strategy.populate_sell_trend).args)
+
             try:
-                (strategy, module_path) = self._search_object(directory=_path,
-                                                              object_type=IStrategy,
-                                                              object_name=strategy_name,
-                                                              kwargs={'config': config})
-                if strategy:
-                    logger.info(f"Using resolved strategy {strategy_name} from '{module_path}'...")
-                    strategy._populate_fun_len = len(
-                        getfullargspec(strategy.populate_indicators).args)
-                    strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
-                    strategy._sell_fun_len = len(getfullargspec(strategy.populate_sell_trend).args)
-                    try:
-                        return import_strategy(strategy, config=config)
-                    except TypeError as e:
-                        logger.warning(
-                            f"Impossible to load strategy '{strategy_name}' from {module_path}. "
-                            f"Error: {e}")
-            except FileNotFoundError:
-                logger.warning('Path "%s" does not exist.', _path.relative_to(Path.cwd()))
+                return import_strategy(strategy, config=config)
+            except TypeError as e:
+                logger.warning(
+                    f"Impossible to load strategy '{strategy_name}'. "
+                    f"Error: {e}")
 
         raise OperationalException(
             f"Impossible to load Strategy '{strategy_name}'. This class does not exist "
