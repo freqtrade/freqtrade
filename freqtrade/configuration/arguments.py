@@ -168,6 +168,11 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='NAME',
         default=constants.DEFAULT_HYPEROPT,
     ),
+    "hyperopt_path": Arg(
+        '--hyperopt-path',
+        help='Specify additional lookup path for Hyperopts and Hyperopt Loss functions.',
+        metavar='PATH',
+    ),
     "epochs": Arg(
         '-e', '--epochs',
         help='Specify number of epochs (default: %(default)d).',
@@ -312,7 +317,8 @@ ARGS_COMMON_OPTIMIZE = ["ticker_interval", "timerange",
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
                                         "live", "strategy_list", "export", "exportfilename"]
 
-ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "position_stacking", "epochs", "spaces",
+ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
+                                        "position_stacking", "epochs", "spaces",
                                         "use_max_market_positions", "print_all", "hyperopt_jobs",
                                         "hyperopt_random_state", "hyperopt_min_trades",
                                         "hyperopt_continue", "hyperopt_loss"]

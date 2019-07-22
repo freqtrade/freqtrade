@@ -60,7 +60,7 @@ class HyperOptResolver(IResolver):
 
         if extra_dir:
             # Add extra hyperopt directory on top of search paths
-            abs_paths.insert(0, Path(extra_dir))
+            abs_paths.insert(0, Path(extra_dir).resolve())
 
         hyperopt = self._load_object(paths=abs_paths, object_type=IHyperOpt,
                                      object_name=hyperopt_name)
@@ -115,7 +115,7 @@ class HyperOptLossResolver(IResolver):
 
         if extra_dir:
             # Add extra hyperopt directory on top of search paths
-            abs_paths.insert(0, Path(extra_dir))
+            abs_paths.insert(0, Path(extra_dir).resolve())
 
         hyperoptloss = self._load_object(paths=abs_paths, object_type=IHyperOptLoss,
                                          object_name=hyper_loss_name)
