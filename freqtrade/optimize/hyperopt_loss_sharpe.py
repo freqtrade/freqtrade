@@ -1,8 +1,9 @@
 """
-IHyperOptLoss interface
-This module defines the interface for the loss-function for hyperopts
-"""
+SharpeHyperOptLoss
 
+This module defines the alternative HyperOptLoss class which can be used for
+Hyperoptimization.
+"""
 from datetime import datetime
 
 from pandas import DataFrame
@@ -13,8 +14,9 @@ from freqtrade.optimize.hyperopt import IHyperOptLoss
 
 class SharpeHyperOptLoss(IHyperOptLoss):
     """
-    Defines the a loss function for hyperopt.
-    This implementation uses the sharpe ratio calculation.
+    Defines the loss function for hyperopt.
+
+    This implementation uses the Sharpe Ratio calculation.
     """
 
     @staticmethod
@@ -22,8 +24,9 @@ class SharpeHyperOptLoss(IHyperOptLoss):
                                min_date: datetime, max_date: datetime,
                                *args, **kwargs) -> float:
         """
-        Objective function, returns smaller number for more optimal results
-        Using sharpe ratio calculation
+        Objective function, returns smaller number for more optimal results.
+
+        Uses Sharpe Ratio calculation.
         """
         total_profit = results.profit_percent
         days_period = (max_date - min_date).days
