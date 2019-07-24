@@ -175,6 +175,7 @@ cp config.json.example config.json
 
 ``` bash
 python3 -m pip install --upgrade pip
+pip install numpy
 python3 -m pip install -r requirements.txt
 python3 -m pip install -e .
 ```
