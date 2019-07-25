@@ -68,7 +68,7 @@ def test_add_indicators(default_conf, caplog):
 
     # Generate buy/sell signals and indicators
     strat = DefaultStrategy(default_conf)
-    data = strat.analyze_ticker(data, {'pair': pair})
+    data = strat._analyze_ticker(data, {'pair': pair})
     fig = generage_empty_figure()
 
     # Row 1
@@ -166,7 +166,7 @@ def test_generate_candlestick_graph_no_trades(default_conf, mocker):
 
     # Generate buy/sell signals and indicators
     strat = DefaultStrategy(default_conf)
-    data = strat.analyze_ticker(data, {'pair': pair})
+    data = strat._analyze_ticker(data, {'pair': pair})
 
     indicators1 = []
     indicators2 = []
