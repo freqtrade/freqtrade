@@ -337,6 +337,24 @@ def test_sharpe_loss_prefers_higher_profits(default_conf, hyperopt_results) -> N
     assert under > correct
 
 
+def test_onlyprofit_loss_prefers_higher_profits(default_conf, hyperopt_results) -> None:
+    results_over = hyperopt_results.copy()
+    results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
+    results_under = hyperopt_results.copy()
+    results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
+
+    default_conf.update({'hyperopt_loss': 'OnlyProfitHyperOptLoss'})
+    hl = HyperOptLossResolver(default_conf).hyperoptloss
+    correct = hl.hyperopt_loss_function(hyperopt_results, len(hyperopt_results),
+                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
+    over = hl.hyperopt_loss_function(results_over, len(hyperopt_results),
+                                     datetime(2019, 1, 1), datetime(2019, 5, 1))
+    under = hl.hyperopt_loss_function(results_under, len(hyperopt_results),
+                                      datetime(2019, 1, 1), datetime(2019, 5, 1))
+    assert over < correct
+    assert under > correct
+
+
 def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
     hyperopt.current_best_loss = 2
     hyperopt.log_results(
