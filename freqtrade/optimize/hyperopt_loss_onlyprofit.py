@@ -12,8 +12,12 @@ from freqtrade.optimize.hyperopt import IHyperOptLoss
 # This is assumed to be expected avg profit * expected trade count.
 # For example, for 0.35% avg per trade (or 0.0035 as ratio) and 1100 trades,
 # expected max profit = 3.85
-# Check that the reported Σ% values do not exceed this!
-# Note, this is ratio. 3.85 stated above means 385Σ%.
+#
+# Note, this is ratio. 3.85 stated above means 385Σ%, 3.0 means 300Σ%.
+#
+# In this implementation it's only used in calculation of the resulting value
+# of the objective function as a normalization coefficient and does not
+# represent any limit for profits as in the Freqtrade legacy default loss function.
 EXPECTED_MAX_PROFIT = 3.0
 
 
@@ -31,4 +35,4 @@ class OnlyProfitHyperOptLoss(IHyperOptLoss):
         Objective function, returns smaller number for better results.
         """
         total_profit = results.profit_percent.sum()
-        return max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)
+        return 1 - total_profit / EXPECTED_MAX_PROFIT
