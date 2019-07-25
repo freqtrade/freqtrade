@@ -6,7 +6,7 @@ import re
 from typing import List, NamedTuple, Optional
 
 import arrow
-from freqtrade.arguments.cli_options import AVAILABLE_CLI_OPTIONS
+from freqtrade.configuration.cli_options import AVAILABLE_CLI_OPTIONS
 from freqtrade import constants
 
 ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir"]
