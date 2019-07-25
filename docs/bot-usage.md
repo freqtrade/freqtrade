@@ -201,7 +201,7 @@ to find optimal parameter values for your stategy.
 usage: freqtrade hyperopt [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
                           [--max_open_trades INT]
                           [--stake_amount STAKE_AMOUNT] [-r]
-			  [--customhyperopt NAME] [--hyperopt-path PATH]
+                          [--customhyperopt NAME] [--hyperopt-path PATH]
                           [--eps] [-e INT]
                           [-s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
                           [--dmmp] [--print-all] [-j JOBS]
