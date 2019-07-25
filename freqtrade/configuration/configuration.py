@@ -4,6 +4,7 @@ This module contains the configuration class
 import json
 import logging
 import sys
+import warnings
 from argparse import Namespace
 from typing import Any, Callable, Dict, Optional
 
@@ -14,7 +15,6 @@ from freqtrade.configuration.json_schema import validate_config_schema
 from freqtrade.loggers import setup_logging
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.state import RunMode
-
 
 logger = logging.getLogger(__name__)
 
@@ -187,7 +187,8 @@ class Configuration(object):
                              'Using ticker_interval: {} ...')
 
         self._args_to_config(config, argname='live',
-                             logstring='Parameter -l/--live detected ...')
+                             logstring='Parameter -l/--live detected ...',
+                             deprecated_msg='--live will be removed soon.')
 
         self._args_to_config(config, argname='position_stacking',
                              logstring='Parameter --enable-position-stacking detected ...')
@@ -323,7 +324,8 @@ class Configuration(object):
                 'to be greater than trailing_stop_positive_offset in your config.')
 
     def _args_to_config(self, config: Dict[str, Any], argname: str,
-                        logstring: str, logfun: Optional[Callable] = None) -> None:
+                        logstring: str, logfun: Optional[Callable] = None,
+                        deprecated_msg: Optional[str] = None) -> None:
         """
         :param config: Configuration dictionary
         :param argname: Argumentname in self.args - will be copied to config dict.
@@ -340,3 +342,5 @@ class Configuration(object):
                 logger.info(logstring.format(logfun(config[argname])))
             else:
                 logger.info(logstring.format(config[argname]))
+            if deprecated_msg:
+                warnings.warn(f"DEPRECATED: {deprecated_msg}", DeprecationWarning)
