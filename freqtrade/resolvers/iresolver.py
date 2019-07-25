@@ -57,7 +57,7 @@ class IResolver(object):
             if not str(entry).endswith('.py'):
                 logger.debug('Ignoring %s', entry)
                 continue
-            module_path = Path.resolve(directory.joinpath(entry))
+            module_path = entry.resolve()
             obj = IResolver._get_valid_object(
                 object_type, module_path, object_name
             )
@@ -84,6 +84,6 @@ class IResolver(object):
                         f"from '{module_path}'...")
                     return module
             except FileNotFoundError:
-                logger.warning('Path "%s" does not exist.', _path.relative_to(Path.cwd()))
+                logger.warning('Path "%s" does not exist.', _path.resolve())
 
         return None
