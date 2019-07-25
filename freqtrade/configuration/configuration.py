@@ -129,8 +129,8 @@ class Configuration(object):
         if self.args.strategy != constants.DEFAULT_STRATEGY or not config.get('strategy'):
             config.update({'strategy': self.args.strategy})
 
-        if self.args.strategy_path:
-            config.update({'strategy_path': self.args.strategy_path})
+        self._args_to_config(config, argname='strategy_path',
+                             logstring='Using additional Strategy lookup path: {}')
 
     def _process_common_options(self, config: Dict[str, Any]) -> None:
 
@@ -238,6 +238,9 @@ class Configuration(object):
         # Hyperopt section
         self._args_to_config(config, argname='hyperopt',
                              logstring='Using Hyperopt file {}')
+
+        self._args_to_config(config, argname='hyperopt_path',
+                             logstring='Using additional Hyperopt lookup path: {}')
 
         self._args_to_config(config, argname='epochs',
                              logstring='Parameter --epochs detected ... '

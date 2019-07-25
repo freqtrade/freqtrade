@@ -201,7 +201,8 @@ to find optimal parameter values for your stategy.
 usage: freqtrade hyperopt [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
                           [--max_open_trades INT]
                           [--stake_amount STAKE_AMOUNT] [-r]
-                          [--customhyperopt NAME] [--eps] [-e INT]
+                          [--customhyperopt NAME] [--hyperopt-path PATH]
+                          [--eps] [-e INT]
                           [-s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
                           [--dmmp] [--print-all] [-j JOBS]
                           [--random-state INT] [--min-trades INT] [--continue]
@@ -225,6 +226,8 @@ optional arguments:
   --customhyperopt NAME
                         Specify hyperopt class name (default:
                         `DefaultHyperOpts`).
+  --hyperopt-path PATH  Specify additional lookup path for Hyperopts and
+                        Hyperopt Loss functions.
   --eps, --enable-position-stacking
                         Allow buying the same pair multiple times (position
                         stacking).
