@@ -366,6 +366,7 @@ def test_strategy_override_use_sell_profit_only(caplog):
             ) in caplog.record_tuples
 
 
+@pytest.mark.filterwarnings("ignore:deprecated")
 def test_deprecate_populate_indicators(result):
     default_location = path.join(path.dirname(path.realpath(__file__)))
     resolver = StrategyResolver({'strategy': 'TestStrategyLegacy',
@@ -398,6 +399,7 @@ def test_deprecate_populate_indicators(result):
             in str(w[-1].message)
 
 
+@pytest.mark.filterwarnings("ignore:deprecated")
 def test_call_deprecated_function(result, monkeypatch):
     default_location = path.join(path.dirname(path.realpath(__file__)))
     resolver = StrategyResolver({'strategy': 'TestStrategyLegacy',
