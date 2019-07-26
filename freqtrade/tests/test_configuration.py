@@ -1,10 +1,11 @@
 # pragma pylint: disable=missing-docstring, protected-access, invalid-name
 import json
 import logging
+import warnings
 from argparse import Namespace
 from copy import deepcopy
-from unittest.mock import MagicMock
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 from jsonschema import Draft4Validator, ValidationError, validate
@@ -60,6 +61,32 @@ def test_load_config_file(default_conf, mocker, caplog) -> None:
     validated_conf = configuration._load_config_file('somefile')
     assert file_mock.call_count == 1
     assert validated_conf.items() >= default_conf.items()
+
+
+def test__args_to_config(caplog):
+
+    arg_list = ['--strategy-path', 'TestTest']
+    args = Arguments(arg_list, '').get_parsed_arg()
+    configuration = Configuration(args)
+    config = {}
+    with warnings.catch_warnings(record=True) as w:
+        # No warnings ...
+        configuration._args_to_config(config, argname="strategy_path", logstring="DeadBeef")
+        assert len(w) == 0
+        assert log_has("DeadBeef", caplog.record_tuples)
+        assert config['strategy_path'] == "TestTest"
+
+    configuration = Configuration(args)
+    config = {}
+    with warnings.catch_warnings(record=True) as w:
+        # Deprecation warnings!
+        configuration._args_to_config(config, argname="strategy_path", logstring="DeadBeef",
+                                      deprecated_msg="Going away soon!")
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
+        assert "DEPRECATED: Going away soon!" in str(w[-1].message)
+        assert log_has("DeadBeef", caplog.record_tuples)
+        assert config['strategy_path'] == "TestTest"
 
 
 def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
