@@ -215,7 +215,7 @@ The `freqtrade.service.watchdog` file contains an example of the service unit co
 as the watchdog.
 
 !!! Note
-  The sd_notify communication between the bot and the systemd service manager will not work if the bot runs in a Docker container.
+    The sd_notify communication between the bot and the systemd service manager will not work if the bot runs in a Docker container.
 
 ------
 

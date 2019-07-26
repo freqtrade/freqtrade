@@ -294,11 +294,6 @@ optional arguments:
 
 To understand edge and how to read the results, please read the [edge documentation](edge.md).
 
-## A parameter missing in the configuration?
-
-All parameters for `main.py`, `backtesting`, `hyperopt` are referenced
-in [misc.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/misc.py#L84)
-
 ## Next step
 
 The optimal strategy of the bot will change with time depending of the market trends. The next step is to
