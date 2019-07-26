@@ -1460,6 +1460,22 @@ def test_update_trade_state_exception(mocker, default_conf,
     assert log_has('Could not update trade amount: ', caplog.record_tuples)
 
 
+def test_update_trade_state_orderexception(mocker, default_conf, caplog) -> None:
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange.get_order',
+                 MagicMock(side_effect=InvalidOrderException))
+
+    trade = MagicMock()
+    trade.open_order_id = '123'
+    trade.open_fee = 0.001
+
+    # Test raise of OperationalException exception
+    grm_mock = mocker.patch("freqtrade.freqtradebot.FreqtradeBot.get_real_amount", MagicMock())
+    freqtrade.update_trade_state(trade)
+    assert grm_mock.call_count == 0
+    assert log_has(f'Unable to fetch order {trade.open_order_id}: ', caplog.record_tuples)
+
+
 def test_update_trade_state_sell(default_conf, trades_for_order, limit_sell_order, mocker):
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     # get_order should not be called!!

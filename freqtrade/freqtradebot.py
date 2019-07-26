@@ -524,7 +524,11 @@ class FreqtradeBot(object):
         if trade.open_order_id:
             # Update trade with order values
             logger.info('Found open order for %s', trade)
-            order = action_order or self.exchange.get_order(trade.open_order_id, trade.pair)
+            try:
+                order = action_order or self.exchange.get_order(trade.open_order_id, trade.pair)
+            except InvalidOrderException as exception:
+                logger.warning('Unable to fetch order %s: %s', trade.open_order_id, exception)
+                return
             # Try update amount (binance-fix)
             try:
                 new_amount = self.get_real_amount(trade, order)
@@ -749,7 +753,7 @@ class FreqtradeBot(object):
                 if not trade.open_order_id:
                     continue
                 order = self.exchange.get_order(trade.open_order_id, trade.pair)
-            except (RequestException, DependencyException):
+            except (RequestException, DependencyException, InvalidOrderException):
                 logger.info(
                     'Cannot query order for %s due to %s',
                     trade,
