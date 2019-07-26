@@ -128,6 +128,7 @@ class Worker(object):
         return result
 
     def _process(self) -> bool:
+        logger.debug("========================================")
         state_changed = False
         try:
             state_changed = self.freqtrade.process()
