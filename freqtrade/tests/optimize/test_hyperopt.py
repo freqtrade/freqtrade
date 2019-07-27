@@ -297,7 +297,7 @@ def test_loss_calculation_prefer_correct_trade_count(default_conf, hyperopt_resu
 
 def test_loss_calculation_prefer_shorter_trades(default_conf, hyperopt_results) -> None:
     resultsb = hyperopt_results.copy()
-    resultsb['trade_duration'][1] = 20
+    resultsb.loc[1, 'trade_duration'] = 20
 
     hl = HyperOptLossResolver(default_conf).hyperoptloss
     longer = hl.hyperopt_loss_function(hyperopt_results, 100)
