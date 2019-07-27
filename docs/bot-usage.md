@@ -2,7 +2,8 @@
 
 This page explains the different parameters of the bot and how to run it.
 
-Note: You can now use the bot by executing `source .env/bin/activate; freqtrade`.
+!Note:
+    If you've used `setup.sh`, don't forget to activate your virtual environment (`source .env/bin/activate`) before running freqtrade commands.
 
 
 ## Bot commands
