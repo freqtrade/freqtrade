@@ -808,52 +808,6 @@ def test_backtest_record(default_conf, fee, mocker):
         assert dur > 0
 
 
-def test_backtest_start_live(default_conf, mocker, caplog):
-    default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
-
-    async def load_pairs(pair, timeframe, since):
-        return _load_pair_as_ticks(pair, timeframe)
-
-    api_mock = MagicMock()
-    api_mock.fetch_ohlcv = load_pairs
-
-    patch_exchange(mocker, api_mock)
-    mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', MagicMock())
-    mocker.patch('freqtrade.optimize.backtesting.Backtesting._generate_text_table', MagicMock())
-    patched_configuration_load_config_file(mocker, default_conf)
-
-    args = [
-        '--config', 'config.json',
-        '--strategy', 'DefaultStrategy',
-        '--datadir', 'freqtrade/tests/testdata',
-        'backtesting',
-        '--ticker-interval', '1m',
-        '--live',
-        '--timerange', '-100',
-        '--enable-position-stacking',
-        '--disable-max-market-positions'
-    ]
-    args = get_args(args)
-    start_backtesting(args)
-    # check the logs, that will contain the backtest result
-    exists = [
-        'Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
-        'Parameter -l/--live detected ...',
-        'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
-        'Parameter --timerange detected: -100 ...',
-        'Using data directory: freqtrade/tests/testdata ...',
-        'Using stake_currency: BTC ...',
-        'Using stake_amount: 0.001 ...',
-        'Live: Downloading data for all defined pairs ...',
-        'Backtesting with data from 2017-11-14T19:31:00+00:00 '
-        'up to 2017-11-14T22:58:00+00:00 (0 days)..',
-        'Parameter --enable-position-stacking detected ...'
-    ]
-
-    for line in exists:
-        assert log_has(line, caplog.record_tuples)
-
-
 def test_backtest_start_multi_strat(default_conf, mocker, caplog):
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
 
