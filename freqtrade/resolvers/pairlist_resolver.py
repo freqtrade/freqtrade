@@ -33,13 +33,14 @@ class PairListResolver(IResolver):
         """
         Search and loads the specified pairlist.
         :param pairlist_name: name of the module to import
+        :param config: configuration dictionary
         :param extra_dir: additional directory to search for the given pairlist
         :return: PairList instance or None
         """
         current_path = Path(__file__).parent.parent.joinpath('pairlist').resolve()
 
         abs_paths = [
-            config['user_data_dir'].joinpath('user_data/pairlist'),
+            config['user_data_dir'].joinpath('pairlist'),
             current_path,
         ]
 
