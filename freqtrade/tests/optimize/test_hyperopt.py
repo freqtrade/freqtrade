@@ -8,7 +8,7 @@ import pytest
 from arrow import Arrow
 from filelock import Timeout
 
-from freqtrade import DependencyException
+from freqtrade import DependencyException, OperationalException
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.history import load_tickerdata_file
 from freqtrade.optimize import setup_configuration, start_hyperopt
@@ -186,6 +186,13 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
     assert hasattr(x, "ticker_interval")
 
 
+def test_hyperoptresolver_wrongname(mocker, default_conf, caplog) -> None:
+    default_conf.update({'hyperopt': "NonExistingHyperoptClass"})
+
+    with pytest.raises(OperationalException, match=r'Impossible to load Hyperopt.*'):
+        HyperOptResolver(default_conf, ).hyperopt
+
+
 def test_hyperoptlossresolver(mocker, default_conf, caplog) -> None:
 
     hl = DefaultHyperOptLoss
@@ -193,9 +200,15 @@ def test_hyperoptlossresolver(mocker, default_conf, caplog) -> None:
         'freqtrade.resolvers.hyperopt_resolver.HyperOptLossResolver._load_hyperoptloss',
         MagicMock(return_value=hl)
     )
-    x = HyperOptResolver(default_conf, ).hyperopt
-    assert hasattr(x, "populate_indicators")
-    assert hasattr(x, "ticker_interval")
+    x = HyperOptLossResolver(default_conf, ).hyperoptloss
+    assert hasattr(x, "hyperopt_loss_function")
+
+
+def test_hyperoptlossresolver_wrongname(mocker, default_conf, caplog) -> None:
+    default_conf.update({'hyperopt_loss': "NonExistingLossClass"})
+
+    with pytest.raises(OperationalException, match=r'Impossible to load HyperoptLoss.*'):
+        HyperOptLossResolver(default_conf, ).hyperopt
 
 
 def test_start(mocker, default_conf, caplog) -> None:
