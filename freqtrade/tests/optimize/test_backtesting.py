@@ -831,8 +831,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog):
         '--datadir', 'freqtrade/tests/testdata',
         'backtesting',
         '--ticker-interval', '1m',
-        '--live',
-        '--timerange', '-100',
+        '--timerange', '-201',
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--strategy-list',
@@ -849,13 +848,11 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog):
     # check the logs, that will contain the backtest result
     exists = [
         'Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
-        'Parameter -l/--live detected ...',
         'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
-        'Parameter --timerange detected: -100 ...',
+        'Parameter --timerange detected: -201 ...',
         'Using data directory: freqtrade/tests/testdata ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
-        'Live: Downloading data for all defined pairs ...',
         'Backtesting with data from 2017-11-14T19:31:00+00:00 '
         'up to 2017-11-14T22:58:00+00:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...',
