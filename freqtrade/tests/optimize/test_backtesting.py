@@ -215,7 +215,6 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
         '--datadir', '/foo/bar',
         'backtesting',
         '--ticker-interval', '1m',
-        '--live',
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--refresh-pairs-cached',
@@ -240,9 +239,6 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
     assert 'ticker_interval' in config
     assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
                    caplog.record_tuples)
-
-    assert 'live' in config
-    assert log_has('Parameter -l/--live detected ...', caplog.record_tuples)
 
     assert 'position_stacking' in config
     assert log_has('Parameter --enable-position-stacking detected ...', caplog.record_tuples)
