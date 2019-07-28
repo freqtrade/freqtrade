@@ -176,6 +176,7 @@ class Configuration(object):
         elif 'user_data_dir' not in config:
             # Default to cwd/user_data (legacy option ...)
             config.update({'user_data_dir': str(Path.cwd() / "user_data")})
+
         # reset to user_data_dir so this contains the absolute path.
         config['user_data_dir'] = create_userdata_dir(config['user_data_dir'])
         logger.info('Using user-data directory: %s ...', config['user_data_dir'])
