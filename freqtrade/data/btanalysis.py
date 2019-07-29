@@ -67,7 +67,6 @@ def evaluate_result_multi(results: pd.DataFrame, freq: str, max_open_trades: int
     dates = pd.Series(pd.concat(dates).values, name='date')
     df2 = pd.DataFrame(np.repeat(results.values, deltas, axis=0), columns=results.columns)
 
-    df2 = df2.astype(dtype={"open_time": "datetime64", "close_time": "datetime64"})
     df2 = pd.concat([dates, df2], axis=1)
     df2 = df2.set_index('date')
     df_final = df2.resample(freq)[['pair']].count()

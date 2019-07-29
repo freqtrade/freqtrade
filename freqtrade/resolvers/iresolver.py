@@ -84,6 +84,6 @@ class IResolver(object):
                         f"from '{module_path}'...")
                     return module
             except FileNotFoundError:
-                logger.warning('Path "%s" does not exist.', _path.relative_to(Path.cwd()))
+                logger.warning('Path "%s" does not exist.', _path.resolve())
 
         return None

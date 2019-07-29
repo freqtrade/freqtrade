@@ -2,8 +2,8 @@
 from copy import deepcopy
 from unittest.mock import MagicMock
 
-import plotly.graph_objs as go
-from plotly import tools
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from freqtrade.configuration import Arguments, TimeRange
 from freqtrade.data import history
@@ -28,7 +28,7 @@ def find_trace_in_fig_data(data, search_string: str):
 
 
 def generage_empty_figure():
-    return tools.make_subplots(
+    return make_subplots(
         rows=3,
         cols=1,
         shared_xaxes=True,
