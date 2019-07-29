@@ -156,6 +156,8 @@ git log --oneline --no-decorate --no-merges master..develop
 
 ### Create github release / tag
 
+Once the PR against master is merged (best right after merging):
+
 * Use the button "Draft a new release" in the Github UI (subsection releases)
 * Use the version-number specified as tag. 
 * Use "master" as reference (this step comes after the above PR is merged).
