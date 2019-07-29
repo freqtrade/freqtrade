@@ -12,8 +12,8 @@ Special fields for the documentation (like Note boxes, ...) can be found [here](
 
 ## Developer setup
 
-To configure a development environment, use best use the `setup.sh` script and answer "y" when asked "Do you want to install dependencies for dev [y/N]? ".
-Alternatively (if your system is not supported by the setup.sh script), follow the manual installation process and run `pip3 install -r requirements-dev.txt`.
+To configure a development environment, best use the `setup.sh` script and answer "y" when asked "Do you want to install dependencies for dev [y/N]? ".
+Alternatively (if your system is not supported by the setup.sh script), follow the manual installation process and run `pip3 install -e .[all]`.
 
 This will install all required tools for development, including `pytest`, `flake8`, `mypy`, and `coveralls`.
 
