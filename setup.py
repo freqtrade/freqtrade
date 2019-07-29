@@ -65,7 +65,7 @@ setup(name='freqtrade',
       ],
       extras_require={
           'api': api,
-          'dev': develop,
+          'dev': all_extra,
           'plot': plot,
           'all': all_extra,
       },
