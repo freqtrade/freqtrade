@@ -13,7 +13,7 @@ from jsonschema import Draft4Validator, ValidationError, validate
 from freqtrade import OperationalException, constants
 from freqtrade.configuration import Arguments, Configuration
 from freqtrade.configuration.check_exchange import check_exchange
-from freqtrade.configuration.folder_operations import create_datadir, create_userdata_dir
+from freqtrade.configuration.directory_operations import create_datadir, create_userdata_dir
 from freqtrade.configuration.json_schema import validate_config_schema
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.loggers import _set_loggers

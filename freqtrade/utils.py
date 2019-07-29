@@ -4,7 +4,7 @@ from argparse import Namespace
 from typing import Any, Dict
 
 from freqtrade.configuration import Configuration
-from freqtrade.configuration.folder_operations import create_userdata_dir
+from freqtrade.configuration.directory_operations import create_userdata_dir
 from freqtrade.exchange import available_exchanges
 from freqtrade.state import RunMode
 

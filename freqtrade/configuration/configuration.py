@@ -11,7 +11,7 @@ from typing import Any, Callable, Dict, Optional
 
 from freqtrade import OperationalException, constants
 from freqtrade.configuration.check_exchange import check_exchange
-from freqtrade.configuration.folder_operations import create_datadir, create_userdata_dir
+from freqtrade.configuration.directory_operations import create_datadir, create_userdata_dir
 from freqtrade.configuration.json_schema import validate_config_schema
 from freqtrade.loggers import setup_logging
 from freqtrade.misc import deep_merge_dicts
