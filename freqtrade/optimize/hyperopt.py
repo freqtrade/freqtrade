@@ -51,7 +51,7 @@ class Hyperopt(Backtesting):
         self.custom_hyperoptloss = HyperOptLossResolver(self.config).hyperoptloss
         self.calculate_loss = self.custom_hyperoptloss.hyperopt_loss_function
 
-        self.total_tries = config.get('epochs', 0)
+        self.total_epochs = config.get('epochs', 0)
         self.current_best_loss = 100
 
         if not self.config.get('hyperopt_continue'):
@@ -124,13 +124,12 @@ class Hyperopt(Backtesting):
         """
         results = sorted(self.trials, key=itemgetter('loss'))
         best_result = results[0]
-        logger.info(
-            'Best result:\n%s\nwith values:\n',
-            best_result['result']
-        )
+
+        log_str = self.format_results_logstring(best_result)
+        print(f"\nBest result:\n{log_str}\nwith values:")
         pprint(best_result['params'], indent=4)
         if 'roi_t1' in best_result['params']:
-            logger.info('ROI table:')
+            print("ROI table:")
             pprint(self.custom_hyperopt.generate_roi_table(best_result['params']), indent=4)
 
     def log_results(self, results) -> None:
@@ -139,21 +138,25 @@ class Hyperopt(Backtesting):
         """
         print_all = self.config.get('print_all', False)
         if print_all or results['loss'] < self.current_best_loss:
-            # Output human-friendly index here (starting from 1)
-            current = results['current_tries'] + 1
-            total = results['total_tries']
-            res = results['result']
-            loss = results['loss']
-            self.current_best_loss = results['loss']
-            log_msg = f'{current:5d}/{total}: {res} Objective: {loss:.5f}'
-            log_msg = f'*{log_msg}' if results['initial_point'] else f' {log_msg}'
+            log_str = self.format_results_logstring(results)
             if print_all:
-                print(log_msg)
+                print(log_str)
             else:
-                print('\n' + log_msg)
+                print('\n' + log_str)
         else:
             print('.', end='')
             sys.stdout.flush()
+
+    def format_results_logstring(self, results) -> str:
+        # Output human-friendly index here (starting from 1)
+        current = results['current_epoch'] + 1
+        total = self.total_epochs
+        res = results['results_explanation']
+        loss = results['loss']
+        self.current_best_loss = results['loss']
+        log_str = f'{current:5d}/{total}: {res} Objective: {loss:.5f}'
+        log_str = f'*{log_str}' if results['is_initial_point'] else f' {log_str}'
+        return log_str
 
     def has_space(self, space: str) -> bool:
         """
@@ -214,7 +217,7 @@ class Hyperopt(Backtesting):
                 'end_date': max_date,
             }
         )
-        result_explanation = self.format_results(results)
+        results_explanation = self.format_results(results)
 
         trade_count = len(results.index)
 
@@ -226,7 +229,7 @@ class Hyperopt(Backtesting):
             return {
                 'loss': MAX_LOSS,
                 'params': params,
-                'result': result_explanation,
+                'results_explanation': results_explanation,
             }
 
         loss = self.calculate_loss(results=results, trade_count=trade_count,
@@ -235,12 +238,12 @@ class Hyperopt(Backtesting):
         return {
             'loss': loss,
             'params': params,
-            'result': result_explanation,
+            'results_explanation': results_explanation,
         }
 
     def format_results(self, results: DataFrame) -> str:
         """
-        Return the format result in a string
+        Return the formatted results explanation in a string
         """
         trades = len(results.index)
         avg_profit = results.profit_percent.mean() * 100.0
@@ -323,25 +326,19 @@ class Hyperopt(Backtesting):
             with Parallel(n_jobs=config_jobs) as parallel:
                 jobs = parallel._effective_n_jobs()
                 logger.info(f'Effective number of parallel workers used: {jobs}')
-                EVALS = max(self.total_tries // jobs, 1)
+                EVALS = max(self.total_epochs // jobs, 1)
                 for i in range(EVALS):
                     asked = opt.ask(n_points=jobs)
                     f_val = self.run_optimizer_parallel(parallel, asked)
-                    opt.tell(asked, [i['loss'] for i in f_val])
-
-                    self.trials += f_val
+                    opt.tell(asked, [v['loss'] for v in f_val])
                     for j in range(jobs):
                         current = i * jobs + j
-                        self.log_results({
-                            'loss': f_val[j]['loss'],
-                            'current_tries': current,
-                            'initial_point': current < INITIAL_POINTS,
-                            'total_tries': self.total_tries,
-                            'result': f_val[j]['result'],
-                        })
-                        logger.debug(f"Optimizer params: {f_val[j]['params']}")
-                    for j in range(jobs):
-                        logger.debug(f"Optimizer state: Xi: {opt.Xi[-j-1]}, yi: {opt.yi[-j-1]}")
+                        val = f_val[j]
+                        val['current_epoch'] = current
+                        val['is_initial_point'] = current < INITIAL_POINTS
+                        self.log_results(val)
+                        self.trials.append(val)
+                        logger.debug(f"Optimizer epoch evaluated: {val}")
         except KeyboardInterrupt:
             print('User interrupted..')
 
