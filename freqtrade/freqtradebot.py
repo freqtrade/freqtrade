@@ -478,8 +478,11 @@ class FreqtradeBot(object):
             return order_amount
 
         # use fee from order-dict if possible
-        if 'fee' in order and order['fee'] and (order['fee'].keys() >= {'currency', 'cost'}):
-            if trade.pair.startswith(order['fee']['currency']):
+        if ('fee' in order and order['fee'] is not None and
+                (order['fee'].keys() >= {'currency', 'cost'})):
+            if (order['fee']['currency'] is not None and
+                    order['fee']['cost'] is not None and
+                    trade.pair.startswith(order['fee']['currency'])):
                 new_amount = order_amount - order['fee']['cost']
                 logger.info("Applying fee on amount for %s (from %s to %s) from Order",
                             trade, order['amount'], new_amount)
@@ -496,9 +499,12 @@ class FreqtradeBot(object):
         fee_abs = 0
         for exectrade in trades:
             amount += exectrade['amount']
-            if "fee" in exectrade and (exectrade['fee'].keys() >= {'currency', 'cost'}):
+            if ("fee" in exectrade and exectrade['fee'] is not None and
+                    (exectrade['fee'].keys() >= {'currency', 'cost'})):
                 # only applies if fee is in quote currency!
-                if trade.pair.startswith(exectrade['fee']['currency']):
+                if (exectrade['fee']['currency'] is not None and
+                        exectrade['fee']['cost'] is not None and
+                        trade.pair.startswith(exectrade['fee']['currency'])):
                     fee_abs += exectrade['fee']['cost']
 
         if amount != order_amount:
@@ -518,7 +524,11 @@ class FreqtradeBot(object):
         if trade.open_order_id:
             # Update trade with order values
             logger.info('Found open order for %s', trade)
-            order = action_order or self.exchange.get_order(trade.open_order_id, trade.pair)
+            try:
+                order = action_order or self.exchange.get_order(trade.open_order_id, trade.pair)
+            except InvalidOrderException as exception:
+                logger.warning('Unable to fetch order %s: %s', trade.open_order_id, exception)
+                return
             # Try update amount (binance-fix)
             try:
                 new_amount = self.get_real_amount(trade, order)
@@ -586,13 +596,13 @@ class FreqtradeBot(object):
                 logger.info('  order book asks top %s: %0.8f', i, order_book_rate)
                 sell_rate = order_book_rate
 
-                if self.check_sell(trade, sell_rate, buy, sell):
+                if self._check_and_execute_sell(trade, sell_rate, buy, sell):
                     return True
 
         else:
             logger.debug('checking sell')
             sell_rate = self.get_sell_rate(trade.pair, True)
-            if self.check_sell(trade, sell_rate, buy, sell):
+            if self._check_and_execute_sell(trade, sell_rate, buy, sell):
                 return True
 
         logger.debug('Found no sell signal for %s.', trade)
@@ -662,7 +672,7 @@ class FreqtradeBot(object):
         if stoploss_order and stoploss_order['status'] == 'closed':
             trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
             trade.update(stoploss_order)
-            self.notify_sell(trade)
+            self._notify_sell(trade)
             return True
 
         # Finally we check if stoploss on exchange should be moved up because of trailing.
@@ -707,13 +717,15 @@ class FreqtradeBot(object):
                     logger.exception(f"Could create trailing stoploss order "
                                      f"for pair {trade.pair}.")
 
-    def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool) -> bool:
-        if self.edge:
-            stoploss = self.edge.stoploss(trade.pair)
-            should_sell = self.strategy.should_sell(
-                trade, sell_rate, datetime.utcnow(), buy, sell, force_stoploss=stoploss)
-        else:
-            should_sell = self.strategy.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell)
+    def _check_and_execute_sell(self, trade: Trade, sell_rate: float,
+                                buy: bool, sell: bool) -> bool:
+        """
+        Check and execute sell
+        """
+        should_sell = self.strategy.should_sell(
+                trade, sell_rate, datetime.utcnow(), buy, sell,
+                force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
+        )
 
         if should_sell.sell_flag:
             self.execute_sell(trade, sell_rate, should_sell.sell_type)
@@ -741,7 +753,7 @@ class FreqtradeBot(object):
                 if not trade.open_order_id:
                     continue
                 order = self.exchange.get_order(trade.open_order_id, trade.pair)
-            except (RequestException, DependencyException):
+            except (RequestException, DependencyException, InvalidOrderException):
                 logger.info(
                     'Cannot query order for %s due to %s',
                     trade,
@@ -867,9 +879,9 @@ class FreqtradeBot(object):
         trade.close_rate_requested = limit
         trade.sell_reason = sell_reason.value
         Trade.session.flush()
-        self.notify_sell(trade)
+        self._notify_sell(trade)
 
-    def notify_sell(self, trade: Trade):
+    def _notify_sell(self, trade: Trade):
         """
         Sends rpc notification when a sell occured.
         """

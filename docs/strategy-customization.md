@@ -5,8 +5,7 @@ indicators.
 
 ## Install a custom strategy file
 
-This is very simple. Copy paste your strategy file into the folder
-`user_data/strategies`.
+This is very simple. Copy paste your strategy file into the directory `user_data/strategies`.
 
 Let assume you have a class called `AwesomeStrategy` in the file `awesome-strategy.py`:
 
@@ -14,7 +13,7 @@ Let assume you have a class called `AwesomeStrategy` in the file `awesome-strate
 2. Start the bot with the param `--strategy AwesomeStrategy` (the parameter is the class name)
 
 ```bash
-python3 freqtrade --strategy AwesomeStrategy
+freqtrade --strategy AwesomeStrategy
 ```
 
 ## Change your strategy
@@ -22,7 +21,7 @@ python3 freqtrade --strategy AwesomeStrategy
 The bot includes a default strategy file. However, we recommend you to
 use your own file to not have to lose your parameters every time the default
 strategy file will be updated on Github. Put your custom strategy file
-into the folder `user_data/strategies`.
+into the directory `user_data/strategies`.
 
 Best copy the test-strategy and modify this copy to avoid having bot-updates override your changes.
 `cp  user_data/strategies/test_strategy.py user_data/strategies/awesome-strategy.py`
@@ -41,7 +40,7 @@ The bot also include a sample strategy called `TestStrategy` you can update: `us
 You can test it with the parameter: `--strategy TestStrategy`
 
 ```bash
-python3 freqtrade --strategy AwesomeStrategy
+freqtrade --strategy AwesomeStrategy
 ```
 
 **For the following section we will use the [user_data/strategies/test_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py)
@@ -398,10 +397,10 @@ The default buy strategy is located in the file
 
 ### Specify custom strategy location
 
-If you want to use a strategy from a different folder you can pass `--strategy-path`
+If you want to use a strategy from a different directory you can pass `--strategy-path`
 
 ```bash
-python3 freqtrade --strategy AwesomeStrategy --strategy-path /some/folder
+freqtrade --strategy AwesomeStrategy --strategy-path /some/directory
 ```
 
 ### Further strategy ideas

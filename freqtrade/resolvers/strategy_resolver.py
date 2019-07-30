@@ -11,7 +11,7 @@ from inspect import getfullargspec
 from pathlib import Path
 from typing import Dict, Optional
 
-from freqtrade import constants
+from freqtrade import constants, OperationalException
 from freqtrade.resolvers import IResolver
 from freqtrade.strategy import import_strategy
 from freqtrade.strategy.interface import IStrategy
@@ -132,7 +132,7 @@ class StrategyResolver(IResolver):
             abs_paths.insert(0, Path(extra_dir).resolve())
 
         if ":" in strategy_name:
-            logger.info("loading base64 endocded strategy")
+            logger.info("loading base64 encoded strategy")
             strat = strategy_name.split(":")
 
             if len(strat) == 2:
@@ -147,25 +147,21 @@ class StrategyResolver(IResolver):
                 # register temp path with the bot
                 abs_paths.insert(0, temp.resolve())
 
-        for _path in abs_paths:
-            try:
-                strategy = self._search_object(directory=_path, object_type=IStrategy,
-                                               object_name=strategy_name, kwargs={'config': config})
-                if strategy:
-                    logger.info("Using resolved strategy %s from '%s'", strategy_name, _path)
-                    strategy._populate_fun_len = len(
-                        getfullargspec(strategy.populate_indicators).args)
-                    strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
-                    strategy._sell_fun_len = len(getfullargspec(strategy.populate_sell_trend).args)
-                    try:
-                        return import_strategy(strategy, config=config)
-                    except TypeError as e:
-                        logger.warning(
-                            f"Impossible to load strategy '{strategy}' from {_path}. Error: {e}")
-            except FileNotFoundError:
-                logger.warning('Path "%s" does not exist', _path.relative_to(Path.cwd()))
+        strategy = self._load_object(paths=abs_paths, object_type=IStrategy,
+                                     object_name=strategy_name, kwargs={'config': config})
+        if strategy:
+            strategy._populate_fun_len = len(getfullargspec(strategy.populate_indicators).args)
+            strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
+            strategy._sell_fun_len = len(getfullargspec(strategy.populate_sell_trend).args)
 
-        raise ImportError(
-            f"Impossible to load Strategy '{strategy_name}'. This class does not exist"
-            " or contains Python code errors"
+            try:
+                return import_strategy(strategy, config=config)
+            except TypeError as e:
+                logger.warning(
+                    f"Impossible to load strategy '{strategy_name}'. "
+                    f"Error: {e}")
+
+        raise OperationalException(
+            f"Impossible to load Strategy '{strategy_name}'. This class does not exist "
+            "or contains Python code errors."
         )

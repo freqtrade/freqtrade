@@ -8,8 +8,10 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
-from freqtrade.arguments import Arguments, TimeRange
+from freqtrade.configuration import Arguments, TimeRange
 from freqtrade.configuration import Configuration
+from freqtrade.configuration.arguments import ARGS_DOWNLOADER
+from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.data.history import download_pair_history
 from freqtrade.exchange import Exchange
 from freqtrade.misc import deep_merge_dicts
@@ -20,13 +22,12 @@ logger = logging.getLogger('download_backtest_data')
 
 DEFAULT_DL_PATH = 'user_data/data'
 
-arguments = Arguments(sys.argv[1:], 'Download backtest data')
-arguments.common_options()
-arguments.download_data_options()
-
 # Do not read the default config if config is not specified
 # in the command line options explicitely
-args = arguments.parse_args(no_default_config=True)
+arguments = Arguments(sys.argv[1:], 'Download backtest data',
+                      no_default_config=True)
+arguments._build_args(optionlist=ARGS_DOWNLOADER)
+args = arguments._parse_args()
 
 # Use bittrex as default exchange
 exchange_name = args.exchange or 'bittrex'
@@ -73,16 +74,16 @@ else:
     }
     timeframes = args.timeframes or ['1m', '5m']
 
-configuration._load_logging_config(config)
+configuration._process_logging_options(config)
 
 if args.config and args.exchange:
     logger.warning("The --exchange option is ignored, "
                    "using exchange settings from the configuration file.")
 
 # Check if the exchange set by the user is supported
-configuration.check_exchange(config)
+check_exchange(config)
 
-configuration._load_datadir_config(config)
+configuration._process_datadir_options(config)
 
 dl_path = Path(config['datadir'])
 

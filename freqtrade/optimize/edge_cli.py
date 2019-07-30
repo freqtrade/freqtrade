@@ -9,7 +9,7 @@ from tabulate import tabulate
 from freqtrade import constants
 from freqtrade.edge import Edge
 
-from freqtrade.arguments import Arguments
+from freqtrade.configuration import Arguments
 from freqtrade.exchange import Exchange
 from freqtrade.resolvers import StrategyResolver
 

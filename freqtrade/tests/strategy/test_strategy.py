@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 import logging
+import tempfile
 import warnings
 from base64 import urlsafe_b64encode
 from os import path
@@ -9,6 +10,7 @@ from unittest.mock import Mock
 import pytest
 from pandas import DataFrame
 
+from freqtrade import OperationalException
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy import import_strategy
 from freqtrade.strategy.default_strategy import DefaultStrategy
@@ -43,22 +45,23 @@ def test_import_strategy(caplog):
 
 def test_search_strategy():
     default_config = {}
-    default_location = Path(__file__).parent.parent.joinpath('strategy').resolve()
-    assert isinstance(
-        StrategyResolver._search_object(
-            directory=default_location,
-            object_type=IStrategy,
-            kwargs={'config': default_config},
-            object_name='DefaultStrategy'
-        ),
-        IStrategy
+    default_location = Path(__file__).parent.parent.parent.joinpath('strategy').resolve()
+
+    s, _ = StrategyResolver._search_object(
+        directory=default_location,
+        object_type=IStrategy,
+        kwargs={'config': default_config},
+        object_name='DefaultStrategy'
     )
-    assert StrategyResolver._search_object(
+    assert isinstance(s, IStrategy)
+
+    s, _ = StrategyResolver._search_object(
         directory=default_location,
         object_type=IStrategy,
         kwargs={'config': default_config},
         object_name='NotFoundStrategy'
-    ) is None
+    )
+    assert s is None
 
 
 def test_load_strategy(result):
@@ -66,11 +69,15 @@ def test_load_strategy(result):
     assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 
 
-def test_load_strategy_byte64(result):
-    with open("freqtrade/tests/strategy/test_strategy.py", "r") as file:
-        encoded_string = urlsafe_b64encode(file.read().encode("utf-8")).decode("utf-8")
+def test_load_strategy_base64(result, caplog):
+    with open("user_data/strategies/test_strategy.py", "rb") as file:
+        encoded_string = urlsafe_b64encode(file.read()).decode("utf-8")
     resolver = StrategyResolver({'strategy': 'TestStrategy:{}'.format(encoded_string)})
     assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
+    # Make sure strategy was loaded from base64 (using temp directory)!!
+    assert log_has_re(r"Using resolved strategy TestStrategy from '"
+                      + tempfile.gettempdir() + r"/.*/TestStrategy\.py'\.\.\.",
+                      caplog.record_tuples)
 
 
 def test_load_strategy_invalid_directory(result, caplog):
@@ -85,18 +92,18 @@ def test_load_strategy_invalid_directory(result, caplog):
 
 def test_load_not_found_strategy():
     strategy = StrategyResolver()
-    with pytest.raises(ImportError,
-                       match=r"Impossible to load Strategy 'NotFoundStrategy'."
-                             r" This class does not exist or contains Python code errors"):
+    with pytest.raises(OperationalException,
+                       match=r"Impossible to load Strategy 'NotFoundStrategy'. "
+                             r"This class does not exist or contains Python code errors."):
         strategy._load_strategy(strategy_name='NotFoundStrategy', config={})
 
 
 def test_load_staticmethod_importerror(mocker, caplog):
     mocker.patch("freqtrade.resolvers.strategy_resolver.import_strategy", Mock(
         side_effect=TypeError("can't pickle staticmethod objects")))
-    with pytest.raises(ImportError,
-                       match=r"Impossible to load Strategy 'DefaultStrategy'."
-                             r" This class does not exist or contains Python code errors"):
+    with pytest.raises(OperationalException,
+                       match=r"Impossible to load Strategy 'DefaultStrategy'. "
+                             r"This class does not exist or contains Python code errors."):
         StrategyResolver()
     assert log_has_re(r".*Error: can't pickle staticmethod objects", caplog.record_tuples)
 
@@ -359,6 +366,7 @@ def test_strategy_override_use_sell_profit_only(caplog):
             ) in caplog.record_tuples
 
 
+@pytest.mark.filterwarnings("ignore:deprecated")
 def test_deprecate_populate_indicators(result):
     default_location = path.join(path.dirname(path.realpath(__file__)))
     resolver = StrategyResolver({'strategy': 'TestStrategyLegacy',
@@ -391,6 +399,7 @@ def test_deprecate_populate_indicators(result):
             in str(w[-1].message)
 
 
+@pytest.mark.filterwarnings("ignore:deprecated")
 def test_call_deprecated_function(result, monkeypatch):
     default_location = path.join(path.dirname(path.realpath(__file__)))
     resolver = StrategyResolver({'strategy': 'TestStrategyLegacy',

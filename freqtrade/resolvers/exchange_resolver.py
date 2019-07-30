@@ -28,6 +28,7 @@ class ExchangeResolver(IResolver):
         except ImportError:
             logger.info(
                 f"No {exchange_name} specific subclass found. Using the generic class instead.")
+        if not hasattr(self, "exchange"):
             self.exchange = Exchange(config)
 
     def _load_exchange(
@@ -44,13 +45,13 @@ class ExchangeResolver(IResolver):
 
             exchange = ex_class(kwargs['config'])
             if exchange:
-                logger.info("Using resolved exchange %s", exchange_name)
+                logger.info(f"Using resolved exchange '{exchange_name}'...")
                 return exchange
         except AttributeError:
             # Pass and raise ImportError instead
             pass
 
         raise ImportError(
-            "Impossible to load Exchange '{}'. This class does not exist"
-            " or contains Python code errors".format(exchange_name)
+            f"Impossible to load Exchange '{exchange_name}'. This class does not exist "
+            "or contains Python code errors."
         )

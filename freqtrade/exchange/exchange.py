@@ -85,6 +85,9 @@ class Exchange(object):
         it does basic validation whether the specified exchange and pairs are valid.
         :return: None
         """
+        self._api: ccxt.Exchange = None
+        self._api_async: ccxt_async.Exchange = None
+
         self._config.update(config)
 
         self._cached_ticker: Dict[str, Any] = {}
@@ -117,9 +120,9 @@ class Exchange(object):
         self._ohlcv_partial_candle = self._ft_has['ohlcv_partial_candle']
 
         # Initialize ccxt objects
-        self._api: ccxt.Exchange = self._init_ccxt(
+        self._api = self._init_ccxt(
             exchange_config, ccxt_kwargs=exchange_config.get('ccxt_config'))
-        self._api_async: ccxt_async.Exchange = self._init_ccxt(
+        self._api_async = self._init_ccxt(
             exchange_config, ccxt_async, ccxt_kwargs=exchange_config.get('ccxt_async_config'))
 
         logger.info('Using Exchange "%s"', self.name)
@@ -171,8 +174,10 @@ class Exchange(object):
         try:
 
             api = getattr(ccxt_module, name.lower())(ex_config)
-        except (KeyError, AttributeError):
-            raise OperationalException(f'Exchange {name} is not supported')
+        except (KeyError, AttributeError) as e:
+            raise OperationalException(f'Exchange {name} is not supported') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(f"Initialization of ccxt failed. Reason: {e}") from e
 
         self.set_sandbox(api, exchange_config, name)
 
@@ -265,10 +270,28 @@ class Exchange(object):
                     f'Pair {pair} is not available on {self.name}. '
                     f'Please remove {pair} from your whitelist.')
 
+    def get_valid_pair_combination(self, curr_1, curr_2) -> str:
+        """
+        Get valid pair combination of curr_1 and curr_2 by trying both combinations.
+        """
+        for pair in [f"{curr_1}/{curr_2}", f"{curr_2}/{curr_1}"]:
+            if pair in self.markets and self.markets[pair].get('active'):
+                return pair
+        raise DependencyException(f"Could not combine {curr_1} and {curr_2} to get a valid pair.")
+
     def validate_timeframes(self, timeframe: List[str]) -> None:
         """
         Checks if ticker interval from config is a supported timeframe on the exchange
         """
+        if not hasattr(self._api, "timeframes") or self._api.timeframes is None:
+            # If timeframes attribute is missing (or is None), the exchange probably
+            # has no fetchOHLCV method.
+            # Therefore we also show that.
+            raise OperationalException(
+                f"The ccxt library does not provide the list of timeframes "
+                f"for the exchange \"{self.name}\" and this exchange "
+                f"is therefore not supported. ccxt fetchOHLCV: {self.exchange_has('fetchOHLCV')}")
+
         timeframes = self._api.timeframes
         if timeframe not in timeframes:
             raise OperationalException(
@@ -364,7 +387,9 @@ class Exchange(object):
         try:
             # Set the precision for amount and price(rate) as accepted by the exchange
             amount = self.symbol_amount_prec(pair, amount)
-            rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
+            needs_price = (ordertype != 'market'
+                           or self._api.options.get("createMarketBuyOrderRequiresPrice", False))
+            rate = self.symbol_price_prec(pair, rate) if needs_price else None
 
             return self._api.create_order(pair, ordertype, side,
                                           amount, rate, params)
@@ -372,18 +397,18 @@ class Exchange(object):
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
                 f'Insufficient funds to create {ordertype} {side} order on market {pair}.'
-                f'Tried to {side} amount {amount} at rate {rate} (total {rate*amount}).'
-                f'Message: {e}')
+                f'Tried to {side} amount {amount} at rate {rate} (total {rate * amount}).'
+                f'Message: {e}') from e
         except ccxt.InvalidOrder as e:
             raise DependencyException(
                 f'Could not create {ordertype} {side} order on market {pair}.'
-                f'Tried to {side} amount {amount} at rate {rate} (total {rate*amount}).'
-                f'Message: {e}')
+                f'Tried to {side} amount {amount} at rate {rate} (total {rate * amount}).'
+                f'Message: {e}') from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f'Could not place {side} order due to {e.__class__.__name__}. Message: {e}')
+                f'Could not place {side} order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
-            raise OperationalException(e)
+            raise OperationalException(e) from e
 
     def buy(self, pair: str, ordertype: str, amount: float,
             rate: float, time_in_force) -> Dict:
@@ -468,9 +493,9 @@ class Exchange(object):
             return balances
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f'Could not get balance due to {e.__class__.__name__}. Message: {e}')
+                f'Could not get balance due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
-            raise OperationalException(e)
+            raise OperationalException(e) from e
 
     @retrier
     def get_tickers(self) -> Dict:
@@ -479,18 +504,18 @@ class Exchange(object):
         except ccxt.NotSupported as e:
             raise OperationalException(
                 f'Exchange {self._api.name} does not support fetching tickers in batch.'
-                f'Message: {e}')
+                f'Message: {e}') from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f'Could not load tickers due to {e.__class__.__name__}. Message: {e}')
+                f'Could not load tickers due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
-            raise OperationalException(e)
+            raise OperationalException(e) from e
 
     @retrier
     def get_ticker(self, pair: str, refresh: Optional[bool] = True) -> dict:
         if refresh or pair not in self._cached_ticker.keys():
             try:
-                if pair not in self._api.markets:
+                if pair not in self._api.markets or not self._api.markets[pair].get('active'):
                     raise DependencyException(f"Pair {pair} not available")
                 data = self._api.fetch_ticker(pair)
                 try:
@@ -503,9 +528,9 @@ class Exchange(object):
                 return data
             except (ccxt.NetworkError, ccxt.ExchangeError) as e:
                 raise TemporaryError(
-                    f'Could not load ticker due to {e.__class__.__name__}. Message: {e}')
+                    f'Could not load ticker due to {e.__class__.__name__}. Message: {e}') from e
             except ccxt.BaseError as e:
-                raise OperationalException(e)
+                raise OperationalException(e) from e
         else:
             logger.info("returning cached ticker-data for %s", pair)
             return self._cached_ticker[pair]
@@ -626,12 +651,12 @@ class Exchange(object):
         except ccxt.NotSupported as e:
             raise OperationalException(
                 f'Exchange {self._api.name} does not support fetching historical candlestick data.'
-                f'Message: {e}')
+                f'Message: {e}') from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not load ticker history due to {e.__class__.__name__}. Message: {e}')
+            raise TemporaryError(f'Could not load ticker history due to {e.__class__.__name__}. '
+                                 f'Message: {e}') from e
         except ccxt.BaseError as e:
-            raise OperationalException(f'Could not fetch ticker data. Msg: {e}')
+            raise OperationalException(f'Could not fetch ticker data. Msg: {e}') from e
 
     @retrier
     def cancel_order(self, order_id: str, pair: str) -> None:
@@ -642,12 +667,12 @@ class Exchange(object):
             return self._api.cancel_order(order_id, pair)
         except ccxt.InvalidOrder as e:
             raise InvalidOrderException(
-                f'Could not cancel order. Message: {e}')
+                f'Could not cancel order. Message: {e}') from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f'Could not cancel order due to {e.__class__.__name__}. Message: {e}')
+                f'Could not cancel order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
-            raise OperationalException(e)
+            raise OperationalException(e) from e
 
     @retrier
     def get_order(self, order_id: str, pair: str) -> Dict:
@@ -658,12 +683,12 @@ class Exchange(object):
             return self._api.fetch_order(order_id, pair)
         except ccxt.InvalidOrder as e:
             raise InvalidOrderException(
-                f'Tried to get an invalid order (id: {order_id}). Message: {e}')
+                f'Tried to get an invalid order (id: {order_id}). Message: {e}') from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f'Could not get order due to {e.__class__.__name__}. Message: {e}')
+                f'Could not get order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
-            raise OperationalException(e)
+            raise OperationalException(e) from e
 
     @retrier
     def get_order_book(self, pair: str, limit: int = 100) -> dict:
@@ -679,12 +704,12 @@ class Exchange(object):
         except ccxt.NotSupported as e:
             raise OperationalException(
                 f'Exchange {self._api.name} does not support fetching order book.'
-                f'Message: {e}')
+                f'Message: {e}') from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f'Could not get order book due to {e.__class__.__name__}. Message: {e}')
+                f'Could not get order book due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
-            raise OperationalException(e)
+            raise OperationalException(e) from e
 
     @retrier
     def get_trades_for_order(self, order_id: str, pair: str, since: datetime) -> List:
@@ -701,9 +726,9 @@ class Exchange(object):
 
         except ccxt.NetworkError as e:
             raise TemporaryError(
-                f'Could not get trades due to networking error. Message: {e}')
+                f'Could not get trades due to networking error. Message: {e}') from e
         except ccxt.BaseError as e:
-            raise OperationalException(e)
+            raise OperationalException(e) from e
 
     @retrier
     def get_fee(self, symbol='ETH/BTC', type='', side='', amount=1,
@@ -717,13 +742,13 @@ class Exchange(object):
                                            price=price, takerOrMaker=taker_or_maker)['rate']
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f'Could not get fee info due to {e.__class__.__name__}. Message: {e}')
+                f'Could not get fee info due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
-            raise OperationalException(e)
+            raise OperationalException(e) from e
 
 
 def is_exchange_bad(exchange: str) -> bool:
-    return exchange in ['bitmex']
+    return exchange in ['bitmex', 'bitstamp']
 
 
 def is_exchange_available(exchange: str, ccxt_module=None) -> bool:

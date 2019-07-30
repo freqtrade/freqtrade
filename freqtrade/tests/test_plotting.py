@@ -1,31 +1,34 @@
 
+from copy import deepcopy
 from unittest.mock import MagicMock
 
-from plotly import tools
-import plotly.graph_objs as go
-from copy import deepcopy
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
-from freqtrade.arguments import TimeRange
+from freqtrade.configuration import Arguments, TimeRange
 from freqtrade.data import history
-from freqtrade.data.btanalysis import load_backtest_data
-from freqtrade.plot.plotting import (generate_graph, generate_plot_file,
-                                     generate_row, plot_trades)
+from freqtrade.data.btanalysis import create_cum_profit, load_backtest_data
+from freqtrade.plot.plotting import (add_indicators, add_profit,
+                                     generate_candlestick_graph,
+                                     generate_plot_filename,
+                                     generate_profit_graph, init_plotscript,
+                                     plot_trades, store_plot_file)
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.tests.conftest import log_has, log_has_re
 
 
 def fig_generating_mock(fig, *args, **kwargs):
-    """ Return Fig - used to mock generate_row and plot_trades"""
+    """ Return Fig - used to mock add_indicators and plot_trades"""
     return fig
 
 
 def find_trace_in_fig_data(data, search_string: str):
-    matches = filter(lambda x: x.name == search_string, data)
+    matches = (d for d in data if d.name == search_string)
     return next(matches)
 
 
 def generage_empty_figure():
-    return tools.make_subplots(
+    return make_subplots(
         rows=3,
         cols=1,
         shared_xaxes=True,
@@ -34,7 +37,27 @@ def generage_empty_figure():
     )
 
 
-def test_generate_row(default_conf, caplog):
+def test_init_plotscript(default_conf, mocker):
+    default_conf['timerange'] = "20180110-20180112"
+    default_conf['trade_source'] = "file"
+    default_conf['ticker_interval'] = "5m"
+    default_conf["datadir"] = history.make_testdata_path(None)
+    default_conf['exportfilename'] = str(
+        history.make_testdata_path(None) / "backtest-result_test.json")
+    ret = init_plotscript(default_conf)
+    assert "tickers" in ret
+    assert "trades" in ret
+    assert "pairs" in ret
+    assert "strategy" in ret
+
+    default_conf['pairs'] = "POWR/BTC,XLM/BTC"
+    ret = init_plotscript(default_conf)
+    assert "tickers" in ret
+    assert "POWR/BTC" in ret["tickers"]
+    assert "XLM/BTC" in ret["tickers"]
+
+
+def test_add_indicators(default_conf, caplog):
     pair = "UNITTEST/BTC"
     timerange = TimeRange(None, 'line', 0, -1000)
 
@@ -49,20 +72,20 @@ def test_generate_row(default_conf, caplog):
     fig = generage_empty_figure()
 
     # Row 1
-    fig1 = generate_row(fig=deepcopy(fig), row=1, indicators=indicators1, data=data)
+    fig1 = add_indicators(fig=deepcopy(fig), row=1, indicators=indicators1, data=data)
     figure = fig1.layout.figure
     ema10 = find_trace_in_fig_data(figure.data, "ema10")
     assert isinstance(ema10, go.Scatter)
     assert ema10.yaxis == "y"
 
-    fig2 = generate_row(fig=deepcopy(fig), row=3, indicators=indicators2, data=data)
+    fig2 = add_indicators(fig=deepcopy(fig), row=3, indicators=indicators2, data=data)
     figure = fig2.layout.figure
     macd = find_trace_in_fig_data(figure.data, "macd")
     assert isinstance(macd, go.Scatter)
     assert macd.yaxis == "y3"
 
     # No indicator found
-    fig3 = generate_row(fig=deepcopy(fig), row=3, indicators=['no_indicator'], data=data)
+    fig3 = add_indicators(fig=deepcopy(fig), row=3, indicators=['no_indicator'], data=data)
     assert fig == fig3
     assert log_has_re(r'Indicator "no_indicator" ignored\..*', caplog.record_tuples)
 
@@ -95,8 +118,8 @@ def test_plot_trades(caplog):
     assert trade_sell.marker.color == 'red'
 
 
-def test_generate_graph_no_signals_no_trades(default_conf, mocker, caplog):
-    row_mock = mocker.patch('freqtrade.plot.plotting.generate_row',
+def test_generate_candlestick_graph_no_signals_no_trades(default_conf, mocker, caplog):
+    row_mock = mocker.patch('freqtrade.plot.plotting.add_indicators',
                             MagicMock(side_effect=fig_generating_mock))
     trades_mock = mocker.patch('freqtrade.plot.plotting.plot_trades',
                                MagicMock(side_effect=fig_generating_mock))
@@ -110,8 +133,8 @@ def test_generate_graph_no_signals_no_trades(default_conf, mocker, caplog):
 
     indicators1 = []
     indicators2 = []
-    fig = generate_graph(pair=pair, data=data, trades=None,
-                         indicators1=indicators1, indicators2=indicators2)
+    fig = generate_candlestick_graph(pair=pair, data=data, trades=None,
+                                     indicators1=indicators1, indicators2=indicators2)
     assert isinstance(fig, go.Figure)
     assert fig.layout.title.text == pair
     figure = fig.layout.figure
@@ -131,8 +154,8 @@ def test_generate_graph_no_signals_no_trades(default_conf, mocker, caplog):
     assert log_has("No sell-signals found.", caplog.record_tuples)
 
 
-def test_generate_graph_no_trades(default_conf, mocker):
-    row_mock = mocker.patch('freqtrade.plot.plotting.generate_row',
+def test_generate_candlestick_graph_no_trades(default_conf, mocker):
+    row_mock = mocker.patch('freqtrade.plot.plotting.add_indicators',
                             MagicMock(side_effect=fig_generating_mock))
     trades_mock = mocker.patch('freqtrade.plot.plotting.plot_trades',
                                MagicMock(side_effect=fig_generating_mock))
@@ -147,8 +170,8 @@ def test_generate_graph_no_trades(default_conf, mocker):
 
     indicators1 = []
     indicators2 = []
-    fig = generate_graph(pair=pair, data=data, trades=None,
-                         indicators1=indicators1, indicators2=indicators2)
+    fig = generate_candlestick_graph(pair=pair, data=data, trades=None,
+                                     indicators1=indicators1, indicators2=indicators2)
     assert isinstance(fig, go.Figure)
     assert fig.layout.title.text == pair
     figure = fig.layout.figure
@@ -178,12 +201,68 @@ def test_generate_graph_no_trades(default_conf, mocker):
     assert trades_mock.call_count == 1
 
 
+def test_generate_Plot_filename():
+    fn = generate_plot_filename("UNITTEST/BTC", "5m")
+    assert fn == "freqtrade-plot-UNITTEST_BTC-5m.html"
+
+
 def test_generate_plot_file(mocker, caplog):
     fig = generage_empty_figure()
     plot_mock = mocker.patch("freqtrade.plot.plotting.plot", MagicMock())
-    generate_plot_file(fig, "UNITTEST/BTC", "5m")
+    store_plot_file(fig, filename="freqtrade-plot-UNITTEST_BTC-5m.html")
 
     assert plot_mock.call_count == 1
     assert plot_mock.call_args[0][0] == fig
     assert (plot_mock.call_args_list[0][1]['filename']
             == "user_data/plots/freqtrade-plot-UNITTEST_BTC-5m.html")
+
+
+def test_add_profit():
+    filename = history.make_testdata_path(None) / "backtest-result_test.json"
+    bt_data = load_backtest_data(filename)
+    timerange = Arguments.parse_timerange("20180110-20180112")
+
+    df = history.load_pair_history(pair="POWR/BTC", ticker_interval='5m',
+                                   datadir=None, timerange=timerange)
+    fig = generage_empty_figure()
+
+    cum_profits = create_cum_profit(df.set_index('date'),
+                                    bt_data[bt_data["pair"] == 'POWR/BTC'],
+                                    "cum_profits")
+
+    fig1 = add_profit(fig, row=2, data=cum_profits, column='cum_profits', name='Profits')
+    figure = fig1.layout.figure
+    profits = find_trace_in_fig_data(figure.data, "Profits")
+    assert isinstance(profits, go.Scattergl)
+    assert profits.yaxis == "y2"
+
+
+def test_generate_profit_graph():
+    filename = history.make_testdata_path(None) / "backtest-result_test.json"
+    trades = load_backtest_data(filename)
+    timerange = Arguments.parse_timerange("20180110-20180112")
+    pairs = ["POWR/BTC", "XLM/BTC"]
+
+    tickers = history.load_data(datadir=None,
+                                pairs=pairs,
+                                ticker_interval='5m',
+                                timerange=timerange
+                                )
+    trades = trades[trades['pair'].isin(pairs)]
+
+    fig = generate_profit_graph(pairs, tickers, trades)
+    assert isinstance(fig, go.Figure)
+
+    assert fig.layout.title.text == "Profit plot"
+    figure = fig.layout.figure
+    assert len(figure.data) == 4
+
+    avgclose = find_trace_in_fig_data(figure.data, "Avg close price")
+    assert isinstance(avgclose, go.Scattergl)
+
+    profit = find_trace_in_fig_data(figure.data, "Profit")
+    assert isinstance(profit, go.Scattergl)
+
+    for pair in pairs:
+        profit_pair = find_trace_in_fig_data(figure.data, f"Profit {pair}")
+        assert isinstance(profit_pair, go.Scattergl)

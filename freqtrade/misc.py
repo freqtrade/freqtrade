@@ -5,10 +5,8 @@ import gzip
 import logging
 import re
 from datetime import datetime
-from typing import Dict
 
 import numpy as np
-from pandas import DataFrame
 import rapidjson
 
 
@@ -39,24 +37,6 @@ def datesarray_to_datetimearray(dates: np.ndarray) -> np.ndarray:
     :return: numpy-array of datetime
     """
     return dates.dt.to_pydatetime()
-
-
-def common_datearray(dfs: Dict[str, DataFrame]) -> np.ndarray:
-    """
-    Return dates from Dataframe
-    :param dfs: Dict with format pair: pair_data
-    :return: List of dates
-    """
-    alldates = {}
-    for pair, pair_data in dfs.items():
-        dates = datesarray_to_datetimearray(pair_data['date'])
-        for date in dates:
-            alldates[date] = 1
-    lst = []
-    for date, _ in alldates.items():
-        lst.append(date)
-    arr = np.array(lst)
-    return np.sort(arr, axis=0)
 
 
 def file_dump_json(filename, data, is_zip=False) -> None:

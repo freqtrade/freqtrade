@@ -16,7 +16,7 @@ import arrow
 from pandas import DataFrame
 
 from freqtrade import OperationalException, misc
-from freqtrade.arguments import TimeRange
+from freqtrade.configuration import TimeRange
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.exchange import Exchange, timeframe_to_minutes
 

@@ -2,19 +2,7 @@
 """
 Script to display when the bot will buy on specific pair(s)
 
-Mandatory Cli parameters:
--p / --pairs: pair(s) to examine
-
-Option but recommended
--s / --strategy: strategy to use
-
-
-Optional Cli parameters
--d / --datadir: path to pair(s) backtest data
---timerange: specify what timerange of data to use.
--l / --live: Live, to download the latest ticker for the pair(s)
--db / --db-url: Show trades stored in database
-
+Use `python plot_dataframe.py --help` to display the command line arguments
 
 Indicators recommended
 Row 1: sma, ema3, ema5, ema10, ema50
@@ -26,18 +14,17 @@ Example of usage:
 """
 import logging
 import sys
-from pathlib import Path
 from typing import Any, Dict, List
 
 import pandas as pd
 
-from freqtrade.arguments import Arguments
-from freqtrade.data import history
-from freqtrade.data.btanalysis import (extract_trades_of_period,
-                                       load_backtest_data, load_trades_from_db)
+from freqtrade.configuration import Arguments
+from freqtrade.configuration.arguments import ARGS_PLOT_DATAFRAME
+from freqtrade.data.btanalysis import extract_trades_of_period
 from freqtrade.optimize import setup_configuration
-from freqtrade.plot.plotting import generate_graph, generate_plot_file
-from freqtrade.resolvers import ExchangeResolver, StrategyResolver
+from freqtrade.plot.plotting import (init_plotscript, generate_candlestick_graph,
+                                     store_plot_file,
+                                     generate_plot_filename)
 from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
@@ -68,52 +55,29 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
     -Generate plot files
     :return: None
     """
-    exchange = ExchangeResolver(config.get('exchange', {}).get('name'), config).exchange
-
-    strategy = StrategyResolver(config).strategy
-    if "pairs" in config:
-        pairs = config["pairs"].split(',')
-    else:
-        pairs = config["exchange"]["pair_whitelist"]
-
-    # Set timerange to use
-    timerange = Arguments.parse_timerange(config["timerange"])
-    ticker_interval = strategy.ticker_interval
-
-    tickers = history.load_data(
-        datadir=Path(str(config.get("datadir"))),
-        pairs=pairs,
-        ticker_interval=config['ticker_interval'],
-        refresh_pairs=config.get('refresh_pairs', False),
-        timerange=timerange,
-        exchange=exchange,
-        live=config.get("live", False),
-    )
+    plot_elements = init_plotscript(config)
+    trades = plot_elements['trades']
 
     pair_counter = 0
-    for pair, data in tickers.items():
+    for pair, data in plot_elements["tickers"].items():
         pair_counter += 1
         logger.info("analyse pair %s", pair)
         tickers = {}
         tickers[pair] = data
-        dataframe = generate_dataframe(strategy, tickers, pair)
-        if config["trade_source"] == "DB":
-            trades = load_trades_from_db(config["db_url"])
-        elif config["trade_source"] == "file":
-            trades = load_backtest_data(Path(config["exportfilename"]))
+        dataframe = generate_dataframe(plot_elements["strategy"], tickers, pair)
 
-        trades = trades.loc[trades['pair'] == pair]
-        trades = extract_trades_of_period(dataframe, trades)
+        trades_pair = trades.loc[trades['pair'] == pair]
+        trades_pair = extract_trades_of_period(dataframe, trades_pair)
 
-        fig = generate_graph(
+        fig = generate_candlestick_graph(
             pair=pair,
             data=dataframe,
-            trades=trades,
+            trades=trades_pair,
             indicators1=config["indicators1"].split(","),
             indicators2=config["indicators2"].split(",")
         )
 
-        generate_plot_file(fig, pair, ticker_interval)
+        store_plot_file(fig, generate_plot_filename(pair, config['ticker_interval']))
 
     logger.info('End of ploting process %s plots generated', pair_counter)
 
@@ -125,16 +89,11 @@ def plot_parse_args(args: List[str]) -> Dict[str, Any]:
     :return: args: Array with all arguments
     """
     arguments = Arguments(args, 'Graph dataframe')
-    arguments.common_options()
-    arguments.main_options()
-    arguments.common_optimize_options()
-    arguments.backtesting_options()
-    arguments.common_scripts_options()
-    arguments.plot_dataframe_options()
-    parsed_args = arguments.parse_args()
+    arguments._build_args(optionlist=ARGS_PLOT_DATAFRAME)
+    parsed_args = arguments._parse_args()
 
     # Load the configuration
-    config = setup_configuration(parsed_args, RunMode.BACKTEST)
+    config = setup_configuration(parsed_args, RunMode.OTHER)
     return config
 
 

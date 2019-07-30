@@ -123,5 +123,5 @@
         "process_throttle_secs": 5
     },
     "strategy": "DefaultStrategy",
-    "strategy_path": "/some/folder/"
+    "strategy_path": "user_data/strategies/"
 }

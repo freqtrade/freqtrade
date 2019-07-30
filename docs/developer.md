@@ -130,7 +130,7 @@ If the day shows the same day, then the last candle can be assumed as incomplete
 
 This part of the documentation is aimed at maintainers, and shows how to create a release.
 
-### create release branch
+### Create release branch
 
 ``` bash
 # make sure you're in develop branch
@@ -140,11 +140,14 @@ git checkout develop
 git checkout -b new_release
 ```
 
-* Edit `freqtrade/__init__.py` and add the desired version (for example `0.18.0`)
+* Edit `freqtrade/__init__.py` and add the version matching the current date (for example `2019.7` for July 2019). Minor versions can be `2019.7-1` should we need to do a second release that month.
 * Commit this part
 * push that branch to the remote and create a PR against the master branch
 
-### create changelog from git commits
+### Create changelog from git commits
+
+!!! Note
+    Make sure that both master and develop are up-todate!.
 
 ``` bash
 # Needs to be done before merging / pulling that branch.
@@ -160,5 +163,5 @@ git log --oneline --no-decorate --no-merges master..develop
 
 ### After-release
 
-* Update version in develop to next valid version and postfix that with `-dev` (`0.18.0 -> 0.18.1-dev`).
+* Update version in develop by postfixing that with `-dev` (`2019.6 -> 2019.6-dev`).
 * Create a PR against develop to update that branch.

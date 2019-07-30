@@ -19,7 +19,6 @@ addons:
 install:
 - cd build_helpers && ./install_ta-lib.sh; cd ..
 - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-- pip install --upgrade pytest-random-order
 - pip install -r requirements-dev.txt
 - pip install -e .
 jobs:
@@ -27,17 +26,17 @@ jobs:
   include:
     - stage: tests
       script:
-      - pytest --cov=freqtrade --cov-config=.coveragerc freqtrade/tests/
+      - pytest --random-order --cov=freqtrade --cov-config=.coveragerc freqtrade/tests/
       # Allow failure for coveralls
       - coveralls || true
       name: pytest
     - script:
       - cp config.json.example config.json
-      - python freqtrade --datadir freqtrade/tests/testdata backtesting
+      - freqtrade --datadir freqtrade/tests/testdata backtesting
       name: backtest
     - script:
       - cp config.json.example config.json
-      - python freqtrade --datadir freqtrade/tests/testdata hyperopt -e 5
+      - freqtrade --datadir freqtrade/tests/testdata hyperopt -e 5
       name: hyperopt
     - script: flake8 freqtrade scripts
       name: flake8
@@ -56,4 +55,4 @@ notifications:
 cache:
   pip: True
   directories:
-    - /usr/local/lib
+    - /usr/local/lib/

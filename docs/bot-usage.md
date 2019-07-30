@@ -2,13 +2,16 @@
 
 This page explains the different parameters of the bot and how to run it.
 
+!Note:
+    If you've used `setup.sh`, don't forget to activate your virtual environment (`source .env/bin/activate`) before running freqtrade commands.
+
 
 ## Bot commands
 
 ```
 usage: freqtrade [-h] [-v] [--logfile FILE] [--version] [-c PATH] [-d PATH]
-                 [-s NAME] [--strategy-path PATH] [--dynamic-whitelist [INT]]
-                 [--db-url PATH] [--sd-notify]
+                 [-s NAME] [--strategy-path PATH] [--db-url PATH]
+                 [--sd-notify]
                  {backtesting,edge,hyperopt} ...
 
 Free, open source crypto trading bot
@@ -23,7 +26,7 @@ optional arguments:
   -h, --help            show this help message and exit
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
   --logfile FILE        Log to the file specified
-  --version             show program's version number and exit
+  -V, --version         show program's version number and exit
   -c PATH, --config PATH
                         Specify configuration file (default: None). Multiple
                         --config options may be used. Can be set to '-' to
@@ -34,9 +37,6 @@ optional arguments:
                         Specify strategy class name (default:
                         DefaultStrategy).
   --strategy-path PATH  Specify additional strategy lookup path.
-  --dynamic-whitelist [INT]
-                        Dynamically generate and update whitelist based on 24h
-                        BaseVolume (default: 20). DEPRECATED.
   --db-url PATH         Override trades database URL, this is useful if
                         dry_run is enabled or in custom deployments (default:
                         None).
@@ -49,7 +49,7 @@ The bot allows you to select which configuration file you want to use. Per
 default, the bot will load the file `./config.json`
 
 ```bash
-python3 freqtrade -c path/far/far/away/config.json
+freqtrade -c path/far/far/away/config.json
 ```
 
 ### How to use multiple configuration files?
@@ -65,13 +65,13 @@ empty key and secrete values while running in the Dry Mode (which does not actua
 require them):
 
 ```bash
-python3 freqtrade -c ./config.json
+freqtrade -c ./config.json
 ```
 
 and specify both configuration files when running in the normal Live Trade Mode:
 
 ```bash
-python3 freqtrade -c ./config.json -c path/to/secrets/keys.config.json
+freqtrade -c ./config.json -c path/to/secrets/keys.config.json
 ```
 
 This could help you hide your private Exchange key and Exchange secrete on you local machine
@@ -97,7 +97,7 @@ In `user_data/strategies` you have a file `my_awesome_strategy.py` which has
 a strategy class called `AwesomeStrategy` to load it:
 
 ```bash
-python3 freqtrade --strategy AwesomeStrategy
+freqtrade --strategy AwesomeStrategy
 ```
 
 If the bot does not find your strategy file, it will display in an error
@@ -109,26 +109,15 @@ Learn more about strategy file in
 ### How to use **--strategy-path**?
 
 This parameter allows you to add an additional strategy lookup path, which gets
-checked before the default locations (The passed path must be a folder!):
+checked before the default locations (The passed path must be a directory!):
 ```bash
-python3 freqtrade --strategy AwesomeStrategy --strategy-path /some/folder
+freqtrade --strategy AwesomeStrategy --strategy-path /some/directory
 ```
 
 #### How to install a strategy?
 
-This is very simple. Copy paste your strategy file into the folder
+This is very simple. Copy paste your strategy file into the directory
 `user_data/strategies` or use `--strategy-path`. And voila, the bot is ready to use it.
-
-### How to use **--dynamic-whitelist**?
-
-!!! danger "DEPRECATED"
-    This command line option is deprecated. Please move your configurations using it
-to the configurations that utilize the `StaticPairList` or `VolumePairList` methods set
-in the configuration file
-as outlined [here](configuration/#dynamic-pairlists)
-
-Description of this deprecated feature was moved to [here](deprecated.md).
-Please no longer use it.
 
 ### How to use **--db-url**?
 
@@ -138,7 +127,7 @@ using `--db-url`. This can also be used to specify a custom database
 in production mode. Example command:
 
 ```bash
-python3 freqtrade -c config.json --db-url sqlite:///tradesv3.dry_run.sqlite
+freqtrade -c config.json --db-url sqlite:///tradesv3.dry_run.sqlite
 ```
 
 ## Backtesting commands
@@ -213,19 +202,23 @@ to find optimal parameter values for your stategy.
 
 ```
 usage: freqtrade hyperopt [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
-                        [--max_open_trades MAX_OPEN_TRADES]
-                        [--stake_amount STAKE_AMOUNT] [-r]
-                        [--customhyperopt NAME] [--eps] [--dmmp] [-e INT]
-                        [-s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
-                        [--print-all] [-j JOBS]
+                          [--max_open_trades INT]
+                          [--stake_amount STAKE_AMOUNT] [-r]
+                          [--customhyperopt NAME] [--hyperopt-path PATH]
+                          [--eps] [-e INT]
+                          [-s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
+                          [--dmmp] [--print-all] [-j JOBS]
+                          [--random-state INT] [--min-trades INT] [--continue]
+                          [--hyperopt-loss NAME]
 
 optional arguments:
   -h, --help            show this help message and exit
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
-                        Specify ticker interval (1m, 5m, 30m, 1h, 1d).
+                        Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
+                        `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
-  --max_open_trades MAX_OPEN_TRADES
+  --max_open_trades INT
                         Specify max_open_trades to use.
   --stake_amount STAKE_AMOUNT
                         Specify stake_amount.
@@ -235,18 +228,20 @@ optional arguments:
                         run your optimization commands with up-to-date data.
   --customhyperopt NAME
                         Specify hyperopt class name (default:
-                        DefaultHyperOpts).
+                        `DefaultHyperOpts`).
+  --hyperopt-path PATH  Specify additional lookup path for Hyperopts and
+                        Hyperopt Loss functions.
   --eps, --enable-position-stacking
                         Allow buying the same pair multiple times (position
                         stacking).
+  -e INT, --epochs INT  Specify number of epochs (default: 100).
+  -s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...], --spaces {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]
+                        Specify which parameters to hyperopt. Space-separated
+                        list. Default: `all`.
   --dmmp, --disable-max-market-positions
                         Disable applying `max_open_trades` during backtest
                         (same as setting `max_open_trades` to a very high
                         number).
-  -e INT, --epochs INT  Specify number of epochs (default: 100).
-  -s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...], --spaces {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]
-                        Specify which parameters to hyperopt. Space separate
-                        list. Default: all.
   --print-all           Print all results, not only the best ones.
   -j JOBS, --job-workers JOBS
                         The number of concurrently running jobs for
@@ -254,6 +249,19 @@ optional arguments:
                         (default), all CPUs are used, for -2, all CPUs but one
                         are used, etc. If 1 is given, no parallel computing
                         code is used at all.
+  --random-state INT    Set random state to some positive integer for
+                        reproducible hyperopt results.
+  --min-trades INT      Set minimal desired number of trades for evaluations
+                        in the hyperopt optimization path (default: 1).
+  --continue            Continue hyperopt from previous runs. By default,
+                        temporary files will be removed and hyperopt will
+                        start from scratch.
+  --hyperopt-loss       NAME
+                        Specify the class name of the hyperopt loss function
+                        class (IHyperOptLoss). Different functions can
+                        generate completely different results, since the
+                        target for optimization is different. (default:
+                        `DefaultHyperOptLoss`).
 ```
 
 ## Edge commands
@@ -288,11 +296,6 @@ optional arguments:
 ```
 
 To understand edge and how to read the results, please read the [edge documentation](edge.md).
-
-## A parameter missing in the configuration?
-
-All parameters for `main.py`, `backtesting`, `hyperopt` are referenced
-in [misc.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/misc.py#L84)
 
 ## Next step
 

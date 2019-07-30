@@ -2,7 +2,6 @@
 # pragma pylint: disable=protected-access, too-many-lines, invalid-name, too-many-arguments
 
 import logging
-import re
 import time
 from copy import deepcopy
 from unittest.mock import MagicMock, PropertyMock
@@ -1419,8 +1418,7 @@ def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> No
     # Assert we call handle_trade() if trade is feasible for execution
     freqtrade.update_trade_state(trade)
 
-    regexp = re.compile('Found open order for.*')
-    assert filter(regexp.match, caplog.record_tuples)
+    assert log_has_re('Found open order for.*', caplog.record_tuples)
 
 
 def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_buy_order, mocker):
@@ -1460,6 +1458,22 @@ def test_update_trade_state_exception(mocker, default_conf,
     )
     freqtrade.update_trade_state(trade)
     assert log_has('Could not update trade amount: ', caplog.record_tuples)
+
+
+def test_update_trade_state_orderexception(mocker, default_conf, caplog) -> None:
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange.get_order',
+                 MagicMock(side_effect=InvalidOrderException))
+
+    trade = MagicMock()
+    trade.open_order_id = '123'
+    trade.open_fee = 0.001
+
+    # Test raise of OperationalException exception
+    grm_mock = mocker.patch("freqtrade.freqtradebot.FreqtradeBot.get_real_amount", MagicMock())
+    freqtrade.update_trade_state(trade)
+    assert grm_mock.call_count == 0
+    assert log_has(f'Unable to fetch order {trade.open_order_id}: ', caplog.record_tuples)
 
 
 def test_update_trade_state_sell(default_conf, trades_for_order, limit_sell_order, mocker):
@@ -1941,14 +1955,11 @@ def test_check_handle_timedout_exception(default_conf, ticker, mocker, caplog) -
     )
 
     Trade.session.add(trade_buy)
-    regexp = re.compile(
-        'Cannot query order for Trade(id=1, pair=ETH/BTC, amount=90.99181073, '
-        'open_rate=0.00001099, open_since=10 hours ago) due to Traceback (most '
-        'recent call last):\n.*'
-    )
 
     freqtrade.check_handle_timedout()
-    assert filter(regexp.match, caplog.record_tuples)
+    assert log_has_re(r'Cannot query order for Trade\(id=1, pair=ETH/BTC, amount=90.99181073, '
+                      r'open_rate=0.00001099, open_since=10 hours ago\) due to Traceback \(most '
+                      r'recent call last\):\n.*', caplog.record_tuples)
 
 
 def test_handle_timedout_limit_buy(mocker, default_conf) -> None:
@@ -2884,6 +2895,30 @@ def test_get_real_amount_stake(default_conf, trades_for_order, buy_order_fee, mo
 
     # Amount does not change
     assert freqtrade.get_real_amount(trade, buy_order_fee) == amount
+
+
+def test_get_real_amount_no_currency_in_fee(default_conf, trades_for_order, buy_order_fee, mocker):
+
+    limit_buy_order = deepcopy(buy_order_fee)
+    limit_buy_order['fee'] = {'cost': 0.004, 'currency': None}
+    trades_for_order[0]['fee']['currency'] = None
+
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
+    amount = sum(x['amount'] for x in trades_for_order)
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=amount,
+        exchange='binance',
+        open_rate=0.245441,
+        open_order_id="123456"
+    )
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+
+    # Amount does not change
+    assert freqtrade.get_real_amount(trade, limit_buy_order) == amount
 
 
 def test_get_real_amount_BNB(default_conf, trades_for_order, buy_order_fee, mocker):

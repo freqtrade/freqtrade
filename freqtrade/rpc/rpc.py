@@ -281,10 +281,11 @@ class RPC(object):
                 rate = 1.0
             else:
                 try:
-                    if coin in('USDT', 'USD', 'EUR'):
-                        rate = 1.0 / self._freqtrade.get_sell_rate('BTC/' + coin, False)
+                    pair = self._freqtrade.exchange.get_valid_pair_combination(coin, "BTC")
+                    if pair.startswith("BTC"):
+                        rate = 1.0 / self._freqtrade.get_sell_rate(pair, False)
                     else:
-                        rate = self._freqtrade.get_sell_rate(coin + '/BTC', False)
+                        rate = self._freqtrade.get_sell_rate(pair, False)
                 except (TemporaryError, DependencyException):
                     logger.warning(f" Could not get rate for pair {coin}.")
                     continue
@@ -298,7 +299,10 @@ class RPC(object):
                 'est_btc': est_btc,
             })
         if total == 0.0:
-            raise RPCException('all balances are zero')
+            if self._freqtrade.config.get('dry_run', False):
+                raise RPCException('Running in Dry Run, balances are not available.')
+            else:
+                raise RPCException('All balances are zero.')
 
         symbol = fiat_display_currency
         value = self._fiat_converter.convert_amount(total, 'BTC',

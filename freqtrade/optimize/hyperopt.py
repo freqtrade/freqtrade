@@ -7,7 +7,7 @@ This module contains the hyperopt logic
 import logging
 import os
 import sys
-from math import exp
+
 from operator import itemgetter
 from pathlib import Path
 from pprint import pprint
@@ -18,10 +18,12 @@ from pandas import DataFrame
 from skopt import Optimizer
 from skopt.space import Dimension
 
-from freqtrade.arguments import Arguments
+from freqtrade.configuration import Arguments
 from freqtrade.data.history import load_data, get_timeframe
 from freqtrade.optimize.backtesting import Backtesting
-from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
+# Import IHyperOptLoss to allow users import from this file
+from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F4
+from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver, HyperOptLossResolver
 
 
 logger = logging.getLogger(__name__)
@@ -46,26 +48,45 @@ class Hyperopt(Backtesting):
         super().__init__(config)
         self.custom_hyperopt = HyperOptResolver(self.config).hyperopt
 
-        # set TARGET_TRADES to suit your number concurrent trades so its realistic
-        # to the number of days
-        self.target_trades = 600
+        self.custom_hyperoptloss = HyperOptLossResolver(self.config).hyperoptloss
+        self.calculate_loss = self.custom_hyperoptloss.hyperopt_loss_function
+
         self.total_tries = config.get('epochs', 0)
         self.current_best_loss = 100
 
-        # max average trade duration in minutes
-        # if eval ends with higher value, we consider it a failed eval
-        self.max_accepted_trade_duration = 300
-
-        # This is assumed to be expected avg profit * expected trade count.
-        # For example, for 0.35% avg per trade (or 0.0035 as ratio) and 1100 trades,
-        # self.expected_max_profit = 3.85
-        # Check that the reported Σ% values do not exceed this!
-        # Note, this is ratio. 3.85 stated above means 385Σ%.
-        self.expected_max_profit = 3.0
+        if not self.config.get('hyperopt_continue'):
+            self.clean_hyperopt()
+        else:
+            logger.info("Continuing on previous hyperopt results.")
 
         # Previous evaluations
         self.trials_file = TRIALSDATA_PICKLE
         self.trials: List = []
+
+        # Populate functions here (hasattr is slow so should not be run during "regular" operations)
+        if hasattr(self.custom_hyperopt, 'populate_buy_trend'):
+            self.advise_buy = self.custom_hyperopt.populate_buy_trend  # type: ignore
+
+        if hasattr(self.custom_hyperopt, 'populate_sell_trend'):
+            self.advise_sell = self.custom_hyperopt.populate_sell_trend  # type: ignore
+
+            # Use max_open_trades for hyperopt as well, except --disable-max-market-positions is set
+        if self.config.get('use_max_market_positions', True):
+            self.max_open_trades = self.config['max_open_trades']
+        else:
+            logger.debug('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
+            self.max_open_trades = 0
+        self.position_stacking = self.config.get('position_stacking', False),
+
+    def clean_hyperopt(self):
+        """
+        Remove hyperopt pickle files to restart hyperopt.
+        """
+        for f in [TICKERDATA_PICKLE, TRIALSDATA_PICKLE]:
+            p = Path(f)
+            if p.is_file():
+                logger.info(f"Removing `{p}`.")
+                p.unlink()
 
     def get_args(self, params):
         dimensions = self.hyperopt_space()
@@ -134,16 +155,6 @@ class Hyperopt(Backtesting):
             print('.', end='')
             sys.stdout.flush()
 
-    def calculate_loss(self, total_profit: float, trade_count: int, trade_duration: float) -> float:
-        """
-        Objective function, returns smaller number for more optimal results
-        """
-        trade_loss = 1 - 0.25 * exp(-(trade_count - self.target_trades) ** 2 / 10 ** 5.8)
-        profit_loss = max(0, 1 - total_profit / self.expected_max_profit)
-        duration_loss = 0.4 * min(trade_duration / self.max_accepted_trade_duration, 1)
-        result = trade_loss + profit_loss + duration_loss
-        return result
-
     def has_space(self, space: str) -> bool:
         """
         Tell if a space value is contained in the configuration
@@ -172,39 +183,40 @@ class Hyperopt(Backtesting):
         return spaces
 
     def generate_optimizer(self, _params: Dict) -> Dict:
+        """
+        Used Optimize function. Called once per epoch to optimize whatever is configured.
+        Keep this function as optimized as possible!
+        """
         params = self.get_args(_params)
         if self.has_space('roi'):
             self.strategy.minimal_roi = self.custom_hyperopt.generate_roi_table(params)
 
         if self.has_space('buy'):
             self.advise_buy = self.custom_hyperopt.buy_strategy_generator(params)
-        elif hasattr(self.custom_hyperopt, 'populate_buy_trend'):
-            self.advise_buy = self.custom_hyperopt.populate_buy_trend  # type: ignore
 
         if self.has_space('sell'):
             self.advise_sell = self.custom_hyperopt.sell_strategy_generator(params)
-        elif hasattr(self.custom_hyperopt, 'populate_sell_trend'):
-            self.advise_sell = self.custom_hyperopt.populate_sell_trend  # type: ignore
 
         if self.has_space('stoploss'):
             self.strategy.stoploss = params['stoploss']
 
         processed = load(TICKERDATA_PICKLE)
+
         min_date, max_date = get_timeframe(processed)
+
         results = self.backtest(
             {
                 'stake_amount': self.config['stake_amount'],
                 'processed': processed,
-                'position_stacking': self.config.get('position_stacking', True),
+                'max_open_trades': self.max_open_trades,
+                'position_stacking': self.position_stacking,
                 'start_date': min_date,
                 'end_date': max_date,
             }
         )
         result_explanation = self.format_results(results)
 
-        total_profit = results.profit_percent.sum()
         trade_count = len(results.index)
-        trade_duration = results.trade_duration.mean()
 
         # If this evaluation contains too short amount of trades to be
         # interesting -- consider it as 'bad' (assigned max. loss value)
@@ -217,7 +229,8 @@ class Hyperopt(Backtesting):
                 'result': result_explanation,
             }
 
-        loss = self.calculate_loss(total_profit, trade_count, trade_duration)
+        loss = self.calculate_loss(results=results, trade_count=trade_count,
+                                   min_date=min_date.datetime, max_date=max_date.datetime)
 
         return {
             'loss': loss,
@@ -288,9 +301,8 @@ class Hyperopt(Backtesting):
             (max_date - min_date).days
         )
 
-        if self.has_space('buy') or self.has_space('sell'):
-            self.strategy.advise_indicators = \
-                self.custom_hyperopt.populate_indicators  # type: ignore
+        self.strategy.advise_indicators = \
+            self.custom_hyperopt.populate_indicators  # type: ignore
 
         preprocessed = self.strategy.tickerdata_to_dataframe(data)
 

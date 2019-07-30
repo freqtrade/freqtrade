@@ -324,7 +324,7 @@ def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, fee, markets,
     assert prec_satoshi(stats['best_rate'], 6.2)
 
 
-def test_rpc_balance_handle(default_conf, mocker):
+def test_rpc_balance_handle_error(default_conf, mocker):
     mock_balance = {
         'BTC': {
             'free': 10.0,
@@ -369,6 +369,72 @@ def test_rpc_balance_handle(default_conf, mocker):
         'est_btc': 12.0,
     }]
     assert result['total'] == 12.0
+
+
+def test_rpc_balance_handle(default_conf, mocker):
+    mock_balance = {
+        'BTC': {
+            'free': 10.0,
+            'total': 12.0,
+            'used': 2.0,
+        },
+        'ETH': {
+            'free': 1.0,
+            'total': 5.0,
+            'used': 4.0,
+        },
+        'PAX': {
+            'free': 5.0,
+            'total': 10.0,
+            'used': 5.0,
+        }
+    }
+
+    mocker.patch.multiple(
+        'freqtrade.rpc.fiat_convert.Market',
+        ticker=MagicMock(return_value={'price_usd': 15000.0}),
+    )
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_balances=MagicMock(return_value=mock_balance),
+        get_ticker=MagicMock(
+            side_effect=lambda p, r: {'bid': 100} if p == "BTC/PAX" else {'bid': 0.01}),
+        get_valid_pair_combination=MagicMock(
+            side_effect=lambda a, b: f"{b}/{a}" if a == "PAX" else f"{a}/{b}")
+    )
+
+    freqtradebot = FreqtradeBot(default_conf)
+    patch_get_signal(freqtradebot, (True, False))
+    rpc = RPC(freqtradebot)
+    rpc._fiat_converter = CryptoToFiatConverter()
+
+    result = rpc._rpc_balance(default_conf['fiat_display_currency'])
+    assert prec_satoshi(result['total'], 12.15)
+    assert prec_satoshi(result['value'], 182250)
+    assert 'USD' == result['symbol']
+    assert result['currencies'] == [
+        {'currency': 'BTC',
+            'available': 10.0,
+            'balance': 12.0,
+            'pending': 2.0,
+            'est_btc': 12.0,
+         },
+        {'available': 1.0,
+         'balance': 5.0,
+         'currency': 'ETH',
+         'est_btc': 0.05,
+         'pending': 4.0
+         },
+        {'available': 5.0,
+         'balance': 10.0,
+         'currency': 'PAX',
+         'est_btc': 0.1,
+         'pending': 5.0}
+    ]
+    assert result['total'] == 12.15
 
 
 def test_rpc_start(mocker, default_conf) -> None:

@@ -4,11 +4,21 @@ This page explains how to prepare your environment for running the bot.
 
 ## Prerequisite
 
+### Requirements
+
+Click each one for install guide:
+
+* [Python >= 3.6.x](http://docs.python-guide.org/en/latest/starting/installation/)
+* [pip](https://pip.pypa.io/en/stable/installing/)
+* [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+* [virtualenv](https://virtualenv.pypa.io/en/stable/installation/) (Recommended)
+* [TA-Lib](https://mrjbq7.github.io/ta-lib/install.html) (install instructions below)
+
+### API keys
+
 Before running your bot in production you will need to setup few
 external API. In production mode, the bot will require valid Exchange API
 credentials. We also recommend a [Telegram bot](telegram-usage.md#setup-your-telegram-bot) (optional but recommended).
-
-- [Setup your exchange account](#setup-your-exchange-account)
 
 ### Setup your exchange account
 
@@ -17,6 +27,9 @@ You will need to create API Keys (Usually you get `key` and `secret`) from the E
 ## Quick start
 
 Freqtrade provides a Linux/MacOS script to install all dependencies and help you to configure the bot.
+
+!!! Note
+    Python3.6 or higher and the corresponding pip are assumed to be available. The install-script will warn and stop if that's not the case.
 
 ```bash
 git clone git@github.com:freqtrade/freqtrade.git
@@ -30,7 +43,7 @@ git checkout develop
 
 ## Easy Installation - Linux Script
 
-If you are on Debian, Ubuntu or MacOS a freqtrade provides a script to Install, Update, Configure, and Reset your bot.
+If you are on Debian, Ubuntu or MacOS freqtrade provides a script to Install, Update, Configure, and Reset your bot.
 
 ```bash
 $ ./setup.sh
@@ -45,7 +58,7 @@ usage:
 
 This script will install everything you need to run the bot:
 
-* Mandatory software as: `Python3`, `ta-lib`, `wget`
+* Mandatory software as: `ta-lib`
 * Setup your virtualenv
 * Configure your `config.json` file
 
@@ -70,24 +83,16 @@ Config parameter is a `config.json` configurator. This script will ask you quest
 We've included/collected install instructions for Ubuntu 16.04, MacOS, and Windows. These are guidelines and your success may vary with other distros.
 OS Specific steps are listed first, the [Common](#common) section below is necessary for all systems.
 
-### Requirements
-
-Click each one for install guide:
-
-* [Python >= 3.6.x](http://docs.python-guide.org/en/latest/starting/installation/)
-* [pip](https://pip.pypa.io/en/stable/installing/)
-* [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
-* [virtualenv](https://virtualenv.pypa.io/en/stable/installation/) (Recommended)
-* [TA-Lib](https://mrjbq7.github.io/ta-lib/install.html)
+!!! Note
+    Python3.6 or higher and the corresponding pip are assumed to be available.
 
 ### Linux - Ubuntu 16.04
 
-#### Install Python 3.6, Git, and wget
+#### Install necessary dependencies
 
 ```bash
-sudo add-apt-repository ppa:jonathonf/python-3.6
 sudo apt-get update
-sudo apt-get install python3.6 python3.6-venv python3.6-dev build-essential autoconf libtool pkg-config make wget git
+sudo apt-get install build-essential git
 ```
 
 #### Raspberry Pi / Raspbian
@@ -109,14 +114,6 @@ conda install scipy pandas numpy
 sudo apt install libffi-dev
 python3 -m pip install -r requirements-common.txt
 python3 -m pip install -e .
-```
-
-### MacOS
-
-#### Install Python 3.6, git and wget
-
-```bash
-brew install python3 git wget
 ```
 
 ### Common
@@ -159,7 +156,7 @@ git clone https://github.com/freqtrade/freqtrade.git
 
 ```
 
-Optionally checkout the stable/master branch:
+Optionally checkout the master branch to get the latest stable release:
 
 ```bash
 git checkout master
@@ -177,9 +174,9 @@ cp config.json.example config.json
 #### 5. Install python dependencies
 
 ``` bash
-pip3 install --upgrade pip
-pip3 install -r requirements.txt
-pip3 install -e .
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
+python3 -m pip install -e .
 ```
 
 #### 6. Run the Bot
@@ -187,7 +184,7 @@ pip3 install -e .
 If this is the first time you run the bot, ensure you are running it in Dry-run `"dry_run": true,` otherwise it will start to buy and sell coins.
 
 ```bash
-python3.6 freqtrade -c config.json
+freqtrade -c config.json
 ```
 
 *Note*: If you run the bot on a server, you should consider using [Docker](docker.md) or a terminal multiplexer like `screen` or [`tmux`](https://en.wikipedia.org/wiki/Tmux) to avoid that the bot is stopped on logout.
@@ -217,8 +214,8 @@ when it changes.
 The `freqtrade.service.watchdog` file contains an example of the service unit configuration file which uses systemd 
 as the watchdog.
 
-!!! Note 
-  The sd_notify communication between the bot and the systemd service manager will not work if the bot runs in a Docker container.
+!!! Note
+    The sd_notify communication between the bot and the systemd service manager will not work if the bot runs in a Docker container.
 
 ------
 
@@ -236,8 +233,6 @@ If that is not available on your system, feel free to try the instructions below
 ```bash
 git clone https://github.com/freqtrade/freqtrade.git
 ```
-
-copy paste `config.json` to ``\path\freqtrade-develop\freqtrade`
 
 #### Install ta-lib
 
