@@ -97,6 +97,7 @@ user_data/
 ├── backtest_results
 ├── data
 ├── hyperopts
+├── hyperopts_results
 ├── plot
 └── strategies
 ```

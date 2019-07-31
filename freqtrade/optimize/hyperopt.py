@@ -47,8 +47,10 @@ class Hyperopt(Backtesting):
         self.custom_hyperoptloss = HyperOptLossResolver(self.config).hyperoptloss
         self.calculate_loss = self.custom_hyperoptloss.hyperopt_loss_function
 
-        self.trials_file = self.config['user_data_dir'] / 'hyperopt_results.pickle'
-        self.tickerdata_pickle = self.config['user_data_dir'] / 'hyperopt_tickerdata.pkl'
+        self.trials_file = (self.config['user_data_dir'] /
+                            'hyperopt_results' / 'hyperopt_results.pickle')
+        self.tickerdata_pickle = (self.config['user_data_dir'] /
+                                  'hyperopt_results' / 'hyperopt_tickerdata.pkl')
         self.total_tries = config.get('epochs', 0)
         self.current_best_loss = 100
 

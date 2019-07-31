@@ -626,7 +626,7 @@ def test_create_userdata_dir(mocker, default_conf, caplog) -> None:
     md = mocker.patch.object(Path, 'mkdir', MagicMock())
 
     x = create_userdata_dir('/tmp/bar')
-    assert md.call_count == 6
+    assert md.call_count == 7
     assert md.call_args[1]['parents'] is False
     assert log_has('Created user-data directory: /tmp/bar', caplog.record_tuples)
     assert isinstance(x, Path)

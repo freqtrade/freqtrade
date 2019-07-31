@@ -21,7 +21,7 @@ def create_datadir(config: Dict[str, Any], datadir: Optional[str] = None) -> str
 
 
 def create_userdata_dir(directory: str) -> Path:
-    sub_dirs = ["backtest_results", "data", "hyperopts", "plot", "strategies", ]
+    sub_dirs = ["backtest_results", "data", "hyperopts", "hyperopt_results", "plot", "strategies", ]
     folder = Path(directory)
     if not folder.is_dir():
         folder.mkdir(parents=True)
