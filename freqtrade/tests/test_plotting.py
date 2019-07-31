@@ -211,7 +211,7 @@ def test_generate_plot_file(mocker, caplog):
     fig = generage_empty_figure()
     plot_mock = mocker.patch("freqtrade.plot.plotting.plot", MagicMock())
     store_plot_file(fig, filename="freqtrade-plot-UNITTEST_BTC-5m.html",
-                    folder=Path("user_data/plots"))
+                    directory=Path("user_data/plots"))
 
     assert plot_mock.call_count == 1
     assert plot_mock.call_args[0][0] == fig
