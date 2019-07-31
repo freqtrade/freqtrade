@@ -55,12 +55,12 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "datadir": Arg(
         '-d', '--datadir',
-        help='Path to backtest data.',
+        help='Path to directory with historical backtesting data.',
         metavar='PATH',
     ),
     "user_data_dir": Arg(
         '--userdir', '--user-data-dir',
-        help='Path to Userdata Directory.',
+        help='Path to userdata directory.',
         metavar='PATH',
     ),
     # Main options

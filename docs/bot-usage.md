@@ -34,9 +34,9 @@ optional arguments:
                         Multiple --config options may be used. Can be set to
                         `-` to read config from stdin.
   -d PATH, --datadir PATH
-                        Path to backtest data.
+                        Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
-                        Path to Userdata Directory.
+                        Path to userdata directory.
   -s NAME, --strategy NAME
                         Specify strategy class name (default:
                         `DefaultStrategy`).
@@ -92,19 +92,21 @@ See more details on this technique with examples in the documentation page on
 Freqtrade allows the creation of a user-data directory using `freqtrade create-userdir --userdir someDirectory`.
 This directory will look as follows:
 
+```
 user_data/
 ├── backtest_results
 ├── data
 ├── hyperopts
 ├── plot
 └── strategies
+```
 
-You can add the entry "user_data_dir" to your configuration, to always point your bot to this folder.
+You can add the entry "user_data_dir" setting to your configuration, to always point your bot to this directory.
 Alternatively, pass in `--userdir` to every command.
 
-This directory should contain your custom strategies, custom hyperopts, backtest data (downloaded using either backtesting or the download script) and plot outputs.
+This directory should contain your custom strategies, custom hyperopts and hyperopt loss functions, backtesting historical data (downloaded using either backtesting command or the download script) and plot outputs.
 
-It is reccomendet to use version control to keep track of changes to your strategies.
+It is recommended to use version control to keep track of changes to your strategies.
 
 ### How to use **--strategy**?
 
