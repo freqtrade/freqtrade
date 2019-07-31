@@ -49,7 +49,7 @@ def start_create_userdir(args: Namespace) -> None:
     :return: None
     """
     if "user_data_dir" in args and args.user_data_dir:
-        create_userdata_dir(args.user_data_dir)
+        create_userdata_dir(args.user_data_dir, create_dir=True)
     else:
         logger.warning("`create-userdir` requires --userdir to be set.")
         sys.exit(1)

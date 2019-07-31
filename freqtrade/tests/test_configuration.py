@@ -335,7 +335,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     )
     mocker.patch(
         'freqtrade.configuration.configuration.create_userdata_dir',
-        lambda x: Path(x)
+        lambda x, *args, **kwargs: Path(x)
     )
     arglist = [
         '--config', 'config.json',
@@ -625,7 +625,7 @@ def test_create_userdata_dir(mocker, default_conf, caplog) -> None:
     mocker.patch.object(Path, "is_dir", MagicMock(return_value=False))
     md = mocker.patch.object(Path, 'mkdir', MagicMock())
 
-    x = create_userdata_dir('/tmp/bar')
+    x = create_userdata_dir('/tmp/bar', create_dir=True)
     assert md.call_count == 7
     assert md.call_args[1]['parents'] is False
     assert log_has('Created user-data directory: /tmp/bar', caplog.record_tuples)
@@ -638,6 +638,15 @@ def test_create_userdata_dir_exists(mocker, default_conf, caplog) -> None:
     md = mocker.patch.object(Path, 'mkdir', MagicMock())
 
     create_userdata_dir('/tmp/bar')
+    assert md.call_count == 0
+
+
+def test_create_userdata_dir_exists_exception(mocker, default_conf, caplog) -> None:
+    mocker.patch.object(Path, "is_dir", MagicMock(return_value=False))
+    md = mocker.patch.object(Path, 'mkdir', MagicMock())
+
+    with pytest.raises(OperationalException, match=r'Directory `/tmp/bar` does not exist.*'):
+        create_userdata_dir('/tmp/bar',  create_dir=False)
     assert md.call_count == 0
 
 

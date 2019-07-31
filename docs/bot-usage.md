@@ -104,6 +104,7 @@ user_data/
 
 You can add the entry "user_data_dir" setting to your configuration, to always point your bot to this directory.
 Alternatively, pass in `--userdir` to every command.
+The bot will fail to start if the directory does not exist, but will create necessary subdirectories.
 
 This directory should contain your custom strategies, custom hyperopts and hyperopt loss functions, backtesting historical data (downloaded using either backtesting command or the download script) and plot outputs.
 
