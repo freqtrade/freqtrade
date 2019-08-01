@@ -33,13 +33,13 @@ def get_mock_coro(return_value):
 def ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            fun, mock_ccxt_fun, **kwargs):
     with pytest.raises(TemporaryError):
-        api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.NetworkError)
+        api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.NetworkError("DeaDBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         getattr(exchange, fun)(**kwargs)
     assert api_mock.__dict__[mock_ccxt_fun].call_count == API_RETRY_COUNT + 1
 
     with pytest.raises(OperationalException):
-        api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.BaseError)
+        api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.BaseError("DeadBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         getattr(exchange, fun)(**kwargs)
     assert api_mock.__dict__[mock_ccxt_fun].call_count == 1
@@ -47,13 +47,13 @@ def ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
 
 async def async_ccxt_exception(mocker, default_conf, api_mock, fun, mock_ccxt_fun, **kwargs):
     with pytest.raises(TemporaryError):
-        api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.NetworkError)
+        api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.NetworkError("DeadBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
         await getattr(exchange, fun)(**kwargs)
     assert api_mock.__dict__[mock_ccxt_fun].call_count == API_RETRY_COUNT + 1
 
     with pytest.raises(OperationalException):
-        api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.BaseError)
+        api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.BaseError("DeadBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
         await getattr(exchange, fun)(**kwargs)
     assert api_mock.__dict__[mock_ccxt_fun].call_count == 1
@@ -256,13 +256,13 @@ def test__load_async_markets(default_conf, mocker, caplog):
 def test__load_markets(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
     api_mock = MagicMock()
-    api_mock.load_markets = MagicMock(side_effect=ccxt.BaseError())
+    api_mock.load_markets = MagicMock(side_effect=ccxt.BaseError("SomeError"))
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock())
     Exchange(default_conf)
-    assert log_has('Unable to initialize markets. Reason: ', caplog.record_tuples)
+    assert log_has('Unable to initialize markets. Reason: SomeError', caplog.record_tuples)
 
     expected_return = {'ETH/BTC': 'available'}
     api_mock = MagicMock()
@@ -305,7 +305,7 @@ def test__reload_markets_exception(default_conf, mocker, caplog):
     caplog.set_level(logging.DEBUG)
 
     api_mock = MagicMock()
-    api_mock.load_markets = MagicMock(side_effect=ccxt.NetworkError)
+    api_mock.load_markets = MagicMock(side_effect=ccxt.NetworkError("LoadError"))
     default_conf['exchange']['markets_refresh_interval'] = 10
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
 
@@ -634,25 +634,25 @@ def test_buy_prod(default_conf, mocker, exchange_name):
 
     # test exception handling
     with pytest.raises(DependencyException):
-        api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds)
+        api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds("Not enough funds"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.buy(pair='ETH/BTC', ordertype=order_type,
                      amount=1, rate=200, time_in_force=time_in_force)
 
     with pytest.raises(DependencyException):
-        api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder)
+        api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.buy(pair='ETH/BTC', ordertype=order_type,
                      amount=1, rate=200, time_in_force=time_in_force)
 
     with pytest.raises(TemporaryError):
-        api_mock.create_order = MagicMock(side_effect=ccxt.NetworkError)
+        api_mock.create_order = MagicMock(side_effect=ccxt.NetworkError("Network disconnect"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.buy(pair='ETH/BTC', ordertype=order_type,
                      amount=1, rate=200, time_in_force=time_in_force)
 
     with pytest.raises(OperationalException):
-        api_mock.create_order = MagicMock(side_effect=ccxt.BaseError)
+        api_mock.create_order = MagicMock(side_effect=ccxt.BaseError("Unknown error"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.buy(pair='ETH/BTC', ordertype=order_type,
                      amount=1, rate=200, time_in_force=time_in_force)
@@ -758,22 +758,22 @@ def test_sell_prod(default_conf, mocker, exchange_name):
 
     # test exception handling
     with pytest.raises(DependencyException):
-        api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds)
+        api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds("0 balance"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
 
     with pytest.raises(DependencyException):
-        api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder)
+        api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
 
     with pytest.raises(TemporaryError):
-        api_mock.create_order = MagicMock(side_effect=ccxt.NetworkError)
+        api_mock.create_order = MagicMock(side_effect=ccxt.NetworkError("No Connection"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
 
     with pytest.raises(OperationalException):
-        api_mock.create_order = MagicMock(side_effect=ccxt.BaseError)
+        api_mock.create_order = MagicMock(side_effect=ccxt.BaseError("DeadBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
 
@@ -846,7 +846,7 @@ def test_get_balance_prod(default_conf, mocker, exchange_name):
     assert exchange.get_balance(currency='BTC') == 123.4
 
     with pytest.raises(OperationalException):
-        api_mock.fetch_balance = MagicMock(side_effect=ccxt.BaseError)
+        api_mock.fetch_balance = MagicMock(side_effect=ccxt.BaseError("Unknown error"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
 
         exchange.get_balance(currency='BTC')
@@ -919,7 +919,7 @@ def test_get_tickers(default_conf, mocker, exchange_name):
                            "get_tickers", "fetch_tickers")
 
     with pytest.raises(OperationalException):
-        api_mock.fetch_tickers = MagicMock(side_effect=ccxt.NotSupported)
+        api_mock.fetch_tickers = MagicMock(side_effect=ccxt.NotSupported("DeadBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.get_tickers()
 
@@ -1101,7 +1101,7 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
 
     api_mock = MagicMock()
     with pytest.raises(OperationalException, match=r'Could not fetch ticker data*'):
-        api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.BaseError)
+        api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.BaseError("Unknown error"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         await exchange._async_get_candle_history(pair, "5m",
                                                  (arrow.utcnow().timestamp - 2000) * 1000)
@@ -1173,15 +1173,15 @@ def test_get_order_book(default_conf, mocker, order_book_l2, exchange_name):
 def test_get_order_book_exception(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
     with pytest.raises(OperationalException):
-        api_mock.fetch_l2_order_book = MagicMock(side_effect=ccxt.NotSupported)
+        api_mock.fetch_l2_order_book = MagicMock(side_effect=ccxt.NotSupported("Not supported"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.get_order_book(pair='ETH/BTC', limit=50)
     with pytest.raises(TemporaryError):
-        api_mock.fetch_l2_order_book = MagicMock(side_effect=ccxt.NetworkError)
+        api_mock.fetch_l2_order_book = MagicMock(side_effect=ccxt.NetworkError("DeadBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.get_order_book(pair='ETH/BTC', limit=50)
     with pytest.raises(OperationalException):
-        api_mock.fetch_l2_order_book = MagicMock(side_effect=ccxt.BaseError)
+        api_mock.fetch_l2_order_book = MagicMock(side_effect=ccxt.BaseError("DeadBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.get_order_book(pair='ETH/BTC', limit=50)
 
@@ -1294,7 +1294,7 @@ def test_cancel_order(default_conf, mocker, exchange_name):
     assert exchange.cancel_order(order_id='_', pair='TKN/BTC') == 123
 
     with pytest.raises(InvalidOrderException):
-        api_mock.cancel_order = MagicMock(side_effect=ccxt.InvalidOrder)
+        api_mock.cancel_order = MagicMock(side_effect=ccxt.InvalidOrder("Did not find order"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.cancel_order(order_id='_', pair='TKN/BTC')
     assert api_mock.cancel_order.call_count == 1
@@ -1321,7 +1321,7 @@ def test_get_order(default_conf, mocker, exchange_name):
     assert exchange.get_order('X', 'TKN/BTC') == 456
 
     with pytest.raises(InvalidOrderException):
-        api_mock.fetch_order = MagicMock(side_effect=ccxt.InvalidOrder)
+        api_mock.fetch_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.get_order(order_id='_', pair='TKN/BTC')
     assert api_mock.fetch_order.call_count == 1
@@ -1437,22 +1437,22 @@ def test_stoploss_limit_order(default_conf, mocker):
 
     # test exception handling
     with pytest.raises(DependencyException):
-        api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds)
+        api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds("0 balance"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
         exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
 
     with pytest.raises(DependencyException):
-        api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder)
+        api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
         exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
 
     with pytest.raises(TemporaryError):
-        api_mock.create_order = MagicMock(side_effect=ccxt.NetworkError)
+        api_mock.create_order = MagicMock(side_effect=ccxt.NetworkError("No connection"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
         exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
 
     with pytest.raises(OperationalException):
-        api_mock.create_order = MagicMock(side_effect=ccxt.BaseError)
+        api_mock.create_order = MagicMock(side_effect=ccxt.BaseError("DeadBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
         exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
 

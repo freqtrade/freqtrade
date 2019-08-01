@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 try:
-    from plotly import tools
+    from plotly.subplots import make_subplots
     from plotly.offline import plot
-    import plotly.graph_objs as go
+    import plotly.graph_objects as go
 except ImportError:
     logger.exception("Module plotly not found \n Please install using `pip install plotly`")
     exit(1)
@@ -62,7 +62,7 @@ def init_plotscript(config):
             }
 
 
-def add_indicators(fig, row, indicators: List[str], data: pd.DataFrame) -> tools.make_subplots:
+def add_indicators(fig, row, indicators: List[str], data: pd.DataFrame) -> make_subplots:
     """
     Generator all the indicator selected by the user for a specific row
     :param fig: Plot figure to append to
@@ -79,7 +79,7 @@ def add_indicators(fig, row, indicators: List[str], data: pd.DataFrame) -> tools
                 mode='lines',
                 name=indicator
             )
-            fig.append_trace(scattergl, row, 1)
+            fig.add_trace(scattergl, row, 1)
         else:
             logger.info(
                 'Indicator "%s" ignored. Reason: This indicator is not found '
@@ -90,7 +90,7 @@ def add_indicators(fig, row, indicators: List[str], data: pd.DataFrame) -> tools
     return fig
 
 
-def add_profit(fig, row, data: pd.DataFrame, column: str, name: str) -> tools.make_subplots:
+def add_profit(fig, row, data: pd.DataFrame, column: str, name: str) -> make_subplots:
     """
     Add profit-plot
     :param fig: Plot figure to append to
@@ -105,12 +105,12 @@ def add_profit(fig, row, data: pd.DataFrame, column: str, name: str) -> tools.ma
         y=data[column],
         name=name,
     )
-    fig.append_trace(profit, row, 1)
+    fig.add_trace(profit, row, 1)
 
     return fig
 
 
-def plot_trades(fig, trades: pd.DataFrame) -> tools.make_subplots:
+def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
     """
     Add trades to "fig"
     """
@@ -145,8 +145,8 @@ def plot_trades(fig, trades: pd.DataFrame) -> tools.make_subplots:
                 color='red'
             )
         )
-        fig.append_trace(trade_buys, 1, 1)
-        fig.append_trace(trade_sells, 1, 1)
+        fig.add_trace(trade_buys, 1, 1)
+        fig.add_trace(trade_sells, 1, 1)
     else:
         logger.warning("No trades found.")
     return fig
@@ -167,7 +167,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     """
 
     # Define the graph
-    fig = tools.make_subplots(
+    fig = make_subplots(
         rows=3,
         cols=1,
         shared_xaxes=True,
@@ -189,7 +189,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
         close=data.close,
         name='Price'
     )
-    fig.append_trace(candles, 1, 1)
+    fig.add_trace(candles, 1, 1)
 
     if 'buy' in data.columns:
         df_buy = data[data['buy'] == 1]
@@ -206,7 +206,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
                     color='green',
                 )
             )
-            fig.append_trace(buys, 1, 1)
+            fig.add_trace(buys, 1, 1)
         else:
             logger.warning("No buy-signals found.")
 
@@ -225,7 +225,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
                     color='red',
                 )
             )
-            fig.append_trace(sells, 1, 1)
+            fig.add_trace(sells, 1, 1)
         else:
             logger.warning("No sell-signals found.")
 
@@ -244,8 +244,8 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
             fillcolor="rgba(0,176,246,0.2)",
             line={'color': 'rgba(255,255,255,0)'},
         )
-        fig.append_trace(bb_lower, 1, 1)
-        fig.append_trace(bb_upper, 1, 1)
+        fig.add_trace(bb_lower, 1, 1)
+        fig.add_trace(bb_upper, 1, 1)
 
     # Add indicators to main plot
     fig = add_indicators(fig=fig, row=1, indicators=indicators1, data=data)
@@ -258,7 +258,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
         y=data['volume'],
         name='Volume'
     )
-    fig.append_trace(volume, 2, 1)
+    fig.add_trace(volume, 2, 1)
 
     # Add indicators to seperate row
     fig = add_indicators(fig=fig, row=3, indicators=indicators2, data=data)
@@ -281,10 +281,10 @@ def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame],
         name='Avg close price',
     )
 
-    fig = tools.make_subplots(rows=3, cols=1, shared_xaxes=True, row_width=[1, 1, 1])
+    fig = make_subplots(rows=3, cols=1, shared_xaxes=True, row_width=[1, 1, 1])
     fig['layout'].update(title="Profit plot")
 
-    fig.append_trace(avgclose, 1, 1)
+    fig.add_trace(avgclose, 1, 1)
     fig = add_profit(fig, 2, df_comb, 'cum_profit', 'Profit')
 
     for pair in pairs:
