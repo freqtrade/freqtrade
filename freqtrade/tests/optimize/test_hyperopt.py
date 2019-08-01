@@ -370,13 +370,13 @@ def test_onlyprofit_loss_prefers_higher_profits(default_conf, hyperopt_results) 
 
 def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
     hyperopt.current_best_loss = 2
+    hyperopt.total_epochs = 2
     hyperopt.log_results(
         {
             'loss': 1,
-            'current_tries': 1,
-            'total_tries': 2,
-            'result': 'foo.',
-            'initial_point': False
+            'current_epoch': 1,
+            'results_explanation': 'foo.',
+            'is_initial_point': False
         }
     )
     out, err = capsys.readouterr()
@@ -433,7 +433,7 @@ def test_roi_table_generation(hyperopt) -> None:
     assert hyperopt.custom_hyperopt.generate_roi_table(params) == {0: 6, 15: 3, 25: 1, 30: 0}
 
 
-def test_start_calls_optimizer(mocker, default_conf, caplog) -> None:
+def test_start_calls_optimizer(mocker, default_conf, caplog, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
     mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
     mocker.patch(
@@ -443,7 +443,7 @@ def test_start_calls_optimizer(mocker, default_conf, caplog) -> None:
 
     parallel = mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
-        MagicMock(return_value=[{'loss': 1, 'result': 'foo result', 'params': {}}])
+        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {}}])
     )
     patch_exchange(mocker)
 
@@ -457,8 +457,11 @@ def test_start_calls_optimizer(mocker, default_conf, caplog) -> None:
     hyperopt.strategy.tickerdata_to_dataframe = MagicMock()
 
     hyperopt.start()
+
     parallel.assert_called_once()
-    assert log_has('Best result:\nfoo result\nwith values:\n', caplog.record_tuples)
+
+    out, err = capsys.readouterr()
+    assert 'Best result:\n*    1/1: foo result Objective: 1.00000\nwith values:\n' in out
     assert dumper.called
     # Should be called twice, once for tickerdata, once to save evaluations
     assert dumper.call_count == 2
@@ -598,8 +601,8 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     }
     response_expected = {
         'loss': 1.9840569076926293,
-        'result': '     1 trades. Avg profit  2.31%. Total profit  0.00023300 BTC '
-                  '(   2.31Σ%). Avg duration 100.0 mins.',
+        'results_explanation': '     1 trades. Avg profit  2.31%. Total profit  0.00023300 BTC '
+                               '(   2.31Σ%). Avg duration 100.0 mins.',
         'params': optimizer_param
     }
 
