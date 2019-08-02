@@ -41,9 +41,9 @@ bt_data = load_pair_history(datadir=Path(data_location),
                             pair=pair)
 print(len(bt_data))
 
-
+### Start strategy reload
 # Load strategy - best done in a new cell
-# Needs to be ran each time the strategy-file is changed.
+# Rerun each time the strategy-file is changed.
 strategy = StrategyResolver({'strategy': strategyname,
                             'user_data_dir': Path.cwd(),
                             'strategy_path': location}).strategy
