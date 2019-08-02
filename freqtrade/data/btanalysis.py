@@ -30,7 +30,7 @@ def load_backtest_data(filename) -> pd.DataFrame:
         filename = Path(filename)
 
     if not filename.is_file():
-        raise ValueError("File {filename} does not exist.")
+        raise ValueError(f"File {filename} does not exist.")
 
     with filename.open() as file:
         data = json_load(file)
