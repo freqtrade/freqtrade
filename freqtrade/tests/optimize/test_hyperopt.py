@@ -26,6 +26,7 @@ from freqtrade.tests.conftest import (get_args, log_has, log_has_re,
 
 @pytest.fixture(scope='function')
 def hyperopt(default_conf, mocker):
+    default_conf.update({'spaces': ['all']})
     patch_exchange(mocker)
     return Hyperopt(default_conf)
 
@@ -455,6 +456,7 @@ def test_start_calls_optimizer(mocker, default_conf, caplog, capsys) -> None:
 
     hyperopt = Hyperopt(default_conf)
     hyperopt.strategy.tickerdata_to_dataframe = MagicMock()
+    hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     hyperopt.start()
 

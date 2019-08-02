@@ -78,6 +78,12 @@ class Hyperopt(Backtesting):
             self.max_open_trades = 0
         self.position_stacking = self.config.get('position_stacking', False),
 
+        if self.has_space('sell'):
+            # Make sure experimental is enabled
+            if 'experimental' not in self.config:
+                self.config['experimental'] = {}
+            self.config['experimental']['use_sell_signal'] = True
+
     def clean_hyperopt(self):
         """
         Remove hyperopt pickle files to restart hyperopt.
@@ -124,13 +130,14 @@ class Hyperopt(Backtesting):
         """
         results = sorted(self.trials, key=itemgetter('loss'))
         best_result = results[0]
+        params = best_result['params']
 
         log_str = self.format_results_logstring(best_result)
         print(f"\nBest result:\n{log_str}\nwith values:")
-        pprint(best_result['params'], indent=4)
-        if 'roi_t1' in best_result['params']:
+        pprint(params, indent=4)
+        if self.has_space('roi'):
             print("ROI table:")
-            pprint(self.custom_hyperopt.generate_roi_table(best_result['params']), indent=4)
+            pprint(self.custom_hyperopt.generate_roi_table(params), indent=4)
 
     def log_results(self, results) -> None:
         """
@@ -162,9 +169,7 @@ class Hyperopt(Backtesting):
         """
         Tell if a space value is contained in the configuration
         """
-        if space in self.config['spaces'] or 'all' in self.config['spaces']:
-            return True
-        return False
+        return any(s in self.config['spaces'] for s in [space, 'all'])
 
     def hyperopt_space(self) -> List[Dimension]:
         """
@@ -172,16 +177,16 @@ class Hyperopt(Backtesting):
         """
         spaces: List[Dimension] = []
         if self.has_space('buy'):
+            logger.debug("Hyperopt has 'buy' space")
             spaces += self.custom_hyperopt.indicator_space()
         if self.has_space('sell'):
+            logger.debug("Hyperopt has 'sell' space")
             spaces += self.custom_hyperopt.sell_indicator_space()
-            # Make sure experimental is enabled
-            if 'experimental' not in self.config:
-                self.config['experimental'] = {}
-            self.config['experimental']['use_sell_signal'] = True
         if self.has_space('roi'):
+            logger.debug("Hyperopt has 'roi' space")
             spaces += self.custom_hyperopt.roi_space()
         if self.has_space('stoploss'):
+            logger.debug("Hyperopt has 'stoploss' space")
             spaces += self.custom_hyperopt.stoploss_space()
         return spaces
 
