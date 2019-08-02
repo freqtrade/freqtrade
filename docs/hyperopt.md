@@ -303,8 +303,9 @@ Given the following result from hyperopt:
 
 ```
 Best result:
-   135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins.
+    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins. Objective: 1.94367
 with values:
+Buy hyperspace params:
 {    'adx-value': 44,
      'rsi-value': 29,
      'adx-enabled': False,
@@ -347,21 +348,14 @@ If you are optimizing ROI, you're result will look as follows and include a ROI 
 
 ```
 Best result:
-   135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins.
+    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins. Objective: 1.94367
 with values:
+Buy hyperspace params:
 {   'adx-value': 44,
     'rsi-value': 29,
-    'adx-enabled': false,
+    'adx-enabled': False,
     'rsi-enabled': True,
-    'trigger': 'bb_lower',
-    'roi_t1': 40,
-    'roi_t2': 57,
-    'roi_t3': 21,
-    'roi_p1': 0.03634636907306948,
-    'roi_p2': 0.055237357937802885,
-    'roi_p3': 0.015163796015548354,
-    'stoploss': -0.37996664668703606
-}
+    'trigger': 'bb_lower'}
 ROI table:
 {   0: 0.10674752302642071,
     21: 0.09158372701087236,
@@ -372,9 +366,9 @@ ROI table:
 This would translate to the following ROI table:
 
 ``` python
- minimal_roi = {
+minimal_roi = {
         "118": 0,
-        "78": 0.0363463,
+        "78": 0.0363,
         "21": 0.0915,
         "0": 0.106
     }
