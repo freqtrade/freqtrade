@@ -11,7 +11,7 @@ The following helpers will help you loading the data into Pandas DataFrames, and
 Debugging a strategy (are there no buy signals, ...) can be very time-consuming.
 FreqTrade tries to help you by exposing a few helper-functions, which can be very handy.
 
-I recommend using Juptyer Notebooks for this analysis, since it offers a dynamic way to rerun certain parts.
+It's recommendet using Juptyer Notebooks for analysis, since it offers a dynamic way to rerun certain parts of the code.
 
 The following is a full code-snippet, which will be explained by both comments, and step by step below.
 
@@ -32,6 +32,8 @@ strategy_location = '../xmatt/strategies'
 data_location = '../freqtrade/user_data/data/binance/'
 # Only use one pair here
 pair = "XRP_ETH"
+
+### End constants
 
 # Load data
 bt_data = load_pair_history(datadir=Path(data_location),
@@ -91,7 +93,8 @@ bt_data = load_pair_history(datadir=Path(data_location),
 print(len(bt_data))
 ```
 
-This second section loads the historic data and prints the amount of candles in the data.
+This second section loads the historic data and prints the amount of candles in the DataFrame.
+You can also inspect this dataframe by using `bt_data.head()` or `bt_data.tail()`.
 
 #### Run strategy and analyze results
 
@@ -114,7 +117,7 @@ data = df.set_index('date', drop=True)
 data.tail()
 ```
 
-The code snippet loads and analyzes the strategy, prints the number of buy signals.
+The code snippet loads and analyzes the strategy, calculates and prints the number of buy signals.
 
 The last 2 lines serve to analyze the dataframe in detail.
 This can be important if your strategy did not generate any buy signals.
