@@ -79,7 +79,7 @@ data_location = 'user_data/data/binance'
 pair = "XRP_ETH"
 ```
 
-This first section imports necessary modules, and defines some constants you'll probably need differently
+This first section imports necessary modules, and defines some constants you'll probably need to adjust for your case.
 
 #### Load candles
 
