@@ -11,7 +11,7 @@ The following helpers will help you loading the data into Pandas DataFrames, and
 Debugging a strategy (are there no buy signals, ...) can be very time-consuming.
 FreqTrade tries to help you by exposing a few helper-functions, which can be very handy.
 
-It's recommendet using Juptyer Notebooks for analysis, since it offers a dynamic way to rerun certain parts of the code.
+It's recommended using Juptyer Notebooks for analysis, since it offers a dynamic way to rerun certain parts of the code.
 
 The following is a full code-snippet, which will be explained by both comments, and step by step below.
 
