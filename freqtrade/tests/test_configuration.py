@@ -325,6 +325,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'export' not in config
 
 
+@pytest.mark.filterwarnings("ignore:DEPRECATED")
 def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch(

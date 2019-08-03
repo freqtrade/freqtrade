@@ -202,6 +202,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert config['runmode'] == RunMode.BACKTEST
 
 
+@pytest.mark.filterwarnings("ignore:DEPRECATED")
 def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch(
@@ -812,6 +813,7 @@ def test_backtest_record(default_conf, fee, mocker):
         assert dur > 0
 
 
+@pytest.mark.filterwarnings("ignore:DEPRECATED")
 def test_backtest_start_live(default_conf, mocker, caplog):
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
 
@@ -858,6 +860,7 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         assert log_has(line, caplog.record_tuples)
 
 
+@pytest.mark.filterwarnings("ignore:DEPRECATED")
 def test_backtest_start_multi_strat(default_conf, mocker, caplog):
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
 
