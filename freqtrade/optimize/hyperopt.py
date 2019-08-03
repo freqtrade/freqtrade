@@ -182,9 +182,9 @@ class Hyperopt(Backtesting):
 
     def hyperopt_space(self, space: Optional[str] = None) -> List[Dimension]:
         """
-        Return the dimentions in the hyperoptimization space.
-        :param space: Defines hyperspace to return dimentions for.
-        If None, then the self.has_space() will be used to return dimentions
+        Return the dimensions in the hyperoptimization space.
+        :param space: Defines hyperspace to return dimensions for.
+        If None, then the self.has_space() will be used to return dimensions
         for all hyperspaces used.
         """
         spaces: List[Dimension] = []
