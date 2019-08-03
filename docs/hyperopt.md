@@ -303,8 +303,9 @@ Given the following result from hyperopt:
 
 ```
 Best result:
+
     44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins. Objective: 1.94367
-with values:
+
 Buy hyperspace params:
 {    'adx-value': 44,
      'rsi-value': 29,
@@ -348,8 +349,9 @@ If you are optimizing ROI, you're result will look as follows and include a ROI 
 
 ```
 Best result:
+
     44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins. Objective: 1.94367
-with values:
+
 Buy hyperspace params:
 {   'adx-value': 44,
     'rsi-value': 29,

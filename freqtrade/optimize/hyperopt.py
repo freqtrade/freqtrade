@@ -133,7 +133,7 @@ class Hyperopt(Backtesting):
         params = best_result['params']
 
         log_str = self.format_results_logstring(best_result)
-        print(f"\nBest result:\n{log_str}\nwith values:")
+        print(f"\nBest result:\n\n{log_str}\n")
         if self.has_space('buy'):
             print('Buy hyperspace params:')
             pprint({p.name: params.get(p.name) for p in self.hyperopt_space('buy')},
