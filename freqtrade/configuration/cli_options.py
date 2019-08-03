@@ -191,6 +191,12 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_true',
         default=False,
     ),
+    "print_colorized": Arg(
+        '--color', '--print-colorized',
+        help='Print colorized hyperopt results.',
+        action='store_true',
+        default=False
+    ),
     "hyperopt_jobs": Arg(
         '-j', '--job-workers',
         help='The number of concurrently running jobs for hyperoptimization '

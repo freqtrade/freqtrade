@@ -20,6 +20,7 @@ from skopt.space import Dimension
 
 from freqtrade.configuration import Arguments
 from freqtrade.data.history import load_data, get_timeframe
+from freqtrade.misc import green, red, bold
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOptLoss to allow users import from this file
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F4
@@ -153,8 +154,19 @@ class Hyperopt(Backtesting):
         Log results if it is better than any previous evaluation
         """
         print_all = self.config.get('print_all', False)
-        if print_all or results['loss'] < self.current_best_loss:
+        is_best_loss = results['loss'] < self.current_best_loss
+        if print_all or is_best_loss:
+            if is_best_loss:
+                self.current_best_loss = results['loss']
             log_str = self.format_results_logstring(results)
+            # Colorize output
+            if self.config.get('print_colorized', False):
+                if results['total_profit'] > 0:
+                    log_str = bold(log_str)
+                if results['loss'] >= MAX_LOSS:
+                    log_str = red(log_str)
+                elif is_best_loss:
+                    log_str = green(log_str)
             if print_all:
                 print(log_str)
             else:
@@ -169,7 +181,6 @@ class Hyperopt(Backtesting):
         total = self.total_epochs
         res = results['results_explanation']
         loss = results['loss']
-        self.current_best_loss = results['loss']
         log_str = f'{current:5d}/{total}: {res} Objective: {loss:.5f}'
         log_str = f'*{log_str}' if results['is_initial_point'] else f' {log_str}'
         return log_str
@@ -237,6 +248,7 @@ class Hyperopt(Backtesting):
         results_explanation = self.format_results(results)
 
         trade_count = len(results.index)
+        total_profit = results.profit_abs.sum()
 
         # If this evaluation contains too short amount of trades to be
         # interesting -- consider it as 'bad' (assigned max. loss value)
@@ -247,6 +259,7 @@ class Hyperopt(Backtesting):
                 'loss': MAX_LOSS,
                 'params': params,
                 'results_explanation': results_explanation,
+                'total_profit': total_profit,
             }
 
         loss = self.calculate_loss(results=results, trade_count=trade_count,
@@ -256,6 +269,7 @@ class Hyperopt(Backtesting):
             'loss': loss,
             'params': params,
             'results_explanation': results_explanation,
+            'total_profit': total_profit,
         }
 
     def format_results(self, results: DataFrame) -> str:

@@ -254,6 +254,9 @@ class Configuration(object):
         self._args_to_config(config, argname='print_all',
                              logstring='Parameter --print-all detected ...')
 
+        self._args_to_config(config, argname='print_colorized',
+                             logstring='Parameter --color/--print-colorized detected ...')
+
         self._args_to_config(config, argname='hyperopt_jobs',
                              logstring='Parameter -j/--job-workers detected: {}')
 

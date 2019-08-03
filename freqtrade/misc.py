@@ -113,3 +113,15 @@ def deep_merge_dicts(source, destination):
             destination[key] = value
 
     return destination
+
+
+def green(s):
+    return '\033[92m' + s + '\033[0m'
+
+
+def red(s):
+    return '\033[91m' + s + '\033[0m'
+
+
+def bold(s):
+    return '\033[1m' + s + '\033[0m'

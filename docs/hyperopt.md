@@ -343,6 +343,10 @@ def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
     return dataframe
 ```
 
+You can use the `--print-all` command line option if you would like to see all results in the hyperopt output, not only the best ones.
+
+When the `--color/--print-colorized` command line option is used, the results are colorized -- bad results (with zero trades or limited by the `--min-trades` option) are red, currest bests -- in green, results with positive total profit are printed in bold.
+
 ### Understand Hyperopt ROI results
 
 If you are optimizing ROI, you're result will look as follows and include a ROI table.
