@@ -318,7 +318,7 @@ def test__reload_markets_exception(default_conf, mocker, caplog):
 def test_validate_pairs(default_conf, mocker):  # test exchange.validate_pairs directly
     api_mock = MagicMock()
     type(api_mock).markets = PropertyMock(return_value={
-        'ETH/BTC': '', 'LTC/BTC': '', 'XRP/BTC': '', 'NEO/BTC': ''
+        'ETH/BTC': {}, 'LTC/BTC': {}, 'XRP/BTC': {}, 'NEO/BTC': {}
     })
     id_mock = PropertyMock(return_value='test_exchange')
     type(api_mock).id = id_mock
@@ -332,7 +332,7 @@ def test_validate_pairs(default_conf, mocker):  # test exchange.validate_pairs d
 def test_validate_pairs_not_available(default_conf, mocker):
     api_mock = MagicMock()
     type(api_mock).markets = PropertyMock(return_value={
-        'XRP/BTC': 'inactive'
+        'XRP/BTC': {'inactive'}
     })
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
@@ -358,6 +358,23 @@ def test_validate_pairs_exception(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value={}))
     Exchange(default_conf)
     assert log_has('Unable to validate pairs (assuming they are correct).',
+                   caplog.record_tuples)
+
+
+def test_validate_pairs_restricted(default_conf, mocker, caplog):
+    api_mock = MagicMock()
+    type(api_mock).markets = PropertyMock(return_value={
+        'ETH/BTC': {}, 'LTC/BTC': {}, 'NEO/BTC': {},
+        'XRP/BTC': {'info': {'IsRestricted': True}}
+    })
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock())
+
+    Exchange(default_conf)
+    assert log_has(f"Pair XRP/BTC is restricted for some users on this exchange."
+                   f"Please check if you are impacted by this restriction "
+                   f"on the exchange and eventually remove XRP/BTC from your whitelist.",
                    caplog.record_tuples)
 
 
