@@ -158,6 +158,21 @@ class IStrategy(ABC):
         """
         Parses the given ticker history and returns a populated DataFrame
         add several TA indicators and buy signal to it
+        :param dataframe: Dataframe containing ticker data
+        :param metadata: Metadata dictionary with additional data (e.g. 'pair')
+        :return: DataFrame with ticker data and indicator data
+        """
+        logger.debug("TA Analysis Launched")
+        dataframe = self.advise_indicators(dataframe, metadata)
+        dataframe = self.advise_buy(dataframe, metadata)
+        dataframe = self.advise_sell(dataframe, metadata)
+        return dataframe
+
+    def _analyze_ticker_int(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        """
+        Parses the given ticker history and returns a populated DataFrame
+        add several TA indicators and buy signal to it
+        Used internally, may skip analysis if `process_only_new_candles` is set.
         :return: DataFrame with ticker data and indicator data
         """
 
@@ -168,10 +183,7 @@ class IStrategy(ABC):
         if (not self.process_only_new_candles or
                 self._last_candle_seen_per_pair.get(pair, None) != dataframe.iloc[-1]['date']):
             # Defs that only make change on new candle data.
-            logger.debug("TA Analysis Launched")
-            dataframe = self.advise_indicators(dataframe, metadata)
-            dataframe = self.advise_buy(dataframe, metadata)
-            dataframe = self.advise_sell(dataframe, metadata)
+            dataframe = self.analyze_ticker(dataframe, metadata)
             self._last_candle_seen_per_pair[pair] = dataframe.iloc[-1]['date']
         else:
             logger.debug("Skipping TA Analysis for already analyzed candle")
@@ -198,7 +210,7 @@ class IStrategy(ABC):
             return False, False
 
         try:
-            dataframe = self.analyze_ticker(dataframe, {'pair': pair})
+            dataframe = self._analyze_ticker_int(dataframe, {'pair': pair})
         except ValueError as error:
             logger.warning(
                 'Unable to analyze ticker for pair %s: %s',
