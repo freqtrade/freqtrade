@@ -13,14 +13,15 @@ from pathlib import Path
 from pprint import pprint
 from typing import Any, Dict, List, Optional
 
+from colorama import init as colorama_init
 from joblib import Parallel, delayed, dump, load, wrap_non_picklable_objects, cpu_count
 from pandas import DataFrame
 from skopt import Optimizer
 from skopt.space import Dimension
+from termcolor import colored
 
 from freqtrade.configuration import Arguments
 from freqtrade.data.history import load_data, get_timeframe
-from freqtrade.misc import green, red, bold
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOptLoss to allow users import from this file
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F4
@@ -162,11 +163,11 @@ class Hyperopt(Backtesting):
             # Colorize output
             if self.config.get('print_colorized', False):
                 if results['total_profit'] > 0:
-                    log_str = bold(log_str)
+                    log_str = colored(log_str, attrs=['bold'])
                 if results['loss'] >= MAX_LOSS:
-                    log_str = red(log_str)
+                    log_str = colored(log_str, 'red')
                 elif is_best_loss:
-                    log_str = green(log_str)
+                    log_str = colored(log_str, 'green')
             if print_all:
                 print(log_str)
             else:
@@ -353,6 +354,9 @@ class Hyperopt(Backtesting):
         logger.info(f'Number of parallel jobs set as: {config_jobs}')
 
         opt = self.get_optimizer(config_jobs)
+
+        colorama_init()
+
         try:
             with Parallel(n_jobs=config_jobs) as parallel:
                 jobs = parallel._effective_n_jobs()
