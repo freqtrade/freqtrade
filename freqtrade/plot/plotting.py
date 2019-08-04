@@ -318,6 +318,7 @@ def store_plot_file(fig, filename: str, auto_open: bool = False) -> None:
     """
 
     Path("user_data/plots").mkdir(parents=True, exist_ok=True)
-
-    plot(fig, filename=str(Path('user_data/plots').joinpath(filename)),
+    _filename = Path('user_data/plots').joinpath(filename)
+    plot(fig, filename=str(_filename),
          auto_open=auto_open)
+    logger.info(f"Stored plot as {_filename}")
