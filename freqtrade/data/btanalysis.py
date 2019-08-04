@@ -93,8 +93,8 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
                             t.close_date.replace(tzinfo=pytz.UTC) if t.close_date else None,
                             t.calc_profit(), t.calc_profit_percent(),
                             t.open_rate, t.close_rate, t.amount,
-                            t.close_date.timestamp() - t.open_date.timestamp()
-                            if t.close_date else None,
+                            (t.close_date.timestamp() - t.open_date.timestamp()
+                                if t.close_date else None),
                             t.sell_reason,
                             t.fee_open, t.fee_close,
                             t.open_rate_requested,
