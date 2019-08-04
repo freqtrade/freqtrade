@@ -304,7 +304,7 @@ def markets():
                     'max': 500000,
                 },
             },
-            'info': '',
+            'info': {},
         },
         'TKN/BTC': {
             'id': 'tknbtc',
@@ -329,7 +329,7 @@ def markets():
                     'max': 500000,
                 },
             },
-            'info': '',
+            'info': {},
         },
         'BLK/BTC': {
             'id': 'blkbtc',
@@ -354,7 +354,7 @@ def markets():
                     'max': 500000,
                 },
             },
-            'info': '',
+            'info': {},
         },
         'LTC/BTC': {
             'id': 'ltcbtc',
@@ -379,7 +379,7 @@ def markets():
                     'max': 500000,
                 },
             },
-            'info': '',
+            'info': {},
         },
         'XRP/BTC': {
             'id': 'xrpbtc',
@@ -404,7 +404,7 @@ def markets():
                     'max': 500000,
                 },
             },
-            'info': '',
+            'info': {},
         },
         'NEO/BTC': {
             'id': 'neobtc',
@@ -429,7 +429,7 @@ def markets():
                     'max': 500000,
                 },
             },
-            'info': '',
+            'info': {},
         },
         'BTT/BTC': {
             'id': 'BTTBTC',
@@ -457,7 +457,7 @@ def markets():
                     'max': None
                 }
             },
-            'info': "",
+            'info': {},
         },
         'ETH/USDT': {
             'id': 'USDT-ETH',
@@ -479,7 +479,7 @@ def markets():
                 }
             },
             'active': True,
-            'info': ""
+            'info': {},
         },
         'LTC/USDT': {
             'id': 'USDT-LTC',
@@ -501,7 +501,7 @@ def markets():
                     'max': None
                 }
             },
-            'info': ""
+            'info': {},
         }
     }
 

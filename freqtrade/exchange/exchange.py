@@ -260,7 +260,7 @@ class Exchange(object):
 
         if not self.markets:
             logger.warning('Unable to validate pairs (assuming they are correct).')
-        #     return
+            return
 
         for pair in pairs:
             # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
@@ -269,6 +269,12 @@ class Exchange(object):
                 raise OperationalException(
                     f'Pair {pair} is not available on {self.name}. '
                     f'Please remove {pair} from your whitelist.')
+            elif self.markets[pair].get('info', {}).get('IsRestricted', False):
+                # Warn users about restricted pairs in whitelist.
+                # We cannot determine reliably if Users are affected.
+                logger.warning(f"Pair {pair} is restricted for some users on this exchange."
+                               f"Please check if you are impacted by this restriction "
+                               f"on the exchange and eventually remove {pair} from your whitelist.")
 
     def get_valid_pair_combination(self, curr_1, curr_2) -> str:
         """
