@@ -168,7 +168,7 @@ class IStrategy(ABC):
         dataframe = self.advise_sell(dataframe, metadata)
         return dataframe
 
-    def _analyze_ticker_int(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def _analyze_ticker_internal(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Parses the given ticker history and returns a populated DataFrame
         add several TA indicators and buy signal to it
@@ -212,7 +212,7 @@ class IStrategy(ABC):
             return False, False
 
         try:
-            dataframe = self._analyze_ticker_int(dataframe, {'pair': pair})
+            dataframe = self._analyze_ticker_internal(dataframe, {'pair': pair})
         except ValueError as error:
             logger.warning(
                 'Unable to analyze ticker for pair %s: %s',
