@@ -172,7 +172,9 @@ class IStrategy(ABC):
         """
         Parses the given ticker history and returns a populated DataFrame
         add several TA indicators and buy signal to it
-        Used internally, may skip analysis if `process_only_new_candles` is set.
+        WARNING: Used internally only, may skip analysis if `process_only_new_candles` is set.
+        :param dataframe: Dataframe containing ticker data
+        :param metadata: Metadata dictionary with additional data (e.g. 'pair')
         :return: DataFrame with ticker data and indicator data
         """
 
