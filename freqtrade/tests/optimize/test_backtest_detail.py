@@ -224,6 +224,53 @@ tc12 = BTContainer(data=[
     trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=2)]
 )
 
+# Test 13 - Buy and sell ROI on same candle
+# Set stop-loss at 10% (should not apply), ROI at 1%
+tc13 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5100, 4950, 5100, 6172, 0, 0],
+    [2, 5100, 5251, 4850, 5100, 6172, 0, 0],
+    [3, 4850, 5050, 4850, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4850, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi=0.01, profit_perc=0.01, trailing_stop=False,
+    trailing_only_offset_is_reached=False, trailing_stop_positive_offset=0.05,
+    trailing_stop_positive=0.03,
+    trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=1)]
+)
+
+# Test 14 - Buy and Stoploss on same candle
+# Set stop-loss at 5%, ROI at 10% (should not apply)
+tc14 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5100, 4600, 5100, 6172, 0, 0],
+    [2, 5100, 5251, 4850, 5100, 6172, 0, 0],
+    [3, 4850, 5050, 4850, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.05, roi=0.10, profit_perc=-0.05, trailing_stop=False,
+    trailing_only_offset_is_reached=False, trailing_stop_positive_offset=0.05,
+    trailing_stop_positive=0.03,
+    trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)]
+)
+
+
+# Test 15 - Buy and ROI on same candle, followed by buy and Stoploss on next candle
+# Set stop-loss at 5%, ROI at 10% (should not apply)
+tc15 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5100, 4900, 5100, 6172, 1, 0],
+    [2, 5100, 5251, 4650, 5100, 6172, 0, 0],
+    [3, 4850, 5050, 4850, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.05, roi=0.01, profit_perc=-0.04, trailing_stop=False,
+    trailing_only_offset_is_reached=False, trailing_stop_positive_offset=0.05,
+    trailing_stop_positive=0.03,
+    trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=1),
+            BTrade(sell_reason=SellType.STOP_LOSS, open_tick=2, close_tick=2)]
+)
+
 TESTS = [
     tc0,
     tc1,
@@ -238,6 +285,9 @@ TESTS = [
     tc10,
     tc11,
     tc12,
+    tc13,
+    tc14,
+    tc15,
 ]
 
 
