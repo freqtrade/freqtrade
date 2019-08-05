@@ -2,7 +2,7 @@
 -r requirements.txt
 -r requirements-plot.txt
 
-coveralls==1.8.1
+coveralls==1.8.2
 flake8==3.7.8
 flake8-type-annotations==0.1.0
 flake8-tidy-imports==2.0.0
