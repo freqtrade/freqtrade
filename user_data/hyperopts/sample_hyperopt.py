@@ -18,14 +18,19 @@ from freqtrade.optimize.hyperopt_interface import IHyperOpt
 class SampleHyperOpts(IHyperOpt):
     """
     This is a test hyperopt to inspire you.
+
     More information in https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md
-     You can:
-    - Rename the class name (Do not forget to update class_name)
-    - Add any methods you want to build your hyperopt
-    - Add any lib you need to build your hyperopt
-     You must keep:
-    - the prototype for the methods: populate_indicators, indicator_space, buy_strategy_generator,
-    roi_space, generate_roi_table, stoploss_space
+
+    You can:
+    - Rename the class name.
+    - Add any methods you want to build your hyperopt.
+    - Add any lib you need to build your hyperopt.
+
+    You must keep:
+    - The prototypes for the methods: populate_indicators, indicator_space, buy_strategy_generator.
+
+    The roi_space, generate_roi_table, stoploss_space methods were moved to the parent class, you may
+    override them here if you need it.
     """
 
     @staticmethod
@@ -165,42 +170,6 @@ class SampleHyperOpts(IHyperOpt):
             Categorical(['sell-bb_upper',
                          'sell-macd_cross_signal',
                          'sell-sar_reversal'], name='sell-trigger')
-        ]
-
-    @staticmethod
-    def generate_roi_table(params: Dict) -> Dict[int, float]:
-        """
-        Generate the ROI table that will be used by Hyperopt
-        """
-        roi_table = {}
-        roi_table[0] = params['roi_p1'] + params['roi_p2'] + params['roi_p3']
-        roi_table[params['roi_t3']] = params['roi_p1'] + params['roi_p2']
-        roi_table[params['roi_t3'] + params['roi_t2']] = params['roi_p1']
-        roi_table[params['roi_t3'] + params['roi_t2'] + params['roi_t1']] = 0
-
-        return roi_table
-
-    @staticmethod
-    def stoploss_space() -> List[Dimension]:
-        """
-        Stoploss Value to search
-        """
-        return [
-            Real(-0.5, -0.02, name='stoploss'),
-        ]
-
-    @staticmethod
-    def roi_space() -> List[Dimension]:
-        """
-        Values to search for each ROI steps
-        """
-        return [
-            Integer(10, 120, name='roi_t1'),
-            Integer(10, 60, name='roi_t2'),
-            Integer(10, 40, name='roi_t3'),
-            Real(0.01, 0.04, name='roi_p1'),
-            Real(0.01, 0.07, name='roi_p2'),
-            Real(0.01, 0.20, name='roi_p3'),
         ]
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
