@@ -316,8 +316,9 @@ def store_plot_file(fig, filename: str, directory: Path, auto_open: bool = False
     :param ticker_interval: Used as part of the filename
     :return: None
     """
-
     directory.mkdir(parents=True, exist_ok=True)
 
-    plot(fig, filename=str(directory.joinpath(filename)),
+    _filename = directory.joinpath(filename)
+    plot(fig, filename=str(_filename),
          auto_open=auto_open)
+    logger.info(f"Stored plot as {_filename}")

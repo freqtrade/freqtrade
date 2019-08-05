@@ -10,7 +10,7 @@ import sys
 from operator import itemgetter
 from pathlib import Path
 from pprint import pprint
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from joblib import Parallel, delayed, dump, load, wrap_non_picklable_objects, cpu_count
 from pandas import DataFrame
@@ -70,7 +70,7 @@ class Hyperopt(Backtesting):
         if hasattr(self.custom_hyperopt, 'populate_sell_trend'):
             self.advise_sell = self.custom_hyperopt.populate_sell_trend  # type: ignore
 
-            # Use max_open_trades for hyperopt as well, except --disable-max-market-positions is set
+        # Use max_open_trades for hyperopt as well, except --disable-max-market-positions is set
         if self.config.get('use_max_market_positions', True):
             self.max_open_trades = self.config['max_open_trades']
         else:
@@ -138,11 +138,20 @@ class Hyperopt(Backtesting):
         params = best_result['params']
 
         log_str = self.format_results_logstring(best_result)
-        print(f"\nBest result:\n{log_str}\nwith values:")
-        pprint(params, indent=4)
+        print(f"\nBest result:\n\n{log_str}\n")
+        if self.has_space('buy'):
+            print('Buy hyperspace params:')
+            pprint({p.name: params.get(p.name) for p in self.hyperopt_space('buy')},
+                   indent=4)
+        if self.has_space('sell'):
+            print('Sell hyperspace params:')
+            pprint({p.name: params.get(p.name) for p in self.hyperopt_space('sell')},
+                   indent=4)
         if self.has_space('roi'):
             print("ROI table:")
             pprint(self.custom_hyperopt.generate_roi_table(params), indent=4)
+        if self.has_space('stoploss'):
+            print(f"Stoploss: {params.get('stoploss')}")
 
     def log_results(self, results) -> None:
         """
@@ -176,21 +185,24 @@ class Hyperopt(Backtesting):
         """
         return any(s in self.config['spaces'] for s in [space, 'all'])
 
-    def hyperopt_space(self) -> List[Dimension]:
+    def hyperopt_space(self, space: Optional[str] = None) -> List[Dimension]:
         """
-        Return the space to use during Hyperopt
+        Return the dimensions in the hyperoptimization space.
+        :param space: Defines hyperspace to return dimensions for.
+        If None, then the self.has_space() will be used to return dimensions
+        for all hyperspaces used.
         """
         spaces: List[Dimension] = []
-        if self.has_space('buy'):
+        if space == 'buy' or (space is None and self.has_space('buy')):
             logger.debug("Hyperopt has 'buy' space")
             spaces += self.custom_hyperopt.indicator_space()
-        if self.has_space('sell'):
+        if space == 'sell' or (space is None and self.has_space('sell')):
             logger.debug("Hyperopt has 'sell' space")
             spaces += self.custom_hyperopt.sell_indicator_space()
-        if self.has_space('roi'):
+        if space == 'roi' or (space is None and self.has_space('roi')):
             logger.debug("Hyperopt has 'roi' space")
             spaces += self.custom_hyperopt.roi_space()
-        if self.has_space('stoploss'):
+        if space == 'stoploss' or (space is None and self.has_space('stoploss')):
             logger.debug("Hyperopt has 'stoploss' space")
             spaces += self.custom_hyperopt.stoploss_space()
         return spaces

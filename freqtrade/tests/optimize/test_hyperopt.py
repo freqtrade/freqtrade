@@ -466,7 +466,7 @@ def test_start_calls_optimizer(mocker, default_conf, caplog, capsys) -> None:
     parallel.assert_called_once()
 
     out, err = capsys.readouterr()
-    assert 'Best result:\n*    1/1: foo result Objective: 1.00000\nwith values:\n' in out
+    assert 'Best result:\n\n*    1/1: foo result Objective: 1.00000\n' in out
     assert dumper.called
     # Should be called twice, once for tickerdata, once to save evaluations
     assert dumper.call_count == 2

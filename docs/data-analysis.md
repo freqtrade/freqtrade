@@ -6,6 +6,128 @@ A good way for this is using Jupyter (notebook or lab) - which provides an inter
 
 The following helpers will help you loading the data into Pandas DataFrames, and may also give you some starting points in analyzing the results.
 
+## Strategy development problem analysis
+
+Debugging a strategy (are there no buy signals, ...) can be very time-consuming.
+FreqTrade tries to help you by exposing a few helper-functions, which can be very handy.
+
+It's recommended using Juptyer Notebooks for analysis, since it offers a dynamic way to rerun certain parts of the code.
+
+The following is a full code-snippet, which will be explained by both comments, and step by step below.
+
+```python
+# Some necessary imports
+from pathlib import Path
+
+from freqtrade.data.history import load_pair_history
+from freqtrade.resolvers import StrategyResolver
+# Define some constants
+ticker_interval = "5m"
+
+# Name of the strategy class
+strategyname = 'Awesomestrategy'
+# Location of the strategy
+strategy_location = '../xmatt/strategies'
+# Location of the data
+data_location = '../freqtrade/user_data/data/binance/'
+# Only use one pair here
+pair = "XRP_ETH"
+
+### End constants
+
+# Load data
+bt_data = load_pair_history(datadir=Path(data_location),
+                            ticker_interval = ticker_interval,
+                            pair=pair)
+print(len(bt_data))
+
+### Start strategy reload
+# Load strategy - best done in a new cell
+# Rerun each time the strategy-file is changed.
+strategy = StrategyResolver({'strategy': strategyname,
+                            'user_data_dir': Path.cwd(),
+                            'strategy_path': location}).strategy
+
+# Run strategy (just like in backtesting)
+df = strategy.analyze_ticker(bt_data, {'pair': pair})
+print(f"Generated {df['buy'].sum()} buy signals")
+
+# Reindex data to be "nicer" and show data
+data = df.set_index('date', drop=True)
+data.tail()
+
+```
+
+### Explanation
+
+#### Imports and constant definition
+
+``` python
+# Some necessary imports
+from pathlib import Path
+
+from freqtrade.data.history import load_pair_history
+from freqtrade.resolvers import StrategyResolver
+# Define some constants
+ticker_interval = "5m"
+
+# Name of the strategy class
+strategyname = 'Awesomestrategy'
+# Location of the strategy
+strategy_location = 'user_data/strategies'
+# Location of the data
+data_location = 'user_data/data/binance'
+# Only use one pair here
+pair = "XRP_ETH"
+```
+
+This first section imports necessary modules, and defines some constants you'll probably need to adjust for your case.
+
+#### Load candles
+
+``` python
+# Load data
+bt_data = load_pair_history(datadir=Path(data_location),
+                            ticker_interval = ticker_interval,
+                            pair=pair)
+print(len(bt_data))
+```
+
+This second section loads the historic data and prints the amount of candles in the DataFrame.
+You can also inspect this dataframe by using `bt_data.head()` or `bt_data.tail()`.
+
+#### Run strategy and analyze results
+
+Now, it's time to load and run your strategy.
+For this, I recommend using a new cell in your notebook, since you'll want to repeat this until you're satisfied with your strategy.
+
+``` python
+# Load strategy - best done in a new cell
+# Needs to be ran each time the strategy-file is changed.
+strategy = StrategyResolver({'strategy': strategyname,
+                            'user_data_dir': Path.cwd(),
+                            'strategy_path': location}).strategy
+
+# Run strategy (just like in backtesting)
+df = strategy.analyze_ticker(bt_data, {'pair': pair})
+print(f"Generated {df['buy'].sum()} buy signals")
+
+# Reindex data to be "nicer" and show data
+data = df.set_index('date', drop=True)
+data.tail()
+```
+
+The code snippet loads and analyzes the strategy, calculates and prints the number of buy signals.
+
+The last 2 lines serve to analyze the dataframe in detail.
+This can be important if your strategy did not generate any buy signals.
+Note that using `data.head()` would also work, however this is misleading since most indicators have some "startup" time at the start of a backtested dataframe.
+
+There can be many things wrong, some signs to look for are:
+
+* Columns with NaN values at the end of the dataframe
+* Columns used in `crossed*()` functions with completely different units
+
 ## Backtesting
 
 To analyze your backtest results, you can [export the trades](#exporting-trades-to-file).

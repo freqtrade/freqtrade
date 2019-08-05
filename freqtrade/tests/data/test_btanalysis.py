@@ -45,6 +45,11 @@ def test_load_trades_db(default_conf, fee, mocker):
     assert isinstance(trades, DataFrame)
     assert "pair" in trades.columns
     assert "open_time" in trades.columns
+    assert "profitperc" in trades.columns
+
+    for col in BT_DATA_COLUMNS:
+        if col not in ['index', 'open_at_end']:
+            assert col in trades.columns
 
 
 def test_extract_trades_of_period():
