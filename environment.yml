@@ -1,0 +1,58 @@
+name: freqtrade
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  # Required for app
+  - python>=3.6
+  - pip
+  - wheel
+  - numpy
+  - pandas
+  - scipy
+  - SQLAlchemy
+  - scikit-learn
+  - arrow
+  - requests
+  - urllib3
+  - wrapt
+  - joblib
+  - jsonschema
+  - tabulate
+  - python-rapidjson
+  - filelock
+  - flask
+  - python-dotenv
+  - cachetools
+  - scikit-optimize
+  - python-telegram-bot
+  # Optional for plotting
+  - plotly
+  # Optional for development
+  - flake8
+  - pytest
+  - pytest-mock
+  - pytest-asyncio
+  - pytest-cov
+  - coveralls
+  - mypy
+  # Useful for jupyter
+  - ipykernel
+  - isort
+  - yapf
+  - pip:
+    # Required for app
+    - cython
+    - coinmarketcap
+    - ccxt
+    - TA-Lib
+    - py_find_1st
+    - sdnotify
+    # Optional for develpment
+    - flake8-tidy-imports
+    - flake8-type-annotations
+    - pytest-random-order
+    - -e .
+
+
+
