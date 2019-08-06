@@ -1391,6 +1391,13 @@ def test_get_trades_for_order(default_conf, mocker, exchange_name):
     orders = exchange.get_trades_for_order(order_id, 'LTC/BTC', since)
     assert len(orders) == 1
     assert orders[0]['price'] == 165
+    assert api_mock.fetch_my_trades.call_count == 1
+    # since argument should be
+    assert isinstance(api_mock.fetch_my_trades.call_args[0][1], int)
+    assert api_mock.fetch_my_trades.call_args[0][0] == 'LTC/BTC'
+    # Same test twice, hardcoded number and doing the same calculation
+    assert api_mock.fetch_my_trades.call_args[0][1] == 1525471195000
+    assert api_mock.fetch_my_trades.call_args[0][1] == int(since.timestamp() - 5) * 1000
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            'get_trades_for_order', 'fetch_my_trades',
