@@ -165,7 +165,7 @@ optional arguments:
                         number).
   -l, --live            Use live data.
   --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
-                        Provide a commaseparated list of strategies to
+                        Provide a space-separated list of strategies to
                         backtest Please note that ticker-interval needs to be
                         set either in config or via command line. When using
                         this together with --export trades, the strategy-name
