@@ -6,7 +6,7 @@ python-telegram-bot==11.1.0
 arrow==0.14.4
 cachetools==3.1.1
 requests==2.22.0
-urllib3==1.24.2  # pyup: ignore
+urllib3==1.25.3
 wrapt==1.11.2
 scikit-learn==0.21.3
 joblib==0.13.2
