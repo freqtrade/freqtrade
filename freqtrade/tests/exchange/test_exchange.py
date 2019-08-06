@@ -2,7 +2,7 @@
 # pragma pylint: disable=protected-access
 import copy
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from random import randint
 from unittest.mock import MagicMock, Mock, PropertyMock
 
@@ -11,8 +11,8 @@ import ccxt
 import pytest
 from pandas import DataFrame
 
-from freqtrade import (DependencyException, OperationalException,
-                       TemporaryError, InvalidOrderException)
+from freqtrade import (DependencyException, InvalidOrderException,
+                       OperationalException, TemporaryError)
 from freqtrade.exchange import Binance, Exchange, Kraken
 from freqtrade.exchange.exchange import API_RETRY_COUNT
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
@@ -1361,7 +1361,7 @@ def test_name(default_conf, mocker, exchange_name):
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_trades_for_order(default_conf, mocker, exchange_name):
     order_id = 'ABCD-ABCD'
-    since = datetime(2018, 5, 5)
+    since = datetime(2018, 5, 5, tzinfo=timezone.utc)
     default_conf["dry_run"] = False
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
     api_mock = MagicMock()
@@ -1396,7 +1396,7 @@ def test_get_trades_for_order(default_conf, mocker, exchange_name):
     assert isinstance(api_mock.fetch_my_trades.call_args[0][1], int)
     assert api_mock.fetch_my_trades.call_args[0][0] == 'LTC/BTC'
     # Same test twice, hardcoded number and doing the same calculation
-    assert api_mock.fetch_my_trades.call_args[0][1] == 1525471195000
+    assert api_mock.fetch_my_trades.call_args[0][1] == 1525478395000
     assert api_mock.fetch_my_trades.call_args[0][1] == int(since.timestamp() - 5) * 1000
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
