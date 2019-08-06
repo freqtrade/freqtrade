@@ -57,7 +57,15 @@ freqtrade backtesting --datadir freqtrade/tests/testdata-20180101
 freqtrade -s TestStrategy backtesting
 ```
 
-Where `-s TestStrategy` refers to the class name within the strategy file `test_strategy.py` found in the `freqtrade/user_data/strategies` directory
+Where `-s TestStrategy` refers to the class name within the strategy file `test_strategy.py` found in the `freqtrade/user_data/strategies` directory.
+
+#### Comparing multiple Strategies
+
+```bash
+freqtrade backtesting --strategy-list TestStrategy1 AwesomeStrategy --ticker-interval 5m
+```
+
+Where `TestStrategy1` and `AwesomeStrategy` refer to class names of strategies.
 
 #### Exporting trades to file
 
