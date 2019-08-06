@@ -373,7 +373,9 @@ class Backtesting(object):
                         continue
                     trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
 
-                trade_entry = self._get_sell_trade_entry(pair, row, ticker[pair][indexes[pair]:],
+                # since indexes has been incremented before, we need to go one step back to
+                # also check the buying candle for sell conditions.
+                trade_entry = self._get_sell_trade_entry(pair, row, ticker[pair][indexes[pair]-1:],
                                                          trade_count_lock, stake_amount,
                                                          max_open_trades)
 

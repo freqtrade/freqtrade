@@ -618,8 +618,9 @@ def test_processed(default_conf, mocker) -> None:
 
 
 def test_backtest_pricecontours(default_conf, fee, mocker) -> None:
+    # TODO: Evaluate usefullness of this, the patterns and buy-signls are unrealistic
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    tests = [['raise', 19], ['lower', 0], ['sine', 18]]
+    tests = [['raise', 19], ['lower', 0], ['sine', 35]]
     # We need to enable sell-signal - otherwise it sells on ROI!!
     default_conf['experimental'] = {"use_sell_signal": True}
 
