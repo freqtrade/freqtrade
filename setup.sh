@@ -39,15 +39,13 @@ function updateenv() {
     echo "-------------------------"
     source .env/bin/activate
     echo "pip install in-progress. Please wait..."
-    # Install numpy first to have py_find_1st install clean
-    ${PYTHON} -m pip install --upgrade pip numpy
-    ${PYTHON} -m pip install --upgrade -r requirements.txt
-
+    ${PYTHON} -m pip install --upgrade pip
     read -p "Do you want to install dependencies for dev [y/N]? "
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
         ${PYTHON} -m pip install --upgrade -r requirements-dev.txt
     else
+        ${PYTHON} -m pip install --upgrade -r requirements.txt
         echo "Dev dependencies ignored."
     fi
 
@@ -90,7 +88,7 @@ function install_macos() {
 # Install bot Debian_ubuntu
 function install_debian() {
     sudo apt-get update
-    sudo apt-get install build-essential autoconf libtool pkg-config make wget git
+    sudo apt-get install -y build-essential autoconf libtool pkg-config make wget git
     install_talib
 }
 
@@ -129,6 +127,10 @@ function reset() {
 
     echo
     ${PYTHON} -m venv .env
+    if [ $? -ne 0 ]; then
+        echo "Could not create virtual environment. Leaving now"
+        exit 1
+    fi
     updateenv
 }
 
