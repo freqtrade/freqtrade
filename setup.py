@@ -68,6 +68,8 @@ setup(name='freqtrade',
           'dev': all_extra,
           'plot': plot,
           'all': all_extra,
+          'jupyter': [],
+          
       },
       include_package_data=True,
       zip_safe=False,
