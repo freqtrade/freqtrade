@@ -37,6 +37,10 @@ function updateenv() {
     echo "-------------------------"
     echo "Updating your virtual env"
     echo "-------------------------"
+    if [ ! -f .env/bin/activate ]; then
+        echo "Something went wrong, no virtual environment found."
+        exit 1
+    fi
     source .env/bin/activate
     echo "pip install in-progress. Please wait..."
     ${PYTHON} -m pip install --upgrade pip
