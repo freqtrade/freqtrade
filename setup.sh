@@ -117,28 +117,33 @@ function reset() {
     echo "----------------------------"
     echo "Reseting branch and virtual env"
     echo "----------------------------"
+
     if [ "1" == $(git branch -vv |grep -cE "\* develop|\* master") ]
     then
-        if [ -d ".env" ]; then
-          echo "- Delete your previous virtual env"
-          rm -rf .env
-        fi
 
-        git fetch -a
+        read -p "Reset git branch? (This will remove all changes you made!) [y/N]? "
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
 
-        if [ "1" == $(git branch -vv |grep -c "* develop") ]
-        then
-          echo "- Hard resetting of 'develop' branch."
-          git reset --hard origin/develop
-        elif [ "1" == $(git branch -vv |grep -c "* master") ]
-        then
-          echo "- Hard resetting of 'master' branch."
-          git reset --hard origin/master
+            git fetch -a
+
+            if [ "1" == $(git branch -vv |grep -c "* develop") ]
+            then
+                echo "- Hard resetting of 'develop' branch."
+                git reset --hard origin/develop
+            elif [ "1" == $(git branch -vv |grep -c "* master") ]
+            then
+                echo "- Hard resetting of 'master' branch."
+                git reset --hard origin/master
+            fi
         fi
     else
         echo "Reset ignored because you are not on 'master' or 'develop'."
     fi
 
+    if [ -d ".env" ]; then
+        echo "- Delete your previous virtual env"
+        rm -rf .env
+    fi
     echo
     ${PYTHON} -m venv .env
     if [ $? -ne 0 ]; then
