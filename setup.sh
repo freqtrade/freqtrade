@@ -11,6 +11,12 @@ function check_installed_pip() {
 
 # Check which python version is installed
 function check_installed_python() {
+    if [ -n "${VIRTUAL_ENV}" ]; then
+        echo "Please deactivate your virtual environment before running setup.sh."
+        echo "You can do this by running 'deactivate'."
+        exit 2
+    fi
+
     which python3.7
     if [ $? -eq 0 ]; then
         echo "using Python 3.7"
