@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional
 
 from pandas import DataFrame
-from tabulate import tabulate
 
+from freqtrade import OperationalException
 from freqtrade.configuration import Arguments
 from freqtrade.data import history
 from freqtrade.data.dataprovider import DataProvider
@@ -21,6 +21,7 @@ from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
 from freqtrade.strategy.interface import IStrategy, SellType
+from tabulate import tabulate
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +89,9 @@ class Backtesting(object):
         Load strategy into backtesting
         """
         self.strategy = strategy
+        if "ticker_interval" not in self.config:
+            raise OperationalException("Ticker-interval needs to be set in either configuration "
+                                       "or as cli argument `--ticker-interval 5m`")
 
         self.ticker_interval = self.config.get('ticker_interval')
         self.ticker_interval_mins = timeframe_to_minutes(self.ticker_interval)
