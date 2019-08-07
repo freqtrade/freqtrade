@@ -72,6 +72,10 @@ function install_talib() {
     ./configure --prefix=/usr/local
     make
     sudo make install
+    if [ -x "$(command -v apt-get)" ]; then
+        echo "Updating library path using ldconfig"
+        sudo ldconfig
+    fi
     cd .. && rm -rf ./ta-lib/
     cd ..
 }
