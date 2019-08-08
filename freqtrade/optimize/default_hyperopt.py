@@ -13,10 +13,9 @@ from freqtrade.optimize.hyperopt_interface import IHyperOpt
 
 class DefaultHyperOpts(IHyperOpt):
     """
-    Default hyperopt provided by freqtrade bot.
+    Default hyperopt provided by the Freqtrade bot.
     You can override it with your own hyperopt
     """
-
     @staticmethod
     def populate_indicators(dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe['adx'] = ta.ADX(dataframe)
