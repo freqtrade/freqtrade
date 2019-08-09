@@ -29,8 +29,6 @@ jupyter = [
     'jupyter',
     'nbstripout',
     'ipykernel',
-    'isort',
-    'yapf',
     ]
 
 all_extra = api + plot + develop + jupyter

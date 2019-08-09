@@ -42,6 +42,9 @@ import os
 from freqtrade.data.history import load_pair_history
 from freqtrade.resolvers import StrategyResolver
 
+# You can override strategy settings as demonstrated below.
+# Customize these according to your needs.
+
 # Define some constants
 ticker_interval = "5m"
 # Name of the strategy class
@@ -66,7 +69,7 @@ bt_data = load_pair_history(datadir=Path(data_location),
                             pair=pair)
 
 # Confirm success
-print("Loaded " + str(len(bt_data)) + f" rows of data for {pair} from {data_location}")
+print(f"Loaded {len(bt_data)} rows of data for {pair} from {data_location}")
 ```
 
 ### Load and run strategy  
