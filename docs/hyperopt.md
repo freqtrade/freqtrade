@@ -350,7 +350,7 @@ def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
 
 ### Understand Hyperopt ROI results
 
-If you are optimizing ROI, your result will look as follows and include a ROI table:
+If you are optimizing ROI (i.e. if optimization search-space contains 'all' or 'roi'), your result will look as follows and include a ROI table:
 
 ```
 Best result:
@@ -396,7 +396,7 @@ Override the `generate_roi_table()` and `roi_space()` methods and implement your
 
 ### Understand Hyperopt Stoploss results
 
-If you are optimizing stoploss values, your result will look as follows and include stoploss:
+If you are optimizing stoploss values (i.e. if optimization search-space contains 'all' or 'stoploss'), your result will look as follows and include stoploss:
 
 ```
 Best result:
