@@ -2,6 +2,8 @@
 
 You can analyze the results of backtests and trading history easily using Jupyter notebooks. A sample notebook is located at `user_data/notebooks/analysis_example.ipynb`. For usage instructions, see [jupyter.org](https://jupyter.org/documentation).
 
+*Pro tip - Don't forget to start a jupyter notbook server from within your conda or venv environment or use [nb_conda_kernels](https://github.com/Anaconda-Platform/nb_conda_kernels)*
+
 ## Example snippets
 
 ### Load backtest results into a pandas dataframe
