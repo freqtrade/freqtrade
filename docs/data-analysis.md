@@ -2,11 +2,33 @@
 
 You can analyze the results of backtests and trading history easily using Jupyter notebooks. A sample notebook is located at `user_data/notebooks/analysis_example.ipynb`. For usage instructions, see [jupyter.org](https://jupyter.org/documentation).
 
+## Example snippets
+
+### Load backtest results into a pandas dataframe
+
+```python
+# Load backtest results
+df = load_backtest_data("user_data/backtest_data/backtest-result.json")
+
+# Show value-counts per pair
+df.groupby("pair")["sell_reason"].value_counts()
+```
+
+### Load live trading results into a pandas dataframe
+
+``` python
+# Fetch trades from database
+df = load_trades_from_db("sqlite:///tradesv3.sqlite")
+
+# Display results
+df.groupby("pair")["sell_reason"].value_counts()
+```
+
 ## Strategy debugging example
 
 Debugging a strategy can be time-consuming. FreqTrade offers helper functions to visualize raw data.
 
-### Import requirements and define variables used in the script
+### Import requirements and define variables used in analyses
 
 ```python
 # Imports
@@ -47,12 +69,6 @@ print("Loaded " + str(len(bt_data)) + f" rows of data for {pair} from {data_loca
 ### Load and run strategy  
 
 * Rerun each time the strategy file is changed
-* Display the trade details. Note that using `data.head()` would also work, however most indicators have some "startup" data at the top of the dataframe.
-
-Some possible problems:
-
-* Columns with NaN values at the end of the dataframe
-* Columns used in `crossed*()` functions with completely different units
 
 ```python
 # Load strategy using values set above
@@ -60,33 +76,31 @@ strategy = StrategyResolver({'strategy': strategy_name,
                             'user_data_dir': user_data_dir,
                             'strategy_path': strategy_location}).strategy
 
-# Run strategy (just like in backtesting)
+# Generate buy/sell signals using strategy
 df = strategy.analyze_ticker(bt_data, {'pair': pair})
+```
 
+### Display the trade details
+
+* Note that using `data.head()` would also work, however most indicators have some "startup" data at the top of the dataframe.
+
+#### Some possible problems
+
+* Columns with NaN values at the end of the dataframe
+* Columns used in `crossed*()` functions with completely different units
+
+#### Comparison with full backtest
+
+having 200 buy signals as output for one pair from `analyze_ticker()` does not necessarily mean that 200 trades will be made during backtesting.
+
+Assuming you use only one condition such as, `df['rsi'] < 30` as buy condition, this will generate multiple "buy" signals for each pair in sequence (until rsi returns > 29).
+The bot will only buy on the first of these signals (and also only if a trade-slot ("max_open_trades") is still available), or on one of the middle signals, as soon as a "slot" becomes available.
+
+```python
 # Report results
 print(f"Generated {df['buy'].sum()} buy signals")
 data = df.set_index('date', drop=True)
 data.tail()
-```
-
-### Load backtest results into a pandas dataframe
-
-```python
-# Load backtest results
-df = load_backtest_data("user_data/backtest_data/backtest-result.json")
-
-# Show value-counts per pair
-df.groupby("pair")["sell_reason"].value_counts()
-```
-
-### Load live trading results into a pandas dataframe
-
-``` python
-# Fetch trades from database
-df = load_trades_from_db("sqlite:///tradesv3.sqlite")
-
-# Display results
-df.groupby("pair")["sell_reason"].value_counts()
 ```
 
 Feel free to submit an issue or Pull Request enhancing this document if you would like to share ideas on how to best analyze the data.

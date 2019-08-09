@@ -25,7 +25,15 @@ develop = [
     'pytest-random-order',
 ]
 
-all_extra = api + plot + develop
+jupyter = [
+    'jupyter',
+    'nbstripout',
+    'ipykernel',
+    'isort',
+    'yapf',
+    ]
+
+all_extra = api + plot + develop + jupyter
 
 setup(name='freqtrade',
       version=__version__,
@@ -68,7 +76,7 @@ setup(name='freqtrade',
           'dev': all_extra,
           'plot': plot,
           'all': all_extra,
-          'jupyter': [],
+          'jupyter': jupyter,
           
       },
       include_package_data=True,
