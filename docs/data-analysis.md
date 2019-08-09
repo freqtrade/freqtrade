@@ -46,9 +46,9 @@ strategy_name = 'NewStrategy'
 # Path to user data
 user_data_dir = 'user_data'
 # Location of the strategy
-strategy_location = os.path.join(user_data_dir, 'strategies')
+strategy_location = Path(user_data_dir, 'strategies')
 # Location of the data
-data_location = os.path.join(user_data_dir, 'data', 'binance')
+data_location = Path(user_data_dir, 'data', 'binance')
 # Pair to analyze 
 # Only use one pair here
 pair = "BTC_USDT"
