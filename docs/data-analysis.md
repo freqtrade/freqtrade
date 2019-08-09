@@ -9,6 +9,7 @@ You can analyze the results of backtests and trading history easily using Jupyte
 ### Load backtest results into a pandas dataframe
 
 ```python
+from freqtrade.data.btanalysis import load_backtest_data
 # Load backtest results
 df = load_backtest_data("user_data/backtest_data/backtest-result.json")
 
@@ -19,6 +20,8 @@ df.groupby("pair")["sell_reason"].value_counts()
 ### Load live trading results into a pandas dataframe
 
 ``` python
+from freqtrade.data.btanalysis import load_trades_from_db
+
 # Fetch trades from database
 df = load_trades_from_db("sqlite:///tradesv3.sqlite")
 
@@ -38,13 +41,11 @@ from pathlib import Path
 import os
 from freqtrade.data.history import load_pair_history
 from freqtrade.resolvers import StrategyResolver
-from freqtrade.data.btanalysis import load_backtest_data
-from freqtrade.data.btanalysis import load_trades_from_db
 
 # Define some constants
-ticker_interval = "1m"
+ticker_interval = "5m"
 # Name of the strategy class
-strategy_name = 'NewStrategy'
+strategy_name = 'AwesomeStrategy'
 # Path to user data
 user_data_dir = 'user_data'
 # Location of the strategy
