@@ -1,9 +1,7 @@
 """
 This module contains the configuration class
 """
-import json
 import logging
-import sys
 import warnings
 from argparse import Namespace
 from typing import Any, Callable, Dict, Optional
@@ -12,6 +10,7 @@ from freqtrade import OperationalException, constants
 from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.create_datadir import create_datadir
 from freqtrade.configuration.json_schema import validate_config_schema
+from freqtrade.configuration.load_config import load_config_file
 from freqtrade.loggers import setup_logging
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.state import RunMode
@@ -52,24 +51,7 @@ class Configuration(object):
             logger.info('Using config: %s ...', path)
 
             # Merge config options, overwriting old values
-            config = deep_merge_dicts(self._load_config_file(path), config)
-
-        return config
-
-    def _load_config_file(self, path: str) -> Dict[str, Any]:
-        """
-        Loads a config file from the given path
-        :param path: path as str
-        :return: configuration as dictionary
-        """
-        try:
-            # Read config from stdin if requested in the options
-            with open(path) if path != '-' else sys.stdin as file:
-                config = json.load(file)
-        except FileNotFoundError:
-            raise OperationalException(
-                f'Config file "{path}" not found!'
-                ' Please create a config file or check whether it exists.')
+            config = deep_merge_dicts(load_config_file(path), config)
 
         return config
 
