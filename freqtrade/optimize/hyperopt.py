@@ -163,11 +163,9 @@ class Hyperopt(Backtesting):
             # Colorize output
             if self.config.get('print_colorized', False):
                 if results['total_profit'] > 0:
-                    log_str = Style.BRIGHT + log_str
-                if results['loss'] >= MAX_LOSS:
-                    log_str = Fore.RED + log_str
-                elif is_best_loss:
                     log_str = Fore.GREEN + log_str
+                if print_all and is_best_loss:
+                    log_str = Style.BRIGHT + log_str
             if print_all:
                 print(log_str)
             else:
