@@ -113,7 +113,7 @@ def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
 
     configsmock = MagicMock(side_effect=config_files)
     mocker.patch(
-        'freqtrade.configuration.load_config.load_config_file',
+        'freqtrade.configuration.configuration.load_config_file',
         configsmock
     )
 
