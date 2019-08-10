@@ -37,6 +37,7 @@ dependencies:
   - coveralls
   - mypy
   # Useful for jupyter
+  - jupyter
   - ipykernel
   - isort
   - yapf
