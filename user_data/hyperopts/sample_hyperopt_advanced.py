@@ -14,7 +14,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.optimize.hyperopt_interface import IHyperOpt
 
 
-class SampleHyperOpts(IHyperOpt):
+class AdvancedSampleHyperOpts(IHyperOpt):
     """
     This is a sample hyperopt to inspire you.
     Feel free to customize it.
@@ -32,8 +32,8 @@ class SampleHyperOpts(IHyperOpt):
     The roi_space, generate_roi_table, stoploss_space methods are no longer required to be
     copied in every custom hyperopt. However, you may override them if you need the
     'roi' and the 'stoploss' spaces that differ from the defaults offered by Freqtrade.
-    Sample implementation of these methods can be found in
-    https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/sample_hyperopt_advanced.py
+
+    This sample illustrates how to override these methods.
     """
     @staticmethod
     def populate_indicators(dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -172,6 +172,59 @@ class SampleHyperOpts(IHyperOpt):
             Categorical(['sell-bb_upper',
                          'sell-macd_cross_signal',
                          'sell-sar_reversal'], name='sell-trigger')
+        ]
+
+    @staticmethod
+    def generate_roi_table(params: Dict) -> Dict[int, float]:
+        """
+        Generate the ROI table that will be used by Hyperopt
+
+        This implementation generates the default legacy Freqtrade ROI tables.
+
+        Change it if you need different number of steps in the generated
+        ROI tables or other structure of the ROI tables.
+
+        Please keep it aligned with parameters in the 'roi' optimization
+        hyperspace defined by the roi_space method.
+        """
+        roi_table = {}
+        roi_table[0] = params['roi_p1'] + params['roi_p2'] + params['roi_p3']
+        roi_table[params['roi_t3']] = params['roi_p1'] + params['roi_p2']
+        roi_table[params['roi_t3'] + params['roi_t2']] = params['roi_p1']
+        roi_table[params['roi_t3'] + params['roi_t2'] + params['roi_t1']] = 0
+
+        return roi_table
+
+    @staticmethod
+    def roi_space() -> List[Dimension]:
+        """
+        Values to search for each ROI steps
+
+        Override it if you need some different ranges for the parameters in the
+        'roi' optimization hyperspace.
+
+        Please keep it aligned with the implementation of the
+        generate_roi_table method.
+        """
+        return [
+            Integer(10, 120, name='roi_t1'),
+            Integer(10, 60, name='roi_t2'),
+            Integer(10, 40, name='roi_t3'),
+            Real(0.01, 0.04, name='roi_p1'),
+            Real(0.01, 0.07, name='roi_p2'),
+            Real(0.01, 0.20, name='roi_p3'),
+        ]
+
+    @staticmethod
+    def stoploss_space() -> List[Dimension]:
+        """
+        Stoploss Value to search
+
+        Override it if you need some different range for the parameter in the
+        'stoploss' optimization hyperspace.
+        """
+        return [
+            Real(-0.5, -0.02, name='stoploss'),
         ]
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
