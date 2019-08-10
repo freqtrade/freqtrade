@@ -45,7 +45,7 @@ def get_args(args):
 
 def patched_configuration_load_config_file(mocker, config) -> None:
     mocker.patch(
-        'freqtrade.configuration.configuration.Configuration._load_config_file',
+        'freqtrade.configuration.load_config.load_config_file',
         lambda *args, **kwargs: config
     )
 
