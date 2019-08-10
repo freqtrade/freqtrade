@@ -5,7 +5,7 @@ from typing import Any, Callable, Dict, List
 
 import talib.abstract as ta
 from pandas import DataFrame
-from skopt.space import Categorical, Dimension, Integer, Real
+from skopt.space import Categorical, Dimension, Integer
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.optimize.hyperopt_interface import IHyperOpt
@@ -13,10 +13,9 @@ from freqtrade.optimize.hyperopt_interface import IHyperOpt
 
 class DefaultHyperOpts(IHyperOpt):
     """
-    Default hyperopt provided by freqtrade bot.
+    Default hyperopt provided by the Freqtrade bot.
     You can override it with your own hyperopt
     """
-
     @staticmethod
     def populate_indicators(dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe['adx'] = ta.ADX(dataframe)
@@ -154,42 +153,6 @@ class DefaultHyperOpts(IHyperOpt):
             Categorical(['sell-bb_upper',
                          'sell-macd_cross_signal',
                          'sell-sar_reversal'], name='sell-trigger')
-        ]
-
-    @staticmethod
-    def generate_roi_table(params: Dict) -> Dict[int, float]:
-        """
-        Generate the ROI table that will be used by Hyperopt
-        """
-        roi_table = {}
-        roi_table[0] = params['roi_p1'] + params['roi_p2'] + params['roi_p3']
-        roi_table[params['roi_t3']] = params['roi_p1'] + params['roi_p2']
-        roi_table[params['roi_t3'] + params['roi_t2']] = params['roi_p1']
-        roi_table[params['roi_t3'] + params['roi_t2'] + params['roi_t1']] = 0
-
-        return roi_table
-
-    @staticmethod
-    def stoploss_space() -> List[Dimension]:
-        """
-        Stoploss Value to search
-        """
-        return [
-            Real(-0.5, -0.02, name='stoploss'),
-        ]
-
-    @staticmethod
-    def roi_space() -> List[Dimension]:
-        """
-        Values to search for each ROI steps
-        """
-        return [
-            Integer(10, 120, name='roi_t1'),
-            Integer(10, 60, name='roi_t2'),
-            Integer(10, 40, name='roi_t3'),
-            Real(0.01, 0.04, name='roi_p1'),
-            Real(0.01, 0.07, name='roi_p2'),
-            Real(0.01, 0.20, name='roi_p3'),
         ]
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

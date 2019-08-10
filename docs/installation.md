@@ -219,6 +219,17 @@ as the watchdog.
 
 ------
 
+## Using Conda
+
+Freqtrade can also be installed using Anaconda (or Miniconda).
+
+``` bash
+conda env create -f environment.yml
+```
+
+!!! Note:
+    This requires the [ta-lib](#1-install-ta-lib) C-library to be installed first.
+
 ## Windows
 
 We recommend that Windows users use [Docker](docker.md) as this will work much easier and smoother (also more secure).

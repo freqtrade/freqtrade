@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 from arrow import Arrow
 
-from freqtrade import DependencyException, constants
+from freqtrade import DependencyException, OperationalException, constants
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import evaluate_result_multi
@@ -21,7 +21,8 @@ from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.state import RunMode
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import SellType
-from freqtrade.tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
+from freqtrade.tests.conftest import (get_args, log_has, log_has_re,
+                                      patch_exchange,
                                       patched_configuration_load_config_file)
 
 
@@ -345,6 +346,23 @@ def test_backtesting_init(mocker, default_conf, order_types) -> None:
     assert not backtesting.strategy.order_types["stoploss_on_exchange"]
 
 
+def test_backtesting_init_no_ticker_interval(mocker, default_conf, caplog) -> None:
+    """
+    Check that stoploss_on_exchange is set to False while backtesting
+    since backtesting assumes a perfect stoploss anyway.
+    """
+    patch_exchange(mocker)
+    del default_conf['ticker_interval']
+    default_conf['strategy_list'] = ['DefaultStrategy',
+                                     'TestStrategy']
+
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
+    with pytest.raises(OperationalException):
+        Backtesting(default_conf)
+    log_has("Ticker-interval needs to be set in either configuration "
+            "or as cli argument `--ticker-interval 5m`", caplog.record_tuples)
+
+
 def test_tickerdata_to_dataframe_bt(default_conf, mocker) -> None:
     patch_exchange(mocker)
     timerange = TimeRange(None, 'line', 0, -100)
@@ -618,8 +636,9 @@ def test_processed(default_conf, mocker) -> None:
 
 
 def test_backtest_pricecontours(default_conf, fee, mocker) -> None:
+    # TODO: Evaluate usefullness of this, the patterns and buy-signls are unrealistic
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    tests = [['raise', 19], ['lower', 0], ['sine', 18]]
+    tests = [['raise', 19], ['lower', 0], ['sine', 35]]
     # We need to enable sell-signal - otherwise it sells on ROI!!
     default_conf['experimental'] = {"use_sell_signal": True}
 

@@ -725,7 +725,8 @@ class Exchange(object):
             return []
         try:
             # Allow 5s offset to catch slight time offsets (discovered in #1185)
-            my_trades = self._api.fetch_my_trades(pair, since.timestamp() - 5)
+            # since needs to be int in milliseconds
+            my_trades = self._api.fetch_my_trades(pair, int((since.timestamp() - 5) * 1000))
             matched_trades = [trade for trade in my_trades if trade['order'] == order_id]
 
             return matched_trades

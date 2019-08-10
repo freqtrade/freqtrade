@@ -135,7 +135,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "strategy_list": Arg(
         '--strategy-list',
-        help='Provide a comma-separated list of strategies to backtest. '
+        help='Provide a space-separated list of strategies to backtest. '
         'Please note that ticker-interval needs to be set either in config '
         'or via command line. When using this together with `--export trades`, '
         'the strategy-name is injected into the filename '
