@@ -15,6 +15,7 @@ from freqtrade.configuration import Arguments, Configuration
 from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.create_datadir import create_datadir
 from freqtrade.configuration.json_schema import validate_config_schema
+from freqtrade.configuration.load_config import load_config_file
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.loggers import _set_loggers
 from freqtrade.state import RunMode
@@ -26,8 +27,7 @@ from freqtrade.tests.conftest import (log_has, log_has_re,
 def all_conf():
     config_file = Path(__file__).parents[2] / "config_full.json.example"
     print(config_file)
-    configuration = Configuration(Namespace())
-    conf = configuration._load_config_file(str(config_file))
+    conf = load_config_file(str(config_file))
     return conf
 
 
@@ -53,12 +53,11 @@ def test_load_config_incorrect_stake_amount(default_conf) -> None:
 
 
 def test_load_config_file(default_conf, mocker, caplog) -> None:
-    file_mock = mocker.patch('freqtrade.configuration.configuration.open', mocker.mock_open(
+    file_mock = mocker.patch('freqtrade.configuration.load_config.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
 
-    configuration = Configuration(Namespace())
-    validated_conf = configuration._load_config_file('somefile')
+    validated_conf = load_config_file('somefile')
     assert file_mock.call_count == 1
     assert validated_conf.items() >= default_conf.items()
 
@@ -114,7 +113,7 @@ def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
 
     configsmock = MagicMock(side_effect=config_files)
     mocker.patch(
-        'freqtrade.configuration.configuration.Configuration._load_config_file',
+        'freqtrade.configuration.configuration.load_config_file',
         configsmock
     )
 
@@ -154,10 +153,9 @@ def test_load_config_file_exception(mocker) -> None:
         'freqtrade.configuration.configuration.open',
         MagicMock(side_effect=FileNotFoundError('File not found'))
     )
-    configuration = Configuration(Namespace())
 
     with pytest.raises(OperationalException, match=r'.*Config file "somefile" not found!*'):
-        configuration._load_config_file('somefile')
+        load_config_file('somefile')
 
 
 def test_load_config(default_conf, mocker) -> None:
