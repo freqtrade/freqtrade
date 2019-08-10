@@ -17,6 +17,8 @@ df = load_backtest_data("user_data/backtest_data/backtest-result.json")
 df.groupby("pair")["sell_reason"].value_counts()
 ```
 
+This will allow you to drill deeper into your backtest results, and perform analysis which otherwise would make the regular backtest-output very difficult to digest due to information overload.
+
 ### Load live trading results into a pandas dataframe
 
 ``` python
