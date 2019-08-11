@@ -15,7 +15,7 @@ from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy import import_strategy
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import IStrategy
-from freqtrade.tests.conftest import log_has_re
+from freqtrade.tests.conftest import log_has, log_has_re
 
 
 def test_import_strategy(caplog):
@@ -35,12 +35,8 @@ def test_import_strategy(caplog):
     assert imported_strategy.__module__ == 'freqtrade.strategy'
     assert imported_strategy.some_method() == 42
 
-    assert (
-        'freqtrade.strategy',
-        logging.DEBUG,
-        'Imported strategy freqtrade.strategy.default_strategy.DefaultStrategy '
-        'as freqtrade.strategy.DefaultStrategy',
-    ) in caplog.record_tuples
+    assert log_has('Imported strategy freqtrade.strategy.default_strategy.DefaultStrategy '
+                   'as freqtrade.strategy.DefaultStrategy', caplog)
 
 
 def test_search_strategy():
@@ -142,10 +138,7 @@ def test_strategy_override_minimal_roi(caplog):
     resolver = StrategyResolver(config)
 
     assert resolver.strategy.minimal_roi[0] == 0.5
-    assert ('freqtrade.resolvers.strategy_resolver',
-            logging.INFO,
-            "Override strategy 'minimal_roi' with value in config file: {'0': 0.5}."
-            ) in caplog.record_tuples
+    assert log_has("Override strategy 'minimal_roi' with value in config file: {'0': 0.5}.", caplog)
 
 
 def test_strategy_override_stoploss(caplog):
@@ -157,10 +150,7 @@ def test_strategy_override_stoploss(caplog):
     resolver = StrategyResolver(config)
 
     assert resolver.strategy.stoploss == -0.5
-    assert ('freqtrade.resolvers.strategy_resolver',
-            logging.INFO,
-            "Override strategy 'stoploss' with value in config file: -0.5."
-            ) in caplog.record_tuples
+    assert log_has("Override strategy 'stoploss' with value in config file: -0.5.", caplog)
 
 
 def test_strategy_override_trailing_stop(caplog):
@@ -173,10 +163,7 @@ def test_strategy_override_trailing_stop(caplog):
 
     assert resolver.strategy.trailing_stop
     assert isinstance(resolver.strategy.trailing_stop, bool)
-    assert ('freqtrade.resolvers.strategy_resolver',
-            logging.INFO,
-            "Override strategy 'trailing_stop' with value in config file: True."
-            ) in caplog.record_tuples
+    assert log_has("Override strategy 'trailing_stop' with value in config file: True.", caplog)
 
 
 def test_strategy_override_trailing_stop_positive(caplog):
@@ -190,16 +177,12 @@ def test_strategy_override_trailing_stop_positive(caplog):
     resolver = StrategyResolver(config)
 
     assert resolver.strategy.trailing_stop_positive == -0.1
-    assert ('freqtrade.resolvers.strategy_resolver',
-            logging.INFO,
-            "Override strategy 'trailing_stop_positive' with value in config file: -0.1."
-            ) in caplog.record_tuples
+    assert log_has("Override strategy 'trailing_stop_positive' with value in config file: -0.1.",
+                   caplog)
 
     assert resolver.strategy.trailing_stop_positive_offset == -0.2
-    assert ('freqtrade.resolvers.strategy_resolver',
-            logging.INFO,
-            "Override strategy 'trailing_stop_positive' with value in config file: -0.1."
-            ) in caplog.record_tuples
+    assert log_has("Override strategy 'trailing_stop_positive' with value in config file: -0.1.",
+                   caplog)
 
 
 def test_strategy_override_ticker_interval(caplog):
@@ -214,10 +197,8 @@ def test_strategy_override_ticker_interval(caplog):
 
     assert resolver.strategy.ticker_interval == 60
     assert resolver.strategy.stake_currency == 'ETH'
-    assert ('freqtrade.resolvers.strategy_resolver',
-            logging.INFO,
-            "Override strategy 'ticker_interval' with value in config file: 60."
-            ) in caplog.record_tuples
+    assert log_has("Override strategy 'ticker_interval' with value in config file: 60.",
+                   caplog)
 
 
 def test_strategy_override_process_only_new_candles(caplog):
@@ -230,10 +211,8 @@ def test_strategy_override_process_only_new_candles(caplog):
     resolver = StrategyResolver(config)
 
     assert resolver.strategy.process_only_new_candles
-    assert ('freqtrade.resolvers.strategy_resolver',
-            logging.INFO,
-            "Override strategy 'process_only_new_candles' with value in config file: True."
-            ) in caplog.record_tuples
+    assert log_has("Override strategy 'process_only_new_candles' with value in config file: True.",
+                   caplog)
 
 
 def test_strategy_override_order_types(caplog):
@@ -256,12 +235,9 @@ def test_strategy_override_order_types(caplog):
     for method in ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']:
         assert resolver.strategy.order_types[method] == order_types[method]
 
-    assert ('freqtrade.resolvers.strategy_resolver',
-            logging.INFO,
-            "Override strategy 'order_types' with value in config file:"
-            " {'buy': 'market', 'sell': 'limit', 'stoploss': 'limit',"
-            " 'stoploss_on_exchange': True}."
-            ) in caplog.record_tuples
+    assert log_has("Override strategy 'order_types' with value in config file:"
+                   " {'buy': 'market', 'sell': 'limit', 'stoploss': 'limit',"
+                   " 'stoploss_on_exchange': True}.", caplog)
 
     config = {
         'strategy': 'DefaultStrategy',
@@ -292,11 +268,8 @@ def test_strategy_override_order_tif(caplog):
     for method in ['buy', 'sell']:
         assert resolver.strategy.order_time_in_force[method] == order_time_in_force[method]
 
-    assert ('freqtrade.resolvers.strategy_resolver',
-            logging.INFO,
-            "Override strategy 'order_time_in_force' with value in config file:"
-            " {'buy': 'fok', 'sell': 'gtc'}."
-            ) in caplog.record_tuples
+    assert log_has("Override strategy 'order_time_in_force' with value in config file:"
+                   " {'buy': 'fok', 'sell': 'gtc'}.", caplog)
 
     config = {
         'strategy': 'DefaultStrategy',
@@ -331,10 +304,7 @@ def test_strategy_override_use_sell_signal(caplog):
 
     assert resolver.strategy.use_sell_signal
     assert isinstance(resolver.strategy.use_sell_signal, bool)
-    assert ('freqtrade.resolvers.strategy_resolver',
-            logging.INFO,
-            "Override strategy 'use_sell_signal' with value in config file: True."
-            ) in caplog.record_tuples
+    assert log_has("Override strategy 'use_sell_signal' with value in config file: True.", caplog)
 
 
 def test_strategy_override_use_sell_profit_only(caplog):
@@ -359,10 +329,7 @@ def test_strategy_override_use_sell_profit_only(caplog):
 
     assert resolver.strategy.sell_profit_only
     assert isinstance(resolver.strategy.sell_profit_only, bool)
-    assert ('freqtrade.resolvers.strategy_resolver',
-            logging.INFO,
-            "Override strategy 'sell_profit_only' with value in config file: True."
-            ) in caplog.record_tuples
+    assert log_has("Override strategy 'sell_profit_only' with value in config file: True.", caplog)
 
 
 @pytest.mark.filterwarnings("ignore:deprecated")
