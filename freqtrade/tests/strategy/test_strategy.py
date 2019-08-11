@@ -272,34 +272,6 @@ def test_strategy_override_order_types(caplog):
         StrategyResolver(config)
 
 
-def test_strategy_override_order_types_dryrun(caplog):
-    caplog.set_level(logging.INFO)
-
-    order_types = {
-        'buy': 'market',
-        'sell': 'limit',
-        'stoploss': 'limit',
-        'stoploss_on_exchange': True,
-    }
-
-    config = {
-        'strategy': 'DefaultStrategy',
-        'order_types': order_types,
-        'dry_run': True,
-    }
-    resolver = StrategyResolver(config)
-
-    assert resolver.strategy.order_types
-    for method in ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']:
-        assert resolver.strategy.order_types[method] == order_types[method]
-
-    assert log_has("Disabling stoploss_on_exchange during dry-run.", caplog.record_tuples)
-
-    assert log_has("Override strategy 'order_types' with value in config file:"
-                   " {'buy': 'market', 'sell': 'limit', 'stoploss': 'limit',"
-                   " 'stoploss_on_exchange': False}.", caplog.record_tuples)
-
-
 def test_strategy_override_order_tif(caplog):
     caplog.set_level(logging.INFO)
 

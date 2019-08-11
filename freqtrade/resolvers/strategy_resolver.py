@@ -81,7 +81,7 @@ class StrategyResolver(IResolver):
             key=lambda t: t[0]))
         self.strategy.stoploss = float(self.strategy.stoploss)
 
-        self._strategy_sanity_validations(config)
+        self._strategy_sanity_validations()
 
     def _override_attribute_helper(self, config, attribute: str, default):
         """
@@ -102,7 +102,7 @@ class StrategyResolver(IResolver):
             setattr(self.strategy, attribute, default)
             config[attribute] = default
 
-    def _strategy_sanity_validations(self, config):
+    def _strategy_sanity_validations(self):
         if not all(k in self.strategy.order_types for k in constants.REQUIRED_ORDERTYPES):
             raise ImportError(f"Impossible to load Strategy '{self.strategy.__class__.__name__}'. "
                               f"Order-types mapping is incomplete.")
@@ -110,12 +110,6 @@ class StrategyResolver(IResolver):
         if not all(k in self.strategy.order_time_in_force for k in constants.REQUIRED_ORDERTIF):
             raise ImportError(f"Impossible to load Strategy '{self.strategy.__class__.__name__}'. "
                               f"Order-time-in-force mapping is incomplete.")
-
-        # Stoploss on exchange does not make sense, therefore we need to disable that.
-        if config.get('dry_run'):
-            logger.info("Disabling stoploss_on_exchange during dry-run.")
-            self.strategy.order_types['stoploss_on_exchange'] = False
-            config['order_types']['stoploss_on_exchange'] = False
 
     def _load_strategy(
             self, strategy_name: str, config: dict, extra_dir: Optional[str] = None) -> IStrategy:
