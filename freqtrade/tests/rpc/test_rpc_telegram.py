@@ -76,7 +76,7 @@ def test_init(default_conf, mocker, caplog) -> None:
                   "['performance'], ['daily'], ['count'], ['reload_conf'], " \
                   "['stopbuy'], ['whitelist'], ['blacklist'], ['edge'], ['help'], ['version']]"
 
-    assert log_has(message_str, caplog.record_tuples)
+    assert log_has(message_str, caplog)
 
 
 def test_cleanup(default_conf, mocker) -> None:
@@ -102,18 +102,9 @@ def test_authorized_only(default_conf, mocker, caplog) -> None:
     dummy = DummyCls(bot)
     dummy.dummy_handler(bot=MagicMock(), update=update)
     assert dummy.state['called'] is True
-    assert log_has(
-        'Executing handler: dummy_handler for chat_id: 0',
-        caplog.record_tuples
-    )
-    assert not log_has(
-        'Rejected unauthorized message from: 0',
-        caplog.record_tuples
-    )
-    assert not log_has(
-        'Exception occurred within Telegram module',
-        caplog.record_tuples
-    )
+    assert log_has('Executing handler: dummy_handler for chat_id: 0', caplog)
+    assert not log_has('Rejected unauthorized message from: 0', caplog)
+    assert not log_has('Exception occurred within Telegram module', caplog)
 
 
 def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
@@ -128,18 +119,9 @@ def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
     dummy = DummyCls(bot)
     dummy.dummy_handler(bot=MagicMock(), update=update)
     assert dummy.state['called'] is False
-    assert not log_has(
-        'Executing handler: dummy_handler for chat_id: 3735928559',
-        caplog.record_tuples
-    )
-    assert log_has(
-        'Rejected unauthorized message from: 3735928559',
-        caplog.record_tuples
-    )
-    assert not log_has(
-        'Exception occurred within Telegram module',
-        caplog.record_tuples
-    )
+    assert not log_has('Executing handler: dummy_handler for chat_id: 3735928559', caplog)
+    assert log_has('Rejected unauthorized message from: 3735928559', caplog)
+    assert not log_has('Exception occurred within Telegram module', caplog)
 
 
 def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
@@ -156,18 +138,9 @@ def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
 
     dummy.dummy_exception(bot=MagicMock(), update=update)
     assert dummy.state['called'] is False
-    assert not log_has(
-        'Executing handler: dummy_handler for chat_id: 0',
-        caplog.record_tuples
-    )
-    assert not log_has(
-        'Rejected unauthorized message from: 0',
-        caplog.record_tuples
-    )
-    assert log_has(
-        'Exception occurred within Telegram module',
-        caplog.record_tuples
-    )
+    assert not log_has('Executing handler: dummy_handler for chat_id: 0', caplog)
+    assert not log_has('Rejected unauthorized message from: 0', caplog)
+    assert log_has('Exception occurred within Telegram module', caplog)
 
 
 def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
@@ -1440,7 +1413,4 @@ def test__send_msg_network_error(default_conf, mocker, caplog) -> None:
 
     # Bot should've tried to send it twice
     assert len(bot.method_calls) == 2
-    assert log_has(
-        'Telegram NetworkError: Oh snap! Trying one more time.',
-        caplog.record_tuples
-    )
+    assert log_has('Telegram NetworkError: Oh snap! Trying one more time.', caplog)
