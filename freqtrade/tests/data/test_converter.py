@@ -18,7 +18,7 @@ def test_parse_ticker_dataframe(ticker_history_list, caplog):
     dataframe = parse_ticker_dataframe(ticker_history_list, '5m',
                                        pair="UNITTEST/BTC", fill_missing=True)
     assert dataframe.columns.tolist() == columns
-    assert log_has('Parsing tickerlist to dataframe', caplog.record_tuples)
+    assert log_has('Parsing tickerlist to dataframe', caplog)
 
 
 def test_ohlcv_fill_up_missing_data(caplog):
@@ -34,8 +34,7 @@ def test_ohlcv_fill_up_missing_data(caplog):
     assert (data.columns == data2.columns).all()
 
     assert log_has(f"Missing data fillup for UNITTEST/BTC: before: "
-                   f"{len(data)} - after: {len(data2)}",
-                   caplog.record_tuples)
+                   f"{len(data)} - after: {len(data2)}", caplog)
 
     # Test fillup actually fixes invalid backtest data
     min_date, max_date = get_timeframe({'UNITTEST/BTC': data})
@@ -97,8 +96,7 @@ def test_ohlcv_fill_up_missing_data2(caplog):
     assert (data.columns == data2.columns).all()
 
     assert log_has(f"Missing data fillup for UNITTEST/BTC: before: "
-                   f"{len(data)} - after: {len(data2)}",
-                   caplog.record_tuples)
+                   f"{len(data)} - after: {len(data2)}", caplog)
 
 
 def test_ohlcv_drop_incomplete(caplog):
@@ -140,11 +138,11 @@ def test_ohlcv_drop_incomplete(caplog):
     data = parse_ticker_dataframe(ticks, ticker_interval, pair="UNITTEST/BTC",
                                   fill_missing=False, drop_incomplete=False)
     assert len(data) == 4
-    assert not log_has("Dropping last candle", caplog.record_tuples)
+    assert not log_has("Dropping last candle", caplog)
 
     # Drop last candle
     data = parse_ticker_dataframe(ticks, ticker_interval, pair="UNITTEST/BTC",
                                   fill_missing=False, drop_incomplete=True)
     assert len(data) == 3
 
-    assert log_has("Dropping last candle", caplog.record_tuples)
+    assert log_has("Dropping last candle", caplog)
