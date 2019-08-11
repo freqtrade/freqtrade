@@ -15,7 +15,7 @@ from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy import import_strategy
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import IStrategy
-from freqtrade.tests.conftest import log_has_re
+from freqtrade.tests.conftest import log_has_re, log_has
 
 
 def test_import_strategy(caplog):
@@ -257,12 +257,9 @@ def test_strategy_override_order_types(caplog):
     for method in ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']:
         assert resolver.strategy.order_types[method] == order_types[method]
 
-    assert ('freqtrade.resolvers.strategy_resolver',
-            logging.INFO,
-            "Override strategy 'order_types' with value in config file:"
-            " {'buy': 'market', 'sell': 'limit', 'stoploss': 'limit',"
-            " 'stoploss_on_exchange': True}."
-            ) in caplog.record_tuples
+    assert log_has("Override strategy 'order_types' with value in config file:"
+                   " {'buy': 'market', 'sell': 'limit', 'stoploss': 'limit',"
+                   " 'stoploss_on_exchange': True}.", caplog.record_tuples)
 
     config = {
         'strategy': 'DefaultStrategy',
@@ -273,6 +270,34 @@ def test_strategy_override_order_types(caplog):
                        match=r"Impossible to load Strategy 'DefaultStrategy'. "
                              r"Order-types mapping is incomplete."):
         StrategyResolver(config)
+
+
+def test_strategy_override_order_types_dryrun(caplog):
+    caplog.set_level(logging.INFO)
+
+    order_types = {
+        'buy': 'market',
+        'sell': 'limit',
+        'stoploss': 'limit',
+        'stoploss_on_exchange': True,
+    }
+
+    config = {
+        'strategy': 'DefaultStrategy',
+        'order_types': order_types,
+        'dry_run': True,
+    }
+    resolver = StrategyResolver(config)
+
+    assert resolver.strategy.order_types
+    for method in ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']:
+        assert resolver.strategy.order_types[method] == order_types[method]
+
+    assert log_has("Disabling stoploss_on_exchange during dry-run.", caplog.record_tuples)
+
+    assert log_has("Override strategy 'order_types' with value in config file:"
+                   " {'buy': 'market', 'sell': 'limit', 'stoploss': 'limit',"
+                   " 'stoploss_on_exchange': False}.", caplog.record_tuples)
 
 
 def test_strategy_override_order_tif(caplog):
