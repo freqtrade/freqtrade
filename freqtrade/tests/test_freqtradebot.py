@@ -16,7 +16,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
-from freqtrade.state import State
+from freqtrade.state import State, RunMode
 from freqtrade.strategy.interface import SellCheckTuple, SellType
 from freqtrade.tests.conftest import (get_patched_freqtradebot,
                                       get_patched_worker, log_has, log_has_re,
@@ -130,7 +130,77 @@ def test_throttle_with_assets(mocker, default_conf) -> None:
     assert result == -1
 
 
-def test_get_trade_stake_amount(default_conf, ticker, limit_buy_order, fee, mocker) -> None:
+def test_order_dict_dry_run(default_conf, mocker, caplog) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_balance=MagicMock(return_value=default_conf['stake_amount'] * 2)
+    )
+    conf = default_conf.copy()
+    conf['runmode'] = RunMode.DRY_RUN
+    conf['order_types'] = {
+        'buy': 'market',
+        'sell': 'limit',
+        'stoploss': 'limit',
+        'stoploss_on_exchange': True,
+    }
+
+    freqtrade = FreqtradeBot(conf)
+    assert log_has("Disabling stoploss_on_exchange during dry-run.", caplog.record_tuples)
+    assert not freqtrade.strategy.order_types['stoploss_on_exchange']
+
+    caplog.clear()
+    # is left untouched
+    conf = default_conf.copy()
+    conf['runmode'] = RunMode.DRY_RUN
+    conf['order_types'] = {
+        'buy': 'market',
+        'sell': 'limit',
+        'stoploss': 'limit',
+        'stoploss_on_exchange': False,
+    }
+    freqtrade = FreqtradeBot(conf)
+    assert not freqtrade.strategy.order_types['stoploss_on_exchange']
+    assert not log_has_re(".*stoploss_on_exchange .* dry-run", caplog.record_tuples)
+
+
+def test_order_dict_live(default_conf, mocker, caplog) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_balance=MagicMock(return_value=default_conf['stake_amount'] * 2)
+    )
+    conf = default_conf.copy()
+    conf['runmode'] = RunMode.LIVE
+    conf['order_types'] = {
+        'buy': 'market',
+        'sell': 'limit',
+        'stoploss': 'limit',
+        'stoploss_on_exchange': True,
+    }
+
+    freqtrade = FreqtradeBot(conf)
+    assert not log_has_re(".*stoploss_on_exchange .* dry-run", caplog.record_tuples)
+    assert freqtrade.strategy.order_types['stoploss_on_exchange']
+
+    caplog.clear()
+    # is left untouched
+    conf = default_conf.copy()
+    conf['runmode'] = RunMode.LIVE
+    conf['order_types'] = {
+        'buy': 'market',
+        'sell': 'limit',
+        'stoploss': 'limit',
+        'stoploss_on_exchange': False,
+    }
+    freqtrade = FreqtradeBot(conf)
+    assert not freqtrade.strategy.order_types['stoploss_on_exchange']
+    assert not log_has_re(".*stoploss_on_exchange .* dry-run", caplog.record_tuples)
+
+
+def test_get_trade_stake_amount(default_conf, ticker, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
