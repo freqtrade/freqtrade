@@ -87,7 +87,7 @@ def test_add_indicators(default_conf, caplog):
     # No indicator found
     fig3 = add_indicators(fig=deepcopy(fig), row=3, indicators=['no_indicator'], data=data)
     assert fig == fig3
-    assert log_has_re(r'Indicator "no_indicator" ignored\..*', caplog.record_tuples)
+    assert log_has_re(r'Indicator "no_indicator" ignored\..*', caplog)
 
 
 def test_plot_trades(caplog):
@@ -95,7 +95,7 @@ def test_plot_trades(caplog):
     # nothing happens when no trades are available
     fig = plot_trades(fig1, None)
     assert fig == fig1
-    assert log_has("No trades found.", caplog.record_tuples)
+    assert log_has("No trades found.", caplog)
     pair = "ADA/BTC"
     filename = history.make_testdata_path(None) / "backtest-result_test.json"
     trades = load_backtest_data(filename)
@@ -150,8 +150,8 @@ def test_generate_candlestick_graph_no_signals_no_trades(default_conf, mocker, c
     assert row_mock.call_count == 2
     assert trades_mock.call_count == 1
 
-    assert log_has("No buy-signals found.", caplog.record_tuples)
-    assert log_has("No sell-signals found.", caplog.record_tuples)
+    assert log_has("No buy-signals found.", caplog)
+    assert log_has("No sell-signals found.", caplog)
 
 
 def test_generate_candlestick_graph_no_trades(default_conf, mocker):
@@ -216,7 +216,7 @@ def test_generate_plot_file(mocker, caplog):
     assert (plot_mock.call_args_list[0][1]['filename']
             == "user_data/plots/freqtrade-plot-UNITTEST_BTC-5m.html")
     assert log_has("Stored plot as user_data/plots/freqtrade-plot-UNITTEST_BTC-5m.html",
-                   caplog.record_tuples)
+                   caplog)
 
 
 def test_add_profit():
