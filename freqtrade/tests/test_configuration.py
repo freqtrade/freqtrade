@@ -634,6 +634,17 @@ def test_validate_tsl(default_conf):
     configuration._validate_config_consistency(default_conf)
 
 
+def test_load_config_test_comments() -> None:
+    """
+    Load config with comments
+    """
+    config_file = Path(__file__).parents[0] / "config_test_comments.json"
+    print(config_file)
+    conf = load_config_file(str(config_file))
+
+    assert conf
+
+
 def test_load_config_default_exchange(all_conf) -> None:
     """
     config['exchange'] subtree has required options in it
