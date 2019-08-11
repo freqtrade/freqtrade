@@ -5,8 +5,7 @@ indicators.
 
 ## Install a custom strategy file
 
-This is very simple. Copy paste your strategy file into the folder
-`user_data/strategies`.
+This is very simple. Copy paste your strategy file into the directory `user_data/strategies`.
 
 Let assume you have a class called `AwesomeStrategy` in the file `awesome-strategy.py`:
 
@@ -14,7 +13,7 @@ Let assume you have a class called `AwesomeStrategy` in the file `awesome-strate
 2. Start the bot with the param `--strategy AwesomeStrategy` (the parameter is the class name)
 
 ```bash
-python3 ./freqtrade/main.py --strategy AwesomeStrategy
+freqtrade --strategy AwesomeStrategy
 ```
 
 ## Change your strategy
@@ -22,7 +21,7 @@ python3 ./freqtrade/main.py --strategy AwesomeStrategy
 The bot includes a default strategy file. However, we recommend you to
 use your own file to not have to lose your parameters every time the default
 strategy file will be updated on Github. Put your custom strategy file
-into the folder `user_data/strategies`.
+into the directory `user_data/strategies`.
 
 Best copy the test-strategy and modify this copy to avoid having bot-updates override your changes.
 `cp  user_data/strategies/test_strategy.py user_data/strategies/awesome-strategy.py`
@@ -41,17 +40,23 @@ The bot also include a sample strategy called `TestStrategy` you can update: `us
 You can test it with the parameter: `--strategy TestStrategy`
 
 ```bash
-python3 ./freqtrade/main.py --strategy AwesomeStrategy
+freqtrade --strategy AwesomeStrategy
 ```
 
 **For the following section we will use the [user_data/strategies/test_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py)
 file as reference.**
 
-!!! Note: Strategies and Backtesting
+!!! Note Strategies and Backtesting
     To avoid problems and unexpected differences between Backtesting and dry/live modes, please be aware
     that during backtesting the full time-interval is passed to the `populate_*()` methods at once.
     It is therefore best to use vectorized operations (across the whole dataframe, not loops) and
     avoid index referencing (`df.iloc[-1]`), but instead use `df.shift()` to get to the previous candle.
+
+!!! Warning Using future data
+    Since backtesting passes the full time interval to the `populate_*()` methods, the strategy author
+    needs to take care to avoid having the strategy utilize data from the future.
+    Samples for usage of future data are `dataframe.shift(-1)`, `dataframe.resample("1h")` (this uses the left border of the interval, so moves data from an hour to the start of the hour).
+    They all use data which is not available during regular operations, so these strategies will perform well during backtesting, but will fail / perform badly in dry-runs.
 
 ### Customize Indicators
 
@@ -212,9 +217,12 @@ stoploss = -0.10
 ```
 
 This would signify a stoploss of -10%.
+
+For the full documentation on stoploss features, look at the dedicated [stoploss page](stoploss.md).
+
 If your exchange supports it, it's recommended to also set `"stoploss_on_exchange"` in the order dict, so your stoploss is on the exchange and cannot be missed for network-problems (or other problems).
 
-For more information on order_types please look [here](https://github.com/freqtrade/freqtrade/blob/develop/docs/configuration.md#understand-order_types).
+For more information on order_types please look [here](configuration.md#understand-order_types).
 
 ### Ticker interval
 
@@ -250,22 +258,19 @@ class Awesomestrategy(IStrategy):
             self.cust_info[metadata["pair"]["crosstime"] = 1
 ```
 
-!!! Warning:
+!!! Warning
   The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
 
-!!! Note:
+!!! Note
   If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
 
 ### Additional data (DataProvider)
 
 The strategy provides access to the `DataProvider`. This allows you to get additional data to use in your strategy.
 
-!!!Note:
-    The DataProvier is currently not available during backtesting / hyperopt, but this is planned for the future.
-
 All methods return `None` in case of failure (do not raise an exception).
 
-Please always check if the `DataProvider` is available to avoid failures during backtesting.
+Please always check the mode of operation to select the correct method to get data (samples see below).
 
 #### Possible options for DataProvider
 
@@ -278,19 +283,34 @@ Please always check if the `DataProvider` is available to avoid failures during 
 
 ``` python
 if self.dp:
-    if dp.runmode == 'live':
-        if ('ETH/BTC', ticker_interval) in self.dp.available_pairs:
-            data_eth = self.dp.ohlcv(pair='ETH/BTC',
-                                     ticker_interval=ticker_interval)
+    if self.dp.runmode in ('live', 'dry_run'):
+        if (f'{self.stake_currency}/BTC', self.ticker_interval) in self.dp.available_pairs:
+            data_eth = self.dp.ohlcv(pair='{self.stake_currency}/BTC',
+                                     ticker_interval=self.ticker_interval)
     else:
         # Get historic ohlcv data (cached on disk).
-        history_eth = self.dp.historic_ohlcv(pair='ETH/BTC',
+        history_eth = self.dp.historic_ohlcv(pair='{self.stake_currency}/BTC',
                                              ticker_interval='1h')
 ```
 
-!!! Warning: Warning about backtesting
+!!! Warning Warning about backtesting
     Be carefull when using dataprovider in backtesting. `historic_ohlcv()` provides the full time-range in one go,
     so please be aware of it and make sure to not "look into the future" to avoid surprises when running in dry/live mode).
+
+!!! Warning Warning in hyperopt
+    This option cannot currently be used during hyperopt.
+
+#### Orderbook
+
+``` python
+if self.dp:
+    if self.dp.runmode in ('live', 'dry_run'):
+        ob = self.dp.orderbook(metadata['pair'], 1)
+        dataframe['best_bid'] = ob['bids'][0][0]
+        dataframe['best_ask'] = ob['asks'][0][0]
+```
+!Warning The order book is not part of the historic data which means backtesting and hyperopt will not work if this
+ method is used.
 
 #### Available Pairs
 
@@ -299,6 +319,7 @@ if self.dp:
     for pair, ticker in self.dp.available_pairs:
         print(f"available {pair}, {ticker}")
 ```
+
 
 #### Get data for non-tradeable pairs
 
@@ -317,7 +338,7 @@ def informative_pairs(self):
             ]
 ```
 
-!!! Warning:
+!!! Warning
     As these pairs will be refreshed as part of the regular whitelist refresh, it's best to keep this list short.
     All intervals and all pairs can be specified as long as they are available (and active) on the used exchange.
     It is however better to use resampling to longer time-intervals when possible
@@ -327,7 +348,7 @@ def informative_pairs(self):
 
 The strategy provides access to the `Wallets` object. This contains the current balances on the exchange.
 
-!!!NOTE:
+!!! Note
     Wallets is not available during backtesting / hyperopt.
 
 Please always check if `Wallets` is available to avoid failures during backtesting.
@@ -345,6 +366,30 @@ if self.wallets:
 - `get_used(asset)` - currently tied up balance (open orders)
 - `get_total(asset)` - total available balance - sum of the 2 above
 
+### Print created dataframe
+
+To inspect the created dataframe, you can issue a print-statement in either `populate_buy_trend()` or `populate_sell_trend()`.
+You may also want to print the pair so it's clear what data is currently shown.
+
+``` python
+def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    dataframe.loc[
+        (
+            #>> whatever condition<<<
+        ),
+        'buy'] = 1
+
+    # Print the Analyzed pair
+    print(f"result for {metadata['pair']}")
+
+    # Inspect the last 5 rows
+    print(dataframe.tail())
+
+    return dataframe
+```
+
+Printing more than a few rows is also possible (simply use  `print(dataframe)` instead of `print(dataframe.tail())`), however not recommended, as that will be very verbose (~500 lines per pair every 5 seconds).
+
 ### Where is the default strategy?
 
 The default buy strategy is located in the file
@@ -352,10 +397,10 @@ The default buy strategy is located in the file
 
 ### Specify custom strategy location
 
-If you want to use a strategy from a different folder you can pass `--strategy-path`
+If you want to use a strategy from a different directory you can pass `--strategy-path`
 
 ```bash
-python3 ./freqtrade/main.py --strategy AwesomeStrategy --strategy-path /some/folder
+freqtrade --strategy AwesomeStrategy --strategy-path /some/directory
 ```
 
 ### Further strategy ideas
@@ -364,7 +409,7 @@ To get additional Ideas for strategies, head over to our [strategy repository](h
 Feel free to use any of them as inspiration for your own strategies.
 We're happy to accept Pull Requests containing new Strategies to that repo.
 
-We also got a *strategy-sharing* channel in our [Slack community](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE) which is a great place to get and/or share ideas.
+We also got a *strategy-sharing* channel in our [Slack community](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LWEyODBiNzkzNzcyNzU0MWYyYzE5NjIyOTQxMzBmMGUxOTIzM2YyN2Y4NWY1YTEwZDgwYTRmMzE2NmM5ZmY2MTg) which is a great place to get and/or share ideas.
 
 ## Next step
 

@@ -12,29 +12,34 @@ and still take a long time.
 ## Prepare Hyperopting
 
 Before we start digging into Hyperopt, we recommend you to take a look at
-an example hyperopt file located into [user_data/hyperopts/](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/test_hyperopt.py)
+an example hyperopt file located into [user_data/hyperopts/](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/sample_hyperopt.py)
 
 Configuring hyperopt is similar to writing your own strategy, and many tasks will be similar and a lot of code can be copied across from the strategy.
 
 ### Checklist on all tasks / possibilities in hyperopt
 
-Depending on the space you want to optimize, only some of the below are required.
+Depending on the space you want to optimize, only some of the below are required:
 
 * fill `populate_indicators` - probably a copy from your strategy
 * fill `buy_strategy_generator` - for buy signal optimization
 * fill `indicator_space` - for buy signal optimzation
 * fill `sell_strategy_generator` - for sell signal optimization
 * fill `sell_indicator_space` - for sell signal optimzation
-* fill `roi_space` - for ROI optimization
-* fill `generate_roi_table` - for ROI optimization (if you need more than 3 entries)
-* fill `stoploss_space` - stoploss optimization
-* Optional but recommended
-  * copy `populate_buy_trend` from your strategy - otherwise default-strategy will be used
-  * copy `populate_sell_trend` from your strategy - otherwise default-strategy will be used
+
+Optional, but recommended:
+
+* copy `populate_buy_trend` from your strategy - otherwise default-strategy will be used
+* copy `populate_sell_trend` from your strategy - otherwise default-strategy will be used
+
+Rarely you may also need to override:
+
+* `roi_space` - for custom ROI optimization (if you need the ranges for the ROI parameters in the optimization hyperspace that differ from default)
+* `generate_roi_table` - for custom ROI optimization (if you need more than 4 entries in the ROI table)
+* `stoploss_space` - for custom stoploss optimization (if you need the range for the stoploss parameter in the optimization hyperspace that differs from default)
 
 ### 1. Install a Custom Hyperopt File
 
-Put your hyperopt file into the folder`user_data/hyperopts`.
+Put your hyperopt file into the directory `user_data/hyperopts`.
 
 Let assume you want a hyperopt file `awesome_hyperopt.py`:  
 Copy the file `user_data/hyperopts/sample_hyperopt.py` into `user_data/hyperopts/awesome_hyperopt.py`
@@ -62,7 +67,7 @@ If you have updated the buy strategy, ie. changed the contents of
 
 #### Sell optimization
 
-Similar to the buy-signal above, sell-signals can also be optimized. 
+Similar to the buy-signal above, sell-signals can also be optimized.
 Place the corresponding settings into the following methods
 
 * Inside `sell_indicator_space()` - the parameters hyperopt shall be optimizing.
@@ -70,6 +75,11 @@ Place the corresponding settings into the following methods
 
 The configuration and rules are the same than for buy signals.
 To avoid naming collisions in the search-space, please prefix all sell-spaces with `sell-`.
+
+#### Using ticker-interval as part of the Strategy
+
+The Strategy exposes the ticker-interval as `self.ticker_interval`. The same value is available as class-attribute `HyperoptName.ticker_interval`.
+In the case of the linked sample-value this would be `SampleHyperOpts.ticker_interval`.
 
 ## Solving a Mystery
 
@@ -122,9 +132,10 @@ So let's write the buy strategy using these values:
                         dataframe['macd'], dataframe['macdsignal']
                     ))
 
-            dataframe.loc[
-                reduce(lambda x, y: x & y, conditions),
-                'buy'] = 1
+            if conditions:
+                dataframe.loc[
+                    reduce(lambda x, y: x & y, conditions),
+                    'buy'] = 1
 
             return dataframe
 
@@ -138,21 +149,90 @@ it will end with telling you which paramter combination produced the best profit
 
 The search for best parameters starts with a few random combinations and then uses a
 regressor algorithm (currently ExtraTreesRegressor) to quickly find a parameter combination
-that minimizes the value of the objective function `calculate_loss` in `hyperopt.py`.
+that minimizes the value of the [loss function](#loss-functions).
 
 The above setup expects to find ADX, RSI and Bollinger Bands in the populated indicators.
 When you want to test an indicator that isn't used by the bot currently, remember to
 add it to the `populate_indicators()` method in `hyperopt.py`.
 
+## Loss-functions
+
+Each hyperparameter tuning requires a target. This is usually defined as a loss function (sometimes also called objective function), which should decrease for more desirable results, and increase for bad results.
+
+By default, FreqTrade uses a loss function, which has been with freqtrade since the beginning and optimizes mostly for short trade duration and avoiding losses.
+
+A different loss function can be specified by using the `--hyperopt-loss <Class-name>` argument.
+This class should be in its own file within the `user_data/hyperopts/` directory.
+
+Currently, the following loss functions are builtin: `DefaultHyperOptLoss` (default legacy Freqtrade hyperoptimization loss function), `SharpeHyperOptLoss` (optimizes Sharpe Ratio calculated on the trade returns) and `OnlyProfitHyperOptLoss` (which takes only amount of profit into consideration).
+
+### Creating and using a custom loss function
+
+To use a custom loss function class, make sure that the function `hyperopt_loss_function` is defined in your custom hyperopt loss class.
+For the sample below, you then need to add the command line parameter `--hyperopt-loss SuperDuperHyperOptLoss` to your hyperopt call so this fuction is being used.
+
+A sample of this can be found below, which is identical to the Default Hyperopt loss implementation. A full sample can be found [user_data/hyperopts/](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/sample_hyperopt_loss.py)
+
+``` python
+from freqtrade.optimize.hyperopt import IHyperOptLoss
+
+TARGET_TRADES = 600
+EXPECTED_MAX_PROFIT = 3.0
+MAX_ACCEPTED_TRADE_DURATION = 300
+
+class SuperDuperHyperOptLoss(IHyperOptLoss):
+    """
+    Defines the default loss function for hyperopt
+    """
+
+    @staticmethod
+    def hyperopt_loss_function(results: DataFrame, trade_count: int,
+                               min_date: datetime, max_date: datetime,
+                               *args, **kwargs) -> float:
+        """
+        Objective function, returns smaller number for better results
+        This is the legacy algorithm (used until now in freqtrade).
+        Weights are distributed as follows:
+        * 0.4 to trade duration
+        * 0.25: Avoiding trade loss
+        * 1.0 to total profit, compared to the expected value (`EXPECTED_MAX_PROFIT`) defined above
+        """
+        total_profit = results.profit_percent.sum()
+        trade_duration = results.trade_duration.mean()
+
+        trade_loss = 1 - 0.25 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.8)
+        profit_loss = max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)
+        duration_loss = 0.4 * min(trade_duration / MAX_ACCEPTED_TRADE_DURATION, 1)
+        result = trade_loss + profit_loss + duration_loss
+        return result
+```
+
+Currently, the arguments are:
+
+* `results`: DataFrame containing the result  
+    The following columns are available in results (corresponds to the output-file of backtesting when used with `--export trades`):  
+    `pair, profit_percent, profit_abs, open_time, close_time, open_index, close_index, trade_duration, open_at_end, open_rate, close_rate, sell_reason`
+* `trade_count`: Amount of trades (identical to `len(results)`)
+* `min_date`: Start date of the hyperopting TimeFrame
+* `min_date`: End date of the hyperopting TimeFrame
+
+This function needs to return a floating point number (`float`). Smaller numbers will be interpreted as better results. The parameters and balancing for this is up to you.
+
+!!! Note
+    This function is called once per iteration - so please make sure to have this as optimized as possible to not slow hyperopt down unnecessarily.
+
+!!! Note
+    Please keep the arguments `*args` and `**kwargs` in the interface to allow us to extend this interface later.
+
 ## Execute Hyperopt
 
 Once you have updated your hyperopt configuration you can run it.
-Because hyperopt tries a lot of combinations to find the best parameters it will take time you will have the result (more than 30 mins).
+Because hyperopt tries a lot of combinations to find the best parameters it will take time to get a good result. More time usually results in better results.
 
 We strongly recommend to use `screen` or `tmux` to prevent any connection loss.
 
 ```bash
-python3 ./freqtrade/main.py -c config.json hyperopt --customhyperopt <hyperoptname> -e 5000 --spaces all
+freqtrade -c config.json hyperopt --customhyperopt <hyperoptname> -e 5000 --spaces all
 ```
 
 Use  `<hyperoptname>` as the name of the custom hyperopt used.
@@ -162,8 +242,11 @@ running at least several thousand evaluations.
 
 The `--spaces all` flag determines that all possible parameters should be optimized. Possibilities are listed below.
 
+!!! Note
+    By default, hyperopt will erase previous results and start from scratch. Continuation can be archived by using `--continue`.
+
 !!! Warning
-When switching parameters or changing configuration options, the file `user_data/hyperopt_results.pickle` should be removed. It's used to be able to continue interrupted calculations, but does not detect changes to settings or the hyperopt file.
+    When switching parameters or changing configuration options, make sure to not use the argument `--continue` so temporary results can be removed.
 
 ### Execute Hyperopt with Different Ticker-Data Source
 
@@ -173,12 +256,11 @@ use data from directory `user_data/data`.
 
 ### Running Hyperopt with Smaller Testset
 
-Use the `--timerange` argument to change how much of the testset
-you want to use. The last N ticks/timeframes will be used.
-Example:
+Use the `--timerange` argument to change how much of the testset you want to use.
+For example, to use one month of data, pass the following parameter to the hyperopt call:
 
 ```bash
-python3 ./freqtrade/main.py hyperopt --timerange -200
+freqtrade hyperopt --timerange 20180401-20180501
 ```
 
 ### Running Hyperopt with Smaller Search Space
@@ -191,12 +273,33 @@ new buy strategy you have.
 
 Legal values are:
 
-- `all`: optimize everything
-- `buy`: just search for a new buy strategy
-- `sell`: just search for a new sell strategy
-- `roi`: just optimize the minimal profit table for your strategy
-- `stoploss`: search for the best stoploss value
-- space-separated list of any of the above values for example `--spaces roi stoploss`
+* `all`: optimize everything
+* `buy`: just search for a new buy strategy
+* `sell`: just search for a new sell strategy
+* `roi`: just optimize the minimal profit table for your strategy
+* `stoploss`: search for the best stoploss value
+* space-separated list of any of the above values for example `--spaces roi stoploss`
+
+### Position stacking and disabling max market positions
+
+In some situations, you may need to run Hyperopt (and Backtesting) with the 
+`--eps`/`--enable-position-staking` and `--dmmp`/`--disable-max-market-positions` arguments.
+
+By default, hyperopt emulates the behavior of the Freqtrade Live Run/Dry Run, where only one
+open trade is allowed for every traded pair. The total number of trades open for all pairs 
+is also limited by the `max_open_trades` setting. During Hyperopt/Backtesting this may lead to
+some potential trades to be hidden (or masked) by previosly open trades.
+
+The `--eps`/`--enable-position-stacking` argument allows emulation of buying the same pair multiple times,
+while `--dmmp`/`--disable-max-market-positions` disables applying `max_open_trades` 
+during Hyperopt/Backtesting (which is equal to setting `max_open_trades` to a very high
+number).
+
+!!! Note
+    Dry/live runs will **NOT** use position stacking - therefore it does make sense to also validate the strategy without this as it's closer to reality.
+
+You can also enable position stacking in the configuration file by explicitly setting 
+`"position_stacking"=true`.
 
 ## Understand the Hyperopt Result
 
@@ -205,8 +308,10 @@ Given the following result from hyperopt:
 
 ```
 Best result:
-   135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins.
-with values:
+
+    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins. Objective: 1.94367
+
+Buy hyperspace params:
 {    'adx-value': 44,
      'rsi-value': 29,
      'adx-enabled': False,
@@ -225,7 +330,7 @@ method, what those values match to.
 
 So for example you had `rsi-value: 29.0` so we would look at `rsi`-block, that translates to the following code block:
 
-```
+``` python
 (dataframe['rsi'] < 29.0)
 ```
 
@@ -245,25 +350,19 @@ def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
 
 ### Understand Hyperopt ROI results
 
-If you are optimizing ROI, you're result will look as follows and include a ROI table.
+If you are optimizing ROI (i.e. if optimization search-space contains 'all' or 'roi'), your result will look as follows and include a ROI table:
 
 ```
 Best result:
-   135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins.
-with values:
+
+    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins. Objective: 1.94367
+
+Buy hyperspace params:
 {   'adx-value': 44,
     'rsi-value': 29,
-    'adx-enabled': false,
+    'adx-enabled': False,
     'rsi-enabled': True,
-    'trigger': 'bb_lower',
-    'roi_t1': 40,
-    'roi_t2': 57,
-    'roi_t3': 21,
-    'roi_p1': 0.03634636907306948,
-    'roi_p2': 0.055237357937802885,
-    'roi_p3': 0.015163796015548354,
-    'stoploss': -0.37996664668703606
-}
+    'trigger': 'bb_lower'}
 ROI table:
 {   0: 0.10674752302642071,
     21: 0.09158372701087236,
@@ -274,27 +373,54 @@ ROI table:
 This would translate to the following ROI table:
 
 ``` python
- minimal_roi = {
+minimal_roi = {
         "118": 0,
-        "78": 0.0363463,
+        "78": 0.0363,
         "21": 0.0915,
         "0": 0.106
     }
 ```
 
-### Validate backtest result
+If you are optimizing ROI, Freqtrade creates the 'roi' optimization hyperspace for you -- it's the hyperspace of components for the ROI tables. By default, each ROI table generated by the Freqtrade consists of 4 rows (steps) with the values that can vary in the following ranges:
+
+| # | minutes | ROI percentage |
+|---|---|---|
+| 1 | always 0 | 0.03...0.31 |
+| 2 | 10...40 | 0.02...0.11 |
+| 3 | 20...100 | 0.01...0.04 |
+| 4 | 30...220 | always 0 |
+
+This structure of the ROI table is sufficient in most cases. Override the `roi_space()` method defining the ranges desired if you need components of the ROI tables to vary in other ranges.
+
+Override the `generate_roi_table()` and `roi_space()` methods and implement your own custom approach for generation of the ROI tables during hyperoptimization in these methods if you need a different structure of the ROI table or other amount of rows (steps) in the ROI tables.
+
+### Understand Hyperopt Stoploss results
+
+If you are optimizing stoploss values (i.e. if optimization search-space contains 'all' or 'stoploss'), your result will look as follows and include stoploss:
+
+```
+Best result:
+
+    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins. Objective: 1.94367
+
+Buy hyperspace params:
+{   'adx-value': 44,
+    'rsi-value': 29,
+    'adx-enabled': False,
+    'rsi-enabled': True,
+    'trigger': 'bb_lower'}
+Stoploss: -0.37996664668703606
+```
+
+If you are optimizing stoploss values, Freqtrade creates the 'stoploss' optimization hyperspace for you. By default, the stoploss values in that hyperspace can vary in the range -0.5...-0.02, which is sufficient in most cases.
+
+Override the `stoploss_space()` method and define the desired range in it if you need stoploss values to vary in other range during hyperoptimization.
+
+### Validate backtesting results
 
 Once the optimized strategy has been implemented into your strategy, you should backtest this strategy to make sure everything is working as expected.
-To archive the same results (number of trades, ...) than during hyperopt, please use the command line flags `--disable-max-market-positions` and `--enable-position-stacking` for backtesting.
 
-This configuration is the default in hyperopt for performance reasons.
-
-You can overwrite position stacking in the configuration by explicitly setting `"position_stacking"=false` or by changing the relevant line in your hyperopt file [here](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L191).
-
-Enabling the market-position for hyperopt is currently not possible.
-
-!!! Note:
-Dry/live runs will **NOT** use position stacking - therefore it does make sense to also validate the strategy without this as it's closer to reality.
+To achieve same results (number of trades, their durations, profit, etc.) than during Hyperopt, please use same set of arguments `--dmmp`/`--disable-max-market-positions` and `--eps`/`--enable-position-stacking` for Backtesting.
 
 ## Next Step
 

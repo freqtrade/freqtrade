@@ -68,9 +68,9 @@ For any other type of installation please refer to [Installation doc](https://ww
 ### Bot commands
 
 ```
-usage: freqtrade [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
-                 [--strategy-path PATH] [--dynamic-whitelist [INT]]
-                 [--db-url PATH]
+usage: freqtrade [-h] [-v] [--logfile FILE] [--version] [-c PATH] [-d PATH]
+                 [-s NAME] [--strategy-path PATH] [--dynamic-whitelist [INT]]
+                 [--db-url PATH] [--sd-notify]
                  {backtesting,edge,hyperopt} ...
 
 Free, open source crypto trading bot
@@ -84,6 +84,7 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified
   --version             show program's version number and exit
   -c PATH, --config PATH
                         Specify configuration file (default: None). Multiple
@@ -100,6 +101,7 @@ optional arguments:
   --db-url PATH         Override trades database URL, this is useful if
                         dry_run is enabled or in custom deployments (default:
                         None).
+  --sd-notify           Notify systemd service manager.
 ```
 
 ### Telegram RPC commands
@@ -127,7 +129,6 @@ The project is currently setup in two main branches:
 - `master` - This branch contains the latest stable release. The bot 'should' be stable on this branch, and is generally well tested.
 - `feat/*` - These are feature branches, which are being worked on heavily. Please don't use these unless you want to test a specific feature.
 
-
 ## A note on Binance
 
 For Binance, please add `"BNB/<STAKE>"` to your blacklist to avoid issues.
@@ -140,7 +141,7 @@ Accounts having BNB accounts use this to pay for fees - if your first trade happ
 For any questions not covered by the documentation or for further
 information about the bot, we encourage you to join our slack channel.
 
-- [Click here to join Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE).
+- [Click here to join Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LWEyODBiNzkzNzcyNzU0MWYyYzE5NjIyOTQxMzBmMGUxOTIzM2YyN2Y4NWY1YTEwZDgwYTRmMzE2NmM5ZmY2MTg).
 
 ### [Bugs / Issues](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue)
 
@@ -171,7 +172,7 @@ to understand the requirements before sending your pull-requests.
 Coding is not a neccessity to contribute - maybe start with improving our documentation?
 Issues labeled [good first issue](https://github.com/freqtrade/freqtrade/labels/good%20first%20issue) can be good first contributions, and will help get you familiar with the codebase.
 
-**Note** before starting any major new feature work, *please open an issue describing what you are planning to do* or talk to us on [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE). This will ensure that interested parties can give valuable feedback on the feature, and let others know that you are working on it.
+**Note** before starting any major new feature work, *please open an issue describing what you are planning to do* or talk to us on [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LWEyODBiNzkzNzcyNzU0MWYyYzE5NjIyOTQxMzBmMGUxOTIzM2YyN2Y4NWY1YTEwZDgwYTRmMzE2NmM5ZmY2MTg). This will ensure that interested parties can give valuable feedback on the feature, and let others know that you are working on it.
 
 **Important:** Always create your PR against the `develop` branch, not `master`.
 

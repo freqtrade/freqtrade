@@ -1,17 +1,21 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 import logging
+import tempfile
+import warnings
 from base64 import urlsafe_b64encode
 from os import path
 from pathlib import Path
-import warnings
+from unittest.mock import Mock
 
 import pytest
 from pandas import DataFrame
 
+from freqtrade import OperationalException
+from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy import import_strategy
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import IStrategy
-from freqtrade.resolvers import StrategyResolver
+from freqtrade.tests.conftest import log_has_re
 
 
 def test_import_strategy(caplog):
@@ -41,57 +45,67 @@ def test_import_strategy(caplog):
 
 def test_search_strategy():
     default_config = {}
-    default_location = Path(__file__).parent.parent.joinpath('strategy').resolve()
-    assert isinstance(
-        StrategyResolver._search_object(
-            directory=default_location,
-            object_type=IStrategy,
-            kwargs={'config': default_config},
-            object_name='DefaultStrategy'
-        ),
-        IStrategy
+    default_location = Path(__file__).parent.parent.parent.joinpath('strategy').resolve()
+
+    s, _ = StrategyResolver._search_object(
+        directory=default_location,
+        object_type=IStrategy,
+        kwargs={'config': default_config},
+        object_name='DefaultStrategy'
     )
-    assert StrategyResolver._search_object(
+    assert isinstance(s, IStrategy)
+
+    s, _ = StrategyResolver._search_object(
         directory=default_location,
         object_type=IStrategy,
         kwargs={'config': default_config},
         object_name='NotFoundStrategy'
-    ) is None
+    )
+    assert s is None
 
 
 def test_load_strategy(result):
     resolver = StrategyResolver({'strategy': 'TestStrategy'})
-    metadata = {'pair': 'ETH/BTC'}
-    assert 'adx' in resolver.strategy.advise_indicators(result, metadata=metadata)
+    assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 
 
-def test_load_strategy_byte64(result):
-    with open("freqtrade/tests/strategy/test_strategy.py", "r") as file:
-        encoded_string = urlsafe_b64encode(file.read().encode("utf-8")).decode("utf-8")
+def test_load_strategy_base64(result, caplog):
+    with open("user_data/strategies/test_strategy.py", "rb") as file:
+        encoded_string = urlsafe_b64encode(file.read()).decode("utf-8")
     resolver = StrategyResolver({'strategy': 'TestStrategy:{}'.format(encoded_string)})
-    assert 'adx' in resolver.strategy.advise_indicators(result, 'ETH/BTC')
+    assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
+    # Make sure strategy was loaded from base64 (using temp directory)!!
+    assert log_has_re(r"Using resolved strategy TestStrategy from '"
+                      + tempfile.gettempdir() + r"/.*/TestStrategy\.py'\.\.\.",
+                      caplog.record_tuples)
 
 
 def test_load_strategy_invalid_directory(result, caplog):
     resolver = StrategyResolver()
-    extra_dir = path.join('some', 'path')
+    extra_dir = Path.cwd() / 'some/path'
     resolver._load_strategy('TestStrategy', config={}, extra_dir=extra_dir)
 
-    assert (
-        'freqtrade.resolvers.strategy_resolver',
-        logging.WARNING,
-        'Path "{}" does not exist'.format(extra_dir),
-    ) in caplog.record_tuples
+    assert log_has_re(r'Path .*' + r'some.*path.*' + r'.* does not exist', caplog.record_tuples)
 
     assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 
 
 def test_load_not_found_strategy():
     strategy = StrategyResolver()
-    with pytest.raises(ImportError,
-                       match=r"Impossible to load Strategy 'NotFoundStrategy'."
-                             r" This class does not exist or contains Python code errors"):
+    with pytest.raises(OperationalException,
+                       match=r"Impossible to load Strategy 'NotFoundStrategy'. "
+                             r"This class does not exist or contains Python code errors."):
         strategy._load_strategy(strategy_name='NotFoundStrategy', config={})
+
+
+def test_load_staticmethod_importerror(mocker, caplog):
+    mocker.patch("freqtrade.resolvers.strategy_resolver.import_strategy", Mock(
+        side_effect=TypeError("can't pickle staticmethod objects")))
+    with pytest.raises(OperationalException,
+                       match=r"Impossible to load Strategy 'DefaultStrategy'. "
+                             r"This class does not exist or contains Python code errors."):
+        StrategyResolver()
+    assert log_has_re(r".*Error: can't pickle staticmethod objects", caplog.record_tuples)
 
 
 def test_strategy(result):
@@ -194,11 +208,13 @@ def test_strategy_override_ticker_interval(caplog):
 
     config = {
         'strategy': 'DefaultStrategy',
-        'ticker_interval': 60
+        'ticker_interval': 60,
+        'stake_currency': 'ETH'
     }
     resolver = StrategyResolver(config)
 
     assert resolver.strategy.ticker_interval == 60
+    assert resolver.strategy.stake_currency == 'ETH'
     assert ('freqtrade.resolvers.strategy_resolver',
             logging.INFO,
             "Override strategy 'ticker_interval' with value in config file: 60."
@@ -350,6 +366,7 @@ def test_strategy_override_use_sell_profit_only(caplog):
             ) in caplog.record_tuples
 
 
+@pytest.mark.filterwarnings("ignore:deprecated")
 def test_deprecate_populate_indicators(result):
     default_location = path.join(path.dirname(path.realpath(__file__)))
     resolver = StrategyResolver({'strategy': 'TestStrategyLegacy',
@@ -357,7 +374,7 @@ def test_deprecate_populate_indicators(result):
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
-        indicators = resolver.strategy.advise_indicators(result, 'ETH/BTC')
+        indicators = resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
         assert len(w) == 1
         assert issubclass(w[-1].category, DeprecationWarning)
         assert "deprecated - check out the Sample strategy to see the current function headers!" \
@@ -366,7 +383,7 @@ def test_deprecate_populate_indicators(result):
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
-        resolver.strategy.advise_buy(indicators, 'ETH/BTC')
+        resolver.strategy.advise_buy(indicators, {'pair': 'ETH/BTC'})
         assert len(w) == 1
         assert issubclass(w[-1].category, DeprecationWarning)
         assert "deprecated - check out the Sample strategy to see the current function headers!" \
@@ -375,13 +392,14 @@ def test_deprecate_populate_indicators(result):
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
-        resolver.strategy.advise_sell(indicators, 'ETH_BTC')
+        resolver.strategy.advise_sell(indicators, {'pair': 'ETH_BTC'})
         assert len(w) == 1
         assert issubclass(w[-1].category, DeprecationWarning)
         assert "deprecated - check out the Sample strategy to see the current function headers!" \
             in str(w[-1].message)
 
 
+@pytest.mark.filterwarnings("ignore:deprecated")
 def test_call_deprecated_function(result, monkeypatch):
     default_location = path.join(path.dirname(path.realpath(__file__)))
     resolver = StrategyResolver({'strategy': 'TestStrategyLegacy',

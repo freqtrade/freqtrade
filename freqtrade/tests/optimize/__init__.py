@@ -3,11 +3,11 @@ from typing import NamedTuple, List
 import arrow
 from pandas import DataFrame
 
+from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.strategy.interface import SellType
-from freqtrade.constants import TICKER_INTERVAL_MINUTES
 
 ticker_start_time = arrow.get(2018, 10, 3)
-tests_ticker_interval = "1h"
+tests_ticker_interval = '1h'
 
 
 class BTrade(NamedTuple):
@@ -28,11 +28,16 @@ class BTContainer(NamedTuple):
     roi: float
     trades: List[BTrade]
     profit_perc: float
+    trailing_stop: bool = False
+    trailing_only_offset_is_reached: bool = False
+    trailing_stop_positive: float = None
+    trailing_stop_positive_offset: float = 0.0
+    use_sell_signal: bool = False
 
 
 def _get_frame_time_from_offset(offset):
-    return ticker_start_time.shift(minutes=(offset * TICKER_INTERVAL_MINUTES[tests_ticker_interval])
-                                   ).datetime.replace(tzinfo=None)
+    return ticker_start_time.shift(minutes=(offset * timeframe_to_minutes(tests_ticker_interval))
+                                   ).datetime
 
 
 def _build_backtest_dataframe(ticker_with_signals):

@@ -4,13 +4,15 @@
 bot constants
 """
 DEFAULT_CONFIG = 'config.json'
+DEFAULT_EXCHANGE = 'bittrex'
 DYNAMIC_WHITELIST = 20  # pairs
 PROCESS_THROTTLE_SECS = 5  # sec
-TICKER_INTERVAL = 5  # min
+DEFAULT_TICKER_INTERVAL = 5  # min
 HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
 DEFAULT_STRATEGY = 'DefaultStrategy'
 DEFAULT_HYPEROPT = 'DefaultHyperOpts'
+DEFAULT_HYPEROPT_LOSS = 'DefaultHyperOptLoss'
 DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
 DEFAULT_DB_DRYRUN_URL = 'sqlite://'
 UNLIMITED_STAKE_AMOUNT = 'unlimited'
@@ -21,23 +23,13 @@ ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList']
 DRY_RUN_WALLET = 999.9
+DEFAULT_DOWNLOAD_TICKER_INTERVALS = '1m 5m'
 
-TICKER_INTERVAL_MINUTES = {
-    '1m': 1,
-    '3m': 3,
-    '5m': 5,
-    '15m': 15,
-    '30m': 30,
-    '1h': 60,
-    '2h': 120,
-    '4h': 240,
-    '6h': 360,
-    '8h': 480,
-    '12h': 720,
-    '1d': 1440,
-    '3d': 4320,
-    '1w': 10080,
-}
+TICKER_INTERVALS = [
+    '1m', '3m', '5m', '15m', '30m',
+    '1h', '2h', '4h', '6h', '8h', '12h',
+    '1d', '3d', '1w',
+]
 
 SUPPORTED_FIAT = [
     "AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK", "DKK",
@@ -52,7 +44,7 @@ CONF_SCHEMA = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': 'integer', 'minimum': -1},
-        'ticker_interval': {'type': 'string', 'enum': list(TICKER_INTERVAL_MINUTES.keys())},
+        'ticker_interval': {'type': 'string', 'enum': TICKER_INTERVALS},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'XBT', 'ETH', 'USDT', 'EUR', 'USD']},
         'stake_amount': {
             "type": ["number", "string"],
@@ -167,6 +159,21 @@ CONF_SCHEMA = {
                 'webhookstatus': {'type': 'object'},
             },
         },
+        'api_server': {
+            'type': 'object',
+            'properties': {
+                'enabled': {'type': 'boolean'},
+                'listen_ip_address': {'format': 'ipv4'},
+                'listen_port': {
+                    'type': 'integer',
+                    "minimum": 1024,
+                    "maximum": 65535
+                },
+                'username': {'type': 'string'},
+                'password': {'type': 'string'},
+            },
+            'required': ['enabled', 'listen_ip_address', 'listen_port', 'username', 'password']
+        },
         'db_url': {'type': 'string'},
         'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
         'forcebuy_enable': {'type': 'boolean'},
@@ -184,10 +191,10 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'name': {'type': 'string'},
-                'sandbox': {'type': 'boolean'},
-                'key': {'type': 'string'},
-                'secret': {'type': 'string'},
-                'password': {'type': 'string'},
+                'sandbox': {'type': 'boolean', 'default': False},
+                'key': {'type': 'string', 'default': ''},
+                'secret': {'type': 'string', 'default': ''},
+                'password': {'type': 'string', 'default': ''},
                 'uid': {'type': 'string'},
                 'pair_whitelist': {
                     'type': 'array',
@@ -210,7 +217,7 @@ CONF_SCHEMA = {
                 'ccxt_config': {'type': 'object'},
                 'ccxt_async_config': {'type': 'object'}
             },
-            'required': ['name', 'key', 'secret', 'pair_whitelist']
+            'required': ['name', 'pair_whitelist']
         },
         'edge': {
             'type': 'object',

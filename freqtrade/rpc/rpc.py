@@ -48,6 +48,11 @@ class RPCException(Exception):
     def __str__(self):
         return self.message
 
+    def __json__(self):
+        return {
+            'msg': self.message
+        }
+
 
 class RPC(object):
     """
@@ -100,20 +105,17 @@ class RPC(object):
                 current_profit = trade.calc_profit_percent(current_rate)
                 fmt_close_profit = (f'{round(trade.close_profit * 100, 2):.2f}%'
                                     if trade.close_profit else None)
-                results.append(dict(
-                    trade_id=trade.id,
-                    pair=trade.pair,
-                    date=arrow.get(trade.open_date),
-                    open_rate=trade.open_rate,
-                    close_rate=trade.close_rate,
-                    current_rate=current_rate,
-                    amount=round(trade.amount, 8),
+                trade_dict = trade.to_json()
+                trade_dict.update(dict(
+                    base_currency=self._freqtrade.config['stake_currency'],
                     close_profit=fmt_close_profit,
+                    current_rate=current_rate,
                     current_profit=round(current_profit * 100, 2),
                     open_order='({} {} rem={:.8f})'.format(
-                      order['type'], order['side'], order['remaining']
+                        order['type'], order['side'], order['remaining']
                     ) if order else None,
                 ))
+                results.append(trade_dict)
             return results
 
     def _rpc_status_table(self) -> DataFrame:
@@ -279,11 +281,13 @@ class RPC(object):
                 rate = 1.0
             else:
                 try:
-                    if coin == 'USDT':
-                        rate = 1.0 / self._freqtrade.get_sell_rate('BTC/USDT', False)
+                    pair = self._freqtrade.exchange.get_valid_pair_combination(coin, "BTC")
+                    if pair.startswith("BTC"):
+                        rate = 1.0 / self._freqtrade.get_sell_rate(pair, False)
                     else:
-                        rate = self._freqtrade.get_sell_rate(coin + '/BTC', False)
+                        rate = self._freqtrade.get_sell_rate(pair, False)
                 except (TemporaryError, DependencyException):
+                    logger.warning(f" Could not get rate for pair {coin}.")
                     continue
             est_btc: float = rate * balance['total']
             total = total + est_btc
@@ -295,7 +299,10 @@ class RPC(object):
                 'est_btc': est_btc,
             })
         if total == 0.0:
-            raise RPCException('all balances are zero')
+            if self._freqtrade.config.get('dry_run', False):
+                raise RPCException('Running in Dry Run, balances are not available.')
+            else:
+                raise RPCException('All balances are zero.')
 
         symbol = fiat_display_currency
         value = self._fiat_converter.convert_amount(total, 'BTC',
@@ -338,7 +345,7 @@ class RPC(object):
 
         return {'status': 'No more buy will occur from now. Run /reload_conf to reset.'}
 
-    def _rpc_forcesell(self, trade_id) -> None:
+    def _rpc_forcesell(self, trade_id) -> Dict[str, str]:
         """
         Handler for forcesell <id>.
         Sells the given trade at current price
@@ -378,7 +385,7 @@ class RPC(object):
             for trade in Trade.get_open_trades():
                 _exec_forcesell(trade)
             Trade.session.flush()
-            return
+            return {'result': 'Created sell orders for all open trades.'}
 
         # Query for trade
         trade = Trade.query.filter(
@@ -393,6 +400,7 @@ class RPC(object):
 
         _exec_forcesell(trade)
         Trade.session.flush()
+        return {'result': f'Created sell order for trade {trade_id}.'}
 
     def _rpc_forcebuy(self, pair: str, price: Optional[float]) -> Optional[Trade]:
         """
@@ -446,17 +454,43 @@ class RPC(object):
             for pair, rate, count in pair_rates
         ]
 
-    def _rpc_count(self) -> List[Trade]:
+    def _rpc_count(self) -> Dict[str, float]:
         """ Returns the number of trades running """
         if self._freqtrade.state != State.RUNNING:
             raise RPCException('trader is not running')
 
-        return Trade.get_open_trades()
+        trades = Trade.get_open_trades()
+        return {
+            'current': len(trades),
+            'max': float(self._freqtrade.config['max_open_trades']),
+            'total_stake': sum((trade.open_rate * trade.amount) for trade in trades)
+        }
 
     def _rpc_whitelist(self) -> Dict:
         """ Returns the currently active whitelist"""
         res = {'method': self._freqtrade.pairlists.name,
-               'length': len(self._freqtrade.pairlists.whitelist),
+               'length': len(self._freqtrade.active_pair_whitelist),
                'whitelist': self._freqtrade.active_pair_whitelist
                }
         return res
+
+    def _rpc_blacklist(self, add: List[str] = None) -> Dict:
+        """ Returns the currently active blacklist"""
+        if add:
+            stake_currency = self._freqtrade.config.get('stake_currency')
+            for pair in add:
+                if (pair.endswith(stake_currency)
+                        and pair not in self._freqtrade.pairlists.blacklist):
+                    self._freqtrade.pairlists.blacklist.append(pair)
+
+        res = {'method': self._freqtrade.pairlists.name,
+               'length': len(self._freqtrade.pairlists.blacklist),
+               'blacklist': self._freqtrade.pairlists.blacklist,
+               }
+        return res
+
+    def _rpc_edge(self) -> List[Dict[str, Any]]:
+        """ Returns information related to Edge """
+        if not self._freqtrade.edge:
+            raise RPCException(f'Edge is not enabled.')
+        return self._freqtrade.edge.accepted_pairs()

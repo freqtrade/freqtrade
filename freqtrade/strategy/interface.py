@@ -6,16 +6,17 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, NamedTuple, Tuple
+from typing import Dict, List, NamedTuple, Optional, Tuple
 import warnings
 
 import arrow
 from pandas import DataFrame
 
-from freqtrade import constants
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.persistence import Trade
 from freqtrade.wallets import Wallets
+
 
 logger = logging.getLogger(__name__)
 
@@ -157,7 +158,24 @@ class IStrategy(ABC):
         """
         Parses the given ticker history and returns a populated DataFrame
         add several TA indicators and buy signal to it
-        :return DataFrame with ticker data and indicator data
+        :param dataframe: Dataframe containing ticker data
+        :param metadata: Metadata dictionary with additional data (e.g. 'pair')
+        :return: DataFrame with ticker data and indicator data
+        """
+        logger.debug("TA Analysis Launched")
+        dataframe = self.advise_indicators(dataframe, metadata)
+        dataframe = self.advise_buy(dataframe, metadata)
+        dataframe = self.advise_sell(dataframe, metadata)
+        return dataframe
+
+    def _analyze_ticker_internal(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        """
+        Parses the given ticker history and returns a populated DataFrame
+        add several TA indicators and buy signal to it
+        WARNING: Used internally only, may skip analysis if `process_only_new_candles` is set.
+        :param dataframe: Dataframe containing ticker data
+        :param metadata: Metadata dictionary with additional data (e.g. 'pair')
+        :return: DataFrame with ticker data and indicator data
         """
 
         pair = str(metadata.get('pair'))
@@ -167,10 +185,7 @@ class IStrategy(ABC):
         if (not self.process_only_new_candles or
                 self._last_candle_seen_per_pair.get(pair, None) != dataframe.iloc[-1]['date']):
             # Defs that only make change on new candle data.
-            logger.debug("TA Analysis Launched")
-            dataframe = self.advise_indicators(dataframe, metadata)
-            dataframe = self.advise_buy(dataframe, metadata)
-            dataframe = self.advise_sell(dataframe, metadata)
+            dataframe = self.analyze_ticker(dataframe, metadata)
             self._last_candle_seen_per_pair[pair] = dataframe.iloc[-1]['date']
         else:
             logger.debug("Skipping TA Analysis for already analyzed candle")
@@ -197,7 +212,7 @@ class IStrategy(ABC):
             return False, False
 
         try:
-            dataframe = self.analyze_ticker(dataframe, {'pair': pair})
+            dataframe = self._analyze_ticker_internal(dataframe, {'pair': pair})
         except ValueError as error:
             logger.warning(
                 'Unable to analyze ticker for pair %s: %s',
@@ -221,7 +236,7 @@ class IStrategy(ABC):
 
         # Check if dataframe is out of date
         signal_date = arrow.get(latest['date'])
-        interval_minutes = constants.TICKER_INTERVAL_MINUTES[interval]
+        interval_minutes = timeframe_to_minutes(interval)
         offset = self.config.get('exchange', {}).get('outdated_offset', 5)
         if signal_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + offset))):
             logger.warning(
@@ -247,6 +262,9 @@ class IStrategy(ABC):
         """
         This function evaluate if on the condition required to trigger a sell has been reached
         if the threshold is reached and updates the trade record.
+        :param low: Only used during backtesting to simulate stoploss
+        :param high: Only used during backtesting, to simulate ROI
+        :param force_stoploss: Externally provided stoploss
         :return: True if trade should be sold, False otherwise
         """
 
@@ -254,14 +272,16 @@ class IStrategy(ABC):
         current_rate = low or rate
         current_profit = trade.calc_profit_percent(current_rate)
 
+        trade.adjust_min_max_rates(high or current_rate)
+
         stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
                                               current_time=date, current_profit=current_profit,
-                                              force_stoploss=force_stoploss)
+                                              force_stoploss=force_stoploss, high=high)
 
         if stoplossflag.sell_flag:
             return stoplossflag
 
-        # Set current rate to low for backtesting sell
+        # Set current rate to high for backtesting sell
         current_rate = high or rate
         current_profit = trade.calc_profit_percent(current_rate)
         experimental = self.config.get('experimental', {})
@@ -285,8 +305,9 @@ class IStrategy(ABC):
 
         return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
 
-    def stop_loss_reached(self, current_rate: float, trade: Trade, current_time: datetime,
-                          current_profit: float, force_stoploss: float) -> SellCheckTuple:
+    def stop_loss_reached(self, current_rate: float, trade: Trade,
+                          current_time: datetime, current_profit: float,
+                          force_stoploss: float, high: float = None) -> SellCheckTuple:
         """
         Based on current profit of the trade and configured (trailing) stoploss,
         decides to sell or not
@@ -294,16 +315,39 @@ class IStrategy(ABC):
         """
 
         trailing_stop = self.config.get('trailing_stop', False)
-        trade.adjust_stop_loss(trade.open_rate, force_stoploss if force_stoploss
-                               else self.stoploss, initial=True)
+        stop_loss_value = force_stoploss if force_stoploss else self.stoploss
+
+        # Initiate stoploss with open_rate. Does nothing if stoploss is already set.
+        trade.adjust_stop_loss(trade.open_rate, stop_loss_value, initial=True)
+
+        if trailing_stop:
+            # trailing stoploss handling
+            sl_offset = self.config.get('trailing_stop_positive_offset') or 0.0
+            tsl_only_offset = self.config.get('trailing_only_offset_is_reached', False)
+
+            # Make sure current_profit is calculated using high for backtesting.
+            high_profit = current_profit if not high else trade.calc_profit_percent(high)
+
+            # Don't update stoploss if trailing_only_offset_is_reached is true.
+            if not (tsl_only_offset and high_profit < sl_offset):
+                # Specific handling for trailing_stop_positive
+                if 'trailing_stop_positive' in self.config and high_profit > sl_offset:
+                    # Ignore mypy error check in configuration that this is a float
+                    stop_loss_value = self.config.get('trailing_stop_positive')  # type: ignore
+                    logger.debug(f"using positive stop loss: {stop_loss_value} "
+                                 f"offset: {sl_offset:.4g} profit: {current_profit:.4f}%")
+
+                trade.adjust_stop_loss(high or current_rate, stop_loss_value)
 
         # evaluate if the stoploss was hit if stoploss is not on exchange
         if ((self.stoploss is not None) and
-           (trade.stop_loss >= current_rate) and
-           (not self.order_types.get('stoploss_on_exchange'))):
+            (trade.stop_loss >= current_rate) and
+                (not self.order_types.get('stoploss_on_exchange'))):
+
             selltype = SellType.STOP_LOSS
-            # If Trailing stop (and max-rate did move above open rate)
-            if trailing_stop and trade.open_rate != trade.max_rate:
+
+            # If initial stoploss is not the same as current one then it is trailing.
+            if trade.initial_stop_loss != trade.stop_loss:
                 selltype = SellType.TRAILING_STOP_LOSS
                 logger.debug(
                     f"HIT STOP: current price at {current_rate:.6f}, "
@@ -315,48 +359,34 @@ class IStrategy(ABC):
             logger.debug('Stop loss hit.')
             return SellCheckTuple(sell_flag=True, sell_type=selltype)
 
-        # update the stop loss afterwards, after all by definition it's supposed to be hanging
-        if trailing_stop:
-
-            # check if we have a special stop loss for positive condition
-            # and if profit is positive
-            stop_loss_value = force_stoploss if force_stoploss else self.stoploss
-
-            sl_offset = self.config.get('trailing_stop_positive_offset') or 0.0
-
-            if 'trailing_stop_positive' in self.config and current_profit > sl_offset:
-
-                # Ignore mypy error check in configuration that this is a float
-                stop_loss_value = self.config.get('trailing_stop_positive')  # type: ignore
-                logger.debug(f"using positive stop loss mode: {stop_loss_value} "
-                             f"with offset {sl_offset:.4g} "
-                             f"since we have profit {current_profit:.4f}%")
-
-            # if trailing_only_offset_is_reached is true,
-            # we update trailing stoploss only if offset is reached.
-            tsl_only_offset = self.config.get('trailing_only_offset_is_reached', False)
-            if not (tsl_only_offset and current_profit < sl_offset):
-                trade.adjust_stop_loss(current_rate, stop_loss_value)
-
         return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
+
+    def min_roi_reached_entry(self, trade_dur: int) -> Optional[float]:
+        """
+        Based on trade duration defines the ROI entry that may have been reached.
+        :param trade_dur: trade duration in minutes
+        :return: minimal ROI entry value or None if none proper ROI entry was found.
+        """
+        # Get highest entry in ROI dict where key <= trade-duration
+        roi_list = list(filter(lambda x: x <= trade_dur, self.minimal_roi.keys()))
+        if not roi_list:
+            return None
+        roi_entry = max(roi_list)
+        return self.minimal_roi[roi_entry]
 
     def min_roi_reached(self, trade: Trade, current_profit: float, current_time: datetime) -> bool:
         """
-        Based an earlier trade and current price and ROI configuration, decides whether bot should
+        Based on trade duration, current price and ROI configuration, decides whether bot should
         sell. Requires current_profit to be in percent!!
-        :return True if bot should sell at current rate
+        :return: True if bot should sell at current rate
         """
-
         # Check if time matches and current rate is above threshold
-        trade_dur = (current_time.timestamp() - trade.open_date.timestamp()) / 60
-
-        # Get highest entry in ROI dict where key >= trade-duration
-        roi_entry = max(list(filter(lambda x: trade_dur >= x, self.minimal_roi.keys())))
-        threshold = self.minimal_roi[roi_entry]
-        if current_profit > threshold:
-            return True
-
-        return False
+        trade_dur = int((current_time.timestamp() - trade.open_date.timestamp()) // 60)
+        roi = self.min_roi_reached_entry(trade_dur)
+        if roi is None:
+            return False
+        else:
+            return current_profit > roi
 
     def tickerdata_to_dataframe(self, tickerdata: Dict[str, List]) -> Dict[str, DataFrame]:
         """
@@ -373,6 +403,7 @@ class IStrategy(ABC):
         :param metadata: Additional information, like the currently traded pair
         :return: a Dataframe with all mandatory indicators for the strategies
         """
+        logger.debug(f"Populating indicators for pair {metadata.get('pair')}.")
         if self._populate_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
@@ -388,6 +419,7 @@ class IStrategy(ABC):
         :param pair: Additional information, like the currently traded pair
         :return: DataFrame with buy column
         """
+        logger.debug(f"Populating buy signals for pair {metadata.get('pair')}.")
         if self._buy_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
@@ -403,6 +435,7 @@ class IStrategy(ABC):
         :param pair: Additional information, like the currently traded pair
         :return: DataFrame with sell column
         """
+        logger.debug(f"Populating sell signals for pair {metadata.get('pair')}.")
         if self._sell_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)

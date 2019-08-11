@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import arrow
 from pandas import DataFrame
 
-from freqtrade.arguments import TimeRange
+from freqtrade.configuration import TimeRange
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.history import load_tickerdata_file
 from freqtrade.persistence import Trade
@@ -19,13 +19,13 @@ _STRATEGY = DefaultStrategy(config={})
 
 def test_returns_latest_buy_signal(mocker, default_conf, ticker_history):
     mocker.patch.object(
-        _STRATEGY, 'analyze_ticker',
+        _STRATEGY, '_analyze_ticker_internal',
         return_value=DataFrame([{'buy': 1, 'sell': 0, 'date': arrow.utcnow()}])
     )
     assert _STRATEGY.get_signal('ETH/BTC', '5m', ticker_history) == (True, False)
 
     mocker.patch.object(
-        _STRATEGY, 'analyze_ticker',
+        _STRATEGY, '_analyze_ticker_internal',
         return_value=DataFrame([{'buy': 0, 'sell': 1, 'date': arrow.utcnow()}])
     )
     assert _STRATEGY.get_signal('ETH/BTC', '5m', ticker_history) == (False, True)
@@ -33,14 +33,14 @@ def test_returns_latest_buy_signal(mocker, default_conf, ticker_history):
 
 def test_returns_latest_sell_signal(mocker, default_conf, ticker_history):
     mocker.patch.object(
-        _STRATEGY, 'analyze_ticker',
+        _STRATEGY, '_analyze_ticker_internal',
         return_value=DataFrame([{'sell': 1, 'buy': 0, 'date': arrow.utcnow()}])
     )
 
     assert _STRATEGY.get_signal('ETH/BTC', '5m', ticker_history) == (False, True)
 
     mocker.patch.object(
-        _STRATEGY, 'analyze_ticker',
+        _STRATEGY, '_analyze_ticker_internal',
         return_value=DataFrame([{'sell': 0, 'buy': 1, 'date': arrow.utcnow()}])
     )
     assert _STRATEGY.get_signal('ETH/BTC', '5m', ticker_history) == (True, False)
@@ -60,7 +60,7 @@ def test_get_signal_empty(default_conf, mocker, caplog):
 def test_get_signal_exception_valueerror(default_conf, mocker, caplog, ticker_history):
     caplog.set_level(logging.INFO)
     mocker.patch.object(
-        _STRATEGY, 'analyze_ticker',
+        _STRATEGY, '_analyze_ticker_internal',
         side_effect=ValueError('xyz')
     )
     assert (False, False) == _STRATEGY.get_signal('foo', default_conf['ticker_interval'],
@@ -71,7 +71,7 @@ def test_get_signal_exception_valueerror(default_conf, mocker, caplog, ticker_hi
 def test_get_signal_empty_dataframe(default_conf, mocker, caplog, ticker_history):
     caplog.set_level(logging.INFO)
     mocker.patch.object(
-        _STRATEGY, 'analyze_ticker',
+        _STRATEGY, '_analyze_ticker_internal',
         return_value=DataFrame([])
     )
     assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
@@ -86,7 +86,7 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog, ticker_history):
     oldtime = arrow.utcnow().shift(minutes=-16)
     ticks = DataFrame([{'buy': 1, 'date': oldtime}])
     mocker.patch.object(
-        _STRATEGY, 'analyze_ticker',
+        _STRATEGY, '_analyze_ticker_internal',
         return_value=DataFrame(ticks)
     )
     assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
@@ -111,7 +111,8 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
 
     timerange = TimeRange(None, 'line', 0, -100)
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
-    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', True)}
+    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
+                                                         fill_missing=True)}
     data = strategy.tickerdata_to_dataframe(tickerlist)
     assert len(data['UNITTEST/BTC']) == 102       # partial candle was removed
 
@@ -185,6 +186,39 @@ def test_min_roi_reached2(default_conf, fee) -> None:
         assert strategy.min_roi_reached(trade, 0.31, arrow.utcnow().shift(minutes=-2).datetime)
 
 
+def test_min_roi_reached3(default_conf, fee) -> None:
+
+    # test for issue #1948
+    min_roi = {20: 0.07,
+               30: 0.05,
+               55: 0.30,
+               }
+    strategy = DefaultStrategy(default_conf)
+    strategy.minimal_roi = min_roi
+    trade = Trade(
+            pair='ETH/BTC',
+            stake_amount=0.001,
+            open_date=arrow.utcnow().shift(hours=-1).datetime,
+            fee_open=fee.return_value,
+            fee_close=fee.return_value,
+            exchange='bittrex',
+            open_rate=1,
+    )
+
+    assert not strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-56).datetime)
+    assert not strategy.min_roi_reached(trade, 0.12, arrow.utcnow().shift(minutes=-56).datetime)
+
+    assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-39).datetime)
+    assert strategy.min_roi_reached(trade, 0.071, arrow.utcnow().shift(minutes=-39).datetime)
+
+    assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-26).datetime)
+    assert strategy.min_roi_reached(trade, 0.06, arrow.utcnow().shift(minutes=-26).datetime)
+
+    # Should not trigger with 20% profit since after 55 minutes only 30% is active.
+    assert not strategy.min_roi_reached(trade, 0.20, arrow.utcnow().shift(minutes=-2).datetime)
+    assert strategy.min_roi_reached(trade, 0.31, arrow.utcnow().shift(minutes=-2).datetime)
+
+
 def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
     caplog.set_level(logging.DEBUG)
     ind_mock = MagicMock(side_effect=lambda x, meta: x)
@@ -218,7 +252,7 @@ def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
                        caplog.record_tuples)
 
 
-def test_analyze_ticker_skip_analyze(ticker_history, mocker, caplog) -> None:
+def test__analyze_ticker_internal_skip_analyze(ticker_history, mocker, caplog) -> None:
     caplog.set_level(logging.DEBUG)
     ind_mock = MagicMock(side_effect=lambda x, meta: x)
     buy_mock = MagicMock(side_effect=lambda x, meta: x)
@@ -233,7 +267,7 @@ def test_analyze_ticker_skip_analyze(ticker_history, mocker, caplog) -> None:
     strategy = DefaultStrategy({})
     strategy.process_only_new_candles = True
 
-    ret = strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
+    ret = strategy._analyze_ticker_internal(ticker_history, {'pair': 'ETH/BTC'})
     assert 'high' in ret.columns
     assert 'low' in ret.columns
     assert 'close' in ret.columns
@@ -246,7 +280,7 @@ def test_analyze_ticker_skip_analyze(ticker_history, mocker, caplog) -> None:
                        caplog.record_tuples)
     caplog.clear()
 
-    ret = strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
+    ret = strategy._analyze_ticker_internal(ticker_history, {'pair': 'ETH/BTC'})
     # No analysis happens as process_only_new_candles is true
     assert ind_mock.call_count == 1
     assert buy_mock.call_count == 1

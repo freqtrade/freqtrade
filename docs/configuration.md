@@ -14,12 +14,13 @@ Mandatory Parameters are marked as **Required**.
 |  Command | Default | Description |
 |----------|---------|-------------|
 | `max_open_trades` | 3 | **Required.** Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades)
-| `stake_currency` | BTC | **Required.** Crypto-currency used for trading.
-| `stake_amount` | 0.05 | **Required.** Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to `"unlimited"` to allow the bot to use all available balance.
+| `stake_currency` | BTC | **Required.** Crypto-currency used for trading. [Strategy Override](#parameters-in-the-strategy).
+| `stake_amount` | 0.05 | **Required.** Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to `"unlimited"` to allow the bot to use all available balance. [Strategy Override](#parameters-in-the-strategy).
 | `amount_reserve_percent` | 0.05 | Reserve some amount in min pair stake amount. Default is 5%. The bot will reserve `amount_reserve_percent` + stop-loss value when calculating min pair stake amount in order to avoid possible trade refusals.
 | `ticker_interval` | [1m, 5m, 15m, 30m, 1h, 1d, ...] | The ticker interval to use (1min, 5 min, 15 min, 30 min, 1 hour or 1 day). Default is 5 minutes. [Strategy Override](#parameters-in-the-strategy).
 | `fiat_display_currency` | USD | **Required.** Fiat currency used to show your profits. More information below.
 | `dry_run` | true | **Required.** Define if the bot must be in Dry-run or production mode.
+| `dry_run_wallet` | 999.9 | Overrides the default amount of 999.9 stake currency units in the wallet used by the bot running in the Dry Run mode if you need it for any reason.
 | `process_only_new_candles` | false | If set to true indicators are processed only once a new candle arrives. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. [Strategy Override](#parameters-in-the-strategy).
 | `minimal_roi` | See below | Set the threshold in percent the bot will use to sell a trade. More information below. [Strategy Override](#parameters-in-the-strategy).
 | `stoploss` | -0.10 | Value of the stoploss in percent used by the bot. More information below. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy).
@@ -39,13 +40,12 @@ Mandatory Parameters are marked as **Required**.
 | `ask_strategy.order_book_max` | 0 | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
 | `order_types` | None | Configure order-types depending on the action (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`). [More information below](#understand-order_types). [Strategy Override](#parameters-in-the-strategy).
 | `order_time_in_force` | None | Configure time in force for buy and sell orders. [More information below](#understand-order_time_in_force). [Strategy Override](#parameters-in-the-strategy).
-| `exchange.name` | bittrex | **Required.** Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename).
+| `exchange.name` |  | **Required.** Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename).
 | `exchange.sandbox` | false | Use the 'sandbox' version of the exchange, where the exchange provides a sandbox for risk-free integration. See [here](sandbox-testing.md) in more details.
-| `exchange.key` | key | API key to use for the exchange. Only required when you are in production mode.
-| `exchange.secret` | secret | API secret to use for the exchange. Only required when you are in production mode.
-| `exchange.pair_whitelist` | [] | List of currency to use by the bot. Can be overrided with `--dynamic-whitelist` param.
-| `exchange.pair_blacklist` | [] | List of currency the bot must avoid. Useful when using `--dynamic-whitelist` param.
-| `exchange.ccxt_rate_limit` | True | DEPRECATED!! Have CCXT handle Exchange rate limits. Depending on the exchange, having this to false can lead to temporary bans from the exchange.
+| `exchange.key` | '' | API key to use for the exchange. Only required when you are in production mode.
+| `exchange.secret` | '' | API secret to use for the exchange. Only required when you are in production mode.
+| `exchange.pair_whitelist` | [] | List of pairs to use by the bot for trading and to check for potential trades during backtesting. Can be overriden by dynamic pairlists (see [below](#dynamic-pairlists)).
+| `exchange.pair_blacklist` | [] | List of pairs the bot must absolutely avoid for trading and backtesting. Can be overriden by dynamic pairlists (see [below](#dynamic-pairlists)).
 | `exchange.ccxt_config` | None | Additional CCXT parameters passed to the regular ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
 | `exchange.ccxt_async_config` | None | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
 | `exchange.markets_refresh_interval` | 60 | The interval in minutes in which markets are reloaded.
@@ -53,7 +53,7 @@ Mandatory Parameters are marked as **Required**.
 | `experimental.use_sell_signal` | false | Use your sell strategy in addition of the `minimal_roi`. [Strategy Override](#parameters-in-the-strategy).
 | `experimental.sell_profit_only` | false | Waits until you have made a positive profit before taking a sell decision. [Strategy Override](#parameters-in-the-strategy).
 | `experimental.ignore_roi_if_buy_signal` | false | Does not sell if the buy-signal is still active. Takes preference over `minimal_roi` and `use_sell_signal`. [Strategy Override](#parameters-in-the-strategy).
-| `pairlist.method` | StaticPairList | Use Static whitelist. [More information below](#dynamic-pairlists).
+| `pairlist.method` | StaticPairList | Use static or dynamic volume-based pairlist. [More information below](#dynamic-pairlists).
 | `pairlist.config` | None | Additional configuration for dynamic pairlists. [More information below](#dynamic-pairlists).
 | `telegram.enabled` | true | **Required.** Enable or not the usage of Telegram.
 | `telegram.token` | token | Your Telegram bot token. Only required if `telegram.enabled` is `true`.
@@ -67,17 +67,20 @@ Mandatory Parameters are marked as **Required**.
 | `initial_state` | running | Defines the initial application state. More information below.
 | `forcebuy_enable` | false | Enables the RPC Commands to force a buy. More information below.
 | `strategy` | DefaultStrategy | Defines Strategy class to use.
-| `strategy_path` | null | Adds an additional strategy lookup path (must be a folder).
+| `strategy_path` | null | Adds an additional strategy lookup path (must be a directory).
 | `internals.process_throttle_secs` | 5 | **Required.** Set the process throttle. Value in second.
 | `internals.sd_notify` | false | Enables use of the sd_notify protocol to tell systemd service manager about changes in the bot state and issue keep-alive pings. See [here](installation.md#7-optional-configure-freqtrade-as-a-systemd-service) for more details.
+| `logfile` | | Specify Logfile. Uses a rolling strategy of 10 files, with 1Mb per file.
 
 ### Parameters in the strategy
 
 The following parameters can be set in either configuration file or strategy.
 Values set in the configuration file always overwrite values set in the strategy.
 
-* `minimal_roi`
+* `stake_currency`
+* `stake_amount`
 * `ticker_interval`
+* `minimal_roi`
 * `stoploss`
 * `trailing_stop`
 * `trailing_stop_positive`
@@ -128,17 +131,11 @@ If it is not set in either Strategy or Configuration, a default of 1000% `{"0": 
 
 ### Understand stoploss
 
-The `stoploss` configuration parameter is loss in percentage that should trigger a sale.
-For example, value `-0.10` will cause immediate sell if the
-profit dips below -10% for a given trade. This parameter is optional.
-
-Most of the strategy files already include the optimal `stoploss`
-value. This parameter is optional. If you use it in the configuration file, it will take over the
-`stoploss` value from the strategy file.
+Go to the [stoploss documentation](stoploss.md) for more details.
 
 ### Understand trailing stoploss
 
-Go to the [trailing stoploss Documentation](stoploss.md) for details on trailing stoploss.
+Go to the [trailing stoploss Documentation](stoploss.md#trailing-stop-loss) for details on trailing stoploss.
 
 ### Understand initial_state
 
@@ -188,14 +185,28 @@ If this is configured, all 4 values (`buy`, `sell`, `stoploss` and
 `stoploss_on_exchange`) need to be present, otherwise the bot will warn about it and fail to start.
 The below is the default which is used if this is not configured in either strategy or configuration file.
 
+Syntax for Strategy:
+
 ```python
-"order_types": {
+order_types = {
     "buy": "limit",
     "sell": "limit",
     "stoploss": "market",
     "stoploss_on_exchange": False,
     "stoploss_on_exchange_interval": 60
-},
+}
+```
+
+Configuration:
+
+```json
+"order_types": {
+    "buy": "limit",
+    "sell": "limit",
+    "stoploss": "market",
+    "stoploss_on_exchange": false,
+    "stoploss_on_exchange_interval": 60
+}
 ```
 
 !!! Note
@@ -208,7 +219,12 @@ The below is the default which is used if this is not configured in either strat
     unsure of what you are doing. For more information about how stoploss works please
     read [the stoploss documentation](stoploss.md).
 
+!!! Note
+    In case of stoploss on exchange if the stoploss is cancelled manually then
+    the bot would recreate one.
+
 ### Understand order_time_in_force
+
 The `order_time_in_force` configuration parameter defines the policy by which the order
 is executed on the exchange. Three commonly used time in force are:
 
@@ -244,9 +260,9 @@ The possible values are: `gtc` (default), `fok` or `ioc`.
     This is an ongoing work. For now it is supported only for binance and only for buy orders.
     Please don't change the default value unless you know what you are doing.
 
-### What values for exchange.name?
+### Exchange configuration
 
-Freqtrade is based on [CCXT library](https://github.com/ccxt/ccxt) that supports 115 cryptocurrency
+Freqtrade is based on [CCXT library](https://github.com/ccxt/ccxt) that supports over 100 cryptocurrency
 exchange markets and trading APIs. The complete up-to-date list can be found in the
 [CCXT repo homepage](https://github.com/ccxt/ccxt/tree/master/python). However, the bot was tested
 with only Bittrex and Binance.
@@ -257,6 +273,49 @@ The bot was tested with the following exchanges:
 - [Binance](https://www.binance.com/): "binance"
 
 Feel free to test other exchanges and submit your PR to improve the bot.
+
+#### Sample exchange configuration
+
+A exchange configuration for "binance" would look as follows:
+
+```json
+"exchange": {
+    "name": "binance",
+    "key": "your_exchange_key",
+    "secret": "your_exchange_secret",
+    "ccxt_config": {"enableRateLimit": true},
+    "ccxt_async_config": {
+        "enableRateLimit": true,
+        "rateLimit": 200
+    },
+```
+
+This configuration enables binance, as well as rate limiting to avoid bans from the exchange.
+`"rateLimit": 200` defines a wait-event of 0.2s between each call. This can also be completely disabled by setting `"enableRateLimit"` to false.
+
+!!! Note
+    Optimal settings for rate limiting depend on the exchange and the size of the whitelist, so an ideal parameter will vary on many other settings.
+    We try to provide sensible defaults per exchange where possible, if you encounter bans please make sure that `"enableRateLimit"` is enabled and increase the `"rateLimit"` parameter step by step.
+
+#### Advanced FreqTrade Exchange configuration
+
+Advanced options can be configured using the `_ft_has_params` setting, which will override Defaults and exchange-specific behaviours.
+
+Available options are listed in the exchange-class as `_ft_has_default`.
+
+For example, to test the order type `FOK` with Kraken, and modify candle_limit to 200 (so you only get 200 candles per call):
+
+```json
+"exchange": {
+    "name": "kraken",
+    "_ft_has_params": {
+        "order_time_in_force": ["gtc", "fok"],
+        "ohlcv_candle_limit": 200
+        }
+```
+
+!!! Warning
+    Please make sure to fully understand the impacts of these settings before modifying them.
 
 ### What values can be used for fiat_display_currency?
 
@@ -321,8 +380,6 @@ section of the configuration.
 * `StaticPairList`
   * It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklist`.
 * `VolumePairList`
-  * Formerly available as `--dynamic-whitelist [<number_assets>]`. This command line
-option is deprecated and should no longer be used.
   * It selects `number_assets` top pairs based on `sort_key`, which can be one of
 `askVolume`, `bidVolume` and `quoteVolume`, defaults to `quoteVolume`.
   * There is a possibility to filter low-value coins that would not allow setting a stop loss

@@ -81,7 +81,6 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
-*.ipynb
 
 # pyenv
 .python-version
@@ -93,3 +92,6 @@ target/
 
 .pytest_cache/
 .mypy_cache/
+
+#exceptions
+!user_data/noteboks/*example.ipynb

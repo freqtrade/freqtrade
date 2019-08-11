@@ -5,6 +5,7 @@ If it hasn't been reported, please create a new issue.
 
 ## Step 2: Describe your environment
 
+  * Operating system: ____
   * Python Version: _____ (`python -V`)
   * CCXT version: _____ (`pip freeze | grep ccxt`)
   * Branch: Master | Develop

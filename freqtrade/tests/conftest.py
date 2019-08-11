@@ -2,21 +2,25 @@
 import json
 import logging
 import re
+from copy import deepcopy
 from datetime import datetime
 from functools import reduce
-from typing import Dict, Optional
+from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 
 import arrow
 import pytest
 from telegram import Chat, Message, Update
 
-from freqtrade import constants
+from freqtrade import constants, persistence
+from freqtrade.configuration import Arguments
 from freqtrade.data.converter import parse_ticker_dataframe
-from freqtrade.exchange import Exchange
 from freqtrade.edge import Edge, PairInfo
+from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.resolvers import ExchangeResolver
+from freqtrade.worker import Worker
+
 
 logging.getLogger('').setLevel(logging.INFO)
 
@@ -33,6 +37,17 @@ def log_has_re(line, logs):
     return reduce(lambda a, b: a or b,
                   filter(lambda x: re.match(line, x[2]), logs),
                   False)
+
+
+def get_args(args):
+    return Arguments(args, '').get_parsed_arg()
+
+
+def patched_configuration_load_config_file(mocker, config) -> None:
+    mocker.patch(
+        'freqtrade.configuration.configuration.load_config_file',
+        lambda *args, **kwargs: config
+    )
 
 
 def patch_exchange(mocker, api_mock=None, id='bittrex') -> None:
@@ -53,7 +68,7 @@ def get_patched_exchange(mocker, config, api_mock=None, id='bittrex') -> Exchang
     patch_exchange(mocker, api_mock, id)
     config["exchange"]["name"] = id
     try:
-        exchange = ExchangeResolver(id.title(), config).exchange
+        exchange = ExchangeResolver(id, config).exchange
     except ImportError:
         exchange = Exchange(config)
     return exchange
@@ -88,24 +103,54 @@ def get_patched_edge(mocker, config) -> Edge:
 # Functions for recurrent object patching
 
 
-def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
+def patch_freqtradebot(mocker, config) -> None:
     """
     This function patch _init_modules() to not call dependencies
     :param mocker: a Mocker object to apply patches
     :param config: Config to pass to the bot
     :return: None
     """
-    patch_coinmarketcap(mocker, {'price_usd': 12345.0})
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
-    mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
+    persistence.init(config['db_url'])
     patch_exchange(mocker, None)
     mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
 
+
+def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
+    """
+    This function patches _init_modules() to not call dependencies
+    :param mocker: a Mocker object to apply patches
+    :param config: Config to pass to the bot
+    :return: FreqtradeBot
+    """
+    patch_freqtradebot(mocker, config)
     return FreqtradeBot(config)
 
 
-def patch_coinmarketcap(mocker, value: Optional[Dict[str, float]] = None) -> None:
+def get_patched_worker(mocker, config) -> Worker:
+    """
+    This function patches _init_modules() to not call dependencies
+    :param mocker: a Mocker object to apply patches
+    :param config: Config to pass to the bot
+    :return: Worker
+    """
+    patch_freqtradebot(mocker, config)
+    return Worker(args=None, config=config)
+
+
+def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
+    """
+    :param mocker: mocker to patch IStrategy class
+    :param value: which value IStrategy.get_signal() must return
+    :return: None
+    """
+    freqtrade.strategy.get_signal = lambda e, s, t: value
+    freqtrade.exchange.refresh_latest_ohlcv = lambda p: None
+
+
+@pytest.fixture(autouse=True)
+def patch_coinmarketcap(mocker) -> None:
     """
     Mocker to coinmarketcap to speed up tests
     :param mocker: mocker to patch coinmarketcap class
@@ -124,6 +169,11 @@ def patch_coinmarketcap(mocker, value: Optional[Dict[str, float]] = None) -> Non
         listings=listmock,
 
     )
+
+
+@pytest.fixture(scope='function')
+def init_persistence(default_conf):
+    persistence.init(default_conf['db_url'], default_conf['dry_run'])
 
 
 @pytest.fixture(scope="function")
@@ -171,6 +221,10 @@ def default_conf():
                 "LTC/BTC",
                 "XRP/BTC",
                 "NEO/BTC"
+            ],
+            "pair_blacklist": [
+                "DOGE/BTC",
+                "HOT/BTC",
             ]
         },
         "telegram": {
@@ -180,7 +234,7 @@ def default_conf():
         },
         "initial_state": "running",
         "db_url": "sqlite://",
-        "loglevel": logging.DEBUG,
+        "verbosity": 3,
     }
     return configuration
 
@@ -250,7 +304,7 @@ def markets():
                     'max': 500000,
                 },
             },
-            'info': '',
+            'info': {},
         },
         'TKN/BTC': {
             'id': 'tknbtc',
@@ -275,7 +329,7 @@ def markets():
                     'max': 500000,
                 },
             },
-            'info': '',
+            'info': {},
         },
         'BLK/BTC': {
             'id': 'blkbtc',
@@ -300,7 +354,7 @@ def markets():
                     'max': 500000,
                 },
             },
-            'info': '',
+            'info': {},
         },
         'LTC/BTC': {
             'id': 'ltcbtc',
@@ -325,7 +379,7 @@ def markets():
                     'max': 500000,
                 },
             },
-            'info': '',
+            'info': {},
         },
         'XRP/BTC': {
             'id': 'xrpbtc',
@@ -350,7 +404,7 @@ def markets():
                     'max': 500000,
                 },
             },
-            'info': '',
+            'info': {},
         },
         'NEO/BTC': {
             'id': 'neobtc',
@@ -375,7 +429,7 @@ def markets():
                     'max': 500000,
                 },
             },
-            'info': '',
+            'info': {},
         },
         'BTT/BTC': {
             'id': 'BTTBTC',
@@ -403,7 +457,7 @@ def markets():
                     'max': None
                 }
             },
-            'info': "",
+            'info': {},
         },
         'ETH/USDT': {
             'id': 'USDT-ETH',
@@ -425,7 +479,7 @@ def markets():
                 }
             },
             'active': True,
-            'info': ""
+            'info': {},
         },
         'LTC/USDT': {
             'id': 'USDT-LTC',
@@ -447,7 +501,7 @@ def markets():
                     'max': None
                 }
             },
-            'info': ""
+            'info': {},
         }
     }
 
@@ -627,7 +681,7 @@ def ticker_history_list():
 
 @pytest.fixture
 def ticker_history(ticker_history_list):
-    return parse_ticker_dataframe(ticker_history_list, "5m", True)
+    return parse_ticker_dataframe(ticker_history_list, "5m", pair="UNITTEST/BTC", fill_missing=True)
 
 
 @pytest.fixture
@@ -831,8 +885,9 @@ def tickers():
 
 @pytest.fixture
 def result():
-    with open('freqtrade/tests/testdata/UNITTEST_BTC-1m.json') as data_file:
-        return parse_ticker_dataframe(json.load(data_file), '1m', True)
+    with Path('freqtrade/tests/testdata/UNITTEST_BTC-1m.json').open('r') as data_file:
+        return parse_ticker_dataframe(json.load(data_file), '1m', pair="UNITTEST/BTC",
+                                      fill_missing=True)
 
 # FIX:
 # Create an fixture/function
@@ -930,9 +985,10 @@ def buy_order_fee():
 
 @pytest.fixture(scope="function")
 def edge_conf(default_conf):
-    default_conf['max_open_trades'] = -1
-    default_conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
-    default_conf['edge'] = {
+    conf = deepcopy(default_conf)
+    conf['max_open_trades'] = -1
+    conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
+    conf['edge'] = {
         "enabled": True,
         "process_throttle_secs": 1800,
         "calculate_since_number_of_days": 14,
@@ -948,4 +1004,40 @@ def edge_conf(default_conf):
         "remove_pumps": False
     }
 
-    return default_conf
+    return conf
+
+
+@pytest.fixture
+def rpc_balance():
+    return {
+        'BTC': {
+            'total': 12.0,
+            'free': 12.0,
+            'used': 0.0
+        },
+        'ETH': {
+            'total': 0.0,
+            'free': 0.0,
+            'used': 0.0
+        },
+        'USDT': {
+            'total': 10000.0,
+            'free': 10000.0,
+            'used': 0.0
+        },
+        'LTC': {
+            'total': 10.0,
+            'free': 10.0,
+            'used': 0.0
+        },
+        'XRP': {
+            'total': 1.0,
+            'free': 1.0,
+            'used': 0.0
+            },
+        'EUR': {
+            'total': 10.0,
+            'free': 10.0,
+            'used': 0.0
+        },
+    }

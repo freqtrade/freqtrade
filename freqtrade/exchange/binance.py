@@ -11,6 +11,7 @@ class Binance(Exchange):
 
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
+        "order_time_in_force": ['gtc', 'fok', 'ioc'],
     }
 
     def get_order_book(self, pair: str, limit: int = 100) -> dict:

@@ -1,16 +1,14 @@
 """
 Various tool function for Freqtrade and scripts
 """
-
 import gzip
 import logging
 import re
 from datetime import datetime
-from typing import Dict
 
 import numpy as np
-from pandas import DataFrame
 import rapidjson
+
 
 logger = logging.getLogger(__name__)
 
@@ -39,24 +37,6 @@ def datesarray_to_datetimearray(dates: np.ndarray) -> np.ndarray:
     :return: numpy-array of datetime
     """
     return dates.dt.to_pydatetime()
-
-
-def common_datearray(dfs: Dict[str, DataFrame]) -> np.ndarray:
-    """
-    Return dates from Dataframe
-    :param dfs: Dict with format pair: pair_data
-    :return: List of dates
-    """
-    alldates = {}
-    for pair, pair_data in dfs.items():
-        dates = datesarray_to_datetimearray(pair_data['date'])
-        for date in dates:
-            alldates[date] = 1
-    lst = []
-    for date, _ in alldates.items():
-        lst.append(date)
-    arr = np.array(lst)
-    return np.sort(arr, axis=0)
 
 
 def file_dump_json(filename, data, is_zip=False) -> None:
@@ -117,6 +97,8 @@ def format_ms_time(date: int) -> str:
 
 def deep_merge_dicts(source, destination):
     """
+    Values from Source override destination, destination is returned (and modified!!)
+    Sample:
     >>> a = { 'first' : { 'rows' : { 'pass' : 'dog', 'number' : '1' } } }
     >>> b = { 'first' : { 'rows' : { 'fail' : 'cat', 'number' : '5' } } }
     >>> merge(b, a) == { 'first' : { 'rows' : { 'pass' : 'dog', 'fail' : 'cat', 'number' : '5' } } }

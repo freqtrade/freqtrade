@@ -3,90 +3,66 @@
 Main Freqtrade bot script.
 Read the documentation to know what cli arguments you need.
 """
-import logging
+
 import sys
+# check min. python version
+if sys.version_info < (3, 6):
+    sys.exit("Freqtrade requires Python version >= 3.6")
+
+# flake8: noqa E402
+import logging
 from argparse import Namespace
-from typing import List
+from typing import Any, List
 
 from freqtrade import OperationalException
-from freqtrade.arguments import Arguments
-from freqtrade.configuration import Configuration, set_loggers
-from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.state import State
-from freqtrade.rpc import RPCMessageType
+from freqtrade.configuration import Arguments
+from freqtrade.worker import Worker
+
 
 logger = logging.getLogger('freqtrade')
 
 
-def main(sysargv: List[str]) -> None:
+def main(sysargv: List[str] = None) -> None:
     """
     This function will initiate the bot and start the trading loop.
     :return: None
     """
-    arguments = Arguments(
-        sysargv,
-        'Free, open source crypto trading bot'
-    )
-    args = arguments.get_parsed_arg()
 
-    # A subcommand has been issued.
-    # Means if Backtesting or Hyperopt have been called we exit the bot
-    if hasattr(args, 'func'):
-        args.func(args)
-        return
-
-    freqtrade = None
-    return_code = 1
+    return_code: Any = 1
+    worker = None
     try:
-        # Load and validate configuration
-        config = Configuration(args, None).get_config()
+        arguments = Arguments(
+            sysargv,
+            'Free, open source crypto trading bot'
+        )
+        args: Namespace = arguments.get_parsed_arg()
 
-        # Init the bot
-        freqtrade = FreqtradeBot(config)
+        # A subcommand has been issued.
+        # Means if Backtesting or Hyperopt have been called we exit the bot
+        if hasattr(args, 'func'):
+            args.func(args)
+            # TODO: fetch return_code as returned by the command function here
+            return_code = 0
+        else:
+            # Load and run worker
+            worker = Worker(args)
+            worker.run()
 
-        state = None
-        while True:
-            state = freqtrade.worker(old_state=state)
-            if state == State.RELOAD_CONF:
-                freqtrade = reconfigure(freqtrade, args)
-
+    except SystemExit as e:
+        return_code = e
     except KeyboardInterrupt:
         logger.info('SIGINT received, aborting ...')
         return_code = 0
     except OperationalException as e:
         logger.error(str(e))
         return_code = 2
-    except BaseException:
+    except Exception:
         logger.exception('Fatal exception!')
     finally:
-        if freqtrade:
-            freqtrade.stopping()
-            freqtrade.rpc.send_msg({
-                'type': RPCMessageType.STATUS_NOTIFICATION,
-                'status': 'process died'
-            })
-            freqtrade.cleanup()
+        if worker:
+            worker.exit()
         sys.exit(return_code)
 
 
-def reconfigure(freqtrade: FreqtradeBot, args: Namespace) -> FreqtradeBot:
-    """
-    Cleans up current instance, reloads the configuration and returns the new instance
-    """
-    freqtrade.reconfigure()
-
-    # Clean up current modules
-    freqtrade.cleanup()
-
-    # Create new instance
-    freqtrade = FreqtradeBot(Configuration(args, None).get_config())
-    freqtrade.rpc.send_msg({
-        'type': RPCMessageType.STATUS_NOTIFICATION,
-        'status': 'config reloaded'
-    })
-    return freqtrade
-
-
 if __name__ == '__main__':
-    set_loggers()
-    main(sys.argv[1:])
+    main()

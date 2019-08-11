@@ -25,15 +25,16 @@ _DECL_BASE: Any = declarative_base()
 _SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
 
 
-def init(config: Dict) -> None:
+def init(db_url: str, clean_open_orders: bool = False) -> None:
     """
     Initializes this module with the given config,
     registers all known command handlers
     and starts polling for message updates
-    :param config: config to use
+    :param db_url: Database to use
+    :param clean_open_orders: Remove open orders from the database.
+        Useful for dry-run or if all orders have been reset on the exchange.
     :return: None
     """
-    db_url = config.get('db_url', None)
     kwargs = {}
 
     # Take care of thread ownership if in-memory db
@@ -57,7 +58,7 @@ def init(config: Dict) -> None:
     check_migrate(engine)
 
     # Clean dry_run DB if the db is not in-memory
-    if config.get('dry_run', False) and db_url != 'sqlite://':
+    if clean_open_orders and db_url != 'sqlite://':
         clean_dry_run_db()
 
 
@@ -83,7 +84,7 @@ def check_migrate(engine) -> None:
         logger.debug(f'trying {table_back_name}')
 
     # Check for latest column
-    if not has_column(cols, 'stoploss_last_update'):
+    if not has_column(cols, 'stop_loss_pct'):
         logger.info(f'Running database migration - backup available as {table_back_name}')
 
         fee_open = get_column_def(cols, 'fee_open', 'fee')
@@ -91,10 +92,13 @@ def check_migrate(engine) -> None:
         open_rate_requested = get_column_def(cols, 'open_rate_requested', 'null')
         close_rate_requested = get_column_def(cols, 'close_rate_requested', 'null')
         stop_loss = get_column_def(cols, 'stop_loss', '0.0')
+        stop_loss_pct = get_column_def(cols, 'stop_loss_pct', 'null')
         initial_stop_loss = get_column_def(cols, 'initial_stop_loss', '0.0')
+        initial_stop_loss_pct = get_column_def(cols, 'initial_stop_loss_pct', 'null')
         stoploss_order_id = get_column_def(cols, 'stoploss_order_id', 'null')
         stoploss_last_update = get_column_def(cols, 'stoploss_last_update', 'null')
         max_rate = get_column_def(cols, 'max_rate', '0.0')
+        min_rate = get_column_def(cols, 'min_rate', 'null')
         sell_reason = get_column_def(cols, 'sell_reason', 'null')
         strategy = get_column_def(cols, 'strategy', 'null')
         ticker_interval = get_column_def(cols, 'ticker_interval', 'null')
@@ -112,8 +116,9 @@ def check_migrate(engine) -> None:
                 (id, exchange, pair, is_open, fee_open, fee_close, open_rate,
                 open_rate_requested, close_rate, close_rate_requested, close_profit,
                 stake_amount, amount, open_date, close_date, open_order_id,
-                stop_loss, initial_stop_loss, stoploss_order_id, stoploss_last_update,
-                max_rate, sell_reason, strategy,
+                stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
+                stoploss_order_id, stoploss_last_update,
+                max_rate, min_rate, sell_reason, strategy,
                 ticker_interval
                 )
             select id, lower(exchange),
@@ -128,9 +133,11 @@ def check_migrate(engine) -> None:
                 open_rate, {open_rate_requested} open_rate_requested, close_rate,
                 {close_rate_requested} close_rate_requested, close_profit,
                 stake_amount, amount, open_date, close_date, open_order_id,
-                {stop_loss} stop_loss, {initial_stop_loss} initial_stop_loss,
+                {stop_loss} stop_loss, {stop_loss_pct} stop_loss_pct,
+                {initial_stop_loss} initial_stop_loss,
+                {initial_stop_loss_pct} initial_stop_loss_pct,
                 {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
-                {max_rate} max_rate, {sell_reason} sell_reason,
+                {max_rate} max_rate, {min_rate} min_rate, {sell_reason} sell_reason,
                 {strategy} strategy, {ticker_interval} ticker_interval
                 from {table_back_name}
              """)
@@ -183,14 +190,20 @@ class Trade(_DECL_BASE):
     open_order_id = Column(String)
     # absolute value of the stop loss
     stop_loss = Column(Float, nullable=True, default=0.0)
+    # percentage value of the stop loss
+    stop_loss_pct = Column(Float, nullable=True)
     # absolute value of the initial stop loss
     initial_stop_loss = Column(Float, nullable=True, default=0.0)
+    # percentage value of the initial stop loss
+    initial_stop_loss_pct = Column(Float, nullable=True)
     # stoploss order id which is on exchange
     stoploss_order_id = Column(String, nullable=True, index=True)
     # last update time of the stoploss order on exchange
     stoploss_last_update = Column(DateTime, nullable=True)
     # absolute value of the highest reached price
     max_rate = Column(Float, nullable=True, default=0.0)
+    # Lowest price reached
+    min_rate = Column(Float, nullable=True)
     sell_reason = Column(String, nullable=True)
     strategy = Column(String, nullable=True)
     ticker_interval = Column(Integer, nullable=True)
@@ -201,8 +214,42 @@ class Trade(_DECL_BASE):
         return (f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
                 f'open_rate={self.open_rate:.8f}, open_since={open_since})')
 
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            'trade_id': self.id,
+            'pair': self.pair,
+            'open_date_hum': arrow.get(self.open_date).humanize(),
+            'open_date': self.open_date.strftime("%Y-%m-%d %H:%M:%S"),
+            'close_date_hum': (arrow.get(self.close_date).humanize()
+                               if self.close_date else None),
+            'close_date': (self.close_date.strftime("%Y-%m-%d %H:%M:%S")
+                           if self.close_date else None),
+            'open_rate': self.open_rate,
+            'close_rate': self.close_rate,
+            'amount': round(self.amount, 8),
+            'stake_amount': round(self.stake_amount, 8),
+            'stop_loss': self.stop_loss,
+            'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
+            'initial_stop_loss': self.initial_stop_loss,
+            'initial_stop_loss_pct': (self.initial_stop_loss_pct * 100
+                                      if self.initial_stop_loss_pct else None),
+        }
+
+    def adjust_min_max_rates(self, current_price: float):
+        """
+        Adjust the max_rate and min_rate.
+        """
+        self.max_rate = max(current_price, self.max_rate or self.open_rate)
+        self.min_rate = min(current_price, self.min_rate or self.open_rate)
+
     def adjust_stop_loss(self, current_price: float, stoploss: float, initial: bool = False):
-        """this adjusts the stop loss to it's most recently observed setting"""
+        """
+        This adjusts the stop loss to it's most recently observed setting
+        :param current_price: Current rate the asset is traded
+        :param stoploss: Stoploss as factor (sample -0.05 -> -5% below current price).
+        :param initial: Called to initiate stop_loss.
+            Skips everything if self.stop_loss is already set.
+        """
 
         if initial and not (self.stop_loss is None or self.stop_loss == 0):
             # Don't modify if called with initial and nothing to do
@@ -210,24 +257,20 @@ class Trade(_DECL_BASE):
 
         new_loss = float(current_price * (1 - abs(stoploss)))
 
-        # keeping track of the highest observed rate for this trade
-        if self.max_rate is None:
-            self.max_rate = current_price
-        else:
-            if current_price > self.max_rate:
-                self.max_rate = current_price
-
         # no stop loss assigned yet
         if not self.stop_loss:
             logger.debug("assigning new stop loss")
             self.stop_loss = new_loss
+            self.stop_loss_pct = -1 * abs(stoploss)
             self.initial_stop_loss = new_loss
+            self.initial_stop_loss_pct = -1 * abs(stoploss)
             self.stoploss_last_update = datetime.utcnow()
 
         # evaluate if the stop loss needs to be updated
         else:
             if new_loss > self.stop_loss:  # stop losses only walk up, never down!
                 self.stop_loss = new_loss
+                self.stop_loss_pct = -1 * abs(stoploss)
                 self.stoploss_last_update = datetime.utcnow()
                 logger.debug("adjusted stop loss")
             else:
@@ -379,3 +422,22 @@ class Trade(_DECL_BASE):
         Query trades from persistence layer
         """
         return Trade.query.filter(Trade.is_open.is_(True)).all()
+
+    @staticmethod
+    def stoploss_reinitialization(desired_stoploss):
+        """
+        Adjust initial Stoploss to desired stoploss for all open trades.
+        """
+        for trade in Trade.get_open_trades():
+            logger.info("Found open trade: %s", trade)
+
+            # skip case if trailing-stop changed the stoploss already.
+            if (trade.stop_loss == trade.initial_stop_loss
+               and trade.initial_stop_loss_pct != desired_stoploss):
+                # Stoploss value got changed
+
+                logger.info(f"Stoploss for {trade} needs adjustment.")
+                # Force reset of stoploss
+                trade.stop_loss = None
+                trade.adjust_stop_loss(trade.open_rate, desired_stoploss)
+                logger.info(f"new stoploss: {trade.stop_loss}, ")

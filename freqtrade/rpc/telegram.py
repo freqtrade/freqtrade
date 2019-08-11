@@ -4,7 +4,7 @@
 This module manage Telegram communication
 """
 import logging
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, List
 
 from tabulate import tabulate
 from telegram import Bot, ParseMode, ReplyKeyboardMarkup, Update
@@ -20,7 +20,10 @@ logger = logging.getLogger(__name__)
 logger.debug('Included module rpc.telegram ...')
 
 
-def authorized_only(command_handler: Callable[[Any, Bot, Update], None]) -> Callable[..., Any]:
+MAX_TELEGRAM_MESSAGE_LENGTH = 4096
+
+
+def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
     """
     Decorator to check if the message comes from the correct chat_id
     :param command_handler: Telegram CommandHandler
@@ -93,6 +96,8 @@ class Telegram(RPC):
             CommandHandler('reload_conf', self._reload_conf),
             CommandHandler('stopbuy', self._stopbuy),
             CommandHandler('whitelist', self._whitelist),
+            CommandHandler('blacklist', self._blacklist, pass_args=True),
+            CommandHandler('edge', self._edge),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
         ]
@@ -127,7 +132,7 @@ class Telegram(RPC):
                 msg['stake_amount_fiat'] = 0
 
             message = ("*{exchange}:* Buying {pair}\n"
-                       "with limit `{limit:.8f}\n"
+                       "at rate `{limit:.8f}\n"
                        "({stake_amount:.6f} {stake_currency}").format(**msg)
 
             if msg.get('fiat_currency', None):
@@ -139,7 +144,7 @@ class Telegram(RPC):
             msg['profit_percent'] = round(msg['profit_percent'] * 100, 2)
 
             message = ("*{exchange}:* Selling {pair}\n"
-                       "*Limit:* `{limit:.8f}`\n"
+                       "*Rate:* `{limit:.8f}`\n"
                        "*Amount:* `{amount:.8f}`\n"
                        "*Open Rate:* `{open_rate:.8f}`\n"
                        "*Current Rate:* `{current_rate:.8f}`\n"
@@ -188,25 +193,36 @@ class Telegram(RPC):
 
         try:
             results = self._rpc_trade_status()
-            # pre format data
-            for result in results:
-                result['date'] = result['date'].humanize()
 
-            messages = [
-                "*Trade ID:* `{trade_id}`\n"
-                "*Current Pair:* {pair}\n"
-                "*Open Since:* `{date}`\n"
-                "*Amount:* `{amount}`\n"
-                "*Open Rate:* `{open_rate:.8f}`\n"
-                "*Close Rate:* `{close_rate}`\n"
-                "*Current Rate:* `{current_rate:.8f}`\n"
-                "*Close Profit:* `{close_profit}`\n"
-                "*Current Profit:* `{current_profit:.2f}%`\n"
-                "*Open Order:* `{open_order}`".format(**result)
-                for result in results
-            ]
+            messages = []
+            for r in results:
+                lines = [
+                    "*Trade ID:* `{trade_id}` `(since {open_date_hum})`",
+                    "*Current Pair:* {pair}",
+                    "*Amount:* `{amount} ({stake_amount} {base_currency})`",
+                    "*Open Rate:* `{open_rate:.8f}`",
+                    "*Close Rate:* `{close_rate}`" if r['close_rate'] else "",
+                    "*Current Rate:* `{current_rate:.8f}`",
+                    "*Close Profit:* `{close_profit}`" if r['close_profit'] else "",
+                    "*Current Profit:* `{current_profit:.2f}%`",
+
+                    # Adding initial stoploss only if it is different from stoploss
+                    "*Initial Stoploss:* `{initial_stop_loss:.8f}` " +
+                    ("`({initial_stop_loss_pct:.2f}%)`" if r['initial_stop_loss_pct'] else "")
+                    if r['stop_loss'] != r['initial_stop_loss'] else "",
+
+                    # Adding stoploss and stoploss percentage only if it is not None
+                    "*Stoploss:* `{stop_loss:.8f}` " +
+                    ("`({stop_loss_pct:.2f}%)`" if r['stop_loss_pct'] else ""),
+
+                    "*Open Order:* `{open_order}`" if r['open_order'] else ""
+                ]
+                # Filter empty lines using list-comprehension
+                messages.append("\n".join([l for l in lines if l]).format(**r))
+
             for msg in messages:
                 self._send_msg(msg, bot=bot)
+
         except RPCException as e:
             self._send_msg(str(e), bot=bot)
 
@@ -251,7 +267,8 @@ class Telegram(RPC):
                                  headers=[
                                      'Day',
                                      f'Profit {stake_cur}',
-                                     f'Profit {fiat_disp_cur}'
+                                     f'Profit {fiat_disp_cur}',
+                                     f'Trades'
                                  ],
                                  tablefmt='simple')
             message = f'<b>Daily Profit over the last {timescale} days</b>:\n<pre>{stats_tab}</pre>'
@@ -312,13 +329,20 @@ class Telegram(RPC):
             output = ''
             for currency in result['currencies']:
                 if currency['est_btc'] > 0.0001:
-                    output += "*{currency}:*\n" \
+                    curr_output = "*{currency}:*\n" \
                             "\t`Available: {available: .8f}`\n" \
                             "\t`Balance: {balance: .8f}`\n" \
                             "\t`Pending: {pending: .8f}`\n" \
                             "\t`Est. BTC: {est_btc: .8f}`\n".format(**currency)
                 else:
-                    output += "*{currency}:* not showing <1$ amount \n".format(**currency)
+                    curr_output = "*{currency}:* not showing <1$ amount \n".format(**currency)
+
+                # Handle overflowing messsage length
+                if len(output + curr_output) >= MAX_TELEGRAM_MESSAGE_LENGTH:
+                    self._send_msg(output, bot=bot)
+                    output = curr_output
+                else:
+                    output += curr_output
 
             output += "\n*Estimated Value*:\n" \
                       "\t`BTC: {total: .8f}`\n" \
@@ -387,7 +411,9 @@ class Telegram(RPC):
 
         trade_id = update.message.text.replace('/forcesell', '').strip()
         try:
-            self._rpc_forcesell(trade_id)
+            msg = self._rpc_forcesell(trade_id)
+            self._send_msg('Forcesell Result: `{result}`'.format(**msg), bot=bot)
+
         except RPCException as e:
             self._send_msg(str(e), bot=bot)
 
@@ -441,12 +467,10 @@ class Telegram(RPC):
         :return: None
         """
         try:
-            trades = self._rpc_count()
-            message = tabulate({
-                'current': [len(trades)],
-                'max': [self._config['max_open_trades']],
-                'total stake': [sum((trade.open_rate * trade.amount) for trade in trades)]
-            }, headers=['current', 'max', 'total stake'], tablefmt='simple')
+            counts = self._rpc_count()
+            message = tabulate({k: [v] for k, v in counts.items()},
+                               headers=['current', 'max', 'total stake'],
+                               tablefmt='simple')
             message = "<pre>{}</pre>".format(message)
             logger.debug(message)
             self._send_msg(message, parse_mode=ParseMode.HTML)
@@ -467,6 +491,38 @@ class Telegram(RPC):
 
             logger.debug(message)
             self._send_msg(message)
+        except RPCException as e:
+            self._send_msg(str(e), bot=bot)
+
+    @authorized_only
+    def _blacklist(self, bot: Bot, update: Update, args: List[str]) -> None:
+        """
+        Handler for /blacklist
+        Shows the currently active blacklist
+        """
+        try:
+
+            blacklist = self._rpc_blacklist(args)
+
+            message = f"Blacklist contains {blacklist['length']} pairs\n"
+            message += f"`{', '.join(blacklist['blacklist'])}`"
+
+            logger.debug(message)
+            self._send_msg(message)
+        except RPCException as e:
+            self._send_msg(str(e), bot=bot)
+
+    @authorized_only
+    def _edge(self, bot: Bot, update: Update) -> None:
+        """
+        Handler for /edge
+        Shows information related to Edge
+        """
+        try:
+            edge_pairs = self._rpc_edge()
+            edge_pairs_tab = tabulate(edge_pairs, headers='keys', tablefmt='simple')
+            message = f'<b>Edge only validated following pairs:</b>\n<pre>{edge_pairs_tab}</pre>'
+            self._send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
         except RPCException as e:
             self._send_msg(str(e), bot=bot)
 
@@ -497,6 +553,9 @@ class Telegram(RPC):
                   "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n" \
                   "*/reload_conf:* `Reload configuration file` \n" \
                   "*/whitelist:* `Show current whitelist` \n" \
+                  "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs " \
+                  "to the blacklist.` \n" \
+                  "*/edge:* `Shows validated pairs by Edge if it is enabeld` \n" \
                   "*/help:* `This help message`\n" \
                   "*/version:* `Show version`"
 
