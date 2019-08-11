@@ -76,8 +76,7 @@ def test_load_strategy_base64(result, caplog):
     assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
     # Make sure strategy was loaded from base64 (using temp directory)!!
     assert log_has_re(r"Using resolved strategy TestStrategy from '"
-                      + tempfile.gettempdir() + r"/.*/TestStrategy\.py'\.\.\.",
-                      caplog.record_tuples)
+                      + tempfile.gettempdir() + r"/.*/TestStrategy\.py'\.\.\.", caplog)
 
 
 def test_load_strategy_invalid_directory(result, caplog):
@@ -85,7 +84,7 @@ def test_load_strategy_invalid_directory(result, caplog):
     extra_dir = Path.cwd() / 'some/path'
     resolver._load_strategy('TestStrategy', config={}, extra_dir=extra_dir)
 
-    assert log_has_re(r'Path .*' + r'some.*path.*' + r'.* does not exist', caplog.record_tuples)
+    assert log_has_re(r'Path .*' + r'some.*path.*' + r'.* does not exist', caplog)
 
     assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 
@@ -105,7 +104,7 @@ def test_load_staticmethod_importerror(mocker, caplog):
                        match=r"Impossible to load Strategy 'DefaultStrategy'. "
                              r"This class does not exist or contains Python code errors."):
         StrategyResolver()
-    assert log_has_re(r".*Error: can't pickle staticmethod objects", caplog.record_tuples)
+    assert log_has_re(r".*Error: can't pickle staticmethod objects", caplog)
 
 
 def test_strategy(result):

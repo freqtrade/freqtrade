@@ -79,21 +79,18 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
     assert 'exchange' in config
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
-    assert log_has(
-        'Using data directory: {} ...'.format(config['datadir']),
-        caplog.record_tuples
-    )
+    assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
     assert 'ticker_interval' in config
-    assert not log_has_re('Parameter -i/--ticker-interval detected .*', caplog.record_tuples)
+    assert not log_has_re('Parameter -i/--ticker-interval detected .*', caplog)
 
     assert 'live' not in config
-    assert not log_has('Parameter -l/--live detected ...', caplog.record_tuples)
+    assert not log_has('Parameter -l/--live detected ...', caplog)
 
     assert 'position_stacking' not in config
-    assert not log_has('Parameter --enable-position-stacking detected ...', caplog.record_tuples)
+    assert not log_has('Parameter --enable-position-stacking detected ...', caplog)
 
     assert 'refresh_pairs' not in config
-    assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
+    assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
 
     assert 'timerange' not in config
     assert 'runmode' in config
@@ -130,41 +127,32 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
     assert 'datadir' in config
     assert config['runmode'] == RunMode.HYPEROPT
 
-    assert log_has(
-        'Using data directory: {} ...'.format(config['datadir']),
-        caplog.record_tuples
-    )
+    assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
     assert 'ticker_interval' in config
     assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
-                   caplog.record_tuples)
+                   caplog)
 
     assert 'position_stacking' in config
-    assert log_has('Parameter --enable-position-stacking detected ...', caplog.record_tuples)
+    assert log_has('Parameter --enable-position-stacking detected ...', caplog)
 
     assert 'use_max_market_positions' in config
-    assert log_has('Parameter --disable-max-market-positions detected ...', caplog.record_tuples)
-    assert log_has('max_open_trades set to unlimited ...', caplog.record_tuples)
+    assert log_has('Parameter --disable-max-market-positions detected ...', caplog)
+    assert log_has('max_open_trades set to unlimited ...', caplog)
 
     assert 'refresh_pairs' in config
-    assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
+    assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
 
     assert 'timerange' in config
-    assert log_has(
-        'Parameter --timerange detected: {} ...'.format(config['timerange']),
-        caplog.record_tuples
-    )
+    assert log_has('Parameter --timerange detected: {} ...'.format(config['timerange']), caplog)
 
     assert 'epochs' in config
     assert log_has('Parameter --epochs detected ... Will run Hyperopt with for 1000 epochs ...',
-                   caplog.record_tuples)
+                   caplog)
 
     assert 'spaces' in config
-    assert log_has(
-        'Parameter -s/--spaces detected: {}'.format(config['spaces']),
-        caplog.record_tuples
-    )
+    assert log_has('Parameter -s/--spaces detected: {}'.format(config['spaces']), caplog)
     assert 'print_all' in config
-    assert log_has('Parameter --print-all detected ...', caplog.record_tuples)
+    assert log_has('Parameter --print-all detected ...', caplog)
 
 
 def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
@@ -181,9 +169,9 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
     assert not hasattr(x, 'populate_buy_trend')
     assert not hasattr(x, 'populate_sell_trend')
     assert log_has("Custom Hyperopt does not provide populate_sell_trend. "
-                   "Using populate_sell_trend from DefaultStrategy.", caplog.record_tuples)
+                   "Using populate_sell_trend from DefaultStrategy.", caplog)
     assert log_has("Custom Hyperopt does not provide populate_buy_trend. "
-                   "Using populate_buy_trend from DefaultStrategy.", caplog.record_tuples)
+                   "Using populate_buy_trend from DefaultStrategy.", caplog)
     assert hasattr(x, "ticker_interval")
 
 
@@ -229,10 +217,7 @@ def test_start(mocker, default_conf, caplog) -> None:
     import pprint
     pprint.pprint(caplog.record_tuples)
 
-    assert log_has(
-        'Starting freqtrade in Hyperopt mode',
-        caplog.record_tuples
-    )
+    assert log_has('Starting freqtrade in Hyperopt mode', caplog)
     assert start_mock.call_count == 1
 
 
@@ -257,7 +242,7 @@ def test_start_no_data(mocker, default_conf, caplog) -> None:
     import pprint
     pprint.pprint(caplog.record_tuples)
 
-    assert log_has('No data found. Terminating.', caplog.record_tuples)
+    assert log_has('No data found. Terminating.', caplog)
 
 
 def test_start_failure(mocker, default_conf, caplog) -> None:
@@ -275,10 +260,7 @@ def test_start_failure(mocker, default_conf, caplog) -> None:
     args = get_args(args)
     with pytest.raises(DependencyException):
         start_hyperopt(args)
-    assert log_has(
-        "Please don't use --strategy for hyperopt.",
-        caplog.record_tuples
-    )
+    assert log_has("Please don't use --strategy for hyperopt.", caplog)
 
 
 def test_start_filelock(mocker, default_conf, caplog) -> None:
@@ -294,10 +276,7 @@ def test_start_filelock(mocker, default_conf, caplog) -> None:
     ]
     args = get_args(args)
     start_hyperopt(args)
-    assert log_has(
-        "Another running instance of freqtrade Hyperopt detected.",
-        caplog.record_tuples
-    )
+    assert log_has("Another running instance of freqtrade Hyperopt detected.", caplog)
 
 
 def test_loss_calculation_prefer_correct_trade_count(default_conf, hyperopt_results) -> None:
@@ -401,10 +380,7 @@ def test_save_trials_saves_trials(mocker, hyperopt, caplog) -> None:
     hyperopt.save_trials()
 
     trials_file = os.path.join('freqtrade', 'tests', 'optimize', 'ut_trials.pickle')
-    assert log_has(
-        'Saving 1 evaluations to \'{}\''.format(trials_file),
-        caplog.record_tuples
-    )
+    assert log_has('Saving 1 evaluations to \'{}\''.format(trials_file), caplog)
     mock_dump.assert_called_once()
 
 
@@ -413,10 +389,7 @@ def test_read_trials_returns_trials_file(mocker, hyperopt, caplog) -> None:
     mock_load = mocker.patch('freqtrade.optimize.hyperopt.load', return_value=trials)
     hyperopt_trial = hyperopt.read_trials()
     trials_file = os.path.join('freqtrade', 'tests', 'optimize', 'ut_trials.pickle')
-    assert log_has(
-        'Reading Trials from \'{}\''.format(trials_file),
-        caplog.record_tuples
-    )
+    assert log_has('Reading Trials from \'{}\''.format(trials_file), caplog)
     assert hyperopt_trial == trials
     mock_load.assert_called_once()
 
@@ -626,7 +599,7 @@ def test_clean_hyperopt(mocker, default_conf, caplog):
     Hyperopt(default_conf)
 
     assert unlinkmock.call_count == 2
-    assert log_has(f"Removing `{TICKERDATA_PICKLE}`.", caplog.record_tuples)
+    assert log_has(f"Removing `{TICKERDATA_PICKLE}`.", caplog)
 
 
 def test_continue_hyperopt(mocker, default_conf, caplog):
@@ -643,4 +616,4 @@ def test_continue_hyperopt(mocker, default_conf, caplog):
     Hyperopt(default_conf)
 
     assert unlinkmock.call_count == 0
-    assert log_has(f"Continuing on previous hyperopt results.", caplog.record_tuples)
+    assert log_has(f"Continuing on previous hyperopt results.", caplog)
