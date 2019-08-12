@@ -1588,6 +1588,9 @@ def test_timeframe_to_prev_date():
     for interval, result in tf_list:
         assert timeframe_to_prev_date(interval, date) == result
 
+    date = datetime.now(tz=timezone.utc)
+    assert timeframe_to_prev_date("5m", date) < date
+
 
 def test_timeframe_to_next_date():
     # 2019-08-12 13:22:08
@@ -1609,3 +1612,6 @@ def test_timeframe_to_next_date():
 
     for interval, result in tf_list:
         assert timeframe_to_next_date(interval, date) == result
+
+    date = datetime.now(tz=timezone.utc)
+    assert timeframe_to_next_date("5m", date) > date

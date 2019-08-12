@@ -801,7 +801,7 @@ def timeframe_to_prev_date(timeframe: str, date: datetime = None) -> datetime:
     :returns: date of previous candle (with utc timezone)
     """
     if not date:
-        date = datetime.utcnow()
+        date = datetime.now(timezone.utc)
     timeframe_secs = timeframe_to_seconds(timeframe)
     # Get offset based on timerame_secs
     offset = date.timestamp() % timeframe_secs
