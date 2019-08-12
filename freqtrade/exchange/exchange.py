@@ -6,7 +6,7 @@ import asyncio
 import inspect
 import logging
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from math import ceil, floor
 from random import randint
 from typing import Any, Dict, List, Optional, Tuple
@@ -781,13 +781,25 @@ def timeframe_to_seconds(ticker_interval: str) -> int:
 
 def timeframe_to_minutes(ticker_interval: str) -> int:
     """
-    Same as above, but returns minutes.
+    Same as timeframe_to_seconds, but returns minutes.
     """
     return ccxt.Exchange.parse_timeframe(ticker_interval) // 60
 
 
 def timeframe_to_msecs(ticker_interval: str) -> int:
     """
-    Same as above, but returns milliseconds.
+    Same as timeframe_to_seconds, but returns milliseconds.
     """
     return ccxt.Exchange.parse_timeframe(ticker_interval) * 1000
+
+
+def timeframe_to_next_date(timeframe: str, date: datetime = None):
+    """
+    Use Timeframe and determine next candle.
+    """
+    if not date:
+        date = datetime.utcnow()
+    timeframe_secs = timeframe_to_seconds(timeframe)
+    offset = date.timestamp() % timeframe_secs
+    new_timestamp = date.timestamp() + (timeframe_secs - offset)
+    return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
