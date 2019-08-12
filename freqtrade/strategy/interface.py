@@ -4,7 +4,7 @@ This module defines the interface to apply for strategies
 """
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Dict, List, NamedTuple, Optional, Tuple
 import warnings
@@ -159,8 +159,19 @@ class IStrategy(ABC):
         """
         Locks pair until a given timestamp happens.
         Locked pairs are not analyzed, and are prevented from opening new trades.
+        :param pair: Pair to lock
+        :param until: datetime in UTC until the pair should be blocked from opening new trades.
+                Needs to be timezone aware `datetime.now(timezone.utc)`
         """
-        self._pair_locked_until['pair'] = until
+        self._pair_locked_until[pair] = until
+
+    def is_pair_locked(self, pair: str) -> bool:
+        """
+        Checks if a pair is currently locked
+        """
+        if pair not in self._pair_locked_until:
+            return False
+        return self._pair_locked_until[pair] >= datetime.now(timezone.utc)
 
     def analyze_ticker(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
@@ -268,8 +279,8 @@ class IStrategy(ABC):
                     sell: bool, low: float = None, high: float = None,
                     force_stoploss: float = 0) -> SellCheckTuple:
         """
-        This function evaluate if on the condition required to trigger a sell has been reached
-        if the threshold is reached and updates the trade record.
+        This function evaluate if one of the conditions required to trigger a sell
+        has been reached, which can either be a stop-loss, ROI or sell-signal.
         :param low: Only used during backtesting to simulate stoploss
         :param high: Only used during backtesting, to simulate ROI
         :param force_stoploss: Externally provided stoploss
