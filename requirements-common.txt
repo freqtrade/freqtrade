@@ -23,7 +23,7 @@ filelock==3.0.12
 py_find_1st==1.1.4
 
 #Load ticker files 30% faster
-python-rapidjson==0.7.2
+python-rapidjson==0.8.0
 
 # Notify systemd
 sdnotify==0.3.2
