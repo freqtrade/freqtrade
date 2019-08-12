@@ -10,7 +10,7 @@ from typing import Dict, Any, List, Optional
 
 import arrow
 import sqlalchemy as sql
-from numpy import mean, nan_to_num, NAN
+from numpy import mean, NAN
 from pandas import DataFrame
 
 from freqtrade import TemporaryError, DependencyException
@@ -195,9 +195,9 @@ class RPC(object):
         trades = Trade.query.order_by(Trade.id).all()
 
         profit_all_coin = []
-        profit_all_percent = []
+        profit_all_perc = []
         profit_closed_coin = []
-        profit_closed_percent = []
+        profit_closed_perc = []
         durations = []
 
         for trade in trades:
@@ -211,7 +211,7 @@ class RPC(object):
             if not trade.is_open:
                 profit_percent = trade.calc_profit_percent()
                 profit_closed_coin.append(trade.calc_profit())
-                profit_closed_percent.append(profit_percent)
+                profit_closed_perc.append(profit_percent)
             else:
                 # Get current rate
                 try:
@@ -223,7 +223,7 @@ class RPC(object):
             profit_all_coin.append(
                 trade.calc_profit(rate=Decimal(trade.close_rate or current_rate))
             )
-            profit_all_percent.append(profit_percent)
+            profit_all_perc.append(profit_percent)
 
         best_pair = Trade.session.query(
             Trade.pair, sql.func.sum(Trade.close_profit).label('profit_sum')
@@ -238,7 +238,8 @@ class RPC(object):
 
         # Prepare data to display
         profit_closed_coin_sum = round(sum(profit_closed_coin), 8)
-        profit_closed_percent = round(nan_to_num(mean(profit_closed_percent)) * 100, 2)
+        profit_closed_percent = (round(mean(profit_closed_perc) * 100, 2) if profit_closed_perc
+                                 else 0.0)
         profit_closed_fiat = self._fiat_converter.convert_amount(
             profit_closed_coin_sum,
             stake_currency,
@@ -246,7 +247,7 @@ class RPC(object):
         ) if self._fiat_converter else 0
 
         profit_all_coin_sum = round(sum(profit_all_coin), 8)
-        profit_all_percent = round(nan_to_num(mean(profit_all_percent)) * 100, 2)
+        profit_all_percent = round(mean(profit_all_perc) * 100, 2) if profit_all_perc else 0.0
         profit_all_fiat = self._fiat_converter.convert_amount(
             profit_all_coin_sum,
             stake_currency,
