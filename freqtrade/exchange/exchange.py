@@ -793,9 +793,12 @@ def timeframe_to_msecs(ticker_interval: str) -> int:
     return ccxt.Exchange.parse_timeframe(ticker_interval) * 1000
 
 
-def timeframe_to_prev_date(timeframe: str, date: datetime = None):
+def timeframe_to_prev_date(timeframe: str, date: datetime = None) -> datetime:
     """
     Use Timeframe and determine last possible candle.
+    :param timeframe: timeframe in string format (e.g. "5m")
+    :param date: date to use. Defaults to utcnow()
+    :returns: date of previous candle (with utc timezone)
     """
     if not date:
         date = datetime.utcnow()
@@ -807,9 +810,12 @@ def timeframe_to_prev_date(timeframe: str, date: datetime = None):
     return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
 
 
-def timeframe_to_next_date(timeframe: str, date: datetime = None):
+def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
     """
     Use Timeframe and determine next candle.
+    :param timeframe: timeframe in string format (e.g. "5m")
+    :param date: date to use. Defaults to utcnow()
+    :returns: date of next candle (with utc timezone)
     """
     if not date:
         date = datetime.utcnow()

@@ -1571,45 +1571,41 @@ def test_timeframe_to_prev_date():
     # 2019-08-12 13:22:08
     date = datetime.fromtimestamp(1565616128, tz=timezone.utc)
 
-    # 5m -> 2019-08-12 13:20:00
-    assert timeframe_to_prev_date("5m", date) == datetime(
-        2019, 8, 12, 13, 20, 0, tzinfo=timezone.utc)
-    # 10m -> 2019-08-12 13:20:00
-    assert timeframe_to_prev_date("10m", date) == datetime(
-        2019, 8, 12, 13, 20, 0, tzinfo=timezone.utc)
-    # 1h -> 2019-08-12 13:00:00
-    assert timeframe_to_prev_date("1h", date) == datetime(
-        2019, 8, 12, 13, 00, 0, tzinfo=timezone.utc)
-    # 2h -> 2019-08-12 12:00:00
-    assert timeframe_to_prev_date("2h", date) == datetime(
-        2019, 8, 12, 12, 00, 0, tzinfo=timezone.utc)
-    # 4h -> 2019-08-12 12:00:00
-    assert timeframe_to_prev_date("4h", date) == datetime(
-        2019, 8, 12, 12, 00, 0, tzinfo=timezone.utc)
-    # 1d -> 2019-08-12 00:00:00
-    assert timeframe_to_prev_date("1d", date) == datetime(
-        2019, 8, 12, 0, 0, 0, tzinfo=timezone.utc)
+    tf_list = [
+        # 5m -> 2019-08-12 13:20:00
+        ("5m", datetime(2019, 8, 12, 13, 20, 0, tzinfo=timezone.utc)),
+        # 10m -> 2019-08-12 13:20:00
+        ("10m", datetime(2019, 8, 12, 13, 20, 0, tzinfo=timezone.utc)),
+        # 1h -> 2019-08-12 13:00:00
+        ("1h", datetime(2019, 8, 12, 13, 00, 0, tzinfo=timezone.utc)),
+        # 2h -> 2019-08-12 12:00:00
+        ("2h", datetime(2019, 8, 12, 12, 00, 0, tzinfo=timezone.utc)),
+        # 4h -> 2019-08-12 12:00:00
+        ("4h", datetime(2019, 8, 12, 12, 00, 0, tzinfo=timezone.utc)),
+        # 1d -> 2019-08-12 00:00:00
+        ("1d", datetime(2019, 8, 12, 00, 00, 0, tzinfo=timezone.utc)),
+    ]
+    for interval, result in tf_list:
+        assert timeframe_to_prev_date(interval, date) == result
 
 
 def test_timeframe_to_next_date():
     # 2019-08-12 13:22:08
     date = datetime.fromtimestamp(1565616128, tz=timezone.utc)
+    tf_list = [
+        # 5m -> 2019-08-12 13:25:00
+        ("5m", datetime(2019, 8, 12, 13, 25, 0, tzinfo=timezone.utc)),
+        # 10m -> 2019-08-12 13:30:00
+        ("10m", datetime(2019, 8, 12, 13, 30, 0, tzinfo=timezone.utc)),
+        # 1h -> 2019-08-12 14:00:00
+        ("1h", datetime(2019, 8, 12, 14, 00, 0, tzinfo=timezone.utc)),
+        # 2h -> 2019-08-12 14:00:00
+        ("2h", datetime(2019, 8, 12, 14, 00, 0, tzinfo=timezone.utc)),
+        # 4h -> 2019-08-12 14:00:00
+        ("4h", datetime(2019, 8, 12, 16, 00, 0, tzinfo=timezone.utc)),
+        # 1d -> 2019-08-13 00:00:00
+        ("1d", datetime(2019, 8, 13, 0, 0, 0, tzinfo=timezone.utc)),
+    ]
 
-    # 5m -> 2019-08-12 13:25:00
-    assert timeframe_to_next_date("5m", date) == datetime(
-        2019, 8, 12, 13, 25, 0, tzinfo=timezone.utc)
-    # 10m -> 2019-08-12 13:30:00
-    assert timeframe_to_next_date("10m", date) == datetime(
-        2019, 8, 12, 13, 30, 0, tzinfo=timezone.utc)
-    # 1h -> 2019-08-12 14:00:00
-    assert timeframe_to_next_date("1h", date) == datetime(
-        2019, 8, 12, 14, 00, 0, tzinfo=timezone.utc)
-    # 2h -> 2019-08-12 14:00:00
-    assert timeframe_to_next_date("2h", date) == datetime(
-        2019, 8, 12, 14, 00, 0, tzinfo=timezone.utc)
-    # 4h -> 2019-08-12 14:00:00
-    assert timeframe_to_next_date("4h", date) == datetime(
-        2019, 8, 12, 16, 00, 0, tzinfo=timezone.utc)
-    # 1d -> 2019-08-13 00:00:00
-    assert timeframe_to_next_date("1d", date) == datetime(
-        2019, 8, 13, 0, 0, 0, tzinfo=timezone.utc)
+    for interval, result in tf_list:
+        assert timeframe_to_next_date(interval, date) == result
