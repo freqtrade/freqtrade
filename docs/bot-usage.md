@@ -256,12 +256,13 @@ optional arguments:
   --continue            Continue hyperopt from previous runs. By default,
                         temporary files will be removed and hyperopt will
                         start from scratch.
-  --hyperopt-loss       NAME
-                        Specify the class name of the hyperopt loss function
+  --hyperopt-loss NAME  Specify the class name of the hyperopt loss function
                         class (IHyperOptLoss). Different functions can
                         generate completely different results, since the
-                        target for optimization is different. (default:
-                        `DefaultHyperOptLoss`).
+                        target for optimization is different. Built-in
+                        Hyperopt-loss-functions are: DefaultHyperOptLoss,
+                        OnlyProfitHyperOptLoss, SharpeHyperOptLoss.
+                        (default: `DefaultHyperOptLoss`).
 ```
 
 ## Edge commands
