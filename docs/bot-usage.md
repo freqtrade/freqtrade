@@ -57,7 +57,7 @@ freqtrade -c path/far/far/away/config.json
 The bot allows you to use multiple configuration files by specifying multiple
 `-c/--config` configuration options in the command line. Configuration parameters
 defined in latter configuration files override parameters with the same name
-defined in the earlier configuration files specified in the command line.
+defined in the previous configuration files specified in the command line earlier.
 
 For example, you can make a separate configuration file with your key and secrete
 for the Exchange you use for trading, specify default configuration file with
