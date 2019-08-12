@@ -107,6 +107,7 @@ class IStrategy(ABC):
         self.config = config
         # Dict to determine if analysis is necessary
         self._last_candle_seen_per_pair: Dict[str, datetime] = {}
+        self._pair_locked_until: Dict[str, datetime] = {}
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -153,6 +154,13 @@ class IStrategy(ABC):
         Returns strategy class name
         """
         return self.__class__.__name__
+
+    def lock_pair(self, pair: str, until: datetime) -> None:
+        """
+        Locks pair until a given timestamp happens.
+        Locked pairs are not analyzed, and are prevented from opening new trades.
+        """
+        self._pair_locked_until['pair'] = until
 
     def analyze_ticker(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
