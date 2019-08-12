@@ -133,6 +133,35 @@ def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
     assert log_has('Validating configuration ...', caplog)
 
 
+def test_from_config(default_conf, mocker, caplog) -> None:
+    conf1 = deepcopy(default_conf)
+    conf2 = deepcopy(default_conf)
+    del conf1['exchange']['key']
+    del conf1['exchange']['secret']
+    del conf2['exchange']['name']
+    conf2['exchange']['pair_whitelist'] += ['NANO/BTC']
+    conf2['fiat_display_currency'] = "EUR"
+    config_files = [conf1, conf2]
+
+    configsmock = MagicMock(side_effect=config_files)
+    mocker.patch(
+        'freqtrade.configuration.configuration.load_config_file',
+        configsmock
+    )
+
+    validated_conf = Configuration.from_files(['test_conf.json', 'test2_conf.json'])
+
+    exchange_conf = default_conf['exchange']
+    assert validated_conf['exchange']['name'] == exchange_conf['name']
+    assert validated_conf['exchange']['key'] == exchange_conf['key']
+    assert validated_conf['exchange']['secret'] == exchange_conf['secret']
+    assert validated_conf['exchange']['pair_whitelist'] != conf1['exchange']['pair_whitelist']
+    assert validated_conf['exchange']['pair_whitelist'] == conf2['exchange']['pair_whitelist']
+    assert validated_conf['fiat_display_currency'] == "EUR"
+    assert 'internals' in validated_conf
+    assert log_has('Validating configuration ...', caplog)
+
+
 def test_load_config_max_open_trades_minus_one(default_conf, mocker, caplog) -> None:
     default_conf['max_open_trades'] = -1
     patched_configuration_load_config_file(mocker, default_conf)

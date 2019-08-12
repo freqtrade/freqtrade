@@ -14,36 +14,48 @@ from freqtrade.optimize.hyperopt_interface import IHyperOpt
 class DefaultHyperOpts(IHyperOpt):
     """
     Default hyperopt provided by the Freqtrade bot.
-    You can override it with your own hyperopt
+    You can override it with your own Hyperopt
     """
     @staticmethod
     def populate_indicators(dataframe: DataFrame, metadata: dict) -> DataFrame:
+        """
+        Add several indicators needed for buy and sell strategies defined below.
+        """
+        # ADX
         dataframe['adx'] = ta.ADX(dataframe)
+        # MACD
         macd = ta.MACD(dataframe)
         dataframe['macd'] = macd['macd']
         dataframe['macdsignal'] = macd['macdsignal']
+        # MFI
         dataframe['mfi'] = ta.MFI(dataframe)
+        # RSI
         dataframe['rsi'] = ta.RSI(dataframe)
+        # Stochastic Fast
         stoch_fast = ta.STOCHF(dataframe)
         dataframe['fastd'] = stoch_fast['fastd']
+        # Minus-DI
         dataframe['minus_di'] = ta.MINUS_DI(dataframe)
         # Bollinger bands
         bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
         dataframe['bb_lowerband'] = bollinger['lower']
         dataframe['bb_upperband'] = bollinger['upper']
+        # SAR
         dataframe['sar'] = ta.SAR(dataframe)
+
         return dataframe
 
     @staticmethod
     def buy_strategy_generator(params: Dict[str, Any]) -> Callable:
         """
-        Define the buy strategy parameters to be used by hyperopt
+        Define the buy strategy parameters to be used by Hyperopt.
         """
         def populate_buy_trend(dataframe: DataFrame, metadata: dict) -> DataFrame:
             """
-            Buy strategy Hyperopt will build and use
+            Buy strategy Hyperopt will build and use.
             """
             conditions = []
+
             # GUARDS AND TRENDS
             if 'mfi-enabled' in params and params['mfi-enabled']:
                 conditions.append(dataframe['mfi'] < params['mfi-value'])
@@ -79,7 +91,7 @@ class DefaultHyperOpts(IHyperOpt):
     @staticmethod
     def indicator_space() -> List[Dimension]:
         """
-        Define your Hyperopt space for searching strategy parameters
+        Define your Hyperopt space for searching buy strategy parameters.
         """
         return [
             Integer(10, 25, name='mfi-value'),
@@ -96,14 +108,14 @@ class DefaultHyperOpts(IHyperOpt):
     @staticmethod
     def sell_strategy_generator(params: Dict[str, Any]) -> Callable:
         """
-        Define the sell strategy parameters to be used by hyperopt
+        Define the sell strategy parameters to be used by Hyperopt.
         """
         def populate_sell_trend(dataframe: DataFrame, metadata: dict) -> DataFrame:
             """
-            Sell strategy Hyperopt will build and use
+            Sell strategy Hyperopt will build and use.
             """
-            # print(params)
             conditions = []
+
             # GUARDS AND TRENDS
             if 'sell-mfi-enabled' in params and params['sell-mfi-enabled']:
                 conditions.append(dataframe['mfi'] > params['sell-mfi-value'])
@@ -139,7 +151,7 @@ class DefaultHyperOpts(IHyperOpt):
     @staticmethod
     def sell_indicator_space() -> List[Dimension]:
         """
-        Define your Hyperopt space for searching sell strategy parameters
+        Define your Hyperopt space for searching sell strategy parameters.
         """
         return [
             Integer(75, 100, name='sell-mfi-value'),
@@ -157,9 +169,9 @@ class DefaultHyperOpts(IHyperOpt):
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
-        Based on TA indicators. Should be a copy of from strategy
-        must align to populate_indicators in this file
-        Only used when --spaces does not include buy
+        Based on TA indicators. Should be a copy of same method from strategy.
+        Must align to populate_indicators in this file.
+        Only used when --spaces does not include buy space.
         """
         dataframe.loc[
             (
@@ -174,9 +186,9 @@ class DefaultHyperOpts(IHyperOpt):
 
     def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
-        Based on TA indicators. Should be a copy of from strategy
-        must align to populate_indicators in this file
-        Only used when --spaces does not include sell
+        Based on TA indicators. Should be a copy of same method from strategy.
+        Must align to populate_indicators in this file.
+        Only used when --spaces does not include sell space.
         """
         dataframe.loc[
             (
@@ -186,4 +198,5 @@ class DefaultHyperOpts(IHyperOpt):
                 (dataframe['fastd'] > 54)
             ),
             'sell'] = 1
+
         return dataframe
