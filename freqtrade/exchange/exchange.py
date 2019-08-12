@@ -817,11 +817,9 @@ def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
     :param date: date to use. Defaults to utcnow()
     :returns: date of next candle (with utc timezone)
     """
-    if not date:
-        date = datetime.utcnow()
+    prevdate = timeframe_to_prev_date(timeframe, date)
     timeframe_secs = timeframe_to_seconds(timeframe)
-    # Get offset to prev timeframe
-    offset = date.timestamp() % timeframe_secs
-    # Add remaining seconds to next timeframe
-    new_timestamp = date.timestamp() + (timeframe_secs - offset)
+
+    # Add one interval to previous candle
+    new_timestamp = prevdate.timestamp() + timeframe_secs
     return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
