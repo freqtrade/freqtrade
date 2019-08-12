@@ -1,15 +1,24 @@
 # Configure the bot
 
-This page explains how to configure your `config.json` file.
+This page explains how to configure your configuration file.
 
-## Setup config.json
+Per default, the bot loads configuration from the `config.json` file located in the current working directory.
+You can change the configuration file used by the bot with the `-c/--config` option.
 
-We recommend to copy and use the `config.json.example` as a template
+If you used the [Quick start](installation.md/#quick-start) method for installing 
+the bot, the installation script should have already created the default configuration file (`config.json`) for you.
+
+We recommend you to copy and use the `config.json.example` as a template
 for your bot configuration.
 
-The table below will list all configuration parameters.
+The configuration file defines the set of configuration parameters for the bot written in the JSON format.
+Additionally, you may use one-line `// ...` and multi-line `/* ... */` comments.
 
-Mandatory Parameters are marked as **Required**.
+## Configuration parameters
+
+The table below will list all configuration parameters available.
+
+Mandatory parameters are marked as **Required**.
 
 |  Command | Default | Description |
 |----------|---------|-------------|
