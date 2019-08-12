@@ -164,7 +164,11 @@ By default, FreqTrade uses a loss function, which has been with freqtrade since 
 A different loss function can be specified by using the `--hyperopt-loss <Class-name>` argument.
 This class should be in its own file within the `user_data/hyperopts/` directory.
 
-Currently, the following loss functions are builtin: `DefaultHyperOptLoss` (default legacy Freqtrade hyperoptimization loss function), `SharpeHyperOptLoss` (optimizes Sharpe Ratio calculated on the trade returns) and `OnlyProfitHyperOptLoss` (which takes only amount of profit into consideration).
+Currently, the following loss functions are builtin:
+
+* `DefaultHyperOptLoss` (default legacy Freqtrade hyperoptimization loss function)
+* `OnlyProfitHyperOptLoss` (which takes only amount of profit into consideration)
+* `SharpeHyperOptLoss` (optimizes Sharpe Ratio calculated on the trade returns)
 
 ### Creating and using a custom loss function
 
