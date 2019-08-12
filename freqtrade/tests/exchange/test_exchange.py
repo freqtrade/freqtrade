@@ -14,7 +14,9 @@ from pandas import DataFrame
 from freqtrade import (DependencyException, InvalidOrderException,
                        OperationalException, TemporaryError)
 from freqtrade.exchange import Binance, Exchange, Kraken
-from freqtrade.exchange.exchange import API_RETRY_COUNT
+from freqtrade.exchange.exchange import (API_RETRY_COUNT, timeframe_to_minutes,
+                                         timeframe_to_msecs,
+                                         timeframe_to_seconds)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from freqtrade.tests.conftest import get_patched_exchange, log_has, log_has_re
 
@@ -1540,3 +1542,24 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
     assert ex.get_valid_pair_combination("BTC", "ETH") == "ETH/BTC"
     with pytest.raises(DependencyException, match=r"Could not combine.* to get a valid pair."):
         ex.get_valid_pair_combination("NOPAIR", "ETH")
+
+
+def test_timeframe_to_minutes():
+    assert timeframe_to_minutes("5m") == 5
+    assert timeframe_to_minutes("10m") == 10
+    assert timeframe_to_minutes("1h") == 60
+    assert timeframe_to_minutes("1d") == 1440
+
+
+def test_timeframe_to_seconds():
+    assert timeframe_to_seconds("5m") == 300
+    assert timeframe_to_seconds("10m") == 600
+    assert timeframe_to_seconds("1h") == 3600
+    assert timeframe_to_seconds("1d") == 86400
+
+
+def test_timeframe_to_msecs():
+    assert timeframe_to_msecs("5m") == 300000
+    assert timeframe_to_msecs("10m") == 600000
+    assert timeframe_to_msecs("1h") == 3600000
+    assert timeframe_to_msecs("1d") == 86400000
