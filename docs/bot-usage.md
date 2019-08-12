@@ -59,8 +59,8 @@ working directory.
 
 The bot allows you to use multiple configuration files by specifying multiple
 `-c/--config` options in the command line. Configuration parameters
-defined in the last configuration file override parameters with the same name
-defined in the previous configuration file specified in the command line.
+defined in the latter configuration files override parameters with the same name
+defined in the previous configuration files specified in the command line earlier.
 
 For example, you can make a separate configuration file with your key and secrete
 for the Exchange you use for trading, specify default configuration file with
@@ -259,12 +259,13 @@ optional arguments:
   --continue            Continue hyperopt from previous runs. By default,
                         temporary files will be removed and hyperopt will
                         start from scratch.
-  --hyperopt-loss       NAME
-                        Specify the class name of the hyperopt loss function
+  --hyperopt-loss NAME  Specify the class name of the hyperopt loss function
                         class (IHyperOptLoss). Different functions can
                         generate completely different results, since the
-                        target for optimization is different. (default:
-                        `DefaultHyperOptLoss`).
+                        target for optimization is different. Built-in
+                        Hyperopt-loss-functions are: DefaultHyperOptLoss,
+                        OnlyProfitHyperOptLoss, SharpeHyperOptLoss.
+                        (default: `DefaultHyperOptLoss`).
 ```
 
 ## Edge commands

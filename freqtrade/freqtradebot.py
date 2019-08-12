@@ -20,7 +20,7 @@ from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver, PairListResolver
-from freqtrade.state import State
+from freqtrade.state import State, RunMode
 from freqtrade.strategy.interface import SellType, IStrategy
 from freqtrade.wallets import Wallets
 
@@ -75,6 +75,12 @@ class FreqtradeBot(object):
         persistence.init(self.config.get('db_url', None),
                          clean_open_orders=self.config.get('dry_run', False))
 
+        # Stoploss on exchange does not make sense, therefore we need to disable that.
+        if (self.dataprovider.runmode == RunMode.DRY_RUN and
+           self.strategy.order_types.get('stoploss_on_exchange', False)):
+            logger.info("Disabling stoploss_on_exchange during dry-run.")
+            self.strategy.order_types['stoploss_on_exchange'] = False
+            config['order_types']['stoploss_on_exchange'] = False
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')
         self.state = State[initial_state.upper()] if initial_state else State.STOPPED

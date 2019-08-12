@@ -4,7 +4,7 @@ This module contains the configuration class
 import logging
 import warnings
 from argparse import Namespace
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from freqtrade import OperationalException, constants
 from freqtrade.configuration.check_exchange import check_exchange
@@ -39,29 +39,35 @@ class Configuration(object):
 
         return self.config
 
-    def _load_config_files(self) -> Dict[str, Any]:
+    @staticmethod
+    def from_files(files: List[str]) -> Dict[str, Any]:
         """
-        Iterate through the config files passed in the args,
-        loading all of them and merging their contents.
+        Iterate through the config files passed in, loading all of them
+        and merging their contents.
+        Files are loaded in sequence, parameters in later configuration files
+        override the same parameter from an earlier file (last definition wins).
+        :param files: List of file paths
+        :return: configuration dictionary
         """
+        # Keep this method as staticmethod, so it can be used from interactive environments
         config: Dict[str, Any] = {}
 
         # We expect here a list of config filenames
-        for path in self.args.config:
-            logger.info('Using config: %s ...', path)
+        for path in files:
+            logger.info(f'Using config: {path} ...')
 
             # Merge config options, overwriting old values
             config = deep_merge_dicts(load_config_file(path), config)
 
-        return config
-
-    def _normalize_config(self, config: Dict[str, Any]) -> None:
-        """
-        Make config more canonical -- i.e. for example add missing parts that we expect
-        to be normally in it...
-        """
+        # Normalize config
         if 'internals' not in config:
             config['internals'] = {}
+
+        # validate configuration before returning
+        logger.info('Validating configuration ...')
+        validate_config_schema(config)
+
+        return config
 
     def load_config(self) -> Dict[str, Any]:
         """
@@ -69,13 +75,7 @@ class Configuration(object):
         :return: Configuration dictionary
         """
         # Load all configs
-        config: Dict[str, Any] = self._load_config_files()
-
-        # Make resulting config more canonical
-        self._normalize_config(config)
-
-        logger.info('Validating configuration ...')
-        validate_config_schema(config)
+        config: Dict[str, Any] = Configuration.from_files(self.args.config)
 
         self._validate_config_consistency(config)
 

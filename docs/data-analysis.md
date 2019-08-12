@@ -31,6 +31,16 @@ df = load_trades_from_db("sqlite:///tradesv3.sqlite")
 df.groupby("pair")["sell_reason"].value_counts()
 ```
 
+### Load multiple configuration files
+
+This option can be usefull to inspect the results of passing in multiple configs in case of problems
+
+``` python
+from freqtrade.configuration import Configuration
+config = Configuration.from_files(["config1.json", "config2.json"])
+print(config)
+```
+
 ## Strategy debugging example
 
 Debugging a strategy can be time-consuming. FreqTrade offers helper functions to visualize raw data.

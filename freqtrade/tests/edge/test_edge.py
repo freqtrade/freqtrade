@@ -311,7 +311,7 @@ def test_edge_process_no_data(mocker, edge_conf, caplog):
 
     assert not edge.calculate()
     assert len(edge._cached_pairs) == 0
-    assert log_has("No data found. Edge is stopped ...", caplog.record_tuples)
+    assert log_has("No data found. Edge is stopped ...", caplog)
     assert edge._last_updated == 0
 
 
@@ -326,7 +326,7 @@ def test_edge_process_no_trades(mocker, edge_conf, caplog):
 
     assert not edge.calculate()
     assert len(edge._cached_pairs) == 0
-    assert log_has("No trades found.", caplog.record_tuples)
+    assert log_has("No trades found.", caplog)
 
 
 def test_edge_init_error(mocker, edge_conf,):
