@@ -192,10 +192,11 @@ AVAILABLE_CLI_OPTIONS = {
         default=False,
     ),
     "print_colorized": Arg(
-        '--color', '--print-colorized',
-        help='Print colorized hyperopt results.',
-        action='store_true',
-        default=False
+        '--no-color',
+        help='Disable colorization of hyperopt results. May be useful if you are '
+        'redirecting output to a file.',
+        action='store_false',
+        default=True,
     ),
     "hyperopt_jobs": Arg(
         '-j', '--job-workers',
