@@ -14,10 +14,10 @@ from pandas import DataFrame
 from freqtrade import (DependencyException, InvalidOrderException,
                        OperationalException, TemporaryError)
 from freqtrade.exchange import Binance, Exchange, Kraken
-from freqtrade.exchange.exchange import (API_RETRY_COUNT,
-                                         timeframe_to_next_date,
-                                         timeframe_to_minutes,
+from freqtrade.exchange.exchange import (API_RETRY_COUNT, timeframe_to_minutes,
                                          timeframe_to_msecs,
+                                         timeframe_to_next_date,
+                                         timeframe_to_prev_date,
                                          timeframe_to_seconds)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from freqtrade.tests.conftest import get_patched_exchange, log_has, log_has_re
@@ -1565,6 +1565,30 @@ def test_timeframe_to_msecs():
     assert timeframe_to_msecs("10m") == 600000
     assert timeframe_to_msecs("1h") == 3600000
     assert timeframe_to_msecs("1d") == 86400000
+
+
+def test_timeframe_to_prev_date():
+    # 2019-08-12 13:22:08
+    date = datetime.fromtimestamp(1565616128, tz=timezone.utc)
+
+    # 5m -> 2019-08-12 13:20:00
+    assert timeframe_to_prev_date("5m", date) == datetime(
+        2019, 8, 12, 13, 20, 0, tzinfo=timezone.utc)
+    # 10m -> 2019-08-12 13:20:00
+    assert timeframe_to_prev_date("10m", date) == datetime(
+        2019, 8, 12, 13, 20, 0, tzinfo=timezone.utc)
+    # 1h -> 2019-08-12 13:00:00
+    assert timeframe_to_prev_date("1h", date) == datetime(
+        2019, 8, 12, 13, 00, 0, tzinfo=timezone.utc)
+    # 2h -> 2019-08-12 12:00:00
+    assert timeframe_to_prev_date("2h", date) == datetime(
+        2019, 8, 12, 12, 00, 0, tzinfo=timezone.utc)
+    # 4h -> 2019-08-12 12:00:00
+    assert timeframe_to_prev_date("4h", date) == datetime(
+        2019, 8, 12, 12, 00, 0, tzinfo=timezone.utc)
+    # 1d -> 2019-08-12 00:00:00
+    assert timeframe_to_prev_date("1d", date) == datetime(
+        2019, 8, 12, 0, 0, 0, tzinfo=timezone.utc)
 
 
 def test_timeframe_to_next_date():

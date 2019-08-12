@@ -793,6 +793,20 @@ def timeframe_to_msecs(ticker_interval: str) -> int:
     return ccxt.Exchange.parse_timeframe(ticker_interval) * 1000
 
 
+def timeframe_to_prev_date(timeframe: str, date: datetime = None):
+    """
+    Use Timeframe and determine last possible candle.
+    """
+    if not date:
+        date = datetime.utcnow()
+    timeframe_secs = timeframe_to_seconds(timeframe)
+    # Get offset based on timerame_secs
+    offset = date.timestamp() % timeframe_secs
+    # Subtract seconds passed since last offset
+    new_timestamp = date.timestamp() - offset
+    return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
+
+
 def timeframe_to_next_date(timeframe: str, date: datetime = None):
     """
     Use Timeframe and determine next candle.
@@ -800,6 +814,8 @@ def timeframe_to_next_date(timeframe: str, date: datetime = None):
     if not date:
         date = datetime.utcnow()
     timeframe_secs = timeframe_to_seconds(timeframe)
+    # Get offset to prev timeframe
     offset = date.timestamp() % timeframe_secs
+    # Add remaining seconds to next timeframe
     new_timestamp = date.timestamp() + (timeframe_secs - offset)
     return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
