@@ -60,8 +60,8 @@ def test_main_fatal_exception(mocker, default_conf, caplog) -> None:
     # Test Main + the KeyboardInterrupt exception
     with pytest.raises(SystemExit):
         main(args)
-    assert log_has('Using config: config.json.example ...', caplog.record_tuples)
-    assert log_has('Fatal exception!', caplog.record_tuples)
+    assert log_has('Using config: config.json.example ...', caplog)
+    assert log_has('Fatal exception!', caplog)
 
 
 def test_main_keyboard_interrupt(mocker, default_conf, caplog) -> None:
@@ -77,8 +77,8 @@ def test_main_keyboard_interrupt(mocker, default_conf, caplog) -> None:
     # Test Main + the KeyboardInterrupt exception
     with pytest.raises(SystemExit):
         main(args)
-    assert log_has('Using config: config.json.example ...', caplog.record_tuples)
-    assert log_has('SIGINT received, aborting ...', caplog.record_tuples)
+    assert log_has('Using config: config.json.example ...', caplog)
+    assert log_has('SIGINT received, aborting ...', caplog)
 
 
 def test_main_operational_exception(mocker, default_conf, caplog) -> None:
@@ -97,8 +97,8 @@ def test_main_operational_exception(mocker, default_conf, caplog) -> None:
     # Test Main + the KeyboardInterrupt exception
     with pytest.raises(SystemExit):
         main(args)
-    assert log_has('Using config: config.json.example ...', caplog.record_tuples)
-    assert log_has('Oh snap!', caplog.record_tuples)
+    assert log_has('Using config: config.json.example ...', caplog)
+    assert log_has('Oh snap!', caplog)
 
 
 def test_main_reload_conf(mocker, default_conf, caplog) -> None:
@@ -121,7 +121,7 @@ def test_main_reload_conf(mocker, default_conf, caplog) -> None:
     with pytest.raises(SystemExit):
         main(['-c', 'config.json.example'])
 
-    assert log_has('Using config: config.json.example ...', caplog.record_tuples)
+    assert log_has('Using config: config.json.example ...', caplog)
     assert worker_mock.call_count == 4
     assert reconfigure_mock.call_count == 1
     assert isinstance(worker.freqtrade, FreqtradeBot)
