@@ -875,15 +875,18 @@ class FreqtradeBot(object):
                 logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
 
         # Execute sell and update trade record
-        order_id = self.exchange.sell(pair=str(trade.pair),
-                                      ordertype=self.strategy.order_types[sell_type],
-                                      amount=trade.amount, rate=limit,
-                                      time_in_force=self.strategy.order_time_in_force['sell']
-                                      )['id']
+        order = self.exchange.sell(pair=str(trade.pair),
+                                   ordertype=self.strategy.order_types[sell_type],
+                                   amount=trade.amount, rate=limit,
+                                   time_in_force=self.strategy.order_time_in_force['sell']
+                                   )
 
-        trade.open_order_id = order_id
+        trade.open_order_id = order['id']
         trade.close_rate_requested = limit
         trade.sell_reason = sell_reason.value
+        # In case of market sell orders the order can be closed immediately
+        if order.get('status', 'unknown') == 'closed':
+            trade.update(order)
         Trade.session.flush()
         self._notify_sell(trade)
 
