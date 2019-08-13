@@ -27,7 +27,8 @@ logger = logging.getLogger(__name__)
 API_RETRY_COUNT = 4
 BAD_EXCHANGES = {
     "bitmex": "Various reasons",
-    "bitstamp": "Does not provide history. Details in https://github.com/freqtrade/freqtrade/issues/1983",
+    "bitstamp": "Does not provide history. "
+                "Details in https://github.com/freqtrade/freqtrade/issues/1983",
     }
 
 
@@ -763,7 +764,7 @@ def is_exchange_bad(exchange: str) -> bool:
 
 
 def get_exchange_bad_reason(exchange: str) -> str:
-    return BAD_EXCHANGES.get(exchange)
+    return BAD_EXCHANGES.get(exchange, "")
 
 
 def is_exchange_available(exchange: str, ccxt_module=None) -> bool:

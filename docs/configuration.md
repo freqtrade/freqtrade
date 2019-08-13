@@ -53,6 +53,7 @@ Mandatory Parameters are marked as **Required**.
 | `experimental.use_sell_signal` | false | Use your sell strategy in addition of the `minimal_roi`. [Strategy Override](#parameters-in-the-strategy).
 | `experimental.sell_profit_only` | false | Waits until you have made a positive profit before taking a sell decision. [Strategy Override](#parameters-in-the-strategy).
 | `experimental.ignore_roi_if_buy_signal` | false | Does not sell if the buy-signal is still active. Takes preference over `minimal_roi` and `use_sell_signal`. [Strategy Override](#parameters-in-the-strategy).
+| `experimental.block_bad_exchanges` | true | Block exchanges known to not work with freqtrade. Leave on default unless you want to test if that exchange works now.
 | `pairlist.method` | StaticPairList | Use static or dynamic volume-based pairlist. [More information below](#dynamic-pairlists).
 | `pairlist.config` | None | Additional configuration for dynamic pairlists. [More information below](#dynamic-pairlists).
 | `telegram.enabled` | true | **Required.** Enable or not the usage of Telegram.
