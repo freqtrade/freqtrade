@@ -148,7 +148,7 @@ class Configuration(object):
             config['internals'].update({'sd_notify': True})
 
         # Check if the exchange set by the user is supported
-        check_exchange(config)
+        check_exchange(config, config.get('experimental', {}).get('block_bad_exchanges', True))
 
     def _process_datadir_options(self, config: Dict[str, Any]) -> None:
         """

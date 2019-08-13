@@ -499,9 +499,9 @@ def test_check_exchange(default_conf, caplog) -> None:
 
     # Test a 'bad' exchange, which known to have serious problems
     default_conf.get('exchange').update({'name': 'bitmex'})
-    assert not check_exchange(default_conf)
-    assert log_has_re(r"Exchange .* is known to not work with the bot yet\. "
-                      r"Use it only for development and testing purposes\.", caplog)
+    with pytest.raises(OperationalException,
+                       match=r"Exchange .* is known to not work with the bot yet.*"):
+        check_exchange(default_conf)
     caplog.clear()
 
     # Test a 'bad' exchange with check_for_bad=False
