@@ -2426,53 +2426,6 @@ def test_execute_sell_market_order(default_conf, ticker, fee,
     } == last_msg
 
 
-def test_execute_sell_without_conf_sell_down(default_conf, ticker, fee,
-                                             ticker_sell_down, markets, mocker) -> None:
-    rpc_mock = patch_RPCManager(mocker)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        _load_markets=MagicMock(return_value={}),
-        get_ticker=ticker,
-        get_fee=fee,
-        markets=PropertyMock(return_value=markets)
-    )
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
-
-    # Create some test data
-    freqtrade.create_trade()
-
-    trade = Trade.query.first()
-    assert trade
-
-    # Decrease the price and sell it
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        get_ticker=ticker_sell_down
-    )
-
-    freqtrade.config = {}
-    freqtrade.execute_sell(trade=trade, limit=ticker_sell_down()['bid'],
-                           sell_reason=SellType.STOP_LOSS)
-
-    assert rpc_mock.call_count == 2
-    last_msg = rpc_mock.call_args_list[-1][0][0]
-    assert {
-        'type': RPCMessageType.SELL_NOTIFICATION,
-        'exchange': 'Bittrex',
-        'pair': 'ETH/BTC',
-        'gain': 'loss',
-        'limit': 1.044e-05,
-        'amount': 90.99181073703367,
-        'order_type': 'limit',
-        'open_rate': 1.099e-05,
-        'current_rate': 1.044e-05,
-        'profit_amount': -5.492e-05,
-        'profit_percent': -0.05478342,
-        'sell_reason': SellType.STOP_LOSS.value
-    } == last_msg
-
-
 def test_sell_profit_only_enable_profit(default_conf, limit_buy_order,
                                         fee, markets, mocker) -> None:
     patch_RPCManager(mocker)
