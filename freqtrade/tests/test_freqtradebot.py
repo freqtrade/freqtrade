@@ -697,7 +697,7 @@ def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
     assert not freqtrade.create_trade()
 
 
-@pytest.mark.parametrize("max_open", range(1, 5))
+@pytest.mark.parametrize("max_open", range(0, 5))
 def test_create_trade_multiple_trades(default_conf, ticker,
                                       fee, markets, mocker, max_open) -> None:
     patch_RPCManager(mocker)
