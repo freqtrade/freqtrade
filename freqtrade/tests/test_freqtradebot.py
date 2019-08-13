@@ -697,6 +697,28 @@ def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
     assert not freqtrade.create_trade()
 
 
+@pytest.mark.parametrize("max_open", range(1, 5))
+def test_create_trade_multiple_trades(default_conf, ticker,
+                                      fee, markets, mocker, max_open) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    default_conf['max_open_trades'] = max_open
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=ticker,
+        buy=MagicMock(return_value={'id': "12355555"}),
+        get_fee=fee,
+        markets=PropertyMock(return_value=markets)
+    )
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+
+    freqtrade.create_trade()
+
+    trades = Trade.get_open_trades()
+    assert len(trades) == max_open
+
+
 def test_process_trade_creation(default_conf, ticker, limit_buy_order,
                                 markets, fee, mocker, caplog) -> None:
     patch_RPCManager(mocker)
