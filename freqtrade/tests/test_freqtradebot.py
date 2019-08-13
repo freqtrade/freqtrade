@@ -302,6 +302,7 @@ def test_edge_overrides_stoploss(limit_buy_order, fee, markets, caplog, mocker, 
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     patch_edge(mocker)
+    edge_conf['max_open_trades'] = float('inf')
 
     # Strategy stoploss is -0.1 but Edge imposes a stoploss at -0.2
     # Thus, if price falls 21%, stoploss should be triggered
@@ -342,6 +343,7 @@ def test_edge_should_ignore_strategy_stoploss(limit_buy_order, fee, markets,
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     patch_edge(mocker)
+    edge_conf['max_open_trades'] = float('inf')
 
     # Strategy stoploss is -0.1 but Edge imposes a stoploss at -0.2
     # Thus, if price falls 15%, stoploss should not be triggered
@@ -380,6 +382,7 @@ def test_total_open_trades_stakes(mocker, default_conf, ticker,
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     default_conf['stake_amount'] = 0.0000098751
+    default_conf['max_open_trades'] = 2
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
@@ -1284,7 +1287,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     patch_edge(mocker)
-
+    edge_conf['max_open_trades'] = float('inf')
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=MagicMock(return_value={
