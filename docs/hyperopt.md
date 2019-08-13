@@ -343,9 +343,9 @@ def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
     return dataframe
 ```
 
-You can use the `--print-all` command line option if you would like to see all results in the hyperopt output, not only the best ones.
+By default, hyperopt prints colorized results -- epochs with positive profit are printed in the green color. This highlighting helps you find epochs that can be interesting for later analysis. Epochs with zero total profit or with negative profits (losses) are printed in the normal color. If you do not need colorization of results (for instance, when you are redirecting hyperopt output to a file) you can switch colorization off by specifying the `--no-color` option in the command line.
 
-When the `--color/--print-colorized` command line option is used, the results are colorized -- bad results (with zero trades or limited by the `--min-trades` option) are red, current bests -- in green, results with positive total profit are printed in bold.
+You can use the `--print-all` command line option if you would like to see all results in the hyperopt output, not only the best ones. When `--print-all` is used, current best results are also colorized by default -- they are printed in bold (bright) style. This can also be switched off with the `--no-color` command line option.
 
 ### Understand Hyperopt ROI results
 
