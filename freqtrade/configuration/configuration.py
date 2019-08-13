@@ -236,6 +236,12 @@ class Configuration(object):
         self._args_to_config(config, argname='print_all',
                              logstring='Parameter --print-all detected ...')
 
+        if 'print_colorized' in self.args and not self.args.print_colorized:
+            logger.info('Parameter --no-color detected ...')
+            config.update({'print_colorized': False})
+        else:
+            config.update({'print_colorized': True})
+
         self._args_to_config(config, argname='hyperopt_jobs',
                              logstring='Parameter -j/--job-workers detected: {}')
 

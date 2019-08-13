@@ -191,6 +191,13 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_true',
         default=False,
     ),
+    "print_colorized": Arg(
+        '--no-color',
+        help='Disable colorization of hyperopt results. May be useful if you are '
+        'redirecting output to a file.',
+        action='store_false',
+        default=True,
+    ),
     "hyperopt_jobs": Arg(
         '-j', '--job-workers',
         help='The number of concurrently running jobs for hyperoptimization '

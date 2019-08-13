@@ -207,7 +207,7 @@ usage: freqtrade hyperopt [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
                           [--customhyperopt NAME] [--hyperopt-path PATH]
                           [--eps] [-e INT]
                           [-s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
-                          [--dmmp] [--print-all] [-j JOBS]
+                          [--dmmp] [--print-all] [--no-color] [-j JOBS]
                           [--random-state INT] [--min-trades INT] [--continue]
                           [--hyperopt-loss NAME]
 
@@ -243,6 +243,8 @@ optional arguments:
                         (same as setting `max_open_trades` to a very high
                         number).
   --print-all           Print all results, not only the best ones.
+  --no-color            Disable colorization of hyperopt results. May be
+                        useful if you are redirecting output to a file.
   -j JOBS, --job-workers JOBS
                         The number of concurrently running jobs for
                         hyperoptimization (hyperopt worker processes). If -1

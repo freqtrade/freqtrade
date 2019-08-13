@@ -30,3 +30,6 @@ sdnotify==0.3.2
 
 # Api server
 flask==1.1.1
+
+# Support for colorized terminal output
+colorama==0.4.1
