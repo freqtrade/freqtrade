@@ -279,15 +279,16 @@ class FreqtradeBot(object):
             logger.info("No currency pair in whitelist, but checking to sell open trades.")
             return False
 
+        buycount = 0
         # running get_signal on historical data fetched
         for _pair in whitelist:
             (buy, sell) = self.strategy.get_signal(
                 _pair, interval, self.dataprovider.ohlcv(_pair, self.strategy.ticker_interval))
 
-            if buy and not sell:
+            if buy and not sell and len(Trade.get_open_trades()) < self.config['max_open_trades']:
                 stake_amount = self._get_trade_stake_amount(_pair)
                 if not stake_amount:
-                    return False
+                    continue
 
                 logger.info(f"Buy signal found: about create a new trade with stake_amount: "
                             f"{stake_amount} ...")
@@ -297,12 +298,11 @@ class FreqtradeBot(object):
                 if (bidstrat_check_depth_of_market.get('enabled', False)) and\
                         (bidstrat_check_depth_of_market.get('bids_to_ask_delta', 0) > 0):
                     if self._check_depth_of_market_buy(_pair, bidstrat_check_depth_of_market):
-                        return self.execute_buy(_pair, stake_amount)
-                    else:
-                        return False
-                return self.execute_buy(_pair, stake_amount)
+                        buycount += self.execute_buy(_pair, stake_amount)
 
-        return False
+                buycount += self.execute_buy(_pair, stake_amount)
+
+        return buycount > 0
 
     def _check_depth_of_market_buy(self, pair: str, conf: Dict) -> bool:
         """
