@@ -308,6 +308,7 @@ def test_status_table_handle(default_conf, update, ticker, fee, markets, mocker)
 def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
                       limit_sell_order, markets, mocker) -> None:
     patch_exchange(mocker)
+    default_conf['max_open_trades'] = 1
     mocker.patch(
         'freqtrade.rpc.rpc.CryptoToFiatConverter._find_price',
         return_value=15000.0
@@ -357,8 +358,8 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
 
     # Reset msg_mock
     msg_mock.reset_mock()
+    freqtradebot.config['max_open_trades'] = 2
     # Add two other trades
-    freqtradebot.create_trade()
     freqtradebot.create_trade()
 
     trades = Trade.query.all()
@@ -832,14 +833,13 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, markets, mocker
         markets=PropertyMock(return_value=markets),
         validate_pairs=MagicMock(return_value={})
     )
-
+    default_conf['max_open_trades'] = 4
     freqtradebot = FreqtradeBot(default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
     # Create some test data
-    for _ in range(4):
-        freqtradebot.create_trade()
+    freqtradebot.create_trade()
     rpc_mock.reset_mock()
 
     update.message.text = '/forcesell all'
