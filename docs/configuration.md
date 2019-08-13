@@ -1,18 +1,28 @@
 # Configure the bot
 
-This page explains how to configure your configuration file.
+This page explains how to configure the bot.
+
+## The Freqtrade configuration file
+
+The bot uses a set of configuration parameters during its operation that all together conform the bot configuration. It normally reads its configuration from a file (Freqtrade configuration file).
 
 Per default, the bot loads configuration from the `config.json` file located in the current working directory.
-You can change the configuration file used by the bot with the `-c/--config` option.
+
+You can change the name of the configuration file used by the bot with the `-c/--config` command line option.
+
+In some advanced use cases, multiple configuration files can be specified and used by the bot or the bot can read its configuration parameters from the process standard input stream.
 
 If you used the [Quick start](installation.md/#quick-start) method for installing 
 the bot, the installation script should have already created the default configuration file (`config.json`) for you.
 
-We recommend you to copy and use the `config.json.example` as a template
+If default configuration file is not created we recommend you to copy and use the `config.json.example` as a template
 for your bot configuration.
 
-The configuration file defines the set of configuration parameters for the bot written in the JSON format.
-Additionally, you may use one-line `// ...` and multi-line `/* ... */` comments.
+The Freqtrade configuration file is to be written in the JSON format.
+
+Additionally to the standard JSON syntax, you may use one-line `// ...` and multi-line `/* ... */` comments in your configuration files and trailing commas in the lists of parameters.
+
+Do not worry if you are not familiar with JSON format -- simply open the configuration file with an editor of your choice, make some changes to the parameters you need, save your changes and, finally, restart the bot or, if it was previously stopped, run it again with the changes you made to the configuration. The bot validates syntax of the configuration file at startup and will warn you if you made any errors editing it.
 
 ## Configuration parameters
 
