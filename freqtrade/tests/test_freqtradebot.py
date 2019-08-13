@@ -744,8 +744,7 @@ def test_process_exchange_failures(default_conf, ticker, markets, mocker) -> Non
     worker = Worker(args=None, config=default_conf)
     patch_get_signal(worker.freqtrade)
 
-    result = worker._process()
-    assert result is False
+    worker._process()
     assert sleep_mock.has_calls()
 
 
@@ -763,8 +762,7 @@ def test_process_operational_exception(default_conf, ticker, markets, mocker) ->
 
     assert worker.state == State.RUNNING
 
-    result = worker._process()
-    assert result is False
+    worker._process()
     assert worker.state == State.STOPPED
     assert 'OperationalException' in msg_mock.call_args_list[-1][0][0]['status']
 
@@ -786,13 +784,14 @@ def test_process_trade_handling(
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert not trades
-    result = freqtrade.process()
-    assert result is True
+    freqtrade.process()
+
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert len(trades) == 1
 
-    result = freqtrade.process()
-    assert result is False
+    # Nothing happened ...
+    freqtrade.process()
+    assert len(trades) == 1
 
 
 def test_process_trade_no_whitelist_pair(
