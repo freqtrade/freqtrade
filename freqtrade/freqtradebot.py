@@ -105,13 +105,12 @@ class FreqtradeBot(object):
             # Adjust stoploss if it was changed
             Trade.stoploss_reinitialization(self.strategy.stoploss)
 
-    def process(self) -> bool:
+    def process(self) -> None:
         """
         Queries the persistence layer for open trades and handles them,
         otherwise a new trade is created.
         :return: True if one or more trades has been created or closed, False otherwise
         """
-        state_changed = False
 
         # Check whether markets have to be reloaded
         self.exchange._reload_markets()
@@ -138,18 +137,16 @@ class FreqtradeBot(object):
 
         # First process current opened trades
         for trade in trades:
-            state_changed |= self.process_maybe_execute_sell(trade)
+            self.process_maybe_execute_sell(trade)
 
         # Then looking for buy opportunities
         if len(trades) < self.config['max_open_trades']:
-            state_changed = self.process_maybe_execute_buy()
+            self.process_maybe_execute_buy()
 
         if 'unfilledtimeout' in self.config:
             # Check and handle any timed out open orders
             self.check_handle_timedout()
             Trade.session.flush()
-
-        return state_changed
 
     def _extend_whitelist_with_trades(self, whitelist: List[str], trades: List[Any]):
         """
