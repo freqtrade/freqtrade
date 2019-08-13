@@ -426,21 +426,17 @@ class FreqtradeBot(object):
 
         return True
 
-    def process_maybe_execute_buy(self) -> bool:
+    def process_maybe_execute_buy(self) -> None:
         """
         Tries to execute a buy trade in a safe way
         :return: True if executed
         """
         try:
             # Create entity and execute trade
-            if self.create_trade():
-                return True
-
-            logger.info('Found no buy signals for whitelisted currencies. Trying again..')
-            return False
+            if not self.create_trade():
+                logger.info('Found no buy signals for whitelisted currencies. Trying again...')
         except DependencyException as exception:
             logger.warning('Unable to create trade: %s', exception)
-            return False
 
     def process_maybe_execute_sell(self, trade: Trade) -> bool:
         """

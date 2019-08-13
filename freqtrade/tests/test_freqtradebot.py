@@ -1385,14 +1385,12 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
                                                 stop_price=0.00002344 * 0.99)
 
 
-def test_process_maybe_execute_buy(mocker, default_conf) -> None:
+def test_process_maybe_execute_buy(mocker, default_conf, caplog) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
-    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.create_trade', MagicMock(return_value=True))
-    assert freqtrade.process_maybe_execute_buy()
-
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.create_trade', MagicMock(return_value=False))
-    assert not freqtrade.process_maybe_execute_buy()
+    freqtrade.process_maybe_execute_buy()
+    assert log_has('Found no buy signals for whitelisted currencies. Trying again...', caplog)
 
 
 def test_process_maybe_execute_buy_exception(mocker, default_conf, caplog) -> None:
