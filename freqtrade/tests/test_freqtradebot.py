@@ -711,8 +711,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order,
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert not trades
 
-    result = freqtrade.process()
-    assert result is True
+    freqtrade.process()
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert len(trades) == 1
@@ -833,11 +832,10 @@ def test_process_trade_no_whitelist_pair(
     ))
 
     assert pair not in freqtrade.active_pair_whitelist
-    result = freqtrade.process()
+    freqtrade.process()
     assert pair in freqtrade.active_pair_whitelist
     # Make sure each pair is only in the list once
     assert len(freqtrade.active_pair_whitelist) == len(set(freqtrade.active_pair_whitelist))
-    assert result is True
 
 
 def test_process_informative_pairs_added(default_conf, ticker, markets, mocker) -> None:
