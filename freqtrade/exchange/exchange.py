@@ -25,6 +25,10 @@ logger = logging.getLogger(__name__)
 
 
 API_RETRY_COUNT = 4
+BAD_EXCHANGES = {
+    "bitmex": "Various reasons",
+    "bitstamp": "Does not provide history. Details in https://github.com/freqtrade/freqtrade/issues/1983",
+    }
 
 
 def retrier_async(f):
@@ -755,7 +759,11 @@ class Exchange(object):
 
 
 def is_exchange_bad(exchange: str) -> bool:
-    return exchange in ['bitmex', 'bitstamp']
+    return exchange in BAD_EXCHANGES
+
+
+def get_exchange_bad_reason(exchange: str) -> str:
+    return BAD_EXCHANGES.get(exchange)
 
 
 def is_exchange_available(exchange: str, ccxt_module=None) -> bool:
