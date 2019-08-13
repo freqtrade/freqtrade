@@ -681,6 +681,9 @@ class FreqtradeBot(object):
         if stoploss_order and stoploss_order['status'] == 'closed':
             trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
             trade.update(stoploss_order)
+            # Lock pair for one candle to prevent immediate rebuys
+            self.strategy.lock_pair(trade.pair,
+                                    timeframe_to_next_date(self.config['ticker_interval']))
             self._notify_sell(trade)
             return True
 
