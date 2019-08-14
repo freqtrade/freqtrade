@@ -258,9 +258,10 @@ class FreqtradeBot(object):
 
     def create_trades(self) -> bool:
         """
-        Checks the implemented trading indicator(s) for a randomly picked pair,
-        if one pair triggers the buy_signal a new trade record gets created
-        :return: True if a trade object has been created and persisted, False otherwise
+        Checks the implemented trading strategy for buy-signals, using the active pair whitelist.
+        If a pair triggers the buy_signal a new trade record gets created.
+        Checks pairs as long as the open trade count is below `max_open_trades`.
+        :return: True if at least one trade has been created.
         """
         interval = self.strategy.ticker_interval
         whitelist = copy.deepcopy(self.active_pair_whitelist)
