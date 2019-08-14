@@ -184,7 +184,8 @@ def test_load_cached_data_for_updating(mocker) -> None:
 
     # same with 'line' timeframe
     num_lines = (test_data[-1][0] - test_data[1][0]) / 1000 / 60 + 120
-    data, start_ts = load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', TimeRange(None, 'line', 0, -num_lines))
+    data, start_ts = load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m',
+                                                   TimeRange(None, 'line', 0, -num_lines))
     assert data == []
     assert start_ts < test_data[0][0] - 1
 

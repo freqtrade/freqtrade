@@ -184,7 +184,7 @@ def pair_data_filename(datadir: Optional[Path], pair: str, ticker_interval: str)
     return filename
 
 
-def load_cached_data_for_updating(datadir: Path, pair: str, ticker_interval: str,
+def load_cached_data_for_updating(datadir: Optional[Path], pair: str, ticker_interval: str,
                                   timerange: Optional[TimeRange]) -> Tuple[List[Any],
                                                                            Optional[int]]:
     """
@@ -203,7 +203,7 @@ def load_cached_data_for_updating(datadir: Path, pair: str, ticker_interval: str
             since_ms = arrow.utcnow().shift(minutes=num_minutes).timestamp * 1000
 
     # read the cached file
-    data = load_tickerdata_file(datadir, pair, ticker_interval, TimeRange)
+    data = load_tickerdata_file(datadir, pair, ticker_interval, timerange)
     # remove the last item, could be incomplete candle
     if data:
         data.pop()
