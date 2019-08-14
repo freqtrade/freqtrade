@@ -546,8 +546,8 @@ class Exchange(object):
             logger.info("returning cached ticker-data for %s", pair)
             return self._cached_ticker[pair]
 
-    def get_history(self, pair: str, ticker_interval: str,
-                    since_ms: int) -> List:
+    def get_historic_ohlcv(self, pair: str, ticker_interval: str,
+                           since_ms: int) -> List:
         """
         Gets candle history using asyncio and returns the list of candles.
         Handles all async doing.
@@ -558,12 +558,12 @@ class Exchange(object):
         :returns List of tickers
         """
         return asyncio.get_event_loop().run_until_complete(
-            self._async_get_history(pair=pair, ticker_interval=ticker_interval,
-                                    since_ms=since_ms))
+            self._async_get_historic_ohlcv(pair=pair, ticker_interval=ticker_interval,
+                                           since_ms=since_ms))
 
-    async def _async_get_history(self, pair: str,
-                                 ticker_interval: str,
-                                 since_ms: int) -> List:
+    async def _async_get_historic_ohlcv(self, pair: str,
+                                        ticker_interval: str,
+                                        since_ms: int) -> List:
 
         one_call = timeframe_to_msecs(ticker_interval) * self._ohlcv_candle_limit
         logger.debug(
