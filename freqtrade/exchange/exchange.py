@@ -154,6 +154,9 @@ class Exchange:
         "order_time_in_force": ["gtc"],
         "ohlcv_candle_limit": 500,
         "ohlcv_partial_candle": True,
+        "trades_pagination": "time",  # Possible are "time" or "id"
+        "trades_pagination_arg": "since",
+
     }
     _ft_has: Dict = {}
 
@@ -196,6 +199,9 @@ class Exchange:
         # Assign this directly for easy access
         self._ohlcv_candle_limit = self._ft_has['ohlcv_candle_limit']
         self._ohlcv_partial_candle = self._ft_has['ohlcv_partial_candle']
+
+        self._trades_pagination = self._ft_has['trades_pagination']
+        self._trades_pagination_arg = self._ft_has['trades_pagination_arg']
 
         # Initialize ccxt objects
         self._api = self._init_ccxt(
