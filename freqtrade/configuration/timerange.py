@@ -14,13 +14,18 @@ class TimeRange():
     if *type is None, don't use corresponding startvalue.
     """
 
-    def __init__(self, starttype: Optional[str], stoptype: Optional[str],
-                 startts: int, stopts: int):
+    def __init__(self, starttype: Optional[str] = None, stoptype: Optional[str] = None,
+                 startts: int = 0, stopts: int = 0):
 
         self.starttype: Optional[str] = starttype
         self.stoptype: Optional[str] = stoptype
         self.startts: int = startts
         self.stopts: int = stopts
+
+    def __eq__(self, other):
+        """Override the default Equals behavior"""
+        return (self.starttype == other.starttype and self.stoptype == other.stoptype
+                and self.startts == other.startts and self.stopts == other.stopts)
 
     @staticmethod
     def parse_timerange(text: Optional[str]):
