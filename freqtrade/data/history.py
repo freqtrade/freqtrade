@@ -73,6 +73,15 @@ def load_tickerdata_file(datadir: Optional[Path], pair: str, ticker_interval: st
     return pairdata
 
 
+def store_tickerdata_file(datadir: Optional[Path], pair: str,
+                          ticker_interval: str, data: list, is_zip: bool = False):
+    """
+    Stores tickerdata to file
+    """
+    filename = pair_data_filename(datadir, pair, ticker_interval)
+    misc.file_dump_json(filename, data, is_zip=is_zip)
+
+
 def load_pair_history(pair: str,
                       ticker_interval: str,
                       datadir: Optional[Path],
@@ -175,7 +184,7 @@ def pair_data_filename(datadir: Optional[Path], pair: str, ticker_interval: str)
     return filename
 
 
-def load_cached_data_for_updating(filename: Path, ticker_interval: str,
+def load_cached_data_for_updating(datadir: Path, pair: str, ticker_interval: str,
                                   timerange: Optional[TimeRange]) -> Tuple[List[Any],
                                                                            Optional[int]]:
     """
@@ -194,12 +203,10 @@ def load_cached_data_for_updating(filename: Path, ticker_interval: str,
             since_ms = arrow.utcnow().shift(minutes=num_minutes).timestamp * 1000
 
     # read the cached file
-    if filename.is_file():
-        with open(filename, "rt") as file:
-            data = misc.json_load(file)
-        # remove the last item, could be incomplete candle
-        if data:
-            data.pop()
+    data = load_tickerdata_file(datadir, pair, ticker_interval, TimeRange)
+    # remove the last item, could be incomplete candle
+    if data:
+        data.pop()
     else:
         data = []
 
@@ -238,14 +245,12 @@ def download_pair_history(datadir: Optional[Path],
         )
 
     try:
-        filename = pair_data_filename(datadir, pair, ticker_interval)
-
         logger.info(
             f'Download history data for pair: "{pair}", interval: {ticker_interval} '
             f'and store in {datadir}.'
         )
 
-        data, since_ms = load_cached_data_for_updating(filename, ticker_interval, timerange)
+        data, since_ms = load_cached_data_for_updating(datadir, pair, ticker_interval, timerange)
 
         logger.debug("Current Start: %s", misc.format_ms_time(data[1][0]) if data else 'None')
         logger.debug("Current End: %s", misc.format_ms_time(data[-1][0]) if data else 'None')
@@ -260,7 +265,7 @@ def download_pair_history(datadir: Optional[Path],
         logger.debug("New Start: %s", misc.format_ms_time(data[0][0]))
         logger.debug("New End: %s", misc.format_ms_time(data[-1][0]))
 
-        misc.file_dump_json(filename, data)
+        store_tickerdata_file(datadir, pair, ticker_interval, data=data)
         return True
 
     except Exception as e:
