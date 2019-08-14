@@ -34,7 +34,7 @@ class HyperOptResolver(IResolver):
         self.hyperopt = self._load_hyperopt(hyperopt_name, extra_dir=config.get('hyperopt_path'))
 
         # Assign ticker_interval to be used in hyperopt
-        self.hyperopt.__class__.ticker_interval = str(config['ticker_interval'])
+        IHyperOpt.ticker_interval = str(config['ticker_interval'])
 
         if not hasattr(self.hyperopt, 'populate_buy_trend'):
             logger.warning("Custom Hyperopt does not provide populate_buy_trend. "
