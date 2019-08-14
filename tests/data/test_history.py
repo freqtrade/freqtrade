@@ -17,6 +17,7 @@ from freqtrade.data.history import (download_pair_history,
                                     _load_cached_data_for_updating,
                                     refresh_backtest_ohlcv_data,
                                     load_tickerdata_file, pair_data_filename,
+                                    pair_trades_filename,
                                     trim_tickerlist)
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
@@ -139,6 +140,12 @@ def test_pair_data_filename():
     fn = pair_data_filename(Path('freqtrade/hello/world'), 'ETH/BTC', '5m')
     assert isinstance(fn, Path)
     assert fn == Path('freqtrade/hello/world/ETH_BTC-5m.json')
+
+
+def test_pair_trades_filename():
+    fn = pair_trades_filename(Path('freqtrade/hello/world'), 'ETH/BTC', '5m')
+    assert isinstance(fn, Path)
+    assert fn == Path('freqtrade/hello/world/ETH_BTC-trades.json')
 
 
 def test_load_cached_data_for_updating(mocker) -> None:

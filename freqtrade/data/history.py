@@ -173,6 +173,12 @@ def pair_data_filename(datadir: Path, pair: str, ticker_interval: str) -> Path:
     return filename
 
 
+def pair_trades_filename(datadir: Path, pair: str) -> Path:
+    pair_s = pair.replace("/", "_")
+    filename = datadir.joinpath(f'{pair_s}-trades.json')
+    return filename
+
+
 def _load_cached_data_for_updating(datadir: Path, pair: str, ticker_interval: str,
                                    timerange: Optional[TimeRange]) -> Tuple[List[Any],
                                                                             Optional[int]]:
