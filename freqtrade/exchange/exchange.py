@@ -142,6 +142,8 @@ def retrier(f):
 class Exchange:
 
     _config: Dict = {}
+
+    # Parameters to add directly to buy/sell calls (like agreeing to trading agreement)
     _params: Dict = {}
 
     # Dict to specify which options each exchange implements
