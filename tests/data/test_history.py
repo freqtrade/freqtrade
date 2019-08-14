@@ -15,13 +15,14 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.history import (download_pair_history,
                                     _load_cached_data_for_updating,
-                                    load_tickerdata_file,
                                     refresh_backtest_ohlcv_data,
+                                    load_tickerdata_file, pair_data_filename,
                                     trim_tickerlist)
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.strategy.default_strategy import DefaultStrategy
-from tests.conftest import get_patched_exchange, log_has, log_has_re, patch_exchange
+from tests.conftest import (get_patched_exchange, log_has, log_has_re,
+                            patch_exchange)
 
 # Change this if modifying UNITTEST/BTC testdatafile
 _BTC_UNITTEST_LENGTH = 13681
@@ -132,6 +133,12 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog,
 
 def test_testdata_path(testdatadir) -> None:
     assert str(Path('tests') / 'testdata') in str(testdatadir)
+
+
+def test_pair_data_filename():
+    fn = pair_data_filename(Path('freqtrade/hello/world'), 'ETH/BTC', '5m')
+    assert isinstance(fn, Path)
+    assert fn == Path('freqtrade/hello/world/ETH_BTC-5m.json')
 
 
 def test_load_cached_data_for_updating(mocker) -> None:
