@@ -718,6 +718,33 @@ def test_create_trades_multiple_trades(default_conf, ticker,
     assert len(trades) == max_open
 
 
+def test_create_trades_preopen(default_conf, ticker, fee, markets, mocker) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    default_conf['max_open_trades'] = 4
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=ticker,
+        buy=MagicMock(return_value={'id': "12355555"}),
+        get_fee=fee,
+        markets=PropertyMock(return_value=markets)
+    )
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+
+    # Create 2 existing trades
+    freqtrade.execute_buy('ETH/BTC', default_conf['stake_amount'])
+    freqtrade.execute_buy('NEO/BTC', default_conf['stake_amount'])
+
+    assert len(Trade.get_open_trades()) == 2
+
+    # Create 2 new trades using create_trades
+    assert freqtrade.create_trades()
+
+    trades = Trade.get_open_trades()
+    assert len(trades) == 4
+
+
 def test_process_trade_creation(default_conf, ticker, limit_buy_order,
                                 markets, fee, mocker, caplog) -> None:
     patch_RPCManager(mocker)
