@@ -20,7 +20,7 @@ from pandas import DataFrame
 from skopt import Optimizer
 from skopt.space import Dimension
 
-from freqtrade.configuration import Arguments
+from freqtrade.configuration import TimeRange
 from freqtrade.data.history import load_data, get_timeframe
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOptLoss to allow users import from this file
@@ -310,7 +310,7 @@ class Hyperopt(Backtesting):
             )
 
     def start(self) -> None:
-        timerange = Arguments.parse_timerange(None if self.config.get(
+        timerange = TimeRange.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
         data = load_data(
             datadir=Path(self.config['datadir']) if self.config.get('datadir') else None,
