@@ -279,7 +279,7 @@ class IStrategy(ABC):
                     sell: bool, low: float = None, high: float = None,
                     force_stoploss: float = 0) -> SellCheckTuple:
         """
-        This function evaluate if one of the conditions required to trigger a sell
+        This function evaluates if one of the conditions required to trigger a sell
         has been reached, which can either be a stop-loss, ROI or sell-signal.
         :param low: Only used during backtesting to simulate stoploss
         :param high: Only used during backtesting, to simulate ROI
