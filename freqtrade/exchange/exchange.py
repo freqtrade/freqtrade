@@ -551,6 +551,11 @@ class Exchange(object):
         """
         Gets candle history using asyncio and returns the list of candles.
         Handles all async doing.
+        Async over one pair, assuming we get `_ohlcv_candle_limit` candles per call.
+        :param pair: Pair to download
+        :param ticker_interval: Interval to get
+        :param since_ms: Timestamp in milliseconds to get history from
+        :returns List of tickers
         """
         return asyncio.get_event_loop().run_until_complete(
             self._async_get_history(pair=pair, ticker_interval=ticker_interval,
@@ -585,6 +590,9 @@ class Exchange(object):
     def refresh_latest_ohlcv(self, pair_list: List[Tuple[str, str]]) -> List[Tuple[str, List]]:
         """
         Refresh in-memory ohlcv asyncronously and set `_klines` with the result
+        Loops asyncroneously over pair_list and dowloads all pairs async (semi-parallel).
+        :param pair_list: List of 2 element tuples containing pair,interval to refresh
+        :return: Returns a List of ticker-dataframes.
         """
         logger.debug("Refreshing ohlcv data for %d pairs", len(pair_list))
 
