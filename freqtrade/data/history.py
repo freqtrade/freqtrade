@@ -57,10 +57,8 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
     return tickerlist[start_index:stop_index]
 
 
-def load_tickerdata_file(
-        datadir: Optional[Path], pair: str,
-        ticker_interval: str,
-        timerange: Optional[TimeRange] = None) -> Optional[list]:
+def load_tickerdata_file(datadir: Optional[Path], pair: str, ticker_interval: str,
+                         timerange: Optional[TimeRange] = None) -> Optional[list]:
     """
     Load a pair from file, either .json.gz or .json
     :return: tickerlist or None if unsuccesful
@@ -68,7 +66,7 @@ def load_tickerdata_file(
     filename = pair_data_filename(datadir, pair, ticker_interval)
     pairdata = misc.file_load_json(filename)
     if not pairdata:
-        return None
+        return []
 
     if timerange:
         pairdata = trim_tickerlist(pairdata, timerange)
@@ -182,6 +180,7 @@ def load_cached_data_for_updating(filename: Path, ticker_interval: str,
                                                                            Optional[int]]:
     """
     Load cached data and choose what part of the data should be updated
+    Only used by download_pair_history().
     """
 
     since_ms = None
