@@ -44,7 +44,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, markets, mocker) -> None:
     with pytest.raises(RPCException, match=r'.*no active trade*'):
         rpc._rpc_trade_status()
 
-    freqtradebot.create_trade()
+    freqtradebot.create_trades()
     results = rpc._rpc_trade_status()
     assert {
         'trade_id': 1,
@@ -116,7 +116,7 @@ def test_rpc_status_table(default_conf, ticker, fee, markets, mocker) -> None:
     with pytest.raises(RPCException, match=r'.*no active order*'):
         rpc._rpc_status_table()
 
-    freqtradebot.create_trade()
+    freqtradebot.create_trades()
     result = rpc._rpc_status_table()
     assert 'instantly' in result['Since'].all()
     assert 'ETH/BTC' in result['Pair'].all()
@@ -151,7 +151,7 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
     rpc = RPC(freqtradebot)
     rpc._fiat_converter = CryptoToFiatConverter()
     # Create some test data
-    freqtradebot.create_trade()
+    freqtradebot.create_trades()
     trade = Trade.query.first()
     assert trade
 
@@ -208,7 +208,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
         rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
 
     # Create some test data
-    freqtradebot.create_trade()
+    freqtradebot.create_trades()
     trade = Trade.query.first()
     # Simulate fulfilled LIMIT_BUY order for trade
     trade.update(limit_buy_order)
@@ -222,7 +222,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
     trade.close_date = datetime.utcnow()
     trade.is_open = False
 
-    freqtradebot.create_trade()
+    freqtradebot.create_trades()
     trade = Trade.query.first()
     # Simulate fulfilled LIMIT_BUY order for trade
     trade.update(limit_buy_order)
@@ -292,7 +292,7 @@ def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, fee, markets,
     rpc = RPC(freqtradebot)
 
     # Create some test data
-    freqtradebot.create_trade()
+    freqtradebot.create_trades()
     trade = Trade.query.first()
     # Simulate fulfilled LIMIT_BUY order for trade
     trade.update(limit_buy_order)
@@ -536,7 +536,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker, markets) -> None:
     msg = rpc._rpc_forcesell('all')
     assert msg == {'result': 'Created sell orders for all open trades.'}
 
-    freqtradebot.create_trade()
+    freqtradebot.create_trades()
     msg = rpc._rpc_forcesell('all')
     assert msg == {'result': 'Created sell orders for all open trades.'}
 
@@ -570,7 +570,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker, markets) -> None:
     assert cancel_order_mock.call_count == 1
     assert trade.amount == filled_amount
 
-    freqtradebot.create_trade()
+    freqtradebot.create_trades()
     trade = Trade.query.filter(Trade.id == '2').first()
     amount = trade.amount
     # make an limit-buy open trade, if there is no 'filled', don't sell it
@@ -589,7 +589,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker, markets) -> None:
     assert cancel_order_mock.call_count == 2
     assert trade.amount == amount
 
-    freqtradebot.create_trade()
+    freqtradebot.create_trades()
     # make an limit-sell open trade
     mocker.patch(
         'freqtrade.exchange.Exchange.get_order',
@@ -622,7 +622,7 @@ def test_performance_handle(default_conf, ticker, limit_buy_order, fee,
     rpc = RPC(freqtradebot)
 
     # Create some test data
-    freqtradebot.create_trade()
+    freqtradebot.create_trades()
     trade = Trade.query.first()
     assert trade
 
@@ -660,7 +660,7 @@ def test_rpc_count(mocker, default_conf, ticker, fee, markets) -> None:
     assert counts["current"] == 0
 
     # Create some test data
-    freqtradebot.create_trade()
+    freqtradebot.create_trades()
     counts = rpc._rpc_count()
     assert counts["current"] == 1
 

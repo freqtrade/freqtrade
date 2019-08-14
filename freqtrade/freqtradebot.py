@@ -256,7 +256,7 @@ class FreqtradeBot(object):
         amount_reserve_percent = max(amount_reserve_percent, 0.5)
         return min(min_stake_amounts) / amount_reserve_percent
 
-    def create_trade(self) -> bool:
+    def create_trades(self) -> bool:
         """
         Checks the implemented trading indicator(s) for a randomly picked pair,
         if one pair triggers the buy_signal a new trade record gets created
@@ -435,7 +435,7 @@ class FreqtradeBot(object):
         """
         try:
             # Create entity and execute trade
-            if not self.create_trade():
+            if not self.create_trades():
                 logger.info('Found no buy signals for whitelisted currencies. Trying again...')
         except DependencyException as exception:
             logger.warning('Unable to create trade: %s', exception)
