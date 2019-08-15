@@ -188,7 +188,9 @@ def load_cached_data_for_updating(datadir: Optional[Path], pair: str, ticker_int
                                   timerange: Optional[TimeRange]) -> Tuple[List[Any],
                                                                            Optional[int]]:
     """
-    Load cached data and choose what part of the data should be updated
+    Load cached data to download more data.
+    If timerange is passed in, checks wether data from an before the stored data will be downloaded.
+    If that's the case than what's available should be completely overwritten.
     Only used by download_pair_history().
     """
 
