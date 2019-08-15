@@ -16,7 +16,7 @@ from freqtrade import (DependencyException, OperationalException, InvalidOrderEx
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver, PairListResolver
@@ -283,6 +283,9 @@ class FreqtradeBot(object):
         buycount = 0
         # running get_signal on historical data fetched
         for _pair in whitelist:
+            if self.strategy.is_pair_locked(_pair):
+                logger.info(f"Pair {_pair} is currently locked.")
+                continue
             (buy, sell) = self.strategy.get_signal(
                 _pair, interval, self.dataprovider.ohlcv(_pair, self.strategy.ticker_interval))
 
@@ -674,6 +677,9 @@ class FreqtradeBot(object):
         if stoploss_order and stoploss_order['status'] == 'closed':
             trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
             trade.update(stoploss_order)
+            # Lock pair for one candle to prevent immediate rebuys
+            self.strategy.lock_pair(trade.pair,
+                                    timeframe_to_next_date(self.config['ticker_interval']))
             self._notify_sell(trade)
             return True
 
@@ -884,6 +890,10 @@ class FreqtradeBot(object):
         if order.get('status', 'unknown') == 'closed':
             trade.update(order)
         Trade.session.flush()
+
+        # Lock pair for one candle to prevent immediate rebuys
+        self.strategy.lock_pair(trade.pair, timeframe_to_next_date(self.config['ticker_interval']))
+
         self._notify_sell(trade)
 
     def _notify_sell(self, trade: Trade):

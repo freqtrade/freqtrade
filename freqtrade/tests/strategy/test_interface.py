@@ -286,3 +286,19 @@ def test__analyze_ticker_internal_skip_analyze(ticker_history, mocker, caplog) -
     assert ret['sell'].sum() == 0
     assert not log_has('TA Analysis Launched', caplog)
     assert log_has('Skipping TA Analysis for already analyzed candle', caplog)
+
+
+def test_is_pair_locked(default_conf):
+    strategy = DefaultStrategy(default_conf)
+    # dict should be empty
+    assert not strategy._pair_locked_until
+
+    pair = 'ETH/BTC'
+    assert not strategy.is_pair_locked(pair)
+    strategy.lock_pair(pair, arrow.utcnow().shift(minutes=4).datetime)
+    # ETH/BTC locked for 4 minutes
+    assert strategy.is_pair_locked(pair)
+
+    # XRP/BTC should not be locked now
+    pair = 'XRP/BTC'
+    assert not strategy.is_pair_locked(pair)

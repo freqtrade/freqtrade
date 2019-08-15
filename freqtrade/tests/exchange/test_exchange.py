@@ -14,7 +14,11 @@ from pandas import DataFrame
 from freqtrade import (DependencyException, InvalidOrderException,
                        OperationalException, TemporaryError)
 from freqtrade.exchange import Binance, Exchange, Kraken
-from freqtrade.exchange.exchange import API_RETRY_COUNT
+from freqtrade.exchange.exchange import (API_RETRY_COUNT, timeframe_to_minutes,
+                                         timeframe_to_msecs,
+                                         timeframe_to_next_date,
+                                         timeframe_to_prev_date,
+                                         timeframe_to_seconds)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from freqtrade.tests.conftest import get_patched_exchange, log_has, log_has_re
 
@@ -1540,3 +1544,74 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
     assert ex.get_valid_pair_combination("BTC", "ETH") == "ETH/BTC"
     with pytest.raises(DependencyException, match=r"Could not combine.* to get a valid pair."):
         ex.get_valid_pair_combination("NOPAIR", "ETH")
+
+
+def test_timeframe_to_minutes():
+    assert timeframe_to_minutes("5m") == 5
+    assert timeframe_to_minutes("10m") == 10
+    assert timeframe_to_minutes("1h") == 60
+    assert timeframe_to_minutes("1d") == 1440
+
+
+def test_timeframe_to_seconds():
+    assert timeframe_to_seconds("5m") == 300
+    assert timeframe_to_seconds("10m") == 600
+    assert timeframe_to_seconds("1h") == 3600
+    assert timeframe_to_seconds("1d") == 86400
+
+
+def test_timeframe_to_msecs():
+    assert timeframe_to_msecs("5m") == 300000
+    assert timeframe_to_msecs("10m") == 600000
+    assert timeframe_to_msecs("1h") == 3600000
+    assert timeframe_to_msecs("1d") == 86400000
+
+
+def test_timeframe_to_prev_date():
+    # 2019-08-12 13:22:08
+    date = datetime.fromtimestamp(1565616128, tz=timezone.utc)
+
+    tf_list = [
+        # 5m -> 2019-08-12 13:20:00
+        ("5m", datetime(2019, 8, 12, 13, 20, 0, tzinfo=timezone.utc)),
+        # 10m -> 2019-08-12 13:20:00
+        ("10m", datetime(2019, 8, 12, 13, 20, 0, tzinfo=timezone.utc)),
+        # 1h -> 2019-08-12 13:00:00
+        ("1h", datetime(2019, 8, 12, 13, 00, 0, tzinfo=timezone.utc)),
+        # 2h -> 2019-08-12 12:00:00
+        ("2h", datetime(2019, 8, 12, 12, 00, 0, tzinfo=timezone.utc)),
+        # 4h -> 2019-08-12 12:00:00
+        ("4h", datetime(2019, 8, 12, 12, 00, 0, tzinfo=timezone.utc)),
+        # 1d -> 2019-08-12 00:00:00
+        ("1d", datetime(2019, 8, 12, 00, 00, 0, tzinfo=timezone.utc)),
+    ]
+    for interval, result in tf_list:
+        assert timeframe_to_prev_date(interval, date) == result
+
+    date = datetime.now(tz=timezone.utc)
+    assert timeframe_to_prev_date("5m", date) < date
+
+
+def test_timeframe_to_next_date():
+    # 2019-08-12 13:22:08
+    date = datetime.fromtimestamp(1565616128, tz=timezone.utc)
+    tf_list = [
+        # 5m -> 2019-08-12 13:25:00
+        ("5m", datetime(2019, 8, 12, 13, 25, 0, tzinfo=timezone.utc)),
+        # 10m -> 2019-08-12 13:30:00
+        ("10m", datetime(2019, 8, 12, 13, 30, 0, tzinfo=timezone.utc)),
+        # 1h -> 2019-08-12 14:00:00
+        ("1h", datetime(2019, 8, 12, 14, 00, 0, tzinfo=timezone.utc)),
+        # 2h -> 2019-08-12 14:00:00
+        ("2h", datetime(2019, 8, 12, 14, 00, 0, tzinfo=timezone.utc)),
+        # 4h -> 2019-08-12 14:00:00
+        ("4h", datetime(2019, 8, 12, 16, 00, 0, tzinfo=timezone.utc)),
+        # 1d -> 2019-08-13 00:00:00
+        ("1d", datetime(2019, 8, 13, 0, 0, 0, tzinfo=timezone.utc)),
+    ]
+
+    for interval, result in tf_list:
+        assert timeframe_to_next_date(interval, date) == result
+
+    date = datetime.now(tz=timezone.utc)
+    assert timeframe_to_next_date("5m", date) > date

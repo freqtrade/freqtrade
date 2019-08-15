@@ -2598,6 +2598,43 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, marke
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
 
 
+def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down, markets, mocker, caplog) -> None:
+    patch_RPCManager(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        _load_markets=MagicMock(return_value={}),
+        get_ticker=ticker,
+        get_fee=fee,
+        markets=PropertyMock(return_value=markets)
+    )
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+
+    # Create some test data
+    freqtrade.create_trades()
+
+    trade = Trade.query.first()
+    assert trade
+
+    # Decrease the price and sell it
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=ticker_sell_down
+    )
+
+    freqtrade.execute_sell(trade=trade, limit=ticker_sell_down()['bid'],
+                           sell_reason=SellType.STOP_LOSS)
+    trade.close(ticker_sell_down()['bid'])
+    assert trade.pair in freqtrade.strategy._pair_locked_until
+    assert freqtrade.strategy.is_pair_locked(trade.pair)
+
+    # reinit - should buy other pair.
+    caplog.clear()
+    freqtrade.create_trades()
+
+    assert log_has(f"Pair {trade.pair} is currently locked.", caplog)
+
+
 def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, markets, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)

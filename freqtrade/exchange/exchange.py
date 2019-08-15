@@ -6,7 +6,7 @@ import asyncio
 import inspect
 import logging
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from math import ceil, floor
 from random import randint
 from typing import Any, Dict, List, Optional, Tuple
@@ -790,13 +790,45 @@ def timeframe_to_seconds(ticker_interval: str) -> int:
 
 def timeframe_to_minutes(ticker_interval: str) -> int:
     """
-    Same as above, but returns minutes.
+    Same as timeframe_to_seconds, but returns minutes.
     """
     return ccxt.Exchange.parse_timeframe(ticker_interval) // 60
 
 
 def timeframe_to_msecs(ticker_interval: str) -> int:
     """
-    Same as above, but returns milliseconds.
+    Same as timeframe_to_seconds, but returns milliseconds.
     """
     return ccxt.Exchange.parse_timeframe(ticker_interval) * 1000
+
+
+def timeframe_to_prev_date(timeframe: str, date: datetime = None) -> datetime:
+    """
+    Use Timeframe and determine last possible candle.
+    :param timeframe: timeframe in string format (e.g. "5m")
+    :param date: date to use. Defaults to utcnow()
+    :returns: date of previous candle (with utc timezone)
+    """
+    if not date:
+        date = datetime.now(timezone.utc)
+    timeframe_secs = timeframe_to_seconds(timeframe)
+    # Get offset based on timerame_secs
+    offset = date.timestamp() % timeframe_secs
+    # Subtract seconds passed since last offset
+    new_timestamp = date.timestamp() - offset
+    return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
+
+
+def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
+    """
+    Use Timeframe and determine next candle.
+    :param timeframe: timeframe in string format (e.g. "5m")
+    :param date: date to use. Defaults to utcnow()
+    :returns: date of next candle (with utc timezone)
+    """
+    prevdate = timeframe_to_prev_date(timeframe, date)
+    timeframe_secs = timeframe_to_seconds(timeframe)
+
+    # Add one interval to previous candle
+    new_timestamp = prevdate.timestamp() + timeframe_secs
+    return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
