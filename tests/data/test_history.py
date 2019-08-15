@@ -143,7 +143,7 @@ def test_pair_data_filename():
 
 
 def test_pair_trades_filename():
-    fn = pair_trades_filename(Path('freqtrade/hello/world'), 'ETH/BTC', '5m')
+    fn = pair_trades_filename(Path('freqtrade/hello/world'), 'ETH/BTC')
     assert isinstance(fn, Path)
     assert fn == Path('freqtrade/hello/world/ETH_BTC-trades.json')
 

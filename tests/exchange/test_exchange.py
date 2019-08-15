@@ -1453,13 +1453,17 @@ def test_merge_ft_has_dict(default_conf, mocker):
     assert ex._ft_has == Exchange._ft_has_default
 
     ex = Kraken(default_conf)
-    assert ex._ft_has == Exchange._ft_has_default
+    assert ex._ft_has != Exchange._ft_has_default
+    assert ex._ft_has['trades_pagination'] == 'id'
+    assert ex._ft_has['trades_pagination_arg'] == 'since'
 
     # Binance defines different values
     ex = Binance(default_conf)
     assert ex._ft_has != Exchange._ft_has_default
     assert ex._ft_has['stoploss_on_exchange']
     assert ex._ft_has['order_time_in_force'] == ['gtc', 'fok', 'ioc']
+    assert ex._ft_has['trades_pagination'] == 'id'
+    assert ex._ft_has['trades_pagination_arg'] == 'fromId'
 
     conf = copy.deepcopy(default_conf)
     conf['exchange']['_ft_has_params'] = {"DeadBeef": 20,
