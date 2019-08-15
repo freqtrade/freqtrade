@@ -290,7 +290,7 @@ class Configuration(object):
         if not self.runmode:
             # Handle real mode, infer dry/live from config
             self.runmode = RunMode.DRY_RUN if config.get('dry_run', True) else RunMode.LIVE
-            logger.info("Runmode set to {self.runmode}.")
+            logger.info(f"Runmode set to {self.runmode}.")
 
         config.update({'runmode': self.runmode})
 
