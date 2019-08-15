@@ -203,7 +203,8 @@ def load_cached_data_for_updating(datadir: Optional[Path], pair: str, ticker_int
             since_ms = arrow.utcnow().shift(minutes=num_minutes).timestamp * 1000
 
     # read the cached file
-    data = load_tickerdata_file(datadir, pair, ticker_interval, timerange)
+    # Intentionally don't pass timerange in - since we need to load the full dataset.
+    data = load_tickerdata_file(datadir, pair, ticker_interval)
     # remove the last item, could be incomplete candle
     if data:
         data.pop()
