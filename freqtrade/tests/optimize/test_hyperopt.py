@@ -578,7 +578,8 @@ def test_generate_optimizer(mocker, default_conf) -> None:
         'loss': 1.9840569076926293,
         'results_explanation': '     1 trades. Avg profit  2.31%. Total profit  0.00023300 BTC '
                                '(   2.31Σ%). Avg duration 100.0 mins.',
-        'params': optimizer_param
+        'params': optimizer_param,
+        'total_profit': 0.00023300
     }
 
     hyperopt = Hyperopt(default_conf)

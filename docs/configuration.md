@@ -1,15 +1,34 @@
 # Configure the bot
 
-This page explains how to configure your `config.json` file.
+This page explains how to configure the bot.
 
-## Setup config.json
+## The Freqtrade configuration file
 
-We recommend to copy and use the `config.json.example` as a template
+The bot uses a set of configuration parameters during its operation that all together conform the bot configuration. It normally reads its configuration from a file (Freqtrade configuration file).
+
+Per default, the bot loads configuration from the `config.json` file located in the current working directory.
+
+You can change the name of the configuration file used by the bot with the `-c/--config` command line option.
+
+In some advanced use cases, multiple configuration files can be specified and used by the bot or the bot can read its configuration parameters from the process standard input stream.
+
+If you used the [Quick start](installation.md/#quick-start) method for installing 
+the bot, the installation script should have already created the default configuration file (`config.json`) for you.
+
+If default configuration file is not created we recommend you to copy and use the `config.json.example` as a template
 for your bot configuration.
 
-The table below will list all configuration parameters.
+The Freqtrade configuration file is to be written in the JSON format.
 
-Mandatory Parameters are marked as **Required**.
+Additionally to the standard JSON syntax, you may use one-line `// ...` and multi-line `/* ... */` comments in your configuration files and trailing commas in the lists of parameters.
+
+Do not worry if you are not familiar with JSON format -- simply open the configuration file with an editor of your choice, make some changes to the parameters you need, save your changes and, finally, restart the bot or, if it was previously stopped, run it again with the changes you made to the configuration. The bot validates syntax of the configuration file at startup and will warn you if you made any errors editing it.
+
+## Configuration parameters
+
+The table below will list all configuration parameters available.
+
+Mandatory parameters are marked as **Required**.
 
 |  Command | Default | Description |
 |----------|---------|-------------|
@@ -53,6 +72,7 @@ Mandatory Parameters are marked as **Required**.
 | `experimental.use_sell_signal` | false | Use your sell strategy in addition of the `minimal_roi`. [Strategy Override](#parameters-in-the-strategy).
 | `experimental.sell_profit_only` | false | Waits until you have made a positive profit before taking a sell decision. [Strategy Override](#parameters-in-the-strategy).
 | `experimental.ignore_roi_if_buy_signal` | false | Does not sell if the buy-signal is still active. Takes preference over `minimal_roi` and `use_sell_signal`. [Strategy Override](#parameters-in-the-strategy).
+| `experimental.block_bad_exchanges` | true | Block exchanges known to not work with freqtrade. Leave on default unless you want to test if that exchange works now.
 | `pairlist.method` | StaticPairList | Use static or dynamic volume-based pairlist. [More information below](#dynamic-pairlists).
 | `pairlist.config` | None | Additional configuration for dynamic pairlists. [More information below](#dynamic-pairlists).
 | `telegram.enabled` | true | **Required.** Enable or not the usage of Telegram.
