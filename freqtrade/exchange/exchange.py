@@ -376,7 +376,7 @@ class Exchange(object):
             'side': side,
             'remaining': amount,
             'datetime': arrow.utcnow().isoformat(),
-            'status': "open",
+            'status': "closed" if ordertype == "market" else "open",
             'fee': None,
             "info": {}
         }

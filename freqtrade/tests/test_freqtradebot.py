@@ -2421,8 +2421,8 @@ def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf,
     assert rpc_mock.call_count == 2
 
 
-def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
-                                           ticker_sell_up, markets, mocker) -> None:
+def test_execute_sell_market_order(default_conf, ticker, fee,
+                                   ticker_sell_up, markets, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -2445,9 +2445,12 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
         'freqtrade.exchange.Exchange',
         get_ticker=ticker_sell_up
     )
-    freqtrade.config = {}
+    freqtrade.config['order_types']['sell'] = 'market'
 
     freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'], sell_reason=SellType.ROI)
+
+    assert not trade.is_open
+    assert trade.close_profit == 0.0611052
 
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
@@ -2458,60 +2461,15 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
         'gain': 'profit',
         'limit': 1.172e-05,
         'amount': 90.99181073703367,
-        'order_type': 'limit',
+        'order_type': 'market',
         'open_rate': 1.099e-05,
         'current_rate': 1.172e-05,
         'profit_amount': 6.126e-05,
         'profit_percent': 0.0611052,
+        'stake_currency': 'BTC',
+        'fiat_currency': 'USD',
         'sell_reason': SellType.ROI.value
 
-    } == last_msg
-
-
-def test_execute_sell_without_conf_sell_down(default_conf, ticker, fee,
-                                             ticker_sell_down, markets, mocker) -> None:
-    rpc_mock = patch_RPCManager(mocker)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        _load_markets=MagicMock(return_value={}),
-        get_ticker=ticker,
-        get_fee=fee,
-        markets=PropertyMock(return_value=markets)
-    )
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
-
-    # Create some test data
-    freqtrade.create_trades()
-
-    trade = Trade.query.first()
-    assert trade
-
-    # Decrease the price and sell it
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        get_ticker=ticker_sell_down
-    )
-
-    freqtrade.config = {}
-    freqtrade.execute_sell(trade=trade, limit=ticker_sell_down()['bid'],
-                           sell_reason=SellType.STOP_LOSS)
-
-    assert rpc_mock.call_count == 2
-    last_msg = rpc_mock.call_args_list[-1][0][0]
-    assert {
-        'type': RPCMessageType.SELL_NOTIFICATION,
-        'exchange': 'Bittrex',
-        'pair': 'ETH/BTC',
-        'gain': 'loss',
-        'limit': 1.044e-05,
-        'amount': 90.99181073703367,
-        'order_type': 'limit',
-        'open_rate': 1.099e-05,
-        'current_rate': 1.044e-05,
-        'profit_amount': -5.492e-05,
-        'profit_percent': -0.05478342,
-        'sell_reason': SellType.STOP_LOSS.value
     } == last_msg
 
 
