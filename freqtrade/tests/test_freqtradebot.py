@@ -2611,7 +2611,7 @@ def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down, markets, mock
     patch_get_signal(freqtrade)
 
     # Create some test data
-    freqtrade.create_trade()
+    freqtrade.create_trades()
 
     trade = Trade.query.first()
     assert trade
@@ -2630,7 +2630,7 @@ def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down, markets, mock
 
     # reinit - should buy other pair.
     caplog.clear()
-    freqtrade.create_trade()
+    freqtrade.create_trades()
 
     assert log_has(f"Pair {trade.pair} is currently locked.", caplog)
 
