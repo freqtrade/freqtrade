@@ -618,3 +618,69 @@ def test_continue_hyperopt(mocker, default_conf, caplog):
 
     assert unlinkmock.call_count == 0
     assert log_has(f"Continuing on previous hyperopt results.", caplog)
+
+
+def test_print_json_spaces_all(mocker, default_conf, caplog, capsys) -> None:
+    mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
+    mocker.patch(
+        'freqtrade.optimize.hyperopt.get_timeframe',
+        MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
+    )
+
+    parallel = mocker.patch(
+        'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
+        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {}}])
+    )
+    patch_exchange(mocker)
+
+    default_conf.update({'config': 'config.json.example',
+                         'epochs': 1,
+                         'timerange': None,
+                         'spaces': 'all',
+                         'hyperopt_jobs': 1,
+                         'print_json': True,
+                         })
+
+    hyperopt = Hyperopt(default_conf)
+    hyperopt.strategy.tickerdata_to_dataframe = MagicMock()
+    hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
+
+    hyperopt.start()
+
+    parallel.assert_called_once()
+
+    out, err = capsys.readouterr()
+    assert '{"params":{"mfi-value":null,"fastd-value":null,"adx-value":null,"rsi-value":null,"mfi-enabled":null,"fastd-enabled":null,"adx-enabled":null,"rsi-enabled":null,"trigger":null,"sell-mfi-value":null,"sell-fastd-value":null,"sell-adx-value":null,"sell-rsi-value":null,"sell-mfi-enabled":null,"sell-fastd-enabled":null,"sell-adx-enabled":null,"sell-rsi-enabled":null,"sell-trigger":null},"minimal_roi":{},"stoploss":null}' in out  # noqa: E501
+
+
+def test_print_json_spaces_roi_stoploss(mocker, default_conf, caplog, capsys) -> None:
+    mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
+    mocker.patch(
+        'freqtrade.optimize.hyperopt.get_timeframe',
+        MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
+    )
+
+    parallel = mocker.patch(
+        'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
+        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {}}])
+    )
+    patch_exchange(mocker)
+
+    default_conf.update({'config': 'config.json.example',
+                         'epochs': 1,
+                         'timerange': None,
+                         'spaces': 'roi stoploss',
+                         'hyperopt_jobs': 1,
+                         'print_json': True,
+                         })
+
+    hyperopt = Hyperopt(default_conf)
+    hyperopt.strategy.tickerdata_to_dataframe = MagicMock()
+    hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
+
+    hyperopt.start()
+
+    parallel.assert_called_once()
+
+    out, err = capsys.readouterr()
+    assert '{"minimal_roi":{},"stoploss":null}' in out
