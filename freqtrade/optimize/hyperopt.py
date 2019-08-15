@@ -140,23 +140,23 @@ class Hyperopt(Backtesting):
         print(f"\nBest result:\n\n{log_str}\n")
 
         if self.config.get('print_json'):
-            result_dict = {}
+            result_dict: Dict = {}
             if self.has_space('buy') or self.has_space('sell'):
                 result_dict['params'] = {}
             if self.has_space('buy'):
                 result_dict['params'].update({p.name: params.get(p.name)
-                    for p in self.hyperopt_space('buy')})
+                                             for p in self.hyperopt_space('buy')})
             if self.has_space('sell'):
                 result_dict['params'].update({p.name: params.get(p.name)
-                    for p in self.hyperopt_space('sell')})
+                                             for p in self.hyperopt_space('sell')})
             if self.has_space('roi'):
-                min_roi = self.custom_hyperopt.generate_roi_table(params)
                 # Convert keys in min_roi dict to strings because
                 # rapidjson cannot dump dicts with integer keys...
                 # OrderedDict is used to keep the numeric order of the items
                 # in the dict.
-                min_roi = OrderedDict((str(k),v) for k,v in min_roi.items())
-                result_dict['minimal_roi'] = min_roi
+                result_dict['minimal_roi'] = OrderedDict(
+                    (str(k), v) for k, v in self.custom_hyperopt.generate_roi_table(params).items()
+                )
             if self.has_space('stoploss'):
                 result_dict['stoploss'] = params.get('stoploss')
             print(rapidjson.dumps(result_dict, default=str, number_mode=rapidjson.NM_NATIVE))
