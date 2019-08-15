@@ -198,6 +198,12 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_false',
         default=True,
     ),
+    "print_json": Arg(
+        '--print-json',
+        help='Print best result detailization in JSON format.',
+        action='store_true',
+        default=False,
+    ),
     "hyperopt_jobs": Arg(
         '-j', '--job-workers',
         help='The number of concurrently running jobs for hyperoptimization '
