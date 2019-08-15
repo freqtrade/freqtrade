@@ -1000,7 +1000,7 @@ def test_get_ticker(default_conf, mocker, exchange_name):
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_get_history(default_conf, mocker, caplog, exchange_name):
+def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     tick = [
         [
@@ -1021,7 +1021,7 @@ def test_get_history(default_conf, mocker, caplog, exchange_name):
     # one_call calculation * 1.8 should do 2 calls
     since = 5 * 60 * 500 * 1.8
     print(f"since = {since}")
-    ret = exchange.get_history(pair, "5m", int((arrow.utcnow().timestamp - since) * 1000))
+    ret = exchange.get_historic_ohlcv(pair, "5m", int((arrow.utcnow().timestamp - since) * 1000))
 
     assert exchange._async_get_candle_history.call_count == 2
     # Returns twice the above tick
