@@ -589,9 +589,9 @@ class Exchange(object):
 
     def refresh_latest_ohlcv(self, pair_list: List[Tuple[str, str]]) -> List[Tuple[str, List]]:
         """
-        Refresh in-memory ohlcv asyncronously and set `_klines` with the result
-        Loops asyncroneously over pair_list and dowloads all pairs async (semi-parallel).
-        :param pair_list: List of 2 element tuples containing pair,interval to refresh
+        Refresh in-memory ohlcv asynchronously and set `_klines` with the result
+        Loops asynchronously over pair_list and downloads all pairs async (semi-parallel).
+        :param pair_list: List of 2 element tuples containing pair, interval to refresh
         :return: Returns a List of ticker-dataframes.
         """
         logger.debug("Refreshing ohlcv data for %d pairs", len(pair_list))
@@ -640,7 +640,7 @@ class Exchange(object):
     async def _async_get_candle_history(self, pair: str, ticker_interval: str,
                                         since_ms: Optional[int] = None) -> Tuple[str, str, List]:
         """
-        Asyncronously gets candle histories using fetch_ohlcv
+        Asynchronously gets candle histories using fetch_ohlcv
         returns tuple: (pair, ticker_interval, ohlcv_list)
         """
         try:
