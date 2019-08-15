@@ -105,7 +105,7 @@ if not pairs or args.pairs_file:
 timerange = TimeRange()
 if args.days:
     time_since = arrow.utcnow().shift(days=-args.days).strftime("%Y%m%d")
-    timerange = arguments.parse_timerange(f'{time_since}-')
+    timerange = TimeRange.parse_timerange(f'{time_since}-')
 
 logger.info(f'About to download pairs: {pairs}, intervals: {timeframes} to {dl_path}')
 
