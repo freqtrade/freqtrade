@@ -64,6 +64,7 @@ setup(name='freqtrade',
           'py_find_1st',
           'python-rapidjson',
           'sdnotify',
+          'colorama',
           # from requirements.txt
           'numpy',
           'pandas',

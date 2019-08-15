@@ -499,9 +499,9 @@ def test_check_exchange(default_conf, caplog) -> None:
 
     # Test a 'bad' exchange, which known to have serious problems
     default_conf.get('exchange').update({'name': 'bitmex'})
-    assert not check_exchange(default_conf)
-    assert log_has_re(r"Exchange .* is known to not work with the bot yet\. "
-                      r"Use it only for development and testing purposes\.", caplog)
+    with pytest.raises(OperationalException,
+                       match=r"Exchange .* is known to not work with the bot yet.*"):
+        check_exchange(default_conf)
     caplog.clear()
 
     # Test a 'bad' exchange with check_for_bad=False
@@ -640,6 +640,17 @@ def test_validate_tsl(default_conf):
     default_conf['trailing_stop_positive_offset'] = 0.015
     Configuration(Namespace())
     configuration._validate_config_consistency(default_conf)
+
+
+def test_load_config_test_comments() -> None:
+    """
+    Load config with comments
+    """
+    config_file = Path(__file__).parents[0] / "config_test_comments.json"
+    print(config_file)
+    conf = load_config_file(str(config_file))
+
+    assert conf
 
 
 def test_load_config_default_exchange(all_conf) -> None:

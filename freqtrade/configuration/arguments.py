@@ -2,10 +2,8 @@
 This module contains the argument manager class
 """
 import argparse
-import re
-from typing import List, NamedTuple, Optional
+from typing import List, Optional
 
-import arrow
 from freqtrade.configuration.cli_options import AVAILABLE_CLI_OPTIONS
 from freqtrade import constants
 
@@ -23,7 +21,8 @@ ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_pos
 
 ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
                                         "position_stacking", "epochs", "spaces",
-                                        "use_max_market_positions", "print_all", "hyperopt_jobs",
+                                        "use_max_market_positions", "print_all",
+                                        "print_colorized", "hyperopt_jobs",
                                         "hyperopt_random_state", "hyperopt_min_trades",
                                         "hyperopt_continue", "hyperopt_loss"]
 
@@ -40,18 +39,6 @@ ARGS_PLOT_DATAFRAME = (ARGS_COMMON + ARGS_STRATEGY +
 
 ARGS_PLOT_PROFIT = (ARGS_COMMON + ARGS_STRATEGY +
                     ["pairs", "timerange", "export", "exportfilename", "db_url", "trade_source"])
-
-
-class TimeRange(NamedTuple):
-    """
-    NamedTuple defining timerange inputs.
-    [start/stop]type defines if [start/stop]ts shall be used.
-    if *type is None, don't use corresponding startvalue.
-    """
-    starttype: Optional[str] = None
-    stoptype: Optional[str] = None
-    startts: int = 0
-    stopts: int = 0
 
 
 class Arguments(object):
@@ -132,45 +119,3 @@ class Arguments(object):
         )
         list_exchanges_cmd.set_defaults(func=start_list_exchanges)
         self._build_args(optionlist=ARGS_LIST_EXCHANGES, parser=list_exchanges_cmd)
-
-    @staticmethod
-    def parse_timerange(text: Optional[str]) -> TimeRange:
-        """
-        Parse the value of the argument --timerange to determine what is the range desired
-        :param text: value from --timerange
-        :return: Start and End range period
-        """
-        if text is None:
-            return TimeRange(None, None, 0, 0)
-        syntax = [(r'^-(\d{8})$', (None, 'date')),
-                  (r'^(\d{8})-$', ('date', None)),
-                  (r'^(\d{8})-(\d{8})$', ('date', 'date')),
-                  (r'^-(\d{10})$', (None, 'date')),
-                  (r'^(\d{10})-$', ('date', None)),
-                  (r'^(\d{10})-(\d{10})$', ('date', 'date')),
-                  (r'^(-\d+)$', (None, 'line')),
-                  (r'^(\d+)-$', ('line', None)),
-                  (r'^(\d+)-(\d+)$', ('index', 'index'))]
-        for rex, stype in syntax:
-            # Apply the regular expression to text
-            match = re.match(rex, text)
-            if match:  # Regex has matched
-                rvals = match.groups()
-                index = 0
-                start: int = 0
-                stop: int = 0
-                if stype[0]:
-                    starts = rvals[index]
-                    if stype[0] == 'date' and len(starts) == 8:
-                        start = arrow.get(starts, 'YYYYMMDD').timestamp
-                    else:
-                        start = int(starts)
-                    index += 1
-                if stype[1]:
-                    stops = rvals[index]
-                    if stype[1] == 'date' and len(stops) == 8:
-                        stop = arrow.get(stops, 'YYYYMMDD').timestamp
-                    else:
-                        stop = int(stops)
-                return TimeRange(stype[0], stype[1], start, stop)
-        raise Exception('Incorrect syntax for timerange "%s"' % text)

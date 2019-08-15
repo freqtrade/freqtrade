@@ -1,9 +1,9 @@
 # requirements without requirements installable via conda
 # mainly used for Raspberry pi installs
-ccxt==1.18.1021
+ccxt==1.18.1043
 SQLAlchemy==1.3.6
 python-telegram-bot==11.1.0
-arrow==0.14.4
+arrow==0.14.5
 cachetools==3.1.1
 requests==2.22.0
 urllib3==1.25.3
@@ -23,10 +23,13 @@ filelock==3.0.12
 py_find_1st==1.1.4
 
 #Load ticker files 30% faster
-python-rapidjson==0.7.2
+python-rapidjson==0.8.0
 
 # Notify systemd
 sdnotify==0.3.2
 
 # Api server
 flask==1.1.1
+
+# Support for colorized terminal output
+colorama==0.4.1

@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 
-from freqtrade.configuration import Arguments
+from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import (combine_tickers_with_mean,
                                        create_cum_profit, load_trades)
@@ -42,7 +42,7 @@ def init_plotscript(config):
         pairs = config["exchange"]["pair_whitelist"]
 
     # Set timerange to use
-    timerange = Arguments.parse_timerange(config.get("timerange"))
+    timerange = TimeRange.parse_timerange(config.get("timerange"))
 
     tickers = history.load_data(
         datadir=Path(str(config.get("datadir"))),

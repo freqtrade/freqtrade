@@ -127,11 +127,10 @@ class Worker(object):
         time.sleep(duration)
         return result
 
-    def _process(self) -> bool:
+    def _process(self) -> None:
         logger.debug("========================================")
-        state_changed = False
         try:
-            state_changed = self.freqtrade.process()
+            self.freqtrade.process()
         except TemporaryError as error:
             logger.warning(f"Error: {error}, retrying in {constants.RETRY_TIMEOUT} seconds...")
             time.sleep(constants.RETRY_TIMEOUT)
@@ -144,10 +143,6 @@ class Worker(object):
             })
             logger.exception('OperationalException. Stopping trader ...')
             self.freqtrade.state = State.STOPPED
-            # TODO: The return value of _process() is not used apart tests
-            # and should (could) be eliminated later. See PR #1689.
-#            state_changed = True
-        return state_changed
 
     def _reconfigure(self) -> None:
         """

@@ -2,9 +2,9 @@ import logging
 from typing import Any, Dict
 
 from freqtrade import OperationalException
-from freqtrade.exchange import (is_exchange_bad, is_exchange_available,
-                                is_exchange_officially_supported, available_exchanges)
-
+from freqtrade.exchange import (available_exchanges, get_exchange_bad_reason,
+                                is_exchange_available, is_exchange_bad,
+                                is_exchange_officially_supported)
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +31,8 @@ def check_exchange(config: Dict[str, Any], check_for_bad: bool = True) -> bool:
         )
 
     if check_for_bad and is_exchange_bad(exchange):
-        logger.warning(f'Exchange "{exchange}" is known to not work with the bot yet. '
-                       f'Use it only for development and testing purposes.')
-        return False
+        raise OperationalException(f'Exchange "{exchange}" is known to not work with the bot yet. '
+                                   f'Reason: {get_exchange_bad_reason(exchange)}')
 
     if is_exchange_officially_supported(exchange):
         logger.info(f'Exchange "{exchange}" is officially supported '

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from freqtrade.configuration import Arguments, TimeRange
+from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import create_cum_profit, load_backtest_data
 from freqtrade.plot.plotting import (add_indicators, add_profit,
@@ -222,7 +222,7 @@ def test_generate_plot_file(mocker, caplog):
 def test_add_profit():
     filename = history.make_testdata_path(None) / "backtest-result_test.json"
     bt_data = load_backtest_data(filename)
-    timerange = Arguments.parse_timerange("20180110-20180112")
+    timerange = TimeRange.parse_timerange("20180110-20180112")
 
     df = history.load_pair_history(pair="POWR/BTC", ticker_interval='5m',
                                    datadir=None, timerange=timerange)
@@ -242,7 +242,7 @@ def test_add_profit():
 def test_generate_profit_graph():
     filename = history.make_testdata_path(None) / "backtest-result_test.json"
     trades = load_backtest_data(filename)
-    timerange = Arguments.parse_timerange("20180110-20180112")
+    timerange = TimeRange.parse_timerange("20180110-20180112")
     pairs = ["POWR/BTC", "XLM/BTC"]
 
     tickers = history.load_data(datadir=None,
