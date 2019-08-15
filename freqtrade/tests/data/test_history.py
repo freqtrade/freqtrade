@@ -210,7 +210,8 @@ def test_load_cached_data_for_updating(mocker) -> None:
     assert data == test_data[:-1]
     assert test_data[-2][0] < start_ts < test_data[-1][0]
 
-    # same with 'line' timeframe
+    # Try loading last 30 lines.
+    # Not supported by load_cached_data_for_updating, we always need to get the full data.
     num_lines = 30
     timerange = TimeRange(None, 'line', 0, -num_lines)
     data, start_ts = load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
