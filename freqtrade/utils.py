@@ -48,7 +48,7 @@ def start_list_exchanges(args: Namespace) -> None:
 
 def start_download_data(args: Namespace) -> None:
     """
-    Download data based
+    Download data (former download_backtest_data.py script)
     """
     config = setup_utils_configuration(args, RunMode.OTHER)
 
@@ -76,7 +76,7 @@ def start_download_data(args: Namespace) -> None:
                 pair_print = pair.replace('/', '_')
                 filename = f'{pair_print}-{ticker_interval}.json'
                 dl_file = dl_path.joinpath(filename)
-                if args.erase and dl_file.exists():
+                if config.get("erase") and dl_file.exists():
                     logger.info(
                         f'Deleting existing data for pair {pair}, interval {ticker_interval}.')
                     dl_file.unlink()

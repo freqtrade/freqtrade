@@ -281,6 +281,9 @@ class Configuration(object):
         self._args_to_config(config, argname='trade_source',
                              logstring='Using trades from: {}')
 
+        self._args_to_config(config, argname='erase',
+                             logstring='Erase detected. Deleting existing data.')
+
         self._args_to_config(config, argname='timeframes',
                              logstring='timeframes --timeframes: {}')
 

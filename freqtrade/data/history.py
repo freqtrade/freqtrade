@@ -122,7 +122,7 @@ def load_pair_history(pair: str,
     else:
         logger.warning(
             f'No history data for pair: "{pair}", interval: {ticker_interval}. '
-            'Use --refresh-pairs-cached option or download_backtest_data.py '
+            'Use --refresh-pairs-cached option or `freqtrade download-data` '
             'script to download the data'
         )
         return None
