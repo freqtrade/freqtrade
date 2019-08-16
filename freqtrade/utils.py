@@ -68,7 +68,7 @@ def start_download_data(args: Namespace) -> None:
         exchange = ExchangeResolver(config['exchange']['name'], config).exchange
 
         for pair in config["pairs"]:
-            if pair not in exchange._api.markets:
+            if pair not in exchange.markets:
                 pairs_not_available.append(pair)
                 logger.info(f"Skipping pair {pair}...")
                 continue
