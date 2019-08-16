@@ -242,6 +242,9 @@ class Configuration(object):
         else:
             config.update({'print_colorized': True})
 
+        self._args_to_config(config, argname='print_json',
+                             logstring='Parameter --print-json detected ...')
+
         self._args_to_config(config, argname='hyperopt_jobs',
                              logstring='Parameter -j/--job-workers detected: {}')
 

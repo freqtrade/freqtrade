@@ -8,10 +8,13 @@ import logging
 import os
 import sys
 
+from collections import OrderedDict
 from operator import itemgetter
 from pathlib import Path
 from pprint import pprint
 from typing import Any, Dict, List, Optional
+
+import rapidjson
 
 from colorama import init as colorama_init
 from colorama import Fore, Style
@@ -133,22 +136,44 @@ class Hyperopt(Backtesting):
         results = sorted(self.trials, key=itemgetter('loss'))
         best_result = results[0]
         params = best_result['params']
-
         log_str = self.format_results_logstring(best_result)
         print(f"\nBest result:\n\n{log_str}\n")
-        if self.has_space('buy'):
-            print('Buy hyperspace params:')
-            pprint({p.name: params.get(p.name) for p in self.hyperopt_space('buy')},
-                   indent=4)
-        if self.has_space('sell'):
-            print('Sell hyperspace params:')
-            pprint({p.name: params.get(p.name) for p in self.hyperopt_space('sell')},
-                   indent=4)
-        if self.has_space('roi'):
-            print("ROI table:")
-            pprint(self.custom_hyperopt.generate_roi_table(params), indent=4)
-        if self.has_space('stoploss'):
-            print(f"Stoploss: {params.get('stoploss')}")
+
+        if self.config.get('print_json'):
+            result_dict: Dict = {}
+            if self.has_space('buy') or self.has_space('sell'):
+                result_dict['params'] = {}
+            if self.has_space('buy'):
+                result_dict['params'].update({p.name: params.get(p.name)
+                                             for p in self.hyperopt_space('buy')})
+            if self.has_space('sell'):
+                result_dict['params'].update({p.name: params.get(p.name)
+                                             for p in self.hyperopt_space('sell')})
+            if self.has_space('roi'):
+                # Convert keys in min_roi dict to strings because
+                # rapidjson cannot dump dicts with integer keys...
+                # OrderedDict is used to keep the numeric order of the items
+                # in the dict.
+                result_dict['minimal_roi'] = OrderedDict(
+                    (str(k), v) for k, v in self.custom_hyperopt.generate_roi_table(params).items()
+                )
+            if self.has_space('stoploss'):
+                result_dict['stoploss'] = params.get('stoploss')
+            print(rapidjson.dumps(result_dict, default=str, number_mode=rapidjson.NM_NATIVE))
+        else:
+            if self.has_space('buy'):
+                print('Buy hyperspace params:')
+                pprint({p.name: params.get(p.name) for p in self.hyperopt_space('buy')},
+                       indent=4)
+            if self.has_space('sell'):
+                print('Sell hyperspace params:')
+                pprint({p.name: params.get(p.name) for p in self.hyperopt_space('sell')},
+                       indent=4)
+            if self.has_space('roi'):
+                print("ROI table:")
+                pprint(self.custom_hyperopt.generate_roi_table(params), indent=4)
+            if self.has_space('stoploss'):
+                print(f"Stoploss: {params.get('stoploss')}")
 
     def log_results(self, results) -> None:
         """
