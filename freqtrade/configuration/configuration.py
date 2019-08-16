@@ -388,4 +388,3 @@ class Configuration(object):
             pairs_file = Path(config['datadir']) / "pairs.json"
             if pairs_file.exists():
                 config['pairs'] = json_load(pairs_file)
-
