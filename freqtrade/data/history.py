@@ -83,15 +83,15 @@ def store_tickerdata_file(datadir: Path, pair: str,
 
 
 def load_trades_file(datadir: Optional[Path], pair: str,
-                     timerange: Optional[TimeRange] = None) -> Optional[list]:
+                     timerange: Optional[TimeRange] = None) -> List[Dict]:
     """
     Load a pair from file, either .json.gz or .json
-    :return: tickerlist or None if unsuccesful
+    :return: tickerlist or empty list if unsuccesful
     """
     filename = pair_trades_filename(datadir, pair)
     tradesdata = misc.file_load_json(filename)
     if not tradesdata:
-        return None
+        return []
 
     # TODO: trim trades based on timerange... ?
     return tradesdata
@@ -327,6 +327,47 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
                                   pair=pair, ticker_interval=str(ticker_interval),
                                   timerange=timerange)
     return pairs_not_available
+
+
+def download_trades_history(datadir: Optional[Path],
+                            exchange: Optional[Exchange],
+                            pair: str,
+                            ticker_interval: str = '5m',
+                            timerange: Optional[TimeRange] = None) -> bool:
+
+    if not exchange:
+        raise OperationalException(
+            "Exchange needs to be initialized to download data")
+    try:
+
+        since = timerange.startts * 1000 if timerange and timerange.starttype == 'date' else None
+
+        trades = load_trades_file(datadir, pair)
+
+        from_id = trades[-1]['id'] if trades else None
+
+        logger.debug("Current Start: %s", trades[1]['datetime'] if trades else 'None')
+        logger.debug("Current End: %s", trades[-1]['datetime'] if trades else 'None')
+
+        exchange.get_historic_trades(pair=pair,
+                                     since=since if since else
+                                     int(arrow.utcnow().shift(days=-30).float_timestamp) * 1000,
+                                     #  until=xxx,
+                                     from_id=from_id,
+                                     )
+
+        store_trades_file(datadir, pair, trades)
+
+        logger.debug("New Start: %s", trades[0]['datetime'])
+        logger.debug("New End: %s", trades[-1]['datetime'])
+        logger.info(f"New Amount of trades: {len(trades)}")
+
+    except Exception as e:
+        logger.error(
+            f'Failed to download historic trades for pair: "{pair}". '
+            f'Error: {e}'
+        )
+        return False
 
 
 def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:

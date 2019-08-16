@@ -791,6 +791,7 @@ class Exchange:
         :param pair: Pair to fetch trade data for
         :param since: Since as integer timestamp in milliseconds
         :param until: Until as integer timestamp in milliseconds
+        :param from_id: Download data starting with ID (if id is known). Ignores "since" if set.
         returns tuple: (pair, ticker_interval, ohlcv_list)
         """
         try:
@@ -880,14 +881,18 @@ class Exchange:
         Async over one pair, assuming we get `_ohlcv_candle_limit` candles per call.
         :param pair: Pair to download
         :param ticker_interval: Interval to get
-        :param since_ms: Timestamp in milliseconds to get history from
+        :param since: Timestamp in milliseconds to get history from
+        :param until: Timestamp in milliseconds. Defaults to current timestamp if not defined.
         :param from_id: Download data starting with ID (if id is known)
         :returns List of tickers
         """
-
+        if not until:
+            # Current milliseconds
+            until = ccxt.Exchange.milliseconds()
         if self._trades_pagination == 'time':
             return asyncio.get_event_loop().run_until_complete(
                 self._async_get_trade_history(pair=pair, since=since, until=until))
+
         elif self._trades_pagination == 'id':
             # Use id-based trade-downloader
             return asyncio.get_event_loop().run_until_complete(
