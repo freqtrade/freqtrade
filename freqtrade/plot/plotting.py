@@ -37,7 +37,7 @@ def init_plotscript(config):
 
     strategy = StrategyResolver(config).strategy
     if "pairs" in config:
-        pairs = config["pairs"].split(',')
+        pairs = config["pairs"]
     else:
         pairs = config["exchange"]["pair_whitelist"]
 
