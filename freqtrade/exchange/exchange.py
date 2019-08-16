@@ -783,7 +783,8 @@ class Exchange:
 
     async def _async_get_trade_history_id(self, pair: str,
                                           since: Optional[int] = None,
-                                          until: Optional[int] = None) -> Tuple[str, List[Dict]]:
+                                          until: Optional[int] = None,
+                                          from_id: Optional[str] = None) -> Tuple[str, List[Dict]]:
         """
         Asyncronously gets trade history using fetch_trades
         use this when exchange doesn't use time-based pagination (e.g. Kraken)
@@ -797,14 +798,15 @@ class Exchange:
                 raise OperationalException(f"Wrong method called to get trades for {self.name}")
             trades: List[Dict] = []
 
-            # Fetch first elements using timebased method to get an ID to paginate on
-            # Depending on the Exchange, this can introduce a drift at the start of the interval
-            # of up to an hour.
-            # Binance returns the "last 1000" candles within a 1h time interval
-            # - so we will miss the first candles.
-            t = await self._async_fetch_trades(pair, since=since)
-            from_id = t[-1]['id']
-            trades.extend(t)
+            if not from_id:
+                # Fetch first elements using timebased method to get an ID to paginate on
+                # Depending on the Exchange, this can introduce a drift at the start of the interval
+                # of up to an hour.
+                # Binance returns the "last 1000" candles within a 1h time interval
+                # - so we will miss the first candles.
+                t = await self._async_fetch_trades(pair, since=since)
+                from_id = t[-1]['id']
+                trades.extend(t)
             while True:
                 t = await self._async_fetch_trades(pair,
                                                    params={self._trades_pagination_arg: from_id})
@@ -844,8 +846,6 @@ class Exchange:
             # TODO: Maybe don't completey stop the bot ... ?
             raise OperationalException("This exchange does not suport downloading Trades.")
         try:
-            if self._trades_pagination != 'time':
-                return await self._async_get_trade_history_id(pair, since, until)
 
             trades: List[Dict] = []
             while True:
@@ -872,7 +872,8 @@ class Exchange:
 
     def get_historic_trades(self, pair: str,
                             since: Optional[int] = None,
-                            until: Optional[int] = None) -> List:
+                            until: Optional[int] = None,
+                            from_id: Optional[str] = None) -> List:
         """
         Gets candle history using asyncio and returns the list of candles.
         Handles all async doing.
@@ -880,10 +881,18 @@ class Exchange:
         :param pair: Pair to download
         :param ticker_interval: Interval to get
         :param since_ms: Timestamp in milliseconds to get history from
+        :param from_id: Download data starting with ID (if id is known)
         :returns List of tickers
         """
-        return asyncio.get_event_loop().run_until_complete(
-            self._async_get_trade_history(pair=pair, since=since, until=until))
+
+        if self._trades_pagination == 'time':
+            return asyncio.get_event_loop().run_until_complete(
+                self._async_get_trade_history(pair=pair, since=since, until=until))
+        elif self._trades_pagination == 'id':
+            # Use id-based trade-downloader
+            return asyncio.get_event_loop().run_until_complete(
+                self._async_get_trade_history_id(pair=pair, since=since,
+                                                 until=until, from_id=from_id))
 
     @retrier
     def cancel_order(self, order_id: str, pair: str) -> None:
