@@ -4,6 +4,7 @@ This module contains the configuration class
 import logging
 import warnings
 from argparse import Namespace
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 from freqtrade import OperationalException, constants
@@ -12,7 +13,7 @@ from freqtrade.configuration.create_datadir import create_datadir
 from freqtrade.configuration.json_schema import validate_config_schema
 from freqtrade.configuration.load_config import load_config_file
 from freqtrade.loggers import setup_logging
-from freqtrade.misc import deep_merge_dicts
+from freqtrade.misc import deep_merge_dicts, json_load
 from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
@@ -363,22 +364,28 @@ class Configuration(object):
         * whitelist from config
         """
 
-        if "pairs" in self.args and self.args.pairs:
+        if "pairs" in config:
             return
 
         if "pairs_file" in self.args and self.args.pairs_file:
-            pairs_file = self.args.pairs_file
+            pairs_file = Path(self.args.pairs_file)
             logger.info(f'Reading pairs file "{pairs_file}".')
             # Download pairs from the pairs file if no config is specified
             # or if pairs file is specified explicitely
             if not pairs_file.exists():
-                OperationalException(f'No pairs file found with path "{pairs_file}".')
+                raise OperationalException(f'No pairs file found with path "{pairs_file}".')
 
-            # with pairs_file.open() as file:
-            #     pairs = list(set(json.load(file)))
+            config['pairs'] = json_load(pairs_file)
 
-            # pairs.sort()
+            config['pairs'].sort()
+            return
 
         if "config" in self.args:
             logger.info("Using pairlist from configuration.")
             config['pairs'] = config.get('exchange', {}).get('pair_whitelist')
+        else:
+            # Fall back to /dl_path/pairs.json
+            pairs_file = Path(config['datadir']) / "pairs.json"
+            if pairs_file.exists():
+                config['pairs'] = json_load(pairs_file)
+
