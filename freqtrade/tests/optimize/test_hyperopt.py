@@ -621,6 +621,7 @@ def test_continue_hyperopt(mocker, default_conf, caplog):
 
 
 def test_print_json_spaces_all(mocker, default_conf, caplog, capsys) -> None:
+    dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
     mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
     mocker.patch(
         'freqtrade.optimize.hyperopt.get_timeframe',
@@ -651,9 +652,13 @@ def test_print_json_spaces_all(mocker, default_conf, caplog, capsys) -> None:
 
     out, err = capsys.readouterr()
     assert '{"params":{"mfi-value":null,"fastd-value":null,"adx-value":null,"rsi-value":null,"mfi-enabled":null,"fastd-enabled":null,"adx-enabled":null,"rsi-enabled":null,"trigger":null,"sell-mfi-value":null,"sell-fastd-value":null,"sell-adx-value":null,"sell-rsi-value":null,"sell-mfi-enabled":null,"sell-fastd-enabled":null,"sell-adx-enabled":null,"sell-rsi-enabled":null,"sell-trigger":null},"minimal_roi":{},"stoploss":null}' in out  # noqa: E501
+    assert dumper.called
+    # Should be called twice, once for tickerdata, once to save evaluations
+    assert dumper.call_count == 2
 
 
 def test_print_json_spaces_roi_stoploss(mocker, default_conf, caplog, capsys) -> None:
+    dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
     mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
     mocker.patch(
         'freqtrade.optimize.hyperopt.get_timeframe',
@@ -684,3 +689,6 @@ def test_print_json_spaces_roi_stoploss(mocker, default_conf, caplog, capsys) ->
 
     out, err = capsys.readouterr()
     assert '{"minimal_roi":{},"stoploss":null}' in out
+    assert dumper.called
+    # Should be called twice, once for tickerdata, once to save evaluations
+    assert dumper.call_count == 2
