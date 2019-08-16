@@ -90,6 +90,11 @@ class Configuration(object):
 
         self._process_runmode(config)
 
+        # Check if the exchange set by the user is supported
+        check_exchange(config, config.get('experimental', {}).get('block_bad_exchanges', True))
+
+        self._resolve_pairs_list(config)
+
         return config
 
     def _process_logging_options(self, config: Dict[str, Any]) -> None:
@@ -149,9 +154,6 @@ class Configuration(object):
         # Support for sd_notify
         if 'sd_notify' in self.args and self.args.sd_notify:
             config['internals'].update({'sd_notify': True})
-
-        # Check if the exchange set by the user is supported
-        check_exchange(config, config.get('experimental', {}).get('block_bad_exchanges', True))
 
     def _process_datadir_options(self, config: Dict[str, Any]) -> None:
         """
@@ -348,3 +350,32 @@ class Configuration(object):
                 logger.info(logstring.format(config[argname]))
             if deprecated_msg:
                 warnings.warn(f"DEPRECATED: {deprecated_msg}", DeprecationWarning)
+
+    def _resolve_pairs_list(self, config: Dict[str, Any]) -> None:
+        """
+        Helper for download script.
+        Takes first found:
+        * -p (pairs argument)
+        * --pairs-file
+        * whitelist from config
+        """
+
+        if "pairs" in self.args and self.args.pairs:
+            return
+
+        if "pairs_file" in self.args and self.args.pairs_file:
+            pairs_file = self.args.pairs_file
+            logger.info(f'Reading pairs file "{pairs_file}".')
+            # Download pairs from the pairs file if no config is specified
+            # or if pairs file is specified explicitely
+            if not pairs_file.exists():
+                OperationalException(f'No pairs file found with path "{pairs_file}".')
+
+            # with pairs_file.open() as file:
+            #     pairs = list(set(json.load(file)))
+
+            # pairs.sort()
+
+        if "config" in self.args:
+            logger.info("Using pairlist from configuration.")
+            config['pairs'] = config.get('exchange', {}).get('pair_whitelist')
