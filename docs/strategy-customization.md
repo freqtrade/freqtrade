@@ -309,8 +309,10 @@ if self.dp:
         dataframe['best_bid'] = ob['bids'][0][0]
         dataframe['best_ask'] = ob['asks'][0][0]
 ```
-!Warning The order book is not part of the historic data which means backtesting and hyperopt will not work if this
- method is used.
+
+!!! Warning
+    The order book is not part of the historic data which means backtesting and hyperopt will not work if this
+    method is used.
 
 #### Available Pairs
 
