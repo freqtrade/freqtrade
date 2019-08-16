@@ -175,7 +175,7 @@ def pair_data_filename(datadir: Path, pair: str, ticker_interval: str) -> Path:
 
 def pair_trades_filename(datadir: Path, pair: str) -> Path:
     pair_s = pair.replace("/", "_")
-    filename = datadir.joinpath(f'{pair_s}-trades.json')
+    filename = datadir.joinpath(f'{pair_s}-trades.json.gz')
     return filename
 
 
