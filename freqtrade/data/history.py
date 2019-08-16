@@ -82,6 +82,30 @@ def store_tickerdata_file(datadir: Path, pair: str,
     misc.file_dump_json(filename, data, is_zip=is_zip)
 
 
+def load_trades_file(datadir: Optional[Path], pair: str,
+                     timerange: Optional[TimeRange] = None) -> Optional[list]:
+    """
+    Load a pair from file, either .json.gz or .json
+    :return: tickerlist or None if unsuccesful
+    """
+    filename = pair_trades_filename(datadir, pair)
+    tradesdata = misc.file_load_json(filename)
+    if not tradesdata:
+        return None
+
+    # TODO: trim trades based on timerange... ?
+    return tradesdata
+
+
+def store_trades_file(datadir: Optional[Path], pair: str,
+                      data: list, is_zip: bool = True):
+    """
+    Stores tickerdata to file
+    """
+    filename = pair_trades_filename(datadir, pair)
+    misc.file_dump_json(filename, data, is_zip=is_zip)
+
+
 def _validate_pairdata(pair, pairdata, timerange: TimeRange):
     if timerange.starttype == 'date' and pairdata[0][0] > timerange.startts * 1000:
         logger.warning('Missing data at start for pair %s, data starts at %s',
