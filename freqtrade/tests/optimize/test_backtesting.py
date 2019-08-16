@@ -2,6 +2,7 @@
 
 import math
 import random
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -785,10 +786,10 @@ def test_backtest_record(default_conf, fee, mocker):
     # reset test to test with strategy name
     names = []
     records = []
-    backtesting._store_backtest_result("backtest-result.json", results, "DefStrat")
+    backtesting._store_backtest_result(Path("backtest-result.json"), results, "DefStrat")
     assert len(results) == 4
     # Assert file_dump_json was only called once
-    assert names == ['backtest-result-DefStrat.json']
+    assert names == [Path('backtest-result-DefStrat.json')]
     records = records[0]
     # Ensure records are of correct type
     assert len(records) == 4
