@@ -38,6 +38,20 @@ SUPPORTED_FIAT = [
     "BTC", "XBT", "ETH", "XRP", "LTC", "BCH", "USDT"
 ]
 
+MINIMAL_CONFIG = {
+    'stake_currency': '',
+    'dry_run': True,
+    'exchange': {
+        'name': '',
+        'key': '',
+        'secret': '',
+        'pair_whitelist': [],
+        'ccxt_async_config': {
+            'enableRateLimit': True,
+        }
+    }
+}
+
 # Required json-schema for user specified config
 CONF_SCHEMA = {
     'type': 'object',

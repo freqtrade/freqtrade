@@ -52,6 +52,9 @@ class Configuration(object):
         # Keep this method as staticmethod, so it can be used from interactive environments
         config: Dict[str, Any] = {}
 
+        if not files:
+            return constants.MINIMAL_CONFIG
+
         # We expect here a list of config filenames
         for path in files:
             logger.info(f'Using config: {path} ...')
@@ -275,6 +278,16 @@ class Configuration(object):
                              logstring='Limiting plot to: {}')
         self._args_to_config(config, argname='trade_source',
                              logstring='Using trades from: {}')
+
+        self._args_to_config(config, argname='timeframes',
+                             logstring='timeframes --timeframes: {}')
+
+        self._args_to_config(config, argname='days',
+                             logstring='Detected --days: {}')
+
+        if "exchange" in self.args and self.args.exchange:
+            config['exchange']['name'] = self.args.exchange
+            logger.info(f"Using exchange {config['exchange']['name']}")
 
     def _process_runmode(self, config: Dict[str, Any]) -> None:
 
