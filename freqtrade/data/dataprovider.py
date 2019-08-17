@@ -44,35 +44,49 @@ class DataProvider():
 
     def ohlcv(self, pair: str, ticker_interval: str = None, copy: bool = True) -> DataFrame:
         """
-        get ohlcv data for the given pair as DataFrame
-        Please check `available_pairs` to verify which pairs are currently cached.
+        Get ohlcv data for the given pair as DataFrame
+        Please check `self.available_pairs` to verify which pairs are currently cached.
         :param pair: pair to get the data for
-        :param ticker_interval: ticker_interval to get pair for
-        :param copy: copy dataframe before returning.
-                     Use false only for RO operations (where the dataframe is not modified)
+        :param ticker_interval: ticker interval to get data for
+        :param copy: copy dataframe before returning if True.
+                     Use False only for read-only operations (where the dataframe is not modified)
         """
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
-            if ticker_interval:
-                pairtick = (pair, ticker_interval)
-            else:
-                pairtick = (pair, self._config['ticker_interval'])
+            pairtick = (pair, ticker_interval or self._config['ticker_interval'])
+            if pairtick in self.available_pairs:
+                return self._exchange.klines(pairtick, copy=copy)
 
-            return self._exchange.klines(pairtick, copy=copy)
-        else:
-            return DataFrame()
+        return DataFrame()
 
-    def historic_ohlcv(self, pair: str, ticker_interval: str) -> DataFrame:
+    def historic_ohlcv(self, pair: str, ticker_interval: str = None) -> DataFrame:
         """
-        get stored historic ohlcv data
+        Get stored historic ohlcv data
         :param pair: pair to get the data for
-        :param ticker_interval: ticker_interval to get pair for
+        :param ticker_interval: ticker interval to get data for
         """
         return load_pair_history(pair=pair,
-                                 ticker_interval=ticker_interval,
+                                 ticker_interval=ticker_interval or self._config['ticker_interval'],
                                  refresh_pairs=False,
                                  datadir=Path(self._config['datadir']) if self._config.get(
                                      'datadir') else None
                                  )
+
+    def get_pair_dataframe(self, pair: str, ticker_interval: str = None) -> DataFrame:
+        """
+        Return pair ohlcv data, either live or cached historical -- depending
+        on the runmode.
+        :param pair: pair to get the data for
+        :param ticker_interval: ticker interval to get data for
+        """
+        if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
+            # Get live ohlcv data.
+            data = self.ohlcv(pair=pair, ticker_interval=ticker_interval)
+        else:
+            # Get historic ohlcv data (cached on disk).
+            data = self.historic_ohlcv(pair=pair, ticker_interval=ticker_interval)
+        if len(data) == 0:
+            logger.warning(f"No data found for pair {pair}")
+        return data
 
     def ticker(self, pair: str):
         """
