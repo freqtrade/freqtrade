@@ -2,6 +2,8 @@ import re
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 
+import pytest
+
 from freqtrade.state import RunMode
 from freqtrade.tests.conftest import get_args, log_has, patch_exchange
 from freqtrade.utils import (setup_utils_configuration, start_download_data,
@@ -58,12 +60,38 @@ def test_download_data(mocker, markets, caplog):
         "download-data",
         "--exchange", "binance",
         "--pairs", "ETH/BTC", "XRP/BTC",
-        "--erase"
+        "--erase",
     ]
     start_download_data(get_args(args))
 
     assert dl_mock.call_count == 4
+    assert dl_mock.call_args[1]['timerange'].starttype is None
+    assert dl_mock.call_args[1]['timerange'].stoptype is None
     assert log_has("Deleting existing data for pair ETH/BTC, interval 1m.", caplog)
+    assert log_has("Downloading pair ETH/BTC, interval 1m.", caplog)
+
+
+def test_download_data_days(mocker, markets, caplog):
+    dl_mock = mocker.patch('freqtrade.utils.download_pair_history', MagicMock())
+    patch_exchange(mocker)
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets)
+    )
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    mocker.patch.object(Path, "unlink", MagicMock())
+
+    args = [
+        "download-data",
+        "--exchange", "binance",
+        "--pairs", "ETH/BTC", "XRP/BTC",
+        "--days", "20",
+    ]
+
+    start_download_data(get_args(args))
+
+    assert dl_mock.call_count == 4
+    assert dl_mock.call_args[1]['timerange'].starttype == 'date'
+
     assert log_has("Downloading pair ETH/BTC, interval 1m.", caplog)
 
 
@@ -76,10 +104,28 @@ def test_download_data_no_markets(mocker, caplog):
     args = [
         "download-data",
         "--exchange", "binance",
-        "--pairs", "ETH/BTC", "XRP/BTC"
+        "--pairs", "ETH/BTC", "XRP/BTC",
     ]
     start_download_data(get_args(args))
 
     assert dl_mock.call_count == 0
     assert log_has("Skipping pair ETH/BTC...", caplog)
     assert log_has("Pairs [ETH/BTC,XRP/BTC] not available on exchange binance.", caplog)
+
+
+def test_download_data_keyboardInterrupt(mocker, caplog, markets):
+    dl_mock = mocker.patch('freqtrade.utils.download_pair_history',
+                           MagicMock(side_effect=KeyboardInterrupt))
+    patch_exchange(mocker)
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets)
+    )
+    args = [
+        "download-data",
+        "--exchange", "binance",
+        "--pairs", "ETH/BTC", "XRP/BTC",
+    ]
+    with pytest.raises(SystemExit):
+        start_download_data(get_args(args))
+
+    assert dl_mock.call_count == 1
