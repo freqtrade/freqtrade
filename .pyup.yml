@@ -14,7 +14,7 @@ pin: True
 # update schedule
 # default: empty
 # allowed: "every day", "every week", ..
-schedule: "every week"
+schedule: "every month"
 
 
 search: False
