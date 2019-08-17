@@ -380,7 +380,7 @@ class Configuration(object):
             config['pairs'].sort()
             return
 
-        if "config" in self.args:
+        if "config" in self.args and self.args.config:
             logger.info("Using pairlist from configuration.")
             config['pairs'] = config.get('exchange', {}).get('pair_whitelist')
         else:
@@ -388,3 +388,4 @@ class Configuration(object):
             pairs_file = Path(config['datadir']) / "pairs.json"
             if pairs_file.exists():
                 config['pairs'] = json_load(pairs_file)
+            config['pairs'].sort()

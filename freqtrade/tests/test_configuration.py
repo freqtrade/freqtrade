@@ -792,3 +792,21 @@ def test_pairlist_resolving_with_config_pl_not_exists(mocker, default_conf):
     with pytest.raises(OperationalException, match=r"No pairs file found with path.*"):
         configuration = Configuration(args)
         configuration.get_config()
+
+
+def test_pairlist_resolving_fallback(mocker):
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    mocker.patch("freqtrade.configuration.configuration.json_load",
+                 MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
+    arglist = [
+        'download-data',
+        '--exchange', 'binance'
+    ]
+
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+
+    assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
+    assert config['exchange']['name'] == 'binance'
