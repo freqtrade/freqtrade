@@ -54,7 +54,7 @@ class Configuration(object):
         config: Dict[str, Any] = {}
 
         if not files:
-            return constants.MINIMAL_CONFIG
+            return constants.MINIMAL_CONFIG.copy()
 
         # We expect here a list of config filenames
         for path in files:
