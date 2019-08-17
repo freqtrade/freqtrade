@@ -30,7 +30,7 @@ ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
 
 ARGS_LIST_EXCHANGES = ["print_one_column"]
 
-ARGS_DOWNLOADER = ["pairs", "pairs_file", "days", "exchange", "timeframes", "erase"]
+ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "exchange", "timeframes", "erase"]
 
 ARGS_PLOT_DATAFRAME = (ARGS_COMMON + ARGS_STRATEGY +
                        ["pairs", "indicators1", "indicators2", "plot_limit", "db_url",
@@ -131,4 +131,4 @@ class Arguments(object):
             help='Download backtesting data.'
         )
         download_data_cmd.set_defaults(func=start_download_data)
-        self._build_args(optionlist=ARGS_DOWNLOADER, parser=download_data_cmd)
+        self._build_args(optionlist=ARGS_DOWNLOAD_DATA, parser=download_data_cmd)
