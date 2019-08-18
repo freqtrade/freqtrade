@@ -3,7 +3,7 @@
 This page explains how to validate your strategy performance by using
 Backtesting.
 
-## Getting data for backtesting / hyperopt
+## Getting data for backtesting and hyperopt
 
 To download backtesting data (candles / OHLCV), we recommend using the `freqtrade download-data` command.
 
