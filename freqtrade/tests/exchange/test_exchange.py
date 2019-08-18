@@ -656,7 +656,13 @@ def test_buy_prod(default_conf, mocker, exchange_name):
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-        exchange.buy(pair='ETH/BTC', ordertype=order_type,
+        exchange.buy(pair='ETH/BTC', ordertype='limit',
+                     amount=1, rate=200, time_in_force=time_in_force)
+
+    with pytest.raises(DependencyException):
+        api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+        exchange.buy(pair='ETH/BTC', ordertype='market',
                      amount=1, rate=200, time_in_force=time_in_force)
 
     with pytest.raises(TemporaryError):

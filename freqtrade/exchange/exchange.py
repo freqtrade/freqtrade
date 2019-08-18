@@ -472,7 +472,7 @@ class Exchange(object):
 
         order = self.create_order(pair, ordertype, 'sell', amount, rate, params)
         logger.info('stoploss limit order added for %s. '
-                    'stop price: %s. limit: %s' % (pair, stop_price, rate))
+                    'stop price: %s. limit: %s', pair, stop_price, rate)
         return order
 
     @retrier
