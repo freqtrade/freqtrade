@@ -632,7 +632,7 @@ def test_create_userdata_dir(mocker, default_conf, caplog) -> None:
     x = create_userdata_dir('/tmp/bar', create_dir=True)
     assert md.call_count == 7
     assert md.call_args[1]['parents'] is False
-    assert log_has('Created user-data directory: /tmp/bar', caplog.record_tuples)
+    assert log_has('Created user-data directory: /tmp/bar', caplog)
     assert isinstance(x, Path)
     assert str(x) == "/tmp/bar"
 

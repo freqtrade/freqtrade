@@ -53,7 +53,7 @@ def test_create_datadir_failed(caplog):
     ]
     with pytest.raises(SystemExit):
         start_create_userdir(get_args(args))
-    assert log_has("`create-userdir` requires --userdir to be set.", caplog.record_tuples)
+    assert log_has("`create-userdir` requires --userdir to be set.", caplog)
 
 
 def test_create_datadir(caplog, mocker):
