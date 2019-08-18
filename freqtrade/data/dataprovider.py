@@ -52,11 +52,10 @@ class DataProvider():
                      Use False only for read-only operations (where the dataframe is not modified)
         """
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
-            pairtick = (pair, ticker_interval or self._config['ticker_interval'])
-            if pairtick in self.available_pairs:
-                return self._exchange.klines(pairtick, copy=copy)
-
-        return DataFrame()
+            return self._exchange.klines((pair, ticker_interval or self._config['ticker_interval']),
+                                         copy=copy)
+        else:
+            return DataFrame()
 
     def historic_ohlcv(self, pair: str, ticker_interval: str = None) -> DataFrame:
         """
