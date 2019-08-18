@@ -45,7 +45,7 @@ class DataProvider():
     def ohlcv(self, pair: str, ticker_interval: str = None, copy: bool = True) -> DataFrame:
         """
         Get ohlcv data for the given pair as DataFrame
-        Please check `self.available_pairs` to verify which pairs are currently cached.
+        Please use the `available_pairs` method to verify which pairs are currently cached.
         :param pair: pair to get the data for
         :param ticker_interval: ticker interval to get data for
         :param copy: copy dataframe before returning if True.
