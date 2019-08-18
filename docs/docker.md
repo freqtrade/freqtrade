@@ -26,6 +26,10 @@ To update the image, simply run the above commands again and restart your runnin
 
 Should you require additional libraries, please [build the image yourself](#build-your-own-docker-image).
 
+!!! Note Docker image update frequency
+    The official docker images with tags `master`, `develop` and `latest` are automatically rebuild once a week to keep the base image uptodate.
+    In addition to that, every merge to `develop` will trigger a rebuild for `develop` and `latest`.
+
 ### Prepare the configuration files
 
 Even though you will use docker, you'll still need some files from the github repository.
