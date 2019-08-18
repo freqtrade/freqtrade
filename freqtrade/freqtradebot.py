@@ -51,6 +51,8 @@ class FreqtradeBot(object):
         self.config = config
 
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
+
+        # Check config consistency here since strategies can set certain options
         validate_config_consistency(config)
 
         self.rpc: RPCManager = RPCManager(self)
