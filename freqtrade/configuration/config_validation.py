@@ -63,6 +63,7 @@ def validate_config_consistency(conf: Dict[str, Any]) -> None:
     """
     # validating trailing stoploss
     _validate_trailing_stoploss(conf)
+    _validate_edge(conf)
 
 
 def _validate_trailing_stoploss(conf: Dict[str, Any]) -> None:
@@ -84,3 +85,18 @@ def _validate_trailing_stoploss(conf: Dict[str, Any]) -> None:
         raise OperationalException(
             f'The config trailing_stop_positive_offset needs '
             'to be greater than trailing_stop_positive_offset in your config.')
+
+
+def _validate_edge(conf: Dict[str, Any]) -> None:
+    """
+    Edge and Dynamic whitelist should not both be enabled, since edge overrides dynamic whitelists.
+    """
+
+    if not conf.get('edge', {}).get('enabled'):
+        return
+
+    if conf.get('pairlist', {}).get('method') == 'VolumePairList':
+        raise OperationalException(
+            "Edge and VolumePairList are incompatible, "
+            "Edge will override whatever pairs VolumePairlist selects."
+        )
