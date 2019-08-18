@@ -10,7 +10,7 @@ import utils_find_1st as utf1st
 from pandas import DataFrame
 
 from freqtrade import constants, OperationalException
-from freqtrade.configuration import Arguments, TimeRange
+from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.strategy.interface import SellType
 
@@ -75,7 +75,7 @@ class Edge():
             self._stoploss_range_step
         )
 
-        self._timerange: TimeRange = Arguments.parse_timerange("%s-" % arrow.now().shift(
+        self._timerange: TimeRange = TimeRange.parse_timerange("%s-" % arrow.now().shift(
             days=-1 * self._since_number_of_days).format('YYYYMMDD'))
 
         self.fee = self.exchange.get_fee()

@@ -12,7 +12,7 @@ from typing import Any, Dict, List, NamedTuple, Optional
 from pandas import DataFrame
 
 from freqtrade import OperationalException
-from freqtrade.configuration import Arguments
+from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exchange import timeframe_to_minutes
@@ -404,7 +404,7 @@ class Backtesting(object):
         logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
         logger.info('Using stake_amount: %s ...', self.config['stake_amount'])
 
-        timerange = Arguments.parse_timerange(None if self.config.get(
+        timerange = TimeRange.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
         data = history.load_data(
             datadir=Path(self.config['datadir']) if self.config.get('datadir') else None,

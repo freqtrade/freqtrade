@@ -164,7 +164,11 @@ By default, FreqTrade uses a loss function, which has been with freqtrade since 
 A different loss function can be specified by using the `--hyperopt-loss <Class-name>` argument.
 This class should be in its own file within the `user_data/hyperopts/` directory.
 
-Currently, the following loss functions are builtin: `DefaultHyperOptLoss` (default legacy Freqtrade hyperoptimization loss function), `SharpeHyperOptLoss` (optimizes Sharpe Ratio calculated on the trade returns) and `OnlyProfitHyperOptLoss` (which takes only amount of profit into consideration).
+Currently, the following loss functions are builtin:
+
+* `DefaultHyperOptLoss` (default legacy Freqtrade hyperoptimization loss function)
+* `OnlyProfitHyperOptLoss` (which takes only amount of profit into consideration)
+* `SharpeHyperOptLoss` (optimizes Sharpe Ratio calculated on the trade returns)
 
 ### Creating and using a custom loss function
 
@@ -347,6 +351,10 @@ def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
         'buy'] = 1
     return dataframe
 ```
+
+By default, hyperopt prints colorized results -- epochs with positive profit are printed in the green color. This highlighting helps you find epochs that can be interesting for later analysis. Epochs with zero total profit or with negative profits (losses) are printed in the normal color. If you do not need colorization of results (for instance, when you are redirecting hyperopt output to a file) you can switch colorization off by specifying the `--no-color` option in the command line.
+
+You can use the `--print-all` command line option if you would like to see all results in the hyperopt output, not only the best ones. When `--print-all` is used, current best results are also colorized by default -- they are printed in bold (bright) style. This can also be switched off with the `--no-color` command line option.
 
 ### Understand Hyperopt ROI results
 

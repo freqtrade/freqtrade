@@ -49,12 +49,12 @@ def test_returns_latest_sell_signal(mocker, default_conf, ticker_history):
 def test_get_signal_empty(default_conf, mocker, caplog):
     assert (False, False) == _STRATEGY.get_signal('foo', default_conf['ticker_interval'],
                                                   DataFrame())
-    assert log_has('Empty ticker history for pair foo', caplog.record_tuples)
+    assert log_has('Empty ticker history for pair foo', caplog)
     caplog.clear()
 
     assert (False, False) == _STRATEGY.get_signal('bar', default_conf['ticker_interval'],
                                                   [])
-    assert log_has('Empty ticker history for pair bar', caplog.record_tuples)
+    assert log_has('Empty ticker history for pair bar', caplog)
 
 
 def test_get_signal_exception_valueerror(default_conf, mocker, caplog, ticker_history):
@@ -65,7 +65,7 @@ def test_get_signal_exception_valueerror(default_conf, mocker, caplog, ticker_hi
     )
     assert (False, False) == _STRATEGY.get_signal('foo', default_conf['ticker_interval'],
                                                   ticker_history)
-    assert log_has('Unable to analyze ticker for pair foo: xyz', caplog.record_tuples)
+    assert log_has('Unable to analyze ticker for pair foo: xyz', caplog)
 
 
 def test_get_signal_empty_dataframe(default_conf, mocker, caplog, ticker_history):
@@ -76,7 +76,7 @@ def test_get_signal_empty_dataframe(default_conf, mocker, caplog, ticker_history
     )
     assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
                                                   ticker_history)
-    assert log_has('Empty dataframe for pair xyz', caplog.record_tuples)
+    assert log_has('Empty dataframe for pair xyz', caplog)
 
 
 def test_get_signal_old_dataframe(default_conf, mocker, caplog, ticker_history):
@@ -91,10 +91,7 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog, ticker_history):
     )
     assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
                                                   ticker_history)
-    assert log_has(
-        'Outdated history for pair xyz. Last tick is 16 minutes old',
-        caplog.record_tuples
-    )
+    assert log_has('Outdated history for pair xyz. Last tick is 16 minutes old', caplog)
 
 
 def test_get_signal_handles_exceptions(mocker, default_conf):
@@ -237,9 +234,8 @@ def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
     assert buy_mock.call_count == 1
     assert buy_mock.call_count == 1
 
-    assert log_has('TA Analysis Launched', caplog.record_tuples)
-    assert not log_has('Skipping TA Analysis for already analyzed candle',
-                       caplog.record_tuples)
+    assert log_has('TA Analysis Launched', caplog)
+    assert not log_has('Skipping TA Analysis for already analyzed candle', caplog)
     caplog.clear()
 
     strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
@@ -247,9 +243,8 @@ def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
     assert ind_mock.call_count == 2
     assert buy_mock.call_count == 2
     assert buy_mock.call_count == 2
-    assert log_has('TA Analysis Launched', caplog.record_tuples)
-    assert not log_has('Skipping TA Analysis for already analyzed candle',
-                       caplog.record_tuples)
+    assert log_has('TA Analysis Launched', caplog)
+    assert not log_has('Skipping TA Analysis for already analyzed candle', caplog)
 
 
 def test__analyze_ticker_internal_skip_analyze(ticker_history, mocker, caplog) -> None:
@@ -275,9 +270,8 @@ def test__analyze_ticker_internal_skip_analyze(ticker_history, mocker, caplog) -
     assert ind_mock.call_count == 1
     assert buy_mock.call_count == 1
     assert buy_mock.call_count == 1
-    assert log_has('TA Analysis Launched', caplog.record_tuples)
-    assert not log_has('Skipping TA Analysis for already analyzed candle',
-                       caplog.record_tuples)
+    assert log_has('TA Analysis Launched', caplog)
+    assert not log_has('Skipping TA Analysis for already analyzed candle', caplog)
     caplog.clear()
 
     ret = strategy._analyze_ticker_internal(ticker_history, {'pair': 'ETH/BTC'})
@@ -290,6 +284,21 @@ def test__analyze_ticker_internal_skip_analyze(ticker_history, mocker, caplog) -
     assert 'sell' in ret.columns
     assert ret['buy'].sum() == 0
     assert ret['sell'].sum() == 0
-    assert not log_has('TA Analysis Launched', caplog.record_tuples)
-    assert log_has('Skipping TA Analysis for already analyzed candle',
-                   caplog.record_tuples)
+    assert not log_has('TA Analysis Launched', caplog)
+    assert log_has('Skipping TA Analysis for already analyzed candle', caplog)
+
+
+def test_is_pair_locked(default_conf):
+    strategy = DefaultStrategy(default_conf)
+    # dict should be empty
+    assert not strategy._pair_locked_until
+
+    pair = 'ETH/BTC'
+    assert not strategy.is_pair_locked(pair)
+    strategy.lock_pair(pair, arrow.utcnow().shift(minutes=4).datetime)
+    # ETH/BTC locked for 4 minutes
+    assert strategy.is_pair_locked(pair)
+
+    # XRP/BTC should not be locked now
+    pair = 'XRP/BTC'
+    assert not strategy.is_pair_locked(pair)

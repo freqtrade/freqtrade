@@ -76,7 +76,7 @@ def test_init(default_conf, mocker, caplog) -> None:
                   "['performance'], ['daily'], ['count'], ['reload_conf'], " \
                   "['stopbuy'], ['whitelist'], ['blacklist'], ['edge'], ['help'], ['version']]"
 
-    assert log_has(message_str, caplog.record_tuples)
+    assert log_has(message_str, caplog)
 
 
 def test_cleanup(default_conf, mocker) -> None:
@@ -102,18 +102,9 @@ def test_authorized_only(default_conf, mocker, caplog) -> None:
     dummy = DummyCls(bot)
     dummy.dummy_handler(bot=MagicMock(), update=update)
     assert dummy.state['called'] is True
-    assert log_has(
-        'Executing handler: dummy_handler for chat_id: 0',
-        caplog.record_tuples
-    )
-    assert not log_has(
-        'Rejected unauthorized message from: 0',
-        caplog.record_tuples
-    )
-    assert not log_has(
-        'Exception occurred within Telegram module',
-        caplog.record_tuples
-    )
+    assert log_has('Executing handler: dummy_handler for chat_id: 0', caplog)
+    assert not log_has('Rejected unauthorized message from: 0', caplog)
+    assert not log_has('Exception occurred within Telegram module', caplog)
 
 
 def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
@@ -128,18 +119,9 @@ def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
     dummy = DummyCls(bot)
     dummy.dummy_handler(bot=MagicMock(), update=update)
     assert dummy.state['called'] is False
-    assert not log_has(
-        'Executing handler: dummy_handler for chat_id: 3735928559',
-        caplog.record_tuples
-    )
-    assert log_has(
-        'Rejected unauthorized message from: 3735928559',
-        caplog.record_tuples
-    )
-    assert not log_has(
-        'Exception occurred within Telegram module',
-        caplog.record_tuples
-    )
+    assert not log_has('Executing handler: dummy_handler for chat_id: 3735928559', caplog)
+    assert log_has('Rejected unauthorized message from: 3735928559', caplog)
+    assert not log_has('Exception occurred within Telegram module', caplog)
 
 
 def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
@@ -156,18 +138,9 @@ def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
 
     dummy.dummy_exception(bot=MagicMock(), update=update)
     assert dummy.state['called'] is False
-    assert not log_has(
-        'Executing handler: dummy_handler for chat_id: 0',
-        caplog.record_tuples
-    )
-    assert not log_has(
-        'Rejected unauthorized message from: 0',
-        caplog.record_tuples
-    )
-    assert log_has(
-        'Exception occurred within Telegram module',
-        caplog.record_tuples
-    )
+    assert not log_has('Executing handler: dummy_handler for chat_id: 0', caplog)
+    assert not log_has('Rejected unauthorized message from: 0', caplog)
+    assert log_has('Exception occurred within Telegram module', caplog)
 
 
 def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
@@ -219,7 +192,7 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
 
     # Create some test data
     for _ in range(3):
-        freqtradebot.create_trade()
+        freqtradebot.create_trades()
 
     telegram._status(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
@@ -267,7 +240,7 @@ def test_status_handle(default_conf, update, ticker, fee, markets, mocker) -> No
     msg_mock.reset_mock()
 
     # Create some test data
-    freqtradebot.create_trade()
+    freqtradebot.create_trades()
     # Trigger status while we have a fulfilled order for the open trade
     telegram._status(bot=MagicMock(), update=update)
 
@@ -319,7 +292,7 @@ def test_status_table_handle(default_conf, update, ticker, fee, markets, mocker)
     msg_mock.reset_mock()
 
     # Create some test data
-    freqtradebot.create_trade()
+    freqtradebot.create_trades()
 
     telegram._status_table(bot=MagicMock(), update=update)
 
@@ -335,6 +308,7 @@ def test_status_table_handle(default_conf, update, ticker, fee, markets, mocker)
 def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
                       limit_sell_order, markets, mocker) -> None:
     patch_exchange(mocker)
+    default_conf['max_open_trades'] = 1
     mocker.patch(
         'freqtrade.rpc.rpc.CryptoToFiatConverter._find_price',
         return_value=15000.0
@@ -358,7 +332,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
     telegram = Telegram(freqtradebot)
 
     # Create some test data
-    freqtradebot.create_trade()
+    freqtradebot.create_trades()
     trade = Trade.query.first()
     assert trade
 
@@ -384,9 +358,9 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
 
     # Reset msg_mock
     msg_mock.reset_mock()
+    freqtradebot.config['max_open_trades'] = 2
     # Add two other trades
-    freqtradebot.create_trade()
-    freqtradebot.create_trade()
+    freqtradebot.create_trades()
 
     trades = Trade.query.all()
     for trade in trades:
@@ -465,7 +439,7 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     msg_mock.reset_mock()
 
     # Create some test data
-    freqtradebot.create_trade()
+    freqtradebot.create_trades()
     trade = Trade.query.first()
 
     # Simulate fulfilled LIMIT_BUY order for trade
@@ -760,7 +734,7 @@ def test_forcesell_handle(default_conf, update, ticker, fee,
     telegram = Telegram(freqtradebot)
 
     # Create some test data
-    freqtradebot.create_trade()
+    freqtradebot.create_trades()
 
     trade = Trade.query.first()
     assert trade
@@ -811,7 +785,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee,
     telegram = Telegram(freqtradebot)
 
     # Create some test data
-    freqtradebot.create_trade()
+    freqtradebot.create_trades()
 
     # Decrease the price and sell it
     mocker.patch.multiple(
@@ -859,14 +833,13 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, markets, mocker
         markets=PropertyMock(return_value=markets),
         validate_pairs=MagicMock(return_value={})
     )
-
+    default_conf['max_open_trades'] = 4
     freqtradebot = FreqtradeBot(default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
     # Create some test data
-    for _ in range(4):
-        freqtradebot.create_trade()
+    freqtradebot.create_trades()
     rpc_mock.reset_mock()
 
     update.message.text = '/forcesell all'
@@ -1010,7 +983,7 @@ def test_performance_handle(default_conf, update, ticker, fee,
     telegram = Telegram(freqtradebot)
 
     # Create some test data
-    freqtradebot.create_trade()
+    freqtradebot.create_trades()
     trade = Trade.query.first()
     assert trade
 
@@ -1055,7 +1028,7 @@ def test_count_handle(default_conf, update, ticker, fee, markets, mocker) -> Non
     freqtradebot.state = State.RUNNING
 
     # Create some test data
-    freqtradebot.create_trade()
+    freqtradebot.create_trades()
     msg_mock.reset_mock()
     telegram._count(bot=MagicMock(), update=update)
 
@@ -1440,7 +1413,4 @@ def test__send_msg_network_error(default_conf, mocker, caplog) -> None:
 
     # Bot should've tried to send it twice
     assert len(bot.method_calls) == 2
-    assert log_has(
-        'Telegram NetworkError: Oh snap! Trying one more time.',
-        caplog.record_tuples
-    )
+    assert log_has('Telegram NetworkError: Oh snap! Trying one more time.', caplog)

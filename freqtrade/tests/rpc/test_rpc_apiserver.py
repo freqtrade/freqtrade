@@ -148,8 +148,8 @@ def test_api_run(default_conf, mocker, caplog):
     assert isinstance(server_mock.call_args_list[0][0][2], Flask)
     assert hasattr(apiserver, "srv")
 
-    assert log_has("Starting HTTP Server at 127.0.0.1:8080", caplog.record_tuples)
-    assert log_has("Starting Local Rest Server.", caplog.record_tuples)
+    assert log_has("Starting HTTP Server at 127.0.0.1:8080", caplog)
+    assert log_has("Starting Local Rest Server.", caplog)
 
     # Test binding to public
     caplog.clear()
@@ -165,22 +165,20 @@ def test_api_run(default_conf, mocker, caplog):
     assert server_mock.call_args_list[0][0][0] == "0.0.0.0"
     assert server_mock.call_args_list[0][0][1] == "8089"
     assert isinstance(server_mock.call_args_list[0][0][2], Flask)
-    assert log_has("Starting HTTP Server at 0.0.0.0:8089", caplog.record_tuples)
-    assert log_has("Starting Local Rest Server.", caplog.record_tuples)
+    assert log_has("Starting HTTP Server at 0.0.0.0:8089", caplog)
+    assert log_has("Starting Local Rest Server.", caplog)
     assert log_has("SECURITY WARNING - Local Rest Server listening to external connections",
-                   caplog.record_tuples)
+                   caplog)
     assert log_has("SECURITY WARNING - This is insecure please set to your loopback,"
-                   "e.g 127.0.0.1 in config.json",
-                   caplog.record_tuples)
+                   "e.g 127.0.0.1 in config.json", caplog)
     assert log_has("SECURITY WARNING - No password for local REST Server defined. "
-                   "Please make sure that this is intentional!",
-                   caplog.record_tuples)
+                   "Please make sure that this is intentional!", caplog)
 
     # Test crashing flask
     caplog.clear()
     mocker.patch('freqtrade.rpc.api_server.make_server', MagicMock(side_effect=Exception))
     apiserver.run()
-    assert log_has("Api server failed to start.", caplog.record_tuples)
+    assert log_has("Api server failed to start.", caplog)
 
 
 def test_api_cleanup(default_conf, mocker, caplog):
@@ -199,7 +197,7 @@ def test_api_cleanup(default_conf, mocker, caplog):
 
     apiserver.cleanup()
     assert stop_mock.shutdown.call_count == 1
-    assert log_has("Stopping API Server", caplog.record_tuples)
+    assert log_has("Stopping API Server", caplog)
 
 
 def test_api_reloadconf(botclient):
@@ -277,7 +275,7 @@ def test_api_count(botclient, mocker, ticker, fee, markets):
     assert rc.json["max"] == 1.0
 
     # Create some test data
-    ftbot.create_trade()
+    ftbot.create_trades()
     rc = client_get(client, f"{BASE_URI}/count")
     assert_response(rc)
     assert rc.json["current"] == 1.0
@@ -331,7 +329,7 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
     assert len(rc.json) == 1
     assert rc.json == {"error": "Error querying _profit: no closed trade"}
 
-    ftbot.create_trade()
+    ftbot.create_trades()
     trade = Trade.query.first()
 
     # Simulate fulfilled LIMIT_BUY order for trade
@@ -420,7 +418,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     assert_response(rc, 502)
     assert rc.json == {'error': 'Error querying _status: no active trade'}
 
-    ftbot.create_trade()
+    ftbot.create_trades()
     rc = client_get(client, f"{BASE_URI}/status")
     assert_response(rc)
     assert len(rc.json) == 1
@@ -550,7 +548,7 @@ def test_api_forcesell(botclient, mocker, ticker, fee, markets):
     assert_response(rc, 502)
     assert rc.json == {"error": "Error querying _forcesell: invalid argument"}
 
-    ftbot.create_trade()
+    ftbot.create_trades()
 
     rc = client_post(client, f"{BASE_URI}/forcesell",
                      data='{"tradeid": "1"}')

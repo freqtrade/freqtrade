@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, PropertyMock
 
 import arrow
 import pytest
+import numpy as np
 from telegram import Chat, Message, Update
 
 from freqtrade import constants, persistence
@@ -25,17 +26,21 @@ from freqtrade.worker import Worker
 logging.getLogger('').setLevel(logging.INFO)
 
 
+# Do not mask numpy errors as warnings that no one read, raise the exсeption
+np.seterr(all='raise')
+
+
 def log_has(line, logs):
     # caplog mocker returns log as a tuple: ('freqtrade.something', logging.WARNING, 'foobar')
     # and we want to match line against foobar in the tuple
     return reduce(lambda a, b: a or b,
-                  filter(lambda x: x[2] == line, logs),
+                  filter(lambda x: x[2] == line, logs.record_tuples),
                   False)
 
 
 def log_has_re(line, logs):
     return reduce(lambda a, b: a or b,
-                  filter(lambda x: re.match(line, x[2]), logs),
+                  filter(lambda x: re.match(line, x[2]), logs.record_tuples),
                   False)
 
 

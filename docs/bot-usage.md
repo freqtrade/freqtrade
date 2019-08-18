@@ -2,7 +2,7 @@
 
 This page explains the different parameters of the bot and how to run it.
 
-!Note:
+!!! Note:
     If you've used `setup.sh`, don't forget to activate your virtual environment (`source .env/bin/activate`) before running freqtrade commands.
 
 
@@ -48,21 +48,24 @@ optional arguments:
 
 ```
 
-### How to use a different configuration file?
+### How to specify which configuration file be used?
 
-The bot allows you to select which configuration file you want to use. Per
-default, the bot will load the file `./config.json`
+The bot allows you to select which configuration file you want to use by means of
+the `-c/--config` command line option:
 
 ```bash
 freqtrade -c path/far/far/away/config.json
 ```
 
+Per default, the bot loads the `config.json` configuration file from the current
+working directory.
+
 ### How to use multiple configuration files?
 
 The bot allows you to use multiple configuration files by specifying multiple
-`-c/--config` configuration options in the command line. Configuration parameters
-defined in the last configuration file override parameters with the same name
-defined in the previous configuration file specified in the command line.
+`-c/--config` options in the command line. Configuration parameters
+defined in the latter configuration files override parameters with the same name
+defined in the previous configuration files specified in the command line earlier.
 
 For example, you can make a separate configuration file with your key and secrete
 for the Exchange you use for trading, specify default configuration file with
@@ -235,7 +238,7 @@ usage: freqtrade hyperopt [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
                           [--customhyperopt NAME] [--hyperopt-path PATH]
                           [--eps] [-e INT]
                           [-s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
-                          [--dmmp] [--print-all] [-j JOBS]
+                          [--dmmp] [--print-all] [--no-color] [-j JOBS]
                           [--random-state INT] [--min-trades INT] [--continue]
                           [--hyperopt-loss NAME]
 
@@ -271,6 +274,8 @@ optional arguments:
                         (same as setting `max_open_trades` to a very high
                         number).
   --print-all           Print all results, not only the best ones.
+  --no-color            Disable colorization of hyperopt results. May be
+                        useful if you are redirecting output to a file.
   -j JOBS, --job-workers JOBS
                         The number of concurrently running jobs for
                         hyperoptimization (hyperopt worker processes). If -1
@@ -284,17 +289,18 @@ optional arguments:
   --continue            Continue hyperopt from previous runs. By default,
                         temporary files will be removed and hyperopt will
                         start from scratch.
-  --hyperopt-loss       NAME
-                        Specify the class name of the hyperopt loss function
+  --hyperopt-loss NAME  Specify the class name of the hyperopt loss function
                         class (IHyperOptLoss). Different functions can
                         generate completely different results, since the
-                        target for optimization is different. (default:
-                        `DefaultHyperOptLoss`).
+                        target for optimization is different. Built-in
+                        Hyperopt-loss-functions are: DefaultHyperOptLoss,
+                        OnlyProfitHyperOptLoss, SharpeHyperOptLoss.
+                        (default: `DefaultHyperOptLoss`).
 ```
 
 ## Edge commands
 
-To know your trade expectacny and winrate against historical data, you can use Edge.
+To know your trade expectancy and winrate against historical data, you can use Edge.
 
 ```
 usage: freqtrade edge [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]

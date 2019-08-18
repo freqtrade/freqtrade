@@ -64,8 +64,7 @@ def test_load_data_30min_ticker(mocker, caplog, default_conf) -> None:
     assert isinstance(ld, DataFrame)
     assert not log_has(
         'Download history data for pair: "UNITTEST/BTC", interval: 30m '
-        'and store in None.',
-        caplog.record_tuples
+        'and store in None.', caplog
     )
 
 
@@ -76,21 +75,19 @@ def test_load_data_7min_ticker(mocker, caplog, default_conf) -> None:
     assert log_has(
         'No history data for pair: "UNITTEST/BTC", interval: 7m. '
         'Use --refresh-pairs-cached option or download_backtest_data.py '
-        'script to download the data',
-        caplog.record_tuples
+        'script to download the data', caplog
     )
 
 
 def test_load_data_1min_ticker(ticker_history, mocker, caplog) -> None:
-    mocker.patch('freqtrade.exchange.Exchange.get_history', return_value=ticker_history)
+    mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ticker_history)
     file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'UNITTEST_BTC-1m.json')
     _backup_file(file, copy_file=True)
     history.load_data(datadir=None, ticker_interval='1m', pairs=['UNITTEST/BTC'])
     assert os.path.isfile(file) is True
     assert not log_has(
         'Download history data for pair: "UNITTEST/BTC", interval: 1m '
-        'and store in None.',
-        caplog.record_tuples
+        'and store in None.', caplog
     )
     _clean_test_file(file)
 
@@ -99,7 +96,7 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog, defau
     """
     Test load_pair_history() with 1 min ticker
     """
-    mocker.patch('freqtrade.exchange.Exchange.get_history', return_value=ticker_history_list)
+    mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ticker_history_list)
     exchange = get_patched_exchange(mocker, default_conf)
     file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-1m.json')
 
@@ -113,8 +110,7 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog, defau
     assert log_has(
         'No history data for pair: "MEME/BTC", interval: 1m. '
         'Use --refresh-pairs-cached option or download_backtest_data.py '
-        'script to download the data',
-        caplog.record_tuples
+        'script to download the data', caplog
     )
 
     # download a new pair if refresh_pairs is set
@@ -126,8 +122,7 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog, defau
     assert os.path.isfile(file) is True
     assert log_has(
         'Download history data for pair: "MEME/BTC", interval: 1m '
-        'and store in None.',
-        caplog.record_tuples
+        'and store in None.', caplog
     )
     with pytest.raises(OperationalException, match=r'Exchange needs to be initialized when.*'):
         history.load_pair_history(datadir=None,
@@ -149,7 +144,7 @@ def test_load_data_live(default_conf, mocker, caplog) -> None:
                       exchange=exchange)
     assert refresh_mock.call_count == 1
     assert len(refresh_mock.call_args_list[0][0][0]) == 2
-    assert log_has('Live: Downloading data for all defined pairs ...', caplog.record_tuples)
+    assert log_has('Live: Downloading data for all defined pairs ...', caplog)
 
 
 def test_load_data_live_noexchange(default_conf, mocker, caplog) -> None:
@@ -271,7 +266,7 @@ def test_load_cached_data_for_updating(mocker) -> None:
 
 
 def test_download_pair_history(ticker_history_list, mocker, default_conf) -> None:
-    mocker.patch('freqtrade.exchange.Exchange.get_history', return_value=ticker_history_list)
+    mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ticker_history_list)
     exchange = get_patched_exchange(mocker, default_conf)
     file1_1 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-1m.json')
     file1_5 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-5m.json')
@@ -324,7 +319,7 @@ def test_download_pair_history2(mocker, default_conf) -> None:
         [1509836580000, 0.00161, 0.00161, 0.00161, 0.00161, 82.390199]
     ]
     json_dump_mock = mocker.patch('freqtrade.misc.file_dump_json', return_value=None)
-    mocker.patch('freqtrade.exchange.Exchange.get_history', return_value=tick)
+    mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=tick)
     exchange = get_patched_exchange(mocker, default_conf)
     download_pair_history(None, exchange, pair="UNITTEST/BTC", ticker_interval='1m')
     download_pair_history(None, exchange, pair="UNITTEST/BTC", ticker_interval='3m')
@@ -332,7 +327,7 @@ def test_download_pair_history2(mocker, default_conf) -> None:
 
 
 def test_download_backtesting_data_exception(ticker_history, mocker, caplog, default_conf) -> None:
-    mocker.patch('freqtrade.exchange.Exchange.get_history',
+    mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv',
                  side_effect=Exception('File Error'))
 
     exchange = get_patched_exchange(mocker, default_conf)
@@ -350,8 +345,7 @@ def test_download_backtesting_data_exception(ticker_history, mocker, caplog, def
     _clean_test_file(file1_5)
     assert log_has(
         'Failed to download history data for pair: "MEME/BTC", interval: 1m. '
-        'Error: File Error',
-        caplog.record_tuples
+        'Error: File Error', caplog
     )
 
 
@@ -380,7 +374,7 @@ def test_load_partial_missing(caplog) -> None:
     start_real = tickerdata['UNITTEST/BTC'].iloc[0, 0]
     assert log_has(f'Missing data at start for pair '
                    f'UNITTEST/BTC, data starts at {start_real.strftime("%Y-%m-%d %H:%M:%S")}',
-                   caplog.record_tuples)
+                   caplog)
     # Make sure we start fresh - test missing data at end
     caplog.clear()
     start = arrow.get('2018-01-10T00:00:00')
@@ -396,7 +390,7 @@ def test_load_partial_missing(caplog) -> None:
     end_real = arrow.get(tickerdata['UNITTEST/BTC'].iloc[-1, 0]).shift(minutes=5)
     assert log_has(f'Missing data at end for pair '
                    f'UNITTEST/BTC, data ends at {end_real.strftime("%Y-%m-%d %H:%M:%S")}',
-                   caplog.record_tuples)
+                   caplog)
 
 
 def test_init(default_conf, mocker) -> None:
@@ -560,7 +554,7 @@ def test_validate_backtest_data_warn(default_conf, mocker, caplog) -> None:
     assert len(caplog.record_tuples) == 1
     assert log_has(
         "UNITTEST/BTC has missing frames: expected 14396, got 13680, that's 716 missing values",
-        caplog.record_tuples)
+        caplog)
 
 
 def test_validate_backtest_data(default_conf, mocker, caplog) -> None:

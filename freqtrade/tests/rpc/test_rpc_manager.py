@@ -19,7 +19,7 @@ def test_init_telegram_disabled(mocker, default_conf, caplog) -> None:
     default_conf['telegram']['enabled'] = False
     rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
 
-    assert not log_has('Enabling rpc.telegram ...', caplog.record_tuples)
+    assert not log_has('Enabling rpc.telegram ...', caplog)
     assert rpc_manager.registered_modules == []
 
 
@@ -28,7 +28,7 @@ def test_init_telegram_enabled(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
     rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
 
-    assert log_has('Enabling rpc.telegram ...', caplog.record_tuples)
+    assert log_has('Enabling rpc.telegram ...', caplog)
     len_modules = len(rpc_manager.registered_modules)
     assert len_modules == 1
     assert 'telegram' in [mod.name for mod in rpc_manager.registered_modules]
@@ -43,7 +43,7 @@ def test_cleanup_telegram_disabled(mocker, default_conf, caplog) -> None:
     rpc_manager = RPCManager(freqtradebot)
     rpc_manager.cleanup()
 
-    assert not log_has('Cleaning up rpc.telegram ...', caplog.record_tuples)
+    assert not log_has('Cleaning up rpc.telegram ...', caplog)
     assert telegram_mock.call_count == 0
 
 
@@ -59,7 +59,7 @@ def test_cleanup_telegram_enabled(mocker, default_conf, caplog) -> None:
     assert 'telegram' in [mod.name for mod in rpc_manager.registered_modules]
 
     rpc_manager.cleanup()
-    assert log_has('Cleaning up rpc.telegram ...', caplog.record_tuples)
+    assert log_has('Cleaning up rpc.telegram ...', caplog)
     assert 'telegram' not in [mod.name for mod in rpc_manager.registered_modules]
     assert telegram_mock.call_count == 1
 
@@ -75,7 +75,7 @@ def test_send_msg_telegram_disabled(mocker, default_conf, caplog) -> None:
         'status': 'test'
     })
 
-    assert log_has("Sending rpc message: {'type': status, 'status': 'test'}", caplog.record_tuples)
+    assert log_has("Sending rpc message: {'type': status, 'status': 'test'}", caplog)
     assert telegram_mock.call_count == 0
 
 
@@ -90,7 +90,7 @@ def test_send_msg_telegram_enabled(mocker, default_conf, caplog) -> None:
         'status': 'test'
     })
 
-    assert log_has("Sending rpc message: {'type': status, 'status': 'test'}", caplog.record_tuples)
+    assert log_has("Sending rpc message: {'type': status, 'status': 'test'}", caplog)
     assert telegram_mock.call_count == 1
 
 
@@ -100,7 +100,7 @@ def test_init_webhook_disabled(mocker, default_conf, caplog) -> None:
     default_conf['webhook'] = {'enabled': False}
     rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
 
-    assert not log_has('Enabling rpc.webhook ...', caplog.record_tuples)
+    assert not log_has('Enabling rpc.webhook ...', caplog)
     assert rpc_manager.registered_modules == []
 
 
@@ -110,7 +110,7 @@ def test_init_webhook_enabled(mocker, default_conf, caplog) -> None:
     default_conf['webhook'] = {'enabled': True, 'url': "https://DEADBEEF.com"}
     rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
 
-    assert log_has('Enabling rpc.webhook ...', caplog.record_tuples)
+    assert log_has('Enabling rpc.webhook ...', caplog)
     assert len(rpc_manager.registered_modules) == 1
     assert 'webhook' in [mod.name for mod in rpc_manager.registered_modules]
 
@@ -144,7 +144,7 @@ def test_init_apiserver_disabled(mocker, default_conf, caplog) -> None:
     default_conf['telegram']['enabled'] = False
     rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
 
-    assert not log_has('Enabling rpc.api_server', caplog.record_tuples)
+    assert not log_has('Enabling rpc.api_server', caplog)
     assert rpc_manager.registered_modules == []
     assert run_mock.call_count == 0
 
@@ -160,7 +160,7 @@ def test_init_apiserver_enabled(mocker, default_conf, caplog) -> None:
                                   "listen_port": "8080"}
     rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
 
-    assert log_has('Enabling rpc.api_server', caplog.record_tuples)
+    assert log_has('Enabling rpc.api_server', caplog)
     assert len(rpc_manager.registered_modules) == 1
     assert 'apiserver' in [mod.name for mod in rpc_manager.registered_modules]
     assert run_mock.call_count == 1

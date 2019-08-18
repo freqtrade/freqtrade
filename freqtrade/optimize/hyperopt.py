@@ -7,17 +7,22 @@ This module contains the hyperopt logic
 import logging
 import sys
 
+from collections import OrderedDict
 from operator import itemgetter
 from pathlib import Path
 from pprint import pprint
 from typing import Any, Dict, List, Optional
 
+import rapidjson
+
+from colorama import init as colorama_init
+from colorama import Fore, Style
 from joblib import Parallel, delayed, dump, load, wrap_non_picklable_objects, cpu_count
 from pandas import DataFrame
 from skopt import Optimizer
 from skopt.space import Dimension
 
-from freqtrade.configuration import Arguments
+from freqtrade.configuration import TimeRange
 from freqtrade.data.history import load_data, get_timeframe
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOptLoss to allow users import from this file
@@ -136,30 +141,61 @@ class Hyperopt(Backtesting):
         results = sorted(self.trials, key=itemgetter('loss'))
         best_result = results[0]
         params = best_result['params']
-
         log_str = self.format_results_logstring(best_result)
         print(f"\nBest result:\n\n{log_str}\n")
-        if self.has_space('buy'):
-            print('Buy hyperspace params:')
-            pprint({p.name: params.get(p.name) for p in self.hyperopt_space('buy')},
-                   indent=4)
-        if self.has_space('sell'):
-            print('Sell hyperspace params:')
-            pprint({p.name: params.get(p.name) for p in self.hyperopt_space('sell')},
-                   indent=4)
-        if self.has_space('roi'):
-            print("ROI table:")
-            pprint(self.custom_hyperopt.generate_roi_table(params), indent=4)
-        if self.has_space('stoploss'):
-            print(f"Stoploss: {params.get('stoploss')}")
+
+        if self.config.get('print_json'):
+            result_dict: Dict = {}
+            if self.has_space('buy') or self.has_space('sell'):
+                result_dict['params'] = {}
+            if self.has_space('buy'):
+                result_dict['params'].update({p.name: params.get(p.name)
+                                             for p in self.hyperopt_space('buy')})
+            if self.has_space('sell'):
+                result_dict['params'].update({p.name: params.get(p.name)
+                                             for p in self.hyperopt_space('sell')})
+            if self.has_space('roi'):
+                # Convert keys in min_roi dict to strings because
+                # rapidjson cannot dump dicts with integer keys...
+                # OrderedDict is used to keep the numeric order of the items
+                # in the dict.
+                result_dict['minimal_roi'] = OrderedDict(
+                    (str(k), v) for k, v in self.custom_hyperopt.generate_roi_table(params).items()
+                )
+            if self.has_space('stoploss'):
+                result_dict['stoploss'] = params.get('stoploss')
+            print(rapidjson.dumps(result_dict, default=str, number_mode=rapidjson.NM_NATIVE))
+        else:
+            if self.has_space('buy'):
+                print('Buy hyperspace params:')
+                pprint({p.name: params.get(p.name) for p in self.hyperopt_space('buy')},
+                       indent=4)
+            if self.has_space('sell'):
+                print('Sell hyperspace params:')
+                pprint({p.name: params.get(p.name) for p in self.hyperopt_space('sell')},
+                       indent=4)
+            if self.has_space('roi'):
+                print("ROI table:")
+                pprint(self.custom_hyperopt.generate_roi_table(params), indent=4)
+            if self.has_space('stoploss'):
+                print(f"Stoploss: {params.get('stoploss')}")
 
     def log_results(self, results) -> None:
         """
         Log results if it is better than any previous evaluation
         """
         print_all = self.config.get('print_all', False)
-        if print_all or results['loss'] < self.current_best_loss:
+        is_best_loss = results['loss'] < self.current_best_loss
+        if print_all or is_best_loss:
+            if is_best_loss:
+                self.current_best_loss = results['loss']
             log_str = self.format_results_logstring(results)
+            # Colorize output
+            if self.config.get('print_colorized', False):
+                if results['total_profit'] > 0:
+                    log_str = Fore.GREEN + log_str
+                if print_all and is_best_loss:
+                    log_str = Style.BRIGHT + log_str
             if print_all:
                 print(log_str)
             else:
@@ -174,7 +210,6 @@ class Hyperopt(Backtesting):
         total = self.total_epochs
         res = results['results_explanation']
         loss = results['loss']
-        self.current_best_loss = results['loss']
         log_str = f'{current:5d}/{total}: {res} Objective: {loss:.5f}'
         log_str = f'*{log_str}' if results['is_initial_point'] else f' {log_str}'
         return log_str
@@ -242,6 +277,7 @@ class Hyperopt(Backtesting):
         results_explanation = self.format_results(results)
 
         trade_count = len(results.index)
+        total_profit = results.profit_abs.sum()
 
         # If this evaluation contains too short amount of trades to be
         # interesting -- consider it as 'bad' (assigned max. loss value)
@@ -252,6 +288,7 @@ class Hyperopt(Backtesting):
                 'loss': MAX_LOSS,
                 'params': params,
                 'results_explanation': results_explanation,
+                'total_profit': total_profit,
             }
 
         loss = self.calculate_loss(results=results, trade_count=trade_count,
@@ -261,6 +298,7 @@ class Hyperopt(Backtesting):
             'loss': loss,
             'params': params,
             'results_explanation': results_explanation,
+            'total_profit': total_profit,
         }
 
     def format_results(self, results: DataFrame) -> str:
@@ -302,7 +340,7 @@ class Hyperopt(Backtesting):
             )
 
     def start(self) -> None:
-        timerange = Arguments.parse_timerange(None if self.config.get(
+        timerange = TimeRange.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
         data = load_data(
             datadir=Path(self.config['datadir']) if self.config.get('datadir') else None,
@@ -344,6 +382,10 @@ class Hyperopt(Backtesting):
         logger.info(f'Number of parallel jobs set as: {config_jobs}')
 
         opt = self.get_optimizer(config_jobs)
+
+        if self.config.get('print_colorized', False):
+            colorama_init(autoreset=True)
+
         try:
             with Parallel(n_jobs=config_jobs) as parallel:
                 jobs = parallel._effective_n_jobs()
