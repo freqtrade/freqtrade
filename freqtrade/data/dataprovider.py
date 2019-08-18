@@ -85,7 +85,7 @@ class DataProvider():
             # Get historic ohlcv data (cached on disk).
             data = self.historic_ohlcv(pair=pair, ticker_interval=ticker_interval)
         if len(data) == 0:
-            logger.warning(f"No data found for pair {pair}")
+            logger.warning(f"No data found for ({pair}, {ticker_interval}).")
         return data
 
     def ticker(self, pair: str):
