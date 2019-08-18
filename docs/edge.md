@@ -234,9 +234,8 @@ An example of its output:
 
 ### Update cached pairs with the latest data
 
-```bash
-freqtrade edge --refresh-pairs-cached
-```
+Edge requires historic data the same way than backtesting does.
+Please refer to the [download section](backtesting.md#Getting-data-for-backtesting-and-hyperopt) of the documentation for details.
 
 ### Precising stoploss range
 

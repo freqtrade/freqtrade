@@ -4,12 +4,13 @@ This page contains description of the command line arguments, configuration para
 and the bot features that were declared as DEPRECATED by the bot development team
 and are no longer supported. Please avoid their usage in your configuration.
 
-### the `--live` command line option
+### the `--refresh-pairs-cached` command line option
 
-`--live` in the context of backtesting allows to download the latest tick data for backtesting.
-Since this only downloads one set of data (by default 500 candles) - this is not really suitable for extendet backtesting, and has therefore been deprecated.
+`--refresh-pairs-cached` in the context of backtesting, hyperopt and edge allowes to refresh candle data for backtesting.
+Since this leads to much confusion, and slows down backtesting (while not beeing part of backtesting) this has been singled out 
+as a seperate freqtrade subcommand `freqtrade download-data`.
 
-This command was deprecated in `2019.6-dev` and will be removed after the next release.
+This command was deprecated in `2019.7-dev` and will be removed after the next release.
 
 ## Removed features
 
