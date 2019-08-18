@@ -16,6 +16,7 @@ from freqtrade import (DependencyException, OperationalException, InvalidOrderEx
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
+from freqtrade.configuration import validate_config_consistency
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
@@ -50,6 +51,7 @@ class FreqtradeBot(object):
         self.config = config
 
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
+        validate_config_consistency(config)
 
         self.rpc: RPCManager = RPCManager(self)
 

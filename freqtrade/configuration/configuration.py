@@ -6,10 +6,11 @@ import warnings
 from argparse import Namespace
 from typing import Any, Callable, Dict, List, Optional
 
-from freqtrade import OperationalException, constants
+from freqtrade import constants
 from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.create_datadir import create_datadir
-from freqtrade.configuration.json_schema import validate_config_schema
+from freqtrade.configuration.config_validation import (validate_config_schema,
+                                                       validate_config_consistency)
 from freqtrade.configuration.load_config import load_config_file
 from freqtrade.loggers import setup_logging
 from freqtrade.misc import deep_merge_dicts
@@ -77,8 +78,6 @@ class Configuration(object):
         # Load all configs
         config: Dict[str, Any] = Configuration.from_files(self.args.config)
 
-        self._validate_config_consistency(config)
-
         self._process_common_options(config)
 
         self._process_optimize_options(config)
@@ -86,6 +85,8 @@ class Configuration(object):
         self._process_plot_options(config)
 
         self._process_runmode(config)
+
+        validate_config_consistency(config)
 
         return config
 
@@ -284,35 +285,6 @@ class Configuration(object):
             logger.info(f"Runmode set to {self.runmode}.")
 
         config.update({'runmode': self.runmode})
-
-    def _validate_config_consistency(self, conf: Dict[str, Any]) -> None:
-        """
-        Validate the configuration consistency
-        :param conf: Config in JSON format
-        :return: Returns None if everything is ok, otherwise throw an OperationalException
-        """
-        # validating trailing stoploss
-        self._validate_trailing_stoploss(conf)
-
-    def _validate_trailing_stoploss(self, conf: Dict[str, Any]) -> None:
-
-        # Skip if trailing stoploss is not activated
-        if not conf.get('trailing_stop', False):
-            return
-
-        tsl_positive = float(conf.get('trailing_stop_positive', 0))
-        tsl_offset = float(conf.get('trailing_stop_positive_offset', 0))
-        tsl_only_offset = conf.get('trailing_only_offset_is_reached', False)
-
-        if tsl_only_offset:
-            if tsl_positive == 0.0:
-                raise OperationalException(
-                    f'The config trailing_only_offset_is_reached needs '
-                    'trailing_stop_positive_offset to be more than 0 in your config.')
-        if tsl_positive > 0 and 0 < tsl_offset <= tsl_positive:
-            raise OperationalException(
-                f'The config trailing_stop_positive_offset needs '
-                'to be greater than trailing_stop_positive_offset in your config.')
 
     def _args_to_config(self, config: Dict[str, Any], argname: str,
                         logstring: str, logfun: Optional[Callable] = None,
