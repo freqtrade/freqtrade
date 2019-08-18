@@ -94,6 +94,7 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
     assert config['runmode'] == RunMode.HYPEROPT
 
 
+@pytest.mark.filterwarnings("ignore:DEPRECATED")
 def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch(
