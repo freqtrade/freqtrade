@@ -31,7 +31,7 @@ def init_plotscript(config):
     exchange: Optional[Exchange] = None
 
     # Exchange is only needed when downloading data!
-    if config.get("live", False) or config.get("refresh_pairs", False):
+    if config.get("refresh_pairs", False):
         exchange = ExchangeResolver(config.get('exchange', {}).get('name'),
                                     config).exchange
 
@@ -51,7 +51,6 @@ def init_plotscript(config):
         refresh_pairs=config.get('refresh_pairs', False),
         timerange=timerange,
         exchange=exchange,
-        live=config.get("live", False),
     )
 
     trades = load_trades(config)

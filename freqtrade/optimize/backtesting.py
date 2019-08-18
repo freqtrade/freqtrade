@@ -413,7 +413,6 @@ class Backtesting(object):
             refresh_pairs=self.config.get('refresh_pairs', False),
             exchange=self.exchange,
             timerange=timerange,
-            live=self.config.get('live', False)
         )
 
         if not data:

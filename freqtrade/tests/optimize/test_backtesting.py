@@ -471,7 +471,6 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
 
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
     default_conf['ticker_interval'] = '1m'
-    default_conf['live'] = False
     default_conf['datadir'] = None
     default_conf['export'] = None
     default_conf['timerange'] = '-100'
@@ -505,7 +504,6 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
 
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
     default_conf['ticker_interval'] = "1m"
-    default_conf['live'] = False
     default_conf['datadir'] = None
     default_conf['export'] = None
     default_conf['timerange'] = '20180101-20180102'
