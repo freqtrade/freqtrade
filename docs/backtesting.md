@@ -67,22 +67,10 @@ freqtrade backtesting
 freqtrade backtesting --ticker-interval 1m
 ```
 
-#### Update cached pairs with the latest data
-
-```bash
-freqtrade backtesting --refresh-pairs-cached
-```
-
-#### With live data (do not alter your testdata files)
-
-```bash
-freqtrade backtesting --live
-```
-
 #### Using a different on-disk ticker-data source
 
 ```bash
-freqtrade backtesting --datadir freqtrade/tests/testdata-20180101
+freqtrade backtesting --datadir user_data/data/bittrex-20180101
 ```
 
 #### With a (custom) strategy file

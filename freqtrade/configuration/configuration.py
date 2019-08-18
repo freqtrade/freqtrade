@@ -175,10 +175,6 @@ class Configuration(object):
                              logstring='Parameter -i/--ticker-interval detected ... '
                              'Using ticker_interval: {} ...')
 
-        self._args_to_config(config, argname='live',
-                             logstring='Parameter -l/--live detected ...',
-                             deprecated_msg='--live will be removed soon.')
-
         self._args_to_config(config, argname='position_stacking',
                              logstring='Parameter --enable-position-stacking detected ...')
 

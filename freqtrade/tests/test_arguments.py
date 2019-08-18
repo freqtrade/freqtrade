@@ -98,7 +98,6 @@ def test_parse_args_backtesting_custom() -> None:
     args = [
         '-c', 'test_conf.json',
         'backtesting',
-        '--live',
         '--ticker-interval', '1m',
         '--refresh-pairs-cached',
         '--strategy-list',
@@ -107,7 +106,6 @@ def test_parse_args_backtesting_custom() -> None:
         ]
     call_args = Arguments(args, '').get_parsed_arg()
     assert call_args.config == ['test_conf.json']
-    assert call_args.live is True
     assert call_args.verbosity == 0
     assert call_args.subparser == 'backtesting'
     assert call_args.func is not None

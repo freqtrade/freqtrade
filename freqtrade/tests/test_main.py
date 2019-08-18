@@ -28,7 +28,6 @@ def test_parse_args_backtesting(mocker) -> None:
     assert backtesting_mock.call_count == 1
     call_args = backtesting_mock.call_args[0][0]
     assert call_args.config == ['config.json']
-    assert call_args.live is False
     assert call_args.verbosity == 0
     assert call_args.subparser == 'backtesting'
     assert call_args.func is not None

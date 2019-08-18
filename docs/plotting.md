@@ -15,7 +15,7 @@ pip install -U -r requirements-plot.txt
 Usage for the price plotter:
 
 ``` bash
-python3 script/plot_dataframe.py [-h] [-p pairs] [--live]
+python3 script/plot_dataframe.py [-h] [-p pairs]
 ```
 
 Example
@@ -39,12 +39,6 @@ To plot multiple pairs, separate them with a comma:
 
 ``` bash
 python3 scripts/plot_dataframe.py -p BTC/ETH,XRP/ETH
-```
-
-To plot the current live price use the `--live` flag:
-
-``` bash
-python3 scripts/plot_dataframe.py -p BTC/ETH --live
 ```
 
 To plot a timerange (to zoom in):
