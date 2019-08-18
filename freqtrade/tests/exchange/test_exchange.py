@@ -779,7 +779,13 @@ def test_sell_prod(default_conf, mocker, exchange_name):
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-        exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
+        exchange.sell(pair='ETH/BTC', ordertype='limit', amount=1, rate=200)
+
+    # Market orders don't require price, so the behaviour is slightly different
+    with pytest.raises(DependencyException):
+        api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+        exchange.sell(pair='ETH/BTC', ordertype='market', amount=1, rate=200)
 
     with pytest.raises(TemporaryError):
         api_mock.create_order = MagicMock(side_effect=ccxt.NetworkError("No Connection"))
