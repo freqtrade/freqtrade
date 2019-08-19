@@ -696,8 +696,13 @@ class Exchange(object):
     @retrier
     def get_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
-            order = self._dry_run_open_orders[order_id]
-            return order
+            try:
+                order = self._dry_run_open_orders[order_id]
+                return order
+            except KeyError as e:
+                # Gracefully handle errors with dry-run orders.
+                raise InvalidOrderException(
+                    f'Tried to get an invalid dry-run-order (id: {order_id}). Message: {e}') from e
         try:
             return self._api.fetch_order(order_id, pair)
         except ccxt.InvalidOrder as e:

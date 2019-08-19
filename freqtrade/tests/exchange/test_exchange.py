@@ -1328,6 +1328,9 @@ def test_get_order(default_conf, mocker, exchange_name):
     print(exchange.get_order('X', 'TKN/BTC'))
     assert exchange.get_order('X', 'TKN/BTC').myid == 123
 
+    with pytest.raises(InvalidOrderException, match=r'Tried to get an invalid dry-run-order.*'):
+        exchange.get_order('Y', 'TKN/BTC')
+
     default_conf['dry_run'] = False
     api_mock = MagicMock()
     api_mock.fetch_order = MagicMock(return_value=456)
