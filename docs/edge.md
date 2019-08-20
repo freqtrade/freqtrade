@@ -234,7 +234,7 @@ An example of its output:
 
 ### Update cached pairs with the latest data
 
-Edge requires historic data the same way than backtesting does.
+Edge requires historic data the same way as backtesting does.
 Please refer to the [download section](backtesting.md#Getting-data-for-backtesting-and-hyperopt) of the documentation for details.
 
 ### Precising stoploss range
