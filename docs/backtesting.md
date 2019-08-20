@@ -5,7 +5,7 @@ Backtesting.
 
 ## Getting data for backtesting and hyperopt
 
-To download backtesting data (candles / OHLCV) and hyperoptimization use the `freqtrade download-data` command.
+To download data (candles / OHLCV) needed for backtesting and hyperoptimization use the `freqtrade download-data` command.
 
 If no additional parameter is specified, freqtrade will download data for `"1m"` and `"5m"` timeframes.
 Exchange and pairs will come from `config.json` (if specified using `-c/--config`). Otherwise `--exchange` becomes mandatory.
