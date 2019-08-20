@@ -74,7 +74,7 @@ def test_load_data_7min_ticker(mocker, caplog, default_conf) -> None:
     assert ld is None
     assert log_has(
         'No history data for pair: "UNITTEST/BTC", interval: 7m. '
-        'Use --refresh-pairs-cached option or download_backtest_data.py '
+        'Use --refresh-pairs-cached option or `freqtrade download-data` '
         'script to download the data', caplog
     )
 
@@ -109,7 +109,7 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog, defau
     assert os.path.isfile(file) is False
     assert log_has(
         'No history data for pair: "MEME/BTC", interval: 1m. '
-        'Use --refresh-pairs-cached option or download_backtest_data.py '
+        'Use --refresh-pairs-cached option or `freqtrade download-data` '
         'script to download the data', caplog
     )
 

@@ -716,3 +716,109 @@ def test_load_config_default_subkeys(all_conf, keys) -> None:
     validate_config_schema(all_conf)
     assert subkey in all_conf[key]
     assert all_conf[key][subkey] == keys[2]
+
+
+def test_pairlist_resolving():
+    arglist = [
+        'download-data',
+        '--pairs', 'ETH/BTC', 'XRP/BTC',
+        '--exchange', 'binance'
+    ]
+
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+
+    assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
+    assert config['exchange']['name'] == 'binance'
+
+
+def test_pairlist_resolving_with_config(mocker, default_conf):
+    patched_configuration_load_config_file(mocker, default_conf)
+    arglist = [
+        '--config', 'config.json',
+        'download-data',
+    ]
+
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+
+    assert config['pairs'] == default_conf['exchange']['pair_whitelist']
+    assert config['exchange']['name'] == default_conf['exchange']['name']
+
+    # Override pairs
+    arglist = [
+        '--config', 'config.json',
+        'download-data',
+        '--pairs', 'ETH/BTC', 'XRP/BTC',
+    ]
+
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+
+    assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
+    assert config['exchange']['name'] == default_conf['exchange']['name']
+
+
+def test_pairlist_resolving_with_config_pl(mocker, default_conf):
+    patched_configuration_load_config_file(mocker, default_conf)
+    load_mock = mocker.patch("freqtrade.configuration.configuration.json_load",
+                             MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+
+    arglist = [
+        '--config', 'config.json',
+        'download-data',
+        '--pairs-file', 'pairs.json',
+    ]
+
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+
+    assert load_mock.call_count == 1
+    assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
+    assert config['exchange']['name'] == default_conf['exchange']['name']
+
+
+def test_pairlist_resolving_with_config_pl_not_exists(mocker, default_conf):
+    patched_configuration_load_config_file(mocker, default_conf)
+    mocker.patch("freqtrade.configuration.configuration.json_load",
+                 MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
+    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
+
+    arglist = [
+        '--config', 'config.json',
+        'download-data',
+        '--pairs-file', 'pairs.json',
+    ]
+
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    with pytest.raises(OperationalException, match=r"No pairs file found with path.*"):
+        configuration = Configuration(args)
+        configuration.get_config()
+
+
+def test_pairlist_resolving_fallback(mocker):
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    mocker.patch("freqtrade.configuration.configuration.json_load",
+                 MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
+    arglist = [
+        'download-data',
+        '--exchange', 'binance'
+    ]
+
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+
+    assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
+    assert config['exchange']['name'] == 'binance'

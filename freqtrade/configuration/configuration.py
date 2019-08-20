@@ -4,16 +4,17 @@ This module contains the configuration class
 import logging
 import warnings
 from argparse import Namespace
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-from freqtrade import constants
+from freqtrade import constants, OperationalException
 from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.create_datadir import create_datadir
 from freqtrade.configuration.config_validation import (validate_config_schema,
                                                        validate_config_consistency)
 from freqtrade.configuration.load_config import load_config_file
 from freqtrade.loggers import setup_logging
-from freqtrade.misc import deep_merge_dicts
+from freqtrade.misc import deep_merge_dicts, json_load
 from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
@@ -53,6 +54,9 @@ class Configuration(object):
         # Keep this method as staticmethod, so it can be used from interactive environments
         config: Dict[str, Any] = {}
 
+        if not files:
+            return constants.MINIMAL_CONFIG.copy()
+
         # We expect here a list of config filenames
         for path in files:
             logger.info(f'Using config: {path} ...')
@@ -85,6 +89,11 @@ class Configuration(object):
         self._process_plot_options(config)
 
         self._process_runmode(config)
+
+        # Check if the exchange set by the user is supported
+        check_exchange(config, config.get('experimental', {}).get('block_bad_exchanges', True))
+
+        self._resolve_pairs_list(config)
 
         validate_config_consistency(config)
 
@@ -147,9 +156,6 @@ class Configuration(object):
         # Support for sd_notify
         if 'sd_notify' in self.args and self.args.sd_notify:
             config['internals'].update({'sd_notify': True})
-
-        # Check if the exchange set by the user is supported
-        check_exchange(config, config.get('experimental', {}).get('block_bad_exchanges', True))
 
     def _process_datadir_options(self, config: Dict[str, Any]) -> None:
         """
@@ -277,6 +283,19 @@ class Configuration(object):
         self._args_to_config(config, argname='trade_source',
                              logstring='Using trades from: {}')
 
+        self._args_to_config(config, argname='erase',
+                             logstring='Erase detected. Deleting existing data.')
+
+        self._args_to_config(config, argname='timeframes',
+                             logstring='timeframes --timeframes: {}')
+
+        self._args_to_config(config, argname='days',
+                             logstring='Detected --days: {}')
+
+        if "exchange" in self.args and self.args.exchange:
+            config['exchange']['name'] = self.args.exchange
+            logger.info(f"Using exchange {config['exchange']['name']}")
+
     def _process_runmode(self, config: Dict[str, Any]) -> None:
 
         if not self.runmode:
@@ -307,3 +326,38 @@ class Configuration(object):
                 logger.info(logstring.format(config[argname]))
             if deprecated_msg:
                 warnings.warn(f"DEPRECATED: {deprecated_msg}", DeprecationWarning)
+
+    def _resolve_pairs_list(self, config: Dict[str, Any]) -> None:
+        """
+        Helper for download script.
+        Takes first found:
+        * -p (pairs argument)
+        * --pairs-file
+        * whitelist from config
+        """
+
+        if "pairs" in config:
+            return
+
+        if "pairs_file" in self.args and self.args.pairs_file:
+            pairs_file = Path(self.args.pairs_file)
+            logger.info(f'Reading pairs file "{pairs_file}".')
+            # Download pairs from the pairs file if no config is specified
+            # or if pairs file is specified explicitely
+            if not pairs_file.exists():
+                raise OperationalException(f'No pairs file found with path "{pairs_file}".')
+
+            config['pairs'] = json_load(pairs_file)
+
+            config['pairs'].sort()
+            return
+
+        if "config" in self.args and self.args.config:
+            logger.info("Using pairlist from configuration.")
+            config['pairs'] = config.get('exchange', {}).get('pair_whitelist')
+        else:
+            # Fall back to /dl_path/pairs.json
+            pairs_file = Path(config['datadir']) / "pairs.json"
+            if pairs_file.exists():
+                config['pairs'] = json_load(pairs_file)
+            config['pairs'].sort()
