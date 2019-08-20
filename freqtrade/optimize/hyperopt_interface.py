@@ -129,7 +129,7 @@ class IHyperOpt(ABC):
             'roi_p3_min': 0.01 * roi_p_scale * roi_p_alpha,
             'roi_p3_max': 0.20 * roi_p_scale * roi_p_alpha,
         }
-        logger.debug(f"Using roi space limits: {round_dict(roi_limits, 5)}")
+        logger.debug(f"Using roi space limits: {roi_limits}")
         p = {
             'roi_t1': roi_limits['roi_t1_min'],
             'roi_t2': roi_limits['roi_t2_min'],
