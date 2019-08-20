@@ -5,19 +5,19 @@ You can analyze the results of backtests and trading history easily using Jupyte
 ## Pro tips  
 
 * See [jupyter.org](https://jupyter.org/documentation) for usage instructions.
-* Don't forget to start a jupyter notbook server from within your conda or venv environment or use [nb_conda_kernels](https://github.com/Anaconda-Platform/nb_conda_kernels)*
-* Copy the example notebook so your changes don't get clobbered with the next freqtrade update.
+* Don't forget to start a Jupyter notebook server from within your conda or venv environment or use [nb_conda_kernels](https://github.com/Anaconda-Platform/nb_conda_kernels)*
+* Copy the example notebook before use so your changes don't get clobbered with the next freqtrade update.
 
 ## Fine print  
 
-Some tasks don't work especially well in notebooks. For example, anything using asyncronous exectution is a problem for Jupyter. Also, freqtrade's primary entry point is the shell cli, so using pure python in a notebook bypasses arguments that provide required parameters to functions.
+Some tasks don't work especially well in notebooks. For example, anything using asynchronous execution is a problem for Jupyter. Also, freqtrade's primary entry point is the shell cli, so using pure python in a notebook bypasses arguments that provide required objects and parameters to helper functions. You may need to set those values or create expected objects manually.
 
 ## Recommended workflow  
 
 | Task | Tool |  
   --- | ---  
 Bot operations | CLI  
-Repetative tasks | shell scripts
+Repetitive tasks | Shell scripts
 Data analysis & visualization | Notebook  
 
 1. Use the CLI to
@@ -28,26 +28,26 @@ Data analysis & visualization | Notebook
 
 1. Collect these actions in shell scripts
     * save complicated commands with arguments
-    * execute mult-step operations  
-    * automate testing strategies and prepareing data for analysis
+    * execute multi-step operations  
+    * automate testing strategies and preparing data for analysis
 
 1. Use a notebook to
-    * import data
+    * visualize data
     * munge and plot to generate insights
 
-## Example utility snippets for Jupyter notebooks  
+## Example utility snippets  
 
 ### Change directory to root  
 
-Jupyter notebooks execute from the notebook directory. The following snippet searches for the project root, so relative paths remain consistant.
+Jupyter notebooks execute from the notebook directory. The following snippet searches for the project root, so relative paths remain consistent.
 
 ```python
-# Change directory
-# Modify this cell to insure that the output shows the correct path.
-# Define all paths relative to the project root shown in the cell output
 import os
 from pathlib import Path
 
+# Change directory
+# Modify this cell to insure that the output shows the correct path.
+# Define all paths relative to the project root shown in the cell output
 project_root = "somedir/freqtrade"
 i=0
 try:
@@ -61,25 +61,16 @@ except:
 print(Path.cwd())
 ```
 
-### Watch project for changes to code
-
-This scans the project for changes to code before Jupyter runs cells.
-
-```python
-# Reloads local code changes
-%load_ext autoreload
-%autoreload 2
-```
-
 ## Load existing objects into a Jupyter notebook
 
-These examples assume that you have already generated data using the cli. These examples will allow you to drill deeper into your results, and perform analysis which otherwise would make the output very difficult to digest due to information overload.
+These examples assume that you have already generated data using the cli. They will allow you to drill deeper into your results, and perform analysis which otherwise would make the output very difficult to digest due to information overload.
 
 ### Load backtest results into a pandas dataframe
 
 ```python
-# Load backtest results
 from freqtrade.data.btanalysis import load_backtest_data
+
+# Load backtest results
 df = load_backtest_data("user_data/backtest_data/backtest-result.json")
 
 # Show value-counts per pair
@@ -89,8 +80,9 @@ df.groupby("pair")["sell_reason"].value_counts()
 ### Load live trading results into a pandas dataframe
 
 ``` python
-# Fetch trades from database
 from freqtrade.data.btanalysis import load_trades_from_db
+
+# Fetch trades from database
 df = load_trades_from_db("sqlite:///tradesv3.sqlite")
 
 # Display results
@@ -102,12 +94,13 @@ df.groupby("pair")["sell_reason"].value_counts()
 This option can be useful to inspect the results of passing in multiple configs
 
 ``` python
-# Load config from multiple files
+import json
 from freqtrade.configuration import Configuration
+
+# Load config from multiple files
 config = Configuration.from_files(["config1.json", "config2.json"])
 
 # Show the config in memory
-import json
 print(json.dumps(config, indent=1))
 ```
 
@@ -116,10 +109,10 @@ print(json.dumps(config, indent=1))
 This loads candle data to a dataframe
 
 ```python
-# Load data using values passed to function
 from pathlib import Path
 from freqtrade.data.history import load_pair_history
 
+# Load data using values passed to function
 ticker_interval = "5m"
 data_location = Path('user_data', 'data', 'bitrex')
 pair = "BTC_USDT"
@@ -128,8 +121,8 @@ candles = load_pair_history(datadir=data_location,
                             pair=pair)
 
 # Confirm success
-print("Loaded " + str(len(candles)) + f" rows of data for {pair} from {data_location}")
-display(candles.head())
+print(f"Loaded len(candles) rows of data for {pair} from {data_location}")
+candles.head()
 ```
 
 ## Strategy debugging example  
@@ -160,17 +153,17 @@ pair = "BTC_USDT"
 ### Load exchange data
 
 ```python
-# Load data using values set above
 from pathlib import Path
 from freqtrade.data.history import load_pair_history
 
+# Load data using values set above
 candles = load_pair_history(datadir=data_location,
                             ticker_interval=ticker_interval,
                             pair=pair)
 
 # Confirm success
-print("Loaded " + str(len(candles)) + f" rows of data for {pair} from {data_location}")
-display(candles.head())
+print(f"Loaded {len(candles)} rows of data for {pair} from {data_location}")
+candles.head()
 ```
 
 ### Load and run strategy  
@@ -178,8 +171,9 @@ display(candles.head())
 * Rerun each time the strategy file is changed
 
 ```python
-# Load strategy using values set above
 from freqtrade.resolvers import StrategyResolver
+
+# Load strategy using values set above
 strategy = StrategyResolver({'strategy': strategy_name,
                             'user_data_dir': user_data_dir,
                             'strategy_path': strategy_location}).strategy
@@ -190,7 +184,7 @@ df = strategy.analyze_ticker(candles, {'pair': pair})
 
 ### Display the trade details
 
-* Note that using `data.head()` would also work, however most indicators have some "startup" data at the top of the dataframe.
+* Note that using `data.tail()` is preferable to `data.head()` as most indicators have some "startup" data at the top of the dataframe.
 * Some possible problems
     * Columns with NaN values at the end of the dataframe
     * Columns used in `crossed*()` functions with completely different units
@@ -199,7 +193,6 @@ df = strategy.analyze_ticker(candles, {'pair': pair})
     * Assuming you use only one condition such as, `df['rsi'] < 30` as buy condition, this will generate multiple "buy" signals for each pair in sequence (until rsi returns > 29). The bot will only buy on the first of these signals (and also only if a trade-slot ("max_open_trades") is still available), or on one of the middle signals, as soon as a "slot" becomes available.  
 
 ```python
-
 # Report results
 print(f"Generated {df['buy'].sum()} buy signals")
 data = df.set_index('date', drop=True)
