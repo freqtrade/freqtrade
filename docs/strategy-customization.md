@@ -274,27 +274,24 @@ Please always check the mode of operation to select the correct method to get da
 
 #### Possible options for DataProvider
 
-- `available_pairs` - Property with tuples listing cached pairs with their intervals. (pair, interval)
-- `ohlcv(pair, ticker_interval)` - Currently cached ticker data for all pairs in the whitelist, returns DataFrame or empty DataFrame
-- `historic_ohlcv(pair, ticker_interval)` - Data stored on disk
+- `available_pairs` - Property with tuples listing cached pairs with their intervals (pair, interval).
+- `ohlcv(pair, ticker_interval)` - Currently cached ticker data for the pair, returns DataFrame or empty DataFrame.
+- `historic_ohlcv(pair, ticker_interval)` - Returns historical data stored on disk.
+- `get_pair_dataframe(pair, ticker_interval)` - This is a universal method, which returns either historical data (for backtesting) or cached live data (for the Dry-Run and Live-Run modes).
 - `runmode` - Property containing the current runmode.
 
-#### ohlcv / historic_ohlcv
+#### Example: fetch live ohlcv / historic data for the first informative pair
 
 ``` python
 if self.dp:
-    if self.dp.runmode in ('live', 'dry_run'):
-        if (f'{self.stake_currency}/BTC', self.ticker_interval) in self.dp.available_pairs:
-            data_eth = self.dp.ohlcv(pair='{self.stake_currency}/BTC',
-                                     ticker_interval=self.ticker_interval)
-    else:
-        # Get historic ohlcv data (cached on disk).
-        history_eth = self.dp.historic_ohlcv(pair='{self.stake_currency}/BTC',
-                                             ticker_interval='1h')
+    inf_pair, inf_timeframe = self.informative_pairs()[0]
+    informative = self.dp.get_pair_dataframe(pair=inf_pair,
+                                             ticker_interval=inf_timeframe)
 ```
 
 !!! Warning Warning about backtesting
-    Be carefull when using dataprovider in backtesting. `historic_ohlcv()` provides the full time-range in one go,
+    Be carefull when using dataprovider in backtesting. `historic_ohlcv()` (and `get_pair_dataframe()`
+    for the backtesting runmode) provides the full time-range in one go,
     so please be aware of it and make sure to not "look into the future" to avoid surprises when running in dry/live mode).
 
 !!! Warning Warning in hyperopt
@@ -309,8 +306,10 @@ if self.dp:
         dataframe['best_bid'] = ob['bids'][0][0]
         dataframe['best_ask'] = ob['asks'][0][0]
 ```
-!Warning The order book is not part of the historic data which means backtesting and hyperopt will not work if this
- method is used.
+
+!!! Warning
+    The order book is not part of the historic data which means backtesting and hyperopt will not work if this
+    method is used.
 
 #### Available Pairs
 

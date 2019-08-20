@@ -275,7 +275,7 @@ def test_api_count(botclient, mocker, ticker, fee, markets):
     assert rc.json["max"] == 1.0
 
     # Create some test data
-    ftbot.create_trade()
+    ftbot.create_trades()
     rc = client_get(client, f"{BASE_URI}/count")
     assert_response(rc)
     assert rc.json["current"] == 1.0
@@ -329,7 +329,7 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
     assert len(rc.json) == 1
     assert rc.json == {"error": "Error querying _profit: no closed trade"}
 
-    ftbot.create_trade()
+    ftbot.create_trades()
     trade = Trade.query.first()
 
     # Simulate fulfilled LIMIT_BUY order for trade
@@ -418,7 +418,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     assert_response(rc, 502)
     assert rc.json == {'error': 'Error querying _status: no active trade'}
 
-    ftbot.create_trade()
+    ftbot.create_trades()
     rc = client_get(client, f"{BASE_URI}/status")
     assert_response(rc)
     assert len(rc.json) == 1
@@ -548,7 +548,7 @@ def test_api_forcesell(botclient, mocker, ticker, fee, markets):
     assert_response(rc, 502)
     assert rc.json == {"error": "Error querying _forcesell: invalid argument"}
 
-    ftbot.create_trade()
+    ftbot.create_trades()
 
     rc = client_post(client, f"{BASE_URI}/forcesell",
                      data='{"tradeid": "1"}')

@@ -8,10 +8,13 @@ import logging
 import os
 import sys
 
+from collections import OrderedDict
 from operator import itemgetter
 from pathlib import Path
 from pprint import pprint
 from typing import Any, Dict, List, Optional
+
+import rapidjson
 
 from colorama import init as colorama_init
 from colorama import Fore, Style
@@ -20,7 +23,7 @@ from pandas import DataFrame
 from skopt import Optimizer
 from skopt.space import Dimension
 
-from freqtrade.configuration import Arguments
+from freqtrade.configuration import TimeRange
 from freqtrade.data.history import load_data, get_timeframe
 from freqtrade.misc import round_dict
 from freqtrade.optimize.backtesting import Backtesting
@@ -135,24 +138,46 @@ class Hyperopt(Backtesting):
         results = sorted(self.trials, key=itemgetter('loss'))
         best_result = results[0]
         params = best_result['params']
-
         log_str = self.format_results_logstring(best_result)
         print(f"\nBest result:\n\n{log_str}\n")
-        if self.has_space('buy'):
-            print('Buy hyperspace params:')
-            pprint({p.name: params.get(p.name) for p in self.hyperopt_space('buy')},
-                   indent=4)
-        if self.has_space('sell'):
-            print('Sell hyperspace params:')
-            pprint({p.name: params.get(p.name) for p in self.hyperopt_space('sell')},
-                   indent=4)
-        if self.has_space('roi'):
-            print("ROI table:")
-            # Round printed values to 5 digits after the decimal point
-            pprint(round_dict(self.custom_hyperopt.generate_roi_table(params), 5), indent=4)
-        if self.has_space('stoploss'):
-            # Also round to 5 digits after the decimal point
-            print(f"Stoploss: {round(params.get('stoploss'), 5)}")
+
+        if self.config.get('print_json'):
+            result_dict: Dict = {}
+            if self.has_space('buy') or self.has_space('sell'):
+                result_dict['params'] = {}
+            if self.has_space('buy'):
+                result_dict['params'].update({p.name: params.get(p.name)
+                                             for p in self.hyperopt_space('buy')})
+            if self.has_space('sell'):
+                result_dict['params'].update({p.name: params.get(p.name)
+                                             for p in self.hyperopt_space('sell')})
+            if self.has_space('roi'):
+                # Convert keys in min_roi dict to strings because
+                # rapidjson cannot dump dicts with integer keys...
+                # OrderedDict is used to keep the numeric order of the items
+                # in the dict.
+                result_dict['minimal_roi'] = OrderedDict(
+                    (str(k), v) for k, v in self.custom_hyperopt.generate_roi_table(params).items()
+                )
+            if self.has_space('stoploss'):
+                result_dict['stoploss'] = params.get('stoploss')
+            print(rapidjson.dumps(result_dict, default=str, number_mode=rapidjson.NM_NATIVE))
+        else:
+            if self.has_space('buy'):
+                print('Buy hyperspace params:')
+                pprint({p.name: params.get(p.name) for p in self.hyperopt_space('buy')},
+                       indent=4)
+            if self.has_space('sell'):
+                print('Sell hyperspace params:')
+                pprint({p.name: params.get(p.name) for p in self.hyperopt_space('sell')},
+                       indent=4)
+            if self.has_space('roi'):
+                print("ROI table:")
+                # Round printed values to 5 digits after the decimal point
+                pprint(round_dict(self.custom_hyperopt.generate_roi_table(params), 5), indent=4)
+            if self.has_space('stoploss'):
+                # Also round to 5 digits after the decimal point
+                print(f"Stoploss: {round(params.get('stoploss'), 5)}")
 
     def log_results(self, results) -> None:
         """
@@ -314,7 +339,7 @@ class Hyperopt(Backtesting):
             )
 
     def start(self) -> None:
-        timerange = Arguments.parse_timerange(None if self.config.get(
+        timerange = TimeRange.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
         data = load_data(
             datadir=Path(self.config['datadir']) if self.config.get('datadir') else None,

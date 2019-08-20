@@ -6,7 +6,7 @@ import asyncio
 import inspect
 import logging
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from math import ceil, floor
 from random import randint
 from typing import Any, Dict, List, Optional, Tuple
@@ -376,7 +376,7 @@ class Exchange(object):
             'side': side,
             'remaining': amount,
             'datetime': arrow.utcnow().isoformat(),
-            'status': "open",
+            'status': "closed" if ordertype == "market" else "open",
             'fee': None,
             "info": {}
         }
@@ -408,12 +408,12 @@ class Exchange(object):
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
                 f'Insufficient funds to create {ordertype} {side} order on market {pair}.'
-                f'Tried to {side} amount {amount} at rate {rate} (total {rate * amount}).'
+                f'Tried to {side} amount {amount} at rate {rate}.'
                 f'Message: {e}') from e
         except ccxt.InvalidOrder as e:
             raise DependencyException(
                 f'Could not create {ordertype} {side} order on market {pair}.'
-                f'Tried to {side} amount {amount} at rate {rate} (total {rate * amount}).'
+                f'Tried to {side} amount {amount} at rate {rate}.'
                 f'Message: {e}') from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
@@ -472,7 +472,7 @@ class Exchange(object):
 
         order = self.create_order(pair, ordertype, 'sell', amount, rate, params)
         logger.info('stoploss limit order added for %s. '
-                    'stop price: %s. limit: %s' % (pair, stop_price, rate))
+                    'stop price: %s. limit: %s', pair, stop_price, rate)
         return order
 
     @retrier
@@ -546,19 +546,24 @@ class Exchange(object):
             logger.info("returning cached ticker-data for %s", pair)
             return self._cached_ticker[pair]
 
-    def get_history(self, pair: str, ticker_interval: str,
-                    since_ms: int) -> List:
+    def get_historic_ohlcv(self, pair: str, ticker_interval: str,
+                           since_ms: int) -> List:
         """
         Gets candle history using asyncio and returns the list of candles.
         Handles all async doing.
+        Async over one pair, assuming we get `_ohlcv_candle_limit` candles per call.
+        :param pair: Pair to download
+        :param ticker_interval: Interval to get
+        :param since_ms: Timestamp in milliseconds to get history from
+        :returns List of tickers
         """
         return asyncio.get_event_loop().run_until_complete(
-            self._async_get_history(pair=pair, ticker_interval=ticker_interval,
-                                    since_ms=since_ms))
+            self._async_get_historic_ohlcv(pair=pair, ticker_interval=ticker_interval,
+                                           since_ms=since_ms))
 
-    async def _async_get_history(self, pair: str,
-                                 ticker_interval: str,
-                                 since_ms: int) -> List:
+    async def _async_get_historic_ohlcv(self, pair: str,
+                                        ticker_interval: str,
+                                        since_ms: int) -> List:
 
         one_call = timeframe_to_msecs(ticker_interval) * self._ohlcv_candle_limit
         logger.debug(
@@ -584,7 +589,10 @@ class Exchange(object):
 
     def refresh_latest_ohlcv(self, pair_list: List[Tuple[str, str]]) -> List[Tuple[str, List]]:
         """
-        Refresh in-memory ohlcv asyncronously and set `_klines` with the result
+        Refresh in-memory ohlcv asynchronously and set `_klines` with the result
+        Loops asynchronously over pair_list and downloads all pairs async (semi-parallel).
+        :param pair_list: List of 2 element tuples containing pair, interval to refresh
+        :return: Returns a List of ticker-dataframes.
         """
         logger.debug("Refreshing ohlcv data for %d pairs", len(pair_list))
 
@@ -632,7 +640,7 @@ class Exchange(object):
     async def _async_get_candle_history(self, pair: str, ticker_interval: str,
                                         since_ms: Optional[int] = None) -> Tuple[str, str, List]:
         """
-        Asyncronously gets candle histories using fetch_ohlcv
+        Asynchronously gets candle histories using fetch_ohlcv
         returns tuple: (pair, ticker_interval, ohlcv_list)
         """
         try:
@@ -688,8 +696,13 @@ class Exchange(object):
     @retrier
     def get_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
-            order = self._dry_run_open_orders[order_id]
-            return order
+            try:
+                order = self._dry_run_open_orders[order_id]
+                return order
+            except KeyError as e:
+                # Gracefully handle errors with dry-run orders.
+                raise InvalidOrderException(
+                    f'Tried to get an invalid dry-run-order (id: {order_id}). Message: {e}') from e
         try:
             return self._api.fetch_order(order_id, pair)
         except ccxt.InvalidOrder as e:
@@ -790,13 +803,45 @@ def timeframe_to_seconds(ticker_interval: str) -> int:
 
 def timeframe_to_minutes(ticker_interval: str) -> int:
     """
-    Same as above, but returns minutes.
+    Same as timeframe_to_seconds, but returns minutes.
     """
     return ccxt.Exchange.parse_timeframe(ticker_interval) // 60
 
 
 def timeframe_to_msecs(ticker_interval: str) -> int:
     """
-    Same as above, but returns milliseconds.
+    Same as timeframe_to_seconds, but returns milliseconds.
     """
     return ccxt.Exchange.parse_timeframe(ticker_interval) * 1000
+
+
+def timeframe_to_prev_date(timeframe: str, date: datetime = None) -> datetime:
+    """
+    Use Timeframe and determine last possible candle.
+    :param timeframe: timeframe in string format (e.g. "5m")
+    :param date: date to use. Defaults to utcnow()
+    :returns: date of previous candle (with utc timezone)
+    """
+    if not date:
+        date = datetime.now(timezone.utc)
+    timeframe_secs = timeframe_to_seconds(timeframe)
+    # Get offset based on timerame_secs
+    offset = date.timestamp() % timeframe_secs
+    # Subtract seconds passed since last offset
+    new_timestamp = date.timestamp() - offset
+    return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
+
+
+def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
+    """
+    Use Timeframe and determine next candle.
+    :param timeframe: timeframe in string format (e.g. "5m")
+    :param date: date to use. Defaults to utcnow()
+    :returns: date of next candle (with utc timezone)
+    """
+    prevdate = timeframe_to_prev_date(timeframe, date)
+    timeframe_secs = timeframe_to_seconds(timeframe)
+
+    # Add one interval to previous candle
+    new_timestamp = prevdate.timestamp() + timeframe_secs
+    return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
