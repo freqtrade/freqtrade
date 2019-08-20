@@ -190,7 +190,7 @@ class Backtesting(object):
         return tabulate(tabular_data, headers=headers,  # type: ignore
                         floatfmt=floatfmt, tablefmt="pipe")
 
-    def _store_backtest_result(self, recordfilename: str, results: DataFrame,
+    def _store_backtest_result(self, recordfilename: Path, results: DataFrame,
                                strategyname: Optional[str] = None) -> None:
 
         records = [(t.pair, t.profit_percent, t.open_time.timestamp(),
@@ -201,10 +201,10 @@ class Backtesting(object):
         if records:
             if strategyname:
                 # Inject strategyname to filename
-                recname = Path(recordfilename)
-                recordfilename = str(Path.joinpath(
-                    recname.parent, f'{recname.stem}-{strategyname}').with_suffix(recname.suffix))
-            logger.info('Dumping backtest results to %s', recordfilename)
+                recordfilename = Path.joinpath(
+                    recordfilename.parent,
+                    f'{recordfilename.stem}-{strategyname}').with_suffix(recordfilename.suffix)
+            logger.info(f'Dumping backtest results to {recordfilename}')
             file_dump_json(recordfilename, records)
 
     def _get_ticker_list(self, processed) -> Dict[str, DataFrame]:
@@ -458,7 +458,7 @@ class Backtesting(object):
         for strategy, results in all_results.items():
 
             if self.config.get('export', False):
-                self._store_backtest_result(self.config['exportfilename'], results,
+                self._store_backtest_result(Path(self.config['exportfilename']), results,
                                             strategy if len(self.strategylist) > 1 else None)
 
             print(f"Result for strategy {strategy}")
