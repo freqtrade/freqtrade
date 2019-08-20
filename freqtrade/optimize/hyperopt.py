@@ -151,7 +151,8 @@ class Hyperopt(Backtesting):
             # Round printed values to 5 digits after the decimal point
             pprint(round_dict(self.custom_hyperopt.generate_roi_table(params), 5), indent=4)
         if self.has_space('stoploss'):
-            print(f"Stoploss: {params.get('stoploss')}")
+            # Also round to 5 digits after the decimal point
+            print(f"Stoploss: {round(params.get('stoploss'), 5)}")
 
     def log_results(self, results) -> None:
         """
