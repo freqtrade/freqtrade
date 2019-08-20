@@ -408,12 +408,12 @@ class Exchange(object):
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
                 f'Insufficient funds to create {ordertype} {side} order on market {pair}.'
-                f'Tried to {side} amount {amount} at rate {rate} (total {rate * amount}).'
+                f'Tried to {side} amount {amount} at rate {rate}.'
                 f'Message: {e}') from e
         except ccxt.InvalidOrder as e:
             raise DependencyException(
                 f'Could not create {ordertype} {side} order on market {pair}.'
-                f'Tried to {side} amount {amount} at rate {rate} (total {rate * amount}).'
+                f'Tried to {side} amount {amount} at rate {rate}.'
                 f'Message: {e}') from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
@@ -472,7 +472,7 @@ class Exchange(object):
 
         order = self.create_order(pair, ordertype, 'sell', amount, rate, params)
         logger.info('stoploss limit order added for %s. '
-                    'stop price: %s. limit: %s' % (pair, stop_price, rate))
+                    'stop price: %s. limit: %s', pair, stop_price, rate)
         return order
 
     @retrier
@@ -696,8 +696,13 @@ class Exchange(object):
     @retrier
     def get_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
-            order = self._dry_run_open_orders[order_id]
-            return order
+            try:
+                order = self._dry_run_open_orders[order_id]
+                return order
+            except KeyError as e:
+                # Gracefully handle errors with dry-run orders.
+                raise InvalidOrderException(
+                    f'Tried to get an invalid dry-run-order (id: {order_id}). Message: {e}') from e
         try:
             return self._api.fetch_order(order_id, pair)
         except ccxt.InvalidOrder as e:

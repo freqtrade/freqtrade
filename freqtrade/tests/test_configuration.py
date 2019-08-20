@@ -2,7 +2,6 @@
 import json
 import logging
 import warnings
-from argparse import Namespace
 from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -11,10 +10,10 @@ import pytest
 from jsonschema import Draft4Validator, ValidationError, validate
 
 from freqtrade import OperationalException, constants
-from freqtrade.configuration import Arguments, Configuration
+from freqtrade.configuration import Arguments, Configuration, validate_config_consistency
 from freqtrade.configuration.check_exchange import check_exchange
+from freqtrade.configuration.config_validation import validate_config_schema
 from freqtrade.configuration.create_datadir import create_datadir
-from freqtrade.configuration.json_schema import validate_config_schema
 from freqtrade.configuration.load_config import load_config_file
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.loggers import _set_loggers
@@ -625,21 +624,34 @@ def test_validate_tsl(default_conf):
     with pytest.raises(OperationalException,
                        match=r'The config trailing_only_offset_is_reached needs '
                        'trailing_stop_positive_offset to be more than 0 in your config.'):
-        configuration = Configuration(Namespace())
-        configuration._validate_config_consistency(default_conf)
+        validate_config_consistency(default_conf)
 
     default_conf['trailing_stop_positive_offset'] = 0.01
     default_conf['trailing_stop_positive'] = 0.015
     with pytest.raises(OperationalException,
                        match=r'The config trailing_stop_positive_offset needs '
                        'to be greater than trailing_stop_positive_offset in your config.'):
-        configuration = Configuration(Namespace())
-        configuration._validate_config_consistency(default_conf)
+        validate_config_consistency(default_conf)
 
     default_conf['trailing_stop_positive'] = 0.01
     default_conf['trailing_stop_positive_offset'] = 0.015
-    Configuration(Namespace())
-    configuration._validate_config_consistency(default_conf)
+    validate_config_consistency(default_conf)
+
+
+def test_validate_edge(edge_conf):
+    edge_conf.update({"pairlist": {
+        "method": "VolumePairList",
+    }})
+
+    with pytest.raises(OperationalException,
+                       match="Edge and VolumePairList are incompatible, "
+                       "Edge will override whatever pairs VolumePairlist selects."):
+        validate_config_consistency(edge_conf)
+
+    edge_conf.update({"pairlist": {
+        "method": "StaticPairList",
+    }})
+    validate_config_consistency(edge_conf)
 
 
 def test_load_config_test_comments() -> None:
