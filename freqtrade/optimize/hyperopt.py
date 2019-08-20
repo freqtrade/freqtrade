@@ -22,6 +22,7 @@ from skopt.space import Dimension
 
 from freqtrade.configuration import Arguments
 from freqtrade.data.history import load_data, get_timeframe
+from freqtrade.misc import round_dict
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
 from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F4
@@ -147,7 +148,8 @@ class Hyperopt(Backtesting):
                    indent=4)
         if self.has_space('roi'):
             print("ROI table:")
-            pprint(self.custom_hyperopt.generate_roi_table(params), indent=4)
+            # Round printed values to 5 digits after the decimal point
+            pprint(round_dict(self.custom_hyperopt.generate_roi_table(params), 5), indent=4)
         if self.has_space('stoploss'):
             print(f"Stoploss: {params.get('stoploss')}")
 

@@ -12,6 +12,7 @@ from pandas import DataFrame
 from skopt.space import Dimension, Integer, Real
 
 from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.misc import round_dict
 
 
 logger = logging.getLogger(__name__)
@@ -128,7 +129,7 @@ class IHyperOpt(ABC):
             'roi_p3_min': 0.01 * roi_p_scale * roi_p_alpha,
             'roi_p3_max': 0.20 * roi_p_scale * roi_p_alpha,
         }
-        logger.debug(f"Using roi space limits: {roi_limits}")
+        logger.debug(f"Using roi space limits: {round_dict(roi_limits, 5)}")
         p = {
             'roi_t1': roi_limits['roi_t1_min'],
             'roi_t2': roi_limits['roi_t2_min'],
@@ -137,7 +138,7 @@ class IHyperOpt(ABC):
             'roi_p2': roi_limits['roi_p2_min'],
             'roi_p3': roi_limits['roi_p3_min'],
         }
-        logger.info(f"Min roi table: {IHyperOpt.generate_roi_table(p)}")
+        logger.info(f"Min roi table: {round_dict(IHyperOpt.generate_roi_table(p), 5)}")
         p = {
             'roi_t1': roi_limits['roi_t1_max'],
             'roi_t2': roi_limits['roi_t2_max'],
@@ -146,7 +147,7 @@ class IHyperOpt(ABC):
             'roi_p2': roi_limits['roi_p2_max'],
             'roi_p3': roi_limits['roi_p3_max'],
         }
-        logger.info(f"Max roi table: {IHyperOpt.generate_roi_table(p)}")
+        logger.info(f"Max roi table: {round_dict(IHyperOpt.generate_roi_table(p), 5)}")
 
         return [
             Integer(roi_limits['roi_t1_min'], roi_limits['roi_t1_max'], name='roi_t1'),
