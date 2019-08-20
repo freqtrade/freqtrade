@@ -417,7 +417,8 @@ def test_start_calls_optimizer(mocker, default_conf, caplog, capsys) -> None:
 
     parallel = mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
-        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {}}])
+        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result',
+                                 'params': {'buy': {}, 'sell': {}, 'roi': {}, 'stoploss': 0.0}}])
     )
     patch_exchange(mocker)
 
