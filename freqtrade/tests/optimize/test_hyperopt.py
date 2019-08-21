@@ -1,12 +1,13 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
 import os
 from datetime import datetime
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 
 import pandas as pd
 import pytest
 from arrow import Arrow
 from filelock import Timeout
+from pathlib import Path
 
 from freqtrade import DependencyException, OperationalException
 from freqtrade.data.converter import parse_ticker_dataframe
@@ -14,8 +15,7 @@ from freqtrade.data.history import load_tickerdata_file
 from freqtrade.optimize import setup_configuration, start_hyperopt
 from freqtrade.optimize.default_hyperopt import DefaultHyperOpts
 from freqtrade.optimize.default_hyperopt_loss import DefaultHyperOptLoss
-from freqtrade.optimize.hyperopt import (HYPEROPT_LOCKFILE, TICKERDATA_PICKLE,
-                                         Hyperopt)
+from freqtrade.optimize.hyperopt import Hyperopt
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver, HyperOptLossResolver
 from freqtrade.state import RunMode
 from freqtrade.strategy.interface import SellType
@@ -54,11 +54,14 @@ def create_trials(mocker, hyperopt) -> None:
       - we might have a pickle'd file so make sure that we return
         false when looking for it
     """
-    hyperopt.trials_file = os.path.join('freqtrade', 'tests', 'optimize', 'ut_trials.pickle')
+    hyperopt.trials_file = Path('freqtrade/tests/optimize/ut_trials.pickle')
 
-    mocker.patch('freqtrade.optimize.hyperopt.os.path.exists', return_value=False)
-    mocker.patch('freqtrade.optimize.hyperopt.os.path.getsize', return_value=1)
-    mocker.patch('freqtrade.optimize.hyperopt.os.remove', return_value=True)
+    mocker.patch.object(Path, "is_file", MagicMock(return_value=False))
+    stat_mock = MagicMock()
+    stat_mock.st_size = PropertyMock(return_value=1)
+    mocker.patch.object(Path, "stat", MagicMock(return_value=False))
+
+    mocker.patch.object(Path, "unlink", MagicMock(return_value=True))
     mocker.patch('freqtrade.optimize.hyperopt.dump', return_value=None)
 
     return [{'loss': 1, 'result': 'foo', 'params': {}}]
@@ -264,7 +267,7 @@ def test_start_failure(mocker, default_conf, caplog) -> None:
 
 
 def test_start_filelock(mocker, default_conf, caplog) -> None:
-    start_mock = MagicMock(side_effect=Timeout(HYPEROPT_LOCKFILE))
+    start_mock = MagicMock(side_effect=Timeout(Hyperopt.get_lock_filename(default_conf)))
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.start', start_mock)
     patch_exchange(mocker)
@@ -597,10 +600,10 @@ def test_clean_hyperopt(mocker, default_conf, caplog):
                          })
     mocker.patch("freqtrade.optimize.hyperopt.Path.is_file", MagicMock(return_value=True))
     unlinkmock = mocker.patch("freqtrade.optimize.hyperopt.Path.unlink", MagicMock())
-    Hyperopt(default_conf)
+    h = Hyperopt(default_conf)
 
     assert unlinkmock.call_count == 2
-    assert log_has(f"Removing `{TICKERDATA_PICKLE}`.", caplog)
+    assert log_has(f"Removing `{h.tickerdata_pickle}`.", caplog)
 
 
 def test_continue_hyperopt(mocker, default_conf, caplog):

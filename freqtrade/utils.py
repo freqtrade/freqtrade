@@ -7,6 +7,7 @@ from typing import Any, Dict
 import arrow
 
 from freqtrade.configuration import Configuration, TimeRange
+from freqtrade.configuration.directory_operations import create_userdata_dir
 from freqtrade.data.history import download_pair_history
 from freqtrade.exchange import available_exchanges
 from freqtrade.resolvers import ExchangeResolver
@@ -44,6 +45,19 @@ def start_list_exchanges(args: Namespace) -> None:
     else:
         print(f"Exchanges supported by ccxt and available for Freqtrade: "
               f"{', '.join(available_exchanges())}")
+
+
+def start_create_userdir(args: Namespace) -> None:
+    """
+    Create "user_data" directory to contain user data strategies, hyperopts, ...)
+    :param args: Cli args from Arguments()
+    :return: None
+    """
+    if "user_data_dir" in args and args.user_data_dir:
+        create_userdata_dir(args.user_data_dir, create_dir=True)
+    else:
+        logger.warning("`create-userdir` requires --userdir to be set.")
+        sys.exit(1)
 
 
 def start_download_data(args: Namespace) -> None:

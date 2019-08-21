@@ -7,7 +7,7 @@ from typing import List, Optional
 from freqtrade.configuration.cli_options import AVAILABLE_CLI_OPTIONS
 from freqtrade import constants
 
-ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir"]
+ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_data_dir"]
 
 ARGS_STRATEGY = ["strategy", "strategy_path"]
 
@@ -29,6 +29,8 @@ ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
 ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
 
 ARGS_LIST_EXCHANGES = ["print_one_column"]
+
+ARGS_CREATE_USERDIR = ["user_data_dir"]
 
 ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "exchange", "timeframes", "erase"]
 
@@ -98,7 +100,7 @@ class Arguments(object):
         :return: None
         """
         from freqtrade.optimize import start_backtesting, start_hyperopt, start_edge
-        from freqtrade.utils import start_download_data, start_list_exchanges
+        from freqtrade.utils import start_create_userdir, start_download_data, start_list_exchanges
 
         subparsers = self.parser.add_subparsers(dest='subparser')
 
@@ -116,6 +118,11 @@ class Arguments(object):
         hyperopt_cmd = subparsers.add_parser('hyperopt', help='Hyperopt module.')
         hyperopt_cmd.set_defaults(func=start_hyperopt)
         self._build_args(optionlist=ARGS_HYPEROPT, parser=hyperopt_cmd)
+
+        create_userdir_cmd = subparsers.add_parser('create-userdir',
+                                                   help="Create user-data directory.")
+        create_userdir_cmd.set_defaults(func=start_create_userdir)
+        self._build_args(optionlist=ARGS_CREATE_USERDIR, parser=create_userdir_cmd)
 
         # Add list-exchanges subcommand
         list_exchanges_cmd = subparsers.add_parser(

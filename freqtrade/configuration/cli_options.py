@@ -55,7 +55,12 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "datadir": Arg(
         '-d', '--datadir',
-        help='Path to backtest data.',
+        help='Path to directory with historical backtesting data.',
+        metavar='PATH',
+    ),
+    "user_data_dir": Arg(
+        '--userdir', '--user-data-dir',
+        help='Path to userdata directory.',
         metavar='PATH',
     ),
     # Main options
@@ -146,9 +151,9 @@ AVAILABLE_CLI_OPTIONS = {
         '--export-filename',
         help='Save backtest results to the file with this filename (default: `%(default)s`). '
         'Requires `--export` to be set as well. '
-        'Example: `--export-filename=user_data/backtest_data/backtest_today.json`',
+        'Example: `--export-filename=user_data/backtest_results/backtest_today.json`',
         metavar='PATH',
-        default=os.path.join('user_data', 'backtest_data',
+        default=os.path.join('user_data', 'backtest_results',
                              'backtest-result.json'),
     ),
     # Edge

@@ -11,7 +11,7 @@ You can analyze the results of backtests and trading history easily using Jupyte
 ```python
 from freqtrade.data.btanalysis import load_backtest_data
 # Load backtest results
-df = load_backtest_data("user_data/backtest_data/backtest-result.json")
+df = load_backtest_data("user_data/backtest_results/backtest-result.json")
 
 # Show value-counts per pair
 df.groupby("pair")["sell_reason"].value_counts()

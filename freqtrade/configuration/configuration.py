@@ -7,11 +7,12 @@ from argparse import Namespace
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-from freqtrade import constants, OperationalException
+from freqtrade import OperationalException, constants
 from freqtrade.configuration.check_exchange import check_exchange
-from freqtrade.configuration.create_datadir import create_datadir
-from freqtrade.configuration.config_validation import (validate_config_schema,
-                                                       validate_config_consistency)
+from freqtrade.configuration.config_validation import (
+    validate_config_consistency, validate_config_schema)
+from freqtrade.configuration.directory_operations import (create_datadir,
+                                                          create_userdata_dir)
 from freqtrade.configuration.load_config import load_config_file
 from freqtrade.loggers import setup_logging
 from freqtrade.misc import deep_merge_dicts, json_load
@@ -115,7 +116,9 @@ class Configuration(object):
 
         setup_logging(config)
 
-    def _process_strategy_options(self, config: Dict[str, Any]) -> None:
+    def _process_common_options(self, config: Dict[str, Any]) -> None:
+
+        self._process_logging_options(config)
 
         # Set strategy if not specified in config and or if it's non default
         if self.args.strategy != constants.DEFAULT_STRATEGY or not config.get('strategy'):
@@ -123,11 +126,6 @@ class Configuration(object):
 
         self._args_to_config(config, argname='strategy_path',
                              logstring='Using additional Strategy lookup path: {}')
-
-    def _process_common_options(self, config: Dict[str, Any]) -> None:
-
-        self._process_logging_options(config)
-        self._process_strategy_options(config)
 
         if ('db_url' in self.args and self.args.db_url and
                 self.args.db_url != constants.DEFAULT_DB_PROD_URL):
@@ -159,9 +157,19 @@ class Configuration(object):
 
     def _process_datadir_options(self, config: Dict[str, Any]) -> None:
         """
-        Extract information for sys.argv and load datadir configuration:
-        the --datadir option
+        Extract information for sys.argv and load directory configurations
+        --user-data, --datadir
         """
+        if 'user_data_dir' in self.args and self.args.user_data_dir:
+            config.update({'user_data_dir': self.args.user_data_dir})
+        elif 'user_data_dir' not in config:
+            # Default to cwd/user_data (legacy option ...)
+            config.update({'user_data_dir': str(Path.cwd() / "user_data")})
+
+        # reset to user_data_dir so this contains the absolute path.
+        config['user_data_dir'] = create_userdata_dir(config['user_data_dir'], create_dir=False)
+        logger.info('Using user-data directory: %s ...', config['user_data_dir'])
+
         if 'datadir' in self.args and self.args.datadir:
             config.update({'datadir': create_datadir(config, self.args.datadir)})
         else:
@@ -357,7 +365,6 @@ class Configuration(object):
         else:
             # Fall back to /dl_path/pairs.json
             pairs_file = Path(config['datadir']) / config['exchange']['name'].lower() / "pairs.json"
-            print(config['datadir'])
             if pairs_file.exists():
                 with pairs_file.open('r') as f:
                     config['pairs'] = json_load(f)

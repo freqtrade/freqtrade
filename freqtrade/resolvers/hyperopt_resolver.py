@@ -31,7 +31,8 @@ class HyperOptResolver(IResolver):
 
         # Verify the hyperopt is in the configuration, otherwise fallback to the default hyperopt
         hyperopt_name = config.get('hyperopt') or DEFAULT_HYPEROPT
-        self.hyperopt = self._load_hyperopt(hyperopt_name, extra_dir=config.get('hyperopt_path'))
+        self.hyperopt = self._load_hyperopt(hyperopt_name, config,
+                                            extra_dir=config.get('hyperopt_path'))
 
         # Assign ticker_interval to be used in hyperopt
         self.hyperopt.__class__.ticker_interval = str(config['ticker_interval'])
@@ -44,17 +45,18 @@ class HyperOptResolver(IResolver):
                            "Using populate_sell_trend from DefaultStrategy.")
 
     def _load_hyperopt(
-            self, hyperopt_name: str, extra_dir: Optional[str] = None) -> IHyperOpt:
+            self, hyperopt_name: str, config: Dict, extra_dir: Optional[str] = None) -> IHyperOpt:
         """
         Search and loads the specified hyperopt.
         :param hyperopt_name: name of the module to import
+        :param config: configuration dictionary
         :param extra_dir: additional directory to search for the given hyperopt
         :return: HyperOpt instance or None
         """
         current_path = Path(__file__).parent.parent.joinpath('optimize').resolve()
 
         abs_paths = [
-            Path.cwd().joinpath('user_data/hyperopts'),
+            config['user_data_dir'].joinpath('hyperopts'),
             current_path,
         ]
 
@@ -79,7 +81,7 @@ class HyperOptLossResolver(IResolver):
 
     __slots__ = ['hyperoptloss']
 
-    def __init__(self, config: Optional[Dict] = None) -> None:
+    def __init__(self, config: Dict = None) -> None:
         """
         Load the custom class from config parameter
         :param config: configuration dictionary or None
@@ -89,7 +91,7 @@ class HyperOptLossResolver(IResolver):
         # Verify the hyperopt is in the configuration, otherwise fallback to the default hyperopt
         hyperopt_name = config.get('hyperopt_loss') or DEFAULT_HYPEROPT_LOSS
         self.hyperoptloss = self._load_hyperoptloss(
-            hyperopt_name, extra_dir=config.get('hyperopt_path'))
+            hyperopt_name, config, extra_dir=config.get('hyperopt_path'))
 
         # Assign ticker_interval to be used in hyperopt
         self.hyperoptloss.__class__.ticker_interval = str(config['ticker_interval'])
@@ -99,17 +101,19 @@ class HyperOptLossResolver(IResolver):
                 f"Found hyperopt {hyperopt_name} does not implement `hyperopt_loss_function`.")
 
     def _load_hyperoptloss(
-            self, hyper_loss_name: str, extra_dir: Optional[str] = None) -> IHyperOptLoss:
+            self, hyper_loss_name: str, config: Dict,
+            extra_dir: Optional[str] = None) -> IHyperOptLoss:
         """
         Search and loads the specified hyperopt loss class.
         :param hyper_loss_name: name of the module to import
+        :param config: configuration dictionary
         :param extra_dir: additional directory to search for the given hyperopt
         :return: HyperOptLoss instance or None
         """
         current_path = Path(__file__).parent.parent.joinpath('optimize').resolve()
 
         abs_paths = [
-            Path.cwd().joinpath('user_data/hyperopts'),
+            config['user_data_dir'].joinpath('hyperopts'),
             current_path,
         ]
 

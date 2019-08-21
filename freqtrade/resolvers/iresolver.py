@@ -58,7 +58,7 @@ class IResolver(object):
             if not str(entry).endswith('.py'):
                 logger.debug('Ignoring %s', entry)
                 continue
-            module_path = Path.resolve(directory.joinpath(entry))
+            module_path = entry.resolve()
             obj = IResolver._get_valid_object(
                 object_type, module_path, object_name
             )

@@ -13,7 +13,8 @@ from freqtrade import OperationalException, constants
 from freqtrade.configuration import Arguments, Configuration, validate_config_consistency
 from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.config_validation import validate_config_schema
-from freqtrade.configuration.create_datadir import create_datadir
+from freqtrade.configuration.directory_operations import (create_datadir,
+                                                          create_userdata_dir)
 from freqtrade.configuration.load_config import load_config_file
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.loggers import _set_loggers
@@ -52,6 +53,7 @@ def test_load_config_incorrect_stake_amount(default_conf) -> None:
 
 
 def test_load_config_file(default_conf, mocker, caplog) -> None:
+    del default_conf['user_data_dir']
     file_mock = mocker.patch('freqtrade.configuration.load_config.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
@@ -331,6 +333,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'exchange' in config
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
+    assert 'user_data_dir' in config
     assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
     assert 'ticker_interval' in config
     assert not log_has('Parameter -i/--ticker-interval detected ...', caplog)
@@ -355,11 +358,15 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         'freqtrade.configuration.configuration.create_datadir',
         lambda c, x: x
     )
-
+    mocker.patch(
+        'freqtrade.configuration.configuration.create_userdata_dir',
+        lambda x, *args, **kwargs: Path(x)
+    )
     arglist = [
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
         '--datadir', '/foo/bar',
+        '--userdir', "/tmp/freqtrade",
         'backtesting',
         '--ticker-interval', '1m',
         '--live',
@@ -380,7 +387,10 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'exchange' in config
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
-    assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
+    assert log_has('Using data directory: {} ...'.format("/foo/bar"), caplog)
+    assert log_has('Using user-data directory: {} ...'.format("/tmp/freqtrade"), caplog)
+    assert 'user_data_dir' in config
+
     assert 'ticker_interval' in config
     assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
                    caplog)
@@ -613,6 +623,35 @@ def test_create_datadir(mocker, default_conf, caplog) -> None:
     create_datadir(default_conf, '/foo/bar')
     assert md.call_args[1]['parents'] is True
     assert log_has('Created data directory: /foo/bar', caplog)
+
+
+def test_create_userdata_dir(mocker, default_conf, caplog) -> None:
+    mocker.patch.object(Path, "is_dir", MagicMock(return_value=False))
+    md = mocker.patch.object(Path, 'mkdir', MagicMock())
+
+    x = create_userdata_dir('/tmp/bar', create_dir=True)
+    assert md.call_count == 7
+    assert md.call_args[1]['parents'] is False
+    assert log_has('Created user-data directory: /tmp/bar', caplog)
+    assert isinstance(x, Path)
+    assert str(x) == "/tmp/bar"
+
+
+def test_create_userdata_dir_exists(mocker, default_conf, caplog) -> None:
+    mocker.patch.object(Path, "is_dir", MagicMock(return_value=True))
+    md = mocker.patch.object(Path, 'mkdir', MagicMock())
+
+    create_userdata_dir('/tmp/bar')
+    assert md.call_count == 0
+
+
+def test_create_userdata_dir_exists_exception(mocker, default_conf, caplog) -> None:
+    mocker.patch.object(Path, "is_dir", MagicMock(return_value=False))
+    md = mocker.patch.object(Path, 'mkdir', MagicMock())
+
+    with pytest.raises(OperationalException, match=r'Directory `/tmp/bar` does not exist.*'):
+        create_userdata_dir('/tmp/bar',  create_dir=False)
+    assert md.call_count == 0
 
 
 def test_validate_tsl(default_conf):

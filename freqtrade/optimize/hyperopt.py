@@ -5,7 +5,6 @@ This module contains the hyperopt logic
 """
 
 import logging
-import os
 import sys
 
 from collections import OrderedDict
@@ -36,9 +35,6 @@ logger = logging.getLogger(__name__)
 
 INITIAL_POINTS = 30
 MAX_LOSS = 100000  # just a big enough number to be bad result in loss optimization
-TICKERDATA_PICKLE = os.path.join('user_data', 'hyperopt_tickerdata.pkl')
-TRIALSDATA_PICKLE = os.path.join('user_data', 'hyperopt_results.pickle')
-HYPEROPT_LOCKFILE = os.path.join('user_data', 'hyperopt.lock')
 
 
 class Hyperopt(Backtesting):
@@ -56,7 +52,12 @@ class Hyperopt(Backtesting):
         self.custom_hyperoptloss = HyperOptLossResolver(self.config).hyperoptloss
         self.calculate_loss = self.custom_hyperoptloss.hyperopt_loss_function
 
+        self.trials_file = (self.config['user_data_dir'] /
+                            'hyperopt_results' / 'hyperopt_results.pickle')
+        self.tickerdata_pickle = (self.config['user_data_dir'] /
+                                  'hyperopt_results' / 'hyperopt_tickerdata.pkl')
         self.total_epochs = config.get('epochs', 0)
+
         self.current_best_loss = 100
 
         if not self.config.get('hyperopt_continue'):
@@ -65,7 +66,6 @@ class Hyperopt(Backtesting):
             logger.info("Continuing on previous hyperopt results.")
 
         # Previous evaluations
-        self.trials_file = TRIALSDATA_PICKLE
         self.trials: List = []
 
         # Populate functions here (hasattr is slow so should not be run during "regular" operations)
@@ -89,11 +89,16 @@ class Hyperopt(Backtesting):
                 self.config['experimental'] = {}
             self.config['experimental']['use_sell_signal'] = True
 
+    @staticmethod
+    def get_lock_filename(config) -> str:
+
+        return str(config['user_data_dir'] / 'hyperopt.lock')
+
     def clean_hyperopt(self):
         """
         Remove hyperopt pickle files to restart hyperopt.
         """
-        for f in [TICKERDATA_PICKLE, TRIALSDATA_PICKLE]:
+        for f in [self.tickerdata_pickle, self.trials_file]:
             p = Path(f)
             if p.is_file():
                 logger.info(f"Removing `{p}`.")
@@ -126,7 +131,7 @@ class Hyperopt(Backtesting):
         """
         logger.info('Reading Trials from \'%s\'', self.trials_file)
         trials = load(self.trials_file)
-        os.remove(self.trials_file)
+        self.trials_file.unlink()
         return trials
 
     def log_trials_result(self) -> None:
@@ -255,7 +260,7 @@ class Hyperopt(Backtesting):
         if self.has_space('stoploss'):
             self.strategy.stoploss = params['stoploss']
 
-        processed = load(TICKERDATA_PICKLE)
+        processed = load(self.tickerdata_pickle)
 
         min_date, max_date = get_timeframe(processed)
 
@@ -327,7 +332,7 @@ class Hyperopt(Backtesting):
 
     def load_previous_results(self):
         """ read trials file if we have one """
-        if os.path.exists(self.trials_file) and os.path.getsize(self.trials_file) > 0:
+        if self.trials_file.is_file() and self.trials_file.stat().st_size > 0:
             self.trials = self.read_trials()
             logger.info(
                 'Loaded %d previous evaluations from disk.',
@@ -364,7 +369,7 @@ class Hyperopt(Backtesting):
 
         preprocessed = self.strategy.tickerdata_to_dataframe(data)
 
-        dump(preprocessed, TICKERDATA_PICKLE)
+        dump(preprocessed, self.tickerdata_pickle)
 
         # We don't need exchange instance anymore while running hyperopt
         self.exchange = None  # type: ignore

@@ -9,38 +9,43 @@ This page explains the different parameters of the bot and how to run it.
 ## Bot commands
 
 ```
-usage: freqtrade [-h] [-v] [--logfile FILE] [--version] [-c PATH] [-d PATH]
-                 [-s NAME] [--strategy-path PATH] [--db-url PATH]
-                 [--sd-notify]
-                 {backtesting,edge,hyperopt} ...
+usage: freqtrade [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
+                 [--userdir PATH] [-s NAME] [--strategy-path PATH]
+                 [--db-url PATH] [--sd-notify]
+                 {backtesting,edge,hyperopt,create-userdir,list-exchanges} ...
 
 Free, open source crypto trading bot
 
 positional arguments:
-  {backtesting,edge,hyperopt}
+  {backtesting,edge,hyperopt,create-userdir,list-exchanges}
     backtesting         Backtesting module.
     edge                Edge module.
     hyperopt            Hyperopt module.
+    create-userdir      Create user-data directory.
+    list-exchanges      Print available exchanges.
 
 optional arguments:
   -h, --help            show this help message and exit
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified
+  --logfile FILE        Log to the file specified.
   -V, --version         show program's version number and exit
   -c PATH, --config PATH
-                        Specify configuration file (default: None). Multiple
-                        --config options may be used. Can be set to '-' to
-                        read config from stdin.
+                        Specify configuration file (default: `config.json`).
+                        Multiple --config options may be used. Can be set to
+                        `-` to read config from stdin.
   -d PATH, --datadir PATH
-                        Path to backtest data.
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
   -s NAME, --strategy NAME
                         Specify strategy class name (default:
-                        DefaultStrategy).
+                        `DefaultStrategy`).
   --strategy-path PATH  Specify additional strategy lookup path.
-  --db-url PATH         Override trades database URL, this is useful if
-                        dry_run is enabled or in custom deployments (default:
-                        None).
+  --db-url PATH         Override trades database URL, this is useful in custom
+                        deployments (default: `sqlite:///tradesv3.sqlite` for
+                        Live Run mode, `sqlite://` for Dry Run).
   --sd-notify           Notify systemd service manager.
+
 ```
 
 ### How to specify which configuration file be used?
@@ -84,6 +89,29 @@ of your configuration in the project issues or in the Internet.
 
 See more details on this technique with examples in the documentation page on
 [configuration](configuration.md).
+
+### Where to store custom data
+
+Freqtrade allows the creation of a user-data directory using `freqtrade create-userdir --userdir someDirectory`.
+This directory will look as follows:
+
+```
+user_data/
+├── backtest_results
+├── data
+├── hyperopts
+├── hyperopts_results
+├── plot
+└── strategies
+```
+
+You can add the entry "user_data_dir" setting to your configuration, to always point your bot to this directory.
+Alternatively, pass in `--userdir` to every command.
+The bot will fail to start if the directory does not exist, but will create necessary subdirectories.
+
+This directory should contain your custom strategies, custom hyperopts and hyperopt loss functions, backtesting historical data (downloaded using either backtesting command or the download script) and plot outputs.
+
+It is recommended to use version control to keep track of changes to your strategies.
 
 ### How to use **--strategy**?
 
@@ -179,8 +207,8 @@ optional arguments:
   --export-filename PATH
                         Save backtest results to this filename requires
                         --export to be set as well Example --export-
-                        filename=user_data/backtest_data/backtest_today.json
-                        (default: user_data/backtest_data/backtest-
+                        filename=user_data/backtest_results/backtest_today.json
+                        (default: user_data/backtest_results/backtest-
                         result.json)
 ```
 
