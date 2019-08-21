@@ -770,6 +770,7 @@ def test_pairlist_resolving_with_config_pl(mocker, default_conf):
     load_mock = mocker.patch("freqtrade.configuration.configuration.json_load",
                              MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    mocker.patch.object(Path, "open", MagicMock(return_value=MagicMock()))
 
     arglist = [
         '--config', 'config.json',
@@ -808,6 +809,7 @@ def test_pairlist_resolving_with_config_pl_not_exists(mocker, default_conf):
 
 def test_pairlist_resolving_fallback(mocker):
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    mocker.patch.object(Path, "open", MagicMock(return_value=MagicMock()))
     mocker.patch("freqtrade.configuration.configuration.json_load",
                  MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
     arglist = [
