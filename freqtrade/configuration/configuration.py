@@ -346,10 +346,9 @@ class Configuration(object):
             # or if pairs file is specified explicitely
             if not pairs_file.exists():
                 raise OperationalException(f'No pairs file found with path "{pairs_file}".')
-
-            config['pairs'] = json_load(pairs_file)
-
-            config['pairs'].sort()
+            with pairs_file.open('r') as f:
+                config['pairs'] = json_load(f)
+                config['pairs'].sort()
             return
 
         if "config" in self.args and self.args.config:
@@ -357,7 +356,10 @@ class Configuration(object):
             config['pairs'] = config.get('exchange', {}).get('pair_whitelist')
         else:
             # Fall back to /dl_path/pairs.json
-            pairs_file = Path(config['datadir']) / "pairs.json"
+            pairs_file = Path(config['datadir']) / config['exchange']['name'].lower() / "pairs.json"
+            print(config['datadir'])
             if pairs_file.exists():
-                config['pairs'] = json_load(pairs_file)
-            config['pairs'].sort()
+                with pairs_file.open('r') as f:
+                    config['pairs'] = json_load(f)
+                if 'pairs' in config:
+                    config['pairs'].sort()

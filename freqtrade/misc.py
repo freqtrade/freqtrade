@@ -6,6 +6,7 @@ import logging
 import re
 from datetime import datetime
 from pathlib import Path
+from typing.io import IO
 
 import numpy as np
 import rapidjson
@@ -60,7 +61,7 @@ def file_dump_json(filename: Path, data, is_zip=False) -> None:
     logger.debug(f'done json to "{filename}"')
 
 
-def json_load(datafile):
+def json_load(datafile: IO):
     """
     load data with rapidjson
     Use this to have a consistent experience,
