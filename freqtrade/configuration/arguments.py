@@ -32,7 +32,7 @@ ARGS_LIST_EXCHANGES = ["print_one_column"]
 
 ARGS_CREATE_USERDIR = ["user_data_dir"]
 
-ARGS_DOWNLOADER = ARGS_COMMON + ["pairs", "pairs_file", "days", "exchange", "timeframes", "erase"]
+ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "exchange", "timeframes", "erase"]
 
 ARGS_PLOT_DATAFRAME = (ARGS_COMMON + ARGS_STRATEGY +
                        ["pairs", "indicators1", "indicators2", "plot_limit", "db_url",
@@ -41,6 +41,8 @@ ARGS_PLOT_DATAFRAME = (ARGS_COMMON + ARGS_STRATEGY +
 
 ARGS_PLOT_PROFIT = (ARGS_COMMON + ARGS_STRATEGY +
                     ["pairs", "timerange", "export", "exportfilename", "db_url", "trade_source"])
+
+NO_CONF_REQURIED = ["start_download_data"]
 
 
 class Arguments(object):
@@ -77,7 +79,10 @@ class Arguments(object):
 
         # Workaround issue in argparse with action='append' and default value
         # (see https://bugs.python.org/issue16399)
-        if not self._no_default_config and parsed_arg.config is None:
+        # Allow no-config for certain commands (like downloading / plotting)
+        if (not self._no_default_config and parsed_arg.config is None
+                and not (hasattr(parsed_arg, 'func')
+                         and parsed_arg.func.__name__ in NO_CONF_REQURIED)):
             parsed_arg.config = [constants.DEFAULT_CONFIG]
 
         return parsed_arg
@@ -95,7 +100,8 @@ class Arguments(object):
         :return: None
         """
         from freqtrade.optimize import start_backtesting, start_hyperopt, start_edge
-        from freqtrade.utils import start_create_userdir, start_list_exchanges
+        from freqtrade.utils import start_create_userdir, start_download_data, start_list_exchanges
+
         subparsers = self.parser.add_subparsers(dest='subparser')
 
         # Add backtesting subcommand
@@ -125,3 +131,11 @@ class Arguments(object):
         )
         list_exchanges_cmd.set_defaults(func=start_list_exchanges)
         self._build_args(optionlist=ARGS_LIST_EXCHANGES, parser=list_exchanges_cmd)
+
+        # Add download-data subcommand
+        download_data_cmd = subparsers.add_parser(
+            'download-data',
+            help='Download backtesting data.'
+        )
+        download_data_cmd.set_defaults(func=start_download_data)
+        self._build_args(optionlist=ARGS_DOWNLOAD_DATA, parser=download_data_cmd)

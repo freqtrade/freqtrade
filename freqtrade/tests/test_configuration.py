@@ -2,7 +2,6 @@
 import json
 import logging
 import warnings
-from argparse import Namespace
 from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -11,10 +10,11 @@ import pytest
 from jsonschema import Draft4Validator, ValidationError, validate
 
 from freqtrade import OperationalException, constants
-from freqtrade.configuration import Arguments, Configuration
+from freqtrade.configuration import Arguments, Configuration, validate_config_consistency
 from freqtrade.configuration.check_exchange import check_exchange
-from freqtrade.configuration.directory_operations import create_datadir, create_userdata_dir
-from freqtrade.configuration.json_schema import validate_config_schema
+from freqtrade.configuration.config_validation import validate_config_schema
+from freqtrade.configuration.directory_operations import (create_datadir,
+                                                          create_userdata_dir)
 from freqtrade.configuration.load_config import load_config_file
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.loggers import _set_loggers
@@ -663,21 +663,34 @@ def test_validate_tsl(default_conf):
     with pytest.raises(OperationalException,
                        match=r'The config trailing_only_offset_is_reached needs '
                        'trailing_stop_positive_offset to be more than 0 in your config.'):
-        configuration = Configuration(Namespace())
-        configuration._validate_config_consistency(default_conf)
+        validate_config_consistency(default_conf)
 
     default_conf['trailing_stop_positive_offset'] = 0.01
     default_conf['trailing_stop_positive'] = 0.015
     with pytest.raises(OperationalException,
                        match=r'The config trailing_stop_positive_offset needs '
                        'to be greater than trailing_stop_positive_offset in your config.'):
-        configuration = Configuration(Namespace())
-        configuration._validate_config_consistency(default_conf)
+        validate_config_consistency(default_conf)
 
     default_conf['trailing_stop_positive'] = 0.01
     default_conf['trailing_stop_positive_offset'] = 0.015
-    Configuration(Namespace())
-    configuration._validate_config_consistency(default_conf)
+    validate_config_consistency(default_conf)
+
+
+def test_validate_edge(edge_conf):
+    edge_conf.update({"pairlist": {
+        "method": "VolumePairList",
+    }})
+
+    with pytest.raises(OperationalException,
+                       match="Edge and VolumePairList are incompatible, "
+                       "Edge will override whatever pairs VolumePairlist selects."):
+        validate_config_consistency(edge_conf)
+
+    edge_conf.update({"pairlist": {
+        "method": "StaticPairList",
+    }})
+    validate_config_consistency(edge_conf)
 
 
 def test_load_config_test_comments() -> None:
@@ -742,3 +755,111 @@ def test_load_config_default_subkeys(all_conf, keys) -> None:
     validate_config_schema(all_conf)
     assert subkey in all_conf[key]
     assert all_conf[key][subkey] == keys[2]
+
+
+def test_pairlist_resolving():
+    arglist = [
+        'download-data',
+        '--pairs', 'ETH/BTC', 'XRP/BTC',
+        '--exchange', 'binance'
+    ]
+
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+
+    assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
+    assert config['exchange']['name'] == 'binance'
+
+
+def test_pairlist_resolving_with_config(mocker, default_conf):
+    patched_configuration_load_config_file(mocker, default_conf)
+    arglist = [
+        '--config', 'config.json',
+        'download-data',
+    ]
+
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+
+    assert config['pairs'] == default_conf['exchange']['pair_whitelist']
+    assert config['exchange']['name'] == default_conf['exchange']['name']
+
+    # Override pairs
+    arglist = [
+        '--config', 'config.json',
+        'download-data',
+        '--pairs', 'ETH/BTC', 'XRP/BTC',
+    ]
+
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+
+    assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
+    assert config['exchange']['name'] == default_conf['exchange']['name']
+
+
+def test_pairlist_resolving_with_config_pl(mocker, default_conf):
+    patched_configuration_load_config_file(mocker, default_conf)
+    load_mock = mocker.patch("freqtrade.configuration.configuration.json_load",
+                             MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    mocker.patch.object(Path, "open", MagicMock(return_value=MagicMock()))
+
+    arglist = [
+        '--config', 'config.json',
+        'download-data',
+        '--pairs-file', 'pairs.json',
+    ]
+
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+
+    assert load_mock.call_count == 1
+    assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
+    assert config['exchange']['name'] == default_conf['exchange']['name']
+
+
+def test_pairlist_resolving_with_config_pl_not_exists(mocker, default_conf):
+    patched_configuration_load_config_file(mocker, default_conf)
+    mocker.patch("freqtrade.configuration.configuration.json_load",
+                 MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
+    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
+
+    arglist = [
+        '--config', 'config.json',
+        'download-data',
+        '--pairs-file', 'pairs.json',
+    ]
+
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    with pytest.raises(OperationalException, match=r"No pairs file found with path.*"):
+        configuration = Configuration(args)
+        configuration.get_config()
+
+
+def test_pairlist_resolving_fallback(mocker):
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    mocker.patch.object(Path, "open", MagicMock(return_value=MagicMock()))
+    mocker.patch("freqtrade.configuration.configuration.json_load",
+                 MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
+    arglist = [
+        'download-data',
+        '--exchange', 'binance'
+    ]
+
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+
+    assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
+    assert config['exchange']['name'] == 'binance'

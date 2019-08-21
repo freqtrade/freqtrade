@@ -1,7 +1,7 @@
 # pragma pylint: disable=missing-docstring
 
 from copy import deepcopy
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
@@ -21,6 +21,7 @@ def test_parse_args_backtesting(mocker) -> None:
     further argument parsing is done in test_arguments.py
     """
     backtesting_mock = mocker.patch('freqtrade.optimize.start_backtesting', MagicMock())
+    backtesting_mock.__name__ = PropertyMock("start_backtesting")
     # it's sys.exit(0) at the end of backtesting
     with pytest.raises(SystemExit):
         main(['backtesting'])
@@ -36,6 +37,7 @@ def test_parse_args_backtesting(mocker) -> None:
 
 def test_main_start_hyperopt(mocker) -> None:
     hyperopt_mock = mocker.patch('freqtrade.optimize.start_hyperopt', MagicMock())
+    hyperopt_mock.__name__ = PropertyMock("start_hyperopt")
     # it's sys.exit(0) at the end of hyperopt
     with pytest.raises(SystemExit):
         main(['hyperopt'])

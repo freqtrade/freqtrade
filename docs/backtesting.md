@@ -3,9 +3,43 @@
 This page explains how to validate your strategy performance by using
 Backtesting.
 
+## Getting data for backtesting and hyperopt
+
+To download data (candles / OHLCV) needed for backtesting and hyperoptimization use the `freqtrade download-data` command.
+
+If no additional parameter is specified, freqtrade will download data for `"1m"` and `"5m"` timeframes.
+Exchange and pairs will come from `config.json` (if specified using `-c/--config`). Otherwise `--exchange` becomes mandatory.
+
+Alternatively, a `pairs.json` file can be used.
+
+If you are using Binance for example:
+
+- create a directory `user_data/data/binance` and copy `pairs.json` in that directory.
+- update the `pairs.json` to contain the currency pairs you are interested in.
+
+```bash
+mkdir -p user_data/data/binance
+cp freqtrade/tests/testdata/pairs.json user_data/data/binance
+```
+
+Then run:
+
+```bash
+freqtrade download-data --exchange binance
+```
+
+This will download ticker data for all the currency pairs you defined in `pairs.json`.
+
+- To use a different directory than the exchange specific default, use `--datadir user_data/data/some_directory`.
+- To change the exchange used to download the tickers, please use a different configuration file (you'll probably need to adjust ratelimits etc.)
+- To use `pairs.json` from some other directory, use `--pairs-file some_other_dir/pairs.json`.
+- To download ticker data for only 10 days, use `--days 10` (defaults to 30 days).
+- Use `--timeframes` to specify which tickers to download. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute tickers.
+- To use exchange, timeframe and list of pairs as defined in your configuration file, use the `-c/--config` option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine `-c/--config` with most other options.
+
 ## Test your strategy with Backtesting
 
-Now you have good Buy and Sell strategies, you want to test it against
+Now you have good Buy and Sell strategies and some historic data, you want to test it against
 real data. This is what we call
 [backtesting](https://en.wikipedia.org/wiki/Backtesting).
 
@@ -108,37 +142,6 @@ The full timerange specification:
 - Use tickframes since 2018/01/31 till 2018/03/01 : `--timerange=20180131-20180301`
 - Use tickframes between POSIX timestamps 1527595200 1527618600:
                                                 `--timerange=1527595200-1527618600`
-
-#### Downloading new set of ticker data
-
-To download new set of backtesting ticker data, you can use a download script.
-
-If you are using Binance for example:
-
-- create a directory `user_data/data/binance` and copy `pairs.json` in that directory.
-- update the `pairs.json` to contain the currency pairs you are interested in.
-
-```bash
-mkdir -p user_data/data/binance
-cp freqtrade/tests/testdata/pairs.json user_data/data/binance
-```
-
-Then run:
-
-```bash
-python scripts/download_backtest_data.py --exchange binance
-```
-
-This will download ticker data for all the currency pairs you defined in `pairs.json`.
-
-- To use a different directory than the exchange specific default, use `--datadir user_data/data/some_directory`.
-- To change the exchange used to download the tickers, use `--exchange`. Default is `bittrex`.
-- To use `pairs.json` from some other directory, use `--pairs-file some_other_dir/pairs.json`.
-- To download ticker data for only 10 days, use `--days 10`.
-- Use `--timeframes` to specify which tickers to download. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute tickers.
-- To use exchange, timeframe and list of pairs as defined in your configuration file, use the `-c/--config` option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine `-c/--config` with other options.
-
-For help about backtesting usage, please refer to [Backtesting commands](#backtesting-commands).
 
 ## Understand the backtesting result
 

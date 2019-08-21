@@ -74,7 +74,7 @@ def test_load_data_7min_ticker(mocker, caplog, default_conf) -> None:
     assert ld is None
     assert log_has(
         'No history data for pair: "UNITTEST/BTC", interval: 7m. '
-        'Use --refresh-pairs-cached option or download_backtest_data.py '
+        'Use --refresh-pairs-cached option or `freqtrade download-data` '
         'script to download the data', caplog
     )
 
@@ -109,7 +109,7 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog, defau
     assert os.path.isfile(file) is False
     assert log_has(
         'No history data for pair: "MEME/BTC", interval: 1m. '
-        'Use --refresh-pairs-cached option or download_backtest_data.py '
+        'Use --refresh-pairs-cached option or `freqtrade download-data` '
         'script to download the data', caplog
     )
 
@@ -178,16 +178,13 @@ def test_load_cached_data_for_updating(mocker) -> None:
     # timeframe starts earlier than the cached data
     # should fully update data
     timerange = TimeRange('date', None, test_data[0][0] / 1000 - 1, 0)
-    data, start_ts = load_cached_data_for_updating(test_filename,
-                                                   '1m',
-                                                   timerange)
+    data, start_ts = load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
     assert data == []
     assert start_ts == test_data[0][0] - 1000
 
     # same with 'line' timeframe
     num_lines = (test_data[-1][0] - test_data[1][0]) / 1000 / 60 + 120
-    data, start_ts = load_cached_data_for_updating(test_filename,
-                                                   '1m',
+    data, start_ts = load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m',
                                                    TimeRange(None, 'line', 0, -num_lines))
     assert data == []
     assert start_ts < test_data[0][0] - 1
@@ -195,36 +192,29 @@ def test_load_cached_data_for_updating(mocker) -> None:
     # timeframe starts in the center of the cached data
     # should return the chached data w/o the last item
     timerange = TimeRange('date', None, test_data[0][0] / 1000 + 1, 0)
-    data, start_ts = load_cached_data_for_updating(test_filename,
-                                                   '1m',
-                                                   timerange)
+    data, start_ts = load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
     assert data == test_data[:-1]
     assert test_data[-2][0] < start_ts < test_data[-1][0]
 
     # same with 'line' timeframe
     num_lines = (test_data[-1][0] - test_data[1][0]) / 1000 / 60 + 30
     timerange = TimeRange(None, 'line', 0, -num_lines)
-    data, start_ts = load_cached_data_for_updating(test_filename,
-                                                   '1m',
-                                                   timerange)
+    data, start_ts = load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
     assert data == test_data[:-1]
     assert test_data[-2][0] < start_ts < test_data[-1][0]
 
     # timeframe starts after the chached data
     # should return the chached data w/o the last item
     timerange = TimeRange('date', None, test_data[-1][0] / 1000 + 1, 0)
-    data, start_ts = load_cached_data_for_updating(test_filename,
-                                                   '1m',
-                                                   timerange)
+    data, start_ts = load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
     assert data == test_data[:-1]
     assert test_data[-2][0] < start_ts < test_data[-1][0]
 
-    # same with 'line' timeframe
+    # Try loading last 30 lines.
+    # Not supported by load_cached_data_for_updating, we always need to get the full data.
     num_lines = 30
     timerange = TimeRange(None, 'line', 0, -num_lines)
-    data, start_ts = load_cached_data_for_updating(test_filename,
-                                                   '1m',
-                                                   timerange)
+    data, start_ts = load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
     assert data == test_data[:-1]
     assert test_data[-2][0] < start_ts < test_data[-1][0]
 
@@ -232,35 +222,27 @@ def test_load_cached_data_for_updating(mocker) -> None:
     # should return the chached data w/o the last item
     num_lines = 30
     timerange = TimeRange(None, 'line', 0, -num_lines)
-    data, start_ts = load_cached_data_for_updating(test_filename,
-                                                   '1m',
-                                                   timerange)
+    data, start_ts = load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
     assert data == test_data[:-1]
     assert test_data[-2][0] < start_ts < test_data[-1][0]
 
     # no datafile exist
     # should return timestamp start time
     timerange = TimeRange('date', None, now_ts - 10000, 0)
-    data, start_ts = load_cached_data_for_updating(test_filename.with_name('unexist'),
-                                                   '1m',
-                                                   timerange)
+    data, start_ts = load_cached_data_for_updating(datadir, 'NONEXIST/BTC', '1m', timerange)
     assert data == []
     assert start_ts == (now_ts - 10000) * 1000
 
     # same with 'line' timeframe
     num_lines = 30
     timerange = TimeRange(None, 'line', 0, -num_lines)
-    data, start_ts = load_cached_data_for_updating(test_filename.with_name('unexist'),
-                                                   '1m',
-                                                   timerange)
+    data, start_ts = load_cached_data_for_updating(datadir, 'NONEXIST/BTC', '1m', timerange)
     assert data == []
     assert start_ts == (now_ts - num_lines * 60) * 1000
 
     # no datafile exist, no timeframe is set
     # should return an empty array and None
-    data, start_ts = load_cached_data_for_updating(test_filename.with_name('unexist'),
-                                                   '1m',
-                                                   None)
+    data, start_ts = load_cached_data_for_updating(datadir, 'NONEXIST/BTC', '1m', None)
     assert data == []
     assert start_ts is None
 

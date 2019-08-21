@@ -212,19 +212,11 @@ optional arguments:
                         result.json)
 ```
 
-### How to use **--refresh-pairs-cached** parameter?
+### Getting historic data for backtesting
 
-The first time your run Backtesting, it will take the pairs you have
-set in your config file and download data from the Exchange.
-
-If for any reason you want to update your data set, you use
-`--refresh-pairs-cached` to force Backtesting to update the data it has.
-
-!!! Note
-    Use it only if you want to update your data set. You will not be able to come back to the previous version.
-
-To test your strategy with latest data, we recommend continuing using
-the parameter `-l` or `--live`.
+The first time your run Backtesting, you will need to download some historic data first.
+This can be accomplished by using `freqtrade download-data`.  
+Check the corresponding [help page section](backtesting.md#Getting-data-for-backtesting-and-hyperopt) for more details
 
 ## Hyperopt commands
 

@@ -259,7 +259,8 @@ AVAILABLE_CLI_OPTIONS = {
     # Script options
     "pairs": Arg(
         '-p', '--pairs',
-        help='Show profits for only these pairs. Pairs are comma-separated.',
+        help='Show profits for only these pairs. Pairs are space-separated.',
+        nargs='+',
     ),
     # Download data
     "pairs_file": Arg(
@@ -281,9 +282,10 @@ AVAILABLE_CLI_OPTIONS = {
     "timeframes": Arg(
         '-t', '--timeframes',
         help=f'Specify which tickers to download. Space-separated list. '
-        f'Default: `{constants.DEFAULT_DOWNLOAD_TICKER_INTERVALS}`.',
+        f'Default: `1m 5m`.',
         choices=['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h',
                  '6h', '8h', '12h', '1d', '3d', '1w'],
+        default=['1m', '5m'],
         nargs='+',
     ),
     "erase": Arg(

@@ -5,10 +5,11 @@ import gzip
 import logging
 import re
 from datetime import datetime
+from pathlib import Path
+from typing.io import IO
 
 import numpy as np
 import rapidjson
-
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ def datesarray_to_datetimearray(dates: np.ndarray) -> np.ndarray:
     return dates.dt.to_pydatetime()
 
 
-def file_dump_json(filename, data, is_zip=False) -> None:
+def file_dump_json(filename: Path, data, is_zip=False) -> None:
     """
     Dump JSON data into a file
     :param filename: file to create
@@ -49,8 +50,8 @@ def file_dump_json(filename, data, is_zip=False) -> None:
     logger.info(f'dumping json to "{filename}"')
 
     if is_zip:
-        if not filename.endswith('.gz'):
-            filename = filename + '.gz'
+        if filename.suffix != '.gz':
+            filename = filename.with_suffix('.gz')
         with gzip.open(filename, 'w') as fp:
             rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
     else:
@@ -60,7 +61,7 @@ def file_dump_json(filename, data, is_zip=False) -> None:
     logger.debug(f'done json to "{filename}"')
 
 
-def json_load(datafile):
+def json_load(datafile: IO):
     """
     load data with rapidjson
     Use this to have a consistent experience,
