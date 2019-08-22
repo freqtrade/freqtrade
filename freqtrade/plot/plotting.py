@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import pandas as pd
 
@@ -9,8 +9,7 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import (combine_tickers_with_mean,
                                        create_cum_profit,
                                        extract_trades_of_period, load_trades)
-from freqtrade.exchange import Exchange
-from freqtrade.resolvers import ExchangeResolver, StrategyResolver
+from freqtrade.resolvers import StrategyResolver
 
 logger = logging.getLogger(__name__)
 
@@ -29,12 +28,6 @@ def init_plotscript(config):
     Initialize objects needed for plotting
     :return: Dict with tickers, trades, pairs and strategy
     """
-    exchange: Optional[Exchange] = None
-
-    # Exchange is only needed when downloading data!
-    if config.get("refresh_pairs", False):
-        exchange = ExchangeResolver(config.get('exchange', {}).get('name'),
-                                    config).exchange
 
     strategy = StrategyResolver(config).strategy
     if "pairs" in config:
@@ -49,9 +42,7 @@ def init_plotscript(config):
         datadir=Path(str(config.get("datadir"))),
         pairs=pairs,
         ticker_interval=config['ticker_interval'],
-        refresh_pairs=config.get('refresh_pairs', False),
         timerange=timerange,
-        exchange=exchange,
     )
 
     trades = load_trades(config)
