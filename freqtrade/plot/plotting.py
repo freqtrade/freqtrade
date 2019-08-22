@@ -45,7 +45,10 @@ def init_plotscript(config):
         timerange=timerange,
     )
 
-    trades = load_trades(config)
+    trades = load_trades(config['trade_source'],
+                         db_url=config.get('db_url'),
+                         exportfilename=config.get('exportfilename'),
+                         )
     return {"tickers": tickers,
             "trades": trades,
             "pairs": pairs,
