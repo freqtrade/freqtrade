@@ -34,7 +34,11 @@ jobs:
       - cp config.json.example config.json
       - freqtrade --datadir freqtrade/tests/testdata hyperopt -e 5
       name: hyperopt
-    - script: flake8 freqtrade scripts
+    - script:
+      - flake8 freqtrade scripts
+      # Test Documentation boxes -
+      # !!! <TYPE>: is not allowed!
+      - grep -Er '^!!!\s\S+:' docs/*; test $? -ne 0
       name: flake8
     - script: mypy freqtrade scripts
       name: mypy
