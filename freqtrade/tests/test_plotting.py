@@ -51,7 +51,6 @@ def test_init_plotscript(default_conf, mocker):
     assert "tickers" in ret
     assert "trades" in ret
     assert "pairs" in ret
-    assert "strategy" in ret
 
     default_conf['pairs'] = ["POWR/BTC", "XLM/BTC"]
     ret = init_plotscript(default_conf)

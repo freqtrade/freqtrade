@@ -26,10 +26,9 @@ except ImportError:
 def init_plotscript(config):
     """
     Initialize objects needed for plotting
-    :return: Dict with tickers, trades, pairs and strategy
+    :return: Dict with tickers, trades and pairs
     """
 
-    strategy = StrategyResolver(config).strategy
     if "pairs" in config:
         pairs = config["pairs"]
     else:
@@ -41,7 +40,7 @@ def init_plotscript(config):
     tickers = history.load_data(
         datadir=Path(str(config.get("datadir"))),
         pairs=pairs,
-        ticker_interval=config['ticker_interval'],
+        ticker_interval=config.get('ticker_interval', '5m'),
         timerange=timerange,
     )
 
@@ -49,10 +48,10 @@ def init_plotscript(config):
                          db_url=config.get('db_url'),
                          exportfilename=config.get('exportfilename'),
                          )
+
     return {"tickers": tickers,
             "trades": trades,
             "pairs": pairs,
-            "strategy": strategy,
             }
 
 
@@ -329,9 +328,10 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
     - Generate plot files
     :return: None
     """
+    strategy = StrategyResolver(config).strategy
+
     plot_elements = init_plotscript(config)
     trades = plot_elements['trades']
-    strategy = plot_elements["strategy"]
 
     pair_counter = 0
     for pair, data in plot_elements["tickers"].items():
@@ -367,7 +367,10 @@ def plot_profit(config: Dict[str, Any]) -> None:
     in helping out to find a good algorithm.
     """
     plot_elements = init_plotscript(config)
-    trades = plot_elements['trades']
+    trades = load_trades(config['trade_source'],
+                         db_url=config.get('db_url'),
+                         exportfilename=config.get('exportfilename'),
+                         )
     # Filter trades to relevant pairs
     trades = trades[trades['pair'].isin(plot_elements["pairs"])]
 
