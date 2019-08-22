@@ -15,7 +15,7 @@ from freqtrade.plot.plotting import (add_indicators, add_profit,
                                      generate_candlestick_graph,
                                      generate_plot_filename,
                                      generate_profit_graph, init_plotscript,
-                                     plot_trades, store_plot_file)
+                                     plot_profit, plot_trades, store_plot_file)
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.tests.conftest import get_args, log_has, log_has_re
 
@@ -330,3 +330,27 @@ def start_plot_profit(mocker):
     called_config = aup.call_args_list[0][0][0]
     assert "pairs" in called_config
     assert called_config['pairs'] == ["ETH/BTC"]
+
+
+def test_plot_profit(default_conf, mocker, caplog):
+    default_conf['trade_source'] = 'file'
+    default_conf["datadir"] = history.make_testdata_path(None)
+    default_conf['exportfilename'] = str(
+        history.make_testdata_path(None) / "backtest-result_test.json")
+    default_conf['pairs'] = ["ETH/BTC", "LTC/BTC"]
+
+    profit_mock = MagicMock()
+    store_mock = MagicMock()
+    mocker.patch.multiple(
+        "freqtrade.plot.plotting",
+        generate_profit_graph=profit_mock,
+        store_plot_file=store_mock
+    )
+    plot_profit(default_conf)
+
+    # Plot-profit generates one combined plot
+    assert profit_mock.call_count == 1
+    assert store_mock.call_count == 1
+
+    assert profit_mock.call_args_list[0][0][0] == default_conf['pairs']
+    assert store_mock.call_args_list[0][1]['auto_open'] == True
