@@ -6,7 +6,10 @@ config*.json
 .hyperopt
 logfile.txt
 hyperopt_trials.pickle
-user_data/
+user_data/*
+!user_data/notebooks
+user_data/notebooks/*
+!user_data/notebooks/*example.ipynb
 freqtrade-plot.html
 freqtrade-profit-plot.html
 
@@ -80,7 +83,7 @@ docs/_build/
 target/
 
 # Jupyter Notebook
-.ipynb_checkpoints
+*.ipynb_checkpoints
 
 # pyenv
 .python-version
@@ -94,4 +97,4 @@ target/
 .mypy_cache/
 
 #exceptions
-!user_data/noteboks/*example.ipynb
+!*.gitkeep
