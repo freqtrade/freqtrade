@@ -9,13 +9,14 @@ from plotly.subplots import make_subplots
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import create_cum_profit, load_backtest_data
+from freqtrade.plot.plot_utils import start_plot_dataframe
 from freqtrade.plot.plotting import (add_indicators, add_profit,
                                      generate_candlestick_graph,
                                      generate_plot_filename,
                                      generate_profit_graph, init_plotscript,
                                      plot_trades, store_plot_file)
 from freqtrade.strategy.default_strategy import DefaultStrategy
-from freqtrade.tests.conftest import log_has, log_has_re
+from freqtrade.tests.conftest import get_args, log_has, log_has_re
 
 
 def fig_generating_mock(fig, *args, **kwargs):
@@ -270,3 +271,18 @@ def test_generate_profit_graph():
     for pair in pairs:
         profit_pair = find_trace_in_fig_data(figure.data, f"Profit {pair}")
         assert isinstance(profit_pair, go.Scattergl)
+
+
+def test_start_plot_dataframe(mocker):
+    aup = mocker.patch("freqtrade.plot.plotting.analyse_and_plot_pairs", MagicMock())
+    args = [
+        "--config", "config.json.example",
+        "plot-dataframe",
+        "--pairs", "ETH/BTC"
+    ]
+    start_plot_dataframe(get_args(args))
+
+    assert aup.call_count == 1
+    called_config = aup.call_args_list[0][0][0]
+    assert "pairs" in called_config
+    assert called_config['pairs'] == ["ETH/BTC"]

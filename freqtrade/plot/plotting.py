@@ -328,11 +328,11 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
     """
     From configuration provided
     - Initializes plot-script
-    -Get tickers data
-    -Generate Dafaframes populated with indicators and signals
-    -Load trades excecuted on same periods
-    -Generate Plotly plot objects
-    -Generate plot files
+    - Get tickers data
+    - Generate Dafaframes populated with indicators and signals based on configured strategy
+    - Load trades excecuted during the selected period
+    - Generate Plotly plot objects
+    - Generate plot files
     :return: None
     """
     plot_elements = init_plotscript(config)
