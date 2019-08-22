@@ -1,13 +1,14 @@
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import (combine_tickers_with_mean,
-                                       create_cum_profit, load_trades)
+                                       create_cum_profit,
+                                       extract_trades_of_period, load_trades)
 from freqtrade.exchange import Exchange
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 
@@ -321,3 +322,44 @@ def store_plot_file(fig, filename: str, directory: Path, auto_open: bool = False
     plot(fig, filename=str(_filename),
          auto_open=auto_open)
     logger.info(f"Stored plot as {_filename}")
+
+
+def analyse_and_plot_pairs(config: Dict[str, Any]):
+    """
+    From configuration provided
+    - Initializes plot-script
+    -Get tickers data
+    -Generate Dafaframes populated with indicators and signals
+    -Load trades excecuted on same periods
+    -Generate Plotly plot objects
+    -Generate plot files
+    :return: None
+    """
+    plot_elements = init_plotscript(config)
+    trades = plot_elements['trades']
+    strategy = plot_elements["strategy"]
+
+    pair_counter = 0
+    for pair, data in plot_elements["tickers"].items():
+        pair_counter += 1
+        logger.info("analyse pair %s", pair)
+        tickers = {}
+        tickers[pair] = data
+
+        dataframe = strategy.analyze_ticker(tickers[pair], {'pair': pair})
+
+        trades_pair = trades.loc[trades['pair'] == pair]
+        trades_pair = extract_trades_of_period(dataframe, trades_pair)
+
+        fig = generate_candlestick_graph(
+            pair=pair,
+            data=dataframe,
+            trades=trades_pair,
+            indicators1=config["indicators1"].split(","),
+            indicators2=config["indicators2"].split(",")
+        )
+
+        store_plot_file(fig, filename=generate_plot_filename(pair, config['ticker_interval']),
+                        directory=config['user_data_dir'] / "plot")
+
+    logger.info('End of ploting process %s plots generated', pair_counter)

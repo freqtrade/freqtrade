@@ -119,6 +119,7 @@ class Arguments(object):
         hyperopt_cmd.set_defaults(func=start_hyperopt)
         self._build_args(optionlist=ARGS_HYPEROPT, parser=hyperopt_cmd)
 
+        # Create userdir subcommand
         create_userdir_cmd = subparsers.add_parser('create-userdir',
                                                    help="Create user-data directory.")
         create_userdir_cmd.set_defaults(func=start_create_userdir)
@@ -139,3 +140,12 @@ class Arguments(object):
         )
         download_data_cmd.set_defaults(func=start_download_data)
         self._build_args(optionlist=ARGS_DOWNLOAD_DATA, parser=download_data_cmd)
+
+        # Add Plotting subcommand
+        from freqtrade.plot.plot_utils import start_plot_dataframe
+        plot_dataframe_cmd = subparsers.add_parser(
+            'plot-dataframe',
+            help='Plot candles with indicators.'
+        )
+        plot_dataframe_cmd.set_defaults(func=start_plot_dataframe)
+        self._build_args(optionlist=ARGS_PLOT_DATAFRAME, parser=plot_dataframe_cmd)
