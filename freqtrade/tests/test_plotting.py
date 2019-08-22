@@ -11,6 +11,7 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import create_cum_profit, load_backtest_data
 from freqtrade.plot.plot_utils import start_plot_dataframe
 from freqtrade.plot.plotting import (add_indicators, add_profit,
+                                     analyse_and_plot_pairs,
                                      generate_candlestick_graph,
                                      generate_plot_filename,
                                      generate_profit_graph, init_plotscript,
@@ -286,3 +287,31 @@ def test_start_plot_dataframe(mocker):
     called_config = aup.call_args_list[0][0][0]
     assert "pairs" in called_config
     assert called_config['pairs'] == ["ETH/BTC"]
+
+
+def test_analyse_and_plot_pairs(default_conf, mocker, caplog):
+    default_conf['trade_source'] = 'file'
+    default_conf["datadir"] = history.make_testdata_path(None)
+    default_conf['exportfilename'] = str(
+        history.make_testdata_path(None) / "backtest-result_test.json")
+    default_conf['indicators1'] = "sma5,ema10"
+    default_conf['indicators2'] = "macd"
+    default_conf['pairs'] = ["ETH/BTC", "LTC/BTC"]
+
+    candle_mock = MagicMock()
+    store_mock = MagicMock()
+    mocker.patch.multiple(
+        "freqtrade.plot.plotting",
+        generate_candlestick_graph=candle_mock,
+        store_plot_file=store_mock
+        )
+    analyse_and_plot_pairs(default_conf)
+
+    # Both mocks should be called once per pair
+    assert candle_mock.call_count == 2
+    assert store_mock.call_count == 2
+
+    assert candle_mock.call_args_list[0][1]['indicators1'] == ['sma5', 'ema10']
+    assert candle_mock.call_args_list[0][1]['indicators2'] == ['macd']
+
+    assert log_has("End of plotting process. 2 plots generated", caplog)

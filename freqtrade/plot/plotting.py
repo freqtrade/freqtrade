@@ -353,4 +353,4 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
         store_plot_file(fig, filename=generate_plot_filename(pair, config['ticker_interval']),
                         directory=config['user_data_dir'] / "plot")
 
-    logger.info('End of ploting process %s plots generated', pair_counter)
+    logger.info('End of plotting process. %s plots generated', pair_counter)
