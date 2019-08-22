@@ -772,20 +772,20 @@ class Exchange(object):
             raise OperationalException(e) from e
 
 
-def is_exchange_bad(exchange: str) -> bool:
-    return exchange in BAD_EXCHANGES
+def is_exchange_bad(exchange_name: str) -> bool:
+    return exchange_name in BAD_EXCHANGES
 
 
-def get_exchange_bad_reason(exchange: str) -> str:
-    return BAD_EXCHANGES.get(exchange, "")
+def get_exchange_bad_reason(exchange_name: str) -> str:
+    return BAD_EXCHANGES.get(exchange_name, "")
 
 
-def is_exchange_available(exchange: str, ccxt_module=None) -> bool:
-    return exchange in available_exchanges(ccxt_module)
+def is_exchange_available(exchange_name: str, ccxt_module=None) -> bool:
+    return exchange_name in available_exchanges(ccxt_module)
 
 
-def is_exchange_officially_supported(exchange: str) -> bool:
-    return exchange in ['bittrex', 'binance']
+def is_exchange_officially_supported(exchange_name: str) -> bool:
+    return exchange_name in ['bittrex', 'binance']
 
 
 def available_exchanges(ccxt_module=None) -> List[str]:
