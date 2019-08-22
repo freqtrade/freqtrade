@@ -315,3 +315,18 @@ def test_analyse_and_plot_pairs(default_conf, mocker, caplog):
     assert candle_mock.call_args_list[0][1]['indicators2'] == ['macd']
 
     assert log_has("End of plotting process. 2 plots generated", caplog)
+
+
+def start_plot_profit(mocker):
+    aup = mocker.patch("freqtrade.plot.plotting.plot_profit", MagicMock())
+    args = [
+        "--config", "config.json.example",
+        "plot-profit",
+        "--pairs", "ETH/BTC"
+    ]
+    start_plot_profit(get_args(args))
+
+    assert aup.call_count == 1
+    called_config = aup.call_args_list[0][0][0]
+    assert "pairs" in called_config
+    assert called_config['pairs'] == ["ETH/BTC"]
