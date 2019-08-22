@@ -4,6 +4,8 @@ This page contains description of the command line arguments, configuration para
 and the bot features that were declared as DEPRECATED by the bot development team
 and are no longer supported. Please avoid their usage in your configuration.
 
+## Deprecated
+
 ### the `--refresh-pairs-cached` command line option
 
 `--refresh-pairs-cached` in the context of backtesting, hyperopt and edge allows to refresh candle data for backtesting.
