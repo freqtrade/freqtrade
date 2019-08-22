@@ -294,8 +294,8 @@ def test_analyse_and_plot_pairs(default_conf, mocker, caplog):
     default_conf["datadir"] = history.make_testdata_path(None)
     default_conf['exportfilename'] = str(
         history.make_testdata_path(None) / "backtest-result_test.json")
-    default_conf['indicators1'] = "sma5,ema10"
-    default_conf['indicators2'] = "macd"
+    default_conf['indicators1'] = ["sma5", "ema10"]
+    default_conf['indicators2'] = ["macd"]
     default_conf['pairs'] = ["ETH/BTC", "LTC/BTC"]
 
     candle_mock = MagicMock()
@@ -353,4 +353,4 @@ def test_plot_profit(default_conf, mocker, caplog):
     assert store_mock.call_count == 1
 
     assert profit_mock.call_args_list[0][0][0] == default_conf['pairs']
-    assert store_mock.call_args_list[0][1]['auto_open'] == True
+    assert store_mock.call_args_list[0][1]['auto_open'] is True

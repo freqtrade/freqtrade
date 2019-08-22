@@ -346,8 +346,8 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
             pair=pair,
             data=dataframe,
             trades=trades_pair,
-            indicators1=config["indicators1"].split(","),
-            indicators2=config["indicators2"].split(",")
+            indicators1=config["indicators1"],
+            indicators2=config["indicators2"],
         )
 
         store_plot_file(fig, filename=generate_plot_filename(pair, config['ticker_interval']),
