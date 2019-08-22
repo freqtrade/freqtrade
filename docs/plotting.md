@@ -44,10 +44,8 @@ python3 scripts/plot_dataframe.py -p BTC/ETH,XRP/ETH
 To plot a timerange (to zoom in):
 
 ``` bash
-python3 scripts/plot_dataframe.py -p BTC/ETH --timerange=100-200
+python3 scripts/plot_dataframe.py -p BTC/ETH --timerange=20180801-20180805
 ```
-
-Timerange doesn't work with live data.
 
 To plot trades stored in a database use `--db-url` argument:
 
