@@ -186,9 +186,6 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'ticker_interval' in config
     assert not log_has_re('Parameter -i/--ticker-interval detected .*', caplog)
 
-    assert 'live' not in config
-    assert not log_has('Parameter -l/--live detected ...', caplog)
-
     assert 'position_stacking' not in config
     assert not log_has('Parameter --enable-position-stacking detected ...', caplog)
 
@@ -215,7 +212,6 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
         '--datadir', '/foo/bar',
         'backtesting',
         '--ticker-interval', '1m',
-        '--live',
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--refresh-pairs-cached',
@@ -237,9 +233,6 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
     assert 'ticker_interval' in config
     assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
                    caplog)
-
-    assert 'live' in config
-    assert log_has('Parameter -l/--live detected ...', caplog)
 
     assert 'position_stacking' in config
     assert log_has('Parameter --enable-position-stacking detected ...', caplog)
@@ -479,7 +472,6 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
 
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
     default_conf['ticker_interval'] = '1m'
-    default_conf['live'] = False
     default_conf['datadir'] = None
     default_conf['export'] = None
     default_conf['timerange'] = '-100'
@@ -513,7 +505,6 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
 
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
     default_conf['ticker_interval'] = "1m"
-    default_conf['live'] = False
     default_conf['datadir'] = None
     default_conf['export'] = None
     default_conf['timerange'] = '20180101-20180102'
@@ -815,8 +806,7 @@ def test_backtest_record(default_conf, fee, mocker):
         assert dur > 0
 
 
-@pytest.mark.filterwarnings("ignore:DEPRECATED")
-def test_backtest_start_live(default_conf, mocker, caplog):
+def test_backtest_start_timerange(default_conf, mocker, caplog):
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
 
     async def load_pairs(pair, timeframe, since):
@@ -836,7 +826,6 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         '--datadir', 'freqtrade/tests/testdata',
         'backtesting',
         '--ticker-interval', '1m',
-        '--live',
         '--timerange', '-100',
         '--enable-position-stacking',
         '--disable-max-market-positions'
@@ -846,14 +835,12 @@ def test_backtest_start_live(default_conf, mocker, caplog):
     # check the logs, that will contain the backtest result
     exists = [
         'Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
-        'Parameter -l/--live detected ...',
         'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
         'Parameter --timerange detected: -100 ...',
         'Using data directory: freqtrade/tests/testdata ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
-        'Live: Downloading data for all defined pairs ...',
-        'Backtesting with data from 2017-11-14T19:31:00+00:00 '
+        'Backtesting with data from 2017-11-14T21:17:00+00:00 '
         'up to 2017-11-14T22:58:00+00:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...'
     ]
@@ -862,7 +849,6 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         assert log_has(line, caplog)
 
 
-@pytest.mark.filterwarnings("ignore:DEPRECATED")
 def test_backtest_start_multi_strat(default_conf, mocker, caplog):
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
 
@@ -886,7 +872,6 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog):
         '--datadir', 'freqtrade/tests/testdata',
         'backtesting',
         '--ticker-interval', '1m',
-        '--live',
         '--timerange', '-100',
         '--enable-position-stacking',
         '--disable-max-market-positions',
@@ -904,14 +889,12 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog):
     # check the logs, that will contain the backtest result
     exists = [
         'Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
-        'Parameter -l/--live detected ...',
         'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
         'Parameter --timerange detected: -100 ...',
         'Using data directory: freqtrade/tests/testdata ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
-        'Live: Downloading data for all defined pairs ...',
-        'Backtesting with data from 2017-11-14T19:31:00+00:00 '
+        'Backtesting with data from 2017-11-14T21:17:00+00:00 '
         'up to 2017-11-14T22:58:00+00:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...',
         'Running backtesting for Strategy DefaultStrategy',

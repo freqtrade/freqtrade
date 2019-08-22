@@ -128,11 +128,6 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_false',
         default=True,
     ),
-    "live": Arg(
-        '-l', '--live',
-        help='Use live data.',
-        action='store_true',
-    ),
     "strategy_list": Arg(
         '--strategy-list',
         help='Provide a space-separated list of strategies to backtest. '

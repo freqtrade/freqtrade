@@ -338,9 +338,6 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'ticker_interval' in config
     assert not log_has('Parameter -i/--ticker-interval detected ...', caplog)
 
-    assert 'live' not in config
-    assert not log_has('Parameter -l/--live detected ...', caplog)
-
     assert 'position_stacking' not in config
     assert not log_has('Parameter --enable-position-stacking detected ...', caplog)
 
@@ -369,7 +366,6 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         '--userdir', "/tmp/freqtrade",
         'backtesting',
         '--ticker-interval', '1m',
-        '--live',
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--refresh-pairs-cached',
@@ -394,9 +390,6 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'ticker_interval' in config
     assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
                    caplog)
-
-    assert 'live' in config
-    assert log_has('Parameter -l/--live detected ...', caplog)
 
     assert 'position_stacking'in config
     assert log_has('Parameter --enable-position-stacking detected ...', caplog)

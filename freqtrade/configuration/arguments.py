@@ -17,7 +17,7 @@ ARGS_COMMON_OPTIMIZE = ["ticker_interval", "timerange",
                         "max_open_trades", "stake_amount", "refresh_pairs"]
 
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
-                                        "live", "strategy_list", "export", "exportfilename"]
+                                        "strategy_list", "export", "exportfilename"]
 
 ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
                                         "position_stacking", "epochs", "spaces",
@@ -37,7 +37,7 @@ ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "exchange", "timeframes", "
 ARGS_PLOT_DATAFRAME = (ARGS_COMMON + ARGS_STRATEGY +
                        ["pairs", "indicators1", "indicators2", "plot_limit", "db_url",
                         "trade_source", "export", "exportfilename", "timerange",
-                        "refresh_pairs", "live"])
+                        "refresh_pairs"])
 
 ARGS_PLOT_PROFIT = (ARGS_COMMON + ARGS_STRATEGY +
                     ["pairs", "timerange", "export", "exportfilename", "db_url", "trade_source"])

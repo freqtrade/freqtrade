@@ -86,9 +86,6 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
     assert 'ticker_interval' in config
     assert not log_has_re('Parameter -i/--ticker-interval detected .*', caplog)
 
-    assert 'live' not in config
-    assert not log_has('Parameter -l/--live detected ...', caplog)
-
     assert 'position_stacking' not in config
     assert not log_has('Parameter --enable-position-stacking detected ...', caplog)
 
@@ -100,6 +97,7 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
     assert config['runmode'] == RunMode.HYPEROPT
 
 
+@pytest.mark.filterwarnings("ignore:DEPRECATED")
 def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch(

@@ -319,7 +319,6 @@ if self.dp:
         print(f"available {pair}, {ticker}")
 ```
 
-
 #### Get data for non-tradeable pairs
 
 Data for additional, informative pairs (reference pairs) can be beneficial for some strategies.

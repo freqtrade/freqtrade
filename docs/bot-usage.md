@@ -195,7 +195,6 @@ optional arguments:
                         Disable applying `max_open_trades` during backtest
                         (same as setting `max_open_trades` to a very high
                         number).
-  -l, --live            Use live data.
   --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
                         Provide a space-separated list of strategies to
                         backtest Please note that ticker-interval needs to be

@@ -183,10 +183,6 @@ class Configuration(object):
                              logstring='Parameter -i/--ticker-interval detected ... '
                              'Using ticker_interval: {} ...')
 
-        self._args_to_config(config, argname='live',
-                             logstring='Parameter -l/--live detected ...',
-                             deprecated_msg='--live will be removed soon.')
-
         self._args_to_config(config, argname='position_stacking',
                              logstring='Parameter --enable-position-stacking detected ...')
 
@@ -211,7 +207,8 @@ class Configuration(object):
         self._process_datadir_options(config)
 
         self._args_to_config(config, argname='refresh_pairs',
-                             logstring='Parameter -r/--refresh-pairs-cached detected ...')
+                             logstring='Parameter -r/--refresh-pairs-cached detected ...',
+                             deprecated_msg='-r/--refresh-pairs-cached will be removed soon.')
 
         self._args_to_config(config, argname='strategy_list',
                              logstring='Using strategy list of {} Strategies', logfun=len)
