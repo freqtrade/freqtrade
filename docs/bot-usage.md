@@ -2,7 +2,7 @@
 
 This page explains the different parameters of the bot and how to run it.
 
-!!! Note:
+!!! Note
     If you've used `setup.sh`, don't forget to activate your virtual environment (`source .env/bin/activate`) before running freqtrade commands.
 
 
@@ -141,6 +141,7 @@ Learn more about strategy file in
 
 This parameter allows you to add an additional strategy lookup path, which gets
 checked before the default locations (The passed path must be a directory!):
+
 ```bash
 freqtrade --strategy AwesomeStrategy --strategy-path /some/directory
 ```
