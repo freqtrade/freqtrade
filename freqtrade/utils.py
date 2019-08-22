@@ -9,8 +9,7 @@ import arrow
 from freqtrade.configuration import Configuration, TimeRange
 from freqtrade.configuration.directory_operations import create_userdata_dir
 from freqtrade.data.history import download_pair_history
-from freqtrade.exchange import available_exchanges
-from freqtrade.resolvers import ExchangeResolver
+from freqtrade.exchange import Exchange, get_exchange, available_exchanges
 from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
@@ -79,7 +78,7 @@ def start_download_data(args: Namespace) -> None:
 
     try:
         # Init exchange
-        exchange = ExchangeResolver(config['exchange']['name'], config).exchange
+        exchange: Exchange = get_exchange(config)
 
         for pair in config["pairs"]:
             if pair not in exchange.markets:

@@ -17,10 +17,10 @@ from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
 from freqtrade.configuration import validate_config_consistency
-from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
+from freqtrade.exchange import Exchange, get_exchange, timeframe_to_minutes, timeframe_to_next_date
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
-from freqtrade.resolvers import ExchangeResolver, StrategyResolver, PairListResolver
+from freqtrade.resolvers import StrategyResolver, PairListResolver
 from freqtrade.state import State, RunMode
 from freqtrade.strategy.interface import SellType, IStrategy
 from freqtrade.wallets import Wallets
@@ -57,10 +57,10 @@ class FreqtradeBot(object):
 
         self.rpc: RPCManager = RPCManager(self)
 
-        self.exchange = ExchangeResolver(self.config['exchange']['name'], self.config).exchange
+        self.exchange: Exchange = get_exchange(self.config)
 
-        self.wallets = Wallets(self.config, self.exchange)
-        self.dataprovider = DataProvider(self.config, self.exchange)
+        self.wallets = Wallets(self.config)
+        self.dataprovider = DataProvider(self.config)
 
         # Attach Dataprovider to Strategy baseclass
         IStrategy.dp = self.dataprovider

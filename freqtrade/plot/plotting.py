@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import pandas as pd
 
@@ -8,8 +8,9 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import (combine_tickers_with_mean,
                                        create_cum_profit, load_trades)
-from freqtrade.exchange import Exchange
-from freqtrade.resolvers import ExchangeResolver, StrategyResolver
+from freqtrade.exchange import Exchange, get_exchange
+from freqtrade.resolvers import StrategyResolver
+
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ try:
     from plotly.offline import plot
     import plotly.graph_objects as go
 except ImportError:
-    logger.exception("Module plotly not found \n Please install using `pip install plotly`")
+    logger.exception("Module plotly not found.\nPlease install using `pip install plotly`.")
     exit(1)
 
 
@@ -28,12 +29,11 @@ def init_plotscript(config):
     Initialize objects needed for plotting
     :return: Dict with tickers, trades, pairs and strategy
     """
-    exchange: Optional[Exchange] = None
+    exchange: Exchange = None
 
     # Exchange is only needed when downloading data!
     if config.get("refresh_pairs", False):
-        exchange = ExchangeResolver(config.get('exchange', {}).get('name'),
-                                    config).exchange
+        exchange = get_exchange(config)
 
     strategy = StrategyResolver(config).strategy
     if "pairs" in config:

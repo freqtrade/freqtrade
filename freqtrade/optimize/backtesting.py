@@ -15,10 +15,10 @@ from freqtrade import OperationalException
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.exchange import Exchange, get_exchange, timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
-from freqtrade.resolvers import ExchangeResolver, StrategyResolver
+from freqtrade.resolvers import StrategyResolver
 from freqtrade.state import RunMode
 from freqtrade.strategy.interface import IStrategy, SellType
 from tabulate import tabulate
@@ -64,11 +64,11 @@ class Backtesting(object):
         self.config['dry_run'] = True
         self.strategylist: List[IStrategy] = []
 
-        self.exchange = ExchangeResolver(self.config['exchange']['name'], self.config).exchange
-        self.fee = self.exchange.get_fee()
+        exchange: Exchange = get_exchange(self.config)
+        self.fee = exchange.get_fee()
 
         if self.config.get('runmode') != RunMode.HYPEROPT:
-            self.dataprovider = DataProvider(self.config, self.exchange)
+            self.dataprovider = DataProvider(self.config)
             IStrategy.dp = self.dataprovider
 
         if self.config.get('strategy_list', None):
@@ -406,12 +406,13 @@ class Backtesting(object):
 
         timerange = TimeRange.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
+        exchange: Exchange = get_exchange(self.config)
         data = history.load_data(
             datadir=Path(self.config['datadir']) if self.config.get('datadir') else None,
             pairs=pairs,
             ticker_interval=self.ticker_interval,
             refresh_pairs=self.config.get('refresh_pairs', False),
-            exchange=self.exchange,
+            exchange=exchange,
             timerange=timerange,
         )
 

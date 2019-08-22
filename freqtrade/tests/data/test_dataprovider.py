@@ -14,7 +14,7 @@ def test_ohlcv(mocker, default_conf, ticker_history):
     exchange._klines[("XRP/BTC", ticker_interval)] = ticker_history
     exchange._klines[("UNITTEST/BTC", ticker_interval)] = ticker_history
 
-    dp = DataProvider(default_conf, exchange)
+    dp = DataProvider(default_conf)
     assert dp.runmode == RunMode.DRY_RUN
     assert ticker_history.equals(dp.ohlcv("UNITTEST/BTC", ticker_interval))
     assert isinstance(dp.ohlcv("UNITTEST/BTC", ticker_interval), DataFrame)
@@ -27,12 +27,12 @@ def test_ohlcv(mocker, default_conf, ticker_history):
     assert dp.ohlcv("UNITTEST/BTC", ticker_interval).equals(dp.ohlcv("UNITTEST/BTC"))
 
     default_conf["runmode"] = RunMode.LIVE
-    dp = DataProvider(default_conf, exchange)
+    dp = DataProvider(default_conf)
     assert dp.runmode == RunMode.LIVE
     assert isinstance(dp.ohlcv("UNITTEST/BTC", ticker_interval), DataFrame)
 
     default_conf["runmode"] = RunMode.BACKTEST
-    dp = DataProvider(default_conf, exchange)
+    dp = DataProvider(default_conf)
     assert dp.runmode == RunMode.BACKTEST
     assert dp.ohlcv("UNITTEST/BTC", ticker_interval).empty
 
@@ -41,7 +41,7 @@ def test_historic_ohlcv(mocker, default_conf, ticker_history):
     historymock = MagicMock(return_value=ticker_history)
     mocker.patch("freqtrade.data.dataprovider.load_pair_history", historymock)
 
-    dp = DataProvider(default_conf, None)
+    dp = DataProvider(default_conf)
     data = dp.historic_ohlcv("UNITTEST/BTC", "5m")
     assert isinstance(data, DataFrame)
     assert historymock.call_count == 1
@@ -57,7 +57,7 @@ def test_get_pair_dataframe(mocker, default_conf, ticker_history):
     exchange._klines[("XRP/BTC", ticker_interval)] = ticker_history
     exchange._klines[("UNITTEST/BTC", ticker_interval)] = ticker_history
 
-    dp = DataProvider(default_conf, exchange)
+    dp = DataProvider(default_conf)
     assert dp.runmode == RunMode.DRY_RUN
     assert ticker_history.equals(dp.get_pair_dataframe("UNITTEST/BTC", ticker_interval))
     assert isinstance(dp.get_pair_dataframe("UNITTEST/BTC", ticker_interval), DataFrame)
@@ -70,7 +70,7 @@ def test_get_pair_dataframe(mocker, default_conf, ticker_history):
                                  ticker_interval).equals(dp.get_pair_dataframe("UNITTEST/BTC"))
 
     default_conf["runmode"] = RunMode.LIVE
-    dp = DataProvider(default_conf, exchange)
+    dp = DataProvider(default_conf)
     assert dp.runmode == RunMode.LIVE
     assert isinstance(dp.get_pair_dataframe("UNITTEST/BTC", ticker_interval), DataFrame)
     assert dp.get_pair_dataframe("NONESENSE/AAA", ticker_interval).empty
@@ -78,7 +78,7 @@ def test_get_pair_dataframe(mocker, default_conf, ticker_history):
     historymock = MagicMock(return_value=ticker_history)
     mocker.patch("freqtrade.data.dataprovider.load_pair_history", historymock)
     default_conf["runmode"] = RunMode.BACKTEST
-    dp = DataProvider(default_conf, exchange)
+    dp = DataProvider(default_conf)
     assert dp.runmode == RunMode.BACKTEST
     assert isinstance(dp.get_pair_dataframe("UNITTEST/BTC", ticker_interval), DataFrame)
     # assert dp.get_pair_dataframe("NONESENSE/AAA", ticker_interval).empty
@@ -90,7 +90,7 @@ def test_available_pairs(mocker, default_conf, ticker_history):
     exchange._klines[("XRP/BTC", ticker_interval)] = ticker_history
     exchange._klines[("UNITTEST/BTC", ticker_interval)] = ticker_history
 
-    dp = DataProvider(default_conf, exchange)
+    dp = DataProvider(default_conf)
     assert len(dp.available_pairs) == 2
     assert dp.available_pairs == [
         ("XRP/BTC", ticker_interval),
@@ -108,7 +108,7 @@ def test_refresh(mocker, default_conf, ticker_history):
 
     pairs_non_trad = [("ETH/USDT", ticker_interval), ("BTC/TUSD", "1h")]
 
-    dp = DataProvider(default_conf, exchange)
+    dp = DataProvider(default_conf)
     dp.refresh(pairs)
 
     assert refresh_mock.call_count == 1

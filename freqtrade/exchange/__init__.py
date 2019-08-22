@@ -1,4 +1,6 @@
 from freqtrade.exchange.exchange import Exchange  # noqa: F401
+from freqtrade.exchange.exchange import (get_exchange,  # noqa: F401
+                                         delete_exchange)
 from freqtrade.exchange.exchange import (get_exchange_bad_reason,  # noqa: F401
                                          is_exchange_bad,
                                          is_exchange_available,

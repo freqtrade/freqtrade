@@ -24,6 +24,7 @@ from skopt.space import Dimension
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.history import load_data, get_timeframe
+from freqtrade.exchange import Exchange, get_exchange
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOptLoss to allow users import from this file
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F4
@@ -342,12 +343,13 @@ class Hyperopt(Backtesting):
     def start(self) -> None:
         timerange = TimeRange.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
+        exchange: Exchange = get_exchange(self.config)
         data = load_data(
             datadir=Path(self.config['datadir']) if self.config.get('datadir') else None,
             pairs=self.config['exchange']['pair_whitelist'],
             ticker_interval=self.ticker_interval,
             refresh_pairs=self.config.get('refresh_pairs', False),
-            exchange=self.exchange,
+            exchange=exchange,
             timerange=timerange
         )
 
@@ -370,9 +372,6 @@ class Hyperopt(Backtesting):
         preprocessed = self.strategy.tickerdata_to_dataframe(data)
 
         dump(preprocessed, self.tickerdata_pickle)
-
-        # We don't need exchange instance anymore while running hyperopt
-        self.exchange = None  # type: ignore
 
         self.load_previous_results()
 

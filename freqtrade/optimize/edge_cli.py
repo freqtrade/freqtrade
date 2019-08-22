@@ -10,7 +10,7 @@ from freqtrade import constants
 from freqtrade.edge import Edge
 
 from freqtrade.configuration import TimeRange
-from freqtrade.exchange import Exchange
+from freqtrade.exchange import Exchange, get_exchange
 from freqtrade.resolvers import StrategyResolver
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ class EdgeCli(object):
         self.config['exchange']['uid'] = ''
         self.config['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
         self.config['dry_run'] = True
-        self.exchange = Exchange(self.config)
+        self.exchange: Exchange = get_exchange(self.config)
         self.strategy = StrategyResolver(self.config).strategy
 
         self.edge = Edge(config, self.exchange, self.strategy)

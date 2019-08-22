@@ -21,6 +21,7 @@ from freqtrade import (DependencyException, InvalidOrderException,
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.misc import deep_merge_dicts
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -770,6 +771,39 @@ class Exchange(object):
                 f'Could not get fee info due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+
+# Store Exchange objects created
+__exchanges: Dict[str, Exchange] = {}
+
+
+def get_exchange(config, exchange_name: Optional[str] = None) -> Exchange:
+    """
+    Return Exchange object for exchange with name `exchange_name`.
+    Creates Exchange if it was not created before.
+    """
+    from freqtrade.resolvers import ExchangeResolver
+
+    name = exchange_name or config['exchange']['name']
+    if name not in __exchanges:
+        logger.info(f"Creating Exchange object for '{name}'...")
+        __exchanges[name] = ExchangeResolver(name, config).exchange
+        logger.info(f"Exchange object for '{name}' created.")
+
+    return __exchanges[name]
+
+
+def delete_exchange(config, exchange_name: Optional[str] = None):
+    """
+    Delete Exchange object for exchange with name `exchange_name`.
+    """
+    name = exchange_name or config['exchange']['name']
+    logger.info(f"Deleting Exchange object for '{name}'...")
+    if name in __exchanges:
+        del __exchanges[name]
+        logger.info(f"Exchange object for '{name}' deleted.")
+    else:
+        logger.warning(f"Exchange object for '{name}' was not found, cannot be deleted.")
 
 
 def is_exchange_bad(exchange_name: str) -> bool:

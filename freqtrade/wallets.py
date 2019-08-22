@@ -2,8 +2,8 @@
 """ Wallet """
 
 import logging
-from typing import Dict, NamedTuple
-from freqtrade.exchange import Exchange
+from typing import Dict, NamedTuple, Optional
+from freqtrade.exchange import Exchange, get_exchange
 from freqtrade import constants
 
 logger = logging.getLogger(__name__)
@@ -19,9 +19,9 @@ class Wallet(NamedTuple):
 
 class Wallets(object):
 
-    def __init__(self, config: dict, exchange: Exchange) -> None:
+    def __init__(self, config: dict, exchange_name: Optional[str] = None) -> None:
         self._config = config
-        self._exchange = exchange
+        self._exchange_name = exchange_name
         self._wallets: Dict[str, Wallet] = {}
 
         self.update()
@@ -61,7 +61,8 @@ class Wallets(object):
 
     def update(self) -> None:
 
-        balances = self._exchange.get_balances()
+        exchange: Exchange = get_exchange(self._config, self._exchange_name)
+        balances = exchange.get_balances()
 
         for currency in balances:
             self._wallets[currency] = Wallet(

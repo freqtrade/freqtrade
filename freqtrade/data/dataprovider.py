@@ -6,12 +6,12 @@ Common Interface for bot and strategy to access data.
 """
 import logging
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from pandas import DataFrame
 
 from freqtrade.data.history import load_pair_history
-from freqtrade.exchange import Exchange
+from freqtrade.exchange import Exchange, get_exchange
 from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 
 class DataProvider():
 
-    def __init__(self, config: dict, exchange: Exchange) -> None:
+    def __init__(self, config: dict, exchange_name: Optional[str] = None) -> None:
         self._config = config
-        self._exchange = exchange
+        self._exchange: Exchange = get_exchange(config, exchange_name)
 
     def refresh(self,
                 pairlist: List[Tuple[str, str]],

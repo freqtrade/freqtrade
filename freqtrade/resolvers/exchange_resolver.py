@@ -3,7 +3,6 @@ This module loads custom exchanges
 """
 import logging
 
-from freqtrade.exchange import Exchange
 import freqtrade.exchange as exchanges
 from freqtrade.resolvers import IResolver
 
@@ -29,10 +28,10 @@ class ExchangeResolver(IResolver):
             logger.info(
                 f"No {exchange_name} specific subclass found. Using the generic class instead.")
         if not hasattr(self, "exchange"):
-            self.exchange = Exchange(config)
+            self.exchange = exchanges.Exchange(config)
 
     def _load_exchange(
-            self, exchange_name: str, kwargs: dict) -> Exchange:
+            self, exchange_name: str, kwargs: dict) -> exchanges.Exchange:
         """
         Loads the specified exchange.
         Only checks for exchanges exported in freqtrade.exchanges
