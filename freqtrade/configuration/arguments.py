@@ -37,8 +37,7 @@ ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "exchange", "timeframes", "
 ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit", "db_url",
                        "trade_source", "export", "exportfilename", "timerange"]
 
-ARGS_PLOT_PROFIT = (ARGS_COMMON + ARGS_STRATEGY +
-                    ["pairs", "timerange", "export", "exportfilename", "db_url", "trade_source"])
+ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url", "trade_source"]
 
 NO_CONF_REQURIED = ["start_download_data"]
 
@@ -140,10 +139,18 @@ class Arguments(object):
         self._build_args(optionlist=ARGS_DOWNLOAD_DATA, parser=download_data_cmd)
 
         # Add Plotting subcommand
-        from freqtrade.plot.plot_utils import start_plot_dataframe
+        from freqtrade.plot.plot_utils import start_plot_dataframe, start_plot_profit
         plot_dataframe_cmd = subparsers.add_parser(
             'plot-dataframe',
             help='Plot candles with indicators.'
         )
         plot_dataframe_cmd.set_defaults(func=start_plot_dataframe)
         self._build_args(optionlist=ARGS_PLOT_DATAFRAME, parser=plot_dataframe_cmd)
+
+        # Plot profit
+        plot_profit_cmd = subparsers.add_parser(
+            'plot-profit',
+            help='Generate plot showing profits.'
+        )
+        plot_profit_cmd.set_defaults(func=start_plot_profit)
+        self._build_args(optionlist=ARGS_PLOT_PROFIT, parser=plot_profit_cmd)
