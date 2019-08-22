@@ -227,7 +227,7 @@ Freqtrade can also be installed using Anaconda (or Miniconda).
 conda env create -f environment.yml
 ```
 
-!!! Note:
+!!! Note
     This requires the [ta-lib](#1-install-ta-lib) C-library to be installed first.
 
 ## Windows
