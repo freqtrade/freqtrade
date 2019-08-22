@@ -4,7 +4,6 @@ import argparse
 import pytest
 
 from freqtrade.configuration import Arguments
-from freqtrade.configuration.arguments import ARGS_PLOT_DATAFRAME
 from freqtrade.configuration.cli_options import check_int_positive
 
 
@@ -149,16 +148,17 @@ def test_download_data_options() -> None:
 
 def test_plot_dataframe_options() -> None:
     args = [
-        '--indicators1', 'sma10,sma100',
-        '--indicators2', 'macd,fastd,fastk',
+        '-c', 'config.json.example',
+        'plot-dataframe',
+        '--indicators1', 'sma10', 'sma100',
+        '--indicators2', 'macd', 'fastd', 'fastk',
         '--plot-limit', '30',
         '-p', 'UNITTEST/BTC',
     ]
-    arguments = Arguments(args, '')
-    arguments._build_args(ARGS_PLOT_DATAFRAME)
-    pargs = arguments._parse_args()
-    assert pargs.indicators1 == "sma10,sma100"
-    assert pargs.indicators2 == "macd,fastd,fastk"
+    pargs = Arguments(args, '').get_parsed_arg()
+
+    assert pargs.indicators1 == ["sma10", "sma100"]
+    assert pargs.indicators2 == ["macd", "fastd", "fastk"]
     assert pargs.plot_limit == 30
     assert pargs.pairs == ["UNITTEST/BTC"]
 
