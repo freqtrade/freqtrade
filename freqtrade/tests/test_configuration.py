@@ -648,6 +648,12 @@ def test_create_userdata_dir_exists_exception(mocker, default_conf, caplog) -> N
 
 
 def test_validate_tsl(default_conf):
+    default_conf['stoploss'] = 0.0
+    with pytest.raises(OperationalException, match='The config stoploss needs to be more '
+                                                   'than 0 to avoid problems with sell orders.'):
+        validate_config_consistency(default_conf)
+    default_conf['stoploss'] = -0.10
+
     default_conf['trailing_stop'] = True
     default_conf['trailing_stop_positive'] = 0
     default_conf['trailing_stop_positive_offset'] = 0
@@ -668,6 +674,15 @@ def test_validate_tsl(default_conf):
     default_conf['trailing_stop_positive'] = 0.01
     default_conf['trailing_stop_positive_offset'] = 0.015
     validate_config_consistency(default_conf)
+
+    # 0 trailing stop positive - results in "Order would trigger immediately"
+    default_conf['trailing_stop_positive'] = 0
+    default_conf['trailing_stop_positive_offset'] = 0.02
+    default_conf['trailing_only_offset_is_reached'] = False
+    with pytest.raises(OperationalException,
+                       match='The config trailing_stop_positive needs to be more than 0'
+                       'to avoid problems with sell orders'):
+        validate_config_consistency(default_conf)
 
 
 def test_validate_edge(edge_conf):
