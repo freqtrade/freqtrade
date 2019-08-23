@@ -157,7 +157,8 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str) -> 
     :param trades: DataFrame containing trades (requires columns close_time and profitperc)
     :return: Returns df with one additional column, col_name, containing the cumulative profit.
     """
-    df[col_name] = trades.set_index('close_time')['profitperc'].cumsum()
+    # Use groupby/sum().cumsum() to avoid errors when multiple trades sold at the same candle.
+    df[col_name] = trades.groupby('close_time')['profitperc'].sum().cumsum()
     # Set first value to 0
     df.loc[df.iloc[0].name, col_name] = 0
     # FFill to get continuous
