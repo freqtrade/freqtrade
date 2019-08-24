@@ -668,7 +668,7 @@ def test_validate_tsl(default_conf):
     default_conf['trailing_stop_positive'] = 0.015
     with pytest.raises(OperationalException,
                        match=r'The config trailing_stop_positive_offset needs '
-                       'to be greater than trailing_stop_positive_offset in your config.'):
+                       'to be greater than trailing_stop_positive in your config.'):
         validate_config_consistency(default_conf)
 
     default_conf['trailing_stop_positive'] = 0.01

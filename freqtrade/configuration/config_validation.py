@@ -88,7 +88,7 @@ def _validate_trailing_stoploss(conf: Dict[str, Any]) -> None:
     if tsl_positive > 0 and 0 < tsl_offset <= tsl_positive:
         raise OperationalException(
             'The config trailing_stop_positive_offset needs '
-            'to be greater than trailing_stop_positive_offset in your config.')
+            'to be greater than trailing_stop_positive in your config.')
 
     # Fetch again without default
     if 'trailing_stop_positive' in conf and float(conf['trailing_stop_positive']) == 0.0:
