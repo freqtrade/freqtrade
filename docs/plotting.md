@@ -2,9 +2,9 @@
 
 This page explains how to plot prices, indicators and profits.
 
-## Installation
+## Installation / Setup
 
-Plotting scripts use Plotly library. Install/upgrade it with:
+Plotting modules use the Plotly library. You can install / upgrade this by running the following command:
 
 ``` bash
 pip install -U -r requirements-plot.txt
@@ -12,7 +12,15 @@ pip install -U -r requirements-plot.txt
 
 ## Plot price and indicators
 
-Usage for the candlestick plotting:
+Plot dataframe shows an interactive graph with three subplots:
+
+* Main plot with candlestics and indicators following price (sma/ema)
+* Volume bars
+* Additional indicators as specified by `--indicators2`
+
+![plot-dataframe](assets/plot-dataframe.png)
+
+Possible arguments:
 
 ```
 usage: freqtrade plot-dataframe [-h] [-p PAIRS [PAIRS ...]]
@@ -57,7 +65,7 @@ optional arguments:
 
 ```
 
-Example
+Example:
 
 ``` bash
 freqtrade plot-dataframe -p BTC/ETH
@@ -71,62 +79,58 @@ The `--pairs` argument can be used to specify pairs you would like to plot.
 Specify custom indicators.
 Use `--indicators1` for the main plot and `--indicators2` for the subplot below (if values are in a different range than prices).
 
+!!! tip
+    You will almost certainly want to specify a custom strategy! This can be done by adding `--strategy ClassName` to the command.
+
 ``` bash
-freqtrade plot-dataframe -p BTC/ETH --indicators1 sma ema --indicators2 macd
+freqtrade --strategy AwesomeStrategy plot-dataframe -p BTC/ETH --indicators1 sma ema --indicators2 macd
 ```
 
-### Advanced use
+### Further usage examples
 
-To plot multiple pairs, separate them with a comma:
+To plot multiple pairs, separate them with a space:
 
 ``` bash
-freqtrade plot-dataframe -p BTC/ETH XRP/ETH
+freqtrade --strategy AwesomeStrategy plot-dataframe -p BTC/ETH XRP/ETH
 ```
 
-To plot a timerange (to zoom in):
+To plot a timerange (to zoom in)
 
 ``` bash
-freqtrade plot-dataframe -p BTC/ETH --timerange=20180801-20180805
+freqtrade --strategy AwesomeStrategy plot-dataframe -p BTC/ETH --timerange=20180801-20180805
 ```
 
-To plot trades stored in a database use `--db-url` argument:
+To plot trades stored in a database use `--db-url` in combination with `--trade-source DB`:
 
 ``` bash
-freqtrade plot-dataframe --db-url sqlite:///tradesv3.dry_run.sqlite -p BTC/ETH --trade-source DB
+freqtrade --strategy AwesomeStrategy plot-dataframe --db-url sqlite:///tradesv3.dry_run.sqlite -p BTC/ETH --trade-source DB
 ```
 
 To plot trades from a backtesting result, use `--export-filename <filename>`
 
 ``` bash
-freqtrade plot-dataframe --export-filename user_data/backtest_results/backtest-result.json -p BTC/ETH
-```
-
-To plot a custom strategy the strategy should have first be backtested.
-The results may then be plotted with the -s argument:
-
-``` bash
-freqtrade plot-dataframe -s Strategy_Name -p BTC/ETH --datadir user_data/data/<exchange_name>/
+freqtrade --strategy AwesomeStrategy plot-dataframe --export-filename user_data/backtest_results/backtest-result.json -p BTC/ETH
 ```
 
 ## Plot profit
 
-The profit plotter shows a picture with three plots:
+![plot-profit](assets/plot-profit.png)
+
+Plot profit shows an interactive graph with three plots:
 
 1) Average closing price for all pairs
 2) The summarized profit made by backtesting.
-   Note that this is not the real-world profit, but
-   more of an estimate.
-3) Each pair individually profit
+   Note that this is not the real-world profit, but more of an estimate.
+3) Profit for each individual pair
 
 The first graph is good to get a grip of how the overall market progresses.
 
-The second graph will show how your algorithm works or doesn't.
-Perhaps you want an algorithm that steadily makes small profits,
-or one that acts less seldom, but makes big swings.
+The second graph will show if your algorithm works or doesn't.
+Perhaps you want an algorithm that steadily makes small profits, or one that acts less often, but makes big swings.
 
-The third graph can be useful to spot outliers, events in pairs that makes profit spikes.
+The third graph can be useful to spot outliers, events in pairs that cause profit spikes.
 
-Usage for the profit plotter:
+Usage for the plot-profit module:
 
 ```
 usage: freqtrade plot-profit [-h] [-p PAIRS [PAIRS ...]]
@@ -160,7 +164,19 @@ optional arguments:
 
 The `--pairs`  argument, can be used to limit the pairs that are considered for this calculation.
 
-Example
+Examples:
+
+Use custom backtest-export file
+
+``` bash
+freqtrade plot-profit  -p LTC/BTC --export-filename user_data/backtest_results/backtest-result-Strategy005.json
+```
+
+Use custom database
+
+``` bash
+freqtrade plot-profit  -p LTC/BTC --db-url sqlite:///tradesv3.sqlite --trade-source DB
+```
 
 ``` bash
 freqtrade plot-profit --datadir ../freqtrade/freqtrade/tests/testdata-20171221/ -p LTC/BTC
