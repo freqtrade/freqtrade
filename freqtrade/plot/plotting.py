@@ -278,7 +278,7 @@ def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame],
                         row_width=[1, 1, 1],
                         vertical_spacing=0.05,
                         subplot_titles=["AVG Close Price", "Combined Profit", "Profit per pair"])
-    fig['layout'].update(title="Profit plot")
+    fig['layout'].update(title="Freqtrade Profit plot")
     fig['layout']['yaxis1'].update(title='Price')
     fig['layout']['yaxis2'].update(title='Profit')
     fig['layout']['yaxis3'].update(title='Profit')
@@ -375,8 +375,8 @@ def plot_profit(config: Dict[str, Any]) -> None:
     """
     plot_elements = init_plotscript(config)
     trades = load_trades(config['trade_source'],
-                         db_url=config.get('db_url'),
-                         exportfilename=config.get('exportfilename'),
+                         db_url=str(config.get('db_url')),
+                         exportfilename=str(config.get('exportfilename')),
                          )
     # Filter trades to relevant pairs
     trades = trades[trades['pair'].isin(plot_elements["pairs"])]

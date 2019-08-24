@@ -258,7 +258,7 @@ def test_generate_profit_graph():
     fig = generate_profit_graph(pairs, tickers, trades)
     assert isinstance(fig, go.Figure)
 
-    assert fig.layout.title.text == "Profit plot"
+    assert fig.layout.title.text == "Freqtrade Profit plot"
     assert fig.layout.yaxis.title.text == "Price"
     assert fig.layout.yaxis2.title.text == "Profit"
     assert fig.layout.yaxis3.title.text == "Profit"
