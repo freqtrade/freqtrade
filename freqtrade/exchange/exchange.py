@@ -320,7 +320,7 @@ class Exchange(object):
         if (order_types.get("stoploss_on_exchange")
                 and not self._ft_has.get("stoploss_on_exchange", False)):
             raise OperationalException(
-                'On exchange stoploss is not supported for %s.' % self.name
+                f'On exchange stoploss is not supported for {self.name}.'
             )
 
     def validate_order_time_in_force(self, order_time_in_force: Dict) -> None:
@@ -469,11 +469,26 @@ class Exchange(object):
 
         params = self._params.copy()
         params.update({'stopPrice': stop_price})
-
-        order = self.create_order(pair, ordertype, 'sell', amount, rate, params)
-        logger.info('stoploss limit order added for %s. '
-                    'stop price: %s. limit: %s', pair, stop_price, rate)
-        return order
+        try:
+            order = self.create_order(pair, ordertype, 'sell', amount, rate, params)
+            logger.info('stoploss limit order added for %s. '
+                        'stop price: %s. limit: %s', pair, stop_price, rate)
+            return order
+        except ccxt.InsufficientFunds as e:
+            raise DependencyException(
+                f'Insufficient funds to create {ordertype} sell order on market {pair}.'
+                f'Tried to sell amount {amount} at rate {rate}.'
+                f'Message: {e}') from e
+        except ccxt.InvalidOrder as e:
+            raise DependencyException(
+                f'Could not create {ordertype} sell order on market {pair}. '
+                f'Tried to sell amount {amount} at rate {rate}.'
+                f'Message: {e}') from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not place sell order due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
 
     @retrier
     def get_balance(self, currency: str) -> float:
