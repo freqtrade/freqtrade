@@ -9,7 +9,7 @@ from plotly.subplots import make_subplots
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import create_cum_profit, load_backtest_data
-from freqtrade.plot.plot_utils import start_plot_dataframe
+from freqtrade.plot.plot_utils import start_plot_dataframe, start_plot_profit
 from freqtrade.plot.plotting import (add_indicators, add_profit,
                                      analyse_and_plot_pairs,
                                      generate_candlestick_graph,
@@ -320,7 +320,7 @@ def test_analyse_and_plot_pairs(default_conf, mocker, caplog):
     assert log_has("End of plotting process. 2 plots generated", caplog)
 
 
-def start_plot_profit(mocker):
+def test_start_plot_profit(mocker):
     aup = mocker.patch("freqtrade.plot.plotting.plot_profit", MagicMock())
     args = [
         "--config", "config.json.example",
