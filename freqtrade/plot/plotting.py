@@ -274,9 +274,15 @@ def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame],
         name='Avg close price',
     )
 
-    fig = make_subplots(rows=3, cols=1, shared_xaxes=True, row_width=[1, 1, 1],
-                        subplot_titles=["AVG Close Price", "Combined Profit", "Protit per pair"])
+    fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
+                        row_width=[1, 1, 1],
+                        vertical_spacing=0.05,
+                        subplot_titles=["AVG Close Price", "Combined Profit", "Profit per pair"])
     fig['layout'].update(title="Profit plot")
+    fig['layout']['yaxis1'].update(title='Price')
+    fig['layout']['yaxis2'].update(title='Profit')
+    fig['layout']['yaxis3'].update(title='Profit')
+    fig['layout']['xaxis']['rangeslider'].update(visible=False)
 
     fig.add_trace(avgclose, 1, 1)
     fig = add_profit(fig, 2, df_comb, 'cum_profit', 'Profit')
