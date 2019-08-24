@@ -429,7 +429,7 @@ def test_start_calls_optimizer(mocker, default_conf, caplog, capsys) -> None:
                          'hyperopt_jobs': 1, })
 
     hyperopt = Hyperopt(default_conf)
-    hyperopt.strategy.tickerdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.tickerdata_to_dataframe = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     hyperopt.start()
@@ -441,8 +441,8 @@ def test_start_calls_optimizer(mocker, default_conf, caplog, capsys) -> None:
     assert dumper.called
     # Should be called twice, once for tickerdata, once to save evaluations
     assert dumper.call_count == 2
-    assert hasattr(hyperopt, "advise_sell")
-    assert hasattr(hyperopt, "advise_buy")
+    assert hasattr(hyperopt.backtesting, "advise_sell")
+    assert hasattr(hyperopt.backtesting, "advise_buy")
     assert hasattr(hyperopt, "max_open_trades")
     assert hyperopt.max_open_trades == default_conf['max_open_trades']
     assert hasattr(hyperopt, "position_stacking")
@@ -488,7 +488,7 @@ def test_populate_indicators(hyperopt) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
                                                          fill_missing=True)}
-    dataframes = hyperopt.strategy.tickerdata_to_dataframe(tickerlist)
+    dataframes = hyperopt.backtesting.strategy.tickerdata_to_dataframe(tickerlist)
     dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
                                                              {'pair': 'UNITTEST/BTC'})
 
@@ -502,7 +502,7 @@ def test_buy_strategy_generator(hyperopt) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
                                                          fill_missing=True)}
-    dataframes = hyperopt.strategy.tickerdata_to_dataframe(tickerlist)
+    dataframes = hyperopt.backtesting.strategy.tickerdata_to_dataframe(tickerlist)
     dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
                                                              {'pair': 'UNITTEST/BTC'})
 
@@ -538,7 +538,7 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     backtest_result = pd.DataFrame.from_records(trades, columns=labels)
 
     mocker.patch(
-        'freqtrade.optimize.hyperopt.Hyperopt.backtest',
+        'freqtrade.optimize.hyperopt.Backtesting.backtest',
         MagicMock(return_value=backtest_result)
     )
     mocker.patch(
@@ -644,7 +644,7 @@ def test_print_json_spaces_all(mocker, default_conf, caplog, capsys) -> None:
                          })
 
     hyperopt = Hyperopt(default_conf)
-    hyperopt.strategy.tickerdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.tickerdata_to_dataframe = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     hyperopt.start()
@@ -681,7 +681,7 @@ def test_print_json_spaces_roi_stoploss(mocker, default_conf, caplog, capsys) ->
                          })
 
     hyperopt = Hyperopt(default_conf)
-    hyperopt.strategy.tickerdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.tickerdata_to_dataframe = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     hyperopt.start()
