@@ -68,6 +68,10 @@ def validate_config_consistency(conf: Dict[str, Any]) -> None:
 
 def _validate_trailing_stoploss(conf: Dict[str, Any]) -> None:
 
+    if conf.get('stoploss') == 0.0:
+        raise OperationalException(
+            'The config stoploss needs to be different from 0 to avoid problems with sell orders.'
+            )
     # Skip if trailing stoploss is not activated
     if not conf.get('trailing_stop', False):
         return
@@ -79,12 +83,19 @@ def _validate_trailing_stoploss(conf: Dict[str, Any]) -> None:
     if tsl_only_offset:
         if tsl_positive == 0.0:
             raise OperationalException(
-                f'The config trailing_only_offset_is_reached needs '
+                'The config trailing_only_offset_is_reached needs '
                 'trailing_stop_positive_offset to be more than 0 in your config.')
     if tsl_positive > 0 and 0 < tsl_offset <= tsl_positive:
         raise OperationalException(
-            f'The config trailing_stop_positive_offset needs '
-            'to be greater than trailing_stop_positive_offset in your config.')
+            'The config trailing_stop_positive_offset needs '
+            'to be greater than trailing_stop_positive in your config.')
+
+    # Fetch again without default
+    if 'trailing_stop_positive' in conf and float(conf['trailing_stop_positive']) == 0.0:
+        raise OperationalException(
+            'The config trailing_stop_positive needs to be different from 0 '
+            'to avoid problems with sell orders.'
+        )
 
 
 def _validate_edge(conf: Dict[str, Any]) -> None:
