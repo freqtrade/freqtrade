@@ -470,7 +470,12 @@ class Exchange(object):
         params = self._params.copy()
         params.update({'stopPrice': stop_price})
         try:
-            order = self.create_order(pair, ordertype, 'sell', amount, rate, params)
+            amount = self.symbol_amount_prec(pair, amount)
+
+            rate = self.symbol_price_prec(pair, rate)
+
+            order = self._api.create_order(pair, ordertype, 'sell',
+                                           amount, rate, params)
             logger.info('stoploss limit order added for %s. '
                         'stop price: %s. limit: %s', pair, stop_price, rate)
             return order
