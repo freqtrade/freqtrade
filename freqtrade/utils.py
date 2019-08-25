@@ -2,13 +2,13 @@ import logging
 import sys
 from argparse import Namespace
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import arrow
 
 from freqtrade.configuration import Configuration, TimeRange
 from freqtrade.configuration.directory_operations import create_userdata_dir
-from freqtrade.data.history import download_pair_history
+from freqtrade.data.history import refresh_backtest_ohlcv_data
 from freqtrade.exchange import available_exchanges
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
@@ -75,39 +75,23 @@ def start_download_data(args: Namespace) -> None:
     logger.info(f'About to download pairs: {config["pairs"]}, '
                 f'intervals: {config["timeframes"]} to {dl_path}')
 
-    pairs_not_available = []
+    pairs_not_available: List[str] = []
 
     try:
         # Init exchange
         exchange = ExchangeResolver(config['exchange']['name'], config).exchange
 
-        for pair in config["pairs"]:
-            if pair not in exchange.markets:
-                pairs_not_available.append(pair)
-                logger.info(f"Skipping pair {pair}...")
-                continue
-            for ticker_interval in config["timeframes"]:
-                pair_print = pair.replace('/', '_')
-                filename = f'{pair_print}-{ticker_interval}.json'
-                dl_file = dl_path.joinpath(filename)
-                if config.get("erase") and dl_file.exists():
-                    logger.info(
-                        f'Deleting existing data for pair {pair}, interval {ticker_interval}.')
-                    dl_file.unlink()
-
-                logger.info(f'Downloading pair {pair}, interval {ticker_interval}.')
-                download_pair_history(datadir=dl_path, exchange=exchange,
-                                      pair=pair, ticker_interval=str(ticker_interval),
-                                      timerange=timerange)
+        pairs_not_available = refresh_backtest_ohlcv_data(
+            exchange, pairs=config["pairs"], timeframes=config["timeframes"],
+            dl_path=Path(config['datadir']), timerange=timerange, erase=config.get("erase"))
 
     except KeyboardInterrupt:
         sys.exit("SIGINT received, aborting ...")
 
     finally:
         if pairs_not_available:
-            logger.info(
-                f"Pairs [{','.join(pairs_not_available)}] not available "
-                f"on exchange {config['exchange']['name']}.")
+            logger.info(f"Pairs [{','.join(pairs_not_available)}] not available "
+                        f"on exchange {config['exchange']['name']}.")
 
     # configuration.resolve_pairs_list()
     print(config)
