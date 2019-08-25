@@ -812,13 +812,15 @@ class Exchange:
                 t = await self._async_fetch_trades(pair,
                                                    params={self._trades_pagination_arg: from_id})
                 if len(t):
-                    from_id = t[-1]['id']
-                    # TODO: eliminate duplicates (first trade = last from previous)
                     trades.extend(t)
-                    # Reached the end of the defined-download period
-                    if until and t[-1]['timestamp'] > until:
+                    if from_id == t[-1]['id'] or (until and t[-1]['timestamp'] > until):
+                        print(f"from_id did not change.")
                         print(f"Reached {t[-1]['timestamp']} > {until}")
                         break
+
+                    # TODO: eliminate duplicates (first trade = last from previous)
+                    # Reached the end of the defined-download period
+                    from_id = t[-1]['id']
                 else:
                     break
 
