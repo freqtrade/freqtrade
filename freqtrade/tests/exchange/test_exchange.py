@@ -1474,22 +1474,28 @@ def test_stoploss_limit_order(default_conf, mocker):
     # test exception handling
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds("0 balance"))
-        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
         exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
 
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
-        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
         exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
 
     with pytest.raises(TemporaryError):
         api_mock.create_order = MagicMock(side_effect=ccxt.NetworkError("No connection"))
-        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
         exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
 
     with pytest.raises(OperationalException):
         api_mock.create_order = MagicMock(side_effect=ccxt.BaseError("DeadBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
+
+
+def test_stoploss_limit_order_unsupported_exchange(default_conf, mocker):
+    exchange = get_patched_exchange(mocker, default_conf, 'bittrex')
+    with pytest.raises(OperationalException, match=r"stoploss_limit is not implemented .*"):
         exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
 
 

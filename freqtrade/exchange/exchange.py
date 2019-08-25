@@ -457,7 +457,7 @@ class Exchange(object):
         Note: Changes to this interface need to be applied to all sub-classes too.
         """
 
-        raise OperationalException(f"stoploss_limit not implemented for {self.name}.")
+        raise OperationalException(f"stoploss_limit is not implemented for {self.name}.")
 
     @retrier
     def get_balance(self, currency: str) -> float:
