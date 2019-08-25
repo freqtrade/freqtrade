@@ -346,16 +346,17 @@ def download_trades_history(datadir: Optional[Path],
 
         from_id = trades[-1]['id'] if trades else None
 
-        logger.debug("Current Start: %s", trades[1]['datetime'] if trades else 'None')
+        logger.debug("Current Start: %s", trades[0]['datetime'] if trades else 'None')
         logger.debug("Current End: %s", trades[-1]['datetime'] if trades else 'None')
 
-        exchange.get_historic_trades(pair=pair,
-                                     since=since if since else
-                                     int(arrow.utcnow().shift(days=-30).float_timestamp) * 1000,
-                                     #  until=xxx,
-                                     from_id=from_id,
-                                     )
-
+        new_trades = exchange.get_historic_trades(pair=pair,
+                                            since=since if since else
+                                            int(arrow.utcnow().shift(
+                                                days=-30).float_timestamp) * 1000,
+                                            #  until=xxx,
+                                            from_id=from_id,
+                                            )
+        trades.extend(new_trades[1])
         store_trades_file(datadir, pair, trades)
 
         logger.debug("New Start: %s", trades[0]['datetime'])
