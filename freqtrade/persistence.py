@@ -48,8 +48,8 @@ def init(db_url: str, clean_open_orders: bool = False) -> None:
     try:
         engine = create_engine(db_url, **kwargs)
     except NoSuchModuleError:
-        raise OperationalException(f'Given value for db_url: \'{db_url}\' '
-                                   f'is no valid database URL! (See {_SQL_DOCS_URL})')
+        raise OperationalException(f"Given value for db_url: '{db_url}' "
+                                   f"is no valid database URL! (See {_SQL_DOCS_URL})")
 
     session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
     Trade.session = session()

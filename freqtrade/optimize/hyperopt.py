@@ -124,14 +124,14 @@ class Hyperopt:
         Save hyperopt trials to file
         """
         if self.trials:
-            logger.info('Saving %d evaluations to \'%s\'', len(self.trials), self.trials_file)
+            logger.info("Saving %d evaluations to '%s'", len(self.trials), self.trials_file)
             dump(self.trials, self.trials_file)
 
     def read_trials(self) -> List:
         """
         Read hyperopt trials file
         """
-        logger.info('Reading Trials from \'%s\'', self.trials_file)
+        logger.info("Reading Trials from '%s'", self.trials_file)
         trials = load(self.trials_file)
         self.trials_file.unlink()
         return trials
@@ -379,7 +379,7 @@ class Hyperopt:
         self.load_previous_results()
 
         cpus = cpu_count()
-        logger.info(f'Found {cpus} CPU cores. Let\'s make them scream!')
+        logger.info(f"Found {cpus} CPU cores. Let's make them scream!")
         config_jobs = self.config.get('hyperopt_jobs', -1)
         logger.info(f'Number of parallel jobs set as: {config_jobs}')
 
