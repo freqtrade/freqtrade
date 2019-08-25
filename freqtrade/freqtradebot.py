@@ -216,7 +216,7 @@ class FreqtradeBot(object):
         if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
             open_trades = len(Trade.get_open_trades())
             if open_trades >= self.config['max_open_trades']:
-                logger.warning('Can\'t open a new trade: max number of trades is reached')
+                logger.warning("Can't open a new trade: max number of trades is reached")
                 return None
             return available_amount / (self.config['max_open_trades'] - open_trades)
 
@@ -351,8 +351,8 @@ class FreqtradeBot(object):
         min_stake_amount = self._get_min_pair_stake_amount(pair_s, buy_limit_requested)
         if min_stake_amount is not None and min_stake_amount > stake_amount:
             logger.warning(
-                f'Can\'t open a new trade for {pair_s}: stake amount '
-                f'is too small ({stake_amount} < {min_stake_amount})'
+                f"Can't open a new trade for {pair_s}: stake amount "
+                f"is too small ({stake_amount} < {min_stake_amount})"
             )
             return False
 

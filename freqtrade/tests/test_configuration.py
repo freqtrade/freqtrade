@@ -41,14 +41,14 @@ def test_load_config_invalid_pair(default_conf) -> None:
 def test_load_config_missing_attributes(default_conf) -> None:
     default_conf.pop('exchange')
 
-    with pytest.raises(ValidationError, match=r'.*\'exchange\' is a required property.*'):
+    with pytest.raises(ValidationError, match=r".*'exchange' is a required property.*"):
         validate_config_schema(default_conf)
 
 
 def test_load_config_incorrect_stake_amount(default_conf) -> None:
     default_conf['stake_amount'] = 'fake'
 
-    with pytest.raises(ValidationError, match=r'.*\'fake\' does not match \'unlimited\'.*'):
+    with pytest.raises(ValidationError, match=r".*'fake' does not match 'unlimited'.*"):
         validate_config_schema(default_conf)
 
 
@@ -472,7 +472,7 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
 
     assert 'spaces' in config
     assert config['spaces'] == ['all']
-    assert log_has('Parameter -s/--spaces detected: [\'all\']', caplog)
+    assert log_has("Parameter -s/--spaces detected: ['all']", caplog)
     assert "runmode" in config
     assert config['runmode'] == RunMode.HYPEROPT
 
@@ -722,7 +722,7 @@ def test_load_config_default_exchange(all_conf) -> None:
     assert 'exchange' not in all_conf
 
     with pytest.raises(ValidationError,
-                       match=r'\'exchange\' is a required property'):
+                       match=r"'exchange' is a required property"):
         validate_config_schema(all_conf)
 
 
@@ -736,7 +736,7 @@ def test_load_config_default_exchange_name(all_conf) -> None:
     assert 'name' not in all_conf['exchange']
 
     with pytest.raises(ValidationError,
-                       match=r'\'name\' is a required property'):
+                       match=r"'name' is a required property"):
         validate_config_schema(all_conf)
 
 
