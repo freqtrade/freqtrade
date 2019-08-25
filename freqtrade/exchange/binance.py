@@ -50,9 +50,10 @@ class Binance(Exchange):
                 pair, ordertype, "sell", amount, stop_price)
             return dry_order
 
-        params = self._params.copy()
-        params.update({'stopPrice': stop_price})
         try:
+            params = self._params.copy()
+            params.update({'stopPrice': stop_price})
+
             amount = self.symbol_amount_prec(pair, amount)
 
             rate = self.symbol_price_prec(pair, rate)
