@@ -72,8 +72,10 @@ def json_load(datafile: IO):
 
 def file_load_json(file):
 
-    gzipfile = file.with_suffix(file.suffix + '.gz')
-
+    if file.suffix != ".gz":
+        gzipfile = file.with_suffix(file.suffix + '.gz')
+    else:
+        gzipfile = file
     # Try gzip file first, otherwise regular json file.
     if gzipfile.is_file():
         logger.debug('Loading ticker data from file %s', gzipfile)
