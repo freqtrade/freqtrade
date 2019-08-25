@@ -334,7 +334,10 @@ def download_trades_history(datadir: Optional[Path],
                             pair: str,
                             ticker_interval: str = '5m',
                             timerange: Optional[TimeRange] = None) -> bool:
-
+    """
+    Download trade history from the exchange.
+    Appends to previously downloaded trades data.
+    """
     if not exchange:
         raise OperationalException(
             "Exchange needs to be initialized to download data")
@@ -350,12 +353,12 @@ def download_trades_history(datadir: Optional[Path],
         logger.debug("Current End: %s", trades[-1]['datetime'] if trades else 'None')
 
         new_trades = exchange.get_historic_trades(pair=pair,
-                                            since=since if since else
-                                            int(arrow.utcnow().shift(
-                                                days=-30).float_timestamp) * 1000,
-                                            #  until=xxx,
-                                            from_id=from_id,
-                                            )
+                                                  since=since if since else
+                                                  int(arrow.utcnow().shift(
+                                                      days=-30).float_timestamp) * 1000,
+                                                  #  until=xxx,
+                                                  from_id=from_id,
+                                                  )
         trades.extend(new_trades[1])
         store_trades_file(datadir, pair, trades)
 
