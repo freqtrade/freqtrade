@@ -30,7 +30,7 @@ class TestStrategy(IStrategy):
     """
     # Strategy intervace version - allow new iterations of the strategy interface.
     # Check the documentation or the Sample strategy to get the latest version.
-    strategy_version: int = 2
+    INTERFACE_VERSION = 2
 
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi"

@@ -156,7 +156,7 @@ class StrategyResolver(IResolver):
             if any([x == 2 for x in [strategy._populate_fun_len,
                                      strategy._buy_fun_len,
                                      strategy._sell_fun_len]]):
-                strategy.strategy_version = 1
+                strategy.INTERFACE_VERSION = 1
 
             try:
                 return import_strategy(strategy, config=config)
