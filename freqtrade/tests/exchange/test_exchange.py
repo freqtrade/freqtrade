@@ -1531,7 +1531,7 @@ def test_timeframe_to_prev_date():
         assert timeframe_to_prev_date(interval, date) == result
 
     date = datetime.now(tz=timezone.utc)
-    assert timeframe_to_prev_date("5m", date) < date
+    assert timeframe_to_prev_date("5m") < date
 
 
 def test_timeframe_to_next_date():
@@ -1556,4 +1556,4 @@ def test_timeframe_to_next_date():
         assert timeframe_to_next_date(interval, date) == result
 
     date = datetime.now(tz=timezone.utc)
-    assert timeframe_to_next_date("5m", date) > date
+    assert timeframe_to_next_date("5m") > date
