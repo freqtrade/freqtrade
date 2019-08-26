@@ -2414,7 +2414,7 @@ def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf,
 
     mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
     mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
-    mocker.patch('freqtrade.exchange.Exchange.stoploss_limit', stoploss_limit)
+    mocker.patch('freqtrade.exchange.Binance.stoploss_limit', stoploss_limit)
 
     freqtrade = FreqtradeBot(default_conf)
     freqtrade.strategy.order_types['stoploss_on_exchange'] = True
@@ -2454,7 +2454,6 @@ def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf,
     freqtrade.process_maybe_execute_sell(trade)
     assert trade.stoploss_order_id is None
     assert trade.is_open is False
-    print(trade.sell_reason)
     assert trade.sell_reason == SellType.STOPLOSS_ON_EXCHANGE.value
     assert rpc_mock.call_count == 2
 

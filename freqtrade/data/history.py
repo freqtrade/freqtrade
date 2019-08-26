@@ -280,6 +280,35 @@ def download_pair_history(datadir: Optional[Path],
         return False
 
 
+def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes: List[str],
+                                dl_path: Path, timerange: TimeRange,
+                                erase=False) -> List[str]:
+    """
+    Refresh stored ohlcv data for backtesting and hyperopt operations.
+    Used by freqtrade download-data
+    :return: Pairs not available
+    """
+    pairs_not_available = []
+    for pair in pairs:
+        if pair not in exchange.markets:
+            pairs_not_available.append(pair)
+            logger.info(f"Skipping pair {pair}...")
+            continue
+        for ticker_interval in timeframes:
+
+            dl_file = pair_data_filename(dl_path, pair, ticker_interval)
+            if erase and dl_file.exists():
+                logger.info(
+                    f'Deleting existing data for pair {pair}, interval {ticker_interval}.')
+                dl_file.unlink()
+
+            logger.info(f'Downloading pair {pair}, interval {ticker_interval}.')
+            download_pair_history(datadir=dl_path, exchange=exchange,
+                                  pair=pair, ticker_interval=str(ticker_interval),
+                                  timerange=timerange)
+    return pairs_not_available
+
+
 def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:
     """
     Get the maximum timeframe for the given backtest data
