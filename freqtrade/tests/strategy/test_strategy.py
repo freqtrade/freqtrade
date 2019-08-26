@@ -380,6 +380,31 @@ def test_call_deprecated_function(result, monkeypatch, default_conf):
     assert resolver.strategy._populate_fun_len == 2
     assert resolver.strategy._buy_fun_len == 2
     assert resolver.strategy._sell_fun_len == 2
+    assert resolver.strategy.strategy_version == 1
+
+    indicator_df = resolver.strategy.advise_indicators(result, metadata=metadata)
+    assert isinstance(indicator_df, DataFrame)
+    assert 'adx' in indicator_df.columns
+
+    buydf = resolver.strategy.advise_buy(result, metadata=metadata)
+    assert isinstance(buydf, DataFrame)
+    assert 'buy' in buydf.columns
+
+    selldf = resolver.strategy.advise_sell(result, metadata=metadata)
+    assert isinstance(selldf, DataFrame)
+    assert 'sell' in selldf
+
+
+def test_strategy_versioning(result, monkeypatch, default_conf):
+    default_conf.update({'strategy': 'DefaultStrategy'})
+    resolver = StrategyResolver(default_conf)
+    metadata = {'pair': 'ETH/BTC'}
+
+    # Make sure we are using a legacy function
+    assert resolver.strategy._populate_fun_len == 3
+    assert resolver.strategy._buy_fun_len == 3
+    assert resolver.strategy._sell_fun_len == 3
+    assert resolver.strategy.strategy_version == 2
 
     indicator_df = resolver.strategy.advise_indicators(result, metadata=metadata)
     assert isinstance(indicator_df, DataFrame)

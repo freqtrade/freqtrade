@@ -28,6 +28,9 @@ class TestStrategy(IStrategy):
     - the prototype for the methods: minimal_roi, stoploss, populate_indicators, populate_buy_trend,
     populate_sell_trend, hyperopt_space, buy_strategy_generator
     """
+    # Strategy intervace version - allow new iterations of the strategy interface.
+    # Check the documentation or the Sample strategy to get the latest version.
+    strategy_version: int = 2
 
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi"
@@ -256,14 +259,14 @@ class TestStrategy(IStrategy):
         # Retrieve best bid and best ask
         # ------------------------------------
         """
-        # first check if dataprovider is available 
+        # first check if dataprovider is available
         if self.dp:
             if self.dp.runmode in ('live', 'dry_run'):
                 ob = self.dp.orderbook(metadata['pair'], 1)
                 dataframe['best_bid'] = ob['bids'][0][0]
                 dataframe['best_ask'] = ob['asks'][0][0]
         """
-        
+
         return dataframe
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

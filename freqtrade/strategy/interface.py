@@ -60,6 +60,11 @@ class IStrategy(ABC):
         stoploss -> float: optimal stoploss designed for the strategy
         ticker_interval -> str: value of the ticker interval to use for the strategy
     """
+    # Strategy interface version
+    # Default to version 2
+    # version 1 is the initial interface without metadata dict
+    # Version 2 populate_* include metadata dict
+    strategy_version: int = 2
 
     _populate_fun_len: int = 0
     _buy_fun_len: int = 0
