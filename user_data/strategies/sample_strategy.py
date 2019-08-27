@@ -11,10 +11,9 @@ import numpy  # noqa
 
 
 # This class is a sample. Feel free to customize it.
-class TestStrategy(IStrategy):
-    __test__ = False  # pytest expects to find tests here because of the name
+class SampleStrategy(IStrategy):
     """
-    This is a test strategy to inspire you.
+    This is an example strategy to inspire you.
     More information in https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md
 
     You can:
@@ -256,14 +255,14 @@ class TestStrategy(IStrategy):
         # Retrieve best bid and best ask
         # ------------------------------------
         """
-        # first check if dataprovider is available 
+        # first check if dataprovider is available
         if self.dp:
             if self.dp.runmode in ('live', 'dry_run'):
                 ob = self.dp.orderbook(metadata['pair'], 1)
                 dataframe['best_bid'] = ob['bids'][0][0]
                 dataframe['best_ask'] = ob['asks'][0][0]
         """
-        
+
         return dataframe
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

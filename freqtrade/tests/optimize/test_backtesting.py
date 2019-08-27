@@ -330,7 +330,7 @@ def test_backtesting_init_no_ticker_interval(mocker, default_conf, caplog) -> No
     patch_exchange(mocker)
     del default_conf['ticker_interval']
     default_conf['strategy_list'] = ['DefaultStrategy',
-                                     'TestStrategy']
+                                     'SampleStrategy']
 
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
     with pytest.raises(OperationalException):
@@ -877,7 +877,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog):
         '--disable-max-market-positions',
         '--strategy-list',
         'DefaultStrategy',
-        'TestStrategy',
+        'SampleStrategy',
     ]
     args = get_args(args)
     start_backtesting(args)
@@ -898,7 +898,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog):
         'up to 2017-11-14T22:58:00+00:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...',
         'Running backtesting for Strategy DefaultStrategy',
-        'Running backtesting for Strategy TestStrategy',
+        'Running backtesting for Strategy SampleStrategy',
     ]
 
     for line in exists:
