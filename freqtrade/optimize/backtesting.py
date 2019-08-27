@@ -81,6 +81,12 @@ class Backtesting(object):
             # No strategy list specified, only one strategy
             self.strategylist.append(StrategyResolver(self.config).strategy)
 
+        if "ticker_interval" not in self.config:
+            raise OperationalException("Ticker-interval needs to be set in either configuration "
+                                       "or as cli argument `--ticker-interval 5m`")
+        self.ticker_interval = str(self.config.get('ticker_interval'))
+        self.ticker_interval_mins = timeframe_to_minutes(self.ticker_interval)
+
         # Load one (first) strategy
         self._set_strategy(self.strategylist[0])
 
@@ -89,12 +95,6 @@ class Backtesting(object):
         Load strategy into backtesting
         """
         self.strategy = strategy
-        if "ticker_interval" not in self.config:
-            raise OperationalException("Ticker-interval needs to be set in either configuration "
-                                       "or as cli argument `--ticker-interval 5m`")
-
-        self.ticker_interval = self.config.get('ticker_interval')
-        self.ticker_interval_mins = timeframe_to_minutes(self.ticker_interval)
         self.advise_buy = strategy.advise_buy
         self.advise_sell = strategy.advise_sell
         # Set stoploss_on_exchange to false for backtesting,
