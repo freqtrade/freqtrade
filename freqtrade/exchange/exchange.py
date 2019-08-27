@@ -797,6 +797,10 @@ class Exchange:
         try:
             if self._trades_pagination == 'time':
                 raise OperationalException(f"Wrong method called to get trades for {self.name}")
+       i    if not self.exchange_has("fetchTrades"):
+                # TODO: Maybe don't completey stop the bot ... ?
+                raise OperationalException("This exchange does not suport downloading Trades.")
+
             trades: List[Dict] = []
 
             if not from_id:
@@ -807,18 +811,18 @@ class Exchange:
                 # - so we will miss the first candles.
                 t = await self._async_fetch_trades(pair, since=since)
                 from_id = t[-1]['id']
-                trades.extend(t)
+                trades.extend(t[:-1])
             while True:
                 t = await self._async_fetch_trades(pair,
                                                    params={self._trades_pagination_arg: from_id})
                 if len(t):
-                    trades.extend(t)
+                    # Skip last id since its the key for the next call
+                    trades.extend(t[:-1])
                     if from_id == t[-1]['id'] or (until and t[-1]['timestamp'] > until):
-                        print(f"from_id did not change.")
-                        print(f"Reached {t[-1]['timestamp']} > {until}")
+                        logger.debug(f"Stopping because from_id did not change. "
+                                     f"Reached {t[-1]['timestamp']} > {until}")
                         break
 
-                    # TODO: eliminate duplicates (first trade = last from previous)
                     # Reached the end of the defined-download period
                     from_id = t[-1]['id']
                 else:
@@ -835,9 +839,9 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(f'Could not fetch trade data. Msg: {e}') from e
 
-    async def _async_get_trade_history(self, pair: str,
-                                       since: Optional[int] = None,
-                                       until: Optional[int] = None) -> Tuple[str, List]:
+    async def _async_get_trade_history_time(self, pair: str,
+                                            since: Optional[int] = None,
+                                            until: Optional[int] = None) -> Tuple[str, List]:
         """
         Asyncronously gets trade history using fetch_trades.
         :param pair: Pair to fetch trade data for
@@ -845,6 +849,8 @@ class Exchange:
         :param until: Until as integer timestamp in milliseconds
         returns tuple: (pair, ticker_interval, ohlcv_list)
         """
+        if self._trades_pagination != 'time':
+            raise OperationalException(f"Wrong method called to get trades for {self.name}")
         if not self.exchange_has("fetchTrades"):
             # TODO: Maybe don't completey stop the bot ... ?
             raise OperationalException("This exchange does not suport downloading Trades.")
@@ -893,7 +899,7 @@ class Exchange:
             until = ccxt.Exchange.milliseconds()
         if self._trades_pagination == 'time':
             return asyncio.get_event_loop().run_until_complete(
-                self._async_get_trade_history(pair=pair, since=since, until=until))
+                self._async_get_trade_history_time(pair=pair, since=since, until=until))
 
         elif self._trades_pagination == 'id':
             # Use id-based trade-downloader
