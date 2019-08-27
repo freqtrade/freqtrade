@@ -797,9 +797,6 @@ class Exchange:
         try:
             if self._trades_pagination == 'time':
                 raise OperationalException(f"Wrong method called to get trades for {self.name}")
-       i    if not self.exchange_has("fetchTrades"):
-                # TODO: Maybe don't completey stop the bot ... ?
-                raise OperationalException("This exchange does not suport downloading Trades.")
 
             trades: List[Dict] = []
 
@@ -843,7 +840,8 @@ class Exchange:
                                             since: Optional[int] = None,
                                             until: Optional[int] = None) -> Tuple[str, List]:
         """
-        Asyncronously gets trade history using fetch_trades.
+        Asyncronously gets trade history using fetch_trades,
+        when the exchange uses time-based iteration
         :param pair: Pair to fetch trade data for
         :param since: Since as integer timestamp in milliseconds
         :param until: Until as integer timestamp in milliseconds
@@ -851,9 +849,6 @@ class Exchange:
         """
         if self._trades_pagination != 'time':
             raise OperationalException(f"Wrong method called to get trades for {self.name}")
-        if not self.exchange_has("fetchTrades"):
-            # TODO: Maybe don't completey stop the bot ... ?
-            raise OperationalException("This exchange does not suport downloading Trades.")
         try:
 
             trades: List[Dict] = []
