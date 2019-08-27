@@ -332,7 +332,6 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
 def download_trades_history(datadir: Optional[Path],
                             exchange: Optional[Exchange],
                             pair: str,
-                            ticker_interval: str = '5m',
                             timerange: Optional[TimeRange] = None) -> bool:
     """
     Download trade history from the exchange.
@@ -372,6 +371,35 @@ def download_trades_history(datadir: Optional[Path],
             f'Error: {e}'
         )
         return False
+
+
+def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], timeframes: List[str],
+                                 dl_path: Path, timerange: TimeRange,
+                                 erase=False) -> List[str]:
+    """
+    Refresh stored trades data .
+    Used by freqtrade download-data
+    :return: Pairs not available
+    """
+    pairs_not_available = []
+    for pair in pairs:
+        if pair not in exchange.markets:
+            pairs_not_available.append(pair)
+            logger.info(f"Skipping pair {pair}...")
+            continue
+        # for ticker_interval in timeframes:
+
+        dl_file = pair_trades_filename(dl_path, pair)
+        if erase and dl_file.exists():
+            logger.info(
+                f'Deleting existing data for pair {pair}.')
+            dl_file.unlink()
+
+        logger.info(f'Downloading trades for pair {pair}.')
+        download_trades_history(datadir=dl_path, exchange=exchange,
+                                pair=pair,
+                                timerange=timerange)
+    return pairs_not_available
 
 
 def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:
