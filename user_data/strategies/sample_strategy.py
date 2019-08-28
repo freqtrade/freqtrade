@@ -13,7 +13,7 @@ import numpy  # noqa
 # This class is a sample. Feel free to customize it.
 class SampleStrategy(IStrategy):
     """
-    This is an example strategy to inspire you.
+    This is a sample strategy to inspire you.
     More information in https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md
 
     You can:
