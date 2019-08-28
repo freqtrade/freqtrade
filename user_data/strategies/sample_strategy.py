@@ -27,6 +27,9 @@ class SampleStrategy(IStrategy):
     - the prototype for the methods: minimal_roi, stoploss, populate_indicators, populate_buy_trend,
     populate_sell_trend, hyperopt_space, buy_strategy_generator
     """
+    # Strategy intervace version - allow new iterations of the strategy interface.
+    # Check the documentation or the Sample strategy to get the latest version.
+    INTERFACE_VERSION = 2
 
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi"

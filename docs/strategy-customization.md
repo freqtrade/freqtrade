@@ -39,6 +39,11 @@ A strategy file contains all the information needed to build a good strategy:
 The bot also include a sample strategy called `SampleStrategy` you can update: `user_data/strategies/sample_strategy.py`.
 You can test it with the parameter: `--strategy SampleStrategy`
 
+Additionally, there is an attribute called `INTERFACE_VERSION`, which defines the version of the strategy interface the bot should use.
+The current version is 2 - which is also the default when it's not set explicitly in the strategy.
+
+Future versions will require this to be set.
+
 ```bash
 freqtrade --strategy AwesomeStrategy
 ```
