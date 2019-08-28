@@ -102,7 +102,7 @@ def test_parse_args_backtesting_custom() -> None:
         '--refresh-pairs-cached',
         '--strategy-list',
         'DefaultStrategy',
-        'TestStrategy'
+        'SampleStrategy'
         ]
     call_args = Arguments(args, '').get_parsed_arg()
     assert call_args.config == ['test_conf.json']

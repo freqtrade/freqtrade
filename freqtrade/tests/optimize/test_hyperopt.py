@@ -254,7 +254,7 @@ def test_start_failure(mocker, default_conf, caplog) -> None:
 
     args = [
         '--config', 'config.json',
-        '--strategy', 'TestStrategy',
+        '--strategy', 'SampleStrategy',
         'hyperopt',
         '--epochs', '5'
     ]

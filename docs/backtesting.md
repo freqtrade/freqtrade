@@ -79,18 +79,18 @@ freqtrade backtesting --datadir user_data/data/bittrex-20180101
 #### With a (custom) strategy file
 
 ```bash
-freqtrade -s TestStrategy backtesting
+freqtrade -s SampleStrategy backtesting
 ```
 
-Where `-s TestStrategy` refers to the class name within the strategy file `test_strategy.py` found in the `freqtrade/user_data/strategies` directory.
+Where `-s SampleStrategy` refers to the class name within the strategy file `sample_strategy.py` found in the `freqtrade/user_data/strategies` directory.
 
 #### Comparing multiple Strategies
 
 ```bash
-freqtrade backtesting --strategy-list TestStrategy1 AwesomeStrategy --ticker-interval 5m
+freqtrade backtesting --strategy-list SampleStrategy1 AwesomeStrategy --ticker-interval 5m
 ```
 
-Where `TestStrategy1` and `AwesomeStrategy` refer to class names of strategies.
+Where `SampleStrategy1` and `AwesomeStrategy` refer to class names of strategies.
 
 #### Exporting trades to file
 
@@ -103,7 +103,7 @@ The exported trades can be used for [further analysis](#further-backtest-result-
 #### Exporting trades to file specifying a custom filename
 
 ```bash
-freqtrade backtesting --export trades --export-filename=backtest_teststrategy.json
+freqtrade backtesting --export trades --export-filename=backtest_samplestrategy.json
 ```
 
 #### Running backtest with smaller testset

@@ -139,7 +139,7 @@ You can override strategy settings as demonstrated below.
 # Define some constants
 ticker_interval = "5m"
 # Name of the strategy class
-strategy_name = 'TestStrategy'
+strategy_name = 'SampleStrategy'
 # Path to user data
 user_data_dir = 'user_data'
 # Location of the strategy

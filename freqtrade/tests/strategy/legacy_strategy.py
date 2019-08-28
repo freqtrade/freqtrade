@@ -15,7 +15,7 @@ class TestStrategyLegacy(IStrategy):
     """
     This is a test strategy using the legacy function headers, which will be
     removed in a future update.
-    Please do not use this as a template, but refer to user_data/strategy/TestStrategy.py
+    Please do not use this as a template, but refer to user_data/strategy/sample_strategy.py
     for a uptodate version of this template.
 
     """

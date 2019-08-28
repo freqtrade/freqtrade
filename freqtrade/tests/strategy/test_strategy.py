@@ -61,27 +61,27 @@ def test_search_strategy():
 
 
 def test_load_strategy(default_conf, result):
-    default_conf.update({'strategy': 'TestStrategy'})
+    default_conf.update({'strategy': 'SampleStrategy'})
     resolver = StrategyResolver(default_conf)
     assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 
 
 def test_load_strategy_base64(result, caplog, default_conf):
-    with open("user_data/strategies/test_strategy.py", "rb") as file:
+    with open("user_data/strategies/sample_strategy.py", "rb") as file:
         encoded_string = urlsafe_b64encode(file.read()).decode("utf-8")
-    default_conf.update({'strategy': 'TestStrategy:{}'.format(encoded_string)})
+    default_conf.update({'strategy': 'SampleStrategy:{}'.format(encoded_string)})
 
     resolver = StrategyResolver(default_conf)
     assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
     # Make sure strategy was loaded from base64 (using temp directory)!!
-    assert log_has_re(r"Using resolved strategy TestStrategy from '"
-                      + tempfile.gettempdir() + r"/.*/TestStrategy\.py'\.\.\.", caplog)
+    assert log_has_re(r"Using resolved strategy SampleStrategy from '"
+                      + tempfile.gettempdir() + r"/.*/SampleStrategy\.py'\.\.\.", caplog)
 
 
 def test_load_strategy_invalid_directory(result, caplog, default_conf):
     resolver = StrategyResolver(default_conf)
     extra_dir = Path.cwd() / 'some/path'
-    resolver._load_strategy('TestStrategy', config=default_conf, extra_dir=extra_dir)
+    resolver._load_strategy('SampleStrategy', config=default_conf, extra_dir=extra_dir)
 
     assert log_has_re(r'Path .*' + r'some.*path.*' + r'.* does not exist', caplog)
 
