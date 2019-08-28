@@ -61,8 +61,9 @@ Mandatory parameters are marked as **Required**.
 | `order_time_in_force` | None | Configure time in force for buy and sell orders. [More information below](#understand-order_time_in_force). [Strategy Override](#parameters-in-the-strategy).
 | `exchange.name` |  | **Required.** Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename).
 | `exchange.sandbox` | false | Use the 'sandbox' version of the exchange, where the exchange provides a sandbox for risk-free integration. See [here](sandbox-testing.md) in more details.
-| `exchange.key` | '' | API key to use for the exchange. Only required when you are in production mode.
-| `exchange.secret` | '' | API secret to use for the exchange. Only required when you are in production mode.
+| `exchange.key` | '' | API key to use for the exchange. Only required when you are in production mode. ***Keep it in secrete, do not disclose publicly.***
+| `exchange.secret` | '' | API secret to use for the exchange. Only required when you are in production mode. ***Keep it in secrete, do not disclose publicly.***
+| `exchange.password` | '' | API password to use for the exchange. Only required when you are in production mode and for exchanges that use password for API requests. ***Keep it in secrete, do not disclose publicly.***
 | `exchange.pair_whitelist` | [] | List of pairs to use by the bot for trading and to check for potential trades during backtesting. Can be overriden by dynamic pairlists (see [below](#dynamic-pairlists)).
 | `exchange.pair_blacklist` | [] | List of pairs the bot must absolutely avoid for trading and backtesting. Can be overriden by dynamic pairlists (see [below](#dynamic-pairlists)).
 | `exchange.ccxt_config` | None | Additional CCXT parameters passed to the regular ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
@@ -76,8 +77,8 @@ Mandatory parameters are marked as **Required**.
 | `pairlist.method` | StaticPairList | Use static or dynamic volume-based pairlist. [More information below](#dynamic-pairlists).
 | `pairlist.config` | None | Additional configuration for dynamic pairlists. [More information below](#dynamic-pairlists).
 | `telegram.enabled` | true | **Required.** Enable or not the usage of Telegram.
-| `telegram.token` | token | Your Telegram bot token. Only required if `telegram.enabled` is `true`.
-| `telegram.chat_id` | chat_id | Your personal Telegram account id. Only required if `telegram.enabled` is `true`.
+| `telegram.token` | token | Your Telegram bot token. Only required if `telegram.enabled` is `true`. ***Keep it in secrete, do not disclose publicly.***
+| `telegram.chat_id` | chat_id | Your personal Telegram account id. Only required if `telegram.enabled` is `true`. ***Keep it in secrete, do not disclose publicly.***
 | `webhook.enabled` | false | Enable usage of Webhook notifications
 | `webhook.url` | false | URL for the webhook. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details.
 | `webhook.webhookbuy` | false | Payload to send on buy. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details.

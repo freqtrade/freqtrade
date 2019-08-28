@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 import ccxt
 import ccxt.async_support as ccxt_async
+from ccxt.base.decimal_to_precision import ROUND_UP, ROUND_DOWN
 from pandas import DataFrame
 
 from freqtrade import (DependencyException, InvalidOrderException,
@@ -808,11 +809,9 @@ def timeframe_to_prev_date(timeframe: str, date: datetime = None) -> datetime:
     """
     if not date:
         date = datetime.now(timezone.utc)
-    timeframe_secs = timeframe_to_seconds(timeframe)
-    # Get offset based on timerame_secs
-    offset = date.timestamp() % timeframe_secs
-    # Subtract seconds passed since last offset
-    new_timestamp = date.timestamp() - offset
+
+    new_timestamp = ccxt.Exchange.round_timeframe(timeframe, date.timestamp() * 1000,
+                                                  ROUND_DOWN) // 1000
     return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
 
 
@@ -823,9 +822,8 @@ def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
     :param date: date to use. Defaults to utcnow()
     :returns: date of next candle (with utc timezone)
     """
-    prevdate = timeframe_to_prev_date(timeframe, date)
-    timeframe_secs = timeframe_to_seconds(timeframe)
-
-    # Add one interval to previous candle
-    new_timestamp = prevdate.timestamp() + timeframe_secs
+    if not date:
+        date = datetime.now(timezone.utc)
+    new_timestamp = ccxt.Exchange.round_timeframe(timeframe, date.timestamp() * 1000,
+                                                  ROUND_UP) // 1000
     return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
