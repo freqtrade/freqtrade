@@ -1,5 +1,15 @@
 """ FreqTrade bot """
-__version__ = '2019.7-dev'
+__version__ = 'develop'
+
+if __version__ == 'develop':
+
+    try:
+        import subprocess
+        __version__ = str(subprocess.check_output(
+            ["git", "describe"], stderr=subprocess.DEVNULL).rstrip())
+    except Exception:
+        # git not available, ignore
+        pass
 
 
 class DependencyException(Exception):
