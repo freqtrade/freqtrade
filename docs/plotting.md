@@ -15,7 +15,7 @@ pip install -U -r requirements-plot.txt
 Usage for the price plotter:
 
 ``` bash
-python3 script/plot_dataframe.py [-h] [-p pairs] [--live]
+python3 script/plot_dataframe.py [-h] [-p pairs]
 ```
 
 Example
@@ -41,19 +41,11 @@ To plot multiple pairs, separate them with a comma:
 python3 scripts/plot_dataframe.py -p BTC/ETH,XRP/ETH
 ```
 
-To plot the current live price use the `--live` flag:
-
-``` bash
-python3 scripts/plot_dataframe.py -p BTC/ETH --live
-```
-
 To plot a timerange (to zoom in):
 
 ``` bash
-python3 scripts/plot_dataframe.py -p BTC/ETH --timerange=100-200
+python3 scripts/plot_dataframe.py -p BTC/ETH --timerange=20180801-20180805
 ```
-
-Timerange doesn't work with live data.
 
 To plot trades stored in a database use `--db-url` argument:
 
@@ -64,7 +56,7 @@ python3 scripts/plot_dataframe.py --db-url sqlite:///tradesv3.dry_run.sqlite -p 
 To plot trades from a backtesting result, use `--export-filename <filename>`
 
 ``` bash
-python3 scripts/plot_dataframe.py --export-filename user_data/backtest_data/backtest-result.json -p BTC/ETH
+python3 scripts/plot_dataframe.py --export-filename user_data/backtest_results/backtest-result.json -p BTC/ETH
 ```
 
 To plot a custom strategy the strategy should have first be backtested.

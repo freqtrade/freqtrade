@@ -4,7 +4,7 @@ import pytest
 from arrow import Arrow
 from pandas import DataFrame, to_datetime
 
-from freqtrade.configuration import Arguments, TimeRange
+from freqtrade.configuration import TimeRange
 from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
                                        combine_tickers_with_mean,
                                        create_cum_profit,
@@ -45,6 +45,11 @@ def test_load_trades_db(default_conf, fee, mocker):
     assert isinstance(trades, DataFrame)
     assert "pair" in trades.columns
     assert "open_time" in trades.columns
+    assert "profitperc" in trades.columns
+
+    for col in BT_DATA_COLUMNS:
+        if col not in ['index', 'open_at_end']:
+            assert col in trades.columns
 
 
 def test_extract_trades_of_period():
@@ -116,7 +121,7 @@ def test_combine_tickers_with_mean():
 def test_create_cum_profit():
     filename = make_testdata_path(None) / "backtest-result_test.json"
     bt_data = load_backtest_data(filename)
-    timerange = Arguments.parse_timerange("20180110-20180112")
+    timerange = TimeRange.parse_timerange("20180110-20180112")
 
     df = load_pair_history(pair="POWR/BTC", ticker_interval='5m',
                            datadir=None, timerange=timerange)

@@ -55,7 +55,12 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "datadir": Arg(
         '-d', '--datadir',
-        help='Path to backtest data.',
+        help='Path to directory with historical backtesting data.',
+        metavar='PATH',
+    ),
+    "user_data_dir": Arg(
+        '--userdir', '--user-data-dir',
+        help='Path to userdata directory.',
         metavar='PATH',
     ),
     # Main options
@@ -123,14 +128,9 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_false',
         default=True,
     ),
-    "live": Arg(
-        '-l', '--live',
-        help='Use live data.',
-        action='store_true',
-    ),
     "strategy_list": Arg(
         '--strategy-list',
-        help='Provide a comma-separated list of strategies to backtest. '
+        help='Provide a space-separated list of strategies to backtest. '
         'Please note that ticker-interval needs to be set either in config '
         'or via command line. When using this together with `--export trades`, '
         'the strategy-name is injected into the filename '
@@ -146,9 +146,9 @@ AVAILABLE_CLI_OPTIONS = {
         '--export-filename',
         help='Save backtest results to the file with this filename (default: `%(default)s`). '
         'Requires `--export` to be set as well. '
-        'Example: `--export-filename=user_data/backtest_data/backtest_today.json`',
+        'Example: `--export-filename=user_data/backtest_results/backtest_today.json`',
         metavar='PATH',
-        default=os.path.join('user_data', 'backtest_data',
+        default=os.path.join('user_data', 'backtest_results',
                              'backtest-result.json'),
     ),
     # Edge
@@ -191,6 +191,19 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_true',
         default=False,
     ),
+    "print_colorized": Arg(
+        '--no-color',
+        help='Disable colorization of hyperopt results. May be useful if you are '
+        'redirecting output to a file.',
+        action='store_false',
+        default=True,
+    ),
+    "print_json": Arg(
+        '--print-json',
+        help='Print best result detailization in JSON format.',
+        action='store_true',
+        default=False,
+    ),
     "hyperopt_jobs": Arg(
         '-j', '--job-workers',
         help='The number of concurrently running jobs for hyperoptimization '
@@ -226,7 +239,9 @@ AVAILABLE_CLI_OPTIONS = {
         '--hyperopt-loss',
         help='Specify the class name of the hyperopt loss function class (IHyperOptLoss). '
         'Different functions can generate completely different results, '
-        'since the target for optimization is different. (default: `%(default)s`).',
+        'since the target for optimization is different. Built-in Hyperopt-loss-functions are: '
+        'DefaultHyperOptLoss, OnlyProfitHyperOptLoss, SharpeHyperOptLoss.'
+        '(default: `%(default)s`).',
         metavar='NAME',
         default=constants.DEFAULT_HYPEROPT_LOSS,
     ),
@@ -239,7 +254,8 @@ AVAILABLE_CLI_OPTIONS = {
     # Script options
     "pairs": Arg(
         '-p', '--pairs',
-        help='Show profits for only these pairs. Pairs are comma-separated.',
+        help='Show profits for only these pairs. Pairs are space-separated.',
+        nargs='+',
     ),
     # Download data
     "pairs_file": Arg(
@@ -261,9 +277,10 @@ AVAILABLE_CLI_OPTIONS = {
     "timeframes": Arg(
         '-t', '--timeframes',
         help=f'Specify which tickers to download. Space-separated list. '
-        f'Default: `{constants.DEFAULT_DOWNLOAD_TICKER_INTERVALS}`.',
+        f'Default: `1m 5m`.',
         choices=['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h',
                  '6h', '8h', '12h', '1d', '3d', '1w'],
+        default=['1m', '5m'],
         nargs='+',
     ),
     "erase": Arg(

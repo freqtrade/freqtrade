@@ -12,10 +12,33 @@ Special fields for the documentation (like Note boxes, ...) can be found [here](
 
 ## Developer setup
 
-To configure a development environment, use best use the `setup.sh` script and answer "y" when asked "Do you want to install dependencies for dev [y/N]? ".
-Alternatively (if your system is not supported by the setup.sh script), follow the manual installation process and run `pip3 install -r requirements-dev.txt`.
+To configure a development environment, best use the `setup.sh` script and answer "y" when asked "Do you want to install dependencies for dev [y/N]? ".
+Alternatively (if your system is not supported by the setup.sh script), follow the manual installation process and run `pip3 install -e .[all]`.
 
 This will install all required tools for development, including `pytest`, `flake8`, `mypy`, and `coveralls`.
+
+### Tests
+
+New code should be covered by basic unittests. Depending on the complexity of the feature, Reviewers may request more in-depth unittests.
+If necessary, the Freqtrade team can assist and give guidance with writing good tests (however please don't expect anyone to write the tests for you).
+
+#### Checking log content in tests
+
+Freqtrade uses 2 main methods to check log content in tests, `log_has()` and `log_has_re()` (to check using regex, in case of dynamic log-messages).
+These are available from `conftest.py` and can be imported in any test module.
+
+A sample check looks as follows:
+
+``` python
+from freqtrade.tests.conftest import log_has, log_has_re
+
+def test_method_to_test(caplog):
+    method_to_test()
+
+    assert log_has("This event happened", caplog)
+    # Check regex with trailing number ...
+    assert log_has_re(r"This dynamic event happened and produced \d+", caplog)
+```
 
 ## Modules
 
@@ -155,6 +178,8 @@ git log --oneline --no-decorate --no-merges master..develop
 ```
 
 ### Create github release / tag
+
+Once the PR against master is merged (best right after merging):
 
 * Use the button "Draft a new release" in the Github UI (subsection releases)
 * Use the version-number specified as tag. 

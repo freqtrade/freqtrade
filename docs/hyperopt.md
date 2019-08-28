@@ -18,19 +18,24 @@ Configuring hyperopt is similar to writing your own strategy, and many tasks wil
 
 ### Checklist on all tasks / possibilities in hyperopt
 
-Depending on the space you want to optimize, only some of the below are required.
+Depending on the space you want to optimize, only some of the below are required:
 
 * fill `populate_indicators` - probably a copy from your strategy
 * fill `buy_strategy_generator` - for buy signal optimization
 * fill `indicator_space` - for buy signal optimzation
 * fill `sell_strategy_generator` - for sell signal optimization
 * fill `sell_indicator_space` - for sell signal optimzation
-* fill `roi_space` - for ROI optimization
-* fill `generate_roi_table` - for ROI optimization (if you need more than 3 entries)
-* fill `stoploss_space` - stoploss optimization
-* Optional but recommended
-  * copy `populate_buy_trend` from your strategy - otherwise default-strategy will be used
-  * copy `populate_sell_trend` from your strategy - otherwise default-strategy will be used
+
+Optional, but recommended:
+
+* copy `populate_buy_trend` from your strategy - otherwise default-strategy will be used
+* copy `populate_sell_trend` from your strategy - otherwise default-strategy will be used
+
+Rarely you may also need to override:
+
+* `roi_space` - for custom ROI optimization (if you need the ranges for the ROI parameters in the optimization hyperspace that differ from default)
+* `generate_roi_table` - for custom ROI optimization (if you need more than 4 entries in the ROI table)
+* `stoploss_space` - for custom stoploss optimization (if you need the range for the stoploss parameter in the optimization hyperspace that differs from default)
 
 ### 1. Install a Custom Hyperopt File
 
@@ -159,7 +164,11 @@ By default, FreqTrade uses a loss function, which has been with freqtrade since 
 A different loss function can be specified by using the `--hyperopt-loss <Class-name>` argument.
 This class should be in its own file within the `user_data/hyperopts/` directory.
 
-Currently, the following loss functions are builtin: `DefaultHyperOptLoss` (default legacy Freqtrade hyperoptimization loss function), `SharpeHyperOptLoss` (optimizes Sharpe Ratio calculated on the trade returns) and `OnlyProfitHyperOptLoss` (which takes only amount of profit into consideration).
+Currently, the following loss functions are builtin:
+
+* `DefaultHyperOptLoss` (default legacy Freqtrade hyperoptimization loss function)
+* `OnlyProfitHyperOptLoss` (which takes only amount of profit into consideration)
+* `SharpeHyperOptLoss` (optimizes Sharpe Ratio calculated on the trade returns)
 
 ### Creating and using a custom loss function
 
@@ -303,8 +312,10 @@ Given the following result from hyperopt:
 
 ```
 Best result:
-   135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins.
-with values:
+
+    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins. Objective: 1.94367
+
+Buy hyperspace params:
 {    'adx-value': 44,
      'rsi-value': 29,
      'adx-enabled': False,
@@ -341,27 +352,25 @@ def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
     return dataframe
 ```
 
+By default, hyperopt prints colorized results -- epochs with positive profit are printed in the green color. This highlighting helps you find epochs that can be interesting for later analysis. Epochs with zero total profit or with negative profits (losses) are printed in the normal color. If you do not need colorization of results (for instance, when you are redirecting hyperopt output to a file) you can switch colorization off by specifying the `--no-color` option in the command line.
+
+You can use the `--print-all` command line option if you would like to see all results in the hyperopt output, not only the best ones. When `--print-all` is used, current best results are also colorized by default -- they are printed in bold (bright) style. This can also be switched off with the `--no-color` command line option.
+
 ### Understand Hyperopt ROI results
 
-If you are optimizing ROI, you're result will look as follows and include a ROI table.
+If you are optimizing ROI (i.e. if optimization search-space contains 'all' or 'roi'), your result will look as follows and include a ROI table:
 
 ```
 Best result:
-   135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins.
-with values:
+
+    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins. Objective: 1.94367
+
+Buy hyperspace params:
 {   'adx-value': 44,
     'rsi-value': 29,
-    'adx-enabled': false,
+    'adx-enabled': False,
     'rsi-enabled': True,
-    'trigger': 'bb_lower',
-    'roi_t1': 40,
-    'roi_t2': 57,
-    'roi_t3': 21,
-    'roi_p1': 0.03634636907306948,
-    'roi_p2': 0.055237357937802885,
-    'roi_p3': 0.015163796015548354,
-    'stoploss': -0.37996664668703606
-}
+    'trigger': 'bb_lower'}
 ROI table:
 {   0: 0.10674752302642071,
     21: 0.09158372701087236,
@@ -372,13 +381,48 @@ ROI table:
 This would translate to the following ROI table:
 
 ``` python
- minimal_roi = {
+minimal_roi = {
         "118": 0,
-        "78": 0.0363463,
+        "78": 0.0363,
         "21": 0.0915,
         "0": 0.106
     }
 ```
+
+If you are optimizing ROI, Freqtrade creates the 'roi' optimization hyperspace for you -- it's the hyperspace of components for the ROI tables. By default, each ROI table generated by the Freqtrade consists of 4 rows (steps) with the values that can vary in the following ranges:
+
+| # | minutes | ROI percentage |
+|---|---|---|
+| 1 | always 0 | 0.03...0.31 |
+| 2 | 10...40 | 0.02...0.11 |
+| 3 | 20...100 | 0.01...0.04 |
+| 4 | 30...220 | always 0 |
+
+This structure of the ROI table is sufficient in most cases. Override the `roi_space()` method defining the ranges desired if you need components of the ROI tables to vary in other ranges.
+
+Override the `generate_roi_table()` and `roi_space()` methods and implement your own custom approach for generation of the ROI tables during hyperoptimization in these methods if you need a different structure of the ROI table or other amount of rows (steps) in the ROI tables.
+
+### Understand Hyperopt Stoploss results
+
+If you are optimizing stoploss values (i.e. if optimization search-space contains 'all' or 'stoploss'), your result will look as follows and include stoploss:
+
+```
+Best result:
+
+    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins. Objective: 1.94367
+
+Buy hyperspace params:
+{   'adx-value': 44,
+    'rsi-value': 29,
+    'adx-enabled': False,
+    'rsi-enabled': True,
+    'trigger': 'bb_lower'}
+Stoploss: -0.37996664668703606
+```
+
+If you are optimizing stoploss values, Freqtrade creates the 'stoploss' optimization hyperspace for you. By default, the stoploss values in that hyperspace can vary in the range -0.5...-0.02, which is sufficient in most cases.
+
+Override the `stoploss_space()` method and define the desired range in it if you need stoploss values to vary in other range during hyperoptimization.
 
 ### Validate backtesting results
 

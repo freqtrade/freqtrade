@@ -151,7 +151,7 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order, fee, caplog):
     assert trade.close_date is None
     assert log_has("LIMIT_BUY has been fulfilled for Trade(id=2, "
                    "pair=ETH/BTC, amount=90.99181073, open_rate=0.00001099, open_since=closed).",
-                   caplog.record_tuples)
+                   caplog)
 
     caplog.clear()
     trade.open_order_id = 'something'
@@ -162,7 +162,7 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order, fee, caplog):
     assert trade.close_date is not None
     assert log_has("LIMIT_SELL has been fulfilled for Trade(id=2, "
                    "pair=ETH/BTC, amount=90.99181073, open_rate=0.00001099, open_since=closed).",
-                   caplog.record_tuples)
+                   caplog)
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -184,7 +184,7 @@ def test_update_market_order(market_buy_order, market_sell_order, fee, caplog):
     assert trade.close_date is None
     assert log_has("MARKET_BUY has been fulfilled for Trade(id=1, "
                    "pair=ETH/BTC, amount=91.99181073, open_rate=0.00004099, open_since=closed).",
-                   caplog.record_tuples)
+                   caplog)
 
     caplog.clear()
     trade.open_order_id = 'something'
@@ -195,7 +195,7 @@ def test_update_market_order(market_buy_order, market_sell_order, fee, caplog):
     assert trade.close_date is not None
     assert log_has("MARKET_SELL has been fulfilled for Trade(id=1, "
                    "pair=ETH/BTC, amount=91.99181073, open_rate=0.00004099, open_since=closed).",
-                   caplog.record_tuples)
+                   caplog)
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -558,10 +558,9 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.ticker_interval is None
     assert trade.stoploss_order_id is None
     assert trade.stoploss_last_update is None
-    assert log_has("trying trades_bak1", caplog.record_tuples)
-    assert log_has("trying trades_bak2", caplog.record_tuples)
-    assert log_has("Running database migration - backup available as trades_bak2",
-                   caplog.record_tuples)
+    assert log_has("trying trades_bak1", caplog)
+    assert log_has("trying trades_bak2", caplog)
+    assert log_has("Running database migration - backup available as trades_bak2", caplog)
 
 
 def test_migrate_mid_state(mocker, default_conf, fee, caplog):
@@ -621,9 +620,8 @@ def test_migrate_mid_state(mocker, default_conf, fee, caplog):
     assert trade.max_rate == 0.0
     assert trade.stop_loss == 0.0
     assert trade.initial_stop_loss == 0.0
-    assert log_has("trying trades_bak0", caplog.record_tuples)
-    assert log_has("Running database migration - backup available as trades_bak0",
-                   caplog.record_tuples)
+    assert log_has("trying trades_bak0", caplog)
+    assert log_has("Running database migration - backup available as trades_bak0", caplog)
 
 
 def test_adjust_stop_loss(fee):

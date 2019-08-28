@@ -43,7 +43,7 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
             start_index += 1
 
     if timerange.stoptype == 'line':
-        start_index = len(tickerlist) + timerange.stopts
+        start_index = max(len(tickerlist) + timerange.stopts, 0)
     if timerange.stoptype == 'index':
         stop_index = timerange.stopts
     elif timerange.stoptype == 'date':
@@ -57,10 +57,8 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
     return tickerlist[start_index:stop_index]
 
 
-def load_tickerdata_file(
-        datadir: Optional[Path], pair: str,
-        ticker_interval: str,
-        timerange: Optional[TimeRange] = None) -> Optional[list]:
+def load_tickerdata_file(datadir: Optional[Path], pair: str, ticker_interval: str,
+                         timerange: Optional[TimeRange] = None) -> Optional[list]:
     """
     Load a pair from file, either .json.gz or .json
     :return: tickerlist or None if unsuccesful
@@ -68,11 +66,20 @@ def load_tickerdata_file(
     filename = pair_data_filename(datadir, pair, ticker_interval)
     pairdata = misc.file_load_json(filename)
     if not pairdata:
-        return None
+        return []
 
     if timerange:
         pairdata = trim_tickerlist(pairdata, timerange)
     return pairdata
+
+
+def store_tickerdata_file(datadir: Optional[Path], pair: str,
+                          ticker_interval: str, data: list, is_zip: bool = False):
+    """
+    Stores tickerdata to file
+    """
+    filename = pair_data_filename(datadir, pair, ticker_interval)
+    misc.file_dump_json(filename, data, is_zip=is_zip)
 
 
 def load_pair_history(pair: str,
@@ -122,7 +129,7 @@ def load_pair_history(pair: str,
     else:
         logger.warning(
             f'No history data for pair: "{pair}", interval: {ticker_interval}. '
-            'Use --refresh-pairs-cached option or download_backtest_data.py '
+            'Use --refresh-pairs-cached option or `freqtrade download-data` '
             'script to download the data'
         )
         return None
@@ -177,11 +184,14 @@ def pair_data_filename(datadir: Optional[Path], pair: str, ticker_interval: str)
     return filename
 
 
-def load_cached_data_for_updating(filename: Path, ticker_interval: str,
+def load_cached_data_for_updating(datadir: Optional[Path], pair: str, ticker_interval: str,
                                   timerange: Optional[TimeRange]) -> Tuple[List[Any],
                                                                            Optional[int]]:
     """
-    Load cached data and choose what part of the data should be updated
+    Load cached data to download more data.
+    If timerange is passed in, checks wether data from an before the stored data will be downloaded.
+    If that's the case than what's available should be completely overwritten.
+    Only used by download_pair_history().
     """
 
     since_ms = None
@@ -195,12 +205,11 @@ def load_cached_data_for_updating(filename: Path, ticker_interval: str,
             since_ms = arrow.utcnow().shift(minutes=num_minutes).timestamp * 1000
 
     # read the cached file
-    if filename.is_file():
-        with open(filename, "rt") as file:
-            data = misc.json_load(file)
-        # remove the last item, could be incomplete candle
-        if data:
-            data.pop()
+    # Intentionally don't pass timerange in - since we need to load the full dataset.
+    data = load_tickerdata_file(datadir, pair, ticker_interval)
+    # remove the last item, could be incomplete candle
+    if data:
+        data.pop()
     else:
         data = []
 
@@ -239,29 +248,28 @@ def download_pair_history(datadir: Optional[Path],
         )
 
     try:
-        filename = pair_data_filename(datadir, pair, ticker_interval)
-
         logger.info(
             f'Download history data for pair: "{pair}", interval: {ticker_interval} '
             f'and store in {datadir}.'
         )
 
-        data, since_ms = load_cached_data_for_updating(filename, ticker_interval, timerange)
+        data, since_ms = load_cached_data_for_updating(datadir, pair, ticker_interval, timerange)
 
         logger.debug("Current Start: %s", misc.format_ms_time(data[1][0]) if data else 'None')
         logger.debug("Current End: %s", misc.format_ms_time(data[-1][0]) if data else 'None')
 
         # Default since_ms to 30 days if nothing is given
-        new_data = exchange.get_history(pair=pair, ticker_interval=ticker_interval,
-                                        since_ms=since_ms if since_ms
-                                        else
-                                        int(arrow.utcnow().shift(days=-30).float_timestamp) * 1000)
+        new_data = exchange.get_historic_ohlcv(pair=pair, ticker_interval=ticker_interval,
+                                               since_ms=since_ms if since_ms
+                                               else
+                                               int(arrow.utcnow().shift(
+                                                   days=-30).float_timestamp) * 1000)
         data.extend(new_data)
 
         logger.debug("New Start: %s", misc.format_ms_time(data[0][0]))
         logger.debug("New End: %s", misc.format_ms_time(data[-1][0]))
 
-        misc.file_dump_json(filename, data)
+        store_tickerdata_file(datadir, pair, ticker_interval, data=data)
         return True
 
     except Exception as e:

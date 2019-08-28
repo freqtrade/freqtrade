@@ -1,7 +1,7 @@
 # pragma pylint: disable=missing-docstring
 
 from copy import deepcopy
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
@@ -21,13 +21,13 @@ def test_parse_args_backtesting(mocker) -> None:
     further argument parsing is done in test_arguments.py
     """
     backtesting_mock = mocker.patch('freqtrade.optimize.start_backtesting', MagicMock())
+    backtesting_mock.__name__ = PropertyMock("start_backtesting")
     # it's sys.exit(0) at the end of backtesting
     with pytest.raises(SystemExit):
         main(['backtesting'])
     assert backtesting_mock.call_count == 1
     call_args = backtesting_mock.call_args[0][0]
     assert call_args.config == ['config.json']
-    assert call_args.live is False
     assert call_args.verbosity == 0
     assert call_args.subparser == 'backtesting'
     assert call_args.func is not None
@@ -36,6 +36,7 @@ def test_parse_args_backtesting(mocker) -> None:
 
 def test_main_start_hyperopt(mocker) -> None:
     hyperopt_mock = mocker.patch('freqtrade.optimize.start_hyperopt', MagicMock())
+    hyperopt_mock.__name__ = PropertyMock("start_hyperopt")
     # it's sys.exit(0) at the end of hyperopt
     with pytest.raises(SystemExit):
         main(['hyperopt'])
@@ -60,8 +61,8 @@ def test_main_fatal_exception(mocker, default_conf, caplog) -> None:
     # Test Main + the KeyboardInterrupt exception
     with pytest.raises(SystemExit):
         main(args)
-    assert log_has('Using config: config.json.example ...', caplog.record_tuples)
-    assert log_has('Fatal exception!', caplog.record_tuples)
+    assert log_has('Using config: config.json.example ...', caplog)
+    assert log_has('Fatal exception!', caplog)
 
 
 def test_main_keyboard_interrupt(mocker, default_conf, caplog) -> None:
@@ -77,8 +78,8 @@ def test_main_keyboard_interrupt(mocker, default_conf, caplog) -> None:
     # Test Main + the KeyboardInterrupt exception
     with pytest.raises(SystemExit):
         main(args)
-    assert log_has('Using config: config.json.example ...', caplog.record_tuples)
-    assert log_has('SIGINT received, aborting ...', caplog.record_tuples)
+    assert log_has('Using config: config.json.example ...', caplog)
+    assert log_has('SIGINT received, aborting ...', caplog)
 
 
 def test_main_operational_exception(mocker, default_conf, caplog) -> None:
@@ -97,8 +98,8 @@ def test_main_operational_exception(mocker, default_conf, caplog) -> None:
     # Test Main + the KeyboardInterrupt exception
     with pytest.raises(SystemExit):
         main(args)
-    assert log_has('Using config: config.json.example ...', caplog.record_tuples)
-    assert log_has('Oh snap!', caplog.record_tuples)
+    assert log_has('Using config: config.json.example ...', caplog)
+    assert log_has('Oh snap!', caplog)
 
 
 def test_main_reload_conf(mocker, default_conf, caplog) -> None:
@@ -121,7 +122,7 @@ def test_main_reload_conf(mocker, default_conf, caplog) -> None:
     with pytest.raises(SystemExit):
         main(['-c', 'config.json.example'])
 
-    assert log_has('Using config: config.json.example ...', caplog.record_tuples)
+    assert log_has('Using config: config.json.example ...', caplog)
     assert worker_mock.call_count == 4
     assert reconfigure_mock.call_count == 1
     assert isinstance(worker.freqtrade, FreqtradeBot)

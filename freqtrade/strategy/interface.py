@@ -4,7 +4,7 @@ This module defines the interface to apply for strategies
 """
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Dict, List, NamedTuple, Optional, Tuple
 import warnings
@@ -107,6 +107,7 @@ class IStrategy(ABC):
         self.config = config
         # Dict to determine if analysis is necessary
         self._last_candle_seen_per_pair: Dict[str, datetime] = {}
+        self._pair_locked_until: Dict[str, datetime] = {}
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -154,10 +155,45 @@ class IStrategy(ABC):
         """
         return self.__class__.__name__
 
+    def lock_pair(self, pair: str, until: datetime) -> None:
+        """
+        Locks pair until a given timestamp happens.
+        Locked pairs are not analyzed, and are prevented from opening new trades.
+        :param pair: Pair to lock
+        :param until: datetime in UTC until the pair should be blocked from opening new trades.
+                Needs to be timezone aware `datetime.now(timezone.utc)`
+        """
+        self._pair_locked_until[pair] = until
+
+    def is_pair_locked(self, pair: str) -> bool:
+        """
+        Checks if a pair is currently locked
+        """
+        if pair not in self._pair_locked_until:
+            return False
+        return self._pair_locked_until[pair] >= datetime.now(timezone.utc)
+
     def analyze_ticker(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Parses the given ticker history and returns a populated DataFrame
         add several TA indicators and buy signal to it
+        :param dataframe: Dataframe containing ticker data
+        :param metadata: Metadata dictionary with additional data (e.g. 'pair')
+        :return: DataFrame with ticker data and indicator data
+        """
+        logger.debug("TA Analysis Launched")
+        dataframe = self.advise_indicators(dataframe, metadata)
+        dataframe = self.advise_buy(dataframe, metadata)
+        dataframe = self.advise_sell(dataframe, metadata)
+        return dataframe
+
+    def _analyze_ticker_internal(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        """
+        Parses the given ticker history and returns a populated DataFrame
+        add several TA indicators and buy signal to it
+        WARNING: Used internally only, may skip analysis if `process_only_new_candles` is set.
+        :param dataframe: Dataframe containing ticker data
+        :param metadata: Metadata dictionary with additional data (e.g. 'pair')
         :return: DataFrame with ticker data and indicator data
         """
 
@@ -168,10 +204,7 @@ class IStrategy(ABC):
         if (not self.process_only_new_candles or
                 self._last_candle_seen_per_pair.get(pair, None) != dataframe.iloc[-1]['date']):
             # Defs that only make change on new candle data.
-            logger.debug("TA Analysis Launched")
-            dataframe = self.advise_indicators(dataframe, metadata)
-            dataframe = self.advise_buy(dataframe, metadata)
-            dataframe = self.advise_sell(dataframe, metadata)
+            dataframe = self.analyze_ticker(dataframe, metadata)
             self._last_candle_seen_per_pair[pair] = dataframe.iloc[-1]['date']
         else:
             logger.debug("Skipping TA Analysis for already analyzed candle")
@@ -198,7 +231,7 @@ class IStrategy(ABC):
             return False, False
 
         try:
-            dataframe = self.analyze_ticker(dataframe, {'pair': pair})
+            dataframe = self._analyze_ticker_internal(dataframe, {'pair': pair})
         except ValueError as error:
             logger.warning(
                 'Unable to analyze ticker for pair %s: %s',
@@ -246,8 +279,8 @@ class IStrategy(ABC):
                     sell: bool, low: float = None, high: float = None,
                     force_stoploss: float = 0) -> SellCheckTuple:
         """
-        This function evaluate if on the condition required to trigger a sell has been reached
-        if the threshold is reached and updates the trade record.
+        This function evaluates if one of the conditions required to trigger a sell
+        has been reached, which can either be a stop-loss, ROI or sell-signal.
         :param low: Only used during backtesting to simulate stoploss
         :param high: Only used during backtesting, to simulate ROI
         :param force_stoploss: Externally provided stoploss

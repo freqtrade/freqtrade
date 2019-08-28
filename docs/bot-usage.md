@@ -2,62 +2,70 @@
 
 This page explains the different parameters of the bot and how to run it.
 
-!Note:
+!!! Note
     If you've used `setup.sh`, don't forget to activate your virtual environment (`source .env/bin/activate`) before running freqtrade commands.
 
 
 ## Bot commands
 
 ```
-usage: freqtrade [-h] [-v] [--logfile FILE] [--version] [-c PATH] [-d PATH]
-                 [-s NAME] [--strategy-path PATH] [--db-url PATH]
-                 [--sd-notify]
-                 {backtesting,edge,hyperopt} ...
+usage: freqtrade [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
+                 [--userdir PATH] [-s NAME] [--strategy-path PATH]
+                 [--db-url PATH] [--sd-notify]
+                 {backtesting,edge,hyperopt,create-userdir,list-exchanges} ...
 
 Free, open source crypto trading bot
 
 positional arguments:
-  {backtesting,edge,hyperopt}
+  {backtesting,edge,hyperopt,create-userdir,list-exchanges}
     backtesting         Backtesting module.
     edge                Edge module.
     hyperopt            Hyperopt module.
+    create-userdir      Create user-data directory.
+    list-exchanges      Print available exchanges.
 
 optional arguments:
   -h, --help            show this help message and exit
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified
+  --logfile FILE        Log to the file specified.
   -V, --version         show program's version number and exit
   -c PATH, --config PATH
-                        Specify configuration file (default: None). Multiple
-                        --config options may be used. Can be set to '-' to
-                        read config from stdin.
+                        Specify configuration file (default: `config.json`).
+                        Multiple --config options may be used. Can be set to
+                        `-` to read config from stdin.
   -d PATH, --datadir PATH
-                        Path to backtest data.
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
   -s NAME, --strategy NAME
                         Specify strategy class name (default:
-                        DefaultStrategy).
+                        `DefaultStrategy`).
   --strategy-path PATH  Specify additional strategy lookup path.
-  --db-url PATH         Override trades database URL, this is useful if
-                        dry_run is enabled or in custom deployments (default:
-                        None).
+  --db-url PATH         Override trades database URL, this is useful in custom
+                        deployments (default: `sqlite:///tradesv3.sqlite` for
+                        Live Run mode, `sqlite://` for Dry Run).
   --sd-notify           Notify systemd service manager.
+
 ```
 
-### How to use a different configuration file?
+### How to specify which configuration file be used?
 
-The bot allows you to select which configuration file you want to use. Per
-default, the bot will load the file `./config.json`
+The bot allows you to select which configuration file you want to use by means of
+the `-c/--config` command line option:
 
 ```bash
 freqtrade -c path/far/far/away/config.json
 ```
 
+Per default, the bot loads the `config.json` configuration file from the current
+working directory.
+
 ### How to use multiple configuration files?
 
 The bot allows you to use multiple configuration files by specifying multiple
-`-c/--config` configuration options in the command line. Configuration parameters
-defined in the last configuration file override parameters with the same name
-defined in the previous configuration file specified in the command line.
+`-c/--config` options in the command line. Configuration parameters
+defined in the latter configuration files override parameters with the same name
+defined in the previous configuration files specified in the command line earlier.
 
 For example, you can make a separate configuration file with your key and secrete
 for the Exchange you use for trading, specify default configuration file with
@@ -81,6 +89,29 @@ of your configuration in the project issues or in the Internet.
 
 See more details on this technique with examples in the documentation page on
 [configuration](configuration.md).
+
+### Where to store custom data
+
+Freqtrade allows the creation of a user-data directory using `freqtrade create-userdir --userdir someDirectory`.
+This directory will look as follows:
+
+```
+user_data/
+├── backtest_results
+├── data
+├── hyperopts
+├── hyperopts_results
+├── plot
+└── strategies
+```
+
+You can add the entry "user_data_dir" setting to your configuration, to always point your bot to this directory.
+Alternatively, pass in `--userdir` to every command.
+The bot will fail to start if the directory does not exist, but will create necessary subdirectories.
+
+This directory should contain your custom strategies, custom hyperopts and hyperopt loss functions, backtesting historical data (downloaded using either backtesting command or the download script) and plot outputs.
+
+It is recommended to use version control to keep track of changes to your strategies.
 
 ### How to use **--strategy**?
 
@@ -110,6 +141,7 @@ Learn more about strategy file in
 
 This parameter allows you to add an additional strategy lookup path, which gets
 checked before the default locations (The passed path must be a directory!):
+
 ```bash
 freqtrade --strategy AwesomeStrategy --strategy-path /some/directory
 ```
@@ -163,9 +195,8 @@ optional arguments:
                         Disable applying `max_open_trades` during backtest
                         (same as setting `max_open_trades` to a very high
                         number).
-  -l, --live            Use live data.
   --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
-                        Provide a commaseparated list of strategies to
+                        Provide a space-separated list of strategies to
                         backtest Please note that ticker-interval needs to be
                         set either in config or via command line. When using
                         this together with --export trades, the strategy-name
@@ -176,24 +207,16 @@ optional arguments:
   --export-filename PATH
                         Save backtest results to this filename requires
                         --export to be set as well Example --export-
-                        filename=user_data/backtest_data/backtest_today.json
-                        (default: user_data/backtest_data/backtest-
+                        filename=user_data/backtest_results/backtest_today.json
+                        (default: user_data/backtest_results/backtest-
                         result.json)
 ```
 
-### How to use **--refresh-pairs-cached** parameter?
+### Getting historic data for backtesting
 
-The first time your run Backtesting, it will take the pairs you have
-set in your config file and download data from the Exchange.
-
-If for any reason you want to update your data set, you use
-`--refresh-pairs-cached` to force Backtesting to update the data it has.
-
-!!! Note
-    Use it only if you want to update your data set. You will not be able to come back to the previous version.
-
-To test your strategy with latest data, we recommend continuing using
-the parameter `-l` or `--live`.
+The first time your run Backtesting, you will need to download some historic data first.
+This can be accomplished by using `freqtrade download-data`.  
+Check the corresponding [help page section](backtesting.md#Getting-data-for-backtesting-and-hyperopt) for more details
 
 ## Hyperopt commands
 
@@ -207,7 +230,7 @@ usage: freqtrade hyperopt [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
                           [--customhyperopt NAME] [--hyperopt-path PATH]
                           [--eps] [-e INT]
                           [-s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
-                          [--dmmp] [--print-all] [-j JOBS]
+                          [--dmmp] [--print-all] [--no-color] [-j JOBS]
                           [--random-state INT] [--min-trades INT] [--continue]
                           [--hyperopt-loss NAME]
 
@@ -243,6 +266,8 @@ optional arguments:
                         (same as setting `max_open_trades` to a very high
                         number).
   --print-all           Print all results, not only the best ones.
+  --no-color            Disable colorization of hyperopt results. May be
+                        useful if you are redirecting output to a file.
   -j JOBS, --job-workers JOBS
                         The number of concurrently running jobs for
                         hyperoptimization (hyperopt worker processes). If -1
@@ -256,17 +281,18 @@ optional arguments:
   --continue            Continue hyperopt from previous runs. By default,
                         temporary files will be removed and hyperopt will
                         start from scratch.
-  --hyperopt-loss       NAME
-                        Specify the class name of the hyperopt loss function
+  --hyperopt-loss NAME  Specify the class name of the hyperopt loss function
                         class (IHyperOptLoss). Different functions can
                         generate completely different results, since the
-                        target for optimization is different. (default:
-                        `DefaultHyperOptLoss`).
+                        target for optimization is different. Built-in
+                        Hyperopt-loss-functions are: DefaultHyperOptLoss,
+                        OnlyProfitHyperOptLoss, SharpeHyperOptLoss.
+                        (default: `DefaultHyperOptLoss`).
 ```
 
 ## Edge commands
 
-To know your trade expectacny and winrate against historical data, you can use Edge.
+To know your trade expectancy and winrate against historical data, you can use Edge.
 
 ```
 usage: freqtrade edge [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]

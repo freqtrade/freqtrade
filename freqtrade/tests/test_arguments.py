@@ -3,8 +3,8 @@ import argparse
 
 import pytest
 
-from freqtrade.configuration import Arguments, TimeRange
-from freqtrade.configuration.arguments import ARGS_DOWNLOADER, ARGS_PLOT_DATAFRAME
+from freqtrade.configuration import Arguments
+from freqtrade.configuration.arguments import ARGS_PLOT_DATAFRAME
 from freqtrade.configuration.cli_options import check_int_positive
 
 
@@ -50,10 +50,10 @@ def test_parse_args_verbose() -> None:
 
 
 def test_common_scripts_options() -> None:
-    arguments = Arguments(['-p', 'ETH/BTC'], '')
-    arguments._build_args(ARGS_DOWNLOADER)
-    args = arguments._parse_args()
-    assert args.pairs == 'ETH/BTC'
+    args = Arguments(['download-data', '-p', 'ETH/BTC', 'XRP/BTC'], '').get_parsed_arg()
+
+    assert args.pairs == ['ETH/BTC', 'XRP/BTC']
+    assert hasattr(args, "func")
 
 
 def test_parse_args_version() -> None:
@@ -86,30 +86,6 @@ def test_parse_args_strategy_path_invalid() -> None:
         Arguments(['--strategy-path'], '').get_parsed_arg()
 
 
-def test_parse_timerange_incorrect() -> None:
-    assert TimeRange(None, 'line', 0, -200) == Arguments.parse_timerange('-200')
-    assert TimeRange('line', None, 200, 0) == Arguments.parse_timerange('200-')
-    assert TimeRange('index', 'index', 200, 500) == Arguments.parse_timerange('200-500')
-
-    assert TimeRange('date', None, 1274486400, 0) == Arguments.parse_timerange('20100522-')
-    assert TimeRange(None, 'date', 0, 1274486400) == Arguments.parse_timerange('-20100522')
-    timerange = Arguments.parse_timerange('20100522-20150730')
-    assert timerange == TimeRange('date', 'date', 1274486400, 1438214400)
-
-    # Added test for unix timestamp - BTC genesis date
-    assert TimeRange('date', None, 1231006505, 0) == Arguments.parse_timerange('1231006505-')
-    assert TimeRange(None, 'date', 0, 1233360000) == Arguments.parse_timerange('-1233360000')
-    timerange = Arguments.parse_timerange('1231006505-1233360000')
-    assert TimeRange('date', 'date', 1231006505, 1233360000) == timerange
-
-    # TODO: Find solution for the following case (passing timestamp in ms)
-    timerange = Arguments.parse_timerange('1231006505000-1233360000000')
-    assert TimeRange('date', 'date', 1231006505, 1233360000) != timerange
-
-    with pytest.raises(Exception, match=r'Incorrect syntax.*'):
-        Arguments.parse_timerange('-')
-
-
 def test_parse_args_backtesting_invalid() -> None:
     with pytest.raises(SystemExit, match=r'2'):
         Arguments(['backtesting --ticker-interval'], '').get_parsed_arg()
@@ -122,7 +98,6 @@ def test_parse_args_backtesting_custom() -> None:
     args = [
         '-c', 'test_conf.json',
         'backtesting',
-        '--live',
         '--ticker-interval', '1m',
         '--refresh-pairs-cached',
         '--strategy-list',
@@ -131,7 +106,6 @@ def test_parse_args_backtesting_custom() -> None:
         ]
     call_args = Arguments(args, '').get_parsed_arg()
     assert call_args.config == ['test_conf.json']
-    assert call_args.live is True
     assert call_args.verbosity == 0
     assert call_args.subparser == 'backtesting'
     assert call_args.func is not None
@@ -159,14 +133,14 @@ def test_parse_args_hyperopt_custom() -> None:
 
 def test_download_data_options() -> None:
     args = [
-        '--pairs-file', 'file_with_pairs',
         '--datadir', 'datadir/directory',
+        'download-data',
+        '--pairs-file', 'file_with_pairs',
         '--days', '30',
         '--exchange', 'binance'
     ]
-    arguments = Arguments(args, '')
-    arguments._build_args(ARGS_DOWNLOADER)
-    args = arguments._parse_args()
+    args = Arguments(args, '').get_parsed_arg()
+
     assert args.pairs_file == 'file_with_pairs'
     assert args.datadir == 'datadir/directory'
     assert args.days == 30
@@ -186,7 +160,7 @@ def test_plot_dataframe_options() -> None:
     assert pargs.indicators1 == "sma10,sma100"
     assert pargs.indicators2 == "macd,fastd,fastk"
     assert pargs.plot_limit == 30
-    assert pargs.pairs == "UNITTEST/BTC"
+    assert pargs.pairs == ["UNITTEST/BTC"]
 
 
 def test_check_int_positive() -> None:

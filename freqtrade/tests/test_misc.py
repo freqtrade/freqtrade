@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring,C0103
 
 import datetime
+from pathlib import Path
 from unittest.mock import MagicMock
 
 from freqtrade.data.converter import parse_ticker_dataframe
@@ -34,12 +35,12 @@ def test_datesarray_to_datetimearray(ticker_history_list):
 def test_file_dump_json(mocker) -> None:
     file_open = mocker.patch('freqtrade.misc.open', MagicMock())
     json_dump = mocker.patch('rapidjson.dump', MagicMock())
-    file_dump_json('somefile', [1, 2, 3])
+    file_dump_json(Path('somefile'), [1, 2, 3])
     assert file_open.call_count == 1
     assert json_dump.call_count == 1
     file_open = mocker.patch('freqtrade.misc.gzip.open', MagicMock())
     json_dump = mocker.patch('rapidjson.dump', MagicMock())
-    file_dump_json('somefile', [1, 2, 3], True)
+    file_dump_json(Path('somefile'), [1, 2, 3], True)
     assert file_open.call_count == 1
     assert json_dump.call_count == 1
 

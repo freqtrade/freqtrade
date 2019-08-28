@@ -8,6 +8,30 @@ if version_info.major == 3 and version_info.minor < 6 or \
 
 from freqtrade import __version__
 
+# Requirements used for submodules
+api = ['flask']
+plot = ['plotly>=4.0']
+
+develop = [
+    'coveralls',
+    'flake8',
+    'flake8-type-annotations',
+    'flake8-tidy-imports',
+    'mypy',
+    'pytest',
+    'pytest-asyncio',
+    'pytest-cov',
+    'pytest-mock',
+    'pytest-random-order',
+]
+
+jupyter = [
+    'jupyter',
+    'nbstripout',
+    'ipykernel',
+    ]
+
+all_extra = api + plot + develop + jupyter
 
 setup(name='freqtrade',
       version=__version__,
@@ -20,26 +44,40 @@ setup(name='freqtrade',
       setup_requires=['pytest-runner', 'numpy'],
       tests_require=['pytest', 'pytest-mock', 'pytest-cov'],
       install_requires=[
-          'ccxt',
+          # from requirements-common.txt
+          'ccxt>=1.18',
           'SQLAlchemy',
           'python-telegram-bot',
           'arrow',
+          'cachetools',
           'requests',
           'urllib3',
           'wrapt',
-          'pandas',
           'scikit-learn',
-          'scipy',
           'joblib',
           'jsonschema',
           'TA-Lib',
           'tabulate',
-          'cachetools',
           'coinmarketcap',
           'scikit-optimize',
+          'filelock',
+          'py_find_1st',
           'python-rapidjson',
-          'py_find_1st'
+          'sdnotify',
+          'colorama',
+          # from requirements.txt
+          'numpy',
+          'pandas',
+          'scipy',
       ],
+      extras_require={
+          'api': api,
+          'dev': all_extra,
+          'plot': plot,
+          'all': all_extra,
+          'jupyter': jupyter,
+          
+      },
       include_package_data=True,
       zip_safe=False,
       entry_points={

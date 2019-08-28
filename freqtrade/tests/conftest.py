@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, PropertyMock
 
 import arrow
 import pytest
+import numpy as np
 from telegram import Chat, Message, Update
 
 from freqtrade import constants, persistence
@@ -25,17 +26,21 @@ from freqtrade.worker import Worker
 logging.getLogger('').setLevel(logging.INFO)
 
 
+# Do not mask numpy errors as warnings that no one read, raise the exсeption
+np.seterr(all='raise')
+
+
 def log_has(line, logs):
     # caplog mocker returns log as a tuple: ('freqtrade.something', logging.WARNING, 'foobar')
     # and we want to match line against foobar in the tuple
     return reduce(lambda a, b: a or b,
-                  filter(lambda x: x[2] == line, logs),
+                  filter(lambda x: x[2] == line, logs.record_tuples),
                   False)
 
 
 def log_has_re(line, logs):
     return reduce(lambda a, b: a or b,
-                  filter(lambda x: re.match(line, x[2]), logs),
+                  filter(lambda x: re.match(line, x[2]), logs.record_tuples),
                   False)
 
 
@@ -45,7 +50,7 @@ def get_args(args):
 
 def patched_configuration_load_config_file(mocker, config) -> None:
     mocker.patch(
-        'freqtrade.configuration.configuration.Configuration._load_config_file',
+        'freqtrade.configuration.configuration.load_config_file',
         lambda *args, **kwargs: config
     )
 
@@ -234,6 +239,7 @@ def default_conf():
         },
         "initial_state": "running",
         "db_url": "sqlite://",
+        "user_data_dir": Path("user_data"),
         "verbosity": 3,
     }
     return configuration
@@ -304,7 +310,7 @@ def markets():
                     'max': 500000,
                 },
             },
-            'info': '',
+            'info': {},
         },
         'TKN/BTC': {
             'id': 'tknbtc',
@@ -329,7 +335,7 @@ def markets():
                     'max': 500000,
                 },
             },
-            'info': '',
+            'info': {},
         },
         'BLK/BTC': {
             'id': 'blkbtc',
@@ -354,7 +360,7 @@ def markets():
                     'max': 500000,
                 },
             },
-            'info': '',
+            'info': {},
         },
         'LTC/BTC': {
             'id': 'ltcbtc',
@@ -379,7 +385,7 @@ def markets():
                     'max': 500000,
                 },
             },
-            'info': '',
+            'info': {},
         },
         'XRP/BTC': {
             'id': 'xrpbtc',
@@ -404,7 +410,7 @@ def markets():
                     'max': 500000,
                 },
             },
-            'info': '',
+            'info': {},
         },
         'NEO/BTC': {
             'id': 'neobtc',
@@ -429,7 +435,7 @@ def markets():
                     'max': 500000,
                 },
             },
-            'info': '',
+            'info': {},
         },
         'BTT/BTC': {
             'id': 'BTTBTC',
@@ -457,7 +463,7 @@ def markets():
                     'max': None
                 }
             },
-            'info': "",
+            'info': {},
         },
         'ETH/USDT': {
             'id': 'USDT-ETH',
@@ -479,7 +485,7 @@ def markets():
                 }
             },
             'active': True,
-            'info': ""
+            'info': {},
         },
         'LTC/USDT': {
             'id': 'USDT-LTC',
@@ -501,7 +507,7 @@ def markets():
                     'max': None
                 }
             },
-            'info': ""
+            'info': {},
         }
     }
 

@@ -32,7 +32,8 @@ def plot_profit(config: Dict[str, Any]) -> None:
     # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
     fig = generate_profit_graph(plot_elements["pairs"], plot_elements["tickers"], trades)
-    store_plot_file(fig, filename='freqtrade-profit-plot.html', auto_open=True)
+    store_plot_file(fig, filename='freqtrade-profit-plot.html',
+                    directory=config['user_data_dir'] / "plot", auto_open=True)
 
 
 def plot_parse_args(args: List[str]) -> Dict[str, Any]:

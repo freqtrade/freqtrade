@@ -5,7 +5,6 @@ bot constants
 """
 DEFAULT_CONFIG = 'config.json'
 DEFAULT_EXCHANGE = 'bittrex'
-DYNAMIC_WHITELIST = 20  # pairs
 PROCESS_THROTTLE_SECS = 5  # sec
 DEFAULT_TICKER_INTERVAL = 5  # min
 HYPEROPT_EPOCH = 100  # epochs
@@ -23,7 +22,6 @@ ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList']
 DRY_RUN_WALLET = 999.9
-DEFAULT_DOWNLOAD_TICKER_INTERVALS = '1m 5m'
 
 TICKER_INTERVALS = [
     '1m', '3m', '5m', '15m', '30m',
@@ -38,6 +36,20 @@ SUPPORTED_FIAT = [
     "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD",
     "BTC", "XBT", "ETH", "XRP", "LTC", "BCH", "USDT"
 ]
+
+MINIMAL_CONFIG = {
+    'stake_currency': '',
+    'dry_run': True,
+    'exchange': {
+        'name': '',
+        'key': '',
+        'secret': '',
+        'pair_whitelist': [],
+        'ccxt_async_config': {
+            'enableRateLimit': True,
+        }
+    }
+}
 
 # Required json-schema for user specified config
 CONF_SCHEMA = {

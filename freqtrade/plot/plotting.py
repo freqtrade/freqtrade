@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 
-from freqtrade.configuration import Arguments
+from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import (combine_tickers_with_mean,
                                        create_cum_profit, load_trades)
@@ -31,18 +31,18 @@ def init_plotscript(config):
     exchange: Optional[Exchange] = None
 
     # Exchange is only needed when downloading data!
-    if config.get("live", False) or config.get("refresh_pairs", False):
+    if config.get("refresh_pairs", False):
         exchange = ExchangeResolver(config.get('exchange', {}).get('name'),
                                     config).exchange
 
     strategy = StrategyResolver(config).strategy
     if "pairs" in config:
-        pairs = config["pairs"].split(',')
+        pairs = config["pairs"]
     else:
         pairs = config["exchange"]["pair_whitelist"]
 
     # Set timerange to use
-    timerange = Arguments.parse_timerange(config.get("timerange"))
+    timerange = TimeRange.parse_timerange(config.get("timerange"))
 
     tickers = history.load_data(
         datadir=Path(str(config.get("datadir"))),
@@ -51,7 +51,6 @@ def init_plotscript(config):
         refresh_pairs=config.get('refresh_pairs', False),
         timerange=timerange,
         exchange=exchange,
-        live=config.get("live", False),
     )
 
     trades = load_trades(config)
@@ -308,7 +307,7 @@ def generate_plot_filename(pair, ticker_interval) -> str:
     return file_name
 
 
-def store_plot_file(fig, filename: str, auto_open: bool = False) -> None:
+def store_plot_file(fig, filename: str, directory: Path, auto_open: bool = False) -> None:
     """
     Generate a plot html file from pre populated fig plotly object
     :param fig: Plotly Figure to plot
@@ -316,8 +315,9 @@ def store_plot_file(fig, filename: str, auto_open: bool = False) -> None:
     :param ticker_interval: Used as part of the filename
     :return: None
     """
+    directory.mkdir(parents=True, exist_ok=True)
 
-    Path("user_data/plots").mkdir(parents=True, exist_ok=True)
-
-    plot(fig, filename=str(Path('user_data/plots').joinpath(filename)),
+    _filename = directory.joinpath(filename)
+    plot(fig, filename=str(_filename),
          auto_open=auto_open)
+    logger.info(f"Stored plot as {_filename}")

@@ -115,7 +115,7 @@ def test_exception_send_msg(default_conf, mocker, caplog):
     webhook = Webhook(get_patched_freqtradebot(mocker, default_conf))
     webhook.send_msg({'type': RPCMessageType.BUY_NOTIFICATION})
     assert log_has(f"Message type {RPCMessageType.BUY_NOTIFICATION} not configured for webhooks",
-                   caplog.record_tuples)
+                   caplog)
 
     default_conf["webhook"] = get_webhook_dict()
     default_conf["webhook"]["webhookbuy"]["value1"] = "{DEADBEEF:8f}"
@@ -135,7 +135,7 @@ def test_exception_send_msg(default_conf, mocker, caplog):
     }
     webhook.send_msg(msg)
     assert log_has("Problem calling Webhook. Please check your webhook configuration. "
-                   "Exception: 'DEADBEEF'", caplog.record_tuples)
+                   "Exception: 'DEADBEEF'", caplog)
 
     msg_mock = MagicMock()
     mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
@@ -164,4 +164,4 @@ def test__send_msg(default_conf, mocker, caplog):
     post = MagicMock(side_effect=RequestException)
     mocker.patch("freqtrade.rpc.webhook.post", post)
     webhook._send_msg(msg)
-    assert log_has('Could not call webhook url. Exception: ', caplog.record_tuples)
+    assert log_has('Could not call webhook url. Exception: ', caplog)

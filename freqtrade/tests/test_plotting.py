@@ -1,11 +1,12 @@
 
 from copy import deepcopy
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from freqtrade.configuration import Arguments, TimeRange
+from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import create_cum_profit, load_backtest_data
 from freqtrade.plot.plotting import (add_indicators, add_profit,
@@ -50,7 +51,7 @@ def test_init_plotscript(default_conf, mocker):
     assert "pairs" in ret
     assert "strategy" in ret
 
-    default_conf['pairs'] = "POWR/BTC,XLM/BTC"
+    default_conf['pairs'] = ["POWR/BTC", "XLM/BTC"]
     ret = init_plotscript(default_conf)
     assert "tickers" in ret
     assert "POWR/BTC" in ret["tickers"]
@@ -87,7 +88,7 @@ def test_add_indicators(default_conf, caplog):
     # No indicator found
     fig3 = add_indicators(fig=deepcopy(fig), row=3, indicators=['no_indicator'], data=data)
     assert fig == fig3
-    assert log_has_re(r'Indicator "no_indicator" ignored\..*', caplog.record_tuples)
+    assert log_has_re(r'Indicator "no_indicator" ignored\..*', caplog)
 
 
 def test_plot_trades(caplog):
@@ -95,7 +96,7 @@ def test_plot_trades(caplog):
     # nothing happens when no trades are available
     fig = plot_trades(fig1, None)
     assert fig == fig1
-    assert log_has("No trades found.", caplog.record_tuples)
+    assert log_has("No trades found.", caplog)
     pair = "ADA/BTC"
     filename = history.make_testdata_path(None) / "backtest-result_test.json"
     trades = load_backtest_data(filename)
@@ -150,8 +151,8 @@ def test_generate_candlestick_graph_no_signals_no_trades(default_conf, mocker, c
     assert row_mock.call_count == 2
     assert trades_mock.call_count == 1
 
-    assert log_has("No buy-signals found.", caplog.record_tuples)
-    assert log_has("No sell-signals found.", caplog.record_tuples)
+    assert log_has("No buy-signals found.", caplog)
+    assert log_has("No sell-signals found.", caplog)
 
 
 def test_generate_candlestick_graph_no_trades(default_conf, mocker):
@@ -209,18 +210,21 @@ def test_generate_Plot_filename():
 def test_generate_plot_file(mocker, caplog):
     fig = generage_empty_figure()
     plot_mock = mocker.patch("freqtrade.plot.plotting.plot", MagicMock())
-    store_plot_file(fig, filename="freqtrade-plot-UNITTEST_BTC-5m.html")
+    store_plot_file(fig, filename="freqtrade-plot-UNITTEST_BTC-5m.html",
+                    directory=Path("user_data/plots"))
 
     assert plot_mock.call_count == 1
     assert plot_mock.call_args[0][0] == fig
     assert (plot_mock.call_args_list[0][1]['filename']
             == "user_data/plots/freqtrade-plot-UNITTEST_BTC-5m.html")
+    assert log_has("Stored plot as user_data/plots/freqtrade-plot-UNITTEST_BTC-5m.html",
+                   caplog)
 
 
 def test_add_profit():
     filename = history.make_testdata_path(None) / "backtest-result_test.json"
     bt_data = load_backtest_data(filename)
-    timerange = Arguments.parse_timerange("20180110-20180112")
+    timerange = TimeRange.parse_timerange("20180110-20180112")
 
     df = history.load_pair_history(pair="POWR/BTC", ticker_interval='5m',
                                    datadir=None, timerange=timerange)
@@ -240,7 +244,7 @@ def test_add_profit():
 def test_generate_profit_graph():
     filename = history.make_testdata_path(None) / "backtest-result_test.json"
     trades = load_backtest_data(filename)
-    timerange = Arguments.parse_timerange("20180110-20180112")
+    timerange = TimeRange.parse_timerange("20180110-20180112")
     pairs = ["POWR/BTC", "XLM/BTC"]
 
     tickers = history.load_data(datadir=None,

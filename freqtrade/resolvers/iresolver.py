@@ -29,7 +29,8 @@ class IResolver(object):
         """
 
         # Generate spec based on absolute path
-        spec = importlib.util.spec_from_file_location('unknown', str(module_path))
+        # Pass object_name as first argument to have logging print a reasonable name.
+        spec = importlib.util.spec_from_file_location(object_name, str(module_path))
         module = importlib.util.module_from_spec(spec)
         try:
             spec.loader.exec_module(module)  # type: ignore # importlib does not use typehints
@@ -57,7 +58,7 @@ class IResolver(object):
             if not str(entry).endswith('.py'):
                 logger.debug('Ignoring %s', entry)
                 continue
-            module_path = Path.resolve(directory.joinpath(entry))
+            module_path = entry.resolve()
             obj = IResolver._get_valid_object(
                 object_type, module_path, object_name
             )

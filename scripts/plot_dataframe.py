@@ -16,8 +16,6 @@ import logging
 import sys
 from typing import Any, Dict, List
 
-import pandas as pd
-
 from freqtrade.configuration import Arguments
 from freqtrade.configuration.arguments import ARGS_PLOT_DATAFRAME
 from freqtrade.data.btanalysis import extract_trades_of_period
@@ -28,20 +26,6 @@ from freqtrade.plot.plotting import (init_plotscript, generate_candlestick_graph
 from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
-
-
-def generate_dataframe(strategy, tickers, pair) -> pd.DataFrame:
-    """
-    Get tickers then Populate strategy indicators and signals, then return the full dataframe
-    :return: the DataFrame of a pair
-    """
-
-    dataframes = strategy.tickerdata_to_dataframe(tickers)
-    dataframe = dataframes[pair]
-    dataframe = strategy.advise_buy(dataframe, {'pair': pair})
-    dataframe = strategy.advise_sell(dataframe, {'pair': pair})
-
-    return dataframe
 
 
 def analyse_and_plot_pairs(config: Dict[str, Any]):
@@ -57,6 +41,7 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
     """
     plot_elements = init_plotscript(config)
     trades = plot_elements['trades']
+    strategy = plot_elements["strategy"]
 
     pair_counter = 0
     for pair, data in plot_elements["tickers"].items():
@@ -64,7 +49,8 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
         logger.info("analyse pair %s", pair)
         tickers = {}
         tickers[pair] = data
-        dataframe = generate_dataframe(plot_elements["strategy"], tickers, pair)
+
+        dataframe = strategy.analyze_ticker(tickers[pair], {'pair': pair})
 
         trades_pair = trades.loc[trades['pair'] == pair]
         trades_pair = extract_trades_of_period(dataframe, trades_pair)
@@ -77,7 +63,8 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
             indicators2=config["indicators2"].split(",")
         )
 
-        store_plot_file(fig, generate_plot_filename(pair, config['ticker_interval']))
+        store_plot_file(fig, filename=generate_plot_filename(pair, config['ticker_interval']),
+                        directory=config['user_data_dir'] / "plot")
 
     logger.info('End of ploting process %s plots generated', pair_counter)
 

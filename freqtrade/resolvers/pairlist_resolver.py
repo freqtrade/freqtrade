@@ -25,21 +25,22 @@ class PairListResolver(IResolver):
         Load the custom class from config parameter
         :param config: configuration dictionary or None
         """
-        self.pairlist = self._load_pairlist(pairlist_name, kwargs={'freqtrade': freqtrade,
-                                                                   'config': config})
+        self.pairlist = self._load_pairlist(pairlist_name, config, kwargs={'freqtrade': freqtrade,
+                                                                           'config': config})
 
     def _load_pairlist(
-            self, pairlist_name: str, kwargs: dict) -> IPairList:
+            self, pairlist_name: str, config: dict, kwargs: dict) -> IPairList:
         """
         Search and loads the specified pairlist.
         :param pairlist_name: name of the module to import
+        :param config: configuration dictionary
         :param extra_dir: additional directory to search for the given pairlist
         :return: PairList instance or None
         """
         current_path = Path(__file__).parent.parent.joinpath('pairlist').resolve()
 
         abs_paths = [
-            Path.cwd().joinpath('user_data/pairlist'),
+            config['user_data_dir'].joinpath('pairlist'),
             current_path,
         ]
 

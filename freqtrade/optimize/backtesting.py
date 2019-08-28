@@ -10,9 +10,9 @@ from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional
 
 from pandas import DataFrame
-from tabulate import tabulate
 
-from freqtrade.configuration import Arguments
+from freqtrade import OperationalException
+from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exchange import timeframe_to_minutes
@@ -21,6 +21,7 @@ from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
 from freqtrade.strategy.interface import IStrategy, SellType
+from tabulate import tabulate
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +89,9 @@ class Backtesting(object):
         Load strategy into backtesting
         """
         self.strategy = strategy
+        if "ticker_interval" not in self.config:
+            raise OperationalException("Ticker-interval needs to be set in either configuration "
+                                       "or as cli argument `--ticker-interval 5m`")
 
         self.ticker_interval = self.config.get('ticker_interval')
         self.ticker_interval_mins = timeframe_to_minutes(self.ticker_interval)
@@ -186,7 +190,7 @@ class Backtesting(object):
         return tabulate(tabular_data, headers=headers,  # type: ignore
                         floatfmt=floatfmt, tablefmt="pipe")
 
-    def _store_backtest_result(self, recordfilename: str, results: DataFrame,
+    def _store_backtest_result(self, recordfilename: Path, results: DataFrame,
                                strategyname: Optional[str] = None) -> None:
 
         records = [(t.pair, t.profit_percent, t.open_time.timestamp(),
@@ -197,10 +201,10 @@ class Backtesting(object):
         if records:
             if strategyname:
                 # Inject strategyname to filename
-                recname = Path(recordfilename)
-                recordfilename = str(Path.joinpath(
-                    recname.parent, f'{recname.stem}-{strategyname}').with_suffix(recname.suffix))
-            logger.info('Dumping backtest results to %s', recordfilename)
+                recordfilename = Path.joinpath(
+                    recordfilename.parent,
+                    f'{recordfilename.stem}-{strategyname}').with_suffix(recordfilename.suffix)
+            logger.info(f'Dumping backtest results to {recordfilename}')
             file_dump_json(recordfilename, records)
 
     def _get_ticker_list(self, processed) -> Dict[str, DataFrame]:
@@ -373,7 +377,9 @@ class Backtesting(object):
                         continue
                     trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
 
-                trade_entry = self._get_sell_trade_entry(pair, row, ticker[pair][indexes[pair]:],
+                # since indexes has been incremented before, we need to go one step back to
+                # also check the buying candle for sell conditions.
+                trade_entry = self._get_sell_trade_entry(pair, row, ticker[pair][indexes[pair]-1:],
                                                          trade_count_lock, stake_amount,
                                                          max_open_trades)
 
@@ -398,7 +404,7 @@ class Backtesting(object):
         logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
         logger.info('Using stake_amount: %s ...', self.config['stake_amount'])
 
-        timerange = Arguments.parse_timerange(None if self.config.get(
+        timerange = TimeRange.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
         data = history.load_data(
             datadir=Path(self.config['datadir']) if self.config.get('datadir') else None,
@@ -407,7 +413,6 @@ class Backtesting(object):
             refresh_pairs=self.config.get('refresh_pairs', False),
             exchange=self.exchange,
             timerange=timerange,
-            live=self.config.get('live', False)
         )
 
         if not data:
@@ -452,7 +457,7 @@ class Backtesting(object):
         for strategy, results in all_results.items():
 
             if self.config.get('export', False):
-                self._store_backtest_result(self.config['exportfilename'], results,
+                self._store_backtest_result(Path(self.config['exportfilename']), results,
                                             strategy if len(self.strategylist) > 1 else None)
 
             print(f"Result for strategy {strategy}")

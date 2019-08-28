@@ -2,7 +2,6 @@
 import json
 import logging
 import warnings
-from argparse import Namespace
 from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -11,10 +10,12 @@ import pytest
 from jsonschema import Draft4Validator, ValidationError, validate
 
 from freqtrade import OperationalException, constants
-from freqtrade.configuration import Arguments, Configuration
+from freqtrade.configuration import Arguments, Configuration, validate_config_consistency
 from freqtrade.configuration.check_exchange import check_exchange
-from freqtrade.configuration.create_datadir import create_datadir
-from freqtrade.configuration.json_schema import validate_config_schema
+from freqtrade.configuration.config_validation import validate_config_schema
+from freqtrade.configuration.directory_operations import (create_datadir,
+                                                          create_userdata_dir)
+from freqtrade.configuration.load_config import load_config_file
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.loggers import _set_loggers
 from freqtrade.state import RunMode
@@ -26,8 +27,7 @@ from freqtrade.tests.conftest import (log_has, log_has_re,
 def all_conf():
     config_file = Path(__file__).parents[2] / "config_full.json.example"
     print(config_file)
-    configuration = Configuration(Namespace())
-    conf = configuration._load_config_file(str(config_file))
+    conf = load_config_file(str(config_file))
     return conf
 
 
@@ -53,12 +53,12 @@ def test_load_config_incorrect_stake_amount(default_conf) -> None:
 
 
 def test_load_config_file(default_conf, mocker, caplog) -> None:
-    file_mock = mocker.patch('freqtrade.configuration.configuration.open', mocker.mock_open(
+    del default_conf['user_data_dir']
+    file_mock = mocker.patch('freqtrade.configuration.load_config.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
 
-    configuration = Configuration(Namespace())
-    validated_conf = configuration._load_config_file('somefile')
+    validated_conf = load_config_file('somefile')
     assert file_mock.call_count == 1
     assert validated_conf.items() >= default_conf.items()
 
@@ -73,7 +73,7 @@ def test__args_to_config(caplog):
         # No warnings ...
         configuration._args_to_config(config, argname="strategy_path", logstring="DeadBeef")
         assert len(w) == 0
-        assert log_has("DeadBeef", caplog.record_tuples)
+        assert log_has("DeadBeef", caplog)
         assert config['strategy_path'] == "TestTest"
 
     configuration = Configuration(args)
@@ -85,7 +85,7 @@ def test__args_to_config(caplog):
         assert len(w) == 1
         assert issubclass(w[-1].category, DeprecationWarning)
         assert "DEPRECATED: Going away soon!" in str(w[-1].message)
-        assert log_has("DeadBeef", caplog.record_tuples)
+        assert log_has("DeadBeef", caplog)
         assert config['strategy_path'] == "TestTest"
 
 
@@ -99,7 +99,7 @@ def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
 
     assert validated_conf['max_open_trades'] == 0
     assert 'internals' in validated_conf
-    assert log_has('Validating configuration ...', caplog.record_tuples)
+    assert log_has('Validating configuration ...', caplog)
 
 
 def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
@@ -114,7 +114,7 @@ def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
 
     configsmock = MagicMock(side_effect=config_files)
     mocker.patch(
-        'freqtrade.configuration.configuration.Configuration._load_config_file',
+        'freqtrade.configuration.configuration.load_config_file',
         configsmock
     )
 
@@ -131,7 +131,36 @@ def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
     assert validated_conf['exchange']['pair_whitelist'] == conf2['exchange']['pair_whitelist']
 
     assert 'internals' in validated_conf
-    assert log_has('Validating configuration ...', caplog.record_tuples)
+    assert log_has('Validating configuration ...', caplog)
+
+
+def test_from_config(default_conf, mocker, caplog) -> None:
+    conf1 = deepcopy(default_conf)
+    conf2 = deepcopy(default_conf)
+    del conf1['exchange']['key']
+    del conf1['exchange']['secret']
+    del conf2['exchange']['name']
+    conf2['exchange']['pair_whitelist'] += ['NANO/BTC']
+    conf2['fiat_display_currency'] = "EUR"
+    config_files = [conf1, conf2]
+
+    configsmock = MagicMock(side_effect=config_files)
+    mocker.patch(
+        'freqtrade.configuration.configuration.load_config_file',
+        configsmock
+    )
+
+    validated_conf = Configuration.from_files(['test_conf.json', 'test2_conf.json'])
+
+    exchange_conf = default_conf['exchange']
+    assert validated_conf['exchange']['name'] == exchange_conf['name']
+    assert validated_conf['exchange']['key'] == exchange_conf['key']
+    assert validated_conf['exchange']['secret'] == exchange_conf['secret']
+    assert validated_conf['exchange']['pair_whitelist'] != conf1['exchange']['pair_whitelist']
+    assert validated_conf['exchange']['pair_whitelist'] == conf2['exchange']['pair_whitelist']
+    assert validated_conf['fiat_display_currency'] == "EUR"
+    assert 'internals' in validated_conf
+    assert log_has('Validating configuration ...', caplog)
 
 
 def test_load_config_max_open_trades_minus_one(default_conf, mocker, caplog) -> None:
@@ -144,7 +173,7 @@ def test_load_config_max_open_trades_minus_one(default_conf, mocker, caplog) -> 
 
     assert validated_conf['max_open_trades'] > 999999999
     assert validated_conf['max_open_trades'] == float('inf')
-    assert log_has('Validating configuration ...', caplog.record_tuples)
+    assert log_has('Validating configuration ...', caplog)
     assert "runmode" in validated_conf
     assert validated_conf['runmode'] == RunMode.DRY_RUN
 
@@ -154,10 +183,9 @@ def test_load_config_file_exception(mocker) -> None:
         'freqtrade.configuration.configuration.open',
         MagicMock(side_effect=FileNotFoundError('File not found'))
     )
-    configuration = Configuration(Namespace())
 
     with pytest.raises(OperationalException, match=r'.*Config file "somefile" not found!*'):
-        configuration._load_config_file('somefile')
+        load_config_file('somefile')
 
 
 def test_load_config(default_conf, mocker) -> None:
@@ -282,8 +310,8 @@ def test_show_info(default_conf, mocker, caplog) -> None:
     configuration = Configuration(args)
     configuration.get_config()
 
-    assert log_has('Using DB: "sqlite:///tmp/testdb"', caplog.record_tuples)
-    assert log_has('Dry run is enabled', caplog.record_tuples)
+    assert log_has('Using DB: "sqlite:///tmp/testdb"', caplog)
+    assert log_has('Dry run is enabled', caplog)
 
 
 def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> None:
@@ -305,40 +333,39 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'exchange' in config
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
-    assert log_has(
-        'Using data directory: {} ...'.format(config['datadir']),
-        caplog.record_tuples
-    )
+    assert 'user_data_dir' in config
+    assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
     assert 'ticker_interval' in config
-    assert not log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
-
-    assert 'live' not in config
-    assert not log_has('Parameter -l/--live detected ...', caplog.record_tuples)
+    assert not log_has('Parameter -i/--ticker-interval detected ...', caplog)
 
     assert 'position_stacking' not in config
-    assert not log_has('Parameter --enable-position-stacking detected ...', caplog.record_tuples)
+    assert not log_has('Parameter --enable-position-stacking detected ...', caplog)
 
     assert 'refresh_pairs' not in config
-    assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
+    assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
 
     assert 'timerange' not in config
     assert 'export' not in config
 
 
+@pytest.mark.filterwarnings("ignore:DEPRECATED")
 def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch(
         'freqtrade.configuration.configuration.create_datadir',
         lambda c, x: x
     )
-
+    mocker.patch(
+        'freqtrade.configuration.configuration.create_userdata_dir',
+        lambda x, *args, **kwargs: Path(x)
+    )
     arglist = [
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
         '--datadir', '/foo/bar',
+        '--userdir', "/tmp/freqtrade",
         'backtesting',
         '--ticker-interval', '1m',
-        '--live',
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--refresh-pairs-cached',
@@ -356,37 +383,28 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'exchange' in config
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
-    assert log_has(
-        'Using data directory: {} ...'.format(config['datadir']),
-        caplog.record_tuples
-    )
+    assert log_has('Using data directory: {} ...'.format("/foo/bar"), caplog)
+    assert log_has('Using user-data directory: {} ...'.format("/tmp/freqtrade"), caplog)
+    assert 'user_data_dir' in config
+
     assert 'ticker_interval' in config
     assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
-                   caplog.record_tuples)
-
-    assert 'live' in config
-    assert log_has('Parameter -l/--live detected ...', caplog.record_tuples)
+                   caplog)
 
     assert 'position_stacking'in config
-    assert log_has('Parameter --enable-position-stacking detected ...', caplog.record_tuples)
+    assert log_has('Parameter --enable-position-stacking detected ...', caplog)
 
     assert 'use_max_market_positions' in config
-    assert log_has('Parameter --disable-max-market-positions detected ...', caplog.record_tuples)
-    assert log_has('max_open_trades set to unlimited ...', caplog.record_tuples)
+    assert log_has('Parameter --disable-max-market-positions detected ...', caplog)
+    assert log_has('max_open_trades set to unlimited ...', caplog)
 
     assert 'refresh_pairs'in config
-    assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
+    assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
     assert 'timerange' in config
-    assert log_has(
-        'Parameter --timerange detected: {} ...'.format(config['timerange']),
-        caplog.record_tuples
-    )
+    assert log_has('Parameter --timerange detected: {} ...'.format(config['timerange']), caplog)
 
     assert 'export' in config
-    assert log_has(
-        'Parameter --export detected: {} ...'.format(config['export']),
-        caplog.record_tuples
-    )
+    assert log_has('Parameter --export detected: {} ...'.format(config['export']), caplog)
 
 
 def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> None:
@@ -416,16 +434,13 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
     assert 'exchange' in config
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
-    assert log_has(
-        'Using data directory: {} ...'.format(config['datadir']),
-        caplog.record_tuples
-    )
+    assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
     assert 'ticker_interval' in config
     assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
-                   caplog.record_tuples)
+                   caplog)
 
     assert 'strategy_list' in config
-    assert log_has('Using strategy list of 2 Strategies', caplog.record_tuples)
+    assert log_has('Using strategy list of 2 Strategies', caplog)
 
     assert 'position_stacking' not in config
 
@@ -434,10 +449,7 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
     assert 'timerange' not in config
 
     assert 'export' in config
-    assert log_has(
-        'Parameter --export detected: {} ...'.format(config['export']),
-        caplog.record_tuples
-    )
+    assert log_has('Parameter --export detected: {} ...'.format(config['export']), caplog)
 
 
 def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
@@ -456,11 +468,11 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
     assert 'epochs' in config
     assert int(config['epochs']) == 10
     assert log_has('Parameter --epochs detected ... Will run Hyperopt with for 10 epochs ...',
-                   caplog.record_tuples)
+                   caplog)
 
     assert 'spaces' in config
     assert config['spaces'] == ['all']
-    assert log_has('Parameter -s/--spaces detected: [\'all\']', caplog.record_tuples)
+    assert log_has('Parameter -s/--spaces detected: [\'all\']', caplog)
     assert "runmode" in config
     assert config['runmode'] == RunMode.HYPEROPT
 
@@ -470,38 +482,35 @@ def test_check_exchange(default_conf, caplog) -> None:
     default_conf.get('exchange').update({'name': 'BITTREX'})
     assert check_exchange(default_conf)
     assert log_has_re(r"Exchange .* is officially supported by the Freqtrade development team\.",
-                      caplog.record_tuples)
+                      caplog)
     caplog.clear()
 
     # Test an officially supported by Freqtrade team exchange
     default_conf.get('exchange').update({'name': 'binance'})
     assert check_exchange(default_conf)
     assert log_has_re(r"Exchange .* is officially supported by the Freqtrade development team\.",
-                      caplog.record_tuples)
+                      caplog)
     caplog.clear()
 
     # Test an available exchange, supported by ccxt
     default_conf.get('exchange').update({'name': 'kraken'})
     assert check_exchange(default_conf)
     assert log_has_re(r"Exchange .* is supported by ccxt and .* not officially supported "
-                      r"by the Freqtrade development team\. .*",
-                      caplog.record_tuples)
+                      r"by the Freqtrade development team\. .*", caplog)
     caplog.clear()
 
     # Test a 'bad' exchange, which known to have serious problems
     default_conf.get('exchange').update({'name': 'bitmex'})
-    assert not check_exchange(default_conf)
-    assert log_has_re(r"Exchange .* is known to not work with the bot yet\. "
-                      r"Use it only for development and testing purposes\.",
-                      caplog.record_tuples)
+    with pytest.raises(OperationalException,
+                       match=r"Exchange .* is known to not work with the bot yet.*"):
+        check_exchange(default_conf)
     caplog.clear()
 
     # Test a 'bad' exchange with check_for_bad=False
     default_conf.get('exchange').update({'name': 'bitmex'})
     assert check_exchange(default_conf, False)
     assert log_has_re(r"Exchange .* is supported by ccxt and .* not officially supported "
-                      r"by the Freqtrade development team\. .*",
-                      caplog.record_tuples)
+                      r"by the Freqtrade development team\. .*", caplog)
     caplog.clear()
 
     # Test an invalid exchange
@@ -527,7 +536,7 @@ def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
     validated_conf = configuration.load_config()
 
     assert validated_conf.get('verbosity') == 3
-    assert log_has('Verbosity set to 3', caplog.record_tuples)
+    assert log_has('Verbosity set to 3', caplog)
 
 
 def test_set_loggers() -> None:
@@ -593,7 +602,7 @@ def test_load_config_warn_forcebuy(default_conf, mocker, caplog) -> None:
     validated_conf = configuration.load_config()
 
     assert validated_conf.get('forcebuy_enable')
-    assert log_has('`forcebuy` RPC message enabled.', caplog.record_tuples)
+    assert log_has('`forcebuy` RPC message enabled.', caplog)
 
 
 def test_validate_default_conf(default_conf) -> None:
@@ -606,10 +615,45 @@ def test_create_datadir(mocker, default_conf, caplog) -> None:
 
     create_datadir(default_conf, '/foo/bar')
     assert md.call_args[1]['parents'] is True
-    assert log_has('Created data directory: /foo/bar', caplog.record_tuples)
+    assert log_has('Created data directory: /foo/bar', caplog)
+
+
+def test_create_userdata_dir(mocker, default_conf, caplog) -> None:
+    mocker.patch.object(Path, "is_dir", MagicMock(return_value=False))
+    md = mocker.patch.object(Path, 'mkdir', MagicMock())
+
+    x = create_userdata_dir('/tmp/bar', create_dir=True)
+    assert md.call_count == 7
+    assert md.call_args[1]['parents'] is False
+    assert log_has('Created user-data directory: /tmp/bar', caplog)
+    assert isinstance(x, Path)
+    assert str(x) == "/tmp/bar"
+
+
+def test_create_userdata_dir_exists(mocker, default_conf, caplog) -> None:
+    mocker.patch.object(Path, "is_dir", MagicMock(return_value=True))
+    md = mocker.patch.object(Path, 'mkdir', MagicMock())
+
+    create_userdata_dir('/tmp/bar')
+    assert md.call_count == 0
+
+
+def test_create_userdata_dir_exists_exception(mocker, default_conf, caplog) -> None:
+    mocker.patch.object(Path, "is_dir", MagicMock(return_value=False))
+    md = mocker.patch.object(Path, 'mkdir', MagicMock())
+
+    with pytest.raises(OperationalException, match=r'Directory `/tmp/bar` does not exist.*'):
+        create_userdata_dir('/tmp/bar',  create_dir=False)
+    assert md.call_count == 0
 
 
 def test_validate_tsl(default_conf):
+    default_conf['stoploss'] = 0.0
+    with pytest.raises(OperationalException, match='The config stoploss needs to be different '
+                                                   'from 0 to avoid problems with sell orders.'):
+        validate_config_consistency(default_conf)
+    default_conf['stoploss'] = -0.10
+
     default_conf['trailing_stop'] = True
     default_conf['trailing_stop_positive'] = 0
     default_conf['trailing_stop_positive_offset'] = 0
@@ -618,21 +662,54 @@ def test_validate_tsl(default_conf):
     with pytest.raises(OperationalException,
                        match=r'The config trailing_only_offset_is_reached needs '
                        'trailing_stop_positive_offset to be more than 0 in your config.'):
-        configuration = Configuration(Namespace())
-        configuration._validate_config_consistency(default_conf)
+        validate_config_consistency(default_conf)
 
     default_conf['trailing_stop_positive_offset'] = 0.01
     default_conf['trailing_stop_positive'] = 0.015
     with pytest.raises(OperationalException,
                        match=r'The config trailing_stop_positive_offset needs '
-                       'to be greater than trailing_stop_positive_offset in your config.'):
-        configuration = Configuration(Namespace())
-        configuration._validate_config_consistency(default_conf)
+                       'to be greater than trailing_stop_positive in your config.'):
+        validate_config_consistency(default_conf)
 
     default_conf['trailing_stop_positive'] = 0.01
     default_conf['trailing_stop_positive_offset'] = 0.015
-    Configuration(Namespace())
-    configuration._validate_config_consistency(default_conf)
+    validate_config_consistency(default_conf)
+
+    # 0 trailing stop positive - results in "Order would trigger immediately"
+    default_conf['trailing_stop_positive'] = 0
+    default_conf['trailing_stop_positive_offset'] = 0.02
+    default_conf['trailing_only_offset_is_reached'] = False
+    with pytest.raises(OperationalException,
+                       match='The config trailing_stop_positive needs to be different from 0 '
+                       'to avoid problems with sell orders'):
+        validate_config_consistency(default_conf)
+
+
+def test_validate_edge(edge_conf):
+    edge_conf.update({"pairlist": {
+        "method": "VolumePairList",
+    }})
+
+    with pytest.raises(OperationalException,
+                       match="Edge and VolumePairList are incompatible, "
+                       "Edge will override whatever pairs VolumePairlist selects."):
+        validate_config_consistency(edge_conf)
+
+    edge_conf.update({"pairlist": {
+        "method": "StaticPairList",
+    }})
+    validate_config_consistency(edge_conf)
+
+
+def test_load_config_test_comments() -> None:
+    """
+    Load config with comments
+    """
+    config_file = Path(__file__).parents[0] / "config_test_comments.json"
+    print(config_file)
+    conf = load_config_file(str(config_file))
+
+    assert conf
 
 
 def test_load_config_default_exchange(all_conf) -> None:
@@ -686,3 +763,111 @@ def test_load_config_default_subkeys(all_conf, keys) -> None:
     validate_config_schema(all_conf)
     assert subkey in all_conf[key]
     assert all_conf[key][subkey] == keys[2]
+
+
+def test_pairlist_resolving():
+    arglist = [
+        'download-data',
+        '--pairs', 'ETH/BTC', 'XRP/BTC',
+        '--exchange', 'binance'
+    ]
+
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+
+    assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
+    assert config['exchange']['name'] == 'binance'
+
+
+def test_pairlist_resolving_with_config(mocker, default_conf):
+    patched_configuration_load_config_file(mocker, default_conf)
+    arglist = [
+        '--config', 'config.json',
+        'download-data',
+    ]
+
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+
+    assert config['pairs'] == default_conf['exchange']['pair_whitelist']
+    assert config['exchange']['name'] == default_conf['exchange']['name']
+
+    # Override pairs
+    arglist = [
+        '--config', 'config.json',
+        'download-data',
+        '--pairs', 'ETH/BTC', 'XRP/BTC',
+    ]
+
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+
+    assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
+    assert config['exchange']['name'] == default_conf['exchange']['name']
+
+
+def test_pairlist_resolving_with_config_pl(mocker, default_conf):
+    patched_configuration_load_config_file(mocker, default_conf)
+    load_mock = mocker.patch("freqtrade.configuration.configuration.json_load",
+                             MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    mocker.patch.object(Path, "open", MagicMock(return_value=MagicMock()))
+
+    arglist = [
+        '--config', 'config.json',
+        'download-data',
+        '--pairs-file', 'pairs.json',
+    ]
+
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+
+    assert load_mock.call_count == 1
+    assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
+    assert config['exchange']['name'] == default_conf['exchange']['name']
+
+
+def test_pairlist_resolving_with_config_pl_not_exists(mocker, default_conf):
+    patched_configuration_load_config_file(mocker, default_conf)
+    mocker.patch("freqtrade.configuration.configuration.json_load",
+                 MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
+    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
+
+    arglist = [
+        '--config', 'config.json',
+        'download-data',
+        '--pairs-file', 'pairs.json',
+    ]
+
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    with pytest.raises(OperationalException, match=r"No pairs file found with path.*"):
+        configuration = Configuration(args)
+        configuration.get_config()
+
+
+def test_pairlist_resolving_fallback(mocker):
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    mocker.patch.object(Path, "open", MagicMock(return_value=MagicMock()))
+    mocker.patch("freqtrade.configuration.configuration.json_load",
+                 MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
+    arglist = [
+        'download-data',
+        '--exchange', 'binance'
+    ]
+
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+
+    assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
+    assert config['exchange']['name'] == 'binance'

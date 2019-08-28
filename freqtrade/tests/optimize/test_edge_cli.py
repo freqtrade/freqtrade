@@ -3,11 +3,14 @@
 
 from unittest.mock import MagicMock
 
+import pytest
+
 from freqtrade.edge import PairInfo
 from freqtrade.optimize import setup_configuration, start_edge
 from freqtrade.optimize.edge_cli import EdgeCli
 from freqtrade.state import RunMode
-from freqtrade.tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
+from freqtrade.tests.conftest import (get_args, log_has, log_has_re,
+                                      patch_exchange,
                                       patched_configuration_load_config_file)
 
 
@@ -29,20 +32,18 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'exchange' in config
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
-    assert log_has(
-        'Using data directory: {} ...'.format(config['datadir']),
-        caplog.record_tuples
-    )
+    assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
     assert 'ticker_interval' in config
-    assert not log_has_re('Parameter -i/--ticker-interval detected .*', caplog.record_tuples)
+    assert not log_has_re('Parameter -i/--ticker-interval detected .*', caplog)
 
     assert 'refresh_pairs' not in config
-    assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
+    assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
 
     assert 'timerange' not in config
     assert 'stoploss_range' not in config
 
 
+@pytest.mark.filterwarnings("ignore:DEPRECATED")
 def test_setup_edge_configuration_with_arguments(mocker, edge_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, edge_conf)
     mocker.patch(
@@ -69,21 +70,15 @@ def test_setup_edge_configuration_with_arguments(mocker, edge_conf, caplog) -> N
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert config['runmode'] == RunMode.EDGE
-    assert log_has(
-        'Using data directory: {} ...'.format(config['datadir']),
-        caplog.record_tuples
-    )
+    assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
     assert 'ticker_interval' in config
     assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
-                   caplog.record_tuples)
+                   caplog)
 
     assert 'refresh_pairs' in config
-    assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
+    assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
     assert 'timerange' in config
-    assert log_has(
-        'Parameter --timerange detected: {} ...'.format(config['timerange']),
-        caplog.record_tuples
-    )
+    assert log_has('Parameter --timerange detected: {} ...'.format(config['timerange']), caplog)
 
 
 def test_start(mocker, fee, edge_conf, caplog) -> None:
@@ -100,10 +95,7 @@ def test_start(mocker, fee, edge_conf, caplog) -> None:
     ]
     args = get_args(args)
     start_edge(args)
-    assert log_has(
-        'Starting freqtrade in Edge mode',
-        caplog.record_tuples
-    )
+    assert log_has('Starting freqtrade in Edge mode', caplog)
     assert start_mock.call_count == 1
 
 

@@ -91,7 +91,7 @@ def test_fiat_convert_unsupported_crypto(mocker, caplog):
     mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._cryptomap', return_value=[])
     fiat_convert = CryptoToFiatConverter()
     assert fiat_convert._find_price(crypto_symbol='CRYPTO_123', fiat_symbol='EUR') == 0.0
-    assert log_has('unsupported crypto-symbol CRYPTO_123 - returning 0.0', caplog.record_tuples)
+    assert log_has('unsupported crypto-symbol CRYPTO_123 - returning 0.0', caplog)
 
 
 def test_fiat_convert_get_price(mocker):
@@ -190,7 +190,7 @@ def test_fiat_invalid_response(mocker, caplog):
     length_cryptomap = len(fiat_convert._cryptomap)
     assert length_cryptomap == 0
     assert log_has('Could not load FIAT Cryptocurrency map for the following problem: TypeError',
-                   caplog.record_tuples)
+                   caplog)
 
 
 def test_convert_amount(mocker):

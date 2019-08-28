@@ -1,0 +1,17 @@
+version: 1
+
+update_configs:
+  - package_manager: "python"
+    directory: "/"
+    update_schedule: "weekly"
+    allowed_updates:
+    - match:
+        update_type: "all"
+    target_branch: "develop"
+
+  - package_manager: "docker"
+    directory: "/"
+    update_schedule: "daily"
+    allowed_updates:
+    - match:
+        update_type: "all"

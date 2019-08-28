@@ -1,12 +1,13 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
 import os
 from datetime import datetime
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 
 import pandas as pd
 import pytest
 from arrow import Arrow
 from filelock import Timeout
+from pathlib import Path
 
 from freqtrade import DependencyException, OperationalException
 from freqtrade.data.converter import parse_ticker_dataframe
@@ -14,8 +15,7 @@ from freqtrade.data.history import load_tickerdata_file
 from freqtrade.optimize import setup_configuration, start_hyperopt
 from freqtrade.optimize.default_hyperopt import DefaultHyperOpts
 from freqtrade.optimize.default_hyperopt_loss import DefaultHyperOptLoss
-from freqtrade.optimize.hyperopt import (HYPEROPT_LOCKFILE, TICKERDATA_PICKLE,
-                                         Hyperopt)
+from freqtrade.optimize.hyperopt import Hyperopt
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver, HyperOptLossResolver
 from freqtrade.state import RunMode
 from freqtrade.strategy.interface import SellType
@@ -26,6 +26,7 @@ from freqtrade.tests.conftest import (get_args, log_has, log_has_re,
 
 @pytest.fixture(scope='function')
 def hyperopt(default_conf, mocker):
+    default_conf.update({'spaces': ['all']})
     patch_exchange(mocker)
     return Hyperopt(default_conf)
 
@@ -53,11 +54,14 @@ def create_trials(mocker, hyperopt) -> None:
       - we might have a pickle'd file so make sure that we return
         false when looking for it
     """
-    hyperopt.trials_file = os.path.join('freqtrade', 'tests', 'optimize', 'ut_trials.pickle')
+    hyperopt.trials_file = Path('freqtrade/tests/optimize/ut_trials.pickle')
 
-    mocker.patch('freqtrade.optimize.hyperopt.os.path.exists', return_value=False)
-    mocker.patch('freqtrade.optimize.hyperopt.os.path.getsize', return_value=1)
-    mocker.patch('freqtrade.optimize.hyperopt.os.remove', return_value=True)
+    mocker.patch.object(Path, "is_file", MagicMock(return_value=False))
+    stat_mock = MagicMock()
+    stat_mock.st_size = PropertyMock(return_value=1)
+    mocker.patch.object(Path, "stat", MagicMock(return_value=False))
+
+    mocker.patch.object(Path, "unlink", MagicMock(return_value=True))
     mocker.patch('freqtrade.optimize.hyperopt.dump', return_value=None)
 
     return [{'loss': 1, 'result': 'foo', 'params': {}}]
@@ -78,27 +82,22 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
     assert 'exchange' in config
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
-    assert log_has(
-        'Using data directory: {} ...'.format(config['datadir']),
-        caplog.record_tuples
-    )
+    assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
     assert 'ticker_interval' in config
-    assert not log_has_re('Parameter -i/--ticker-interval detected .*', caplog.record_tuples)
-
-    assert 'live' not in config
-    assert not log_has('Parameter -l/--live detected ...', caplog.record_tuples)
+    assert not log_has_re('Parameter -i/--ticker-interval detected .*', caplog)
 
     assert 'position_stacking' not in config
-    assert not log_has('Parameter --enable-position-stacking detected ...', caplog.record_tuples)
+    assert not log_has('Parameter --enable-position-stacking detected ...', caplog)
 
     assert 'refresh_pairs' not in config
-    assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
+    assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
 
     assert 'timerange' not in config
     assert 'runmode' in config
     assert config['runmode'] == RunMode.HYPEROPT
 
 
+@pytest.mark.filterwarnings("ignore:DEPRECATED")
 def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch(
@@ -129,41 +128,32 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
     assert 'datadir' in config
     assert config['runmode'] == RunMode.HYPEROPT
 
-    assert log_has(
-        'Using data directory: {} ...'.format(config['datadir']),
-        caplog.record_tuples
-    )
+    assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
     assert 'ticker_interval' in config
     assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
-                   caplog.record_tuples)
+                   caplog)
 
     assert 'position_stacking' in config
-    assert log_has('Parameter --enable-position-stacking detected ...', caplog.record_tuples)
+    assert log_has('Parameter --enable-position-stacking detected ...', caplog)
 
     assert 'use_max_market_positions' in config
-    assert log_has('Parameter --disable-max-market-positions detected ...', caplog.record_tuples)
-    assert log_has('max_open_trades set to unlimited ...', caplog.record_tuples)
+    assert log_has('Parameter --disable-max-market-positions detected ...', caplog)
+    assert log_has('max_open_trades set to unlimited ...', caplog)
 
     assert 'refresh_pairs' in config
-    assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
+    assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
 
     assert 'timerange' in config
-    assert log_has(
-        'Parameter --timerange detected: {} ...'.format(config['timerange']),
-        caplog.record_tuples
-    )
+    assert log_has('Parameter --timerange detected: {} ...'.format(config['timerange']), caplog)
 
     assert 'epochs' in config
     assert log_has('Parameter --epochs detected ... Will run Hyperopt with for 1000 epochs ...',
-                   caplog.record_tuples)
+                   caplog)
 
     assert 'spaces' in config
-    assert log_has(
-        'Parameter -s/--spaces detected: {}'.format(config['spaces']),
-        caplog.record_tuples
-    )
+    assert log_has('Parameter -s/--spaces detected: {}'.format(config['spaces']), caplog)
     assert 'print_all' in config
-    assert log_has('Parameter --print-all detected ...', caplog.record_tuples)
+    assert log_has('Parameter --print-all detected ...', caplog)
 
 
 def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
@@ -180,9 +170,9 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
     assert not hasattr(x, 'populate_buy_trend')
     assert not hasattr(x, 'populate_sell_trend')
     assert log_has("Custom Hyperopt does not provide populate_sell_trend. "
-                   "Using populate_sell_trend from DefaultStrategy.", caplog.record_tuples)
+                   "Using populate_sell_trend from DefaultStrategy.", caplog)
     assert log_has("Custom Hyperopt does not provide populate_buy_trend. "
-                   "Using populate_buy_trend from DefaultStrategy.", caplog.record_tuples)
+                   "Using populate_buy_trend from DefaultStrategy.", caplog)
     assert hasattr(x, "ticker_interval")
 
 
@@ -228,10 +218,7 @@ def test_start(mocker, default_conf, caplog) -> None:
     import pprint
     pprint.pprint(caplog.record_tuples)
 
-    assert log_has(
-        'Starting freqtrade in Hyperopt mode',
-        caplog.record_tuples
-    )
+    assert log_has('Starting freqtrade in Hyperopt mode', caplog)
     assert start_mock.call_count == 1
 
 
@@ -256,7 +243,7 @@ def test_start_no_data(mocker, default_conf, caplog) -> None:
     import pprint
     pprint.pprint(caplog.record_tuples)
 
-    assert log_has('No data found. Terminating.', caplog.record_tuples)
+    assert log_has('No data found. Terminating.', caplog)
 
 
 def test_start_failure(mocker, default_conf, caplog) -> None:
@@ -274,14 +261,11 @@ def test_start_failure(mocker, default_conf, caplog) -> None:
     args = get_args(args)
     with pytest.raises(DependencyException):
         start_hyperopt(args)
-    assert log_has(
-        "Please don't use --strategy for hyperopt.",
-        caplog.record_tuples
-    )
+    assert log_has("Please don't use --strategy for hyperopt.", caplog)
 
 
 def test_start_filelock(mocker, default_conf, caplog) -> None:
-    start_mock = MagicMock(side_effect=Timeout(HYPEROPT_LOCKFILE))
+    start_mock = MagicMock(side_effect=Timeout(Hyperopt.get_lock_filename(default_conf)))
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.start', start_mock)
     patch_exchange(mocker)
@@ -293,10 +277,7 @@ def test_start_filelock(mocker, default_conf, caplog) -> None:
     ]
     args = get_args(args)
     start_hyperopt(args)
-    assert log_has(
-        "Another running instance of freqtrade Hyperopt detected.",
-        caplog.record_tuples
-    )
+    assert log_has("Another running instance of freqtrade Hyperopt detected.", caplog)
 
 
 def test_loss_calculation_prefer_correct_trade_count(default_conf, hyperopt_results) -> None:
@@ -370,13 +351,13 @@ def test_onlyprofit_loss_prefers_higher_profits(default_conf, hyperopt_results) 
 
 def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
     hyperopt.current_best_loss = 2
+    hyperopt.total_epochs = 2
     hyperopt.log_results(
         {
             'loss': 1,
-            'current_tries': 1,
-            'total_tries': 2,
-            'result': 'foo.',
-            'initial_point': False
+            'current_epoch': 1,
+            'results_explanation': 'foo.',
+            'is_initial_point': False
         }
     )
     out, err = capsys.readouterr()
@@ -400,10 +381,7 @@ def test_save_trials_saves_trials(mocker, hyperopt, caplog) -> None:
     hyperopt.save_trials()
 
     trials_file = os.path.join('freqtrade', 'tests', 'optimize', 'ut_trials.pickle')
-    assert log_has(
-        'Saving 1 evaluations to \'{}\''.format(trials_file),
-        caplog.record_tuples
-    )
+    assert log_has('Saving 1 evaluations to \'{}\''.format(trials_file), caplog)
     mock_dump.assert_called_once()
 
 
@@ -412,10 +390,7 @@ def test_read_trials_returns_trials_file(mocker, hyperopt, caplog) -> None:
     mock_load = mocker.patch('freqtrade.optimize.hyperopt.load', return_value=trials)
     hyperopt_trial = hyperopt.read_trials()
     trials_file = os.path.join('freqtrade', 'tests', 'optimize', 'ut_trials.pickle')
-    assert log_has(
-        'Reading Trials from \'{}\''.format(trials_file),
-        caplog.record_tuples
-    )
+    assert log_has('Reading Trials from \'{}\''.format(trials_file), caplog)
     assert hyperopt_trial == trials
     mock_load.assert_called_once()
 
@@ -433,7 +408,7 @@ def test_roi_table_generation(hyperopt) -> None:
     assert hyperopt.custom_hyperopt.generate_roi_table(params) == {0: 6, 15: 3, 25: 1, 30: 0}
 
 
-def test_start_calls_optimizer(mocker, default_conf, caplog) -> None:
+def test_start_calls_optimizer(mocker, default_conf, caplog, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
     mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
     mocker.patch(
@@ -443,7 +418,7 @@ def test_start_calls_optimizer(mocker, default_conf, caplog) -> None:
 
     parallel = mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
-        MagicMock(return_value=[{'loss': 1, 'result': 'foo result', 'params': {}}])
+        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {}}])
     )
     patch_exchange(mocker)
 
@@ -454,16 +429,20 @@ def test_start_calls_optimizer(mocker, default_conf, caplog) -> None:
                          'hyperopt_jobs': 1, })
 
     hyperopt = Hyperopt(default_conf)
-    hyperopt.strategy.tickerdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.tickerdata_to_dataframe = MagicMock()
+    hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     hyperopt.start()
+
     parallel.assert_called_once()
-    assert log_has('Best result:\nfoo result\nwith values:\n', caplog.record_tuples)
+
+    out, err = capsys.readouterr()
+    assert 'Best result:\n\n*    1/1: foo result Objective: 1.00000\n' in out
     assert dumper.called
     # Should be called twice, once for tickerdata, once to save evaluations
     assert dumper.call_count == 2
-    assert hasattr(hyperopt, "advise_sell")
-    assert hasattr(hyperopt, "advise_buy")
+    assert hasattr(hyperopt.backtesting, "advise_sell")
+    assert hasattr(hyperopt.backtesting, "advise_buy")
     assert hasattr(hyperopt, "max_open_trades")
     assert hyperopt.max_open_trades == default_conf['max_open_trades']
     assert hasattr(hyperopt, "position_stacking")
@@ -509,7 +488,7 @@ def test_populate_indicators(hyperopt) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
                                                          fill_missing=True)}
-    dataframes = hyperopt.strategy.tickerdata_to_dataframe(tickerlist)
+    dataframes = hyperopt.backtesting.strategy.tickerdata_to_dataframe(tickerlist)
     dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
                                                              {'pair': 'UNITTEST/BTC'})
 
@@ -523,7 +502,7 @@ def test_buy_strategy_generator(hyperopt) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
                                                          fill_missing=True)}
-    dataframes = hyperopt.strategy.tickerdata_to_dataframe(tickerlist)
+    dataframes = hyperopt.backtesting.strategy.tickerdata_to_dataframe(tickerlist)
     dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
                                                              {'pair': 'UNITTEST/BTC'})
 
@@ -559,7 +538,7 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     backtest_result = pd.DataFrame.from_records(trades, columns=labels)
 
     mocker.patch(
-        'freqtrade.optimize.hyperopt.Hyperopt.backtest',
+        'freqtrade.optimize.hyperopt.Backtesting.backtest',
         MagicMock(return_value=backtest_result)
     )
     mocker.patch(
@@ -598,9 +577,10 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     }
     response_expected = {
         'loss': 1.9840569076926293,
-        'result': '     1 trades. Avg profit  2.31%. Total profit  0.00023300 BTC '
-                  '(   2.31Σ%). Avg duration 100.0 mins.',
-        'params': optimizer_param
+        'results_explanation': '     1 trades. Avg profit  2.31%. Total profit  0.00023300 BTC '
+                               '(   2.31Σ%). Avg duration 100.0 mins.',
+        'params': optimizer_param,
+        'total_profit': 0.00023300
     }
 
     hyperopt = Hyperopt(default_conf)
@@ -618,10 +598,10 @@ def test_clean_hyperopt(mocker, default_conf, caplog):
                          })
     mocker.patch("freqtrade.optimize.hyperopt.Path.is_file", MagicMock(return_value=True))
     unlinkmock = mocker.patch("freqtrade.optimize.hyperopt.Path.unlink", MagicMock())
-    Hyperopt(default_conf)
+    h = Hyperopt(default_conf)
 
     assert unlinkmock.call_count == 2
-    assert log_has(f"Removing `{TICKERDATA_PICKLE}`.", caplog.record_tuples)
+    assert log_has(f"Removing `{h.tickerdata_pickle}`.", caplog)
 
 
 def test_continue_hyperopt(mocker, default_conf, caplog):
@@ -638,4 +618,78 @@ def test_continue_hyperopt(mocker, default_conf, caplog):
     Hyperopt(default_conf)
 
     assert unlinkmock.call_count == 0
-    assert log_has(f"Continuing on previous hyperopt results.", caplog.record_tuples)
+    assert log_has(f"Continuing on previous hyperopt results.", caplog)
+
+
+def test_print_json_spaces_all(mocker, default_conf, caplog, capsys) -> None:
+    dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
+    mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
+    mocker.patch(
+        'freqtrade.optimize.hyperopt.get_timeframe',
+        MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
+    )
+
+    parallel = mocker.patch(
+        'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
+        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {}}])
+    )
+    patch_exchange(mocker)
+
+    default_conf.update({'config': 'config.json.example',
+                         'epochs': 1,
+                         'timerange': None,
+                         'spaces': 'all',
+                         'hyperopt_jobs': 1,
+                         'print_json': True,
+                         })
+
+    hyperopt = Hyperopt(default_conf)
+    hyperopt.backtesting.strategy.tickerdata_to_dataframe = MagicMock()
+    hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
+
+    hyperopt.start()
+
+    parallel.assert_called_once()
+
+    out, err = capsys.readouterr()
+    assert '{"params":{"mfi-value":null,"fastd-value":null,"adx-value":null,"rsi-value":null,"mfi-enabled":null,"fastd-enabled":null,"adx-enabled":null,"rsi-enabled":null,"trigger":null,"sell-mfi-value":null,"sell-fastd-value":null,"sell-adx-value":null,"sell-rsi-value":null,"sell-mfi-enabled":null,"sell-fastd-enabled":null,"sell-adx-enabled":null,"sell-rsi-enabled":null,"sell-trigger":null},"minimal_roi":{},"stoploss":null}' in out  # noqa: E501
+    assert dumper.called
+    # Should be called twice, once for tickerdata, once to save evaluations
+    assert dumper.call_count == 2
+
+
+def test_print_json_spaces_roi_stoploss(mocker, default_conf, caplog, capsys) -> None:
+    dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
+    mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
+    mocker.patch(
+        'freqtrade.optimize.hyperopt.get_timeframe',
+        MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
+    )
+
+    parallel = mocker.patch(
+        'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
+        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {}}])
+    )
+    patch_exchange(mocker)
+
+    default_conf.update({'config': 'config.json.example',
+                         'epochs': 1,
+                         'timerange': None,
+                         'spaces': 'roi stoploss',
+                         'hyperopt_jobs': 1,
+                         'print_json': True,
+                         })
+
+    hyperopt = Hyperopt(default_conf)
+    hyperopt.backtesting.strategy.tickerdata_to_dataframe = MagicMock()
+    hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
+
+    hyperopt.start()
+
+    parallel.assert_called_once()
+
+    out, err = capsys.readouterr()
+    assert '{"minimal_roi":{},"stoploss":null}' in out
+    assert dumper.called
+    # Should be called twice, once for tickerdata, once to save evaluations
+    assert dumper.call_count == 2
