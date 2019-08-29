@@ -1314,6 +1314,54 @@ async def test___async_get_candle_history_sort(default_conf, mocker, exchange_na
     assert ticks[9][5] == 2.31452783
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+async def test__async_fetch_trades(default_conf, mocker, caplog, exchange_name,
+                                   trades_history):
+
+    caplog.set_level(logging.DEBUG)
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    # Monkey-patch async function
+    exchange._api_async.fetch_trades = get_mock_coro(trades_history)
+
+    pair = 'ETH/BTC'
+    res = await exchange._async_fetch_trades(pair, since=None, params=None)
+    assert type(res) is list
+    assert isinstance(res[0], dict)
+    assert isinstance(res[1], dict)
+
+    assert exchange._api_async.fetch_trades.call_count == 1
+    assert exchange._api_async.fetch_trades.call_args[0][0] == pair
+    assert exchange._api_async.fetch_trades.call_args[1]['limit'] == 1000
+
+    assert log_has_re(f"Fetching trades for pair {pair}, since .*", caplog)
+    caplog.clear()
+    exchange._api_async.fetch_trades.reset_mock()
+    res = await exchange._async_fetch_trades(pair, since=None, params={'from': '123'})
+    assert exchange._api_async.fetch_trades.call_count == 1
+    assert exchange._api_async.fetch_trades.call_args[0][0] == pair
+    assert exchange._api_async.fetch_trades.call_args[1]['limit'] == 1000
+    assert exchange._api_async.fetch_trades.call_args[1]['params'] == {'from': '123'}
+    assert log_has_re(f"Fetching trades for pair {pair}, params: .*", caplog)
+
+    exchange = Exchange(default_conf)
+    await async_ccxt_exception(mocker, default_conf, MagicMock(),
+                               "_async_fetch_trades", "fetch_trades",
+                               pair='ABCD/BTC', since=None)
+
+    api_mock = MagicMock()
+    with pytest.raises(OperationalException, match=r'Could not fetch trade data*'):
+        api_mock.fetch_trades = MagicMock(side_effect=ccxt.BaseError("Unknown error"))
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+        await exchange._async_fetch_trades(pair, since=(arrow.utcnow().timestamp - 2000) * 1000)
+
+    with pytest.raises(OperationalException, match=r'Exchange.* does not support fetching '
+                                                   r'historical trade data\..*'):
+        api_mock.fetch_trades = MagicMock(side_effect=ccxt.NotSupported("Not supported"))
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+        await exchange._async_fetch_trades(pair, since=(arrow.utcnow().timestamp - 2000) * 1000)
+
+
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = True
