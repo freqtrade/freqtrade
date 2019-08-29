@@ -871,3 +871,4 @@ def test_pairlist_resolving_fallback(mocker):
 
     assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
     assert config['exchange']['name'] == 'binance'
+    assert config['datadir'] == str(Path.cwd() / "user_data/data/binance")
