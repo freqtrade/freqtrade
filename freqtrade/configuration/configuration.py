@@ -4,6 +4,7 @@ This module contains the configuration class
 import logging
 import warnings
 from argparse import Namespace
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
@@ -56,7 +57,7 @@ class Configuration(object):
         config: Dict[str, Any] = {}
 
         if not files:
-            return constants.MINIMAL_CONFIG.copy()
+            return deepcopy(constants.MINIMAL_CONFIG)
 
         # We expect here a list of config filenames
         for path in files:
