@@ -86,7 +86,7 @@ def load_trades_file(datadir: Optional[Path], pair: str,
                      timerange: Optional[TimeRange] = None) -> List[Dict]:
     """
     Load a pair from file, either .json.gz or .json
-    :return: tickerlist or empty list if unsuccesful
+    :return: tradelist or empty list if unsuccesful
     """
     filename = pair_trades_filename(datadir, pair)
     tradesdata = misc.file_load_json(filename)
@@ -373,11 +373,10 @@ def download_trades_history(datadir: Optional[Path],
         return False
 
 
-def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], timeframes: List[str],
-                                 datadir: Path, timerange: TimeRange,
-                                 erase=False) -> List[str]:
+def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: Path,
+                                 timerange: TimeRange, erase=False) -> List[str]:
     """
-    Refresh stored trades data .
+    Refresh stored trades data.
     Used by freqtrade download-data
     :return: Pairs not available
     """
@@ -387,7 +386,6 @@ def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], timeframe
             pairs_not_available.append(pair)
             logger.info(f"Skipping pair {pair}...")
             continue
-        # for ticker_interval in timeframes:
 
         dl_file = pair_trades_filename(datadir, pair)
         if erase and dl_file.exists():
@@ -400,6 +398,23 @@ def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], timeframe
                                 pair=pair,
                                 timerange=timerange)
     return pairs_not_available
+
+
+def convert_trades_to_ohlcv(exchange: Exchange, pairs: List[str], timeframes: List[str],
+                            datadir: Path, timerange: TimeRange, erase=False) -> None:
+    """
+    Convert stored trades data to ohlcv data
+    """
+    for pair in pairs:
+        trades = load_trades_file(datadir, pair)
+        for timeframe in timeframes:
+            ohlcv_file = pair_data_filename(datadir, pair, timeframe)
+            if erase and ohlcv_file.exists():
+                logger.info(f'Deleting existing data for pair {pair}, interval {timeframe}.')
+                ohlcv_file.unlink()
+            ohlcv = exchange.build_ohlcv(trades, timeframe)
+            # Store ohlcv
+            store_tickerdata_file(datadir, pair, timeframe, data=ohlcv)
 
 
 def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:

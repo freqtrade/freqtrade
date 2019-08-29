@@ -8,7 +8,8 @@ import arrow
 from freqtrade import OperationalException
 from freqtrade.configuration import Configuration, TimeRange
 from freqtrade.configuration.directory_operations import create_userdata_dir
-from freqtrade.data.history import (refresh_backtest_ohlcv_data,
+from freqtrade.data.history import (convert_trades_to_ohlcv,
+                                    refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
 from freqtrade.exchange import available_exchanges, ccxt_exchanges
 from freqtrade.resolvers import ExchangeResolver
@@ -96,6 +97,11 @@ def start_download_data(args: Dict[str, Any]) -> None:
                 dl_path=Path(config['datadir']), timerange=timerange, erase=config.get("erase"))
         else:
             pairs_not_available = refresh_backtest_trades_data(
+                exchange, pairs=config["pairs"], datadir=Path(config['datadir']),
+                timerange=timerange, erase=config.get("erase"))
+
+            # Convert downloaded trade data to different timeframes
+            convert_trades_to_ohlcv(
                 exchange, pairs=config["pairs"], timeframes=config["timeframes"],
                 datadir=Path(config['datadir']), timerange=timerange, erase=config.get("erase"))
 
