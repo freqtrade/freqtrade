@@ -801,8 +801,8 @@ class Exchange:
             # Fetch first elements using timebased method to get an ID to paginate on
             # Depending on the Exchange, this can introduce a drift at the start of the interval
             # of up to an hour.
-            # Binance returns the "last 1000" candles within a 1h time interval
-            # - so we will miss the first candles.
+            # e.g. Binance returns the "last 1000" candles within a 1h time interval
+            # - so we will miss the first trades.
             t = await self._async_fetch_trades(pair, since=since)
             from_id = t[-1]['id']
             trades.extend(t[:-1])

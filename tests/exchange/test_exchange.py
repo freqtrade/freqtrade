@@ -1136,6 +1136,13 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
         await exchange._async_get_candle_history(pair, "5m",
                                                  (arrow.utcnow().timestamp - 2000) * 1000)
 
+    with pytest.raises(OperationalException, match=r'Exchange.* does not support fetching '
+                                                   r'historical candlestick data\..*'):
+        api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.NotSupported("Not supported"))
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+        await exchange._async_get_candle_history(pair, "5m",
+                                                 (arrow.utcnow().timestamp - 2000) * 1000)
+
 
 @pytest.mark.asyncio
 async def test__async_get_candle_history_empty(default_conf, mocker, caplog):
