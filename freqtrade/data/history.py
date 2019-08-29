@@ -374,7 +374,7 @@ def download_trades_history(datadir: Optional[Path],
 
 
 def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], timeframes: List[str],
-                                 dl_path: Path, timerange: TimeRange,
+                                 datadir: Path, timerange: TimeRange,
                                  erase=False) -> List[str]:
     """
     Refresh stored trades data .
@@ -389,14 +389,14 @@ def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], timeframe
             continue
         # for ticker_interval in timeframes:
 
-        dl_file = pair_trades_filename(dl_path, pair)
+        dl_file = pair_trades_filename(datadir, pair)
         if erase and dl_file.exists():
             logger.info(
                 f'Deleting existing data for pair {pair}.')
             dl_file.unlink()
 
         logger.info(f'Downloading trades for pair {pair}.')
-        download_trades_history(datadir=dl_path, exchange=exchange,
+        download_trades_history(datadir=datadir, exchange=exchange,
                                 pair=pair,
                                 timerange=timerange)
     return pairs_not_available

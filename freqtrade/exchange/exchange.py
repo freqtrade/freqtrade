@@ -997,8 +997,7 @@ class Exchange:
             raise OperationalException(e) from e
 
     def build_ohlcv(self, trades: List[Dict], timeframe: str, since: int = None,
-                    limit: int = None) -> str:
-        # TODO: fix return value
+                    limit: int = None) -> List:
         """
         Build ohlcv data from trade list.
         trade-list has to be in the ccxt format, which is a list of dicts containing at least:
