@@ -364,6 +364,7 @@ def download_trades_history(datadir: Optional[Path],
         logger.debug("New Start: %s", trades[0]['datetime'])
         logger.debug("New End: %s", trades[-1]['datetime'])
         logger.info(f"New Amount of trades: {len(trades)}")
+        return True
 
     except Exception as e:
         logger.error(
