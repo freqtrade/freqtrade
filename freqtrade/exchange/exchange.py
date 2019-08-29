@@ -780,8 +780,8 @@ class Exchange:
             raise OperationalException(f'Could not fetch trade data. Msg: {e}') from e
 
     async def _async_get_trade_history_id(self, pair: str,
+                                          until: int,
                                           since: Optional[int] = None,
-                                          until: Optional[int] = None,
                                           from_id: Optional[str] = None) -> Tuple[str, List[Dict]]:
         """
         Asyncronously gets trade history using fetch_trades
@@ -812,12 +812,12 @@ class Exchange:
             if len(t):
                 # Skip last id since its the key for the next call
                 trades.extend(t[:-1])
-                if from_id == t[-1]['id'] or (until and t[-1]['timestamp'] > until):
+                if from_id == t[-1]['id'] or t[-1]['timestamp'] > until:
                     logger.debug(f"Stopping because from_id did not change. "
                                  f"Reached {t[-1]['timestamp']} > {until}")
+                    # Reached the end of the defined-download period
                     break
 
-                # Reached the end of the defined-download period
                 from_id = t[-1]['id']
             else:
                 break
@@ -845,6 +845,8 @@ class Exchange:
                 trades.extend(t)
                 # Reached the end of the defined-download period
                 if until and t[-1]['timestamp'] > until:
+                    logger.debug(
+                        f"Stopping because until was reached. {t[-1]['timestamp']} > {until}")
                     break
             else:
                 break
@@ -862,14 +864,18 @@ class Exchange:
             # TODO: Maybe don't stop the bot ... ?
             raise OperationalException("This exchange does not suport downloading Trades.")
         try:
-            if not until:
-                # Current milliseconds
-                until = ccxt.Exchange.milliseconds()
             if self._trades_pagination == 'time':
-                return await self._async_get_trade_history_time(pair=pair, since=since, until=until)
+                return await self._async_get_trade_history_time(
+                    pair=pair, since=since,
+                    until=until or ccxt.Exchange.milliseconds())
             elif self._trades_pagination == 'id':
-                return await self._async_get_trade_history_id(pair=pair, since=since,
-                                                              until=until, from_id=from_id)
+                return await self._async_get_trade_history_id(
+                    pair=pair, since=since,
+                    until=until or ccxt.Exchange.milliseconds(), from_id=from_id
+                )
+            else:
+                raise OperationalException(f"Exchange {self.name} does use neither time, "
+                                           f"nor id based pagination")
 
         except ccxt.NotSupported as e:
             raise OperationalException(
