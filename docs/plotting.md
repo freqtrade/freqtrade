@@ -12,7 +12,7 @@ pip install -U -r requirements-plot.txt
 
 ## Plot price and indicators
 
-Plot dataframe shows an interactive graph with three subplots:
+The `freqtrade plot-dataframe` subcommand shows an interactive graph with three subplots:
 
 * Main plot with candlestics and indicators following price (sma/ema)
 * Volume bars
@@ -71,10 +71,10 @@ Example:
 freqtrade plot-dataframe -p BTC/ETH
 ```
 
-The `--pairs` argument can be used to specify pairs you would like to plot.
+The `-p/--pairs` argument can be used to specify pairs you would like to plot.
 
 !!! Note
-    Generates one plot-file per pair.
+    The `freqtrade plot-dataframe` subcommand generates one plot-file per pair.
 
 Specify custom indicators.
 Use `--indicators1` for the main plot and `--indicators2` for the subplot below (if values are in a different range than prices).
@@ -116,7 +116,7 @@ freqtrade --strategy AwesomeStrategy plot-dataframe --export-filename user_data/
 
 ![plot-profit](assets/plot-profit.png)
 
-Plot profit shows an interactive graph with three plots:
+The `freqtrade plot-profit` subcommand shows an interactive graph with three plots:
 
 1) Average closing price for all pairs
 2) The summarized profit made by backtesting.
@@ -130,7 +130,7 @@ Perhaps you want an algorithm that steadily makes small profits, or one that act
 
 The third graph can be useful to spot outliers, events in pairs that cause profit spikes.
 
-Usage for the plot-profit module:
+Possible options for the `freqtrade plot-profit` subcommand:
 
 ```
 usage: freqtrade plot-profit [-h] [-p PAIRS [PAIRS ...]]
@@ -162,7 +162,7 @@ optional arguments:
 
 ```
 
-The `--pairs`  argument, can be used to limit the pairs that are considered for this calculation.
+The `-p/--pairs`  argument, can be used to limit the pairs that are considered for this calculation.
 
 Examples:
 
