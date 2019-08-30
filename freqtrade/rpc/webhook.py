@@ -43,7 +43,9 @@ class Webhook(RPC):
                 valuedict = self._config['webhook'].get('webhookbuy', None)
             elif msg['type'] == RPCMessageType.SELL_NOTIFICATION:
                 valuedict = self._config['webhook'].get('webhooksell', None)
-            elif msg['type'] == RPCMessageType.STATUS_NOTIFICATION:
+            elif msg['type'] in(RPCMessageType.STATUS_NOTIFICATION,
+                                RPCMessageType.CUSTOM_NOTIFICATION,
+                                RPCMessageType.WARNING_NOTIFICATION):
                 valuedict = self._config['webhook'].get('webhookstatus', None)
             else:
                 raise NotImplementedError('Unknown message type: {}'.format(msg['type']))
