@@ -45,7 +45,7 @@ setup(name='freqtrade',
       tests_require=['pytest', 'pytest-mock', 'pytest-cov'],
       install_requires=[
           # from requirements-common.txt
-          'ccxt>=1.18',
+          'ccxt>=1.18.1080',
           'SQLAlchemy',
           'python-telegram-bot',
           'arrow',
@@ -76,7 +76,7 @@ setup(name='freqtrade',
           'plot': plot,
           'all': all_extra,
           'jupyter': jupyter,
-          
+
       },
       include_package_data=True,
       zip_safe=False,

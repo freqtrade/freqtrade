@@ -11,7 +11,7 @@ class DependencyException(Exception):
 
 class OperationalException(Exception):
     """
-    Requires manual intervention.
+    Requires manual intervention and will usually stop the bot.
     This happens when an exchange returns an unexpected error during runtime
     or given configuration is invalid.
     """

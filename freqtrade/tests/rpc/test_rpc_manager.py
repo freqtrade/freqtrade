@@ -115,6 +115,22 @@ def test_init_webhook_enabled(mocker, default_conf, caplog) -> None:
     assert 'webhook' in [mod.name for mod in rpc_manager.registered_modules]
 
 
+def test_send_msg_webhook_CustomMessagetype(mocker, default_conf, caplog) -> None:
+    caplog.set_level(logging.DEBUG)
+    default_conf['telegram']['enabled'] = False
+    default_conf['webhook'] = {'enabled': True, 'url': "https://DEADBEEF.com"}
+    mocker.patch('freqtrade.rpc.webhook.Webhook.send_msg',
+                 MagicMock(side_effect=NotImplementedError))
+    rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
+
+    assert 'webhook' in [mod.name for mod in rpc_manager.registered_modules]
+    rpc_manager.send_msg({'type': RPCMessageType.CUSTOM_NOTIFICATION,
+                          'status': 'TestMessage'})
+    assert log_has(
+        "Message type RPCMessageType.CUSTOM_NOTIFICATION not implemented by handler webhook.",
+        caplog)
+
+
 def test_startupmessages_telegram_enabled(mocker, default_conf, caplog) -> None:
     telegram_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())

@@ -24,7 +24,7 @@ strategy file will be updated on Github. Put your custom strategy file
 into the directory `user_data/strategies`.
 
 Best copy the test-strategy and modify this copy to avoid having bot-updates override your changes.
-`cp  user_data/strategies/test_strategy.py user_data/strategies/awesome-strategy.py`
+`cp  user_data/strategies/sample_strategy.py user_data/strategies/awesome-strategy.py`
 
 ### Anatomy of a strategy
 
@@ -36,14 +36,19 @@ A strategy file contains all the information needed to build a good strategy:
 - Minimal ROI recommended
 - Stoploss strongly recommended
 
-The bot also include a sample strategy called `TestStrategy` you can update: `user_data/strategies/test_strategy.py`.
-You can test it with the parameter: `--strategy TestStrategy`
+The bot also include a sample strategy called `SampleStrategy` you can update: `user_data/strategies/sample_strategy.py`.
+You can test it with the parameter: `--strategy SampleStrategy`
+
+Additionally, there is an attribute called `INTERFACE_VERSION`, which defines the version of the strategy interface the bot should use.
+The current version is 2 - which is also the default when it's not set explicitly in the strategy.
+
+Future versions will require this to be set.
 
 ```bash
 freqtrade --strategy AwesomeStrategy
 ```
 
-**For the following section we will use the [user_data/strategies/test_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py)
+**For the following section we will use the [user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/sample_strategy.py)
 file as reference.**
 
 !!! Note Strategies and Backtesting
@@ -109,9 +114,8 @@ def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame
     return dataframe
 ```
 
-
 !!! Note "Want more indicator examples?"
-    Look into the [user_data/strategies/test_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py).<br/>
+    Look into the [user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/sample_strategy.py).
     Then uncomment indicators you need.
 
 ### Buy signal rules
@@ -122,7 +126,7 @@ It's important to always return the dataframe without removing/modifying the col
 
 This will method will also define a new column, `"buy"`, which needs to contain 1 for buys, and 0 for "no action".
 
-Sample from `user_data/strategies/test_strategy.py`:
+Sample from `user_data/strategies/sample_strategy.py`:
 
 ```python
 def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -152,7 +156,7 @@ It's important to always return the dataframe without removing/modifying the col
 
 This will method will also define a new column, `"sell"`, which needs to contain 1 for sells, and 0 for "no action".
 
-Sample from `user_data/strategies/test_strategy.py`:
+Sample from `user_data/strategies/sample_strategy.py`:
 
 ```python
 def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

@@ -91,21 +91,24 @@ def test_send_msg(default_conf, mocker):
     assert (msg_mock.call_args[0][0]["value3"] ==
             default_conf["webhook"]["webhooksell"]["value3"].format(**msg))
 
-    # Test notification
-    msg = {
-        'type': RPCMessageType.STATUS_NOTIFICATION,
-        'status': 'Unfilled sell order for BTC cancelled due to timeout'
-    }
-    msg_mock = MagicMock()
-    mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
-    webhook.send_msg(msg)
-    assert msg_mock.call_count == 1
-    assert (msg_mock.call_args[0][0]["value1"] ==
-            default_conf["webhook"]["webhookstatus"]["value1"].format(**msg))
-    assert (msg_mock.call_args[0][0]["value2"] ==
-            default_conf["webhook"]["webhookstatus"]["value2"].format(**msg))
-    assert (msg_mock.call_args[0][0]["value3"] ==
-            default_conf["webhook"]["webhookstatus"]["value3"].format(**msg))
+    for msgtype in [RPCMessageType.STATUS_NOTIFICATION,
+                    RPCMessageType.WARNING_NOTIFICATION,
+                    RPCMessageType.CUSTOM_NOTIFICATION]:
+        # Test notification
+        msg = {
+            'type': msgtype,
+            'status': 'Unfilled sell order for BTC cancelled due to timeout'
+        }
+        msg_mock = MagicMock()
+        mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
+        webhook.send_msg(msg)
+        assert msg_mock.call_count == 1
+        assert (msg_mock.call_args[0][0]["value1"] ==
+                default_conf["webhook"]["webhookstatus"]["value1"].format(**msg))
+        assert (msg_mock.call_args[0][0]["value2"] ==
+                default_conf["webhook"]["webhookstatus"]["value2"].format(**msg))
+        assert (msg_mock.call_args[0][0]["value3"] ==
+                default_conf["webhook"]["webhookstatus"]["value3"].format(**msg))
 
 
 def test_exception_send_msg(default_conf, mocker, caplog):

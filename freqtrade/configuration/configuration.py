@@ -4,6 +4,7 @@ This module contains the configuration class
 import logging
 import warnings
 from argparse import Namespace
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
@@ -56,7 +57,7 @@ class Configuration(object):
         config: Dict[str, Any] = {}
 
         if not files:
-            return constants.MINIMAL_CONFIG.copy()
+            return deepcopy(constants.MINIMAL_CONFIG)
 
         # We expect here a list of config filenames
         for path in files:
@@ -160,6 +161,11 @@ class Configuration(object):
         Extract information for sys.argv and load directory configurations
         --user-data, --datadir
         """
+        # Check exchange parameter here - otherwise `datadir` might be wrong.
+        if "exchange" in self.args and self.args.exchange:
+            config['exchange']['name'] = self.args.exchange
+            logger.info(f"Using exchange {config['exchange']['name']}")
+
         if 'user_data_dir' in self.args and self.args.user_data_dir:
             config.update({'user_data_dir': self.args.user_data_dir})
         elif 'user_data_dir' not in config:
@@ -297,10 +303,6 @@ class Configuration(object):
         self._args_to_config(config, argname='days',
                              logstring='Detected --days: {}')
 
-        if "exchange" in self.args and self.args.exchange:
-            config['exchange']['name'] = self.args.exchange
-            logger.info(f"Using exchange {config['exchange']['name']}")
-
     def _process_runmode(self, config: Dict[str, Any]) -> None:
 
         if not self.runmode:
@@ -361,7 +363,7 @@ class Configuration(object):
             config['pairs'] = config.get('exchange', {}).get('pair_whitelist')
         else:
             # Fall back to /dl_path/pairs.json
-            pairs_file = Path(config['datadir']) / config['exchange']['name'].lower() / "pairs.json"
+            pairs_file = Path(config['datadir']) / "pairs.json"
             if pairs_file.exists():
                 with pairs_file.open('r') as f:
                     config['pairs'] = json_load(f)

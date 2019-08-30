@@ -11,10 +11,9 @@ import numpy  # noqa
 
 
 # This class is a sample. Feel free to customize it.
-class TestStrategy(IStrategy):
-    __test__ = False  # pytest expects to find tests here because of the name
+class SampleStrategy(IStrategy):
     """
-    This is a test strategy to inspire you.
+    This is a sample strategy to inspire you.
     More information in https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md
 
     You can:
@@ -28,6 +27,9 @@ class TestStrategy(IStrategy):
     - the prototype for the methods: minimal_roi, stoploss, populate_indicators, populate_buy_trend,
     populate_sell_trend, hyperopt_space, buy_strategy_generator
     """
+    # Strategy intervace version - allow new iterations of the strategy interface.
+    # Check the documentation or the Sample strategy to get the latest version.
+    INTERFACE_VERSION = 2
 
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi"
@@ -256,14 +258,14 @@ class TestStrategy(IStrategy):
         # Retrieve best bid and best ask
         # ------------------------------------
         """
-        # first check if dataprovider is available 
+        # first check if dataprovider is available
         if self.dp:
             if self.dp.runmode in ('live', 'dry_run'):
                 ob = self.dp.orderbook(metadata['pair'], 1)
                 dataframe['best_bid'] = ob['bids'][0][0]
                 dataframe['best_ask'] = ob['asks'][0][0]
         """
-        
+
         return dataframe
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

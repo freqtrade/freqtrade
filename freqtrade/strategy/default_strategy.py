@@ -13,6 +13,7 @@ class DefaultStrategy(IStrategy):
     Default Strategy provided by freqtrade bot.
     You can override it with your own strategy
     """
+    INTERFACE_VERSION = 2
 
     # Minimal ROI designed for the strategy
     minimal_roi = {
