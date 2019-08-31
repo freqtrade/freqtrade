@@ -1153,7 +1153,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
         side_effect=DependencyException()
     )
     freqtrade.handle_stoploss_on_exchange(trade)
-    assert log_has('Unable to place a stoploss order on exchange: ', caplog)
+    assert log_has('Unable to place a stoploss order on exchange.', caplog)
     assert trade.stoploss_order_id is None
 
     # Fifth case: get_order returns InvalidOrder

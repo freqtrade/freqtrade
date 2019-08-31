@@ -617,6 +617,26 @@ class FreqtradeBot(object):
         logger.debug('Found no sell signal for %s.', trade)
         return False
 
+    def create_stoploss_order(self, trade: Trade, stop_price: float, rate: float) -> bool:
+        """
+        Abstracts creating stoploss orders from the logic.
+        Handles errors and updates the trade database object.
+        :return: True if the order succeeded, and False in case of problems.
+        """
+        # Limit price threshold: As limit price should always be below price
+        LIMIT_PRICE_PCT = 0.99
+
+        try:
+            stoploss_order = self.exchange.stoploss_limit(pair=trade.pair, amount=trade.amount,
+                                                          stop_price=stop_price,
+                                                          rate=rate * LIMIT_PRICE_PCT)
+            trade.stoploss_order_id = str(stoploss_order['id'])
+            return True
+        except DependencyException:
+            trade.stoploss_order_id = None
+            logger.exception('Unable to place a stoploss order on exchange.')
+            return False
+
     def handle_stoploss_on_exchange(self, trade: Trade) -> bool:
         """
         Check if trade is fulfilled in which case the stoploss
@@ -638,9 +658,6 @@ class FreqtradeBot(object):
         # If trade open order id does not exist: buy order is fulfilled
         buy_order_fulfilled = not trade.open_order_id
 
-        # Limit price threshold: As limit price should always be below price
-        limit_price_pct = 0.99
-
         # If buy order is fulfilled but there is no stoploss, we add a stoploss on exchange
         if (buy_order_fulfilled and not stoploss_order):
             if self.edge:
@@ -650,34 +667,18 @@ class FreqtradeBot(object):
 
             stop_price = trade.open_rate * (1 + stoploss)
 
-            # limit price should be less than stop price.
-            limit_price = stop_price * limit_price_pct
-
-            try:
-                stoploss_order_id = self.exchange.stoploss_limit(
-                    pair=trade.pair, amount=trade.amount, stop_price=stop_price, rate=limit_price
-                )['id']
-                trade.stoploss_order_id = str(stoploss_order_id)
+            if self.create_stoploss_order(trade=trade, stop_price=stop_price, rate=stop_price):
                 trade.stoploss_last_update = datetime.now()
                 return False
 
-            except DependencyException as exception:
-                trade.stoploss_order_id = None
-                logger.warning('Unable to place a stoploss order on exchange: %s', exception)
-
         # If stoploss order is canceled for some reason we add it
         if stoploss_order and stoploss_order['status'] == 'canceled':
-            try:
-                stoploss_order_id = self.exchange.stoploss_limit(
-                    pair=trade.pair, amount=trade.amount,
-                    stop_price=trade.stop_loss, rate=trade.stop_loss * limit_price_pct
-                )['id']
-                trade.stoploss_order_id = str(stoploss_order_id)
+            if self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss,
+                                          rate=trade.stop_loss):
                 return False
-            except DependencyException as exception:
+            else:
                 trade.stoploss_order_id = None
-                logger.warning('Stoploss order was cancelled, '
-                               'but unable to recreate one: %s', exception)
+                logger.warning('Stoploss order was cancelled, but unable to recreate one.')
 
         # We check if stoploss order is fulfilled
         if stoploss_order and stoploss_order['status'] == 'closed':
@@ -720,17 +721,13 @@ class FreqtradeBot(object):
                     logger.exception(f"Could not cancel stoploss order {order['id']} "
                                      f"for pair {trade.pair}")
 
-                try:
-                    # creating the new one
-                    stoploss_order_id = self.exchange.stoploss_limit(
-                        pair=trade.pair, amount=trade.amount,
-                        stop_price=trade.stop_loss, rate=trade.stop_loss * 0.99
-                    )['id']
-                    trade.stoploss_order_id = str(stoploss_order_id)
-                except DependencyException:
-                    trade.stoploss_order_id = None
-                    logger.exception(f"Could not create trailing stoploss order "
-                                     f"for pair {trade.pair}.")
+                # Create new stoploss order
+                if self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss,
+                                              rate=trade.stop_loss):
+                    return False
+                else:
+                    logger.warning(f"Could not create trailing stoploss order "
+                                   f"for pair {trade.pair}.")
 
     def _check_and_execute_sell(self, trade: Trade, sell_rate: float,
                                 buy: bool, sell: bool) -> bool:
