@@ -40,7 +40,7 @@ ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit", "db_
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "ticker_interval"]
 
-NO_CONF_REQURIED = ["start_download_data"]
+NO_CONF_REQURIED = ["download-data", "plot-dataframe", "plot-profit"]
 
 
 class Arguments(object):
@@ -79,8 +79,7 @@ class Arguments(object):
         # (see https://bugs.python.org/issue16399)
         # Allow no-config for certain commands (like downloading / plotting)
         if (not self._no_default_config and parsed_arg.config is None
-                and not (hasattr(parsed_arg, 'func')
-                         and parsed_arg.func.__name__ in NO_CONF_REQURIED)):
+                and not ('subparser' in parsed_arg and parsed_arg.subparser in NO_CONF_REQURIED)):
             parsed_arg.config = [constants.DEFAULT_CONFIG]
 
         return parsed_arg
