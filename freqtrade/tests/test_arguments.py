@@ -163,6 +163,20 @@ def test_plot_dataframe_options() -> None:
     assert pargs.pairs == ["UNITTEST/BTC"]
 
 
+def test_plot_profit_options() -> None:
+    args = [
+        'plot-profit',
+        '-p', 'UNITTEST/BTC',
+        '--trade-source', 'DB',
+        "--db-url", "sqlite:///whatever.sqlite",
+    ]
+    pargs = Arguments(args, '').get_parsed_arg()
+
+    assert pargs.trade_source == "DB"
+    assert pargs.pairs == ["UNITTEST/BTC"]
+    assert pargs.db_url == "sqlite:///whatever.sqlite"
+
+
 def test_check_int_positive() -> None:
     assert check_int_positive("3") == 3
     assert check_int_positive("1") == 1
