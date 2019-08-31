@@ -80,7 +80,7 @@ Specify custom indicators.
 Use `--indicators1` for the main plot and `--indicators2` for the subplot below (if values are in a different range than prices).
 
 !!! tip
-    You will almost certainly want to specify a custom strategy! This can be done by adding `--strategy ClassName` to the command.
+    You will almost certainly want to specify a custom strategy! This can be done by adding `-s Classname` / `--strategy ClassName` to the command.
 
 ``` bash
 freqtrade --strategy AwesomeStrategy plot-dataframe -p BTC/ETH --indicators1 sma ema --indicators2 macd
