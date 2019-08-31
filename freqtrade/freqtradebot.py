@@ -655,15 +655,10 @@ class FreqtradeBot(object):
         except InvalidOrderException as exception:
             logger.warning('Unable to fetch stoploss order: %s', exception)
 
-        # If trade open order id does not exist: buy order is fulfilled
-        buy_order_fulfilled = not trade.open_order_id
-
         # If buy order is fulfilled but there is no stoploss, we add a stoploss on exchange
-        if (buy_order_fulfilled and not stoploss_order):
-            if self.edge:
-                stoploss = self.edge.stoploss(pair=trade.pair)
-            else:
-                stoploss = self.strategy.stoploss
+        if (not trade.open_order_id and not stoploss_order):
+
+            stoploss = self.edge.stoploss(pair=trade.pair) if self.edge else self.strategy.stoploss
 
             stop_price = trade.open_rate * (1 + stoploss)
 
