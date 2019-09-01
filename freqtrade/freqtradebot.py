@@ -641,7 +641,7 @@ class FreqtradeBot(object):
         except DependencyException:
             trade.stoploss_order_id = None
             logger.exception('Unable to place a stoploss order on exchange.')
-            return False
+        return False
 
     def handle_stoploss_on_exchange(self, trade: Trade) -> bool:
         """
