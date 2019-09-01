@@ -367,7 +367,7 @@ class Exchange(object):
     def dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                       rate: float, params: Dict = {}) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{randint(0, 10**6)}'
-        dry_order = {  # TODO: additional entry should be added for stoploss limit
+        dry_order = {
             "id": order_id,
             'pair': pair,
             'price': rate,
@@ -382,6 +382,7 @@ class Exchange(object):
             "info": {}
         }
         self._store_dry_order(dry_order)
+        # Copy order and close it - so the returned order is open unless it's a market order
         return dry_order
 
     def _store_dry_order(self, dry_order: Dict) -> None:
@@ -392,6 +393,8 @@ class Exchange(object):
                 "filled": closed_order["amount"],
                 "remaining": 0
                 })
+        if closed_order["type"] in ["stop_loss_limit"]:
+            closed_order["info"].update({"stopPrice": closed_order["price"]})
         self._dry_run_open_orders[closed_order["id"]] = closed_order
 
     def create_order(self, pair: str, ordertype: str, side: str, amount: float,
