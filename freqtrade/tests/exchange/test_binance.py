@@ -4,7 +4,8 @@ from unittest.mock import MagicMock
 import ccxt
 import pytest
 
-from freqtrade import DependencyException, OperationalException, TemporaryError
+from freqtrade import (DependencyException, InvalidOrderException,
+                       OperationalException, TemporaryError)
 from freqtrade.tests.conftest import get_patched_exchange
 
 
@@ -49,8 +50,9 @@ def test_stoploss_limit_order(default_conf, mocker):
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
         exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
 
-    with pytest.raises(DependencyException):
-        api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
+    with pytest.raises(InvalidOrderException):
+        api_mock.create_order = MagicMock(
+            side_effect=ccxt.InvalidOrder("binance Order would trigger immediately."))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
         exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
 

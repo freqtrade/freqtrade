@@ -4,7 +4,8 @@ from typing import Dict
 
 import ccxt
 
-from freqtrade import DependencyException, OperationalException, TemporaryError
+from freqtrade import (DependencyException, InvalidOrderException,
+                       OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
 
 logger = logging.getLogger(__name__)
@@ -69,7 +70,9 @@ class Binance(Exchange):
                 f'Tried to sell amount {amount} at rate {rate}.'
                 f'Message: {e}') from e
         except ccxt.InvalidOrder as e:
-            raise DependencyException(
+            # Errors:
+            # `binance Order would trigger immediately.`
+            raise InvalidOrderException(
                 f'Could not create {ordertype} sell order on market {pair}. '
                 f'Tried to sell amount {amount} at rate {rate}.'
                 f'Message: {e}') from e
