@@ -688,7 +688,7 @@ class FreqtradeBot(object):
             # Lock pair for one candle to prevent immediate rebuys
             self.strategy.lock_pair(trade.pair,
                                     timeframe_to_next_date(self.config['ticker_interval']))
-            self._notify_sell(trade)
+            self._notify_sell(trade, "stoploss")
             return True
 
         # Finally we check if stoploss on exchange should be moved up because of trailing.
@@ -904,9 +904,9 @@ class FreqtradeBot(object):
         # Lock pair for one candle to prevent immediate rebuys
         self.strategy.lock_pair(trade.pair, timeframe_to_next_date(self.config['ticker_interval']))
 
-        self._notify_sell(trade)
+        self._notify_sell(trade, ordertype)
 
-    def _notify_sell(self, trade: Trade):
+    def _notify_sell(self, trade: Trade, order_type: str):
         """
         Sends rpc notification when a sell occured.
         """
@@ -923,7 +923,7 @@ class FreqtradeBot(object):
             'pair': trade.pair,
             'gain': gain,
             'limit': trade.close_rate_requested,
-            'order_type': self.strategy.order_types['sell'],
+            'order_type': order_type,
             'amount': trade.amount,
             'open_rate': trade.open_rate,
             'current_rate': current_rate,
