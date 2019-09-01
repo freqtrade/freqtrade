@@ -881,9 +881,14 @@ class FreqtradeBot(object):
             except InvalidOrderException:
                 logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
 
+        ordertype = self.strategy.order_types[sell_type]
+        if sell_reason == SellType.EMERGENCY_SELL:
+            # Emergencysells (default to market!)
+            ordertype = self.strategy.order_types.get("emergencysell", "market")
+
         # Execute sell and update trade record
         order = self.exchange.sell(pair=str(trade.pair),
-                                   ordertype=self.strategy.order_types[sell_type],
+                                   ordertype=ordertype,
                                    amount=trade.amount, rate=limit,
                                    time_in_force=self.strategy.order_time_in_force['sell']
                                    )
