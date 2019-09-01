@@ -621,6 +621,7 @@ class FreqtradeBot(object):
         """
         Abstracts creating stoploss orders from the logic.
         Handles errors and updates the trade database object.
+        Force-sells the pair (using EmergencySell reason) in case of Problems creating the order.
         :return: True if the order succeeded, and False in case of problems.
         """
         # Limit price threshold: As limit price should always be below price
