@@ -39,6 +39,7 @@ class SellType(Enum):
     TRAILING_STOP_LOSS = "trailing_stop_loss"
     SELL_SIGNAL = "sell_signal"
     FORCE_SELL = "force_sell"
+    EMERGENCY_SELL = "emergency_sell"
     NONE = ""
 
 

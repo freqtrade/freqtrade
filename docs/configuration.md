@@ -205,6 +205,7 @@ Values set in the configuration file  overwrites values set in the strategy.
 
 If this is configured, all 4 values (`buy`, `sell`, `stoploss` and
 `stoploss_on_exchange`) need to be present, otherwise the bot will warn about it and fail to start.
+`emergencysell` is an optional value, which defaults to `market` and is used when creating stoploss on exchange orders fails.
 The below is the default which is used if this is not configured in either strategy or configuration file.
 
 Syntax for Strategy:
@@ -213,6 +214,7 @@ Syntax for Strategy:
 order_types = {
     "buy": "limit",
     "sell": "limit",
+    "emergencysell": "market",
     "stoploss": "market",
     "stoploss_on_exchange": False,
     "stoploss_on_exchange_interval": 60
@@ -225,6 +227,7 @@ Configuration:
 "order_types": {
     "buy": "limit",
     "sell": "limit",
+    "emergencysell": "market",
     "stoploss": "market",
     "stoploss_on_exchange": false,
     "stoploss_on_exchange_interval": 60

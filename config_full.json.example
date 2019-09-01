@@ -38,6 +38,7 @@
     "order_types": {
         "buy": "limit",
         "sell": "limit",
+        "emergencysell": "market",
         "stoploss": "market",
         "stoploss_on_exchange": false,
         "stoploss_on_exchange_interval": 60
