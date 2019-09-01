@@ -632,9 +632,9 @@ class FreqtradeBot(object):
                                                           rate=rate * LIMIT_PRICE_PCT)
             trade.stoploss_order_id = str(stoploss_order['id'])
             return True
-        except InvalidOrderException:
+        except InvalidOrderException as e:
             trade.stoploss_order_id = None
-            logger.exception('Unable to place a stoploss order on exchange.')
+            logger.error(f'Unable to place a stoploss order on exchange. {e}')
             logger.warning('Selling the trade forcefully')
             self.execute_sell(trade, trade.stop_loss, sell_reason=SellType.EMERGENCY_SELL)
 
