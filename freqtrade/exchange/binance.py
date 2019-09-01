@@ -67,14 +67,14 @@ class Binance(Exchange):
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
                 f'Insufficient funds to create {ordertype} sell order on market {pair}.'
-                f'Tried to sell amount {amount} at rate {rate}.'
+                f'Tried to sell amount {amount} at rate {rate}. '
                 f'Message: {e}') from e
         except ccxt.InvalidOrder as e:
             # Errors:
             # `binance Order would trigger immediately.`
             raise InvalidOrderException(
                 f'Could not create {ordertype} sell order on market {pair}. '
-                f'Tried to sell amount {amount} at rate {rate}.'
+                f'Tried to sell amount {amount} at rate {rate}. '
                 f'Message: {e}') from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
