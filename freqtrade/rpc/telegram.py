@@ -4,12 +4,12 @@
 This module manage Telegram communication
 """
 import logging
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict
 
 from tabulate import tabulate
-from telegram import Bot, ParseMode, ReplyKeyboardMarkup, Update
+from telegram import ParseMode, ReplyKeyboardMarkup, Update
 from telegram.error import NetworkError, TelegramError
-from telegram.ext import CommandHandler, Updater
+from telegram.ext import CommandHandler, Updater, CallbackContext
 
 from freqtrade.__init__ import __version__
 from freqtrade.rpc import RPC, RPCException, RPCMessageType
@@ -97,7 +97,7 @@ class Telegram(RPC):
             CommandHandler('reload_conf', self._reload_conf),
             CommandHandler('stopbuy', self._stopbuy),
             CommandHandler('whitelist', self._whitelist),
-            CommandHandler('blacklist', self._blacklist, pass_args=True),
+            CommandHandler('blacklist', self._blacklist),
             CommandHandler('edge', self._edge),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
@@ -185,11 +185,8 @@ class Telegram(RPC):
         :return: None
         """
 
-        # Check if additional parameters are passed
-        params = update.message.text.replace('/status', '').split(' ') \
-            if update.message.text else []
-        if 'table' in params:
-            self._status_table(bot, update)
+        if 'table' in context.args:
+            self._status_table(update, context)
             return
 
         try:
@@ -255,8 +252,8 @@ class Telegram(RPC):
         stake_cur = self._config['stake_currency']
         fiat_disp_cur = self._config.get('fiat_display_currency', '')
         try:
-            timescale = int(update.message.text.replace('/daily', '').strip())
-        except (TypeError, ValueError):
+            timescale = int(context.args[0])
+        except (TypeError, ValueError, IndexError):
             timescale = 7
         try:
             stats = self._rpc_daily_profit(
