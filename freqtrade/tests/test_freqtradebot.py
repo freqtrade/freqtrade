@@ -147,8 +147,7 @@ def test_order_dict_dry_run(default_conf, mocker, caplog) -> None:
     }
 
     freqtrade = FreqtradeBot(conf)
-    assert log_has("Disabling stoploss_on_exchange during dry-run.", caplog)
-    assert not freqtrade.strategy.order_types['stoploss_on_exchange']
+    assert freqtrade.strategy.order_types['stoploss_on_exchange']
 
     caplog.clear()
     # is left untouched
