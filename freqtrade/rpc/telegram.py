@@ -407,7 +407,7 @@ class Telegram(RPC):
         :return: None
         """
 
-        trade_id = update.message.text.replace('/forcesell', '').strip()
+        trade_id = context.args[0] if len(context.args) > 0 else None
         try:
             msg = self._rpc_forcesell(trade_id)
             self._send_msg('Forcesell Result: `{result}`'.format(**msg))
@@ -425,9 +425,8 @@ class Telegram(RPC):
         :return: None
         """
 
-        message = update.message.text.replace('/forcebuy', '').strip().split()
-        pair = message[0]
-        price = float(message[1]) if len(message) > 1 else None
+        pair = context.args[0]
+        price = float(context.args[1]) if len(context.args) > 1 else None
         try:
             self._rpc_forcebuy(pair, price)
         except RPCException as e:
