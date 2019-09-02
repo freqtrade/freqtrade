@@ -92,6 +92,3 @@ def start_download_data(args: Namespace) -> None:
         if pairs_not_available:
             logger.info(f"Pairs [{','.join(pairs_not_available)}] not available "
                         f"on exchange {config['exchange']['name']}.")
-
-    # configuration.resolve_pairs_list()
-    print(config)

@@ -5,6 +5,7 @@ from freqtrade import OperationalException
 from freqtrade.exchange import (available_exchanges, get_exchange_bad_reason,
                                 is_exchange_available, is_exchange_bad,
                                 is_exchange_officially_supported)
+from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,10 @@ def check_exchange(config: Dict[str, Any], check_for_bad: bool = True) -> bool:
              raises an exception if the exchange if not supported by ccxt
              and thus is not known for the Freqtrade at all.
     """
+
+    if config['runmode'] in [RunMode.PLOT] and not config.get('exchange', {}).get('name'):
+        # Skip checking exchange in plot mode, since it requires no exchange
+        return True
     logger.info("Checking exchange...")
 
     exchange = config.get('exchange', {}).get('name').lower()

@@ -9,13 +9,15 @@ from plotly.subplots import make_subplots
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import create_cum_profit, load_backtest_data
+from freqtrade.plot.plot_utils import start_plot_dataframe, start_plot_profit
 from freqtrade.plot.plotting import (add_indicators, add_profit,
+                                     analyse_and_plot_pairs,
                                      generate_candlestick_graph,
                                      generate_plot_filename,
                                      generate_profit_graph, init_plotscript,
-                                     plot_trades, store_plot_file)
+                                     plot_profit, plot_trades, store_plot_file)
 from freqtrade.strategy.default_strategy import DefaultStrategy
-from freqtrade.tests.conftest import log_has, log_has_re
+from freqtrade.tests.conftest import get_args, log_has, log_has_re
 
 
 def fig_generating_mock(fig, *args, **kwargs):
@@ -49,7 +51,6 @@ def test_init_plotscript(default_conf, mocker):
     assert "tickers" in ret
     assert "trades" in ret
     assert "pairs" in ret
-    assert "strategy" in ret
 
     default_conf['pairs'] = ["POWR/BTC", "XLM/BTC"]
     ret = init_plotscript(default_conf)
@@ -257,7 +258,11 @@ def test_generate_profit_graph():
     fig = generate_profit_graph(pairs, tickers, trades)
     assert isinstance(fig, go.Figure)
 
-    assert fig.layout.title.text == "Profit plot"
+    assert fig.layout.title.text == "Freqtrade Profit plot"
+    assert fig.layout.yaxis.title.text == "Price"
+    assert fig.layout.yaxis2.title.text == "Profit"
+    assert fig.layout.yaxis3.title.text == "Profit"
+
     figure = fig.layout.figure
     assert len(figure.data) == 4
 
@@ -270,3 +275,85 @@ def test_generate_profit_graph():
     for pair in pairs:
         profit_pair = find_trace_in_fig_data(figure.data, f"Profit {pair}")
         assert isinstance(profit_pair, go.Scattergl)
+
+
+def test_start_plot_dataframe(mocker):
+    aup = mocker.patch("freqtrade.plot.plotting.analyse_and_plot_pairs", MagicMock())
+    args = [
+        "--config", "config.json.example",
+        "plot-dataframe",
+        "--pairs", "ETH/BTC"
+    ]
+    start_plot_dataframe(get_args(args))
+
+    assert aup.call_count == 1
+    called_config = aup.call_args_list[0][0][0]
+    assert "pairs" in called_config
+    assert called_config['pairs'] == ["ETH/BTC"]
+
+
+def test_analyse_and_plot_pairs(default_conf, mocker, caplog):
+    default_conf['trade_source'] = 'file'
+    default_conf["datadir"] = history.make_testdata_path(None)
+    default_conf['exportfilename'] = str(
+        history.make_testdata_path(None) / "backtest-result_test.json")
+    default_conf['indicators1'] = ["sma5", "ema10"]
+    default_conf['indicators2'] = ["macd"]
+    default_conf['pairs'] = ["ETH/BTC", "LTC/BTC"]
+
+    candle_mock = MagicMock()
+    store_mock = MagicMock()
+    mocker.patch.multiple(
+        "freqtrade.plot.plotting",
+        generate_candlestick_graph=candle_mock,
+        store_plot_file=store_mock
+        )
+    analyse_and_plot_pairs(default_conf)
+
+    # Both mocks should be called once per pair
+    assert candle_mock.call_count == 2
+    assert store_mock.call_count == 2
+
+    assert candle_mock.call_args_list[0][1]['indicators1'] == ['sma5', 'ema10']
+    assert candle_mock.call_args_list[0][1]['indicators2'] == ['macd']
+
+    assert log_has("End of plotting process. 2 plots generated", caplog)
+
+
+def test_start_plot_profit(mocker):
+    aup = mocker.patch("freqtrade.plot.plotting.plot_profit", MagicMock())
+    args = [
+        "--config", "config.json.example",
+        "plot-profit",
+        "--pairs", "ETH/BTC"
+    ]
+    start_plot_profit(get_args(args))
+
+    assert aup.call_count == 1
+    called_config = aup.call_args_list[0][0][0]
+    assert "pairs" in called_config
+    assert called_config['pairs'] == ["ETH/BTC"]
+
+
+def test_plot_profit(default_conf, mocker, caplog):
+    default_conf['trade_source'] = 'file'
+    default_conf["datadir"] = history.make_testdata_path(None)
+    default_conf['exportfilename'] = str(
+        history.make_testdata_path(None) / "backtest-result_test.json")
+    default_conf['pairs'] = ["ETH/BTC", "LTC/BTC"]
+
+    profit_mock = MagicMock()
+    store_mock = MagicMock()
+    mocker.patch.multiple(
+        "freqtrade.plot.plotting",
+        generate_profit_graph=profit_mock,
+        store_plot_file=store_mock
+    )
+    plot_profit(default_conf)
+
+    # Plot-profit generates one combined plot
+    assert profit_mock.call_count == 1
+    assert store_mock.call_count == 1
+
+    assert profit_mock.call_args_list[0][0][0] == default_conf['pairs']
+    assert store_mock.call_args_list[0][1]['auto_open'] is True

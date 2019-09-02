@@ -89,17 +89,20 @@ def test_load_trades(default_conf, mocker):
     db_mock = mocker.patch("freqtrade.data.btanalysis.load_trades_from_db", MagicMock())
     bt_mock = mocker.patch("freqtrade.data.btanalysis.load_backtest_data", MagicMock())
 
-    default_conf['trade_source'] = "DB"
-    load_trades(default_conf)
+    load_trades("DB",
+                db_url=default_conf.get('db_url'),
+                exportfilename=default_conf.get('exportfilename'),
+                )
 
     assert db_mock.call_count == 1
     assert bt_mock.call_count == 0
 
     db_mock.reset_mock()
     bt_mock.reset_mock()
-    default_conf['trade_source'] = "file"
     default_conf['exportfilename'] = "testfile.json"
-    load_trades(default_conf)
+    load_trades("file",
+                db_url=default_conf.get('db_url'),
+                exportfilename=default_conf.get('exportfilename'),)
 
     assert db_mock.call_count == 0
     assert bt_mock.call_count == 1

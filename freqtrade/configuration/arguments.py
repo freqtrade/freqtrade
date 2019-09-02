@@ -34,15 +34,13 @@ ARGS_CREATE_USERDIR = ["user_data_dir"]
 
 ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "exchange", "timeframes", "erase"]
 
-ARGS_PLOT_DATAFRAME = (ARGS_COMMON + ARGS_STRATEGY +
-                       ["pairs", "indicators1", "indicators2", "plot_limit", "db_url",
-                        "trade_source", "export", "exportfilename", "timerange",
-                        "refresh_pairs"])
+ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit", "db_url",
+                       "trade_source", "export", "exportfilename", "timerange", "ticker_interval"]
 
-ARGS_PLOT_PROFIT = (ARGS_COMMON + ARGS_STRATEGY +
-                    ["pairs", "timerange", "export", "exportfilename", "db_url", "trade_source"])
+ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
+                    "trade_source", "ticker_interval"]
 
-NO_CONF_REQURIED = ["start_download_data"]
+NO_CONF_REQURIED = ["download-data", "plot-dataframe", "plot-profit"]
 
 
 class Arguments(object):
@@ -81,8 +79,7 @@ class Arguments(object):
         # (see https://bugs.python.org/issue16399)
         # Allow no-config for certain commands (like downloading / plotting)
         if (not self._no_default_config and parsed_arg.config is None
-                and not (hasattr(parsed_arg, 'func')
-                         and parsed_arg.func.__name__ in NO_CONF_REQURIED)):
+                and not ('subparser' in parsed_arg and parsed_arg.subparser in NO_CONF_REQURIED)):
             parsed_arg.config = [constants.DEFAULT_CONFIG]
 
         return parsed_arg
@@ -119,6 +116,7 @@ class Arguments(object):
         hyperopt_cmd.set_defaults(func=start_hyperopt)
         self._build_args(optionlist=ARGS_HYPEROPT, parser=hyperopt_cmd)
 
+        # add create-userdir subcommand
         create_userdir_cmd = subparsers.add_parser('create-userdir',
                                                    help="Create user-data directory.")
         create_userdir_cmd.set_defaults(func=start_create_userdir)
@@ -139,3 +137,20 @@ class Arguments(object):
         )
         download_data_cmd.set_defaults(func=start_download_data)
         self._build_args(optionlist=ARGS_DOWNLOAD_DATA, parser=download_data_cmd)
+
+        # Add Plotting subcommand
+        from freqtrade.plot.plot_utils import start_plot_dataframe, start_plot_profit
+        plot_dataframe_cmd = subparsers.add_parser(
+            'plot-dataframe',
+            help='Plot candles with indicators.'
+        )
+        plot_dataframe_cmd.set_defaults(func=start_plot_dataframe)
+        self._build_args(optionlist=ARGS_PLOT_DATAFRAME, parser=plot_dataframe_cmd)
+
+        # Plot profit
+        plot_profit_cmd = subparsers.add_parser(
+            'plot-profit',
+            help='Generate plot showing profits.'
+        )
+        plot_profit_cmd.set_defaults(func=start_plot_profit)
+        self._build_args(optionlist=ARGS_PLOT_PROFIT, parser=plot_profit_cmd)

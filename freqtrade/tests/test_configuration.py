@@ -479,6 +479,7 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
 
 def test_check_exchange(default_conf, caplog) -> None:
     # Test an officially supported by Freqtrade team exchange
+    default_conf['runmode'] = RunMode.DRY_RUN
     default_conf.get('exchange').update({'name': 'BITTREX'})
     assert check_exchange(default_conf)
     assert log_has_re(r"Exchange .* is officially supported by the Freqtrade development team\.",
@@ -522,6 +523,11 @@ def test_check_exchange(default_conf, caplog) -> None:
               r'and therefore not available for the bot.*'
     ):
         check_exchange(default_conf)
+
+    # Test no exchange...
+    default_conf.get('exchange').update({'name': ''})
+    default_conf['runmode'] = RunMode.PLOT
+    assert check_exchange(default_conf)
 
 
 def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
