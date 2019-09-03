@@ -3,6 +3,7 @@ Various tool function for Freqtrade and scripts
 """
 import gzip
 import logging
+from os import chdir
 import re
 from datetime import datetime
 from pathlib import Path
