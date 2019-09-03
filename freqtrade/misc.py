@@ -3,6 +3,7 @@ Various tool function for Freqtrade and scripts
 """
 import gzip
 import logging
+from os import chdir
 import re
 from datetime import datetime
 from pathlib import Path
@@ -114,3 +115,23 @@ def deep_merge_dicts(source, destination):
             destination[key] = value
 
     return destination
+
+
+def find_project_root(path=None):
+    """Locates root directory of the project.
+    Root is defined by existence of "LICENSE" and the dir 'freqtrade'.
+    :param path: pathlib.Path object, or string pointing to project root directory.
+    :return: path to project root directory
+    """
+    if path is None:
+        path = Path(__file__).parent
+    i = 0
+    try:
+        chdir(path)
+        assert Path('LICENSE').is_file() and Path('freqtrade').exists()
+    except AssertionError:
+        while i < 5 and not (Path(path, 'LICENSE').is_file() and Path(path, 'freqtrade').exists()):
+            path = Path(path).parent
+            i += 1
+    logger.info(f'project_root is {path}')
+    return path
