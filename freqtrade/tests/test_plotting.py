@@ -30,7 +30,7 @@ def find_trace_in_fig_data(data, search_string: str):
     return next(matches)
 
 
-def generage_empty_figure():
+def generate_empty_figure():
     return make_subplots(
         rows=3,
         cols=1,
