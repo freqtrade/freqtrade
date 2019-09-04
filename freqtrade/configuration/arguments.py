@@ -47,11 +47,10 @@ class Arguments(object):
     """
     Arguments Class. Manage the arguments received by the cli
     """
-    def __init__(self, args: Optional[List[str]], description: str,
-                 no_default_config: bool = False) -> None:
+    def __init__(self, args: Optional[List[str]], no_default_config: bool = False) -> None:
         self.args = args
         self._parsed_arg: Optional[argparse.Namespace] = None
-        self.parser = argparse.ArgumentParser(description=description)
+        self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot')
         self._no_default_config = no_default_config
 
     def _load_args(self) -> None:

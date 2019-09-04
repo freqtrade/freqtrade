@@ -31,10 +31,7 @@ def main(sysargv: List[str] = None) -> None:
     return_code: Any = 1
     worker = None
     try:
-        arguments = Arguments(
-            sysargv,
-            'Free, open source crypto trading bot'
-        )
+        arguments = Arguments(sysargv)
         args: Namespace = arguments.get_parsed_arg()
 
         # A subcommand has been issued.
