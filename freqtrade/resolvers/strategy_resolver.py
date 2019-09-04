@@ -121,7 +121,6 @@ class StrategyResolver(IResolver):
 
         abs_paths = [
             Path(config['user_data_dir']).joinpath('strategies'),
-            config['strategy_path'],
             current_path,
         ]
 
