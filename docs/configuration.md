@@ -192,19 +192,20 @@ end up paying more then would probably have been necessary.
 
 ### Understand order_types
 
-The `order_types` configuration parameter contains a dict mapping order-types to
-market-types as well as stoploss on or off exchange type and stoploss on exchange
-update interval in seconds. This allows to buy using limit orders, sell using
-limit-orders, and create stoploss orders using market. It also allows to set the
-stoploss "on exchange" which means stoploss order would be placed immediately once
-the buy order is fulfilled. In case stoploss on exchange and `trailing_stop` are
-both set, then the bot will use `stoploss_on_exchange_interval` to check it periodically
-and update it if necessary (e.x. in case of trailing stoploss).
-This can be set in the configuration file or in the strategy.
-Values set in the configuration file  overwrites values set in the strategy.
+The `order_types` configuration parameter maps actions (`buy`, `sell`, `stoploss`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
 
-If this is configured, all 4 values (`buy`, `sell`, `stoploss` and
-`stoploss_on_exchange`) need to be present, otherwise the bot will warn about it and fail to start.
+This allows to buy using limit orders, sell using
+limit-orders, and create stoplosses using using market orders. It also allows to set the
+stoploss "on exchange" which means stoploss order would be placed immediately once
+the buy order is fulfilled.
+If `stoploss_on_exchange` and `trailing_stop` are both set, then the bot will use `stoploss_on_exchange_interval` to check and update the stoploss on exchange periodically.
+`order_types` can be set in the configuration file or in the strategy.
+`order_types` set in the configuration file overwrites values set in the strategy as a whole, so you need to configure the whole `order_types` dictionary in one place.
+
+If this is configured, the following 4 values (`buy`, `sell`, `stoploss` and
+`stoploss_on_exchange`) need to be present, otherwise the bot will fail to start.
+
+`emergencysell` is an optional value, which defaults to `market` and is used when creating stoploss on exchange orders fails.
 The below is the default which is used if this is not configured in either strategy or configuration file.
 
 Syntax for Strategy:
@@ -213,6 +214,7 @@ Syntax for Strategy:
 order_types = {
     "buy": "limit",
     "sell": "limit",
+    "emergencysell": "market",
     "stoploss": "market",
     "stoploss_on_exchange": False,
     "stoploss_on_exchange_interval": 60
@@ -225,6 +227,7 @@ Configuration:
 "order_types": {
     "buy": "limit",
     "sell": "limit",
+    "emergencysell": "market",
     "stoploss": "market",
     "stoploss_on_exchange": false,
     "stoploss_on_exchange_interval": 60
@@ -239,11 +242,13 @@ Configuration:
 !!! Note
     Stoploss on exchange interval is not mandatory. Do not change its value if you are
     unsure of what you are doing. For more information about how stoploss works please
-    read [the stoploss documentation](stoploss.md).
+    refer to [the stoploss documentation](stoploss.md).
 
 !!! Note
-    In case of stoploss on exchange if the stoploss is cancelled manually then
-    the bot would recreate one.
+    If `stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new order.
+
+!!! Warning stoploss_on_exchange failures
+    If stoploss on exchange creation fails for some reason, then an "emergency sell" is initiated. By default, this will sell the asset using a market order. The order-type for the emergency-sell can be changed by setting the `emergencysell` value in the `order_types` dictionary - however this is not advised.
 
 ### Understand order_time_in_force
 

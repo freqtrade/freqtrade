@@ -1152,7 +1152,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
         side_effect=DependencyException()
     )
     freqtrade.handle_stoploss_on_exchange(trade)
-    assert log_has('Unable to place a stoploss order on exchange: ', caplog)
+    assert log_has('Unable to place a stoploss order on exchange.', caplog)
     assert trade.stoploss_order_id is None
 
     # Fifth case: get_order returns InvalidOrder
@@ -1198,6 +1198,50 @@ def test_handle_sle_cancel_cant_recreate(mocker, default_conf, fee, caplog,
     assert log_has_re(r'Stoploss order was cancelled, but unable to recreate one.*', caplog)
     assert trade.stoploss_order_id is None
     assert trade.is_open is True
+
+
+def test_create_stoploss_order_invalid_order(mocker, default_conf, caplog, fee,
+                                             markets, limit_buy_order, limit_sell_order):
+    rpc_mock = patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    sell_mock = MagicMock(return_value={'id': limit_sell_order['id']})
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=MagicMock(return_value={
+            'bid': 0.00001172,
+            'ask': 0.00001173,
+            'last': 0.00001172
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        sell=sell_mock,
+        get_fee=fee,
+        markets=PropertyMock(return_value=markets),
+        get_order=MagicMock(return_value={'status': 'canceled'}),
+        stoploss_limit=MagicMock(side_effect=InvalidOrderException()),
+    )
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+    freqtrade.strategy.order_types['stoploss_on_exchange'] = True
+
+    freqtrade.create_trades()
+    trade = Trade.query.first()
+    caplog.clear()
+    freqtrade.create_stoploss_order(trade, 200, 199)
+    assert trade.stoploss_order_id is None
+    assert trade.sell_reason == SellType.EMERGENCY_SELL.value
+    assert log_has("Unable to place a stoploss order on exchange. ", caplog)
+    assert log_has("Selling the trade forcefully", caplog)
+
+    # Should call a market sell
+    assert sell_mock.call_count == 1
+    assert sell_mock.call_args[1]['ordertype'] == 'market'
+    assert sell_mock.call_args[1]['pair'] == trade.pair
+    assert sell_mock.call_args[1]['amount'] == trade.amount
+
+    # Rpc is sending first buy, then sell
+    assert rpc_mock.call_count == 2
+    assert rpc_mock.call_args_list[1][0][0]['sell_reason'] == SellType.EMERGENCY_SELL.value
+    assert rpc_mock.call_args_list[1][0][0]['order_type'] == 'market'
 
 
 def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
