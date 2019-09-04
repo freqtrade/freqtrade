@@ -45,7 +45,7 @@ def log_has_re(line, logs):
 
 
 def get_args(args):
-    return Arguments(args, '').get_parsed_arg()
+    return Arguments(args).get_parsed_arg()
 
 
 def patched_configuration_load_config_file(mocker, config) -> None:
