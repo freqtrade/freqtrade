@@ -4,12 +4,12 @@
 This module manage Telegram communication
 """
 import logging
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict
 
 from tabulate import tabulate
-from telegram import Bot, ParseMode, ReplyKeyboardMarkup, Update
+from telegram import ParseMode, ReplyKeyboardMarkup, Update
 from telegram.error import NetworkError, TelegramError
-from telegram.ext import CommandHandler, Updater
+from telegram.ext import CommandHandler, Updater, CallbackContext
 
 from freqtrade.__init__ import __version__
 from freqtrade.rpc import RPC, RPCException, RPCMessageType
@@ -31,7 +31,7 @@ def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
     """
     def wrapper(self, *args, **kwargs):
         """ Decorator logic """
-        update = kwargs.get('update') or args[1]
+        update = kwargs.get('update') or args[0]
 
         # Reject unauthorized messages
         chat_id = int(self._config['telegram']['chat_id'])
@@ -79,7 +79,8 @@ class Telegram(RPC):
         registers all known command handlers
         and starts polling for message updates
         """
-        self._updater = Updater(token=self._config['telegram']['token'], workers=0)
+        self._updater = Updater(token=self._config['telegram']['token'], workers=0,
+                                use_context=True)
 
         # Register command handler and start telegram message polling
         handles = [
@@ -96,7 +97,7 @@ class Telegram(RPC):
             CommandHandler('reload_conf', self._reload_conf),
             CommandHandler('stopbuy', self._stopbuy),
             CommandHandler('whitelist', self._whitelist),
-            CommandHandler('blacklist', self._blacklist, pass_args=True),
+            CommandHandler('blacklist', self._blacklist),
             CommandHandler('edge', self._edge),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
@@ -175,7 +176,7 @@ class Telegram(RPC):
         self._send_msg(message)
 
     @authorized_only
-    def _status(self, bot: Bot, update: Update) -> None:
+    def _status(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /status.
         Returns the current TradeThread status
@@ -184,11 +185,8 @@ class Telegram(RPC):
         :return: None
         """
 
-        # Check if additional parameters are passed
-        params = update.message.text.replace('/status', '').split(' ') \
-            if update.message.text else []
-        if 'table' in params:
-            self._status_table(bot, update)
+        if 'table' in context.args:
+            self._status_table(update, context)
             return
 
         try:
@@ -221,13 +219,13 @@ class Telegram(RPC):
                 messages.append("\n".join([l for l in lines if l]).format(**r))
 
             for msg in messages:
-                self._send_msg(msg, bot=bot)
+                self._send_msg(msg)
 
         except RPCException as e:
-            self._send_msg(str(e), bot=bot)
+            self._send_msg(str(e))
 
     @authorized_only
-    def _status_table(self, bot: Bot, update: Update) -> None:
+    def _status_table(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /status table.
         Returns the current TradeThread status in table format
@@ -240,10 +238,10 @@ class Telegram(RPC):
             message = tabulate(df_statuses, headers='keys', tablefmt='simple')
             self._send_msg(f"<pre>{message}</pre>", parse_mode=ParseMode.HTML)
         except RPCException as e:
-            self._send_msg(str(e), bot=bot)
+            self._send_msg(str(e))
 
     @authorized_only
-    def _daily(self, bot: Bot, update: Update) -> None:
+    def _daily(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /daily <n>
         Returns a daily profit (in BTC) over the last n days.
@@ -254,8 +252,8 @@ class Telegram(RPC):
         stake_cur = self._config['stake_currency']
         fiat_disp_cur = self._config.get('fiat_display_currency', '')
         try:
-            timescale = int(update.message.text.replace('/daily', '').strip())
-        except (TypeError, ValueError):
+            timescale = int(context.args[0])
+        except (TypeError, ValueError, IndexError):
             timescale = 7
         try:
             stats = self._rpc_daily_profit(
@@ -272,12 +270,12 @@ class Telegram(RPC):
                                  ],
                                  tablefmt='simple')
             message = f'<b>Daily Profit over the last {timescale} days</b>:\n<pre>{stats_tab}</pre>'
-            self._send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
+            self._send_msg(message, parse_mode=ParseMode.HTML)
         except RPCException as e:
-            self._send_msg(str(e), bot=bot)
+            self._send_msg(str(e))
 
     @authorized_only
-    def _profit(self, bot: Bot, update: Update) -> None:
+    def _profit(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /profit.
         Returns a cumulative profit statistics.
@@ -317,12 +315,12 @@ class Telegram(RPC):
                            f"*Latest Trade opened:* `{latest_trade_date}`\n" \
                            f"*Avg. Duration:* `{avg_duration}`\n" \
                            f"*Best Performing:* `{best_pair}: {best_rate:.2f}%`"
-            self._send_msg(markdown_msg, bot=bot)
+            self._send_msg(markdown_msg)
         except RPCException as e:
-            self._send_msg(str(e), bot=bot)
+            self._send_msg(str(e))
 
     @authorized_only
-    def _balance(self, bot: Bot, update: Update) -> None:
+    def _balance(self, update: Update, context: CallbackContext) -> None:
         """ Handler for /balance """
         try:
             result = self._rpc_balance(self._config.get('fiat_display_currency', ''))
@@ -339,7 +337,7 @@ class Telegram(RPC):
 
                 # Handle overflowing messsage length
                 if len(output + curr_output) >= MAX_TELEGRAM_MESSAGE_LENGTH:
-                    self._send_msg(output, bot=bot)
+                    self._send_msg(output)
                     output = curr_output
                 else:
                     output += curr_output
@@ -347,12 +345,12 @@ class Telegram(RPC):
             output += "\n*Estimated Value*:\n" \
                       "\t`BTC: {total: .8f}`\n" \
                       "\t`{symbol}: {value: .2f}`\n".format(**result)
-            self._send_msg(output, bot=bot)
+            self._send_msg(output)
         except RPCException as e:
-            self._send_msg(str(e), bot=bot)
+            self._send_msg(str(e))
 
     @authorized_only
-    def _start(self, bot: Bot, update: Update) -> None:
+    def _start(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /start.
         Starts TradeThread
@@ -361,10 +359,10 @@ class Telegram(RPC):
         :return: None
         """
         msg = self._rpc_start()
-        self._send_msg('Status: `{status}`'.format(**msg), bot=bot)
+        self._send_msg('Status: `{status}`'.format(**msg))
 
     @authorized_only
-    def _stop(self, bot: Bot, update: Update) -> None:
+    def _stop(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /stop.
         Stops TradeThread
@@ -373,10 +371,10 @@ class Telegram(RPC):
         :return: None
         """
         msg = self._rpc_stop()
-        self._send_msg('Status: `{status}`'.format(**msg), bot=bot)
+        self._send_msg('Status: `{status}`'.format(**msg))
 
     @authorized_only
-    def _reload_conf(self, bot: Bot, update: Update) -> None:
+    def _reload_conf(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /reload_conf.
         Triggers a config file reload
@@ -385,10 +383,10 @@ class Telegram(RPC):
         :return: None
         """
         msg = self._rpc_reload_conf()
-        self._send_msg('Status: `{status}`'.format(**msg), bot=bot)
+        self._send_msg('Status: `{status}`'.format(**msg))
 
     @authorized_only
-    def _stopbuy(self, bot: Bot, update: Update) -> None:
+    def _stopbuy(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /stop_buy.
         Sets max_open_trades to 0 and gracefully sells all open trades
@@ -397,10 +395,10 @@ class Telegram(RPC):
         :return: None
         """
         msg = self._rpc_stopbuy()
-        self._send_msg('Status: `{status}`'.format(**msg), bot=bot)
+        self._send_msg('Status: `{status}`'.format(**msg))
 
     @authorized_only
-    def _forcesell(self, bot: Bot, update: Update) -> None:
+    def _forcesell(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /forcesell <id>.
         Sells the given trade at current price
@@ -409,16 +407,16 @@ class Telegram(RPC):
         :return: None
         """
 
-        trade_id = update.message.text.replace('/forcesell', '').strip()
+        trade_id = context.args[0] if len(context.args) > 0 else None
         try:
             msg = self._rpc_forcesell(trade_id)
-            self._send_msg('Forcesell Result: `{result}`'.format(**msg), bot=bot)
+            self._send_msg('Forcesell Result: `{result}`'.format(**msg))
 
         except RPCException as e:
-            self._send_msg(str(e), bot=bot)
+            self._send_msg(str(e))
 
     @authorized_only
-    def _forcebuy(self, bot: Bot, update: Update) -> None:
+    def _forcebuy(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /forcebuy <asset> <price>.
         Buys a pair trade at the given or current price
@@ -427,16 +425,15 @@ class Telegram(RPC):
         :return: None
         """
 
-        message = update.message.text.replace('/forcebuy', '').strip().split()
-        pair = message[0]
-        price = float(message[1]) if len(message) > 1 else None
+        pair = context.args[0]
+        price = float(context.args[1]) if len(context.args) > 1 else None
         try:
             self._rpc_forcebuy(pair, price)
         except RPCException as e:
-            self._send_msg(str(e), bot=bot)
+            self._send_msg(str(e))
 
     @authorized_only
-    def _performance(self, bot: Bot, update: Update) -> None:
+    def _performance(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /performance.
         Shows a performance statistic from finished trades
@@ -455,10 +452,10 @@ class Telegram(RPC):
             message = '<b>Performance:</b>\n{}'.format(stats)
             self._send_msg(message, parse_mode=ParseMode.HTML)
         except RPCException as e:
-            self._send_msg(str(e), bot=bot)
+            self._send_msg(str(e))
 
     @authorized_only
-    def _count(self, bot: Bot, update: Update) -> None:
+    def _count(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /count.
         Returns the number of trades running
@@ -475,10 +472,10 @@ class Telegram(RPC):
             logger.debug(message)
             self._send_msg(message, parse_mode=ParseMode.HTML)
         except RPCException as e:
-            self._send_msg(str(e), bot=bot)
+            self._send_msg(str(e))
 
     @authorized_only
-    def _whitelist(self, bot: Bot, update: Update) -> None:
+    def _whitelist(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /whitelist
         Shows the currently active whitelist
@@ -492,17 +489,17 @@ class Telegram(RPC):
             logger.debug(message)
             self._send_msg(message)
         except RPCException as e:
-            self._send_msg(str(e), bot=bot)
+            self._send_msg(str(e))
 
     @authorized_only
-    def _blacklist(self, bot: Bot, update: Update, args: List[str]) -> None:
+    def _blacklist(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /blacklist
         Shows the currently active blacklist
         """
         try:
 
-            blacklist = self._rpc_blacklist(args)
+            blacklist = self._rpc_blacklist(context.args)
 
             message = f"Blacklist contains {blacklist['length']} pairs\n"
             message += f"`{', '.join(blacklist['blacklist'])}`"
@@ -510,10 +507,10 @@ class Telegram(RPC):
             logger.debug(message)
             self._send_msg(message)
         except RPCException as e:
-            self._send_msg(str(e), bot=bot)
+            self._send_msg(str(e))
 
     @authorized_only
-    def _edge(self, bot: Bot, update: Update) -> None:
+    def _edge(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /edge
         Shows information related to Edge
@@ -522,12 +519,12 @@ class Telegram(RPC):
             edge_pairs = self._rpc_edge()
             edge_pairs_tab = tabulate(edge_pairs, headers='keys', tablefmt='simple')
             message = f'<b>Edge only validated following pairs:</b>\n<pre>{edge_pairs_tab}</pre>'
-            self._send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
+            self._send_msg(message, parse_mode=ParseMode.HTML)
         except RPCException as e:
-            self._send_msg(str(e), bot=bot)
+            self._send_msg(str(e))
 
     @authorized_only
-    def _help(self, bot: Bot, update: Update) -> None:
+    def _help(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /help.
         Show commands of the bot
@@ -559,10 +556,10 @@ class Telegram(RPC):
                   "*/help:* `This help message`\n" \
                   "*/version:* `Show version`"
 
-        self._send_msg(message, bot=bot)
+        self._send_msg(message)
 
     @authorized_only
-    def _version(self, bot: Bot, update: Update) -> None:
+    def _version(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /version.
         Show version information
@@ -570,10 +567,9 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
-        self._send_msg('*Version:* `{}`'.format(__version__), bot=bot)
+        self._send_msg('*Version:* `{}`'.format(__version__))
 
-    def _send_msg(self, msg: str, bot: Bot = None,
-                  parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
+    def _send_msg(self, msg: str, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
         """
         Send given markdown message
         :param msg: message
@@ -581,7 +577,6 @@ class Telegram(RPC):
         :param parse_mode: telegram parse mode
         :return: None
         """
-        bot = bot or self._updater.bot
 
         keyboard = [['/daily', '/profit', '/balance'],
                     ['/status', '/status table', '/performance'],
@@ -591,7 +586,7 @@ class Telegram(RPC):
 
         try:
             try:
-                bot.send_message(
+                self._updater.bot.send_message(
                     self._config['telegram']['chat_id'],
                     text=msg,
                     parse_mode=parse_mode,
@@ -604,7 +599,7 @@ class Telegram(RPC):
                     'Telegram NetworkError: %s! Trying one more time.',
                     network_err.message
                 )
-                bot.send_message(
+                self._updater.bot.send_message(
                     self._config['telegram']['chat_id'],
                     text=msg,
                     parse_mode=parse_mode,
