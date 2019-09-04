@@ -24,8 +24,6 @@ class StrategyResolver(IResolver):
     This class contains all the logic to load custom strategy class
     """
 
-    __slots__ = ['strategy']
-
     def __init__(self, config: Optional[Dict] = None) -> None:
         """
         Load the custom class from config parameter
@@ -123,7 +121,8 @@ class StrategyResolver(IResolver):
         current_path = Path(__file__).parent.parent.joinpath('strategy').resolve()
 
         abs_paths = [
-            config['user_data_dir'].joinpath('strategies'),
+            Path(config['user_data_dir']).joinpath('strategies'),
+            config['strategy_path'],
             current_path,
         ]
 
