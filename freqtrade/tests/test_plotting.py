@@ -71,7 +71,7 @@ def test_add_indicators(default_conf, caplog):
     # Generate buy/sell signals and indicators
     strat = DefaultStrategy(default_conf)
     data = strat.analyze_ticker(data, {'pair': pair})
-    fig = generage_empty_figure()
+    fig = generate_empty_figure()
 
     # Row 1
     fig1 = add_indicators(fig=deepcopy(fig), row=1, indicators=indicators1, data=data)
@@ -93,7 +93,7 @@ def test_add_indicators(default_conf, caplog):
 
 
 def test_plot_trades(caplog):
-    fig1 = generage_empty_figure()
+    fig1 = generate_empty_figure()
     # nothing happens when no trades are available
     fig = plot_trades(fig1, None)
     assert fig == fig1
@@ -209,7 +209,7 @@ def test_generate_Plot_filename():
 
 
 def test_generate_plot_file(mocker, caplog):
-    fig = generage_empty_figure()
+    fig = generate_empty_figure()
     plot_mock = mocker.patch("freqtrade.plot.plotting.plot", MagicMock())
     store_plot_file(fig, filename="freqtrade-plot-UNITTEST_BTC-5m.html",
                     directory=Path("user_data/plots"))
@@ -229,7 +229,7 @@ def test_add_profit():
 
     df = history.load_pair_history(pair="POWR/BTC", ticker_interval='5m',
                                    datadir=None, timerange=timerange)
-    fig = generage_empty_figure()
+    fig = generate_empty_figure()
 
     cum_profits = create_cum_profit(df.set_index('date'),
                                     bt_data[bt_data["pair"] == 'POWR/BTC'],
