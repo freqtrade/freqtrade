@@ -128,9 +128,9 @@ def load_pair_history(pair: str,
                                       drop_incomplete=drop_incomplete)
     else:
         logger.warning(
-            f'No history data for pair: "{pair}", interval: {ticker_interval}. '
-            'Use --refresh-pairs-cached option or `freqtrade download-data` '
-            'script to download the data'
+            f'No history data for pair: "{pair}", interval: {ticker_interval}, in {datadir}. '
+            'Provide the correct path to datadir in config.json, or download data with '
+            '--refresh-pairs-cached option or `freqtrade download-data`. '
         )
         return None
 

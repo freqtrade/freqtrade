@@ -24,8 +24,6 @@ class StrategyResolver(IResolver):
     This class contains all the logic to load custom strategy class
     """
 
-    __slots__ = ['strategy']
-
     def __init__(self, config: Optional[Dict] = None) -> None:
         """
         Load the custom class from config parameter

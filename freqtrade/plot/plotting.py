@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import pandas as pd
-
+from freqtrade import OperationalException
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import (combine_tickers_with_mean,
@@ -33,9 +33,13 @@ def init_plotscript(config):
         pairs = config["pairs"]
     else:
         pairs = config["exchange"]["pair_whitelist"]
+    if pairs is None:
+        raise OperationalException('No pairs available in config.')
 
     # Set timerange to use
     timerange = TimeRange.parse_timerange(config.get("timerange"))
+    if timerange is None:
+        raise OperationalException('Could not parse timerange in config.')
 
     tickers = history.load_data(
         datadir=Path(str(config.get("datadir"))),
@@ -43,11 +47,15 @@ def init_plotscript(config):
         ticker_interval=config.get('ticker_interval', '5m'),
         timerange=timerange,
     )
+    if tickers is None:
+        raise OperationalException('No ticker data available as specified in config.')
 
     trades = load_trades(config['trade_source'],
                          db_url=config.get('db_url'),
                          exportfilename=config.get('exportfilename'),
                          )
+    if trades is None:
+        raise OperationalException('No trades available as specified in config.')
 
     return {"tickers": tickers,
             "trades": trades,
@@ -324,7 +332,7 @@ def store_plot_file(fig, filename: str, directory: Path, auto_open: bool = False
     logger.info(f"Stored plot as {_filename}")
 
 
-def analyse_and_plot_pairs(config: Dict[str, Any]):
+def load_and_plot_trades(config: Dict[str, Any]):
     """
     From configuration provided
     - Initializes plot-script
@@ -339,7 +347,7 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
 
     plot_elements = init_plotscript(config)
     trades = plot_elements['trades']
-
+    
     pair_counter = 0
     for pair, data in plot_elements["tickers"].items():
         pair_counter += 1
