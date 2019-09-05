@@ -577,8 +577,8 @@ def test_balance_handle_too_large_response(default_conf, update, mocker) -> None
         curr = choice(ascii_uppercase) + choice(ascii_uppercase) + choice(ascii_uppercase)
         balances.append({
             'currency': curr,
-            'available': 1.0,
-            'pending': 0.5,
+            'free': 1.0,
+            'used': 0.5,
             'balance': i,
             'est_btc': 1
         })

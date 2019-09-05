@@ -328,9 +328,9 @@ class Telegram(RPC):
             for currency in result['currencies']:
                 if currency['est_btc'] > 0.0001:
                     curr_output = "*{currency}:*\n" \
-                            "\t`Available: {available: .8f}`\n" \
+                            "\t`Available: {free: .8f}`\n" \
                             "\t`Balance: {balance: .8f}`\n" \
-                            "\t`Pending: {pending: .8f}`\n" \
+                            "\t`Pending: {used: .8f}`\n" \
                             "\t`Est. BTC: {est_btc: .8f}`\n".format(**currency)
                 else:
                     curr_output = "*{currency}:* not showing <1$ amount \n".format(**currency)

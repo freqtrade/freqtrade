@@ -363,9 +363,9 @@ def test_rpc_balance_handle_error(default_conf, mocker):
     assert 'USD' == result['symbol']
     assert result['currencies'] == [{
         'currency': 'BTC',
-        'available': 10.0,
+        'free': 10.0,
         'balance': 12.0,
-        'pending': 2.0,
+        'used': 2.0,
         'est_btc': 12.0,
     }]
     assert result['total'] == 12.0
@@ -417,22 +417,22 @@ def test_rpc_balance_handle(default_conf, mocker):
     assert 'USD' == result['symbol']
     assert result['currencies'] == [
         {'currency': 'BTC',
-            'available': 10.0,
+            'free': 10.0,
             'balance': 12.0,
-            'pending': 2.0,
+            'used': 2.0,
             'est_btc': 12.0,
          },
-        {'available': 1.0,
+        {'free': 1.0,
          'balance': 5.0,
          'currency': 'ETH',
          'est_btc': 0.05,
-         'pending': 4.0
+         'used': 4.0
          },
-        {'available': 5.0,
+        {'free': 5.0,
          'balance': 10.0,
          'currency': 'PAX',
          'est_btc': 0.1,
-         'pending': 5.0}
+         'used': 5.0}
     ]
     assert result['total'] == 12.15
 

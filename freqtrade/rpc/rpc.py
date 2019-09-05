@@ -294,9 +294,9 @@ class RPC(object):
             total = total + est_btc
             output.append({
                 'currency': coin,
-                'available': balance['free'],
+                'free': balance['free'],
                 'balance': balance['total'],
-                'pending': balance['used'],
+                'used': balance['used'],
                 'est_btc': est_btc,
             })
         if total == 0.0:
