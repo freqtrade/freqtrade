@@ -17,11 +17,11 @@ def start_plot_dataframe(args: Namespace) -> None:
     Entrypoint for dataframe plotting
     """
     # Import here to avoid errors if plot-dependencies are not installed.
-    from freqtrade.plot.plotting import analyse_and_plot_pairs
+    from freqtrade.plot.plotting import load_and_plot_trades
     validate_plot_args(args)
     config = setup_utils_configuration(args, RunMode.PLOT)
 
-    analyse_and_plot_pairs(config)
+    load_and_plot_trades(config)
 
 
 def start_plot_profit(args: Namespace) -> None:

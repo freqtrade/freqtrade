@@ -32,7 +32,7 @@ def find_trace_in_fig_data(data, search_string: str):
     return next(matches)
 
 
-def generage_empty_figure():
+def generate_empty_figure():
     return make_subplots(
         rows=3,
         cols=1,
@@ -72,7 +72,7 @@ def test_add_indicators(default_conf, testdatadir, caplog):
     # Generate buy/sell signals and indicators
     strat = DefaultStrategy(default_conf)
     data = strat.analyze_ticker(data, {'pair': pair})
-    fig = generage_empty_figure()
+    fig = generate_empty_figure()
 
     # Row 1
     fig1 = add_indicators(fig=deepcopy(fig), row=1, indicators=indicators1, data=data)
@@ -210,7 +210,7 @@ def test_generate_Plot_filename():
 
 
 def test_generate_plot_file(mocker, caplog):
-    fig = generage_empty_figure()
+    fig = generate_empty_figure()
     plot_mock = mocker.patch("freqtrade.plot.plotting.plot", MagicMock())
     store_plot_file(fig, filename="freqtrade-plot-UNITTEST_BTC-5m.html",
                     directory=Path("user_data/plots"))

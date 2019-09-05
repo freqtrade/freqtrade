@@ -61,7 +61,7 @@ def load_tickerdata_file(datadir: Path, pair: str, ticker_interval: str,
                          timerange: Optional[TimeRange] = None) -> Optional[list]:
     """
     Load a pair from file, either .json.gz or .json
-    :return: tickerlist or None if unsuccesful
+    :return: tickerlist or None if unsuccessful
     """
     filename = pair_data_filename(datadir, pair, ticker_interval)
     pairdata = misc.file_load_json(filename)
