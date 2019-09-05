@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import pandas as pd
-
+from freqtrade import OperationalException
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import (combine_tickers_with_mean,
@@ -33,24 +33,29 @@ def init_plotscript(config):
         pairs = config["pairs"]
     else:
         pairs = config["exchange"]["pair_whitelist"]
-    assert pairs is not None, ('No pairs available in config.')
+    if pairs is None:
+        raise OperationalException('No pairs available in config.')
 
     # Set timerange to use
     timerange = TimeRange.parse_timerange(config.get("timerange"))
+    if timerange is None:
+        raise OperationalException('Could not parse timerange in config.')
 
     tickers = history.load_data(
-        datadir=Path(config.get("datadir"), config.get("exchange").get("name")),
+        datadir=Path(str(config.get("datadir"))),
         pairs=pairs,
         ticker_interval=config.get('ticker_interval', '5m'),
         timerange=timerange,
     )
-    assert tickers is not None, ('No ticker data available as specified in config.')
+    if tickers is None:
+        raise OperationalException('No ticker data available as specified in config.')
 
     trades = load_trades(config['trade_source'],
                          db_url=config.get('db_url'),
                          exportfilename=config.get('exportfilename'),
                          )
-    assert trades is not None, ('No trades available as specified in config.')
+    if trades is None:
+        raise OperationalException('No trades available as specified in config.')
 
     return {"tickers": tickers,
             "trades": trades,
@@ -342,34 +347,34 @@ def load_and_plot_trades(config: Dict[str, Any]):
 
     plot_elements = init_plotscript(config)
     trades = plot_elements['trades']
-    if trades is None:
-        raise ValueError('No trades to analyze')
-    else:
-        pair_counter = 0
-        for pair, data in plot_elements["tickers"].items():
-            pair_counter += 1
-            logger.info("analyse pair %s", pair)
-            tickers = {}
-            tickers[pair] = data
+    # if trades is None:
+    #     # raise ValueError('No trades to analyze')
+    # else:
+    pair_counter = 0
+    for pair, data in plot_elements["tickers"].items():
+        pair_counter += 1
+        logger.info("analyse pair %s", pair)
+        tickers = {}
+        tickers[pair] = data
 
-            dataframe = strategy.analyze_ticker(tickers[pair], {'pair': pair})
-            logger.debug(f'pair: {pair}')
+        dataframe = strategy.analyze_ticker(tickers[pair], {'pair': pair})
+        logger.debug(f'pair: {pair}')
 
-            trades_pair = trades.loc[trades['pair'] == pair]
-            trades_pair = extract_trades_of_period(dataframe, trades_pair)
+        trades_pair = trades.loc[trades['pair'] == pair]
+        trades_pair = extract_trades_of_period(dataframe, trades_pair)
 
-            fig = generate_candlestick_graph(
-                pair=pair,
-                data=dataframe,
-                trades=trades_pair,
-                indicators1=config["indicators1"],
-                indicators2=config["indicators2"],
-            )
+        fig = generate_candlestick_graph(
+            pair=pair,
+            data=dataframe,
+            trades=trades_pair,
+            indicators1=config["indicators1"],
+            indicators2=config["indicators2"],
+        )
 
-            store_plot_file(fig, filename=generate_plot_filename(pair, config['ticker_interval']),
-                            directory=config['user_data_dir'] / "plot")
+        store_plot_file(fig, filename=generate_plot_filename(pair, config['ticker_interval']),
+                        directory=config['user_data_dir'] / "plot")
 
-            logger.info('End of plotting process. %s plots generated', pair_counter)
+    logger.info('End of plotting process. %s plots generated', pair_counter)
 
 
 def plot_profit(config: Dict[str, Any]) -> None:
