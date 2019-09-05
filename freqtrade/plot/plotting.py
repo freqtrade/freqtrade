@@ -347,9 +347,6 @@ def load_and_plot_trades(config: Dict[str, Any]):
 
     plot_elements = init_plotscript(config)
     trades = plot_elements['trades']
-    # if trades is None:
-    #     # raise ValueError('No trades to analyze')
-    # else:
     pair_counter = 0
     for pair, data in plot_elements["tickers"].items():
         pair_counter += 1
