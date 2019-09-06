@@ -24,8 +24,10 @@ from skopt.space import Dimension
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.history import load_data, get_timeframe
+from freqtrade.misc import round_dict
 from freqtrade.optimize.backtesting import Backtesting
-# Import IHyperOptLoss to allow users import from this file
+# Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
+from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F4
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F4
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver, HyperOptLossResolver
 
@@ -178,9 +180,11 @@ class Hyperopt:
                        indent=4)
             if self.has_space('roi'):
                 print("ROI table:")
-                pprint(self.custom_hyperopt.generate_roi_table(params), indent=4)
+                # Round printed values to 5 digits after the decimal point
+                pprint(round_dict(self.custom_hyperopt.generate_roi_table(params), 5), indent=4)
             if self.has_space('stoploss'):
-                print(f"Stoploss: {params.get('stoploss')}")
+                # Also round to 5 digits after the decimal point
+                print(f"Stoploss: {round(params.get('stoploss'), 5)}")
 
     def log_results(self, results) -> None:
         """
