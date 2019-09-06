@@ -251,9 +251,9 @@ def test_api_balance(botclient, mocker, rpc_balance):
     assert len(rc.json["currencies"]) == 5
     assert rc.json['currencies'][0] == {
         'currency': 'BTC',
-        'available': 12.0,
+        'free': 12.0,
         'balance': 12.0,
-        'pending': 0.0,
+        'used': 0.0,
         'est_btc': 12.0,
     }
 

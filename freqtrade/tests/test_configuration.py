@@ -494,7 +494,7 @@ def test_check_exchange(default_conf, caplog) -> None:
     caplog.clear()
 
     # Test an available exchange, supported by ccxt
-    default_conf.get('exchange').update({'name': 'kraken'})
+    default_conf.get('exchange').update({'name': 'huobipro'})
     assert check_exchange(default_conf)
     assert log_has_re(r"Exchange .* is supported by ccxt and .* not officially supported "
                       r"by the Freqtrade development team\. .*", caplog)
