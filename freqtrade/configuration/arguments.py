@@ -3,6 +3,7 @@ This module contains the argument manager class
 """
 import argparse
 from typing import List, Optional
+from pathlib import Path
 
 from freqtrade.configuration.cli_options import AVAILABLE_CLI_OPTIONS
 from freqtrade import constants
@@ -47,12 +48,10 @@ class Arguments(object):
     """
     Arguments Class. Manage the arguments received by the cli
     """
-    def __init__(self, args: Optional[List[str]], description: str,
-                 no_default_config: bool = False) -> None:
+    def __init__(self, args: Optional[List[str]]) -> None:
         self.args = args
         self._parsed_arg: Optional[argparse.Namespace] = None
-        self.parser = argparse.ArgumentParser(description=description)
-        self._no_default_config = no_default_config
+        self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot')
 
     def _load_args(self) -> None:
         self._build_args(optionlist=ARGS_MAIN)
@@ -75,11 +74,13 @@ class Arguments(object):
         """
         parsed_arg = self.parser.parse_args(self.args)
 
+        # When no config is provided, but a config exists, use that configuration!
+
         # Workaround issue in argparse with action='append' and default value
         # (see https://bugs.python.org/issue16399)
         # Allow no-config for certain commands (like downloading / plotting)
-        if (not self._no_default_config and parsed_arg.config is None
-                and not ('subparser' in parsed_arg and parsed_arg.subparser in NO_CONF_REQURIED)):
+        if (parsed_arg.config is None and ((Path.cwd() / constants.DEFAULT_CONFIG).is_file() or
+           not ('subparser' in parsed_arg and parsed_arg.subparser in NO_CONF_REQURIED))):
             parsed_arg.config = [constants.DEFAULT_CONFIG]
 
         return parsed_arg

@@ -117,7 +117,7 @@ def test_main_reload_conf(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
 
-    args = Arguments(['-c', 'config.json.example'], '').get_parsed_arg()
+    args = Arguments(['-c', 'config.json.example']).get_parsed_arg()
     worker = Worker(args=args, config=default_conf)
     with pytest.raises(SystemExit):
         main(['-c', 'config.json.example'])
@@ -139,7 +139,7 @@ def test_reconfigure(mocker, default_conf) -> None:
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
 
-    args = Arguments(['-c', 'config.json.example'], '').get_parsed_arg()
+    args = Arguments(['-c', 'config.json.example']).get_parsed_arg()
     worker = Worker(args=args, config=default_conf)
     freqtrade = worker.freqtrade
 

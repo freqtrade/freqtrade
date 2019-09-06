@@ -4,8 +4,10 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import plotly.graph_objects as go
+import pytest
 from plotly.subplots import make_subplots
 
+from freqtrade import OperationalException
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import create_cum_profit, load_backtest_data
@@ -333,6 +335,15 @@ def test_start_plot_profit(mocker):
     called_config = aup.call_args_list[0][0][0]
     assert "pairs" in called_config
     assert called_config['pairs'] == ["ETH/BTC"]
+
+
+def test_start_plot_profit_error(mocker):
+    args = [
+        "plot-profit",
+        "--pairs", "ETH/BTC"
+    ]
+    with pytest.raises(OperationalException):
+        start_plot_profit(get_args(args))
 
 
 def test_plot_profit(default_conf, mocker, caplog):

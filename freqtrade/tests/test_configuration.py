@@ -66,7 +66,7 @@ def test_load_config_file(default_conf, mocker, caplog) -> None:
 def test__args_to_config(caplog):
 
     arg_list = ['--strategy-path', 'TestTest']
-    args = Arguments(arg_list, '').get_parsed_arg()
+    args = Arguments(arg_list).get_parsed_arg()
     configuration = Configuration(args)
     config = {}
     with warnings.catch_warnings(record=True) as w:
@@ -93,7 +93,7 @@ def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
     default_conf['max_open_trades'] = 0
     patched_configuration_load_config_file(mocker, default_conf)
 
-    args = Arguments([], '').get_parsed_arg()
+    args = Arguments([]).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
@@ -119,7 +119,7 @@ def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
     )
 
     arg_list = ['-c', 'test_conf.json', '--config', 'test2_conf.json', ]
-    args = Arguments(arg_list, '').get_parsed_arg()
+    args = Arguments(arg_list).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
@@ -167,7 +167,7 @@ def test_load_config_max_open_trades_minus_one(default_conf, mocker, caplog) -> 
     default_conf['max_open_trades'] = -1
     patched_configuration_load_config_file(mocker, default_conf)
 
-    args = Arguments([], '').get_parsed_arg()
+    args = Arguments([]).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
@@ -191,7 +191,7 @@ def test_load_config_file_exception(mocker) -> None:
 def test_load_config(default_conf, mocker) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
 
-    args = Arguments([], '').get_parsed_arg()
+    args = Arguments([]).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
@@ -208,7 +208,7 @@ def test_load_config_with_params(default_conf, mocker) -> None:
         '--strategy-path', '/some/path',
         '--db-url', 'sqlite:///someurl',
     ]
-    args = Arguments(arglist, '').get_parsed_arg()
+    args = Arguments(arglist).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
@@ -226,7 +226,7 @@ def test_load_config_with_params(default_conf, mocker) -> None:
         '--strategy', 'TestStrategy',
         '--strategy-path', '/some/path'
     ]
-    args = Arguments(arglist, '').get_parsed_arg()
+    args = Arguments(arglist).get_parsed_arg()
 
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
@@ -242,7 +242,7 @@ def test_load_config_with_params(default_conf, mocker) -> None:
         '--strategy', 'TestStrategy',
         '--strategy-path', '/some/path'
     ]
-    args = Arguments(arglist, '').get_parsed_arg()
+    args = Arguments(arglist).get_parsed_arg()
 
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
@@ -258,7 +258,7 @@ def test_load_config_with_params(default_conf, mocker) -> None:
         '--strategy', 'TestStrategy',
         '--strategy-path', '/some/path'
     ]
-    args = Arguments(arglist, '').get_parsed_arg()
+    args = Arguments(arglist).get_parsed_arg()
 
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
@@ -276,7 +276,7 @@ def test_load_config_with_params(default_conf, mocker) -> None:
         '--strategy', 'TestStrategy',
         '--strategy-path', '/some/path'
     ]
-    args = Arguments(arglist, '').get_parsed_arg()
+    args = Arguments(arglist).get_parsed_arg()
 
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
@@ -290,7 +290,7 @@ def test_load_custom_strategy(default_conf, mocker) -> None:
     })
     patched_configuration_load_config_file(mocker, default_conf)
 
-    args = Arguments([], '').get_parsed_arg()
+    args = Arguments([]).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
@@ -305,7 +305,7 @@ def test_show_info(default_conf, mocker, caplog) -> None:
         '--strategy', 'TestStrategy',
         '--db-url', 'sqlite:///tmp/testdb',
     ]
-    args = Arguments(arglist, '').get_parsed_arg()
+    args = Arguments(arglist).get_parsed_arg()
 
     configuration = Configuration(args)
     configuration.get_config()
@@ -323,7 +323,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
         'backtesting'
     ]
 
-    args = Arguments(arglist, '').get_parsed_arg()
+    args = Arguments(arglist).get_parsed_arg()
 
     configuration = Configuration(args)
     config = configuration.get_config()
@@ -373,7 +373,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         '--export', '/bar/foo'
     ]
 
-    args = Arguments(arglist, '').get_parsed_arg()
+    args = Arguments(arglist).get_parsed_arg()
 
     configuration = Configuration(args)
     config = configuration.get_config()
@@ -423,7 +423,7 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
         'TestStrategy'
     ]
 
-    args = Arguments(arglist, '').get_parsed_arg()
+    args = Arguments(arglist).get_parsed_arg()
 
     configuration = Configuration(args, RunMode.BACKTEST)
     config = configuration.get_config()
@@ -460,7 +460,7 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
         '--epochs', '10',
         '--spaces', 'all',
     ]
-    args = Arguments(arglist, '').get_parsed_arg()
+    args = Arguments(arglist).get_parsed_arg()
 
     configuration = Configuration(args, RunMode.HYPEROPT)
     config = configuration.get_config()
@@ -536,7 +536,7 @@ def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
     # Prevent setting loggers
     mocker.patch('freqtrade.loggers._set_loggers', MagicMock)
     arglist = ['-vvv']
-    args = Arguments(arglist, '').get_parsed_arg()
+    args = Arguments(arglist).get_parsed_arg()
 
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
@@ -589,7 +589,7 @@ def test_set_logfile(default_conf, mocker):
     arglist = [
         '--logfile', 'test_file.log',
     ]
-    args = Arguments(arglist, '').get_parsed_arg()
+    args = Arguments(arglist).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
@@ -603,7 +603,7 @@ def test_load_config_warn_forcebuy(default_conf, mocker, caplog) -> None:
     default_conf['forcebuy_enable'] = True
     patched_configuration_load_config_file(mocker, default_conf)
 
-    args = Arguments([], '').get_parsed_arg()
+    args = Arguments([]).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
@@ -778,7 +778,7 @@ def test_pairlist_resolving():
         '--exchange', 'binance'
     ]
 
-    args = Arguments(arglist, '').get_parsed_arg()
+    args = Arguments(arglist).get_parsed_arg()
 
     configuration = Configuration(args)
     config = configuration.get_config()
@@ -794,7 +794,7 @@ def test_pairlist_resolving_with_config(mocker, default_conf):
         'download-data',
     ]
 
-    args = Arguments(arglist, '').get_parsed_arg()
+    args = Arguments(arglist).get_parsed_arg()
 
     configuration = Configuration(args)
     config = configuration.get_config()
@@ -809,7 +809,7 @@ def test_pairlist_resolving_with_config(mocker, default_conf):
         '--pairs', 'ETH/BTC', 'XRP/BTC',
     ]
 
-    args = Arguments(arglist, '').get_parsed_arg()
+    args = Arguments(arglist).get_parsed_arg()
 
     configuration = Configuration(args)
     config = configuration.get_config()
@@ -831,7 +831,7 @@ def test_pairlist_resolving_with_config_pl(mocker, default_conf):
         '--pairs-file', 'pairs.json',
     ]
 
-    args = Arguments(arglist, '').get_parsed_arg()
+    args = Arguments(arglist).get_parsed_arg()
 
     configuration = Configuration(args)
     config = configuration.get_config()
@@ -853,7 +853,7 @@ def test_pairlist_resolving_with_config_pl_not_exists(mocker, default_conf):
         '--pairs-file', 'pairs.json',
     ]
 
-    args = Arguments(arglist, '').get_parsed_arg()
+    args = Arguments(arglist).get_parsed_arg()
 
     with pytest.raises(OperationalException, match=r"No pairs file found with path.*"):
         configuration = Configuration(args)
@@ -870,7 +870,9 @@ def test_pairlist_resolving_fallback(mocker):
         '--exchange', 'binance'
     ]
 
-    args = Arguments(arglist, '').get_parsed_arg()
+    args = Arguments(arglist).get_parsed_arg()
+    # Fix flaky tests if config.json exists
+    args.config = None
 
     configuration = Configuration(args)
     config = configuration.get_config()

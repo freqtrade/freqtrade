@@ -114,3 +114,10 @@ def deep_merge_dicts(source, destination):
             destination[key] = value
 
     return destination
+
+
+def round_dict(d, n):
+    """
+    Rounds float values in the dict to n digits after the decimal point.
+    """
+    return {k: (round(v, n) if isinstance(v, float) else v) for k, v in d.items()}
