@@ -36,6 +36,9 @@ class IHyperOpt(ABC):
     """
     ticker_interval: str
 
+    def __init__(self, config: dict = None) -> None:
+        self.config = config
+
     @staticmethod
     @abstractmethod
     def populate_indicators(dataframe: DataFrame, metadata: dict) -> DataFrame:
