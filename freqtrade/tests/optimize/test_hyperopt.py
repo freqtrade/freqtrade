@@ -814,58 +814,6 @@ def test_simplified_interface_buy(mocker, default_conf, caplog, capsys) -> None:
     assert hasattr(hyperopt, "position_stacking")
 
 
-def test_simplified_interface_buy_failed_1(mocker, default_conf, caplog, capsys) -> None:
-    mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
-    mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
-    mocker.patch(
-        'freqtrade.optimize.hyperopt.get_timeframe',
-        MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
-    )
-
-    patch_exchange(mocker)
-
-    default_conf.update({'config': 'config.json.example',
-                         'epochs': 1,
-                         'timerange': None,
-                         'spaces': 'buy',
-                         'hyperopt_jobs': 1, })
-
-    hyperopt = Hyperopt(default_conf)
-    hyperopt.backtesting.strategy.tickerdata_to_dataframe = MagicMock()
-    hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
-
-    del hyperopt.custom_hyperopt.__class__.buy_strategy_generator
-
-    with pytest.raises(OperationalException, match=r"The 'buy' space is included into *"):
-        hyperopt.start()
-
-
-def test_simplified_interface_buy_failed_2(mocker, default_conf, caplog, capsys) -> None:
-    mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
-    mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
-    mocker.patch(
-        'freqtrade.optimize.hyperopt.get_timeframe',
-        MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
-    )
-
-    patch_exchange(mocker)
-
-    default_conf.update({'config': 'config.json.example',
-                         'epochs': 1,
-                         'timerange': None,
-                         'spaces': 'buy',
-                         'hyperopt_jobs': 1, })
-
-    hyperopt = Hyperopt(default_conf)
-    hyperopt.backtesting.strategy.tickerdata_to_dataframe = MagicMock()
-    hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
-
-    del hyperopt.custom_hyperopt.__class__.indicator_space
-
-    with pytest.raises(OperationalException, match=r"The 'buy' space is included into *"):
-        hyperopt.start()
-
-
 def test_simplified_interface_sell(mocker, default_conf, caplog, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
     mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
@@ -911,7 +859,13 @@ def test_simplified_interface_sell(mocker, default_conf, caplog, capsys) -> None
     assert hasattr(hyperopt, "position_stacking")
 
 
-def test_simplified_interface_sell_failed_1(mocker, default_conf, caplog, capsys) -> None:
+@pytest.mark.parametrize("method,space", [
+    ('buy_strategy_generator', 'buy'),
+    ('indicator_space', 'buy'),
+    ('sell_strategy_generator', 'sell'),
+    ('sell_indicator_space', 'sell'),
+])
+def test_simplified_interface_failed(mocker, default_conf, caplog, capsys, method, space) -> None:
     mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
     mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
     mocker.patch(
@@ -924,40 +878,14 @@ def test_simplified_interface_sell_failed_1(mocker, default_conf, caplog, capsys
     default_conf.update({'config': 'config.json.example',
                          'epochs': 1,
                          'timerange': None,
-                         'spaces': 'sell',
+                         'spaces': space,
                          'hyperopt_jobs': 1, })
 
     hyperopt = Hyperopt(default_conf)
     hyperopt.backtesting.strategy.tickerdata_to_dataframe = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
-    del hyperopt.custom_hyperopt.__class__.sell_strategy_generator
+    delattr(hyperopt.custom_hyperopt.__class__, method)
 
-    with pytest.raises(OperationalException, match=r"The 'sell' space is included into *"):
-        hyperopt.start()
-
-
-def test_simplified_interface_sell_failed_2(mocker, default_conf, caplog, capsys) -> None:
-    mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
-    mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
-    mocker.patch(
-        'freqtrade.optimize.hyperopt.get_timeframe',
-        MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
-    )
-
-    patch_exchange(mocker)
-
-    default_conf.update({'config': 'config.json.example',
-                         'epochs': 1,
-                         'timerange': None,
-                         'spaces': 'sell',
-                         'hyperopt_jobs': 1, })
-
-    hyperopt = Hyperopt(default_conf)
-    hyperopt.backtesting.strategy.tickerdata_to_dataframe = MagicMock()
-    hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
-
-    del hyperopt.custom_hyperopt.__class__.sell_indicator_space
-
-    with pytest.raises(OperationalException, match=r"The 'sell' space is included into *"):
+    with pytest.raises(OperationalException, match=f"The '{space}' space is included into *"):
         hyperopt.start()
