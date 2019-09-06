@@ -11,11 +11,19 @@ from typing import Dict, Any, Callable, List
 from pandas import DataFrame
 from skopt.space import Dimension, Integer, Real
 
+from freqtrade import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import round_dict
 
 
 logger = logging.getLogger(__name__)
+
+
+def _format_exception_message(method: str, space: str) -> str:
+    return (f"The '{space}' space is included into the hyperoptimization "
+            f"but {method}() method is not found in your "
+            f"custom Hyperopt class. You should either implement this "
+            f"method or remove the '{space}' space from hyperoptimization.")
 
 
 class IHyperOpt(ABC):
@@ -38,32 +46,32 @@ class IHyperOpt(ABC):
         """
 
     @staticmethod
-    @abstractmethod
     def buy_strategy_generator(params: Dict[str, Any]) -> Callable:
         """
         Create a buy strategy generator.
         """
+        raise OperationalException(_format_exception_message('buy_strategy_generator', 'buy'))
 
     @staticmethod
-    @abstractmethod
     def sell_strategy_generator(params: Dict[str, Any]) -> Callable:
         """
         Create a sell strategy generator.
         """
+        raise OperationalException(_format_exception_message('sell_strategy_generator', 'sell'))
 
     @staticmethod
-    @abstractmethod
     def indicator_space() -> List[Dimension]:
         """
         Create an indicator space.
         """
+        raise OperationalException(_format_exception_message('indicator_space', 'buy'))
 
     @staticmethod
-    @abstractmethod
     def sell_indicator_space() -> List[Dimension]:
         """
         Create a sell indicator space.
         """
+        raise OperationalException(_format_exception_message('sell_indicator_space', 'sell'))
 
     @staticmethod
     def generate_roi_table(params: Dict) -> Dict[int, float]:
