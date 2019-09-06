@@ -706,7 +706,8 @@ def test_simplified_interface_roi_stoploss(mocker, default_conf, caplog, capsys)
 
     parallel = mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
-        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {}}])
+        MagicMock(return_value=[{
+            'loss': 1, 'results_explanation': 'foo result', 'params': {'stoploss': 0.0}}])
     )
     patch_exchange(mocker)
 
