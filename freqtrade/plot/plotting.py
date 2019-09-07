@@ -358,7 +358,7 @@ def load_and_plot_trades(config: Dict[str, Any]):
         )
 
         store_plot_file(fig, filename=generate_plot_filename(pair, config['ticker_interval']),
-                        directory=config['user_data_dir'] / "plot")
+                        directory=Path(config['user_data_dir'], "plot"))
 
     logger.info('End of plotting process. %s plots generated', pair_counter)
 
