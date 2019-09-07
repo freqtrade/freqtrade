@@ -134,12 +134,12 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog,
     _clean_test_file(file)
 
 
-def test_load_data_live(default_conf, mocker, caplog) -> None:
+def test_load_data_live(default_conf, mocker, caplog, testdatadir) -> None:
     refresh_mock = MagicMock()
     mocker.patch("freqtrade.exchange.Exchange.refresh_latest_ohlcv", refresh_mock)
     exchange = get_patched_exchange(mocker, default_conf)
 
-    history.load_data(datadir=None, ticker_interval='5m',
+    history.load_data(datadir=testdatadir, ticker_interval='5m',
                       pairs=['UNITTEST/BTC', 'UNITTEST2/BTC'],
                       live=True,
                       exchange=exchange)
@@ -148,11 +148,11 @@ def test_load_data_live(default_conf, mocker, caplog) -> None:
     assert log_has('Live: Downloading data for all defined pairs ...', caplog)
 
 
-def test_load_data_live_noexchange(default_conf, mocker, caplog) -> None:
+def test_load_data_live_noexchange(default_conf, mocker, caplog, testdatadir) -> None:
 
     with pytest.raises(OperationalException,
                        match=r'Exchange needs to be initialized when using live data.'):
-        history.load_data(datadir=None, ticker_interval='5m',
+        history.load_data(datadir=testdatadir, ticker_interval='5m',
                           pairs=['UNITTEST/BTC', 'UNITTEST2/BTC'],
                           exchange=None,
                           live=True,
