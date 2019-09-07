@@ -11,8 +11,8 @@ from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
                                        extract_trades_of_period,
                                        load_backtest_data, load_trades,
                                        load_trades_from_db)
-from freqtrade.data.history import (load_data, load_pair_history,
-                                    make_testdata_path)
+from freqtrade.data.history import load_data, load_pair_history
+from freqtrade.tests.conftest import make_testdata_path
 from freqtrade.tests.test_persistence import create_mock_trades
 
 

@@ -1047,3 +1047,8 @@ def rpc_balance():
             'used': 0.0
         },
     }
+
+
+def make_testdata_path(datadir) -> Path:
+    """Return the path where testdata files are stored"""
+    return (Path(__file__).parent / "testdata").resolve()

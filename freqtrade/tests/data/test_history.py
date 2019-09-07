@@ -16,14 +16,14 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.history import (download_pair_history,
                                     load_cached_data_for_updating,
-                                    load_tickerdata_file, make_testdata_path,
+                                    load_tickerdata_file,
                                     refresh_backtest_ohlcv_data,
                                     trim_tickerlist)
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.tests.conftest import (get_patched_exchange, log_has,
-                                      patch_exchange)
+                                      patch_exchange, make_testdata_path)
 
 # Change this if modifying UNITTEST/BTC testdatafile
 _BTC_UNITTEST_LENGTH = 13681
