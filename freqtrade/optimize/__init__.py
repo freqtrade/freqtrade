@@ -25,16 +25,6 @@ def setup_configuration(args: Namespace, method: RunMode) -> Dict[str, Any]:
             raise DependencyException('stake amount could not be "%s" for backtesting' %
                                       constants.UNLIMITED_STAKE_AMOUNT)
 
-    if method == RunMode.HYPEROPT:
-        # Special cases for Hyperopt
-        if config.get('strategy') and config.get('strategy') != 'DefaultStrategy':
-            logger.error("Please don't use --strategy for hyperopt.")
-            logger.error(
-                "Read the documentation at "
-                "https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md "
-                "to understand how to configure hyperopt.")
-            raise DependencyException("--strategy configured but not supported for hyperopt")
-
     return config
 
 
