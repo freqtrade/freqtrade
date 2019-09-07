@@ -489,7 +489,7 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
         assert log_has(line, caplog)
 
 
-def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
+def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) -> None:
     def get_timeframe(input1):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
@@ -505,7 +505,7 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
 
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
     default_conf['ticker_interval'] = "1m"
-    default_conf['datadir'] = None
+    default_conf['datadir'] = testdatadir
     default_conf['export'] = None
     default_conf['timerange'] = '20180101-20180102'
 

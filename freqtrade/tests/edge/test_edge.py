@@ -291,7 +291,6 @@ def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=Fals
 
 
 def test_edge_process_downloaded_data(mocker, edge_conf):
-    edge_conf['datadir'] = None
     freqtrade = get_patched_freqtradebot(mocker, edge_conf)
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.001))
     mocker.patch('freqtrade.data.history.load_data', mocked_load_data)
@@ -303,7 +302,6 @@ def test_edge_process_downloaded_data(mocker, edge_conf):
 
 
 def test_edge_process_no_data(mocker, edge_conf, caplog):
-    edge_conf['datadir'] = None
     freqtrade = get_patched_freqtradebot(mocker, edge_conf)
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.001))
     mocker.patch('freqtrade.data.history.load_data', MagicMock(return_value={}))
@@ -316,7 +314,6 @@ def test_edge_process_no_data(mocker, edge_conf, caplog):
 
 
 def test_edge_process_no_trades(mocker, edge_conf, caplog):
-    edge_conf['datadir'] = None
     freqtrade = get_patched_freqtradebot(mocker, edge_conf)
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.001))
     mocker.patch('freqtrade.data.history.load_data', mocked_load_data)
