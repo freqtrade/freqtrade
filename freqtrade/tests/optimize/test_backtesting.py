@@ -34,9 +34,9 @@ def trim_dictlist(dict_list, num):
     return new
 
 
-def load_data_test(what):
+def load_data_test(what, testdatadir):
     timerange = TimeRange(None, 'line', 0, -101)
-    pair = history.load_tickerdata_file(None, ticker_interval='1m',
+    pair = history.load_tickerdata_file(testdatadir, ticker_interval='1m',
                                         pair='UNITTEST/BTC', timerange=timerange)
     datalen = len(pair)
 
@@ -79,12 +79,12 @@ def load_data_test(what):
                                                    fill_missing=True)}
 
 
-def simple_backtest(config, contour, num_results, mocker) -> None:
+def simple_backtest(config, contour, num_results, mocker, testdatadir) -> None:
     patch_exchange(mocker)
     config['ticker_interval'] = '1m'
     backtesting = Backtesting(config)
 
-    data = load_data_test(contour)
+    data = load_data_test(contour, testdatadir)
     processed = backtesting.strategy.tickerdata_to_dataframe(data)
     min_date, max_date = get_timeframe(processed)
     assert isinstance(processed, dict)
@@ -118,8 +118,8 @@ def _load_pair_as_ticks(pair, tickfreq):
 
 
 # FIX: fixturize this?
-def _make_backtest_conf(mocker, conf=None, pair='UNITTEST/BTC', record=None):
-    data = history.load_data(datadir=None, ticker_interval='1m', pairs=[pair])
+def _make_backtest_conf(mocker, datadir, conf=None, pair='UNITTEST/BTC', record=None):
+    data = history.load_data(datadir=datadir, ticker_interval='1m', pairs=[pair])
     data = trim_dictlist(data, -201)
     patch_exchange(mocker)
     backtesting = Backtesting(conf)
@@ -339,10 +339,10 @@ def test_backtesting_init_no_ticker_interval(mocker, default_conf, caplog) -> No
             "or as cli argument `--ticker-interval 5m`", caplog)
 
 
-def test_tickerdata_to_dataframe_bt(default_conf, mocker) -> None:
+def test_tickerdata_to_dataframe_bt(default_conf, mocker, testdatadir) -> None:
     patch_exchange(mocker)
     timerange = TimeRange(None, 'line', 0, -100)
-    tick = history.load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
+    tick = history.load_tickerdata_file(testdatadir, 'UNITTEST/BTC', '1m', timerange=timerange)
     tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
                                                          fill_missing=True)}
 
@@ -456,7 +456,7 @@ def test_generate_text_table_strategyn(default_conf, mocker):
     assert backtesting._generate_text_table_strategy(all_results=results) == result_str
 
 
-def test_backtesting_start(default_conf, mocker, caplog) -> None:
+def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     def get_timeframe(input1):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
@@ -472,7 +472,7 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
 
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
     default_conf['ticker_interval'] = '1m'
-    default_conf['datadir'] = None
+    default_conf['datadir'] = testdatadir
     default_conf['export'] = None
     default_conf['timerange'] = '-100'
 
@@ -516,13 +516,13 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
     assert log_has('No data found. Terminating.', caplog)
 
 
-def test_backtest(default_conf, fee, mocker) -> None:
+def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
     pair = 'UNITTEST/BTC'
     timerange = TimeRange(None, 'line', 0, -201)
-    data = history.load_data(datadir=None, ticker_interval='5m', pairs=['UNITTEST/BTC'],
+    data = history.load_data(datadir=testdatadir, ticker_interval='5m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
     data_processed = backtesting.strategy.tickerdata_to_dataframe(data)
     min_date, max_date = get_timeframe(data_processed)
@@ -570,14 +570,14 @@ def test_backtest(default_conf, fee, mocker) -> None:
                 t["close_rate"], 6) < round(ln.iloc[0]["high"], 6))
 
 
-def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
+def test_backtest_1min_ticker_interval(default_conf, fee, mocker, testdatadir) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
 
     # Run a backtesting for an exiting 1min ticker_interval
     timerange = TimeRange(None, 'line', 0, -200)
-    data = history.load_data(datadir=None, ticker_interval='1m', pairs=['UNITTEST/BTC'],
+    data = history.load_data(datadir=testdatadir, ticker_interval='1m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
     processed = backtesting.strategy.tickerdata_to_dataframe(data)
     min_date, max_date = get_timeframe(processed)
@@ -595,11 +595,11 @@ def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
     assert len(results) == 1
 
 
-def test_processed(default_conf, mocker) -> None:
+def test_processed(default_conf, mocker, testdatadir) -> None:
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
 
-    dict_of_tickerrows = load_data_test('raise')
+    dict_of_tickerrows = load_data_test('raise', testdatadir)
     dataframes = backtesting.strategy.tickerdata_to_dataframe(dict_of_tickerrows)
     dataframe = dataframes['UNITTEST/BTC']
     cols = dataframe.columns
@@ -609,7 +609,7 @@ def test_processed(default_conf, mocker) -> None:
         assert col in cols
 
 
-def test_backtest_pricecontours(default_conf, fee, mocker) -> None:
+def test_backtest_pricecontours(default_conf, fee, mocker, testdatadir) -> None:
     # TODO: Evaluate usefullness of this, the patterns and buy-signls are unrealistic
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     tests = [['raise', 19], ['lower', 0], ['sine', 35]]
@@ -617,17 +617,17 @@ def test_backtest_pricecontours(default_conf, fee, mocker) -> None:
     default_conf['experimental'] = {"use_sell_signal": True}
 
     for [contour, numres] in tests:
-        simple_backtest(default_conf, contour, numres, mocker)
+        simple_backtest(default_conf, contour, numres, mocker, testdatadir)
 
 
-def test_backtest_clash_buy_sell(mocker, default_conf):
+def test_backtest_clash_buy_sell(mocker, default_conf, testdatadir):
     # Override the default buy trend function in our default_strategy
     def fun(dataframe=None, pair=None):
         buy_value = 1
         sell_value = 1
         return _trend(dataframe, buy_value, sell_value)
 
-    backtest_conf = _make_backtest_conf(mocker, conf=default_conf)
+    backtest_conf = _make_backtest_conf(mocker, conf=default_conf, datadir=testdatadir)
     backtesting = Backtesting(default_conf)
     backtesting.advise_buy = fun  # Override
     backtesting.advise_sell = fun  # Override
@@ -635,14 +635,14 @@ def test_backtest_clash_buy_sell(mocker, default_conf):
     assert results.empty
 
 
-def test_backtest_only_sell(mocker, default_conf):
+def test_backtest_only_sell(mocker, default_conf, testdatadir):
     # Override the default buy trend function in our default_strategy
     def fun(dataframe=None, pair=None):
         buy_value = 0
         sell_value = 1
         return _trend(dataframe, buy_value, sell_value)
 
-    backtest_conf = _make_backtest_conf(mocker, conf=default_conf)
+    backtest_conf = _make_backtest_conf(mocker, conf=default_conf, datadir=testdatadir)
     backtesting = Backtesting(default_conf)
     backtesting.advise_buy = fun  # Override
     backtesting.advise_sell = fun  # Override
@@ -650,10 +650,11 @@ def test_backtest_only_sell(mocker, default_conf):
     assert results.empty
 
 
-def test_backtest_alternate_buy_sell(default_conf, fee, mocker):
+def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch('freqtrade.optimize.backtesting.file_dump_json', MagicMock())
-    backtest_conf = _make_backtest_conf(mocker, conf=default_conf, pair='UNITTEST/BTC')
+    backtest_conf = _make_backtest_conf(mocker, conf=default_conf,
+                                        pair='UNITTEST/BTC', datadir=testdatadir)
     # We need to enable sell-signal - otherwise it sells on ROI!!
     default_conf['experimental'] = {"use_sell_signal": True}
     default_conf['ticker_interval'] = '1m'
@@ -672,7 +673,7 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker):
 
 @pytest.mark.parametrize("pair", ['ADA/BTC', 'LTC/BTC'])
 @pytest.mark.parametrize("tres", [0, 20, 30])
-def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair):
+def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir):
 
     def _trend_alternate_hold(dataframe=None, metadata=None):
         """
@@ -690,7 +691,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair):
     patch_exchange(mocker)
 
     pairs = ['ADA/BTC', 'DASH/BTC', 'ETH/BTC', 'LTC/BTC', 'NXT/BTC']
-    data = history.load_data(datadir=None, ticker_interval='5m', pairs=pairs)
+    data = history.load_data(datadir=testdatadir, ticker_interval='5m', pairs=pairs)
     # Only use 500 lines to increase performance
     data = trim_dictlist(data, -500)
 

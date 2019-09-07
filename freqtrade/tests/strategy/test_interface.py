@@ -103,11 +103,11 @@ def test_get_signal_handles_exceptions(mocker, default_conf):
     assert _STRATEGY.get_signal(exchange, 'ETH/BTC', '5m') == (False, False)
 
 
-def test_tickerdata_to_dataframe(default_conf) -> None:
+def test_tickerdata_to_dataframe(default_conf, testdatadir) -> None:
     strategy = DefaultStrategy(default_conf)
 
     timerange = TimeRange(None, 'line', 0, -100)
-    tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
+    tick = load_tickerdata_file(testdatadir, 'UNITTEST/BTC', '1m', timerange=timerange)
     tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
                                                          fill_missing=True)}
     data = strategy.tickerdata_to_dataframe(tickerlist)

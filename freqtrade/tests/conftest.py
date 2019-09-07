@@ -1049,6 +1049,7 @@ def rpc_balance():
     }
 
 
-def make_testdata_path(datadir) -> Path:
+@pytest.fixture
+def testdatadir() -> Path:
     """Return the path where testdata files are stored"""
     return (Path(__file__).parent / "testdata").resolve()

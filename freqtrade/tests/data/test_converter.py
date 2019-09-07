@@ -21,8 +21,8 @@ def test_parse_ticker_dataframe(ticker_history_list, caplog):
     assert log_has('Parsing tickerlist to dataframe', caplog)
 
 
-def test_ohlcv_fill_up_missing_data(caplog):
-    data = load_pair_history(datadir=None,
+def test_ohlcv_fill_up_missing_data(testdatadir, caplog):
+    data = load_pair_history(datadir=testdatadir,
                              ticker_interval='1m',
                              refresh_pairs=False,
                              pair='UNITTEST/BTC',

@@ -12,13 +12,12 @@ from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
                                        load_backtest_data, load_trades,
                                        load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
-from freqtrade.tests.conftest import make_testdata_path
 from freqtrade.tests.test_persistence import create_mock_trades
 
 
-def test_load_backtest_data():
+def test_load_backtest_data(testdatadir):
 
-    filename = make_testdata_path(None) / "backtest-result_test.json"
+    filename = testdatadir / "backtest-result_test.json"
     bt_data = load_backtest_data(filename)
     assert isinstance(bt_data, DataFrame)
     assert list(bt_data.columns) == BT_DATA_COLUMNS + ["profitabs"]
@@ -52,12 +51,12 @@ def test_load_trades_db(default_conf, fee, mocker):
             assert col in trades.columns
 
 
-def test_extract_trades_of_period():
+def test_extract_trades_of_period(testdatadir):
     pair = "UNITTEST/BTC"
     timerange = TimeRange(None, 'line', 0, -1000)
 
     data = load_pair_history(pair=pair, ticker_interval='1m',
-                             datadir=None, timerange=timerange)
+                             datadir=testdatadir, timerange=timerange)
 
     # timerange = 2017-11-14 06:07 - 2017-11-14 22:58:00
     trades = DataFrame(
@@ -108,9 +107,9 @@ def test_load_trades(default_conf, mocker):
     assert bt_mock.call_count == 1
 
 
-def test_combine_tickers_with_mean():
+def test_combine_tickers_with_mean(testdatadir):
     pairs = ["ETH/BTC", "XLM/BTC"]
-    tickers = load_data(datadir=None,
+    tickers = load_data(datadir=testdatadir,
                         pairs=pairs,
                         ticker_interval='5m'
                         )
@@ -121,13 +120,13 @@ def test_combine_tickers_with_mean():
     assert "mean" in df.columns
 
 
-def test_create_cum_profit():
-    filename = make_testdata_path(None) / "backtest-result_test.json"
+def test_create_cum_profit(testdatadir):
+    filename = testdatadir / "backtest-result_test.json"
     bt_data = load_backtest_data(filename)
     timerange = TimeRange.parse_timerange("20180110-20180112")
 
     df = load_pair_history(pair="POWR/BTC", ticker_interval='5m',
-                           datadir=None, timerange=timerange)
+                           datadir=testdatadir, timerange=timerange)
 
     cum_profits = create_cum_profit(df.set_index('date'),
                                     bt_data[bt_data["pair"] == 'POWR/BTC'],

@@ -45,16 +45,16 @@ def test_file_dump_json(mocker) -> None:
     assert json_dump.call_count == 1
 
 
-def test_file_load_json(mocker) -> None:
+def test_file_load_json(mocker, testdatadir) -> None:
 
     # 7m .json does not exist
-    ret = file_load_json(pair_data_filename(None, 'UNITTEST/BTC', '7m'))
+    ret = file_load_json(pair_data_filename(testdatadir, 'UNITTEST/BTC', '7m'))
     assert not ret
     # 1m json exists (but no .gz exists)
-    ret = file_load_json(pair_data_filename(None, 'UNITTEST/BTC', '1m'))
+    ret = file_load_json(pair_data_filename(testdatadir, 'UNITTEST/BTC', '1m'))
     assert ret
     # 8 .json is empty and will fail if it's loaded. .json.gz is a copy of 1.json
-    ret = file_load_json(pair_data_filename(None, 'UNITTEST/BTC', '8m'))
+    ret = file_load_json(pair_data_filename(testdatadir, 'UNITTEST/BTC', '8m'))
     assert ret
 
 
