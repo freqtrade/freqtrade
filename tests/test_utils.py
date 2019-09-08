@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, PropertyMock
 import pytest
 
 from freqtrade.state import RunMode
-from freqtrade.tests.conftest import get_args, log_has, patch_exchange
+from tests.conftest import get_args, log_has, patch_exchange
 from freqtrade.utils import (setup_utils_configuration, start_create_userdir,
                              start_download_data, start_list_exchanges)
 

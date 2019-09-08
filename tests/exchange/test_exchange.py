@@ -20,7 +20,7 @@ from freqtrade.exchange.exchange import (API_RETRY_COUNT, timeframe_to_minutes,
                                          timeframe_to_prev_date,
                                          timeframe_to_seconds)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
-from freqtrade.tests.conftest import get_patched_exchange, log_has, log_has_re
+from tests.conftest import get_patched_exchange, log_has, log_has_re
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
 EXCHANGES = ['bittrex', 'binance', 'kraken', ]

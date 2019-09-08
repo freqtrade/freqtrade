@@ -10,7 +10,7 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.history import load_tickerdata_file
 from freqtrade.persistence import Trade
-from freqtrade.tests.conftest import get_patched_exchange, log_has
+from tests.conftest import get_patched_exchange, log_has
 from freqtrade.strategy.default_strategy import DefaultStrategy
 
 # Avoid to reinit the same object again and again

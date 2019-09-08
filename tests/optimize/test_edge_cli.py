@@ -9,9 +9,8 @@ from freqtrade.edge import PairInfo
 from freqtrade.optimize import setup_configuration, start_edge
 from freqtrade.optimize.edge_cli import EdgeCli
 from freqtrade.state import RunMode
-from freqtrade.tests.conftest import (get_args, log_has, log_has_re,
-                                      patch_exchange,
-                                      patched_configuration_load_config_file)
+from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
+                            patched_configuration_load_config_file)
 
 
 def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> None:

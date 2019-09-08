@@ -16,13 +16,12 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
-from freqtrade.state import State, RunMode
+from freqtrade.state import RunMode, State
 from freqtrade.strategy.interface import SellCheckTuple, SellType
-from freqtrade.tests.conftest import (get_patched_freqtradebot,
-                                      get_patched_worker, log_has, log_has_re,
-                                      patch_edge, patch_exchange,
-                                      patch_get_signal, patch_wallet)
 from freqtrade.worker import Worker
+from tests.conftest import (get_patched_freqtradebot, get_patched_worker,
+                            log_has, log_has_re, patch_edge, patch_exchange,
+                            patch_get_signal, patch_wallet)
 
 
 def patch_RPCManager(mocker) -> MagicMock:

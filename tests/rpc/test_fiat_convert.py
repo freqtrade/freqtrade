@@ -8,7 +8,7 @@ import pytest
 from requests.exceptions import RequestException
 
 from freqtrade.rpc.fiat_convert import CryptoFiat, CryptoToFiatConverter
-from freqtrade.tests.conftest import log_has
+from tests.conftest import log_has
 
 
 def test_pair_convertion_object():

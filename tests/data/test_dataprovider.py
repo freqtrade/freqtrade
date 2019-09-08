@@ -4,7 +4,7 @@ from pandas import DataFrame
 
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.state import RunMode
-from freqtrade.tests.conftest import get_patched_exchange
+from tests.conftest import get_patched_exchange
 
 
 def test_ohlcv(mocker, default_conf, ticker_history):

@@ -6,7 +6,7 @@ import pytest
 
 from freqtrade import (DependencyException, InvalidOrderException,
                        OperationalException, TemporaryError)
-from freqtrade.tests.conftest import get_patched_exchange
+from tests.conftest import get_patched_exchange
 
 
 def test_stoploss_limit_order(default_conf, mocker):

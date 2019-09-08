@@ -14,10 +14,9 @@ from freqtrade import OperationalException
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.strategy.interface import SellType
-from freqtrade.tests.conftest import get_patched_freqtradebot, log_has
-from freqtrade.tests.optimize import (BTContainer, BTrade,
-                                      _build_backtest_dataframe,
-                                      _get_frame_time_from_offset)
+from tests.conftest import get_patched_freqtradebot, log_has
+from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
+                            _get_frame_time_from_offset)
 
 # Cases to be tested:
 # 1) Open trade should be removed from the end

@@ -1,13 +1,13 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
 import os
 from datetime import datetime
+from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 
 import pandas as pd
 import pytest
 from arrow import Arrow
 from filelock import Timeout
-from pathlib import Path
 
 from freqtrade import OperationalException
 from freqtrade.data.converter import parse_ticker_dataframe
@@ -16,12 +16,12 @@ from freqtrade.optimize import setup_configuration, start_hyperopt
 from freqtrade.optimize.default_hyperopt import DefaultHyperOpts
 from freqtrade.optimize.default_hyperopt_loss import DefaultHyperOptLoss
 from freqtrade.optimize.hyperopt import Hyperopt
-from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver, HyperOptLossResolver
+from freqtrade.resolvers.hyperopt_resolver import (HyperOptLossResolver,
+                                                   HyperOptResolver)
 from freqtrade.state import RunMode
 from freqtrade.strategy.interface import SellType
-from freqtrade.tests.conftest import (get_args, log_has, log_has_re,
-                                      patch_exchange,
-                                      patched_configuration_load_config_file)
+from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
+                            patched_configuration_load_config_file)
 
 
 @pytest.fixture(scope='function')
@@ -47,14 +47,14 @@ def hyperopt_results():
 
 
 # Functions for recurrent object patching
-def create_trials(mocker, hyperopt) -> None:
+def create_trials(mocker, hyperopt, testdatadir) -> None:
     """
     When creating trials, mock the hyperopt Trials so that *by default*
       - we don't create any pickle'd files in the filesystem
       - we might have a pickle'd file so make sure that we return
         false when looking for it
     """
-    hyperopt.trials_file = Path('freqtrade/tests/optimize/ut_trials.pickle')
+    hyperopt.trials_file = testdatadir / '/optimize/ut_trials.pickle'
 
     mocker.patch.object(Path, "is_file", MagicMock(return_value=False))
     stat_mock = MagicMock()

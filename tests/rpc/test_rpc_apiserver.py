@@ -13,9 +13,7 @@ from freqtrade.__init__ import __version__
 from freqtrade.persistence import Trade
 from freqtrade.rpc.api_server import BASE_URI, ApiServer
 from freqtrade.state import State
-from freqtrade.tests.conftest import (get_patched_freqtradebot, log_has,
-                                      patch_get_signal)
-
+from tests.conftest import get_patched_freqtradebot, log_has, patch_get_signal
 
 _TEST_USER = "FreqTrader"
 _TEST_PASS = "SuperSecurePassword1!"

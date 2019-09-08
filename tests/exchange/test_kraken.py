@@ -3,7 +3,7 @@
 from random import randint
 from unittest.mock import MagicMock
 
-from freqtrade.tests.conftest import get_patched_exchange
+from tests.conftest import get_patched_exchange
 
 
 def test_buy_kraken_trading_agreement(default_conf, mocker):

@@ -8,7 +8,7 @@ from requests import RequestException
 from freqtrade.rpc import RPCMessageType
 from freqtrade.rpc.webhook import Webhook
 from freqtrade.strategy.interface import SellType
-from freqtrade.tests.conftest import get_patched_freqtradebot, log_has
+from tests.conftest import get_patched_freqtradebot, log_has
 
 
 def get_webhook_dict() -> dict:

@@ -12,12 +12,12 @@ from pandas import DataFrame
 from freqtrade import OperationalException
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy.interface import IStrategy
-from freqtrade.tests.conftest import log_has, log_has_re
+from tests.conftest import log_has, log_has_re
 
 
 def test_search_strategy():
     default_config = {}
-    default_location = Path(__file__).parent.parent.parent.joinpath('strategy').resolve()
+    default_location = Path(__file__).parent.parent.joinpath('strategy').resolve()
 
     s, _ = StrategyResolver._search_object(
         directory=default_location,

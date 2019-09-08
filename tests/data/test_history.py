@@ -22,7 +22,7 @@ from freqtrade.data.history import (download_pair_history,
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.strategy.default_strategy import DefaultStrategy
-from freqtrade.tests.conftest import get_patched_exchange, log_has, log_has_re, patch_exchange
+from tests.conftest import get_patched_exchange, log_has, log_has_re, patch_exchange
 
 # Change this if modifying UNITTEST/BTC testdatafile
 _BTC_UNITTEST_LENGTH = 13681

@@ -1,5 +1,5 @@
 # pragma pylint: disable=missing-docstring
-from freqtrade.tests.conftest import get_patched_freqtradebot
+from tests.conftest import get_patched_freqtradebot
 from unittest.mock import MagicMock
 
 

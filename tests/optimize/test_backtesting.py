@@ -22,9 +22,8 @@ from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.state import RunMode
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import SellType
-from freqtrade.tests.conftest import (get_args, log_has, log_has_re,
-                                      patch_exchange,
-                                      patched_configuration_load_config_file)
+from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
+                            patched_configuration_load_config_file)
 
 
 def trim_dictlist(dict_list, num):
@@ -807,7 +806,7 @@ def test_backtest_record(default_conf, fee, mocker):
         assert dur > 0
 
 
-def test_backtest_start_timerange(default_conf, mocker, caplog):
+def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
 
     async def load_pairs(pair, timeframe, since):
@@ -824,7 +823,7 @@ def test_backtest_start_timerange(default_conf, mocker, caplog):
     args = [
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
-        '--datadir', 'freqtrade/tests/testdata',
+        '--datadir', str(testdatadir),
         'backtesting',
         '--ticker-interval', '1m',
         '--timerange', '-100',
@@ -838,7 +837,7 @@ def test_backtest_start_timerange(default_conf, mocker, caplog):
         'Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
         'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
         'Parameter --timerange detected: -100 ...',
-        'Using data directory: freqtrade/tests/testdata ...',
+        f'Using data directory: {testdatadir} ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
         'Backtesting with data from 2017-11-14T21:17:00+00:00 '
@@ -850,7 +849,7 @@ def test_backtest_start_timerange(default_conf, mocker, caplog):
         assert log_has(line, caplog)
 
 
-def test_backtest_start_multi_strat(default_conf, mocker, caplog):
+def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
 
     async def load_pairs(pair, timeframe, since):
@@ -870,7 +869,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog):
 
     args = [
         '--config', 'config.json',
-        '--datadir', 'freqtrade/tests/testdata',
+        '--datadir', str(testdatadir),
         'backtesting',
         '--ticker-interval', '1m',
         '--timerange', '-100',
@@ -892,7 +891,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog):
         'Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
         'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
         'Parameter --timerange detected: -100 ...',
-        'Using data directory: freqtrade/tests/testdata ...',
+        f'Using data directory: {testdatadir} ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
         'Backtesting with data from 2017-11-14T21:17:00+00:00 '

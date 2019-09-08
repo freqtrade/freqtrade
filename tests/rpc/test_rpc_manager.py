@@ -4,7 +4,7 @@ import logging
 from unittest.mock import MagicMock
 
 from freqtrade.rpc import RPCMessageType, RPCManager
-from freqtrade.tests.conftest import log_has, get_patched_freqtradebot
+from tests.conftest import log_has, get_patched_freqtradebot
 
 
 def test__init__(mocker, default_conf) -> None:

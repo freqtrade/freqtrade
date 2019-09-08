@@ -891,8 +891,8 @@ def tickers():
 
 
 @pytest.fixture
-def result():
-    with Path('freqtrade/tests/testdata/UNITTEST_BTC-1m.json').open('r') as data_file:
+def result(testdatadir):
+    with (testdatadir / 'UNITTEST_BTC-1m.json').open('r') as data_file:
         return parse_ticker_dataframe(json.load(data_file), '1m', pair="UNITTEST/BTC",
                                       fill_missing=True)
 

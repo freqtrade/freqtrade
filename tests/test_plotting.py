@@ -19,7 +19,7 @@ from freqtrade.plot.plotting import (add_indicators, add_profit,
                                      generate_profit_graph, init_plotscript,
                                      plot_profit, plot_trades, store_plot_file)
 from freqtrade.strategy.default_strategy import DefaultStrategy
-from freqtrade.tests.conftest import get_args, log_has, log_has_re
+from tests.conftest import get_args, log_has, log_has_re
 
 
 def fig_generating_mock(fig, *args, **kwargs):

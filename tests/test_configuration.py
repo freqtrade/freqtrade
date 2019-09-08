@@ -10,7 +10,8 @@ import pytest
 from jsonschema import Draft4Validator, ValidationError, validate
 
 from freqtrade import OperationalException, constants
-from freqtrade.configuration import Arguments, Configuration, validate_config_consistency
+from freqtrade.configuration import (Arguments, Configuration,
+                                     validate_config_consistency)
 from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.config_validation import validate_config_schema
 from freqtrade.configuration.directory_operations import (create_datadir,
@@ -19,8 +20,8 @@ from freqtrade.configuration.load_config import load_config_file
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.loggers import _set_loggers
 from freqtrade.state import RunMode
-from freqtrade.tests.conftest import (log_has, log_has_re,
-                                      patched_configuration_load_config_file)
+from tests.conftest import (log_has, log_has_re,
+                            patched_configuration_load_config_file)
 
 
 @pytest.fixture(scope="function")
