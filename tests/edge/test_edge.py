@@ -155,8 +155,6 @@ def test_edge_results(edge_conf, mocker, caplog, data) -> None:
     trades = edge._find_trades_for_stoploss_range(frame, 'TEST/BTC', [data.stop_loss])
     results = edge._fill_calculable_fields(DataFrame(trades)) if trades else DataFrame()
 
-    print(results)
-
     assert len(trades) == len(data.trades)
 
     if not results.empty:

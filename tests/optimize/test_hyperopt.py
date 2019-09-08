@@ -214,9 +214,6 @@ def test_start(mocker, default_conf, caplog) -> None:
     args = get_args(args)
     start_hyperopt(args)
 
-    import pprint
-    pprint.pprint(caplog.record_tuples)
-
     assert log_has('Starting freqtrade in Hyperopt mode', caplog)
     assert start_mock.call_count == 1
 
@@ -238,9 +235,6 @@ def test_start_no_data(mocker, default_conf, caplog) -> None:
     ]
     args = get_args(args)
     start_hyperopt(args)
-
-    import pprint
-    pprint.pprint(caplog.record_tuples)
 
     assert log_has('No data found. Terminating.', caplog)
 

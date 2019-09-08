@@ -27,7 +27,6 @@ from tests.conftest import (log_has, log_has_re,
 @pytest.fixture(scope="function")
 def all_conf():
     config_file = Path(__file__).parents[1] / "config_full.json.example"
-    print(config_file)
     conf = load_config_file(str(config_file))
     return conf
 
@@ -713,7 +712,6 @@ def test_load_config_test_comments() -> None:
     Load config with comments
     """
     config_file = Path(__file__).parents[0] / "config_test_comments.json"
-    print(config_file)
     conf = load_config_file(str(config_file))
 
     assert conf

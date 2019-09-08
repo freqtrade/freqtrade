@@ -1035,7 +1035,6 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
     since = 5 * 60 * 500 * 1.8
-    print(f"since = {since}")
     ret = exchange.get_historic_ohlcv(pair, "5m", int((arrow.utcnow().timestamp - since) * 1000))
 
     assert exchange._async_get_candle_history.call_count == 2
@@ -1340,7 +1339,6 @@ def test_get_order(default_conf, mocker, exchange_name):
     order.myid = 123
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     exchange._dry_run_open_orders['X'] = order
-    print(exchange.get_order('X', 'TKN/BTC'))
     assert exchange.get_order('X', 'TKN/BTC').myid == 123
 
     with pytest.raises(InvalidOrderException, match=r'Tried to get an invalid dry-run-order.*'):
