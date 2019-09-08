@@ -43,12 +43,11 @@ Now you have good Buy and Sell strategies and some historic data, you want to te
 real data. This is what we call
 [backtesting](https://en.wikipedia.org/wiki/Backtesting).
 
-Backtesting will use the crypto-currencies (pair) from your config file
-and load static tickers located in
-[/freqtrade/tests/testdata](https://github.com/freqtrade/freqtrade/tree/develop/freqtrade/tests/testdata).
-If the 5 min and 1 min ticker for the crypto-currencies to test is not
-already in the `testdata` directory, backtesting will download them
-automatically. Testdata files will not be updated until you specify it.
+Backtesting will use the crypto-currencies (pairs) from your config file
+and load ticker data from `user_data/data/<exchange>` by default.
+If no data is available for the exchange / pair / ticker interval combination, backtesting will
+ask you to download them first using `freqtrade download-data`. 
+For details on downloading, please refer to the [relevant section](#Getting-data-for-backtesting-and-hyperopt) in the documentation.
 
 The result of backtesting will confirm you if your bot has better odds of making a profit than a loss.
 

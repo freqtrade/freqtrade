@@ -28,19 +28,19 @@ make it pass. It means you have introduced a regression.
 #### Test the whole project
 
 ```bash
-pytest freqtrade
+pytest
 ```
 
 #### Test only one file
 
 ```bash
-pytest freqtrade/tests/test_<file_name>.py
+pytest tests/test_<file_name>.py
 ```
 
 #### Test only one method from one file
 
 ```bash
-pytest freqtrade/tests/test_<file_name>.py::test_<method_name>
+pytest tests/test_<file_name>.py::test_<method_name>
 ```
 
 ### 2. Test if your code is PEP8 compliant
