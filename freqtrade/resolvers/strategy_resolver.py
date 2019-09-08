@@ -13,7 +13,6 @@ from typing import Dict, Optional
 
 from freqtrade import constants, OperationalException
 from freqtrade.resolvers import IResolver
-from freqtrade.strategy import import_strategy
 from freqtrade.strategy.interface import IStrategy
 
 logger = logging.getLogger(__name__)
@@ -158,12 +157,7 @@ class StrategyResolver(IResolver):
                                      strategy._sell_fun_len]]):
                 strategy.INTERFACE_VERSION = 1
 
-            try:
-                return import_strategy(strategy, config=config)
-            except TypeError as e:
-                logger.warning(
-                    f"Impossible to load strategy '{strategy_name}'. "
-                    f"Error: {e}")
+            return strategy
 
         raise OperationalException(
             f"Impossible to load Strategy '{strategy_name}'. This class does not exist "

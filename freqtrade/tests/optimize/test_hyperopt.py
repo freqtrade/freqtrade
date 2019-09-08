@@ -9,7 +9,7 @@ from arrow import Arrow
 from filelock import Timeout
 from pathlib import Path
 
-from freqtrade import DependencyException, OperationalException
+from freqtrade import OperationalException
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.history import load_tickerdata_file
 from freqtrade.optimize import setup_configuration, start_hyperopt
@@ -244,24 +244,6 @@ def test_start_no_data(mocker, default_conf, caplog) -> None:
     pprint.pprint(caplog.record_tuples)
 
     assert log_has('No data found. Terminating.', caplog)
-
-
-def test_start_failure(mocker, default_conf, caplog) -> None:
-    start_mock = MagicMock()
-    patched_configuration_load_config_file(mocker, default_conf)
-    mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.start', start_mock)
-    patch_exchange(mocker)
-
-    args = [
-        '--config', 'config.json',
-        '--strategy', 'SampleStrategy',
-        'hyperopt',
-        '--epochs', '5'
-    ]
-    args = get_args(args)
-    with pytest.raises(DependencyException):
-        start_hyperopt(args)
-    assert log_has("Please don't use --strategy for hyperopt.", caplog)
 
 
 def test_start_filelock(mocker, default_conf, caplog) -> None:
