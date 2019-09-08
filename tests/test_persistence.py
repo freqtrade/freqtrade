@@ -729,7 +729,6 @@ def test_to_json(default_conf, fee):
     )
     result = trade.to_json()
     assert isinstance(result, dict)
-    print(result)
 
     assert result == {'trade_id': None,
                       'pair': 'ETH/BTC',

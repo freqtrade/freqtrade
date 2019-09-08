@@ -451,7 +451,6 @@ def test_generate_text_table_strategyn(default_conf, mocker):
         '| LTC/BTC    |           3 |          30.00 |          90.00 '
         '|       1.30000000 |          45.00 | 0:20:00        |        3 |      0 |'
     )
-    print(backtesting._generate_text_table_strategy(all_results=results))
     assert backtesting._generate_text_table_strategy(all_results=results) == result_str
 
 

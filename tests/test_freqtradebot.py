@@ -970,7 +970,6 @@ def test_execute_buy(mocker, default_conf, fee, markets, limit_buy_order) -> Non
         markets=PropertyMock(return_value=markets)
     )
     pair = 'ETH/BTC'
-    print(buy_mm.call_args_list)
 
     assert freqtrade.execute_buy(pair, stake_amount)
     assert get_bid.call_count == 1

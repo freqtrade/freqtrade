@@ -308,7 +308,6 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
             'end_date': max_date,
         }
     )
-    print(results.T)
 
     assert len(results) == len(data.trades)
     assert round(results["profit_percent"].sum(), 3) == round(data.profit_perc, 3)
