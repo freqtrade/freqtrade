@@ -1,5 +1,4 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
-import os
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
@@ -54,7 +53,7 @@ def create_trials(mocker, hyperopt, testdatadir) -> None:
       - we might have a pickle'd file so make sure that we return
         false when looking for it
     """
-    hyperopt.trials_file = testdatadir / '/optimize/ut_trials.pickle'
+    hyperopt.trials_file = testdatadir / 'optimize/ut_trials.pickle'
 
     mocker.patch.object(Path, "is_file", MagicMock(return_value=False))
     stat_mock = MagicMock()
@@ -356,23 +355,23 @@ def test_no_log_if_loss_does_not_improve(hyperopt, caplog) -> None:
     assert caplog.record_tuples == []
 
 
-def test_save_trials_saves_trials(mocker, hyperopt, caplog) -> None:
-    trials = create_trials(mocker, hyperopt)
+def test_save_trials_saves_trials(mocker, hyperopt, testdatadir, caplog) -> None:
+    trials = create_trials(mocker, hyperopt, testdatadir)
     mock_dump = mocker.patch('freqtrade.optimize.hyperopt.dump', return_value=None)
     hyperopt.trials = trials
     hyperopt.save_trials()
 
-    trials_file = os.path.join('freqtrade', 'tests', 'optimize', 'ut_trials.pickle')
-    assert log_has("Saving 1 evaluations to '{}'".format(trials_file), caplog)
+    trials_file = testdatadir / 'optimize' / 'ut_trials.pickle'
+    assert log_has(f"Saving 1 evaluations to '{trials_file}'", caplog)
     mock_dump.assert_called_once()
 
 
-def test_read_trials_returns_trials_file(mocker, hyperopt, caplog) -> None:
-    trials = create_trials(mocker, hyperopt)
+def test_read_trials_returns_trials_file(mocker, hyperopt, testdatadir, caplog) -> None:
+    trials = create_trials(mocker, hyperopt, testdatadir)
     mock_load = mocker.patch('freqtrade.optimize.hyperopt.load', return_value=trials)
     hyperopt_trial = hyperopt.read_trials()
-    trials_file = os.path.join('freqtrade', 'tests', 'optimize', 'ut_trials.pickle')
-    assert log_has("Reading Trials from '{}'".format(trials_file), caplog)
+    trials_file = testdatadir / 'optimize' / 'ut_trials.pickle'
+    assert log_has(f"Reading Trials from '{trials_file}'", caplog)
     assert hyperopt_trial == trials
     mock_load.assert_called_once()
 

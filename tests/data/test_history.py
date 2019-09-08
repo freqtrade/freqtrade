@@ -160,7 +160,7 @@ def test_load_data_live_noexchange(default_conf, mocker, caplog, testdatadir) ->
 
 
 def test_testdata_path(testdatadir) -> None:
-    assert str(Path('freqtrade') / 'tests' / 'testdata') in str(testdatadir)
+    assert str(Path('tests') / 'testdata') in str(testdatadir)
 
 
 def test_load_cached_data_for_updating(mocker) -> None:

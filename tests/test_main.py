@@ -10,9 +10,9 @@ from freqtrade.configuration import Arguments
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.main import main
 from freqtrade.state import State
-from tests.conftest import (log_has, patch_exchange,
-                                      patched_configuration_load_config_file)
 from freqtrade.worker import Worker
+from tests.conftest import (log_has, patch_exchange,
+                            patched_configuration_load_config_file)
 
 
 def test_parse_args_backtesting(mocker) -> None:
