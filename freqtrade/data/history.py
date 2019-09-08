@@ -57,7 +57,7 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
     return tickerlist[start_index:stop_index]
 
 
-def load_tickerdata_file(datadir: Optional[Path], pair: str, ticker_interval: str,
+def load_tickerdata_file(datadir: Path, pair: str, ticker_interval: str,
                          timerange: Optional[TimeRange] = None) -> Optional[list]:
     """
     Load a pair from file, either .json.gz or .json
@@ -73,7 +73,7 @@ def load_tickerdata_file(datadir: Optional[Path], pair: str, ticker_interval: st
     return pairdata
 
 
-def store_tickerdata_file(datadir: Optional[Path], pair: str,
+def store_tickerdata_file(datadir: Path, pair: str,
                           ticker_interval: str, data: list, is_zip: bool = False):
     """
     Stores tickerdata to file
@@ -84,7 +84,7 @@ def store_tickerdata_file(datadir: Optional[Path], pair: str,
 
 def load_pair_history(pair: str,
                       ticker_interval: str,
-                      datadir: Optional[Path],
+                      datadir: Path,
                       timerange: TimeRange = TimeRange(None, None, 0, 0),
                       refresh_pairs: bool = False,
                       exchange: Optional[Exchange] = None,
@@ -135,7 +135,7 @@ def load_pair_history(pair: str,
         return None
 
 
-def load_data(datadir: Optional[Path],
+def load_data(datadir: Path,
               ticker_interval: str,
               pairs: List[str],
               refresh_pairs: bool = False,
@@ -172,19 +172,13 @@ def load_data(datadir: Optional[Path],
     return result
 
 
-def make_testdata_path(datadir: Optional[Path]) -> Path:
-    """Return the path where testdata files are stored"""
-    return datadir or (Path(__file__).parent.parent / "tests" / "testdata").resolve()
-
-
-def pair_data_filename(datadir: Optional[Path], pair: str, ticker_interval: str) -> Path:
-    path = make_testdata_path(datadir)
+def pair_data_filename(datadir: Path, pair: str, ticker_interval: str) -> Path:
     pair_s = pair.replace("/", "_")
-    filename = path.joinpath(f'{pair_s}-{ticker_interval}.json')
+    filename = datadir.joinpath(f'{pair_s}-{ticker_interval}.json')
     return filename
 
 
-def load_cached_data_for_updating(datadir: Optional[Path], pair: str, ticker_interval: str,
+def load_cached_data_for_updating(datadir: Path, pair: str, ticker_interval: str,
                                   timerange: Optional[TimeRange]) -> Tuple[List[Any],
                                                                            Optional[int]]:
     """
@@ -224,7 +218,7 @@ def load_cached_data_for_updating(datadir: Optional[Path], pair: str, ticker_int
     return (data, since_ms)
 
 
-def download_pair_history(datadir: Optional[Path],
+def download_pair_history(datadir: Path,
                           exchange: Optional[Exchange],
                           pair: str,
                           ticker_interval: str = '5m',

@@ -182,7 +182,7 @@ def init_persistence(default_conf):
 
 
 @pytest.fixture(scope="function")
-def default_conf():
+def default_conf(testdatadir):
     """ Returns validated configuration suitable for most tests """
     configuration = {
         "max_open_trades": 1,
@@ -237,6 +237,7 @@ def default_conf():
             "token": "token",
             "chat_id": "0"
         },
+        "datadir": str(testdatadir),
         "initial_state": "running",
         "db_url": "sqlite://",
         "user_data_dir": Path("user_data"),
@@ -1047,3 +1048,9 @@ def rpc_balance():
             'used': 0.0
         },
     }
+
+
+@pytest.fixture
+def testdatadir() -> Path:
+    """Return the path where testdata files are stored"""
+    return (Path(__file__).parent / "testdata").resolve()

@@ -349,7 +349,7 @@ class Hyperopt:
         timerange = TimeRange.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
         data = load_data(
-            datadir=Path(self.config['datadir']) if self.config.get('datadir') else None,
+            datadir=Path(self.config['datadir']),
             pairs=self.config['exchange']['pair_whitelist'],
             ticker_interval=self.backtesting.ticker_interval,
             refresh_pairs=self.config.get('refresh_pairs', False),

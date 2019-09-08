@@ -485,8 +485,8 @@ def test_has_space(hyperopt):
     assert hyperopt.has_space('buy')
 
 
-def test_populate_indicators(hyperopt) -> None:
-    tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
+def test_populate_indicators(hyperopt, testdatadir) -> None:
+    tick = load_tickerdata_file(testdatadir, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
                                                          fill_missing=True)}
     dataframes = hyperopt.backtesting.strategy.tickerdata_to_dataframe(tickerlist)
@@ -499,8 +499,8 @@ def test_populate_indicators(hyperopt) -> None:
     assert 'rsi' in dataframe
 
 
-def test_buy_strategy_generator(hyperopt) -> None:
-    tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
+def test_buy_strategy_generator(hyperopt, testdatadir) -> None:
+    tick = load_tickerdata_file(testdatadir, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
                                                          fill_missing=True)}
     dataframes = hyperopt.backtesting.strategy.tickerdata_to_dataframe(tickerlist)
