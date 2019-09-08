@@ -5,38 +5,14 @@ import warnings
 from base64 import urlsafe_b64encode
 from os import path
 from pathlib import Path
-from unittest.mock import Mock
 
 import pytest
 from pandas import DataFrame
 
 from freqtrade import OperationalException
 from freqtrade.resolvers import StrategyResolver
-from freqtrade.strategy import import_strategy
-from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.tests.conftest import log_has, log_has_re
-
-
-def test_import_strategy(caplog):
-    caplog.set_level(logging.DEBUG)
-    default_config = {}
-
-    strategy = DefaultStrategy(default_config)
-    strategy.some_method = lambda *args, **kwargs: 42
-
-    assert strategy.__module__ == 'freqtrade.strategy.default_strategy'
-    assert strategy.some_method() == 42
-
-    imported_strategy = import_strategy(strategy, default_config)
-
-    assert dir(strategy) == dir(imported_strategy)
-
-    assert imported_strategy.__module__ == 'freqtrade.strategy'
-    assert imported_strategy.some_method() == 42
-
-    assert log_has('Imported strategy freqtrade.strategy.default_strategy.DefaultStrategy '
-                   'as freqtrade.strategy.DefaultStrategy', caplog)
 
 
 def test_search_strategy():
@@ -94,16 +70,6 @@ def test_load_not_found_strategy(default_conf):
                        match=r"Impossible to load Strategy 'NotFoundStrategy'. "
                              r"This class does not exist or contains Python code errors."):
         strategy._load_strategy(strategy_name='NotFoundStrategy', config=default_conf)
-
-
-def test_load_staticmethod_importerror(mocker, caplog, default_conf):
-    mocker.patch("freqtrade.resolvers.strategy_resolver.import_strategy", Mock(
-        side_effect=TypeError("can't pickle staticmethod objects")))
-    with pytest.raises(OperationalException,
-                       match=r"Impossible to load Strategy 'DefaultStrategy'. "
-                             r"This class does not exist or contains Python code errors."):
-        StrategyResolver(default_conf)
-    assert log_has_re(r".*Error: can't pickle staticmethod objects", caplog)
 
 
 def test_strategy(result, default_conf):
