@@ -179,5 +179,5 @@ freqtrade plot-profit  -p LTC/BTC --db-url sqlite:///tradesv3.sqlite --trade-sou
 ```
 
 ``` bash
-freqtrade plot-profit --datadir ../freqtrade/freqtrade/tests/testdata-20171221/ -p LTC/BTC
+freqtrade plot-profit --datadir user_data/data/binance_save/ -p LTC/BTC
 ```

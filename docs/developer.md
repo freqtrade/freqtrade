@@ -30,7 +30,7 @@ These are available from `conftest.py` and can be imported in any test module.
 A sample check looks as follows:
 
 ``` python
-from freqtrade.tests.conftest import log_has, log_has_re
+from tests.conftest import log_has, log_has_re
 
 def test_method_to_test(caplog):
     method_to_test()
