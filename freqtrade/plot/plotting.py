@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import pandas as pd
-
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import (combine_tickers_with_mean,
@@ -324,7 +323,7 @@ def store_plot_file(fig, filename: str, directory: Path, auto_open: bool = False
     logger.info(f"Stored plot as {_filename}")
 
 
-def analyse_and_plot_pairs(config: Dict[str, Any]):
+def load_and_plot_trades(config: Dict[str, Any]):
     """
     From configuration provided
     - Initializes plot-script
@@ -339,7 +338,6 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
 
     plot_elements = init_plotscript(config)
     trades = plot_elements['trades']
-
     pair_counter = 0
     for pair, data in plot_elements["tickers"].items():
         pair_counter += 1
@@ -348,7 +346,6 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
         tickers[pair] = data
 
         dataframe = strategy.analyze_ticker(tickers[pair], {'pair': pair})
-
         trades_pair = trades.loc[trades['pair'] == pair]
         trades_pair = extract_trades_of_period(dataframe, trades_pair)
 

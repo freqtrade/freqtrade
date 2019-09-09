@@ -13,7 +13,7 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import create_cum_profit, load_backtest_data
 from freqtrade.plot.plot_utils import start_plot_dataframe, start_plot_profit
 from freqtrade.plot.plotting import (add_indicators, add_profit,
-                                     analyse_and_plot_pairs,
+                                     load_and_plot_trades,
                                      generate_candlestick_graph,
                                      generate_plot_filename,
                                      generate_profit_graph, init_plotscript,
@@ -32,7 +32,7 @@ def find_trace_in_fig_data(data, search_string: str):
     return next(matches)
 
 
-def generage_empty_figure():
+def generate_empty_figure():
     return make_subplots(
         rows=3,
         cols=1,
@@ -72,7 +72,7 @@ def test_add_indicators(default_conf, testdatadir, caplog):
     # Generate buy/sell signals and indicators
     strat = DefaultStrategy(default_conf)
     data = strat.analyze_ticker(data, {'pair': pair})
-    fig = generage_empty_figure()
+    fig = generate_empty_figure()
 
     # Row 1
     fig1 = add_indicators(fig=deepcopy(fig), row=1, indicators=indicators1, data=data)
@@ -94,7 +94,7 @@ def test_add_indicators(default_conf, testdatadir, caplog):
 
 
 def test_plot_trades(testdatadir, caplog):
-    fig1 = generage_empty_figure()
+    fig1 = generate_empty_figure()
     # nothing happens when no trades are available
     fig = plot_trades(fig1, None)
     assert fig == fig1
@@ -210,7 +210,7 @@ def test_generate_Plot_filename():
 
 
 def test_generate_plot_file(mocker, caplog):
-    fig = generage_empty_figure()
+    fig = generate_empty_figure()
     plot_mock = mocker.patch("freqtrade.plot.plotting.plot", MagicMock())
     store_plot_file(fig, filename="freqtrade-plot-UNITTEST_BTC-5m.html",
                     directory=Path("user_data/plots"))
@@ -230,7 +230,7 @@ def test_add_profit(testdatadir):
 
     df = history.load_pair_history(pair="POWR/BTC", ticker_interval='5m',
                                    datadir=testdatadir, timerange=timerange)
-    fig = generage_empty_figure()
+    fig = generate_empty_figure()
 
     cum_profits = create_cum_profit(df.set_index('date'),
                                     bt_data[bt_data["pair"] == 'POWR/BTC'],
@@ -279,7 +279,7 @@ def test_generate_profit_graph(testdatadir):
 
 
 def test_start_plot_dataframe(mocker):
-    aup = mocker.patch("freqtrade.plot.plotting.analyse_and_plot_pairs", MagicMock())
+    aup = mocker.patch("freqtrade.plot.plotting.load_and_plot_trades", MagicMock())
     args = [
         "--config", "config.json.example",
         "plot-dataframe",
@@ -293,7 +293,7 @@ def test_start_plot_dataframe(mocker):
     assert called_config['pairs'] == ["ETH/BTC"]
 
 
-def test_analyse_and_plot_pairs(default_conf, mocker, caplog, testdatadir):
+def test_load_and_plot_trades(default_conf, mocker, caplog, testdatadir):
     default_conf['trade_source'] = 'file'
     default_conf["datadir"] = testdatadir
     default_conf['exportfilename'] = str(testdatadir / "backtest-result_test.json")
@@ -308,7 +308,7 @@ def test_analyse_and_plot_pairs(default_conf, mocker, caplog, testdatadir):
         generate_candlestick_graph=candle_mock,
         store_plot_file=store_mock
         )
-    analyse_and_plot_pairs(default_conf)
+    load_and_plot_trades(default_conf)
 
     # Both mocks should be called once per pair
     assert candle_mock.call_count == 2
