@@ -1,0 +1,19 @@
+---
+version: '3'
+services:
+  freqtrade_develop:
+    build:
+      context: .
+      dockerfile: "./Dockerfile"
+    volumes:
+      - ".:/freqtrade"
+
+  pytest:
+    build:
+      context: .
+      dockerfile: "./Dockerfile.develop"
+    volumes:
+      - ".:/freqtrade"
+    command:
+      ["./scripts/pytest.sh"]
+
