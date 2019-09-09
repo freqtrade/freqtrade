@@ -210,3 +210,10 @@ def test_convert_amount(mocker):
         fiat_symbol="BTC"
     )
     assert result == 1.23
+
+    result = fiat_convert.convert_amount(
+        crypto_amount="1.23",
+        crypto_symbol="BTC",
+        fiat_symbol="BTC"
+    )
+    assert result == 1.23
