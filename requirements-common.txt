@@ -1,6 +1,6 @@
 # requirements without requirements installable via conda
 # mainly used for Raspberry pi installs
-ccxt==1.18.1115
+ccxt==1.18.1124
 SQLAlchemy==1.3.8
 python-telegram-bot==12.0.0
 arrow==0.15.0
