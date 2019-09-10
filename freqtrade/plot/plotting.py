@@ -252,7 +252,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     )
     fig.add_trace(volume, 2, 1)
 
-    # Add indicators to seperate row
+    # Add indicators to separate row
     fig = add_indicators(fig=fig, row=3, indicators=indicators2, data=data)
 
     return fig
