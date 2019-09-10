@@ -723,8 +723,9 @@ def test_reload_conf_handle(default_conf, update, mocker) -> None:
     assert 'reloading config' in msg_mock.call_args_list[0][0][0]
 
 
-def test_forcesell_handle(default_conf, update, ticker, fee,
-                          ticker_sell_up, markets, mocker) -> None:
+@pytest.mark.asyncio
+async def test_forcesell_handle(default_conf, update, ticker, fee,
+                                ticker_sell_up, markets, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     rpc_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
@@ -775,8 +776,9 @@ def test_forcesell_handle(default_conf, update, ticker, fee,
     } == last_msg
 
 
-def test_forcesell_down_handle(default_conf, update, ticker, fee,
-                               ticker_sell_down, markets, mocker) -> None:
+@pytest.mark.asyncio
+async def test_forcesell_down_handle(default_conf, update, ticker, fee,
+                                     ticker_sell_down, markets, mocker) -> None:
     mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._find_price',
                  return_value=15000.0)
     rpc_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
@@ -923,7 +925,8 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     assert 'invalid argument' in msg_mock.call_args_list[0][0][0]
 
 
-def test_forcebuy_handle(default_conf, update, markets, mocker) -> None:
+@pytest.mark.asyncio
+async def test_forcebuy_handle(default_conf, update, markets, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch('freqtrade.rpc.telegram.Telegram._send_msg', MagicMock())
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
@@ -963,7 +966,8 @@ def test_forcebuy_handle(default_conf, update, markets, mocker) -> None:
     assert fbuy_mock.call_args_list[0][0][1] == 0.055
 
 
-def test_forcebuy_handle_exception(default_conf, update, markets, mocker) -> None:
+@pytest.mark.asyncio
+async def test_forcebuy_handle_exception(default_conf, update, markets, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     rpc_mock = mocker.patch('freqtrade.rpc.telegram.Telegram._send_msg', MagicMock())
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())

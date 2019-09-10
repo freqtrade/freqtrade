@@ -2198,7 +2198,8 @@ def test_handle_timedout_limit_sell(mocker, default_conf) -> None:
     assert cancel_order_mock.call_count == 1
 
 
-def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, mocker) -> None:
+@pytest.mark.asyncio
+async def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -2244,7 +2245,9 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, moc
     } == last_msg
 
 
-def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets, mocker) -> None:
+@pytest.mark.asyncio
+async def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down,
+                                 markets, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -2291,9 +2294,10 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets,
     } == last_msg
 
 
-def test_execute_sell_down_stoploss_on_exchange_dry_run(default_conf, ticker, fee,
-                                                        ticker_sell_down,
-                                                        markets, mocker) -> None:
+@pytest.mark.asyncio
+async def test_execute_sell_down_stoploss_on_exchange_dry_run(default_conf, ticker, fee,
+                                                              ticker_sell_down,
+                                                              markets, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -2377,9 +2381,10 @@ def test_execute_sell_sloe_cancel_exception(mocker, default_conf, ticker, fee,
     assert log_has('Could not cancel stoploss order abcd', caplog)
 
 
-def test_execute_sell_with_stoploss_on_exchange(default_conf,
-                                                ticker, fee, ticker_sell_up,
-                                                markets, mocker) -> None:
+@pytest.mark.asyncio
+async def test_execute_sell_with_stoploss_on_exchange(default_conf,
+                                                      ticker, fee, ticker_sell_up,
+                                                      markets, mocker) -> None:
 
     default_conf['exchange']['name'] = 'binance'
     rpc_mock = patch_RPCManager(mocker)
@@ -2432,10 +2437,11 @@ def test_execute_sell_with_stoploss_on_exchange(default_conf,
     assert rpc_mock.call_count == 2
 
 
-def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf,
-                                                         ticker, fee,
-                                                         limit_buy_order,
-                                                         markets, mocker) -> None:
+@pytest.mark.asyncio
+async def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf,
+                                                               ticker, fee,
+                                                               limit_buy_order,
+                                                               markets, mocker) -> None:
     default_conf['exchange']['name'] = 'binance'
     rpc_mock = patch_RPCManager(mocker)
     mocker.patch.multiple(
@@ -2499,8 +2505,9 @@ def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf,
     assert rpc_mock.call_count == 2
 
 
-def test_execute_sell_market_order(default_conf, ticker, fee,
-                                   ticker_sell_up, markets, mocker) -> None:
+@pytest.mark.asyncio
+async def test_execute_sell_market_order(default_conf, ticker, fee,
+                                         ticker_sell_up, markets, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -2676,7 +2683,9 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, marke
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
 
 
-def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down, markets, mocker, caplog) -> None:
+@pytest.mark.asyncio
+async def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down,
+                            markets, mocker, caplog) -> None:
     patch_RPCManager(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
