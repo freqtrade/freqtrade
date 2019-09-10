@@ -202,7 +202,6 @@ class IStrategy(ABC):
         :param metadata: Metadata dictionary with additional data (e.g. 'pair')
         :return: DataFrame with ticker data and indicator data
         """
-
         pair = str(metadata.get('pair'))
 
         # Test if seen this pair and last candle before.
@@ -292,7 +291,6 @@ class IStrategy(ABC):
         :param force_stoploss: Externally provided stoploss
         :return: True if trade should be sold, False otherwise
         """
-
         # Set current rate to low for backtesting sell
         current_rate = low or rate
         current_profit = trade.calc_profit_percent(current_rate)
@@ -304,6 +302,8 @@ class IStrategy(ABC):
                                               force_stoploss=force_stoploss, high=high)
 
         if stoplossflag.sell_flag:
+            logger.debug(f"'{trade.pair}' - Stoploss hit. Selling "
+                         f"(sell_type={stoplossflag.sell_type})...")
             return stoplossflag
 
         # Set current rate to high for backtesting sell
@@ -312,22 +312,30 @@ class IStrategy(ABC):
         experimental = self.config.get('experimental', {})
 
         if buy and experimental.get('ignore_roi_if_buy_signal', False):
-            logger.debug('Buy signal still active - not selling.')
+            logger.debug(f"'{trade.pair}' - Buy signal still active. Not selling "
+                         f"(sell_type=SellType.NONE)...")
             return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
 
         # Check if minimal roi has been reached and no longer in buy conditions (avoiding a fee)
         if self.min_roi_reached(trade=trade, current_profit=current_profit, current_time=date):
-            logger.debug('Required profit reached. Selling..')
+            logger.debug(f"'{trade.pair}' - Required profit reached. Selling "
+                         f"(sell_type=SellType.ROI)...")
             return SellCheckTuple(sell_flag=True, sell_type=SellType.ROI)
 
         if experimental.get('sell_profit_only', False):
-            logger.debug('Checking if trade is profitable..')
+            logger.debug(f"'{trade.pair}' - Checking if trade is profitable...")
             if trade.calc_profit(rate=rate) <= 0:
+                logger.debug(f"'{trade.pair}' - Trade is not profitable. Not selling "
+                             f"(sell_type=SellType.NONE)...")
                 return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
+
         if sell and not buy and experimental.get('use_sell_signal', False):
-            logger.debug('Sell signal received. Selling..')
+            logger.debug(f"'{trade.pair}' - Sell signal received. Selling "
+                         f"(sell_type=SellType.SELL_SIGNAL)...")
             return SellCheckTuple(sell_flag=True, sell_type=SellType.SELL_SIGNAL)
 
+        # This one is noisy, commented out...
+#        logger.debug(f"'{trade.pair}' - Not selling (sell_type=SellType.NONE)...")
         return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
 
     def stop_loss_reached(self, current_rate: float, trade: Trade,
@@ -338,7 +346,6 @@ class IStrategy(ABC):
         decides to sell or not
         :param current_profit: current profit in percent
         """
-
         trailing_stop = self.config.get('trailing_stop', False)
         stop_loss_value = force_stoploss if force_stoploss else self.stoploss
 
@@ -359,7 +366,7 @@ class IStrategy(ABC):
                 if 'trailing_stop_positive' in self.config and high_profit > sl_offset:
                     # Ignore mypy error check in configuration that this is a float
                     stop_loss_value = self.config.get('trailing_stop_positive')  # type: ignore
-                    logger.debug(f"using positive stop loss: {stop_loss_value} "
+                    logger.debug(f"'{trade.pair}' - Using positive stoploss: {stop_loss_value} "
                                  f"offset: {sl_offset:.4g} profit: {current_profit:.4f}%")
 
                 trade.adjust_stop_loss(high or current_rate, stop_loss_value)
@@ -369,20 +376,20 @@ class IStrategy(ABC):
             (trade.stop_loss >= current_rate) and
                 (not self.order_types.get('stoploss_on_exchange'))):
 
-            selltype = SellType.STOP_LOSS
+            sell_type = SellType.STOP_LOSS
 
             # If initial stoploss is not the same as current one then it is trailing.
             if trade.initial_stop_loss != trade.stop_loss:
-                selltype = SellType.TRAILING_STOP_LOSS
+                sell_type = SellType.TRAILING_STOP_LOSS
                 logger.debug(
-                    f"HIT STOP: current price at {current_rate:.6f}, "
-                    f"stop loss is {trade.stop_loss:.6f}, "
-                    f"initial stop loss was at {trade.initial_stop_loss:.6f}, "
+                    f"'{trade.pair}' - HIT STOP: current price at {current_rate:.6f}, "
+                    f"stoploss is {trade.stop_loss:.6f}, "
+                    f"initial stoploss was at {trade.initial_stop_loss:.6f}, "
                     f"trade opened at {trade.open_rate:.6f}")
-                logger.debug(f"trailing stop saved {trade.stop_loss - trade.initial_stop_loss:.6f}")
+                logger.debug(f"'{trade.pair}' - Trailing stop saved "
+                             f"{trade.stop_loss - trade.initial_stop_loss:.6f}")
 
-            logger.debug('Stop loss hit.')
-            return SellCheckTuple(sell_flag=True, sell_type=selltype)
+            return SellCheckTuple(sell_flag=True, sell_type=sell_type)
 
         return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
 
