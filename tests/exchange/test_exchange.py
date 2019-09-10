@@ -69,8 +69,7 @@ def test_init(default_conf, mocker, caplog):
     assert log_has('Instance is running with dry_run enabled', caplog)
 
 
-@pytest.mark.asyncio
-async def test_init_ccxt_kwargs(default_conf, mocker, caplog):
+def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
     caplog.set_level(logging.INFO)
     conf = copy.deepcopy(default_conf)
@@ -1363,11 +1362,8 @@ def test_get_order(default_conf, mocker, exchange_name):
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-@pytest.mark.asyncio
-async def test_name(default_conf, mocker, exchange_name):
-    mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
-    default_conf['exchange']['name'] = exchange_name
-    exchange = Exchange(default_conf)
+def test_name(default_conf, mocker, exchange_name):
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
 
     assert exchange.name == exchange_name.title()
     assert exchange.id == exchange_name

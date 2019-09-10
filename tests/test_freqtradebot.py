@@ -2198,12 +2198,11 @@ def test_handle_timedout_limit_sell(mocker, default_conf) -> None:
     assert cancel_order_mock.call_count == 1
 
 
-@pytest.mark.asyncio
-async def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, mocker) -> None:
+def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        _load_markets=MagicMock(return_value={}),
         get_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
@@ -2245,13 +2244,11 @@ async def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, market
     } == last_msg
 
 
-@pytest.mark.asyncio
-async def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down,
-                                 markets, mocker) -> None:
+def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        _load_markets=MagicMock(return_value={}),
         get_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
@@ -2294,14 +2291,13 @@ async def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down,
     } == last_msg
 
 
-@pytest.mark.asyncio
-async def test_execute_sell_down_stoploss_on_exchange_dry_run(default_conf, ticker, fee,
-                                                              ticker_sell_down,
-                                                              markets, mocker) -> None:
+def test_execute_sell_down_stoploss_on_exchange_dry_run(default_conf, ticker, fee,
+                                                        ticker_sell_down,
+                                                        markets, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        _load_markets=MagicMock(return_value={}),
         get_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
@@ -2356,9 +2352,9 @@ def test_execute_sell_sloe_cancel_exception(mocker, default_conf, ticker, fee,
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.cancel_order', side_effect=InvalidOrderException())
     sellmock = MagicMock()
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        _load_markets=MagicMock(return_value={}),
         get_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets),
@@ -2381,16 +2377,15 @@ def test_execute_sell_sloe_cancel_exception(mocker, default_conf, ticker, fee,
     assert log_has('Could not cancel stoploss order abcd', caplog)
 
 
-@pytest.mark.asyncio
-async def test_execute_sell_with_stoploss_on_exchange(default_conf,
-                                                      ticker, fee, ticker_sell_up,
-                                                      markets, mocker) -> None:
+def test_execute_sell_with_stoploss_on_exchange(default_conf,
+                                                ticker, fee, ticker_sell_up,
+                                                markets, mocker) -> None:
 
     default_conf['exchange']['name'] = 'binance'
     rpc_mock = patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        _load_markets=MagicMock(return_value={}),
         get_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
@@ -2437,16 +2432,15 @@ async def test_execute_sell_with_stoploss_on_exchange(default_conf,
     assert rpc_mock.call_count == 2
 
 
-@pytest.mark.asyncio
-async def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf,
-                                                               ticker, fee,
-                                                               limit_buy_order,
-                                                               markets, mocker) -> None:
+def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf,
+                                                         ticker, fee,
+                                                         limit_buy_order,
+                                                         markets, mocker) -> None:
     default_conf['exchange']['name'] = 'binance'
     rpc_mock = patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        _load_markets=MagicMock(return_value={}),
         get_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
@@ -2505,13 +2499,12 @@ async def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf,
     assert rpc_mock.call_count == 2
 
 
-@pytest.mark.asyncio
-async def test_execute_sell_market_order(default_conf, ticker, fee,
-                                         ticker_sell_up, markets, mocker) -> None:
+def test_execute_sell_market_order(default_conf, ticker, fee,
+                                   ticker_sell_up, markets, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        _load_markets=MagicMock(return_value={}),
         get_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
@@ -2683,13 +2676,11 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, marke
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
 
 
-@pytest.mark.asyncio
-async def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down,
-                            markets, mocker, caplog) -> None:
+def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down, markets, mocker, caplog) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        _load_markets=MagicMock(return_value={}),
         get_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)

@@ -26,12 +26,11 @@ def prec_satoshi(a, b) -> float:
 
 
 # Unit tests
-@pytest.mark.asyncio
-async def test_rpc_trade_status(default_conf, ticker, fee, markets, mocker) -> None:
+def test_rpc_trade_status(default_conf, ticker, fee, markets, mocker) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        _load_markets=MagicMock(return_value={}),
         get_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
