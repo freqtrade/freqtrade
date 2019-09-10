@@ -211,7 +211,7 @@ class Trade(_DECL_BASE):
 
     def __repr__(self):
         open_since = (f"{arrow.get(self.open_date).strftime('%Y-%m-%d %H:%M:%S')} "
-                     f"({arrow.get(self.open_date).humanize()})" ) if self.is_open else 'closed'
+                      f"({arrow.get(self.open_date).humanize()})") if self.is_open else 'closed'
 
         return (f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
                 f'open_rate={self.open_rate:.8f}, open_since={open_since})')
