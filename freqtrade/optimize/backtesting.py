@@ -248,7 +248,7 @@ class Backtesting(object):
             fee_close=self.fee,
             is_open=True,
         )
-        logger.debug(f"'{pair}' - Backtesting emulates creation of new trade: {trade}.")
+        logger.debug(f"{pair} - Backtesting emulates creation of new trade: {trade}.")
         # calculate win/lose forwards from buy point
         for sell_row in partial_ticker:
             if max_open_trades > 0:
@@ -305,7 +305,7 @@ class Backtesting(object):
                                     close_rate=sell_row.open,
                                     sell_reason=SellType.FORCE_SELL
                                     )
-            logger.debug(f"'{pair}' - Force selling still open trade, "
+            logger.debug(f"{pair} - Force selling still open trade, "
                          f"profit percent: {bt_res.profit_percent}, "
                          f"profit abs: {bt_res.profit_abs}")
 
@@ -388,7 +388,7 @@ class Backtesting(object):
                                                          max_open_trades)
 
                 if trade_entry:
-                    logger.debug(f"'{pair}' - Locking pair till "
+                    logger.debug(f"{pair} - Locking pair till "
                                  f"close_time={trade_entry.close_time}")
                     lock_pair_until[pair] = trade_entry.close_time
                     trades.append(trade_entry)

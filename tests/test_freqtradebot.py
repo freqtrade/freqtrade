@@ -1823,7 +1823,7 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order,
     # if ROI is reached we must sell
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade)
-    assert log_has("'ETH/BTC' - Required profit reached. Selling (sell_type=SellType.ROI)...",
+    assert log_has("ETH/BTC - Required profit reached. Selling (sell_type=SellType.ROI)...",
                    caplog)
 
 
@@ -1854,7 +1854,7 @@ def test_handle_trade_experimental(
 
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade)
-    assert log_has("'ETH/BTC' - Sell signal received. Selling (sell_type=SellType.SELL_SIGNAL)...",
+    assert log_has("ETH/BTC - Sell signal received. Selling (sell_type=SellType.SELL_SIGNAL)...",
                    caplog)
 
 
@@ -2798,7 +2798,7 @@ def test_trailing_stop_loss(default_conf, limit_buy_order, fee, markets, caplog,
     # Sell as trailing-stop is reached
     assert freqtrade.handle_trade(trade) is True
     assert log_has(
-        f"'ETH/BTC' - HIT STOP: current price at 0.000012, "
+        f"ETH/BTC - HIT STOP: current price at 0.000012, "
         f"stoploss is 0.000015, "
         f"initial stoploss was at 0.000010, trade opened at 0.000011", caplog)
     assert trade.sell_reason == SellType.TRAILING_STOP_LOSS.value
@@ -2842,8 +2842,8 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee, markets
                  }))
     # stop-loss not reached, adjusted stoploss
     assert freqtrade.handle_trade(trade) is False
-    assert log_has(f"'ETH/BTC' - Using positive stoploss: 0.01 offset: 0 profit: 0.2666%", caplog)
-    assert log_has(f"'ETH/BTC' - Adjusting stoploss...", caplog)
+    assert log_has(f"ETH/BTC - Using positive stoploss: 0.01 offset: 0 profit: 0.2666%", caplog)
+    assert log_has(f"ETH/BTC - Adjusting stoploss...", caplog)
     assert trade.stop_loss == 0.0000138501
 
     mocker.patch('freqtrade.exchange.Exchange.get_ticker',
@@ -2855,7 +2855,7 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee, markets
     # Lower price again (but still positive)
     assert freqtrade.handle_trade(trade) is True
     assert log_has(
-        f"'ETH/BTC' - HIT STOP: current price at {buy_price + 0.000002:.6f}, "
+        f"ETH/BTC - HIT STOP: current price at {buy_price + 0.000002:.6f}, "
         f"stoploss is {trade.stop_loss:.6f}, "
         f"initial stoploss was at 0.000010, trade opened at 0.000011", caplog)
 
@@ -2900,9 +2900,9 @@ def test_trailing_stop_loss_offset(default_conf, limit_buy_order, fee,
                  }))
     # stop-loss not reached, adjusted stoploss
     assert freqtrade.handle_trade(trade) is False
-    assert log_has(f"'ETH/BTC' - Using positive stoploss: 0.01 offset: 0.011 profit: 0.2666%",
+    assert log_has(f"ETH/BTC - Using positive stoploss: 0.01 offset: 0.011 profit: 0.2666%",
                    caplog)
-    assert log_has(f"'ETH/BTC' - Adjusting stoploss...", caplog)
+    assert log_has(f"ETH/BTC - Adjusting stoploss...", caplog)
     assert trade.stop_loss == 0.0000138501
 
     mocker.patch('freqtrade.exchange.Exchange.get_ticker',
@@ -2914,7 +2914,7 @@ def test_trailing_stop_loss_offset(default_conf, limit_buy_order, fee,
     # Lower price again (but still positive)
     assert freqtrade.handle_trade(trade) is True
     assert log_has(
-        f"'ETH/BTC' - HIT STOP: current price at {buy_price + 0.000002:.6f}, "
+        f"ETH/BTC - HIT STOP: current price at {buy_price + 0.000002:.6f}, "
         f"stoploss is {trade.stop_loss:.6f}, "
         f"initial stoploss was at 0.000010, trade opened at 0.000011", caplog)
     assert trade.sell_reason == SellType.TRAILING_STOP_LOSS.value
@@ -2967,7 +2967,7 @@ def test_tsl_only_offset_reached(default_conf, limit_buy_order, fee,
     # stop-loss should not be adjusted as offset is not reached yet
     assert freqtrade.handle_trade(trade) is False
 
-    assert not log_has(f"'ETH/BTC' - Adjusting stoploss...", caplog)
+    assert not log_has(f"ETH/BTC - Adjusting stoploss...", caplog)
     assert trade.stop_loss == 0.0000098910
 
     # price rises above the offset (rises 12% when the offset is 5.5%)
@@ -2979,9 +2979,9 @@ def test_tsl_only_offset_reached(default_conf, limit_buy_order, fee,
                  }))
 
     assert freqtrade.handle_trade(trade) is False
-    assert log_has(f"'ETH/BTC' - Using positive stoploss: 0.05 offset: 0.055 profit: 0.1218%",
+    assert log_has(f"ETH/BTC - Using positive stoploss: 0.05 offset: 0.055 profit: 0.1218%",
                    caplog)
-    assert log_has(f"'ETH/BTC' - Adjusting stoploss...", caplog)
+    assert log_has(f"ETH/BTC - Adjusting stoploss...", caplog)
     assert trade.stop_loss == 0.0000117705
 
 
@@ -3350,8 +3350,8 @@ def test_order_book_bid_strategy2(mocker, default_conf, order_book_l2, markets) 
     default_conf['telegram']['enabled'] = False
 
     freqtrade = FreqtradeBot(default_conf)
-    # ordrebook shall be used even if tickers would be lower.
-    assert freqtrade.get_target_bid('ETH/BTC', ) != 0.042
+    # orderbook shall be used even if tickers would be lower.
+    assert freqtrade.get_target_bid('ETH/BTC') != 0.042
     assert ticker_mock.call_count == 0
 
 
