@@ -90,7 +90,7 @@ def test_cleanup(default_conf, mocker) -> None:
 
 
 def test_authorized_only(default_conf, mocker, caplog) -> None:
-    patch_exchange(mocker, None)
+    patch_exchange(mocker)
 
     chat = Chat(0, 0)
     update = Update(randint(1, 100))
@@ -108,7 +108,7 @@ def test_authorized_only(default_conf, mocker, caplog) -> None:
 
 
 def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
-    patch_exchange(mocker, None)
+    patch_exchange(mocker)
     chat = Chat(0xdeadbeef, 0)
     update = Update(randint(1, 100))
     update.message = Message(randint(1, 100), 0, datetime.utcnow(), chat)

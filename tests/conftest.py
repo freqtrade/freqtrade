@@ -117,7 +117,7 @@ def patch_freqtradebot(mocker, config) -> None:
     """
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     persistence.init(config['db_url'])
-    patch_exchange(mocker, None)
+    patch_exchange(mocker)
     mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
 
