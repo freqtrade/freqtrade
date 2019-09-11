@@ -120,7 +120,7 @@ class StrategyResolver(IResolver):
         current_path = Path(__file__).parent.parent.joinpath('strategy').resolve()
 
         abs_paths = [
-            Path(config['user_data_dir']).joinpath('strategies'),
+            config['user_data_dir'].joinpath('strategies'),
             current_path,
         ]
 
