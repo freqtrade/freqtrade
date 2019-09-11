@@ -278,13 +278,12 @@ class Trade(_DECL_BASE):
                 logger.debug(f"{self.pair} - Keeping current stoploss...")
 
         logger.debug(
-            f"{self.pair} - Stoploss adjusted. Current price {current_price:.8f}, "
-            f"bought at {self.open_rate:.8f} and calculated "
-            f"stoploss is at: {self.initial_stop_loss:.8f}, "
-            f"initial stop at {self.stop_loss:.8f}. "
+            f"{self.pair} - Stoploss adjusted. current_price={current_price:.8f}, "
+            f"open_rate={self.open_rate:.8f}, max_rate={self.max_rate:.8f}, "
+            f"initial_stop_loss={self.initial_stop_loss:.8f}, "
+            f"stop_loss={self.stop_loss:.8f}. "
             f"Trailing stoploss saved us: "
-            f"{float(self.stop_loss) - float(self.initial_stop_loss):.8f} "
-            f"and max observed rate was {self.max_rate:.8f}.")
+            f"{float(self.stop_loss) - float(self.initial_stop_loss):.8f}.")
 
     def update(self, order: Dict) -> None:
         """
