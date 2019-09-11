@@ -867,7 +867,7 @@ def test_get_balance_dry_run(default_conf, mocker):
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_balance_prod(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
-    api_mock.fetch_balance = MagicMock(return_value={'BTC': {'free': 123.4}})
+    api_mock.fetch_balance = MagicMock(return_value={'BTC': {'free': 123.4, 'total': 123.4}})
     default_conf['dry_run'] = False
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
@@ -883,6 +883,7 @@ def test_get_balance_prod(default_conf, mocker, exchange_name):
     with pytest.raises(TemporaryError, match=r'.*balance due to malformed exchange response:.*'):
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         mocker.patch('freqtrade.exchange.Exchange.get_balances', MagicMock(return_value={}))
+        mocker.patch('freqtrade.exchange.Kraken.get_balances', MagicMock(return_value={}))
         exchange.get_balance(currency='BTC')
 
 
