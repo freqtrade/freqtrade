@@ -302,8 +302,8 @@ class IStrategy(ABC):
                                               force_stoploss=force_stoploss, high=high)
 
         if stoplossflag.sell_flag:
-            logger.debug(f"{trade.pair} - Stoploss hit. Selling "
-                         f"(sell_type={stoplossflag.sell_type})...")
+            logger.debug(f"{trade.pair} - Stoploss hit. sell_flag=True, "
+                         f"sell_type={stoplossflag.sell_type}")
             return stoplossflag
 
         # Set current rate to high for backtesting sell
@@ -312,30 +312,28 @@ class IStrategy(ABC):
         experimental = self.config.get('experimental', {})
 
         if buy and experimental.get('ignore_roi_if_buy_signal', False):
-            logger.debug(f"{trade.pair} - Buy signal still active. Not selling "
-                         f"(sell_type=SellType.NONE)...")
+            logger.debug(f"{trade.pair} - Buy signal still active. sell_flag=False")
             return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
 
         # Check if minimal roi has been reached and no longer in buy conditions (avoiding a fee)
         if self.min_roi_reached(trade=trade, current_profit=current_profit, current_time=date):
-            logger.debug(f"{trade.pair} - Required profit reached. Selling "
-                         f"(sell_type=SellType.ROI)...")
+            logger.debug(f"{trade.pair} - Required profit reached. sell_flag=True, "
+                         f"sell_type=SellType.ROI")
             return SellCheckTuple(sell_flag=True, sell_type=SellType.ROI)
 
         if experimental.get('sell_profit_only', False):
             logger.debug(f"{trade.pair} - Checking if trade is profitable...")
             if trade.calc_profit(rate=rate) <= 0:
-                logger.debug(f"{trade.pair} - Trade is not profitable. Not selling "
-                             f"(sell_type=SellType.NONE)...")
+                logger.debug(f"{trade.pair} - Trade is not profitable. sell_flag=False")
                 return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
 
         if sell and not buy and experimental.get('use_sell_signal', False):
-            logger.debug(f"{trade.pair} - Sell signal received. Selling "
-                         f"(sell_type=SellType.SELL_SIGNAL)...")
+            logger.debug(f"{trade.pair} - Sell signal received. sell_flag=True, "
+                         f"sell_type=SellType.SELL_SIGNAL")
             return SellCheckTuple(sell_flag=True, sell_type=SellType.SELL_SIGNAL)
 
         # This one is noisy, commented out...
-#        logger.debug(f"{trade.pair} - Not selling (sell_type=SellType.NONE)...")
+#        logger.debug(f"{trade.pair} - No sell signal. sell_flag=False")
         return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
 
     def stop_loss_reached(self, current_rate: float, trade: Trade,

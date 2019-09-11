@@ -1823,7 +1823,7 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order,
     # if ROI is reached we must sell
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade)
-    assert log_has("ETH/BTC - Required profit reached. Selling (sell_type=SellType.ROI)...",
+    assert log_has("ETH/BTC - Required profit reached. sell_flag=True, sell_type=SellType.ROI",
                    caplog)
 
 
@@ -1854,7 +1854,7 @@ def test_handle_trade_experimental(
 
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade)
-    assert log_has("ETH/BTC - Sell signal received. Selling (sell_type=SellType.SELL_SIGNAL)...",
+    assert log_has("ETH/BTC - Sell signal received. sell_flag=True, sell_type=SellType.SELL_SIGNAL",
                    caplog)
 
 
