@@ -32,6 +32,10 @@ class CalmarHyperOptLoss(IHyperOptLoss):
         Objective function, returns smaller number for better results
         """
 
+        # exclude the case when no trade was lost
+        if(results.profit_percent.min() >= 0):
+            return MAX_LOSS
+
         simulated_drawdowns = []
 
         backtest_duration_years = ((max_date-min_date).days/365.2425)
@@ -43,10 +47,6 @@ class CalmarHyperOptLoss(IHyperOptLoss):
         return_avg_per_year = (results.profit_percent.sum() / backtest_duration_years)
 
         sample_size = round(trade_count_average_per_year * SIMULATION_YEAR_DURATION)
-
-        # exclude the case when no trade was lost
-        if(results.profit_percent.min() >= 0):
-            return MAX_LOSS
 
         # simulate n years of run to define a median max drawdown
         for i in range(0, NB_SIMULATIONS):
