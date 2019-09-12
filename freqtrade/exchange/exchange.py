@@ -72,7 +72,7 @@ def retrier(f):
     return wrapper
 
 
-class Exchange(object):
+class Exchange:
 
     _config: Dict = {}
     _params: Dict = {}

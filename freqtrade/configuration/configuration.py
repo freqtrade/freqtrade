@@ -22,7 +22,7 @@ from freqtrade.state import RunMode
 logger = logging.getLogger(__name__)
 
 
-class Configuration(object):
+class Configuration:
     """
     Class to read and init the bot configuration
     Reuse this class for the bot, backtesting, hyperopt and every script that required configuration

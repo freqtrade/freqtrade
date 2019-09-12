@@ -15,7 +15,7 @@ from freqtrade.constants import SUPPORTED_FIAT
 logger = logging.getLogger(__name__)
 
 
-class CryptoFiat(object):
+class CryptoFiat:
     """
     Object to describe what is the price of Crypto-currency in a FIAT
     """
@@ -60,7 +60,7 @@ class CryptoFiat(object):
         return self._expiration - time.time() <= 0
 
 
-class CryptoToFiatConverter(object):
+class CryptoToFiatConverter:
     """
     Main class to initiate Crypto to FIAT.
     This object contains a list of pair Crypto, FIAT
