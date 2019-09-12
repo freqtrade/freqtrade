@@ -38,7 +38,7 @@ class CalmarHyperOptLoss(IHyperOptLoss):
 
         simulated_drawdowns = []
 
-        backtest_duration_years = ((max_date-min_date).days/365.2425)
+        backtest_duration_years = ((max_date-min_date).days/365)
         trade_count_average_per_year = trade_count/backtest_duration_years
 
         # add slipage to be closed to live
