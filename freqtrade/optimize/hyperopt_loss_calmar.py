@@ -59,8 +59,8 @@ class CalmarHyperOptLoss(IHyperOptLoss):
         abs_mediam_simulated_drawdowns = Series(simulated_drawdowns).median()
         calmar_ratio = return_avg_per_year/abs_mediam_simulated_drawdowns
 
-        # Normalize loss value to be float between (0, 1)
-        calmar_loss = 1 - (norm.cdf(calmar_ratio, 0, 100))
+        # Normalize loss value to be float between (0, 1) :  0.5 value mean no profit
+        calmar_loss = 1 - (norm.cdf(calmar_ratio, 0, 10))
 
         # feel free to add other criterias (e.g avg expected time duration)
         loss = (calmar_loss * CALMAR_LOSS_WEIGHT)
