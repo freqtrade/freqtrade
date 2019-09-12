@@ -55,7 +55,7 @@ class CalmarHyperOptLoss(IHyperOptLoss):
         abs_mediam_simulated_drawdowns = Series(simulated_drawdowns).median()
         calmar_ratio = return_avg_simulation_duration/abs_mediam_simulated_drawdowns
 
-        # float between ]0,1[
+        # Normalize loss value to be float between (0, 1)
         calmar_loss = 1 - (norm.cdf(calmar_ratio, 0, 100))
 
         # feel free to add other criterias (e.g avg expected time duration)
