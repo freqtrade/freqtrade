@@ -210,7 +210,7 @@ class Trade(_DECL_BASE):
     ticker_interval = Column(Integer, nullable=True)
 
     def __repr__(self):
-        open_since = self.open_date.strftime('%Y-%m-%d %H:%M:%S') if self.is_open else 'closed'
+        open_since = self.open_date.strftime('%Y-%m-%d %H:%M:%S') if self.open_date else 'closed'
 
         return (f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
                 f'open_rate={self.open_rate:.8f}, open_since={open_since})')
