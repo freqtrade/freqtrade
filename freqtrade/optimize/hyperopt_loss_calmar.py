@@ -1,12 +1,12 @@
 from datetime import datetime
 from pandas import DataFrame, Series
-from freqtrade.optimize.hyperopt import IHyperOptLoss
 import numpy as np
 from scipy.stats import norm
 
+from freqtrade.optimize.hyperopt import IHyperOptLoss, MAX_LOSS
+
 NB_SIMULATIONS = 1000
 SIMULATION_YEAR_DURATION = 3
-HIGH_NUMBER = 100000
 CALMAR_LOSS_WEIGHT = 1
 SLIPPAGE_PERCENT = 0.001
 
@@ -42,7 +42,7 @@ class CalmarHyperOptLoss(IHyperOptLoss):
 
         # exclude the case when no trade was lost
         if(results.profit_percent.min() >= 0):
-            return HIGH_NUMBER
+            return MAX_LOSS
 
         # simulate n years of run to define a median max drawdown
         for i in range(0, NB_SIMULATIONS):
