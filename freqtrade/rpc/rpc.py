@@ -54,7 +54,7 @@ class RPCException(Exception):
         }
 
 
-class RPC(object):
+class RPC:
     """
     RPC class can be used to have extra feature, like bot data, and access to DB data
     """

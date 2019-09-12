@@ -44,7 +44,7 @@ class BacktestResult(NamedTuple):
     sell_reason: SellType
 
 
-class Backtesting(object):
+class Backtesting:
     """
     Backtesting class, this class contains all the logic to run a backtest
 

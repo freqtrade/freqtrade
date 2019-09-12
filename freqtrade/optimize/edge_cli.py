@@ -16,7 +16,7 @@ from freqtrade.resolvers import StrategyResolver
 logger = logging.getLogger(__name__)
 
 
-class EdgeCli(object):
+class EdgeCli:
     """
     EdgeCli class, this class contains all the logic to run edge backtesting
 

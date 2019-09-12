@@ -44,7 +44,7 @@ ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
 NO_CONF_REQURIED = ["download-data", "plot-dataframe", "plot-profit"]
 
 
-class Arguments(object):
+class Arguments:
     """
     Arguments Class. Manage the arguments received by the cli
     """

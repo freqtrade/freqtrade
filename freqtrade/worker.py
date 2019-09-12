@@ -19,7 +19,7 @@ from freqtrade.rpc import RPCMessageType
 logger = logging.getLogger(__name__)
 
 
-class Worker(object):
+class Worker:
     """
     Freqtradebot worker class
     """

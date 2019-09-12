@@ -9,7 +9,7 @@ from freqtrade.rpc import RPC, RPCMessageType
 logger = logging.getLogger(__name__)
 
 
-class RPCManager(object):
+class RPCManager:
     """
     Class to manage RPC objects (Telegram, Slack, ...)
     """
