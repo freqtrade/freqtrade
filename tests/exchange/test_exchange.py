@@ -1363,9 +1363,7 @@ def test_get_order(default_conf, mocker, exchange_name):
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_name(default_conf, mocker, exchange_name):
-    mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
-    default_conf['exchange']['name'] = exchange_name
-    exchange = Exchange(default_conf)
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
 
     assert exchange.name == exchange_name.title()
     assert exchange.id == exchange_name
