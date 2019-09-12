@@ -17,7 +17,7 @@ from freqtrade.state import RunMode
 logger = logging.getLogger(__name__)
 
 
-class DataProvider():
+class DataProvider:
 
     def __init__(self, config: dict, exchange: Exchange) -> None:
         self._config = config
