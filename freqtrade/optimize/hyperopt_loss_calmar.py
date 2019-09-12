@@ -41,7 +41,6 @@ class CalmarHyperOptLoss(IHyperOptLoss):
         results['profit_percent'] -= SLIPPAGE_PERCENT
 
         return_avg_per_year = (results.profit_percent.sum() / backtest_duration_years)
-        return_avg_simulation_duration = return_avg_per_year * SIMULATION_YEAR_DURATION
 
         sample_size = round(trade_count_average_per_year * SIMULATION_YEAR_DURATION)
 
@@ -58,7 +57,7 @@ class CalmarHyperOptLoss(IHyperOptLoss):
             simulated_drawdowns.append(simulated_drawdown)
 
         abs_mediam_simulated_drawdowns = Series(simulated_drawdowns).median()
-        calmar_ratio = return_avg_simulation_duration/abs_mediam_simulated_drawdowns
+        calmar_ratio = return_avg_per_year/abs_mediam_simulated_drawdowns
 
         # Normalize loss value to be float between (0, 1)
         calmar_loss = 1 - (norm.cdf(calmar_ratio, 0, 100))
