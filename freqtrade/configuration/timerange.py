@@ -7,7 +7,7 @@ from typing import Optional
 import arrow
 
 
-class TimeRange():
+class TimeRange:
     """
     object defining timerange inputs.
     [start/stop]type defines if [start/stop]ts shall be used.

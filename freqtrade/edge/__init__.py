@@ -28,7 +28,7 @@ class PairInfo(NamedTuple):
     avg_trade_duration: float
 
 
-class Edge():
+class Edge:
     """
     Calculates Win Rate, Risk Reward Ratio, Expectancy
     against historical data for a give set of markets and a strategy
