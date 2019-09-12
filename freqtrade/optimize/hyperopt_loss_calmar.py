@@ -18,8 +18,8 @@ class CalmarHyperOptLoss(IHyperOptLoss):
     Calmar ratio is based on  average annual rate of return for the last 36 months divided by the
     maximum drawdown for the last 36 months.
     But you maybe don't have running hyperopt with 36 months of data so we will simulate 36 months
-    of trading with a montecarlo simulation and find the median drawdown (what's happenned if the trades
-    orders changes, the max drawdown change ?)
+    of trading with a montecarlo simulation and find the median drawdown (what's happenned if the
+    trades orders changes, the max drawdown change ?)
     shorturl.at/ioAK2
     """
 
