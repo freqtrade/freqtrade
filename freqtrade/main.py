@@ -11,7 +11,6 @@ if sys.version_info < (3, 6):
 
 # flake8: noqa E402
 import logging
-from argparse import Namespace
 from typing import Any, List
 
 from freqtrade import OperationalException

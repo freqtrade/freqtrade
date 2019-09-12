@@ -344,7 +344,7 @@ def test_start_plot_profit_error(mocker):
     argsp = get_args(args)
     # Make sure we use no config. Details: #2241
     # not resetting config causes random failures if config.json exists
-    argsp.config = []
+    argsp["config"] = []
     with pytest.raises(OperationalException):
         start_plot_profit(argsp)
 

@@ -871,7 +871,7 @@ def test_pairlist_resolving_fallback(mocker):
 
     args = Arguments(arglist).get_parsed_arg()
     # Fix flaky tests if config.json exists
-    args.config = None
+    args["config"] = None
 
     configuration = Configuration(args)
     config = configuration.get_config()
