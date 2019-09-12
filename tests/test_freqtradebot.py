@@ -2153,8 +2153,8 @@ def test_check_handle_timedout_exception(default_conf, ticker, mocker, caplog) -
     freqtrade.check_handle_timedout()
     assert log_has_re(r"Cannot query order for Trade\(id=1, pair=ETH/BTC, amount=90.99181073, "
                       r"open_rate=0.00001099, open_since="
-                      f"{open_date.strftime('%Y-%m-%d %H:%M:%S')} "
-                      r"\(10 hours ago\)\) due to Traceback \(most recent call last\):\n*",
+                      f"{open_date.strftime('%Y-%m-%d %H:%M:%S')}"
+                      r"\) due to Traceback \(most recent call last\):\n*",
                       caplog)
 
 
