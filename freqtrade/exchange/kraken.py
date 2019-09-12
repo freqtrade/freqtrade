@@ -29,8 +29,11 @@ class Kraken(Exchange):
             balances.pop("used", None)
 
             orders = self._api.fetch_open_orders()
-            order_list = [[x["symbol"].split("/")[0 if x["side"] == "sell" else 1],
-                           x["remaining"], x["side"], x["amount"], ] for x in orders]
+            order_list = [(x["symbol"].split("/")[0 if x["side"] == "sell" else 1],
+                           x["remaining"],
+                           # Don't remove the below comment, this can be important for debuggung
+                           # x["side"], x["amount"],
+                           ) for x in orders]
             for bal in balances:
                 balances[bal]['used'] = sum(order[1] for order in order_list if order[0] == bal)
                 balances[bal]['free'] = balances[bal]['total'] - balances[bal]['used']
