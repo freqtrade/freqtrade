@@ -33,7 +33,7 @@ class CalmarHyperOptLoss(IHyperOptLoss):
         """
 
         # exclude the case when no trade was lost
-        if(results.profit_percent.min() >= 0):
+        if results.profit_percent.min() >= 0:
             return MAX_LOSS
 
         simulated_drawdowns = []
