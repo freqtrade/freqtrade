@@ -13,9 +13,13 @@ SLIPPAGE_PERCENT = 0.001
 
 class CalmarHyperOptLoss(IHyperOptLoss):
     """
-    Defines the default loss function for hyperopt
-    This is intended to give you some inspiration for your own loss function.
-    The Function needs to return a number (float) - which becomes for better backtest results.
+    Defines the calmar loss function for hyperopt.
+    Calmar ratio is based on  average annual rate of return for the last 36 months divided by the
+    maximum drawdown for the last 36 months.
+    But you maybe don't have running hyperopt with 36 months of data so we will simulate 36 months
+    of trading with a montecarlo simulation and find the median drawdown (what's happenned if the trades
+    orders changes, the max drawdown change ?)
+    shorturl.at/ioAK2
     """
 
     @classmethod
