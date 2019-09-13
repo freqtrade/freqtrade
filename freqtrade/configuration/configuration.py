@@ -106,10 +106,7 @@ class Configuration:
         the -v/--verbose, --logfile options
         """
         # Log level
-        if 'verbosity' in self.args and self.args["verbosity"]:
-            config.update({'verbosity': self.args["verbosity"]})
-        else:
-            config.update({'verbosity': 0})
+        config.update({'verbosity': self.args.get("verbosity", 0)})
 
         if 'logfile' in self.args and self.args["logfile"]:
             config.update({'logfile': self.args["logfile"]})
@@ -121,8 +118,8 @@ class Configuration:
         self._process_logging_options(config)
 
         # Set strategy if not specified in config and or if it's non default
-        if self.args["strategy"] != constants.DEFAULT_STRATEGY or not config.get('strategy'):
-            config.update({'strategy': self.args["strategy"]})
+        if self.args.get("strategy") != constants.DEFAULT_STRATEGY or not config.get('strategy'):
+            config.update({'strategy': self.args.get("strategy")})
 
         self._args_to_config(config, argname='strategy_path',
                              logstring='Using additional Strategy lookup path: {}')
@@ -175,10 +172,7 @@ class Configuration:
         config['user_data_dir'] = create_userdata_dir(config['user_data_dir'], create_dir=False)
         logger.info('Using user-data directory: %s ...', config['user_data_dir'])
 
-        if 'datadir' in self.args and self.args["datadir"]:
-            config.update({'datadir': create_datadir(config, self.args["datadir"])})
-        else:
-            config.update({'datadir': create_datadir(config, None)})
+        config.update({'datadir': create_datadir(config, self.args.get("datadir", None))})
         logger.info('Using data directory: %s ...', config.get('datadir'))
 
     def _process_optimize_options(self, config: Dict[str, Any]) -> None:
