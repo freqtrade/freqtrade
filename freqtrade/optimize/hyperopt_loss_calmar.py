@@ -37,6 +37,7 @@ class CalmarHyperOptLoss(IHyperOptLoss):
             return MAX_LOSS
 
         simulated_drawdowns = []
+        simulated_annualized_returns = []
 
         backtest_duration_years = ((max_date-min_date).days/365)
         trade_count_average_per_year = trade_count/backtest_duration_years
@@ -44,20 +45,21 @@ class CalmarHyperOptLoss(IHyperOptLoss):
         # add slipage to be closed to live
         results['profit_percent'] -= SLIPPAGE_PERCENT
 
-        return_avg_per_year = (results.profit_percent.sum() / backtest_duration_years)
-
         sample_size = round(trade_count_average_per_year * SIMULATION_YEAR_DURATION)
 
-        # simulate n years of run to define a median max drawdown
+        # simulate n years of run to define a median max drawdown and median annual return
         for i in range(0, NB_SIMULATIONS):
             randomized_result = results.profit_percent.sample(n=sample_size,
                                                               random_state=np.random.RandomState(),
                                                               replace=True)
             simulated_drawdown = cls.abs_max_drawdown(randomized_result)
             simulated_drawdowns.append(simulated_drawdown)
+            simulated_annualized_returns.append(randomized_result.sum()/SIMULATION_YEAR_DURATION)
 
         abs_mediam_simulated_drawdowns = Series(simulated_drawdowns).median()
-        calmar_ratio = return_avg_per_year/abs_mediam_simulated_drawdowns
+        mediam_simulated_annualized_returns = Series(simulated_annualized_returns).median()
+
+        calmar_ratio = mediam_simulated_annualized_returns/abs_mediam_simulated_drawdowns
 
         # Normalize loss value to be float between (0, 1) :  0.5 value mean no profit
         calmar_loss = 1 - (norm.cdf(calmar_ratio, 0, 10))
