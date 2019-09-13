@@ -49,9 +49,16 @@ class Configuration:
         and merging their contents.
         Files are loaded in sequence, parameters in later configuration files
         override the same parameter from an earlier file (last definition wins).
+        Runs through the whole Configuration initialization, so all expected config entries
+        are available to interactive environments.
         :param files: List of file paths
         :return: configuration dictionary
         """
+        c = Configuration({"config": files}, RunMode.OTHER)
+        return c.get_config()
+
+    def load_from_files(self, files: List[str]) -> Dict[str, Any]:
+
         # Keep this method as staticmethod, so it can be used from interactive environments
         config: Dict[str, Any] = {}
 
@@ -81,7 +88,7 @@ class Configuration:
         :return: Configuration dictionary
         """
         # Load all configs
-        config: Dict[str, Any] = Configuration.from_files(self.args["config"])
+        config: Dict[str, Any] = self.load_from_files(self.args["config"])
 
         self._process_common_options(config)
 
