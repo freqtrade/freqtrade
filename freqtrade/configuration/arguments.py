@@ -80,7 +80,7 @@ class Arguments:
 
         return parsed_arg
 
-    def _build_args(self, optionlist, parser=None):
+    def _build_args(self, optionlist, parser):
 
         for val in optionlist:
             opt = AVAILABLE_CLI_OPTIONS[val]
