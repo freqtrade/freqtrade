@@ -14,8 +14,8 @@ ARGS_STRATEGY = ["strategy", "strategy_path"]
 
 ARGS_MAIN = ARGS_STRATEGY + ["db_url", "sd_notify"]
 
-ARGS_COMMON_OPTIMIZE = ["ticker_interval", "timerange",
-                        "max_open_trades", "stake_amount"]
+ARGS_COMMON_OPTIMIZE = ARGS_STRATEGY + ["ticker_interval", "timerange",
+                                        "max_open_trades", "stake_amount"]
 
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
                                         "strategy_list", "export", "exportfilename"]
@@ -75,7 +75,7 @@ class Arguments:
         # (see https://bugs.python.org/issue16399)
         # Allow no-config for certain commands (like downloading / plotting)
         if (parsed_arg.config is None and ((Path.cwd() / constants.DEFAULT_CONFIG).is_file() or
-           not ('subparser' in parsed_arg and parsed_arg.subparser in NO_CONF_REQURIED))):
+           not ('command' in parsed_arg and parsed_arg.command in NO_CONF_REQURIED))):
             parsed_arg.config = [constants.DEFAULT_CONFIG]
 
         return parsed_arg
@@ -120,7 +120,8 @@ class Arguments:
         self._build_args(optionlist=ARGS_BACKTEST, parser=backtesting_cmd)
 
         # Add edge subcommand
-        edge_cmd = subparsers.add_parser('edge', help='Edge module.', parents=[_common_parser])
+        edge_cmd = subparsers.add_parser('edge', help='Edge module.',
+                                         parents=[_common_parser])
         edge_cmd.set_defaults(func=start_edge)
         self._build_args(optionlist=ARGS_EDGE, parser=edge_cmd)
 
