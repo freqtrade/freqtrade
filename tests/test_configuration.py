@@ -806,8 +806,8 @@ def test_pairlist_resolving():
 def test_pairlist_resolving_with_config(mocker, default_conf):
     patched_configuration_load_config_file(mocker, default_conf)
     arglist = [
-        '--config', 'config.json',
         'download-data',
+        '--config', 'config.json',
     ]
 
     args = Arguments(arglist).get_parsed_arg()
@@ -820,8 +820,8 @@ def test_pairlist_resolving_with_config(mocker, default_conf):
 
     # Override pairs
     arglist = [
-        '--config', 'config.json',
         'download-data',
+        '--config', 'config.json',
         '--pairs', 'ETH/BTC', 'XRP/BTC',
     ]
 
@@ -842,8 +842,8 @@ def test_pairlist_resolving_with_config_pl(mocker, default_conf):
     mocker.patch.object(Path, "open", MagicMock(return_value=MagicMock()))
 
     arglist = [
-        '--config', 'config.json',
         'download-data',
+        '--config', 'config.json',
         '--pairs-file', 'pairs.json',
     ]
 
@@ -864,8 +864,8 @@ def test_pairlist_resolving_with_config_pl_not_exists(mocker, default_conf):
     mocker.patch.object(Path, "exists", MagicMock(return_value=False))
 
     arglist = [
-        '--config', 'config.json',
         'download-data',
+        '--config', 'config.json',
         '--pairs-file', 'pairs.json',
     ]
 
