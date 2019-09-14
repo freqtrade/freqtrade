@@ -171,7 +171,7 @@ AVAILABLE_CLI_OPTIONS = {
         default=constants.HYPEROPT_EPOCH,
     ),
     "spaces": Arg(
-        '-s', '--spaces',
+        '--spaces',
         help='Specify which parameters to hyperopt. Space-separated list. '
         'Default: `%(default)s`.',
         choices=['all', 'buy', 'sell', 'roi', 'stoploss'],
