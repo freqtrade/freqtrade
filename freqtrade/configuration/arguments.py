@@ -99,12 +99,19 @@ class Arguments:
         # Build main command
         self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot',
                                               parents=[_common_parser])
-        self._build_args(optionlist=ARGS_MAIN, parser=self.parser)
 
         from freqtrade.optimize import start_backtesting, start_hyperopt, start_edge
-        from freqtrade.utils import start_create_userdir, start_download_data, start_list_exchanges
+        from freqtrade.utils import (start_create_userdir, start_download_data,
+                                     start_list_exchanges, start_trading)
+        from freqtrade.plot.plot_utils import start_plot_dataframe, start_plot_profit
 
-        subparsers = self.parser.add_subparsers(dest='subparser')
+        subparsers = self.parser.add_subparsers(dest='subparser', required=True)
+
+        # Add trade subcommand
+        trade_cmd = subparsers.add_parser('trade', help='Trade module.',
+                                          parents=[_common_parser])
+        trade_cmd.set_defaults(func=start_trading)
+        self._build_args(optionlist=ARGS_MAIN, parser=trade_cmd)
 
         # Add backtesting subcommand
         backtesting_cmd = subparsers.add_parser('backtesting', help='Backtesting module.',
@@ -149,7 +156,6 @@ class Arguments:
         self._build_args(optionlist=ARGS_DOWNLOAD_DATA, parser=download_data_cmd)
 
         # Add Plotting subcommand
-        from freqtrade.plot.plot_utils import start_plot_dataframe, start_plot_profit
         plot_dataframe_cmd = subparsers.add_parser('plot-dataframe',
                                                    help='Plot candles with indicators.',
                                                    parents=[_common_parser],

@@ -33,6 +33,17 @@ def setup_utils_configuration(args: Dict[str, Any], method: RunMode) -> Dict[str
     return config
 
 
+def start_trading(args: Dict[str, Any]) -> int:
+    """
+    Main entry point for trading mode
+    """
+    from freqtrade.worker import Worker
+    # Load and run worker
+    worker = Worker(args)
+    worker.run()
+    return 0
+
+
 def start_list_exchanges(args: Dict[str, Any]) -> None:
     """
     Print available exchanges
@@ -47,7 +58,7 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
               f"{', '.join(available_exchanges())}")
 
 
-def start_create_userdir(args: Dict[str, Any]) -> None:
+def start_create_userdir(args: Dict[str, Any]) -> int:
     """
     Create "user_data" directory to contain user data strategies, hyperopts, ...)
     :param args: Cli args from Arguments()
@@ -57,7 +68,7 @@ def start_create_userdir(args: Dict[str, Any]) -> None:
         create_userdata_dir(args["user_data_dir"], create_dir=True)
     else:
         logger.warning("`create-userdir` requires --userdir to be set.")
-        sys.exit(1)
+        return 1
 
 
 def start_download_data(args: Dict[str, Any]) -> None:
