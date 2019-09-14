@@ -1,6 +1,5 @@
 import logging
 import sys
-from argparse import Namespace
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -16,7 +15,7 @@ from freqtrade.state import RunMode
 logger = logging.getLogger(__name__)
 
 
-def setup_utils_configuration(args: Namespace, method: RunMode) -> Dict[str, Any]:
+def setup_utils_configuration(args: Dict[str, Any], method: RunMode) -> Dict[str, Any]:
     """
     Prepare the configuration for utils subcommands
     :param args: Cli args from Arguments()
@@ -33,34 +32,34 @@ def setup_utils_configuration(args: Namespace, method: RunMode) -> Dict[str, Any
     return config
 
 
-def start_list_exchanges(args: Namespace) -> None:
+def start_list_exchanges(args: Dict[str, Any]) -> None:
     """
     Print available exchanges
     :param args: Cli args from Arguments()
     :return: None
     """
 
-    if args.print_one_column:
+    if args['print_one_column']:
         print('\n'.join(available_exchanges()))
     else:
         print(f"Exchanges supported by ccxt and available for Freqtrade: "
               f"{', '.join(available_exchanges())}")
 
 
-def start_create_userdir(args: Namespace) -> None:
+def start_create_userdir(args: Dict[str, Any]) -> None:
     """
     Create "user_data" directory to contain user data strategies, hyperopts, ...)
     :param args: Cli args from Arguments()
     :return: None
     """
-    if "user_data_dir" in args and args.user_data_dir:
-        create_userdata_dir(args.user_data_dir, create_dir=True)
+    if "user_data_dir" in args and args["user_data_dir"]:
+        create_userdata_dir(args["user_data_dir"], create_dir=True)
     else:
         logger.warning("`create-userdir` requires --userdir to be set.")
         sys.exit(1)
 
 
-def start_download_data(args: Namespace) -> None:
+def start_download_data(args: Dict[str, Any]) -> None:
     """
     Download data (former download_backtest_data.py script)
     """

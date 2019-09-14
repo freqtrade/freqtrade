@@ -91,7 +91,8 @@ df.groupby("pair")["sell_reason"].value_counts()
 
 ### Load multiple configuration files
 
-This option can be useful to inspect the results of passing in multiple configs
+This option can be useful to inspect the results of passing in multiple configs.
+This will also run through the whole Configuration initialization, so the configuration is completely initialized to be passed to other methods.
 
 ``` python
 import json
@@ -101,7 +102,16 @@ from freqtrade.configuration import Configuration
 config = Configuration.from_files(["config1.json", "config2.json"])
 
 # Show the config in memory
-print(json.dumps(config, indent=1))
+print(json.dumps(config, indent=2))
+```
+
+For Interactive environments, have an additional configuration specifying `user_data_dir` and pass this in last, so you don't have to change directories while running the bot.
+Best avoid relative paths, since this starts at the storage location of the jupyter notebook, unless the directory is changed.
+
+``` json
+{
+    "user_data_dir": "~/.freqtrade/"
+}
 ```
 
 ### Load exchange data to a pandas dataframe
