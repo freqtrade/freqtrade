@@ -105,7 +105,7 @@ class Arguments:
                                      start_list_exchanges, start_trading)
         from freqtrade.plot.plot_utils import start_plot_dataframe, start_plot_profit
 
-        subparsers = self.parser.add_subparsers(dest='subparser', required=True)
+        subparsers = self.parser.add_subparsers(dest='command', required=True)
 
         # Add trade subcommand
         trade_cmd = subparsers.add_parser('trade', help='Trade module.',
