@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103
 import argparse
+import re
 
 import pytest
 
@@ -8,8 +9,16 @@ from freqtrade.configuration.cli_options import check_int_positive
 
 
 # Parse common command-line-arguments. Used for all tools
-def test_parse_args_none() -> None:
+def test_parse_args_error(capsys) -> None:
     arguments = Arguments([])
+    with pytest.raises(SystemExit):
+        arguments.get_parsed_arg()
+    captured = capsys.readouterr()
+    assert re.search(r".*the following arguments are required.*", captured.err)
+
+
+def test_parse_args_none() -> None:
+    arguments = Arguments(['trade'])
     assert isinstance(arguments, Arguments)
     x = arguments.get_parsed_arg()
     assert isinstance(x, dict)
@@ -17,7 +26,7 @@ def test_parse_args_none() -> None:
 
 
 def test_parse_args_defaults() -> None:
-    args = Arguments([]).get_parsed_arg()
+    args = Arguments(['trade']).get_parsed_arg()
     assert args["config"] == ['config.json']
     assert args["strategy_path"] is None
     assert args["datadir"] is None
