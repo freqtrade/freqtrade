@@ -13,7 +13,7 @@ from tests.conftest import get_args, log_has, patch_exchange
 
 def test_setup_utils_configuration():
     args = [
-        '--config', 'config.json.example',
+        'list-exchanges', '--config', 'config.json.example',
     ]
 
     config = setup_utils_configuration(get_args(args), RunMode.OTHER)

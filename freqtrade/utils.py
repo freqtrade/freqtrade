@@ -68,7 +68,7 @@ def start_create_userdir(args: Dict[str, Any]) -> int:
         create_userdata_dir(args["user_data_dir"], create_dir=True)
     else:
         logger.warning("`create-userdir` requires --userdir to be set.")
-        return 1
+        sys.exit(1)
 
 
 def start_download_data(args: Dict[str, Any]) -> None:
