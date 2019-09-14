@@ -1590,6 +1590,8 @@ def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> No
     Trade.session = MagicMock()
     trade.open_order_id = '123'
     trade.open_fee = 0.001
+    # Add datetime explicitly since sqlalchemy defaults apply only once written to database
+    trade.open_date = arrow.utcnow().datetime
     freqtrade.update_trade_state(trade)
     # Test amount not modified by fee-logic
     assert not log_has_re(r'Applying fee to .*', caplog)
