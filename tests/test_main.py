@@ -58,7 +58,7 @@ def test_main_fatal_exception(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
 
-    args = ['-c', 'config.json.example']
+    args = ['trade', '-c', 'config.json.example']
 
     # Test Main + the KeyboardInterrupt exception
     with pytest.raises(SystemExit):
@@ -75,7 +75,7 @@ def test_main_keyboard_interrupt(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
 
-    args = ['-c', 'config.json.example']
+    args = ['trade', '-c', 'config.json.example']
 
     # Test Main + the KeyboardInterrupt exception
     with pytest.raises(SystemExit):
@@ -95,7 +95,7 @@ def test_main_operational_exception(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
 
-    args = ['-c', 'config.json.example']
+    args = ['trade', '-c', 'config.json.example']
 
     # Test Main + the KeyboardInterrupt exception
     with pytest.raises(SystemExit):
@@ -114,15 +114,15 @@ def test_main_reload_conf(mocker, default_conf, caplog) -> None:
                                          OperationalException("Oh snap!")])
     mocker.patch('freqtrade.worker.Worker._worker', worker_mock)
     patched_configuration_load_config_file(mocker, default_conf)
-    reconfigure_mock = mocker.patch('freqtrade.main.Worker._reconfigure', MagicMock())
+    reconfigure_mock = mocker.patch('freqtrade.worker.Worker._reconfigure', MagicMock())
 
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
 
-    args = Arguments(['-c', 'config.json.example']).get_parsed_arg()
+    args = Arguments(['trade', '-c', 'config.json.example']).get_parsed_arg()
     worker = Worker(args=args, config=default_conf)
     with pytest.raises(SystemExit):
-        main(['-c', 'config.json.example'])
+        main(['trade', '-c', 'config.json.example'])
 
     assert log_has('Using config: config.json.example ...', caplog)
     assert worker_mock.call_count == 4
@@ -141,7 +141,7 @@ def test_reconfigure(mocker, default_conf) -> None:
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
 
-    args = Arguments(['-c', 'config.json.example']).get_parsed_arg()
+    args = Arguments(['trade', '-c', 'config.json.example']).get_parsed_arg()
     worker = Worker(args=args, config=default_conf)
     freqtrade = worker.freqtrade
 

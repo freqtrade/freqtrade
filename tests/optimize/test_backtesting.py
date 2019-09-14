@@ -169,9 +169,9 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     patched_configuration_load_config_file(mocker, default_conf)
 
     args = [
+        'backtesting',
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
-        'backtesting'
     ]
 
     config = setup_configuration(get_args(args), RunMode.BACKTEST)
@@ -202,10 +202,10 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
     )
 
     args = [
+        'backtesting',
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
         '--datadir', '/foo/bar',
-        'backtesting',
         '--ticker-interval', '1m',
         '--enable-position-stacking',
         '--disable-max-market-positions',
@@ -250,9 +250,9 @@ def test_setup_configuration_unlimited_stake_amount(mocker, default_conf, caplog
     patched_configuration_load_config_file(mocker, default_conf)
 
     args = [
+        'backtesting',
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
-        'backtesting'
     ]
 
     with pytest.raises(DependencyException, match=r'.*stake amount.*'):
@@ -267,9 +267,9 @@ def test_start(mocker, fee, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
 
     args = [
+        'backtesting',
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
-        'backtesting'
     ]
     args = get_args(args)
     start_backtesting(args)
@@ -812,10 +812,10 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
     patched_configuration_load_config_file(mocker, default_conf)
 
     args = [
+        'backtesting',
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
         '--datadir', str(testdatadir),
-        'backtesting',
         '--ticker-interval', '1m',
         '--timerange', '-100',
         '--enable-position-stacking',
@@ -859,9 +859,9 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
     patched_configuration_load_config_file(mocker, default_conf)
 
     args = [
+        'backtesting',
         '--config', 'config.json',
         '--datadir', str(testdatadir),
-        'backtesting',
         '--ticker-interval', '1m',
         '--timerange', '-100',
         '--enable-position-stacking',
