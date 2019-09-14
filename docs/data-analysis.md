@@ -106,7 +106,7 @@ print(json.dumps(config, indent=2))
 ```
 
 For Interactive environments, have an additional configuration specifying `user_data_dir` and pass this in last, so you don't have to change directories while running the bot.
-Best avoid relative paths, since this starts at the storage location of the jupyter notebook, unless the folder is changed.
+Best avoid relative paths, since this starts at the storage location of the jupyter notebook, unless the directory is changed.
 
 ``` json
 {
