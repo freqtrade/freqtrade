@@ -603,7 +603,7 @@ def test_processed(default_conf, mocker, testdatadir) -> None:
     cols = dataframe.columns
     # assert the dataframe got some of the indicator columns
     for col in ['close', 'high', 'low', 'open', 'date',
-                'ema50', 'ao', 'macd', 'plus_dm']:
+                'ema10', 'rsi', 'fastd', 'plus_di']:
         assert col in cols
 
 
