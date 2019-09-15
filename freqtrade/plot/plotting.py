@@ -332,13 +332,14 @@ def load_and_plot_trades(config: Dict[str, Any]):
     - Load trades excecuted during the selected period
     - Generate Plotly plot objects
     - Generate plot files
-    :return: None
+    :return: Dict of fig, data, trades for each pair and interval
     """
     strategy = StrategyResolver(config).strategy
 
     plot_elements = init_plotscript(config)
     trades = plot_elements['trades']
     pair_counter = 0
+    plot_data = {}
     for pair, data in plot_elements["tickers"].items():
         pair_counter += 1
         logger.info("analyse pair %s", pair)
@@ -359,16 +360,23 @@ def load_and_plot_trades(config: Dict[str, Any]):
 
         store_plot_file(fig, filename=generate_plot_filename(pair, config['ticker_interval']),
                         directory=config['user_data_dir'] / "plot")
+        plot_data[generate_plot_filename(pair,
+                                         config['ticker_interval'])] = {"fig": fig, 
+                                                                        "data": dataframe, 
+                                                                        "trades": trades}
 
     logger.info('End of plotting process. %s plots generated', pair_counter)
+    logger.info(f'fig, data, trades are available with the keys {list(plot_data)}')
+    return plot_data
 
 
-def plot_profit(config: Dict[str, Any]) -> None:
+def plot_profit(config: Dict[str, Any], auto_open: bool = False) -> None:
     """
     Plots the total profit for all pairs.
     Note, the profit calculation isn't realistic.
     But should be somewhat proportional, and therefor useful
     in helping out to find a good algorithm.
+    :return: profit plot
     """
     plot_elements = init_plotscript(config)
     trades = load_trades(config['trade_source'],
@@ -382,4 +390,5 @@ def plot_profit(config: Dict[str, Any]) -> None:
     # this could be useful to gauge the overall market trend
     fig = generate_profit_graph(plot_elements["pairs"], plot_elements["tickers"], trades)
     store_plot_file(fig, filename='freqtrade-profit-plot.html',
-                    directory=config['user_data_dir'] / "plot", auto_open=True)
+                    directory=config['user_data_dir'] / "plot", auto_open=auto_open)
+    return fig
