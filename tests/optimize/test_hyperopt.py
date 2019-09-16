@@ -68,8 +68,8 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
     patched_configuration_load_config_file(mocker, default_conf)
 
     args = [
+        'hyperopt',
         '--config', 'config.json',
-        'hyperopt'
     ]
 
     config = setup_configuration(get_args(args), RunMode.HYPEROPT)
@@ -99,9 +99,9 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
     )
 
     args = [
+        'hyperopt',
         '--config', 'config.json',
         '--datadir', '/foo/bar',
-        'hyperopt',
         '--ticker-interval', '1m',
         '--timerange', ':100',
         '--enable-position-stacking',
@@ -215,8 +215,8 @@ def test_start(mocker, default_conf, caplog) -> None:
     patch_exchange(mocker)
 
     args = [
-        '--config', 'config.json',
         'hyperopt',
+        '--config', 'config.json',
         '--epochs', '5'
     ]
     args = get_args(args)
@@ -237,8 +237,8 @@ def test_start_no_data(mocker, default_conf, caplog) -> None:
     patch_exchange(mocker)
 
     args = [
-        '--config', 'config.json',
         'hyperopt',
+        '--config', 'config.json',
         '--epochs', '5'
     ]
     args = get_args(args)
@@ -254,8 +254,8 @@ def test_start_filelock(mocker, default_conf, caplog) -> None:
     patch_exchange(mocker)
 
     args = [
-        '--config', 'config.json',
         'hyperopt',
+        '--config', 'config.json',
         '--epochs', '5'
     ]
     args = get_args(args)
