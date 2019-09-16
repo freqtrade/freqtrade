@@ -58,7 +58,7 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
               f"{', '.join(available_exchanges())}")
 
 
-def start_create_userdir(args: Dict[str, Any]) -> int:
+def start_create_userdir(args: Dict[str, Any]) -> None:
     """
     Create "user_data" directory to contain user data strategies, hyperopts, ...)
     :param args: Cli args from Arguments()

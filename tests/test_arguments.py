@@ -1,10 +1,8 @@
 # pragma pylint: disable=missing-docstring, C0103
 import argparse
-import re
 
 import pytest
 
-from freqtrade import OperationalException
 from freqtrade.configuration import Arguments
 from freqtrade.configuration.cli_options import check_int_positive
 
