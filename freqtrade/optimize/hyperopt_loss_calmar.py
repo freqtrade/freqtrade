@@ -77,8 +77,8 @@ class CalmarHyperOptLoss(IHyperOptLoss):
         """
         expected_trade_loss_penalty = 1 - norm.cdf(trade_count-NB_EXPECTED_TRADES,-NB_EXPECTED_TRADES,(NB_EXPECTED_TRADES*(2/3))*EXPECTED_TRADES_WEIGHT)
 
-        # feel free to add other criterias (e.g avg expected time duration)
-        loss = (calmar_loss * CALMAR_LOSS_WEIGHT)
+        # want to see the loss -> shorturl.at/DHX34
+        loss = calmar_loss + expected_trade_loss_penalty
 
         # print('calmar_ratio {}'.format(calmar_ratio))
 
