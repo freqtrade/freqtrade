@@ -17,7 +17,7 @@ EXPECTED_TRADES_WEIGHT = 0.5
 class CalmarHyperOptLoss(IHyperOptLoss):
     """
     Defines the calmar loss function for hyperopt (you maybe need to add other criterias
-    like the number of trades expected and the max duration expected).
+    as the max duration expected).
     Calmar ratio is based on  average annual rate of return for the last 36 months divided by the
     maximum drawdown for the last 36 months.
     But you maybe don't have running hyperopt with 36 months of data so we will simulate 36 months
