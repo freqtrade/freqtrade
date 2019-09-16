@@ -70,12 +70,15 @@ class CalmarHyperOptLoss(IHyperOptLoss):
         0 mean no profit
         """
         calmar_loss = 0.5 - (norm.cdf(calmar_ratio, 0, 1.5/CALMAR_LOSS_WEIGHT))
+        normalized_expected_trade_loss = norm.cdf(trade_count-NB_EXPECTED_TRADES,
+                                                  -NB_EXPECTED_TRADES,
+                                                  (NB_EXPECTED_TRADES*(2/3))*EXPECTED_TRADES_WEIGHT)
 
         """
         Normalize loss value to be float between (0, 0.5) :
         Closed to 0 mean trade_count = NB_EXPECTED_TRADES
         """
-        expected_trade_loss_penalty = 1 - norm.cdf(trade_count-NB_EXPECTED_TRADES,-NB_EXPECTED_TRADES,(NB_EXPECTED_TRADES*(2/3))*EXPECTED_TRADES_WEIGHT)
+        expected_trade_loss_penalty = 1 - normalized_expected_trade_loss
 
         # want to see the loss -> shorturl.at/DHX34
         loss = calmar_loss + expected_trade_loss_penalty
