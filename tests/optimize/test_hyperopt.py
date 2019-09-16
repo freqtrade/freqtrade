@@ -560,6 +560,7 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     }
 
     hyperopt = Hyperopt(default_conf)
+    hyperopt.dimensions = hyperopt.hyperopt_space()
     generate_optimizer_value = hyperopt.generate_optimizer(list(optimizer_param.values()))
     assert generate_optimizer_value == response_expected
 
