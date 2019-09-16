@@ -99,6 +99,7 @@ class Arguments:
 
         # Build main command
         self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot')
+        self._build_args(optionlist=['version'], parser=self.parser)
 
         from freqtrade.optimize import start_backtesting, start_hyperopt, start_edge
         from freqtrade.utils import (start_create_userdir, start_download_data,
