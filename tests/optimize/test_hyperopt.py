@@ -44,6 +44,7 @@ def hyperopt_results():
         }
     )
 
+
 @pytest.fixture(scope='function')
 def hyperopt_results_min_median_drawdown():
     return pd.DataFrame(
@@ -52,9 +53,11 @@ def hyperopt_results_min_median_drawdown():
             'profit_percent': [0.1, 0.1, -0.1, 0.1, 0.1],
             'profit_abs': [0.2, 0.2, -0.2, 0.2, 0.2],
             'trade_duration': [10, 30, 10, 30, 10],
-            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS,SellType.ROI, SellType.ROI]
+            'sell_reason':
+            [SellType.ROI, SellType.ROI, SellType.STOP_LOSS, SellType.ROI, SellType.ROI]
         }
     )
+
 
 @pytest.fixture(scope='function')
 def hyperopt_results_max_median_drawdown():
@@ -64,9 +67,11 @@ def hyperopt_results_max_median_drawdown():
             'profit_percent': [0.3, -0.1, -0.1, -0.1, 0.3],
             'profit_abs': [0.6, -0.2, -0.2, -0.2, 0.6],
             'trade_duration': [10, 30, 10, 30, 10],
-            'sell_reason': [SellType.ROI, SellType.STOP_LOSS, SellType.STOP_LOSS,SellType.STOP_LOSS, SellType.ROI]
+            'sell_reason':
+            [SellType.ROI, SellType.STOP_LOSS, SellType.STOP_LOSS, SellType.STOP_LOSS, SellType.ROI]
         }
     )
+
 
 # Functions for recurrent object patching
 def create_trials(mocker, hyperopt, testdatadir) -> None:
@@ -328,7 +333,13 @@ def test_sharpe_loss_prefers_higher_profits(default_conf, hyperopt_results) -> N
     assert over < correct
     assert under > correct
 
-# When the profit a two backtests are the same i prefer to take the one that minimise the median drawdown
+
+"""
+When the profit a two backtests are the same i prefer to take
+the one that minimise the median drawdown
+"""
+
+
 def test_calmar_loss_prefers_higher_profits(default_conf,
                                             hyperopt_results_min_median_drawdown,
                                             hyperopt_results_max_median_drawdown) -> None:
@@ -336,11 +347,11 @@ def test_calmar_loss_prefers_higher_profits(default_conf,
     default_conf.update({'hyperopt_loss': 'CalmarHyperOptLoss'})
     hl = HyperOptLossResolver(default_conf).hyperoptloss
     min_median_drawdown_loss = hl.hyperopt_loss_function(hyperopt_results_min_median_drawdown,
-                                                        len(hyperopt_results_min_median_drawdown),
-                                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
+                                                         len(hyperopt_results_min_median_drawdown),
+                                                         datetime(2019, 1, 1), datetime(2019, 5, 1))
     max_median_drawdown_loss = hl.hyperopt_loss_function(hyperopt_results_max_median_drawdown,
-                                                        len(hyperopt_results_max_median_drawdown),
-                                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
+                                                         len(hyperopt_results_max_median_drawdown),
+                                                         datetime(2019, 1, 1), datetime(2019, 5, 1))
     assert min_median_drawdown_loss < max_median_drawdown_loss
 
 
