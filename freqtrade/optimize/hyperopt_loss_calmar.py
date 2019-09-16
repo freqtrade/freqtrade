@@ -8,9 +8,9 @@ from freqtrade.optimize.hyperopt import IHyperOptLoss, MAX_LOSS
 NB_SIMULATIONS = 1000
 SIMULATION_YEAR_DURATION = 3
 
+# Configure according to your needs
 SLIPPAGE_PERCENT = 0.000
 NB_EXPECTED_TRADES = 600
-
 CALMAR_LOSS_WEIGHT = 0.5
 EXPECTED_TRADES_WEIGHT = 0.5
 
