@@ -46,7 +46,7 @@ class CalmarHyperOptLoss(IHyperOptLoss):
         backtest_duration_years = ((max_date-min_date).days/365)
         trade_count_average_per_year = trade_count/backtest_duration_years
 
-        # add slipage to be closed to live
+        # add extra slipage to be closed to live?
         results['profit_percent'] -= SLIPPAGE_PERCENT
 
         sample_size = round(trade_count_average_per_year * SIMULATION_YEAR_DURATION)
