@@ -38,8 +38,6 @@ def hyperopt_results():
             'profit_percent': [0.1, 0.2, 0.3],
             'profit_abs': [0.2, 0.4, 0.5],
             'trade_duration': [10, 30, 10],
-            'profit': [2, 0, 0],
-            'loss': [0, 0, 1],
             'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
         }
     )
