@@ -35,6 +35,13 @@ def main(sysargv: List[str] = None) -> None:
         # Call subcommand.
         if 'func' in args:
             return_code = args['func'](args)
+        else:
+            # No subcommand was issued.
+            raise OperationalException(
+                "Usage of freqtrade requires a subcommand.\n"
+                "To use the previous behaviour, run freqtrade with `freqtrade trade [...]`.\n"
+                "To see a full list of options, please use `freqtrade --help`"
+                )
 
     except SystemExit as e:
         return_code = e

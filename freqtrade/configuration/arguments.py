@@ -74,8 +74,9 @@ class Arguments:
         # Workaround issue in argparse with action='append' and default value
         # (see https://bugs.python.org/issue16399)
         # Allow no-config for certain commands (like downloading / plotting)
-        if (parsed_arg.config is None and ((Path.cwd() / constants.DEFAULT_CONFIG).is_file() or
-           not ('command' in parsed_arg and parsed_arg.command in NO_CONF_REQURIED))):
+        if ('config' in parsed_arg and parsed_arg.config is None and
+            ((Path.cwd() / constants.DEFAULT_CONFIG).is_file() or
+             not ('command' in parsed_arg and parsed_arg.command in NO_CONF_REQURIED))):
             parsed_arg.config = [constants.DEFAULT_CONFIG]
 
         return parsed_arg
@@ -97,15 +98,18 @@ class Arguments:
         self._build_args(optionlist=ARGS_COMMON, parser=group)
 
         # Build main command
-        self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot',
-                                              parents=[_common_parser])
+        self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot')
 
         from freqtrade.optimize import start_backtesting, start_hyperopt, start_edge
         from freqtrade.utils import (start_create_userdir, start_download_data,
                                      start_list_exchanges, start_trading)
         from freqtrade.plot.plot_utils import start_plot_dataframe, start_plot_profit
 
-        subparsers = self.parser.add_subparsers(dest='command', required=True)
+        subparsers = self.parser.add_subparsers(dest='command',
+                                                # Use custom message when no subhandler is added
+                                                # shown from `main.py`
+                                                # required=True
+                                                )
 
         # Add trade subcommand
         trade_cmd = subparsers.add_parser('trade', help='Trade module.',
