@@ -10,6 +10,8 @@ SIMULATION_YEAR_DURATION = 3
 CALMAR_LOSS_WEIGHT = 1
 
 SLIPPAGE_PERCENT = 0.000
+NB_EXPECTED_TRADES = 600
+EXPECTED_TRADES_WEIGHT = 0.5
 
 
 class CalmarHyperOptLoss(IHyperOptLoss):
@@ -64,6 +66,11 @@ class CalmarHyperOptLoss(IHyperOptLoss):
 
         # Normalize loss value to be float between (0, 1) :  0.5 value mean no profit
         calmar_loss = 1 - (norm.cdf(calmar_ratio, 0, 10))
+        """
+        Normalize loss value to be float between (0, 0.5) :
+        Closed to 0 mean trade_count = NB_EXPECTED_TRADES
+        """
+        expected_trade_loss_penalty = 1 - norm.cdf(trade_count-NB_EXPECTED_TRADES,-NB_EXPECTED_TRADES,(NB_EXPECTED_TRADES*(2/3))*EXPECTED_TRADES_WEIGHT)
 
         # feel free to add other criterias (e.g avg expected time duration)
         loss = (calmar_loss * CALMAR_LOSS_WEIGHT)
