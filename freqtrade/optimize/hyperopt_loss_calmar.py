@@ -7,10 +7,11 @@ from freqtrade.optimize.hyperopt import IHyperOptLoss, MAX_LOSS
 
 NB_SIMULATIONS = 1000
 SIMULATION_YEAR_DURATION = 3
-CALMAR_LOSS_WEIGHT = 1
 
 SLIPPAGE_PERCENT = 0.000
 NB_EXPECTED_TRADES = 600
+
+CALMAR_LOSS_WEIGHT = 0.5
 EXPECTED_TRADES_WEIGHT = 0.5
 
 
@@ -64,8 +65,12 @@ class CalmarHyperOptLoss(IHyperOptLoss):
 
         calmar_ratio = mediam_simulated_annualized_returns/abs_mediam_simulated_drawdowns
 
-        # Normalize loss value to be float between (0, 1) :  0.5 value mean no profit
-        calmar_loss = 1 - (norm.cdf(calmar_ratio, 0, 10))
+        """
+        Normalize loss value to be float between (-0.5, 0.5)
+        0 mean no profit
+        """
+        calmar_loss = 0.5 - (norm.cdf(calmar_ratio, 0, 1.5/CALMAR_LOSS_WEIGHT))
+
         """
         Normalize loss value to be float between (0, 0.5) :
         Closed to 0 mean trade_count = NB_EXPECTED_TRADES
