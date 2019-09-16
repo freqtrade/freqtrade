@@ -328,6 +328,21 @@ def test_sharpe_loss_prefers_higher_profits(default_conf, hyperopt_results) -> N
     assert over < correct
     assert under > correct
 
+# When the profit a two backtests are the same i prefer to take the one that minimise the median drawdown
+def test_calmar_loss_prefers_higher_profits(default_conf,
+                                            hyperopt_results_min_median_drawdown,
+                                            hyperopt_results_max_median_drawdown) -> None:
+
+    default_conf.update({'hyperopt_loss': 'CalmarHyperOptLoss'})
+    hl = HyperOptLossResolver(default_conf).hyperoptloss
+    min_median_drawdown_loss = hl.hyperopt_loss_function(hyperopt_results_min_median_drawdown,
+                                                        len(hyperopt_results_min_median_drawdown),
+                                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
+    max_median_drawdown_loss = hl.hyperopt_loss_function(hyperopt_results_max_median_drawdown,
+                                                        len(hyperopt_results_max_median_drawdown),
+                                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
+    assert min_median_drawdown_loss < max_median_drawdown_loss
+
 
 def test_onlyprofit_loss_prefers_higher_profits(default_conf, hyperopt_results) -> None:
     results_over = hyperopt_results.copy()
