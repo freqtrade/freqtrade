@@ -44,6 +44,29 @@ def hyperopt_results():
         }
     )
 
+@pytest.fixture(scope='function')
+def hyperopt_results_min_median_drawdown():
+    return pd.DataFrame(
+        {
+            'pair': ['ETH/BTC', 'ETH/BTC', 'ETH/BTC', 'ETH/BTC', 'ETH/BTC'],
+            'profit_percent': [0.1, 0.1, -0.1, 0.1, 0.1],
+            'profit_abs': [0.2, 0.2, -0.2, 0.2, 0.2],
+            'trade_duration': [10, 30, 10, 30, 10],
+            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS,SellType.ROI, SellType.ROI]
+        }
+    )
+
+@pytest.fixture(scope='function')
+def hyperopt_results_max_median_drawdown():
+    return pd.DataFrame(
+        {
+            'pair': ['ETH/BTC', 'ETH/BTC', 'ETH/BTC', 'ETH/BTC', 'ETH/BTC'],
+            'profit_percent': [0.3, -0.1, -0.1, -0.1, 0.3],
+            'profit_abs': [0.6, -0.2, -0.2, -0.2, 0.6],
+            'trade_duration': [10, 30, 10, 30, 10],
+            'sell_reason': [SellType.ROI, SellType.STOP_LOSS, SellType.STOP_LOSS,SellType.STOP_LOSS, SellType.ROI]
+        }
+    )
 
 # Functions for recurrent object patching
 def create_trials(mocker, hyperopt, testdatadir) -> None:
