@@ -8,7 +8,8 @@ from freqtrade.optimize.hyperopt import IHyperOptLoss, MAX_LOSS
 NB_SIMULATIONS = 1000
 SIMULATION_YEAR_DURATION = 3
 CALMAR_LOSS_WEIGHT = 1
-SLIPPAGE_PERCENT = 0.001
+
+SLIPPAGE_PERCENT = 0.000
 
 
 class CalmarHyperOptLoss(IHyperOptLoss):
