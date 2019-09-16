@@ -4,19 +4,12 @@ import re
 
 import pytest
 
+from freqtrade import OperationalException
 from freqtrade.configuration import Arguments
 from freqtrade.configuration.cli_options import check_int_positive
 
 
 # Parse common command-line-arguments. Used for all tools
-def test_parse_args_error(capsys) -> None:
-    arguments = Arguments([])
-    with pytest.raises(SystemExit):
-        arguments.get_parsed_arg()
-    captured = capsys.readouterr()
-    assert re.search(r".*the following arguments are required.*", captured.err)
-
-
 def test_parse_args_none() -> None:
     arguments = Arguments(['trade'])
     assert isinstance(arguments, Arguments)
@@ -157,8 +150,8 @@ def test_download_data_options() -> None:
 
 def test_plot_dataframe_options() -> None:
     args = [
-        '-c', 'config.json.example',
         'plot-dataframe',
+        '-c', 'config.json.example',
         '--indicators1', 'sma10', 'sma100',
         '--indicators2', 'macd', 'fastd', 'fastk',
         '--plot-limit', '30',
