@@ -440,7 +440,7 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
                    caplog)
 
     assert 'strategy_list' in config
-    assert log_has('Using strategy list of 2 Strategies', caplog)
+    assert log_has('Using strategy list of 2 strategies', caplog)
 
     assert 'position_stacking' not in config
 
