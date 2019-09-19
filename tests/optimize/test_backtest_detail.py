@@ -291,8 +291,8 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     patch_exchange(mocker)
     frame = _build_backtest_dataframe(data.data)
     backtesting = Backtesting(default_conf)
-    backtesting.advise_buy = lambda a, m: frame
-    backtesting.advise_sell = lambda a, m: frame
+    backtesting.strategy.advise_buy = lambda a, m: frame
+    backtesting.strategy.advise_sell = lambda a, m: frame
     caplog.set_level(logging.DEBUG)
 
     pair = "UNITTEST/BTC"

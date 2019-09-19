@@ -95,8 +95,6 @@ class Backtesting:
         Load strategy into backtesting
         """
         self.strategy = strategy
-        self.advise_buy = strategy.advise_buy
-        self.advise_sell = strategy.advise_sell
         # Set stoploss_on_exchange to false for backtesting,
         # since a "perfect" stoploss-sell is assumed anyway
         # And the regular "stoploss" function would not apply to that case
@@ -219,8 +217,8 @@ class Backtesting:
         for pair, pair_data in processed.items():
             pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
 
-            ticker_data = self.advise_sell(
-                self.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
+            ticker_data = self.strategy.advise_sell(
+                self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
 
             # to avoid using data from future, we buy/sell with signal from previous candle
             ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)

@@ -217,7 +217,7 @@ class Configuration:
                              deprecated_msg='-r/--refresh-pairs-cached will be removed soon.')
 
         self._args_to_config(config, argname='strategy_list',
-                             logstring='Using strategy list of {} Strategies', logfun=len)
+                             logstring='Using strategy list of {} strategies', logfun=len)
 
         self._args_to_config(config, argname='ticker_interval',
                              logstring='Overriding ticker interval with Command line argument')
@@ -238,7 +238,7 @@ class Configuration:
 
         # Hyperopt section
         self._args_to_config(config, argname='hyperopt',
-                             logstring='Using Hyperopt file {}')
+                             logstring='Using Hyperopt class name: {}')
 
         self._args_to_config(config, argname='hyperopt_path',
                              logstring='Using additional Hyperopt lookup path: {}')
@@ -276,7 +276,7 @@ class Configuration:
                              logstring='Hyperopt continue: {}')
 
         self._args_to_config(config, argname='hyperopt_loss',
-                             logstring='Using loss function: {}')
+                             logstring='Using Hyperopt loss class name: {}')
 
     def _process_plot_options(self, config: Dict[str, Any]) -> None:
 
