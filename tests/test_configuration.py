@@ -143,12 +143,10 @@ def test_from_config(default_conf, mocker, caplog) -> None:
     conf2['exchange']['pair_whitelist'] += ['NANO/BTC']
     conf2['fiat_display_currency'] = "EUR"
     config_files = [conf1, conf2]
+    mocker.patch('freqtrade.configuration.configuration.create_datadir', lambda c, x: x)
 
     configsmock = MagicMock(side_effect=config_files)
-    mocker.patch(
-        'freqtrade.configuration.configuration.load_config_file',
-        configsmock
-    )
+    mocker.patch('freqtrade.configuration.configuration.load_config_file',configsmock)
 
     validated_conf = Configuration.from_files(['test_conf.json', 'test2_conf.json'])
 
@@ -171,10 +169,8 @@ def test_print_config(default_conf, mocker, caplog) -> None:
     config_files = [conf1]
 
     configsmock = MagicMock(side_effect=config_files)
-    mocker.patch(
-        'freqtrade.configuration.configuration.load_config_file',
-        configsmock
-    )
+    mocker.patch('freqtrade.configuration.configuration.create_datadir', lambda c, x: x)
+    mocker.patch('freqtrade.configuration.configuration.load_config_file', configsmock)
 
     validated_conf = Configuration.from_files(['test_conf.json'])
 
