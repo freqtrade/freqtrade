@@ -107,13 +107,6 @@ AVAILABLE_CLI_OPTIONS = {
         help='Specify stake_amount.',
         type=float,
     ),
-    "refresh_pairs": Arg(
-        '-r', '--refresh-pairs-cached',
-        help='Refresh the pairs files in tests/testdata with the latest data from the '
-        'exchange. Use it if you want to run your optimization commands with '
-        'up-to-date data.',
-        action='store_true',
-    ),
     # Backtesting
     "position_stacking": Arg(
         '--eps', '--enable-position-stacking',

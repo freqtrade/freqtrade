@@ -65,7 +65,6 @@ class DataProvider:
         """
         return load_pair_history(pair=pair,
                                  ticker_interval=ticker_interval or self._config['ticker_interval'],
-                                 refresh_pairs=False,
                                  datadir=Path(self._config['datadir'])
                                  )
 

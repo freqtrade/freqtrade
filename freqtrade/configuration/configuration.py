@@ -212,10 +212,6 @@ class Configuration:
 
         self._process_datadir_options(config)
 
-        self._args_to_config(config, argname='refresh_pairs',
-                             logstring='Parameter -r/--refresh-pairs-cached detected ...',
-                             deprecated_msg='-r/--refresh-pairs-cached will be removed soon.')
-
         self._args_to_config(config, argname='strategy_list',
                              logstring='Using strategy list of {} strategies', logfun=len)
 
