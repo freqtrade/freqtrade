@@ -99,7 +99,6 @@ def test_parse_args_backtesting_custom() -> None:
         '-c', 'test_conf.json',
         'backtesting',
         '--ticker-interval', '1m',
-        '--refresh-pairs-cached',
         '--strategy-list',
         'DefaultStrategy',
         'SampleStrategy'
@@ -110,7 +109,6 @@ def test_parse_args_backtesting_custom() -> None:
     assert call_args["subparser"] == 'backtesting'
     assert call_args["func"] is not None
     assert call_args["ticker_interval"] == '1m'
-    assert call_args["refresh_pairs"] is True
     assert type(call_args["strategy_list"]) is list
     assert len(call_args["strategy_list"]) == 2
 

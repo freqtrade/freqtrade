@@ -94,7 +94,6 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
     assert config['runmode'] == RunMode.HYPEROPT
 
 
-@pytest.mark.filterwarnings("ignore:DEPRECATED")
 def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch(
@@ -108,7 +107,6 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
         'hyperopt',
         '--ticker-interval', '1m',
         '--timerange', ':100',
-        '--refresh-pairs-cached',
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--epochs', '1000',
@@ -136,9 +134,6 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
     assert 'use_max_market_positions' in config
     assert log_has('Parameter --disable-max-market-positions detected ...', caplog)
     assert log_has('max_open_trades set to unlimited ...', caplog)
-
-    assert 'refresh_pairs' in config
-    assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
 
     assert 'timerange' in config
     assert log_has('Parameter --timerange detected: {} ...'.format(config['timerange']), caplog)
