@@ -143,8 +143,12 @@ def load_data(datadir: Path,
               fill_up_missing: bool = True,
               ) -> Dict[str, DataFrame]:
     """
-    Loads ticker history data for a list of pairs the given parameters
+    Loads ticker history data for a list of pairs
     :return: dict(<pair>:<tickerlist>)
+    TODO: refresh_pairs is still used by edge to keep the data uptodate.
+        This should be replaced in the future. Instead, writing the current candles to disk
+        from dataprovider should be implemented, as this would avoid loading ohlcv data twice.
+        exchange and refresh_pairs are then not needed here nor in load_pair_history.
     """
     result: Dict[str, DataFrame] = {}
 
