@@ -188,9 +188,6 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'position_stacking' not in config
     assert not log_has('Parameter --enable-position-stacking detected ...', caplog)
 
-    assert 'refresh_pairs' not in config
-    assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
-
     assert 'timerange' not in config
     assert 'export' not in config
     assert 'runmode' in config

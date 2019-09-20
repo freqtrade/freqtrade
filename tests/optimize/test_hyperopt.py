@@ -86,9 +86,6 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
     assert 'position_stacking' not in config
     assert not log_has('Parameter --enable-position-stacking detected ...', caplog)
 
-    assert 'refresh_pairs' not in config
-    assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
-
     assert 'timerange' not in config
     assert 'runmode' in config
     assert config['runmode'] == RunMode.HYPEROPT

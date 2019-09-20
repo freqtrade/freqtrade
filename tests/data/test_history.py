@@ -321,7 +321,6 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
     start = arrow.get('2018-01-01T00:00:00')
     end = arrow.get('2018-01-11T00:00:00')
     tickerdata = history.load_data(testdatadir, '5m', ['UNITTEST/BTC'],
-                                   refresh_pairs=False,
                                    timerange=TimeRange('date', 'date',
                                                        start.timestamp, end.timestamp))
     # timedifference in 5 minutes
@@ -336,7 +335,7 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
     start = arrow.get('2018-01-10T00:00:00')
     end = arrow.get('2018-02-20T00:00:00')
     tickerdata = history.load_data(datadir=testdatadir, ticker_interval='5m',
-                                   pairs=['UNITTEST/BTC'], refresh_pairs=False,
+                                   pairs=['UNITTEST/BTC'],
                                    timerange=TimeRange('date', 'date',
                                                        start.timestamp, end.timestamp))
     # timedifference in 5 minutes
