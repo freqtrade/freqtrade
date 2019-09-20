@@ -102,7 +102,7 @@ from freqtrade.configuration import Configuration
 config = Configuration.from_files(["config1.json", "config2.json"])
 
 # Show the config in memory
-print(json.dumps(config, indent=2))
+print(json.dumps(config['original_config'], indent=2))
 ```
 
 For Interactive environments, have an additional configuration specifying `user_data_dir` and pass this in last, so you don't have to change directories while running the bot.

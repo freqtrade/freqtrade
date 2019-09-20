@@ -90,6 +90,9 @@ class Configuration:
         # Load all configs
         config: Dict[str, Any] = self.load_from_files(self.args["config"])
 
+        # Keep a copy of the original configuration file
+        config['original_config'] = deepcopy(config)
+
         self._process_common_options(config)
 
         self._process_optimize_options(config)

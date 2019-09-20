@@ -161,6 +161,27 @@ def test_from_config(default_conf, mocker, caplog) -> None:
     assert validated_conf['fiat_display_currency'] == "EUR"
     assert 'internals' in validated_conf
     assert log_has('Validating configuration ...', caplog)
+    assert isinstance(validated_conf['user_data_dir'], Path)
+
+
+def test_print_config(default_conf, mocker, caplog) -> None:
+    conf1 = deepcopy(default_conf)
+    # Delete non-json elements from default_conf
+    del conf1['user_data_dir']
+    config_files = [conf1]
+
+    configsmock = MagicMock(side_effect=config_files)
+    mocker.patch(
+        'freqtrade.configuration.configuration.load_config_file',
+        configsmock
+    )
+
+    validated_conf = Configuration.from_files(['test_conf.json'])
+
+    assert isinstance(validated_conf['user_data_dir'], Path)
+    assert "user_data_dir" in validated_conf
+    assert "original_config" in validated_conf
+    assert isinstance(json.dumps(validated_conf['original_config']), str)
 
 
 def test_load_config_max_open_trades_minus_one(default_conf, mocker, caplog) -> None:
