@@ -4,7 +4,7 @@ This page contains description of the command line arguments, configuration para
 and the bot features that were declared as DEPRECATED by the bot development team
 and are no longer supported. Please avoid their usage in your configuration.
 
-## Deprecated
+## Removed features
 
 ### the `--refresh-pairs-cached` command line option
 
@@ -12,9 +12,7 @@ and are no longer supported. Please avoid their usage in your configuration.
 Since this leads to much confusion, and slows down backtesting (while not being part of backtesting) this has been singled out 
 as a seperate freqtrade subcommand `freqtrade download-data`.
 
-This command line option was deprecated in `2019.7-dev` and will be removed after the next release.
-
-## Removed features
+This command line option was deprecated in `2019.7-dev` and removed in `2019-9`
 
 ### The **--dynamic-whitelist** command line option
 

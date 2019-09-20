@@ -129,8 +129,7 @@ def load_pair_history(pair: str,
     else:
         logger.warning(
             f'No history data for pair: "{pair}", interval: {ticker_interval}. '
-            'Use --refresh-pairs-cached option or `freqtrade download-data` '
-            'script to download the data'
+            'Use `freqtrade download-data` to download the data'
         )
         return None
 
@@ -142,33 +141,21 @@ def load_data(datadir: Path,
               exchange: Optional[Exchange] = None,
               timerange: TimeRange = TimeRange(None, None, 0, 0),
               fill_up_missing: bool = True,
-              live: bool = False
               ) -> Dict[str, DataFrame]:
     """
     Loads ticker history data for a list of pairs the given parameters
     :return: dict(<pair>:<tickerlist>)
     """
     result: Dict[str, DataFrame] = {}
-    if live:
-        if exchange:
-            logger.info('Live: Downloading data for all defined pairs ...')
-            exchange.refresh_latest_ohlcv([(pair, ticker_interval) for pair in pairs])
-            result = {key[0]: value for key, value in exchange._klines.items() if value is not None}
-        else:
-            raise OperationalException(
-                "Exchange needs to be initialized when using live data."
-            )
-    else:
-        logger.info('Using local backtesting data ...')
 
-        for pair in pairs:
-            hist = load_pair_history(pair=pair, ticker_interval=ticker_interval,
-                                     datadir=datadir, timerange=timerange,
-                                     refresh_pairs=refresh_pairs,
-                                     exchange=exchange,
-                                     fill_up_missing=fill_up_missing)
-            if hist is not None:
-                result[pair] = hist
+    for pair in pairs:
+        hist = load_pair_history(pair=pair, ticker_interval=ticker_interval,
+                                 datadir=datadir, timerange=timerange,
+                                 refresh_pairs=refresh_pairs,
+                                 exchange=exchange,
+                                 fill_up_missing=fill_up_missing)
+        if hist is not None:
+            result[pair] = hist
     return result
 
 

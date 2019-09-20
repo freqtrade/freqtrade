@@ -184,10 +184,6 @@ optional arguments:
                         Specify max_open_trades to use.
   --stake_amount STAKE_AMOUNT
                         Specify stake_amount.
-  -r, --refresh-pairs-cached
-                        Refresh the pairs files in tests/testdata with the
-                        latest data from the exchange. Use it if you want to
-                        run your optimization commands with up-to-date data.
   --eps, --enable-position-stacking
                         Allow buying the same pair multiple times (position
                         stacking).
@@ -245,10 +241,6 @@ optional arguments:
                         Specify max_open_trades to use.
   --stake_amount STAKE_AMOUNT
                         Specify stake_amount.
-  -r, --refresh-pairs-cached
-                        Refresh the pairs files in tests/testdata with the
-                        latest data from the exchange. Use it if you want to
-                        run your optimization commands with up-to-date data.
   --customhyperopt NAME
                         Specify hyperopt class name (default:
                         `DefaultHyperOpts`).
@@ -310,10 +302,6 @@ optional arguments:
                         Specify max_open_trades to use.
   --stake_amount STAKE_AMOUNT
                         Specify stake_amount.
-  -r, --refresh-pairs-cached
-                        Refresh the pairs files in tests/testdata with the
-                        latest data from the exchange. Use it if you want to
-                        run your optimization commands with up-to-date data.
   --stoplosses STOPLOSS_RANGE
                         Defines a range of stoploss against which edge will
                         assess the strategy the format is "min,max,step"
