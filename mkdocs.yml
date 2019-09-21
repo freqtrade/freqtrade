@@ -15,8 +15,10 @@ nav:
     - Hyperopt: hyperopt.md
     - Edge positioning: edge.md
     - FAQ: faq.md
-    - Data Analysis: data-analysis.md
-    - Plotting: plotting.md
+    - Data Analysis:
+        - Jupyter Notebooks: data-analysis.md
+        - Strategy analysis: strategy_analysis_example.md
+        - Plotting: plotting.md
     - SQL Cheatsheet: sql_cheatsheet.md
     - Sandbox testing: sandbox-testing.md
     - Deprecated features: deprecated.md

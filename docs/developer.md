@@ -149,6 +149,14 @@ print(datetime.utcnow())
 The output will show the last entry from the Exchange as well as the current UTC date.
 If the day shows the same day, then the last candle can be assumed as incomplete and should be dropped (leave the setting `"ohlcv_partial_candle"` from the exchange-class untouched / True). Otherwise, set `"ohlcv_partial_candle"` to `False` to not drop Candles (shown in the example above).
 
+## Updating example notebooks
+
+To keep the jupyter notebooks aligned with the documentation, the following should be ran after updating a example notebook.
+
+``` bash
+jupyter nbconvert --to markdown user_data/notebooks/strategy_analysis_example.ipynb --stdout > docs/strategy_analysis_example.md
+```
+
 ## Creating a release
 
 This part of the documentation is aimed at maintainers, and shows how to create a release.
