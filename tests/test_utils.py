@@ -1,4 +1,5 @@
 import re
+from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 
 import pytest
@@ -7,7 +8,7 @@ from freqtrade import OperationalException
 from freqtrade.state import RunMode
 from freqtrade.utils import (setup_utils_configuration, start_create_userdir,
                              start_download_data, start_list_exchanges)
-from tests.conftest import get_args, log_has, log_has_re, patch_exchange
+from tests.conftest import get_args, log_has, patch_exchange
 
 
 def test_setup_utils_configuration():
@@ -114,8 +115,27 @@ def test_download_data_no_exchange(mocker, caplog):
         'freqtrade.exchange.Exchange.markets', PropertyMock(return_value={})
     )
     args = [
-        "download-data"
+        "download-data",
         ]
     with pytest.raises(OperationalException,
                        match=r"This command requires a configured exchange.*"):
+        start_download_data(get_args(args))
+
+
+def test_download_data_no_pairs(mocker, caplog):
+    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
+
+    mocker.patch('freqtrade.utils.refresh_backtest_ohlcv_data',
+                 MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
+    patch_exchange(mocker)
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets', PropertyMock(return_value={})
+    )
+    args = [
+        "download-data",
+        "--exchange",
+        "binance",
+    ]
+    with pytest.raises(OperationalException,
+                       match=r"Downloading data requires a list of pairs\..*"):
         start_download_data(get_args(args))
