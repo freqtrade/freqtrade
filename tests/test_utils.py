@@ -3,10 +3,11 @@ from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
+from freqtrade import OperationalException
 from freqtrade.state import RunMode
-from tests.conftest import get_args, log_has, patch_exchange
 from freqtrade.utils import (setup_utils_configuration, start_create_userdir,
                              start_download_data, start_list_exchanges)
+from tests.conftest import get_args, log_has, log_has_re, patch_exchange
 
 
 def test_setup_utils_configuration():
@@ -103,3 +104,18 @@ def test_download_data_no_markets(mocker, caplog):
     start_download_data(get_args(args))
     assert dl_mock.call_args[1]['timerange'].starttype == "date"
     assert log_has("Pairs [ETH/BTC,XRP/BTC] not available on exchange binance.", caplog)
+
+
+def test_download_data_no_exchange(mocker, caplog):
+    mocker.patch('freqtrade.utils.refresh_backtest_ohlcv_data',
+                 MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
+    patch_exchange(mocker)
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets', PropertyMock(return_value={})
+    )
+    args = [
+        "download-data"
+        ]
+    with pytest.raises(OperationalException,
+                       match=r"This command requires a configured exchange.*"):
+        start_download_data(get_args(args))
