@@ -95,7 +95,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `db_url` | `sqlite:///tradesv3.sqlite`| Declares database URL to use. NOTE: This defaults to `sqlite://` if `dry_run` is `True`.
 | `initial_state` | running | Defines the initial application state. More information below.
 | `forcebuy_enable` | false | Enables the RPC Commands to force a buy. More information below.
-| `strategy` | DefaultStrategy | Defines Strategy class to use.
+| `strategy` | None | **Required** Defines Strategy class to use. Recommended to set via `--strategy NAME`. 
 | `strategy_path` | null | Adds an additional strategy lookup path (must be a directory).
 | `internals.process_throttle_secs` | 5 | **Required.** Set the process throttle. Value in second.
 | `internals.sd_notify` | false | Enables use of the sd_notify protocol to tell systemd service manager about changes in the bot state and issue keep-alive pings. See [here](installation.md#7-optional-configure-freqtrade-as-a-systemd-service) for more details.
