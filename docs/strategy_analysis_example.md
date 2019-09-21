@@ -1,31 +1,12 @@
-## Strategy debugging example
+# Strategy analysis example
 
 Debugging a strategy can be time-consuming. FreqTrade offers helper functions to visualize raw data.
 
 ## Setup
 
+
 ```python
-# Change directory
-# Modify this cell to insure that the output shows the correct path.
-import os
 from pathlib import Path
-
-# Define all paths relative to the project root shown in the cell output
-project_root = "somedir/freqtrade"
-i=0
-try:
-    os.chdirdir(project_root)
-    assert Path('LICENSE').is_file()
-except:
-    while i<4 and (not Path('LICENSE').is_file()):
-        os.chdir(Path(Path.cwd(), '../'))
-        i+=1
-    project_root = Path.cwd()
-print(Path.cwd())
-```
-
-
-```python
 # Customize these according to your needs.
 
 # Define some constants
@@ -33,9 +14,9 @@ ticker_interval = "5m"
 # Name of the strategy class
 strategy_name = 'SampleStrategy'
 # Path to user data
-user_data_dir = 'user_data'
+user_data_dir = Path('user_data')
 # Location of the strategy
-strategy_location = Path(user_data_dir, 'strategies')
+strategy_location = user_data_dir / 'strategies'
 # Location of the data
 data_location = Path(user_data_dir, 'data', 'binance')
 # Pair to analyze - Only use one pair here
@@ -45,7 +26,6 @@ pair = "BTC_USDT"
 
 ```python
 # Load data using values set above
-from pathlib import Path
 from freqtrade.data.history import load_pair_history
 
 candles = load_pair_history(datadir=data_location,

@@ -154,7 +154,8 @@ If the day shows the same day, then the last candle can be assumed as incomplete
 To keep the jupyter notebooks aligned with the documentation, the following should be ran after updating a example notebook.
 
 ``` bash
-jupyter nbconvert --to markdown user_data/notebooks/strategy_analysis_example.ipynb --stdout > docs/strategy_analysis_example.md
+jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace user_data/notebooks/strategy_analysis_example.ipynb
+jupyter nbconvert --ClearOutputPreprocessor.enabled=True --to markdown user_data/notebooks/strategy_analysis_example.ipynb --stdout > docs/strategy_analysis_example.md
 ```
 
 ## Creating a release
