@@ -68,8 +68,75 @@ df.tail()
 ```python
 # Report results
 print(f"Generated {df['buy'].sum()} buy signals")
-data = df.set_index('date', drop=True)
+data = df.set_index('date', drop=False)
 data.tail()
+```
+
+## Load existing objects into a Jupyter notebook
+
+The following cells assume that you have already generated data using the cli.  
+They will allow you to drill deeper into your results, and perform analysis which otherwise would make the output very difficult to digest due to information overload.
+
+### Load backtest results to pandas dataframe
+
+Analyze a trades dataframe (also used below for plotting)
+
+
+```python
+from freqtrade.data.btanalysis import load_backtest_data
+
+# Load backtest results
+trades = load_backtest_data(user_data_dir / "backtest_results/backtest-result.json")
+
+# Show value-counts per pair
+trades.groupby("pair")["sell_reason"].value_counts()
+```
+
+### Load live trading results into a pandas dataframe
+
+In case you did already some trading and want to analyze your performance
+
+
+```python
+from freqtrade.data.btanalysis import load_trades_from_db
+
+# Fetch trades from database
+trades = load_trades_from_db("sqlite:///tradesv3.sqlite")
+
+# Display results
+trades.groupby("pair")["sell_reason"].value_counts()
+```
+
+## Plot results
+
+Freqtrade offers interactive plotting capabilities based on plotly.
+
+
+```python
+from freqtrade.plot.plotting import  generate_candlestick_graph
+# Limit graph period to keep plotly quick and reactive
+
+data_red = data['2019-06-01':'2019-06-10']
+# Generate candlestick graph
+graph = generate_candlestick_graph(pair=pair,
+                                   data=data_red,
+                                   trades=trades,
+                                   indicators1=['sma20', 'ema50', 'ema55'],
+                                   indicators2=['rsi', 'macd', 'macdsignal', 'macdhist']
+                                  )
+
+
+
+```
+
+
+```python
+# Show graph inline
+# graph.show()
+
+# Render graph in a seperate window
+graph.show(renderer="browser")
+
 ```
 
 Feel free to submit an issue or Pull Request enhancing this document if you would like to share ideas on how to best analyze the data.

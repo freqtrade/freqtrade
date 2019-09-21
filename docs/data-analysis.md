@@ -61,34 +61,6 @@ except:
 print(Path.cwd())
 ```
 
-## Load existing objects into a Jupyter notebook
-
-These examples assume that you have already generated data using the cli. They will allow you to drill deeper into your results, and perform analysis which otherwise would make the output very difficult to digest due to information overload.
-
-### Load backtest results into a pandas dataframe
-
-```python
-from freqtrade.data.btanalysis import load_backtest_data
-
-# Load backtest results
-df = load_backtest_data("user_data/backtest_results/backtest-result.json")
-
-# Show value-counts per pair
-df.groupby("pair")["sell_reason"].value_counts()
-```
-
-### Load live trading results into a pandas dataframe
-
-``` python
-from freqtrade.data.btanalysis import load_trades_from_db
-
-# Fetch trades from database
-df = load_trades_from_db("sqlite:///tradesv3.sqlite")
-
-# Display results
-df.groupby("pair")["sell_reason"].value_counts()
-```
-
 ### Load multiple configuration files
 
 This option can be useful to inspect the results of passing in multiple configs.
@@ -114,30 +86,9 @@ Best avoid relative paths, since this starts at the storage location of the jupy
 }
 ```
 
-### Load exchange data to a pandas dataframe
+### Further Data analysis documentation
 
-This loads candle data to a dataframe
-
-```python
-from pathlib import Path
-from freqtrade.data.history import load_pair_history
-
-# Load data using values passed to function
-ticker_interval = "5m"
-data_location = Path('user_data', 'data', 'bitrex')
-pair = "BTC_USDT"
-candles = load_pair_history(datadir=data_location,
-                            ticker_interval=ticker_interval,
-                            pair=pair)
-
-# Confirm success
-print(f"Loaded len(candles) rows of data for {pair} from {data_location}")
-candles.head()
-```
-
-Further Data analysis documents:
-
-* [Strategy debugging](strategy_analysis_example.md)
+* [Strategy debugging](strategy_analysis_example.md) - also available as Jupyter notebook (`user_data/notebooks/strategy_analysis_example.ipynb`)
 * [Plotting](plotting.md)
 
 Feel free to submit an issue or Pull Request enhancing this document if you would like to share ideas on how to best analyze the data.
