@@ -1,14 +1,15 @@
 # Configure the bot
 
-This page explains how to configure the bot.
+Freqtrade has many configurable options and possibilities.
+By default, these options are configured via the configuration file (see below).
 
 ## The Freqtrade configuration file
 
 The bot uses a set of configuration parameters during its operation that all together conform the bot configuration. It normally reads its configuration from a file (Freqtrade configuration file).
 
-Per default, the bot loads configuration from the `config.json` file located in the current working directory.
+Per default, the bot loads the configuration from the file `config.json`, located in the current working directory.
 
-You can change the name of the configuration file used by the bot with the `-c/--config` command line option.
+You can use a different configuration file used by the bot with the `-c/--config` command line option.
 
 In some advanced use cases, multiple configuration files can be specified and used by the bot or the bot can read its configuration parameters from the process standard input stream.
 
@@ -22,19 +23,26 @@ The Freqtrade configuration file is to be written in the JSON format.
 
 Additionally to the standard JSON syntax, you may use one-line `// ...` and multi-line `/* ... */` comments in your configuration files and trailing commas in the lists of parameters.
 
-Do not worry if you are not familiar with JSON format -- simply open the configuration file with an editor of your choice, make some changes to the parameters you need, save your changes and, finally, restart the bot or, if it was previously stopped, run it again with the changes you made to the configuration. The bot validates syntax of the configuration file at startup and will warn you if you made any errors editing it.
+Do not worry if you are not familiar with JSON format -- simply open the configuration file with an editor of your choice, make some changes to the parameters you need, save your changes and, finally, restart the bot or, if it was previously stopped, run it again with the changes you made to the configuration. The bot validates syntax of the configuration file at startup and will warn you if you made any errors editing it, pointing out problematic lines.
 
 ## Configuration parameters
 
 The table below will list all configuration parameters available.
 
-Mandatory parameters are marked as **Required**.
+Freqtrade can also load many options via command line arguments (check out the commands `--help` output for details).
+The prevelance for all Options is as follows:
+
+- CLI arguments override any other option
+- Configuration files are used in sequence (last file wins), and override Strategy configurations.
+- Strategy configurations are only used if they are not set via configuration or via command line arguments. These options are market with [Strategy Override](#parameters-in-the-strategy) in the below table.
+
+Mandatory parameters are marked as **Required**, which means that they are required to be set in one of the possible ways.
 
 |  Command | Default | Description |
 |----------|---------|-------------|
 | `max_open_trades` | 3 | **Required.** Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades)
-| `stake_currency` | BTC | **Required.** Crypto-currency used for trading. [Strategy Override](#parameters-in-the-strategy).
-| `stake_amount` | 0.05 | **Required.** Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to `"unlimited"` to allow the bot to use all available balance. [Strategy Override](#parameters-in-the-strategy).
+| `stake_currency` | BTC | **Required.** Crypto-currency used for trading.
+| `stake_amount` | 0.05 | **Required.** Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to `"unlimited"` to allow the bot to use all available balance.
 | `amount_reserve_percent` | 0.05 | Reserve some amount in min pair stake amount. Default is 5%. The bot will reserve `amount_reserve_percent` + stop-loss value when calculating min pair stake amount in order to avoid possible trade refusals.
 | `ticker_interval` | [1m, 5m, 15m, 30m, 1h, 1d, ...] | The ticker interval to use (1min, 5 min, 15 min, 30 min, 1 hour or 1 day). Default is 5 minutes. [Strategy Override](#parameters-in-the-strategy).
 | `fiat_display_currency` | USD | **Required.** Fiat currency used to show your profits. More information below.
@@ -99,8 +107,6 @@ Mandatory parameters are marked as **Required**.
 The following parameters can be set in either configuration file or strategy.
 Values set in the configuration file always overwrite values set in the strategy.
 
-* `stake_currency`
-* `stake_amount`
 * `ticker_interval`
 * `minimal_roi`
 * `stoploss`
