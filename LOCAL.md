@@ -36,3 +36,13 @@ docker-compose up
 ``` bash
 docker-compose build
 ```
+
+### Execing (effectively SSH into the container)
+
+The `exec` command requires that the container already be running, if you want to start it
+that can be effected by `docker-compose up` or `docker-compose run freqtrade_develop`
+
+``` bash
+docker-compose exec freqtrade_develop /bin/bash
+```
+![image](https://user-images.githubusercontent.com/419355/65456522-ba671a80-de06-11e9-9598-df9ca0d8dcac.png)
