@@ -23,8 +23,16 @@ sudo apt install docker-compose
 rm docker-compose.yml && mv docker-compose.develop.yml docker-compose.yml
 ```
 
-## Docker Compose up
+## Docker Compose
+
+## Starting
 
 ``` bash
 docker-compose up
+```
+![Docker compose up](https://user-images.githubusercontent.com/419355/65456322-47f63a80-de06-11e9-90c6-3c74d1bad0b8.png)
+
+### Rebuilding
+``` bash
+docker-compose build
 ```
