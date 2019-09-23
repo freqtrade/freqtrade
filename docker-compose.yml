@@ -1,1 +1,8 @@
-docker-compose.prod.yml
+---
+version: '3'
+services:
+  freqtrade:
+    image: freqtradeorg/freqtrade:master
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+      - "./config.json:/freqtrade/config.json"
