@@ -358,8 +358,9 @@ class Hyperopt:
         """
         n = len(self.opt.models) - SKOPT_MODELS_MAX_NUM
         # Keep no more than 2*SKOPT_MODELS_MAX_NUM models in the skopt models list,
-        # remove the old ones. These are no really needed, the current model
-        # from the estimator is only used.
+        # remove the old ones. These are actually of no use, the current model
+        # from the estimator is the only one used in the skopt optimizer.
+        # Freqtrade code also does not inspect details of the models.
         if n >= SKOPT_MODELS_MAX_NUM:
             logger.debug(f"Fixing skopt models list, removing {n} old items...")
             del self.opt.models[0:n]
