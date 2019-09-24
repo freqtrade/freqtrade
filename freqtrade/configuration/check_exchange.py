@@ -29,8 +29,8 @@ def check_exchange(config: Dict[str, Any], check_for_bad: bool = True) -> bool:
     exchange = config.get('exchange', {}).get('name').lower()
     if not exchange:
         raise OperationalException(
-            f'This command requires a configured exchange. You can use either '
-            f'`--exchange <exchange_name` or use a configuration via `--config`.\n'
+            f'This command requires a configured exchange. You should either use '
+            f'`--exchange <exchange_name>` or specify a configuration file via `--config`.\n'
             f'The following exchanges are supported by ccxt: '
             f'{", ".join(available_exchanges())}'
         )

@@ -73,7 +73,7 @@ def start_download_data(args: Dict[str, Any]) -> None:
 
     if 'pairs' not in config:
         raise OperationalException(
-            "Downloading data requires a list of pairs."
+            "Downloading data requires a list of pairs. "
             "Please check the documentation on how to configure this.")
 
     dl_path = Path(config['datadir'])
