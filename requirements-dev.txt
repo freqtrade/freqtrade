@@ -1,6 +1,7 @@
 # Include all requirements to run the bot.
 -r requirements.txt
 -r requirements-plot.txt
+-r requirements-hyperopt.txt
 
 coveralls==1.8.2
 flake8==3.7.8
