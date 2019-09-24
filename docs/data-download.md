@@ -4,20 +4,25 @@
 
 To download data (candles / OHLCV) needed for backtesting and hyperoptimization use the `freqtrade download-data` command.
 
-If no additional parameter is specified, freqtrade will download data for `"1m"` and `"5m"` timeframes.
-Exchange and pairs will come from `config.json` (if specified using `-c/--config`). Otherwise `--exchange` becomes mandatory.
+If no additional parameter is specified, freqtrade will download data for `"1m"` and `"5m"` timeframes for the last 30 days.
+Exchange and pairs will come from `config.json` (if specified using `-c/--config`).
+Otherwise `--exchange` becomes mandatory.
 
-Alternatively, a `pairs.json` file can be used.
+### Pairs file
+
+In alternative to the whitelist from `config.json`, a `pairs.json` file can be used.
 
 If you are using Binance for example:
 
-- create a directory `user_data/data/binance` and copy `pairs.json` in that directory.
-- update the `pairs.json` to contain the currency pairs you are interested in.
+- create a directory `user_data/data/binance` and copy or create the `pairs.json` file in that directory.
+- update the `pairs.json` file to contain the currency pairs you are interested in.
 
 ```bash
 mkdir -p user_data/data/binance
 cp freqtrade/tests/testdata/pairs.json user_data/data/binance
 ```
+
+### start download
 
 Then run:
 
@@ -26,6 +31,8 @@ freqtrade download-data --exchange binance
 ```
 
 This will download ticker data for all the currency pairs you defined in `pairs.json`.
+
+### Other Notes
 
 - To use a different directory than the exchange specific default, use `--datadir user_data/data/some_directory`.
 - To change the exchange used to download the tickers, please use a different configuration file (you'll probably need to adjust ratelimits etc.)

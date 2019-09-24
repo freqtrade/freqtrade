@@ -3,7 +3,7 @@
 This page explains how to validate your strategy performance by using Backtesting.
 
 Backtesting requires historic data to be available.
-To learn how to get data for the pairs and exchange you're interrested in, head over to the [Data Downloading](data-download.md) section of the documentation.
+To learn how to get data for the pairs and exchange you're interested in, head over to the [Data Downloading](data-download.md) section of the documentation.
 
 ## Test your strategy with Backtesting
 
@@ -15,7 +15,7 @@ Backtesting will use the crypto-currencies (pairs) from your config file
 and load ticker data from `user_data/data/<exchange>` by default.
 If no data is available for the exchange / pair / ticker interval combination, backtesting will
 ask you to download them first using `freqtrade download-data`.
-For details on downloading, please refer to the [Downloading data](data-download.md) section in the documentation.
+For details on downloading, please refer to the [Data Downloading](data-download.md) section in the documentation.
 
 The result of backtesting will confirm if your bot has better odds of making a profit than a loss.
 
@@ -84,8 +84,8 @@ freqtrade backtesting --timerange=20190501-
 
 #### Advanced use of timerange
 
-Doing `--timerange=20190101-` will all available data starting with January 1st, 2019 from your inputdata.
-You can also specify specific dates, or a range span indexed by start and stop.
+Using `--timerange=20190101-` will use all available data starting with January 1st, 2019 from your inputdata.
+You can also specify particular dates or a range span indexed by start and stop.
 
 The full timerange specification:
 
