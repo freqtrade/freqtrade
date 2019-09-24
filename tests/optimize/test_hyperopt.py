@@ -190,6 +190,37 @@ def test_hyperoptlossresolver_wrongname(mocker, default_conf, caplog) -> None:
         HyperOptLossResolver(default_conf, ).hyperopt
 
 
+def test_start_not_installed(mocker, default_conf, caplog) -> None:
+    start_mock = MagicMock()
+    patched_configuration_load_config_file(mocker, default_conf)
+    # Source of this test-method: https://stackoverflow.com/questions/2481511/mocking-importerror-in-python
+    import builtins
+    realimport = builtins.__import__
+
+    def mockedimport(name, *args, **kwargs):
+        if name == "filelock":
+            raise ImportError("No module named 'filelock'")
+        return realimport(name, *args, **kwargs)
+
+    builtins.__import__ = mockedimport
+
+    mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.start', start_mock)
+    patch_exchange(mocker)
+
+    args = [
+        '--config', 'config.json',
+        'hyperopt',
+        '--epochs', '5'
+    ]
+    args = get_args(args)
+
+    with pytest.raises(OperationalException, match=r"Please ensure that the hyperopt dependencies"):
+        start_hyperopt(args)
+
+    # restore previous importfunction
+    builtins.__import__ = realimport
+
+
 def test_start(mocker, default_conf, caplog) -> None:
     start_mock = MagicMock()
     patched_configuration_load_config_file(mocker, default_conf)
