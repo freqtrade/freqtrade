@@ -1,5 +1,4 @@
 import logging
-from argparse import Namespace
 from typing import Any, Dict
 
 from filelock import FileLock, Timeout
@@ -12,7 +11,7 @@ from freqtrade.utils import setup_utils_configuration
 logger = logging.getLogger(__name__)
 
 
-def setup_configuration(args: Namespace, method: RunMode) -> Dict[str, Any]:
+def setup_configuration(args: Dict[str, Any], method: RunMode) -> Dict[str, Any]:
     """
     Prepare the configuration for the Hyperopt module
     :param args: Cli args from Arguments()
@@ -28,7 +27,7 @@ def setup_configuration(args: Namespace, method: RunMode) -> Dict[str, Any]:
     return config
 
 
-def start_backtesting(args: Namespace) -> None:
+def start_backtesting(args: Dict[str, Any]) -> None:
     """
     Start Backtesting script
     :param args: Cli args from Arguments()
@@ -47,7 +46,7 @@ def start_backtesting(args: Namespace) -> None:
     backtesting.start()
 
 
-def start_hyperopt(args: Namespace) -> None:
+def start_hyperopt(args: Dict[str, Any]) -> None:
     """
     Start hyperopt script
     :param args: Cli args from Arguments()
@@ -85,7 +84,7 @@ def start_hyperopt(args: Namespace) -> None:
         # Same in Edge and Backtesting start() functions.
 
 
-def start_edge(args: Namespace) -> None:
+def start_edge(args: Dict[str, Any]) -> None:
     """
     Start Edge script
     :param args: Cli args from Arguments()

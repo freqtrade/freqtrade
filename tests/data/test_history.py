@@ -74,8 +74,7 @@ def test_load_data_7min_ticker(mocker, caplog, default_conf, testdatadir) -> Non
     assert ld is None
     assert log_has(
         'No history data for pair: "UNITTEST/BTC", interval: 7m. '
-        'Use --refresh-pairs-cached option or `freqtrade download-data` '
-        'script to download the data', caplog
+        'Use `freqtrade download-data` to download the data', caplog
     )
 
 
@@ -105,13 +104,11 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog,
     # do not download a new pair if refresh_pairs isn't set
     history.load_pair_history(datadir=testdatadir,
                               ticker_interval='1m',
-                              refresh_pairs=False,
                               pair='MEME/BTC')
     assert os.path.isfile(file) is False
     assert log_has(
         'No history data for pair: "MEME/BTC", interval: 1m. '
-        'Use --refresh-pairs-cached option or `freqtrade download-data` '
-        'script to download the data', caplog
+        'Use `freqtrade download-data` to download the data', caplog
     )
 
     # download a new pair if refresh_pairs is set
@@ -132,31 +129,6 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog,
                                   exchange=None,
                                   pair='MEME/BTC')
     _clean_test_file(file)
-
-
-def test_load_data_live(default_conf, mocker, caplog, testdatadir) -> None:
-    refresh_mock = MagicMock()
-    mocker.patch("freqtrade.exchange.Exchange.refresh_latest_ohlcv", refresh_mock)
-    exchange = get_patched_exchange(mocker, default_conf)
-
-    history.load_data(datadir=testdatadir, ticker_interval='5m',
-                      pairs=['UNITTEST/BTC', 'UNITTEST2/BTC'],
-                      live=True,
-                      exchange=exchange)
-    assert refresh_mock.call_count == 1
-    assert len(refresh_mock.call_args_list[0][0][0]) == 2
-    assert log_has('Live: Downloading data for all defined pairs ...', caplog)
-
-
-def test_load_data_live_noexchange(default_conf, mocker, caplog, testdatadir) -> None:
-
-    with pytest.raises(OperationalException,
-                       match=r'Exchange needs to be initialized when using live data.'):
-        history.load_data(datadir=testdatadir, ticker_interval='5m',
-                          pairs=['UNITTEST/BTC', 'UNITTEST2/BTC'],
-                          exchange=None,
-                          live=True,
-                          )
 
 
 def test_testdata_path(testdatadir) -> None:
@@ -349,7 +321,6 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
     start = arrow.get('2018-01-01T00:00:00')
     end = arrow.get('2018-01-11T00:00:00')
     tickerdata = history.load_data(testdatadir, '5m', ['UNITTEST/BTC'],
-                                   refresh_pairs=False,
                                    timerange=TimeRange('date', 'date',
                                                        start.timestamp, end.timestamp))
     # timedifference in 5 minutes
@@ -364,7 +335,7 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
     start = arrow.get('2018-01-10T00:00:00')
     end = arrow.get('2018-02-20T00:00:00')
     tickerdata = history.load_data(datadir=testdatadir, ticker_interval='5m',
-                                   pairs=['UNITTEST/BTC'], refresh_pairs=False,
+                                   pairs=['UNITTEST/BTC'],
                                    timerange=TimeRange('date', 'date',
                                                        start.timestamp, end.timestamp))
     # timedifference in 5 minutes

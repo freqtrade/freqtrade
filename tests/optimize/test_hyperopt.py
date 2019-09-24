@@ -35,12 +35,10 @@ def hyperopt_results():
     return pd.DataFrame(
         {
             'pair': ['ETH/BTC', 'ETH/BTC', 'ETH/BTC'],
-            'profit_percent': [0.1, 0.2, 0.3],
-            'profit_abs': [0.2, 0.4, 0.5],
+            'profit_percent': [-0.1, 0.2, 0.3],
+            'profit_abs': [-0.2, 0.4, 0.6],
             'trade_duration': [10, 30, 10],
-            'profit': [2, 0, 0],
-            'loss': [0, 0, 1],
-            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
+            'sell_reason': [SellType.STOP_LOSS, SellType.ROI, SellType.ROI]
         }
     )
 
@@ -88,15 +86,11 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
     assert 'position_stacking' not in config
     assert not log_has('Parameter --enable-position-stacking detected ...', caplog)
 
-    assert 'refresh_pairs' not in config
-    assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
-
     assert 'timerange' not in config
     assert 'runmode' in config
     assert config['runmode'] == RunMode.HYPEROPT
 
 
-@pytest.mark.filterwarnings("ignore:DEPRECATED")
 def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch(
@@ -110,7 +104,6 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
         'hyperopt',
         '--ticker-interval', '1m',
         '--timerange', ':100',
-        '--refresh-pairs-cached',
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--epochs', '1000',
@@ -139,9 +132,6 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
     assert log_has('Parameter --disable-max-market-positions detected ...', caplog)
     assert log_has('max_open_trades set to unlimited ...', caplog)
 
-    assert 'refresh_pairs' in config
-    assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
-
     assert 'timerange' in config
     assert log_has('Parameter --timerange detected: {} ...'.format(config['timerange']), caplog)
 
@@ -168,10 +158,10 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
     x = HyperOptResolver(default_conf, ).hyperopt
     assert not hasattr(x, 'populate_buy_trend')
     assert not hasattr(x, 'populate_sell_trend')
-    assert log_has("Custom Hyperopt does not provide populate_sell_trend. "
-                   "Using populate_sell_trend from DefaultStrategy.", caplog)
-    assert log_has("Custom Hyperopt does not provide populate_buy_trend. "
-                   "Using populate_buy_trend from DefaultStrategy.", caplog)
+    assert log_has("Hyperopt class does not provide populate_sell_trend() method. "
+                   "Using populate_sell_trend from the strategy.", caplog)
+    assert log_has("Hyperopt class does not provide populate_buy_trend() method. "
+                   "Using populate_buy_trend from the strategy.", caplog)
     assert hasattr(x, "ticker_interval")
 
 
@@ -417,8 +407,8 @@ def test_start_calls_optimizer(mocker, default_conf, caplog, capsys) -> None:
     assert dumper.called
     # Should be called twice, once for tickerdata, once to save evaluations
     assert dumper.call_count == 2
-    assert hasattr(hyperopt.backtesting, "advise_sell")
-    assert hasattr(hyperopt.backtesting, "advise_buy")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_sell")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_buy")
     assert hasattr(hyperopt, "max_open_trades")
     assert hyperopt.max_open_trades == default_conf['max_open_trades']
     assert hasattr(hyperopt, "position_stacking")
@@ -560,6 +550,7 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     }
 
     hyperopt = Hyperopt(default_conf)
+    hyperopt.dimensions = hyperopt.hyperopt_space()
     generate_optimizer_value = hyperopt.generate_optimizer(list(optimizer_param.values()))
     assert generate_optimizer_value == response_expected
 
@@ -710,8 +701,8 @@ def test_simplified_interface_roi_stoploss(mocker, default_conf, caplog, capsys)
     assert dumper.called
     # Should be called twice, once for tickerdata, once to save evaluations
     assert dumper.call_count == 2
-    assert hasattr(hyperopt.backtesting, "advise_sell")
-    assert hasattr(hyperopt.backtesting, "advise_buy")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_sell")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_buy")
     assert hasattr(hyperopt, "max_open_trades")
     assert hyperopt.max_open_trades == default_conf['max_open_trades']
     assert hasattr(hyperopt, "position_stacking")
@@ -784,8 +775,8 @@ def test_simplified_interface_buy(mocker, default_conf, caplog, capsys) -> None:
     assert dumper.called
     # Should be called twice, once for tickerdata, once to save evaluations
     assert dumper.call_count == 2
-    assert hasattr(hyperopt.backtesting, "advise_sell")
-    assert hasattr(hyperopt.backtesting, "advise_buy")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_sell")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_buy")
     assert hasattr(hyperopt, "max_open_trades")
     assert hyperopt.max_open_trades == default_conf['max_open_trades']
     assert hasattr(hyperopt, "position_stacking")
@@ -829,8 +820,8 @@ def test_simplified_interface_sell(mocker, default_conf, caplog, capsys) -> None
     assert dumper.called
     # Should be called twice, once for tickerdata, once to save evaluations
     assert dumper.call_count == 2
-    assert hasattr(hyperopt.backtesting, "advise_sell")
-    assert hasattr(hyperopt.backtesting, "advise_buy")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_sell")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_buy")
     assert hasattr(hyperopt, "max_open_trades")
     assert hyperopt.max_open_trades == default_conf['max_open_trades']
     assert hasattr(hyperopt, "position_stacking")

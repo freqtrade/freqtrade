@@ -24,7 +24,6 @@ def test_parse_ticker_dataframe(ticker_history_list, caplog):
 def test_ohlcv_fill_up_missing_data(testdatadir, caplog):
     data = load_pair_history(datadir=testdatadir,
                              ticker_interval='1m',
-                             refresh_pairs=False,
                              pair='UNITTEST/BTC',
                              fill_up_missing=False)
     caplog.set_level(logging.DEBUG)

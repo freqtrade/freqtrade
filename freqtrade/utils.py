@@ -1,11 +1,11 @@
 import logging
 import sys
-from argparse import Namespace
 from pathlib import Path
 from typing import Any, Dict, List
 
 import arrow
 
+from freqtrade import OperationalException
 from freqtrade.configuration import Configuration, TimeRange
 from freqtrade.configuration.directory_operations import create_userdata_dir
 from freqtrade.data.history import refresh_backtest_ohlcv_data
@@ -16,7 +16,7 @@ from freqtrade.state import RunMode
 logger = logging.getLogger(__name__)
 
 
-def setup_utils_configuration(args: Namespace, method: RunMode) -> Dict[str, Any]:
+def setup_utils_configuration(args: Dict[str, Any], method: RunMode) -> Dict[str, Any]:
     """
     Prepare the configuration for utils subcommands
     :param args: Cli args from Arguments()
@@ -33,34 +33,34 @@ def setup_utils_configuration(args: Namespace, method: RunMode) -> Dict[str, Any
     return config
 
 
-def start_list_exchanges(args: Namespace) -> None:
+def start_list_exchanges(args: Dict[str, Any]) -> None:
     """
     Print available exchanges
     :param args: Cli args from Arguments()
     :return: None
     """
 
-    if args.print_one_column:
+    if args['print_one_column']:
         print('\n'.join(available_exchanges()))
     else:
         print(f"Exchanges supported by ccxt and available for Freqtrade: "
               f"{', '.join(available_exchanges())}")
 
 
-def start_create_userdir(args: Namespace) -> None:
+def start_create_userdir(args: Dict[str, Any]) -> None:
     """
     Create "user_data" directory to contain user data strategies, hyperopts, ...)
     :param args: Cli args from Arguments()
     :return: None
     """
-    if "user_data_dir" in args and args.user_data_dir:
-        create_userdata_dir(args.user_data_dir, create_dir=True)
+    if "user_data_dir" in args and args["user_data_dir"]:
+        create_userdata_dir(args["user_data_dir"], create_dir=True)
     else:
         logger.warning("`create-userdir` requires --userdir to be set.")
         sys.exit(1)
 
 
-def start_download_data(args: Namespace) -> None:
+def start_download_data(args: Dict[str, Any]) -> None:
     """
     Download data (former download_backtest_data.py script)
     """
@@ -70,6 +70,11 @@ def start_download_data(args: Namespace) -> None:
     if 'days' in config:
         time_since = arrow.utcnow().shift(days=-config['days']).strftime("%Y%m%d")
         timerange = TimeRange.parse_timerange(f'{time_since}-')
+
+    if 'pairs' not in config:
+        raise OperationalException(
+            "Downloading data requires a list of pairs. "
+            "Please check the documentation on how to configure this.")
 
     dl_path = Path(config['datadir'])
     logger.info(f'About to download pairs: {config["pairs"]}, '

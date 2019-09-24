@@ -17,7 +17,7 @@ class Wallet(NamedTuple):
     total: float = 0
 
 
-class Wallets(object):
+class Wallets:
 
     def __init__(self, config: dict, exchange: Exchange) -> None:
         self._config = config

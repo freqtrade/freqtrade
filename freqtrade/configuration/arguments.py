@@ -2,11 +2,11 @@
 This module contains the argument manager class
 """
 import argparse
-from typing import List, Optional
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from freqtrade.configuration.cli_options import AVAILABLE_CLI_OPTIONS
 from freqtrade import constants
+from freqtrade.configuration.cli_options import AVAILABLE_CLI_OPTIONS
 
 ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_data_dir"]
 
@@ -15,7 +15,7 @@ ARGS_STRATEGY = ["strategy", "strategy_path"]
 ARGS_MAIN = ARGS_COMMON + ARGS_STRATEGY + ["db_url", "sd_notify"]
 
 ARGS_COMMON_OPTIMIZE = ["ticker_interval", "timerange",
-                        "max_open_trades", "stake_amount", "refresh_pairs"]
+                        "max_open_trades", "stake_amount"]
 
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
                                         "strategy_list", "export", "exportfilename"]
@@ -41,10 +41,10 @@ ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit", "db_
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "ticker_interval"]
 
-NO_CONF_REQURIED = ["download-data", "plot-dataframe", "plot-profit"]
+NO_CONF_REQURIED = ["create-userdir", "download-data", "plot-dataframe", "plot-profit"]
 
 
-class Arguments(object):
+class Arguments:
     """
     Arguments Class. Manage the arguments received by the cli
     """
@@ -57,7 +57,7 @@ class Arguments(object):
         self._build_args(optionlist=ARGS_MAIN)
         self._build_subcommands()
 
-    def get_parsed_arg(self) -> argparse.Namespace:
+    def get_parsed_arg(self) -> Dict[str, Any]:
         """
         Return the list of arguments
         :return: List[str] List of arguments
@@ -66,7 +66,7 @@ class Arguments(object):
             self._load_args()
             self._parsed_arg = self._parse_args()
 
-        return self._parsed_arg
+        return vars(self._parsed_arg)
 
     def _parse_args(self) -> argparse.Namespace:
         """

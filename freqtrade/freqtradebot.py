@@ -29,7 +29,7 @@ from freqtrade.wallets import Wallets
 logger = logging.getLogger(__name__)
 
 
-class FreqtradeBot(object):
+class FreqtradeBot:
     """
     Freqtrade is the main class of the bot.
     This is from here the bot start its logic.

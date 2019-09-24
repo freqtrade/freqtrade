@@ -49,9 +49,10 @@ class Hyperopt:
     """
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
-        self.backtesting = Backtesting(self.config)
 
         self.custom_hyperopt = HyperOptResolver(self.config).hyperopt
+
+        self.backtesting = Backtesting(self.config)
 
         self.custom_hyperoptloss = HyperOptLossResolver(self.config).hyperoptloss
         self.calculate_loss = self.custom_hyperoptloss.hyperopt_loss_function
@@ -73,11 +74,15 @@ class Hyperopt:
         self.trials: List = []
 
         # Populate functions here (hasattr is slow so should not be run during "regular" operations)
+        if hasattr(self.custom_hyperopt, 'populate_indicators'):
+            self.backtesting.strategy.advise_indicators = \
+                    self.custom_hyperopt.populate_indicators  # type: ignore
         if hasattr(self.custom_hyperopt, 'populate_buy_trend'):
-            self.backtesting.advise_buy = self.custom_hyperopt.populate_buy_trend  # type: ignore
-
+            self.backtesting.strategy.advise_buy = \
+                    self.custom_hyperopt.populate_buy_trend  # type: ignore
         if hasattr(self.custom_hyperopt, 'populate_sell_trend'):
-            self.backtesting.advise_sell = self.custom_hyperopt.populate_sell_trend  # type: ignore
+            self.backtesting.strategy.advise_sell = \
+                    self.custom_hyperopt.populate_sell_trend  # type: ignore
 
         # Use max_open_trades for hyperopt as well, except --disable-max-market-positions is set
         if self.config.get('use_max_market_positions', True):
@@ -109,7 +114,9 @@ class Hyperopt:
                 p.unlink()
 
     def get_args(self, params):
-        dimensions = self.hyperopt_space()
+
+        dimensions = self.dimensions
+
         # Ensure the number of dimensions match
         # the number of parameters in the list x.
         if len(params) != len(dimensions):
@@ -255,13 +262,16 @@ class Hyperopt:
         """
         params = self.get_args(_params)
         if self.has_space('roi'):
-            self.backtesting.strategy.minimal_roi = self.custom_hyperopt.generate_roi_table(params)
+            self.backtesting.strategy.minimal_roi = \
+                    self.custom_hyperopt.generate_roi_table(params)
 
         if self.has_space('buy'):
-            self.backtesting.advise_buy = self.custom_hyperopt.buy_strategy_generator(params)
+            self.backtesting.strategy.advise_buy = \
+                    self.custom_hyperopt.buy_strategy_generator(params)
 
         if self.has_space('sell'):
-            self.backtesting.advise_sell = self.custom_hyperopt.sell_strategy_generator(params)
+            self.backtesting.strategy.advise_sell = \
+                    self.custom_hyperopt.sell_strategy_generator(params)
 
         if self.has_space('stoploss'):
             self.backtesting.strategy.stoploss = params['stoploss']
@@ -322,9 +332,9 @@ class Hyperopt:
                 f'Total profit {total_profit: 11.8f} {stake_cur} '
                 f'({profit: 7.2f}Σ%). Avg duration {duration:5.1f} mins.')
 
-    def get_optimizer(self, cpu_count) -> Optimizer:
+    def get_optimizer(self, dimensions, cpu_count) -> Optimizer:
         return Optimizer(
-            self.hyperopt_space(),
+            dimensions,
             base_estimator="ET",
             acq_optimizer="auto",
             n_initial_points=INITIAL_POINTS,
@@ -352,8 +362,6 @@ class Hyperopt:
             datadir=Path(self.config['datadir']),
             pairs=self.config['exchange']['pair_whitelist'],
             ticker_interval=self.backtesting.ticker_interval,
-            refresh_pairs=self.config.get('refresh_pairs', False),
-            exchange=self.backtesting.exchange,
             timerange=timerange
         )
 
@@ -370,9 +378,6 @@ class Hyperopt:
             (max_date - min_date).days
         )
 
-        self.backtesting.strategy.advise_indicators = \
-            self.custom_hyperopt.populate_indicators  # type: ignore
-
         preprocessed = self.backtesting.strategy.tickerdata_to_dataframe(data)
 
         dump(preprocessed, self.tickerdata_pickle)
@@ -387,7 +392,8 @@ class Hyperopt:
         config_jobs = self.config.get('hyperopt_jobs', -1)
         logger.info(f'Number of parallel jobs set as: {config_jobs}')
 
-        opt = self.get_optimizer(config_jobs)
+        self.dimensions = self.hyperopt_space()
+        self.opt = self.get_optimizer(self.dimensions, config_jobs)
 
         if self.config.get('print_colorized', False):
             colorama_init(autoreset=True)
@@ -398,9 +404,9 @@ class Hyperopt:
                 logger.info(f'Effective number of parallel workers used: {jobs}')
                 EVALS = max(self.total_epochs // jobs, 1)
                 for i in range(EVALS):
-                    asked = opt.ask(n_points=jobs)
+                    asked = self.opt.ask(n_points=jobs)
                     f_val = self.run_optimizer_parallel(parallel, asked)
-                    opt.tell(asked, [v['loss'] for v in f_val])
+                    self.opt.tell(asked, [v['loss'] for v in f_val])
                     for j in range(jobs):
                         current = i * jobs + j
                         val = f_val[j]

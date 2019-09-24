@@ -188,16 +188,12 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'position_stacking' not in config
     assert not log_has('Parameter --enable-position-stacking detected ...', caplog)
 
-    assert 'refresh_pairs' not in config
-    assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
-
     assert 'timerange' not in config
     assert 'export' not in config
     assert 'runmode' in config
     assert config['runmode'] == RunMode.BACKTEST
 
 
-@pytest.mark.filterwarnings("ignore:DEPRECATED")
 def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch(
@@ -213,7 +209,6 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
         '--ticker-interval', '1m',
         '--enable-position-stacking',
         '--disable-max-market-positions',
-        '--refresh-pairs-cached',
         '--timerange', ':100',
         '--export', '/bar/foo',
         '--export-filename', 'foo_bar.json'
@@ -239,9 +234,6 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
     assert 'use_max_market_positions' in config
     assert log_has('Parameter --disable-max-market-positions detected ...', caplog)
     assert log_has('max_open_trades set to unlimited ...', caplog)
-
-    assert 'refresh_pairs' in config
-    assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
 
     assert 'timerange' in config
     assert log_has('Parameter --timerange detected: {} ...'.format(config['timerange']), caplog)
@@ -313,8 +305,8 @@ def test_backtesting_init(mocker, default_conf, order_types) -> None:
     assert backtesting.config == default_conf
     assert backtesting.ticker_interval == '5m'
     assert callable(backtesting.strategy.tickerdata_to_dataframe)
-    assert callable(backtesting.advise_buy)
-    assert callable(backtesting.advise_sell)
+    assert callable(backtesting.strategy.advise_buy)
+    assert callable(backtesting.strategy.advise_sell)
     assert isinstance(backtesting.strategy.dp, DataProvider)
     get_fee.assert_called()
     assert backtesting.fee == 0.5
@@ -603,7 +595,7 @@ def test_processed(default_conf, mocker, testdatadir) -> None:
     cols = dataframe.columns
     # assert the dataframe got some of the indicator columns
     for col in ['close', 'high', 'low', 'open', 'date',
-                'ema50', 'ao', 'macd', 'plus_dm']:
+                'ema10', 'rsi', 'fastd', 'plus_di']:
         assert col in cols
 
 
@@ -627,8 +619,8 @@ def test_backtest_clash_buy_sell(mocker, default_conf, testdatadir):
 
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf, datadir=testdatadir)
     backtesting = Backtesting(default_conf)
-    backtesting.advise_buy = fun  # Override
-    backtesting.advise_sell = fun  # Override
+    backtesting.strategy.advise_buy = fun  # Override
+    backtesting.strategy.advise_sell = fun  # Override
     results = backtesting.backtest(backtest_conf)
     assert results.empty
 
@@ -642,8 +634,8 @@ def test_backtest_only_sell(mocker, default_conf, testdatadir):
 
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf, datadir=testdatadir)
     backtesting = Backtesting(default_conf)
-    backtesting.advise_buy = fun  # Override
-    backtesting.advise_sell = fun  # Override
+    backtesting.strategy.advise_buy = fun  # Override
+    backtesting.strategy.advise_sell = fun  # Override
     results = backtesting.backtest(backtest_conf)
     assert results.empty
 
@@ -657,8 +649,8 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
     default_conf['experimental'] = {"use_sell_signal": True}
     default_conf['ticker_interval'] = '1m'
     backtesting = Backtesting(default_conf)
-    backtesting.advise_buy = _trend_alternate  # Override
-    backtesting.advise_sell = _trend_alternate  # Override
+    backtesting.strategy.advise_buy = _trend_alternate  # Override
+    backtesting.strategy.advise_sell = _trend_alternate  # Override
     results = backtesting.backtest(backtest_conf)
     backtesting._store_backtest_result("test_.json", results)
     # 200 candles in backtest data
@@ -700,8 +692,8 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     default_conf['ticker_interval'] = '5m'
 
     backtesting = Backtesting(default_conf)
-    backtesting.advise_buy = _trend_alternate_hold  # Override
-    backtesting.advise_sell = _trend_alternate_hold  # Override
+    backtesting.strategy.advise_buy = _trend_alternate_hold  # Override
+    backtesting.strategy.advise_sell = _trend_alternate_hold  # Override
 
     data_processed = backtesting.strategy.tickerdata_to_dataframe(data)
     min_date, max_date = get_timeframe(data_processed)

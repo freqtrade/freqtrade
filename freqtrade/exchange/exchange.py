@@ -30,9 +30,6 @@ BAD_EXCHANGES = {
     "bitmex": "Various reasons",
     "bitstamp": "Does not provide history. "
                 "Details in https://github.com/freqtrade/freqtrade/issues/1983",
-    "kraken": "TEMPORARY: Balance does not report free balance, so freqtrade will not know "
-              "if enough balance is available."
-              "Details in https://github.com/freqtrade/freqtrade/issues/1687#issuecomment-528509266"
     }
 
 
@@ -72,7 +69,7 @@ def retrier(f):
     return wrapper
 
 
-class Exchange(object):
+class Exchange:
 
     _config: Dict = {}
     _params: Dict = {}

@@ -143,12 +143,10 @@ def test_from_config(default_conf, mocker, caplog) -> None:
     conf2['exchange']['pair_whitelist'] += ['NANO/BTC']
     conf2['fiat_display_currency'] = "EUR"
     config_files = [conf1, conf2]
+    mocker.patch('freqtrade.configuration.configuration.create_datadir', lambda c, x: x)
 
     configsmock = MagicMock(side_effect=config_files)
-    mocker.patch(
-        'freqtrade.configuration.configuration.load_config_file',
-        configsmock
-    )
+    mocker.patch('freqtrade.configuration.configuration.load_config_file', configsmock)
 
     validated_conf = Configuration.from_files(['test_conf.json', 'test2_conf.json'])
 
@@ -161,6 +159,25 @@ def test_from_config(default_conf, mocker, caplog) -> None:
     assert validated_conf['fiat_display_currency'] == "EUR"
     assert 'internals' in validated_conf
     assert log_has('Validating configuration ...', caplog)
+    assert isinstance(validated_conf['user_data_dir'], Path)
+
+
+def test_print_config(default_conf, mocker, caplog) -> None:
+    conf1 = deepcopy(default_conf)
+    # Delete non-json elements from default_conf
+    del conf1['user_data_dir']
+    config_files = [conf1]
+
+    configsmock = MagicMock(side_effect=config_files)
+    mocker.patch('freqtrade.configuration.configuration.create_datadir', lambda c, x: x)
+    mocker.patch('freqtrade.configuration.configuration.load_config_file', configsmock)
+
+    validated_conf = Configuration.from_files(['test_conf.json'])
+
+    assert isinstance(validated_conf['user_data_dir'], Path)
+    assert "user_data_dir" in validated_conf
+    assert "original_config" in validated_conf
+    assert isinstance(json.dumps(validated_conf['original_config']), str)
 
 
 def test_load_config_max_open_trades_minus_one(default_conf, mocker, caplog) -> None:
@@ -341,14 +358,10 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'position_stacking' not in config
     assert not log_has('Parameter --enable-position-stacking detected ...', caplog)
 
-    assert 'refresh_pairs' not in config
-    assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
-
     assert 'timerange' not in config
     assert 'export' not in config
 
 
-@pytest.mark.filterwarnings("ignore:DEPRECATED")
 def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch(
@@ -368,7 +381,6 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         '--ticker-interval', '1m',
         '--enable-position-stacking',
         '--disable-max-market-positions',
-        '--refresh-pairs-cached',
         '--timerange', ':100',
         '--export', '/bar/foo'
     ]
@@ -398,8 +410,6 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert log_has('Parameter --disable-max-market-positions detected ...', caplog)
     assert log_has('max_open_trades set to unlimited ...', caplog)
 
-    assert 'refresh_pairs'in config
-    assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
     assert 'timerange' in config
     assert log_has('Parameter --timerange detected: {} ...'.format(config['timerange']), caplog)
 
@@ -440,7 +450,7 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
                    caplog)
 
     assert 'strategy_list' in config
-    assert log_has('Using strategy list of 2 Strategies', caplog)
+    assert log_has('Using strategy list of 2 strategies', caplog)
 
     assert 'position_stacking' not in config
 
@@ -528,6 +538,13 @@ def test_check_exchange(default_conf, caplog) -> None:
     default_conf.get('exchange').update({'name': ''})
     default_conf['runmode'] = RunMode.PLOT
     assert check_exchange(default_conf)
+
+    # Test no exchange...
+    default_conf.get('exchange').update({'name': ''})
+    default_conf['runmode'] = RunMode.OTHER
+    with pytest.raises(OperationalException,
+                       match=r'This command requires a configured exchange.*'):
+        check_exchange(default_conf)
 
 
 def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
@@ -871,7 +888,7 @@ def test_pairlist_resolving_fallback(mocker):
 
     args = Arguments(arglist).get_parsed_arg()
     # Fix flaky tests if config.json exists
-    args.config = None
+    args["config"] = None
 
     configuration = Configuration(args)
     config = configuration.get_config()

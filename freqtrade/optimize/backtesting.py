@@ -44,7 +44,7 @@ class BacktestResult(NamedTuple):
     sell_reason: SellType
 
 
-class Backtesting(object):
+class Backtesting:
     """
     Backtesting class, this class contains all the logic to run a backtest
 
@@ -95,8 +95,6 @@ class Backtesting(object):
         Load strategy into backtesting
         """
         self.strategy = strategy
-        self.advise_buy = strategy.advise_buy
-        self.advise_sell = strategy.advise_sell
         # Set stoploss_on_exchange to false for backtesting,
         # since a "perfect" stoploss-sell is assumed anyway
         # And the regular "stoploss" function would not apply to that case
@@ -219,8 +217,8 @@ class Backtesting(object):
         for pair, pair_data in processed.items():
             pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
 
-            ticker_data = self.advise_sell(
-                self.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
+            ticker_data = self.strategy.advise_sell(
+                self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
 
             # to avoid using data from future, we buy/sell with signal from previous candle
             ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)
@@ -239,14 +237,16 @@ class Backtesting(object):
             stake_amount: float, max_open_trades: int) -> Optional[BacktestResult]:
 
         trade = Trade(
+            pair=pair,
             open_rate=buy_row.open,
             open_date=buy_row.date,
             stake_amount=stake_amount,
             amount=stake_amount / buy_row.open,
             fee_open=self.fee,
-            fee_close=self.fee
+            fee_close=self.fee,
+            is_open=True,
         )
-
+        logger.debug(f"{pair} - Backtesting emulates creation of new trade: {trade}.")
         # calculate win/lose forwards from buy point
         for sell_row in partial_ticker:
             if max_open_trades > 0:
@@ -289,23 +289,25 @@ class Backtesting(object):
         if partial_ticker:
             # no sell condition found - trade stil open at end of backtest period
             sell_row = partial_ticker[-1]
-            btr = BacktestResult(pair=pair,
-                                 profit_percent=trade.calc_profit_percent(rate=sell_row.open),
-                                 profit_abs=trade.calc_profit(rate=sell_row.open),
-                                 open_time=buy_row.date,
-                                 close_time=sell_row.date,
-                                 trade_duration=int((
-                                     sell_row.date - buy_row.date).total_seconds() // 60),
-                                 open_index=buy_row.Index,
-                                 close_index=sell_row.Index,
-                                 open_at_end=True,
-                                 open_rate=buy_row.open,
-                                 close_rate=sell_row.open,
-                                 sell_reason=SellType.FORCE_SELL
-                                 )
-            logger.debug('Force_selling still open trade %s with %s perc - %s', btr.pair,
-                         btr.profit_percent, btr.profit_abs)
-            return btr
+            bt_res = BacktestResult(pair=pair,
+                                    profit_percent=trade.calc_profit_percent(rate=sell_row.open),
+                                    profit_abs=trade.calc_profit(rate=sell_row.open),
+                                    open_time=buy_row.date,
+                                    close_time=sell_row.date,
+                                    trade_duration=int((
+                                        sell_row.date - buy_row.date).total_seconds() // 60),
+                                    open_index=buy_row.Index,
+                                    close_index=sell_row.Index,
+                                    open_at_end=True,
+                                    open_rate=buy_row.open,
+                                    close_rate=sell_row.open,
+                                    sell_reason=SellType.FORCE_SELL
+                                    )
+            logger.debug(f"{pair} - Force selling still open trade, "
+                         f"profit percent: {bt_res.profit_percent}, "
+                         f"profit abs: {bt_res.profit_abs}")
+
+            return bt_res
         return None
 
     def backtest(self, args: Dict) -> DataFrame:
@@ -384,6 +386,8 @@ class Backtesting(object):
                                                          max_open_trades)
 
                 if trade_entry:
+                    logger.debug(f"{pair} - Locking pair till "
+                                 f"close_time={trade_entry.close_time}")
                     lock_pair_until[pair] = trade_entry.close_time
                     trades.append(trade_entry)
                 else:
@@ -410,8 +414,6 @@ class Backtesting(object):
             datadir=Path(self.config['datadir']),
             pairs=pairs,
             ticker_interval=self.ticker_interval,
-            refresh_pairs=self.config.get('refresh_pairs', False),
-            exchange=self.exchange,
             timerange=timerange,
         )
 

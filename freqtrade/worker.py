@@ -4,27 +4,26 @@ Main Freqtrade worker class.
 import logging
 import time
 import traceback
-from argparse import Namespace
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Dict, Optional
+
 import sdnotify
 
-from freqtrade import (constants, OperationalException, TemporaryError,
-                       __version__)
+from freqtrade import (OperationalException, TemporaryError, __version__,
+                       constants)
 from freqtrade.configuration import Configuration
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.state import State
 from freqtrade.rpc import RPCMessageType
-
+from freqtrade.state import State
 
 logger = logging.getLogger(__name__)
 
 
-class Worker(object):
+class Worker:
     """
     Freqtradebot worker class
     """
 
-    def __init__(self, args: Namespace, config=None) -> None:
+    def __init__(self, args: Dict[str, Any], config=None) -> None:
         """
         Init all variables and objects the bot needs to work
         """
