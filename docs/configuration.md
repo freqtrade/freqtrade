@@ -1,15 +1,15 @@
 # Configure the bot
 
-Freqtrade has many configurable options and possibilities.
-By default, these options are configured via the configuration file (see below).
+Freqtrade has many configurable features and possibilities.
+By default, these settings are configured via the configuration file (see below).
 
 ## The Freqtrade configuration file
 
 The bot uses a set of configuration parameters during its operation that all together conform the bot configuration. It normally reads its configuration from a file (Freqtrade configuration file).
 
-Per default, the bot loads the configuration from the file `config.json`, located in the current working directory.
+Per default, the bot loads the configuration from the `config.json` file, located in the current working directory.
 
-You can use a different configuration file used by the bot with the `-c/--config` command line option.
+You can specify a different configuration file used by the bot with the `-c/--config` command line option.
 
 In some advanced use cases, multiple configuration files can be specified and used by the bot or the bot can read its configuration parameters from the process standard input stream.
 
@@ -29,7 +29,7 @@ Do not worry if you are not familiar with JSON format -- simply open the configu
 
 The table below will list all configuration parameters available.
 
-Freqtrade can also load many options via command line arguments (check out the commands `--help` output for details).
+Freqtrade can also load many options via command line (CLI) arguments (check out the commands `--help` output for details).
 The prevelance for all Options is as follows:
 
 - CLI arguments override any other option
