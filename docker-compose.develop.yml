@@ -4,6 +4,6 @@ services:
   freqtrade_develop:
     build:
       context: .
-      dockerfile: "./Dockerfile.develop"
+      dockerfile: "./Dockerfile"
     volumes:
       - ".:/freqtrade"
