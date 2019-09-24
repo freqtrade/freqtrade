@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 
 import arrow
 
+from freqtrade import OperationalException
 from freqtrade.configuration import Configuration, TimeRange
 from freqtrade.configuration.directory_operations import create_userdata_dir
 from freqtrade.data.history import refresh_backtest_ohlcv_data
@@ -69,6 +70,11 @@ def start_download_data(args: Dict[str, Any]) -> None:
     if 'days' in config:
         time_since = arrow.utcnow().shift(days=-config['days']).strftime("%Y%m%d")
         timerange = TimeRange.parse_timerange(f'{time_since}-')
+
+    if 'pairs' not in config:
+        raise OperationalException(
+            "Downloading data requires a list of pairs. "
+            "Please check the documentation on how to configure this.")
 
     dl_path = Path(config['datadir'])
     logger.info(f'About to download pairs: {config["pairs"]}, '

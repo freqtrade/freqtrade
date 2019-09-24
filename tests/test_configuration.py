@@ -546,6 +546,13 @@ def test_check_exchange(default_conf, caplog) -> None:
     default_conf['runmode'] = RunMode.PLOT
     assert check_exchange(default_conf)
 
+    # Test no exchange...
+    default_conf.get('exchange').update({'name': ''})
+    default_conf['runmode'] = RunMode.OTHER
+    with pytest.raises(OperationalException,
+                       match=r'This command requires a configured exchange.*'):
+        check_exchange(default_conf)
+
 
 def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
