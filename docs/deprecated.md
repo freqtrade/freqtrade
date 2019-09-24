@@ -12,7 +12,7 @@ and are no longer supported. Please avoid their usage in your configuration.
 Since this leads to much confusion, and slows down backtesting (while not being part of backtesting) this has been singled out 
 as a seperate freqtrade subcommand `freqtrade download-data`.
 
-This command line option was deprecated in `2019.7-dev` and removed in `2019-9`
+This command line option was deprecated in 2019.7-dev (develop branch) and removed in 2019.9 (master branch).
 
 ### The **--dynamic-whitelist** command line option
 
