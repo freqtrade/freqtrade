@@ -64,14 +64,14 @@ def add_indicators(fig, row, indicators: List[str], data: pd.DataFrame) -> make_
     """
     for indicator in indicators:
         if indicator in data:
-            # TODO: Figure out why scattergl causes problems
-            scattergl = go.Scatter(
+            # TODO: Figure out why scattergl causes problems plotly/plotly.js#2284
+            scatter = go.Scatter(
                 x=data['date'],
                 y=data[indicator].values,
                 mode='lines',
                 name=indicator
             )
-            fig.add_trace(scattergl, row, 1)
+            fig.add_trace(scatter, row, 1)
         else:
             logger.info(
                 'Indicator "%s" ignored. Reason: This indicator is not found '
@@ -92,7 +92,7 @@ def add_profit(fig, row, data: pd.DataFrame, column: str, name: str) -> make_sub
     :param name: Name to use
     :return: fig with added profit plot
     """
-    profit = go.Scattergl(
+    profit = go.Scatter(
         x=data.index,
         y=data[column],
         name=name,
@@ -222,23 +222,26 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
             logger.warning("No sell-signals found.")
 
     if 'bb_lowerband' in data and 'bb_upperband' in data:
-        bb_lower = go.Scattergl(
+        bb_lower = go.Scatter(
             x=data.date,
             y=data.bb_lowerband,
-            name='BB lower',
+            showlegend=False,
             line={'color': 'rgba(255,255,255,0)'},
         )
-        bb_upper = go.Scattergl(
+        bb_upper = go.Scatter(
             x=data.date,
             y=data.bb_upperband,
-            name='BB upper',
+            name='Bollinger Band',
             fill="tonexty",
             fillcolor="rgba(0,176,246,0.2)",
             line={'color': 'rgba(255,255,255,0)'},
         )
         fig.add_trace(bb_lower, 1, 1)
         fig.add_trace(bb_upper, 1, 1)
-
+        if 'bb_upperband' in indicators1 and 'bb_lowerband' in indicators1:
+            indicators1.remove('bb_upperband')
+            indicators1.remove('bb_lowerband')
+            
     # Add indicators to main plot
     fig = add_indicators(fig=fig, row=1, indicators=indicators1, data=data)
 
@@ -252,7 +255,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     )
     fig.add_trace(volume, 2, 1)
 
-    # Add indicators to seperate row
+    # Add indicators to separate row
     fig = add_indicators(fig=fig, row=3, indicators=indicators2, data=data)
 
     return fig
@@ -267,7 +270,7 @@ def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame],
     df_comb = create_cum_profit(df_comb, trades, 'cum_profit')
 
     # Plot the pairs average close prices, and total profit growth
-    avgclose = go.Scattergl(
+    avgclose = go.Scatter(
         x=df_comb.index,
         y=df_comb['mean'],
         name='Avg close price',
