@@ -22,6 +22,18 @@ mkdir -p user_data/data/binance
 cp freqtrade/tests/testdata/pairs.json user_data/data/binance
 ```
 
+The format of the `pairs.json` file is a simple json list.
+Mixing different stake-currencies is allowed for this file, since it's only used for downloading.
+
+``` json
+[
+    "ETH/BTC",
+    "ETH/USDT",
+    "BTC/USDT",
+    "XRP/ETH"
+]
+```
+
 ### start download
 
 Then run:
