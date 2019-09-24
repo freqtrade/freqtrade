@@ -362,8 +362,6 @@ class Hyperopt:
             datadir=Path(self.config['datadir']),
             pairs=self.config['exchange']['pair_whitelist'],
             ticker_interval=self.backtesting.ticker_interval,
-            refresh_pairs=self.config.get('refresh_pairs', False),
-            exchange=self.backtesting.exchange,
             timerange=timerange
         )
 

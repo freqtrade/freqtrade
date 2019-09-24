@@ -3,8 +3,6 @@
 
 from unittest.mock import MagicMock
 
-import pytest
-
 from freqtrade.edge import PairInfo
 from freqtrade.optimize import setup_configuration, start_edge
 from freqtrade.optimize.edge_cli import EdgeCli
@@ -35,14 +33,10 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'ticker_interval' in config
     assert not log_has_re('Parameter -i/--ticker-interval detected .*', caplog)
 
-    assert 'refresh_pairs' not in config
-    assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
-
     assert 'timerange' not in config
     assert 'stoploss_range' not in config
 
 
-@pytest.mark.filterwarnings("ignore:DEPRECATED")
 def test_setup_edge_configuration_with_arguments(mocker, edge_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, edge_conf)
     mocker.patch(
@@ -56,7 +50,6 @@ def test_setup_edge_configuration_with_arguments(mocker, edge_conf, caplog) -> N
         '--datadir', '/foo/bar',
         'edge',
         '--ticker-interval', '1m',
-        '--refresh-pairs-cached',
         '--timerange', ':100',
         '--stoplosses=-0.01,-0.10,-0.001'
     ]
@@ -74,8 +67,6 @@ def test_setup_edge_configuration_with_arguments(mocker, edge_conf, caplog) -> N
     assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
                    caplog)
 
-    assert 'refresh_pairs' in config
-    assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
     assert 'timerange' in config
     assert log_has('Parameter --timerange detected: {} ...'.format(config['timerange']), caplog)
 
