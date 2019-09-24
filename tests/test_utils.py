@@ -117,12 +117,15 @@ def test_download_data_no_exchange(mocker, caplog):
     args = [
         "download-data",
         ]
+    pargs = get_args(args)
+    pargs['config'] = None
     with pytest.raises(OperationalException,
                        match=r"This command requires a configured exchange.*"):
-        start_download_data(get_args(args))
+        start_download_data(pargs)
 
 
 def test_download_data_no_pairs(mocker, caplog):
+
     mocker.patch.object(Path, "exists", MagicMock(return_value=False))
 
     mocker.patch('freqtrade.utils.refresh_backtest_ohlcv_data',
@@ -136,6 +139,8 @@ def test_download_data_no_pairs(mocker, caplog):
         "--exchange",
         "binance",
     ]
+    pargs = get_args(args)
+    pargs['config'] = None
     with pytest.raises(OperationalException,
                        match=r"Downloading data requires a list of pairs\..*"):
-        start_download_data(get_args(args))
+        start_download_data(pargs)
