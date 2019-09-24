@@ -11,7 +11,7 @@ nav:
         - Telegram: telegram-usage.md
         - Web Hook: webhook-config.md
         - REST API: rest-api.md
-    - Data Download: data-download.md
+    - Data Downloading: data-download.md
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
     - Edge positioning: edge.md

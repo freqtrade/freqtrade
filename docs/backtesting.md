@@ -3,7 +3,7 @@
 This page explains how to validate your strategy performance by using Backtesting.
 
 Backtesting requires historic data to be available.
-To learn how to get data for the pairs and exchange you're interrested in, head over to the [Data downloading](data-download.md) section of the documentation.
+To learn how to get data for the pairs and exchange you're interrested in, head over to the [Data Downloading](data-download.md) section of the documentation.
 
 ## Test your strategy with Backtesting
 
@@ -164,13 +164,13 @@ here:
 The bot has made `429` trades for an average duration of `4:12:00`, with a performance of `76.20%` (profit), that means it has
 earned a total of `0.00762792 BTC` starting with a capital of 0.01 BTC.
 
-The column `avg profit %` shows the average profit for all trades made while the column `cum profit %` sums all the profits/losses.
+The column `avg profit %` shows the average profit for all trades made while the column `cum profit %` sums up all the profits/losses.
 The column `tot profit %` shows instead the total profit % in relation to allocated capital (`max_open_trades * stake_amount`).
-In the above results we have `max_open_trades=2 stake_amount=0.005` in config  so `(76.20/100) * (0.005 * 2) =~ 0.00762792 BTC`.
+In the above results we have `max_open_trades=2` and `stake_amount=0.005` in config  so `tot_profit %` will be `(76.20/100) * (0.005 * 2) =~ 0.00762792 BTC`.
 
 Your strategy performance is influenced by your buy strategy, your sell strategy, and also by the `minimal_roi` and `stop_loss` you have set.
 
-For example, if your minimal_roi is only `"0":  0.01`. You cannot expect the bot to make more profit than 1% (because it will sell every time a trade will reach 1%).
+For example, if your `minimal_roi` is only `"0":  0.01` you cannot expect the bot to make more profit than 1% (because it will sell every time a trade reaches 1%).
 
 ```json
 "minimal_roi": {
@@ -179,8 +179,8 @@ For example, if your minimal_roi is only `"0":  0.01`. You cannot expect the bot
 ```
 
 On the other hand, if you set a too high `minimal_roi` like `"0":  0.55`
-(55%), there is almost no chance that the bot will never reach this profit.
-Hence, keep in mind that your performance is a mix of the different elements of the strategy, your configuration, and the crypto-currency pairs you have set up.
+(55%), there is almost no chance that the bot will ever reach this profit.
+Hence, keep in mind that your performance is an integral mix of all different elements of the strategy, your configuration, and the crypto-currency pairs you have set up.
 
 ### Assumptions made by backtesting
 
