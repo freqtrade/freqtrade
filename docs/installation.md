@@ -99,8 +99,8 @@ sudo apt-get install build-essential git
 
 Before installing FreqTrade on a Raspberry Pi running the official Raspbian Image, make sure you have at least Python 3.6 installed. The default image only provides Python 3.5. Probably the easiest way to get a recent version of python is [miniconda](https://repo.continuum.io/miniconda/).
 
-The following assumes that miniconda3 is installed and available in your environment. Last miniconda3 installation file use python 3.4, we will update to python 3.6 on this installation.
-It's recommended to use (mini)conda for this as installation/compilation of `numpy`, `scipy` and `pandas` takes a long time.
+The following assumes that miniconda3 is installed and available in your environment. Since the last miniconda3 installation file uses python 3.4, we will update to python 3.6 on this installation.
+It's recommended to use (mini)conda for this as installation/compilation of `numpy` and `pandas` takes a long time.
 
 Additional package to install on your Raspbian, `libffi-dev` required by cryptography (from python-telegram-bot).
 
@@ -109,12 +109,16 @@ conda config --add channels rpi
 conda install python=3.6
 conda create -n freqtrade python=3.6
 conda activate freqtrade
-conda install scipy pandas numpy
+conda install pandas numpy
 
 sudo apt install libffi-dev
 python3 -m pip install -r requirements-common.txt
 python3 -m pip install -e .
 ```
+
+!!! Note
+    This does not install hyperopt dependencies. To install these, please use `python3 -m pip install -e .[hyperopt]`.
+    We do not advise to run hyperopt on a Raspberry Pi, since this is a very resource-heavy operation, which should be done on powerfull machine.
 
 ### Common
 
@@ -175,7 +179,6 @@ cp config.json.example config.json
 
 ``` bash
 python3 -m pip install --upgrade pip
-python3 -m pip install -r requirements.txt
 python3 -m pip install -e .
 ```
 

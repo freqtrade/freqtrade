@@ -22,13 +22,13 @@ RUN tar -xzf /freqtrade/ta-lib-0.4.0-src.tar.gz \
 ENV LD_LIBRARY_PATH /usr/local/lib
 
 # Install berryconda
-RUN wget https://github.com/jjhelmus/berryconda/releases/download/v2.0.0/Berryconda3-2.0.0-Linux-armv7l.sh \
+RUN wget -q https://github.com/jjhelmus/berryconda/releases/download/v2.0.0/Berryconda3-2.0.0-Linux-armv7l.sh \
  && bash ./Berryconda3-2.0.0-Linux-armv7l.sh -b \
  && rm Berryconda3-2.0.0-Linux-armv7l.sh
 
 # Install dependencies
 COPY requirements-common.txt /freqtrade/
-RUN ~/berryconda3/bin/conda install -y numpy pandas scipy \
+RUN ~/berryconda3/bin/conda install -y numpy pandas \
  && ~/berryconda3/bin/pip install -r requirements-common.txt --no-cache-dir
 
 # Install and execute
