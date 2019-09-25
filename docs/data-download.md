@@ -1,4 +1,4 @@
-# Data download
+# Data Downloading
 
 ## Getting data for backtesting and hyperopt
 

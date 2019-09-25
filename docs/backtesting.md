@@ -84,7 +84,7 @@ freqtrade backtesting --timerange=20190501-
 
 #### Advanced use of timerange
 
-Using `--timerange=20190101-` will use all available data starting with January 1st, 2019 from your inputdata.
+For Example, running backtesting with the `--timerange=20190101-` option will use all available data starting with January 1st, 2019 from your inputdata.
 You can also specify particular dates or a range span indexed by start and stop.
 
 The full timerange specification:
