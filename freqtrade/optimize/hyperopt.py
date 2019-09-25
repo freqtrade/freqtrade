@@ -36,6 +36,11 @@ logger = logging.getLogger(__name__)
 
 
 INITIAL_POINTS = 30
+
+# Keep no more than 2*SKOPT_MODELS_MAX_NUM models
+# in the skopt models list
+SKOPT_MODELS_MAX_NUM = 10
+
 MAX_LOSS = 100000  # just a big enough number to be bad result in loss optimization
 
 
@@ -255,12 +260,13 @@ class Hyperopt:
             spaces += self.custom_hyperopt.stoploss_space()
         return spaces
 
-    def generate_optimizer(self, _params: Dict) -> Dict:
+    def generate_optimizer(self, _params: Dict, iteration=None) -> Dict:
         """
         Used Optimize function. Called once per epoch to optimize whatever is configured.
         Keep this function as optimized as possible!
         """
         params = self.get_args(_params)
+
         if self.has_space('roi'):
             self.backtesting.strategy.minimal_roi = \
                     self.custom_hyperopt.generate_roi_table(params)
@@ -342,9 +348,26 @@ class Hyperopt:
             random_state=self.config.get('hyperopt_random_state', None)
         )
 
-    def run_optimizer_parallel(self, parallel, asked) -> List:
+    def fix_optimizer_models_list(self):
+        """
+        WORKAROUND: Since skopt is not actively supported, this resolves problems with skopt
+        memory usage, see also: https://github.com/scikit-optimize/scikit-optimize/pull/746
+
+        This may cease working when skopt updates if implementation of this intrinsic
+        part changes.
+        """
+        n = len(self.opt.models) - SKOPT_MODELS_MAX_NUM
+        # Keep no more than 2*SKOPT_MODELS_MAX_NUM models in the skopt models list,
+        # remove the old ones. These are actually of no use, the current model
+        # from the estimator is the only one used in the skopt optimizer.
+        # Freqtrade code also does not inspect details of the models.
+        if n >= SKOPT_MODELS_MAX_NUM:
+            logger.debug(f"Fixing skopt models list, removing {n} old items...")
+            del self.opt.models[0:n]
+
+    def run_optimizer_parallel(self, parallel, asked, i) -> List:
         return parallel(delayed(
-                        wrap_non_picklable_objects(self.generate_optimizer))(v) for v in asked)
+                        wrap_non_picklable_objects(self.generate_optimizer))(v, i) for v in asked)
 
     def load_previous_results(self):
         """ read trials file if we have one """
@@ -405,8 +428,9 @@ class Hyperopt:
                 EVALS = max(self.total_epochs // jobs, 1)
                 for i in range(EVALS):
                     asked = self.opt.ask(n_points=jobs)
-                    f_val = self.run_optimizer_parallel(parallel, asked)
+                    f_val = self.run_optimizer_parallel(parallel, asked, i)
                     self.opt.tell(asked, [v['loss'] for v in f_val])
+                    self.fix_optimizer_models_list()
                     for j in range(jobs):
                         current = i * jobs + j
                         val = f_val[j]
