@@ -90,7 +90,7 @@ class Hyperopt:
         else:
             logger.debug('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
             self.max_open_trades = 0
-        self.position_stacking = self.config.get('position_stacking', False),
+        self.position_stacking = self.config.get('position_stacking', False)
 
         if self.has_space('sell'):
             # Make sure experimental is enabled
