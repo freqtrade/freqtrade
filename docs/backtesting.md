@@ -72,23 +72,20 @@ The exported trades can be used for [further analysis](#further-backtest-result-
 freqtrade backtesting --export trades --export-filename=backtest_samplestrategy.json
 ```
 
-#### Running backtest with smaller testset
+#### Running backtest with smaller testset by using timerange
 
 Use the `--timerange` argument to change how much of the testset you want to use.
 
-Example:
+
+For example, running backtesting with the `--timerange=20190501-` option will use all available data starting with May 1st, 2019 from your inputdata.
 
 ```bash
 freqtrade backtesting --timerange=20190501-
 ```
 
-#### Advanced use of timerange
-
-For Example, running backtesting with the `--timerange=20190101-` option will use all available data starting with January 1st, 2019 from your inputdata.
 You can also specify particular dates or a range span indexed by start and stop.
 
 The full timerange specification:
-
 
 - Use tickframes till 2018/01/31: `--timerange=-20180131`
 - Use tickframes since 2018/01/31: `--timerange=20180131-`
