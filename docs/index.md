@@ -64,7 +64,7 @@ To run this bot we recommend you a cloud instance with a minimum of:
 Help / Slack
 For any questions not covered by the documentation or for further information about the bot, we encourage you to join our Slack channel.
 
-Click [here](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LWEyODBiNzkzNzcyNzU0MWYyYzE5NjIyOTQxMzBmMGUxOTIzM2YyN2Y4NWY1YTEwZDgwYTRmMzE2NmM5ZmY2MTg) to join Slack channel.
+Click [here](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE) to join Slack channel.
 
 ## Ready to try?
 
