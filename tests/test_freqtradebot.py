@@ -3205,6 +3205,30 @@ def test_get_real_amount_invalid_order(default_conf, trades_for_order, buy_order
     assert freqtrade.get_real_amount(trade, limit_buy_order) == amount
 
 
+def test_get_real_amount_wrong_amount(default_conf, trades_for_order, buy_order_fee, mocker):
+    limit_buy_order = deepcopy(buy_order_fee)
+    limit_buy_order['fee'] = {'cost': 0.004}
+    limit_buy_order['amount'] = limit_buy_order['amount'] + 0.1
+
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
+    amount = float(sum(x['amount'] for x in trades_for_order))
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=amount,
+        exchange='binance',
+        open_rate=0.245441,
+        open_order_id="123456"
+    )
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+
+    # Amount does not change
+    with pytest.raises(OperationalException, match=r"Half bought\? Amounts don't match"):
+        freqtrade.get_real_amount(trade, limit_buy_order)
+
+
 def test_get_real_amount_invalid(default_conf, trades_for_order, buy_order_fee, mocker):
     # Remove "Currency" from fee dict
     trades_for_order[0]['fee'] = {'cost': 0.008}
