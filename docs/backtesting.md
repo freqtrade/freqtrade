@@ -1,45 +1,9 @@
 # Backtesting
 
-This page explains how to validate your strategy performance by using
-Backtesting.
+This page explains how to validate your strategy performance by using Backtesting.
 
-## Getting data for backtesting and hyperopt
-
-To download data (candles / OHLCV) needed for backtesting and hyperoptimization use the `freqtrade download-data` command.
-
-If no additional parameter is specified, freqtrade will download data for `"1m"` and `"5m"` timeframes for 30 days.
-Exchange and pairs will come from `config.json` (if specified using `-c/--config`). Otherwise `--exchange` becomes mandatory.
-
-Alternatively, a `pairs.json` file can be used.
-
-If you are using Binance for example:
-
-- create a directory `user_data/data/binance` and copy `pairs.json` in that directory.
-- update the `pairs.json` to contain the currency pairs you are interested in.
-
-```bash
-mkdir -p user_data/data/binance
-cp freqtrade/tests/testdata/pairs.json user_data/data/binance
-```
-
-Then run:
-
-```bash
-freqtrade download-data --exchange binance
-```
-
-This will download ticker data for all the currency pairs you defined in `pairs.json`.
-
-- To use a different directory than the exchange specific default, use `--datadir user_data/data/some_directory`.
-- To change the exchange used to download the tickers, please use a different configuration file (you'll probably need to adjust ratelimits etc.)
-- To use `pairs.json` from some other directory, use `--pairs-file some_other_dir/pairs.json`.
-- To download ticker data for only 10 days, use `--days 10` (defaults to 30 days).
-- Use `--timeframes` to specify which tickers to download. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute tickers.
-- To use exchange, timeframe and list of pairs as defined in your configuration file, use the `-c/--config` option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine `-c/--config` with most other options.
-
-!!! Tip Updating existing data
-    If you already have backtesting data available in your data-directory and would like to refresh this data up to today, use `--days xx` with a number slightly higher than the missing number of days. Freqtrade will keep the available data and only download the missing data.
-    Be carefull though: If the number is too small (which would result in a few missing days), the whole dataset will be removed and only xx days will be downloaded.
+Backtesting requires historic data to be available.
+To learn how to get data for the pairs and exchange you're interested in, head over to the [Data Downloading](data-download.md) section of the documentation.
 
 ## Test your strategy with Backtesting
 
@@ -50,14 +14,13 @@ real data. This is what we call
 Backtesting will use the crypto-currencies (pairs) from your config file
 and load ticker data from `user_data/data/<exchange>` by default.
 If no data is available for the exchange / pair / ticker interval combination, backtesting will
-ask you to download them first using `freqtrade download-data`. 
-For details on downloading, please refer to the [relevant section](#Getting-data-for-backtesting-and-hyperopt) in the documentation.
+ask you to download them first using `freqtrade download-data`.
+For details on downloading, please refer to the [Data Downloading](data-download.md) section in the documentation.
 
-The result of backtesting will confirm you if your bot has better odds of making a profit than a loss.
-
-The backtesting is very easy with freqtrade.
+The result of backtesting will confirm if your bot has better odds of making a profit than a loss.
 
 ### Run a backtesting against the currencies listed in your config file
+
 #### With 5 min tickers (Per default)
 
 ```bash
@@ -109,33 +72,32 @@ The exported trades can be used for [further analysis](#further-backtest-result-
 freqtrade backtesting --export trades --export-filename=backtest_samplestrategy.json
 ```
 
-#### Running backtest with smaller testset
+#### Running backtest with smaller testset by using timerange
 
-Use the `--timerange` argument to change how much of the testset
-you want to use. The last N ticks/timeframes will be used.
+Use the `--timerange` argument to change how much of the testset you want to use.
 
-Example:
+
+For example, running backtesting with the `--timerange=20190501-` option will use all available data starting with May 1st, 2019 from your inputdata.
 
 ```bash
-freqtrade backtesting --timerange=-200
+freqtrade backtesting --timerange=20190501-
 ```
 
-#### Advanced use of timerange
-
-Doing `--timerange=-200` will get the last 200 timeframes
-from your inputdata. You can also specify specific dates,
-or a range span indexed by start and stop.
+You can also specify particular dates or a range span indexed by start and stop.
 
 The full timerange specification:
 
-- Use last 123 tickframes of data: `--timerange=-123`
-- Use first 123 tickframes of data: `--timerange=123-`
-- Use tickframes from line 123 through 456: `--timerange=123-456`
 - Use tickframes till 2018/01/31: `--timerange=-20180131`
 - Use tickframes since 2018/01/31: `--timerange=20180131-`
 - Use tickframes since 2018/01/31 till 2018/03/01 : `--timerange=20180131-20180301`
 - Use tickframes between POSIX timestamps 1527595200 1527618600:
                                                 `--timerange=1527595200-1527618600`
+- Use last 123 tickframes of data: `--timerange=-123`
+- Use first 123 tickframes of data: `--timerange=123-`
+- Use tickframes from line 123 through 456: `--timerange=123-456`
+
+!!! warning
+    Be carefull when using non-date functions - these do not allow you to specify precise dates, so if you updated the test-data it will probably use a different dataset.
 
 ## Understand the backtesting result
 
@@ -181,11 +143,12 @@ A backtesting result will look like that:
 | TOTAL    |           2 |           0.78 |           1.57 |       0.00007855 |           0.78 | 4:00:00        |        2 |      0 |
 ```
 
-The 1st table will contain all trades the bot made.
+The 1st table contains all trades the bot made, including "left open trades".
 
-The 2nd table will contain a recap of sell reasons.
+The 2nd table contains a recap of sell reasons.
 
-The 3rd table will contain all trades the bot had to `forcesell` at the end of the backtest period to present a full picture.
+The 3rd table contains all trades the bot had to `forcesell` at the end of the backtest period to present a full picture.
+This is necessary to simulate realistic behaviour, since the backtest period has to end at some point, while realistically, you could leave the bot running forever.
 These trades are also included in the first table, but are extracted separately for clarity.
 
 The last line will give you the overall performance of your strategy,
@@ -195,22 +158,16 @@ here:
 | TOTAL    |         429 |           0.36 |         152.41 |       0.00762792 |          76.20 | 4:12:00        |      186 |    243 |
 ```
 
-We understand the bot has made `429` trades for an average duration of
-`4:12:00`, with a performance of `76.20%` (profit), that means it has
+The bot has made `429` trades for an average duration of `4:12:00`, with a performance of `76.20%` (profit), that means it has
 earned a total of `0.00762792 BTC` starting with a capital of 0.01 BTC.
 
-The column `avg profit %` shows the average profit for all trades made while the column `cum profit %` sums all the profits/losses. 
-The column `tot profit %` shows instead the total profit % in relation to allocated capital 
-(`max_open_trades * stake_amount`). In the above results we have `max_open_trades=2 stake_amount=0.005` in config 
-so `(76.20/100) * (0.005 * 2) =~ 0.00762792 BTC`.
+The column `avg profit %` shows the average profit for all trades made while the column `cum profit %` sums up all the profits/losses.
+The column `tot profit %` shows instead the total profit % in relation to allocated capital (`max_open_trades * stake_amount`).
+In the above results we have `max_open_trades=2` and `stake_amount=0.005` in config  so `tot_profit %` will be `(76.20/100) * (0.005 * 2) =~ 0.00762792 BTC`.
 
-As you will see your strategy performance will be influenced by your buy
-strategy, your sell strategy, and also by the `minimal_roi` and
-`stop_loss` you have set.
+Your strategy performance is influenced by your buy strategy, your sell strategy, and also by the `minimal_roi` and `stop_loss` you have set.
 
-As for an example if your minimal_roi is only `"0":  0.01`. You cannot
-expect the bot to make more profit than 1% (because it will sell every
-time a trade will reach 1%).
+For example, if your `minimal_roi` is only `"0":  0.01` you cannot expect the bot to make more profit than 1% (because it will sell every time a trade reaches 1%).
 
 ```json
 "minimal_roi": {
@@ -219,22 +176,33 @@ time a trade will reach 1%).
 ```
 
 On the other hand, if you set a too high `minimal_roi` like `"0":  0.55`
-(55%), there is a lot of chance that the bot will never reach this
-profit. Hence, keep in mind that your performance is a mix of your
-strategies, your configuration, and the crypto-currency you have set up.
+(55%), there is almost no chance that the bot will ever reach this profit.
+Hence, keep in mind that your performance is an integral mix of all different elements of the strategy, your configuration, and the crypto-currency pairs you have set up.
+
+### Assumptions made by backtesting
+
+Since backtesting lacks some detailed information about what happens within a candle, it needs to take a few assumptions:
+
+- Buys happen at open-price
+- Low happens before high for stoploss, protecting capital first.
+- ROI sells are compared to high - but the ROI value is used (e.g. ROI = 2%, high=5% - so the sell will be at 2%)
+- Stoploss sells happen exactly at stoploss price, even if low was lower
+- Trailing stoploss
+  - High happens first - adjusting stoploss
+  - Low uses the adjusted stoploss (so sells with large high-low difference are backtested correctly)
+- Sell-reason does not explain if a trade was positive or negative, just what triggered the sell (this can look odd if negative ROI values are used)
 
 ### Further backtest-result analysis
 
 To further analyze your backtest results, you can [export the trades](#exporting-trades-to-file).
 You can then load the trades to perform further analysis as shown in our [data analysis](data-analysis.md#backtesting) backtesting section.
 
-
 ## Backtesting multiple strategies
 
-To backtest multiple strategies, a list of Strategies can be provided.
+To compare multiple strategies, a list of Strategies can be provided to backtesting.
 
 This is limited to 1 ticker-interval per run, however, data is only loaded once from disk so if you have multiple
-strategies you'd like to compare, this should give a nice runtime boost.
+strategies you'd like to compare, this will give a nice runtime boost.
 
 All listed Strategies need to be in the same directory.
 
@@ -244,7 +212,7 @@ freqtrade backtesting --timerange 20180401-20180410 --ticker-interval 5m --strat
 
 This will save the results to `user_data/backtest_results/backtest-result-<strategy>.json`, injecting the strategy-name into the target filename.
 There will be an additional table comparing win/losses of the different strategies (identical to the "Total" row in the first table).
-Detailed output for all strategies one after the other will be available, so make sure to scroll up.
+Detailed output for all strategies one after the other will be available, so make sure to scroll up to see the details per strategy.
 
 ```
 =========================================================== Strategy Summary ===========================================================

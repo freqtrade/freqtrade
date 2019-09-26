@@ -6,6 +6,9 @@ algorithms included in the `scikit-optimize` package to accomplish this. The
 search will burn all your CPU cores, make your laptop sound like a fighter jet
 and still take a long time.
 
+Hyperopt requires historic data to be available, just as backtesting does.
+To learn how to get data for the pairs and exchange you're interrested in, head over to the [Data Downloading](data-download.md) section of the documentation.
+
 !!! Bug
     Hyperopt will crash when used with only 1 CPU Core as found out in [Issue #1133](https://github.com/freqtrade/freqtrade/issues/1133)
 
