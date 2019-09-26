@@ -190,6 +190,24 @@ def test_hyperoptlossresolver_wrongname(mocker, default_conf, caplog) -> None:
         HyperOptLossResolver(default_conf, ).hyperopt
 
 
+def test_start_not_installed(mocker, default_conf, caplog, import_fails) -> None:
+    start_mock = MagicMock()
+    patched_configuration_load_config_file(mocker, default_conf)
+
+    mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.start', start_mock)
+    patch_exchange(mocker)
+
+    args = [
+        '--config', 'config.json',
+        'hyperopt',
+        '--epochs', '5'
+    ]
+    args = get_args(args)
+
+    with pytest.raises(OperationalException, match=r"Please ensure that the hyperopt dependencies"):
+        start_hyperopt(args)
+
+
 def test_start(mocker, default_conf, caplog) -> None:
     start_mock = MagicMock()
     patched_configuration_load_config_file(mocker, default_conf)

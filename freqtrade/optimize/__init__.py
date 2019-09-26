@@ -1,9 +1,7 @@
 import logging
 from typing import Any, Dict
 
-from filelock import FileLock, Timeout
-
-from freqtrade import DependencyException, constants
+from freqtrade import DependencyException, constants, OperationalException
 from freqtrade.state import RunMode
 from freqtrade.utils import setup_utils_configuration
 
@@ -53,8 +51,12 @@ def start_hyperopt(args: Dict[str, Any]) -> None:
     :return: None
     """
     # Import here to avoid loading hyperopt module when it's not used
-    from freqtrade.optimize.hyperopt import Hyperopt
-
+    try:
+        from filelock import FileLock, Timeout
+        from freqtrade.optimize.hyperopt import Hyperopt
+    except ImportError as e:
+        raise OperationalException(
+            f"{e}. Please ensure that the hyperopt dependencies are installed.") from e
     # Initialize configuration
     config = setup_configuration(args, RunMode.HYPEROPT)
 

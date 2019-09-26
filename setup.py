@@ -18,6 +18,13 @@ if readme_file.is_file():
 # Requirements used for submodules
 api = ['flask']
 plot = ['plotly>=4.0']
+hyperopt = [
+    'scipy',
+    'scikit-learn',
+    'scikit-optimize',
+    'filelock',
+    'joblib',
+    ]
 
 develop = [
     'coveralls',
@@ -38,7 +45,7 @@ jupyter = [
     'ipykernel',
     ]
 
-all_extra = api + plot + develop + jupyter
+all_extra = api + plot + develop + jupyter + hyperopt
 
 setup(name='freqtrade',
       version=__version__,
@@ -62,14 +69,10 @@ setup(name='freqtrade',
           'requests',
           'urllib3',
           'wrapt',
-          'scikit-learn',
-          'joblib',
           'jsonschema',
           'TA-Lib',
           'tabulate',
           'coinmarketcap',
-          'scikit-optimize',
-          'filelock',
           'py_find_1st',
           'python-rapidjson',
           'sdnotify',
@@ -77,15 +80,14 @@ setup(name='freqtrade',
           # from requirements.txt
           'numpy',
           'pandas',
-          'scipy',
       ],
       extras_require={
           'api': api,
           'dev': all_extra,
           'plot': plot,
-          'all': all_extra,
           'jupyter': jupyter,
-
+          'hyperopt': hyperopt,
+          'all': all_extra,
       },
       include_package_data=True,
       zip_safe=False,

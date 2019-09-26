@@ -1054,3 +1054,24 @@ def rpc_balance():
 def testdatadir() -> Path:
     """Return the path where testdata files are stored"""
     return (Path(__file__).parent / "testdata").resolve()
+
+
+@pytest.fixture(scope="function")
+def import_fails() -> None:
+    # Source of this test-method:
+    # https://stackoverflow.com/questions/2481511/mocking-importerror-in-python
+    import builtins
+    realimport = builtins.__import__
+
+    def mockedimport(name, *args, **kwargs):
+        if name in ["filelock"]:
+            raise ImportError(f"No module named '{name}'")
+        return realimport(name, *args, **kwargs)
+
+    builtins.__import__ = mockedimport
+
+    # Run test - then cleanup
+    yield
+
+    # restore previous importfunction
+    builtins.__import__ = realimport
