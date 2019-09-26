@@ -9,25 +9,26 @@ dependencies:
   - wheel
   - numpy
   - pandas
-  - scipy
   - SQLAlchemy
-  - scikit-learn
   - arrow
   - requests
   - urllib3
   - wrapt
-  - joblib
   - jsonschema
   - tabulate
   - python-rapidjson
-  - filelock
   - flask
   - python-dotenv
   - cachetools
-  - scikit-optimize
   - python-telegram-bot
   # Optional for plotting
   - plotly
+  # Optional for hyperopt
+  - scipy
+  - scikit-optimize
+  - scikit-learn
+  - filelock
+  - joblib
   # Optional for development
   - flake8
   - pytest

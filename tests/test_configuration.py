@@ -358,14 +358,10 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'position_stacking' not in config
     assert not log_has('Parameter --enable-position-stacking detected ...', caplog)
 
-    assert 'refresh_pairs' not in config
-    assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
-
     assert 'timerange' not in config
     assert 'export' not in config
 
 
-@pytest.mark.filterwarnings("ignore:DEPRECATED")
 def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch(
@@ -385,7 +381,6 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         '--ticker-interval', '1m',
         '--enable-position-stacking',
         '--disable-max-market-positions',
-        '--refresh-pairs-cached',
         '--timerange', ':100',
         '--export', '/bar/foo'
     ]
@@ -415,8 +410,6 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert log_has('Parameter --disable-max-market-positions detected ...', caplog)
     assert log_has('max_open_trades set to unlimited ...', caplog)
 
-    assert 'refresh_pairs'in config
-    assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
     assert 'timerange' in config
     assert log_has('Parameter --timerange detected: {} ...'.format(config['timerange']), caplog)
 
@@ -545,6 +538,13 @@ def test_check_exchange(default_conf, caplog) -> None:
     default_conf.get('exchange').update({'name': ''})
     default_conf['runmode'] = RunMode.PLOT
     assert check_exchange(default_conf)
+
+    # Test no exchange...
+    default_conf.get('exchange').update({'name': ''})
+    default_conf['runmode'] = RunMode.OTHER
+    with pytest.raises(OperationalException,
+                       match=r'This command requires a configured exchange.*'):
+        check_exchange(default_conf)
 
 
 def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:

@@ -39,7 +39,8 @@ class EdgeCli:
         self.strategy = StrategyResolver(self.config).strategy
 
         self.edge = Edge(config, self.exchange, self.strategy)
-        self.edge._refresh_pairs = self.config.get('refresh_pairs', False)
+        # Set refresh_pairs to false for edge-cli (it must be true for edge)
+        self.edge._refresh_pairs = False
 
         self.timerange = TimeRange.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))

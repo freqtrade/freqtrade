@@ -86,15 +86,11 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
     assert 'position_stacking' not in config
     assert not log_has('Parameter --enable-position-stacking detected ...', caplog)
 
-    assert 'refresh_pairs' not in config
-    assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
-
     assert 'timerange' not in config
     assert 'runmode' in config
     assert config['runmode'] == RunMode.HYPEROPT
 
 
-@pytest.mark.filterwarnings("ignore:DEPRECATED")
 def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch(
@@ -108,7 +104,6 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
         'hyperopt',
         '--ticker-interval', '1m',
         '--timerange', ':100',
-        '--refresh-pairs-cached',
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--epochs', '1000',
@@ -136,9 +131,6 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
     assert 'use_max_market_positions' in config
     assert log_has('Parameter --disable-max-market-positions detected ...', caplog)
     assert log_has('max_open_trades set to unlimited ...', caplog)
-
-    assert 'refresh_pairs' in config
-    assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
 
     assert 'timerange' in config
     assert log_has('Parameter --timerange detected: {} ...'.format(config['timerange']), caplog)
@@ -196,6 +188,24 @@ def test_hyperoptlossresolver_wrongname(mocker, default_conf, caplog) -> None:
 
     with pytest.raises(OperationalException, match=r'Impossible to load HyperoptLoss.*'):
         HyperOptLossResolver(default_conf, ).hyperopt
+
+
+def test_start_not_installed(mocker, default_conf, caplog, import_fails) -> None:
+    start_mock = MagicMock()
+    patched_configuration_load_config_file(mocker, default_conf)
+
+    mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.start', start_mock)
+    patch_exchange(mocker)
+
+    args = [
+        '--config', 'config.json',
+        'hyperopt',
+        '--epochs', '5'
+    ]
+    args = get_args(args)
+
+    with pytest.raises(OperationalException, match=r"Please ensure that the hyperopt dependencies"):
+        start_hyperopt(args)
 
 
 def test_start(mocker, default_conf, caplog) -> None:

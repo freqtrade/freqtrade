@@ -188,16 +188,12 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'position_stacking' not in config
     assert not log_has('Parameter --enable-position-stacking detected ...', caplog)
 
-    assert 'refresh_pairs' not in config
-    assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
-
     assert 'timerange' not in config
     assert 'export' not in config
     assert 'runmode' in config
     assert config['runmode'] == RunMode.BACKTEST
 
 
-@pytest.mark.filterwarnings("ignore:DEPRECATED")
 def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch(
@@ -213,7 +209,6 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
         '--ticker-interval', '1m',
         '--enable-position-stacking',
         '--disable-max-market-positions',
-        '--refresh-pairs-cached',
         '--timerange', ':100',
         '--export', '/bar/foo',
         '--export-filename', 'foo_bar.json'
@@ -239,9 +234,6 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
     assert 'use_max_market_positions' in config
     assert log_has('Parameter --disable-max-market-positions detected ...', caplog)
     assert log_has('max_open_trades set to unlimited ...', caplog)
-
-    assert 'refresh_pairs' in config
-    assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog)
 
     assert 'timerange' in config
     assert log_has('Parameter --timerange detected: {} ...'.format(config['timerange']), caplog)
