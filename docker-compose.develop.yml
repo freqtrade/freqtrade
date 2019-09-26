@@ -4,6 +4,17 @@ services:
   freqtrade_develop:
     build:
       context: .
-      dockerfile: "./Dockerfile"
+      dockerfile: "./Dockerfile.develop"
     volumes:
       - ".:/freqtrade"
+    entrypoint:
+      - "freqtrade"
+
+  freqtrade_bash:
+    build:
+      context: .
+      dockerfile: "./Dockerfile.develop"
+    volumes:
+      - ".:/freqtrade"
+    entrypoint:
+      - "/bin/bash"
