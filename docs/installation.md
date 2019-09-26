@@ -118,7 +118,7 @@ python3 -m pip install -e .
 
 !!! Note
     This does not install hyperopt dependencies. To install these, please use `python3 -m pip install -e .[hyperopt]`.
-    We do not advise to run hyperopt on a Raspberry Pi, since this is a very resource-heavy operation, which should be done on powerfull machine.
+    We do not advise to run hyperopt on a Raspberry Pi, since this is a very resource-heavy operation, which should be done on powerful machine.
 
 ### Common
 
