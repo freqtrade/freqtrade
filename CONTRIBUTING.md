@@ -11,7 +11,7 @@ Few pointers for contributions:
 - Create your PR against the `develop` branch, not `master`.
 - New features need to contain unit tests and must be PEP8 conformant (max-line-length = 100).
 
-If you are unsure, discuss the feature on our [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LWEyODBiNzkzNzcyNzU0MWYyYzE5NjIyOTQxMzBmMGUxOTIzM2YyN2Y4NWY1YTEwZDgwYTRmMzE2NmM5ZmY2MTg)
+If you are unsure, discuss the feature on our [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE)
 or in a [issue](https://github.com/freqtrade/freqtrade/issues) before a PR.
 
 ## Getting started
