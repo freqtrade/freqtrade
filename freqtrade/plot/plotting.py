@@ -64,7 +64,6 @@ def add_indicators(fig, row, indicators: List[str], data: pd.DataFrame) -> make_
     """
     for indicator in indicators:
         if indicator in data:
-            # TODO: Figure out why scattergl causes problems plotly/plotly.js#2284
             scatter = go.Scatter(
                 x=data['date'],
                 y=data[indicator].values,
@@ -92,7 +91,7 @@ def add_profit(fig, row, data: pd.DataFrame, column: str, name: str) -> make_sub
     :param name: Name to use
     :return: fig with added profit plot
     """
-    profit = go.Scatter(
+    profit = go.Scattergl(
         x=data.index,
         y=data[column],
         name=name,
@@ -221,6 +220,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
         else:
             logger.warning("No sell-signals found.")
 
+    # TODO: Figure out why scattergl causes problems plotly/plotly.js#2284
     if 'bb_lowerband' in data and 'bb_upperband' in data:
         bb_lower = go.Scatter(
             x=data.date,
@@ -251,8 +251,10 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     volume = go.Bar(
         x=data['date'],
         y=data['volume'],
-        name='Volume'
-    )
+        name='Volume',
+        marker_color='DarkSlateGrey',
+        marker_line_color='DarkSlateGrey'
+        )
     fig.add_trace(volume, 2, 1)
 
     # Add indicators to separate row
@@ -270,7 +272,7 @@ def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame],
     df_comb = create_cum_profit(df_comb, trades, 'cum_profit')
 
     # Plot the pairs average close prices, and total profit growth
-    avgclose = go.Scatter(
+    avgclose = go.Scattergl(
         x=df_comb.index,
         y=df_comb['mean'],
         name='Avg close price',
