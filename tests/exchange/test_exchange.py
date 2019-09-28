@@ -1362,6 +1362,31 @@ async def test__async_fetch_trades(default_conf, mocker, caplog, exchange_name,
         await exchange._async_fetch_trades(pair, since=(arrow.utcnow().timestamp - 2000) * 1000)
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+async def test__async_get_trade_history_id(default_conf, mocker, caplog, exchange_name,
+                                           trades_history):
+
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    # Monkey-patch async function
+    exchange._async_fetch_trades = get_mock_coro(trades_history)
+    pair = 'ETH/BTC'
+    ret = await exchange._async_get_trade_history_id(pair, since=trades_history[0]["timestamp"],
+                                                     until=None)
+    assert type(ret) is tuple
+    assert ret[0] == pair
+    assert type(ret[1]) is list
+    assert exchange._async_fetch_trades.call_count == 2
+    # first call (using since, not fromId)
+    assert exchange._async_fetch_trades.call_args_list[0][0][0] == pair
+    assert exchange._async_fetch_trades.call_args_list[0][1]['since'] == trades_history[0]["timestamp"]
+
+    # 2nd call
+    assert exchange._async_fetch_trades.call_args_list[1][0][0] == pair
+    assert 'params' in exchange._async_fetch_trades.call_args_list[1][1]
+    assert exchange._ft_has['trades_pagination_arg'] in exchange._async_fetch_trades.call_args_list[1][1]['params']
+
+
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_historic_trades(default_conf, mocker, caplog, exchange_name, trades_history):
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
