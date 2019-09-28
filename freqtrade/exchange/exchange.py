@@ -863,29 +863,19 @@ class Exchange:
         if not self.exchange_has("fetchTrades"):
             # TODO: Maybe don't stop the bot ... ?
             raise OperationalException("This exchange does not suport downloading Trades.")
-        try:
-            if self._trades_pagination == 'time':
-                return await self._async_get_trade_history_time(
-                    pair=pair, since=since,
-                    until=until or ccxt.Exchange.milliseconds())
-            elif self._trades_pagination == 'id':
-                return await self._async_get_trade_history_id(
-                    pair=pair, since=since,
-                    until=until or ccxt.Exchange.milliseconds(), from_id=from_id
-                )
-            else:
-                raise OperationalException(f"Exchange {self.name} does use neither time, "
-                                           f"nor id based pagination")
 
-        except ccxt.NotSupported as e:
-            raise OperationalException(
-                f'Exchange {self._api.name} does not support fetching historical trade data.'
-                f'Message: {e}') from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(f'Could not load trade history due to {e.__class__.__name__}. '
-                                 f'Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(f'Could not fetch trade data. Msg: {e}') from e
+        if self._trades_pagination == 'time':
+            return await self._async_get_trade_history_time(
+                pair=pair, since=since,
+                until=until or ccxt.Exchange.milliseconds())
+        elif self._trades_pagination == 'id':
+            return await self._async_get_trade_history_id(
+                pair=pair, since=since,
+                until=until or ccxt.Exchange.milliseconds(), from_id=from_id
+            )
+        else:
+            raise OperationalException(f"Exchange {self.name} does use neither time, "
+                                       f"nor id based pagination")
 
     def get_historic_trades(self, pair: str,
                             since: Optional[int] = None,
