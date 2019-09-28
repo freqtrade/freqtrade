@@ -116,11 +116,15 @@ class FreqtradeBot:
         # Refresh whitelist
         self.pairlists.refresh_pairlist()
         self.active_pair_whitelist = self.pairlists.whitelist
+        logger.info("Pairlist returned active pair whitelist: "
+                    f"{len(self.active_pair_whitelist)} pairs.")
 
         # Calculating Edge positioning
         if self.edge:
             self.edge.calculate()
             self.active_pair_whitelist = self.edge.adjust(self.active_pair_whitelist)
+            logger.info("Edge adjusted active pair whitelist: "
+                        f"{len(self.active_pair_whitelist)} pairs.")
 
         # Query trades from persistence layer
         trades = Trade.get_open_trades()
@@ -265,7 +269,7 @@ class FreqtradeBot:
         whitelist = copy.deepcopy(self.active_pair_whitelist)
 
         if not whitelist:
-            logger.warning("Whitelist is empty.")
+            logger.info("Active pair whitelist is empty.")
             return False
 
         # Remove currently opened and latest pairs from whitelist
