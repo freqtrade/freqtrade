@@ -153,7 +153,7 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
     delattr(hyperopts, 'populate_sell_trend')
     mocker.patch(
         'freqtrade.resolvers.hyperopt_resolver.HyperOptResolver._load_hyperopt',
-        MagicMock(return_value=hyperopts)
+        MagicMock(return_value=hyperopts(default_conf))
     )
     x = HyperOptResolver(default_conf, ).hyperopt
     assert not hasattr(x, 'populate_buy_trend')
