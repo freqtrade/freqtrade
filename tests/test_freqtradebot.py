@@ -3277,7 +3277,7 @@ def test_get_real_amount_wrong_amount_rounding(default_conf, trades_for_order, b
 
     # Amount changes by fee amount.
     assert isclose(freqtrade.get_real_amount(trade, limit_buy_order), amount - (amount * 0.001),
-                   rel_tol=MATH_CLOSE_PREC,)
+                   abs_tol=MATH_CLOSE_PREC,)
 
 
 def test_get_real_amount_invalid(default_conf, trades_for_order, buy_order_fee, mocker):

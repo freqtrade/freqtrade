@@ -511,7 +511,7 @@ class FreqtradeBot:
                         trade.pair.startswith(exectrade['fee']['currency'])):
                     fee_abs += exectrade['fee']['cost']
 
-        if not isclose(amount, order_amount, rel_tol=constants.MATH_CLOSE_PREC):
+        if not isclose(amount, order_amount, abs_tol=constants.MATH_CLOSE_PREC):
             logger.warning(f"Amount {amount} does not match amount {trade.amount}")
             raise OperationalException("Half bought? Amounts don't match")
         real_amount = amount - fee_abs
@@ -536,7 +536,7 @@ class FreqtradeBot:
             # Try update amount (binance-fix)
             try:
                 new_amount = self.get_real_amount(trade, order)
-                if not isclose(order['amount'], new_amount, rel_tol=constants.MATH_CLOSE_PREC):
+                if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
                     order['amount'] = new_amount
                     # Fee was applied, so set to 0
                     trade.fee_open = 0
