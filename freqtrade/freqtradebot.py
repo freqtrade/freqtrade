@@ -116,7 +116,7 @@ class FreqtradeBot:
         # Refresh whitelist
         self.pairlists.refresh_pairlist()
         self.active_pair_whitelist = self.pairlists.whitelist
-        logger.info("Pairlist returned active pair whitelist: "
+        logger.info("PairList returned active pair whitelist: "
                     f"{len(self.active_pair_whitelist)} pairs.")
 
         # Calculating Edge positioning
