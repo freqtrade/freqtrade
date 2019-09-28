@@ -785,15 +785,13 @@ class Exchange:
                                           from_id: Optional[str] = None) -> Tuple[str, List[Dict]]:
         """
         Asyncronously gets trade history using fetch_trades
-        use this when exchange uses id-based iteration
+        use this when exchange uses id-based iteration (check `self._trades_pagination`)
         :param pair: Pair to fetch trade data for
         :param since: Since as integer timestamp in milliseconds
         :param until: Until as integer timestamp in milliseconds
         :param from_id: Download data starting with ID (if id is known). Ignores "since" if set.
         returns tuple: (pair, ticker_interval, ohlcv_list)
         """
-        if self._trades_pagination == 'time':
-            raise OperationalException(f"Wrong method called to get trades for {self.name}")
 
         trades: List[Dict] = []
 
@@ -828,14 +826,12 @@ class Exchange:
                                             since: Optional[int] = None) -> Tuple[str, List]:
         """
         Asyncronously gets trade history using fetch_trades,
-        when the exchange uses time-based iteration
+        when the exchange uses time-based iteration (check `self._trades_pagination`)
         :param pair: Pair to fetch trade data for
         :param since: Since as integer timestamp in milliseconds
         :param until: Until as integer timestamp in milliseconds
         returns tuple: (pair, ticker_interval, ohlcv_list)
         """
-        if self._trades_pagination != 'time':
-            raise OperationalException(f"Wrong method called to get trades for {self.name}")
 
         trades: List[Dict] = []
         while True:
