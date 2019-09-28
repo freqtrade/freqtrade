@@ -672,7 +672,7 @@ def test_create_trades_no_pairs_in_whitelist(default_conf, ticker, limit_buy_ord
     patch_get_signal(freqtrade)
 
     assert not freqtrade.create_trades()
-    assert log_has("Whitelist is empty.", caplog)
+    assert log_has("Active pair whitelist is empty.", caplog)
 
 
 def test_create_trades_no_signal(default_conf, fee, mocker) -> None:
