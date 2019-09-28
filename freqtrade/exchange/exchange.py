@@ -813,7 +813,8 @@ class Exchange:
                 if from_id == t[-1]['id'] or t[-1]['timestamp'] > until:
                     logger.debug(f"Stopping because from_id did not change. "
                                  f"Reached {t[-1]['timestamp']} > {until}")
-                    # Reached the end of the defined-download period
+                    # Reached the end of the defined-download period - add last trade as well.
+                    trades.extend(t[-1:])
                     break
 
                 from_id = t[-1]['id']
