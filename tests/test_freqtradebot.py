@@ -4,6 +4,7 @@
 import logging
 import time
 from copy import deepcopy
+from math import isclose
 from unittest.mock import MagicMock, PropertyMock
 
 import arrow
@@ -12,6 +13,7 @@ import requests
 
 from freqtrade import (DependencyException, InvalidOrderException,
                        OperationalException, TemporaryError, constants)
+from freqtrade.constants import MATH_CLOSE_PREC
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
@@ -1635,6 +1637,31 @@ def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_
     assert trade.amount == limit_buy_order['amount']
 
 
+def test_update_trade_state_withorderdict_rounding_fee(default_conf, trades_for_order,
+                                                       limit_buy_order, mocker, caplog):
+    trades_for_order[0]['amount'] = limit_buy_order['amount'] + 1e-14
+    mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
+    # get_order should not be called!!
+    mocker.patch('freqtrade.exchange.Exchange.get_order', MagicMock(side_effect=ValueError))
+    patch_exchange(mocker)
+    Trade.session = MagicMock()
+    amount = sum(x['amount'] for x in trades_for_order)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=amount,
+        exchange='binance',
+        open_rate=0.245441,
+        open_order_id="123456",
+        is_open=True,
+        open_date=arrow.utcnow().datetime,
+    )
+    freqtrade.update_trade_state(trade, limit_buy_order)
+    assert trade.amount != amount
+    assert trade.amount == limit_buy_order['amount']
+    assert log_has_re(r'Applying fee on amount for .*', caplog)
+
+
 def test_update_trade_state_exception(mocker, default_conf,
                                       limit_buy_order, caplog) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
@@ -3203,6 +3230,54 @@ def test_get_real_amount_invalid_order(default_conf, trades_for_order, buy_order
 
     # Amount does not change
     assert freqtrade.get_real_amount(trade, limit_buy_order) == amount
+
+
+def test_get_real_amount_wrong_amount(default_conf, trades_for_order, buy_order_fee, mocker):
+    limit_buy_order = deepcopy(buy_order_fee)
+    limit_buy_order['amount'] = limit_buy_order['amount'] - 0.001
+
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
+    amount = float(sum(x['amount'] for x in trades_for_order))
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=amount,
+        exchange='binance',
+        open_rate=0.245441,
+        open_order_id="123456"
+    )
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+
+    # Amount does not change
+    with pytest.raises(OperationalException, match=r"Half bought\? Amounts don't match"):
+        freqtrade.get_real_amount(trade, limit_buy_order)
+
+
+def test_get_real_amount_wrong_amount_rounding(default_conf, trades_for_order, buy_order_fee,
+                                               mocker):
+    # Floats should not be compared directly.
+    limit_buy_order = deepcopy(buy_order_fee)
+    trades_for_order[0]['amount'] = trades_for_order[0]['amount'] + 1e-15
+
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
+    amount = float(sum(x['amount'] for x in trades_for_order))
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=amount,
+        exchange='binance',
+        open_rate=0.245441,
+        open_order_id="123456"
+    )
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+
+    # Amount changes by fee amount.
+    assert isclose(freqtrade.get_real_amount(trade, limit_buy_order), amount - (amount * 0.001),
+                   abs_tol=MATH_CLOSE_PREC,)
 
 
 def test_get_real_amount_invalid(default_conf, trades_for_order, buy_order_fee, mocker):

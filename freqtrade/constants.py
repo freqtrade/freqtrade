@@ -22,6 +22,7 @@ ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList']
 DRY_RUN_WALLET = 999.9
+MATH_CLOSE_PREC = 1e-14  # Precision used for float comparisons
 
 TICKER_INTERVALS = [
     '1m', '3m', '5m', '15m', '30m',
