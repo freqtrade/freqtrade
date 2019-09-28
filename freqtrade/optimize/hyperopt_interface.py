@@ -175,7 +175,7 @@ class IHyperOpt(ABC):
         You may override it in your custom Hyperopt class.
         """
         return [
-            Real(-0.5, -0.02, name='stoploss'),
+            Real(-0.35, -0.02, name='stoploss'),
         ]
 
     # This is needed for proper unpickling the class attribute ticker_interval
