@@ -1371,9 +1371,6 @@ def test_get_historic_trades(default_conf, mocker, caplog, exchange_name, trades
 
     exchange._async_get_trade_history_id = get_mock_coro((pair, trades_history))
     exchange._async_get_trade_history_time = get_mock_coro((pair, trades_history))
-    # one_call calculation * 1.8 should do 2 calls
-    since = 5 * 60 * 500 * 1.8
-    print(f"since = {since}")
     ret = exchange.get_historic_trades(pair, since=trades_history[0]["timestamp"],
                                        until=trades_history[-1]["timestamp"])
 
@@ -1384,6 +1381,20 @@ def test_get_historic_trades(default_conf, mocker, caplog, exchange_name, trades
     assert len(ret) == 2
     assert ret[0] == pair
     assert len(ret[1]) == 3
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_get_historic_trades_notsupported(default_conf, mocker, caplog, exchange_name,
+                                          trades_history):
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=False)
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+
+    pair = 'ETH/BTC'
+
+    with pytest.raises(OperationalException,
+                       match="This exchange does not suport downloading Trades."):
+        exchange.get_historic_trades(pair, since=trades_history[0]["timestamp"],
+                                     until=trades_history[-1]["timestamp"])
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
