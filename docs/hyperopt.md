@@ -422,7 +422,7 @@ Buy hyperspace params:
     'adx-enabled': False,
     'rsi-enabled': True,
     'trigger': 'bb_lower'}
-Stoploss: -0.37996664668703606
+Stoploss: -0.27996
 ```
 
 If you are optimizing stoploss values, Freqtrade creates the 'stoploss' optimization hyperspace for you. By default, the stoploss values in that hyperspace can vary in the range -0.35...-0.02, which is sufficient in most cases.
