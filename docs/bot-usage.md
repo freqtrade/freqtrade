@@ -72,7 +72,7 @@ The bot allows you to select which configuration file you want to use by means o
 the `-c/--config` command line option:
 
 ```bash
-freqtrade -c path/far/far/away/config.json
+freqtrade trade -c path/far/far/away/config.json
 ```
 
 Per default, the bot loads the `config.json` configuration file from the current
@@ -91,13 +91,13 @@ empty key and secrete values while running in the Dry Mode (which does not actua
 require them):
 
 ```bash
-freqtrade -c ./config.json
+freqtrade trade -c ./config.json
 ```
 
 and specify both configuration files when running in the normal Live Trade Mode:
 
 ```bash
-freqtrade -c ./config.json -c path/to/secrets/keys.config.json
+freqtrade trade -c ./config.json -c path/to/secrets/keys.config.json
 ```
 
 This could help you hide your private Exchange key and Exchange secrete on you local machine
@@ -177,7 +177,7 @@ using `--db-url`. This can also be used to specify a custom database
 in production mode. Example command:
 
 ```bash
-freqtrade -c config.json --db-url sqlite:///tradesv3.dry_run.sqlite
+freqtrade trade -c config.json --db-url sqlite:///tradesv3.dry_run.sqlite
 ```
 
 ## Backtesting commands
