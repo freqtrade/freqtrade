@@ -98,7 +98,7 @@ class Arguments:
         self._build_args(optionlist=ARGS_COMMON, parser=group)
 
         _strategy_parser = argparse.ArgumentParser(add_help=False)
-        strategy_group = _common_parser.add_argument_group("Strategy arguments")
+        strategy_group = _strategy_parser.add_argument_group("Strategy arguments")
         self._build_args(optionlist=ARGS_STRATEGY, parser=strategy_group)
 
         # Build main command
