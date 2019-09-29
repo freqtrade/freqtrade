@@ -12,10 +12,9 @@ ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_dat
 
 ARGS_STRATEGY = ["strategy", "strategy_path"]
 
-ARGS_MAIN = ARGS_STRATEGY + ["db_url", "sd_notify"]
+ARGS_TRADE = ["db_url", "sd_notify"]
 
-ARGS_COMMON_OPTIMIZE = ARGS_STRATEGY + ["ticker_interval", "timerange",
-                                        "max_open_trades", "stake_amount"]
+ARGS_COMMON_OPTIMIZE = ["ticker_interval", "timerange", "max_open_trades", "stake_amount"]
 
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
                                         "strategy_list", "export", "exportfilename"]
@@ -35,8 +34,9 @@ ARGS_CREATE_USERDIR = ["user_data_dir"]
 
 ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "exchange", "timeframes", "erase"]
 
-ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit", "db_url",
-                       "trade_source", "export", "exportfilename", "timerange", "ticker_interval"]
+ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
+                       "db_url", "trade_source", "export", "exportfilename",
+                       "timerange", "ticker_interval"]
 
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "ticker_interval"]
@@ -94,8 +94,12 @@ class Arguments:
         """
         # Build shared arguments (as group Common Options)
         _common_parser = argparse.ArgumentParser(add_help=False)
-        group = _common_parser.add_argument_group("Common Options")
+        group = _common_parser.add_argument_group("Common arguments")
         self._build_args(optionlist=ARGS_COMMON, parser=group)
+
+        _strategy_parser = argparse.ArgumentParser(add_help=False)
+        strategy_group = _common_parser.add_argument_group("Strategy arguments")
+        self._build_args(optionlist=ARGS_STRATEGY, parser=strategy_group)
 
         # Build main command
         self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot')
@@ -114,25 +118,25 @@ class Arguments:
 
         # Add trade subcommand
         trade_cmd = subparsers.add_parser('trade', help='Trade module.',
-                                          parents=[_common_parser])
+                                          parents=[_common_parser, _strategy_parser])
         trade_cmd.set_defaults(func=start_trading)
-        self._build_args(optionlist=ARGS_MAIN, parser=trade_cmd)
+        self._build_args(optionlist=ARGS_TRADE, parser=trade_cmd)
 
         # Add backtesting subcommand
         backtesting_cmd = subparsers.add_parser('backtesting', help='Backtesting module.',
-                                                parents=[_common_parser])
+                                                parents=[_common_parser, _strategy_parser])
         backtesting_cmd.set_defaults(func=start_backtesting)
         self._build_args(optionlist=ARGS_BACKTEST, parser=backtesting_cmd)
 
         # Add edge subcommand
         edge_cmd = subparsers.add_parser('edge', help='Edge module.',
-                                         parents=[_common_parser])
+                                         parents=[_common_parser, _strategy_parser])
         edge_cmd.set_defaults(func=start_edge)
         self._build_args(optionlist=ARGS_EDGE, parser=edge_cmd)
 
         # Add hyperopt subcommand
         hyperopt_cmd = subparsers.add_parser('hyperopt', help='Hyperopt module.',
-                                             parents=[_common_parser],
+                                             parents=[_common_parser, _strategy_parser],
                                              )
         hyperopt_cmd.set_defaults(func=start_hyperopt)
         self._build_args(optionlist=ARGS_HYPEROPT, parser=hyperopt_cmd)
@@ -140,7 +144,6 @@ class Arguments:
         # add create-userdir subcommand
         create_userdir_cmd = subparsers.add_parser('create-userdir',
                                                    help="Create user-data directory.",
-
                                                    )
         create_userdir_cmd.set_defaults(func=start_create_userdir)
         self._build_args(optionlist=ARGS_CREATE_USERDIR, parser=create_userdir_cmd)
@@ -164,7 +167,7 @@ class Arguments:
         # Add Plotting subcommand
         plot_dataframe_cmd = subparsers.add_parser('plot-dataframe',
                                                    help='Plot candles with indicators.',
-                                                   parents=[_common_parser],
+                                                   parents=[_common_parser, _strategy_parser],
                                                    )
         plot_dataframe_cmd.set_defaults(func=start_plot_dataframe)
         self._build_args(optionlist=ARGS_PLOT_DATAFRAME, parser=plot_dataframe_cmd)

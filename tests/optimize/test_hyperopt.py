@@ -198,8 +198,8 @@ def test_start_not_installed(mocker, default_conf, caplog, import_fails) -> None
     patch_exchange(mocker)
 
     args = [
-        '--config', 'config.json',
         'hyperopt',
+        '--config', 'config.json',
         '--epochs', '5'
     ]
     args = get_args(args)
