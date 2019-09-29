@@ -4,7 +4,7 @@
 
 ### The bot does not start
 
-Running the bot with `freqtrade --config config.json` does show the output `freqtrade: command not found`.
+Running the bot with `freqtrade trade --config config.json` does show the output `freqtrade: command not found`.
 
 This could have the following reasons:
 

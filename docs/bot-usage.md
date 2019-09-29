@@ -5,27 +5,47 @@ This page explains the different parameters of the bot and how to run it.
 !!! Note
     If you've used `setup.sh`, don't forget to activate your virtual environment (`source .env/bin/activate`) before running freqtrade commands.
 
-
 ## Bot commands
 
 ```
-usage: freqtrade [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
-                 [--userdir PATH] [-s NAME] [--strategy-path PATH]
-                 [--db-url PATH] [--sd-notify]
-                 {backtesting,edge,hyperopt,create-userdir,list-exchanges} ...
+usage: freqtrade [-h] [-V]
+                 {trade,backtesting,edge,hyperopt,create-userdir,list-exchanges,download-data,plot-dataframe,plot-profit}
+                 ...
 
 Free, open source crypto trading bot
 
 positional arguments:
-  {backtesting,edge,hyperopt,create-userdir,list-exchanges}
+  {trade,backtesting,edge,hyperopt,create-userdir,list-exchanges,download-data,plot-dataframe,plot-profit}
+    trade               Trade module.
     backtesting         Backtesting module.
     edge                Edge module.
     hyperopt            Hyperopt module.
     create-userdir      Create user-data directory.
     list-exchanges      Print available exchanges.
+    download-data       Download backtesting data.
+    plot-dataframe      Plot candles with indicators.
+    plot-profit         Generate plot showing profits.
 
 optional arguments:
   -h, --help            show this help message and exit
+  -V, --version         show program's version number and exit
+```
+
+### Bot trading commands
+
+```
+usage: freqtrade trade [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
+                       [--userdir PATH] [-s NAME] [--strategy-path PATH]
+                       [--db-url PATH] [--sd-notify]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --db-url PATH         Override trades database URL, this is useful in custom
+                        deployments (default: `sqlite:///tradesv3.sqlite` for
+                        Live Run mode, `sqlite://` for Dry Run).
+  --sd-notify           Notify systemd service manager.
+
+Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
   --logfile FILE        Log to the file specified.
   -V, --version         show program's version number and exit
@@ -37,14 +57,12 @@ optional arguments:
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
+
+Strategy arguments:
   -s NAME, --strategy NAME
                         Specify strategy class name (default:
                         `DefaultStrategy`).
   --strategy-path PATH  Specify additional strategy lookup path.
-  --db-url PATH         Override trades database URL, this is useful in custom
-                        deployments (default: `sqlite:///tradesv3.sqlite` for
-                        Live Run mode, `sqlite://` for Dry Run).
-  --sd-notify           Notify systemd service manager.
 
 ```
 
@@ -128,7 +146,7 @@ In `user_data/strategies` you have a file `my_awesome_strategy.py` which has
 a strategy class called `AwesomeStrategy` to load it:
 
 ```bash
-freqtrade --strategy AwesomeStrategy
+freqtrade trade --strategy AwesomeStrategy
 ```
 
 If the bot does not find your strategy file, it will display in an error
@@ -143,7 +161,7 @@ This parameter allows you to add an additional strategy lookup path, which gets
 checked before the default locations (The passed path must be a directory!):
 
 ```bash
-freqtrade --strategy AwesomeStrategy --strategy-path /some/directory
+freqtrade trade --strategy AwesomeStrategy --strategy-path /some/directory
 ```
 
 #### How to install a strategy?
@@ -167,20 +185,22 @@ freqtrade -c config.json --db-url sqlite:///tradesv3.dry_run.sqlite
 Backtesting also uses the config specified via `-c/--config`.
 
 ```
-usage: freqtrade backtesting [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
-                           [--max_open_trades MAX_OPEN_TRADES]
-                           [--stake_amount STAKE_AMOUNT] [-r] [--eps] [--dmmp]
-                           [-l]
-                           [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
-                           [--export EXPORT] [--export-filename PATH]
+usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                             [-d PATH] [--userdir PATH] [-s NAME]
+                             [--strategy-path PATH] [-i TICKER_INTERVAL]
+                             [--timerange TIMERANGE] [--max_open_trades INT]
+                             [--stake_amount STAKE_AMOUNT] [--eps] [--dmmp]
+                             [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
+                             [--export EXPORT] [--export-filename PATH]
 
 optional arguments:
   -h, --help            show this help message and exit
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
-                        Specify ticker interval (1m, 5m, 30m, 1h, 1d).
+                        Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
+                        `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
-  --max_open_trades MAX_OPEN_TRADES
+  --max_open_trades INT
                         Specify max_open_trades to use.
   --stake_amount STAKE_AMOUNT
                         Specify stake_amount.
@@ -193,26 +213,47 @@ optional arguments:
                         number).
   --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
                         Provide a space-separated list of strategies to
-                        backtest Please note that ticker-interval needs to be
+                        backtest. Please note that ticker-interval needs to be
                         set either in config or via command line. When using
-                        this together with --export trades, the strategy-name
-                        is injected into the filename (so backtest-data.json
-                        becomes backtest-data-DefaultStrategy.json
-  --export EXPORT       Export backtest results, argument are: trades. Example
-                        --export=trades
+                        this together with `--export trades`, the strategy-
+                        name is injected into the filename (so `backtest-
+                        data.json` becomes `backtest-data-
+                        DefaultStrategy.json`
+  --export EXPORT       Export backtest results, argument are: trades.
+                        Example: `--export=trades`
   --export-filename PATH
-                        Save backtest results to this filename requires
-                        --export to be set as well Example --export-
-                        filename=user_data/backtest_results/backtest_today.json
-                        (default: user_data/backtest_results/backtest-
-                        result.json)
+                        Save backtest results to the file with this filename
+                        (default: `user_data/backtest_results/backtest-
+                        result.json`). Requires `--export` to be set as well.
+                        Example: `--export-filename=user_data/backtest_results
+                        /backtest_today.json`
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`).
+                        Multiple --config options may be used. Can be set to
+                        `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+
+Strategy arguments:
+  -s NAME, --strategy NAME
+                        Specify strategy class name (default:
+                        `DefaultStrategy`).
+  --strategy-path PATH  Specify additional strategy lookup path.
+
 ```
 
 ### Getting historic data for backtesting
 
 The first time your run Backtesting, you will need to download some historic data first.
 This can be accomplished by using `freqtrade download-data`.  
-Check the corresponding [help page section](backtesting.md#Getting-data-for-backtesting-and-hyperopt) for more details
+Check the corresponding [Data Downloading](data-download.md) section for more details
 
 ## Hyperopt commands
 
@@ -220,15 +261,17 @@ To optimize your strategy, you can use hyperopt parameter hyperoptimization
 to find optimal parameter values for your stategy.
 
 ```
-usage: freqtrade hyperopt [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
+usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
+                          [--userdir PATH] [-s NAME] [--strategy-path PATH]
+                          [-i TICKER_INTERVAL] [--timerange TIMERANGE]
                           [--max_open_trades INT]
-                          [--stake_amount STAKE_AMOUNT] [-r]
+                          [--stake_amount STAKE_AMOUNT]
                           [--customhyperopt NAME] [--hyperopt-path PATH]
                           [--eps] [-e INT]
-                          [-s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
-                          [--dmmp] [--print-all] [--no-color] [-j JOBS]
-                          [--random-state INT] [--min-trades INT] [--continue]
-                          [--hyperopt-loss NAME]
+                          [--spaces {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
+                          [--dmmp] [--print-all] [--no-color] [--print-json]
+                          [-j JOBS] [--random-state INT] [--min-trades INT]
+                          [--continue] [--hyperopt-loss NAME]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -250,7 +293,7 @@ optional arguments:
                         Allow buying the same pair multiple times (position
                         stacking).
   -e INT, --epochs INT  Specify number of epochs (default: 100).
-  -s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...], --spaces {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]
+  --spaces {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]
                         Specify which parameters to hyperopt. Space-separated
                         list. Default: `all`.
   --dmmp, --disable-max-market-positions
@@ -260,6 +303,7 @@ optional arguments:
   --print-all           Print all results, not only the best ones.
   --no-color            Disable colorization of hyperopt results. May be
                         useful if you are redirecting output to a file.
+  --print-json          Print best result detailization in JSON format.
   -j JOBS, --job-workers JOBS
                         The number of concurrently running jobs for
                         hyperoptimization (hyperopt worker processes). If -1
@@ -278,8 +322,28 @@ optional arguments:
                         generate completely different results, since the
                         target for optimization is different. Built-in
                         Hyperopt-loss-functions are: DefaultHyperOptLoss,
-                        OnlyProfitHyperOptLoss, SharpeHyperOptLoss.
-                        (default: `DefaultHyperOptLoss`).
+                        OnlyProfitHyperOptLoss, SharpeHyperOptLoss.(default:
+                        `DefaultHyperOptLoss`).
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`).
+                        Multiple --config options may be used. Can be set to
+                        `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+
+Strategy arguments:
+  -s NAME, --strategy NAME
+                        Specify strategy class name (default:
+                        `DefaultStrategy`).
+  --strategy-path PATH  Specify additional strategy lookup path.
+
 ```
 
 ## Edge commands
@@ -287,26 +351,48 @@ optional arguments:
 To know your trade expectancy and winrate against historical data, you can use Edge.
 
 ```
-usage: freqtrade edge [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
-                    [--max_open_trades MAX_OPEN_TRADES]
-                    [--stake_amount STAKE_AMOUNT] [-r]
-                    [--stoplosses STOPLOSS_RANGE]
+usage: freqtrade edge [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
+                      [--userdir PATH] [-s NAME] [--strategy-path PATH]
+                      [-i TICKER_INTERVAL] [--timerange TIMERANGE]
+                      [--max_open_trades INT] [--stake_amount STAKE_AMOUNT]
+                      [--stoplosses STOPLOSS_RANGE]
 
 optional arguments:
   -h, --help            show this help message and exit
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
-                        Specify ticker interval (1m, 5m, 30m, 1h, 1d).
+                        Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
+                        `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
-  --max_open_trades MAX_OPEN_TRADES
+  --max_open_trades INT
                         Specify max_open_trades to use.
   --stake_amount STAKE_AMOUNT
                         Specify stake_amount.
   --stoplosses STOPLOSS_RANGE
-                        Defines a range of stoploss against which edge will
-                        assess the strategy the format is "min,max,step"
-                        (without any space).example:
-                        --stoplosses=-0.01,-0.1,-0.001
+                        Defines a range of stoploss values against which edge
+                        will assess the strategy. The format is "min,max,step"
+                        (without any space). Example:
+                        `--stoplosses=-0.01,-0.1,-0.001`
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`).
+                        Multiple --config options may be used. Can be set to
+                        `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+
+Strategy arguments:
+  -s NAME, --strategy NAME
+                        Specify strategy class name (default:
+                        `DefaultStrategy`).
+  --strategy-path PATH  Specify additional strategy lookup path.
+
 ```
 
 To understand edge and how to read the results, please read the [edge documentation](edge.md).
