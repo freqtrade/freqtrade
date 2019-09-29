@@ -104,19 +104,14 @@ def start_list_timeframes(args: Dict[str, Any]) -> None:
     Print ticker intervals (timeframes) available on Exchange
     """
     config = setup_utils_configuration(args, RunMode.OTHER)
+    # Do not use ticker_interval set in the config
+    config['ticker_interval'] = None
 
     # Init exchange
     exchange = ExchangeResolver(config['exchange']['name'], config).exchange
 
-    timeframes = list((exchange._api.timeframes or {}).keys())
-
-    if not timeframes:
-        logger.warning("List of timeframes available for exchange "
-                       f"`{config['exchange']['name']}` is empty. "
-                       "This exchange does not support fetching OHLCV data.")
+    if args['print_one_column']:
+        print('\n'.join(exchange.timeframes))
     else:
-        if args['print_one_column']:
-            print('\n'.join(timeframes))
-        else:
-            print(f"Timeframes available for the exchange `{config['exchange']['name']}`: "
-                  f"{', '.join(timeframes)}")
+        print(f"Timeframes available for the exchange `{config['exchange']['name']}`: "
+              f"{', '.join(exchange.timeframes)}")

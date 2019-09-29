@@ -409,7 +409,8 @@ def test_validate_timeframes_failed(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
-    with pytest.raises(OperationalException, match=r'Invalid ticker 3m, this Exchange supports.*'):
+    with pytest.raises(OperationalException,
+                       match=r"Invalid ticker interval '3m'. This exchange supports.*"):
         Exchange(default_conf)
 
 
