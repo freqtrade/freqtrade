@@ -31,7 +31,7 @@ def test_list_exchanges(capsys):
 
     start_list_exchanges(get_args(args))
     captured = capsys.readouterr()
-    assert re.match(r"Exchanges supported by ccxt and available.*", captured.out)
+    assert re.match(r"Exchanges available for Freqtrade.*", captured.out)
     assert re.match(r".*binance,.*", captured.out)
     assert re.match(r".*bittrex,.*", captured.out)
 
@@ -43,9 +43,34 @@ def test_list_exchanges(capsys):
 
     start_list_exchanges(get_args(args))
     captured = capsys.readouterr()
-    assert not re.match(r"Exchanges supported by ccxt and available.*", captured.out)
     assert re.search(r"^binance$", captured.out, re.MULTILINE)
     assert re.search(r"^bittrex$", captured.out, re.MULTILINE)
+
+    # Test with --all
+    args = [
+        "list-exchanges",
+        "--all",
+    ]
+
+    start_list_exchanges(get_args(args))
+    captured = capsys.readouterr()
+    assert re.match(r"All exchanges supported by the ccxt library.*", captured.out)
+    assert re.match(r".*binance,.*", captured.out)
+    assert re.match(r".*bittrex,.*", captured.out)
+    assert re.match(r".*bitmex,.*", captured.out)
+
+    # Test with --one-column --all
+    args = [
+        "list-exchanges",
+        "--one-column",
+        "--all",
+    ]
+
+    start_list_exchanges(get_args(args))
+    captured = capsys.readouterr()
+    assert re.search(r"^binance$", captured.out, re.MULTILINE)
+    assert re.search(r"^bittrex$", captured.out, re.MULTILINE)
+    assert re.search(r"^bitmex$", captured.out, re.MULTILINE)
 
 
 def test_create_datadir_failed(caplog):
