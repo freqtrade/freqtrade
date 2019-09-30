@@ -14,14 +14,15 @@ nav:
     - Data Downloading: data-download.md
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
-    - Edge positioning: edge.md
+    - Edge Positioning: edge.md
+    - Utility Subcommands: utils.md
     - FAQ: faq.md
     - Data Analysis: data-analysis.md
     - Plotting: plotting.md
     - SQL Cheatsheet: sql_cheatsheet.md
-    - Sandbox testing: sandbox-testing.md
-    - Deprecated features: deprecated.md
-    - Contributors guide: developer.md
+    - Sandbox Testing: sandbox-testing.md
+    - Deprecated Features: deprecated.md
+    - Contributors Guide: developer.md
 theme:
   name: material
   logo: 'images/logo.png'

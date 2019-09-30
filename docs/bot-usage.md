@@ -12,17 +12,23 @@ This page explains the different parameters of the bot and how to run it.
 usage: freqtrade [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                  [--userdir PATH] [-s NAME] [--strategy-path PATH]
                  [--db-url PATH] [--sd-notify]
-                 {backtesting,edge,hyperopt,create-userdir,list-exchanges} ...
+                 {backtesting,edge,hyperopt,create-userdir,list-exchanges,list-timeframes,download-data,plot-dataframe,plot-profit}
+                 ...
 
 Free, open source crypto trading bot
 
 positional arguments:
-  {backtesting,edge,hyperopt,create-userdir,list-exchanges}
+  {backtesting,edge,hyperopt,create-userdir,list-exchanges,list-timeframes,download-data,plot-dataframe,plot-profit}
     backtesting         Backtesting module.
     edge                Edge module.
     hyperopt            Hyperopt module.
     create-userdir      Create user-data directory.
     list-exchanges      Print available exchanges.
+    list-timeframes     Print available ticker intervals (timeframes) for the
+                        exchange.
+    download-data       Download backtesting data.
+    plot-dataframe      Plot candles with indicators.
+    plot-profit         Generate plot showing profits.
 
 optional arguments:
   -h, --help            show this help message and exit
