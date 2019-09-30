@@ -43,8 +43,9 @@ ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit", "db_
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "ticker_interval"]
 
-NO_CONF_REQURIED = ["create-userdir", "download-data", "list-timeframes", "plot-dataframe",
-                    "plot-profit"]
+NO_CONF_REQURIED = ["download-data", "list-timeframes", "plot-dataframe", "plot-profit"]
+
+NO_CONF_ALLOWED = ["create-userdir", "list-exchanges"]
 
 
 class Arguments:
@@ -78,12 +79,15 @@ class Arguments:
         parsed_arg = self.parser.parse_args(self.args)
 
         # When no config is provided, but a config exists, use that configuration!
+        subparser = parsed_arg.subparser if 'subparser' in parsed_arg else None
 
         # Workaround issue in argparse with action='append' and default value
         # (see https://bugs.python.org/issue16399)
         # Allow no-config for certain commands (like downloading / plotting)
-        if (parsed_arg.config is None and ((Path.cwd() / constants.DEFAULT_CONFIG).is_file() or
-           not ('subparser' in parsed_arg and parsed_arg.subparser in NO_CONF_REQURIED))):
+        if (parsed_arg.config is None
+                and subparser not in NO_CONF_ALLOWED
+                and ((Path.cwd() / constants.DEFAULT_CONFIG).is_file()
+                     or (subparser not in NO_CONF_REQURIED))):
             parsed_arg.config = [constants.DEFAULT_CONFIG]
 
         return parsed_arg
