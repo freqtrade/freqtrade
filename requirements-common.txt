@@ -10,7 +10,7 @@ urllib3==1.25.5
 wrapt==1.11.2
 jsonschema==3.0.2
 TA-Lib==0.4.17
-tabulate==0.8.3
+tabulate==0.8.5
 coinmarketcap==5.0.3
 
 # find first, C search in arrays
