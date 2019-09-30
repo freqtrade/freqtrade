@@ -27,9 +27,11 @@ logger = logging.getLogger(__name__)
 
 API_RETRY_COUNT = 4
 BAD_EXCHANGES = {
-    "bitmex": "Various reasons",
+    "bitmex": "Various reasons.",
     "bitstamp": "Does not provide history. "
                 "Details in https://github.com/freqtrade/freqtrade/issues/1983",
+    "hitbtc": "This API cannot be used with Freqtrade. "
+              "Use `hitbtc2` exchange id to access this exchange.",
     **dict.fromkeys([
         'adara',
         'anxpro',
@@ -73,7 +75,7 @@ BAD_EXCHANGES = {
         'flowbtc',
         'foxbit',
         'fybse',
-        'hitbtc',
+        # 'hitbtc',
         'ice3x',
         'independentreserve',
         'indodax',
