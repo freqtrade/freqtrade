@@ -235,7 +235,7 @@ class Exchange:
         # Find matching class for the given exchange name
         name = exchange_config['name']
 
-        if not is_exchange_available(name, ccxt_module):
+        if not is_exchange_known_ccxt(name, ccxt_module):
             raise OperationalException(f'Exchange {name} is not supported by ccxt')
 
         ex_config = {
@@ -838,16 +838,27 @@ def get_exchange_bad_reason(exchange_name: str) -> str:
     return BAD_EXCHANGES.get(exchange_name, "")
 
 
-def is_exchange_available(exchange_name: str, ccxt_module=None) -> bool:
-    return exchange_name in available_exchanges(ccxt_module)
+def is_exchange_known_ccxt(exchange_name: str, ccxt_module=None) -> bool:
+    return exchange_name in ccxt_exchanges(ccxt_module)
 
 
 def is_exchange_officially_supported(exchange_name: str) -> bool:
     return exchange_name in ['bittrex', 'binance']
 
 
-def available_exchanges(ccxt_module=None) -> List[str]:
+def ccxt_exchanges(ccxt_module=None) -> List[str]:
+    """
+    Return the list of all exchanges known to ccxt
+    """
     return ccxt_module.exchanges if ccxt_module is not None else ccxt.exchanges
+
+
+def available_exchanges(ccxt_module=None) -> List[str]:
+    """
+    Return exchanges available to the bot, i.e. non-bad exchanges in the ccxt list
+    """
+    exchanges = ccxt_exchanges(ccxt_module)
+    return [x for x in exchanges if not is_exchange_bad(x)]
 
 
 def timeframe_to_seconds(ticker_interval: str) -> int:

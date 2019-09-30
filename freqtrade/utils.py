@@ -9,7 +9,7 @@ from freqtrade import OperationalException
 from freqtrade.configuration import Configuration, TimeRange
 from freqtrade.configuration.directory_operations import create_userdata_dir
 from freqtrade.data.history import refresh_backtest_ohlcv_data
-from freqtrade.exchange import available_exchanges
+from freqtrade.exchange import available_exchanges, ccxt_exchanges
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
 
@@ -39,12 +39,14 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
     :param args: Cli args from Arguments()
     :return: None
     """
-
+    exchanges = ccxt_exchanges() if args['list_exchanges_all'] else available_exchanges()
     if args['print_one_column']:
-        print('\n'.join(available_exchanges()))
+        print('\n'.join(exchanges))
     else:
-        print(f"Exchanges supported by ccxt and available for Freqtrade: "
-              f"{', '.join(available_exchanges())}")
+        if args['list_exchanges_all']:
+            print(f"All exchanges supported by the ccxt library: {', '.join(exchanges)}")
+        else:
+            print(f"Exchanges available for Freqtrade: {', '.join(exchanges)}")
 
 
 def start_create_userdir(args: Dict[str, Any]) -> None:
