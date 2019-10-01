@@ -506,7 +506,8 @@ def test_check_exchange(default_conf, caplog) -> None:
     # Test an available exchange, supported by ccxt
     default_conf.get('exchange').update({'name': 'huobipro'})
     assert check_exchange(default_conf)
-    assert log_has_re(r"Exchange .* is supported by ccxt and .* not officially supported "
+    assert log_has_re(r"Exchange .* is known to the the ccxt library, available for the bot, "
+                      r"but not officially supported "
                       r"by the Freqtrade development team\. .*", caplog)
     caplog.clear()
 
@@ -520,16 +521,16 @@ def test_check_exchange(default_conf, caplog) -> None:
     # Test a 'bad' exchange with check_for_bad=False
     default_conf.get('exchange').update({'name': 'bitmex'})
     assert check_exchange(default_conf, False)
-    assert log_has_re(r"Exchange .* is supported by ccxt and .* not officially supported "
+    assert log_has_re(r"Exchange .* is known to the the ccxt library, available for the bot, "
+                      r"but not officially supported "
                       r"by the Freqtrade development team\. .*", caplog)
     caplog.clear()
 
     # Test an invalid exchange
     default_conf.get('exchange').update({'name': 'unknown_exchange'})
-
     with pytest.raises(
         OperationalException,
-        match=r'.*Exchange "unknown_exchange" is not supported by ccxt '
+        match=r'Exchange "unknown_exchange" is not known to the ccxt library '
               r'and therefore not available for the bot.*'
     ):
         check_exchange(default_conf)

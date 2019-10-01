@@ -244,6 +244,11 @@ AVAILABLE_CLI_OPTIONS = {
         help='Print exchanges in one column.',
         action='store_true',
     ),
+    "list_exchanges_all": Arg(
+        '-a', '--all',
+        help='Print all exchanges known to the ccxt library.',
+        action='store_true',
+    ),
     # Script options
     "pairs": Arg(
         '-p', '--pairs',
