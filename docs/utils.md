@@ -5,11 +5,12 @@ Besides the Live-Trade and Dry-Run run modes, the `backtesting`, `edge` and `hyp
 ## List Exchanges
 
 ```
-usage: freqtrade list-exchanges [-h] [-1]
+usage: freqtrade list-exchanges [-h] [-1] [-a]
 
 optional arguments:
   -h, --help        show this help message and exit
   -1, --one-column  Print exchanges in one column.
+  -a, --all         Print all exchanges known to the ccxt library.
 ```
 
 ## List Timeframes
