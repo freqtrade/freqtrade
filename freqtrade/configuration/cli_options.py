@@ -107,13 +107,6 @@ AVAILABLE_CLI_OPTIONS = {
         help='Specify stake_amount.',
         type=float,
     ),
-    "refresh_pairs": Arg(
-        '-r', '--refresh-pairs-cached',
-        help='Refresh the pairs files in tests/testdata with the latest data from the '
-        'exchange. Use it if you want to run your optimization commands with '
-        'up-to-date data.',
-        action='store_true',
-    ),
     # Backtesting
     "position_stacking": Arg(
         '--eps', '--enable-position-stacking',
@@ -292,14 +285,16 @@ AVAILABLE_CLI_OPTIONS = {
     "indicators1": Arg(
         '--indicators1',
         help='Set indicators from your strategy you want in the first row of the graph. '
-        'Comma-separated list. Example: `ema3,ema5`. Default: `%(default)s`.',
-        default='sma,ema3,ema5',
+        'Space-separated list. Example: `ema3 ema5`. Default: `%(default)s`.',
+        default=['sma', 'ema3', 'ema5'],
+        nargs='+',
     ),
     "indicators2": Arg(
         '--indicators2',
         help='Set indicators from your strategy you want in the third row of the graph. '
-        'Comma-separated list. Example: `fastd,fastk`. Default: `%(default)s`.',
-        default='macd,macdsignal',
+        'Space-separated list. Example: `fastd fastk`. Default: `%(default)s`.',
+        default=['macd', 'macdsignal'],
+        nargs='+',
     ),
     "plot_limit": Arg(
         '--plot-limit',

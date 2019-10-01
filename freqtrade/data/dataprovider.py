@@ -17,7 +17,7 @@ from freqtrade.state import RunMode
 logger = logging.getLogger(__name__)
 
 
-class DataProvider():
+class DataProvider:
 
     def __init__(self, config: dict, exchange: Exchange) -> None:
         self._config = config
@@ -65,9 +65,7 @@ class DataProvider():
         """
         return load_pair_history(pair=pair,
                                  ticker_interval=ticker_interval or self._config['ticker_interval'],
-                                 refresh_pairs=False,
-                                 datadir=Path(self._config['datadir']) if self._config.get(
-                                     'datadir') else None
+                                 datadir=Path(self._config['datadir'])
                                  )
 
     def get_pair_dataframe(self, pair: str, ticker_interval: str = None) -> DataFrame:

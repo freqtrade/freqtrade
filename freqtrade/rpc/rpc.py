@@ -54,7 +54,7 @@ class RPCException(Exception):
         }
 
 
-class RPC(object):
+class RPC:
     """
     RPC class can be used to have extra feature, like bot data, and access to DB data
     """
@@ -294,9 +294,9 @@ class RPC(object):
             total = total + est_btc
             output.append({
                 'currency': coin,
-                'available': balance['free'],
-                'balance': balance['total'],
-                'pending': balance['used'],
+                'free': balance['free'] if balance['free'] is not None else 0,
+                'balance': balance['total'] if balance['total'] is not None else 0,
+                'used': balance['used'] if balance['used'] is not None else 0,
                 'est_btc': est_btc,
             })
         if total == 0.0:

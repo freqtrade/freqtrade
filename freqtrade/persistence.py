@@ -1,7 +1,6 @@
 """
 This module contains the class to persist trades into SQLite
 """
-
 import logging
 from datetime import datetime
 from decimal import Decimal
@@ -19,7 +18,9 @@ from sqlalchemy.pool import StaticPool
 
 from freqtrade import OperationalException
 
+
 logger = logging.getLogger(__name__)
+
 
 _DECL_BASE: Any = declarative_base()
 _SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
@@ -48,8 +49,8 @@ def init(db_url: str, clean_open_orders: bool = False) -> None:
     try:
         engine = create_engine(db_url, **kwargs)
     except NoSuchModuleError:
-        raise OperationalException(f'Given value for db_url: \'{db_url}\' '
-                                   f'is no valid database URL! (See {_SQL_DOCS_URL})')
+        raise OperationalException(f"Given value for db_url: '{db_url}' "
+                                   f"is no valid database URL! (See {_SQL_DOCS_URL})")
 
     session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
     Trade.session = session()
@@ -209,7 +210,7 @@ class Trade(_DECL_BASE):
     ticker_interval = Column(Integer, nullable=True)
 
     def __repr__(self):
-        open_since = arrow.get(self.open_date).humanize() if self.is_open else 'closed'
+        open_since = self.open_date.strftime('%Y-%m-%d %H:%M:%S') if self.is_open else 'closed'
 
         return (f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
                 f'open_rate={self.open_rate:.8f}, open_since={open_since})')
@@ -250,7 +251,6 @@ class Trade(_DECL_BASE):
         :param initial: Called to initiate stop_loss.
             Skips everything if self.stop_loss is already set.
         """
-
         if initial and not (self.stop_loss is None or self.stop_loss == 0):
             # Don't modify if called with initial and nothing to do
             return
@@ -259,7 +259,7 @@ class Trade(_DECL_BASE):
 
         # no stop loss assigned yet
         if not self.stop_loss:
-            logger.debug("assigning new stop loss")
+            logger.debug(f"{self.pair} - Assigning new stoploss...")
             self.stop_loss = new_loss
             self.stop_loss_pct = -1 * abs(stoploss)
             self.initial_stop_loss = new_loss
@@ -269,21 +269,20 @@ class Trade(_DECL_BASE):
         # evaluate if the stop loss needs to be updated
         else:
             if new_loss > self.stop_loss:  # stop losses only walk up, never down!
+                logger.debug(f"{self.pair} - Adjusting stoploss...")
                 self.stop_loss = new_loss
                 self.stop_loss_pct = -1 * abs(stoploss)
                 self.stoploss_last_update = datetime.utcnow()
-                logger.debug("adjusted stop loss")
             else:
-                logger.debug("keeping current stop loss")
+                logger.debug(f"{self.pair} - Keeping current stoploss...")
 
         logger.debug(
-            f"{self.pair} - current price {current_price:.8f}, "
-            f"bought at {self.open_rate:.8f} and calculated "
-            f"stop loss is at: {self.initial_stop_loss:.8f} initial "
-            f"stop at {self.stop_loss:.8f}. "
-            f"trailing stop loss saved us: "
-            f"{float(self.stop_loss) - float(self.initial_stop_loss):.8f} "
-            f"and max observed rate was {self.max_rate:.8f}")
+            f"{self.pair} - Stoploss adjusted. current_price={current_price:.8f}, "
+            f"open_rate={self.open_rate:.8f}, max_rate={self.max_rate:.8f}, "
+            f"initial_stop_loss={self.initial_stop_loss:.8f}, "
+            f"stop_loss={self.stop_loss:.8f}. "
+            f"Trailing stoploss saved us: "
+            f"{float(self.stop_loss) - float(self.initial_stop_loss):.8f}.")
 
     def update(self, order: Dict) -> None:
         """
@@ -331,24 +330,19 @@ class Trade(_DECL_BASE):
             self
         )
 
-    def calc_open_trade_price(
-            self,
-            fee: Optional[float] = None) -> float:
+    def calc_open_trade_price(self, fee: Optional[float] = None) -> float:
         """
         Calculate the open_rate including fee.
         :param fee: fee to use on the open rate (optional).
         If rate is not set self.fee will be used
         :return: Price in of the open trade incl. Fees
         """
-
         buy_trade = (Decimal(self.amount) * Decimal(self.open_rate))
         fees = buy_trade * Decimal(fee or self.fee_open)
         return float(buy_trade + fees)
 
-    def calc_close_trade_price(
-            self,
-            rate: Optional[float] = None,
-            fee: Optional[float] = None) -> float:
+    def calc_close_trade_price(self, rate: Optional[float] = None,
+                               fee: Optional[float] = None) -> float:
         """
         Calculate the close_rate including fee
         :param fee: fee to use on the close rate (optional).
@@ -357,7 +351,6 @@ class Trade(_DECL_BASE):
         If rate is not set self.close_rate will be used
         :return: Price in BTC of the open trade
         """
-
         if rate is None and not self.close_rate:
             return 0.0
 
@@ -365,10 +358,8 @@ class Trade(_DECL_BASE):
         fees = sell_trade * Decimal(fee or self.fee_close)
         return float(sell_trade - fees)
 
-    def calc_profit(
-            self,
-            rate: Optional[float] = None,
-            fee: Optional[float] = None) -> float:
+    def calc_profit(self, rate: Optional[float] = None,
+                    fee: Optional[float] = None) -> float:
         """
         Calculate the absolute profit in stake currency between Close and Open trade
         :param fee: fee to use on the close rate (optional).
@@ -385,10 +376,8 @@ class Trade(_DECL_BASE):
         profit = close_trade_price - open_trade_price
         return float(f"{profit:.8f}")
 
-    def calc_profit_percent(
-            self,
-            rate: Optional[float] = None,
-            fee: Optional[float] = None) -> float:
+    def calc_profit_percent(self, rate: Optional[float] = None,
+                            fee: Optional[float] = None) -> float:
         """
         Calculates the profit in percentage (including fee).
         :param rate: rate to compare with (optional).
@@ -396,7 +385,6 @@ class Trade(_DECL_BASE):
         :param fee: fee to use on the close rate (optional).
         :return: profit in percentage as float
         """
-
         open_trade_price = self.calc_open_trade_price()
         close_trade_price = self.calc_close_trade_price(
             rate=(rate or self.close_rate),
@@ -436,8 +424,8 @@ class Trade(_DECL_BASE):
                and trade.initial_stop_loss_pct != desired_stoploss):
                 # Stoploss value got changed
 
-                logger.info(f"Stoploss for {trade} needs adjustment.")
+                logger.info(f"Stoploss for {trade} needs adjustment...")
                 # Force reset of stoploss
                 trade.stop_loss = None
                 trade.adjust_stop_loss(trade.open_rate, desired_stoploss)
-                logger.info(f"new stoploss: {trade.stop_loss}, ")
+                logger.info(f"New stoploss: {trade.stop_loss}.")

@@ -9,7 +9,7 @@ from freqtrade.rpc import RPC, RPCMessageType
 logger = logging.getLogger(__name__)
 
 
-class RPCManager(object):
+class RPCManager:
     """
     Class to manage RPC objects (Telegram, Slack, ...)
     """
@@ -56,7 +56,10 @@ class RPCManager(object):
         logger.info('Sending rpc message: %s', msg)
         for mod in self.registered_modules:
             logger.debug('Forwarding message to rpc.%s', mod.name)
-            mod.send_msg(msg)
+            try:
+                mod.send_msg(msg)
+            except NotImplementedError:
+                logger.error(f"Message type {msg['type']} not implemented by handler {mod.name}.")
 
     def startup_messages(self, config, pairlist) -> None:
         if config.get('dry_run', False):

@@ -1,14 +1,14 @@
 import logging
 import sys
-from argparse import Namespace
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import arrow
 
+from freqtrade import OperationalException
 from freqtrade.configuration import Configuration, TimeRange
 from freqtrade.configuration.directory_operations import create_userdata_dir
-from freqtrade.data.history import download_pair_history
+from freqtrade.data.history import refresh_backtest_ohlcv_data
 from freqtrade.exchange import available_exchanges
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
@@ -16,7 +16,7 @@ from freqtrade.state import RunMode
 logger = logging.getLogger(__name__)
 
 
-def setup_utils_configuration(args: Namespace, method: RunMode) -> Dict[str, Any]:
+def setup_utils_configuration(args: Dict[str, Any], method: RunMode) -> Dict[str, Any]:
     """
     Prepare the configuration for utils subcommands
     :param args: Cli args from Arguments()
@@ -33,34 +33,34 @@ def setup_utils_configuration(args: Namespace, method: RunMode) -> Dict[str, Any
     return config
 
 
-def start_list_exchanges(args: Namespace) -> None:
+def start_list_exchanges(args: Dict[str, Any]) -> None:
     """
     Print available exchanges
     :param args: Cli args from Arguments()
     :return: None
     """
 
-    if args.print_one_column:
+    if args['print_one_column']:
         print('\n'.join(available_exchanges()))
     else:
         print(f"Exchanges supported by ccxt and available for Freqtrade: "
               f"{', '.join(available_exchanges())}")
 
 
-def start_create_userdir(args: Namespace) -> None:
+def start_create_userdir(args: Dict[str, Any]) -> None:
     """
     Create "user_data" directory to contain user data strategies, hyperopts, ...)
     :param args: Cli args from Arguments()
     :return: None
     """
-    if "user_data_dir" in args and args.user_data_dir:
-        create_userdata_dir(args.user_data_dir, create_dir=True)
+    if "user_data_dir" in args and args["user_data_dir"]:
+        create_userdata_dir(args["user_data_dir"], create_dir=True)
     else:
         logger.warning("`create-userdir` requires --userdir to be set.")
         sys.exit(1)
 
 
-def start_download_data(args: Namespace) -> None:
+def start_download_data(args: Dict[str, Any]) -> None:
     """
     Download data (former download_backtest_data.py script)
     """
@@ -71,43 +71,29 @@ def start_download_data(args: Namespace) -> None:
         time_since = arrow.utcnow().shift(days=-config['days']).strftime("%Y%m%d")
         timerange = TimeRange.parse_timerange(f'{time_since}-')
 
+    if 'pairs' not in config:
+        raise OperationalException(
+            "Downloading data requires a list of pairs. "
+            "Please check the documentation on how to configure this.")
+
     dl_path = Path(config['datadir'])
     logger.info(f'About to download pairs: {config["pairs"]}, '
                 f'intervals: {config["timeframes"]} to {dl_path}')
 
-    pairs_not_available = []
+    pairs_not_available: List[str] = []
 
     try:
         # Init exchange
         exchange = ExchangeResolver(config['exchange']['name'], config).exchange
 
-        for pair in config["pairs"]:
-            if pair not in exchange.markets:
-                pairs_not_available.append(pair)
-                logger.info(f"Skipping pair {pair}...")
-                continue
-            for ticker_interval in config["timeframes"]:
-                pair_print = pair.replace('/', '_')
-                filename = f'{pair_print}-{ticker_interval}.json'
-                dl_file = dl_path.joinpath(filename)
-                if config.get("erase") and dl_file.exists():
-                    logger.info(
-                        f'Deleting existing data for pair {pair}, interval {ticker_interval}.')
-                    dl_file.unlink()
-
-                logger.info(f'Downloading pair {pair}, interval {ticker_interval}.')
-                download_pair_history(datadir=dl_path, exchange=exchange,
-                                      pair=pair, ticker_interval=str(ticker_interval),
-                                      timerange=timerange)
+        pairs_not_available = refresh_backtest_ohlcv_data(
+            exchange, pairs=config["pairs"], timeframes=config["timeframes"],
+            dl_path=Path(config['datadir']), timerange=timerange, erase=config.get("erase"))
 
     except KeyboardInterrupt:
         sys.exit("SIGINT received, aborting ...")
 
     finally:
         if pairs_not_available:
-            logger.info(
-                f"Pairs [{','.join(pairs_not_available)}] not available "
-                f"on exchange {config['exchange']['name']}.")
-
-    # configuration.resolve_pairs_list()
-    print(config)
+            logger.info(f"Pairs [{','.join(pairs_not_available)}] not available "
+                        f"on exchange {config['exchange']['name']}.")

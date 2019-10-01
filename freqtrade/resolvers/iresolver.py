@@ -12,7 +12,7 @@ from typing import Any, List, Optional, Tuple, Type, Union
 logger = logging.getLogger(__name__)
 
 
-class IResolver(object):
+class IResolver:
     """
     This class contains all the logic to load custom classes
     """

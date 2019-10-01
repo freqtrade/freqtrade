@@ -1,10 +1,7 @@
 import logging
-from argparse import Namespace
 from typing import Any, Dict
 
-from filelock import FileLock, Timeout
-
-from freqtrade import DependencyException, constants
+from freqtrade import DependencyException, constants, OperationalException
 from freqtrade.state import RunMode
 from freqtrade.utils import setup_utils_configuration
 
@@ -12,7 +9,7 @@ from freqtrade.utils import setup_utils_configuration
 logger = logging.getLogger(__name__)
 
 
-def setup_configuration(args: Namespace, method: RunMode) -> Dict[str, Any]:
+def setup_configuration(args: Dict[str, Any], method: RunMode) -> Dict[str, Any]:
     """
     Prepare the configuration for the Hyperopt module
     :param args: Cli args from Arguments()
@@ -25,20 +22,10 @@ def setup_configuration(args: Namespace, method: RunMode) -> Dict[str, Any]:
             raise DependencyException('stake amount could not be "%s" for backtesting' %
                                       constants.UNLIMITED_STAKE_AMOUNT)
 
-    if method == RunMode.HYPEROPT:
-        # Special cases for Hyperopt
-        if config.get('strategy') and config.get('strategy') != 'DefaultStrategy':
-            logger.error("Please don't use --strategy for hyperopt.")
-            logger.error(
-                "Read the documentation at "
-                "https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md "
-                "to understand how to configure hyperopt.")
-            raise DependencyException("--strategy configured but not supported for hyperopt")
-
     return config
 
 
-def start_backtesting(args: Namespace) -> None:
+def start_backtesting(args: Dict[str, Any]) -> None:
     """
     Start Backtesting script
     :param args: Cli args from Arguments()
@@ -57,15 +44,19 @@ def start_backtesting(args: Namespace) -> None:
     backtesting.start()
 
 
-def start_hyperopt(args: Namespace) -> None:
+def start_hyperopt(args: Dict[str, Any]) -> None:
     """
     Start hyperopt script
     :param args: Cli args from Arguments()
     :return: None
     """
     # Import here to avoid loading hyperopt module when it's not used
-    from freqtrade.optimize.hyperopt import Hyperopt
-
+    try:
+        from filelock import FileLock, Timeout
+        from freqtrade.optimize.hyperopt import Hyperopt
+    except ImportError as e:
+        raise OperationalException(
+            f"{e}. Please ensure that the hyperopt dependencies are installed.") from e
     # Initialize configuration
     config = setup_configuration(args, RunMode.HYPEROPT)
 
@@ -95,7 +86,7 @@ def start_hyperopt(args: Namespace) -> None:
         # Same in Edge and Backtesting start() functions.
 
 
-def start_edge(args: Namespace) -> None:
+def start_edge(args: Dict[str, Any]) -> None:
     """
     Start Edge script
     :param args: Cli args from Arguments()

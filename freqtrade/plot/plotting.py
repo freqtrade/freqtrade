@@ -1,15 +1,14 @@
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List
 
 import pandas as pd
-
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import (combine_tickers_with_mean,
-                                       create_cum_profit, load_trades)
-from freqtrade.exchange import Exchange
-from freqtrade.resolvers import ExchangeResolver, StrategyResolver
+                                       create_cum_profit,
+                                       extract_trades_of_period, load_trades)
+from freqtrade.resolvers import StrategyResolver
 
 logger = logging.getLogger(__name__)
 
@@ -19,23 +18,16 @@ try:
     from plotly.offline import plot
     import plotly.graph_objects as go
 except ImportError:
-    logger.exception("Module plotly not found \n Please install using `pip install plotly`")
+    logger.exception("Module plotly not found \n Please install using `pip3 install plotly`")
     exit(1)
 
 
 def init_plotscript(config):
     """
     Initialize objects needed for plotting
-    :return: Dict with tickers, trades, pairs and strategy
+    :return: Dict with tickers, trades and pairs
     """
-    exchange: Optional[Exchange] = None
 
-    # Exchange is only needed when downloading data!
-    if config.get("refresh_pairs", False):
-        exchange = ExchangeResolver(config.get('exchange', {}).get('name'),
-                                    config).exchange
-
-    strategy = StrategyResolver(config).strategy
     if "pairs" in config:
         pairs = config["pairs"]
     else:
@@ -47,17 +39,18 @@ def init_plotscript(config):
     tickers = history.load_data(
         datadir=Path(str(config.get("datadir"))),
         pairs=pairs,
-        ticker_interval=config['ticker_interval'],
-        refresh_pairs=config.get('refresh_pairs', False),
+        ticker_interval=config.get('ticker_interval', '5m'),
         timerange=timerange,
-        exchange=exchange,
     )
 
-    trades = load_trades(config)
+    trades = load_trades(config['trade_source'],
+                         db_url=config.get('db_url'),
+                         exportfilename=config.get('exportfilename'),
+                         )
+
     return {"tickers": tickers,
             "trades": trades,
             "pairs": pairs,
-            "strategy": strategy,
             }
 
 
@@ -280,8 +273,15 @@ def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame],
         name='Avg close price',
     )
 
-    fig = make_subplots(rows=3, cols=1, shared_xaxes=True, row_width=[1, 1, 1])
-    fig['layout'].update(title="Profit plot")
+    fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
+                        row_width=[1, 1, 1],
+                        vertical_spacing=0.05,
+                        subplot_titles=["AVG Close Price", "Combined Profit", "Profit per pair"])
+    fig['layout'].update(title="Freqtrade Profit plot")
+    fig['layout']['yaxis1'].update(title='Price')
+    fig['layout']['yaxis2'].update(title='Profit')
+    fig['layout']['yaxis3'].update(title='Profit')
+    fig['layout']['xaxis']['rangeslider'].update(visible=False)
 
     fig.add_trace(avgclose, 1, 1)
     fig = add_profit(fig, 2, df_comb, 'cum_profit', 'Profit')
@@ -321,3 +321,65 @@ def store_plot_file(fig, filename: str, directory: Path, auto_open: bool = False
     plot(fig, filename=str(_filename),
          auto_open=auto_open)
     logger.info(f"Stored plot as {_filename}")
+
+
+def load_and_plot_trades(config: Dict[str, Any]):
+    """
+    From configuration provided
+    - Initializes plot-script
+    - Get tickers data
+    - Generate Dafaframes populated with indicators and signals based on configured strategy
+    - Load trades excecuted during the selected period
+    - Generate Plotly plot objects
+    - Generate plot files
+    :return: None
+    """
+    strategy = StrategyResolver(config).strategy
+
+    plot_elements = init_plotscript(config)
+    trades = plot_elements['trades']
+    pair_counter = 0
+    for pair, data in plot_elements["tickers"].items():
+        pair_counter += 1
+        logger.info("analyse pair %s", pair)
+        tickers = {}
+        tickers[pair] = data
+
+        dataframe = strategy.analyze_ticker(tickers[pair], {'pair': pair})
+        trades_pair = trades.loc[trades['pair'] == pair]
+        trades_pair = extract_trades_of_period(dataframe, trades_pair)
+
+        fig = generate_candlestick_graph(
+            pair=pair,
+            data=dataframe,
+            trades=trades_pair,
+            indicators1=config["indicators1"],
+            indicators2=config["indicators2"],
+        )
+
+        store_plot_file(fig, filename=generate_plot_filename(pair, config['ticker_interval']),
+                        directory=config['user_data_dir'] / "plot")
+
+    logger.info('End of plotting process. %s plots generated', pair_counter)
+
+
+def plot_profit(config: Dict[str, Any]) -> None:
+    """
+    Plots the total profit for all pairs.
+    Note, the profit calculation isn't realistic.
+    But should be somewhat proportional, and therefor useful
+    in helping out to find a good algorithm.
+    """
+    plot_elements = init_plotscript(config)
+    trades = load_trades(config['trade_source'],
+                         db_url=str(config.get('db_url')),
+                         exportfilename=str(config.get('exportfilename')),
+                         )
+    # Filter trades to relevant pairs
+    trades = trades[trades['pair'].isin(plot_elements["pairs"])]
+
+    # Create an average close price of all the pairs that were involved.
+    # this could be useful to gauge the overall market trend
+    fig = generate_profit_graph(plot_elements["pairs"], plot_elements["tickers"], trades)
+    store_plot_file(fig, filename='freqtrade-profit-plot.html',
+                    directory=config['user_data_dir'] / "plot", auto_open=True)

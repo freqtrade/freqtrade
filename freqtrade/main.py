@@ -11,7 +11,6 @@ if sys.version_info < (3, 6):
 
 # flake8: noqa E402
 import logging
-from argparse import Namespace
 from typing import Any, List
 
 from freqtrade import OperationalException
@@ -31,16 +30,13 @@ def main(sysargv: List[str] = None) -> None:
     return_code: Any = 1
     worker = None
     try:
-        arguments = Arguments(
-            sysargv,
-            'Free, open source crypto trading bot'
-        )
-        args: Namespace = arguments.get_parsed_arg()
+        arguments = Arguments(sysargv)
+        args = arguments.get_parsed_arg()
 
         # A subcommand has been issued.
         # Means if Backtesting or Hyperopt have been called we exit the bot
-        if hasattr(args, 'func'):
-            args.func(args)
+        if 'func' in args:
+            args['func'](args)
             # TODO: fetch return_code as returned by the command function here
             return_code = 0
         else:

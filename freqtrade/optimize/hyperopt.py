@@ -24,8 +24,10 @@ from skopt.space import Dimension
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.history import load_data, get_timeframe
+from freqtrade.misc import round_dict
 from freqtrade.optimize.backtesting import Backtesting
-# Import IHyperOptLoss to allow users import from this file
+# Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
+from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F4
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F4
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver, HyperOptLossResolver
 
@@ -34,6 +36,11 @@ logger = logging.getLogger(__name__)
 
 
 INITIAL_POINTS = 30
+
+# Keep no more than 2*SKOPT_MODELS_MAX_NUM models
+# in the skopt models list
+SKOPT_MODELS_MAX_NUM = 10
+
 MAX_LOSS = 100000  # just a big enough number to be bad result in loss optimization
 
 
@@ -47,9 +54,10 @@ class Hyperopt:
     """
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
-        self.backtesting = Backtesting(self.config)
 
         self.custom_hyperopt = HyperOptResolver(self.config).hyperopt
+
+        self.backtesting = Backtesting(self.config)
 
         self.custom_hyperoptloss = HyperOptLossResolver(self.config).hyperoptloss
         self.calculate_loss = self.custom_hyperoptloss.hyperopt_loss_function
@@ -71,11 +79,15 @@ class Hyperopt:
         self.trials: List = []
 
         # Populate functions here (hasattr is slow so should not be run during "regular" operations)
+        if hasattr(self.custom_hyperopt, 'populate_indicators'):
+            self.backtesting.strategy.advise_indicators = \
+                    self.custom_hyperopt.populate_indicators  # type: ignore
         if hasattr(self.custom_hyperopt, 'populate_buy_trend'):
-            self.backtesting.advise_buy = self.custom_hyperopt.populate_buy_trend  # type: ignore
-
+            self.backtesting.strategy.advise_buy = \
+                    self.custom_hyperopt.populate_buy_trend  # type: ignore
         if hasattr(self.custom_hyperopt, 'populate_sell_trend'):
-            self.backtesting.advise_sell = self.custom_hyperopt.populate_sell_trend  # type: ignore
+            self.backtesting.strategy.advise_sell = \
+                    self.custom_hyperopt.populate_sell_trend  # type: ignore
 
         # Use max_open_trades for hyperopt as well, except --disable-max-market-positions is set
         if self.config.get('use_max_market_positions', True):
@@ -83,7 +95,7 @@ class Hyperopt:
         else:
             logger.debug('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
             self.max_open_trades = 0
-        self.position_stacking = self.config.get('position_stacking', False),
+        self.position_stacking = self.config.get('position_stacking', False)
 
         if self.has_space('sell'):
             # Make sure experimental is enabled
@@ -107,7 +119,9 @@ class Hyperopt:
                 p.unlink()
 
     def get_args(self, params):
-        dimensions = self.hyperopt_space()
+
+        dimensions = self.dimensions
+
         # Ensure the number of dimensions match
         # the number of parameters in the list x.
         if len(params) != len(dimensions):
@@ -124,14 +138,14 @@ class Hyperopt:
         Save hyperopt trials to file
         """
         if self.trials:
-            logger.info('Saving %d evaluations to \'%s\'', len(self.trials), self.trials_file)
+            logger.info("Saving %d evaluations to '%s'", len(self.trials), self.trials_file)
             dump(self.trials, self.trials_file)
 
     def read_trials(self) -> List:
         """
         Read hyperopt trials file
         """
-        logger.info('Reading Trials from \'%s\'', self.trials_file)
+        logger.info("Reading Trials from '%s'", self.trials_file)
         trials = load(self.trials_file)
         self.trials_file.unlink()
         return trials
@@ -178,9 +192,11 @@ class Hyperopt:
                        indent=4)
             if self.has_space('roi'):
                 print("ROI table:")
-                pprint(self.custom_hyperopt.generate_roi_table(params), indent=4)
+                # Round printed values to 5 digits after the decimal point
+                pprint(round_dict(self.custom_hyperopt.generate_roi_table(params), 5), indent=4)
             if self.has_space('stoploss'):
-                print(f"Stoploss: {params.get('stoploss')}")
+                # Also round to 5 digits after the decimal point
+                print(f"Stoploss: {round(params.get('stoploss'), 5)}")
 
     def log_results(self, results) -> None:
         """
@@ -244,20 +260,24 @@ class Hyperopt:
             spaces += self.custom_hyperopt.stoploss_space()
         return spaces
 
-    def generate_optimizer(self, _params: Dict) -> Dict:
+    def generate_optimizer(self, _params: Dict, iteration=None) -> Dict:
         """
         Used Optimize function. Called once per epoch to optimize whatever is configured.
         Keep this function as optimized as possible!
         """
         params = self.get_args(_params)
+
         if self.has_space('roi'):
-            self.backtesting.strategy.minimal_roi = self.custom_hyperopt.generate_roi_table(params)
+            self.backtesting.strategy.minimal_roi = \
+                    self.custom_hyperopt.generate_roi_table(params)
 
         if self.has_space('buy'):
-            self.backtesting.advise_buy = self.custom_hyperopt.buy_strategy_generator(params)
+            self.backtesting.strategy.advise_buy = \
+                    self.custom_hyperopt.buy_strategy_generator(params)
 
         if self.has_space('sell'):
-            self.backtesting.advise_sell = self.custom_hyperopt.sell_strategy_generator(params)
+            self.backtesting.strategy.advise_sell = \
+                    self.custom_hyperopt.sell_strategy_generator(params)
 
         if self.has_space('stoploss'):
             self.backtesting.strategy.stoploss = params['stoploss']
@@ -318,9 +338,9 @@ class Hyperopt:
                 f'Total profit {total_profit: 11.8f} {stake_cur} '
                 f'({profit: 7.2f}Σ%). Avg duration {duration:5.1f} mins.')
 
-    def get_optimizer(self, cpu_count) -> Optimizer:
+    def get_optimizer(self, dimensions, cpu_count) -> Optimizer:
         return Optimizer(
-            self.hyperopt_space(),
+            dimensions,
             base_estimator="ET",
             acq_optimizer="auto",
             n_initial_points=INITIAL_POINTS,
@@ -328,9 +348,26 @@ class Hyperopt:
             random_state=self.config.get('hyperopt_random_state', None)
         )
 
-    def run_optimizer_parallel(self, parallel, asked) -> List:
+    def fix_optimizer_models_list(self):
+        """
+        WORKAROUND: Since skopt is not actively supported, this resolves problems with skopt
+        memory usage, see also: https://github.com/scikit-optimize/scikit-optimize/pull/746
+
+        This may cease working when skopt updates if implementation of this intrinsic
+        part changes.
+        """
+        n = len(self.opt.models) - SKOPT_MODELS_MAX_NUM
+        # Keep no more than 2*SKOPT_MODELS_MAX_NUM models in the skopt models list,
+        # remove the old ones. These are actually of no use, the current model
+        # from the estimator is the only one used in the skopt optimizer.
+        # Freqtrade code also does not inspect details of the models.
+        if n >= SKOPT_MODELS_MAX_NUM:
+            logger.debug(f"Fixing skopt models list, removing {n} old items...")
+            del self.opt.models[0:n]
+
+    def run_optimizer_parallel(self, parallel, asked, i) -> List:
         return parallel(delayed(
-                        wrap_non_picklable_objects(self.generate_optimizer))(v) for v in asked)
+                        wrap_non_picklable_objects(self.generate_optimizer))(v, i) for v in asked)
 
     def load_previous_results(self):
         """ read trials file if we have one """
@@ -345,11 +382,9 @@ class Hyperopt:
         timerange = TimeRange.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
         data = load_data(
-            datadir=Path(self.config['datadir']) if self.config.get('datadir') else None,
+            datadir=Path(self.config['datadir']),
             pairs=self.config['exchange']['pair_whitelist'],
             ticker_interval=self.backtesting.ticker_interval,
-            refresh_pairs=self.config.get('refresh_pairs', False),
-            exchange=self.backtesting.exchange,
             timerange=timerange
         )
 
@@ -366,9 +401,6 @@ class Hyperopt:
             (max_date - min_date).days
         )
 
-        self.backtesting.strategy.advise_indicators = \
-            self.custom_hyperopt.populate_indicators  # type: ignore
-
         preprocessed = self.backtesting.strategy.tickerdata_to_dataframe(data)
 
         dump(preprocessed, self.tickerdata_pickle)
@@ -379,11 +411,12 @@ class Hyperopt:
         self.load_previous_results()
 
         cpus = cpu_count()
-        logger.info(f'Found {cpus} CPU cores. Let\'s make them scream!')
+        logger.info(f"Found {cpus} CPU cores. Let's make them scream!")
         config_jobs = self.config.get('hyperopt_jobs', -1)
         logger.info(f'Number of parallel jobs set as: {config_jobs}')
 
-        opt = self.get_optimizer(config_jobs)
+        self.dimensions = self.hyperopt_space()
+        self.opt = self.get_optimizer(self.dimensions, config_jobs)
 
         if self.config.get('print_colorized', False):
             colorama_init(autoreset=True)
@@ -394,9 +427,10 @@ class Hyperopt:
                 logger.info(f'Effective number of parallel workers used: {jobs}')
                 EVALS = max(self.total_epochs // jobs, 1)
                 for i in range(EVALS):
-                    asked = opt.ask(n_points=jobs)
-                    f_val = self.run_optimizer_parallel(parallel, asked)
-                    opt.tell(asked, [v['loss'] for v in f_val])
+                    asked = self.opt.ask(n_points=jobs)
+                    f_val = self.run_optimizer_parallel(parallel, asked, i)
+                    self.opt.tell(asked, [v['loss'] for v in f_val])
+                    self.fix_optimizer_models_list()
                     for j in range(jobs):
                         current = i * jobs + j
                         val = f_val[j]

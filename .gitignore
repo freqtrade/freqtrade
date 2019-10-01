@@ -1,12 +1,9 @@
 # Freqtrade rules
-freqtrade/tests/testdata/*.json
-hyperopt_conf.py
 config*.json
 *.sqlite
-.hyperopt
 logfile.txt
-hyperopt_trials.pickle
 user_data/*
+!user_data/strategy/sample_strategy.py
 !user_data/notebooks
 user_data/notebooks/*
 !user_data/notebooks/*example.ipynb

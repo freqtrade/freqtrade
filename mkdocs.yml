@@ -11,15 +11,16 @@ nav:
         - Telegram: telegram-usage.md
         - Web Hook: webhook-config.md
         - REST API: rest-api.md
+    - Data Downloading: data-download.md
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
     - Edge positioning: edge.md
-    - Plotting: plotting.md
-    - Deprecated features: deprecated.md
     - FAQ: faq.md
     - Data Analysis: data-analysis.md
+    - Plotting: plotting.md
     - SQL Cheatsheet: sql_cheatsheet.md
     - Sandbox testing: sandbox-testing.md
+    - Deprecated features: deprecated.md
     - Contributors guide: developer.md
 theme:
   name: material

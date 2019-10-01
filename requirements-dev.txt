@@ -1,13 +1,14 @@
 # Include all requirements to run the bot.
 -r requirements.txt
 -r requirements-plot.txt
+-r requirements-hyperopt.txt
 
 coveralls==1.8.2
 flake8==3.7.8
 flake8-type-annotations==0.1.0
 flake8-tidy-imports==2.0.0
 mypy==0.720
-pytest==5.1.0
+pytest==5.1.3
 pytest-asyncio==0.10.0
 pytest-cov==2.7.1
 pytest-mock==1.10.4

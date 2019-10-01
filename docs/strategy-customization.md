@@ -24,7 +24,7 @@ strategy file will be updated on Github. Put your custom strategy file
 into the directory `user_data/strategies`.
 
 Best copy the test-strategy and modify this copy to avoid having bot-updates override your changes.
-`cp  user_data/strategies/test_strategy.py user_data/strategies/awesome-strategy.py`
+`cp  user_data/strategies/sample_strategy.py user_data/strategies/awesome-strategy.py`
 
 ### Anatomy of a strategy
 
@@ -36,14 +36,19 @@ A strategy file contains all the information needed to build a good strategy:
 - Minimal ROI recommended
 - Stoploss strongly recommended
 
-The bot also include a sample strategy called `TestStrategy` you can update: `user_data/strategies/test_strategy.py`.
-You can test it with the parameter: `--strategy TestStrategy`
+The bot also include a sample strategy called `SampleStrategy` you can update: `user_data/strategies/sample_strategy.py`.
+You can test it with the parameter: `--strategy SampleStrategy`
+
+Additionally, there is an attribute called `INTERFACE_VERSION`, which defines the version of the strategy interface the bot should use.
+The current version is 2 - which is also the default when it's not set explicitly in the strategy.
+
+Future versions will require this to be set.
 
 ```bash
 freqtrade --strategy AwesomeStrategy
 ```
 
-**For the following section we will use the [user_data/strategies/test_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py)
+**For the following section we will use the [user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/sample_strategy.py)
 file as reference.**
 
 !!! Note Strategies and Backtesting
@@ -109,9 +114,8 @@ def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame
     return dataframe
 ```
 
-
 !!! Note "Want more indicator examples?"
-    Look into the [user_data/strategies/test_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py).<br/>
+    Look into the [user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/sample_strategy.py).
     Then uncomment indicators you need.
 
 ### Buy signal rules
@@ -122,7 +126,7 @@ It's important to always return the dataframe without removing/modifying the col
 
 This will method will also define a new column, `"buy"`, which needs to contain 1 for buys, and 0 for "no action".
 
-Sample from `user_data/strategies/test_strategy.py`:
+Sample from `user_data/strategies/sample_strategy.py`:
 
 ```python
 def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -152,7 +156,7 @@ It's important to always return the dataframe without removing/modifying the col
 
 This will method will also define a new column, `"sell"`, which needs to contain 1 for sells, and 0 for "no action".
 
-Sample from `user_data/strategies/test_strategy.py`:
+Sample from `user_data/strategies/sample_strategy.py`:
 
 ```python
 def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -220,7 +224,7 @@ This would signify a stoploss of -10%.
 
 For the full documentation on stoploss features, look at the dedicated [stoploss page](stoploss.md).
 
-If your exchange supports it, it's recommended to also set `"stoploss_on_exchange"` in the order dict, so your stoploss is on the exchange and cannot be missed for network-problems (or other problems).
+If your exchange supports it, it's recommended to also set `"stoploss_on_exchange"` in the order_types dictionary, so your stoploss is on the exchange and cannot be missed due to network problems, high load or other reasons.
 
 For more information on order_types please look [here](configuration.md#understand-order_types).
 
@@ -407,7 +411,7 @@ To get additional Ideas for strategies, head over to our [strategy repository](h
 Feel free to use any of them as inspiration for your own strategies.
 We're happy to accept Pull Requests containing new Strategies to that repo.
 
-We also got a *strategy-sharing* channel in our [Slack community](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LWEyODBiNzkzNzcyNzU0MWYyYzE5NjIyOTQxMzBmMGUxOTIzM2YyN2Y4NWY1YTEwZDgwYTRmMzE2NmM5ZmY2MTg) which is a great place to get and/or share ideas.
+We also got a *strategy-sharing* channel in our [Slack community](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE) which is a great place to get and/or share ideas.
 
 ## Next step
 

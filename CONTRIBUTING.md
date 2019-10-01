@@ -11,7 +11,7 @@ Few pointers for contributions:
 - Create your PR against the `develop` branch, not `master`.
 - New features need to contain unit tests and must be PEP8 conformant (max-line-length = 100).
 
-If you are unsure, discuss the feature on our [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LWEyODBiNzkzNzcyNzU0MWYyYzE5NjIyOTQxMzBmMGUxOTIzM2YyN2Y4NWY1YTEwZDgwYTRmMzE2NmM5ZmY2MTg)
+If you are unsure, discuss the feature on our [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE)
 or in a [issue](https://github.com/freqtrade/freqtrade/issues) before a PR.
 
 ## Getting started
@@ -28,19 +28,19 @@ make it pass. It means you have introduced a regression.
 #### Test the whole project
 
 ```bash
-pytest freqtrade
+pytest
 ```
 
 #### Test only one file
 
 ```bash
-pytest freqtrade/tests/test_<file_name>.py
+pytest tests/test_<file_name>.py
 ```
 
 #### Test only one method from one file
 
 ```bash
-pytest freqtrade/tests/test_<file_name>.py::test_<method_name>
+pytest tests/test_<file_name>.py::test_<method_name>
 ```
 
 ### 2. Test if your code is PEP8 compliant

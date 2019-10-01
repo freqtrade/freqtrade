@@ -112,16 +112,16 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
     return trades
 
 
-def load_trades(config) -> pd.DataFrame:
+def load_trades(source: str, db_url: str, exportfilename: str) -> pd.DataFrame:
     """
     Based on configuration option "trade_source":
     * loads data from DB (using `db_url`)
     * loads data from backtestfile (using `exportfilename`)
     """
-    if config["trade_source"] == "DB":
-        return load_trades_from_db(config["db_url"])
-    elif config["trade_source"] == "file":
-        return load_backtest_data(Path(config["exportfilename"]))
+    if source == "DB":
+        return load_trades_from_db(db_url)
+    elif source == "file":
+        return load_backtest_data(Path(exportfilename))
 
 
 def extract_trades_of_period(dataframe: pd.DataFrame, trades: pd.DataFrame) -> pd.DataFrame:
@@ -157,7 +157,8 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str) -> 
     :param trades: DataFrame containing trades (requires columns close_time and profitperc)
     :return: Returns df with one additional column, col_name, containing the cumulative profit.
     """
-    df[col_name] = trades.set_index('close_time')['profitperc'].cumsum()
+    # Use groupby/sum().cumsum() to avoid errors when multiple trades sold at the same candle.
+    df[col_name] = trades.groupby('close_time')['profitperc'].sum().cumsum()
     # Set first value to 0
     df.loc[df.iloc[0].name, col_name] = 0
     # FFill to get continuous

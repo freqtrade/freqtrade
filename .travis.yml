@@ -22,19 +22,19 @@ jobs:
   include:
     - stage: tests
       script:
-      - pytest --random-order --cov=freqtrade --cov-config=.coveragerc freqtrade/tests/
+      - pytest --random-order --cov=freqtrade --cov-config=.coveragerc
       # Allow failure for coveralls
       - coveralls || true
       name: pytest
     - script:
       - cp config.json.example config.json
-      - freqtrade --datadir freqtrade/tests/testdata backtesting
+      - freqtrade --datadir tests/testdata backtesting
       name: backtest
     - script:
       - cp config.json.example config.json
-      - freqtrade --datadir freqtrade/tests/testdata hyperopt -e 5
+      - freqtrade --datadir tests/testdata hyperopt -e 5
       name: hyperopt
-    - script: flake8 freqtrade scripts
+    - script: flake8
       name: flake8
     - script:
       # Test Documentation boxes -

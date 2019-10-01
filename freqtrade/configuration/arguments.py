@@ -2,10 +2,11 @@
 This module contains the argument manager class
 """
 import argparse
-from typing import List, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from freqtrade.configuration.cli_options import AVAILABLE_CLI_OPTIONS
 from freqtrade import constants
+from freqtrade.configuration.cli_options import AVAILABLE_CLI_OPTIONS
 
 ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_data_dir"]
 
@@ -14,7 +15,7 @@ ARGS_STRATEGY = ["strategy", "strategy_path"]
 ARGS_MAIN = ARGS_COMMON + ARGS_STRATEGY + ["db_url", "sd_notify"]
 
 ARGS_COMMON_OPTIMIZE = ["ticker_interval", "timerange",
-                        "max_open_trades", "stake_amount", "refresh_pairs"]
+                        "max_open_trades", "stake_amount"]
 
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
                                         "strategy_list", "export", "exportfilename"]
@@ -34,33 +35,29 @@ ARGS_CREATE_USERDIR = ["user_data_dir"]
 
 ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "exchange", "timeframes", "erase"]
 
-ARGS_PLOT_DATAFRAME = (ARGS_COMMON + ARGS_STRATEGY +
-                       ["pairs", "indicators1", "indicators2", "plot_limit", "db_url",
-                        "trade_source", "export", "exportfilename", "timerange",
-                        "refresh_pairs"])
+ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit", "db_url",
+                       "trade_source", "export", "exportfilename", "timerange", "ticker_interval"]
 
-ARGS_PLOT_PROFIT = (ARGS_COMMON + ARGS_STRATEGY +
-                    ["pairs", "timerange", "export", "exportfilename", "db_url", "trade_source"])
+ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
+                    "trade_source", "ticker_interval"]
 
-NO_CONF_REQURIED = ["start_download_data"]
+NO_CONF_REQURIED = ["create-userdir", "download-data", "plot-dataframe", "plot-profit"]
 
 
-class Arguments(object):
+class Arguments:
     """
     Arguments Class. Manage the arguments received by the cli
     """
-    def __init__(self, args: Optional[List[str]], description: str,
-                 no_default_config: bool = False) -> None:
+    def __init__(self, args: Optional[List[str]]) -> None:
         self.args = args
         self._parsed_arg: Optional[argparse.Namespace] = None
-        self.parser = argparse.ArgumentParser(description=description)
-        self._no_default_config = no_default_config
+        self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot')
 
     def _load_args(self) -> None:
         self._build_args(optionlist=ARGS_MAIN)
         self._build_subcommands()
 
-    def get_parsed_arg(self) -> argparse.Namespace:
+    def get_parsed_arg(self) -> Dict[str, Any]:
         """
         Return the list of arguments
         :return: List[str] List of arguments
@@ -69,7 +66,7 @@ class Arguments(object):
             self._load_args()
             self._parsed_arg = self._parse_args()
 
-        return self._parsed_arg
+        return vars(self._parsed_arg)
 
     def _parse_args(self) -> argparse.Namespace:
         """
@@ -77,12 +74,13 @@ class Arguments(object):
         """
         parsed_arg = self.parser.parse_args(self.args)
 
+        # When no config is provided, but a config exists, use that configuration!
+
         # Workaround issue in argparse with action='append' and default value
         # (see https://bugs.python.org/issue16399)
         # Allow no-config for certain commands (like downloading / plotting)
-        if (not self._no_default_config and parsed_arg.config is None
-                and not (hasattr(parsed_arg, 'func')
-                         and parsed_arg.func.__name__ in NO_CONF_REQURIED)):
+        if (parsed_arg.config is None and ((Path.cwd() / constants.DEFAULT_CONFIG).is_file() or
+           not ('subparser' in parsed_arg and parsed_arg.subparser in NO_CONF_REQURIED))):
             parsed_arg.config = [constants.DEFAULT_CONFIG]
 
         return parsed_arg
@@ -119,6 +117,7 @@ class Arguments(object):
         hyperopt_cmd.set_defaults(func=start_hyperopt)
         self._build_args(optionlist=ARGS_HYPEROPT, parser=hyperopt_cmd)
 
+        # add create-userdir subcommand
         create_userdir_cmd = subparsers.add_parser('create-userdir',
                                                    help="Create user-data directory.")
         create_userdir_cmd.set_defaults(func=start_create_userdir)
@@ -139,3 +138,20 @@ class Arguments(object):
         )
         download_data_cmd.set_defaults(func=start_download_data)
         self._build_args(optionlist=ARGS_DOWNLOAD_DATA, parser=download_data_cmd)
+
+        # Add Plotting subcommand
+        from freqtrade.plot.plot_utils import start_plot_dataframe, start_plot_profit
+        plot_dataframe_cmd = subparsers.add_parser(
+            'plot-dataframe',
+            help='Plot candles with indicators.'
+        )
+        plot_dataframe_cmd.set_defaults(func=start_plot_dataframe)
+        self._build_args(optionlist=ARGS_PLOT_DATAFRAME, parser=plot_dataframe_cmd)
+
+        # Plot profit
+        plot_profit_cmd = subparsers.add_parser(
+            'plot-profit',
+            help='Generate plot showing profits.'
+        )
+        plot_profit_cmd.set_defaults(func=start_plot_profit)
+        self._build_args(optionlist=ARGS_PLOT_PROFIT, parser=plot_profit_cmd)

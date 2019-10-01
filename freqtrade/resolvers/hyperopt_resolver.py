@@ -34,15 +34,12 @@ class HyperOptResolver(IResolver):
         self.hyperopt = self._load_hyperopt(hyperopt_name, config,
                                             extra_dir=config.get('hyperopt_path'))
 
-        # Assign ticker_interval to be used in hyperopt
-        self.hyperopt.__class__.ticker_interval = str(config['ticker_interval'])
-
         if not hasattr(self.hyperopt, 'populate_buy_trend'):
-            logger.warning("Custom Hyperopt does not provide populate_buy_trend. "
-                           "Using populate_buy_trend from DefaultStrategy.")
+            logger.warning("Hyperopt class does not provide populate_buy_trend() method. "
+                           "Using populate_buy_trend from the strategy.")
         if not hasattr(self.hyperopt, 'populate_sell_trend'):
-            logger.warning("Custom Hyperopt does not provide populate_sell_trend. "
-                           "Using populate_sell_trend from DefaultStrategy.")
+            logger.warning("Hyperopt class does not provide populate_sell_trend() method. "
+                           "Using populate_sell_trend from the strategy.")
 
     def _load_hyperopt(
             self, hyperopt_name: str, config: Dict, extra_dir: Optional[str] = None) -> IHyperOpt:
@@ -65,7 +62,7 @@ class HyperOptResolver(IResolver):
             abs_paths.insert(0, Path(extra_dir).resolve())
 
         hyperopt = self._load_object(paths=abs_paths, object_type=IHyperOpt,
-                                     object_name=hyperopt_name)
+                                     object_name=hyperopt_name, kwargs={'config': config})
         if hyperopt:
             return hyperopt
         raise OperationalException(

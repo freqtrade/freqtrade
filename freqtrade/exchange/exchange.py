@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 import ccxt
 import ccxt.async_support as ccxt_async
+from ccxt.base.decimal_to_precision import ROUND_UP, ROUND_DOWN
 from pandas import DataFrame
 
 from freqtrade import (DependencyException, InvalidOrderException,
@@ -68,7 +69,7 @@ def retrier(f):
     return wrapper
 
 
-class Exchange(object):
+class Exchange:
 
     _config: Dict = {}
     _params: Dict = {}
@@ -320,7 +321,7 @@ class Exchange(object):
         if (order_types.get("stoploss_on_exchange")
                 and not self._ft_has.get("stoploss_on_exchange", False)):
             raise OperationalException(
-                'On exchange stoploss is not supported for %s.' % self.name
+                f'On exchange stoploss is not supported for {self.name}.'
             )
 
     def validate_order_time_in_force(self, order_time_in_force: Dict) -> None:
@@ -366,7 +367,7 @@ class Exchange(object):
     def dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                       rate: float, params: Dict = {}) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{randint(0, 10**6)}'
-        dry_order = {  # TODO: additional entry should be added for stoploss limit
+        dry_order = {
             "id": order_id,
             'pair': pair,
             'price': rate,
@@ -381,6 +382,7 @@ class Exchange(object):
             "info": {}
         }
         self._store_dry_order(dry_order)
+        # Copy order and close it - so the returned order is open unless it's a market order
         return dry_order
 
     def _store_dry_order(self, dry_order: Dict) -> None:
@@ -391,6 +393,8 @@ class Exchange(object):
                 "filled": closed_order["amount"],
                 "remaining": 0
                 })
+        if closed_order["type"] in ["stop_loss_limit"]:
+            closed_order["info"].update({"stopPrice": closed_order["price"]})
         self._dry_run_open_orders[closed_order["id"]] = closed_order
 
     def create_order(self, pair: str, ordertype: str, side: str, amount: float,
@@ -450,30 +454,14 @@ class Exchange(object):
     def stoploss_limit(self, pair: str, amount: float, stop_price: float, rate: float) -> Dict:
         """
         creates a stoploss limit order.
-        NOTICE: it is not supported by all exchanges. only binance is tested for now.
-        TODO: implementation maybe needs to be moved to the binance subclass
+        Since ccxt does not unify stoploss-limit orders yet, this needs to be implemented in each
+        exchange's subclass.
+        The exception below should never raise, since we disallow
+        starting the bot in validate_ordertypes()
+        Note: Changes to this interface need to be applied to all sub-classes too.
         """
-        ordertype = "stop_loss_limit"
 
-        stop_price = self.symbol_price_prec(pair, stop_price)
-
-        # Ensure rate is less than stop price
-        if stop_price <= rate:
-            raise OperationalException(
-                'In stoploss limit order, stop price should be more than limit price')
-
-        if self._config['dry_run']:
-            dry_order = self.dry_run_order(
-                pair, ordertype, "sell", amount, stop_price)
-            return dry_order
-
-        params = self._params.copy()
-        params.update({'stopPrice': stop_price})
-
-        order = self.create_order(pair, ordertype, 'sell', amount, rate, params)
-        logger.info('stoploss limit order added for %s. '
-                    'stop price: %s. limit: %s', pair, stop_price, rate)
-        return order
+        raise OperationalException(f"stoploss_limit is not implemented for {self.name}.")
 
     @retrier
     def get_balance(self, currency: str) -> float:
@@ -824,11 +812,9 @@ def timeframe_to_prev_date(timeframe: str, date: datetime = None) -> datetime:
     """
     if not date:
         date = datetime.now(timezone.utc)
-    timeframe_secs = timeframe_to_seconds(timeframe)
-    # Get offset based on timerame_secs
-    offset = date.timestamp() % timeframe_secs
-    # Subtract seconds passed since last offset
-    new_timestamp = date.timestamp() - offset
+
+    new_timestamp = ccxt.Exchange.round_timeframe(timeframe, date.timestamp() * 1000,
+                                                  ROUND_DOWN) // 1000
     return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
 
 
@@ -839,9 +825,8 @@ def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
     :param date: date to use. Defaults to utcnow()
     :returns: date of next candle (with utc timezone)
     """
-    prevdate = timeframe_to_prev_date(timeframe, date)
-    timeframe_secs = timeframe_to_seconds(timeframe)
-
-    # Add one interval to previous candle
-    new_timestamp = prevdate.timestamp() + timeframe_secs
+    if not date:
+        date = datetime.now(timezone.utc)
+    new_timestamp = ccxt.Exchange.round_timeframe(timeframe, date.timestamp() * 1000,
+                                                  ROUND_UP) // 1000
     return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)

@@ -1,5 +1,16 @@
 """ FreqTrade bot """
-__version__ = '2019.8-1'
+__version__ = '2019.9'
+
+if __version__ == 'develop':
+
+    try:
+        import subprocess
+        __version__ = 'develop-' + subprocess.check_output(
+            ['git', 'log', '--format="%h"', '-n 1'],
+            stderr=subprocess.DEVNULL).decode("utf-8").rstrip().strip('"')
+    except Exception:
+        # git not available, ignore
+        pass
 
 
 class DependencyException(Exception):
@@ -11,7 +22,7 @@ class DependencyException(Exception):
 
 class OperationalException(Exception):
     """
-    Requires manual intervention.
+    Requires manual intervention and will usually stop the bot.
     This happens when an exchange returns an unexpected error during runtime
     or given configuration is invalid.
     """

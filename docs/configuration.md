@@ -1,14 +1,15 @@
 # Configure the bot
 
-This page explains how to configure the bot.
+Freqtrade has many configurable features and possibilities.
+By default, these settings are configured via the configuration file (see below).
 
 ## The Freqtrade configuration file
 
 The bot uses a set of configuration parameters during its operation that all together conform the bot configuration. It normally reads its configuration from a file (Freqtrade configuration file).
 
-Per default, the bot loads configuration from the `config.json` file located in the current working directory.
+Per default, the bot loads the configuration from the `config.json` file, located in the current working directory.
 
-You can change the name of the configuration file used by the bot with the `-c/--config` command line option.
+You can specify a different configuration file used by the bot with the `-c/--config` command line option.
 
 In some advanced use cases, multiple configuration files can be specified and used by the bot or the bot can read its configuration parameters from the process standard input stream.
 
@@ -22,19 +23,26 @@ The Freqtrade configuration file is to be written in the JSON format.
 
 Additionally to the standard JSON syntax, you may use one-line `// ...` and multi-line `/* ... */` comments in your configuration files and trailing commas in the lists of parameters.
 
-Do not worry if you are not familiar with JSON format -- simply open the configuration file with an editor of your choice, make some changes to the parameters you need, save your changes and, finally, restart the bot or, if it was previously stopped, run it again with the changes you made to the configuration. The bot validates syntax of the configuration file at startup and will warn you if you made any errors editing it.
+Do not worry if you are not familiar with JSON format -- simply open the configuration file with an editor of your choice, make some changes to the parameters you need, save your changes and, finally, restart the bot or, if it was previously stopped, run it again with the changes you made to the configuration. The bot validates syntax of the configuration file at startup and will warn you if you made any errors editing it, pointing out problematic lines.
 
 ## Configuration parameters
 
 The table below will list all configuration parameters available.
 
-Mandatory parameters are marked as **Required**.
+Freqtrade can also load many options via command line (CLI) arguments (check out the commands `--help` output for details).
+The prevelance for all Options is as follows:
+
+- CLI arguments override any other option
+- Configuration files are used in sequence (last file wins), and override Strategy configurations.
+- Strategy configurations are only used if they are not set via configuration or via command line arguments. These options are market with [Strategy Override](#parameters-in-the-strategy) in the below table.
+
+Mandatory parameters are marked as **Required**, which means that they are required to be set in one of the possible ways.
 
 |  Command | Default | Description |
 |----------|---------|-------------|
 | `max_open_trades` | 3 | **Required.** Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades)
-| `stake_currency` | BTC | **Required.** Crypto-currency used for trading. [Strategy Override](#parameters-in-the-strategy).
-| `stake_amount` | 0.05 | **Required.** Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to `"unlimited"` to allow the bot to use all available balance. [Strategy Override](#parameters-in-the-strategy).
+| `stake_currency` | BTC | **Required.** Crypto-currency used for trading.
+| `stake_amount` | 0.05 | **Required.** Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to `"unlimited"` to allow the bot to use all available balance.
 | `amount_reserve_percent` | 0.05 | Reserve some amount in min pair stake amount. Default is 5%. The bot will reserve `amount_reserve_percent` + stop-loss value when calculating min pair stake amount in order to avoid possible trade refusals.
 | `ticker_interval` | [1m, 5m, 15m, 30m, 1h, 1d, ...] | The ticker interval to use (1min, 5 min, 15 min, 30 min, 1 hour or 1 day). Default is 5 minutes. [Strategy Override](#parameters-in-the-strategy).
 | `fiat_display_currency` | USD | **Required.** Fiat currency used to show your profits. More information below.
@@ -61,8 +69,9 @@ Mandatory parameters are marked as **Required**.
 | `order_time_in_force` | None | Configure time in force for buy and sell orders. [More information below](#understand-order_time_in_force). [Strategy Override](#parameters-in-the-strategy).
 | `exchange.name` |  | **Required.** Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename).
 | `exchange.sandbox` | false | Use the 'sandbox' version of the exchange, where the exchange provides a sandbox for risk-free integration. See [here](sandbox-testing.md) in more details.
-| `exchange.key` | '' | API key to use for the exchange. Only required when you are in production mode.
-| `exchange.secret` | '' | API secret to use for the exchange. Only required when you are in production mode.
+| `exchange.key` | '' | API key to use for the exchange. Only required when you are in production mode. ***Keep it in secrete, do not disclose publicly.***
+| `exchange.secret` | '' | API secret to use for the exchange. Only required when you are in production mode. ***Keep it in secrete, do not disclose publicly.***
+| `exchange.password` | '' | API password to use for the exchange. Only required when you are in production mode and for exchanges that use password for API requests. ***Keep it in secrete, do not disclose publicly.***
 | `exchange.pair_whitelist` | [] | List of pairs to use by the bot for trading and to check for potential trades during backtesting. Can be overriden by dynamic pairlists (see [below](#dynamic-pairlists)).
 | `exchange.pair_blacklist` | [] | List of pairs the bot must absolutely avoid for trading and backtesting. Can be overriden by dynamic pairlists (see [below](#dynamic-pairlists)).
 | `exchange.ccxt_config` | None | Additional CCXT parameters passed to the regular ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
@@ -76,8 +85,8 @@ Mandatory parameters are marked as **Required**.
 | `pairlist.method` | StaticPairList | Use static or dynamic volume-based pairlist. [More information below](#dynamic-pairlists).
 | `pairlist.config` | None | Additional configuration for dynamic pairlists. [More information below](#dynamic-pairlists).
 | `telegram.enabled` | true | **Required.** Enable or not the usage of Telegram.
-| `telegram.token` | token | Your Telegram bot token. Only required if `telegram.enabled` is `true`.
-| `telegram.chat_id` | chat_id | Your personal Telegram account id. Only required if `telegram.enabled` is `true`.
+| `telegram.token` | token | Your Telegram bot token. Only required if `telegram.enabled` is `true`. ***Keep it in secrete, do not disclose publicly.***
+| `telegram.chat_id` | chat_id | Your personal Telegram account id. Only required if `telegram.enabled` is `true`. ***Keep it in secrete, do not disclose publicly.***
 | `webhook.enabled` | false | Enable usage of Webhook notifications
 | `webhook.url` | false | URL for the webhook. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details.
 | `webhook.webhookbuy` | false | Payload to send on buy. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details.
@@ -98,8 +107,6 @@ Mandatory parameters are marked as **Required**.
 The following parameters can be set in either configuration file or strategy.
 Values set in the configuration file always overwrite values set in the strategy.
 
-* `stake_currency`
-* `stake_amount`
 * `ticker_interval`
 * `minimal_roi`
 * `stoploss`
@@ -191,19 +198,20 @@ end up paying more then would probably have been necessary.
 
 ### Understand order_types
 
-The `order_types` configuration parameter contains a dict mapping order-types to
-market-types as well as stoploss on or off exchange type and stoploss on exchange
-update interval in seconds. This allows to buy using limit orders, sell using
-limit-orders, and create stoploss orders using market. It also allows to set the
-stoploss "on exchange" which means stoploss order would be placed immediately once
-the buy order is fulfilled. In case stoploss on exchange and `trailing_stop` are
-both set, then the bot will use `stoploss_on_exchange_interval` to check it periodically
-and update it if necessary (e.x. in case of trailing stoploss).
-This can be set in the configuration file or in the strategy.
-Values set in the configuration file  overwrites values set in the strategy.
+The `order_types` configuration parameter maps actions (`buy`, `sell`, `stoploss`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
 
-If this is configured, all 4 values (`buy`, `sell`, `stoploss` and
-`stoploss_on_exchange`) need to be present, otherwise the bot will warn about it and fail to start.
+This allows to buy using limit orders, sell using
+limit-orders, and create stoplosses using using market orders. It also allows to set the
+stoploss "on exchange" which means stoploss order would be placed immediately once
+the buy order is fulfilled.
+If `stoploss_on_exchange` and `trailing_stop` are both set, then the bot will use `stoploss_on_exchange_interval` to check and update the stoploss on exchange periodically.
+`order_types` can be set in the configuration file or in the strategy.
+`order_types` set in the configuration file overwrites values set in the strategy as a whole, so you need to configure the whole `order_types` dictionary in one place.
+
+If this is configured, the following 4 values (`buy`, `sell`, `stoploss` and
+`stoploss_on_exchange`) need to be present, otherwise the bot will fail to start.
+
+`emergencysell` is an optional value, which defaults to `market` and is used when creating stoploss on exchange orders fails.
 The below is the default which is used if this is not configured in either strategy or configuration file.
 
 Syntax for Strategy:
@@ -212,6 +220,7 @@ Syntax for Strategy:
 order_types = {
     "buy": "limit",
     "sell": "limit",
+    "emergencysell": "market",
     "stoploss": "market",
     "stoploss_on_exchange": False,
     "stoploss_on_exchange_interval": 60
@@ -224,6 +233,7 @@ Configuration:
 "order_types": {
     "buy": "limit",
     "sell": "limit",
+    "emergencysell": "market",
     "stoploss": "market",
     "stoploss_on_exchange": false,
     "stoploss_on_exchange_interval": 60
@@ -238,11 +248,13 @@ Configuration:
 !!! Note
     Stoploss on exchange interval is not mandatory. Do not change its value if you are
     unsure of what you are doing. For more information about how stoploss works please
-    read [the stoploss documentation](stoploss.md).
+    refer to [the stoploss documentation](stoploss.md).
 
 !!! Note
-    In case of stoploss on exchange if the stoploss is cancelled manually then
-    the bot would recreate one.
+    If `stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new order.
+
+!!! Warning stoploss_on_exchange failures
+    If stoploss on exchange creation fails for some reason, then an "emergency sell" is initiated. By default, this will sell the asset using a market order. The order-type for the emergency-sell can be changed by setting the `emergencysell` value in the `order_types` dictionary - however this is not advised.
 
 ### Understand order_time_in_force
 

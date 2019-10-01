@@ -6,6 +6,7 @@ import copy
 import logging
 import traceback
 from datetime import datetime
+from math import isclose
 from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
@@ -21,7 +22,7 @@ from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver, PairListResolver
-from freqtrade.state import State, RunMode
+from freqtrade.state import State
 from freqtrade.strategy.interface import SellType, IStrategy
 from freqtrade.wallets import Wallets
 
@@ -29,7 +30,7 @@ from freqtrade.wallets import Wallets
 logger = logging.getLogger(__name__)
 
 
-class FreqtradeBot(object):
+class FreqtradeBot:
     """
     Freqtrade is the main class of the bot.
     This is from here the bot start its logic.
@@ -79,12 +80,6 @@ class FreqtradeBot(object):
         persistence.init(self.config.get('db_url', None),
                          clean_open_orders=self.config.get('dry_run', False))
 
-        # Stoploss on exchange does not make sense, therefore we need to disable that.
-        if (self.dataprovider.runmode == RunMode.DRY_RUN and
-           self.strategy.order_types.get('stoploss_on_exchange', False)):
-            logger.info("Disabling stoploss_on_exchange during dry-run.")
-            self.strategy.order_types['stoploss_on_exchange'] = False
-            config['order_types']['stoploss_on_exchange'] = False
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')
         self.state = State[initial_state.upper()] if initial_state else State.STOPPED
@@ -216,7 +211,7 @@ class FreqtradeBot(object):
         if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
             open_trades = len(Trade.get_open_trades())
             if open_trades >= self.config['max_open_trades']:
-                logger.warning('Can\'t open a new trade: max number of trades is reached')
+                logger.warning("Can't open a new trade: max number of trades is reached")
                 return None
             return available_amount / (self.config['max_open_trades'] - open_trades)
 
@@ -351,8 +346,8 @@ class FreqtradeBot(object):
         min_stake_amount = self._get_min_pair_stake_amount(pair_s, buy_limit_requested)
         if min_stake_amount is not None and min_stake_amount > stake_amount:
             logger.warning(
-                f'Can\'t open a new trade for {pair_s}: stake amount '
-                f'is too small ({stake_amount} < {min_stake_amount})'
+                f"Can't open a new trade for {pair_s}: stake amount "
+                f"is too small ({stake_amount} < {min_stake_amount})"
             )
             return False
 
@@ -516,7 +511,7 @@ class FreqtradeBot(object):
                         trade.pair.startswith(exectrade['fee']['currency'])):
                     fee_abs += exectrade['fee']['cost']
 
-        if amount != order_amount:
+        if not isclose(amount, order_amount, abs_tol=constants.MATH_CLOSE_PREC):
             logger.warning(f"Amount {amount} does not match amount {trade.amount}")
             raise OperationalException("Half bought? Amounts don't match")
         real_amount = amount - fee_abs
@@ -541,7 +536,7 @@ class FreqtradeBot(object):
             # Try update amount (binance-fix)
             try:
                 new_amount = self.get_real_amount(trade, order)
-                if order['amount'] != new_amount:
+                if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
                     order['amount'] = new_amount
                     # Fee was applied, so set to 0
                     trade.fee_open = 0
@@ -617,6 +612,33 @@ class FreqtradeBot(object):
         logger.debug('Found no sell signal for %s.', trade)
         return False
 
+    def create_stoploss_order(self, trade: Trade, stop_price: float, rate: float) -> bool:
+        """
+        Abstracts creating stoploss orders from the logic.
+        Handles errors and updates the trade database object.
+        Force-sells the pair (using EmergencySell reason) in case of Problems creating the order.
+        :return: True if the order succeeded, and False in case of problems.
+        """
+        # Limit price threshold: As limit price should always be below price
+        LIMIT_PRICE_PCT = 0.99
+
+        try:
+            stoploss_order = self.exchange.stoploss_limit(pair=trade.pair, amount=trade.amount,
+                                                          stop_price=stop_price,
+                                                          rate=rate * LIMIT_PRICE_PCT)
+            trade.stoploss_order_id = str(stoploss_order['id'])
+            return True
+        except InvalidOrderException as e:
+            trade.stoploss_order_id = None
+            logger.error(f'Unable to place a stoploss order on exchange. {e}')
+            logger.warning('Selling the trade forcefully')
+            self.execute_sell(trade, trade.stop_loss, sell_reason=SellType.EMERGENCY_SELL)
+
+        except DependencyException:
+            trade.stoploss_order_id = None
+            logger.exception('Unable to place a stoploss order on exchange.')
+        return False
+
     def handle_stoploss_on_exchange(self, trade: Trade) -> bool:
         """
         Check if trade is fulfilled in which case the stoploss
@@ -635,49 +657,25 @@ class FreqtradeBot(object):
         except InvalidOrderException as exception:
             logger.warning('Unable to fetch stoploss order: %s', exception)
 
-        # If trade open order id does not exist: buy order is fulfilled
-        buy_order_fulfilled = not trade.open_order_id
-
-        # Limit price threshold: As limit price should always be below price
-        limit_price_pct = 0.99
-
         # If buy order is fulfilled but there is no stoploss, we add a stoploss on exchange
-        if (buy_order_fulfilled and not stoploss_order):
-            if self.edge:
-                stoploss = self.edge.stoploss(pair=trade.pair)
-            else:
-                stoploss = self.strategy.stoploss
+        if (not trade.open_order_id and not stoploss_order):
+
+            stoploss = self.edge.stoploss(pair=trade.pair) if self.edge else self.strategy.stoploss
 
             stop_price = trade.open_rate * (1 + stoploss)
 
-            # limit price should be less than stop price.
-            limit_price = stop_price * limit_price_pct
-
-            try:
-                stoploss_order_id = self.exchange.stoploss_limit(
-                    pair=trade.pair, amount=trade.amount, stop_price=stop_price, rate=limit_price
-                )['id']
-                trade.stoploss_order_id = str(stoploss_order_id)
+            if self.create_stoploss_order(trade=trade, stop_price=stop_price, rate=stop_price):
                 trade.stoploss_last_update = datetime.now()
                 return False
 
-            except DependencyException as exception:
-                trade.stoploss_order_id = None
-                logger.warning('Unable to place a stoploss order on exchange: %s', exception)
-
         # If stoploss order is canceled for some reason we add it
         if stoploss_order and stoploss_order['status'] == 'canceled':
-            try:
-                stoploss_order_id = self.exchange.stoploss_limit(
-                    pair=trade.pair, amount=trade.amount,
-                    stop_price=trade.stop_loss, rate=trade.stop_loss * limit_price_pct
-                )['id']
-                trade.stoploss_order_id = str(stoploss_order_id)
+            if self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss,
+                                          rate=trade.stop_loss):
                 return False
-            except DependencyException as exception:
+            else:
                 trade.stoploss_order_id = None
-                logger.warning('Stoploss order was cancelled, '
-                               'but unable to recreate one: %s', exception)
+                logger.warning('Stoploss order was cancelled, but unable to recreate one.')
 
         # We check if stoploss order is fulfilled
         if stoploss_order and stoploss_order['status'] == 'closed':
@@ -686,7 +684,7 @@ class FreqtradeBot(object):
             # Lock pair for one candle to prevent immediate rebuys
             self.strategy.lock_pair(trade.pair,
                                     timeframe_to_next_date(self.config['ticker_interval']))
-            self._notify_sell(trade)
+            self._notify_sell(trade, "stoploss")
             return True
 
         # Finally we check if stoploss on exchange should be moved up because of trailing.
@@ -720,17 +718,13 @@ class FreqtradeBot(object):
                     logger.exception(f"Could not cancel stoploss order {order['id']} "
                                      f"for pair {trade.pair}")
 
-                try:
-                    # creating the new one
-                    stoploss_order_id = self.exchange.stoploss_limit(
-                        pair=trade.pair, amount=trade.amount,
-                        stop_price=trade.stop_loss, rate=trade.stop_loss * 0.99
-                    )['id']
-                    trade.stoploss_order_id = str(stoploss_order_id)
-                except DependencyException:
-                    trade.stoploss_order_id = None
-                    logger.exception(f"Could not create trailing stoploss order "
-                                     f"for pair {trade.pair}.")
+                # Create new stoploss order
+                if self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss,
+                                              rate=trade.stop_loss):
+                    return False
+                else:
+                    logger.warning(f"Could not create trailing stoploss order "
+                                   f"for pair {trade.pair}.")
 
     def _check_and_execute_sell(self, trade: Trade, sell_rate: float,
                                 buy: bool, sell: bool) -> bool:
@@ -883,9 +877,14 @@ class FreqtradeBot(object):
             except InvalidOrderException:
                 logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
 
+        ordertype = self.strategy.order_types[sell_type]
+        if sell_reason == SellType.EMERGENCY_SELL:
+            # Emergencysells (default to market!)
+            ordertype = self.strategy.order_types.get("emergencysell", "market")
+
         # Execute sell and update trade record
         order = self.exchange.sell(pair=str(trade.pair),
-                                   ordertype=self.strategy.order_types[sell_type],
+                                   ordertype=ordertype,
                                    amount=trade.amount, rate=limit,
                                    time_in_force=self.strategy.order_time_in_force['sell']
                                    )
@@ -901,9 +900,9 @@ class FreqtradeBot(object):
         # Lock pair for one candle to prevent immediate rebuys
         self.strategy.lock_pair(trade.pair, timeframe_to_next_date(self.config['ticker_interval']))
 
-        self._notify_sell(trade)
+        self._notify_sell(trade, ordertype)
 
-    def _notify_sell(self, trade: Trade):
+    def _notify_sell(self, trade: Trade, order_type: str):
         """
         Sends rpc notification when a sell occured.
         """
@@ -920,7 +919,7 @@ class FreqtradeBot(object):
             'pair': trade.pair,
             'gain': gain,
             'limit': trade.close_rate_requested,
-            'order_type': self.strategy.order_types['sell'],
+            'order_type': order_type,
             'amount': trade.amount,
             'open_rate': trade.open_rate,
             'current_rate': current_rate,
