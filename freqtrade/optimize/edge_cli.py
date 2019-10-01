@@ -69,8 +69,8 @@ class EdgeCli:
                 ])
 
         # Ignore type as floatfmt does allow tuples but mypy does not know that
-        return tabulate(tabular_data, headers=headers,  # type: ignore
-                        floatfmt=floatfmt, tablefmt="pipe")
+        return tabulate(tabular_data, headers=headers,
+                        floatfmt=floatfmt, tablefmt="pipe")  # type: ignore
 
     def start(self) -> None:
         result = self.edge.calculate()
