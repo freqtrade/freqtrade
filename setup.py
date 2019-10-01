@@ -43,6 +43,7 @@ jupyter = [
     'jupyter',
     'nbstripout',
     'ipykernel',
+    'nbconvert',
     ]
 
 all_extra = api + plot + develop + jupyter + hyperopt

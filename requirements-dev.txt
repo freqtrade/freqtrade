@@ -13,3 +13,6 @@ pytest-asyncio==0.10.0
 pytest-cov==2.7.1
 pytest-mock==1.11.0
 pytest-random-order==1.0.4
+
+# Convert jupyter notebooks to markdown documents
+nbconvert==5.6.0
