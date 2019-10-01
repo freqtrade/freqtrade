@@ -28,11 +28,11 @@ jobs:
       name: pytest
     - script:
       - cp config.json.example config.json
-      - freqtrade backtesting --datadir tests/testdata
+      - freqtrade backtesting --datadir tests/testdata --strategy DefaultStrategy
       name: backtest
     - script:
       - cp config.json.example config.json
-      - freqtrade hyperopt --datadir tests/testdata -e 5
+      - freqtrade hyperopt --datadir tests/testdata -e 5 --strategy DefaultStrategy
       name: hyperopt
     - script: flake8
       name: flake8

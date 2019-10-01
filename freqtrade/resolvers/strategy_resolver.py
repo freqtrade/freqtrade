@@ -32,8 +32,11 @@ class StrategyResolver(IResolver):
         """
         config = config or {}
 
-        # Verify the strategy is in the configuration, otherwise fallback to the default strategy
-        strategy_name = config.get('strategy') or constants.DEFAULT_STRATEGY
+        if not config.get('strategy'):
+            raise OperationalException("No strategy set. Please use `--strategy` to specify "
+                                       "the strategy class to use.")
+
+        strategy_name = config['strategy']
         self.strategy: IStrategy = self._load_strategy(strategy_name,
                                                        config=config,
                                                        extra_dir=config.get('strategy_path'))

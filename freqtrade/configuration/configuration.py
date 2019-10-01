@@ -128,7 +128,7 @@ class Configuration:
         self._process_logging_options(config)
 
         # Set strategy if not specified in config and or if it's non default
-        if self.args.get("strategy") != constants.DEFAULT_STRATEGY or not config.get('strategy'):
+        if self.args.get("strategy") or not config.get('strategy'):
             config.update({'strategy': self.args.get("strategy")})
 
         self._args_to_config(config, argname='strategy_path',

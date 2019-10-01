@@ -212,7 +212,6 @@ def test_load_config(default_conf, mocker) -> None:
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
-    assert validated_conf.get('strategy') == 'DefaultStrategy'
     assert validated_conf.get('strategy_path') is None
     assert 'edge' not in validated_conf
 

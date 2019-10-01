@@ -9,7 +9,6 @@ PROCESS_THROTTLE_SECS = 5  # sec
 DEFAULT_TICKER_INTERVAL = 5  # min
 HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
-DEFAULT_STRATEGY = 'DefaultStrategy'
 DEFAULT_HYPEROPT = 'DefaultHyperOpts'
 DEFAULT_HYPEROPT_LOSS = 'DefaultHyperOptLoss'
 DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'

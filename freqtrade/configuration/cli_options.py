@@ -66,9 +66,8 @@ AVAILABLE_CLI_OPTIONS = {
     # Main options
     "strategy": Arg(
         '-s', '--strategy',
-        help='Specify strategy class name (default: `%(default)s`).',
+        help='Specify strategy class name which will be used by the bot.',
         metavar='NAME',
-        default='DefaultStrategy',
     ),
     "strategy_path": Arg(
         '--strategy-path',

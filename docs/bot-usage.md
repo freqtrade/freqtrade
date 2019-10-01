@@ -60,8 +60,8 @@ Common arguments:
 
 Strategy arguments:
   -s NAME, --strategy NAME
-                        Specify strategy class name (default:
-                        `DefaultStrategy`).
+                        Specify strategy class name which will be used by the
+                        bot.
   --strategy-path PATH  Specify additional strategy lookup path.
 
 ```
