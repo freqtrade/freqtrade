@@ -446,24 +446,25 @@ class FreqtradeBot:
         """
         Tries to execute sell trades in a safe way
         """
+        result = False
         for trade in trades:
             try:
                 self.update_trade_state(trade)
 
-                if trade.is_open:
-                    result = False
-                    if self.strategy.order_types.get('stoploss_on_exchange'):
-                        result = self.handle_stoploss_on_exchange(trade)
-                    elif trade.open_order_id is None:
-                        # Check if we can sell our current pair
-                        result = self.handle_trade(trade)
-
-                    # Updating wallets if any trade occured
-                    if result:
-                        self.wallets.update()
+                if (self.strategy.order_types.get('stoploss_on_exchange') and
+                        self.handle_stoploss_on_exchange(trade)):
+                    result = True
+                    continue
+                # Check if we can sell our current pair
+                if trade.open_order_id is None and self.handle_trade(trade):
+                    result = True
 
             except DependencyException as exception:
                 logger.warning('Unable to sell trade: %s', exception)
+
+        # Updating wallets if any trade occured
+        if result:
+            self.wallets.update()
 
     def get_real_amount(self, trade: Trade, order: Dict) -> float:
         """
@@ -569,7 +570,7 @@ class FreqtradeBot:
         :return: True if trade has been sold, False otherwise
         """
         if not trade.is_open:
-            raise ValueError(f'Attempt to handle closed trade: {trade}')
+            raise DependencyException(f'Attempt to handle closed trade: {trade}')
 
         logger.debug('Handling %s ...', trade)
 
