@@ -85,6 +85,14 @@ class DataProvider:
             logger.warning(f"No data found for ({pair}, {ticker_interval}).")
         return data
 
+    def market(self, pair: str):
+        """
+        Return market data for the pair
+        :param pair: Pair to get the data for
+        :return: Market data dict from ccxt or None if market info is not available for the pair
+        """
+        return self._exchange.markets.get(pair)
+
     def ticker(self, pair: str):
         """
         Return last ticker data
