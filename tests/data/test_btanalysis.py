@@ -108,7 +108,7 @@ def test_load_trades(default_conf, mocker):
 
 
 def test_combine_tickers_with_mean(testdatadir):
-    pairs = ["ETH/BTC", "XLM/BTC"]
+    pairs = ["ETH/BTC", "ADA/BTC"]
     tickers = load_data(datadir=testdatadir,
                         pairs=pairs,
                         ticker_interval='5m'
@@ -116,7 +116,7 @@ def test_combine_tickers_with_mean(testdatadir):
     df = combine_tickers_with_mean(tickers)
     assert isinstance(df, DataFrame)
     assert "ETH/BTC" in df.columns
-    assert "XLM/BTC" in df.columns
+    assert "ADA/BTC" in df.columns
     assert "mean" in df.columns
 
 
