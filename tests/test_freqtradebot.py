@@ -1915,7 +1915,7 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order,
     trade.update(limit_sell_order)
     assert trade.is_open is False
 
-    with pytest.raises(ValueError, match=r'.*closed trade.*'):
+    with pytest.raises(DependencyException, match=r'.*closed trade.*'):
         freqtrade.handle_trade(trade)
 
 
