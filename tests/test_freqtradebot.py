@@ -655,7 +655,8 @@ def test_create_trades_no_pairs_let(default_conf, ticker, limit_buy_order, fee,
 
     assert freqtrade.create_trades()
     assert not freqtrade.create_trades()
-    assert log_has("No currency pair in whitelist, but checking to sell open trades.", caplog)
+    assert log_has("No currency pair in active pair whitelist, "
+                   "but checking to sell open trades.", caplog)
 
 
 def test_create_trades_no_pairs_in_whitelist(default_conf, ticker, limit_buy_order, fee,
@@ -674,7 +675,7 @@ def test_create_trades_no_pairs_in_whitelist(default_conf, ticker, limit_buy_ord
     patch_get_signal(freqtrade)
 
     assert not freqtrade.create_trades()
-    assert log_has("Whitelist is empty.", caplog)
+    assert log_has("Active pair whitelist is empty.", caplog)
 
 
 def test_create_trades_no_signal(default_conf, fee, mocker) -> None:
@@ -1057,8 +1058,9 @@ def test_add_stoploss_on_exchange(mocker, default_conf, limit_buy_order) -> None
     trade.open_order_id = None
     trade.stoploss_order_id = None
     trade.is_open = True
+    trades = [trade]
 
-    freqtrade.process_maybe_execute_sell(trade)
+    freqtrade.process_maybe_execute_sells(trades)
     assert trade.stoploss_order_id == '13434334'
     assert stoploss_limit.call_count == 1
     assert trade.is_open is True
@@ -1518,26 +1520,26 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
                                                 stop_price=0.00002344 * 0.99)
 
 
-def test_process_maybe_execute_buy(mocker, default_conf, caplog) -> None:
+def test_process_maybe_execute_buys(mocker, default_conf, caplog) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.create_trades', MagicMock(return_value=False))
-    freqtrade.process_maybe_execute_buy()
+    freqtrade.process_maybe_execute_buys()
     assert log_has('Found no buy signals for whitelisted currencies. Trying again...', caplog)
 
 
-def test_process_maybe_execute_buy_exception(mocker, default_conf, caplog) -> None:
+def test_process_maybe_execute_buys_exception(mocker, default_conf, caplog) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     mocker.patch(
         'freqtrade.freqtradebot.FreqtradeBot.create_trades',
         MagicMock(side_effect=DependencyException)
     )
-    freqtrade.process_maybe_execute_buy()
+    freqtrade.process_maybe_execute_buys()
     assert log_has('Unable to create trade: ', caplog)
 
 
-def test_process_maybe_execute_sell(mocker, default_conf, limit_buy_order, caplog) -> None:
+def test_process_maybe_execute_sells(mocker, default_conf, limit_buy_order, caplog) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_trade', MagicMock(return_value=True))
@@ -1549,7 +1551,8 @@ def test_process_maybe_execute_sell(mocker, default_conf, limit_buy_order, caplo
     trade = MagicMock()
     trade.open_order_id = '123'
     trade.open_fee = 0.001
-    assert not freqtrade.process_maybe_execute_sell(trade)
+    trades = [trade]
+    assert not freqtrade.process_maybe_execute_sells(trades)
     # Test amount not modified by fee-logic
     assert not log_has(
         'Applying fee to amount for Trade {} from 90.99181073 to 90.81'.format(trade), caplog
@@ -1557,24 +1560,25 @@ def test_process_maybe_execute_sell(mocker, default_conf, limit_buy_order, caplo
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', return_value=90.81)
     # test amount modified by fee-logic
-    assert not freqtrade.process_maybe_execute_sell(trade)
+    assert not freqtrade.process_maybe_execute_sells(trades)
 
 
-def test_process_maybe_execute_sell_exception(mocker, default_conf,
-                                              limit_buy_order, caplog) -> None:
+def test_process_maybe_execute_sells_exception(mocker, default_conf,
+                                               limit_buy_order, caplog) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.get_order', return_value=limit_buy_order)
 
     trade = MagicMock()
     trade.open_order_id = '123'
     trade.open_fee = 0.001
+    trades = [trade]
 
     # Test raise of DependencyException exception
     mocker.patch(
         'freqtrade.freqtradebot.FreqtradeBot.update_trade_state',
         side_effect=DependencyException()
     )
-    freqtrade.process_maybe_execute_sell(trade)
+    freqtrade.process_maybe_execute_sells(trades)
     assert log_has('Unable to sell trade: ', caplog)
 
 
@@ -2448,8 +2452,9 @@ def test_execute_sell_with_stoploss_on_exchange(default_conf,
 
     trade = Trade.query.first()
     assert trade
+    trades = [trade]
 
-    freqtrade.process_maybe_execute_sell(trade)
+    freqtrade.process_maybe_execute_sells(trades)
 
     # Increase the price and sell it
     mocker.patch.multiple(
@@ -2498,7 +2503,8 @@ def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf,
     # Create some test data
     freqtrade.create_trades()
     trade = Trade.query.first()
-    freqtrade.process_maybe_execute_sell(trade)
+    trades = [trade]
+    freqtrade.process_maybe_execute_sells(trades)
     assert trade
     assert trade.stoploss_order_id == '123'
     assert trade.open_order_id is None
@@ -2526,7 +2532,7 @@ def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf,
     })
     mocker.patch('freqtrade.exchange.Exchange.get_order', stoploss_limit_executed)
 
-    freqtrade.process_maybe_execute_sell(trade)
+    freqtrade.process_maybe_execute_sells(trades)
     assert trade.stoploss_order_id is None
     assert trade.is_open is False
     assert trade.sell_reason == SellType.STOPLOSS_ON_EXCHANGE.value
