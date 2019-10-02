@@ -53,11 +53,11 @@ def test_init_plotscript(default_conf, mocker, testdatadir):
     assert "trades" in ret
     assert "pairs" in ret
 
-    default_conf['pairs'] = ["POWR/BTC", "XLM/BTC"]
+    default_conf['pairs'] = ["POWR/BTC", "ADA/BTC"]
     ret = init_plotscript(default_conf)
     assert "tickers" in ret
     assert "POWR/BTC" in ret["tickers"]
-    assert "XLM/BTC" in ret["tickers"]
+    assert "ADA/BTC" in ret["tickers"]
 
 
 def test_add_indicators(default_conf, testdatadir, caplog):
@@ -247,7 +247,7 @@ def test_generate_profit_graph(testdatadir):
     filename = testdatadir / "backtest-result_test.json"
     trades = load_backtest_data(filename)
     timerange = TimeRange.parse_timerange("20180110-20180112")
-    pairs = ["POWR/BTC", "XLM/BTC"]
+    pairs = ["POWR/BTC", "ADA/BTC"]
 
     tickers = history.load_data(datadir=testdatadir,
                                 pairs=pairs,
