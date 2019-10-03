@@ -7,7 +7,8 @@ import pytest
 from freqtrade import OperationalException
 from freqtrade.state import RunMode
 from freqtrade.utils import (setup_utils_configuration, start_create_userdir,
-                             start_download_data, start_list_exchanges)
+                             start_download_data, start_list_exchanges,
+                             start_list_timeframes)
 from tests.conftest import get_args, log_has, patch_exchange
 
 
@@ -46,6 +47,77 @@ def test_list_exchanges(capsys):
     assert not re.match(r"Exchanges supported by ccxt and available.*", captured.out)
     assert re.search(r"^binance$", captured.out, re.MULTILINE)
     assert re.search(r"^bittrex$", captured.out, re.MULTILINE)
+
+
+def test_list_timeframes(capsys):
+
+    args = [
+        "list-timeframes",
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    with pytest.raises(OperationalException,
+                       match=r"This command requires a configured exchange.*"):
+        start_list_timeframes(pargs)
+
+    # Test with --config config.json.example
+    args = [
+        '--config', 'config.json.example',
+        "list-timeframes",
+    ]
+    start_list_timeframes(get_args(args))
+    captured = capsys.readouterr()
+    assert re.match("Timeframes available for the exchange `bittrex`: "
+                    "1m, 5m, 30m, 1h, 1d",
+                    captured.out)
+
+    # Test with --exchange bittrex
+    args = [
+        "list-timeframes",
+        "--exchange", "bittrex",
+    ]
+    start_list_timeframes(get_args(args))
+    captured = capsys.readouterr()
+    assert re.match("Timeframes available for the exchange `bittrex`: "
+                    "1m, 5m, 30m, 1h, 1d",
+                    captured.out)
+
+    # Test with --exchange binance
+    args = [
+        "list-timeframes",
+        "--exchange", "binance",
+    ]
+    start_list_timeframes(get_args(args))
+    captured = capsys.readouterr()
+    assert re.match("Timeframes available for the exchange `binance`: "
+                    "1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M",
+                    captured.out)
+
+    # Test with --one-column
+    args = [
+        '--config', 'config.json.example',
+        "list-timeframes",
+        "--one-column",
+    ]
+    start_list_timeframes(get_args(args))
+    captured = capsys.readouterr()
+    assert re.search(r"^1m$", captured.out, re.MULTILINE)
+    assert re.search(r"^5m$", captured.out, re.MULTILINE)
+    assert re.search(r"^1h$", captured.out, re.MULTILINE)
+    assert re.search(r"^1d$", captured.out, re.MULTILINE)
+
+    # Test with --exchange binance --one-column
+    args = [
+        "list-timeframes",
+        "--exchange", "binance",
+        "--one-column",
+    ]
+    start_list_timeframes(get_args(args))
+    captured = capsys.readouterr()
+    assert re.search(r"^1m$", captured.out, re.MULTILINE)
+    assert re.search(r"^5m$", captured.out, re.MULTILINE)
+    assert re.search(r"^1h$", captured.out, re.MULTILINE)
+    assert re.search(r"^1d$", captured.out, re.MULTILINE)
 
 
 def test_create_datadir_failed(caplog):
