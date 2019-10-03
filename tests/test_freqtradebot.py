@@ -2537,6 +2537,50 @@ def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf,
     assert rpc_mock.call_count == 2
 
 
+def test_may_execute_sell_stoploss_on_exchange_multi(default_conf,
+                                                     ticker, fee,
+                                                     limit_buy_order,
+                                                     markets, mocker) -> None:
+    default_conf['max_open_trades'] = 3
+    default_conf['exchange']['name'] = 'binance'
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=ticker,
+        get_fee=fee,
+        markets=PropertyMock(return_value=markets),
+        symbol_amount_prec=lambda s, x, y: y,
+        symbol_price_prec=lambda s, x, y: y,
+    )
+    # Sell first trade
+    stoploss_mock = MagicMock(side_effect=[True, False, False])
+
+    # Sell 3rd trade (not called for the first trade)
+    handle_trade_mock = MagicMock(side_effect=[False, True])
+    wallets_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.freqtradebot.FreqtradeBot',
+        handle_stoploss_on_exchange=stoploss_mock,
+        handle_trade=handle_trade_mock,
+    )
+    mocker.patch("freqtrade.wallets.Wallets.update", wallets_mock)
+
+    freqtrade = FreqtradeBot(default_conf)
+    freqtrade.strategy.order_types['stoploss_on_exchange'] = True
+    patch_get_signal(freqtrade)
+
+    # Create some test data
+    freqtrade.create_trades()
+    wallets_mock.reset_mock()
+
+    trades = Trade.query.all()
+
+    freqtrade.process_maybe_execute_sells(trades)
+    assert stoploss_mock.call_count == 3
+    assert handle_trade_mock.call_count == 2
+    assert wallets_mock.call_count == 1
+
 def test_execute_sell_market_order(default_conf, ticker, fee,
                                    ticker_sell_up, markets, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
