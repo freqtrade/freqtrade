@@ -433,7 +433,7 @@ class FreqtradeBot:
 
     def process_maybe_execute_buys(self) -> None:
         """
-        Tries to execute buy trades in a safe way
+        Tries to execute buy orders for trades in a safe way
         """
         try:
             # Create entity and execute trade
@@ -444,7 +444,7 @@ class FreqtradeBot:
 
     def process_maybe_execute_sells(self, trades: List[Any]) -> None:
         """
-        Tries to execute sell trades in a safe way
+        Tries to execute sell orders for trades in a safe way
         """
         result = False
         for trade in trades:
