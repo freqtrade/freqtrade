@@ -2422,13 +2422,6 @@ def test_execute_sell_with_stoploss_on_exchange(default_conf,
     default_conf['exchange']['name'] = 'binance'
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        get_ticker=ticker,
-        get_fee=fee,
-        markets=PropertyMock(return_value=markets)
-    )
-
     stoploss_limit = MagicMock(return_value={
         'id': 123,
         'info': {
@@ -2437,11 +2430,16 @@ def test_execute_sell_with_stoploss_on_exchange(default_conf,
     })
 
     cancel_order = MagicMock(return_value=True)
-
-    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
-    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
-    mocker.patch('freqtrade.exchange.Exchange.stoploss_limit', stoploss_limit)
-    mocker.patch('freqtrade.exchange.Exchange.cancel_order', cancel_order)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=ticker,
+        get_fee=fee,
+        markets=PropertyMock(return_value=markets),
+        symbol_amount_prec=lambda s, x, y: y,
+        symbol_price_prec=lambda s, x, y: y,
+        stoploss_limit=stoploss_limit,
+        cancel_order=cancel_order,
+    )
 
     freqtrade = FreqtradeBot(default_conf)
     freqtrade.strategy.order_types['stoploss_on_exchange'] = True
@@ -2482,7 +2480,9 @@ def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf,
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         get_fee=fee,
-        markets=PropertyMock(return_value=markets)
+        markets=PropertyMock(return_value=markets),
+        symbol_amount_prec=lambda s, x, y: y,
+        symbol_price_prec=lambda s, x, y: y,
     )
 
     stoploss_limit = MagicMock(return_value={
@@ -2492,8 +2492,6 @@ def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf,
         }
     })
 
-    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
-    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
     mocker.patch('freqtrade.exchange.Binance.stoploss_limit', stoploss_limit)
 
     freqtrade = FreqtradeBot(default_conf)
