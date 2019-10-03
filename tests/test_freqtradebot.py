@@ -2545,6 +2545,39 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf,
     default_conf['exchange']['name'] = 'binance'
     patch_RPCManager(mocker)
     patch_exchange(mocker)
+
+    stoploss_limit = {
+        'id': 123,
+        'info': {
+            'foo': 'bar'
+        }
+    }
+    stoploss_order_open = {
+        "id": "123",
+        "timestamp": 1542707426845,
+        "datetime": "2018-11-20T09:50:26.845Z",
+        "lastTradeTimestamp": None,
+        "symbol": "BTC/USDT",
+        "type": "stop_loss_limit",
+        "side": "sell",
+        "price": 1.08801,
+        "amount": 90.99181074,
+        "cost": 0.0,
+        "average": 0.0,
+        "filled": 0.0,
+        "remaining": 0.0,
+        "status": "open",
+        "fee": None,
+        "trades": None
+    }
+    stoploss_order_closed = stoploss_order_open.copy()
+    stoploss_order_closed['status'] = 'closed'
+    # Sell first trade based on stoploss, keep 2nd and 3rd trade open
+    stoploss_order_mock = MagicMock(
+        side_effect=[stoploss_order_closed, stoploss_order_open, stoploss_order_open])
+    create_sl_mock = MagicMock(return_value=True)
+
+    mocker.patch('freqtrade.exchange.Binance.stoploss_limit', stoploss_limit)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
@@ -2552,17 +2585,17 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf,
         markets=PropertyMock(return_value=markets),
         symbol_amount_prec=lambda s, x, y: y,
         symbol_price_prec=lambda s, x, y: y,
+        get_order=stoploss_order_mock,
     )
-    # Sell first trade
-    stoploss_mock = MagicMock(side_effect=[True, False, False])
-
     # Sell 3rd trade (not called for the first trade)
     handle_trade_mock = MagicMock(side_effect=[False, True])
     wallets_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.freqtradebot.FreqtradeBot',
-        handle_stoploss_on_exchange=stoploss_mock,
         handle_trade=handle_trade_mock,
+        create_stoploss_order=create_sl_mock,
+        update_trade_state=MagicMock(),
+        _notify_sell=MagicMock(),
     )
     mocker.patch("freqtrade.wallets.Wallets.update", wallets_mock)
 
@@ -2575,11 +2608,22 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf,
     wallets_mock.reset_mock()
 
     trades = Trade.query.all()
+    # Make sure stoploss-order is open and trade is bought (since we mock update_trade_state)
+    for trade in trades:
+        trade.stoploss_order_id = 3
+        trade.open_order_id = None
 
     freqtrade.process_maybe_execute_sells(trades)
-    assert stoploss_mock.call_count == 3
     assert handle_trade_mock.call_count == 2
     assert wallets_mock.call_count == 1
+
+    trade = trades[0]
+    assert trade.sell_reason == SellType.STOPLOSS_ON_EXCHANGE.value
+    assert not trade.is_open
+    trade = trades[1]
+    assert not trade.sell_reason
+    assert trade.is_open
+
 
 def test_execute_sell_market_order(default_conf, ticker, fee,
                                    ticker_sell_up, markets, mocker) -> None:
