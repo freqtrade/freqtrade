@@ -70,8 +70,7 @@ def test_load_not_found_strategy(default_conf):
     with pytest.raises(OperationalException,
                        match=r"Impossible to load Strategy 'NotFoundStrategy'. "
                              r"This class does not exist or contains Python code errors."):
-        strategy = StrategyResolver(default_conf)
-        strategy._load_strategy(strategy_name='NotFoundStrategy', config=default_conf)
+        StrategyResolver(default_conf)
 
 
 def test_load_strategy_noname(default_conf):
