@@ -22,7 +22,7 @@ tc0 = BTContainer(data=[
     [3, 5010, 5000, 4980, 5010, 6172, 0, 1],
     [4, 5010, 4987, 4977, 4995, 6172, 0, 0],
     [5, 4995, 4995, 4995, 4950, 6172, 0, 0]],
-    stop_loss=-0.01, roi=1, profit_perc=0.002, use_sell_signal=True,
+    stop_loss=-0.01, roi={"0": 1}, profit_perc=0.002, use_sell_signal=True,
     trades=[BTrade(sell_reason=SellType.SELL_SIGNAL, open_tick=1, close_tick=4)]
 )
 
@@ -36,7 +36,7 @@ tc1 = BTContainer(data=[
     [3, 4975, 5000, 4980, 4977, 6172, 0, 0],
     [4, 4977, 4987, 4977, 4995, 6172, 0, 0],
     [5, 4995, 4995, 4995, 4950, 6172, 0, 0]],
-    stop_loss=-0.01, roi=1, profit_perc=-0.01,
+    stop_loss=-0.01, roi={"0": 1}, profit_perc=-0.01,
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=2)]
 )
 
@@ -51,7 +51,7 @@ tc2 = BTContainer(data=[
     [3, 4975, 5000, 4800, 4962, 6172, 0, 0],  # exit with stoploss hit
     [4, 4962, 4987, 4937, 4950, 6172, 0, 0],
     [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
-    stop_loss=-0.03, roi=1, profit_perc=-0.03,
+    stop_loss=-0.03, roi={"0": 1}, profit_perc=-0.03,
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=3)]
 )
 
@@ -71,7 +71,7 @@ tc3 = BTContainer(data=[
     [4, 4975, 5000, 4950, 4962, 6172, 0, 0],  # enter trade 2 (signal on last candle)
     [5, 4962, 4987, 4000, 4000, 6172, 0, 0],  # exit with stoploss hit
     [6, 4950, 4975, 4975, 4950, 6172, 0, 0]],
-    stop_loss=-0.02, roi=1, profit_perc=-0.04,
+    stop_loss=-0.02, roi={"0": 1}, profit_perc=-0.04,
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=2),
             BTrade(sell_reason=SellType.STOP_LOSS, open_tick=4, close_tick=5)]
 )
@@ -88,7 +88,7 @@ tc4 = BTContainer(data=[
     [3, 4975, 5000, 4950, 4962, 6172, 0, 0],
     [4, 4962, 4987, 4937, 4950, 6172, 0, 0],
     [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
-    stop_loss=-0.02, roi=0.06, profit_perc=-0.02,
+    stop_loss=-0.02, roi={"0": 0.06}, profit_perc=-0.02,
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=2)]
 )
 
@@ -102,7 +102,7 @@ tc5 = BTContainer(data=[
     [3, 4975, 6000, 4975, 6000, 6172, 0, 0],  # ROI
     [4, 4962, 4987, 4972, 4950, 6172, 0, 0],
     [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
-    stop_loss=-0.01, roi=0.03, profit_perc=0.03,
+    stop_loss=-0.01, roi={"0": 0.03}, profit_perc=0.03,
     trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=3)]
 )
 
@@ -116,7 +116,7 @@ tc6 = BTContainer(data=[
     [3, 4975, 5000, 4950, 4962, 6172, 0, 0],
     [4, 4962, 4987, 4972, 4950, 6172, 0, 0],
     [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
-    stop_loss=-0.02, roi=0.05, profit_perc=-0.02,
+    stop_loss=-0.02, roi={"0": 0.05}, profit_perc=-0.02,
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=2)]
 )
 
@@ -130,7 +130,7 @@ tc7 = BTContainer(data=[
     [3, 4975, 5000, 4950, 4962, 6172, 0, 0],
     [4, 4962, 4987, 4972, 4950, 6172, 0, 0],
     [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
-    stop_loss=-0.02, roi=0.03, profit_perc=0.03,
+    stop_loss=-0.02, roi={"0": 0.03}, profit_perc=0.03,
     trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=2)]
 )
 
@@ -144,7 +144,7 @@ tc8 = BTContainer(data=[
     [2, 5000, 5250, 4750, 4850, 6172, 0, 0],
     [3, 4850, 5050, 4650, 4750, 6172, 0, 0],
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
-    stop_loss=-0.10, roi=0.10, profit_perc=-0.055, trailing_stop=True,
+    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=-0.055, trailing_stop=True,
     trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
 )
 
@@ -158,7 +158,7 @@ tc9 = BTContainer(data=[
     [2, 5000, 5050, 4950, 5000, 6172, 0, 0],
     [3, 5000, 5200, 4550, 4850, 6172, 0, 0],
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
-    stop_loss=-0.10, roi=0.10, profit_perc=-0.064, trailing_stop=True,
+    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=-0.064, trailing_stop=True,
     trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
 )
 
@@ -172,7 +172,7 @@ tc10 = BTContainer(data=[
     [2, 5100, 5251, 5100, 5100, 6172, 0, 0],
     [3, 4850, 5050, 4650, 4750, 6172, 0, 0],
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
-    stop_loss=-0.10, roi=0.10, profit_perc=-0.1, trailing_stop=True,
+    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=-0.1, trailing_stop=True,
     trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.10,
     trailing_stop_positive=0.03,
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=4)]
@@ -188,7 +188,7 @@ tc11 = BTContainer(data=[
     [2, 5100, 5251, 5100, 5100, 6172, 0, 0],
     [3, 4850, 5050, 4650, 4750, 6172, 0, 0],
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
-    stop_loss=-0.10, roi=0.10, profit_perc=0.019, trailing_stop=True,
+    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.019, trailing_stop=True,
     trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
     trailing_stop_positive=0.03,
     trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
@@ -204,7 +204,7 @@ tc12 = BTContainer(data=[
     [2, 5100, 5251, 4650, 5100, 6172, 0, 0],
     [3, 4850, 5050, 4650, 4750, 6172, 0, 0],
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
-    stop_loss=-0.10, roi=0.10, profit_perc=0.019, trailing_stop=True,
+    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.019, trailing_stop=True,
     trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
     trailing_stop_positive=0.03,
     trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=2)]
@@ -219,7 +219,7 @@ tc13 = BTContainer(data=[
     [2, 5100, 5251, 4850, 5100, 6172, 0, 0],
     [3, 4850, 5050, 4850, 4750, 6172, 0, 0],
     [4, 4750, 4950, 4850, 4750, 6172, 0, 0]],
-    stop_loss=-0.10, roi=0.01, profit_perc=0.01,
+    stop_loss=-0.10, roi={"0": 0.01}, profit_perc=0.01,
     trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=1)]
 )
 
@@ -232,7 +232,7 @@ tc14 = BTContainer(data=[
     [2, 5100, 5251, 4850, 5100, 6172, 0, 0],
     [3, 4850, 5050, 4850, 4750, 6172, 0, 0],
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
-    stop_loss=-0.05, roi=0.10, profit_perc=-0.05,
+    stop_loss=-0.05, roi={"0": 0.10}, profit_perc=-0.05,
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)]
 )
 
@@ -246,7 +246,7 @@ tc15 = BTContainer(data=[
     [2, 5100, 5251, 4650, 5100, 6172, 0, 0],
     [3, 4850, 5050, 4850, 4750, 6172, 0, 0],
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
-    stop_loss=-0.05, roi=0.01, profit_perc=-0.04,
+    stop_loss=-0.05, roi={"0": 0.01}, profit_perc=-0.04,
     trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=1),
             BTrade(sell_reason=SellType.STOP_LOSS, open_tick=2, close_tick=2)]
 )
@@ -277,7 +277,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     run functional tests
     """
     default_conf["stoploss"] = data.stop_loss
-    default_conf["minimal_roi"] = {"0": data.roi}
+    default_conf["minimal_roi"] = data.roi
     default_conf["ticker_interval"] = tests_ticker_interval
     default_conf["trailing_stop"] = data.trailing_stop
     default_conf["trailing_only_offset_is_reached"] = data.trailing_only_offset_is_reached
