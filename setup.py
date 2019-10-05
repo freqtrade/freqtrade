@@ -59,7 +59,7 @@ setup(name='freqtrade',
       license='GPLv3',
       packages=['freqtrade'],
       setup_requires=['pytest-runner', 'numpy'],
-      tests_require=['pytest', 'pytest-mock', 'pytest-cov'],
+      tests_require=['pytest', 'pytest-asyncio', 'pytest-cov', 'pytest-mock', ],
       install_requires=[
           # from requirements-common.txt
           'ccxt>=1.18.1080',
