@@ -403,7 +403,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
                    caplog)
 
-    assert 'position_stacking'in config
+    assert 'position_stacking' in config
     assert log_has('Parameter --enable-position-stacking detected ...', caplog)
 
     assert 'use_max_market_positions' in config

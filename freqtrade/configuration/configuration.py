@@ -328,7 +328,7 @@ class Configuration:
                         configuration instead of the content)
         """
         if (argname in self.args and self.args[argname] is not None
-            and self.args[argname] is not False):
+           and self.args[argname] is not False):
 
             config.update({argname: self.args[argname]})
             if logfun:
