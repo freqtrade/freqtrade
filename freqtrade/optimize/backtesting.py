@@ -267,6 +267,11 @@ class Backtesting:
                         # - (Expected abs profit + open_rate + open_fee) / (fee_close -1)
                         closerate = - (trade.open_rate * roi + trade.open_rate *
                                        (1 + trade.fee_open)) / (trade.fee_close - 1)
+
+                        # Use the maximum between closerate and low as we
+                        # cannot sell outside of a candle.
+                        # Applies when using {"xx": -1} as roi to force sells after xx minutes
+                        closerate = max(closerate, sell_row.low)
                     else:
                         # This should not be reached...
                         closerate = sell_row.open
