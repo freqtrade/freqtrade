@@ -168,22 +168,25 @@ Backtesting also uses the config specified via `-c/--config`.
 
 ```
 usage: freqtrade backtesting [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
-                           [--max_open_trades MAX_OPEN_TRADES]
-                           [--stake_amount STAKE_AMOUNT] [-r] [--eps] [--dmmp]
-                           [-l]
-                           [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
-                           [--export EXPORT] [--export-filename PATH]
+                             [--max_open_trades INT]
+                             [--stake_amount STAKE_AMOUNT] [--fee FLOAT]
+                             [--eps] [--dmmp]
+                             [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
+                             [--export EXPORT] [--export-filename PATH]
 
 optional arguments:
   -h, --help            show this help message and exit
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
-                        Specify ticker interval (1m, 5m, 30m, 1h, 1d).
+                        Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
+                        `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
-  --max_open_trades MAX_OPEN_TRADES
+  --max_open_trades INT
                         Specify max_open_trades to use.
   --stake_amount STAKE_AMOUNT
                         Specify stake_amount.
+  --fee FLOAT           Specify fee %. Should be in %, will be applied twice
+                        (on trade entry and exit).
   --eps, --enable-position-stacking
                         Allow buying the same pair multiple times (position
                         stacking).
@@ -193,19 +196,21 @@ optional arguments:
                         number).
   --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
                         Provide a space-separated list of strategies to
-                        backtest Please note that ticker-interval needs to be
+                        backtest. Please note that ticker-interval needs to be
                         set either in config or via command line. When using
-                        this together with --export trades, the strategy-name
-                        is injected into the filename (so backtest-data.json
-                        becomes backtest-data-DefaultStrategy.json
-  --export EXPORT       Export backtest results, argument are: trades. Example
-                        --export=trades
+                        this together with `--export trades`, the strategy-
+                        name is injected into the filename (so `backtest-
+                        data.json` becomes `backtest-data-
+                        DefaultStrategy.json`
+  --export EXPORT       Export backtest results, argument are: trades.
+                        Example: `--export=trades`
   --export-filename PATH
-                        Save backtest results to this filename requires
-                        --export to be set as well Example --export-
-                        filename=user_data/backtest_results/backtest_today.json
-                        (default: user_data/backtest_results/backtest-
-                        result.json)
+                        Save backtest results to the file with this filename
+                        (default: `user_data/backtest_results/backtest-
+                        result.json`). Requires `--export` to be set as well.
+                        Example: `--export-filename=user_data/backtest_results
+                        /backtest_today.json`
+
 ```
 
 ### Getting historic data for backtesting
@@ -222,13 +227,13 @@ to find optimal parameter values for your stategy.
 ```
 usage: freqtrade hyperopt [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
                           [--max_open_trades INT]
-                          [--stake_amount STAKE_AMOUNT] [-r]
+                          [--stake_amount STAKE_AMOUNT] [--fee FLOAT]
                           [--customhyperopt NAME] [--hyperopt-path PATH]
                           [--eps] [-e INT]
                           [-s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
-                          [--dmmp] [--print-all] [--no-color] [-j JOBS]
-                          [--random-state INT] [--min-trades INT] [--continue]
-                          [--hyperopt-loss NAME]
+                          [--dmmp] [--print-all] [--no-color] [--print-json]
+                          [-j JOBS] [--random-state INT] [--min-trades INT]
+                          [--continue] [--hyperopt-loss NAME]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -241,6 +246,8 @@ optional arguments:
                         Specify max_open_trades to use.
   --stake_amount STAKE_AMOUNT
                         Specify stake_amount.
+  --fee FLOAT           Specify fee %. Should be in %, will be applied twice
+                        (on trade entry and exit).
   --customhyperopt NAME
                         Specify hyperopt class name (default:
                         `DefaultHyperOpts`).
@@ -260,6 +267,7 @@ optional arguments:
   --print-all           Print all results, not only the best ones.
   --no-color            Disable colorization of hyperopt results. May be
                         useful if you are redirecting output to a file.
+  --print-json          Print best result detailization in JSON format.
   -j JOBS, --job-workers JOBS
                         The number of concurrently running jobs for
                         hyperoptimization (hyperopt worker processes). If -1
@@ -278,8 +286,8 @@ optional arguments:
                         generate completely different results, since the
                         target for optimization is different. Built-in
                         Hyperopt-loss-functions are: DefaultHyperOptLoss,
-                        OnlyProfitHyperOptLoss, SharpeHyperOptLoss.
-                        (default: `DefaultHyperOptLoss`).
+                        OnlyProfitHyperOptLoss, SharpeHyperOptLoss.(default:
+                        `DefaultHyperOptLoss`).
 ```
 
 ## Edge commands
@@ -288,25 +296,28 @@ To know your trade expectancy and winrate against historical data, you can use E
 
 ```
 usage: freqtrade edge [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
-                    [--max_open_trades MAX_OPEN_TRADES]
-                    [--stake_amount STAKE_AMOUNT] [-r]
-                    [--stoplosses STOPLOSS_RANGE]
+                      [--max_open_trades INT] [--stake_amount STAKE_AMOUNT]
+                      [--fee FLOAT] [--stoplosses STOPLOSS_RANGE]
 
 optional arguments:
   -h, --help            show this help message and exit
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
-                        Specify ticker interval (1m, 5m, 30m, 1h, 1d).
+                        Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
+                        `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
-  --max_open_trades MAX_OPEN_TRADES
+  --max_open_trades INT
                         Specify max_open_trades to use.
   --stake_amount STAKE_AMOUNT
                         Specify stake_amount.
+  --fee FLOAT           Specify fee %. Should be in %, will be applied twice
+                        (on trade entry and exit).
   --stoplosses STOPLOSS_RANGE
-                        Defines a range of stoploss against which edge will
-                        assess the strategy the format is "min,max,step"
-                        (without any space).example:
-                        --stoplosses=-0.01,-0.1,-0.001
+                        Defines a range of stoploss values against which edge
+                        will assess the strategy. The format is "min,max,step"
+                        (without any space). Example:
+                        `--stoplosses=-0.01,-0.1,-0.001`
+
 ```
 
 To understand edge and how to read the results, please read the [edge documentation](edge.md).

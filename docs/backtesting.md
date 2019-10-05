@@ -72,6 +72,17 @@ The exported trades can be used for [further analysis](#further-backtest-result-
 freqtrade backtesting --export trades --export-filename=backtest_samplestrategy.json
 ```
 
+#### Supplying custom fee value
+
+Sometimes your account has certain fee rabates, which are not visible to ccxt.
+To account for this in backtesting, you can use `--fee 0.001` to supply this value to backtesting.
+This fee must be a percentage, and will be applied twice (once for trade entry, and once for trade exit).
+
+```bash
+freqtrade backtesting --fee 0.001
+```
+
+
 #### Running backtest with smaller testset by using timerange
 
 Use the `--timerange` argument to change how much of the testset you want to use.
