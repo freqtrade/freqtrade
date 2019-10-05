@@ -65,6 +65,9 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `ask_strategy.use_order_book` | false | Allows selling of open traded pair using the rates in Order Book Asks.
 | `ask_strategy.order_book_min` | 0 | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
 | `ask_strategy.order_book_max` | 0 | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
+| `ask_strategy.use_sell_signal` | true | Use your strategy sell signals in addition to the `minimal_roi`. [Strategy Override](#parameters-in-the-strategy).
+| `ask_strategy.sell_profit_only` | false | Wait until you have made a positive profit before taking a sell decision. [Strategy Override](#parameters-in-the-strategy).
+| `ask_strategy.ignore_roi_if_buy_signal` | false | Do not sell if the buy-signal is still active. This setting takes preference over `minimal_roi` and `use_sell_signal`. [Strategy Override](#parameters-in-the-strategy).
 | `order_types` | None | Configure order-types depending on the action (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`). [More information below](#understand-order_types). [Strategy Override](#parameters-in-the-strategy).
 | `order_time_in_force` | None | Configure time in force for buy and sell orders. [More information below](#understand-order_time_in_force). [Strategy Override](#parameters-in-the-strategy).
 | `exchange.name` |  | **Required.** Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename).
@@ -78,9 +81,6 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `exchange.ccxt_async_config` | None | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
 | `exchange.markets_refresh_interval` | 60 | The interval in minutes in which markets are reloaded.
 | `edge` | false | Please refer to [edge configuration document](edge.md) for detailed explanation.
-| `experimental.use_sell_signal` | false | Use your sell strategy in addition of the `minimal_roi`. [Strategy Override](#parameters-in-the-strategy).
-| `experimental.sell_profit_only` | false | Waits until you have made a positive profit before taking a sell decision. [Strategy Override](#parameters-in-the-strategy).
-| `experimental.ignore_roi_if_buy_signal` | false | Does not sell if the buy-signal is still active. Takes preference over `minimal_roi` and `use_sell_signal`. [Strategy Override](#parameters-in-the-strategy).
 | `experimental.block_bad_exchanges` | true | Block exchanges known to not work with freqtrade. Leave on default unless you want to test if that exchange works now.
 | `pairlist.method` | StaticPairList | Use static or dynamic volume-based pairlist. [More information below](#dynamic-pairlists).
 | `pairlist.config` | None | Additional configuration for dynamic pairlists. [More information below](#dynamic-pairlists).
@@ -116,9 +116,9 @@ Values set in the configuration file always overwrite values set in the strategy
 * `process_only_new_candles`
 * `order_types`
 * `order_time_in_force`
-* `use_sell_signal` (experimental)
-* `sell_profit_only` (experimental)
-* `ignore_roi_if_buy_signal` (experimental)
+* `use_sell_signal` (ask_strategy)
+* `sell_profit_only` (ask_strategy)
+* `ignore_roi_if_buy_signal` (ask_strategy)
 
 ### Understand stake_amount
 

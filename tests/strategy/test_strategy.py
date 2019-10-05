@@ -256,23 +256,23 @@ def test_strategy_override_use_sell_signal(caplog, default_conf):
         'strategy': 'DefaultStrategy',
     })
     resolver = StrategyResolver(default_conf)
-    assert not resolver.strategy.use_sell_signal
+    assert resolver.strategy.use_sell_signal
     assert isinstance(resolver.strategy.use_sell_signal, bool)
     # must be inserted to configuration
-    assert 'use_sell_signal' in default_conf['experimental']
-    assert not default_conf['experimental']['use_sell_signal']
+    assert 'use_sell_signal' in default_conf['ask_strategy']
+    assert default_conf['ask_strategy']['use_sell_signal']
 
     default_conf.update({
         'strategy': 'DefaultStrategy',
-        'experimental': {
-            'use_sell_signal': True,
+        'ask_strategy': {
+            'use_sell_signal': False,
         },
     })
     resolver = StrategyResolver(default_conf)
 
-    assert resolver.strategy.use_sell_signal
+    assert not resolver.strategy.use_sell_signal
     assert isinstance(resolver.strategy.use_sell_signal, bool)
-    assert log_has("Override strategy 'use_sell_signal' with value in config file: True.", caplog)
+    assert log_has("Override strategy 'use_sell_signal' with value in config file: False.", caplog)
 
 
 def test_strategy_override_use_sell_profit_only(caplog, default_conf):
@@ -284,12 +284,12 @@ def test_strategy_override_use_sell_profit_only(caplog, default_conf):
     assert not resolver.strategy.sell_profit_only
     assert isinstance(resolver.strategy.sell_profit_only, bool)
     # must be inserted to configuration
-    assert 'sell_profit_only' in default_conf['experimental']
-    assert not default_conf['experimental']['sell_profit_only']
+    assert 'sell_profit_only' in default_conf['ask_strategy']
+    assert not default_conf['ask_strategy']['sell_profit_only']
 
     default_conf.update({
         'strategy': 'DefaultStrategy',
-        'experimental': {
+        'ask_strategy': {
             'sell_profit_only': True,
         },
     })

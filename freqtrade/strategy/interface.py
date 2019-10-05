@@ -309,9 +309,9 @@ class IStrategy(ABC):
         # Set current rate to high for backtesting sell
         current_rate = high or rate
         current_profit = trade.calc_profit_percent(current_rate)
-        experimental = self.config.get('experimental', {})
+        config_ask_strategy = self.config.get('ask_strategy', {})
 
-        if buy and experimental.get('ignore_roi_if_buy_signal', False):
+        if buy and config_ask_strategy.get('ignore_roi_if_buy_signal', False):
             # This one is noisy, commented out
             # logger.debug(f"{trade.pair} - Buy signal still active. sell_flag=False")
             return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
@@ -322,7 +322,7 @@ class IStrategy(ABC):
                          f"sell_type=SellType.ROI")
             return SellCheckTuple(sell_flag=True, sell_type=SellType.ROI)
 
-        if experimental.get('sell_profit_only', False):
+        if config_ask_strategy.get('sell_profit_only', False):
             # This one is noisy, commented out
             # logger.debug(f"{trade.pair} - Checking if trade is profitable...")
             if trade.calc_profit(rate=rate) <= 0:
@@ -330,7 +330,7 @@ class IStrategy(ABC):
                 # logger.debug(f"{trade.pair} - Trade is not profitable. sell_flag=False")
                 return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
 
-        if sell and not buy and experimental.get('use_sell_signal', False):
+        if sell and not buy and config_ask_strategy.get('use_sell_signal', True):
             logger.debug(f"{trade.pair} - Sell signal received. sell_flag=True, "
                          f"sell_type=SellType.SELL_SIGNAL")
             return SellCheckTuple(sell_flag=True, sell_type=SellType.SELL_SIGNAL)

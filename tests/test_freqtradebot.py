@@ -1768,8 +1768,6 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order,
 
 def test_handle_overlpapping_signals(default_conf, ticker, limit_buy_order,
                                      fee, markets, mocker) -> None:
-    default_conf.update({'experimental': {'use_sell_signal': True}})
-
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -1824,7 +1822,6 @@ def test_handle_overlpapping_signals(default_conf, ticker, limit_buy_order,
 def test_handle_trade_roi(default_conf, ticker, limit_buy_order,
                           fee, mocker, markets, caplog) -> None:
     caplog.set_level(logging.DEBUG)
-    default_conf.update({'experimental': {'use_sell_signal': True}})
 
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -1856,10 +1853,10 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order,
                    caplog)
 
 
-def test_handle_trade_experimental(
+def test_handle_trade_use_sell_signal(
         default_conf, ticker, limit_buy_order, fee, mocker, markets, caplog) -> None:
+    # use_sell_signal is True buy default
     caplog.set_level(logging.DEBUG)
-    default_conf.update({'experimental': {'use_sell_signal': True}})
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -2600,7 +2597,7 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
-    default_conf['experimental'] = {
+    default_conf['ask_strategy'] = {
         'use_sell_signal': True,
         'sell_profit_only': True,
     }
@@ -2632,7 +2629,7 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
-    default_conf['experimental'] = {
+    default_conf['ask_strategy'] = {
         'use_sell_signal': True,
         'sell_profit_only': False,
     }
@@ -2662,7 +2659,7 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, fee, market
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
-    default_conf['experimental'] = {
+    default_conf['ask_strategy'] = {
         'use_sell_signal': True,
         'sell_profit_only': True,
     }
@@ -2692,7 +2689,7 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, marke
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
-    default_conf['experimental'] = {
+    default_conf['ask_strategy'] = {
         'use_sell_signal': True,
         'sell_profit_only': False,
     }
@@ -2761,7 +2758,7 @@ def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, markets, m
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
-    default_conf['experimental'] = {
+    default_conf['ask_strategy'] = {
         'ignore_roi_if_buy_signal': True
     }
     freqtrade = FreqtradeBot(default_conf)
@@ -3029,7 +3026,7 @@ def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
-    default_conf['experimental'] = {
+    default_conf['ask_strategy'] = {
         'ignore_roi_if_buy_signal': False
     }
     freqtrade = FreqtradeBot(default_conf)

@@ -33,7 +33,10 @@
     "ask_strategy":{
         "use_order_book": false,
         "order_book_min": 1,
-        "order_book_max": 9
+        "order_book_max": 9,
+        "use_sell_signal": true,
+        "sell_profit_only": false,
+        "ignore_roi_if_buy_signal": false
     },
     "order_types": {
         "buy": "limit",
@@ -99,11 +102,6 @@
         "min_trade_number": 10,
         "max_trade_duration_minute": 1440,
         "remove_pumps": false
-    },
-    "experimental": {
-        "use_sell_signal": false,
-        "sell_profit_only": false,
-        "ignore_roi_if_buy_signal": false
     },
     "telegram": {
         "enabled": true,

@@ -103,11 +103,6 @@
         "max_trade_duration_minute": 1440,
         "remove_pumps": false
     },
-    "experimental": {
-        "use_sell_signal": false,
-        "sell_profit_only": false,
-        "ignore_roi_if_buy_signal": false
-    },
     "telegram": {
 // We can now comment out some settings
 //        "enabled": true,
