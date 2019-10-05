@@ -39,7 +39,7 @@ Assume you downloaded the history data from the Bittrex exchange and kept it in 
 You can then use this data for backtesting as follows:
 
 ```bash
-freqtrade backtesting --datadir user_data/data/bittrex-20180101
+freqtrade --datadir user_data/data/bittrex-20180101 backtesting
 ```
 
 #### With a (custom) strategy file
