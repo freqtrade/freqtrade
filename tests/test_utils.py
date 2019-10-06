@@ -52,11 +52,11 @@ def test_list_exchanges(capsys):
 def test_list_timeframes(mocker, capsys):
 
     api_mock = MagicMock()
-    api_mock.timeframes = {'1m': '1m',
-                           '5m': '5m',
-                           '30m': '30m',
-                           '1h': '1h',
-                           '1d': '1d',
+    api_mock.timeframes = {'1m': 'oneMin',
+                           '5m': 'fiveMin',
+                           '30m': 'thirtyMin',
+                           '1h': 'hour',
+                           '1d': 'day',
                            }
     patch_exchange(mocker, api_mock=api_mock)
     args = [
