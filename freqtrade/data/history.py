@@ -82,10 +82,19 @@ def store_tickerdata_file(datadir: Path, pair: str,
     misc.file_dump_json(filename, data, is_zip=is_zip)
 
 
+def _validate_pairdata(pair, pairdata, timerange: TimeRange):
+    if timerange.starttype == 'date' and pairdata[0][0] > timerange.startts * 1000:
+        logger.warning('Missing data at start for pair %s, data starts at %s',
+                       pair, arrow.get(pairdata[0][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
+    if timerange.stoptype == 'date' and pairdata[-1][0] < timerange.stopts * 1000:
+        logger.warning('Missing data at end for pair %s, data ends at %s',
+                       pair, arrow.get(pairdata[-1][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
+
+
 def load_pair_history(pair: str,
                       ticker_interval: str,
                       datadir: Path,
-                      timerange: TimeRange = TimeRange(None, None, 0, 0),
+                      timerange: Optional[TimeRange] = None,
                       refresh_pairs: bool = False,
                       exchange: Optional[Exchange] = None,
                       fill_up_missing: bool = True,
@@ -116,13 +125,8 @@ def load_pair_history(pair: str,
     pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
 
     if pairdata:
-        if timerange.starttype == 'date' and pairdata[0][0] > timerange.startts * 1000:
-            logger.warning('Missing data at start for pair %s, data starts at %s',
-                           pair, arrow.get(pairdata[0][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
-        if timerange.stoptype == 'date' and pairdata[-1][0] < timerange.stopts * 1000:
-            logger.warning('Missing data at end for pair %s, data ends at %s',
-                           pair,
-                           arrow.get(pairdata[-1][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
+        if timerange:
+            _validate_pairdata(pair, pairdata, timerange)
         return parse_ticker_dataframe(pairdata, ticker_interval, pair=pair,
                                       fill_missing=fill_up_missing,
                                       drop_incomplete=drop_incomplete)
@@ -139,7 +143,7 @@ def load_data(datadir: Path,
               pairs: List[str],
               refresh_pairs: bool = False,
               exchange: Optional[Exchange] = None,
-              timerange: TimeRange = TimeRange(None, None, 0, 0),
+              timerange: Optional[TimeRange] = None,
               fill_up_missing: bool = True,
               ) -> Dict[str, DataFrame]:
     """
@@ -169,13 +173,14 @@ def pair_data_filename(datadir: Path, pair: str, ticker_interval: str) -> Path:
     return filename
 
 
-def load_cached_data_for_updating(datadir: Path, pair: str, ticker_interval: str,
-                                  timerange: Optional[TimeRange]) -> Tuple[List[Any],
-                                                                           Optional[int]]:
+def _load_cached_data_for_updating(datadir: Path, pair: str, ticker_interval: str,
+                                   timerange: Optional[TimeRange]) -> Tuple[List[Any],
+                                                                            Optional[int]]:
     """
     Load cached data to download more data.
-    If timerange is passed in, checks wether data from an before the stored data will be downloaded.
-    If that's the case than what's available should be completely overwritten.
+    If timerange is passed in, checks whether data from an before the stored data will be
+    downloaded.
+    If that's the case then what's available should be completely overwritten.
     Only used by download_pair_history().
     """
 
@@ -238,7 +243,7 @@ def download_pair_history(datadir: Path,
             f'and store in {datadir}.'
         )
 
-        data, since_ms = load_cached_data_for_updating(datadir, pair, ticker_interval, timerange)
+        data, since_ms = _load_cached_data_for_updating(datadir, pair, ticker_interval, timerange)
 
         logger.debug("Current Start: %s", misc.format_ms_time(data[1][0]) if data else 'None')
         logger.debug("Current End: %s", misc.format_ms_time(data[-1][0]) if data else 'None')
@@ -266,7 +271,7 @@ def download_pair_history(datadir: Path,
 
 
 def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes: List[str],
-                                dl_path: Path, timerange: TimeRange,
+                                dl_path: Path, timerange: Optional[TimeRange] = None,
                                 erase=False) -> List[str]:
     """
     Refresh stored ohlcv data for backtesting and hyperopt operations.
