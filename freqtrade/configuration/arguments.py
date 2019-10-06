@@ -31,6 +31,8 @@ ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
 
 ARGS_LIST_EXCHANGES = ["print_one_column", "list_exchanges_all"]
 
+ARGS_LIST_TIMEFRAMES = ["exchange", "print_one_column"]
+
 ARGS_CREATE_USERDIR = ["user_data_dir"]
 
 ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "exchange", "timeframes", "erase"]
@@ -41,7 +43,7 @@ ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit", "db_
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "ticker_interval"]
 
-NO_CONF_REQURIED = ["download-data", "plot-dataframe", "plot-profit"]
+NO_CONF_REQURIED = ["download-data", "list-timeframes", "plot-dataframe", "plot-profit"]
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges"]
 
@@ -103,7 +105,8 @@ class Arguments:
         :return: None
         """
         from freqtrade.optimize import start_backtesting, start_hyperopt, start_edge
-        from freqtrade.utils import start_create_userdir, start_download_data, start_list_exchanges
+        from freqtrade.utils import (start_create_userdir, start_download_data,
+                                     start_list_exchanges, start_list_timeframes)
 
         subparsers = self.parser.add_subparsers(dest='subparser')
 
@@ -135,6 +138,14 @@ class Arguments:
         )
         list_exchanges_cmd.set_defaults(func=start_list_exchanges)
         self._build_args(optionlist=ARGS_LIST_EXCHANGES, parser=list_exchanges_cmd)
+
+        # Add list-timeframes subcommand
+        list_timeframes_cmd = subparsers.add_parser(
+            'list-timeframes',
+            help='Print available ticker intervals (timeframes) for the exchange.'
+        )
+        list_timeframes_cmd.set_defaults(func=start_list_timeframes)
+        self._build_args(optionlist=ARGS_LIST_TIMEFRAMES, parser=list_timeframes_cmd)
 
         # Add download-data subcommand
         download_data_cmd = subparsers.add_parser(

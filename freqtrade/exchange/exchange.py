@@ -203,6 +203,9 @@ class Exchange:
 
         logger.info('Using Exchange "%s"', self.name)
 
+        # Check if timeframe is available
+        self.validate_timeframes(config.get('ticker_interval'))
+
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
             "markets_refresh_interval", 60) * 60
@@ -213,10 +216,6 @@ class Exchange:
         self.validate_pairs(config['exchange']['pair_whitelist'])
         self.validate_ordertypes(config.get('order_types', {}))
         self.validate_order_time_in_force(config.get('order_time_in_force', {}))
-
-        if config.get('ticker_interval'):
-            # Check if timeframe is available
-            self.validate_timeframes(config['ticker_interval'])
 
     def __del__(self):
         """
@@ -268,6 +267,10 @@ class Exchange:
     def id(self) -> str:
         """exchange ccxt id"""
         return self._api.id
+
+    @property
+    def timeframes(self) -> List[str]:
+        return list((self._api.timeframes or {}).keys())
 
     @property
     def markets(self) -> Dict:
@@ -361,7 +364,7 @@ class Exchange:
                 return pair
         raise DependencyException(f"Could not combine {curr_1} and {curr_2} to get a valid pair.")
 
-    def validate_timeframes(self, timeframe: List[str]) -> None:
+    def validate_timeframes(self, timeframe: Optional[str]) -> None:
         """
         Checks if ticker interval from config is a supported timeframe on the exchange
         """
@@ -374,10 +377,9 @@ class Exchange:
                 f"for the exchange \"{self.name}\" and this exchange "
                 f"is therefore not supported. ccxt fetchOHLCV: {self.exchange_has('fetchOHLCV')}")
 
-        timeframes = self._api.timeframes
-        if timeframe not in timeframes:
+        if timeframe and (timeframe not in self.timeframes):
             raise OperationalException(
-                f'Invalid ticker {timeframe}, this Exchange supports {timeframes}')
+                f"Invalid ticker interval '{timeframe}'. This exchange supports: {self.timeframes}")
 
     def validate_ordertypes(self, order_types: Dict) -> None:
         """

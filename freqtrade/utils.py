@@ -99,3 +99,21 @@ def start_download_data(args: Dict[str, Any]) -> None:
         if pairs_not_available:
             logger.info(f"Pairs [{','.join(pairs_not_available)}] not available "
                         f"on exchange {config['exchange']['name']}.")
+
+
+def start_list_timeframes(args: Dict[str, Any]) -> None:
+    """
+    Print ticker intervals (timeframes) available on Exchange
+    """
+    config = setup_utils_configuration(args, RunMode.OTHER)
+    # Do not use ticker_interval set in the config
+    config['ticker_interval'] = None
+
+    # Init exchange
+    exchange = ExchangeResolver(config['exchange']['name'], config).exchange
+
+    if args['print_one_column']:
+        print('\n'.join(exchange.timeframes))
+    else:
+        print(f"Timeframes available for the exchange `{config['exchange']['name']}`: "
+              f"{', '.join(exchange.timeframes)}")
