@@ -59,15 +59,15 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `unfilledtimeout.sell` | 10 | **Required.** How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled.
 | `bid_strategy.ask_last_balance` | 0.0 | **Required.** Set the bidding price. More information [below](#understand-ask_last_balance).
 | `bid_strategy.use_order_book` | false | Allows buying of pair using the rates in Order Book Bids.
-| `bid_strategy.order_book_top` | 0 | Bot will use the top N rate in Order Book Bids. Ie. a value of 2 will allow the bot to pick the 2nd bid rate in Order Book Bids.
+| `bid_strategy.order_book_top` | 0 | Bot will use the top N rate in Order Book Bids. I.e. a value of 2 will allow the bot to pick the 2nd bid rate in Order Book Bids.
 | `bid_strategy. check_depth_of_market.enabled` | false | Does not buy if the % difference of buy orders and sell orders is met in Order Book.
 | `bid_strategy. check_depth_of_market.bids_to_ask_delta` | 0 | The % difference of buy orders and sell orders found in Order Book. A value lesser than 1 means sell orders is greater, while value greater than 1 means buy orders is higher.
 | `ask_strategy.use_order_book` | false | Allows selling of open traded pair using the rates in Order Book Asks.
 | `ask_strategy.order_book_min` | 0 | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
 | `ask_strategy.order_book_max` | 0 | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
-| `ask_strategy.use_sell_signal` | true | Use your strategy sell signals in addition to the `minimal_roi`. [Strategy Override](#parameters-in-the-strategy).
-| `ask_strategy.sell_profit_only` | false | Wait until you have made a positive profit before taking a sell decision. [Strategy Override](#parameters-in-the-strategy).
-| `ask_strategy.ignore_roi_if_buy_signal` | false | Do not sell if the buy-signal is still active. This setting takes preference over `minimal_roi` and `use_sell_signal`. [Strategy Override](#parameters-in-the-strategy).
+| `ask_strategy.use_sell_signal` | true | Use sell signals produced by the strategy in addition to the `minimal_roi`. [Strategy Override](#parameters-in-the-strategy).
+| `ask_strategy.sell_profit_only` | false | Wait until the bot makes a positive profit before taking a sell decision. [Strategy Override](#parameters-in-the-strategy).
+| `ask_strategy.ignore_roi_if_buy_signal` | false | Do not sell if the buy signal is still active. This setting takes preference over `minimal_roi` and `use_sell_signal`. [Strategy Override](#parameters-in-the-strategy).
 | `order_types` | None | Configure order-types depending on the action (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`). [More information below](#understand-order_types). [Strategy Override](#parameters-in-the-strategy).
 | `order_time_in_force` | None | Configure time in force for buy and sell orders. [More information below](#understand-order_time_in_force). [Strategy Override](#parameters-in-the-strategy).
 | `exchange.name` |  | **Required.** Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename).
