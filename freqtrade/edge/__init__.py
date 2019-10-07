@@ -77,8 +77,10 @@ class Edge:
 
         self._timerange: TimeRange = TimeRange.parse_timerange("%s-" % arrow.now().shift(
             days=-1 * self._since_number_of_days).format('YYYYMMDD'))
-
-        self.fee = self.exchange.get_fee()
+        if config.get('fee'):
+            self.fee = config['fee']
+        else:
+            self.fee = self.exchange.get_fee()
 
     def calculate(self) -> bool:
         pairs = self.config['exchange']['pair_whitelist']

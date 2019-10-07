@@ -15,7 +15,7 @@ ARGS_STRATEGY = ["strategy", "strategy_path"]
 ARGS_MAIN = ARGS_COMMON + ARGS_STRATEGY + ["db_url", "sd_notify"]
 
 ARGS_COMMON_OPTIMIZE = ["ticker_interval", "timerange",
-                        "max_open_trades", "stake_amount"]
+                        "max_open_trades", "stake_amount", "fee"]
 
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
                                         "strategy_list", "export", "exportfilename"]

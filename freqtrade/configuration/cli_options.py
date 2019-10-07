@@ -144,6 +144,12 @@ AVAILABLE_CLI_OPTIONS = {
         default=os.path.join('user_data', 'backtest_results',
                              'backtest-result.json'),
     ),
+    "fee": Arg(
+        '--fee',
+        help='Specify fee ratio. Will be applied twice (on trade entry and exit).',
+        type=float,
+        metavar='FLOAT',
+    ),
     # Edge
     "stoploss_range": Arg(
         '--stoplosses',

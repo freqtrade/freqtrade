@@ -26,6 +26,21 @@ from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 
 
+ORDER_TYPES = [
+    {
+        'buy': 'limit',
+        'sell': 'limit',
+        'stoploss': 'limit',
+        'stoploss_on_exchange': False
+    },
+    {
+        'buy': 'limit',
+        'sell': 'limit',
+        'stoploss': 'limit',
+        'stoploss_on_exchange': True
+    }]
+
+
 def trim_dictlist(dict_list, num):
     new = {}
     for pair, pair_data in dict_list.items():
@@ -211,7 +226,8 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
         '--disable-max-market-positions',
         '--timerange', ':100',
         '--export', '/bar/foo',
-        '--export-filename', 'foo_bar.json'
+        '--export-filename', 'foo_bar.json',
+        '--fee', '0',
     ]
 
     config = setup_configuration(get_args(args), RunMode.BACKTEST)
@@ -242,6 +258,9 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
     assert log_has('Parameter --export detected: {} ...'.format(config['export']), caplog)
     assert 'exportfilename' in config
     assert log_has('Storing backtest results to {} ...'.format(config['exportfilename']), caplog)
+
+    assert 'fee' in config
+    assert log_has('Parameter --fee detected, setting fee to: {} ...'.format(config['fee']), caplog)
 
 
 def test_setup_configuration_unlimited_stake_amount(mocker, default_conf, caplog) -> None:
@@ -277,21 +296,6 @@ def test_start(mocker, fee, default_conf, caplog) -> None:
     assert start_mock.call_count == 1
 
 
-ORDER_TYPES = [
-    {
-        'buy': 'limit',
-        'sell': 'limit',
-        'stoploss': 'limit',
-        'stoploss_on_exchange': False
-    },
-    {
-        'buy': 'limit',
-        'sell': 'limit',
-        'stoploss': 'limit',
-        'stoploss_on_exchange': True
-    }]
-
-
 @pytest.mark.parametrize("order_types", ORDER_TYPES)
 def test_backtesting_init(mocker, default_conf, order_types) -> None:
     """
@@ -314,10 +318,6 @@ def test_backtesting_init(mocker, default_conf, order_types) -> None:
 
 
 def test_backtesting_init_no_ticker_interval(mocker, default_conf, caplog) -> None:
-    """
-    Check that stoploss_on_exchange is set to False while backtesting
-    since backtesting assumes a perfect stoploss anyway.
-    """
     patch_exchange(mocker)
     del default_conf['ticker_interval']
     default_conf['strategy_list'] = ['DefaultStrategy',
@@ -328,6 +328,16 @@ def test_backtesting_init_no_ticker_interval(mocker, default_conf, caplog) -> No
         Backtesting(default_conf)
     log_has("Ticker-interval needs to be set in either configuration "
             "or as cli argument `--ticker-interval 5m`", caplog)
+
+
+def test_tickerdata_with_fee(default_conf, mocker, testdatadir) -> None:
+    patch_exchange(mocker)
+    default_conf['fee'] = 0.1234
+
+    fee_mock = mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
+    backtesting = Backtesting(default_conf)
+    assert backtesting.fee == 0.1234
+    assert fee_mock.call_count == 0
 
 
 def test_tickerdata_to_dataframe_bt(default_conf, mocker, testdatadir) -> None:

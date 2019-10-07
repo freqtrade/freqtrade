@@ -210,6 +210,10 @@ class Configuration:
                              logstring='Parameter --stake_amount detected, '
                              'overriding stake_amount to: {} ...')
 
+        self._args_to_config(config, argname='fee',
+                             logstring='Parameter --fee detected, '
+                             'setting fee to: {} ...')
+
         self._args_to_config(config, argname='timerange',
                              logstring='Parameter --timerange detected: {} ...')
 
@@ -323,7 +327,8 @@ class Configuration:
                         sample: logfun=len (prints the length of the found
                         configuration instead of the content)
         """
-        if argname in self.args and self.args[argname]:
+        if (argname in self.args and self.args[argname] is not None
+           and self.args[argname] is not False):
 
             config.update({argname: self.args[argname]})
             if logfun:
