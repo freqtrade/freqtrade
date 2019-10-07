@@ -10,7 +10,7 @@ flake8-tidy-imports==2.0.0
 mypy==0.730
 pytest==5.2.1
 pytest-asyncio==0.10.0
-pytest-cov==2.7.1
+pytest-cov==2.8.1
 pytest-mock==1.11.1
 pytest-random-order==1.0.4
 
