@@ -282,6 +282,8 @@ Please always check the mode of operation to select the correct method to get da
 - `ohlcv(pair, ticker_interval)` - Currently cached ticker data for the pair, returns DataFrame or empty DataFrame.
 - `historic_ohlcv(pair, ticker_interval)` - Returns historical data stored on disk.
 - `get_pair_dataframe(pair, ticker_interval)` - This is a universal method, which returns either historical data (for backtesting) or cached live data (for the Dry-Run and Live-Run modes).
+- `orderbook(pair, maximum)` - Returns latest orderbook data for the pair, a dict with bids/asks with a total of `maximum` entries.
+- `market(pair)` - Returns market data for the pair: fees, limits, precisions, activity flag, etc. See [ccxt documentation](https://github.com/ccxt/ccxt/wiki/Manual#markets) for more details on Market data structure.
 - `runmode` - Property containing the current runmode.
 
 #### Example: fetch live ohlcv / historic data for the first informative pair
@@ -346,7 +348,7 @@ def informative_pairs(self):
     It is however better to use resampling to longer time-intervals when possible
     to avoid hammering the exchange with too many requests and risk beeing blocked.
 
-### Additional data - Wallets
+### Additional data (Wallets)
 
 The strategy provides access to the `Wallets` object. This contains the current balances on the exchange.
 
