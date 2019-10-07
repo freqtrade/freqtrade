@@ -146,7 +146,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "fee": Arg(
         '--fee',
-        help='Specify fee %%. Should be in %%, will be applied twice (on trade entry and exit).',
+        help='Specify fee ratio. Will be applied twice (on trade entry and exit).',
         type=float,
         metavar='FLOAT',
     ),

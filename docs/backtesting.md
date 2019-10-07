@@ -74,7 +74,7 @@ freqtrade backtesting --export trades --export-filename=backtest_samplestrategy.
 
 #### Supplying custom fee value
 
-Sometimes your account has certain fee rabates, which are not visible to ccxt.
+Sometimes your account has certain fee rebates (fee reductions starting with a certain account size or monthly volume), which are not visible to ccxt.
 To account for this in backtesting, you can use `--fee 0.001` to supply this value to backtesting.
 This fee must be a percentage, and will be applied twice (once for trade entry, and once for trade exit).
 
