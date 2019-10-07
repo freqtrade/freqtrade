@@ -27,12 +27,12 @@ class SampleStrategy(IStrategy):
     - the prototype for the methods: minimal_roi, stoploss, populate_indicators, populate_buy_trend,
     populate_sell_trend, hyperopt_space, buy_strategy_generator
     """
-    # Strategy intervace version - allow new iterations of the strategy interface.
+    # Strategy interface version - allow new iterations of the strategy interface.
     # Check the documentation or the Sample strategy to get the latest version.
     INTERFACE_VERSION = 2
 
     # Minimal ROI designed for the strategy.
-    # This attribute will be overridden if the config file contains "minimal_roi"
+    # This attribute will be overridden if the config file contains "minimal_roi".
     minimal_roi = {
         "40": 0.0,
         "30": 0.01,
@@ -40,27 +40,27 @@ class SampleStrategy(IStrategy):
         "0": 0.04
     }
 
-    # Optimal stoploss designed for the strategy
-    # This attribute will be overridden if the config file contains "stoploss"
+    # Optimal stoploss designed for the strategy.
+    # This attribute will be overridden if the config file contains "stoploss".
     stoploss = -0.10
 
-    # trailing stoploss
+    # Trailing stoploss
     trailing_stop = False
     # trailing_stop_positive = 0.01
     # trailing_stop_positive_offset = 0.0  # Disabled / not configured
 
-    # Optimal ticker interval for the strategy
+    # Optimal ticker interval for the strategy.
     ticker_interval = '5m'
 
-    # run "populate_indicators" only for new candle
+    # Run "populate_indicators()" only for new candle.
     process_only_new_candles = False
 
-    # Experimental settings (configuration will overide these if set)
-    use_sell_signal = False
+    # These values can be overridden in the "ask_strategy" section in the config.
+    use_sell_signal = True
     sell_profit_only = False
     ignore_roi_if_buy_signal = False
 
-    # Optional order type mapping
+    # Optional order type mapping.
     order_types = {
         'buy': 'limit',
         'sell': 'limit',
@@ -68,7 +68,7 @@ class SampleStrategy(IStrategy):
         'stoploss_on_exchange': False
     }
 
-    # Optional order time in force
+    # Optional order time in force.
     order_time_in_force = {
         'buy': 'gtc',
         'sell': 'gtc'
