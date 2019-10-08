@@ -18,7 +18,7 @@ from freqtrade.data.history import (download_pair_history,
                                     refresh_backtest_ohlcv_data,
                                     load_tickerdata_file, pair_data_filename,
                                     pair_trades_filename,
-                                    trim_tickerlist)
+                                    trim_tickerlist, refresh_backtest_trades_data)
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.strategy.default_strategy import DefaultStrategy
@@ -583,3 +583,27 @@ def test_download_data_no_markets(mocker, default_conf, caplog, testdatadir):
     assert "ETH/BTC" in unav_pairs
     assert "XRP/BTC" in unav_pairs
     assert log_has("Skipping pair ETH/BTC...", caplog)
+
+
+def test_refresh_backtest_trades_data(mocker, default_conf, markets, caplog, testdatadir):
+    dl_mock = mocker.patch('freqtrade.data.history.download_trades_history', MagicMock())
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets)
+    )
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    mocker.patch.object(Path, "unlink", MagicMock())
+
+    ex = get_patched_exchange(mocker, default_conf)
+    timerange = TimeRange.parse_timerange("20190101-20190102")
+    unavailable_pairs = refresh_backtest_trades_data(exchange=ex,
+                                                     pairs=["ETH/BTC", "XRP/BTC", "XRP/ETH"],
+                                                     datadir=testdatadir,
+                                                     timerange=timerange, erase=True
+                                                     )
+
+    assert dl_mock.call_count == 2
+    assert dl_mock.call_args[1]['timerange'].starttype == 'date'
+
+    assert log_has("Downloading trades for pair ETH/BTC.", caplog)
+    assert unavailable_pairs == ["XRP/ETH"]
+    assert log_has("Skipping pair XRP/ETH...", caplog)

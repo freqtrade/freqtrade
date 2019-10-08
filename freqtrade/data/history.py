@@ -82,7 +82,7 @@ def store_tickerdata_file(datadir: Path, pair: str,
     misc.file_dump_json(filename, data, is_zip=is_zip)
 
 
-def load_trades_file(datadir: Optional[Path], pair: str,
+def load_trades_file(datadir: Path, pair: str,
                      timerange: Optional[TimeRange] = None) -> List[Dict]:
     """
     Load a pair from file, either .json.gz or .json
@@ -97,7 +97,7 @@ def load_trades_file(datadir: Optional[Path], pair: str,
     return tradesdata
 
 
-def store_trades_file(datadir: Optional[Path], pair: str,
+def store_trades_file(datadir: Path, pair: str,
                       data: list, is_zip: bool = True):
     """
     Stores tickerdata to file
@@ -329,17 +329,14 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
     return pairs_not_available
 
 
-def download_trades_history(datadir: Optional[Path],
-                            exchange: Optional[Exchange],
+def download_trades_history(datadir: Path,
+                            exchange: Exchange,
                             pair: str,
                             timerange: Optional[TimeRange] = None) -> bool:
     """
     Download trade history from the exchange.
     Appends to previously downloaded trades data.
     """
-    if not exchange:
-        raise OperationalException(
-            "Exchange needs to be initialized to download data")
     try:
 
         since = timerange.startts * 1000 if timerange and timerange.starttype == 'date' else None
