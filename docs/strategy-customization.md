@@ -246,9 +246,9 @@ Instead, have a look at the section [Storing information](#Storing-information)
 
 ### Storing information
 
-Storing information can be accomplished by crating a new dictionary within the strategy class.
+Storing information can be accomplished by creating a new dictionary within the strategy class.
 
-The name of the variable can be choosen at will, but should be prefixed with `cust_` to avoid naming collisions with predefined strategy variables.
+The name of the variable can be chosen at will, but should be prefixed with `cust_` to avoid naming collisions with predefined strategy variables.
 
 ```python
 class Awesomestrategy(IStrategy):
@@ -344,7 +344,7 @@ def informative_pairs(self):
     As these pairs will be refreshed as part of the regular whitelist refresh, it's best to keep this list short.
     All intervals and all pairs can be specified as long as they are available (and active) on the used exchange.
     It is however better to use resampling to longer time-intervals when possible
-    to avoid hammering the exchange with too many requests and risk beeing blocked.
+    to avoid hammering the exchange with too many requests and risk being blocked.
 
 ### Additional data - Wallets
 
