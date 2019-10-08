@@ -14,6 +14,7 @@ from freqtrade.configuration import (Arguments, Configuration,
                                      validate_config_consistency)
 from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.config_validation import validate_config_schema
+from freqtrade.configuration.deprecated_settings import (process_temporary_deprecated_settings)
 from freqtrade.configuration.directory_operations import (create_datadir,
                                                           create_userdata_dir)
 from freqtrade.configuration.load_config import load_config_file
@@ -897,3 +898,27 @@ def test_pairlist_resolving_fallback(mocker):
     assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
     assert config['exchange']['name'] == 'binance'
     assert config['datadir'] == str(Path.cwd() / "user_data/data/binance")
+
+
+@pytest.mark.parametrize("setting", [
+        ("ask_strategy", "use_sell_signal", True,
+         "experimental", "use_sell_signal", False),
+        ("ask_strategy", "sell_profit_only", False,
+         "experimental", "sell_profit_only", True),
+        ("ask_strategy", "ignore_roi_if_buy_signal", False,
+         "experimental", "ignore_roi_if_buy_signal", True),
+    ])
+def test_deprecated_experimental(mocker, default_conf, setting, caplog):
+    patched_configuration_load_config_file(mocker, default_conf)
+
+    default_conf[setting[3]] = {}
+    default_conf[setting[0]][setting[1]] = setting[2]
+    default_conf[setting[3]][setting[4]] = setting[5]
+
+    with pytest.raises(OperationalException, match=r'DEPRECATED'):
+        process_temporary_deprecated_settings(default_conf)
+
+    del default_conf[setting[0]][setting[1]]
+    process_temporary_deprecated_settings(default_conf)
+    assert log_has_re('DEPRECATED', caplog)
+    assert default_conf[setting[0]][setting[1]] == setting[5]
