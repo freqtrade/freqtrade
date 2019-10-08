@@ -18,7 +18,7 @@ from freqtrade.data.history import (download_pair_history,
                                     refresh_backtest_ohlcv_data,
                                     load_tickerdata_file, pair_data_filename,
                                     pair_trades_filename,
-                                    trim_tickerlist, refresh_backtest_trades_data)
+                                    trim_tickerlist, refresh_backtest_trades_data, download_trades_history)
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.strategy.default_strategy import DefaultStrategy
@@ -607,3 +607,36 @@ def test_refresh_backtest_trades_data(mocker, default_conf, markets, caplog, tes
     assert log_has("Downloading trades for pair ETH/BTC.", caplog)
     assert unavailable_pairs == ["XRP/ETH"]
     assert log_has("Skipping pair XRP/ETH...", caplog)
+
+
+def test_download_trades_history(trades_history, mocker, default_conf, testdatadir, caplog) -> None:
+
+    ght_mock = MagicMock(side_effect=lambda pair, *args, **kwargs: (pair, trades_history))
+    mocker.patch('freqtrade.exchange.Exchange.get_historic_trades',
+                 ght_mock)
+    exchange = get_patched_exchange(mocker, default_conf)
+    file1 = testdatadir / 'ETH_BTC-trades.json.gz'
+
+    _backup_file(file1)
+
+    assert not file1.is_file()
+
+    assert download_trades_history(datadir=testdatadir, exchange=exchange,
+                                   pair='ETH/BTC')
+    assert log_has("New Amount of trades: 5", caplog)
+    assert file1.is_file()
+
+    # clean files freshly downloaded
+    _clean_test_file(file1)
+
+    mocker.patch('freqtrade.exchange.Exchange.get_historic_trades',
+                 MagicMock(side_effect=ValueError))
+
+    assert not download_trades_history(datadir=testdatadir, exchange=exchange,
+                                       pair='ETH/BTC')
+    assert log_has_re('Failed to download historic trades for pair: "ETH/BTC".*', caplog)
+
+
+def convert_trades_to_ohlcv():
+    # TODO: Write this test
+    pass
