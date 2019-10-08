@@ -90,12 +90,7 @@ def start_download_data(args: Dict[str, Any]) -> None:
         # Init exchange
         exchange = ExchangeResolver(config['exchange']['name'], config).exchange
 
-        # TODO Add correct switch here!
-        if 1 == 2:
-            pairs_not_available = refresh_backtest_ohlcv_data(
-                exchange, pairs=config["pairs"], timeframes=config["timeframes"],
-                dl_path=Path(config['datadir']), timerange=timerange, erase=config.get("erase"))
-        else:
+        if config.get('download_trades'):
             pairs_not_available = refresh_backtest_trades_data(
                 exchange, pairs=config["pairs"], datadir=Path(config['datadir']),
                 timerange=timerange, erase=config.get("erase"))
@@ -104,6 +99,10 @@ def start_download_data(args: Dict[str, Any]) -> None:
             convert_trades_to_ohlcv(
                 exchange, pairs=config["pairs"], timeframes=config["timeframes"],
                 datadir=Path(config['datadir']), timerange=timerange, erase=config.get("erase"))
+        else:
+            pairs_not_available = refresh_backtest_ohlcv_data(
+                exchange, pairs=config["pairs"], timeframes=config["timeframes"],
+                dl_path=Path(config['datadir']), timerange=timerange, erase=config.get("erase"))
 
     except KeyboardInterrupt:
         sys.exit("SIGINT received, aborting ...")
