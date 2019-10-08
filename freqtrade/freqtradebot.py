@@ -1,7 +1,6 @@
 """
 Freqtrade is the main module of this bot. It contains the class Freqtrade()
 """
-
 import copy
 import logging
 import traceback
@@ -135,12 +134,11 @@ class FreqtradeBot:
                                   self.strategy.informative_pairs())
 
         # First process current opened trades
-        for trade in trades:
-            self.process_maybe_execute_sell(trade)
+        self.process_maybe_execute_sells(trades)
 
         # Then looking for buy opportunities
         if len(trades) < self.config['max_open_trades']:
-            self.process_maybe_execute_buy()
+            self.process_maybe_execute_buys()
 
         if 'unfilledtimeout' in self.config:
             # Check and handle any timed out open orders
@@ -262,11 +260,10 @@ class FreqtradeBot:
         Checks pairs as long as the open trade count is below `max_open_trades`.
         :return: True if at least one trade has been created.
         """
-        interval = self.strategy.ticker_interval
         whitelist = copy.deepcopy(self.active_pair_whitelist)
 
         if not whitelist:
-            logger.warning("Whitelist is empty.")
+            logger.info("Active pair whitelist is empty.")
             return False
 
         # Remove currently opened and latest pairs from whitelist
@@ -276,7 +273,8 @@ class FreqtradeBot:
                 logger.debug('Ignoring %s in pair whitelist', trade.pair)
 
         if not whitelist:
-            logger.info("No currency pair in whitelist, but checking to sell open trades.")
+            logger.info("No currency pair in active pair whitelist, "
+                        "but checking to sell open trades.")
             return False
 
         buycount = 0
@@ -285,8 +283,10 @@ class FreqtradeBot:
             if self.strategy.is_pair_locked(_pair):
                 logger.info(f"Pair {_pair} is currently locked.")
                 continue
+
             (buy, sell) = self.strategy.get_signal(
-                _pair, interval, self.dataprovider.ohlcv(_pair, self.strategy.ticker_interval))
+                _pair, self.strategy.ticker_interval,
+                self.dataprovider.ohlcv(_pair, self.strategy.ticker_interval))
 
             if buy and not sell and len(Trade.get_open_trades()) < self.config['max_open_trades']:
                 stake_amount = self._get_trade_stake_amount(_pair)
@@ -431,10 +431,9 @@ class FreqtradeBot:
 
         return True
 
-    def process_maybe_execute_buy(self) -> None:
+    def process_maybe_execute_buys(self) -> None:
         """
-        Tries to execute a buy trade in a safe way
-        :return: True if executed
+        Tries to execute buy orders for trades in a safe way
         """
         try:
             # Create entity and execute trade
@@ -443,33 +442,29 @@ class FreqtradeBot:
         except DependencyException as exception:
             logger.warning('Unable to create trade: %s', exception)
 
-    def process_maybe_execute_sell(self, trade: Trade) -> bool:
+    def process_maybe_execute_sells(self, trades: List[Any]) -> None:
         """
-        Tries to execute a sell trade
-        :return: True if executed
+        Tries to execute sell orders for trades in a safe way
         """
-        try:
-            self.update_trade_state(trade)
+        result = False
+        for trade in trades:
+            try:
+                self.update_trade_state(trade)
 
-            if self.strategy.order_types.get('stoploss_on_exchange') and trade.is_open:
-                result = self.handle_stoploss_on_exchange(trade)
-                if result:
-                    self.wallets.update()
-                    return result
-
-            if trade.is_open and trade.open_order_id is None:
+                if (self.strategy.order_types.get('stoploss_on_exchange') and
+                        self.handle_stoploss_on_exchange(trade)):
+                    result = True
+                    continue
                 # Check if we can sell our current pair
-                result = self.handle_trade(trade)
+                if trade.open_order_id is None and self.handle_trade(trade):
+                    result = True
 
-                # Updating wallets if any trade occured
-                if result:
-                    self.wallets.update()
+            except DependencyException as exception:
+                logger.warning('Unable to sell trade: %s', exception)
 
-                return result
-
-        except DependencyException as exception:
-            logger.warning('Unable to sell trade: %s', exception)
-        return False
+        # Updating wallets if any trade occured
+        if result:
+            self.wallets.update()
 
     def get_real_amount(self, trade: Trade, order: Dict) -> float:
         """
@@ -575,7 +570,7 @@ class FreqtradeBot:
         :return: True if trade has been sold, False otherwise
         """
         if not trade.is_open:
-            raise ValueError(f'Attempt to handle closed trade: {trade}')
+            raise DependencyException(f'Attempt to handle closed trade: {trade}')
 
         logger.debug('Handling %s ...', trade)
 
