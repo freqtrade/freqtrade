@@ -32,6 +32,8 @@ theme:
   palette:
     primary: 'blue grey'
     accent: 'tear'
+extra_css:
+  - 'stylesheets/ft.extra.css'
 markdown_extensions:
     - admonition
     - codehilite:
