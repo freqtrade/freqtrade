@@ -1,7 +1,6 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 
 import json
-import os
 import uuid
 from pathlib import Path
 from shutil import copyfile
@@ -28,35 +27,35 @@ from tests.conftest import get_patched_exchange, log_has, log_has_re, patch_exch
 _BTC_UNITTEST_LENGTH = 13681
 
 
-def _backup_file(file: str, copy_file: bool = False) -> None:
+def _backup_file(file: Path, copy_file: bool = False) -> None:
     """
     Backup existing file to avoid deleting the user file
     :param file: complete path to the file
     :param touch_file: create an empty file in replacement
     :return: None
     """
-    file_swp = file + '.swp'
-    if os.path.isfile(file):
-        os.rename(file, file_swp)
+    file_swp = str(file) + '.swp'
+    if file.is_file():
+        file.rename(file_swp)
 
         if copy_file:
             copyfile(file_swp, file)
 
 
-def _clean_test_file(file: str) -> None:
+def _clean_test_file(file: Path) -> None:
     """
     Backup existing file to avoid deleting the user file
     :param file: complete path to the file
     :return: None
     """
-    file_swp = file + '.swp'
+    file_swp = Path(str(file) + '.swp')
     # 1. Delete file from the test
-    if os.path.isfile(file):
-        os.remove(file)
+    if file.is_file():
+        file.unlink()
 
     # 2. Rollback to the initial file
-    if os.path.isfile(file_swp):
-        os.rename(file_swp, file)
+    if file_swp.is_file():
+        file_swp.rename(file)
 
 
 def test_load_data_30min_ticker(mocker, caplog, default_conf, testdatadir) -> None:
@@ -80,10 +79,10 @@ def test_load_data_7min_ticker(mocker, caplog, default_conf, testdatadir) -> Non
 
 def test_load_data_1min_ticker(ticker_history, mocker, caplog, testdatadir) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ticker_history)
-    file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'UNITTEST_BTC-1m.json')
+    file = testdatadir / 'UNITTEST_BTC-1m.json'
     _backup_file(file, copy_file=True)
     history.load_data(datadir=testdatadir, ticker_interval='1m', pairs=['UNITTEST/BTC'])
-    assert os.path.isfile(file) is True
+    assert file.is_file()
     assert not log_has(
         'Download history data for pair: "UNITTEST/BTC", interval: 1m '
         'and store in None.', caplog
@@ -98,14 +97,14 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog,
     """
     mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ticker_history_list)
     exchange = get_patched_exchange(mocker, default_conf)
-    file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-1m.json')
+    file = testdatadir / 'MEME_BTC-1m.json'
 
     _backup_file(file)
     # do not download a new pair if refresh_pairs isn't set
     history.load_pair_history(datadir=testdatadir,
                               ticker_interval='1m',
                               pair='MEME/BTC')
-    assert os.path.isfile(file) is False
+    assert not file.is_file()
     assert log_has(
         'No history data for pair: "MEME/BTC", interval: 1m. '
         'Use `freqtrade download-data` to download the data', caplog
@@ -117,7 +116,7 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog,
                               refresh_pairs=True,
                               exchange=exchange,
                               pair='MEME/BTC')
-    assert os.path.isfile(file) is True
+    assert file.is_file()
     assert log_has_re(
         'Download history data for pair: "MEME/BTC", interval: 1m '
         'and store in .*', caplog
@@ -223,18 +222,18 @@ def test_load_cached_data_for_updating(mocker) -> None:
 def test_download_pair_history(ticker_history_list, mocker, default_conf, testdatadir) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ticker_history_list)
     exchange = get_patched_exchange(mocker, default_conf)
-    file1_1 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-1m.json')
-    file1_5 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-5m.json')
-    file2_1 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'CFI_BTC-1m.json')
-    file2_5 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'CFI_BTC-5m.json')
+    file1_1 = testdatadir / 'MEME_BTC-1m.json'
+    file1_5 = testdatadir / 'MEME_BTC-5m.json'
+    file2_1 = testdatadir / 'CFI_BTC-1m.json'
+    file2_5 = testdatadir / 'CFI_BTC-5m.json'
 
     _backup_file(file1_1)
     _backup_file(file1_5)
     _backup_file(file2_1)
     _backup_file(file2_5)
 
-    assert os.path.isfile(file1_1) is False
-    assert os.path.isfile(file2_1) is False
+    assert not file1_1.is_file()
+    assert not file2_1.is_file()
 
     assert download_pair_history(datadir=testdatadir, exchange=exchange,
                                  pair='MEME/BTC',
@@ -243,15 +242,15 @@ def test_download_pair_history(ticker_history_list, mocker, default_conf, testda
                                  pair='CFI/BTC',
                                  ticker_interval='1m')
     assert not exchange._pairs_last_refresh_time
-    assert os.path.isfile(file1_1) is True
-    assert os.path.isfile(file2_1) is True
+    assert file1_1.is_file()
+    assert file2_1.is_file()
 
     # clean files freshly downloaded
     _clean_test_file(file1_1)
     _clean_test_file(file2_1)
 
-    assert os.path.isfile(file1_5) is False
-    assert os.path.isfile(file2_5) is False
+    assert not file1_5.is_file()
+    assert not file2_5.is_file()
 
     assert download_pair_history(datadir=testdatadir, exchange=exchange,
                                  pair='MEME/BTC',
@@ -260,8 +259,8 @@ def test_download_pair_history(ticker_history_list, mocker, default_conf, testda
                                  pair='CFI/BTC',
                                  ticker_interval='5m')
     assert not exchange._pairs_last_refresh_time
-    assert os.path.isfile(file1_5) is True
-    assert os.path.isfile(file2_5) is True
+    assert file1_5.is_file()
+    assert file2_5.is_file()
 
     # clean files freshly downloaded
     _clean_test_file(file1_5)
@@ -288,8 +287,8 @@ def test_download_backtesting_data_exception(ticker_history, mocker, caplog,
 
     exchange = get_patched_exchange(mocker, default_conf)
 
-    file1_1 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-1m.json')
-    file1_5 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-5m.json')
+    file1_1 = testdatadir / 'MEME_BTC-1m.json'
+    file1_5 = testdatadir / 'MEME_BTC-5m.json'
     _backup_file(file1_1)
     _backup_file(file1_5)
 
@@ -359,8 +358,8 @@ def test_init(default_conf, mocker) -> None:
     )
 
 
-def test_trim_tickerlist() -> None:
-    file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'UNITTEST_BTC-1m.json')
+def test_trim_tickerlist(testdatadir) -> None:
+    file = testdatadir / 'UNITTEST_BTC-1m.json'
     with open(file) as data_file:
         ticker_list = json.load(data_file)
     ticker_list_len = len(ticker_list)
@@ -449,22 +448,21 @@ def test_trim_tickerlist() -> None:
     assert not ticker
 
 
-def test_file_dump_json_tofile() -> None:
-    file = os.path.join(os.path.dirname(__file__), '..', 'testdata',
-                        'test_{id}.json'.format(id=str(uuid.uuid4())))
+def test_file_dump_json_tofile(testdatadir) -> None:
+    file = testdatadir / 'test_{id}.json'.format(id=str(uuid.uuid4()))
     data = {'bar': 'foo'}
 
     # check the file we will create does not exist
-    assert os.path.isfile(file) is False
+    assert not file.is_file()
 
     # Create the Json file
     file_dump_json(file, data)
 
     # Check the file was create
-    assert os.path.isfile(file) is True
+    assert file.is_file()
 
     # Open the Json file created and test the data is in it
-    with open(file) as data_file:
+    with file.open() as data_file:
         json_from_file = json.load(data_file)
 
     assert 'bar' in json_from_file
