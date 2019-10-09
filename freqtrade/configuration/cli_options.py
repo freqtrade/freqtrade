@@ -245,7 +245,7 @@ AVAILABLE_CLI_OPTIONS = {
         default=constants.DEFAULT_HYPEROPT_LOSS,
     ),
     # List exchanges
-    "print_one_column": Arg(
+    "list_exchanges_print_one_column": Arg(
         '-1', '--one-column',
         help='Print exchanges in one column.',
         action='store_true',
@@ -253,6 +253,12 @@ AVAILABLE_CLI_OPTIONS = {
     "list_exchanges_all": Arg(
         '-a', '--all',
         help='Print all exchanges known to the ccxt library.',
+        action='store_true',
+    ),
+    # List timeframes
+    "list_timeframes_print_one_column": Arg(
+        '-1', '--one-column',
+        help='Print timeframes in one column.',
         action='store_true',
     ),
     # Script options

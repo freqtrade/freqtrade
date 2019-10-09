@@ -29,9 +29,9 @@ ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
 
 ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
 
-ARGS_LIST_EXCHANGES = ["print_one_column", "list_exchanges_all"]
+ARGS_LIST_EXCHANGES = ["list_exchanges_all", "list_exchanges_print_one_column"]
 
-ARGS_LIST_TIMEFRAMES = ["exchange", "print_one_column"]
+ARGS_LIST_TIMEFRAMES = ["exchange", "list_timeframes_print_one_column"]
 
 ARGS_CREATE_USERDIR = ["user_data_dir"]
 

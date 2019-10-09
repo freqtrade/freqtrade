@@ -40,7 +40,7 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
     :return: None
     """
     exchanges = ccxt_exchanges() if args['list_exchanges_all'] else available_exchanges()
-    if args['print_one_column']:
+    if args['list_exchanges_print_one_column']:
         print('\n'.join(exchanges))
     else:
         if args['list_exchanges_all']:
@@ -112,7 +112,7 @@ def start_list_timeframes(args: Dict[str, Any]) -> None:
     # Init exchange
     exchange = ExchangeResolver(config['exchange']['name'], config).exchange
 
-    if args['print_one_column']:
+    if args['list_timeframes_print_one_column']:
         print('\n'.join(exchange.timeframes))
     else:
         print(f"Timeframes available for the exchange `{config['exchange']['name']}`: "
