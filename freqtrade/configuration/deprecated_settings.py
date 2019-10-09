@@ -1,5 +1,5 @@
 """
-Functions to handle deprecated warnings
+Functions to handle deprecated settings
 """
 
 import logging
