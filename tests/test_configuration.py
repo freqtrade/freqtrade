@@ -14,7 +14,9 @@ from freqtrade.configuration import (Arguments, Configuration,
                                      validate_config_consistency)
 from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.config_validation import validate_config_schema
-from freqtrade.configuration.deprecated_settings import (process_temporary_deprecated_settings)
+from freqtrade.configuration.deprecated_settings import (check_conflicting_settings,
+                                                         process_deprecated_setting,
+                                                         process_temporary_deprecated_settings)
 from freqtrade.configuration.directory_operations import (create_datadir,
                                                           create_userdata_dir)
 from freqtrade.configuration.load_config import load_config_file
@@ -908,17 +910,116 @@ def test_pairlist_resolving_fallback(mocker):
         ("ask_strategy", "ignore_roi_if_buy_signal", False,
          "experimental", "ignore_roi_if_buy_signal", True),
     ])
-def test_deprecated_experimental(mocker, default_conf, setting, caplog):
+def test_process_temporary_deprecated_settings(mocker, default_conf, setting, caplog):
     patched_configuration_load_config_file(mocker, default_conf)
 
+    # Create sections for new and deprecated settings
+    # (they may not exist in the config)
+    default_conf[setting[0]] = {}
     default_conf[setting[3]] = {}
+    # Assign new setting
     default_conf[setting[0]][setting[1]] = setting[2]
+    # Assign deprecated setting
     default_conf[setting[3]][setting[4]] = setting[5]
 
+    # New and deprecated settings are conflicting ones
     with pytest.raises(OperationalException, match=r'DEPRECATED'):
         process_temporary_deprecated_settings(default_conf)
 
+    caplog.clear()
+
+    # Delete new setting
     del default_conf[setting[0]][setting[1]]
+
     process_temporary_deprecated_settings(default_conf)
     assert log_has_re('DEPRECATED', caplog)
+    # The value of the new setting shall have been set to the
+    # value of the deprecated one
     assert default_conf[setting[0]][setting[1]] == setting[5]
+
+
+def test_check_conflicting_settings(mocker, default_conf, caplog):
+    patched_configuration_load_config_file(mocker, default_conf)
+
+    # Create sections for new and deprecated settings
+    # (they may not exist in the config)
+    default_conf['sectionA'] = {}
+    default_conf['sectionB'] = {}
+    # Assign new setting
+    default_conf['sectionA']['new_setting'] = 'valA'
+    # Assign deprecated setting
+    default_conf['sectionB']['deprecated_setting'] = 'valB'
+
+    # New and deprecated settings are conflicting ones
+    with pytest.raises(OperationalException, match=r'DEPRECATED'):
+        check_conflicting_settings(default_conf,
+                                   'sectionA', 'new_setting',
+                                   'sectionB', 'deprecated_setting')
+
+    caplog.clear()
+
+    # Delete new setting (deprecated exists)
+    del default_conf['sectionA']['new_setting']
+    check_conflicting_settings(default_conf,
+                               'sectionA', 'new_setting',
+                               'sectionB', 'deprecated_setting')
+    assert not log_has_re('DEPRECATED', caplog)
+    assert 'new_setting' not in default_conf['sectionA']
+
+    caplog.clear()
+
+    # Assign new setting
+    default_conf['sectionA']['new_setting'] = 'valA'
+    # Delete deprecated setting
+    del default_conf['sectionB']['deprecated_setting']
+    check_conflicting_settings(default_conf,
+                               'sectionA', 'new_setting',
+                               'sectionB', 'deprecated_setting')
+    assert not log_has_re('DEPRECATED', caplog)
+    assert default_conf['sectionA']['new_setting'] == 'valA'
+
+
+def test_process_deprecated_setting(mocker, default_conf, caplog):
+    patched_configuration_load_config_file(mocker, default_conf)
+
+    # Create sections for new and deprecated settings
+    # (they may not exist in the config)
+    default_conf['sectionA'] = {}
+    default_conf['sectionB'] = {}
+    # Assign new setting
+    default_conf['sectionA']['new_setting'] = 'valA'
+    # Assign deprecated setting
+    default_conf['sectionB']['deprecated_setting'] = 'valB'
+
+    # Both new and deprecated settings exists
+    process_deprecated_setting(default_conf,
+                               'sectionA', 'new_setting',
+                               'sectionB', 'deprecated_setting')
+    assert log_has_re('DEPRECATED', caplog)
+    # The value of the new setting shall have been set to the
+    # value of the deprecated one
+    assert default_conf['sectionA']['new_setting'] == 'valB'
+
+    caplog.clear()
+
+    # Delete new setting (deprecated exists)
+    del default_conf['sectionA']['new_setting']
+    process_deprecated_setting(default_conf,
+                               'sectionA', 'new_setting',
+                               'sectionB', 'deprecated_setting')
+    assert log_has_re('DEPRECATED', caplog)
+    # The value of the new setting shall have been set to the
+    # value of the deprecated one
+    assert default_conf['sectionA']['new_setting'] == 'valB'
+
+    caplog.clear()
+
+    # Assign new setting
+    default_conf['sectionA']['new_setting'] = 'valA'
+    # Delete deprecated setting
+    del default_conf['sectionB']['deprecated_setting']
+    process_deprecated_setting(default_conf,
+                               'sectionA', 'new_setting',
+                               'sectionB', 'deprecated_setting')
+    assert not log_has_re('DEPRECATED', caplog)
+    assert default_conf['sectionA']['new_setting'] == 'valA'
