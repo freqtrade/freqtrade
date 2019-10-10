@@ -247,7 +247,7 @@ AVAILABLE_CLI_OPTIONS = {
     # List exchanges
     "print_one_column": Arg(
         '-1', '--one-column',
-        help='Print exchanges in one column.',
+        help='Print output in one column.',
         action='store_true',
     ),
     "list_exchanges_all": Arg(
