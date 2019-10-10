@@ -98,10 +98,10 @@ class Hyperopt:
         self.position_stacking = self.config.get('position_stacking', False)
 
         if self.has_space('sell'):
-            # Make sure experimental is enabled
-            if 'experimental' not in self.config:
-                self.config['experimental'] = {}
-            self.config['experimental']['use_sell_signal'] = True
+            # Make sure use_sell_signal is enabled
+            if 'ask_strategy' not in self.config:
+                self.config['ask_strategy'] = {}
+            self.config['ask_strategy']['use_sell_signal'] = True
 
     @staticmethod
     def get_lock_filename(config) -> str:

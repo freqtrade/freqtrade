@@ -517,6 +517,7 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) ->
 
 
 def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
+    default_conf['ask_strategy']['use_sell_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
@@ -571,6 +572,7 @@ def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
 
 
 def test_backtest_1min_ticker_interval(default_conf, fee, mocker, testdatadir) -> None:
+    default_conf['ask_strategy']['use_sell_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
@@ -613,8 +615,6 @@ def test_backtest_pricecontours(default_conf, fee, mocker, testdatadir) -> None:
     # TODO: Evaluate usefullness of this, the patterns and buy-signls are unrealistic
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     tests = [['raise', 19], ['lower', 0], ['sine', 35]]
-    # We need to enable sell-signal - otherwise it sells on ROI!!
-    default_conf['experimental'] = {"use_sell_signal": True}
 
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres, mocker, testdatadir)
@@ -655,8 +655,6 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
     mocker.patch('freqtrade.optimize.backtesting.file_dump_json', MagicMock())
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf,
                                         pair='UNITTEST/BTC', datadir=testdatadir)
-    # We need to enable sell-signal - otherwise it sells on ROI!!
-    default_conf['experimental'] = {"use_sell_signal": True}
     default_conf['ticker_interval'] = '1m'
     backtesting = Backtesting(default_conf)
     backtesting.strategy.advise_buy = _trend_alternate  # Override
@@ -697,8 +695,6 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
 
     # Remove data for one pair from the beginning of the data
     data[pair] = data[pair][tres:].reset_index()
-    # We need to enable sell-signal - otherwise it sells on ROI!!
-    default_conf['experimental'] = {"use_sell_signal": True}
     default_conf['ticker_interval'] = '5m'
 
     backtesting = Backtesting(default_conf)

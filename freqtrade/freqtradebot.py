@@ -575,13 +575,15 @@ class FreqtradeBot:
         logger.debug('Handling %s ...', trade)
 
         (buy, sell) = (False, False)
-        experimental = self.config.get('experimental', {})
-        if experimental.get('use_sell_signal') or experimental.get('ignore_roi_if_buy_signal'):
+
+        config_ask_strategy = self.config.get('ask_strategy', {})
+
+        if (config_ask_strategy.get('use_sell_signal', True) or
+                config_ask_strategy.get('ignore_roi_if_buy_signal')):
             (buy, sell) = self.strategy.get_signal(
                 trade.pair, self.strategy.ticker_interval,
                 self.dataprovider.ohlcv(trade.pair, self.strategy.ticker_interval))
 
-        config_ask_strategy = self.config.get('ask_strategy', {})
         if config_ask_strategy.get('use_order_book', False):
             logger.info('Using order book for selling...')
             # logger.debug('Order book %s',orderBook)

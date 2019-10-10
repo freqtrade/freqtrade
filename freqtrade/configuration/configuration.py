@@ -9,8 +9,9 @@ from typing import Any, Callable, Dict, List, Optional
 
 from freqtrade import OperationalException, constants
 from freqtrade.configuration.check_exchange import check_exchange
-from freqtrade.configuration.config_validation import (
-    validate_config_consistency, validate_config_schema)
+from freqtrade.configuration.config_validation import (validate_config_consistency,
+                                                       validate_config_schema)
+from freqtrade.configuration.deprecated_settings import process_temporary_deprecated_settings
 from freqtrade.configuration.directory_operations import (create_datadir,
                                                           create_userdata_dir)
 from freqtrade.configuration.load_config import load_config_file
@@ -75,6 +76,10 @@ class Configuration:
         # Normalize config
         if 'internals' not in config:
             config['internals'] = {}
+        # TODO: This can be deleted along with removal of deprecated
+        # experimental settings
+        if 'ask_strategy' not in config:
+            config['ask_strategy'] = {}
 
         # validate configuration before returning
         logger.info('Validating configuration ...')
@@ -105,6 +110,8 @@ class Configuration:
         check_exchange(config, config.get('experimental', {}).get('block_bad_exchanges', True))
 
         self._resolve_pairs_list(config)
+
+        process_temporary_deprecated_settings(config)
 
         validate_config_consistency(config)
 
