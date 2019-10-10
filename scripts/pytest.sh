@@ -2,4 +2,4 @@
 
 echo "Running Unit tests"
 
-pytest --random-order --cov=freqtrade --cov-config=.coveragerc freqtrade/tests/
+pytest --random-order --cov=freqtrade --cov-config=.coveragerc tests/
