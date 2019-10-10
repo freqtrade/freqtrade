@@ -153,9 +153,8 @@ AVAILABLE_CLI_OPTIONS = {
     # Hyperopt
     "hyperopt": Arg(
         '--customhyperopt',
-        help='Specify hyperopt class name (default: `%(default)s`).',
+        help='Specify hyperopt class name which will be used by the bot.',
         metavar='NAME',
-        default=constants.DEFAULT_HYPEROPT,
     ),
     "hyperopt_path": Arg(
         '--hyperopt-path',
@@ -232,10 +231,8 @@ AVAILABLE_CLI_OPTIONS = {
         help='Specify the class name of the hyperopt loss function class (IHyperOptLoss). '
         'Different functions can generate completely different results, '
         'since the target for optimization is different. Built-in Hyperopt-loss-functions are: '
-        'DefaultHyperOptLoss, OnlyProfitHyperOptLoss, SharpeHyperOptLoss.'
-        '(default: `%(default)s`).',
+        'DefaultHyperOptLoss, OnlyProfitHyperOptLoss, SharpeHyperOptLoss.',
         metavar='NAME',
-        default=constants.DEFAULT_HYPEROPT_LOSS,
     ),
     # List exchanges
     "print_one_column": Arg(
