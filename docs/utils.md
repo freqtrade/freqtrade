@@ -11,7 +11,7 @@ usage: freqtrade list-exchanges [-h] [-1] [-a]
 
 optional arguments:
   -h, --help        show this help message and exit
-  -1, --one-column  Print exchanges in one column.
+  -1, --one-column  Print output in one column.
   -a, --all         Print all exchanges known to the ccxt library.
 ```
 
@@ -38,7 +38,7 @@ optional arguments:
   -h, --help           show this help message and exit
   --exchange EXCHANGE  Exchange name (default: `bittrex`). Only valid if no
                        config is provided.
-  -1, --one-column     Print exchanges in one column.
+  -1, --one-column     Print output in one column.
 
 ```
 
