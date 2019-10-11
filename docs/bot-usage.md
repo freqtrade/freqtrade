@@ -322,7 +322,8 @@ optional arguments:
                         generate completely different results, since the
                         target for optimization is different. Built-in
                         Hyperopt-loss-functions are: DefaultHyperOptLoss,
-                        OnlyProfitHyperOptLoss, SharpeHyperOptLoss.
+                        OnlyProfitHyperOptLoss, SharpeHyperOptLoss (default:
+                        `DefaultHyperOptLoss`).
 
 
 Common arguments:

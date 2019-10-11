@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Optional, Dict
 
 from freqtrade import OperationalException
+from freqtrade.constants import DEFAULT_HYPEROPT_LOSS
 from freqtrade.optimize.hyperopt_interface import IHyperOpt
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss
 from freqtrade.resolvers import IResolver
@@ -87,12 +88,9 @@ class HyperOptLossResolver(IResolver):
         """
         config = config or {}
 
-        if not config.get('hyperopt_loss'):
-            raise OperationalException("No Hyperopt Loss Function set. Please use "
-                                       "`--hyperopt-loss` to specify "
-                                       "the Hyperopt Loss Function class to use.")
-
-        hyperoptloss_name = config['hyperopt_loss']
+        # Verify the hyperopt_loss is in the configuration, otherwise fallback to the
+        # default hyperopt loss
+        hyperoptloss_name = config.get('hyperopt_loss') or DEFAULT_HYPEROPT_LOSS
 
         self.hyperoptloss = self._load_hyperoptloss(
             hyperoptloss_name, config, extra_dir=config.get('hyperopt_path'))
