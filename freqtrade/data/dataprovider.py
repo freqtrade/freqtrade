@@ -6,7 +6,7 @@ Common Interface for bot and strategy to access data.
 """
 import logging
 from pathlib import Path
-from typing import List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from pandas import DataFrame
 
@@ -85,7 +85,7 @@ class DataProvider:
             logger.warning(f"No data found for ({pair}, {ticker_interval}).")
         return data
 
-    def market(self, pair: str):
+    def market(self, pair: str) -> Optional[Dict[str, Any]]:
         """
         Return market data for the pair
         :param pair: Pair to get the data for
@@ -100,9 +100,9 @@ class DataProvider:
         # TODO: Implement me
         pass
 
-    def orderbook(self, pair: str, maximum: int):
+    def orderbook(self, pair: str, maximum: int) -> Dict[str, List]:
         """
-        return latest orderbook data
+        fetch latest orderbook data
         :param pair: pair to get the data for
         :param maximum: Maximum number of orderbook entries to query
         :return: dict including bids/asks with a total of `maximum` entries.
