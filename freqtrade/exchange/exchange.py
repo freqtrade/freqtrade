@@ -139,9 +139,121 @@ def retrier(f):
     return wrapper
 
 
-class Exchange:
+class BaseExchange:
 
     _config: Dict = {}
+
+    def __init__(self, config: dict) -> None:
+        """
+        Initializes this module with the given config,
+        it does basic validation whether the specified exchange and pairs are valid.
+        :return: None
+        """
+        self._api: ccxt.Exchange = None
+        self._api_async: ccxt_async.Exchange = None
+
+        self._config.update(config)
+
+        exchange_config = config['exchange']
+
+        # Initialize ccxt objects
+        self._api = self._init_ccxt(
+            exchange_config, ccxt_kwargs=exchange_config.get('ccxt_config'))
+        self._api_async = self._init_ccxt(
+            exchange_config, ccxt_async, ccxt_kwargs=exchange_config.get('ccxt_async_config'))
+
+        logger.info('Using Exchange "%s"', self.name)
+
+        # Check if timeframes is available
+        self.validate_timeframes()
+
+    def _init_ccxt(self, exchange_config: dict, ccxt_module=ccxt,
+                   ccxt_kwargs: dict = None) -> ccxt.Exchange:
+        """
+        Initialize ccxt with given config and return valid
+        ccxt instance.
+        """
+        # Find matching class for the given exchange name
+        name = exchange_config['name']
+
+        if not is_exchange_known_ccxt(name, ccxt_module):
+            raise OperationalException(f'Exchange {name} is not supported by ccxt')
+
+        ex_config = {
+            'apiKey': exchange_config.get('key'),
+            'secret': exchange_config.get('secret'),
+            'password': exchange_config.get('password'),
+            'uid': exchange_config.get('uid', ''),
+        }
+        if ccxt_kwargs:
+            logger.info('Applying additional ccxt config: %s', ccxt_kwargs)
+            ex_config.update(ccxt_kwargs)
+
+        try:
+            api = getattr(ccxt_module, name.lower())(ex_config)
+        except (KeyError, AttributeError) as e:
+            raise OperationalException(f'Exchange {name} is not supported') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(f"Initialization of ccxt failed. Reason: {e}") from e
+
+        self.set_sandbox(api, exchange_config, name)
+
+        return api
+
+    def __del__(self):
+        """
+        Destructor - clean up async stuff
+        """
+        logger.debug("Exchange object destroyed, closing async loop")
+        if self._api_async and inspect.iscoroutinefunction(self._api_async.close):
+            asyncio.get_event_loop().run_until_complete(self._api_async.close())
+
+    @property
+    def name(self) -> str:
+        """exchange Name (from ccxt)"""
+        return self._api.name
+
+    @property
+    def id(self) -> str:
+        """exchange ccxt id"""
+        return self._api.id
+
+    def set_sandbox(self, api, exchange_config: dict, name: str):
+        if exchange_config.get('sandbox'):
+            if api.urls.get('test'):
+                api.urls['api'] = api.urls['test']
+                logger.info("Enabled Sandbox API on %s", name)
+            else:
+                logger.warning(name, "No Sandbox URL in CCXT, exiting. "
+                                     "Please check your config.json")
+                raise OperationalException(f'Exchange {name} does not provide a sandbox api')
+
+    def exchange_has(self, endpoint: str) -> bool:
+        """
+        Checks if exchange implements a specific API endpoint.
+        Wrapper around ccxt 'has' attribute
+        :param endpoint: Name of endpoint (e.g. 'fetchOHLCV', 'fetchTickers')
+        :return: bool
+        """
+        return endpoint in self._api.has and self._api.has[endpoint]
+
+    @property
+    def timeframes(self) -> List[str]:
+        return list((self._api.timeframes or {}).keys())
+
+    def validate_timeframes(self) -> None:
+        if not hasattr(self._api, "timeframes") or self._api.timeframes is None:
+            # If timeframes attribute is missing (or is None), the exchange probably
+            # has no fetchOHLCV method.
+            # Therefore we also show that.
+            raise OperationalException(
+                f"The ccxt library does not provide the list of timeframes "
+                f"for the exchange \"{self.name}\" and this exchange "
+                f"is therefore not supported. ccxt fetchOHLCV: {self.exchange_has('fetchOHLCV')}")
+
+
+class Exchange(BaseExchange):
+
     _params: Dict = {}
 
     # Dict to specify which options each exchange implements
@@ -161,10 +273,8 @@ class Exchange:
         it does basic validation whether the specified exchange and pairs are valid.
         :return: None
         """
-        self._api: ccxt.Exchange = None
-        self._api_async: ccxt_async.Exchange = None
 
-        self._config.update(config)
+        BaseExchange.__init__(self, config)
 
         self._cached_ticker: Dict[str, Any] = {}
 
@@ -195,16 +305,8 @@ class Exchange:
         self._ohlcv_candle_limit = self._ft_has['ohlcv_candle_limit']
         self._ohlcv_partial_candle = self._ft_has['ohlcv_partial_candle']
 
-        # Initialize ccxt objects
-        self._api = self._init_ccxt(
-            exchange_config, ccxt_kwargs=exchange_config.get('ccxt_config'))
-        self._api_async = self._init_ccxt(
-            exchange_config, ccxt_async, ccxt_kwargs=exchange_config.get('ccxt_async_config'))
-
-        logger.info('Using Exchange "%s"', self.name)
-
         # Check if timeframe is available
-        self.validate_timeframes(config.get('ticker_interval'))
+        self.validate_timeframe(config.get('ticker_interval'))
 
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
@@ -216,61 +318,6 @@ class Exchange:
         self.validate_pairs(config['exchange']['pair_whitelist'])
         self.validate_ordertypes(config.get('order_types', {}))
         self.validate_order_time_in_force(config.get('order_time_in_force', {}))
-
-    def __del__(self):
-        """
-        Destructor - clean up async stuff
-        """
-        logger.debug("Exchange object destroyed, closing async loop")
-        if self._api_async and inspect.iscoroutinefunction(self._api_async.close):
-            asyncio.get_event_loop().run_until_complete(self._api_async.close())
-
-    def _init_ccxt(self, exchange_config: dict, ccxt_module=ccxt,
-                   ccxt_kwargs: dict = None) -> ccxt.Exchange:
-        """
-        Initialize ccxt with given config and return valid
-        ccxt instance.
-        """
-        # Find matching class for the given exchange name
-        name = exchange_config['name']
-
-        if not is_exchange_known_ccxt(name, ccxt_module):
-            raise OperationalException(f'Exchange {name} is not supported by ccxt')
-
-        ex_config = {
-            'apiKey': exchange_config.get('key'),
-            'secret': exchange_config.get('secret'),
-            'password': exchange_config.get('password'),
-            'uid': exchange_config.get('uid', ''),
-        }
-        if ccxt_kwargs:
-            logger.info('Applying additional ccxt config: %s', ccxt_kwargs)
-            ex_config.update(ccxt_kwargs)
-        try:
-
-            api = getattr(ccxt_module, name.lower())(ex_config)
-        except (KeyError, AttributeError) as e:
-            raise OperationalException(f'Exchange {name} is not supported') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(f"Initialization of ccxt failed. Reason: {e}") from e
-
-        self.set_sandbox(api, exchange_config, name)
-
-        return api
-
-    @property
-    def name(self) -> str:
-        """exchange Name (from ccxt)"""
-        return self._api.name
-
-    @property
-    def id(self) -> str:
-        """exchange ccxt id"""
-        return self._api.id
-
-    @property
-    def timeframes(self) -> List[str]:
-        return list((self._api.timeframes or {}).keys())
 
     @property
     def markets(self) -> Dict:
@@ -285,16 +332,6 @@ class Exchange:
             return self._klines[pair_interval].copy() if copy else self._klines[pair_interval]
         else:
             return DataFrame()
-
-    def set_sandbox(self, api, exchange_config: dict, name: str):
-        if exchange_config.get('sandbox'):
-            if api.urls.get('test'):
-                api.urls['api'] = api.urls['test']
-                logger.info("Enabled Sandbox API on %s", name)
-            else:
-                logger.warning(name, "No Sandbox URL in CCXT, exiting. "
-                                     "Please check your config.json")
-                raise OperationalException(f'Exchange {name} does not provide a sandbox api')
 
     def _load_async_markets(self, reload=False) -> None:
         try:
@@ -364,19 +401,11 @@ class Exchange:
                 return pair
         raise DependencyException(f"Could not combine {curr_1} and {curr_2} to get a valid pair.")
 
-    def validate_timeframes(self, timeframe: Optional[str]) -> None:
+    def validate_timeframe(self, timeframe: Optional[str]) -> None:
         """
         Checks if ticker interval from config is a supported timeframe on the exchange
         """
-        if not hasattr(self._api, "timeframes") or self._api.timeframes is None:
-            # If timeframes attribute is missing (or is None), the exchange probably
-            # has no fetchOHLCV method.
-            # Therefore we also show that.
-            raise OperationalException(
-                f"The ccxt library does not provide the list of timeframes "
-                f"for the exchange \"{self.name}\" and this exchange "
-                f"is therefore not supported. ccxt fetchOHLCV: {self.exchange_has('fetchOHLCV')}")
-
+#        self.validate_timeframes()
         if timeframe and (timeframe not in self.timeframes):
             raise OperationalException(
                 f"Invalid ticker interval '{timeframe}'. This exchange supports: {self.timeframes}")
@@ -404,15 +433,6 @@ class Exchange:
                for k, v in order_time_in_force.items()):
             raise OperationalException(
                 f'Time in force policies are not supported for {self.name} yet.')
-
-    def exchange_has(self, endpoint: str) -> bool:
-        """
-        Checks if exchange implements a specific API endpoint.
-        Wrapper around ccxt 'has' attribute
-        :param endpoint: Name of endpoint (e.g. 'fetchOHLCV', 'fetchTickers')
-        :return: bool
-        """
-        return endpoint in self._api.has and self._api.has[endpoint]
 
     def symbol_amount_prec(self, pair, amount: float):
         '''

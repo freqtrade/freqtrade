@@ -3,7 +3,7 @@ This module loads custom exchanges
 """
 import logging
 
-from freqtrade.exchange import Exchange
+from freqtrade.exchange import BaseExchange, Exchange
 import freqtrade.exchange as exchanges
 from freqtrade.resolvers import IResolver
 
@@ -17,19 +17,22 @@ class ExchangeResolver(IResolver):
 
     __slots__ = ['exchange']
 
-    def __init__(self, exchange_name: str, config: dict) -> None:
+    def __init__(self, exchange_name: str, config: dict, base: bool = False) -> None:
         """
         Load the custom class from config parameter
         :param config: configuration dictionary
         """
-        exchange_name = exchange_name.title()
-        try:
-            self.exchange = self._load_exchange(exchange_name, kwargs={'config': config})
-        except ImportError:
-            logger.info(
-                f"No {exchange_name} specific subclass found. Using the generic class instead.")
-        if not hasattr(self, "exchange"):
-            self.exchange = Exchange(config)
+        if base:
+            self.exchange = BaseExchange(config)
+        else:
+            exchange_name = exchange_name.title()
+            try:
+                self.exchange = self._load_exchange(exchange_name, kwargs={'config': config})
+            except ImportError:
+                logger.info(
+                    f"No {exchange_name} specific subclass found. Using the generic class instead.")
+            if not hasattr(self, "exchange"):
+                self.exchange = Exchange(config)
 
     def _load_exchange(
             self, exchange_name: str, kwargs: dict) -> Exchange:
