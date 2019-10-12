@@ -58,15 +58,16 @@ def patched_configuration_load_config_file(mocker, config) -> None:
 def patch_exchange(mocker, api_mock=None, id='bittrex') -> None:
     mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframe', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_ordertypes', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.id', PropertyMock(return_value=id))
-    mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value=id.title()))
+    mocker.patch('freqtrade.exchange.BaseExchange.validate_timeframes', MagicMock())
+    mocker.patch('freqtrade.exchange.BaseExchange.id', PropertyMock(return_value=id))
+    mocker.patch('freqtrade.exchange.BaseExchange.name', PropertyMock(return_value=id.title()))
 
     if api_mock:
-        mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+        mocker.patch('freqtrade.exchange.BaseExchange._init_ccxt', MagicMock(return_value=api_mock))
     else:
-        mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock())
+        mocker.patch('freqtrade.exchange.BaseExchange._init_ccxt', MagicMock())
 
 
 def get_patched_exchange(mocker, config, api_mock=None, id='bittrex') -> Exchange:
