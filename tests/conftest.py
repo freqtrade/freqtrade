@@ -17,7 +17,7 @@ from freqtrade import constants, persistence
 from freqtrade.configuration import Arguments
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.edge import Edge, PairInfo
-from freqtrade.exchange import Exchange
+from freqtrade.exchange import BaseExchange, Exchange
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
@@ -55,19 +55,29 @@ def patched_configuration_load_config_file(mocker, config) -> None:
     )
 
 
-def patch_exchange(mocker, api_mock=None, id='bittrex') -> None:
-    mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.validate_timeframe', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.validate_ordertypes', MagicMock())
+def patch_baseexchange(mocker, api_mock=None, id='bittrex') -> None:
     mocker.patch('freqtrade.exchange.BaseExchange.validate_timeframes', MagicMock())
     mocker.patch('freqtrade.exchange.BaseExchange.id', PropertyMock(return_value=id))
     mocker.patch('freqtrade.exchange.BaseExchange.name', PropertyMock(return_value=id.title()))
-
     if api_mock:
         mocker.patch('freqtrade.exchange.BaseExchange._init_ccxt', MagicMock(return_value=api_mock))
     else:
         mocker.patch('freqtrade.exchange.BaseExchange._init_ccxt', MagicMock())
+
+
+def patch_exchange(mocker, api_mock=None, id='bittrex') -> None:
+    patch_baseexchange(mocker, api_mock, id)
+    mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframe', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_ordertypes', MagicMock())
+
+
+def get_patched_baseexchange(mocker, config, api_mock=None, id='bittrex') -> Exchange:
+    patch_baseexchange(mocker, api_mock, id)
+    config["exchange"]["name"] = id
+    base_exchange = BaseExchange(config)
+    return base_exchange
 
 
 def get_patched_exchange(mocker, config, api_mock=None, id='bittrex') -> Exchange:
