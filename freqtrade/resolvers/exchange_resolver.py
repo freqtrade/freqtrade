@@ -23,7 +23,7 @@ class ExchangeResolver(IResolver):
         :param config: configuration dictionary
         """
         if base:
-            self.exchange = BaseExchange(config)
+            self.base_exchange = BaseExchange(config)
         else:
             exchange_name = exchange_name.title()
             try:

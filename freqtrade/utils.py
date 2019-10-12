@@ -108,7 +108,7 @@ def start_list_timeframes(args: Dict[str, Any]) -> None:
     config = setup_utils_configuration(args, RunMode.OTHER)
 
     # Init exchange
-    exchange = ExchangeResolver(config['exchange']['name'], config, base=True).exchange
+    exchange = ExchangeResolver(config['exchange']['name'], config, base=True).base_exchange
 
     if args['print_one_column']:
         print('\n'.join(exchange.timeframes))
