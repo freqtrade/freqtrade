@@ -121,3 +121,7 @@ def round_dict(d, n):
     Rounds float values in the dict to n digits after the decimal point.
     """
     return {k: (round(v, n) if isinstance(v, float) else v) for k, v in d.items()}
+
+
+def plural(num, singular: str, plural: str = None) -> str:
+    return singular if (num == 1 or num == -1) else plural or singular + 's'

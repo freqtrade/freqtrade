@@ -280,6 +280,25 @@ class Exchange:
             self._load_markets()
         return self._api.markets
 
+    def get_markets(self, base_currency: str = None, quote_currency: str = None,
+                    pairs_only: bool = False, active_only: bool = False) -> Dict:
+        """
+        Return exchange ccxt markets, filtered out by base currency and quote currency
+        if this was requested in parameters.
+
+        TODO: consider moving it to the Dataprovider
+        """
+        markets = self.markets
+        if base_currency:
+            markets = {k: v for k, v in markets.items() if v['base'] == base_currency}
+        if quote_currency:
+            markets = {k: v for k, v in markets.items() if v['quote'] == quote_currency}
+        if pairs_only:
+            markets = {k: v for k, v in markets.items() if '/' in v['symbol']}
+        if active_only:
+            markets = {k: v for k, v in markets.items() if v['active']}
+        return markets
+
     def klines(self, pair_interval: Tuple[str, str], copy=True) -> DataFrame:
         if pair_interval in self._klines:
             return self._klines[pair_interval].copy() if copy else self._klines[pair_interval]

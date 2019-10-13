@@ -2,6 +2,7 @@
 This module contains the argument manager class
 """
 import argparse
+from functools import partial
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -33,6 +34,8 @@ ARGS_LIST_EXCHANGES = ["print_one_column", "list_exchanges_all"]
 
 ARGS_LIST_TIMEFRAMES = ["exchange", "print_one_column"]
 
+ARGS_LIST_PAIRS = ["exchange", "print_list", "base_currency", "quote_currency", "active_only"]
+
 ARGS_CREATE_USERDIR = ["user_data_dir"]
 
 ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "exchange", "timeframes", "erase"]
@@ -43,7 +46,8 @@ ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit", "db_
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "ticker_interval"]
 
-NO_CONF_REQURIED = ["download-data", "list-timeframes", "plot-dataframe", "plot-profit"]
+NO_CONF_REQURIED = ["download-data", "list-timeframes", "list-markets", "list-pairs",
+                    "plot-dataframe", "plot-profit"]
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges"]
 
@@ -106,7 +110,8 @@ class Arguments:
         """
         from freqtrade.optimize import start_backtesting, start_hyperopt, start_edge
         from freqtrade.utils import (start_create_userdir, start_download_data,
-                                     start_list_exchanges, start_list_timeframes)
+                                     start_list_exchanges, start_list_timeframes,
+                                     start_list_pairs)
 
         subparsers = self.parser.add_subparsers(dest='subparser')
 
@@ -146,6 +151,22 @@ class Arguments:
         )
         list_timeframes_cmd.set_defaults(func=start_list_timeframes)
         self._build_args(optionlist=ARGS_LIST_TIMEFRAMES, parser=list_timeframes_cmd)
+
+        # Add list-markets subcommand
+        list_markets_cmd = subparsers.add_parser(
+            'list-markets',
+            help='Print markets on exchange.'
+        )
+        list_markets_cmd.set_defaults(func=partial(start_list_pairs, pairs_only=False))
+        self._build_args(optionlist=ARGS_LIST_PAIRS, parser=list_markets_cmd)
+
+        # Add list-pairs subcommand
+        list_pairs_cmd = subparsers.add_parser(
+            'list-pairs',
+            help='Print pairs on exchange.'
+        )
+        list_pairs_cmd.set_defaults(func=partial(start_list_pairs, pairs_only=True))
+        self._build_args(optionlist=ARGS_LIST_PAIRS, parser=list_pairs_cmd)
 
         # Add download-data subcommand
         download_data_cmd = subparsers.add_parser(

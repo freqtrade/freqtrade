@@ -4,12 +4,14 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import arrow
+from tabulate import tabulate
 
 from freqtrade import OperationalException
 from freqtrade.configuration import Configuration, TimeRange
 from freqtrade.configuration.directory_operations import create_userdata_dir
 from freqtrade.data.history import refresh_backtest_ohlcv_data
 from freqtrade.exchange import available_exchanges, ccxt_exchanges
+from freqtrade.misc import plural
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
 
@@ -117,3 +119,43 @@ def start_list_timeframes(args: Dict[str, Any]) -> None:
     else:
         print(f"Timeframes available for the exchange `{config['exchange']['name']}`: "
               f"{', '.join(exchange.timeframes)}")
+
+
+def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:
+    """
+    Print pairs on the exchange
+    :param args: Cli args from Arguments()
+    :param pairs_only: if True print only pairs, otherwise print all instruments (markets)
+    :return: None
+    """
+    config = setup_utils_configuration(args, RunMode.OTHER)
+
+    # Init exchange
+    exchange = ExchangeResolver(config['exchange']['name'], config).exchange
+
+    active_only = args.get('active_only', False)
+    base_currency = args.get('base_currency', '')
+    quote_currency = args.get('quote_currency', '')
+
+    pairs = exchange.get_markets(base_currency=base_currency,
+                                 quote_currency=quote_currency,
+                                 pairs_only=pairs_only,
+                                 active_only=active_only)
+
+    if args.get('print_list', False):
+        # print data as a list
+        print(f"Exchange {exchange.name} has {len(pairs)} " +
+              (plural(len(pairs), "pair" if pairs_only else "market")) +
+              (f" with {base_currency} as base currency" if base_currency else "") +
+              (" and" if base_currency and quote_currency else "") +
+              (f" with {quote_currency} as quote currency" if quote_currency else "") +
+              (f": {sorted(pairs.keys())}" if len(pairs) else "") + ".")
+    else:
+        # print data as a table
+        tabular_data = []
+        for _, v in pairs.items():
+            tabular_data.append([v['id'], v['symbol'], v['base'], v['quote'],
+                                "Yes" if v['active'] else "No"])
+
+        headers = ['Id', 'Symbol', 'Base', 'Quote', 'Active']
+        print(tabulate(tabular_data, headers=headers, tablefmt='pipe'))

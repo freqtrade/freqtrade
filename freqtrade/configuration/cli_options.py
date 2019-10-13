@@ -255,6 +255,26 @@ AVAILABLE_CLI_OPTIONS = {
         help='Print all exchanges known to the ccxt library.',
         action='store_true',
     ),
+    # List pairs / markets
+    "print_list": Arg(
+        '--print-list',
+        help='Print list of pairs or market symbols. By default data is '
+             'printed in the tabular format.',
+        action='store_true',
+    ),
+    "quote_currency": Arg(
+        '--quote-currency',
+        help='Select quote currency.',
+    ),
+    "base_currency": Arg(
+        '--base-currency',
+        help='Select base currency.',
+    ),
+    "active_only": Arg(
+        '--active-only',
+        help='Print only active pairs or markets.',
+        action='store_true',
+    ),
     # Script options
     "pairs": Arg(
         '-p', '--pairs',
