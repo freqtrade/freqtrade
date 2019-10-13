@@ -13,14 +13,18 @@ from pandas import DataFrame
 from freqtrade import OperationalException
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
-from freqtrade.data.history import (download_pair_history,
-                                    _load_cached_data_for_updating,
-                                    refresh_backtest_ohlcv_data,
+from freqtrade.data.history import (_load_cached_data_for_updating,
+                                    convert_trades_to_ohlcv,
+                                    download_pair_history,
+                                    download_trades_history,
                                     load_tickerdata_file, pair_data_filename,
                                     pair_trades_filename,
-                                    trim_tickerlist, refresh_backtest_trades_data, download_trades_history)
+                                    refresh_backtest_ohlcv_data,
+                                    refresh_backtest_trades_data,
+                                    trim_tickerlist)
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
+from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from tests.conftest import (get_patched_exchange, log_has, log_has_re,
                             patch_exchange)
@@ -637,6 +641,40 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
     assert log_has_re('Failed to download historic trades for pair: "ETH/BTC".*', caplog)
 
 
-def convert_trades_to_ohlcv():
-    # TODO: Write this test
-    pass
+def test_convert_trades_to_ohlcv(mocker, default_conf, testdatadir, caplog):
+    pair = 'XRP/ETH'
+    file1 = testdatadir / 'XRP_ETH-1m.json'
+    file5 = testdatadir / 'XRP_ETH-5m.json'
+    # Compare downloaded dataset with converted dataset
+    dfbak_1m = history.load_pair_history(datadir=testdatadir,
+                                         ticker_interval="1m",
+                                         pair=pair)
+    dfbak_5m = history.load_pair_history(datadir=testdatadir,
+                                         ticker_interval="5m",
+                                         pair=pair)
+
+    _backup_file(file1)
+    _backup_file(file5)
+
+    exchange = ExchangeResolver('Bittrex', default_conf).exchange
+    tr = TimeRange.parse_timerange('20191011-20191012')
+    # mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    # mocker.patch.object(Path, "unlink", MagicMock())
+
+    convert_trades_to_ohlcv(exchange, [pair], timeframes=['1m', '5m'],
+                            datadir=testdatadir, timerange=tr, erase=True)
+
+    # assert log_has("Deleting existing data for XRP/ETH, interval 1m.", caplog)
+    # Load new data
+    df_1m = history.load_pair_history(datadir=testdatadir,
+                                      ticker_interval="1m",
+                                      pair=pair)
+    df_5m = history.load_pair_history(datadir=testdatadir,
+                                      ticker_interval="5m",
+                                      pair=pair)
+
+    assert df_1m.equals(dfbak_1m)
+    assert df_5m.equals(dfbak_5m)
+
+    _clean_test_file(file1)
+    _clean_test_file(file5)
