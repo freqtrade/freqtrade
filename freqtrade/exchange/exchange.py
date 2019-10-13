@@ -155,7 +155,7 @@ class Exchange:
     }
     _ft_has: Dict = {}
 
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: dict, validate: bool = True) -> None:
         """
         Initializes this module with the given config,
         it does basic validation whether the specified exchange and pairs are valid.
@@ -209,13 +209,13 @@ class Exchange:
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
             "markets_refresh_interval", 60) * 60
-        # Initial markets load
-        self._load_markets()
-
-        # Check if all pairs are available
-        self.validate_pairs(config['exchange']['pair_whitelist'])
-        self.validate_ordertypes(config.get('order_types', {}))
-        self.validate_order_time_in_force(config.get('order_time_in_force', {}))
+        if validate:
+            # Initial markets load
+            self._load_markets()
+            # Check if all pairs are available
+            self.validate_pairs(config['exchange']['pair_whitelist'])
+            self.validate_ordertypes(config.get('order_types', {}))
+            self.validate_order_time_in_force(config.get('order_time_in_force', {}))
 
     def __del__(self):
         """

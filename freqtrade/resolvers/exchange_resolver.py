@@ -17,14 +17,15 @@ class ExchangeResolver(IResolver):
 
     __slots__ = ['exchange']
 
-    def __init__(self, exchange_name: str, config: dict) -> None:
+    def __init__(self, exchange_name: str, config: dict, validate: bool = True) -> None:
         """
         Load the custom class from config parameter
         :param config: configuration dictionary
         """
         exchange_name = exchange_name.title()
         try:
-            self.exchange = self._load_exchange(exchange_name, kwargs={'config': config})
+            self.exchange = self._load_exchange(exchange_name, kwargs={'config': config,
+                                                                       'validate': validate})
         except ImportError:
             logger.info(
                 f"No {exchange_name} specific subclass found. Using the generic class instead.")
@@ -43,7 +44,7 @@ class ExchangeResolver(IResolver):
         try:
             ex_class = getattr(exchanges, exchange_name)
 
-            exchange = ex_class(kwargs['config'])
+            exchange = ex_class(**kwargs)
             if exchange:
                 logger.info(f"Using resolved exchange '{exchange_name}'...")
                 return exchange
