@@ -78,8 +78,8 @@ class IStrategy(ABC):
 
     # trailing stoploss
     trailing_stop: bool = False
-    trailing_stop_positive: float
-    trailing_stop_positive_offset: float
+    trailing_stop_positive: Optional[float] = None
+    trailing_stop_positive_offset: float = 0.0
     trailing_only_offset_is_reached = False
 
     # associated ticker interval
@@ -347,26 +347,23 @@ class IStrategy(ABC):
         decides to sell or not
         :param current_profit: current profit in percent
         """
-        trailing_stop = self.config.get('trailing_stop', False)
         stop_loss_value = force_stoploss if force_stoploss else self.stoploss
 
         # Initiate stoploss with open_rate. Does nothing if stoploss is already set.
         trade.adjust_stop_loss(trade.open_rate, stop_loss_value, initial=True)
 
-        if trailing_stop:
+        if self.trailing_stop:
             # trailing stoploss handling
-            sl_offset = self.config.get('trailing_stop_positive_offset') or 0.0
-            tsl_only_offset = self.config.get('trailing_only_offset_is_reached', False)
+            sl_offset = self.trailing_stop_positive_offset
 
             # Make sure current_profit is calculated using high for backtesting.
             high_profit = current_profit if not high else trade.calc_profit_percent(high)
 
             # Don't update stoploss if trailing_only_offset_is_reached is true.
-            if not (tsl_only_offset and high_profit < sl_offset):
+            if not (self.trailing_only_offset_is_reached and high_profit < sl_offset):
                 # Specific handling for trailing_stop_positive
-                if 'trailing_stop_positive' in self.config and high_profit > sl_offset:
-                    # Ignore mypy error check in configuration that this is a float
-                    stop_loss_value = self.config.get('trailing_stop_positive')  # type: ignore
+                if self.trailing_stop_positive is not None and high_profit > sl_offset:
+                    stop_loss_value = self.trailing_stop_positive
                     logger.debug(f"{trade.pair} - Using positive stoploss: {stop_loss_value} "
                                  f"offset: {sl_offset:.4g} profit: {current_profit:.4f}%")
 

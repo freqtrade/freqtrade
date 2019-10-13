@@ -95,7 +95,10 @@ class StrategyResolver(IResolver):
             logger.info("Override strategy '%s' with value in config file: %s.",
                         attribute, config[attribute])
         elif hasattr(self.strategy, attribute):
-            config[attribute] = getattr(self.strategy, attribute)
+            val = getattr(self.strategy, attribute)
+            # None's cannot exist in the config, so do not copy them
+            if val is not None:
+                config[attribute] = val
         # Explicitly check for None here as other "falsy" values are possible
         elif default is not None:
             setattr(self.strategy, attribute, default)
