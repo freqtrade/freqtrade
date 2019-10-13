@@ -38,7 +38,7 @@ Mixing different stake-currencies is allowed for this file, since it's only used
 ]
 ```
 
-### start download
+### Start download
 
 Then run:
 
@@ -56,6 +56,32 @@ This will download ticker data for all the currency pairs you defined in `pairs.
 - To download ticker data for only 10 days, use `--days 10` (defaults to 30 days).
 - Use `--timeframes` to specify which tickers to download. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute tickers.
 - To use exchange, timeframe and list of pairs as defined in your configuration file, use the `-c/--config` option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine `-c/--config` with most other options.
+
+### Trades (tick) data
+
+By default, download-data downloads Candles (OHLCV) data. Some exchanges also provide historic trade-data via their API.
+This data can be useful if you need many different timeframes, since it is only downloaded once, and then resampled locally to the desired timeframes.
+
+Since this data is large by default, the files use gzip by default. They are stored in your data-directory with the naming convention of `<pair>-trades.json.gz` (`ETH_BTC_trades.json.gz`). Incremental mode is supported, so downloading the data once per week with `--days 8` will create an incremental data-repository.
+
+To use this mode, simply add `--dl-trades` to your call. This will swap the download-method to trades, and resamples the data locally.
+
+Example call:
+
+```bash
+freqtrade download-data --exchange binance --pairs XRP/ETH ETH/BTC --days 20 --dl-trades
+```
+
+!!! Note
+    While this method uses async calls, it will be slow, since it requires the result of the previous call to generate the next request to the exchange.
+
+!!! Warning
+    This datatype is not available during trading. It probably will never be since all exchanges tested don't provide this data in real time, but with a delay of a few 100 candles.
+
+### Historic Kraken data
+
+The Kraken API does only provide 720 historic candles, which is sufficient for regular trading operations, but a problem for backtesting.
+To download data for the Kraken exchange, using `--dl-trades` is mandatory, otherwise the bot will download the same 720 candles over and over, and you'll not have enough backtest data.
 
 ## Next step
 
