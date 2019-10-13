@@ -22,13 +22,11 @@ class HyperOptResolver(IResolver):
     """
     __slots__ = ['hyperopt']
 
-    def __init__(self, config: Dict = None) -> None:
+    def __init__(self, config: Dict) -> None:
         """
         Load the custom class from config parameter
         :param config: configuration dictionary
         """
-        config = config or {}
-
         if not config.get('hyperopt'):
             raise OperationalException("No Hyperopt set. Please use `--customhyperopt` to specify "
                                        "the Hyperopt class to use.")
@@ -81,12 +79,11 @@ class HyperOptLossResolver(IResolver):
     """
     __slots__ = ['hyperoptloss']
 
-    def __init__(self, config: Dict = None) -> None:
+    def __init__(self, config: Dict) -> None:
         """
         Load the custom class from config parameter
-        :param config: configuration dictionary or None
+        :param config: configuration dictionary
         """
-        config = config or {}
 
         # Verify the hyperopt_loss is in the configuration, otherwise fallback to the
         # default hyperopt loss
@@ -100,7 +97,8 @@ class HyperOptLossResolver(IResolver):
 
         if not hasattr(self.hyperoptloss, 'hyperopt_loss_function'):
             raise OperationalException(
-                f"Found hyperopt {hyperoptloss_name} does not implement `hyperopt_loss_function`.")
+                f"Found HyperoptLoss class {hyperoptloss_name} does not "
+                "implement `hyperopt_loss_function`.")
 
     def _load_hyperoptloss(
             self, hyper_loss_name: str, config: Dict,
