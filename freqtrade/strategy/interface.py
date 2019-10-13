@@ -361,8 +361,8 @@ class IStrategy(ABC):
 
             # Don't update stoploss if trailing_only_offset_is_reached is true.
             if not (self.trailing_only_offset_is_reached and high_profit < sl_offset):
+                # Specific handling for trailing_stop_positive
                 if self.trailing_stop_positive is not None and high_profit > sl_offset:
-                    # Ignore mypy error check in configuration that this is a float
                     stop_loss_value = self.trailing_stop_positive
                     logger.debug(f"{trade.pair} - Using positive stoploss: {stop_loss_value} "
                                  f"offset: {sl_offset:.4g} profit: {current_profit:.4f}%")
