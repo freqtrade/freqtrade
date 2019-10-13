@@ -24,7 +24,6 @@ from freqtrade.data.history import (_load_cached_data_for_updating,
                                     trim_tickerlist)
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
-from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from tests.conftest import (get_patched_exchange, log_has, log_has_re,
                             patch_exchange)
@@ -642,6 +641,7 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
 
 
 def test_convert_trades_to_ohlcv(mocker, default_conf, testdatadir, caplog):
+
     pair = 'XRP/ETH'
     file1 = testdatadir / 'XRP_ETH-1m.json'
     file5 = testdatadir / 'XRP_ETH-5m.json'
@@ -653,18 +653,15 @@ def test_convert_trades_to_ohlcv(mocker, default_conf, testdatadir, caplog):
                                          ticker_interval="5m",
                                          pair=pair)
 
-    _backup_file(file1)
+    _backup_file(file1, copy_file=True)
     _backup_file(file5)
 
-    exchange = ExchangeResolver('Bittrex', default_conf).exchange
     tr = TimeRange.parse_timerange('20191011-20191012')
-    # mocker.patch.object(Path, "exists", MagicMock(return_value=True))
-    # mocker.patch.object(Path, "unlink", MagicMock())
 
-    convert_trades_to_ohlcv(exchange, [pair], timeframes=['1m', '5m'],
+    convert_trades_to_ohlcv([pair], timeframes=['1m', '5m'],
                             datadir=testdatadir, timerange=tr, erase=True)
 
-    # assert log_has("Deleting existing data for XRP/ETH, interval 1m.", caplog)
+    assert log_has("Deleting existing data for pair XRP/ETH, interval 1m.", caplog)
     # Load new data
     df_1m = history.load_pair_history(datadir=testdatadir,
                                       ticker_interval="1m",

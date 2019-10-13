@@ -17,7 +17,7 @@ from pandas import DataFrame
 
 from freqtrade import OperationalException, misc
 from freqtrade.configuration import TimeRange
-from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.data.converter import parse_ticker_dataframe, trades_to_ohlcv
 from freqtrade.exchange import Exchange, timeframe_to_minutes
 
 logger = logging.getLogger(__name__)
@@ -398,7 +398,7 @@ def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: 
     return pairs_not_available
 
 
-def convert_trades_to_ohlcv(exchange: Exchange, pairs: List[str], timeframes: List[str],
+def convert_trades_to_ohlcv(pairs: List[str], timeframes: List[str],
                             datadir: Path, timerange: TimeRange, erase=False) -> None:
     """
     Convert stored trades data to ohlcv data
@@ -410,7 +410,7 @@ def convert_trades_to_ohlcv(exchange: Exchange, pairs: List[str], timeframes: Li
             if erase and ohlcv_file.exists():
                 logger.info(f'Deleting existing data for pair {pair}, interval {timeframe}.')
                 ohlcv_file.unlink()
-            ohlcv = exchange.build_ohlcv(trades, timeframe)
+            ohlcv = trades_to_ohlcv(trades, timeframe)
             # Store ohlcv
             store_tickerdata_file(datadir, pair, timeframe, data=ohlcv)
 

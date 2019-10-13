@@ -114,3 +114,23 @@ def order_book_to_dataframe(bids: list, asks: list) -> DataFrame:
                       keys=['b_sum', 'b_size', 'bids', 'asks', 'a_size', 'a_sum'])
     # logger.info('order book %s', frame )
     return frame
+
+
+def trades_to_ohlcv(trades, timeframe):
+    """
+    Converts trades list to ohlcv list
+    """
+    from freqtrade.exchange import timeframe_to_minutes
+    ticker_minutes = timeframe_to_minutes(timeframe)
+    df = pd.DataFrame(trades)
+    df['datetime'] = pd.to_datetime(df['datetime'])
+
+    df = df.set_index('datetime')
+    df_new = df['price'].resample(f'{ticker_minutes}min').ohlc()
+
+    df_new['volume'] = df['amount'].resample(f'{ticker_minutes}min').sum()
+    df_new['date'] = df_new.index.astype("int64") // 10 ** 6
+    # Drop 0 volume columns
+    df_new = df_new.dropna()
+    columns = ["date", "open", "high", "low", "close", "volume"]
+    return list(zip(*[df_new[x].values.tolist() for x in columns]))
