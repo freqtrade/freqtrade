@@ -988,22 +988,6 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def build_ohlcv(self, trades: List[Dict], timeframe: str, since: int = None,
-                    limit: int = None) -> List:
-        """
-        Build ohlcv data from trade list.
-        trade-list has to be in the ccxt format, which is a list of dicts containing at least:
-            * timestamp
-            * price
-            * amount
-        :param trades: List of Dicts
-        :param timeframe: timeframe to convert to (e.g. "5m")
-        :param since: start at a specific data, as oposed to the trades-list start date
-        :param limit: Limit amount of candles
-        :return: ohlcv data (as returned by ccxt.fetch_ohlcv)
-        """
-        return self._api.build_ohlcv(trades, timeframe, since, limit)
-
 
 def is_exchange_bad(exchange_name: str) -> bool:
     return exchange_name in BAD_EXCHANGES

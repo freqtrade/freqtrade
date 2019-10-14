@@ -93,7 +93,6 @@ def load_trades_file(datadir: Path, pair: str,
     if not tradesdata:
         return []
 
-    # TODO: trim trades based on timerange... ?
     return tradesdata
 
 
