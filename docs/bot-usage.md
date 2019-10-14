@@ -266,7 +266,7 @@ usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                           [-i TICKER_INTERVAL] [--timerange TIMERANGE]
                           [--max_open_trades INT]
                           [--stake_amount STAKE_AMOUNT]
-                          [--customhyperopt NAME] [--hyperopt-path PATH]
+                          [--hyperopt NAME] [--hyperopt-path PATH]
                           [--eps] [-e INT]
                           [--spaces {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
                           [--dmmp] [--print-all] [--no-color] [--print-json]
@@ -284,7 +284,7 @@ optional arguments:
                         Specify max_open_trades to use.
   --stake_amount STAKE_AMOUNT
                         Specify stake_amount.
-  --customhyperopt NAME
+  --hyperopt NAME
                         Specify hyperopt class name which will be used by the
                         bot.
   --hyperopt-path PATH  Specify additional lookup path for Hyperopts and

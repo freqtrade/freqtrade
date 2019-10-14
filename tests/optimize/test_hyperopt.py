@@ -73,7 +73,7 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--customhyperopt', 'DefaultHyperOpts',
+        '--hyperopt', 'DefaultHyperOpts',
     ]
 
     config = setup_configuration(get_args(args), RunMode.HYPEROPT)
@@ -105,7 +105,7 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--customhyperopt', 'DefaultHyperOpts',
+        '--hyperopt', 'DefaultHyperOpts',
         '--datadir', '/foo/bar',
         '--ticker-interval', '1m',
         '--timerange', ':100',
@@ -181,7 +181,7 @@ def test_hyperoptresolver_wrongname(mocker, default_conf, caplog) -> None:
 def test_hyperoptresolver_noname(default_conf):
     default_conf['hyperopt'] = ''
     with pytest.raises(OperationalException,
-                       match="No Hyperopt set. Please use `--customhyperopt` to specify "
+                       match="No Hyperopt set. Please use `--hyperopt` to specify "
                              "the Hyperopt class to use."):
         HyperOptResolver(default_conf)
 
@@ -214,7 +214,7 @@ def test_start_not_installed(mocker, default_conf, caplog, import_fails) -> None
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--customhyperopt', 'DefaultHyperOpts',
+        '--hyperopt', 'DefaultHyperOpts',
         '--epochs', '5'
     ]
     args = get_args(args)
@@ -232,7 +232,7 @@ def test_start(mocker, default_conf, caplog) -> None:
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--customhyperopt', 'DefaultHyperOpts',
+        '--hyperopt', 'DefaultHyperOpts',
         '--epochs', '5'
     ]
     args = get_args(args)
@@ -255,7 +255,7 @@ def test_start_no_data(mocker, default_conf, caplog) -> None:
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--customhyperopt', 'DefaultHyperOpts',
+        '--hyperopt', 'DefaultHyperOpts',
         '--epochs', '5'
     ]
     args = get_args(args)
@@ -273,7 +273,7 @@ def test_start_filelock(mocker, default_conf, caplog) -> None:
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--customhyperopt', 'DefaultHyperOpts',
+        '--hyperopt', 'DefaultHyperOpts',
         '--epochs', '5'
     ]
     args = get_args(args)
