@@ -102,6 +102,11 @@ BAD_EXCHANGES = {
         ], "Does not provide timeframes. ccxt fetchOHLCV: emulated"),
     }
 
+MAP_EXCHANGE_CHILDCLASS = {
+    'binanceus': 'binance',
+    'binanceje': 'binance',
+}
+
 
 def retrier_async(f):
     async def wrapper(*args, **kwargs):

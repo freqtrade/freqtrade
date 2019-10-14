@@ -142,6 +142,12 @@ def test_exchange_resolver(default_conf, mocker, caplog):
     assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
                           caplog)
 
+    # Test mapping
+    exchange = ExchangeResolver('binanceus', default_conf).exchange
+    assert isinstance(exchange, Exchange)
+    assert isinstance(exchange, Binance)
+    assert not isinstance(exchange, Kraken)
+
 
 def test_validate_order_time_in_force(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
