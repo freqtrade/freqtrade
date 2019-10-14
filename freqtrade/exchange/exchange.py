@@ -289,14 +289,17 @@ class Exchange:
         TODO: consider moving it to the Dataprovider
         """
         markets = self.markets
+        if not markets:
+            raise OperationalException("Markets were not loaded.")
+
         if base_currency:
             markets = {k: v for k, v in markets.items() if v['base'] == base_currency}
         if quote_currency:
             markets = {k: v for k, v in markets.items() if v['quote'] == quote_currency}
         if pairs_only:
-            markets = {k: v for k, v in markets.items() if '/' in v['symbol']}
+            markets = {k: v for k, v in markets.items() if market_is_pair(v)}
         if active_only:
-            markets = {k: v for k, v in markets.items() if v['active']}
+            markets = {k: v for k, v in markets.items() if market_is_active(v)}
         return markets
 
     def klines(self, pair_interval: Tuple[str, str], copy=True) -> DataFrame:
@@ -932,3 +935,22 @@ def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
     new_timestamp = ccxt.Exchange.round_timeframe(timeframe, date.timestamp() * 1000,
                                                   ROUND_UP) // 1000
     return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
+
+
+def market_is_pair(market):
+    """
+    Return True if the market is a pair.
+    Currently pairs are defined as markets containing '/' character in its symbol.
+    """
+    return '/' in market.get('symbol', '')
+
+
+def market_is_active(market):
+    """
+    Return True if the market is active.
+    """
+    # "It's active, if the active flag isn't explicitly set to false. If it's missing or
+    # true then it's true. If it's undefined, then it's most likely true, but not 100% )"
+    # See https://github.com/ccxt/ccxt/issues/4874,
+    # https://github.com/ccxt/ccxt/issues/4075#issuecomment-434760520
+    return market.get('active', True) is not False

@@ -10,7 +10,7 @@ from freqtrade import OperationalException
 from freqtrade.configuration import Configuration, TimeRange
 from freqtrade.configuration.directory_operations import create_userdata_dir
 from freqtrade.data.history import refresh_backtest_ohlcv_data
-from freqtrade.exchange import available_exchanges, ccxt_exchanges
+from freqtrade.exchange import (available_exchanges, ccxt_exchanges, market_is_active)
 from freqtrade.misc import plural
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
@@ -137,25 +137,30 @@ def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:
     base_currency = args.get('base_currency', '')
     quote_currency = args.get('quote_currency', '')
 
-    pairs = exchange.get_markets(base_currency=base_currency,
-                                 quote_currency=quote_currency,
-                                 pairs_only=pairs_only,
-                                 active_only=active_only)
+    try:
+        pairs = exchange.get_markets(base_currency=base_currency,
+                                     quote_currency=quote_currency,
+                                     pairs_only=pairs_only,
+                                     active_only=active_only)
+    except Exception as e:
+        raise OperationalException(f"Cannot get markets. Reason: {e}") from e
 
-    if args.get('print_list', False):
-        # print data as a list
-        print(f"Exchange {exchange.name} has {len(pairs)} " +
-              (plural(len(pairs), "pair" if pairs_only else "market")) +
-              (f" with {base_currency} as base currency" if base_currency else "") +
-              (" and" if base_currency and quote_currency else "") +
-              (f" with {quote_currency} as quote currency" if quote_currency else "") +
-              (f": {sorted(pairs.keys())}" if len(pairs) else "") + ".")
     else:
-        # print data as a table
-        tabular_data = []
-        for _, v in pairs.items():
-            tabular_data.append([v['id'], v['symbol'], v['base'], v['quote'],
-                                "Yes" if v['active'] else "No"])
+        if args.get('print_list', False):
+            # print data as a list
+            print(f"Exchange {exchange.name} has {len(pairs)} " +
+                  ("active " if active_only else "") +
+                  (plural(len(pairs), "pair" if pairs_only else "market")) +
+                  (f" with {base_currency} as base currency" if base_currency else "") +
+                  (" and" if base_currency and quote_currency else "") +
+                  (f" with {quote_currency} as quote currency" if quote_currency else "") +
+                  (f": {sorted(pairs.keys())}" if len(pairs) else "") + ".")
+        else:
+            # print data as a table
+            tabular_data = []
+            for _, v in pairs.items():
+                tabular_data.append([v['id'], v['symbol'], v['base'], v['quote'],
+                                    "Yes" if market_is_active(v) else "No"])
 
-        headers = ['Id', 'Symbol', 'Base', 'Quote', 'Active']
-        print(tabulate(tabular_data, headers=headers, tablefmt='pipe'))
+            headers = ['Id', 'Symbol', 'Base', 'Quote', 'Active']
+            print(tabulate(tabular_data, headers=headers, tablefmt='pipe'))
