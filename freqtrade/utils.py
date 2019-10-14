@@ -10,7 +10,8 @@ from freqtrade import OperationalException
 from freqtrade.configuration import Configuration, TimeRange
 from freqtrade.configuration.directory_operations import create_userdata_dir
 from freqtrade.data.history import refresh_backtest_ohlcv_data
-from freqtrade.exchange import (available_exchanges, ccxt_exchanges, market_is_active)
+from freqtrade.exchange import (available_exchanges, ccxt_exchanges, market_is_active,
+                                market_is_pair)
 from freqtrade.misc import plural
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
@@ -157,10 +158,12 @@ def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:
                   (f": {sorted(pairs.keys())}" if len(pairs) else "") + ".")
         else:
             # print data as a table
+            headers = ['Id', 'Symbol', 'Base', 'Quote', 'Active']
+            if not pairs_only:
+                headers.append('Is pair')
             tabular_data = []
             for _, v in pairs.items():
                 tabular_data.append([v['id'], v['symbol'], v['base'], v['quote'],
-                                    "Yes" if market_is_active(v) else "No"])
-
-            headers = ['Id', 'Symbol', 'Base', 'Quote', 'Active']
+                                     "Yes" if market_is_active(v) else "No",
+                                     "Yes" if market_is_pair(v) else "No"])
             print(tabulate(tabular_data, headers=headers, tablefmt='pipe'))
