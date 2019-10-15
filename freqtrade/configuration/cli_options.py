@@ -262,6 +262,12 @@ AVAILABLE_CLI_OPTIONS = {
              'printed in the tabular format.',
         action='store_true',
     ),
+    "list_pairs_print_json": Arg(
+        '--print-json',
+        help='Print list of pairs or market symbols in JSON format.',
+        action='store_true',
+        default=False,
+    ),
     "quote_currency": Arg(
         '--quote-currency',
         help='Select quote currency.',

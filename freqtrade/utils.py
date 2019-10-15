@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import arrow
+import rapidjson
 from tabulate import tabulate
 
 from freqtrade import OperationalException
@@ -156,6 +157,10 @@ def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:
                   (" and" if base_currency and quote_currency else "") +
                   (f" with {quote_currency} as quote currency" if quote_currency else "") +
                   (f": {', '.join(sorted(pairs.keys()))}" if len(pairs) else "") + ".")
+        elif args.get('print_one_column', False):
+            print('\n'.join(sorted(pairs.keys())))
+        elif args.get('list_pairs_print_json', False):
+            print(rapidjson.dumps(sorted(pairs.keys()), default=str))
         else:
             # print data as a table
             headers = ['Id', 'Symbol', 'Base', 'Quote', 'Active']
