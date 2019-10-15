@@ -44,8 +44,8 @@ optional arguments:
                         deployments (default: `sqlite:///tradesv3.sqlite` for
                         Live Run mode, `sqlite://` for Dry Run).
   --sd-notify           Notify systemd service manager.
-  --dry-run             Enforce dry-run for trading, removes API keys and
-                        simulates trades.
+  --dry-run             Enforce dry-run for trading (removes Exchange secrets
+                        and simulates trades).
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

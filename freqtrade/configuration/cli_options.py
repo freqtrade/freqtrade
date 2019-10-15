@@ -88,7 +88,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "dry_run": Arg(
         '--dry-run',
-        help='Enforce dry-run for trading, removes API keys and simulates trades.',
+        help='Enforce dry-run for trading (removes Exchange secrets and simulates trades).',
         action='store_true',
     ),
     # Optimize common
