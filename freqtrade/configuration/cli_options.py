@@ -268,6 +268,11 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_true',
         default=False,
     ),
+    "print_csv": Arg(
+        '--print-csv',
+        help='Print exchange pair or market data in the csv format.',
+        action='store_true',
+    ),
     "quote_currency": Arg(
         '--quote-currency',
         help='Select quote currency.',

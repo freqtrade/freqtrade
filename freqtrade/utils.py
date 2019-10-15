@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import arrow
+import csv
 import rapidjson
 from tabulate import tabulate
 
@@ -148,27 +149,42 @@ def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:
         raise OperationalException(f"Cannot get markets. Reason: {e}") from e
 
     else:
+        summary_str = ((f"Exchange {exchange.name} has {len(pairs)} ") +
+                       ("active " if active_only else "") +
+                       (plural(len(pairs), "pair" if pairs_only else "market")) +
+                       (f" with {base_currency} as base currency" if base_currency else "") +
+                       (" and" if base_currency and quote_currency else "") +
+                       (f" with {quote_currency} as quote currency" if quote_currency else ""))
+
+        headers = ["Id", "Symbol", "Base", "Quote", "Active"]
+        if not pairs_only:
+            headers.append('Is pair')
+
         if args.get('print_list', False):
-            # print data as a list
-            print(f"Exchange {exchange.name} has {len(pairs)} " +
-                  ("active " if active_only else "") +
-                  (plural(len(pairs), "pair" if pairs_only else "market")) +
-                  (f" with {base_currency} as base currency" if base_currency else "") +
-                  (" and" if base_currency and quote_currency else "") +
-                  (f" with {quote_currency} as quote currency" if quote_currency else "") +
+            # print data as a list, with human-readable summary
+            print(summary_str +
                   (f": {', '.join(sorted(pairs.keys()))}" if len(pairs) else "") + ".")
         elif args.get('print_one_column', False):
             print('\n'.join(sorted(pairs.keys())))
         elif args.get('list_pairs_print_json', False):
             print(rapidjson.dumps(sorted(pairs.keys()), default=str))
+        elif args.get('print_csv', False):
+            if len(pairs):
+                writer = csv.DictWriter(sys.stdout, fieldnames=headers, extrasaction='ignore')
+                writer.writeheader()
+                for _, v in pairs.items():
+                    writer.writerow({'Id': v['id'], 'Symbol': v['symbol'],
+                                     'Base': v['base'], 'Quote': v['quote'],
+                                     'Active': market_is_active(v),
+                                     'Is pair': market_is_pair(v)})
         else:
-            # print data as a table
-            headers = ['Id', 'Symbol', 'Base', 'Quote', 'Active']
-            if not pairs_only:
-                headers.append('Is pair')
-            tabular_data = []
-            for _, v in pairs.items():
-                tabular_data.append([v['id'], v['symbol'], v['base'], v['quote'],
-                                     "Yes" if market_is_active(v) else "No",
-                                     "Yes" if market_is_pair(v) else "No"])
-            print(tabulate(tabular_data, headers=headers, tablefmt='pipe'))
+            print(summary_str +
+                  (":" if len(pairs) else "."))
+            if len(pairs):
+                # print data as a table
+                tabular_data = []
+                for _, v in pairs.items():
+                    tabular_data.append([v['id'], v['symbol'], v['base'], v['quote'],
+                                         "Yes" if market_is_active(v) else "No",
+                                         "Yes" if market_is_pair(v) else "No"])
+                print(tabulate(tabular_data, headers=headers, tablefmt='pipe'))
