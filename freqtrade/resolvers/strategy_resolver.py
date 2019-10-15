@@ -124,14 +124,8 @@ class StrategyResolver(IResolver):
         """
         current_path = Path(__file__).parent.parent.joinpath('strategy').resolve()
 
-        abs_paths = [
-            config['user_data_dir'].joinpath('strategies'),
-            current_path,
-        ]
-
-        if extra_dir:
-            # Add extra strategy directory on top of search paths
-            abs_paths.insert(0, Path(extra_dir).resolve())
+        abs_paths = self.build_search_paths(config, current_path=current_path,
+                                            user_subdir='strategies', extra_dir=extra_dir)
 
         if ":" in strategy_name:
             logger.info("loading base64 encoded strategy")

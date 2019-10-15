@@ -7,7 +7,7 @@ import importlib.util
 import inspect
 import logging
 from pathlib import Path
-from typing import Any, List, Optional, Tuple, Type, Union, Generator
+from typing import Any, List, Optional, Tuple, Union, Generator
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +16,20 @@ class IResolver:
     """
     This class contains all the logic to load custom classes
     """
+
+    def build_search_paths(self, config, current_path: Path, user_subdir: str,
+                           extra_dir: Optional[str] = None) -> List[Path]:
+
+        abs_paths = [
+            config['user_data_dir'].joinpath(user_subdir),
+            current_path,
+        ]
+
+        if extra_dir:
+            # Add extra directory to the top of the search paths
+            abs_paths.insert(0, Path(extra_dir).resolve())
+
+        return abs_paths
 
     @staticmethod
     def _get_valid_object(object_type, module_path: Path,
