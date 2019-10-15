@@ -34,9 +34,8 @@ class SampleStrategy(IStrategy):
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi".
     minimal_roi = {
-        "40": 0.0,
-        "30": 0.01,
-        "20": 0.02,
+        "60": 0.01,
+        "30": 0.02,
         "0": 0.04
     }
 
@@ -99,13 +98,16 @@ class SampleStrategy(IStrategy):
         :return: a Dataframe with all mandatory indicators for the strategies
         """
 
-        # Momentum Indicator
+        # Momentum Indicators
         # ------------------------------------
 
-        # ADX
-        dataframe['adx'] = ta.ADX(dataframe)
+        # RSI
+        dataframe['rsi'] = ta.RSI(dataframe)
 
         """
+        # ADX
+        # dataframe['adx'] = ta.ADX(dataframe)
+
         # Awesome oscillator
         dataframe['ao'] = qtpylib.awesome_oscillator(dataframe)
 
@@ -132,9 +134,6 @@ class SampleStrategy(IStrategy):
 
         # ROC
         dataframe['roc'] = ta.ROC(dataframe)
-
-        # RSI
-        dataframe['rsi'] = ta.RSI(dataframe)
 
         # Inverse Fisher transform on RSI, values [-1.0, 1.0] (https://goo.gl/2JGGoy)
         rsi = 0.1 * (dataframe['rsi'] - 50)
@@ -255,7 +254,7 @@ class SampleStrategy(IStrategy):
         dataframe['ha_low'] = heikinashi['low']
         """
 
-        # Retrieve best bid and best ask
+        # Retrieve best bid and best ask from the orderbook
         # ------------------------------------
         """
         # first check if dataprovider is available
@@ -277,9 +276,9 @@ class SampleStrategy(IStrategy):
         """
         dataframe.loc[
             (
-                (dataframe['adx'] > 30) &
-                (dataframe['tema'] <= dataframe['bb_middleband']) &
-                (dataframe['tema'] > dataframe['tema'].shift(1)) &
+                (qtpylib.crossed_above(dataframe['rsi'], 30)) &  # Signal: RSI crosses above 30
+                (dataframe['tema'] <= dataframe['bb_middleband']) &  # Guard: tema below BB middle
+                (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard: tema is raising
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
             'buy'] = 1
@@ -295,9 +294,9 @@ class SampleStrategy(IStrategy):
         """
         dataframe.loc[
             (
-                (dataframe['adx'] > 70) &
-                (dataframe['tema'] > dataframe['bb_middleband']) &
-                (dataframe['tema'] < dataframe['tema'].shift(1)) &
+                (qtpylib.crossed_above(dataframe['rsi'], 70)) &  # Signal: RSI crosses above 70
+                (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard: tema above BB middle
+                (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard: tema is falling
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
             'sell'] = 1

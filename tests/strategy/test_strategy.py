@@ -39,7 +39,7 @@ def test_search_strategy():
 def test_load_strategy(default_conf, result):
     default_conf.update({'strategy': 'SampleStrategy'})
     resolver = StrategyResolver(default_conf)
-    assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
+    assert 'rsi' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 
 
 def test_load_strategy_base64(result, caplog, default_conf):
@@ -48,7 +48,7 @@ def test_load_strategy_base64(result, caplog, default_conf):
     default_conf.update({'strategy': 'SampleStrategy:{}'.format(encoded_string)})
 
     resolver = StrategyResolver(default_conf)
-    assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
+    assert 'rsi' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
     # Make sure strategy was loaded from base64 (using temp directory)!!
     assert log_has_re(r"Using resolved strategy SampleStrategy from '"
                       + tempfile.gettempdir() + r"/.*/SampleStrategy\.py'\.\.\.", caplog)
