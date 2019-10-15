@@ -102,8 +102,10 @@ class SampleStrategy(IStrategy):
         # ------------------------------------
 
         # ADX
-        dataframe['adx'] = ta.ADX(dataframe)
+        # dataframe['adx'] = ta.ADX(dataframe)
 
+        # RSI
+        dataframe['rsi'] = ta.RSI(dataframe)
         """
         # Awesome oscillator
         dataframe['ao'] = qtpylib.awesome_oscillator(dataframe)
@@ -131,9 +133,6 @@ class SampleStrategy(IStrategy):
 
         # ROC
         dataframe['roc'] = ta.ROC(dataframe)
-
-        # RSI
-        dataframe['rsi'] = ta.RSI(dataframe)
 
         # Inverse Fisher transform on RSI, values [-1.0, 1.0] (https://goo.gl/2JGGoy)
         rsi = 0.1 * (dataframe['rsi'] - 50)
@@ -276,7 +275,7 @@ class SampleStrategy(IStrategy):
         """
         dataframe.loc[
             (
-                (qtpylib.crossed_above(dataframe['adx'], 30)) &  # Signal: ADX crosses above 30
+                (qtpylib.crossed_above(dataframe['rsi'], 30)) &  # Signal: RSI crosses above 30
                 (dataframe['tema'] <= dataframe['bb_middleband']) &  # Guard: tema below BB middle
                 (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard: tema is raising
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
@@ -294,7 +293,7 @@ class SampleStrategy(IStrategy):
         """
         dataframe.loc[
             (
-                (qtpylib.crossed_above(dataframe['adx'], 70)) &  # Signal: ADX crosses above 70
+                (qtpylib.crossed_above(dataframe['rsi'], 70)) &  # Signal: RSI crosses above 70
                 (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard: tema above BB middle
                 (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard: tema is falling
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
