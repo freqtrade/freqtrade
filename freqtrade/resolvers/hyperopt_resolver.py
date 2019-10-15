@@ -28,7 +28,7 @@ class HyperOptResolver(IResolver):
         :param config: configuration dictionary
         """
         if not config.get('hyperopt'):
-            raise OperationalException("No Hyperopt set. Please use `--customhyperopt` to specify "
+            raise OperationalException("No Hyperopt set. Please use `--hyperopt` to specify "
                                        "the Hyperopt class to use.")
 
         hyperopt_name = config['hyperopt']

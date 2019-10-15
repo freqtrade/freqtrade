@@ -157,7 +157,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     # Hyperopt
     "hyperopt": Arg(
-        '--customhyperopt',
+        '--hyperopt',
         help='Specify hyperopt class name which will be used by the bot.',
         metavar='NAME',
     ),
