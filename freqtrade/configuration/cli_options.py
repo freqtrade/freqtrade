@@ -86,6 +86,11 @@ AVAILABLE_CLI_OPTIONS = {
         help='Notify systemd service manager.',
         action='store_true',
     ),
+    "dry_run": Arg(
+        '--dry-run',
+        help='Enforce dry-run for trading, removes API keys and simulates trades.',
+        action='store_true',
+    ),
     # Optimize common
     "ticker_interval": Arg(
         '-i', '--ticker-interval',

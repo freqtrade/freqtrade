@@ -36,7 +36,7 @@ optional arguments:
 ```
 usage: freqtrade trade [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                        [--userdir PATH] [-s NAME] [--strategy-path PATH]
-                       [--db-url PATH] [--sd-notify]
+                       [--db-url PATH] [--sd-notify] [--dry-run]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -44,6 +44,8 @@ optional arguments:
                         deployments (default: `sqlite:///tradesv3.sqlite` for
                         Live Run mode, `sqlite://` for Dry Run).
   --sd-notify           Notify systemd service manager.
+  --dry-run             Enforce dry-run for trading, removes API keys and
+                        simulates trades.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -63,7 +65,6 @@ Strategy arguments:
                         Specify strategy class name which will be used by the
                         bot.
   --strategy-path PATH  Specify additional strategy lookup path.
-
 ```
 
 ### How to specify which configuration file be used?
