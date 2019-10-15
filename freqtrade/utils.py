@@ -119,7 +119,7 @@ def start_list_timeframes(args: Dict[str, Any]) -> None:
         print('\n'.join(exchange.timeframes))
     else:
         print(f"Timeframes available for the exchange `{config['exchange']['name']}`: "
-              f"{', '.join(exchange.timeframes)}")
+              f"{', '.join(exchange.timeframes)}.")
 
 
 def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:
@@ -155,7 +155,7 @@ def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:
                   (f" with {base_currency} as base currency" if base_currency else "") +
                   (" and" if base_currency and quote_currency else "") +
                   (f" with {quote_currency} as quote currency" if quote_currency else "") +
-                  (f": {sorted(pairs.keys())}" if len(pairs) else "") + ".")
+                  (f": {', '.join(sorted(pairs.keys()))}" if len(pairs) else "") + ".")
         else:
             # print data as a table
             headers = ['Id', 'Symbol', 'Base', 'Quote', 'Active']
