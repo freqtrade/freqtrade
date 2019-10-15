@@ -98,15 +98,16 @@ class SampleStrategy(IStrategy):
         :return: a Dataframe with all mandatory indicators for the strategies
         """
 
-        # Momentum Indicator
+        # Momentum Indicators
         # ------------------------------------
-
-        # ADX
-        # dataframe['adx'] = ta.ADX(dataframe)
 
         # RSI
         dataframe['rsi'] = ta.RSI(dataframe)
+
         """
+        # ADX
+        # dataframe['adx'] = ta.ADX(dataframe)
+
         # Awesome oscillator
         dataframe['ao'] = qtpylib.awesome_oscillator(dataframe)
 
@@ -253,7 +254,7 @@ class SampleStrategy(IStrategy):
         dataframe['ha_low'] = heikinashi['low']
         """
 
-        # Retrieve best bid and best ask
+        # Retrieve best bid and best ask from the orderbook
         # ------------------------------------
         """
         # first check if dataprovider is available
