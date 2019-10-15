@@ -138,7 +138,7 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     """
     dataframe.loc[
         (
-            (qtpylib.crossed_above(dataframe['adx'], 30)) &  # Signal: ADX crosses baove 30
+            (qtpylib.crossed_above(dataframe['adx'], 30)) &  # Signal: ADX crosses above 30
             (dataframe['tema'] <= dataframe['bb_middleband']) &  # Guard
             (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard
             (dataframe['volume'] > 0)  # Make sure Volume is not 0
@@ -149,7 +149,7 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 ```
 
 !!! Note
-    Buying requires sellers to buy from - therefore volume needs to be > 0 (`dataframe['volume'] > 0`) to make sure backtesting does not buy/sell in no-activity periods.
+    Buying requires sellers to buy from - therefore volume needs to be > 0 (`dataframe['volume'] > 0`) to make sure that the does not buy/sell in no-activity periods.
 
 ### Sell signal rules
 
@@ -172,9 +172,9 @@ def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame
     """
     dataframe.loc[
         (
-            (qtpylib.crossed_above(dataframe['adx'], 70)) &  # Signal: ADX crosses above 30
+            (qtpylib.crossed_above(dataframe['adx'], 70)) &  # Signal: ADX crosses above 70
             (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard
-            (dataframe['tema'] < dataframe['tema'].shift(1)) &  #Guard
+            (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard
             (dataframe['volume'] > 0)  # Make sure Volume is not 0
         ),
         'sell'] = 1

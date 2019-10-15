@@ -294,9 +294,9 @@ class SampleStrategy(IStrategy):
         """
         dataframe.loc[
             (
-                (qtpylib.crossed_above(dataframe['adx'], 70)) &  # Signal: - ADX crosses above 70
-                (dataframe['tema'] > dataframe['bb_middleband']) &
-                (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard: tema is raising
+                (qtpylib.crossed_above(dataframe['adx'], 70)) &  # Signal: ADX crosses above 70
+                (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard: tema above BB middle
+                (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard: tema is falling
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
             'sell'] = 1
