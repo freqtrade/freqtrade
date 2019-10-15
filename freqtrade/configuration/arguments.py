@@ -12,7 +12,7 @@ ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_dat
 
 ARGS_STRATEGY = ["strategy", "strategy_path"]
 
-ARGS_TRADE = ["db_url", "sd_notify"]
+ARGS_TRADE = ["db_url", "sd_notify", "dry_run"]
 
 ARGS_COMMON_OPTIMIZE = ["ticker_interval", "timerange", "max_open_trades", "stake_amount"]
 

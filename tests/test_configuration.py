@@ -304,6 +304,23 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     assert validated_conf.get('db_url') == DEFAULT_DB_DRYRUN_URL
 
 
+@pytest.mark.parametrize("config_value,expected,arglist", [
+    (True, True, ['trade', '--dry-run']),  # Leave config untouched
+    (False, True, ['trade', '--dry-run']),  # Override config untouched
+    (False, False, ['trade']),  # Leave config untouched
+    (True, True, ['trade']),  # Leave config untouched
+])
+def test_load_dry_run(default_conf, mocker, config_value, expected, arglist) -> None:
+
+    default_conf['dry_run'] = config_value
+    patched_configuration_load_config_file(mocker, default_conf)
+
+    configuration = Configuration(Arguments(arglist).get_parsed_arg())
+    validated_conf = configuration.load_config()
+
+    assert validated_conf.get('dry_run') is expected
+
+
 def test_load_custom_strategy(default_conf, mocker) -> None:
     default_conf.update({
         'strategy': 'CustomStrategy',

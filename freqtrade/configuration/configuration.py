@@ -162,6 +162,10 @@ class Configuration:
         if 'sd_notify' in self.args and self.args["sd_notify"]:
             config['internals'].update({'sd_notify': True})
 
+        self._args_to_config(config, argname='dry_run',
+                             logstring='Parameter --dry-run detected, '
+                             'overriding dry_run to: {} ...')
+
     def _process_datadir_options(self, config: Dict[str, Any]) -> None:
         """
         Extract information for sys.argv and load directory configurations
