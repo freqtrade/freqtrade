@@ -156,9 +156,15 @@ def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:
                        (" and" if base_currency and quote_currency else "") +
                        (f" with {quote_currency} as quote currency" if quote_currency else ""))
 
-        headers = ["Id", "Symbol", "Base", "Quote", "Active"]
-        if not pairs_only:
-            headers.append('Is pair')
+        headers = ["Id", "Symbol", "Base", "Quote", "Active",
+                   *(['Is pair'] if not pairs_only else [])]
+
+        tabular_data = []
+        for _, v in pairs.items():
+            tabular_data.append({'Id': v['id'], 'Symbol': v['symbol'],
+                                 'Base': v['base'], 'Quote': v['quote'],
+                                 'Active': market_is_active(v),
+                                 **({'Is pair': market_is_pair(v)} if not pairs_only else {})})
 
         if args.get('print_list', False):
             # print data as a list, with human-readable summary
@@ -170,21 +176,12 @@ def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:
             print(rapidjson.dumps(sorted(pairs.keys()), default=str))
         elif args.get('print_csv', False):
             if len(pairs):
-                writer = csv.DictWriter(sys.stdout, fieldnames=headers, extrasaction='ignore')
+                writer = csv.DictWriter(sys.stdout, fieldnames=headers)
                 writer.writeheader()
-                for _, v in pairs.items():
-                    writer.writerow({'Id': v['id'], 'Symbol': v['symbol'],
-                                     'Base': v['base'], 'Quote': v['quote'],
-                                     'Active': market_is_active(v),
-                                     'Is pair': market_is_pair(v)})
+                writer.writerows(tabular_data)
         else:
             print(summary_str +
                   (":" if len(pairs) else "."))
             if len(pairs):
                 # print data as a table
-                tabular_data = []
-                for _, v in pairs.items():
-                    tabular_data.append([v['id'], v['symbol'], v['base'], v['quote'],
-                                         "Yes" if market_is_active(v) else "No",
-                                         "Yes" if market_is_pair(v) else "No"])
-                print(tabulate(tabular_data, headers=headers, tablefmt='pipe'))
+                print(tabulate(tabular_data, headers='keys', tablefmt='pipe'))
