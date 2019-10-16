@@ -136,7 +136,9 @@ def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:  #
     # Init exchange
     exchange = ExchangeResolver(config['exchange']['name'], config).exchange
 
-    active_only = args.get('active_only', False)
+    # By default only active pairs/markets are to be shown
+    active_only = not args.get('list_pairs_all', False)
+
     base_currencies = args.get('base_currencies', [])
     quote_currencies = args.get('quote_currencies', [])
 

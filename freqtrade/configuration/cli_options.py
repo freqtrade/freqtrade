@@ -256,6 +256,12 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_true',
     ),
     # List pairs / markets
+    "list_pairs_all": Arg(
+        '-a', '--all',
+        help='Print all pairs or market symbols. By default only active '
+             'ones are shown.',
+        action='store_true',
+    ),
     "print_list": Arg(
         '--print-list',
         help='Print list of pairs or market symbols. By default data is '
@@ -282,11 +288,6 @@ AVAILABLE_CLI_OPTIONS = {
         '--base',
         help='Specify base currency(-ies). Space-separated list.',
         nargs='+',
-    ),
-    "active_only": Arg(
-        '--active-only',
-        help='Print only active pairs or markets.',
-        action='store_true',
     ),
     # Script options
     "pairs": Arg(

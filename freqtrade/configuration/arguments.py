@@ -35,7 +35,7 @@ ARGS_LIST_EXCHANGES = ["print_one_column", "list_exchanges_all"]
 ARGS_LIST_TIMEFRAMES = ["exchange", "print_one_column"]
 
 ARGS_LIST_PAIRS = ["exchange", "print_list", "list_pairs_print_json", "print_one_column",
-                   "print_csv", "base_currencies", "quote_currencies", "active_only"]
+                   "print_csv", "base_currencies", "quote_currencies", "list_pairs_all"]
 
 ARGS_CREATE_USERDIR = ["user_data_dir"]
 
