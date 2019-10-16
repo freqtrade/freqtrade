@@ -124,7 +124,7 @@ def start_list_timeframes(args: Dict[str, Any]) -> None:
               f"{', '.join(exchange.timeframes)}.")
 
 
-def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:
+def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:  # noqa: C901
     """
     Print pairs on the exchange
     :param args: Cli args from Arguments()
