@@ -39,10 +39,8 @@ class PairListResolver(IResolver):
         """
         current_path = Path(__file__).parent.parent.joinpath('pairlist').resolve()
 
-        abs_paths = [
-            config['user_data_dir'].joinpath('pairlist'),
-            current_path,
-        ]
+        abs_paths = self.build_search_paths(config, current_path=current_path,
+                                            user_subdir='pairlist', extra_dir=None)
 
         pairlist = self._load_object(paths=abs_paths, object_type=IPairList,
                                      object_name=pairlist_name, kwargs=kwargs)
