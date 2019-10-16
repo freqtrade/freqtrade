@@ -137,12 +137,12 @@ def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:  #
     exchange = ExchangeResolver(config['exchange']['name'], config).exchange
 
     active_only = args.get('active_only', False)
-    base_currency = args.get('base_currency', '')
-    quote_currency = args.get('quote_currency', '')
+    base_currencies = args.get('base_currencies', [])
+    quote_currencies = args.get('quote_currencies', [])
 
     try:
-        pairs = exchange.get_markets(base_currency=base_currency,
-                                     quote_currency=quote_currency,
+        pairs = exchange.get_markets(base_currencies=base_currencies,
+                                     quote_currencies=quote_currencies,
                                      pairs_only=pairs_only,
                                      active_only=active_only)
     except Exception as e:
@@ -152,9 +152,13 @@ def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:  #
         summary_str = ((f"Exchange {exchange.name} has {len(pairs)} ") +
                        ("active " if active_only else "") +
                        (plural(len(pairs), "pair" if pairs_only else "market")) +
-                       (f" with {base_currency} as base currency" if base_currency else "") +
-                       (" and" if base_currency and quote_currency else "") +
-                       (f" with {quote_currency} as quote currency" if quote_currency else ""))
+                       (f" with {', '.join(base_currencies)} as base "
+                        f"{plural(len(base_currencies), 'currency', 'currencies')}"
+                        if base_currencies else "") +
+                       (" and" if base_currencies and quote_currencies else "") +
+                       (f" with {', '.join(quote_currencies)} as quote "
+                        f"{plural(len(quote_currencies), 'currency', 'currencies')}"
+                        if quote_currencies else ""))
 
         headers = ["Id", "Symbol", "Base", "Quote", "Active",
                    *(['Is pair'] if not pairs_only else [])]

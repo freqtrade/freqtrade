@@ -273,13 +273,15 @@ AVAILABLE_CLI_OPTIONS = {
         help='Print exchange pair or market data in the csv format.',
         action='store_true',
     ),
-    "quote_currency": Arg(
-        '--quote-currency',
-        help='Select quote currency.',
+    "quote_currencies": Arg(
+        '--quote',
+        help='Specify quote currency(-ies). Space-separated list.',
+        nargs='+',
     ),
-    "base_currency": Arg(
-        '--base-currency',
-        help='Select base currency.',
+    "base_currencies": Arg(
+        '--base',
+        help='Specify base currency(-ies). Space-separated list.',
+        nargs='+',
     ),
     "active_only": Arg(
         '--active-only',

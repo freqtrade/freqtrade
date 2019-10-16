@@ -280,7 +280,7 @@ class Exchange:
             self._load_markets()
         return self._api.markets
 
-    def get_markets(self, base_currency: str = None, quote_currency: str = None,
+    def get_markets(self, base_currencies: List[str] = None, quote_currencies: List[str] = None,
                     pairs_only: bool = False, active_only: bool = False) -> Dict:
         """
         Return exchange ccxt markets, filtered out by base currency and quote currency
@@ -292,10 +292,10 @@ class Exchange:
         if not markets:
             raise OperationalException("Markets were not loaded.")
 
-        if base_currency:
-            markets = {k: v for k, v in markets.items() if v['base'] == base_currency}
-        if quote_currency:
-            markets = {k: v for k, v in markets.items() if v['quote'] == quote_currency}
+        if base_currencies:
+            markets = {k: v for k, v in markets.items() if v['base'] in base_currencies}
+        if quote_currencies:
+            markets = {k: v for k, v in markets.items() if v['quote'] in quote_currencies}
         if pairs_only:
             markets = {k: v for k, v in markets.items() if market_is_pair(v)}
         if active_only:
