@@ -166,14 +166,21 @@ def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:
                                  'Active': market_is_active(v),
                                  **({'Is pair': market_is_pair(v)} if not pairs_only else {})})
 
+        if (args.get('print_one_column', False) or
+                args.get('list_pairs_print_json', False) or
+                args.get('print_csv', False)):
+            logger.info(f"{summary_str}.")
+
         if args.get('print_list', False):
             # print data as a list, with human-readable summary
             print(summary_str +
                   (f": {', '.join(sorted(pairs.keys()))}" if len(pairs) else "") + ".")
         elif args.get('print_one_column', False):
-            print('\n'.join(sorted(pairs.keys())))
+            if len(pairs):
+                print('\n'.join(sorted(pairs.keys())))
         elif args.get('list_pairs_print_json', False):
-            print(rapidjson.dumps(sorted(pairs.keys()), default=str))
+            if len(pairs):
+                print(rapidjson.dumps(sorted(pairs.keys()), default=str))
         elif args.get('print_csv', False):
             if len(pairs):
                 writer = csv.DictWriter(sys.stdout, fieldnames=headers)
