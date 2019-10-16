@@ -106,7 +106,7 @@ class SampleStrategy(IStrategy):
 
         """
         # ADX
-        # dataframe['adx'] = ta.ADX(dataframe)
+        dataframe['adx'] = ta.ADX(dataframe)
 
         # Awesome oscillator
         dataframe['ao'] = qtpylib.awesome_oscillator(dataframe)
