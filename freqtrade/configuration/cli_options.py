@@ -283,11 +283,13 @@ AVAILABLE_CLI_OPTIONS = {
         '--quote',
         help='Specify quote currency(-ies). Space-separated list.',
         nargs='+',
+        metavar='QUOTE_CURRENCY',
     ),
     "base_currencies": Arg(
         '--base',
         help='Specify base currency(-ies). Space-separated list.',
         nargs='+',
+        metavar='BASE_CURRENCY',
     ),
     # Script options
     "pairs": Arg(
