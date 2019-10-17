@@ -8,7 +8,7 @@ from freqtrade import OperationalException
 from freqtrade.state import RunMode
 from freqtrade.utils import (setup_utils_configuration, start_create_userdir,
                              start_download_data, start_list_exchanges,
-                             start_list_pairs, start_list_timeframes)
+                             start_list_markets, start_list_timeframes)
 from tests.conftest import get_args, log_has, patch_exchange
 
 
@@ -176,14 +176,14 @@ def test_list_markets(mocker, markets, capsys):
     ]
     with pytest.raises(OperationalException,
                        match=r"This command requires a configured exchange.*"):
-        start_list_pairs(get_args(args), False)
+        start_list_markets(get_args(args), False)
 
     # Test with --config config.json.example
     args = [
         '--config', 'config.json.example',
         "list-markets",
     ]
-    start_list_pairs(get_args(args), False)
+    start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
     assert re.match("Exchange Bittrex has 8 active markets:\n",
                     captured.out)
@@ -193,7 +193,7 @@ def test_list_markets(mocker, markets, capsys):
 #        "list-markets",
 #        "--exchange", "binance"
 #    ]
-#    start_list_pairs(get_args(args), False)
+#    start_list_markets(get_args(args), False)
 #    captured = capsys.readouterr()
 #    assert re.match("Exchange Binance has 8 active markets:\n",
 #                    captured.out)
@@ -203,7 +203,7 @@ def test_list_markets(mocker, markets, capsys):
         '--config', 'config.json.example',
         "list-markets", "--all"
     ]
-    start_list_pairs(get_args(args), False)
+    start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
     assert re.match("Exchange Bittrex has 11 markets:\n",
                     captured.out)
@@ -213,7 +213,7 @@ def test_list_markets(mocker, markets, capsys):
         '--config', 'config.json.example',
         "list-pairs",
     ]
-    start_list_pairs(get_args(args), True)
+    start_list_markets(get_args(args), True)
     captured = capsys.readouterr()
     assert re.match("Exchange Bittrex has 7 active pairs:\n",
                     captured.out)
@@ -223,7 +223,7 @@ def test_list_markets(mocker, markets, capsys):
         '--config', 'config.json.example',
         "list-pairs", "--all"
     ]
-    start_list_pairs(get_args(args), True)
+    start_list_markets(get_args(args), True)
     captured = capsys.readouterr()
     assert re.match("Exchange Bittrex has 10 pairs:\n",
                     captured.out)
@@ -234,7 +234,7 @@ def test_list_markets(mocker, markets, capsys):
         "list-markets",
         "--base", "ETH", "LTC"
     ]
-    start_list_pairs(get_args(args), False)
+    start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
     assert re.match("Exchange Bittrex has 5 active markets with ETH, LTC as base currencies:\n",
                     captured.out)
@@ -245,7 +245,7 @@ def test_list_markets(mocker, markets, capsys):
         "list-markets",
         "--base", "LTC"
     ]
-    start_list_pairs(get_args(args), False)
+    start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
     assert re.match("Exchange Bittrex has 3 active markets with LTC as base currency:\n",
                     captured.out)
@@ -256,7 +256,7 @@ def test_list_markets(mocker, markets, capsys):
         "list-markets",
         "--quote", "USDT", "USD"
     ]
-    start_list_pairs(get_args(args), False)
+    start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
     assert re.match("Exchange Bittrex has 4 active markets with USDT, USD as quote currencies:\n",
                     captured.out)
@@ -267,7 +267,7 @@ def test_list_markets(mocker, markets, capsys):
         "list-markets",
         "--quote", "USDT"
     ]
-    start_list_pairs(get_args(args), False)
+    start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
     assert re.match("Exchange Bittrex has 3 active markets with USDT as quote currency:\n",
                     captured.out)
@@ -278,7 +278,7 @@ def test_list_markets(mocker, markets, capsys):
         "list-markets",
         "--base", "LTC", "--quote", "USDT"
     ]
-    start_list_pairs(get_args(args), False)
+    start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
     assert re.match("Exchange Bittrex has 2 active markets with LTC as base currency and "
                     "with USDT as quote currency:\n",
@@ -290,7 +290,7 @@ def test_list_markets(mocker, markets, capsys):
         "list-pairs",
         "--base", "LTC", "--quote", "USDT"
     ]
-    start_list_pairs(get_args(args), True)
+    start_list_markets(get_args(args), True)
     captured = capsys.readouterr()
     assert re.match("Exchange Bittrex has 1 active pair with LTC as base currency and "
                     "with USDT as quote currency:\n",
@@ -302,7 +302,7 @@ def test_list_markets(mocker, markets, capsys):
         "list-markets",
         "--base", "LTC", "--quote", "USDT", "NONEXISTENT"
     ]
-    start_list_pairs(get_args(args), False)
+    start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
     assert re.match("Exchange Bittrex has 2 active markets with LTC as base currency and "
                     "with USDT, NONEXISTENT as quote currencies:\n",
@@ -314,7 +314,7 @@ def test_list_markets(mocker, markets, capsys):
         "list-markets",
         "--base", "LTC", "--quote", "NONEXISTENT"
     ]
-    start_list_pairs(get_args(args), False)
+    start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
     assert re.match("Exchange Bittrex has 0 active markets with LTC as base currency and "
                     "with NONEXISTENT as quote currency.\n",

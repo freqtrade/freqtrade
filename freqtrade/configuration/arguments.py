@@ -112,7 +112,7 @@ class Arguments:
         from freqtrade.optimize import start_backtesting, start_hyperopt, start_edge
         from freqtrade.utils import (start_create_userdir, start_download_data,
                                      start_list_exchanges, start_list_timeframes,
-                                     start_list_pairs)
+                                     start_list_markets)
 
         subparsers = self.parser.add_subparsers(dest='subparser')
 
@@ -158,7 +158,7 @@ class Arguments:
             'list-markets',
             help='Print markets on exchange.'
         )
-        list_markets_cmd.set_defaults(func=partial(start_list_pairs, pairs_only=False))
+        list_markets_cmd.set_defaults(func=partial(start_list_markets, pairs_only=False))
         self._build_args(optionlist=ARGS_LIST_PAIRS, parser=list_markets_cmd)
 
         # Add list-pairs subcommand
@@ -166,7 +166,7 @@ class Arguments:
             'list-pairs',
             help='Print pairs on exchange.'
         )
-        list_pairs_cmd.set_defaults(func=partial(start_list_pairs, pairs_only=True))
+        list_pairs_cmd.set_defaults(func=partial(start_list_markets, pairs_only=True))
         self._build_args(optionlist=ARGS_LIST_PAIRS, parser=list_pairs_cmd)
 
         # Add download-data subcommand

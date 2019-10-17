@@ -125,9 +125,9 @@ def start_list_timeframes(args: Dict[str, Any]) -> None:
               f"{', '.join(exchange.timeframes)}.")
 
 
-def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:
+def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
     """
-    Print pairs on the exchange
+    Print pairs/markets on the exchange
     :param args: Cli args from Arguments()
     :param pairs_only: if True print only pairs, otherwise print all instruments (markets)
     :return: None
