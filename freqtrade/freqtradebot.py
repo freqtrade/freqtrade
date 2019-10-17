@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 from requests.exceptions import RequestException
 
-from freqtrade import (DependencyException, OperationalException, InvalidOrderException,
+from freqtrade import (DependencyException, InvalidOrderException,
                        __version__, constants, persistence)
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
@@ -508,7 +508,7 @@ class FreqtradeBot:
 
         if not isclose(amount, order_amount, abs_tol=constants.MATH_CLOSE_PREC):
             logger.warning(f"Amount {amount} does not match amount {trade.amount}")
-            raise OperationalException("Half bought? Amounts don't match")
+            raise DependencyException("Half bought? Amounts don't match")
         real_amount = amount - fee_abs
         if fee_abs != 0:
             logger.info(f"Applying fee on amount for {trade} "
@@ -536,7 +536,7 @@ class FreqtradeBot:
                     # Fee was applied, so set to 0
                     trade.fee_open = 0
 
-            except OperationalException as exception:
+            except DependencyException as exception:
                 logger.warning("Could not update trade amount: %s", exception)
 
             trade.update(order)

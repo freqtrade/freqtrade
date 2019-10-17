@@ -9,8 +9,8 @@ from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 
 import arrow
-import pytest
 import numpy as np
+import pytest
 from telegram import Chat, Message, Update
 
 from freqtrade import constants, persistence
@@ -19,9 +19,9 @@ from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
+from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
-
 
 logging.getLogger('').setLevel(logging.INFO)
 
@@ -1069,3 +1069,19 @@ def import_fails() -> None:
 
     # restore previous importfunction
     builtins.__import__ = realimport
+
+
+@pytest.fixture(scope="function")
+def open_trade():
+    return Trade(
+        pair='ETH/BTC',
+        open_rate=0.00001099,
+        exchange='bittrex',
+        open_order_id='123456789',
+        amount=90.99181073,
+        fee_open=0.0,
+        fee_close=0.0,
+        stake_amount=1,
+        open_date=arrow.utcnow().shift(minutes=-601).datetime,
+        is_open=True
+    )

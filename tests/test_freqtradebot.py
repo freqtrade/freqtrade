@@ -1916,7 +1916,8 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order,
         freqtrade.handle_trade(trade)
 
 
-def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, fee, mocker) -> None:
+def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, open_trade,
+                                   fee, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
     patch_exchange(mocker)
@@ -1929,31 +1930,18 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, fe
     )
     freqtrade = FreqtradeBot(default_conf)
 
-    trade_buy = Trade(
-        pair='ETH/BTC',
-        open_rate=0.00001099,
-        exchange='bittrex',
-        open_order_id='123456789',
-        amount=90.99181073,
-        fee_open=0.0,
-        fee_close=0.0,
-        stake_amount=1,
-        open_date=arrow.utcnow().shift(minutes=-601).datetime,
-        is_open=True
-    )
-
-    Trade.session.add(trade_buy)
+    Trade.session.add(open_trade)
 
     # check it does cancel buy orders over the time limit
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
-    trades = Trade.query.filter(Trade.open_order_id.is_(trade_buy.open_order_id)).all()
+    trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     nb_trades = len(trades)
     assert nb_trades == 0
 
 
-def test_check_handle_cancelled_buy(default_conf, ticker, limit_buy_order_old,
+def test_check_handle_cancelled_buy(default_conf, ticker, limit_buy_order_old, open_trade,
                                     fee, mocker, caplog) -> None:
     """ Handle Buy order cancelled on exchange"""
     rpc_mock = patch_RPCManager(mocker)
@@ -1969,32 +1957,19 @@ def test_check_handle_cancelled_buy(default_conf, ticker, limit_buy_order_old,
     )
     freqtrade = FreqtradeBot(default_conf)
 
-    trade_buy = Trade(
-        pair='ETH/BTC',
-        open_rate=0.00001099,
-        exchange='bittrex',
-        open_order_id='123456789',
-        amount=90.99181073,
-        fee_open=0.0,
-        fee_close=0.0,
-        stake_amount=1,
-        open_date=arrow.utcnow().shift(minutes=-601).datetime,
-        is_open=True
-    )
-
-    Trade.session.add(trade_buy)
+    Trade.session.add(open_trade)
 
     # check it does cancel buy orders over the time limit
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 1
-    trades = Trade.query.filter(Trade.open_order_id.is_(trade_buy.open_order_id)).all()
+    trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     nb_trades = len(trades)
     assert nb_trades == 0
     assert log_has_re("Buy order canceled on Exchange for Trade.*", caplog)
 
 
-def test_check_handle_timedout_buy_exception(default_conf, ticker, limit_buy_order_old,
+def test_check_handle_timedout_buy_exception(default_conf, ticker, limit_buy_order_old, open_trade,
                                              fee, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
@@ -2009,31 +1984,19 @@ def test_check_handle_timedout_buy_exception(default_conf, ticker, limit_buy_ord
     )
     freqtrade = FreqtradeBot(default_conf)
 
-    trade_buy = Trade(
-        pair='ETH/BTC',
-        open_rate=0.00001099,
-        exchange='bittrex',
-        open_order_id='123456789',
-        amount=90.99181073,
-        fee_open=0.0,
-        fee_close=0.0,
-        stake_amount=1,
-        open_date=arrow.utcnow().shift(minutes=-601).datetime,
-        is_open=True
-    )
-
-    Trade.session.add(trade_buy)
+    Trade.session.add(open_trade)
 
     # check it does cancel buy orders over the time limit
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 0
-    trades = Trade.query.filter(Trade.open_order_id.is_(trade_buy.open_order_id)).all()
+    trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     nb_trades = len(trades)
     assert nb_trades == 1
 
 
-def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, mocker) -> None:
+def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, mocker,
+                                    open_trade) -> None:
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
     patch_exchange(mocker)
@@ -2045,30 +2008,20 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
     )
     freqtrade = FreqtradeBot(default_conf)
 
-    trade_sell = Trade(
-        pair='ETH/BTC',
-        open_rate=0.00001099,
-        exchange='bittrex',
-        open_order_id='123456789',
-        amount=90.99181073,
-        fee_open=0.0,
-        fee_close=0.0,
-        stake_amount=1,
-        open_date=arrow.utcnow().shift(hours=-5).datetime,
-        close_date=arrow.utcnow().shift(minutes=-601).datetime,
-        is_open=False
-    )
+    open_trade.open_date = arrow.utcnow().shift(hours=-5).datetime
+    open_trade.close_date = arrow.utcnow().shift(minutes=-601).datetime
+    open_trade.is_open = False
 
-    Trade.session.add(trade_sell)
+    Trade.session.add(open_trade)
 
     # check it does cancel sell orders over the time limit
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
-    assert trade_sell.is_open is True
+    assert open_trade.is_open is True
 
 
-def test_check_handle_cancelled_sell(default_conf, ticker, limit_sell_order_old,
+def test_check_handle_cancelled_sell(default_conf, ticker, limit_sell_order_old, open_trade,
                                      mocker, caplog) -> None:
     """ Handle sell order cancelled on exchange"""
     rpc_mock = patch_RPCManager(mocker)
@@ -2083,32 +2036,22 @@ def test_check_handle_cancelled_sell(default_conf, ticker, limit_sell_order_old,
     )
     freqtrade = FreqtradeBot(default_conf)
 
-    trade_sell = Trade(
-        pair='ETH/BTC',
-        open_rate=0.00001099,
-        exchange='bittrex',
-        open_order_id='123456789',
-        amount=90.99181073,
-        fee_open=0.0,
-        fee_close=0.0,
-        stake_amount=1,
-        open_date=arrow.utcnow().shift(hours=-5).datetime,
-        close_date=arrow.utcnow().shift(minutes=-601).datetime,
-        is_open=False
-    )
+    open_trade.open_date = arrow.utcnow().shift(hours=-5).datetime
+    open_trade.close_date = arrow.utcnow().shift(minutes=-601).datetime
+    open_trade.is_open = False
 
-    Trade.session.add(trade_sell)
+    Trade.session.add(open_trade)
 
     # check it does cancel sell orders over the time limit
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 1
-    assert trade_sell.is_open is True
+    assert open_trade.is_open is True
     assert log_has_re("Sell order canceled on exchange for Trade.*", caplog)
 
 
 def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old_partial,
-                                       mocker) -> None:
+                                       open_trade, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
     patch_exchange(mocker)
@@ -2120,33 +2063,20 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
     )
     freqtrade = FreqtradeBot(default_conf)
 
-    trade_buy = Trade(
-        pair='ETH/BTC',
-        open_rate=0.00001099,
-        exchange='bittrex',
-        open_order_id='123456789',
-        amount=90.99181073,
-        fee_open=0.0,
-        fee_close=0.0,
-        stake_amount=1,
-        open_date=arrow.utcnow().shift(minutes=-601).datetime,
-        is_open=True
-    )
-
-    Trade.session.add(trade_buy)
+    Trade.session.add(open_trade)
 
     # check it does cancel buy orders over the time limit
     # note this is for a partially-complete buy order
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
-    trades = Trade.query.filter(Trade.open_order_id.is_(trade_buy.open_order_id)).all()
+    trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     assert len(trades) == 1
     assert trades[0].amount == 23.0
-    assert trades[0].stake_amount == trade_buy.open_rate * trades[0].amount
+    assert trades[0].stake_amount == open_trade.open_rate * trades[0].amount
 
 
-def test_check_handle_timedout_exception(default_conf, ticker, mocker, caplog) -> None:
+def test_check_handle_timedout_exception(default_conf, ticker, open_trade, mocker, caplog) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     cancel_order_mock = MagicMock()
@@ -2164,26 +2094,12 @@ def test_check_handle_timedout_exception(default_conf, ticker, mocker, caplog) -
     )
     freqtrade = FreqtradeBot(default_conf)
 
-    open_date = arrow.utcnow().shift(minutes=-601)
-    trade_buy = Trade(
-        pair='ETH/BTC',
-        open_rate=0.00001099,
-        exchange='bittrex',
-        open_order_id='123456789',
-        amount=90.99181073,
-        fee_open=0.0,
-        fee_close=0.0,
-        stake_amount=1,
-        open_date=open_date.datetime,
-        is_open=True
-    )
-
-    Trade.session.add(trade_buy)
+    Trade.session.add(open_trade)
 
     freqtrade.check_handle_timedout()
     assert log_has_re(r"Cannot query order for Trade\(id=1, pair=ETH/BTC, amount=90.99181073, "
                       r"open_rate=0.00001099, open_since="
-                      f"{open_date.strftime('%Y-%m-%d %H:%M:%S')}"
+                      f"{open_trade.open_date.strftime('%Y-%m-%d %H:%M:%S')}"
                       r"\) due to Traceback \(most recent call last\):\n*",
                       caplog)
 
@@ -2204,9 +2120,11 @@ def test_handle_timedout_limit_buy(mocker, default_conf, limit_buy_order) -> Non
     limit_buy_order['remaining'] = limit_buy_order['amount']
     assert freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
     assert cancel_order_mock.call_count == 1
+
+    cancel_order_mock.reset_mock()
     limit_buy_order['amount'] = 2
     assert not freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
-    assert cancel_order_mock.call_count == 2
+    assert cancel_order_mock.call_count == 1
 
 
 def test_handle_timedout_limit_sell(mocker, default_conf) -> None:
