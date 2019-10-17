@@ -925,17 +925,17 @@ def test_get_balances_prod(default_conf, mocker, exchange_name):
 def test_get_tickers(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
     tick = {'ETH/BTC': {
-          'symbol': 'ETH/BTC',
-          'bid': 0.5,
-          'ask': 1,
-          'last': 42,
-      }, 'BCH/BTC': {
-          'symbol': 'BCH/BTC',
-          'bid': 0.6,
-          'ask': 0.5,
-          'last': 41,
-      }
-      }
+        'symbol': 'ETH/BTC',
+        'bid': 0.5,
+        'ask': 1,
+        'last': 42,
+    }, 'BCH/BTC': {
+        'symbol': 'BCH/BTC',
+        'bid': 0.6,
+        'ask': 0.5,
+        'last': 41,
+    }
+    }
     api_mock.fetch_tickers = MagicMock(return_value=tick)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     # retrieve original ticker
@@ -1488,59 +1488,60 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
         ex.get_valid_pair_combination("NOPAIR", "ETH")
 
 
-@pytest.mark.parametrize("base_currencies, quote_currencies, pairs_only, active_only,"
-                         "expected_keys", [
-# Testing markets (in conftest.py):
-# 'BLK/BTC':  'active': True
-# 'BTT/BTC':  'active': True
-# 'ETH/BTC':  'active': True
-# 'ETH/USDT': 'active': True
-# 'LTC/BTC':  'active': False
-# 'LTC/USD':  'active': True
-# 'LTC/USDT': 'active': True
-# 'NEO/BTC':  'active': False
-# 'TKN/BTC':  'active'  not set
-# 'XLTCUSDT': 'active': True, not a pair
-# 'XRP/BTC':  'active': False
-    # all markets
-    ([], [], False, False,
-     ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD', 'LTC/USDT', 'NEO/BTC',
-     'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
-    # active markets
-    ([], [], False, True,
-     ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/USD', 'LTC/USDT', 'TKN/BTC', 'XLTCUSDT']),
-    # all pairs
-    ([], [], True, False,
-     ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD', 'LTC/USDT', 'NEO/BTC',
-      'TKN/BTC', 'XRP/BTC']),
-    # active pairs
-    ([], [], True, True,
-     ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/USD', 'LTC/USDT', 'TKN/BTC']),
-    # all markets, base=ETH, LTC
-    (['ETH', 'LTC'], [], False, False,
-     ['ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
-    # all markets, base=LTC
-    (['LTC'], [], False, False,
-     ['LTC/BTC', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
-    # all markets, quote=USDT
-    ([], ['USDT'], False, False,
-     ['ETH/USDT', 'LTC/USDT', 'XLTCUSDT']),
-    # all markets, quote=USDT, USD
-    ([], ['USDT', 'USD'], False, False,
-     ['ETH/USDT', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
-    # all markets, base=LTC, quote=USDT
-    (['LTC'], ['USDT'], False, False,
-     ['LTC/USDT', 'XLTCUSDT']),
-    # all pairs, base=LTC, quote=USDT
-    (['LTC'], ['USDT'], True, False,
-     ['LTC/USDT']),
-    # all markets, base=LTC, quote=USDT, NONEXISTENT
-    (['LTC'], ['USDT', 'NONEXISTENT'], False, False,
-     ['LTC/USDT', 'XLTCUSDT']),
-    # all markets, base=LTC, quote=NONEXISTENT
-    (['LTC'], ['NONEXISTENT'], False, False,
-     []),
-])
+@pytest.mark.parametrize(
+    "base_currencies, quote_currencies, pairs_only, active_only, expected_keys", [
+        # Testing markets (in conftest.py):
+        # 'BLK/BTC':  'active': True
+        # 'BTT/BTC':  'active': True
+        # 'ETH/BTC':  'active': True
+        # 'ETH/USDT': 'active': True
+        # 'LTC/BTC':  'active': False
+        # 'LTC/USD':  'active': True
+        # 'LTC/USDT': 'active': True
+        # 'NEO/BTC':  'active': False
+        # 'TKN/BTC':  'active'  not set
+        # 'XLTCUSDT': 'active': True, not a pair
+        # 'XRP/BTC':  'active': False
+        # all markets
+        ([], [], False, False,
+         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD',
+          'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
+        # active markets
+        ([], [], False, True,
+         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/USD', 'LTC/USDT',
+          'TKN/BTC', 'XLTCUSDT']),
+        # all pairs
+        ([], [], True, False,
+         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD',
+          'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XRP/BTC']),
+        # active pairs
+        ([], [], True, True,
+         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/USD', 'LTC/USDT', 'TKN/BTC']),
+        # all markets, base=ETH, LTC
+        (['ETH', 'LTC'], [], False, False,
+         ['ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
+        # all markets, base=LTC
+        (['LTC'], [], False, False,
+         ['LTC/BTC', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
+        # all markets, quote=USDT
+        ([], ['USDT'], False, False,
+         ['ETH/USDT', 'LTC/USDT', 'XLTCUSDT']),
+        # all markets, quote=USDT, USD
+        ([], ['USDT', 'USD'], False, False,
+         ['ETH/USDT', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
+        # all markets, base=LTC, quote=USDT
+        (['LTC'], ['USDT'], False, False,
+         ['LTC/USDT', 'XLTCUSDT']),
+        # all pairs, base=LTC, quote=USDT
+        (['LTC'], ['USDT'], True, False,
+         ['LTC/USDT']),
+        # all markets, base=LTC, quote=USDT, NONEXISTENT
+        (['LTC'], ['USDT', 'NONEXISTENT'], False, False,
+         ['LTC/USDT', 'XLTCUSDT']),
+        # all markets, base=LTC, quote=NONEXISTENT
+        (['LTC'], ['NONEXISTENT'], False, False,
+         []),
+    ])
 def test_get_markets(default_conf, mocker, markets,
                      base_currencies, quote_currencies, pairs_only, active_only,
                      expected_keys):
