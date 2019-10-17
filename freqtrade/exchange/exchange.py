@@ -22,6 +22,7 @@ from freqtrade import (DependencyException, InvalidOrderException,
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.misc import deep_merge_dicts
 
+
 logger = logging.getLogger(__name__)
 
 
