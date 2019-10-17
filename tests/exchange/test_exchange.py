@@ -18,7 +18,8 @@ from freqtrade.exchange.exchange import (API_RETRY_COUNT, timeframe_to_minutes,
                                          timeframe_to_msecs,
                                          timeframe_to_next_date,
                                          timeframe_to_prev_date,
-                                         timeframe_to_seconds)
+                                         timeframe_to_seconds,
+                                         market_is_pair)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import get_patched_exchange, log_has, log_has_re
 
@@ -1555,3 +1556,24 @@ def test_timeframe_to_next_date():
 
     date = datetime.now(tz=timezone.utc)
     assert timeframe_to_next_date("5m") > date
+
+
+@pytest.mark.parametrize("market,base_currency,quote_currency,expected_result", [
+    ({'symbol': "BTC/USDT"}, None, None, True),
+    ({'symbol': "USDT/BTC"}, None, None, True),
+    ({'symbol': "BTCUSDT"}, None, None, False),
+    ({'symbol': "BTC/USDT"}, None, "USDT", True),
+    ({'symbol': "USDT/BTC"}, None, "USDT", False),
+    ({'symbol': "BTCUSDT"}, None, "USDT", False),
+    ({'symbol': "BTC/USDT"}, "BTC", None, True),
+    ({'symbol': "USDT/BTC"}, "BTC", None, False),
+    ({'symbol': "BTCUSDT"}, "BTC", None, False),
+    ({'symbol': "BTC/USDT"}, "BTC", "USDT", True),
+    ({'symbol': "BTC/USDT"}, "USDT", "BTC", False),
+    ({'symbol': "BTC/USDT"}, "BTC", "USD", False),
+    ({'symbol': "BTCUSDT"}, "BTC", "USDT", False),
+    ({'symbol': "BTC/"}, None, None, False),
+    ({'symbol': "/USDT"}, None, None, False),
+])
+def test_market_is_pair(market, base_currency, quote_currency, expected_result) -> None:
+    assert market_is_pair(market, base_currency, quote_currency) == expected_result
