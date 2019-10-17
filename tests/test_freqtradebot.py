@@ -1678,7 +1678,7 @@ def test_update_trade_state_exception(mocker, default_conf,
     # Test raise of OperationalException exception
     mocker.patch(
         'freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
-        side_effect=OperationalException()
+        side_effect=DependencyException()
     )
     freqtrade.update_trade_state(trade)
     assert log_has('Could not update trade amount: ', caplog)
@@ -2188,7 +2188,7 @@ def test_check_handle_timedout_exception(default_conf, ticker, mocker, caplog) -
                       caplog)
 
 
-def test_handle_timedout_limit_buy(mocker, default_conf) -> None:
+def test_handle_timedout_limit_buy(mocker, default_conf, limit_buy_order) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     cancel_order_mock = MagicMock()
@@ -2201,12 +2201,11 @@ def test_handle_timedout_limit_buy(mocker, default_conf) -> None:
 
     Trade.session = MagicMock()
     trade = MagicMock()
-    order = {'remaining': 1,
-             'amount': 1}
-    assert freqtrade.handle_timedout_limit_buy(trade, order)
+    limit_buy_order['remaining'] = limit_buy_order['amount']
+    assert freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
     assert cancel_order_mock.call_count == 1
-    order['amount'] = 2
-    assert not freqtrade.handle_timedout_limit_buy(trade, order)
+    limit_buy_order['amount'] = 2
+    assert not freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
     assert cancel_order_mock.call_count == 2
 
 
@@ -3361,7 +3360,7 @@ def test_get_real_amount_wrong_amount(default_conf, trades_for_order, buy_order_
     patch_get_signal(freqtrade)
 
     # Amount does not change
-    with pytest.raises(OperationalException, match=r"Half bought\? Amounts don't match"):
+    with pytest.raises(DependencyException, match=r"Half bought\? Amounts don't match"):
         freqtrade.get_real_amount(trade, limit_buy_order)
 
 

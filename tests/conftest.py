@@ -896,12 +896,6 @@ def result(testdatadir):
         return parse_ticker_dataframe(json.load(data_file), '1m', pair="UNITTEST/BTC",
                                       fill_missing=True)
 
-# FIX:
-# Create an fixture/function
-# that inserts a trade of some type and open-status
-# return the open-order-id
-# See tests in rpc/main that could use this
-
 
 @pytest.fixture(scope="function")
 def trades_for_order():
