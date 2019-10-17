@@ -937,12 +937,17 @@ def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
     return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
 
 
-def market_is_pair(market):
+def market_is_pair(market, base_currency: str = None, quote_currency: str = None):
     """
-    Return True if the market is a pair.
-    Currently pairs are defined as markets containing '/' character in its symbol.
+    Check if the market is a pair, i.e. that its symbol consists of the base currency and the
+    quote currency separated by '/' character. If base_currency and/or quote_currency is passed,
+    it also checks that the symbol contains appropriate base and/or quote currency part before
+    and after the separating character correspondingly.
     """
-    return '/' in market.get('symbol', '')
+    symbol_parts = market['symbol'].split('/')
+    return (len(symbol_parts) == 2 and
+            (symbol_parts[0] == base_currency if base_currency else len(symbol_parts[0]) > 0) and
+            (symbol_parts[1] == quote_currency if quote_currency else len(symbol_parts[1]) > 0))
 
 
 def market_is_active(market):
