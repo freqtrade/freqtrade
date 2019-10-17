@@ -80,7 +80,7 @@ freqtrade download-data --exchange binance --pairs XRP/ETH ETH/BTC --days 20 --d
 
 ### Historic Kraken data
 
-The Kraken API does only provide 720 historic candles, which is sufficient for regular trading operations, but a problem for backtesting.
+The Kraken API does only provide 720 historic candles, which is sufficient for regular trading operations, but is a problem for backtesting.
 To download data for the Kraken exchange, using `--dl-trades` is mandatory, otherwise the bot will download the same 720 candles over and over, and you'll not have enough backtest data.
 
 ## Next step
