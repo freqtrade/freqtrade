@@ -1,5 +1,6 @@
 import logging
 import sys
+from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -147,6 +148,8 @@ def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:  #
                                      quote_currencies=quote_currencies,
                                      pairs_only=pairs_only,
                                      active_only=active_only)
+        # Sort the pairs/markets by symbol
+        pairs = OrderedDict(sorted(pairs.items()))
     except Exception as e:
         raise OperationalException(f"Cannot get markets. Reason: {e}") from e
 
@@ -180,13 +183,13 @@ def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:  #
         if args.get('print_list', False):
             # print data as a list, with human-readable summary
             print(summary_str +
-                  (f": {', '.join(sorted(pairs.keys()))}" if len(pairs) else "") + ".")
+                  (f": {', '.join(pairs.keys())}" if len(pairs) else "") + ".")
         elif args.get('print_one_column', False):
             if len(pairs):
-                print('\n'.join(sorted(pairs.keys())))
+                print('\n'.join(pairs.keys()))
         elif args.get('list_pairs_print_json', False):
             if len(pairs):
-                print(rapidjson.dumps(sorted(pairs.keys()), default=str))
+                print(rapidjson.dumps(pairs.keys(), default=str))
         elif args.get('print_csv', False):
             if len(pairs):
                 writer = csv.DictWriter(sys.stdout, fieldnames=headers)
