@@ -19,7 +19,8 @@ from freqtrade.exchange.exchange import (API_RETRY_COUNT, timeframe_to_minutes,
                                          timeframe_to_next_date,
                                          timeframe_to_prev_date,
                                          timeframe_to_seconds,
-                                         symbol_is_pair)
+                                         symbol_is_pair,
+                                         market_is_active)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import get_patched_exchange, log_has, log_has_re
 
@@ -1577,3 +1578,12 @@ def test_timeframe_to_next_date():
 ])
 def test_symbol_is_pair(market_symbol, base_currency, quote_currency, expected_result) -> None:
     assert symbol_is_pair(market_symbol, base_currency, quote_currency) == expected_result
+
+
+@pytest.mark.parametrize("market,expected_result", [
+    ({'symbol': 'ETH/BTC', 'active': True}, True),
+    ({'symbol': 'ETH/BTC', 'active': False}, False),
+    ({'symbol': 'ETH/BTC', }, True),
+])
+def test_market_is_active(market, expected_result) -> None:
+    assert market_is_active(market) == expected_result
