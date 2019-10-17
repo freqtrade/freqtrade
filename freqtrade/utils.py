@@ -125,7 +125,7 @@ def start_list_timeframes(args: Dict[str, Any]) -> None:
               f"{', '.join(exchange.timeframes)}.")
 
 
-def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:  # noqa: C901
+def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:
     """
     Print pairs on the exchange
     :param args: Cli args from Arguments()
@@ -180,24 +180,23 @@ def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:  #
                 args.get('print_csv', False)):
             logger.info(f"{summary_str}.")
 
-        if args.get('print_list', False):
-            # print data as a list, with human-readable summary
-            print(summary_str +
-                  (f": {', '.join(pairs.keys())}" if len(pairs) else "") + ".")
-        elif args.get('print_one_column', False):
-            if len(pairs):
+        if len(pairs):
+            if args.get('print_list', False):
+                # print data as a list, with human-readable summary
+                print(f"{summary_str}: {', '.join(pairs.keys())}.")
+            elif args.get('print_one_column', False):
                 print('\n'.join(pairs.keys()))
-        elif args.get('list_pairs_print_json', False):
-            if len(pairs):
-                print(rapidjson.dumps(pairs.keys(), default=str))
-        elif args.get('print_csv', False):
-            if len(pairs):
+            elif args.get('list_pairs_print_json', False):
+                print(rapidjson.dumps(list(pairs.keys()), default=str))
+            elif args.get('print_csv', False):
                 writer = csv.DictWriter(sys.stdout, fieldnames=headers)
                 writer.writeheader()
                 writer.writerows(tabular_data)
-        else:
-            print(summary_str +
-                  (":" if len(pairs) else "."))
-            if len(pairs):
-                # print data as a table
+            else:
+                # print data as a table, with the human-readable summary
+                print(f"{summary_str}:")
                 print(tabulate(tabular_data, headers='keys', tablefmt='pipe'))
+        elif not (args.get('print_one_column', False) or
+                  args.get('list_pairs_print_json', False) or
+                  args.get('print_csv', False)):
+            print(f"{summary_str}.")
