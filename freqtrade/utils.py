@@ -14,7 +14,7 @@ from freqtrade.configuration import Configuration, TimeRange
 from freqtrade.configuration.directory_operations import create_userdata_dir
 from freqtrade.data.history import refresh_backtest_ohlcv_data
 from freqtrade.exchange import (available_exchanges, ccxt_exchanges, market_is_active,
-                                market_is_pair)
+                                symbol_is_pair)
 from freqtrade.misc import plural
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
@@ -173,7 +173,8 @@ def start_list_pairs(args: Dict[str, Any], pairs_only: bool = False) -> None:
             tabular_data.append({'Id': v['id'], 'Symbol': v['symbol'],
                                  'Base': v['base'], 'Quote': v['quote'],
                                  'Active': market_is_active(v),
-                                 **({'Is pair': market_is_pair(v)} if not pairs_only else {})})
+                                 **({'Is pair': symbol_is_pair(v['symbol'])}
+                                    if not pairs_only else {})})
 
         if (args.get('print_one_column', False) or
                 args.get('list_pairs_print_json', False) or
