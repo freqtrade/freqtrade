@@ -318,7 +318,8 @@ def markets():
             'symbol': 'TKN/BTC',
             'base': 'TKN',
             'quote': 'BTC',
-            'active': True,
+            # According to ccxt, markets without active item set are also active
+            # 'active': True,
             'precision': {
                 'price': 8,
                 'amount': 8,
