@@ -466,12 +466,13 @@ class FreqtradeBot:
         if result:
             self.wallets.update()
 
-    def get_real_amount(self, trade: Trade, order: Dict) -> float:
+    def get_real_amount(self, trade: Trade, order: Dict, order_amount: float = None) -> float:
         """
         Get real amount for the trade
         Necessary for exchanges which charge fees in base currency (e.g. binance)
         """
-        order_amount = order['amount']
+        if order_amount is None:
+            order_amount = order['amount']
         # Only run for closed orders
         if trade.fee_open == 0 or order['status'] == 'open':
             return order_amount
@@ -819,7 +820,7 @@ class FreqtradeBot:
         trade.stake_amount = trade.amount * trade.open_rate
         # verify if fees were taken from amount to avoid problems during selling
         try:
-            new_amount = self.get_real_amount(trade, corder)
+            new_amount = self.get_real_amount(trade, corder, trade.amount)
             if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
                 trade.amount = new_amount
                 # Fee was applied, so set to 0

@@ -2076,7 +2076,7 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
     assert trades[0].stake_amount == open_trade.open_rate * trades[0].amount
 
 
-def test_check_handle_timedout_partial_fee(default_conf, ticker, open_trade, caplog,
+def test_check_handle_timedout_partial_fee(default_conf, ticker, open_trade, caplog, fee,
                                            limit_buy_order_old_partial, trades_for_order,
                                            limit_buy_order_old_partial_canceled, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
@@ -2093,8 +2093,8 @@ def test_check_handle_timedout_partial_fee(default_conf, ticker, open_trade, cap
 
     assert open_trade.amount == limit_buy_order_old_partial['amount']
 
-    open_trade.fee_open = 0.0025
-    open_trade.fee_close = 0.0025
+    open_trade.fee_open = fee()
+    open_trade.fee_close = fee()
     Trade.session.add(open_trade)
     # cancelling a half-filled order should update the amount to the bought amount
     # and apply fees if necessary.
@@ -2107,9 +2107,50 @@ def test_check_handle_timedout_partial_fee(default_conf, ticker, open_trade, cap
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     assert len(trades) == 1
     # Verify that tradehas been updated
-    assert trades[0].amount == limit_buy_order_old_partial['amount'] - 0.0001
+    assert trades[0].amount == (limit_buy_order_old_partial['amount'] -
+                                limit_buy_order_old_partial['remaining']) - 0.0001
     assert trades[0].open_order_id is None
     assert trades[0].fee_open == 0
+
+
+def test_check_handle_timedout_partial_except(default_conf, ticker, open_trade, caplog, fee,
+                                              limit_buy_order_old_partial, trades_for_order,
+                                              limit_buy_order_old_partial_canceled, mocker) -> None:
+    rpc_mock = patch_RPCManager(mocker)
+    cancel_order_mock = MagicMock(return_value=limit_buy_order_old_partial_canceled)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=ticker,
+        get_order=MagicMock(return_value=limit_buy_order_old_partial),
+        cancel_order=cancel_order_mock,
+        get_trades_for_order=MagicMock(return_value=trades_for_order),
+    )
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
+                 MagicMock(side_effect=DependencyException))
+    freqtrade = FreqtradeBot(default_conf)
+
+    assert open_trade.amount == limit_buy_order_old_partial['amount']
+
+    open_trade.fee_open = fee()
+    open_trade.fee_close = fee()
+    Trade.session.add(open_trade)
+    # cancelling a half-filled order should update the amount to the bought amount
+    # and apply fees if necessary.
+    freqtrade.check_handle_timedout()
+
+    assert log_has_re(r"Could not update trade amount: .*", caplog)
+
+    assert cancel_order_mock.call_count == 1
+    assert rpc_mock.call_count == 1
+    trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
+    assert len(trades) == 1
+    # Verify that tradehas been updated
+
+    assert trades[0].amount == (limit_buy_order_old_partial['amount'] -
+                                limit_buy_order_old_partial['remaining'])
+    assert trades[0].open_order_id is None
+    assert trades[0].fee_open == fee()
 
 
 def test_check_handle_timedout_exception(default_conf, ticker, open_trade, mocker, caplog) -> None:
