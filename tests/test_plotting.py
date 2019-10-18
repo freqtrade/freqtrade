@@ -214,11 +214,12 @@ def test_generate_plot_file(mocker, caplog):
     store_plot_file(fig, filename="freqtrade-plot-UNITTEST_BTC-5m.html",
                     directory=Path("user_data/plots"))
 
+    expected_fn = str(Path("user_data/plots/freqtrade-plot-UNITTEST_BTC-5m.html"))
     assert plot_mock.call_count == 1
     assert plot_mock.call_args[0][0] == fig
     assert (plot_mock.call_args_list[0][1]['filename']
-            == "user_data/plots/freqtrade-plot-UNITTEST_BTC-5m.html")
-    assert log_has("Stored plot as user_data/plots/freqtrade-plot-UNITTEST_BTC-5m.html",
+            == expected_fn)
+    assert log_has(f"Stored plot as {expected_fn}",
                    caplog)
 
 
