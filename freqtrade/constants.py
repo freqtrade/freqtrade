@@ -266,6 +266,6 @@ CONF_SCHEMA = {
         'stake_amount',
         'dry_run',
         'bid_strategy',
-        'telegram'
+        'unfilledtimeout',
     ]
 }

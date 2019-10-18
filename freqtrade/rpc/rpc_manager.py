@@ -18,7 +18,7 @@ class RPCManager:
         self.registered_modules: List[RPC] = []
 
         # Enable telegram
-        if freqtrade.config['telegram'].get('enabled', False):
+        if freqtrade.config.get('telegram', {}).get('enabled', False):
             logger.info('Enabling rpc.telegram ...')
             from freqtrade.rpc.telegram import Telegram
             self.registered_modules.append(Telegram(freqtrade))
