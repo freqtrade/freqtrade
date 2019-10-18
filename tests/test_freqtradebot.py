@@ -1449,7 +1449,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
     # setting stoploss
     freqtrade.strategy.stoploss = -0.02
 
-    # setting stoploss_on_exchange_interval to 0 second
+    # setting stoploss_on_exchange_interval to 0 seconds
     freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 0
 
     patch_get_signal(freqtrade)
