@@ -1,6 +1,5 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 import logging
-import tempfile
 import warnings
 from base64 import urlsafe_b64encode
 from os import path
@@ -51,7 +50,7 @@ def test_load_strategy_base64(result, caplog, default_conf):
     assert 'rsi' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
     # Make sure strategy was loaded from base64 (using temp directory)!!
     assert log_has_re(r"Using resolved strategy SampleStrategy from '"
-                      + tempfile.gettempdir() + r"/.*/SampleStrategy\.py'\.\.\.", caplog)
+                      r".*(/|\\).*(/|\\)SampleStrategy\.py'\.\.\.", caplog)
 
 
 def test_load_strategy_invalid_directory(result, caplog, default_conf):
