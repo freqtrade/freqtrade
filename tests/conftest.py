@@ -9,8 +9,8 @@ from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 
 import arrow
-import pytest
 import numpy as np
+import pytest
 from telegram import Chat, Message, Update
 
 from freqtrade import constants, persistence
@@ -19,9 +19,9 @@ from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
+from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
-
 
 logging.getLogger('').setLevel(logging.INFO)
 
@@ -609,6 +609,14 @@ def limit_buy_order_old_partial():
 
 
 @pytest.fixture
+def limit_buy_order_old_partial_canceled(limit_buy_order_old_partial):
+    res = deepcopy(limit_buy_order_old_partial)
+    res['status'] = 'canceled'
+    res['fee'] = {'cost': 0.0001, 'currency': 'ETH'}
+    return res
+
+
+@pytest.fixture
 def limit_sell_order():
     return {
         'id': 'mocked_limit_sell',
@@ -896,12 +904,6 @@ def result(testdatadir):
         return parse_ticker_dataframe(json.load(data_file), '1m', pair="UNITTEST/BTC",
                                       fill_missing=True)
 
-# FIX:
-# Create an fixture/function
-# that inserts a trade of some type and open-status
-# return the open-order-id
-# See tests in rpc/main that could use this
-
 
 @pytest.fixture(scope="function")
 def trades_for_order():
@@ -1075,3 +1077,19 @@ def import_fails() -> None:
 
     # restore previous importfunction
     builtins.__import__ = realimport
+
+
+@pytest.fixture(scope="function")
+def open_trade():
+    return Trade(
+        pair='ETH/BTC',
+        open_rate=0.00001099,
+        exchange='bittrex',
+        open_order_id='123456789',
+        amount=90.99181073,
+        fee_open=0.0,
+        fee_close=0.0,
+        stake_amount=1,
+        open_date=arrow.utcnow().shift(minutes=-601).datetime,
+        is_open=True
+    )

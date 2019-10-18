@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 from requests.exceptions import RequestException
 
-from freqtrade import (DependencyException, OperationalException, InvalidOrderException,
+from freqtrade import (DependencyException, InvalidOrderException,
                        __version__, constants, persistence)
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
@@ -466,12 +466,13 @@ class FreqtradeBot:
         if result:
             self.wallets.update()
 
-    def get_real_amount(self, trade: Trade, order: Dict) -> float:
+    def get_real_amount(self, trade: Trade, order: Dict, order_amount: float = None) -> float:
         """
         Get real amount for the trade
         Necessary for exchanges which charge fees in base currency (e.g. binance)
         """
-        order_amount = order['amount']
+        if order_amount is None:
+            order_amount = order['amount']
         # Only run for closed orders
         if trade.fee_open == 0 or order['status'] == 'open':
             return order_amount
@@ -508,7 +509,7 @@ class FreqtradeBot:
 
         if not isclose(amount, order_amount, abs_tol=constants.MATH_CLOSE_PREC):
             logger.warning(f"Amount {amount} does not match amount {trade.amount}")
-            raise OperationalException("Half bought? Amounts don't match")
+            raise DependencyException("Half bought? Amounts don't match")
         real_amount = amount - fee_abs
         if fee_abs != 0:
             logger.info(f"Applying fee on amount for {trade} "
@@ -536,7 +537,7 @@ class FreqtradeBot:
                     # Fee was applied, so set to 0
                     trade.fee_open = 0
 
-            except OperationalException as exception:
+            except DependencyException as exception:
                 logger.warning("Could not update trade amount: %s", exception)
 
             trade.update(order)
@@ -772,21 +773,19 @@ class FreqtradeBot:
                 self.wallets.update()
                 continue
 
-            # Handle cancelled on exchange
-            if order['status'] == 'canceled':
-                if order['side'] == 'buy':
-                    self.handle_buy_order_full_cancel(trade, "canceled on Exchange")
-                elif order['side'] == 'sell':
-                    self.handle_timedout_limit_sell(trade, order)
-                    self.wallets.update()
-            # Check if order is still actually open
-            elif order['status'] == 'open':
-                if order['side'] == 'buy' and ordertime < buy_timeoutthreashold:
-                    self.handle_timedout_limit_buy(trade, order)
-                    self.wallets.update()
-                elif order['side'] == 'sell' and ordertime < sell_timeoutthreashold:
-                    self.handle_timedout_limit_sell(trade, order)
-                    self.wallets.update()
+            if (order['side'] == 'buy'
+                and order['status'] == 'canceled'
+                or (order['status'] == 'open'
+                    and order['side'] == 'buy' and ordertime < buy_timeoutthreashold)):
+
+                self.handle_timedout_limit_buy(trade, order)
+                self.wallets.update()
+
+            elif (order['side'] == 'sell' and order['status'] == 'canceled'
+                  or (order['status'] == 'open'
+                      and order['side'] == 'sell' and ordertime < sell_timeoutthreashold)):
+                self.handle_timedout_limit_sell(trade, order)
+                self.wallets.update()
 
     def handle_buy_order_full_cancel(self, trade: Trade, reason: str) -> None:
         """Close trade in database and send message"""
@@ -802,16 +801,33 @@ class FreqtradeBot:
         """Buy timeout - cancel order
         :return: True if order was fully cancelled
         """
-        self.exchange.cancel_order(trade.open_order_id, trade.pair)
-        if order['remaining'] == order['amount']:
+        reason = "cancelled due to timeout"
+        if order['status'] != 'canceled':
+            corder = self.exchange.cancel_order(trade.open_order_id, trade.pair)
+        else:
+            # Order was cancelled already, so we can reuse the existing dict
+            corder = order
+            reason = "canceled on Exchange"
+
+        if corder['remaining'] == corder['amount']:
             # if trade is not partially completed, just delete the trade
-            self.handle_buy_order_full_cancel(trade, "cancelled due to timeout")
+            self.handle_buy_order_full_cancel(trade, reason)
             return True
 
         # if trade is partially complete, edit the stake details for the trade
         # and close the order
-        trade.amount = order['amount'] - order['remaining']
+        trade.amount = corder['amount'] - corder['remaining']
         trade.stake_amount = trade.amount * trade.open_rate
+        # verify if fees were taken from amount to avoid problems during selling
+        try:
+            new_amount = self.get_real_amount(trade, corder, trade.amount)
+            if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
+                trade.amount = new_amount
+                # Fee was applied, so set to 0
+                trade.fee_open = 0
+        except DependencyException as e:
+            logger.warning("Could not update trade amount: %s", e)
+
         trade.open_order_id = None
         logger.info('Partial buy order timeout for %s.', trade)
         self.rpc.send_msg({
