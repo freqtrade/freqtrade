@@ -2053,7 +2053,7 @@ def test_check_handle_cancelled_sell(default_conf, ticker, limit_sell_order_old,
 def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old_partial,
                                        open_trade, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
-    cancel_order_mock = MagicMock()
+    cancel_order_mock = MagicMock(return_value=limit_buy_order_old_partial)
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -2143,7 +2143,7 @@ def test_check_handle_timedout_exception(default_conf, ticker, open_trade, mocke
 def test_handle_timedout_limit_buy(mocker, default_conf, limit_buy_order) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    cancel_order_mock = MagicMock()
+    cancel_order_mock = MagicMock(return_value=limit_buy_order)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         cancel_order=cancel_order_mock
