@@ -772,21 +772,19 @@ class FreqtradeBot:
                 self.wallets.update()
                 continue
 
-            # Handle cancelled on exchange
-            if order['status'] == 'canceled':
-                if order['side'] == 'buy':
-                    self.handle_buy_order_full_cancel(trade, "canceled on Exchange")
-                elif order['side'] == 'sell':
-                    self.handle_timedout_limit_sell(trade, order)
-                    self.wallets.update()
-            # Check if order is still actually open
-            elif order['status'] == 'open':
-                if order['side'] == 'buy' and ordertime < buy_timeoutthreashold:
-                    self.handle_timedout_limit_buy(trade, order)
-                    self.wallets.update()
-                elif order['side'] == 'sell' and ordertime < sell_timeoutthreashold:
-                    self.handle_timedout_limit_sell(trade, order)
-                    self.wallets.update()
+            if (order['side'] == 'buy'
+                and order['status'] == 'canceled'
+                or (order['status'] == 'open'
+                    and order['side'] == 'buy' and ordertime < buy_timeoutthreashold)):
+
+                self.handle_timedout_limit_buy(trade, order)
+                self.wallets.update()
+
+            elif (order['side'] == 'sell' and order['status'] == 'canceled'
+                  or (order['status'] == 'open'
+                      and order['side'] == 'sell' and ordertime < sell_timeoutthreashold)):
+                self.handle_timedout_limit_sell(trade, order)
+                self.wallets.update()
 
     def handle_buy_order_full_cancel(self, trade: Trade, reason: str) -> None:
         """Close trade in database and send message"""
@@ -802,10 +800,17 @@ class FreqtradeBot:
         """Buy timeout - cancel order
         :return: True if order was fully cancelled
         """
-        corder = self.exchange.cancel_order(trade.open_order_id, trade.pair)
+        reason = "cancelled due to timeout"
+        if order['status'] != 'canceled':
+            corder = self.exchange.cancel_order(trade.open_order_id, trade.pair)
+        else:
+            # Order was cancelled already, so we can reuse the existing dict
+            corder = order
+            reason = "canceled on Exchange"
+
         if corder['remaining'] == corder['amount']:
             # if trade is not partially completed, just delete the trade
-            self.handle_buy_order_full_cancel(trade, "cancelled due to timeout")
+            self.handle_buy_order_full_cancel(trade, reason)
             return True
 
         # if trade is partially complete, edit the stake details for the trade
