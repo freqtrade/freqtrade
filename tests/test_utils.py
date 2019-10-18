@@ -182,11 +182,13 @@ def test_list_markets(mocker, markets, capsys):
     args = [
         '--config', 'config.json.example',
         "list-markets",
+        "--print-list",
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert re.match("Exchange Bittrex has 8 active markets:\n",
-                    captured.out)
+    assert ("Exchange Bittrex has 8 active markets: "
+            "BLK/BTC, BTT/BTC, ETH/BTC, ETH/USDT, LTC/USD, LTC/USDT, TKN/BTC, XLTCUSDT.\n"
+            in captured.out)
 
 #    # Test with --exchange
 #    args = [
@@ -201,124 +203,200 @@ def test_list_markets(mocker, markets, capsys):
     # Test with --all: all markets
     args = [
         '--config', 'config.json.example',
-        "list-markets", "--all"
+        "list-markets", "--all",
+        "--print-list",
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert re.match("Exchange Bittrex has 11 markets:\n",
-                    captured.out)
+    assert ("Exchange Bittrex has 11 markets: "
+            "BLK/BTC, BTT/BTC, ETH/BTC, ETH/USDT, LTC/BTC, LTC/USD, LTC/USDT, NEO/BTC, "
+            "TKN/BTC, XLTCUSDT, XRP/BTC.\n"
+            in captured.out)
 
     # Test list-pairs subcommand: active pairs
     args = [
         '--config', 'config.json.example',
         "list-pairs",
+        "--print-list",
     ]
     start_list_markets(get_args(args), True)
     captured = capsys.readouterr()
-    assert re.match("Exchange Bittrex has 7 active pairs:\n",
-                    captured.out)
+    assert ("Exchange Bittrex has 7 active pairs: "
+            "BLK/BTC, BTT/BTC, ETH/BTC, ETH/USDT, LTC/USD, LTC/USDT, TKN/BTC.\n"
+            in captured.out)
 
     # Test list-pairs subcommand with --all: all pairs
     args = [
         '--config', 'config.json.example',
-        "list-pairs", "--all"
+        "list-pairs", "--all",
+        "--print-list",
     ]
     start_list_markets(get_args(args), True)
     captured = capsys.readouterr()
-    assert re.match("Exchange Bittrex has 10 pairs:\n",
-                    captured.out)
+    assert ("Exchange Bittrex has 10 pairs: "
+            "BLK/BTC, BTT/BTC, ETH/BTC, ETH/USDT, LTC/BTC, LTC/USD, LTC/USDT, NEO/BTC, "
+            "TKN/BTC, XRP/BTC.\n"
+            in captured.out)
 
     # active markets, base=ETH, LTC
     args = [
         '--config', 'config.json.example',
         "list-markets",
-        "--base", "ETH", "LTC"
+        "--base", "ETH", "LTC",
+        "--print-list",
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert re.match("Exchange Bittrex has 5 active markets with ETH, LTC as base currencies:\n",
-                    captured.out)
+    assert ("Exchange Bittrex has 5 active markets with ETH, LTC as base currencies: "
+            "ETH/BTC, ETH/USDT, LTC/USD, LTC/USDT, XLTCUSDT.\n"
+            in captured.out)
 
     # active markets, base=LTC
     args = [
         '--config', 'config.json.example',
         "list-markets",
-        "--base", "LTC"
+        "--base", "LTC",
+        "--print-list",
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert re.match("Exchange Bittrex has 3 active markets with LTC as base currency:\n",
-                    captured.out)
+    assert ("Exchange Bittrex has 3 active markets with LTC as base currency: "
+            "LTC/USD, LTC/USDT, XLTCUSDT.\n"
+            in captured.out)
 
     # active markets, quote=USDT, USD
     args = [
         '--config', 'config.json.example',
         "list-markets",
-        "--quote", "USDT", "USD"
+        "--quote", "USDT", "USD",
+        "--print-list",
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert re.match("Exchange Bittrex has 4 active markets with USDT, USD as quote currencies:\n",
-                    captured.out)
+    assert ("Exchange Bittrex has 4 active markets with USDT, USD as quote currencies: "
+            "ETH/USDT, LTC/USD, LTC/USDT, XLTCUSDT.\n"
+            in captured.out)
 
     # active markets, quote=USDT
     args = [
         '--config', 'config.json.example',
         "list-markets",
-        "--quote", "USDT"
+        "--quote", "USDT",
+        "--print-list",
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert re.match("Exchange Bittrex has 3 active markets with USDT as quote currency:\n",
-                    captured.out)
+    assert ("Exchange Bittrex has 3 active markets with USDT as quote currency: "
+            "ETH/USDT, LTC/USDT, XLTCUSDT.\n"
+            in captured.out)
 
     # active markets, base=LTC, quote=USDT
     args = [
         '--config', 'config.json.example',
         "list-markets",
-        "--base", "LTC", "--quote", "USDT"
+        "--base", "LTC", "--quote", "USDT",
+        "--print-list",
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert re.match("Exchange Bittrex has 2 active markets with LTC as base currency and "
-                    "with USDT as quote currency:\n",
-                    captured.out)
+    assert ("Exchange Bittrex has 2 active markets with LTC as base currency and "
+            "with USDT as quote currency: LTC/USDT, XLTCUSDT.\n"
+            in captured.out)
 
     # active pairs, base=LTC, quote=USDT
     args = [
         '--config', 'config.json.example',
         "list-pairs",
-        "--base", "LTC", "--quote", "USDT"
+        "--base", "LTC", "--quote", "USDT",
+        "--print-list",
     ]
     start_list_markets(get_args(args), True)
     captured = capsys.readouterr()
-    assert re.match("Exchange Bittrex has 1 active pair with LTC as base currency and "
-                    "with USDT as quote currency:\n",
-                    captured.out)
+    assert ("Exchange Bittrex has 1 active pair with LTC as base currency and "
+            "with USDT as quote currency: LTC/USDT.\n"
+            in captured.out)
 
     # active markets, base=LTC, quote=USDT, NONEXISTENT
     args = [
         '--config', 'config.json.example',
         "list-markets",
-        "--base", "LTC", "--quote", "USDT", "NONEXISTENT"
+        "--base", "LTC", "--quote", "USDT", "NONEXISTENT",
+        "--print-list",
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert re.match("Exchange Bittrex has 2 active markets with LTC as base currency and "
-                    "with USDT, NONEXISTENT as quote currencies:\n",
-                    captured.out)
+    assert ("Exchange Bittrex has 2 active markets with LTC as base currency and "
+            "with USDT, NONEXISTENT as quote currencies: LTC/USDT, XLTCUSDT.\n"
+            in captured.out)
 
     # active markets, base=LTC, quote=NONEXISTENT
     args = [
         '--config', 'config.json.example',
         "list-markets",
-        "--base", "LTC", "--quote", "NONEXISTENT"
+        "--base", "LTC", "--quote", "NONEXISTENT",
+        "--print-list",
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert re.match("Exchange Bittrex has 0 active markets with LTC as base currency and "
-                    "with NONEXISTENT as quote currency.\n",
-                    captured.out)
+    assert ("Exchange Bittrex has 0 active markets with LTC as base currency and "
+            "with NONEXISTENT as quote currency.\n"
+            in captured.out)
+
+    # Test tabular output
+    args = [
+        '--config', 'config.json.example',
+        "list-markets",
+    ]
+    start_list_markets(get_args(args), False)
+    captured = capsys.readouterr()
+    assert ("Exchange Bittrex has 8 active markets:\n"
+            in captured.out)
+
+    # Test tabular output, no markets found
+    args = [
+        '--config', 'config.json.example',
+        "list-markets",
+        "--base", "LTC", "--quote", "NONEXISTENT",
+    ]
+    start_list_markets(get_args(args), False)
+    captured = capsys.readouterr()
+    assert ("Exchange Bittrex has 0 active markets with LTC as base currency and "
+            "with NONEXISTENT as quote currency.\n"
+            in captured.out)
+
+    # Test --print-json
+    args = [
+        '--config', 'config.json.example',
+        "list-markets",
+        "--print-json"
+    ]
+    start_list_markets(get_args(args), False)
+    captured = capsys.readouterr()
+    assert ('["BLK/BTC","BTT/BTC","ETH/BTC","ETH/USDT","LTC/USD","LTC/USDT","TKN/BTC","XLTCUSDT"]'
+            in captured.out)
+
+    # Test --print-csv
+    args = [
+        '--config', 'config.json.example',
+        "list-markets",
+        "--print-csv"
+    ]
+    start_list_markets(get_args(args), False)
+    captured = capsys.readouterr()
+    assert ("Id,Symbol,Base,Quote,Active,Is pair" in captured.out)
+    assert ("blkbtc,BLK/BTC,BLK,BTC,True,True" in captured.out)
+    assert ("BTTBTC,BTT/BTC,BTT,BTC,True,True" in captured.out)
+
+    # Test --one-column
+    args = [
+        '--config', 'config.json.example',
+        "list-markets",
+        "--one-column"
+    ]
+    start_list_markets(get_args(args), False)
+    captured = capsys.readouterr()
+    assert re.search(r"^BLK/BTC$", captured.out, re.MULTILINE)
+    assert re.search(r"^BTT/BTC$", captured.out, re.MULTILINE)
 
 
 def test_create_datadir_failed(caplog):
