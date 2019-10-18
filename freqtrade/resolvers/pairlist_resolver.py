@@ -1,7 +1,7 @@
 # pragma pylint: disable=attribute-defined-outside-init
 
 """
-This module load custom hyperopts
+This module load custom pairlists
 """
 import logging
 from pathlib import Path
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class PairListResolver(IResolver):
     """
-    This class contains all the logic to load custom hyperopt class
+    This class contains all the logic to load custom PairList class
     """
 
     __slots__ = ['pairlist']
