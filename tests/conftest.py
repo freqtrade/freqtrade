@@ -609,6 +609,14 @@ def limit_buy_order_old_partial():
 
 
 @pytest.fixture
+def limit_buy_order_old_partial_canceled(limit_buy_order_old_partial):
+    res = deepcopy(limit_buy_order_old_partial)
+    res['status'] = 'canceled'
+    res['fee'] = {'cost': 0.0001, 'currency': 'ETH'}
+    return res
+
+
+@pytest.fixture
 def limit_sell_order():
     return {
         'id': 'mocked_limit_sell',
