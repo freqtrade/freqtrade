@@ -49,7 +49,7 @@ def trim_dictlist(dict_list, num):
 
 
 def load_data_test(what, testdatadir):
-    timerange = TimeRange(None, 'line', 0, -101)
+    timerange = TimeRange.parse_timerange('1510694220-1510700340')
     pair = history.load_tickerdata_file(testdatadir, ticker_interval='1m',
                                         pair='UNITTEST/BTC', timerange=timerange)
     datalen = len(pair)
@@ -342,7 +342,8 @@ def test_tickerdata_with_fee(default_conf, mocker, testdatadir) -> None:
 
 def test_tickerdata_to_dataframe_bt(default_conf, mocker, testdatadir) -> None:
     patch_exchange(mocker)
-    timerange = TimeRange(None, 'line', 0, -100)
+    # timerange = TimeRange(None, 'line', 0, -100)
+    timerange = TimeRange.parse_timerange('1510694220-1510700340')
     tick = history.load_tickerdata_file(testdatadir, 'UNITTEST/BTC', '1m', timerange=timerange)
     tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
                                                          fill_missing=True)}
@@ -474,7 +475,7 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     default_conf['ticker_interval'] = '1m'
     default_conf['datadir'] = testdatadir
     default_conf['export'] = None
-    default_conf['timerange'] = '-100'
+    default_conf['timerange'] = '-1510694220'
 
     backtesting = Backtesting(default_conf)
     backtesting.start()
@@ -522,7 +523,7 @@ def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
     pair = 'UNITTEST/BTC'
-    timerange = TimeRange(None, 'line', 0, -201)
+    timerange = TimeRange('date', None, 1517227800, 0)
     data = history.load_data(datadir=testdatadir, ticker_interval='5m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
     data_processed = backtesting.strategy.tickerdata_to_dataframe(data)
@@ -578,7 +579,7 @@ def test_backtest_1min_ticker_interval(default_conf, fee, mocker, testdatadir) -
     backtesting = Backtesting(default_conf)
 
     # Run a backtesting for an exiting 1min ticker_interval
-    timerange = TimeRange(None, 'line', 0, -200)
+    timerange = TimeRange.parse_timerange('1510688220-1510700340')
     data = history.load_data(datadir=testdatadir, ticker_interval='1m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
     processed = backtesting.strategy.tickerdata_to_dataframe(data)
@@ -823,7 +824,7 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
         '--datadir', str(testdatadir),
         'backtesting',
         '--ticker-interval', '1m',
-        '--timerange', '-100',
+        '--timerange', '1510694220-1510700340',
         '--enable-position-stacking',
         '--disable-max-market-positions'
     ]
@@ -833,7 +834,7 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
     exists = [
         'Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
         'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
-        'Parameter --timerange detected: -100 ...',
+        'Parameter --timerange detected: 1510694220-1510700340 ...',
         f'Using data directory: {testdatadir} ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
@@ -869,7 +870,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         '--datadir', str(testdatadir),
         'backtesting',
         '--ticker-interval', '1m',
-        '--timerange', '-100',
+        '--timerange', '1510694220-1510700340',
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--strategy-list',
@@ -887,7 +888,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
     exists = [
         'Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
         'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
-        'Parameter --timerange detected: -100 ...',
+        'Parameter --timerange detected: 1510694220-1510700340 ...',
         f'Using data directory: {testdatadir} ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',

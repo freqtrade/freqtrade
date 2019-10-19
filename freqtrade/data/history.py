@@ -33,20 +33,12 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
     start_index = 0
     stop_index = len(tickerlist)
 
-    if timerange.starttype == 'line':
-        stop_index = timerange.startts
-    if timerange.starttype == 'index':
-        start_index = timerange.startts
-    elif timerange.starttype == 'date':
+    if timerange.starttype == 'date':
         while (start_index < len(tickerlist) and
                tickerlist[start_index][0] < timerange.startts * 1000):
             start_index += 1
 
-    if timerange.stoptype == 'line':
-        start_index = max(len(tickerlist) + timerange.stopts, 0)
-    if timerange.stoptype == 'index':
-        stop_index = timerange.stopts
-    elif timerange.stoptype == 'date':
+    if timerange.stoptype == 'date':
         while (stop_index > 0 and
                tickerlist[stop_index-1][0] > timerange.stopts * 1000):
             stop_index -= 1

@@ -103,12 +103,6 @@ The full timerange specification:
 - Use tickframes since 2018/01/31 till 2018/03/01 : `--timerange=20180131-20180301`
 - Use tickframes between POSIX timestamps 1527595200 1527618600:
                                                 `--timerange=1527595200-1527618600`
-- Use last 123 tickframes of data: `--timerange=-123`
-- Use first 123 tickframes of data: `--timerange=123-`
-- Use tickframes from line 123 through 456: `--timerange=123-456`
-
-!!! warning
-    Be carefull when using non-date functions - these do not allow you to specify precise dates, so if you updated the test-data it will probably use a different dataset.
 
 ## Understand the backtesting result
 
