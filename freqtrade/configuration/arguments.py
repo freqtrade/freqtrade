@@ -35,7 +35,8 @@ ARGS_LIST_TIMEFRAMES = ["exchange", "print_one_column"]
 
 ARGS_CREATE_USERDIR = ["user_data_dir"]
 
-ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "exchange", "timeframes", "erase"]
+ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "download_trades", "exchange",
+                      "timeframes", "erase"]
 
 ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit", "db_url",
                        "trade_source", "export", "exportfilename", "timerange", "ticker_interval"]

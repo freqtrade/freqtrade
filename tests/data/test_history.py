@@ -13,15 +13,20 @@ from pandas import DataFrame
 from freqtrade import OperationalException
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
-from freqtrade.data.history import (download_pair_history,
-                                    _load_cached_data_for_updating,
-                                    load_tickerdata_file,
+from freqtrade.data.history import (_load_cached_data_for_updating,
+                                    convert_trades_to_ohlcv,
+                                    download_pair_history,
+                                    download_trades_history,
+                                    load_tickerdata_file, pair_data_filename,
+                                    pair_trades_filename,
                                     refresh_backtest_ohlcv_data,
+                                    refresh_backtest_trades_data,
                                     trim_tickerlist)
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.strategy.default_strategy import DefaultStrategy
-from tests.conftest import get_patched_exchange, log_has, log_has_re, patch_exchange
+from tests.conftest import (get_patched_exchange, log_has, log_has_re,
+                            patch_exchange)
 
 # Change this if modifying UNITTEST/BTC testdatafile
 _BTC_UNITTEST_LENGTH = 13681
@@ -132,6 +137,18 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog,
 
 def test_testdata_path(testdatadir) -> None:
     assert str(Path('tests') / 'testdata') in str(testdatadir)
+
+
+def test_pair_data_filename():
+    fn = pair_data_filename(Path('freqtrade/hello/world'), 'ETH/BTC', '5m')
+    assert isinstance(fn, Path)
+    assert fn == Path('freqtrade/hello/world/ETH_BTC-5m.json')
+
+
+def test_pair_trades_filename():
+    fn = pair_trades_filename(Path('freqtrade/hello/world'), 'ETH/BTC')
+    assert isinstance(fn, Path)
+    assert fn == Path('freqtrade/hello/world/ETH_BTC-trades.json.gz')
 
 
 def test_load_cached_data_for_updating(mocker) -> None:
@@ -569,3 +586,92 @@ def test_download_data_no_markets(mocker, default_conf, caplog, testdatadir):
     assert "ETH/BTC" in unav_pairs
     assert "XRP/BTC" in unav_pairs
     assert log_has("Skipping pair ETH/BTC...", caplog)
+
+
+def test_refresh_backtest_trades_data(mocker, default_conf, markets, caplog, testdatadir):
+    dl_mock = mocker.patch('freqtrade.data.history.download_trades_history', MagicMock())
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets)
+    )
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    mocker.patch.object(Path, "unlink", MagicMock())
+
+    ex = get_patched_exchange(mocker, default_conf)
+    timerange = TimeRange.parse_timerange("20190101-20190102")
+    unavailable_pairs = refresh_backtest_trades_data(exchange=ex,
+                                                     pairs=["ETH/BTC", "XRP/BTC", "XRP/ETH"],
+                                                     datadir=testdatadir,
+                                                     timerange=timerange, erase=True
+                                                     )
+
+    assert dl_mock.call_count == 2
+    assert dl_mock.call_args[1]['timerange'].starttype == 'date'
+
+    assert log_has("Downloading trades for pair ETH/BTC.", caplog)
+    assert unavailable_pairs == ["XRP/ETH"]
+    assert log_has("Skipping pair XRP/ETH...", caplog)
+
+
+def test_download_trades_history(trades_history, mocker, default_conf, testdatadir, caplog) -> None:
+
+    ght_mock = MagicMock(side_effect=lambda pair, *args, **kwargs: (pair, trades_history))
+    mocker.patch('freqtrade.exchange.Exchange.get_historic_trades',
+                 ght_mock)
+    exchange = get_patched_exchange(mocker, default_conf)
+    file1 = testdatadir / 'ETH_BTC-trades.json.gz'
+
+    _backup_file(file1)
+
+    assert not file1.is_file()
+
+    assert download_trades_history(datadir=testdatadir, exchange=exchange,
+                                   pair='ETH/BTC')
+    assert log_has("New Amount of trades: 5", caplog)
+    assert file1.is_file()
+
+    # clean files freshly downloaded
+    _clean_test_file(file1)
+
+    mocker.patch('freqtrade.exchange.Exchange.get_historic_trades',
+                 MagicMock(side_effect=ValueError))
+
+    assert not download_trades_history(datadir=testdatadir, exchange=exchange,
+                                       pair='ETH/BTC')
+    assert log_has_re('Failed to download historic trades for pair: "ETH/BTC".*', caplog)
+
+
+def test_convert_trades_to_ohlcv(mocker, default_conf, testdatadir, caplog):
+
+    pair = 'XRP/ETH'
+    file1 = testdatadir / 'XRP_ETH-1m.json'
+    file5 = testdatadir / 'XRP_ETH-5m.json'
+    # Compare downloaded dataset with converted dataset
+    dfbak_1m = history.load_pair_history(datadir=testdatadir,
+                                         ticker_interval="1m",
+                                         pair=pair)
+    dfbak_5m = history.load_pair_history(datadir=testdatadir,
+                                         ticker_interval="5m",
+                                         pair=pair)
+
+    _backup_file(file1, copy_file=True)
+    _backup_file(file5)
+
+    tr = TimeRange.parse_timerange('20191011-20191012')
+
+    convert_trades_to_ohlcv([pair], timeframes=['1m', '5m'],
+                            datadir=testdatadir, timerange=tr, erase=True)
+
+    assert log_has("Deleting existing data for pair XRP/ETH, interval 1m.", caplog)
+    # Load new data
+    df_1m = history.load_pair_history(datadir=testdatadir,
+                                      ticker_interval="1m",
+                                      pair=pair)
+    df_5m = history.load_pair_history(datadir=testdatadir,
+                                      ticker_interval="5m",
+                                      pair=pair)
+
+    assert df_1m.equals(dfbak_1m)
+    assert df_5m.equals(dfbak_5m)
+
+    _clean_test_file(file1)
+    _clean_test_file(file5)

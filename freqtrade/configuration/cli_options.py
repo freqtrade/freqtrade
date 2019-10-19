@@ -273,6 +273,12 @@ AVAILABLE_CLI_OPTIONS = {
         type=check_int_positive,
         metavar='INT',
     ),
+    "download_trades": Arg(
+        '--dl-trades',
+        help='Download trades instead of OHLCV data. The bot will resample trades to the '
+             'desired timeframe as specified as --timeframes/-t.',
+        action='store_true',
+    ),
     "exchange": Arg(
         '--exchange',
         help=f'Exchange name (default: `{constants.DEFAULT_EXCHANGE}`). '

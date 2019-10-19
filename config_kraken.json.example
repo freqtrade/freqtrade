@@ -70,5 +70,6 @@
     "forcebuy_enable": false,
     "internals": {
         "process_throttle_secs": 5
-    }
+    },
+    "download_trades": true
 }
