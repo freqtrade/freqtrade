@@ -42,6 +42,8 @@ class TimeRange:
                   (r'^-(\d{10})$', (None, 'date')),
                   (r'^(\d{10})-$', ('date', None)),
                   (r'^(\d{10})-(\d{10})$', ('date', 'date')),
+                  (r'^-(\d{13})$', (None, 'date')),
+                  (r'^(\d{13})-$', ('date', None)),
                   (r'^(\d{13})-(\d{13})$', ('date', 'date')),
                   ]
         for rex, stype in syntax:
