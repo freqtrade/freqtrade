@@ -59,12 +59,12 @@ This will download ticker data for all the currency pairs you defined in `pairs.
 
 ### Trades (tick) data
 
-By default, download-data downloads Candles (OHLCV) data. Some exchanges also provide historic trade-data via their API.
+By default, `download-data` subcommand downloads Candles (OHLCV) data. Some exchanges also provide historic trade-data via their API.
 This data can be useful if you need many different timeframes, since it is only downloaded once, and then resampled locally to the desired timeframes.
 
-Since this data is large by default, the files use gzip by default. They are stored in your data-directory with the naming convention of `<pair>-trades.json.gz` (`ETH_BTC_trades.json.gz`). Incremental mode is supported, so downloading the data once per week with `--days 8` will create an incremental data-repository.
+Since this data is large by default, the files use gzip by default. They are stored in your data-directory with the naming convention of `<pair>-trades.json.gz` (`ETH_BTC-trades.json.gz`). Incremental mode is also supported, as for historic OHLCV data, so downloading the data once per week with `--days 8` will create an incremental data-repository.
 
-To use this mode, simply add `--dl-trades` to your call. This will swap the download-method to trades, and resamples the data locally.
+To use this mode, simply add `--dl-trades` to your call. This will swap the download method to download trades, and resamples the data locally.
 
 Example call:
 
@@ -76,11 +76,11 @@ freqtrade download-data --exchange binance --pairs XRP/ETH ETH/BTC --days 20 --d
     While this method uses async calls, it will be slow, since it requires the result of the previous call to generate the next request to the exchange.
 
 !!! Warning
-    This datatype is not available during trading. It probably will never be since all exchanges tested don't provide this data in real time, but with a delay of a few 100 candles.
+    The historic trades are not available during Freqtrade dry-run and live trade modes because all exchanges tested provide this data with a delay of few 100 candles, so it's not suitable for real-time trading.
 
 ### Historic Kraken data
 
-The Kraken API does only provide 720 historic candles, which is sufficient for regular trading operations, but is a problem for backtesting.
+The Kraken API does only provide 720 historic candles, which is sufficient for FreqTrade dry-run and live trade modes, but is a problem for backtesting.
 To download data for the Kraken exchange, using `--dl-trades` is mandatory, otherwise the bot will download the same 720 candles over and over, and you'll not have enough backtest data.
 
 ## Next step

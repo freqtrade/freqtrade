@@ -754,7 +754,7 @@ class Exchange:
         Handles exchange errors, does one call to the exchange.
         :param pair: Pair to fetch trade data for
         :param since: Since as integer timestamp in milliseconds
-        returns tuple: (pair, ticker_interval, ohlcv_list)
+        returns: List of dicts containing trades
         """
         try:
             # fetch trades asynchronously
@@ -790,7 +790,7 @@ class Exchange:
         :param since: Since as integer timestamp in milliseconds
         :param until: Until as integer timestamp in milliseconds
         :param from_id: Download data starting with ID (if id is known). Ignores "since" if set.
-        returns tuple: (pair, ticker_interval, ohlcv_list)
+        returns tuple: (pair, trades-list)
         """
 
         trades: List[Dict] = []
@@ -831,7 +831,7 @@ class Exchange:
         :param pair: Pair to fetch trade data for
         :param since: Since as integer timestamp in milliseconds
         :param until: Until as integer timestamp in milliseconds
-        returns tuple: (pair, ticker_interval, ohlcv_list)
+        returns tuple: (pair, trades-list)
         """
 
         trades: List[Dict] = []
@@ -857,9 +857,6 @@ class Exchange:
         """
         Async wrapper handling downloading trades using either time or id based methods.
         """
-        if not self.exchange_has("fetchTrades"):
-            # TODO: Maybe don't stop the bot ... ?
-            raise OperationalException("This exchange does not suport downloading Trades.")
 
         if self._trades_pagination == 'time':
             return await self._async_get_trade_history_time(
@@ -889,6 +886,8 @@ class Exchange:
         :param from_id: Download data starting with ID (if id is known)
         :returns List of tickers
         """
+        if not self.exchange_has("fetchTrades"):
+            raise OperationalException("This exchange does not suport downloading Trades.")
 
         return asyncio.get_event_loop().run_until_complete(
             self._async_get_trade_history(pair=pair, since=since,
