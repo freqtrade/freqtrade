@@ -364,37 +364,6 @@ def test_trim_tickerlist(testdatadir) -> None:
         ticker_list = json.load(data_file)
     ticker_list_len = len(ticker_list)
 
-    # Test the pattern ^(-\d+)$
-    # This pattern uses the latest N elements
-    timerange = TimeRange(None, 'line', 0, -5)
-    ticker = trim_tickerlist(ticker_list, timerange)
-    ticker_len = len(ticker)
-
-    assert ticker_len == 5
-    assert ticker_list[0] is not ticker[0]  # The first element should be different
-    assert ticker_list[-1] is ticker[-1]  # The last element must be the same
-
-    # Test the pattern ^(\d+)-$
-    # This pattern keep X element from the end
-    timerange = TimeRange('line', None, 5, 0)
-    ticker = trim_tickerlist(ticker_list, timerange)
-    ticker_len = len(ticker)
-
-    assert ticker_len == 5
-    assert ticker_list[0] is ticker[0]  # The first element must be the same
-    assert ticker_list[-1] is not ticker[-1]  # The last element should be different
-
-    # Test the pattern ^(\d+)-(\d+)$
-    # This pattern extract a window
-    timerange = TimeRange('index', 'index', 5, 10)
-    ticker = trim_tickerlist(ticker_list, timerange)
-    ticker_len = len(ticker)
-
-    assert ticker_len == 5
-    assert ticker_list[0] is not ticker[0]  # The first element should be different
-    assert ticker_list[5] is ticker[0]  # The list starts at the index 5
-    assert ticker_list[9] is ticker[-1]  # The list ends at the index 9 (5 elements)
-
     # Test the pattern ^(\d{8})-(\d{8})$
     # This pattern extract a window between the dates
     timerange = TimeRange('date', 'date', ticker_list[5][0] / 1000, ticker_list[10][0] / 1000 - 1)
@@ -431,13 +400,6 @@ def test_trim_tickerlist(testdatadir) -> None:
     timerange = TimeRange(None, None, None, 5)
     ticker = trim_tickerlist(ticker_list, timerange)
     ticker_len = len(ticker)
-
-    assert ticker_list_len == ticker_len
-
-    # Test invalid timerange (start after stop)
-    timerange = TimeRange('index', 'index', 10, 5)
-    with pytest.raises(ValueError, match=r'The timerange .* is incorrect'):
-        trim_tickerlist(ticker_list, timerange)
 
     assert ticker_list_len == ticker_len
 
