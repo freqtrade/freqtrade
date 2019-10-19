@@ -2,7 +2,6 @@
 Definition of cli arguments used in arguments.py
 """
 import argparse
-import os
 
 from freqtrade import __version__, constants
 
@@ -141,8 +140,6 @@ AVAILABLE_CLI_OPTIONS = {
         'Requires `--export` to be set as well. '
         'Example: `--export-filename=user_data/backtest_results/backtest_today.json`',
         metavar='PATH',
-        default=os.path.join('user_data', 'backtest_results',
-                             'backtest-result.json'),
     ),
     "fee": Arg(
         '--fee',
