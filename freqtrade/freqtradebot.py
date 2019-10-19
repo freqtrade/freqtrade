@@ -748,8 +748,8 @@ class FreqtradeBot:
         """
         buy_timeout = self.config['unfilledtimeout']['buy']
         sell_timeout = self.config['unfilledtimeout']['sell']
-        buy_timeoutthreashold = arrow.utcnow().shift(minutes=-buy_timeout).datetime
-        sell_timeoutthreashold = arrow.utcnow().shift(minutes=-sell_timeout).datetime
+        buy_timeout_threshold = arrow.utcnow().shift(minutes=-buy_timeout).datetime
+        sell_timeout_threshold = arrow.utcnow().shift(minutes=-sell_timeout).datetime
 
         for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
             try:
@@ -773,17 +773,16 @@ class FreqtradeBot:
                 self.wallets.update()
                 continue
 
-            if (order['side'] == 'buy'
-                and order['status'] == 'canceled'
+            if ((order['side'] == 'buy' and order['status'] == 'canceled')
                 or (order['status'] == 'open'
-                    and order['side'] == 'buy' and ordertime < buy_timeoutthreashold)):
+                    and order['side'] == 'buy' and ordertime < buy_timeout_threshold)):
 
                 self.handle_timedout_limit_buy(trade, order)
                 self.wallets.update()
 
-            elif (order['side'] == 'sell' and order['status'] == 'canceled'
+            elif ((order['side'] == 'sell' and order['status'] == 'canceled')
                   or (order['status'] == 'open'
-                      and order['side'] == 'sell' and ordertime < sell_timeoutthreashold)):
+                      and order['side'] == 'sell' and ordertime < sell_timeout_threshold)):
                 self.handle_timedout_limit_sell(trade, order)
                 self.wallets.update()
 
