@@ -27,6 +27,10 @@ class TimeRange:
         return (self.starttype == other.starttype and self.stoptype == other.stoptype
                 and self.startts == other.startts and self.stopts == other.stopts)
 
+    def subtract_start(self, seconds) -> None:
+        if self.startts:
+            self.startts = self.startts - seconds
+
     @staticmethod
     def parse_timerange(text: Optional[str]):
         """
