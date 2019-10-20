@@ -192,15 +192,17 @@ def test_list_markets(mocker, markets, capsys):
             "BLK/BTC, BTT/BTC, ETH/BTC, ETH/USDT, LTC/USD, LTC/USDT, TKN/BTC, XLTCUSDT.\n"
             in captured.out)
 
-#    # Test with --exchange
-#    args = [
-#        "list-markets",
-#        "--exchange", "binance"
-#    ]
-#    start_list_markets(get_args(args), False)
-#    captured = capsys.readouterr()
-#    assert re.match("Exchange Binance has 8 active markets:\n",
-#                    captured.out)
+    # Test with --exchange
+    args = [
+        "list-markets",
+        "--exchange", "binance"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_list_markets(pargs, False)
+    captured = capsys.readouterr()
+    assert re.match("Exchange Binance has 8 active markets:\n",
+                    captured.out)
 
     # Test with --all: all markets
     args = [
