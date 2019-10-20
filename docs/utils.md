@@ -59,16 +59,25 @@ $ for i in `freqtrade list-exchanges -1`; do freqtrade list-timeframes --exchang
 
 The `list-pairs` and `list-markets` subcommands allow to see the pairs/markets available on exchange.
 
-Pairs are markets with the '/' character between the base currency part and the quote currency part.
+Pairs are markets with the '/' character between the base currency part and the quote currency part in the market symbol.
+
+For example, in the 'ETH/BTC' pair 'ETH' is the base currency, while 'BTC' is the quote currency.
+
+For pairs traded by Freqtrade the pair quote currency should be equal to the value of the `stake_currency` configuration setting.
 
 These subcommands have same usage and same set of available options:
 
 ```
+usage: freqtrade list-markets [-h] [--exchange EXCHANGE] [--print-list]
+                              [--print-json] [-1] [--print-csv]
+                              [--base BASE_CURRENCY [BASE_CURRENCY ...]]
+                              [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]]
+                              [-a]
+
 usage: freqtrade list-pairs [-h] [--exchange EXCHANGE] [--print-list]
                             [--print-json] [-1] [--print-csv]
-                            [--base BASE_CURRENCIES [BASE_CURRENCIES ...]]
-                            [--quote QUOTE_CURRENCIES [QUOTE_CURRENCIES ...]]
-                            [-a]
+                            [--base BASE_CURRENCY [BASE_CURRENCY ...]]
+                            [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]] [-a]
 
 optional arguments:
   -h, --help            show this help message and exit
