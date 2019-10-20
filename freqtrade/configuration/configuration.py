@@ -128,7 +128,7 @@ class Configuration:
         self._process_logging_options(config)
 
         # Set strategy if not specified in config and or if it's non default
-        if self.args.get("strategy") != constants.DEFAULT_STRATEGY or not config.get('strategy'):
+        if self.args.get("strategy") or not config.get('strategy'):
             config.update({'strategy': self.args.get("strategy")})
 
         self._args_to_config(config, argname='strategy_path',
@@ -161,6 +161,10 @@ class Configuration:
         # Support for sd_notify
         if 'sd_notify' in self.args and self.args["sd_notify"]:
             config['internals'].update({'sd_notify': True})
+
+        self._args_to_config(config, argname='dry_run',
+                             logstring='Parameter --dry-run detected, '
+                             'overriding dry_run to: {} ...')
 
     def _process_datadir_options(self, config: Dict[str, Any]) -> None:
         """

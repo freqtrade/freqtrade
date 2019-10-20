@@ -33,6 +33,17 @@ def setup_utils_configuration(args: Dict[str, Any], method: RunMode) -> Dict[str
     return config
 
 
+def start_trading(args: Dict[str, Any]) -> int:
+    """
+    Main entry point for trading mode
+    """
+    from freqtrade.worker import Worker
+    # Load and run worker
+    worker = Worker(args)
+    worker.run()
+    return 0
+
+
 def start_list_exchanges(args: Dict[str, Any]) -> None:
     """
     Print available exchanges

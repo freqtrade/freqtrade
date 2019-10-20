@@ -239,7 +239,7 @@ Because hyperopt tries a lot of combinations to find the best parameters it will
 We strongly recommend to use `screen` or `tmux` to prevent any connection loss.
 
 ```bash
-freqtrade -c config.json hyperopt --customhyperopt <hyperoptname> -e 5000 --spaces all
+freqtrade hyperopt --config config.json --hyperopt <hyperoptname> -e 5000 --spaces all
 ```
 
 Use  `<hyperoptname>` as the name of the custom hyperopt used.

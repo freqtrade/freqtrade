@@ -13,7 +13,7 @@ Let assume you have a class called `AwesomeStrategy` in the file `awesome-strate
 2. Start the bot with the param `--strategy AwesomeStrategy` (the parameter is the class name)
 
 ```bash
-freqtrade --strategy AwesomeStrategy
+freqtrade trade --strategy AwesomeStrategy
 ```
 
 ## Change your strategy
@@ -45,7 +45,7 @@ The current version is 2 - which is also the default when it's not set explicitl
 Future versions will require this to be set.
 
 ```bash
-freqtrade --strategy AwesomeStrategy
+freqtrade trade --strategy AwesomeStrategy
 ```
 
 **For the following section we will use the [user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/sample_strategy.py)
@@ -402,7 +402,7 @@ The default buy strategy is located in the file
 If you want to use a strategy from a different directory you can pass `--strategy-path`
 
 ```bash
-freqtrade --strategy AwesomeStrategy --strategy-path /some/directory
+freqtrade trade --strategy AwesomeStrategy --strategy-path /some/directory
 ```
 
 ### Further strategy ideas

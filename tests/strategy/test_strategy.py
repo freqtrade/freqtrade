@@ -55,6 +55,7 @@ def test_load_strategy_base64(result, caplog, default_conf):
 
 
 def test_load_strategy_invalid_directory(result, caplog, default_conf):
+    default_conf['strategy'] = 'SampleStrategy'
     resolver = StrategyResolver(default_conf)
     extra_dir = Path.cwd() / 'some/path'
     resolver._load_strategy('SampleStrategy', config=default_conf, extra_dir=extra_dir)
@@ -65,11 +66,19 @@ def test_load_strategy_invalid_directory(result, caplog, default_conf):
 
 
 def test_load_not_found_strategy(default_conf):
-    strategy = StrategyResolver(default_conf)
+    default_conf['strategy'] = 'NotFoundStrategy'
     with pytest.raises(OperationalException,
                        match=r"Impossible to load Strategy 'NotFoundStrategy'. "
                              r"This class does not exist or contains Python code errors."):
-        strategy._load_strategy(strategy_name='NotFoundStrategy', config=default_conf)
+        StrategyResolver(default_conf)
+
+
+def test_load_strategy_noname(default_conf):
+    default_conf['strategy'] = ''
+    with pytest.raises(OperationalException,
+                       match="No strategy set. Please use `--strategy` to specify "
+                             "the strategy class to use."):
+        StrategyResolver(default_conf)
 
 
 def test_strategy(result, default_conf):

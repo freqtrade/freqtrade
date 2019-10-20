@@ -15,7 +15,6 @@ from typing import Any, List
 
 from freqtrade import OperationalException
 from freqtrade.configuration import Arguments
-from freqtrade.worker import Worker
 
 
 logger = logging.getLogger('freqtrade')
@@ -33,16 +32,16 @@ def main(sysargv: List[str] = None) -> None:
         arguments = Arguments(sysargv)
         args = arguments.get_parsed_arg()
 
-        # A subcommand has been issued.
-        # Means if Backtesting or Hyperopt have been called we exit the bot
+        # Call subcommand.
         if 'func' in args:
-            args['func'](args)
-            # TODO: fetch return_code as returned by the command function here
-            return_code = 0
+            return_code = args['func'](args)
         else:
-            # Load and run worker
-            worker = Worker(args)
-            worker.run()
+            # No subcommand was issued.
+            raise OperationalException(
+                "Usage of freqtrade requires a subcommand.\n"
+                "To use the previous behaviour, run freqtrade with `freqtrade trade [...]`.\n"
+                "To see a full list of options, please use `freqtrade --help`"
+                )
 
     except SystemExit as e:
         return_code = e

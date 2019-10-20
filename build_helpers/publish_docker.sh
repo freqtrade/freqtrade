@@ -23,7 +23,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Run backtest
-docker run --rm -it -v $(pwd)/config.json.example:/freqtrade/config.json:ro -v $(pwd)/tests:/tests freqtrade:${TAG} --datadir /tests/testdata backtesting
+docker run --rm -it -v $(pwd)/config.json.example:/freqtrade/config.json:ro -v $(pwd)/tests:/tests freqtrade:${TAG} backtesting --datadir /tests/testdata --strategy DefaultStrategy
 
 if [ $? -ne 0 ]; then
     echo "failed running backtest"

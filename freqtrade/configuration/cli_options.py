@@ -66,9 +66,8 @@ AVAILABLE_CLI_OPTIONS = {
     # Main options
     "strategy": Arg(
         '-s', '--strategy',
-        help='Specify strategy class name (default: `%(default)s`).',
+        help='Specify strategy class name which will be used by the bot.',
         metavar='NAME',
-        default='DefaultStrategy',
     ),
     "strategy_path": Arg(
         '--strategy-path',
@@ -85,6 +84,11 @@ AVAILABLE_CLI_OPTIONS = {
     "sd_notify": Arg(
         '--sd-notify',
         help='Notify systemd service manager.',
+        action='store_true',
+    ),
+    "dry_run": Arg(
+        '--dry-run',
+        help='Enforce dry-run for trading (removes Exchange secrets and simulates trades).',
         action='store_true',
     ),
     # Optimize common
@@ -153,10 +157,9 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     # Hyperopt
     "hyperopt": Arg(
-        '--customhyperopt',
-        help='Specify hyperopt class name (default: `%(default)s`).',
+        '--hyperopt',
+        help='Specify hyperopt class name which will be used by the bot.',
         metavar='NAME',
-        default=constants.DEFAULT_HYPEROPT,
     ),
     "hyperopt_path": Arg(
         '--hyperopt-path',
@@ -171,7 +174,7 @@ AVAILABLE_CLI_OPTIONS = {
         default=constants.HYPEROPT_EPOCH,
     ),
     "spaces": Arg(
-        '-s', '--spaces',
+        '--spaces',
         help='Specify which parameters to hyperopt. Space-separated list. '
         'Default: `%(default)s`.',
         choices=['all', 'buy', 'sell', 'roi', 'stoploss'],
@@ -233,7 +236,7 @@ AVAILABLE_CLI_OPTIONS = {
         help='Specify the class name of the hyperopt loss function class (IHyperOptLoss). '
         'Different functions can generate completely different results, '
         'since the target for optimization is different. Built-in Hyperopt-loss-functions are: '
-        'DefaultHyperOptLoss, OnlyProfitHyperOptLoss, SharpeHyperOptLoss.'
+        'DefaultHyperOptLoss, OnlyProfitHyperOptLoss, SharpeHyperOptLoss '
         '(default: `%(default)s`).',
         metavar='NAME',
         default=constants.DEFAULT_HYPEROPT_LOSS,
