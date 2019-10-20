@@ -179,7 +179,13 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
         if (args.get('print_one_column', False) or
                 args.get('list_pairs_print_json', False) or
                 args.get('print_csv', False)):
+            # Print summary string in the log in case of machine-readable
+            # regular formats.
             logger.info(f"{summary_str}.")
+        else:
+            # Print empty string separating leading logs and output in case of
+            # human-readable formats.
+            print()
 
         if len(pairs):
             if args.get('print_list', False):
