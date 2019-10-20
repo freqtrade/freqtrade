@@ -9,19 +9,21 @@ This page explains the different parameters of the bot and how to run it.
 
 ```
 usage: freqtrade [-h] [-V]
-                 {trade,backtesting,edge,hyperopt,create-userdir,list-exchanges,download-data,plot-dataframe,plot-profit}
+                 {trade,backtesting,edge,hyperopt,create-userdir,list-exchanges,list-timeframes,download-data,plot-dataframe,plot-profit}
                  ...
 
 Free, open source crypto trading bot
 
 positional arguments:
-  {trade,backtesting,edge,hyperopt,create-userdir,list-exchanges,download-data,plot-dataframe,plot-profit}
+  {trade,backtesting,edge,hyperopt,create-userdir,list-exchanges,list-timeframes,download-data,plot-dataframe,plot-profit}
     trade               Trade module.
     backtesting         Backtesting module.
     edge                Edge module.
     hyperopt            Hyperopt module.
     create-userdir      Create user-data directory.
     list-exchanges      Print available exchanges.
+    list-timeframes     Print available ticker intervals (timeframes) for the
+                        exchange.
     download-data       Download backtesting data.
     plot-dataframe      Plot candles with indicators.
     plot-profit         Generate plot showing profits.
@@ -29,6 +31,7 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   -V, --version         show program's version number and exit
+
 ```
 
 ### Bot trading commands
@@ -190,7 +193,8 @@ usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                              [-d PATH] [--userdir PATH] [-s NAME]
                              [--strategy-path PATH] [-i TICKER_INTERVAL]
                              [--timerange TIMERANGE] [--max_open_trades INT]
-                             [--stake_amount STAKE_AMOUNT] [--eps] [--dmmp]
+                             [--stake_amount STAKE_AMOUNT] [--fee FLOAT]
+                             [--eps] [--dmmp]
                              [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
                              [--export EXPORT] [--export-filename PATH]
 
@@ -225,11 +229,10 @@ optional arguments:
   --export EXPORT       Export backtest results, argument are: trades.
                         Example: `--export=trades`
   --export-filename PATH
-                        Save backtest results to the file with this filename
-                        (default: `user_data/backtest_results/backtest-
-                        result.json`). Requires `--export` to be set as well.
-                        Example: `--export-filename=user_data/backtest_results
-                        /backtest_today.json`
+                        Save backtest results to the file with this filename.
+                        Requires `--export` to be set as well. Example:
+                        `--export-filename=user_data/backtest_results/backtest
+                        _today.json`
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -246,8 +249,8 @@ Common arguments:
 
 Strategy arguments:
   -s NAME, --strategy NAME
-                        Specify strategy class name (default:
-                        `DefaultStrategy`).
+                        Specify strategy class name which will be used by the
+                        bot.
   --strategy-path PATH  Specify additional strategy lookup path.
 
 ```
@@ -268,9 +271,9 @@ usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                           [--userdir PATH] [-s NAME] [--strategy-path PATH]
                           [-i TICKER_INTERVAL] [--timerange TIMERANGE]
                           [--max_open_trades INT]
-                          [--stake_amount STAKE_AMOUNT]
-                          [--hyperopt NAME] [--hyperopt-path PATH]
-                          [--eps] [-e INT]
+                          [--stake_amount STAKE_AMOUNT] [--fee FLOAT]
+                          [--hyperopt NAME] [--hyperopt-path PATH] [--eps]
+                          [-e INT]
                           [--spaces {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
                           [--dmmp] [--print-all] [--no-color] [--print-json]
                           [-j JOBS] [--random-state INT] [--min-trades INT]
@@ -287,8 +290,9 @@ optional arguments:
                         Specify max_open_trades to use.
   --stake_amount STAKE_AMOUNT
                         Specify stake_amount.
-  --hyperopt NAME
-                        Specify hyperopt class name which will be used by the
+  --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
+                        entry and exit).
+  --hyperopt NAME       Specify hyperopt class name which will be used by the
                         bot.
   --hyperopt-path PATH  Specify additional lookup path for Hyperopts and
                         Hyperopt Loss functions.
@@ -328,7 +332,6 @@ optional arguments:
                         OnlyProfitHyperOptLoss, SharpeHyperOptLoss (default:
                         `DefaultHyperOptLoss`).
 
-
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
   --logfile FILE        Log to the file specified.
@@ -344,10 +347,9 @@ Common arguments:
 
 Strategy arguments:
   -s NAME, --strategy NAME
-                        Specify strategy class name (default:
-                        `DefaultStrategy`).
+                        Specify strategy class name which will be used by the
+                        bot.
   --strategy-path PATH  Specify additional strategy lookup path.
-
 ```
 
 ## Edge commands
@@ -359,7 +361,7 @@ usage: freqtrade edge [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                       [--userdir PATH] [-s NAME] [--strategy-path PATH]
                       [-i TICKER_INTERVAL] [--timerange TIMERANGE]
                       [--max_open_trades INT] [--stake_amount STAKE_AMOUNT]
-                      [--stoplosses STOPLOSS_RANGE]
+                      [--fee FLOAT] [--stoplosses STOPLOSS_RANGE]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -395,10 +397,9 @@ Common arguments:
 
 Strategy arguments:
   -s NAME, --strategy NAME
-                        Specify strategy class name (default:
-                        `DefaultStrategy`).
+                        Specify strategy class name which will be used by the
+                        bot.
   --strategy-path PATH  Specify additional strategy lookup path.
-
 ```
 
 To understand edge and how to read the results, please read the [edge documentation](edge.md).
