@@ -61,7 +61,8 @@ The `list-pairs` and `list-markets` subcommands allow to see the pairs/markets a
 
 Pairs are markets with the '/' character between the base currency part and the quote currency part in the market symbol.
 For example, in the 'ETH/BTC' pair 'ETH' is the base currency, while 'BTC' is the quote currency.
-For pairs traded by Freqtrade the pair quote currency should be equal to the value of the `stake_currency` configuration setting.
+For pairs traded by Freqtrade the pair quote currency is defined by the value of the `stake_currency` configuration setting,
+but using these commands you can print info about any pair/market, with any quote currency.
 
 These subcommands have same usage and same set of available options:
 
