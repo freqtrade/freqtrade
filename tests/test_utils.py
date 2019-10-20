@@ -174,9 +174,11 @@ def test_list_markets(mocker, markets, capsys):
     args = [
         "list-markets",
     ]
+    pargs = get_args(args)
+    pargs['config'] = None
     with pytest.raises(OperationalException,
                        match=r"This command requires a configured exchange.*"):
-        start_list_markets(get_args(args), False)
+        start_list_markets(pargs, False)
 
     # Test with --config config.json.example
     args = [
