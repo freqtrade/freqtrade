@@ -60,8 +60,7 @@ file as reference.**
 !!! Warning Using future data
     Since backtesting passes the full time interval to the `populate_*()` methods, the strategy author
     needs to take care to avoid having the strategy utilize data from the future.
-    Samples for usage of future data are `dataframe.shift(-1)`, `dataframe.resample("1h")` (this uses the left border of the interval, so moves data from an hour to the start of the hour).
-    They all use data which is not available during regular operations, so these strategies will perform well during backtesting, but will fail / perform badly in dry-runs.
+    Some common patterns for this are listed in the [Common Mistakes](#common-mistakes-when-developing-strategies) section of this document.
 
 ### Customize Indicators
 
@@ -399,10 +398,10 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
 Printing more than a few rows is also possible (simply use  `print(dataframe)` instead of `print(dataframe.tail())`), however not recommended, as that will be very verbose (~500 lines per pair every 5 seconds).
 
-### Where is the default strategy?
+### Where can i find a strategy template?
 
-The default buy strategy is located in the file
-[freqtrade/default_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/strategy/default_strategy.py).
+The strategy template is located in the file
+[user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/sample_strategy.py).
 
 ### Specify custom strategy location
 
@@ -411,6 +410,19 @@ If you want to use a strategy from a different directory you can pass `--strateg
 ```bash
 freqtrade --strategy AwesomeStrategy --strategy-path /some/directory
 ```
+
+### Common mistakes when developing strategies
+
+Backtesting analyzes the whole time-range at once for performance reasons. Because of this, strategy authors need to make sure that strategies do not look into the future.
+This is a common pain-point, which can cause huge differences between backtesting and dry/live run methods, since they all use data which is not available during dry/live runs, so these strategies will perform well during backtesting, but will fail / perform badly in real conditions.
+
+The following lists some common patterns which should be avoided to avoid frustration:
+
+- don't use `shift(-1)`. This uses data from the future, which is not available.
+- don't use `.iloc[-1]` or any other absolute position in the dataframe, this will be different between dry-run and backtesting.
+- don't use `dataframe['volume'].mean()`. This uses the full DataFrame for backtesting, including data from the future. Use `dataframe['volume'].rolling(<window>).mean()` instead
+- don't use `.resample('1h')`. This uses the left border of the interval, so moves data from an hour to the start of the hour. Use `.resample('1h', label='right')` instead.
+
 
 ### Further strategy ideas
 
