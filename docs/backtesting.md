@@ -199,8 +199,9 @@ Since backtesting lacks some detailed information about what happens within a ca
 - Low happens before high for stoploss, protecting capital first.
 - ROI sells are compared to high - but the ROI value is used (e.g. ROI = 2%, high=5% - so the sell will be at 2%)
 - Stoploss sells happen exactly at stoploss price, even if low was lower
-- Trailing stoploss: High happens first - adjusting stoploss
-- Trailing stoploss: Low uses the adjusted stoploss (so sells with large high-low difference are backtested correctly)
+- Trailing stoploss
+  - High happens first - adjusting stoploss
+  - Low uses the adjusted stoploss (so sells with large high-low difference are backtested correctly)
 - Sell-reason does not explain if a trade was positive or negative, just what triggered the sell (this can look odd if negative ROI values are used)
 
 Taking these assumptions, backtesting tries to mirror real trading as closely as possible. However, backtesting will **never** replace running a strategy in dry-run mode.
