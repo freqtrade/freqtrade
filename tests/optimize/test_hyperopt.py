@@ -27,7 +27,7 @@ from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
 def hyperopt(default_conf, mocker):
     default_conf.update({
         'spaces': ['all'],
-        'hyperopt': 'DefaultHyperOpts',
+        'hyperopt': 'DefaultHyperOpt',
     })
     patch_exchange(mocker)
     return Hyperopt(default_conf)
@@ -73,7 +73,7 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--hyperopt', 'DefaultHyperOpts',
+        '--hyperopt', 'DefaultHyperOpt',
     ]
 
     config = setup_configuration(get_args(args), RunMode.HYPEROPT)
@@ -105,7 +105,7 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--hyperopt', 'DefaultHyperOpts',
+        '--hyperopt', 'DefaultHyperOpt',
         '--datadir', '/foo/bar',
         '--ticker-interval', '1m',
         '--timerange', ':100',
@@ -160,7 +160,7 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
         'freqtrade.resolvers.hyperopt_resolver.HyperOptResolver._load_hyperopt',
         MagicMock(return_value=hyperopt(default_conf))
     )
-    default_conf.update({'hyperopt': 'DefaultHyperOpts'})
+    default_conf.update({'hyperopt': 'DefaultHyperOpt'})
     x = HyperOptResolver(default_conf).hyperopt
     assert not hasattr(x, 'populate_buy_trend')
     assert not hasattr(x, 'populate_sell_trend')
@@ -214,7 +214,7 @@ def test_start_not_installed(mocker, default_conf, caplog, import_fails) -> None
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--hyperopt', 'DefaultHyperOpts',
+        '--hyperopt', 'DefaultHyperOpt',
         '--epochs', '5'
     ]
     args = get_args(args)
@@ -232,7 +232,7 @@ def test_start(mocker, default_conf, caplog) -> None:
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--hyperopt', 'DefaultHyperOpts',
+        '--hyperopt', 'DefaultHyperOpt',
         '--epochs', '5'
     ]
     args = get_args(args)
@@ -255,7 +255,7 @@ def test_start_no_data(mocker, default_conf, caplog) -> None:
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--hyperopt', 'DefaultHyperOpts',
+        '--hyperopt', 'DefaultHyperOpt',
         '--epochs', '5'
     ]
     args = get_args(args)
@@ -273,7 +273,7 @@ def test_start_filelock(mocker, default_conf, caplog) -> None:
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--hyperopt', 'DefaultHyperOpts',
+        '--hyperopt', 'DefaultHyperOpt',
         '--epochs', '5'
     ]
     args = get_args(args)
@@ -425,7 +425,7 @@ def test_start_calls_optimizer(mocker, default_conf, caplog, capsys) -> None:
     patch_exchange(mocker)
 
     default_conf.update({'config': 'config.json.example',
-                         'hyperopt': 'DefaultHyperOpts',
+                         'hyperopt': 'DefaultHyperOpt',
                          'epochs': 1,
                          'timerange': None,
                          'spaces': 'all',
@@ -530,7 +530,7 @@ def test_buy_strategy_generator(hyperopt, testdatadir) -> None:
 
 def test_generate_optimizer(mocker, default_conf) -> None:
     default_conf.update({'config': 'config.json.example',
-                         'hyperopt': 'DefaultHyperOpts',
+                         'hyperopt': 'DefaultHyperOpt',
                          'timerange': None,
                          'spaces': 'all',
                          'hyperopt_min_trades': 1,
@@ -597,7 +597,7 @@ def test_generate_optimizer(mocker, default_conf) -> None:
 def test_clean_hyperopt(mocker, default_conf, caplog):
     patch_exchange(mocker)
     default_conf.update({'config': 'config.json.example',
-                         'hyperopt': 'DefaultHyperOpts',
+                         'hyperopt': 'DefaultHyperOpt',
                          'epochs': 1,
                          'timerange': None,
                          'spaces': 'all',
@@ -614,7 +614,7 @@ def test_clean_hyperopt(mocker, default_conf, caplog):
 def test_continue_hyperopt(mocker, default_conf, caplog):
     patch_exchange(mocker)
     default_conf.update({'config': 'config.json.example',
-                         'hyperopt': 'DefaultHyperOpts',
+                         'hyperopt': 'DefaultHyperOpt',
                          'epochs': 1,
                          'timerange': None,
                          'spaces': 'all',
@@ -644,7 +644,7 @@ def test_print_json_spaces_all(mocker, default_conf, caplog, capsys) -> None:
     patch_exchange(mocker)
 
     default_conf.update({'config': 'config.json.example',
-                         'hyperopt': 'DefaultHyperOpts',
+                         'hyperopt': 'DefaultHyperOpt',
                          'epochs': 1,
                          'timerange': None,
                          'spaces': 'all',
@@ -682,7 +682,7 @@ def test_print_json_spaces_roi_stoploss(mocker, default_conf, caplog, capsys) ->
     patch_exchange(mocker)
 
     default_conf.update({'config': 'config.json.example',
-                         'hyperopt': 'DefaultHyperOpts',
+                         'hyperopt': 'DefaultHyperOpt',
                          'epochs': 1,
                          'timerange': None,
                          'spaces': 'roi stoploss',
@@ -721,7 +721,7 @@ def test_simplified_interface_roi_stoploss(mocker, default_conf, caplog, capsys)
     patch_exchange(mocker)
 
     default_conf.update({'config': 'config.json.example',
-                         'hyperopt': 'DefaultHyperOpts',
+                         'hyperopt': 'DefaultHyperOpt',
                          'epochs': 1,
                          'timerange': None,
                          'spaces': 'roi stoploss',
@@ -763,7 +763,7 @@ def test_simplified_interface_all_failed(mocker, default_conf, caplog, capsys) -
     patch_exchange(mocker)
 
     default_conf.update({'config': 'config.json.example',
-                         'hyperopt': 'DefaultHyperOpts',
+                         'hyperopt': 'DefaultHyperOpt',
                          'epochs': 1,
                          'timerange': None,
                          'spaces': 'all',
@@ -797,7 +797,7 @@ def test_simplified_interface_buy(mocker, default_conf, caplog, capsys) -> None:
     patch_exchange(mocker)
 
     default_conf.update({'config': 'config.json.example',
-                         'hyperopt': 'DefaultHyperOpts',
+                         'hyperopt': 'DefaultHyperOpt',
                          'epochs': 1,
                          'timerange': None,
                          'spaces': 'buy',
@@ -843,7 +843,7 @@ def test_simplified_interface_sell(mocker, default_conf, caplog, capsys) -> None
     patch_exchange(mocker)
 
     default_conf.update({'config': 'config.json.example',
-                         'hyperopt': 'DefaultHyperOpts',
+                         'hyperopt': 'DefaultHyperOpt',
                          'epochs': 1,
                          'timerange': None,
                          'spaces': 'sell',
@@ -891,7 +891,7 @@ def test_simplified_interface_failed(mocker, default_conf, caplog, capsys, metho
     patch_exchange(mocker)
 
     default_conf.update({'config': 'config.json.example',
-                         'hyperopt': 'DefaultHyperOpts',
+                         'hyperopt': 'DefaultHyperOpt',
                          'epochs': 1,
                          'timerange': None,
                          'spaces': space,

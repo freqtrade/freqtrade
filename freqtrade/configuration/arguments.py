@@ -153,41 +153,46 @@ class Arguments:
         self._build_args(optionlist=ARGS_CREATE_USERDIR, parser=create_userdir_cmd)
 
         # Add list-exchanges subcommand
-        list_exchanges_cmd = subparsers.add_parser('list-exchanges',
-                                                   help='Print available exchanges.',
-                                                   parents=[_common_parser],
-                                                   )
+        list_exchanges_cmd = subparsers.add_parser(
+            'list-exchanges',
+            help='Print available exchanges.',
+            parents=[_common_parser],
+        )
         list_exchanges_cmd.set_defaults(func=start_list_exchanges)
         self._build_args(optionlist=ARGS_LIST_EXCHANGES, parser=list_exchanges_cmd)
 
         # Add list-timeframes subcommand
         list_timeframes_cmd = subparsers.add_parser(
             'list-timeframes',
-            help='Print available ticker intervals (timeframes) for the exchange.'
+            help='Print available ticker intervals (timeframes) for the exchange.',
+            parents=[_common_parser],
         )
         list_timeframes_cmd.set_defaults(func=start_list_timeframes)
         self._build_args(optionlist=ARGS_LIST_TIMEFRAMES, parser=list_timeframes_cmd)
 
         # Add download-data subcommand
-        download_data_cmd = subparsers.add_parser('download-data',
-                                                  help='Download backtesting data.',
-                                                  parents=[_common_parser],
-                                                  )
+        download_data_cmd = subparsers.add_parser(
+            'download-data',
+            help='Download backtesting data.',
+            parents=[_common_parser],
+        )
         download_data_cmd.set_defaults(func=start_download_data)
         self._build_args(optionlist=ARGS_DOWNLOAD_DATA, parser=download_data_cmd)
 
         # Add Plotting subcommand
-        plot_dataframe_cmd = subparsers.add_parser('plot-dataframe',
-                                                   help='Plot candles with indicators.',
-                                                   parents=[_common_parser, _strategy_parser],
-                                                   )
+        plot_dataframe_cmd = subparsers.add_parser(
+            'plot-dataframe',
+            help='Plot candles with indicators.',
+            parents=[_common_parser, _strategy_parser],
+        )
         plot_dataframe_cmd.set_defaults(func=start_plot_dataframe)
         self._build_args(optionlist=ARGS_PLOT_DATAFRAME, parser=plot_dataframe_cmd)
 
         # Plot profit
-        plot_profit_cmd = subparsers.add_parser('plot-profit',
-                                                help='Generate plot showing profits.',
-                                                parents=[_common_parser],
-                                                )
+        plot_profit_cmd = subparsers.add_parser(
+            'plot-profit',
+            help='Generate plot showing profits.',
+            parents=[_common_parser],
+        )
         plot_profit_cmd.set_defaults(func=start_plot_profit)
         self._build_args(optionlist=ARGS_PLOT_PROFIT, parser=plot_profit_cmd)

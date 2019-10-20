@@ -61,7 +61,7 @@ def test_load_strategy_invalid_directory(result, caplog, default_conf):
 
     assert log_has_re(r'Path .*' + r'some.*path.*' + r'.* does not exist', caplog)
 
-    assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
+    assert 'rsi' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 
 
 def test_load_not_found_strategy(default_conf):

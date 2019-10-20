@@ -95,8 +95,8 @@ def test_list_timeframes(mocker, capsys):
 
     # Test with --config config.json.example
     args = [
-        '--config', 'config.json.example',
         "list-timeframes",
+        '--config', 'config.json.example',
     ]
     start_list_timeframes(get_args(args))
     captured = capsys.readouterr()
@@ -139,8 +139,8 @@ def test_list_timeframes(mocker, capsys):
 
     # Test with --one-column
     args = [
-        '--config', 'config.json.example',
         "list-timeframes",
+        '--config', 'config.json.example',
         "--one-column",
     ]
     start_list_timeframes(get_args(args))

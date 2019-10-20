@@ -186,7 +186,7 @@ def test_config_notallowed(mocker) -> None:
     ]
     pargs = Arguments(args).get_parsed_arg()
 
-    assert pargs["config"] is None
+    assert "config" not in pargs
 
     # When file exists:
     mocker.patch.object(Path, "is_file", MagicMock(return_value=True))
@@ -195,7 +195,7 @@ def test_config_notallowed(mocker) -> None:
     ]
     pargs = Arguments(args).get_parsed_arg()
     # config is not added even if it exists, since create-userdir is in the notallowed list
-    assert pargs["config"] is None
+    assert "config" not in pargs
 
 
 def test_config_notrequired(mocker) -> None:
