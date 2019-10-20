@@ -192,6 +192,13 @@ class Configuration:
         config.update({'datadir': create_datadir(config, self.args.get("datadir", None))})
         logger.info('Using data directory: %s ...', config.get('datadir'))
 
+        if self.args.get('exportfilename'):
+            self._args_to_config(config, argname='exportfilename',
+                                 logstring='Storing backtest results to {} ...')
+        else:
+            config['exportfilename'] = (config['user_data_dir']
+                                        / 'backtest_results/backtest-result.json')
+
     def _process_optimize_options(self, config: Dict[str, Any]) -> None:
 
         # This will override the strategy configuration
@@ -234,9 +241,6 @@ class Configuration:
 
         self._args_to_config(config, argname='export',
                              logstring='Parameter --export detected: {} ...')
-
-        self._args_to_config(config, argname='exportfilename',
-                             logstring='Storing backtest results to {} ...')
 
         # Edge section:
         if 'stoploss_range' in self.args and self.args["stoploss_range"]:
@@ -312,6 +316,8 @@ class Configuration:
 
         self._args_to_config(config, argname='days',
                              logstring='Detected --days: {}')
+        self._args_to_config(config, argname='download_trades',
+                             logstring='Detected --dl-trades: {}')
 
     def _process_runmode(self, config: Dict[str, Any]) -> None:
 

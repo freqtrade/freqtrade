@@ -5,9 +5,6 @@ from freqtrade.configuration import TimeRange
 
 
 def test_parse_timerange_incorrect() -> None:
-    assert TimeRange(None, 'line', 0, -200) == TimeRange.parse_timerange('-200')
-    assert TimeRange('line', None, 200, 0) == TimeRange.parse_timerange('200-')
-    assert TimeRange('index', 'index', 200, 500) == TimeRange.parse_timerange('200-500')
 
     assert TimeRange('date', None, 1274486400, 0) == TimeRange.parse_timerange('20100522-')
     assert TimeRange(None, 'date', 0, 1274486400) == TimeRange.parse_timerange('-20100522')
@@ -20,9 +17,14 @@ def test_parse_timerange_incorrect() -> None:
     timerange = TimeRange.parse_timerange('1231006505-1233360000')
     assert TimeRange('date', 'date', 1231006505, 1233360000) == timerange
 
-    # TODO: Find solution for the following case (passing timestamp in ms)
     timerange = TimeRange.parse_timerange('1231006505000-1233360000000')
-    assert TimeRange('date', 'date', 1231006505, 1233360000) != timerange
+    assert TimeRange('date', 'date', 1231006505, 1233360000) == timerange
+
+    timerange = TimeRange.parse_timerange('1231006505000-')
+    assert TimeRange('date', None, 1231006505, 0) == timerange
+
+    timerange = TimeRange.parse_timerange('-1231006505000')
+    assert TimeRange(None, 'date', 0, 1231006505) == timerange
 
     with pytest.raises(Exception, match=r'Incorrect syntax.*'):
         TimeRange.parse_timerange('-')

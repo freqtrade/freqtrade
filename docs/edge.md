@@ -249,13 +249,10 @@ freqtrade edge --stoplosses=-0.01,-0.1,-0.001 #min,max,step
 freqtrade edge --timerange=20181110-20181113
 ```
 
-Doing `--timerange=-200` will get the last 200 timeframes from your inputdata. You can also specify specific dates, or a range span indexed by start and stop.
+Doing `--timerange=-20190901` will get all available data until September 1st (excluding September 1st 2019).
 
 The full timerange specification:
 
-* Use last 123 tickframes of data: `--timerange=-123`
-* Use first 123 tickframes of data: `--timerange=123-`
-* Use tickframes from line 123 through 456: `--timerange=123-456`
 * Use tickframes till 2018/01/31: `--timerange=-20180131`
 * Use tickframes since 2018/01/31: `--timerange=20180131-`
 * Use tickframes since 2018/01/31 till 2018/03/01 : `--timerange=20180131-20180301`

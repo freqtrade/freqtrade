@@ -14,6 +14,10 @@ logger = logging.getLogger(__name__)
 class Kraken(Exchange):
 
     _params: Dict = {"trading_agreement": "agree"}
+    _ft_has: Dict = {
+        "trades_pagination": "id",
+        "trades_pagination_arg": "since",
+    }
 
     @retrier
     def get_balances(self) -> dict:

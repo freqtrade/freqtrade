@@ -53,12 +53,12 @@ def test_load_trades_db(default_conf, fee, mocker):
 
 def test_extract_trades_of_period(testdatadir):
     pair = "UNITTEST/BTC"
-    timerange = TimeRange(None, 'line', 0, -1000)
+    # 2018-11-14 06:07:00
+    timerange = TimeRange('date', None, 1510639620, 0)
 
     data = load_pair_history(pair=pair, ticker_interval='1m',
                              datadir=testdatadir, timerange=timerange)
 
-    # timerange = 2017-11-14 06:07 - 2017-11-14 22:58:00
     trades = DataFrame(
         {'pair': [pair, pair, pair, pair],
          'profit_percent': [0.0, 0.1, -0.2, -0.5],

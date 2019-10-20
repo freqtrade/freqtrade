@@ -497,3 +497,25 @@ def test_download_data_no_pairs(mocker, caplog):
     with pytest.raises(OperationalException,
                        match=r"Downloading data requires a list of pairs\..*"):
         start_download_data(pargs)
+
+
+def test_download_data_trades(mocker, caplog):
+    dl_mock = mocker.patch('freqtrade.utils.refresh_backtest_trades_data',
+                           MagicMock(return_value=[]))
+    convert_mock = mocker.patch('freqtrade.utils.convert_trades_to_ohlcv',
+                                MagicMock(return_value=[]))
+    patch_exchange(mocker)
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets', PropertyMock(return_value={})
+    )
+    args = [
+        "download-data",
+        "--exchange", "kraken",
+        "--pairs", "ETH/BTC", "XRP/BTC",
+        "--days", "20",
+        "--dl-trades"
+    ]
+    start_download_data(get_args(args))
+    assert dl_mock.call_args[1]['timerange'].starttype == "date"
+    assert dl_mock.call_count == 1
+    assert convert_mock.call_count == 1

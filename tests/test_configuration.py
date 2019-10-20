@@ -399,7 +399,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert log_has('Using data directory: {} ...'.format("/foo/bar"), caplog)
-    assert log_has('Using user-data directory: {} ...'.format("/tmp/freqtrade"), caplog)
+    assert log_has('Using user-data directory: {} ...'.format(Path("/tmp/freqtrade")), caplog)
     assert 'user_data_dir' in config
 
     assert 'ticker_interval' in config
@@ -652,9 +652,9 @@ def test_create_userdata_dir(mocker, default_conf, caplog) -> None:
     x = create_userdata_dir('/tmp/bar', create_dir=True)
     assert md.call_count == 7
     assert md.call_args[1]['parents'] is False
-    assert log_has('Created user-data directory: /tmp/bar', caplog)
+    assert log_has(f'Created user-data directory: {Path("/tmp/bar")}', caplog)
     assert isinstance(x, Path)
-    assert str(x) == "/tmp/bar"
+    assert str(x) == str(Path("/tmp/bar"))
 
 
 def test_create_userdata_dir_exists(mocker, default_conf, caplog) -> None:
@@ -669,7 +669,8 @@ def test_create_userdata_dir_exists_exception(mocker, default_conf, caplog) -> N
     mocker.patch.object(Path, "is_dir", MagicMock(return_value=False))
     md = mocker.patch.object(Path, 'mkdir', MagicMock())
 
-    with pytest.raises(OperationalException, match=r'Directory `/tmp/bar` does not exist.*'):
+    with pytest.raises(OperationalException,
+                       match=r'Directory `.{1,2}tmp.{1,2}bar` does not exist.*'):
         create_userdata_dir('/tmp/bar',  create_dir=False)
     assert md.call_count == 0
 

@@ -10,7 +10,7 @@ DEFAULT_TICKER_INTERVAL = 5  # min
 HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
 DEFAULT_STRATEGY = 'DefaultStrategy'
-DEFAULT_HYPEROPT = 'DefaultHyperOpts'
+DEFAULT_HYPEROPT = 'DefaultHyperOpt'
 DEFAULT_HYPEROPT_LOSS = 'DefaultHyperOptLoss'
 DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
 DEFAULT_DB_DRYRUN_URL = 'sqlite://'
@@ -266,6 +266,6 @@ CONF_SCHEMA = {
         'stake_amount',
         'dry_run',
         'bid_strategy',
-        'telegram'
+        'unfilledtimeout',
     ]
 }

@@ -106,7 +106,7 @@ user_data/
 ├── backtest_results
 ├── data
 ├── hyperopts
-├── hyperopts_results
+├── hyperopt_results
 ├── plot
 └── strategies
 ```
@@ -256,7 +256,7 @@ optional arguments:
                         entry and exit).
   --customhyperopt NAME
                         Specify hyperopt class name (default:
-                        `DefaultHyperOpts`).
+                        `DefaultHyperOpt`).
   --hyperopt-path PATH  Specify additional lookup path for Hyperopts and
                         Hyperopt Loss functions.
   --eps, --enable-position-stacking

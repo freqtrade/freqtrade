@@ -38,7 +38,7 @@ like pauses. You can stop your bot, adjust settings and start it again.
 
 ### I want to improve the bot with a new strategy
 
-That's great. We have a nice backtesting and hyperoptimizing setup. See
+That's great. We have a nice backtesting and hyperoptimization setup. See
 the tutorial [here|Testing-new-strategies-with-Hyperopt](bot-usage.md#hyperopt-commands).
 
 ### Is there a setting to only SELL the coins being held and not perform anymore BUYS?
@@ -59,7 +59,7 @@ If you're a US customer, the bot will fail to create orders for these pairs, and
 
 ### How many epoch do I need to get a good Hyperopt result?
 
-Per default Hyperopts without `-e` or `--epochs` parameter will only
+Per default Hyperopt called without the `-e`/`--epochs` command line option will only
 run 100 epochs, means 100 evals of your triggers, guards, ... Too few
 to find a great result (unless if you are very lucky), so you probably
 have to run it for 10.000 or more. But it will take an eternity to
