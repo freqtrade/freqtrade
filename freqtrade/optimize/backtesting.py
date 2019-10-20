@@ -15,7 +15,7 @@ from freqtrade import OperationalException
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
@@ -90,6 +90,9 @@ class Backtesting:
         self.ticker_interval = str(self.config.get('ticker_interval'))
         self.ticker_interval_mins = timeframe_to_minutes(self.ticker_interval)
 
+        # Get maximum required startup period
+        self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
+        self.required_startup_s = self.required_startup * timeframe_to_seconds(self.ticker_interval)
         # Load one (first) strategy
         self._set_strategy(self.strategylist[0])
 
@@ -418,11 +421,19 @@ class Backtesting:
 
         timerange = TimeRange.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
+
+        logger.info('Using indicator startup period: %s ...', self.required_startup)
+
+        # Timerange_startup is timerange - startup-candles
+        timerange_startup = deepcopy(timerange)
+        timerange_startup.subtract_start(self.required_startup_s)
+
         data = history.load_data(
             datadir=Path(self.config['datadir']),
             pairs=pairs,
             ticker_interval=self.ticker_interval,
             timerange=timerange,
+            startup_candles=self.required_startup
         )
 
         if not data:
@@ -439,11 +450,14 @@ class Backtesting:
         min_date, max_date = history.get_timeframe(data)
 
         logger.info(
-            'Backtesting with data from %s up to %s (%s days)..',
-            min_date.isoformat(),
-            max_date.isoformat(),
-            (max_date - min_date).days
+            'Loading backtest data from %s up to %s (%s days)..',
+            min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
         )
+        if not timerange_startup.starttype:
+            # If no startts was defined, we need to move the backtesting start
+            logger.info("Moving start-date by %s candles.", self.required_startup)
+            timerange.startts = min_date.timestamp + self.required_startup_s
+            timerange.starttype = 'date'
 
         for strat in self.strategylist:
             logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
@@ -452,6 +466,15 @@ class Backtesting:
             # need to reprocess data every time to populate signals
             preprocessed = self.strategy.tickerdata_to_dataframe(data)
 
+            # Trim startup period from analyzed dataframe
+            for pair, df in preprocessed.items():
+                preprocessed[pair] = history.trim_dataframe(df, timerange)
+            min_date, max_date = history.get_timeframe(preprocessed)
+
+            logger.info(
+                'Backtesting with data from %s up to %s (%s days)..',
+                min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
+            )
             # Execute backtest and print results
             all_results[self.strategy.get_strategy_name()] = self.backtest(
                 {
