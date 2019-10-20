@@ -10,12 +10,12 @@ Hyperopt requires historic data to be available, just as backtesting does.
 To learn how to get data for the pairs and exchange you're interrested in, head over to the [Data Downloading](data-download.md) section of the documentation.
 
 !!! Bug
-    Hyperopt will crash when used with only 1 CPU Core as found out in [Issue #1133](https://github.com/freqtrade/freqtrade/issues/1133)
+    Hyperopt can crash when used with only 1 CPU Core as found out in [Issue #1133](https://github.com/freqtrade/freqtrade/issues/1133)
 
 ## Prepare Hyperopting
 
 Before we start digging into Hyperopt, we recommend you to take a look at
-an example hyperopt file located into [user_data/hyperopts/](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/sample_hyperopt.py)
+the sample hyperopt file located in [user_data/hyperopts/](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/sample_hyperopt.py).
 
 Configuring hyperopt is similar to writing your own strategy, and many tasks will be similar and a lot of code can be copied across from the strategy.
 
@@ -64,9 +64,9 @@ multiple guards. The constructed strategy will be something like
 "*buy exactly when close price touches lower bollinger band, BUT only if
 ADX > 10*".
 
-If you have updated the buy strategy, ie. changed the contents of
-`populate_buy_trend()` method you have to update the `guards` and
-`triggers` hyperopts must use.
+If you have updated the buy strategy, i.e. changed the contents of
+`populate_buy_trend()` method, you have to update the `guards` and
+`triggers` your hyperopt must use correspondingly.
 
 #### Sell optimization
 
@@ -82,7 +82,7 @@ To avoid naming collisions in the search-space, please prefix all sell-spaces wi
 #### Using ticker-interval as part of the Strategy
 
 The Strategy exposes the ticker-interval as `self.ticker_interval`. The same value is available as class-attribute `HyperoptName.ticker_interval`.
-In the case of the linked sample-value this would be `SampleHyperOpts.ticker_interval`.
+In the case of the linked sample-value this would be `SampleHyperOpt.ticker_interval`.
 
 ## Solving a Mystery
 

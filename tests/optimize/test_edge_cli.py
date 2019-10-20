@@ -98,6 +98,16 @@ def test_edge_init(mocker, edge_conf) -> None:
     assert callable(edge_cli.edge.calculate)
 
 
+def test_edge_init_fee(mocker, edge_conf) -> None:
+    patch_exchange(mocker)
+    edge_conf['fee'] = 0.1234
+    edge_conf['stake_amount'] = 20
+    fee_mock = mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
+    edge_cli = EdgeCli(edge_conf)
+    assert edge_cli.edge.fee == 0.1234
+    assert fee_mock.call_count == 0
+
+
 def test_generate_edge_table(edge_conf, mocker):
     patch_exchange(mocker)
     edge_cli = EdgeCli(edge_conf)

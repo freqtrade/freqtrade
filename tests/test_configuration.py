@@ -14,6 +14,9 @@ from freqtrade.configuration import (Arguments, Configuration,
                                      validate_config_consistency)
 from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.config_validation import validate_config_schema
+from freqtrade.configuration.deprecated_settings import (check_conflicting_settings,
+                                                         process_deprecated_setting,
+                                                         process_temporary_deprecated_settings)
 from freqtrade.configuration.directory_operations import (create_datadir,
                                                           create_userdata_dir)
 from freqtrade.configuration.load_config import load_config_file
@@ -418,14 +421,14 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert log_has('Using data directory: {} ...'.format("/foo/bar"), caplog)
-    assert log_has('Using user-data directory: {} ...'.format("/tmp/freqtrade"), caplog)
+    assert log_has('Using user-data directory: {} ...'.format(Path("/tmp/freqtrade")), caplog)
     assert 'user_data_dir' in config
 
     assert 'ticker_interval' in config
     assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
                    caplog)
 
-    assert 'position_stacking'in config
+    assert 'position_stacking' in config
     assert log_has('Parameter --enable-position-stacking detected ...', caplog)
 
     assert 'use_max_market_positions' in config
@@ -528,7 +531,8 @@ def test_check_exchange(default_conf, caplog) -> None:
     # Test an available exchange, supported by ccxt
     default_conf.get('exchange').update({'name': 'huobipro'})
     assert check_exchange(default_conf)
-    assert log_has_re(r"Exchange .* is supported by ccxt and .* not officially supported "
+    assert log_has_re(r"Exchange .* is known to the the ccxt library, available for the bot, "
+                      r"but not officially supported "
                       r"by the Freqtrade development team\. .*", caplog)
     caplog.clear()
 
@@ -542,16 +546,16 @@ def test_check_exchange(default_conf, caplog) -> None:
     # Test a 'bad' exchange with check_for_bad=False
     default_conf.get('exchange').update({'name': 'bitmex'})
     assert check_exchange(default_conf, False)
-    assert log_has_re(r"Exchange .* is supported by ccxt and .* not officially supported "
+    assert log_has_re(r"Exchange .* is known to the the ccxt library, available for the bot, "
+                      r"but not officially supported "
                       r"by the Freqtrade development team\. .*", caplog)
     caplog.clear()
 
     # Test an invalid exchange
     default_conf.get('exchange').update({'name': 'unknown_exchange'})
-
     with pytest.raises(
         OperationalException,
-        match=r'.*Exchange "unknown_exchange" is not supported by ccxt '
+        match=r'Exchange "unknown_exchange" is not known to the ccxt library '
               r'and therefore not available for the bot.*'
     ):
         check_exchange(default_conf)
@@ -670,9 +674,9 @@ def test_create_userdata_dir(mocker, default_conf, caplog) -> None:
     x = create_userdata_dir('/tmp/bar', create_dir=True)
     assert md.call_count == 7
     assert md.call_args[1]['parents'] is False
-    assert log_has('Created user-data directory: /tmp/bar', caplog)
+    assert log_has(f'Created user-data directory: {Path("/tmp/bar")}', caplog)
     assert isinstance(x, Path)
-    assert str(x) == "/tmp/bar"
+    assert str(x) == str(Path("/tmp/bar"))
 
 
 def test_create_userdata_dir_exists(mocker, default_conf, caplog) -> None:
@@ -687,7 +691,8 @@ def test_create_userdata_dir_exists_exception(mocker, default_conf, caplog) -> N
     mocker.patch.object(Path, "is_dir", MagicMock(return_value=False))
     md = mocker.patch.object(Path, 'mkdir', MagicMock())
 
-    with pytest.raises(OperationalException, match=r'Directory `/tmp/bar` does not exist.*'):
+    with pytest.raises(OperationalException,
+                       match=r'Directory `.{1,2}tmp.{1,2}bar` does not exist.*'):
         create_userdata_dir('/tmp/bar',  create_dir=False)
     assert md.call_count == 0
 
@@ -918,3 +923,126 @@ def test_pairlist_resolving_fallback(mocker):
     assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
     assert config['exchange']['name'] == 'binance'
     assert config['datadir'] == str(Path.cwd() / "user_data/data/binance")
+
+
+@pytest.mark.parametrize("setting", [
+        ("ask_strategy", "use_sell_signal", True,
+         "experimental", "use_sell_signal", False),
+        ("ask_strategy", "sell_profit_only", False,
+         "experimental", "sell_profit_only", True),
+        ("ask_strategy", "ignore_roi_if_buy_signal", False,
+         "experimental", "ignore_roi_if_buy_signal", True),
+    ])
+def test_process_temporary_deprecated_settings(mocker, default_conf, setting, caplog):
+    patched_configuration_load_config_file(mocker, default_conf)
+
+    # Create sections for new and deprecated settings
+    # (they may not exist in the config)
+    default_conf[setting[0]] = {}
+    default_conf[setting[3]] = {}
+    # Assign new setting
+    default_conf[setting[0]][setting[1]] = setting[2]
+    # Assign deprecated setting
+    default_conf[setting[3]][setting[4]] = setting[5]
+
+    # New and deprecated settings are conflicting ones
+    with pytest.raises(OperationalException, match=r'DEPRECATED'):
+        process_temporary_deprecated_settings(default_conf)
+
+    caplog.clear()
+
+    # Delete new setting
+    del default_conf[setting[0]][setting[1]]
+
+    process_temporary_deprecated_settings(default_conf)
+    assert log_has_re('DEPRECATED', caplog)
+    # The value of the new setting shall have been set to the
+    # value of the deprecated one
+    assert default_conf[setting[0]][setting[1]] == setting[5]
+
+
+def test_check_conflicting_settings(mocker, default_conf, caplog):
+    patched_configuration_load_config_file(mocker, default_conf)
+
+    # Create sections for new and deprecated settings
+    # (they may not exist in the config)
+    default_conf['sectionA'] = {}
+    default_conf['sectionB'] = {}
+    # Assign new setting
+    default_conf['sectionA']['new_setting'] = 'valA'
+    # Assign deprecated setting
+    default_conf['sectionB']['deprecated_setting'] = 'valB'
+
+    # New and deprecated settings are conflicting ones
+    with pytest.raises(OperationalException, match=r'DEPRECATED'):
+        check_conflicting_settings(default_conf,
+                                   'sectionA', 'new_setting',
+                                   'sectionB', 'deprecated_setting')
+
+    caplog.clear()
+
+    # Delete new setting (deprecated exists)
+    del default_conf['sectionA']['new_setting']
+    check_conflicting_settings(default_conf,
+                               'sectionA', 'new_setting',
+                               'sectionB', 'deprecated_setting')
+    assert not log_has_re('DEPRECATED', caplog)
+    assert 'new_setting' not in default_conf['sectionA']
+
+    caplog.clear()
+
+    # Assign new setting
+    default_conf['sectionA']['new_setting'] = 'valA'
+    # Delete deprecated setting
+    del default_conf['sectionB']['deprecated_setting']
+    check_conflicting_settings(default_conf,
+                               'sectionA', 'new_setting',
+                               'sectionB', 'deprecated_setting')
+    assert not log_has_re('DEPRECATED', caplog)
+    assert default_conf['sectionA']['new_setting'] == 'valA'
+
+
+def test_process_deprecated_setting(mocker, default_conf, caplog):
+    patched_configuration_load_config_file(mocker, default_conf)
+
+    # Create sections for new and deprecated settings
+    # (they may not exist in the config)
+    default_conf['sectionA'] = {}
+    default_conf['sectionB'] = {}
+    # Assign new setting
+    default_conf['sectionA']['new_setting'] = 'valA'
+    # Assign deprecated setting
+    default_conf['sectionB']['deprecated_setting'] = 'valB'
+
+    # Both new and deprecated settings exists
+    process_deprecated_setting(default_conf,
+                               'sectionA', 'new_setting',
+                               'sectionB', 'deprecated_setting')
+    assert log_has_re('DEPRECATED', caplog)
+    # The value of the new setting shall have been set to the
+    # value of the deprecated one
+    assert default_conf['sectionA']['new_setting'] == 'valB'
+
+    caplog.clear()
+
+    # Delete new setting (deprecated exists)
+    del default_conf['sectionA']['new_setting']
+    process_deprecated_setting(default_conf,
+                               'sectionA', 'new_setting',
+                               'sectionB', 'deprecated_setting')
+    assert log_has_re('DEPRECATED', caplog)
+    # The value of the new setting shall have been set to the
+    # value of the deprecated one
+    assert default_conf['sectionA']['new_setting'] == 'valB'
+
+    caplog.clear()
+
+    # Assign new setting
+    default_conf['sectionA']['new_setting'] = 'valA'
+    # Delete deprecated setting
+    del default_conf['sectionB']['deprecated_setting']
+    process_deprecated_setting(default_conf,
+                               'sectionA', 'new_setting',
+                               'sectionB', 'deprecated_setting')
+    assert not log_has_re('DEPRECATED', caplog)
+    assert default_conf['sectionA']['new_setting'] == 'valA'

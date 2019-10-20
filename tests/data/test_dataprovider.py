@@ -120,3 +120,35 @@ def test_refresh(mocker, default_conf, ticker_history):
     assert len(refresh_mock.call_args[0]) == 1
     assert len(refresh_mock.call_args[0][0]) == len(pairs) + len(pairs_non_trad)
     assert refresh_mock.call_args[0][0] == pairs + pairs_non_trad
+
+
+def test_orderbook(mocker, default_conf, order_book_l2):
+    api_mock = MagicMock()
+    api_mock.fetch_l2_order_book = order_book_l2
+    exchange = get_patched_exchange(mocker, default_conf, api_mock=api_mock)
+
+    dp = DataProvider(default_conf, exchange)
+    res = dp.orderbook('ETH/BTC', 5)
+    assert order_book_l2.call_count == 1
+    assert order_book_l2.call_args_list[0][0][0] == 'ETH/BTC'
+    assert order_book_l2.call_args_list[0][0][1] == 5
+
+    assert type(res) is dict
+    assert 'bids' in res
+    assert 'asks' in res
+
+
+def test_market(mocker, default_conf, markets):
+    api_mock = MagicMock()
+    api_mock.markets = markets
+    exchange = get_patched_exchange(mocker, default_conf, api_mock=api_mock)
+
+    dp = DataProvider(default_conf, exchange)
+    res = dp.market('ETH/BTC')
+
+    assert type(res) is dict
+    assert 'symbol' in res
+    assert res['symbol'] == 'ETH/BTC'
+
+    res = dp.market('UNITTEST/BTC')
+    assert res is None

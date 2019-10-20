@@ -8,8 +8,10 @@ import arrow
 from freqtrade import OperationalException
 from freqtrade.configuration import Configuration, TimeRange
 from freqtrade.configuration.directory_operations import create_userdata_dir
-from freqtrade.data.history import refresh_backtest_ohlcv_data
-from freqtrade.exchange import available_exchanges
+from freqtrade.data.history import (convert_trades_to_ohlcv,
+                                    refresh_backtest_ohlcv_data,
+                                    refresh_backtest_trades_data)
+from freqtrade.exchange import available_exchanges, ccxt_exchanges
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
 
@@ -50,12 +52,14 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
     :param args: Cli args from Arguments()
     :return: None
     """
-
+    exchanges = ccxt_exchanges() if args['list_exchanges_all'] else available_exchanges()
     if args['print_one_column']:
-        print('\n'.join(available_exchanges()))
+        print('\n'.join(exchanges))
     else:
-        print(f"Exchanges supported by ccxt and available for Freqtrade: "
-              f"{', '.join(available_exchanges())}")
+        if args['list_exchanges_all']:
+            print(f"All exchanges supported by the ccxt library: {', '.join(exchanges)}")
+        else:
+            print(f"Exchanges available for Freqtrade: {', '.join(exchanges)}")
 
 
 def start_create_userdir(args: Dict[str, Any]) -> None:
@@ -97,9 +101,19 @@ def start_download_data(args: Dict[str, Any]) -> None:
         # Init exchange
         exchange = ExchangeResolver(config['exchange']['name'], config).exchange
 
-        pairs_not_available = refresh_backtest_ohlcv_data(
-            exchange, pairs=config["pairs"], timeframes=config["timeframes"],
-            dl_path=Path(config['datadir']), timerange=timerange, erase=config.get("erase"))
+        if config.get('download_trades'):
+            pairs_not_available = refresh_backtest_trades_data(
+                exchange, pairs=config["pairs"], datadir=Path(config['datadir']),
+                timerange=timerange, erase=config.get("erase"))
+
+            # Convert downloaded trade data to different timeframes
+            convert_trades_to_ohlcv(
+                pairs=config["pairs"], timeframes=config["timeframes"],
+                datadir=Path(config['datadir']), timerange=timerange, erase=config.get("erase"))
+        else:
+            pairs_not_available = refresh_backtest_ohlcv_data(
+                exchange, pairs=config["pairs"], timeframes=config["timeframes"],
+                dl_path=Path(config['datadir']), timerange=timerange, erase=config.get("erase"))
 
     except KeyboardInterrupt:
         sys.exit("SIGINT received, aborting ...")
@@ -108,3 +122,21 @@ def start_download_data(args: Dict[str, Any]) -> None:
         if pairs_not_available:
             logger.info(f"Pairs [{','.join(pairs_not_available)}] not available "
                         f"on exchange {config['exchange']['name']}.")
+
+
+def start_list_timeframes(args: Dict[str, Any]) -> None:
+    """
+    Print ticker intervals (timeframes) available on Exchange
+    """
+    config = setup_utils_configuration(args, RunMode.OTHER)
+    # Do not use ticker_interval set in the config
+    config['ticker_interval'] = None
+
+    # Init exchange
+    exchange = ExchangeResolver(config['exchange']['name'], config).exchange
+
+    if args['print_one_column']:
+        print('\n'.join(exchange.timeframes))
+    else:
+        print(f"Timeframes available for the exchange `{config['exchange']['name']}`: "
+              f"{', '.join(exchange.timeframes)}")

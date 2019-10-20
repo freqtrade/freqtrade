@@ -138,14 +138,18 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     """
     dataframe.loc[
         (
-            (dataframe['adx'] > 30) &
-            (dataframe['tema'] <= dataframe['bb_middleband']) &
-            (dataframe['tema'] > dataframe['tema'].shift(1))
+            (qtpylib.crossed_above(dataframe['rsi'], 30)) &  # Signal: RSI crosses above 30
+            (dataframe['tema'] <= dataframe['bb_middleband']) &  # Guard
+            (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard
+            (dataframe['volume'] > 0)  # Make sure Volume is not 0
         ),
         'buy'] = 1
 
     return dataframe
 ```
+
+!!! Note
+    Buying requires sellers to buy from - therefore volume needs to be > 0 (`dataframe['volume'] > 0`) to make sure that the bot does not buy/sell in no-activity periods.
 
 ### Sell signal rules
 
@@ -168,9 +172,10 @@ def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame
     """
     dataframe.loc[
         (
-            (dataframe['adx'] > 70) &
-            (dataframe['tema'] > dataframe['bb_middleband']) &
-            (dataframe['tema'] < dataframe['tema'].shift(1))
+            (qtpylib.crossed_above(dataframe['rsi'], 70)) &  # Signal: RSI crosses above 70
+            (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard
+            (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard
+            (dataframe['volume'] > 0)  # Make sure Volume is not 0
         ),
         'sell'] = 1
     return dataframe
@@ -246,9 +251,9 @@ Instead, have a look at the section [Storing information](#Storing-information)
 
 ### Storing information
 
-Storing information can be accomplished by crating a new dictionary within the strategy class.
+Storing information can be accomplished by creating a new dictionary within the strategy class.
 
-The name of the variable can be choosen at will, but should be prefixed with `cust_` to avoid naming collisions with predefined strategy variables.
+The name of the variable can be chosen at will, but should be prefixed with `cust_` to avoid naming collisions with predefined strategy variables.
 
 ```python
 class Awesomestrategy(IStrategy):
@@ -282,6 +287,8 @@ Please always check the mode of operation to select the correct method to get da
 - `ohlcv(pair, ticker_interval)` - Currently cached ticker data for the pair, returns DataFrame or empty DataFrame.
 - `historic_ohlcv(pair, ticker_interval)` - Returns historical data stored on disk.
 - `get_pair_dataframe(pair, ticker_interval)` - This is a universal method, which returns either historical data (for backtesting) or cached live data (for the Dry-Run and Live-Run modes).
+- `orderbook(pair, maximum)` - Returns latest orderbook data for the pair, a dict with bids/asks with a total of `maximum` entries.
+- `market(pair)` - Returns market data for the pair: fees, limits, precisions, activity flag, etc. See [ccxt documentation](https://github.com/ccxt/ccxt/wiki/Manual#markets) for more details on Market data structure.
 - `runmode` - Property containing the current runmode.
 
 #### Example: fetch live ohlcv / historic data for the first informative pair
@@ -344,9 +351,9 @@ def informative_pairs(self):
     As these pairs will be refreshed as part of the regular whitelist refresh, it's best to keep this list short.
     All intervals and all pairs can be specified as long as they are available (and active) on the used exchange.
     It is however better to use resampling to longer time-intervals when possible
-    to avoid hammering the exchange with too many requests and risk beeing blocked.
+    to avoid hammering the exchange with too many requests and risk being blocked.
 
-### Additional data - Wallets
+### Additional data (Wallets)
 
 The strategy provides access to the `Wallets` object. This contains the current balances on the exchange.
 

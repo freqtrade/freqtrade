@@ -38,7 +38,47 @@ def test_method_to_test(caplog):
     assert log_has("This event happened", caplog)
     # Check regex with trailing number ...
     assert log_has_re(r"This dynamic event happened and produced \d+", caplog)
+
 ```
+
+### Local docker usage
+
+The fastest and easiest way to start up is to use docker-compose.develop which gives developers the ability to start the bot up with all the required dependencies, *without* needing to install any freqtrade specific dependencies on your local machine.
+
+#### Install
+* [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+* [docker](https://docs.docker.com/install/)
+* [docker-compose](https://docs.docker.com/compose/install/)
+
+#### Starting the bot
+##### Use the develop dockerfile
+``` bash
+rm docker-compose.yml && mv docker-compose.develop.yml docker-compose.yml
+```
+#### Docker Compose
+
+##### Starting
+
+``` bash
+docker-compose up
+```
+![Docker compose up](https://user-images.githubusercontent.com/419355/65456322-47f63a80-de06-11e9-90c6-3c74d1bad0b8.png)
+
+##### Rebuilding
+``` bash
+docker-compose build
+```
+
+##### Execing (effectively SSH into the container)
+
+The `exec` command requires that the container already be running, if you want to start it
+that can be effected by `docker-compose up` or `docker-compose run freqtrade_develop`
+
+``` bash
+docker-compose exec freqtrade_develop /bin/bash
+```
+![image](https://user-images.githubusercontent.com/419355/65456522-ba671a80-de06-11e9-9598-df9ca0d8dcac.png)
+
 
 ## Modules
 
@@ -149,6 +189,15 @@ print(datetime.utcnow())
 The output will show the last entry from the Exchange as well as the current UTC date.
 If the day shows the same day, then the last candle can be assumed as incomplete and should be dropped (leave the setting `"ohlcv_partial_candle"` from the exchange-class untouched / True). Otherwise, set `"ohlcv_partial_candle"` to `False` to not drop Candles (shown in the example above).
 
+## Updating example notebooks
+
+To keep the jupyter notebooks aligned with the documentation, the following should be ran after updating a example notebook.
+
+``` bash
+jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace user_data/notebooks/strategy_analysis_example.ipynb
+jupyter nbconvert --ClearOutputPreprocessor.enabled=True --to markdown user_data/notebooks/strategy_analysis_example.ipynb --stdout > docs/strategy_analysis_example.md
+```
+
 ## Creating a release
 
 This part of the documentation is aimed at maintainers, and shows how to create a release.
@@ -182,7 +231,7 @@ git log --oneline --no-decorate --no-merges master..develop
 Once the PR against master is merged (best right after merging):
 
 * Use the button "Draft a new release" in the Github UI (subsection releases)
-* Use the version-number specified as tag. 
+* Use the version-number specified as tag.
 * Use "master" as reference (this step comes after the above PR is merged).
 * Use the above changelog as release comment (as codeblock)
 

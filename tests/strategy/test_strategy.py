@@ -1,6 +1,5 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 import logging
-import tempfile
 import warnings
 from base64 import urlsafe_b64encode
 from os import path
@@ -39,7 +38,7 @@ def test_search_strategy():
 def test_load_strategy(default_conf, result):
     default_conf.update({'strategy': 'SampleStrategy'})
     resolver = StrategyResolver(default_conf)
-    assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
+    assert 'rsi' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 
 
 def test_load_strategy_base64(result, caplog, default_conf):
@@ -48,10 +47,10 @@ def test_load_strategy_base64(result, caplog, default_conf):
     default_conf.update({'strategy': 'SampleStrategy:{}'.format(encoded_string)})
 
     resolver = StrategyResolver(default_conf)
-    assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
+    assert 'rsi' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
     # Make sure strategy was loaded from base64 (using temp directory)!!
     assert log_has_re(r"Using resolved strategy SampleStrategy from '"
-                      + tempfile.gettempdir() + r"/.*/SampleStrategy\.py'\.\.\.", caplog)
+                      r".*(/|\\).*(/|\\)SampleStrategy\.py'\.\.\.", caplog)
 
 
 def test_load_strategy_invalid_directory(result, caplog, default_conf):
@@ -265,23 +264,23 @@ def test_strategy_override_use_sell_signal(caplog, default_conf):
         'strategy': 'DefaultStrategy',
     })
     resolver = StrategyResolver(default_conf)
-    assert not resolver.strategy.use_sell_signal
+    assert resolver.strategy.use_sell_signal
     assert isinstance(resolver.strategy.use_sell_signal, bool)
     # must be inserted to configuration
-    assert 'use_sell_signal' in default_conf['experimental']
-    assert not default_conf['experimental']['use_sell_signal']
+    assert 'use_sell_signal' in default_conf['ask_strategy']
+    assert default_conf['ask_strategy']['use_sell_signal']
 
     default_conf.update({
         'strategy': 'DefaultStrategy',
-        'experimental': {
-            'use_sell_signal': True,
+        'ask_strategy': {
+            'use_sell_signal': False,
         },
     })
     resolver = StrategyResolver(default_conf)
 
-    assert resolver.strategy.use_sell_signal
+    assert not resolver.strategy.use_sell_signal
     assert isinstance(resolver.strategy.use_sell_signal, bool)
-    assert log_has("Override strategy 'use_sell_signal' with value in config file: True.", caplog)
+    assert log_has("Override strategy 'use_sell_signal' with value in config file: False.", caplog)
 
 
 def test_strategy_override_use_sell_profit_only(caplog, default_conf):
@@ -293,12 +292,12 @@ def test_strategy_override_use_sell_profit_only(caplog, default_conf):
     assert not resolver.strategy.sell_profit_only
     assert isinstance(resolver.strategy.sell_profit_only, bool)
     # must be inserted to configuration
-    assert 'sell_profit_only' in default_conf['experimental']
-    assert not default_conf['experimental']['sell_profit_only']
+    assert 'sell_profit_only' in default_conf['ask_strategy']
+    assert not default_conf['ask_strategy']['sell_profit_only']
 
     default_conf.update({
         'strategy': 'DefaultStrategy',
-        'experimental': {
+        'ask_strategy': {
             'sell_profit_only': True,
         },
     })

@@ -17,7 +17,7 @@ from pandas import DataFrame
 
 from freqtrade import OperationalException, misc
 from freqtrade.configuration import TimeRange
-from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.data.converter import parse_ticker_dataframe, trades_to_ohlcv
 from freqtrade.exchange import Exchange, timeframe_to_minutes
 
 logger = logging.getLogger(__name__)
@@ -33,20 +33,12 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
     start_index = 0
     stop_index = len(tickerlist)
 
-    if timerange.starttype == 'line':
-        stop_index = timerange.startts
-    if timerange.starttype == 'index':
-        start_index = timerange.startts
-    elif timerange.starttype == 'date':
+    if timerange.starttype == 'date':
         while (start_index < len(tickerlist) and
                tickerlist[start_index][0] < timerange.startts * 1000):
             start_index += 1
 
-    if timerange.stoptype == 'line':
-        start_index = max(len(tickerlist) + timerange.stopts, 0)
-    if timerange.stoptype == 'index':
-        stop_index = timerange.stopts
-    elif timerange.stoptype == 'date':
+    if timerange.stoptype == 'date':
         while (stop_index > 0 and
                tickerlist[stop_index-1][0] > timerange.stopts * 1000):
             stop_index -= 1
@@ -82,10 +74,42 @@ def store_tickerdata_file(datadir: Path, pair: str,
     misc.file_dump_json(filename, data, is_zip=is_zip)
 
 
+def load_trades_file(datadir: Path, pair: str,
+                     timerange: Optional[TimeRange] = None) -> List[Dict]:
+    """
+    Load a pair from file, either .json.gz or .json
+    :return: tradelist or empty list if unsuccesful
+    """
+    filename = pair_trades_filename(datadir, pair)
+    tradesdata = misc.file_load_json(filename)
+    if not tradesdata:
+        return []
+
+    return tradesdata
+
+
+def store_trades_file(datadir: Path, pair: str,
+                      data: list, is_zip: bool = True):
+    """
+    Stores tickerdata to file
+    """
+    filename = pair_trades_filename(datadir, pair)
+    misc.file_dump_json(filename, data, is_zip=is_zip)
+
+
+def _validate_pairdata(pair, pairdata, timerange: TimeRange):
+    if timerange.starttype == 'date' and pairdata[0][0] > timerange.startts * 1000:
+        logger.warning('Missing data at start for pair %s, data starts at %s',
+                       pair, arrow.get(pairdata[0][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
+    if timerange.stoptype == 'date' and pairdata[-1][0] < timerange.stopts * 1000:
+        logger.warning('Missing data at end for pair %s, data ends at %s',
+                       pair, arrow.get(pairdata[-1][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
+
+
 def load_pair_history(pair: str,
                       ticker_interval: str,
                       datadir: Path,
-                      timerange: TimeRange = TimeRange(None, None, 0, 0),
+                      timerange: Optional[TimeRange] = None,
                       refresh_pairs: bool = False,
                       exchange: Optional[Exchange] = None,
                       fill_up_missing: bool = True,
@@ -116,13 +140,8 @@ def load_pair_history(pair: str,
     pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
 
     if pairdata:
-        if timerange.starttype == 'date' and pairdata[0][0] > timerange.startts * 1000:
-            logger.warning('Missing data at start for pair %s, data starts at %s',
-                           pair, arrow.get(pairdata[0][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
-        if timerange.stoptype == 'date' and pairdata[-1][0] < timerange.stopts * 1000:
-            logger.warning('Missing data at end for pair %s, data ends at %s',
-                           pair,
-                           arrow.get(pairdata[-1][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
+        if timerange:
+            _validate_pairdata(pair, pairdata, timerange)
         return parse_ticker_dataframe(pairdata, ticker_interval, pair=pair,
                                       fill_missing=fill_up_missing,
                                       drop_incomplete=drop_incomplete)
@@ -139,7 +158,7 @@ def load_data(datadir: Path,
               pairs: List[str],
               refresh_pairs: bool = False,
               exchange: Optional[Exchange] = None,
-              timerange: TimeRange = TimeRange(None, None, 0, 0),
+              timerange: Optional[TimeRange] = None,
               fill_up_missing: bool = True,
               ) -> Dict[str, DataFrame]:
     """
@@ -169,13 +188,20 @@ def pair_data_filename(datadir: Path, pair: str, ticker_interval: str) -> Path:
     return filename
 
 
-def load_cached_data_for_updating(datadir: Path, pair: str, ticker_interval: str,
-                                  timerange: Optional[TimeRange]) -> Tuple[List[Any],
-                                                                           Optional[int]]:
+def pair_trades_filename(datadir: Path, pair: str) -> Path:
+    pair_s = pair.replace("/", "_")
+    filename = datadir.joinpath(f'{pair_s}-trades.json.gz')
+    return filename
+
+
+def _load_cached_data_for_updating(datadir: Path, pair: str, ticker_interval: str,
+                                   timerange: Optional[TimeRange]) -> Tuple[List[Any],
+                                                                            Optional[int]]:
     """
     Load cached data to download more data.
-    If timerange is passed in, checks wether data from an before the stored data will be downloaded.
-    If that's the case than what's available should be completely overwritten.
+    If timerange is passed in, checks whether data from an before the stored data will be
+    downloaded.
+    If that's the case then what's available should be completely overwritten.
     Only used by download_pair_history().
     """
 
@@ -238,7 +264,7 @@ def download_pair_history(datadir: Path,
             f'and store in {datadir}.'
         )
 
-        data, since_ms = load_cached_data_for_updating(datadir, pair, ticker_interval, timerange)
+        data, since_ms = _load_cached_data_for_updating(datadir, pair, ticker_interval, timerange)
 
         logger.debug("Current Start: %s", misc.format_ms_time(data[1][0]) if data else 'None')
         logger.debug("Current End: %s", misc.format_ms_time(data[-1][0]) if data else 'None')
@@ -266,7 +292,7 @@ def download_pair_history(datadir: Path,
 
 
 def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes: List[str],
-                                dl_path: Path, timerange: TimeRange,
+                                dl_path: Path, timerange: Optional[TimeRange] = None,
                                 erase=False) -> List[str]:
     """
     Refresh stored ohlcv data for backtesting and hyperopt operations.
@@ -292,6 +318,92 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
                                   pair=pair, ticker_interval=str(ticker_interval),
                                   timerange=timerange)
     return pairs_not_available
+
+
+def download_trades_history(datadir: Path,
+                            exchange: Exchange,
+                            pair: str,
+                            timerange: Optional[TimeRange] = None) -> bool:
+    """
+    Download trade history from the exchange.
+    Appends to previously downloaded trades data.
+    """
+    try:
+
+        since = timerange.startts * 1000 if timerange and timerange.starttype == 'date' else None
+
+        trades = load_trades_file(datadir, pair)
+
+        from_id = trades[-1]['id'] if trades else None
+
+        logger.debug("Current Start: %s", trades[0]['datetime'] if trades else 'None')
+        logger.debug("Current End: %s", trades[-1]['datetime'] if trades else 'None')
+
+        new_trades = exchange.get_historic_trades(pair=pair,
+                                                  since=since if since else
+                                                  int(arrow.utcnow().shift(
+                                                      days=-30).float_timestamp) * 1000,
+                                                  #  until=xxx,
+                                                  from_id=from_id,
+                                                  )
+        trades.extend(new_trades[1])
+        store_trades_file(datadir, pair, trades)
+
+        logger.debug("New Start: %s", trades[0]['datetime'])
+        logger.debug("New End: %s", trades[-1]['datetime'])
+        logger.info(f"New Amount of trades: {len(trades)}")
+        return True
+
+    except Exception as e:
+        logger.error(
+            f'Failed to download historic trades for pair: "{pair}". '
+            f'Error: {e}'
+        )
+        return False
+
+
+def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: Path,
+                                 timerange: TimeRange, erase=False) -> List[str]:
+    """
+    Refresh stored trades data.
+    Used by freqtrade download-data
+    :return: Pairs not available
+    """
+    pairs_not_available = []
+    for pair in pairs:
+        if pair not in exchange.markets:
+            pairs_not_available.append(pair)
+            logger.info(f"Skipping pair {pair}...")
+            continue
+
+        dl_file = pair_trades_filename(datadir, pair)
+        if erase and dl_file.exists():
+            logger.info(
+                f'Deleting existing data for pair {pair}.')
+            dl_file.unlink()
+
+        logger.info(f'Downloading trades for pair {pair}.')
+        download_trades_history(datadir=datadir, exchange=exchange,
+                                pair=pair,
+                                timerange=timerange)
+    return pairs_not_available
+
+
+def convert_trades_to_ohlcv(pairs: List[str], timeframes: List[str],
+                            datadir: Path, timerange: TimeRange, erase=False) -> None:
+    """
+    Convert stored trades data to ohlcv data
+    """
+    for pair in pairs:
+        trades = load_trades_file(datadir, pair)
+        for timeframe in timeframes:
+            ohlcv_file = pair_data_filename(datadir, pair, timeframe)
+            if erase and ohlcv_file.exists():
+                logger.info(f'Deleting existing data for pair {pair}, interval {timeframe}.')
+                ohlcv_file.unlink()
+            ohlcv = trades_to_ohlcv(trades, timeframe)
+            # Store ohlcv
+            store_tickerdata_file(datadir, pair, timeframe, data=ohlcv)
 
 
 def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:

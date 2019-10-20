@@ -1,5 +1,7 @@
 # pragma pylint: disable=missing-docstring, C0103
 import argparse
+from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -175,6 +177,44 @@ def test_plot_profit_options() -> None:
     assert pargs["trade_source"] == "DB"
     assert pargs["pairs"] == ["UNITTEST/BTC"]
     assert pargs["db_url"] == "sqlite:///whatever.sqlite"
+
+
+def test_config_notallowed(mocker) -> None:
+    mocker.patch.object(Path, "is_file", MagicMock(return_value=False))
+    args = [
+        'create-userdir',
+    ]
+    pargs = Arguments(args).get_parsed_arg()
+
+    assert pargs["config"] is None
+
+    # When file exists:
+    mocker.patch.object(Path, "is_file", MagicMock(return_value=True))
+    args = [
+        'create-userdir',
+    ]
+    pargs = Arguments(args).get_parsed_arg()
+    # config is not added even if it exists, since create-userdir is in the notallowed list
+    assert pargs["config"] is None
+
+
+def test_config_notrequired(mocker) -> None:
+    mocker.patch.object(Path, "is_file", MagicMock(return_value=False))
+    args = [
+        'download-data',
+    ]
+    pargs = Arguments(args).get_parsed_arg()
+
+    assert pargs["config"] is None
+
+    # When file exists:
+    mocker.patch.object(Path, "is_file", MagicMock(return_value=True))
+    args = [
+        'download-data',
+    ]
+    pargs = Arguments(args).get_parsed_arg()
+    # config is added if it exists
+    assert pargs["config"] == ['config.json']
 
 
 def test_check_int_positive() -> None:

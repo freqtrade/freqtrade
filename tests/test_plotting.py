@@ -53,11 +53,11 @@ def test_init_plotscript(default_conf, mocker, testdatadir):
     assert "trades" in ret
     assert "pairs" in ret
 
-    default_conf['pairs'] = ["POWR/BTC", "XLM/BTC"]
+    default_conf['pairs'] = ["POWR/BTC", "ADA/BTC"]
     ret = init_plotscript(default_conf)
     assert "tickers" in ret
     assert "POWR/BTC" in ret["tickers"]
-    assert "XLM/BTC" in ret["tickers"]
+    assert "ADA/BTC" in ret["tickers"]
 
 
 def test_add_indicators(default_conf, testdatadir, caplog):
@@ -197,8 +197,7 @@ def test_generate_candlestick_graph_no_trades(default_conf, mocker, testdatadir)
     # All buy-signals should be plotted
     assert int(data.sell.sum()) == len(sell.x)
 
-    assert find_trace_in_fig_data(figure.data, "BB lower")
-    assert find_trace_in_fig_data(figure.data, "BB upper")
+    assert find_trace_in_fig_data(figure.data, "Bollinger Band")
 
     assert row_mock.call_count == 2
     assert trades_mock.call_count == 1
@@ -215,11 +214,12 @@ def test_generate_plot_file(mocker, caplog):
     store_plot_file(fig, filename="freqtrade-plot-UNITTEST_BTC-5m.html",
                     directory=Path("user_data/plots"))
 
+    expected_fn = str(Path("user_data/plots/freqtrade-plot-UNITTEST_BTC-5m.html"))
     assert plot_mock.call_count == 1
     assert plot_mock.call_args[0][0] == fig
     assert (plot_mock.call_args_list[0][1]['filename']
-            == "user_data/plots/freqtrade-plot-UNITTEST_BTC-5m.html")
-    assert log_has("Stored plot as user_data/plots/freqtrade-plot-UNITTEST_BTC-5m.html",
+            == expected_fn)
+    assert log_has(f"Stored plot as {expected_fn}",
                    caplog)
 
 
@@ -239,7 +239,7 @@ def test_add_profit(testdatadir):
     fig1 = add_profit(fig, row=2, data=cum_profits, column='cum_profits', name='Profits')
     figure = fig1.layout.figure
     profits = find_trace_in_fig_data(figure.data, "Profits")
-    assert isinstance(profits, go.Scattergl)
+    assert isinstance(profits, go.Scatter)
     assert profits.yaxis == "y2"
 
 
@@ -247,7 +247,7 @@ def test_generate_profit_graph(testdatadir):
     filename = testdatadir / "backtest-result_test.json"
     trades = load_backtest_data(filename)
     timerange = TimeRange.parse_timerange("20180110-20180112")
-    pairs = ["POWR/BTC", "XLM/BTC"]
+    pairs = ["POWR/BTC", "ADA/BTC"]
 
     tickers = history.load_data(datadir=testdatadir,
                                 pairs=pairs,
@@ -268,14 +268,14 @@ def test_generate_profit_graph(testdatadir):
     assert len(figure.data) == 4
 
     avgclose = find_trace_in_fig_data(figure.data, "Avg close price")
-    assert isinstance(avgclose, go.Scattergl)
+    assert isinstance(avgclose, go.Scatter)
 
     profit = find_trace_in_fig_data(figure.data, "Profit")
-    assert isinstance(profit, go.Scattergl)
+    assert isinstance(profit, go.Scatter)
 
     for pair in pairs:
         profit_pair = find_trace_in_fig_data(figure.data, f"Profit {pair}")
-        assert isinstance(profit_pair, go.Scattergl)
+        assert isinstance(profit_pair, go.Scatter)
 
 
 def test_start_plot_dataframe(mocker):

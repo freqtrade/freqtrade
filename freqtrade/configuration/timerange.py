@@ -42,9 +42,10 @@ class TimeRange:
                   (r'^-(\d{10})$', (None, 'date')),
                   (r'^(\d{10})-$', ('date', None)),
                   (r'^(\d{10})-(\d{10})$', ('date', 'date')),
-                  (r'^(-\d+)$', (None, 'line')),
-                  (r'^(\d+)-$', ('line', None)),
-                  (r'^(\d+)-(\d+)$', ('index', 'index'))]
+                  (r'^-(\d{13})$', (None, 'date')),
+                  (r'^(\d{13})-$', ('date', None)),
+                  (r'^(\d{13})-(\d{13})$', ('date', 'date')),
+                  ]
         for rex, stype in syntax:
             # Apply the regular expression to text
             match = re.match(rex, text)
@@ -57,6 +58,8 @@ class TimeRange:
                     starts = rvals[index]
                     if stype[0] == 'date' and len(starts) == 8:
                         start = arrow.get(starts, 'YYYYMMDD').timestamp
+                    elif len(starts) == 13:
+                        start = int(starts) // 1000
                     else:
                         start = int(starts)
                     index += 1
@@ -64,6 +67,8 @@ class TimeRange:
                     stops = rvals[index]
                     if stype[1] == 'date' and len(stops) == 8:
                         stop = arrow.get(stops, 'YYYYMMDD').timestamp
+                    elif len(stops) == 13:
+                        stop = int(stops) // 1000
                     else:
                         stop = int(stops)
                 return TimeRange(stype[0], stype[1], start, stop)

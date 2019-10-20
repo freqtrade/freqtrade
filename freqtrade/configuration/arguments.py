@@ -14,7 +14,8 @@ ARGS_STRATEGY = ["strategy", "strategy_path"]
 
 ARGS_TRADE = ["db_url", "sd_notify", "dry_run"]
 
-ARGS_COMMON_OPTIMIZE = ["ticker_interval", "timerange", "max_open_trades", "stake_amount"]
+ARGS_COMMON_OPTIMIZE = ["ticker_interval", "timerange",
+                        "max_open_trades", "stake_amount", "fee"]
 
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
                                         "strategy_list", "export", "exportfilename"]
@@ -28,11 +29,14 @@ ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
 
 ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
 
-ARGS_LIST_EXCHANGES = ["print_one_column"]
+ARGS_LIST_EXCHANGES = ["print_one_column", "list_exchanges_all"]
+
+ARGS_LIST_TIMEFRAMES = ["exchange", "print_one_column"]
 
 ARGS_CREATE_USERDIR = ["user_data_dir"]
 
-ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "exchange", "timeframes", "erase"]
+ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "download_trades", "exchange",
+                      "timeframes", "erase"]
 
 ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
                        "db_url", "trade_source", "export", "exportfilename",
@@ -41,7 +45,9 @@ ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "ticker_interval"]
 
-NO_CONF_REQURIED = ["create-userdir", "download-data", "plot-dataframe", "plot-profit"]
+NO_CONF_REQURIED = ["download-data", "list-timeframes", "plot-dataframe", "plot-profit"]
+
+NO_CONF_ALLOWED = ["create-userdir", "list-exchanges"]
 
 
 class Arguments:
@@ -68,8 +74,6 @@ class Arguments:
         Parses given arguments and returns an argparse Namespace instance.
         """
         parsed_arg = self.parser.parse_args(self.args)
-
-        # When no config is provided, but a config exists, use that configuration!
 
         # Workaround issue in argparse with action='append' and default value
         # (see https://bugs.python.org/issue16399)
@@ -107,7 +111,7 @@ class Arguments:
 
         from freqtrade.optimize import start_backtesting, start_hyperopt, start_edge
         from freqtrade.utils import (start_create_userdir, start_download_data,
-                                     start_list_exchanges, start_trading)
+                                     start_list_exchanges, start_list_timeframes, start_trading)
         from freqtrade.plot.plot_utils import start_plot_dataframe, start_plot_profit
 
         subparsers = self.parser.add_subparsers(dest='command',
@@ -155,6 +159,14 @@ class Arguments:
                                                    )
         list_exchanges_cmd.set_defaults(func=start_list_exchanges)
         self._build_args(optionlist=ARGS_LIST_EXCHANGES, parser=list_exchanges_cmd)
+
+        # Add list-timeframes subcommand
+        list_timeframes_cmd = subparsers.add_parser(
+            'list-timeframes',
+            help='Print available ticker intervals (timeframes) for the exchange.'
+        )
+        list_timeframes_cmd.set_defaults(func=start_list_timeframes)
+        self._build_args(optionlist=ARGS_LIST_TIMEFRAMES, parser=list_timeframes_cmd)
 
         # Add download-data subcommand
         download_data_cmd = subparsers.add_parser('download-data',

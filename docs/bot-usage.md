@@ -119,7 +119,7 @@ user_data/
 ├── backtest_results
 ├── data
 ├── hyperopts
-├── hyperopts_results
+├── hyperopt_results
 ├── plot
 └── strategies
 ```
@@ -205,6 +205,8 @@ optional arguments:
                         Specify max_open_trades to use.
   --stake_amount STAKE_AMOUNT
                         Specify stake_amount.
+  --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
+                        entry and exit).
   --eps, --enable-position-stacking
                         Allow buying the same pair multiple times (position
                         stacking).
@@ -370,6 +372,8 @@ optional arguments:
                         Specify max_open_trades to use.
   --stake_amount STAKE_AMOUNT
                         Specify stake_amount.
+  --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
+                        entry and exit).
   --stoplosses STOPLOSS_RANGE
                         Defines a range of stoploss values against which edge
                         will assess the strategy. The format is "min,max,step"

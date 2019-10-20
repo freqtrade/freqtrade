@@ -1,7 +1,6 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 
 import json
-import os
 import uuid
 from pathlib import Path
 from shutil import copyfile
@@ -14,49 +13,54 @@ from pandas import DataFrame
 from freqtrade import OperationalException
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
-from freqtrade.data.history import (download_pair_history,
-                                    load_cached_data_for_updating,
-                                    load_tickerdata_file,
+from freqtrade.data.history import (_load_cached_data_for_updating,
+                                    convert_trades_to_ohlcv,
+                                    download_pair_history,
+                                    download_trades_history,
+                                    load_tickerdata_file, pair_data_filename,
+                                    pair_trades_filename,
                                     refresh_backtest_ohlcv_data,
+                                    refresh_backtest_trades_data,
                                     trim_tickerlist)
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.strategy.default_strategy import DefaultStrategy
-from tests.conftest import get_patched_exchange, log_has, log_has_re, patch_exchange
+from tests.conftest import (get_patched_exchange, log_has, log_has_re,
+                            patch_exchange)
 
 # Change this if modifying UNITTEST/BTC testdatafile
 _BTC_UNITTEST_LENGTH = 13681
 
 
-def _backup_file(file: str, copy_file: bool = False) -> None:
+def _backup_file(file: Path, copy_file: bool = False) -> None:
     """
     Backup existing file to avoid deleting the user file
     :param file: complete path to the file
     :param touch_file: create an empty file in replacement
     :return: None
     """
-    file_swp = file + '.swp'
-    if os.path.isfile(file):
-        os.rename(file, file_swp)
+    file_swp = str(file) + '.swp'
+    if file.is_file():
+        file.rename(file_swp)
 
         if copy_file:
             copyfile(file_swp, file)
 
 
-def _clean_test_file(file: str) -> None:
+def _clean_test_file(file: Path) -> None:
     """
     Backup existing file to avoid deleting the user file
     :param file: complete path to the file
     :return: None
     """
-    file_swp = file + '.swp'
+    file_swp = Path(str(file) + '.swp')
     # 1. Delete file from the test
-    if os.path.isfile(file):
-        os.remove(file)
+    if file.is_file():
+        file.unlink()
 
     # 2. Rollback to the initial file
-    if os.path.isfile(file_swp):
-        os.rename(file_swp, file)
+    if file_swp.is_file():
+        file_swp.rename(file)
 
 
 def test_load_data_30min_ticker(mocker, caplog, default_conf, testdatadir) -> None:
@@ -80,10 +84,10 @@ def test_load_data_7min_ticker(mocker, caplog, default_conf, testdatadir) -> Non
 
 def test_load_data_1min_ticker(ticker_history, mocker, caplog, testdatadir) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ticker_history)
-    file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'UNITTEST_BTC-1m.json')
+    file = testdatadir / 'UNITTEST_BTC-1m.json'
     _backup_file(file, copy_file=True)
     history.load_data(datadir=testdatadir, ticker_interval='1m', pairs=['UNITTEST/BTC'])
-    assert os.path.isfile(file) is True
+    assert file.is_file()
     assert not log_has(
         'Download history data for pair: "UNITTEST/BTC", interval: 1m '
         'and store in None.', caplog
@@ -98,14 +102,14 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog,
     """
     mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ticker_history_list)
     exchange = get_patched_exchange(mocker, default_conf)
-    file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-1m.json')
+    file = testdatadir / 'MEME_BTC-1m.json'
 
     _backup_file(file)
     # do not download a new pair if refresh_pairs isn't set
     history.load_pair_history(datadir=testdatadir,
                               ticker_interval='1m',
                               pair='MEME/BTC')
-    assert os.path.isfile(file) is False
+    assert not file.is_file()
     assert log_has(
         'No history data for pair: "MEME/BTC", interval: 1m. '
         'Use `freqtrade download-data` to download the data', caplog
@@ -117,7 +121,7 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog,
                               refresh_pairs=True,
                               exchange=exchange,
                               pair='MEME/BTC')
-    assert os.path.isfile(file) is True
+    assert file.is_file()
     assert log_has_re(
         'Download history data for pair: "MEME/BTC", interval: 1m '
         'and store in .*', caplog
@@ -133,6 +137,18 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog,
 
 def test_testdata_path(testdatadir) -> None:
     assert str(Path('tests') / 'testdata') in str(testdatadir)
+
+
+def test_pair_data_filename():
+    fn = pair_data_filename(Path('freqtrade/hello/world'), 'ETH/BTC', '5m')
+    assert isinstance(fn, Path)
+    assert fn == Path('freqtrade/hello/world/ETH_BTC-5m.json')
+
+
+def test_pair_trades_filename():
+    fn = pair_trades_filename(Path('freqtrade/hello/world'), 'ETH/BTC')
+    assert isinstance(fn, Path)
+    assert fn == Path('freqtrade/hello/world/ETH_BTC-trades.json.gz')
 
 
 def test_load_cached_data_for_updating(mocker) -> None:
@@ -151,43 +167,43 @@ def test_load_cached_data_for_updating(mocker) -> None:
     # timeframe starts earlier than the cached data
     # should fully update data
     timerange = TimeRange('date', None, test_data[0][0] / 1000 - 1, 0)
-    data, start_ts = load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
+    data, start_ts = _load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
     assert data == []
     assert start_ts == test_data[0][0] - 1000
 
     # same with 'line' timeframe
     num_lines = (test_data[-1][0] - test_data[1][0]) / 1000 / 60 + 120
-    data, start_ts = load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m',
-                                                   TimeRange(None, 'line', 0, -num_lines))
+    data, start_ts = _load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m',
+                                                    TimeRange(None, 'line', 0, -num_lines))
     assert data == []
     assert start_ts < test_data[0][0] - 1
 
     # timeframe starts in the center of the cached data
     # should return the chached data w/o the last item
     timerange = TimeRange('date', None, test_data[0][0] / 1000 + 1, 0)
-    data, start_ts = load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
+    data, start_ts = _load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
     assert data == test_data[:-1]
     assert test_data[-2][0] < start_ts < test_data[-1][0]
 
     # same with 'line' timeframe
     num_lines = (test_data[-1][0] - test_data[1][0]) / 1000 / 60 + 30
     timerange = TimeRange(None, 'line', 0, -num_lines)
-    data, start_ts = load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
+    data, start_ts = _load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
     assert data == test_data[:-1]
     assert test_data[-2][0] < start_ts < test_data[-1][0]
 
     # timeframe starts after the chached data
     # should return the chached data w/o the last item
     timerange = TimeRange('date', None, test_data[-1][0] / 1000 + 1, 0)
-    data, start_ts = load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
+    data, start_ts = _load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
     assert data == test_data[:-1]
     assert test_data[-2][0] < start_ts < test_data[-1][0]
 
     # Try loading last 30 lines.
-    # Not supported by load_cached_data_for_updating, we always need to get the full data.
+    # Not supported by _load_cached_data_for_updating, we always need to get the full data.
     num_lines = 30
     timerange = TimeRange(None, 'line', 0, -num_lines)
-    data, start_ts = load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
+    data, start_ts = _load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
     assert data == test_data[:-1]
     assert test_data[-2][0] < start_ts < test_data[-1][0]
 
@@ -195,27 +211,27 @@ def test_load_cached_data_for_updating(mocker) -> None:
     # should return the chached data w/o the last item
     num_lines = 30
     timerange = TimeRange(None, 'line', 0, -num_lines)
-    data, start_ts = load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
+    data, start_ts = _load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
     assert data == test_data[:-1]
     assert test_data[-2][0] < start_ts < test_data[-1][0]
 
     # no datafile exist
     # should return timestamp start time
     timerange = TimeRange('date', None, now_ts - 10000, 0)
-    data, start_ts = load_cached_data_for_updating(datadir, 'NONEXIST/BTC', '1m', timerange)
+    data, start_ts = _load_cached_data_for_updating(datadir, 'NONEXIST/BTC', '1m', timerange)
     assert data == []
     assert start_ts == (now_ts - 10000) * 1000
 
     # same with 'line' timeframe
     num_lines = 30
     timerange = TimeRange(None, 'line', 0, -num_lines)
-    data, start_ts = load_cached_data_for_updating(datadir, 'NONEXIST/BTC', '1m', timerange)
+    data, start_ts = _load_cached_data_for_updating(datadir, 'NONEXIST/BTC', '1m', timerange)
     assert data == []
     assert start_ts == (now_ts - num_lines * 60) * 1000
 
     # no datafile exist, no timeframe is set
     # should return an empty array and None
-    data, start_ts = load_cached_data_for_updating(datadir, 'NONEXIST/BTC', '1m', None)
+    data, start_ts = _load_cached_data_for_updating(datadir, 'NONEXIST/BTC', '1m', None)
     assert data == []
     assert start_ts is None
 
@@ -223,18 +239,18 @@ def test_load_cached_data_for_updating(mocker) -> None:
 def test_download_pair_history(ticker_history_list, mocker, default_conf, testdatadir) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ticker_history_list)
     exchange = get_patched_exchange(mocker, default_conf)
-    file1_1 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-1m.json')
-    file1_5 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-5m.json')
-    file2_1 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'CFI_BTC-1m.json')
-    file2_5 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'CFI_BTC-5m.json')
+    file1_1 = testdatadir / 'MEME_BTC-1m.json'
+    file1_5 = testdatadir / 'MEME_BTC-5m.json'
+    file2_1 = testdatadir / 'CFI_BTC-1m.json'
+    file2_5 = testdatadir / 'CFI_BTC-5m.json'
 
     _backup_file(file1_1)
     _backup_file(file1_5)
     _backup_file(file2_1)
     _backup_file(file2_5)
 
-    assert os.path.isfile(file1_1) is False
-    assert os.path.isfile(file2_1) is False
+    assert not file1_1.is_file()
+    assert not file2_1.is_file()
 
     assert download_pair_history(datadir=testdatadir, exchange=exchange,
                                  pair='MEME/BTC',
@@ -243,15 +259,15 @@ def test_download_pair_history(ticker_history_list, mocker, default_conf, testda
                                  pair='CFI/BTC',
                                  ticker_interval='1m')
     assert not exchange._pairs_last_refresh_time
-    assert os.path.isfile(file1_1) is True
-    assert os.path.isfile(file2_1) is True
+    assert file1_1.is_file()
+    assert file2_1.is_file()
 
     # clean files freshly downloaded
     _clean_test_file(file1_1)
     _clean_test_file(file2_1)
 
-    assert os.path.isfile(file1_5) is False
-    assert os.path.isfile(file2_5) is False
+    assert not file1_5.is_file()
+    assert not file2_5.is_file()
 
     assert download_pair_history(datadir=testdatadir, exchange=exchange,
                                  pair='MEME/BTC',
@@ -260,8 +276,8 @@ def test_download_pair_history(ticker_history_list, mocker, default_conf, testda
                                  pair='CFI/BTC',
                                  ticker_interval='5m')
     assert not exchange._pairs_last_refresh_time
-    assert os.path.isfile(file1_5) is True
-    assert os.path.isfile(file2_5) is True
+    assert file1_5.is_file()
+    assert file2_5.is_file()
 
     # clean files freshly downloaded
     _clean_test_file(file1_5)
@@ -288,8 +304,8 @@ def test_download_backtesting_data_exception(ticker_history, mocker, caplog,
 
     exchange = get_patched_exchange(mocker, default_conf)
 
-    file1_1 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-1m.json')
-    file1_5 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-5m.json')
+    file1_1 = testdatadir / 'MEME_BTC-1m.json'
+    file1_5 = testdatadir / 'MEME_BTC-5m.json'
     _backup_file(file1_1)
     _backup_file(file1_5)
 
@@ -359,42 +375,11 @@ def test_init(default_conf, mocker) -> None:
     )
 
 
-def test_trim_tickerlist() -> None:
-    file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'UNITTEST_BTC-1m.json')
+def test_trim_tickerlist(testdatadir) -> None:
+    file = testdatadir / 'UNITTEST_BTC-1m.json'
     with open(file) as data_file:
         ticker_list = json.load(data_file)
     ticker_list_len = len(ticker_list)
-
-    # Test the pattern ^(-\d+)$
-    # This pattern uses the latest N elements
-    timerange = TimeRange(None, 'line', 0, -5)
-    ticker = trim_tickerlist(ticker_list, timerange)
-    ticker_len = len(ticker)
-
-    assert ticker_len == 5
-    assert ticker_list[0] is not ticker[0]  # The first element should be different
-    assert ticker_list[-1] is ticker[-1]  # The last element must be the same
-
-    # Test the pattern ^(\d+)-$
-    # This pattern keep X element from the end
-    timerange = TimeRange('line', None, 5, 0)
-    ticker = trim_tickerlist(ticker_list, timerange)
-    ticker_len = len(ticker)
-
-    assert ticker_len == 5
-    assert ticker_list[0] is ticker[0]  # The first element must be the same
-    assert ticker_list[-1] is not ticker[-1]  # The last element should be different
-
-    # Test the pattern ^(\d+)-(\d+)$
-    # This pattern extract a window
-    timerange = TimeRange('index', 'index', 5, 10)
-    ticker = trim_tickerlist(ticker_list, timerange)
-    ticker_len = len(ticker)
-
-    assert ticker_len == 5
-    assert ticker_list[0] is not ticker[0]  # The first element should be different
-    assert ticker_list[5] is ticker[0]  # The list starts at the index 5
-    assert ticker_list[9] is ticker[-1]  # The list ends at the index 9 (5 elements)
 
     # Test the pattern ^(\d{8})-(\d{8})$
     # This pattern extract a window between the dates
@@ -435,13 +420,6 @@ def test_trim_tickerlist() -> None:
 
     assert ticker_list_len == ticker_len
 
-    # Test invalid timerange (start after stop)
-    timerange = TimeRange('index', 'index', 10, 5)
-    with pytest.raises(ValueError, match=r'The timerange .* is incorrect'):
-        trim_tickerlist(ticker_list, timerange)
-
-    assert ticker_list_len == ticker_len
-
     # passing empty list
     timerange = TimeRange(None, None, None, 5)
     ticker = trim_tickerlist([], timerange)
@@ -449,22 +427,21 @@ def test_trim_tickerlist() -> None:
     assert not ticker
 
 
-def test_file_dump_json_tofile() -> None:
-    file = os.path.join(os.path.dirname(__file__), '..', 'testdata',
-                        'test_{id}.json'.format(id=str(uuid.uuid4())))
+def test_file_dump_json_tofile(testdatadir) -> None:
+    file = testdatadir / 'test_{id}.json'.format(id=str(uuid.uuid4()))
     data = {'bar': 'foo'}
 
     # check the file we will create does not exist
-    assert os.path.isfile(file) is False
+    assert not file.is_file()
 
     # Create the Json file
     file_dump_json(file, data)
 
     # Check the file was create
-    assert os.path.isfile(file) is True
+    assert file.is_file()
 
     # Open the Json file created and test the data is in it
-    with open(file) as data_file:
+    with file.open() as data_file:
         json_from_file = json.load(data_file)
 
     assert 'bar' in json_from_file
@@ -571,3 +548,92 @@ def test_download_data_no_markets(mocker, default_conf, caplog, testdatadir):
     assert "ETH/BTC" in unav_pairs
     assert "XRP/BTC" in unav_pairs
     assert log_has("Skipping pair ETH/BTC...", caplog)
+
+
+def test_refresh_backtest_trades_data(mocker, default_conf, markets, caplog, testdatadir):
+    dl_mock = mocker.patch('freqtrade.data.history.download_trades_history', MagicMock())
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets)
+    )
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    mocker.patch.object(Path, "unlink", MagicMock())
+
+    ex = get_patched_exchange(mocker, default_conf)
+    timerange = TimeRange.parse_timerange("20190101-20190102")
+    unavailable_pairs = refresh_backtest_trades_data(exchange=ex,
+                                                     pairs=["ETH/BTC", "XRP/BTC", "XRP/ETH"],
+                                                     datadir=testdatadir,
+                                                     timerange=timerange, erase=True
+                                                     )
+
+    assert dl_mock.call_count == 2
+    assert dl_mock.call_args[1]['timerange'].starttype == 'date'
+
+    assert log_has("Downloading trades for pair ETH/BTC.", caplog)
+    assert unavailable_pairs == ["XRP/ETH"]
+    assert log_has("Skipping pair XRP/ETH...", caplog)
+
+
+def test_download_trades_history(trades_history, mocker, default_conf, testdatadir, caplog) -> None:
+
+    ght_mock = MagicMock(side_effect=lambda pair, *args, **kwargs: (pair, trades_history))
+    mocker.patch('freqtrade.exchange.Exchange.get_historic_trades',
+                 ght_mock)
+    exchange = get_patched_exchange(mocker, default_conf)
+    file1 = testdatadir / 'ETH_BTC-trades.json.gz'
+
+    _backup_file(file1)
+
+    assert not file1.is_file()
+
+    assert download_trades_history(datadir=testdatadir, exchange=exchange,
+                                   pair='ETH/BTC')
+    assert log_has("New Amount of trades: 5", caplog)
+    assert file1.is_file()
+
+    # clean files freshly downloaded
+    _clean_test_file(file1)
+
+    mocker.patch('freqtrade.exchange.Exchange.get_historic_trades',
+                 MagicMock(side_effect=ValueError))
+
+    assert not download_trades_history(datadir=testdatadir, exchange=exchange,
+                                       pair='ETH/BTC')
+    assert log_has_re('Failed to download historic trades for pair: "ETH/BTC".*', caplog)
+
+
+def test_convert_trades_to_ohlcv(mocker, default_conf, testdatadir, caplog):
+
+    pair = 'XRP/ETH'
+    file1 = testdatadir / 'XRP_ETH-1m.json'
+    file5 = testdatadir / 'XRP_ETH-5m.json'
+    # Compare downloaded dataset with converted dataset
+    dfbak_1m = history.load_pair_history(datadir=testdatadir,
+                                         ticker_interval="1m",
+                                         pair=pair)
+    dfbak_5m = history.load_pair_history(datadir=testdatadir,
+                                         ticker_interval="5m",
+                                         pair=pair)
+
+    _backup_file(file1, copy_file=True)
+    _backup_file(file5)
+
+    tr = TimeRange.parse_timerange('20191011-20191012')
+
+    convert_trades_to_ohlcv([pair], timeframes=['1m', '5m'],
+                            datadir=testdatadir, timerange=tr, erase=True)
+
+    assert log_has("Deleting existing data for pair XRP/ETH, interval 1m.", caplog)
+    # Load new data
+    df_1m = history.load_pair_history(datadir=testdatadir,
+                                      ticker_interval="1m",
+                                      pair=pair)
+    df_5m = history.load_pair_history(datadir=testdatadir,
+                                      ticker_interval="5m",
+                                      pair=pair)
+
+    assert df_1m.equals(dfbak_1m)
+    assert df_5m.equals(dfbak_5m)
+
+    _clean_test_file(file1)
+    _clean_test_file(file5)

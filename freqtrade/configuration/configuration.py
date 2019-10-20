@@ -9,8 +9,9 @@ from typing import Any, Callable, Dict, List, Optional
 
 from freqtrade import OperationalException, constants
 from freqtrade.configuration.check_exchange import check_exchange
-from freqtrade.configuration.config_validation import (
-    validate_config_consistency, validate_config_schema)
+from freqtrade.configuration.config_validation import (validate_config_consistency,
+                                                       validate_config_schema)
+from freqtrade.configuration.deprecated_settings import process_temporary_deprecated_settings
 from freqtrade.configuration.directory_operations import (create_datadir,
                                                           create_userdata_dir)
 from freqtrade.configuration.load_config import load_config_file
@@ -75,6 +76,10 @@ class Configuration:
         # Normalize config
         if 'internals' not in config:
             config['internals'] = {}
+        # TODO: This can be deleted along with removal of deprecated
+        # experimental settings
+        if 'ask_strategy' not in config:
+            config['ask_strategy'] = {}
 
         # validate configuration before returning
         logger.info('Validating configuration ...')
@@ -105,6 +110,8 @@ class Configuration:
         check_exchange(config, config.get('experimental', {}).get('block_bad_exchanges', True))
 
         self._resolve_pairs_list(config)
+
+        process_temporary_deprecated_settings(config)
 
         validate_config_consistency(config)
 
@@ -189,6 +196,13 @@ class Configuration:
         config.update({'datadir': create_datadir(config, self.args.get("datadir", None))})
         logger.info('Using data directory: %s ...', config.get('datadir'))
 
+        if self.args.get('exportfilename'):
+            self._args_to_config(config, argname='exportfilename',
+                                 logstring='Storing backtest results to {} ...')
+        else:
+            config['exportfilename'] = (config['user_data_dir']
+                                        / 'backtest_results/backtest-result.json')
+
     def _process_optimize_options(self, config: Dict[str, Any]) -> None:
 
         # This will override the strategy configuration
@@ -214,6 +228,10 @@ class Configuration:
                              logstring='Parameter --stake_amount detected, '
                              'overriding stake_amount to: {} ...')
 
+        self._args_to_config(config, argname='fee',
+                             logstring='Parameter --fee detected, '
+                             'setting fee to: {} ...')
+
         self._args_to_config(config, argname='timerange',
                              logstring='Parameter --timerange detected: {} ...')
 
@@ -227,9 +245,6 @@ class Configuration:
 
         self._args_to_config(config, argname='export',
                              logstring='Parameter --export detected: {} ...')
-
-        self._args_to_config(config, argname='exportfilename',
-                             logstring='Storing backtest results to {} ...')
 
         # Edge section:
         if 'stoploss_range' in self.args and self.args["stoploss_range"]:
@@ -305,6 +320,8 @@ class Configuration:
 
         self._args_to_config(config, argname='days',
                              logstring='Detected --days: {}')
+        self._args_to_config(config, argname='download_trades',
+                             logstring='Detected --dl-trades: {}')
 
     def _process_runmode(self, config: Dict[str, Any]) -> None:
 
@@ -327,7 +344,8 @@ class Configuration:
                         sample: logfun=len (prints the length of the found
                         configuration instead of the content)
         """
-        if argname in self.args and self.args[argname]:
+        if (argname in self.args and self.args[argname] is not None
+           and self.args[argname] is not False):
 
             config.update({argname: self.args[argname]})
             if logfun:

@@ -1,8 +1,9 @@
-from freqtrade.exchange.exchange import Exchange  # noqa: F401
+from freqtrade.exchange.exchange import Exchange, MAP_EXCHANGE_CHILDCLASS  # noqa: F401
 from freqtrade.exchange.exchange import (get_exchange_bad_reason,  # noqa: F401
                                          is_exchange_bad,
-                                         is_exchange_available,
+                                         is_exchange_known_ccxt,
                                          is_exchange_officially_supported,
+                                         ccxt_exchanges,
                                          available_exchanges)
 from freqtrade.exchange.exchange import (timeframe_to_seconds,  # noqa: F401
                                          timeframe_to_minutes,

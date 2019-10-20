@@ -54,14 +54,8 @@ class HyperOptResolver(IResolver):
         """
         current_path = Path(__file__).parent.parent.joinpath('optimize').resolve()
 
-        abs_paths = [
-            config['user_data_dir'].joinpath('hyperopts'),
-            current_path,
-        ]
-
-        if extra_dir:
-            # Add extra hyperopt directory on top of search paths
-            abs_paths.insert(0, Path(extra_dir).resolve())
+        abs_paths = self.build_search_paths(config, current_path=current_path,
+                                            user_subdir='hyperopts', extra_dir=extra_dir)
 
         hyperopt = self._load_object(paths=abs_paths, object_type=IHyperOpt,
                                      object_name=hyperopt_name, kwargs={'config': config})
@@ -112,14 +106,8 @@ class HyperOptLossResolver(IResolver):
         """
         current_path = Path(__file__).parent.parent.joinpath('optimize').resolve()
 
-        abs_paths = [
-            config['user_data_dir'].joinpath('hyperopts'),
-            current_path,
-        ]
-
-        if extra_dir:
-            # Add extra hyperopt directory on top of search paths
-            abs_paths.insert(0, Path(extra_dir).resolve())
+        abs_paths = self.build_search_paths(config, current_path=current_path,
+                                            user_subdir='hyperopts', extra_dir=extra_dir)
 
         hyperoptloss = self._load_object(paths=abs_paths, object_type=IHyperOptLoss,
                                          object_name=hyper_loss_name)

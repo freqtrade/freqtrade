@@ -79,7 +79,7 @@ tc0 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 1]],  # enter trade (signal on last candle)
-    stop_loss=-0.99, roi=float('inf'), profit_perc=0.00,
+    stop_loss=-0.99, roi={"0": float('inf')}, profit_perc=0.00,
     trades=[]
 )
 
@@ -94,7 +94,7 @@ tc1 = BTContainer(data=[
     [5, 5000, 5025, 4975, 4987, 6172, 0, 1],  # no action
     [6, 5000, 5025, 4975, 4987, 6172, 0, 0],  # should sell
 ],
-    stop_loss=-0.99, roi=float('inf'), profit_perc=0.00,
+    stop_loss=-0.99, roi={"0": float('inf')}, profit_perc=0.00,
     trades=[BTrade(sell_reason=SellType.SELL_SIGNAL, open_tick=1, close_tick=2),
             BTrade(sell_reason=SellType.SELL_SIGNAL, open_tick=4, close_tick=6)]
 )
@@ -106,7 +106,7 @@ tc2 = BTContainer(data=[
     [1, 5000, 5025, 4600, 4987, 6172, 0, 0],  # enter trade, stoploss hit
     [2, 5000, 5025, 4975, 4987, 6172, 0, 0],
 ],
-    stop_loss=-0.01, roi=float('inf'), profit_perc=-0.01,
+    stop_loss=-0.01, roi={"0": float('inf')}, profit_perc=-0.01,
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)]
 )
 
@@ -117,7 +117,7 @@ tc3 = BTContainer(data=[
     [1, 5000, 5025, 4800, 4987, 6172, 0, 0],  # enter trade, stoploss hit
     [2, 5000, 5025, 4975, 4987, 6172, 0, 0],
 ],
-    stop_loss=-0.03, roi=float('inf'), profit_perc=-0.03,
+    stop_loss=-0.03, roi={"0": float('inf')}, profit_perc=-0.03,
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)]
 )
 
@@ -128,7 +128,7 @@ tc4 = BTContainer(data=[
     [1, 5000, 5025, 4800, 4987, 6172, 0, 1],  # enter trade, stoploss hit, sell signal
     [2, 5000, 5025, 4975, 4987, 6172, 0, 0],
 ],
-    stop_loss=-0.03, roi=float('inf'), profit_perc=-0.03,
+    stop_loss=-0.03, roi={"0": float('inf')}, profit_perc=-0.03,
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)]
 )
 
