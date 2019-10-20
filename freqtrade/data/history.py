@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
+import pytz
 from pandas import DataFrame
 
 from freqtrade import OperationalException, misc
@@ -47,6 +48,19 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
         raise ValueError(f'The timerange [{timerange.startts},{timerange.stopts}] is incorrect')
 
     return tickerlist[start_index:stop_index]
+
+
+def trim_dataframe(df: DataFrame, timerange: TimeRange) -> DataFrame:
+    """
+    Trim dataframe based on given timerange
+    """
+    if timerange.starttype == 'date':
+        start = datetime.fromtimestamp(timerange.startts, tz=pytz.utc)
+        df = df.loc[df['date'] >= start, :]
+    if timerange.stoptype == 'date':
+        stop = datetime.fromtimestamp(timerange.stopts, tz=pytz.utc)
+        df = df.loc[df['date'] <= stop, :]
+    return df
 
 
 def load_tickerdata_file(datadir: Path, pair: str, ticker_interval: str,
