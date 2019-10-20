@@ -117,7 +117,7 @@ def simple_backtest(config, contour, num_results, mocker, testdatadir) -> None:
 
 
 def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=False,
-                     timerange=None, exchange=None, live=False):
+                     timerange=None, exchange=None, live=False, startup_candles=0):
     tickerdata = history.load_tickerdata_file(datadir, 'UNITTEST/BTC', '1m', timerange=timerange)
     pairdata = {'UNITTEST/BTC': parse_ticker_dataframe(tickerdata, '1m', pair="UNITTEST/BTC",
                                                        fill_missing=True)}

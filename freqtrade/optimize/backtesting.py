@@ -92,7 +92,6 @@ class Backtesting:
 
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
-        self.required_startup_s = self.required_startup * timeframe_to_seconds(self.ticker_interval)
         # Load one (first) strategy
         self._set_strategy(self.strategylist[0])
 
@@ -422,11 +421,6 @@ class Backtesting:
         timerange = TimeRange.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
 
-        logger.info('Using indicator startup period: %s ...', self.required_startup)
-
-        # Timerange_startup is timerange - startup-candles
-        timerange_startup = deepcopy(timerange)
-        timerange_startup.subtract_start(self.required_startup_s)
 
         data = history.load_data(
             datadir=Path(self.config['datadir']),
@@ -453,10 +447,12 @@ class Backtesting:
             'Loading backtest data from %s up to %s (%s days)..',
             min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
         )
-        if not timerange_startup.starttype:
+        if not timerange.starttype:
             # If no startts was defined, we need to move the backtesting start
             logger.info("Moving start-date by %s candles.", self.required_startup)
-            timerange.startts = min_date.timestamp + self.required_startup_s
+            timerange.startts = (min_date.timestamp
+                                 + timeframe_to_seconds(self.ticker_interval)
+                                 * self.required_startup)
             timerange.starttype = 'date'
 
         for strat in self.strategylist:

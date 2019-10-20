@@ -8,6 +8,7 @@ Includes:
 
 import logging
 import operator
+from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -19,7 +20,7 @@ from pandas import DataFrame
 from freqtrade import OperationalException, misc
 from freqtrade.configuration import TimeRange
 from freqtrade.data.converter import parse_ticker_dataframe, trades_to_ohlcv
-from freqtrade.exchange import Exchange, timeframe_to_minutes
+from freqtrade.exchange import Exchange, timeframe_to_minutes, timeframe_to_seconds
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +128,8 @@ def load_pair_history(pair: str,
                       refresh_pairs: bool = False,
                       exchange: Optional[Exchange] = None,
                       fill_up_missing: bool = True,
-                      drop_incomplete: bool = True
+                      drop_incomplete: bool = True,
+                      startup_candles: int = 0,
                       ) -> DataFrame:
     """
     Loads cached ticker history for the given pair.
@@ -140,8 +142,14 @@ def load_pair_history(pair: str,
     :param exchange: Exchange object (needed when using "refresh_pairs")
     :param fill_up_missing: Fill missing values with "No action"-candles
     :param drop_incomplete: Drop last candle assuming it may be incomplete.
+    :param startup_candles: Additional candles to load at the start of the period
     :return: DataFrame with ohlcv data
     """
+
+    timerange_startup = deepcopy(timerange)
+    if startup_candles:
+        logger.info('Using indicator startup period: %s ...', startup_candles)
+        timerange_startup.subtract_start(timeframe_to_seconds(ticker_interval) * startup_candles)
 
     # The user forced the refresh of pairs
     if refresh_pairs:
@@ -151,11 +159,11 @@ def load_pair_history(pair: str,
                               ticker_interval=ticker_interval,
                               timerange=timerange)
 
-    pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
+    pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange_startup)
 
     if pairdata:
-        if timerange:
-            _validate_pairdata(pair, pairdata, timerange)
+        if timerange_startup:
+            _validate_pairdata(pair, pairdata, timerange_startup)
         return parse_ticker_dataframe(pairdata, ticker_interval, pair=pair,
                                       fill_missing=fill_up_missing,
                                       drop_incomplete=drop_incomplete)
@@ -174,10 +182,20 @@ def load_data(datadir: Path,
               exchange: Optional[Exchange] = None,
               timerange: Optional[TimeRange] = None,
               fill_up_missing: bool = True,
+              startup_candles: int = 0,
               ) -> Dict[str, DataFrame]:
     """
     Loads ticker history data for a list of pairs
-    :return: dict(<pair>:<tickerlist>)
+    :param datadir: Path to the data storage location.
+    :param ticker_interval: Ticker-interval (e.g. "5m")
+    :param pairs: List of pairs to load
+    :param refresh_pairs: Refresh pairs from exchange.
+        (Note: Requires exchange to be passed as well.)
+    :param exchange: Exchange object (needed when using "refresh_pairs")
+    :param timerange: Limit data to be loaded to this timerange
+    :param fill_up_missing: Fill missing values with "No action"-candles
+    :param startup_candles: Additional candles to load at the start of the period
+    :return: dict(<pair>:<Dataframe>)
     TODO: refresh_pairs is still used by edge to keep the data uptodate.
         This should be replaced in the future. Instead, writing the current candles to disk
         from dataprovider should be implemented, as this would avoid loading ohlcv data twice.
