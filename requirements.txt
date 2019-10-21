@@ -1,5 +1,5 @@
 # Load common requirements
 -r requirements-common.txt
 
-numpy==1.17.2
+numpy==1.17.3
 pandas==0.25.1
