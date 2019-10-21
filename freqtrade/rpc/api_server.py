@@ -66,7 +66,7 @@ class ApiServer(RPC):
     """
     This class runs api server and provides rpc.rpc functionality to it
 
-    This class starts a none blocking thread the api server runs within
+    This class starts a non-blocking thread the api server runs within
     """
 
     def check_auth(self, username, password):
