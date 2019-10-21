@@ -192,6 +192,7 @@ def test_list_markets(mocker, markets, capsys):
             "BLK/BTC, BTT/BTC, ETH/BTC, ETH/USDT, LTC/USD, LTC/USDT, TKN/BTC, XLTCUSDT.\n"
             in captured.out)
 
+    patch_exchange(mocker, api_mock=api_mock, id="binance")
     # Test with --exchange
     args = [
         "list-markets",
@@ -201,9 +202,10 @@ def test_list_markets(mocker, markets, capsys):
     pargs['config'] = None
     start_list_markets(pargs, False)
     captured = capsys.readouterr()
-    assert re.match("Exchange Binance has 8 active markets:\n",
+    assert re.match("\nExchange Binance has 8 active markets:\n",
                     captured.out)
 
+    patch_exchange(mocker, api_mock=api_mock, id="bittrex")
     # Test with --all: all markets
     args = [
         '--config', 'config.json.example',
