@@ -413,16 +413,15 @@ freqtrade --strategy AwesomeStrategy --strategy-path /some/directory
 
 ### Common mistakes when developing strategies
 
-Backtesting analyzes the whole time-range at once for performance reasons. Because of this, strategy authors need to make sure that strategies do not look into the future.
+Backtesting analyzes the whole time-range at once for performance reasons. Because of this, strategy authors need to make sure that strategies do not look-ahead into the future.
 This is a common pain-point, which can cause huge differences between backtesting and dry/live run methods, since they all use data which is not available during dry/live runs, so these strategies will perform well during backtesting, but will fail / perform badly in real conditions.
 
-The following lists some common patterns which should be avoided to avoid frustration:
+The following lists some common patterns which should be avoided to prevent frustration:
 
 - don't use `shift(-1)`. This uses data from the future, which is not available.
 - don't use `.iloc[-1]` or any other absolute position in the dataframe, this will be different between dry-run and backtesting.
 - don't use `dataframe['volume'].mean()`. This uses the full DataFrame for backtesting, including data from the future. Use `dataframe['volume'].rolling(<window>).mean()` instead
 - don't use `.resample('1h')`. This uses the left border of the interval, so moves data from an hour to the start of the hour. Use `.resample('1h', label='right')` instead.
-
 
 ### Further strategy ideas
 
