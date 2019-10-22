@@ -122,7 +122,7 @@ def start_list_timeframes(args: Dict[str, Any]) -> None:
     config['ticker_interval'] = None
 
     # Init exchange
-    exchange = ExchangeResolver(config['exchange']['name'], config).exchange
+    exchange = ExchangeResolver(config['exchange']['name'], config, validate=False).exchange
 
     if args['print_one_column']:
         print('\n'.join(exchange.timeframes))
