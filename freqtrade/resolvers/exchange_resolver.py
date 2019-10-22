@@ -32,7 +32,7 @@ class ExchangeResolver(IResolver):
             logger.info(
                 f"No {exchange_name} specific subclass found. Using the generic class instead.")
         if not hasattr(self, "exchange"):
-            self.exchange = Exchange(config)
+            self.exchange = Exchange(config, validate=validate)
 
     def _load_exchange(
             self, exchange_name: str, kwargs: dict) -> Exchange:
