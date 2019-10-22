@@ -217,19 +217,21 @@ class Exchange:
 
         logger.info('Using Exchange "%s"', self.name)
 
-        # Check if timeframe is available
-        self.validate_timeframes(config.get('ticker_interval'))
-
-        # Converts the interval provided in minutes in config to seconds
-        self.markets_refresh_interval: int = exchange_config.get(
-            "markets_refresh_interval", 60) * 60
         if validate:
+            # Check if timeframe is available
+            self.validate_timeframes(config.get('ticker_interval'))
+
             # Initial markets load
             self._load_markets()
+
             # Check if all pairs are available
             self.validate_pairs(config['exchange']['pair_whitelist'])
             self.validate_ordertypes(config.get('order_types', {}))
             self.validate_order_time_in_force(config.get('order_time_in_force', {}))
+
+        # Converts the interval provided in minutes in config to seconds
+        self.markets_refresh_interval: int = exchange_config.get(
+            "markets_refresh_interval", 60) * 60
 
     def __del__(self):
         """
