@@ -147,7 +147,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
     config = setup_utils_configuration(args, RunMode.OTHER)
 
     # Init exchange
-    exchange = ExchangeResolver(config['exchange']['name'], config).exchange
+    exchange = ExchangeResolver(config['exchange']['name'], config, validate=False).exchange
 
     # By default only active pairs/markets are to be shown
     active_only = not args.get('list_pairs_all', False)
