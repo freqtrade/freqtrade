@@ -51,7 +51,7 @@ class TimeRange:
         :return: None (Modifies the object in place)
         """
         if (not self.starttype or (startup_candles
-                                   and min_date.timestamp == self.startts)):
+                                   and min_date.timestamp >= self.startts)):
             # If no startts was defined, or test-data starts at the defined test-date
             logger.warning("Moving start-date by %s candles to account for startup time.",
                            startup_candles)

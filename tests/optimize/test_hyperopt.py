@@ -228,7 +228,7 @@ def test_start(mocker, default_conf, caplog) -> None:
 
 def test_start_no_data(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
-    mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock(return_value={}))
+    mocker.patch('freqtrade.data.history.load_pair_history', MagicMock(return_value=None))
     mocker.patch(
         'freqtrade.optimize.hyperopt.get_timeframe',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
@@ -242,9 +242,8 @@ def test_start_no_data(mocker, default_conf, caplog) -> None:
         '--epochs', '5'
     ]
     args = get_args(args)
-    start_hyperopt(args)
-
-    assert log_has('No data found. Terminating.', caplog)
+    with pytest.raises(OperationalException, match='No data found. Terminating.'):
+        start_hyperopt(args)
 
 
 def test_start_filelock(mocker, default_conf, caplog) -> None:

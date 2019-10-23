@@ -117,7 +117,7 @@ def simple_backtest(config, contour, num_results, mocker, testdatadir) -> None:
 
 
 def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=False,
-                     timerange=None, exchange=None, live=False, startup_candles=0):
+                     timerange=None, exchange=None, live=False, *args, **kwargs):
     tickerdata = history.load_tickerdata_file(datadir, 'UNITTEST/BTC', '1m', timerange=timerange)
     pairdata = {'UNITTEST/BTC': parse_ticker_dataframe(tickerdata, '1m', pair="UNITTEST/BTC",
                                                        fill_missing=True)}
@@ -494,7 +494,7 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) ->
     def get_timeframe(input1):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
-    mocker.patch('freqtrade.data.history.load_data', MagicMock(return_value={}))
+    mocker.patch('freqtrade.data.history.load_pair_history', MagicMock(return_value=None))
     mocker.patch('freqtrade.data.history.get_timeframe', get_timeframe)
     mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', MagicMock())
     patch_exchange(mocker)
@@ -511,10 +511,8 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) ->
     default_conf['timerange'] = '20180101-20180102'
 
     backtesting = Backtesting(default_conf)
-    backtesting.start()
-    # check the logs, that will contain the backtest result
-
-    assert log_has('No data found. Terminating.', caplog)
+    with pytest.raises(OperationalException, match='No data found. Terminating.'):
+        backtesting.start()
 
 
 def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
@@ -838,10 +836,9 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
         f'Using data directory: {testdatadir} ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
-        'Backtesting with data from 2017-11-14T21:37:00+00:00 '
+        'Loading data from 2017-11-14T20:57:00+00:00 '
         'up to 2017-11-14T22:58:00+00:00 (0 days)..',
-        'Moving start-date by 20 candles to account for startup time.',
-        'Loading backtest data from 2017-11-14T21:17:00+00:00 '
+        'Backtesting with data from 2017-11-14T21:17:00+00:00 '
         'up to 2017-11-14T22:58:00+00:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...'
     ]
@@ -895,10 +892,9 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         f'Using data directory: {testdatadir} ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
-        'Backtesting with data from 2017-11-14T21:37:00+00:00 '
+        'Loading data from 2017-11-14T20:57:00+00:00 '
         'up to 2017-11-14T22:58:00+00:00 (0 days)..',
-        'Moving start-date by 20 candles to account for startup time.',
-        'Loading backtest data from 2017-11-14T21:17:00+00:00 '
+        'Backtesting with data from 2017-11-14T21:17:00+00:00 '
         'up to 2017-11-14T22:58:00+00:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...',
         'Running backtesting for Strategy DefaultStrategy',
