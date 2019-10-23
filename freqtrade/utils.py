@@ -86,9 +86,9 @@ def start_download_data(args: Dict[str, Any]) -> None:
 
     pairs_not_available: List[str] = []
 
+    # Init exchange
+    exchange = ExchangeResolver(config['exchange']['name'], config).exchange
     try:
-        # Init exchange
-        exchange = ExchangeResolver(config['exchange']['name'], config).exchange
 
         if config.get('download_trades'):
             pairs_not_available = refresh_backtest_trades_data(
@@ -110,7 +110,7 @@ def start_download_data(args: Dict[str, Any]) -> None:
     finally:
         if pairs_not_available:
             logger.info(f"Pairs [{','.join(pairs_not_available)}] not available "
-                        f"on exchange {config['exchange']['name']}.")
+                        f"on exchange {exchange.name}.")
 
 
 def start_list_timeframes(args: Dict[str, Any]) -> None:
@@ -127,5 +127,5 @@ def start_list_timeframes(args: Dict[str, Any]) -> None:
     if args['print_one_column']:
         print('\n'.join(exchange.timeframes))
     else:
-        print(f"Timeframes available for the exchange `{config['exchange']['name']}`: "
+        print(f"Timeframes available for the exchange `{exchange.name}`: "
               f"{', '.join(exchange.timeframes)}")

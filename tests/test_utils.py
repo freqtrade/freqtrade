@@ -100,7 +100,7 @@ def test_list_timeframes(mocker, capsys):
     ]
     start_list_timeframes(get_args(args))
     captured = capsys.readouterr()
-    assert re.match("Timeframes available for the exchange `bittrex`: "
+    assert re.match("Timeframes available for the exchange `Bittrex`: "
                     "1m, 5m, 30m, 1h, 1d",
                     captured.out)
 
@@ -111,7 +111,7 @@ def test_list_timeframes(mocker, capsys):
     ]
     start_list_timeframes(get_args(args))
     captured = capsys.readouterr()
-    assert re.match("Timeframes available for the exchange `bittrex`: "
+    assert re.match("Timeframes available for the exchange `Bittrex`: "
                     "1m, 5m, 30m, 1h, 1d",
                     captured.out)
 
@@ -125,7 +125,7 @@ def test_list_timeframes(mocker, capsys):
                            '1d': '1d',
                            '3d': '3d',
                            }
-    patch_exchange(mocker, api_mock=api_mock)
+    patch_exchange(mocker, api_mock=api_mock, id='binance')
     # Test with --exchange binance
     args = [
         "list-timeframes",
@@ -133,7 +133,7 @@ def test_list_timeframes(mocker, capsys):
     ]
     start_list_timeframes(get_args(args))
     captured = capsys.readouterr()
-    assert re.match("Timeframes available for the exchange `binance`: "
+    assert re.match("Timeframes available for the exchange `Binance`: "
                     "1m, 5m, 15m, 30m, 1h, 6h, 12h, 1d, 3d",
                     captured.out)
 
@@ -208,7 +208,7 @@ def test_download_data_keyboardInterrupt(mocker, caplog, markets):
 def test_download_data_no_markets(mocker, caplog):
     dl_mock = mocker.patch('freqtrade.utils.refresh_backtest_ohlcv_data',
                            MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
-    patch_exchange(mocker)
+    patch_exchange(mocker, id='binance')
     mocker.patch(
         'freqtrade.exchange.Exchange.markets', PropertyMock(return_value={})
     )
@@ -220,7 +220,7 @@ def test_download_data_no_markets(mocker, caplog):
     ]
     start_download_data(get_args(args))
     assert dl_mock.call_args[1]['timerange'].starttype == "date"
-    assert log_has("Pairs [ETH/BTC,XRP/BTC] not available on exchange binance.", caplog)
+    assert log_has("Pairs [ETH/BTC,XRP/BTC] not available on exchange Binance.", caplog)
 
 
 def test_download_data_no_exchange(mocker, caplog):
