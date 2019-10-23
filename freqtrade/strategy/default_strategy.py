@@ -39,6 +39,9 @@ class DefaultStrategy(IStrategy):
         'stoploss_on_exchange': False
     }
 
+    # Count of candles the strategy requires before producing valid signals
+    startup_candle_count: int = 20
+
     # Optional time in force for orders
     order_time_in_force = {
         'buy': 'gtc',
@@ -104,9 +107,6 @@ class DefaultStrategy(IStrategy):
 
         # EMA - Exponential Moving Average
         dataframe['ema10'] = ta.EMA(dataframe, timeperiod=10)
-
-        # SMA - Simple Moving Average
-        dataframe['sma'] = ta.SMA(dataframe, timeperiod=40)
 
         return dataframe
 

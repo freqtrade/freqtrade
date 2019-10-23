@@ -421,7 +421,6 @@ class Backtesting:
         timerange = TimeRange.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
 
-
         data = history.load_data(
             datadir=Path(self.config['datadir']),
             pairs=pairs,
@@ -447,9 +446,11 @@ class Backtesting:
             'Loading backtest data from %s up to %s (%s days)..',
             min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
         )
-        if not timerange.starttype:
-            # If no startts was defined, we need to move the backtesting start
-            logger.info("Moving start-date by %s candles.", self.required_startup)
+        if (not timerange.starttype or (self.required_startup
+                                        and min_date.timestamp == timerange.startts)):
+            # If no startts was defined, or test-data starts at the defined test-date
+            logger.warning("Moving start-date by %s candles to account for startup time.",
+                           self.required_startup)
             timerange.startts = (min_date.timestamp
                                  + timeframe_to_seconds(self.ticker_interval)
                                  * self.required_startup)

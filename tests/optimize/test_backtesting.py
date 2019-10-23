@@ -838,7 +838,10 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
         f'Using data directory: {testdatadir} ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
-        'Backtesting with data from 2017-11-14T21:17:00+00:00 '
+        'Backtesting with data from 2017-11-14T21:37:00+00:00 '
+        'up to 2017-11-14T22:58:00+00:00 (0 days)..',
+        'Moving start-date by 20 candles to account for startup time.',
+        'Loading backtest data from 2017-11-14T21:17:00+00:00 '
         'up to 2017-11-14T22:58:00+00:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...'
     ]
@@ -892,7 +895,10 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         f'Using data directory: {testdatadir} ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
-        'Backtesting with data from 2017-11-14T21:17:00+00:00 '
+        'Backtesting with data from 2017-11-14T21:37:00+00:00 '
+        'up to 2017-11-14T22:58:00+00:00 (0 days)..',
+        'Moving start-date by 20 candles to account for startup time.',
+        'Loading backtest data from 2017-11-14T21:17:00+00:00 '
         'up to 2017-11-14T22:58:00+00:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...',
         'Running backtesting for Strategy DefaultStrategy',
