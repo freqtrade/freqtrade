@@ -18,7 +18,9 @@ from freqtrade.exchange.exchange import (API_RETRY_COUNT, timeframe_to_minutes,
                                          timeframe_to_msecs,
                                          timeframe_to_next_date,
                                          timeframe_to_prev_date,
-                                         timeframe_to_seconds)
+                                         timeframe_to_seconds,
+                                         symbol_is_pair,
+                                         market_is_active)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import get_patched_exchange, log_has, log_has_re
 
@@ -929,17 +931,17 @@ def test_get_balances_prod(default_conf, mocker, exchange_name):
 def test_get_tickers(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
     tick = {'ETH/BTC': {
-          'symbol': 'ETH/BTC',
-          'bid': 0.5,
-          'ask': 1,
-          'last': 42,
-      }, 'BCH/BTC': {
-          'symbol': 'BCH/BTC',
-          'bid': 0.6,
-          'ask': 0.5,
-          'last': 41,
-      }
-      }
+        'symbol': 'ETH/BTC',
+        'bid': 0.5,
+        'ask': 1,
+        'last': 42,
+    }, 'BCH/BTC': {
+        'symbol': 'BCH/BTC',
+        'bid': 0.6,
+        'ask': 0.5,
+        'last': 41,
+    }
+    }
     api_mock.fetch_tickers = MagicMock(return_value=tick)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     # retrieve original ticker
@@ -1693,6 +1695,74 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
         ex.get_valid_pair_combination("NOPAIR", "ETH")
 
 
+@pytest.mark.parametrize(
+    "base_currencies, quote_currencies, pairs_only, active_only, expected_keys", [
+        # Testing markets (in conftest.py):
+        # 'BLK/BTC':  'active': True
+        # 'BTT/BTC':  'active': True
+        # 'ETH/BTC':  'active': True
+        # 'ETH/USDT': 'active': True
+        # 'LTC/BTC':  'active': False
+        # 'LTC/USD':  'active': True
+        # 'LTC/USDT': 'active': True
+        # 'NEO/BTC':  'active': False
+        # 'TKN/BTC':  'active'  not set
+        # 'XLTCUSDT': 'active': True, not a pair
+        # 'XRP/BTC':  'active': False
+        # all markets
+        ([], [], False, False,
+         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD',
+          'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
+        # active markets
+        ([], [], False, True,
+         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/USD', 'LTC/USDT',
+          'TKN/BTC', 'XLTCUSDT']),
+        # all pairs
+        ([], [], True, False,
+         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD',
+          'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XRP/BTC']),
+        # active pairs
+        ([], [], True, True,
+         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/USD', 'LTC/USDT', 'TKN/BTC']),
+        # all markets, base=ETH, LTC
+        (['ETH', 'LTC'], [], False, False,
+         ['ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
+        # all markets, base=LTC
+        (['LTC'], [], False, False,
+         ['LTC/BTC', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
+        # all markets, quote=USDT
+        ([], ['USDT'], False, False,
+         ['ETH/USDT', 'LTC/USDT', 'XLTCUSDT']),
+        # all markets, quote=USDT, USD
+        ([], ['USDT', 'USD'], False, False,
+         ['ETH/USDT', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
+        # all markets, base=LTC, quote=USDT
+        (['LTC'], ['USDT'], False, False,
+         ['LTC/USDT', 'XLTCUSDT']),
+        # all pairs, base=LTC, quote=USDT
+        (['LTC'], ['USDT'], True, False,
+         ['LTC/USDT']),
+        # all markets, base=LTC, quote=USDT, NONEXISTENT
+        (['LTC'], ['USDT', 'NONEXISTENT'], False, False,
+         ['LTC/USDT', 'XLTCUSDT']),
+        # all markets, base=LTC, quote=NONEXISTENT
+        (['LTC'], ['NONEXISTENT'], False, False,
+         []),
+    ])
+def test_get_markets(default_conf, mocker, markets,
+                     base_currencies, quote_currencies, pairs_only, active_only,
+                     expected_keys):
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          _init_ccxt=MagicMock(return_value=MagicMock()),
+                          _load_async_markets=MagicMock(),
+                          validate_pairs=MagicMock(),
+                          validate_timeframes=MagicMock(),
+                          markets=PropertyMock(return_value=markets))
+    ex = Exchange(default_conf)
+    pairs = ex.get_markets(base_currencies, quote_currencies, pairs_only, active_only)
+    assert sorted(pairs.keys()) == sorted(expected_keys)
+
+
 def test_timeframe_to_minutes():
     assert timeframe_to_minutes("5m") == 5
     assert timeframe_to_minutes("10m") == 10
@@ -1762,3 +1832,33 @@ def test_timeframe_to_next_date():
 
     date = datetime.now(tz=timezone.utc)
     assert timeframe_to_next_date("5m") > date
+
+
+@pytest.mark.parametrize("market_symbol,base_currency,quote_currency,expected_result", [
+    ("BTC/USDT", None, None, True),
+    ("USDT/BTC", None, None, True),
+    ("BTCUSDT", None, None, False),
+    ("BTC/USDT", None, "USDT", True),
+    ("USDT/BTC", None, "USDT", False),
+    ("BTCUSDT", None, "USDT", False),
+    ("BTC/USDT", "BTC", None, True),
+    ("USDT/BTC", "BTC", None, False),
+    ("BTCUSDT", "BTC", None, False),
+    ("BTC/USDT", "BTC", "USDT", True),
+    ("BTC/USDT", "USDT", "BTC", False),
+    ("BTC/USDT", "BTC", "USD", False),
+    ("BTCUSDT", "BTC", "USDT", False),
+    ("BTC/", None, None, False),
+    ("/USDT", None, None, False),
+])
+def test_symbol_is_pair(market_symbol, base_currency, quote_currency, expected_result) -> None:
+    assert symbol_is_pair(market_symbol, base_currency, quote_currency) == expected_result
+
+
+@pytest.mark.parametrize("market,expected_result", [
+    ({'symbol': 'ETH/BTC', 'active': True}, True),
+    ({'symbol': 'ETH/BTC', 'active': False}, False),
+    ({'symbol': 'ETH/BTC', }, True),
+])
+def test_market_is_active(market, expected_result) -> None:
+    assert market_is_active(market) == expected_result

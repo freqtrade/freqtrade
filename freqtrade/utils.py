@@ -1,9 +1,13 @@
 import logging
 import sys
+from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List
 
 import arrow
+import csv
+import rapidjson
+from tabulate import tabulate
 
 from freqtrade import OperationalException
 from freqtrade.configuration import Configuration, TimeRange
@@ -11,7 +15,9 @@ from freqtrade.configuration.directory_operations import create_userdata_dir
 from freqtrade.data.history import (convert_trades_to_ohlcv,
                                     refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
-from freqtrade.exchange import available_exchanges, ccxt_exchanges
+from freqtrade.exchange import (available_exchanges, ccxt_exchanges, market_is_active,
+                                symbol_is_pair)
+from freqtrade.misc import plural
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
 
@@ -128,4 +134,88 @@ def start_list_timeframes(args: Dict[str, Any]) -> None:
         print('\n'.join(exchange.timeframes))
     else:
         print(f"Timeframes available for the exchange `{config['exchange']['name']}`: "
-              f"{', '.join(exchange.timeframes)}")
+              f"{', '.join(exchange.timeframes)}.")
+
+
+def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
+    """
+    Print pairs/markets on the exchange
+    :param args: Cli args from Arguments()
+    :param pairs_only: if True print only pairs, otherwise print all instruments (markets)
+    :return: None
+    """
+    config = setup_utils_configuration(args, RunMode.OTHER)
+
+    # Init exchange
+    exchange = ExchangeResolver(config['exchange']['name'], config, validate=False).exchange
+
+    # By default only active pairs/markets are to be shown
+    active_only = not args.get('list_pairs_all', False)
+
+    base_currencies = args.get('base_currencies', [])
+    quote_currencies = args.get('quote_currencies', [])
+
+    try:
+        pairs = exchange.get_markets(base_currencies=base_currencies,
+                                     quote_currencies=quote_currencies,
+                                     pairs_only=pairs_only,
+                                     active_only=active_only)
+        # Sort the pairs/markets by symbol
+        pairs = OrderedDict(sorted(pairs.items()))
+    except Exception as e:
+        raise OperationalException(f"Cannot get markets. Reason: {e}") from e
+
+    else:
+        summary_str = ((f"Exchange {exchange.name} has {len(pairs)} ") +
+                       ("active " if active_only else "") +
+                       (plural(len(pairs), "pair" if pairs_only else "market")) +
+                       (f" with {', '.join(base_currencies)} as base "
+                        f"{plural(len(base_currencies), 'currency', 'currencies')}"
+                        if base_currencies else "") +
+                       (" and" if base_currencies and quote_currencies else "") +
+                       (f" with {', '.join(quote_currencies)} as quote "
+                        f"{plural(len(quote_currencies), 'currency', 'currencies')}"
+                        if quote_currencies else ""))
+
+        headers = ["Id", "Symbol", "Base", "Quote", "Active",
+                   *(['Is pair'] if not pairs_only else [])]
+
+        tabular_data = []
+        for _, v in pairs.items():
+            tabular_data.append({'Id': v['id'], 'Symbol': v['symbol'],
+                                 'Base': v['base'], 'Quote': v['quote'],
+                                 'Active': market_is_active(v),
+                                 **({'Is pair': symbol_is_pair(v['symbol'])}
+                                    if not pairs_only else {})})
+
+        if (args.get('print_one_column', False) or
+                args.get('list_pairs_print_json', False) or
+                args.get('print_csv', False)):
+            # Print summary string in the log in case of machine-readable
+            # regular formats.
+            logger.info(f"{summary_str}.")
+        else:
+            # Print empty string separating leading logs and output in case of
+            # human-readable formats.
+            print()
+
+        if len(pairs):
+            if args.get('print_list', False):
+                # print data as a list, with human-readable summary
+                print(f"{summary_str}: {', '.join(pairs.keys())}.")
+            elif args.get('print_one_column', False):
+                print('\n'.join(pairs.keys()))
+            elif args.get('list_pairs_print_json', False):
+                print(rapidjson.dumps(list(pairs.keys()), default=str))
+            elif args.get('print_csv', False):
+                writer = csv.DictWriter(sys.stdout, fieldnames=headers)
+                writer.writeheader()
+                writer.writerows(tabular_data)
+            else:
+                # print data as a table, with the human-readable summary
+                print(f"{summary_str}:")
+                print(tabulate(tabular_data, headers='keys', tablefmt='pipe'))
+        elif not (args.get('print_one_column', False) or
+                  args.get('list_pairs_print_json', False) or
+                  args.get('print_csv', False)):
+            print(f"{summary_str}.")
