@@ -446,15 +446,9 @@ class Backtesting:
             'Loading backtest data from %s up to %s (%s days)..',
             min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
         )
-        if (not timerange.starttype or (self.required_startup
-                                        and min_date.timestamp == timerange.startts)):
-            # If no startts was defined, or test-data starts at the defined test-date
-            logger.warning("Moving start-date by %s candles to account for startup time.",
-                           self.required_startup)
-            timerange.startts = (min_date.timestamp
-                                 + timeframe_to_seconds(self.ticker_interval)
-                                 * self.required_startup)
-            timerange.starttype = 'date'
+        # Adjust startts forward if not enough data is available
+        timerange.adjust_start_if_necessary(timeframe_to_seconds(self.ticker_interval),
+                                            self.required_startup, min_date)
 
         for strat in self.strategylist:
             logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())

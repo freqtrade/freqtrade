@@ -1,10 +1,13 @@
 """
 This module contains the argument manager class
 """
+import logging
 import re
 from typing import Optional
 
 import arrow
+
+logger = logging.getLogger(__name__)
 
 
 class TimeRange:
@@ -28,8 +31,32 @@ class TimeRange:
                 and self.startts == other.startts and self.stopts == other.stopts)
 
     def subtract_start(self, seconds) -> None:
+        """
+        Subtracts <seconds> from startts if startts is set.
+        :param seconds: Seconds to subtract from starttime
+        :return: None (Modifies the object in place)
+        """
         if self.startts:
             self.startts = self.startts - seconds
+
+    def adjust_start_if_necessary(self, ticker_interval_secs: int, startup_candles: int,
+                                  min_date: arrow.Arrow) -> None:
+        """
+        Adjust startts by <startup_candles> candles.
+        Applies only if no startup-candles have been available.
+        :param ticker_interval_secs: Ticker interval in seconds e.g. `timeframe_to_seconds('5m')`
+        :param startup_candles: Number of candles to move start-date forward
+        :param min_date: Minimum data date loaded. Key kriterium to decide if start-time
+                         has to be moved
+        :return: None (Modifies the object in place)
+        """
+        if (not self.starttype or (startup_candles
+                                   and min_date.timestamp == self.startts)):
+            # If no startts was defined, or test-data starts at the defined test-date
+            logger.warning("Moving start-date by %s candles to account for startup time.",
+                           startup_candles)
+            self.startts = (min_date.timestamp + ticker_interval_secs * startup_candles)
+            self.starttype = 'date'
 
     @staticmethod
     def parse_timerange(text: Optional[str]):
