@@ -427,6 +427,46 @@ def test_trim_tickerlist(testdatadir) -> None:
     assert not ticker
 
 
+def test_trim_dataframe(testdatadir) -> None:
+    data = history.load_data(
+        datadir=testdatadir,
+        ticker_interval='1m',
+        pairs=['UNITTEST/BTC']
+    )['UNITTEST/BTC']
+    min_date = int(data.iloc[0]['date'].timestamp())
+    max_date = int(data.iloc[-1]['date'].timestamp())
+    data_modify = data.copy()
+
+    # Remove first 30 minutes (1800 s)
+    tr = TimeRange('date', None, min_date + 1800, 0)
+    data_modify = history.trim_dataframe(data_modify, tr)
+    assert not data_modify.equals(data)
+    assert len(data_modify) < len(data)
+    assert len(data_modify) == len(data) - 30
+    assert all(data_modify.iloc[-1] == data.iloc[-1])
+    assert all(data_modify.iloc[0] == data.iloc[30])
+
+    data_modify = data.copy()
+    # Remove last 30 minutes (1800 s)
+    tr = TimeRange(None, 'date', 0, max_date - 1800)
+    data_modify = history.trim_dataframe(data_modify, tr)
+    assert not data_modify.equals(data)
+    assert len(data_modify) < len(data)
+    assert len(data_modify) == len(data) - 30
+    assert all(data_modify.iloc[0] == data.iloc[0])
+    assert all(data_modify.iloc[-1] == data.iloc[-31])
+
+    data_modify = data.copy()
+    # Remove first 25 and last 30 minutes (1800 s)
+    tr = TimeRange('date', 'date', min_date + 1500, max_date - 1800)
+    data_modify = history.trim_dataframe(data_modify, tr)
+    assert not data_modify.equals(data)
+    assert len(data_modify) < len(data)
+    assert len(data_modify) == len(data) - 55
+    # first row matches 25th original row
+    assert all(data_modify.iloc[0] == data.iloc[25])
+
+
 def test_file_dump_json_tofile(testdatadir) -> None:
     file = testdatadir / 'test_{id}.json'.format(id=str(uuid.uuid4()))
     data = {'bar': 'foo'}
