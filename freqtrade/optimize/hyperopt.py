@@ -23,7 +23,7 @@ from skopt import Optimizer
 from skopt.space import Dimension
 
 from freqtrade.configuration import TimeRange
-from freqtrade.data.history import load_data, get_timeframe
+from freqtrade.data.history import load_data, get_timeframe, trim_dataframe
 from freqtrade.misc import round_dict
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
@@ -379,30 +379,19 @@ class Hyperopt:
             )
 
     def start(self) -> None:
-        timerange = TimeRange.parse_timerange(None if self.config.get(
-            'timerange') is None else str(self.config.get('timerange')))
-        data = load_data(
-            datadir=Path(self.config['datadir']),
-            pairs=self.config['exchange']['pair_whitelist'],
-            ticker_interval=self.backtesting.ticker_interval,
-            timerange=timerange
-        )
+        data, timerange = self.backtesting.load_bt_data()
 
-        if not data:
-            logger.critical("No data found. Terminating.")
-            return
+        preprocessed = self.backtesting.strategy.tickerdata_to_dataframe(data)
 
+        # Trim startup period from analyzed dataframe
+        for pair, df in preprocessed.items():
+            preprocessed[pair] = trim_dataframe(df, timerange)
         min_date, max_date = get_timeframe(data)
 
         logger.info(
             'Hyperopting with data from %s up to %s (%s days)..',
-            min_date.isoformat(),
-            max_date.isoformat(),
-            (max_date - min_date).days
+            min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
         )
-
-        preprocessed = self.backtesting.strategy.tickerdata_to_dataframe(data)
-
         dump(preprocessed, self.tickerdata_pickle)
 
         # We don't need exchange instance anymore while running hyperopt

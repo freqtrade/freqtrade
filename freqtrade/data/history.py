@@ -183,6 +183,7 @@ def load_data(datadir: Path,
               timerange: Optional[TimeRange] = None,
               fill_up_missing: bool = True,
               startup_candles: int = 0,
+              fail_without_data: bool = False
               ) -> Dict[str, DataFrame]:
     """
     Loads ticker history data for a list of pairs
@@ -195,6 +196,7 @@ def load_data(datadir: Path,
     :param timerange: Limit data to be loaded to this timerange
     :param fill_up_missing: Fill missing values with "No action"-candles
     :param startup_candles: Additional candles to load at the start of the period
+    :param fail_without_data: Raise OperationalException if no data is found.
     :return: dict(<pair>:<Dataframe>)
     TODO: refresh_pairs is still used by edge to keep the data uptodate.
         This should be replaced in the future. Instead, writing the current candles to disk
@@ -208,9 +210,13 @@ def load_data(datadir: Path,
                                  datadir=datadir, timerange=timerange,
                                  refresh_pairs=refresh_pairs,
                                  exchange=exchange,
-                                 fill_up_missing=fill_up_missing)
+                                 fill_up_missing=fill_up_missing,
+                                 startup_candles=startup_candles)
         if hist is not None:
             result[pair] = hist
+
+    if fail_without_data and not result:
+        raise OperationalException("No data found. Terminating.")
     return result
 
 

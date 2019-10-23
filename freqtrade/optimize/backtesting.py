@@ -105,6 +105,31 @@ class Backtesting:
         # And the regular "stoploss" function would not apply to that case
         self.strategy.order_types['stoploss_on_exchange'] = False
 
+    def load_bt_data(self):
+        timerange = TimeRange.parse_timerange(None if self.config.get(
+            'timerange') is None else str(self.config.get('timerange')))
+
+        data = history.load_data(
+            datadir=Path(self.config['datadir']),
+            pairs=self.config['exchange']['pair_whitelist'],
+            ticker_interval=self.ticker_interval,
+            timerange=timerange,
+            startup_candles=self.required_startup,
+            fail_without_data=True,
+        )
+
+        min_date, max_date = history.get_timeframe(data)
+
+        logger.info(
+            'Loading data from %s up to %s (%s days)..',
+            min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
+        )
+        # Adjust startts forward if not enough data is available
+        timerange.adjust_start_if_necessary(timeframe_to_seconds(self.ticker_interval),
+                                            self.required_startup, min_date)
+
+        return data, timerange
+
     def _generate_text_table(self, data: Dict[str, Dict], results: DataFrame,
                              skip_nan: bool = False) -> str:
         """
@@ -414,42 +439,18 @@ class Backtesting:
         :return: None
         """
         data: Dict[str, Any] = {}
-        pairs = self.config['exchange']['pair_whitelist']
         logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
         logger.info('Using stake_amount: %s ...', self.config['stake_amount'])
-
-        timerange = TimeRange.parse_timerange(None if self.config.get(
-            'timerange') is None else str(self.config.get('timerange')))
-
-        data = history.load_data(
-            datadir=Path(self.config['datadir']),
-            pairs=pairs,
-            ticker_interval=self.ticker_interval,
-            timerange=timerange,
-            startup_candles=self.required_startup
-        )
-
-        if not data:
-            logger.critical("No data found. Terminating.")
-            return
         # Use max_open_trades in backtesting, except --disable-max-market-positions is set
         if self.config.get('use_max_market_positions', True):
             max_open_trades = self.config['max_open_trades']
         else:
             logger.info('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
             max_open_trades = 0
+
+        data, timerange = self.load_bt_data()
+
         all_results = {}
-
-        min_date, max_date = history.get_timeframe(data)
-
-        logger.info(
-            'Loading backtest data from %s up to %s (%s days)..',
-            min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
-        )
-        # Adjust startts forward if not enough data is available
-        timerange.adjust_start_if_necessary(timeframe_to_seconds(self.ticker_interval),
-                                            self.required_startup, min_date)
-
         for strat in self.strategylist:
             logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
             self._set_strategy(strat)
