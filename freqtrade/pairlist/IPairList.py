@@ -8,6 +8,9 @@ import logging
 from abc import ABC, abstractmethod
 from typing import List
 
+from freqtrade.exchange import market_is_active
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -77,7 +80,7 @@ class IPairList(ABC):
                 continue
             # Check if market is active
             market = markets[pair]
-            if not market['active']:
+            if not market_is_active(market):
                 logger.info(f"Ignoring {pair} from whitelist. Market is not active.")
                 continue
             sanitized_whitelist.add(pair)

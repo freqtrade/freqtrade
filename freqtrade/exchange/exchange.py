@@ -22,6 +22,7 @@ from freqtrade import (DependencyException, InvalidOrderException,
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.misc import deep_merge_dicts
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -165,7 +166,7 @@ class Exchange:
     }
     _ft_has: Dict = {}
 
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: dict, validate: bool = True) -> None:
         """
         Initializes this module with the given config,
         it does basic validation whether the specified exchange and pairs are valid.
@@ -216,19 +217,21 @@ class Exchange:
 
         logger.info('Using Exchange "%s"', self.name)
 
-        # Check if timeframe is available
-        self.validate_timeframes(config.get('ticker_interval'))
+        if validate:
+            # Check if timeframe is available
+            self.validate_timeframes(config.get('ticker_interval'))
+
+            # Initial markets load
+            self._load_markets()
+
+            # Check if all pairs are available
+            self.validate_pairs(config['exchange']['pair_whitelist'])
+            self.validate_ordertypes(config.get('order_types', {}))
+            self.validate_order_time_in_force(config.get('order_time_in_force', {}))
 
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
             "markets_refresh_interval", 60) * 60
-        # Initial markets load
-        self._load_markets()
-
-        # Check if all pairs are available
-        self.validate_pairs(config['exchange']['pair_whitelist'])
-        self.validate_ordertypes(config.get('order_types', {}))
-        self.validate_order_time_in_force(config.get('order_time_in_force', {}))
 
     def __del__(self):
         """
@@ -292,6 +295,28 @@ class Exchange:
             logger.warning("Markets were not loaded. Loading them now..")
             self._load_markets()
         return self._api.markets
+
+    def get_markets(self, base_currencies: List[str] = None, quote_currencies: List[str] = None,
+                    pairs_only: bool = False, active_only: bool = False) -> Dict:
+        """
+        Return exchange ccxt markets, filtered out by base currency and quote currency
+        if this was requested in parameters.
+
+        TODO: consider moving it to the Dataprovider
+        """
+        markets = self.markets
+        if not markets:
+            raise OperationalException("Markets were not loaded.")
+
+        if base_currencies:
+            markets = {k: v for k, v in markets.items() if v['base'] in base_currencies}
+        if quote_currencies:
+            markets = {k: v for k, v in markets.items() if v['quote'] in quote_currencies}
+        if pairs_only:
+            markets = {k: v for k, v in markets.items() if symbol_is_pair(v['symbol'])}
+        if active_only:
+            markets = {k: v for k, v in markets.items() if market_is_active(v)}
+        return markets
 
     def klines(self, pair_interval: Tuple[str, str], copy=True) -> DataFrame:
         if pair_interval in self._klines:
@@ -1074,3 +1099,27 @@ def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
     new_timestamp = ccxt.Exchange.round_timeframe(timeframe, date.timestamp() * 1000,
                                                   ROUND_UP) // 1000
     return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
+
+
+def symbol_is_pair(market_symbol: str, base_currency: str = None, quote_currency: str = None):
+    """
+    Check if the market symbol is a pair, i.e. that its symbol consists of the base currency and the
+    quote currency separated by '/' character. If base_currency and/or quote_currency is passed,
+    it also checks that the symbol contains appropriate base and/or quote currency part before
+    and after the separating character correspondingly.
+    """
+    symbol_parts = market_symbol.split('/')
+    return (len(symbol_parts) == 2 and
+            (symbol_parts[0] == base_currency if base_currency else len(symbol_parts[0]) > 0) and
+            (symbol_parts[1] == quote_currency if quote_currency else len(symbol_parts[1]) > 0))
+
+
+def market_is_active(market):
+    """
+    Return True if the market is active.
+    """
+    # "It's active, if the active flag isn't explicitly set to false. If it's missing or
+    # true then it's true. If it's undefined, then it's most likely true, but not 100% )"
+    # See https://github.com/ccxt/ccxt/issues/4874,
+    # https://github.com/ccxt/ccxt/issues/4075#issuecomment-434760520
+    return market.get('active', True) is not False

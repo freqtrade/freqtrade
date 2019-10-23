@@ -319,7 +319,8 @@ def markets():
             'symbol': 'TKN/BTC',
             'base': 'TKN',
             'quote': 'BTC',
-            'active': True,
+            # According to ccxt, markets without active item set are also active
+            # 'active': True,
             'precision': {
                 'price': 8,
                 'amount': 8,
@@ -492,6 +493,50 @@ def markets():
         'LTC/USDT': {
             'id': 'USDT-LTC',
             'symbol': 'LTC/USDT',
+            'base': 'LTC',
+            'quote': 'USDT',
+            'active': True,
+            'precision': {
+                'amount': 8,
+                'price': 8
+            },
+            'limits': {
+                'amount': {
+                    'min': 0.06646786,
+                    'max': None
+                },
+                'price': {
+                    'min': 1e-08,
+                    'max': None
+                }
+            },
+            'info': {},
+        },
+        'LTC/USD': {
+            'id': 'USD-LTC',
+            'symbol': 'LTC/USD',
+            'base': 'LTC',
+            'quote': 'USD',
+            'active': True,
+            'precision': {
+                'amount': 8,
+                'price': 8
+            },
+            'limits': {
+                'amount': {
+                    'min': 0.06646786,
+                    'max': None
+                },
+                'price': {
+                    'min': 1e-08,
+                    'max': None
+                }
+            },
+            'info': {},
+        },
+        'XLTCUSDT': {
+            'id': 'xLTCUSDT',
+            'symbol': 'XLTCUSDT',
             'base': 'LTC',
             'quote': 'USDT',
             'active': True,
