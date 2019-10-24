@@ -55,8 +55,6 @@ class FreqtradeBot:
         # Check config consistency here since strategies can set certain options
         validate_config_consistency(config)
 
-        self.rpc: RPCManager = RPCManager(self)
-
         self.exchange = ExchangeResolver(self.config['exchange']['name'], self.config).exchange
 
         self.wallets = Wallets(self.config, self.exchange)
@@ -82,6 +80,13 @@ class FreqtradeBot:
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')
         self.state = State[initial_state.upper()] if initial_state else State.STOPPED
+
+        # RPC runs in separate threads, can start handling external commands just after
+        # initialization, even before Freqtradebot has a chance to start its throttling,
+        # so anything in the Freqtradebot instance should be ready (initialized), including
+        # the initial state of the bot.
+        # Keep this at the end of this initialization method.
+        self.rpc: RPCManager = RPCManager(self)
 
     def cleanup(self) -> None:
         """
