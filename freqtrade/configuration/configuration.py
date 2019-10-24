@@ -93,7 +93,7 @@ class Configuration:
         :return: Configuration dictionary
         """
         # Load all configs
-        config: Dict[str, Any] = self.load_from_files(self.args["config"])
+        config: Dict[str, Any] = self.load_from_files(self.args.get("config", []))
 
         # Keep a copy of the original configuration file
         config['original_config'] = deepcopy(config)
