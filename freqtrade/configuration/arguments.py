@@ -179,7 +179,8 @@ class Arguments:
         # Add list-markets subcommand
         list_markets_cmd = subparsers.add_parser(
             'list-markets',
-            help='Print markets on exchange.'
+            help='Print markets on exchange.',
+            parents=[_common_parser],
         )
         list_markets_cmd.set_defaults(func=partial(start_list_markets, pairs_only=False))
         self._build_args(optionlist=ARGS_LIST_PAIRS, parser=list_markets_cmd)
@@ -187,7 +188,8 @@ class Arguments:
         # Add list-pairs subcommand
         list_pairs_cmd = subparsers.add_parser(
             'list-pairs',
-            help='Print pairs on exchange.'
+            help='Print pairs on exchange.',
+            parents=[_common_parser],
         )
         list_pairs_cmd.set_defaults(func=partial(start_list_markets, pairs_only=True))
         self._build_args(optionlist=ARGS_LIST_PAIRS, parser=list_pairs_cmd)

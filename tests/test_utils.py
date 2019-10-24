@@ -182,8 +182,8 @@ def test_list_markets(mocker, markets, capsys):
 
     # Test with --config config.json.example
     args = [
-        '--config', 'config.json.example',
         "list-markets",
+        '--config', 'config.json.example',
         "--print-list",
     ]
     start_list_markets(get_args(args), False)
@@ -208,8 +208,8 @@ def test_list_markets(mocker, markets, capsys):
     patch_exchange(mocker, api_mock=api_mock, id="bittrex")
     # Test with --all: all markets
     args = [
-        '--config', 'config.json.example',
         "list-markets", "--all",
+        '--config', 'config.json.example',
         "--print-list",
     ]
     start_list_markets(get_args(args), False)
@@ -221,8 +221,8 @@ def test_list_markets(mocker, markets, capsys):
 
     # Test list-pairs subcommand: active pairs
     args = [
-        '--config', 'config.json.example',
         "list-pairs",
+        '--config', 'config.json.example',
         "--print-list",
     ]
     start_list_markets(get_args(args), True)
@@ -233,8 +233,8 @@ def test_list_markets(mocker, markets, capsys):
 
     # Test list-pairs subcommand with --all: all pairs
     args = [
-        '--config', 'config.json.example',
         "list-pairs", "--all",
+        '--config', 'config.json.example',
         "--print-list",
     ]
     start_list_markets(get_args(args), True)
@@ -246,8 +246,8 @@ def test_list_markets(mocker, markets, capsys):
 
     # active markets, base=ETH, LTC
     args = [
-        '--config', 'config.json.example',
         "list-markets",
+        '--config', 'config.json.example',
         "--base", "ETH", "LTC",
         "--print-list",
     ]
@@ -259,8 +259,8 @@ def test_list_markets(mocker, markets, capsys):
 
     # active markets, base=LTC
     args = [
-        '--config', 'config.json.example',
         "list-markets",
+        '--config', 'config.json.example',
         "--base", "LTC",
         "--print-list",
     ]
@@ -272,8 +272,8 @@ def test_list_markets(mocker, markets, capsys):
 
     # active markets, quote=USDT, USD
     args = [
-        '--config', 'config.json.example',
         "list-markets",
+        '--config', 'config.json.example',
         "--quote", "USDT", "USD",
         "--print-list",
     ]
@@ -285,8 +285,8 @@ def test_list_markets(mocker, markets, capsys):
 
     # active markets, quote=USDT
     args = [
-        '--config', 'config.json.example',
         "list-markets",
+        '--config', 'config.json.example',
         "--quote", "USDT",
         "--print-list",
     ]
@@ -298,8 +298,8 @@ def test_list_markets(mocker, markets, capsys):
 
     # active markets, base=LTC, quote=USDT
     args = [
-        '--config', 'config.json.example',
         "list-markets",
+        '--config', 'config.json.example',
         "--base", "LTC", "--quote", "USDT",
         "--print-list",
     ]
@@ -311,8 +311,8 @@ def test_list_markets(mocker, markets, capsys):
 
     # active pairs, base=LTC, quote=USDT
     args = [
-        '--config', 'config.json.example',
         "list-pairs",
+        '--config', 'config.json.example',
         "--base", "LTC", "--quote", "USDT",
         "--print-list",
     ]
@@ -324,8 +324,8 @@ def test_list_markets(mocker, markets, capsys):
 
     # active markets, base=LTC, quote=USDT, NONEXISTENT
     args = [
-        '--config', 'config.json.example',
         "list-markets",
+        '--config', 'config.json.example',
         "--base", "LTC", "--quote", "USDT", "NONEXISTENT",
         "--print-list",
     ]
@@ -337,8 +337,8 @@ def test_list_markets(mocker, markets, capsys):
 
     # active markets, base=LTC, quote=NONEXISTENT
     args = [
-        '--config', 'config.json.example',
         "list-markets",
+        '--config', 'config.json.example',
         "--base", "LTC", "--quote", "NONEXISTENT",
         "--print-list",
     ]
@@ -350,8 +350,8 @@ def test_list_markets(mocker, markets, capsys):
 
     # Test tabular output
     args = [
-        '--config', 'config.json.example',
         "list-markets",
+        '--config', 'config.json.example',
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
@@ -360,8 +360,8 @@ def test_list_markets(mocker, markets, capsys):
 
     # Test tabular output, no markets found
     args = [
-        '--config', 'config.json.example',
         "list-markets",
+        '--config', 'config.json.example',
         "--base", "LTC", "--quote", "NONEXISTENT",
     ]
     start_list_markets(get_args(args), False)
@@ -372,8 +372,8 @@ def test_list_markets(mocker, markets, capsys):
 
     # Test --print-json
     args = [
-        '--config', 'config.json.example',
         "list-markets",
+        '--config', 'config.json.example',
         "--print-json"
     ]
     start_list_markets(get_args(args), False)
@@ -383,8 +383,8 @@ def test_list_markets(mocker, markets, capsys):
 
     # Test --print-csv
     args = [
-        '--config', 'config.json.example',
         "list-markets",
+        '--config', 'config.json.example',
         "--print-csv"
     ]
     start_list_markets(get_args(args), False)
@@ -395,8 +395,8 @@ def test_list_markets(mocker, markets, capsys):
 
     # Test --one-column
     args = [
-        '--config', 'config.json.example',
         "list-markets",
+        '--config', 'config.json.example',
         "--one-column"
     ]
     start_list_markets(get_args(args), False)
