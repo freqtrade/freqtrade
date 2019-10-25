@@ -120,7 +120,7 @@
     "forcebuy_enable": false,
     "internals": {
         "process_throttle_secs": 5,
-        "keep_alive_interval": 60
+        "heartbeat_interval": 60
     },
     "strategy": "DefaultStrategy",
     "strategy_path": "user_data/strategies/"

@@ -6,25 +6,26 @@ import logging
 import traceback
 from datetime import datetime
 from math import isclose
+from os import getpid
 from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
 from requests.exceptions import RequestException
 
-from freqtrade import (DependencyException, InvalidOrderException,
-                       __version__, constants, persistence)
+from freqtrade import (DependencyException, InvalidOrderException, __version__,
+                       constants, persistence)
+from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.configuration import validate_config_consistency
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
 from freqtrade.persistence import Trade
+from freqtrade.resolvers import (ExchangeResolver, PairListResolver,
+                                 StrategyResolver)
 from freqtrade.rpc import RPCManager, RPCMessageType
-from freqtrade.resolvers import ExchangeResolver, StrategyResolver, PairListResolver
 from freqtrade.state import State
-from freqtrade.strategy.interface import SellType, IStrategy
+from freqtrade.strategy.interface import IStrategy, SellType
 from freqtrade.wallets import Wallets
-
 
 logger = logging.getLogger(__name__)
 
@@ -50,9 +51,9 @@ class FreqtradeBot:
         # Init objects
         self.config = config
 
-        self._last_alive_msg = 0
+        self._heartbeat_msg = 0
 
-        self.keep_alive_interval = self.config.get('internals', {}).get('keep_alive_interval', 60)
+        self.hearbeat_interval = self.config.get('internals', {}).get('heartbeat_interval', 60)
 
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
 
@@ -154,10 +155,10 @@ class FreqtradeBot:
             self.check_handle_timedout()
             Trade.session.flush()
 
-        if (self.keep_alive_interval
-           and (arrow.utcnow().timestamp - self._last_alive_msg > self.keep_alive_interval)):
-            logger.info("I am alive.")
-            self._last_alive_msg = arrow.utcnow().timestamp
+        if (self.hearbeat_interval
+            and (arrow.utcnow().timestamp - self._heartbeat_msg > self.hearbeat_interval)):
+            logger.info(f"Freqtrade heartbeat. PID={getpid()}")
+            self._heartbeat_msg = arrow.utcnow().timestamp
 
     def _extend_whitelist_with_trades(self, whitelist: List[str], trades: List[Any]):
         """

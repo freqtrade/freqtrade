@@ -3656,19 +3656,19 @@ def test_process_i_am_alive(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
 
     ftbot = get_patched_freqtradebot(mocker, default_conf)
-    message = "I am alive."
+    message = r"Freqtrade heartbeat. PID=.*"
     ftbot.process()
-    assert log_has(message, caplog)
-    assert ftbot._last_alive_msg != 0
+    assert log_has_re(message, caplog)
+    assert ftbot._heartbeat_msg != 0
 
     caplog.clear()
     # Message is not shown before interval is up
     ftbot.process()
-    assert not log_has(message, caplog)
+    assert not log_has_re(message, caplog)
 
     caplog.clear()
     # Set clock - 70 seconds
-    ftbot._last_alive_msg -= 70
+    ftbot._heartbeat_msg -= 70
 
     ftbot.process()
-    assert log_has(message, caplog)
+    assert log_has_re(message, caplog)
