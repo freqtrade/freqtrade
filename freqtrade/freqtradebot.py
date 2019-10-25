@@ -443,7 +443,7 @@ class FreqtradeBot:
         try:
             # Create entity and execute trade
             if not self.create_trades():
-                logger.info('Found no buy signals for whitelisted currencies. Trying again...')
+                logger.debug('Found no buy signals for whitelisted currencies. Trying again...')
         except DependencyException as exception:
             logger.warning('Unable to create trade: %s', exception)
 

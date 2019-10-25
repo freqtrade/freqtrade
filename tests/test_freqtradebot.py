@@ -1521,6 +1521,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
 
 
 def test_process_maybe_execute_buys(mocker, default_conf, caplog) -> None:
+    caplog.set_level(logging.DEBUG)
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.create_trades', MagicMock(return_value=False))
