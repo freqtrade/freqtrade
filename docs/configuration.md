@@ -417,10 +417,15 @@ section of the configuration.
 `askVolume`, `bidVolume` and `quoteVolume`, defaults to `quoteVolume`.
   * There is a possibility to filter low-value coins that would not allow setting a stop loss
 (set `precision_filter` parameter to `true` for this).
+  * `VolumePairList` does not consider `pair_whitelist`, but builds this automatically based the pairlist configuration.
 
 Example:
 
 ```json
+"exchange": {
+    "pair_whitelist": [],
+    "pair_blacklist": ["BNB/BTC"]
+},
 "pairlist": {
         "method": "VolumePairList",
         "config": {
