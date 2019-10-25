@@ -50,6 +50,10 @@ class FreqtradeBot:
         # Init objects
         self.config = config
 
+        self._last_alive_msg = 0
+
+        self.keep_alive_interval = self.config.get('internals', {}).get('keep_alive_interval', 60)
+
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
 
         # Check config consistency here since strategies can set certain options
@@ -149,6 +153,11 @@ class FreqtradeBot:
             # Check and handle any timed out open orders
             self.check_handle_timedout()
             Trade.session.flush()
+
+        if (self.keep_alive_interval
+           and (arrow.utcnow().timestamp - self._last_alive_msg > self.keep_alive_interval)):
+            logger.info("I am alive.")
+            self._last_alive_msg = arrow.utcnow().timestamp
 
     def _extend_whitelist_with_trades(self, whitelist: List[str], trades: List[Any]):
         """

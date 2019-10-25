@@ -98,6 +98,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `strategy` | DefaultStrategy | Defines Strategy class to use.
 | `strategy_path` | null | Adds an additional strategy lookup path (must be a directory).
 | `internals.process_throttle_secs` | 5 | **Required.** Set the process throttle. Value in second.
+| `internals.keep_alive_interval` | 60 | Print keepalive message every X seconds. Set to 0 to disable keepalive messages.
 | `internals.sd_notify` | false | Enables use of the sd_notify protocol to tell systemd service manager about changes in the bot state and issue keep-alive pings. See [here](installation.md#7-optional-configure-freqtrade-as-a-systemd-service) for more details.
 | `logfile` | | Specify Logfile. Uses a rolling strategy of 10 files, with 1Mb per file.
 | `user_data_dir` | cwd()/user_data | Directory containing user data. Defaults to `./user_data/`.
