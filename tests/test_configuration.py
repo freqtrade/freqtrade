@@ -825,7 +825,7 @@ def test_pairlist_resolving():
 
     args = Arguments(arglist).get_parsed_arg()
 
-    configuration = Configuration(args)
+    configuration = Configuration(args, RunMode.OTHER)
     config = configuration.get_config()
 
     assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
