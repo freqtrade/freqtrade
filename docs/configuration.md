@@ -331,7 +331,7 @@ This configuration enables binance, as well as rate limiting to avoid bans from 
     Optimal settings for rate limiting depend on the exchange and the size of the whitelist, so an ideal parameter will vary on many other settings.
     We try to provide sensible defaults per exchange where possible, if you encounter bans please make sure that `"enableRateLimit"` is enabled and increase the `"rateLimit"` parameter step by step.
 
-#### Advanced FreqTrade Exchange configuration
+#### Advanced Freqtrade Exchange configuration
 
 Advanced options can be configured using the `_ft_has_params` setting, which will override Defaults and exchange-specific behaviours.
 
@@ -350,6 +350,13 @@ For example, to test the order type `FOK` with Kraken, and modify candle_limit t
 
 !!! Warning
     Please make sure to fully understand the impacts of these settings before modifying them.
+
+#### Random notes for other exchanges
+
+* The Ocean (ccxt id: 'theocean') exchange uses Web3 functionality and requires web3 package to be installed:
+```shell
+$ pip3 install web3
+```
 
 ### What values can be used for fiat_display_currency?
 
