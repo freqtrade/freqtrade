@@ -1519,6 +1519,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
 
 
 def test_process_maybe_execute_buys(mocker, default_conf, caplog) -> None:
+    caplog.set_level(logging.DEBUG)
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.create_trades', MagicMock(return_value=False))
@@ -3642,3 +3643,27 @@ def test_startup_trade_reinit(default_conf, edge_conf, mocker):
     ftbot = get_patched_freqtradebot(mocker, edge_conf)
     ftbot.startup()
     assert reinit_mock.call_count == 0
+
+
+def test_process_i_am_alive(default_conf, mocker, caplog):
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+
+    ftbot = get_patched_freqtradebot(mocker, default_conf)
+    message = r"Bot heartbeat\. PID=.*"
+    ftbot.process()
+    assert log_has_re(message, caplog)
+    assert ftbot._heartbeat_msg != 0
+
+    caplog.clear()
+    # Message is not shown before interval is up
+    ftbot.process()
+    assert not log_has_re(message, caplog)
+
+    caplog.clear()
+    # Set clock - 70 seconds
+    ftbot._heartbeat_msg -= 70
+
+    ftbot.process()
+    assert log_has_re(message, caplog)
