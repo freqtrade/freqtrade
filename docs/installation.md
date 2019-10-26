@@ -218,6 +218,12 @@ If that is not available on your system, feel free to try the instructions below
 
 ### Install freqtrade manually
 
+!!! Note
+    Make sure to use 64bit Windows to avoid problems with backtesting or hyperopt due to the memory constraints 32bit applications have under Windows.
+
+!!! Hint
+    Using the [Anaconda Distribution](https://www.anaconda.com/distribution/) under windows can greatly help with installation problems. Check out the [Conda section](#using-conda) in this document.
+
 #### Clone the git repository
 
 ```bash
