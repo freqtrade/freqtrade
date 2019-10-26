@@ -22,6 +22,7 @@ nav:
         - Strategy analysis: strategy_analysis_example.md
         - Plotting: plotting.md
     - SQL Cheatsheet: sql_cheatsheet.md
+    - Advanced Post-installation Tasks: advanced-setup.md
     - Sandbox Testing: sandbox-testing.md
     - Deprecated Features: deprecated.md
     - Contributors Guide: developer.md
