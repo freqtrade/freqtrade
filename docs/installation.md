@@ -194,7 +194,7 @@ freqtrade -c config.json
 
 #### 7. (Optional) Post-installation Tasks
 
-You can also optionally setup the bot to run as a `systemd` service and configure it to send the log messages to the `syslog`/`rsyslog` or `journald` daemons. See [Advanced Post-installation Tasks](advanced-setup.md) for details.
+On Linux, as an optional post-installation task, you can setup the bot to run as a `systemd` service. See [Advanced Post-installation Tasks](advanced-setup.md) for details.
 
 ------
 
