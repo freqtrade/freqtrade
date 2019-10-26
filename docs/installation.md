@@ -151,7 +151,7 @@ python3 -m venv .env
 source .env/bin/activate
 ```
 
-#### 3. Install FreqTrade
+#### 3. Install Freqtrade
 
 Clone the git repository:
 
@@ -192,33 +192,9 @@ freqtrade -c config.json
 
 *Note*: If you run the bot on a server, you should consider using [Docker](docker.md) or a terminal multiplexer like `screen` or [`tmux`](https://en.wikipedia.org/wiki/Tmux) to avoid that the bot is stopped on logout.
 
-#### 7. [Optional] Configure `freqtrade` as a `systemd` service
+#### 7. (Optional) Post-installation Tasks
 
-From the freqtrade repo... copy `freqtrade.service` to your systemd user directory (usually `~/.config/systemd/user`) and update `WorkingDirectory` and `ExecStart` to match your setup.
-
-After that you can start the daemon with:
-
-```bash
-systemctl --user start freqtrade
-```
-
-For this to be persistent (run when user is logged out) you'll need to enable `linger` for your freqtrade user.
-
-```bash
-sudo loginctl enable-linger "$USER"
-```
-
-If you run the bot as a service, you can use systemd service manager as a software watchdog monitoring freqtrade bot 
-state and restarting it in the case of failures. If the `internals.sd_notify` parameter is set to true in the 
-configuration or the `--sd-notify` command line option is used, the bot will send keep-alive ping messages to systemd 
-using the sd_notify (systemd notifications) protocol and will also tell systemd its current state (Running or Stopped) 
-when it changes. 
-
-The `freqtrade.service.watchdog` file contains an example of the service unit configuration file which uses systemd 
-as the watchdog.
-
-!!! Note
-    The sd_notify communication between the bot and the systemd service manager will not work if the bot runs in a Docker container.
+You can also optionally setup the bot to run as a `systemd` service and configure it to send the log messages to the `syslog`/`rsyslog` or `journald` daemons. See [Advanced Post-installation Tasks](advanced-setup.md) for details.
 
 ------
 
