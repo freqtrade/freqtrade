@@ -63,7 +63,8 @@ def patch_exchange(mocker, api_mock=None, id='bittrex', mock_markets=True) -> No
     mocker.patch('freqtrade.exchange.Exchange.id', PropertyMock(return_value=id))
     mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value=id.title()))
     if mock_markets:
-        mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=get_markets()))
+        mocker.patch('freqtrade.exchange.Exchange.markets',
+                     PropertyMock(return_value=get_markets()))
 
     if api_mock:
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
@@ -71,7 +72,8 @@ def patch_exchange(mocker, api_mock=None, id='bittrex', mock_markets=True) -> No
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock())
 
 
-def get_patched_exchange(mocker, config, api_mock=None, id='bittrex', mock_markets=True) -> Exchange:
+def get_patched_exchange(mocker, config, api_mock=None, id='bittrex',
+                         mock_markets=True) -> Exchange:
     patch_exchange(mocker, api_mock, id, mock_markets)
     config["exchange"]["name"] = id
     try:

@@ -2951,7 +2951,7 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee,
     default_conf['trailing_stop'] = True
     default_conf['trailing_stop_positive'] = 0.01
     patch_whitelist(mocker, default_conf)
-    
+
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
