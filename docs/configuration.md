@@ -98,6 +98,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `strategy` | DefaultStrategy | Defines Strategy class to use.
 | `strategy_path` | null | Adds an additional strategy lookup path (must be a directory).
 | `internals.process_throttle_secs` | 5 | **Required.** Set the process throttle. Value in second.
+| `internals.heartbeat_interval` | 60 | Print heartbeat message every X seconds. Set to 0 to disable heartbeat messages.
 | `internals.sd_notify` | false | Enables use of the sd_notify protocol to tell systemd service manager about changes in the bot state and issue keep-alive pings. See [here](installation.md#7-optional-configure-freqtrade-as-a-systemd-service) for more details.
 | `logfile` | | Specify Logfile. Uses a rolling strategy of 10 files, with 1Mb per file.
 | `user_data_dir` | cwd()/user_data | Directory containing user data. Defaults to `./user_data/`.
@@ -330,7 +331,7 @@ This configuration enables binance, as well as rate limiting to avoid bans from 
     Optimal settings for rate limiting depend on the exchange and the size of the whitelist, so an ideal parameter will vary on many other settings.
     We try to provide sensible defaults per exchange where possible, if you encounter bans please make sure that `"enableRateLimit"` is enabled and increase the `"rateLimit"` parameter step by step.
 
-#### Advanced FreqTrade Exchange configuration
+#### Advanced Freqtrade Exchange configuration
 
 Advanced options can be configured using the `_ft_has_params` setting, which will override Defaults and exchange-specific behaviours.
 
@@ -349,6 +350,13 @@ For example, to test the order type `FOK` with Kraken, and modify candle_limit t
 
 !!! Warning
     Please make sure to fully understand the impacts of these settings before modifying them.
+
+#### Random notes for other exchanges
+
+* The Ocean (ccxt id: 'theocean') exchange uses Web3 functionality and requires web3 package to be installed:
+```shell
+$ pip3 install web3
+```
 
 ### What values can be used for fiat_display_currency?
 

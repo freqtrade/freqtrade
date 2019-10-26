@@ -6,25 +6,26 @@ import logging
 import traceback
 from datetime import datetime
 from math import isclose
+from os import getpid
 from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
 from requests.exceptions import RequestException
 
-from freqtrade import (DependencyException, InvalidOrderException,
-                       __version__, constants, persistence)
+from freqtrade import (DependencyException, InvalidOrderException, __version__,
+                       constants, persistence)
+from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.configuration import validate_config_consistency
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
 from freqtrade.persistence import Trade
+from freqtrade.resolvers import (ExchangeResolver, PairListResolver,
+                                 StrategyResolver)
 from freqtrade.rpc import RPCManager, RPCMessageType
-from freqtrade.resolvers import ExchangeResolver, StrategyResolver, PairListResolver
 from freqtrade.state import State
-from freqtrade.strategy.interface import SellType, IStrategy
+from freqtrade.strategy.interface import IStrategy, SellType
 from freqtrade.wallets import Wallets
-
 
 logger = logging.getLogger(__name__)
 
@@ -50,12 +51,14 @@ class FreqtradeBot:
         # Init objects
         self.config = config
 
+        self._heartbeat_msg = 0
+
+        self.heartbeat_interval = self.config.get('internals', {}).get('heartbeat_interval', 60)
+
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
 
         # Check config consistency here since strategies can set certain options
         validate_config_consistency(config)
-
-        self.rpc: RPCManager = RPCManager(self)
 
         self.exchange = ExchangeResolver(self.config['exchange']['name'], self.config).exchange
 
@@ -82,6 +85,13 @@ class FreqtradeBot:
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')
         self.state = State[initial_state.upper()] if initial_state else State.STOPPED
+
+        # RPC runs in separate threads, can start handling external commands just after
+        # initialization, even before Freqtradebot has a chance to start its throttling,
+        # so anything in the Freqtradebot instance should be ready (initialized), including
+        # the initial state of the bot.
+        # Keep this at the end of this initialization method.
+        self.rpc: RPCManager = RPCManager(self)
 
     def cleanup(self) -> None:
         """
@@ -144,6 +154,11 @@ class FreqtradeBot:
             # Check and handle any timed out open orders
             self.check_handle_timedout()
             Trade.session.flush()
+
+        if (self.heartbeat_interval
+           and (arrow.utcnow().timestamp - self._heartbeat_msg > self.heartbeat_interval)):
+            logger.info(f"Bot heartbeat. PID={getpid()}")
+            self._heartbeat_msg = arrow.utcnow().timestamp
 
     def _extend_whitelist_with_trades(self, whitelist: List[str], trades: List[Any]):
         """
@@ -438,7 +453,7 @@ class FreqtradeBot:
         try:
             # Create entity and execute trade
             if not self.create_trades():
-                logger.info('Found no buy signals for whitelisted currencies. Trying again...')
+                logger.debug('Found no buy signals for whitelisted currencies. Trying again...')
         except DependencyException as exception:
             logger.warning('Unable to create trade: %s', exception)
 
