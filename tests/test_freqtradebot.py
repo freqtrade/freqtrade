@@ -3656,7 +3656,7 @@ def test_process_i_am_alive(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
 
     ftbot = get_patched_freqtradebot(mocker, default_conf)
-    message = r"Freqtrade heartbeat. PID=.*"
+    message = r"Bot heartbeat\. PID=.*"
     ftbot.process()
     assert log_has_re(message, caplog)
     assert ftbot._heartbeat_msg != 0

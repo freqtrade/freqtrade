@@ -53,7 +53,7 @@ class FreqtradeBot:
 
         self._heartbeat_msg = 0
 
-        self.hearbeat_interval = self.config.get('internals', {}).get('heartbeat_interval', 60)
+        self.heartbeat_interval = self.config.get('internals', {}).get('heartbeat_interval', 60)
 
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
 
@@ -155,9 +155,9 @@ class FreqtradeBot:
             self.check_handle_timedout()
             Trade.session.flush()
 
-        if (self.hearbeat_interval
-            and (arrow.utcnow().timestamp - self._heartbeat_msg > self.hearbeat_interval)):
-            logger.info(f"Freqtrade heartbeat. PID={getpid()}")
+        if (self.heartbeat_interval
+           and (arrow.utcnow().timestamp - self._heartbeat_msg > self.heartbeat_interval)):
+            logger.info(f"Bot heartbeat. PID={getpid()}")
             self._heartbeat_msg = arrow.utcnow().timestamp
 
     def _extend_whitelist_with_trades(self, whitelist: List[str], trades: List[Any]):
