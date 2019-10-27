@@ -135,7 +135,7 @@ To allow the bot to trade all the available `stake_currency` in your account set
 In this case a trade amount is calclulated as:
 
 ```python
-currency_balanse / (max_open_trades - current_open_trades)
+currency_balance / (max_open_trades - current_open_trades)
 ```
 
 ### Understand minimal_roi
