@@ -4,20 +4,18 @@ The `stoploss` configuration parameter is loss in percentage that should trigger
 For example, value `-0.10` will cause immediate sell if the profit dips below -10% for a given trade. This parameter is optional.
 
 Most of the strategy files already include the optimal `stoploss` value.
-Stoploss parameters need to be set in either strategy or configuration file.
-Parameters in the configuration will overwrite settings within the strategy.
+
+!!! Info
+    All stoploss properties mentioned in this file can be set in the Strategy, or in the configuration. Configuration values will override the strategy values.
 
 ## Stop Loss Types
 
 At this stage the bot contains the following stoploss support modes:
 
-1. static stop loss, defined in either the strategy or configuration.
-2. trailing stop loss, defined in the configuration.
-3. trailing stop loss, custom positive loss, defined in configuration.
-4. trailing stop loss only once the trade has reached a certain offset,
-
-!!! Note
-    All stoploss properties can be configured in either Strategy or configuration. Configuration values override strategy values.
+1. Static stop loss.
+2. Trailing stop loss.
+3. Trailing stop loss, custom positive loss.
+4. Trailing stop loss only once the trade has reached a certain offset,
 
 Those stoploss modes can be *on exchange* or *off exchange*. If the stoploss is *on exchange* it means a stoploss limit order is placed on the exchange immediately after buy order happens successfully. This will protect you against sudden crashes in market as the order will be in the queue immediately and if market goes down then the order has more chance of being fulfilled.
 
@@ -37,11 +35,11 @@ This is very simple, you define a stop loss of x. This will try to sell the asse
 
 ## Trailing Stop Loss
 
-The initial value for this is `stoploss`, set either in the strategy or in the configuration file. Just as you would define your Stop loss normally.
-To enable this Feauture all you have to do is to define the configuration element:
+The initial value for this is `stoploss`, just as you would define your static Stop loss.
+To enable trailing stoploss:
 
-``` json
-"trailing_stop" : True
+``` python
+trailing_stop = True
 ```
 
 This will now activate an algorithm, which automatically moves the stop loss up every time the price of your asset increases.
@@ -62,31 +60,36 @@ In summary: The stoploss will be adjusted to be always be 2% of the highest obse
 It is also possible to have a default stop loss, when you are in the red with your buy, but once your profit surpasses a certain percentage, the system will utilize a new stop loss, which can have a different value.
 For example your default stop loss is 5%, but once you have 1.1% profit, it will be changed to be only a 1% stop loss, which trails the green candles until it goes below them.
 
-Both values can be configured in the strategy or configuration file and requires `"trailing_stop": true` to be set to true.
+Both values require `trailing_stop` to be set to true.
 
-``` json
-    "trailing_stop_positive":  0.01,
-    "trailing_stop_positive_offset":  0.011,
+``` python
+    trailing_stop_positive = 0.01
+    trailing_stop_positive_offset = 0.011
 ```
 
 The 0.01 would translate to a 1% stop loss, once you hit 1.1% profit.
+Before this, `stoploss` is used for the trailing stoploss.
 
-You should also make sure to have this value (`trailing_stop_positive_offset`) lower than your minimal ROI, otherwise minimal ROI will apply first and sell your trade.
+Read the [next section](#trailing-only-once-offset-is-reached) to keep stoploss at 5% of the entry point.
+
+!!! Tip
+    Make sure to have this value (`trailing_stop_positive_offset`) lower than minimal ROI, otherwise minimal ROI will apply first and sell the trade.
 
 ### Trailing only once offset is reached
 
-It is also possible to use a static stoploss until the offset is reached, and then trail the trade to take profits once the market goes down again.
+It is also possible to use a static stoploss until the offset is reached, and then trail the trade to take profits once the market turns.
 
 If `"trailing_only_offset_is_reached": true` then the trailing stoploss is only activated once the offset is reached. Until then, the stoploss remains at the configured `stoploss`.
 This option can be used with or without `trailing_stop_positive`, but uses `trailing_stop_positive_offset` as offset.
 
-``` json
-    "trailing_only_offset_is_reached": true,
+``` python
+    trailing_stop_positive_offset = 0.011
+    trailing_only_offset_is_reached = true
 ```
 
 Simplified example:
 
-```python
+``` python
     stoploss = 0.05
     trailing_stop_positive_offset = 0.03
     trailing_only_offset_is_reached = True
