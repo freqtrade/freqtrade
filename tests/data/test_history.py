@@ -95,6 +95,23 @@ def test_load_data_1min_ticker(ticker_history, mocker, caplog, testdatadir) -> N
     _clean_test_file(file)
 
 
+def test_load_data_startup_candles(mocker, caplog, default_conf, testdatadir) -> None:
+    ltfmock = mocker.patch('freqtrade.data.history.load_tickerdata_file',
+                           MagicMock(return_value=None))
+    timerange = TimeRange('date', None, 1510639620, 0)
+    history.load_pair_history(pair='UNITTEST/BTC', ticker_interval='1m',
+                              datadir=testdatadir, timerange=timerange,
+                              startup_candles=20,
+                              )
+    assert log_has(
+        'Using indicator startup period: 20 ...', caplog
+    )
+    assert ltfmock.call_count == 1
+    assert ltfmock.call_args_list[0][1]['timerange'] != timerange
+    # startts is 20 minutes earlier
+    assert ltfmock.call_args_list[0][1]['timerange'].startts == timerange.startts - 20 * 60
+
+
 def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog,
                                       default_conf, testdatadir) -> None:
     """
