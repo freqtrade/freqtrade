@@ -228,6 +228,7 @@ class Exchange:
             self.validate_pairs(config['exchange']['pair_whitelist'])
             self.validate_ordertypes(config.get('order_types', {}))
             self.validate_order_time_in_force(config.get('order_time_in_force', {}))
+            self.validate_required_startup_candles(config.get('startup_candle_count', 0))
 
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
@@ -442,6 +443,15 @@ class Exchange:
                for k, v in order_time_in_force.items()):
             raise OperationalException(
                 f'Time in force policies are not supported for {self.name} yet.')
+
+    def validate_required_startup_candles(self, startup_candles) -> None:
+        """
+        Checks if required startup_candles is more than ohlcv_candle_limit.
+        """
+        if startup_candles + 5 > self._ft_has['ohlcv_candle_limit']:
+            raise OperationalException(
+                f"This strategy requires {startup_candles} candles to start. "
+                f"{self.name} only provides {self._ft_has['ohlcv_candle_limit']}.")
 
     def exchange_has(self, endpoint: str) -> bool:
         """
