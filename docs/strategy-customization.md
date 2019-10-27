@@ -131,7 +131,7 @@ In this example strategy, this should be set to 100 (`startup_candle_count = 100
 
 By letting the bot know how much history is needed, backtest trades can start at the specified timerange during backtesting and hyperopt.
 
-!!! Warning:
+!!! Warning
     `startup_candle_count` should be below `ohlcv_candle_limit` (which is 500 for most exchanges) - since only this amount of candles will be available during trading operations.
 
 #### Example

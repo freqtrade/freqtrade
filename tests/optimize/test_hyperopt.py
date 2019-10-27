@@ -392,7 +392,8 @@ def test_roi_table_generation(hyperopt) -> None:
 
 def test_start_calls_optimizer(mocker, default_conf, caplog, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
-    mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
+                 MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
         'freqtrade.optimize.hyperopt.get_timeframe',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
@@ -607,7 +608,8 @@ def test_continue_hyperopt(mocker, default_conf, caplog):
 
 def test_print_json_spaces_all(mocker, default_conf, caplog, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
-    mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
+                 MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
         'freqtrade.optimize.hyperopt.get_timeframe',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
@@ -644,7 +646,8 @@ def test_print_json_spaces_all(mocker, default_conf, caplog, capsys) -> None:
 
 def test_print_json_spaces_roi_stoploss(mocker, default_conf, caplog, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
-    mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
+                 MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
         'freqtrade.optimize.hyperopt.get_timeframe',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
@@ -681,7 +684,8 @@ def test_print_json_spaces_roi_stoploss(mocker, default_conf, caplog, capsys) ->
 
 def test_simplified_interface_roi_stoploss(mocker, default_conf, caplog, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
-    mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
+                 MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
         'freqtrade.optimize.hyperopt.get_timeframe',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
@@ -727,7 +731,8 @@ def test_simplified_interface_roi_stoploss(mocker, default_conf, caplog, capsys)
 
 def test_simplified_interface_all_failed(mocker, default_conf, caplog, capsys) -> None:
     mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
-    mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
+                 MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
         'freqtrade.optimize.hyperopt.get_timeframe',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
@@ -756,7 +761,8 @@ def test_simplified_interface_all_failed(mocker, default_conf, caplog, capsys) -
 
 def test_simplified_interface_buy(mocker, default_conf, caplog, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
-    mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
+                 MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
         'freqtrade.optimize.hyperopt.get_timeframe',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
@@ -801,7 +807,8 @@ def test_simplified_interface_buy(mocker, default_conf, caplog, capsys) -> None:
 
 def test_simplified_interface_sell(mocker, default_conf, caplog, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
-    mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
+                 MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
         'freqtrade.optimize.hyperopt.get_timeframe',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
@@ -852,7 +859,8 @@ def test_simplified_interface_sell(mocker, default_conf, caplog, capsys) -> None
 ])
 def test_simplified_interface_failed(mocker, default_conf, caplog, capsys, method, space) -> None:
     mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
-    mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
+                 MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
         'freqtrade.optimize.hyperopt.get_timeframe',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))

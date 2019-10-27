@@ -22,8 +22,7 @@ from pandas import DataFrame
 from skopt import Optimizer
 from skopt.space import Dimension
 
-from freqtrade.configuration import TimeRange
-from freqtrade.data.history import load_data, get_timeframe, trim_dataframe
+from freqtrade.data.history import get_timeframe, trim_dataframe
 from freqtrade.misc import round_dict
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
