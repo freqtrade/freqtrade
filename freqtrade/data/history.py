@@ -147,7 +147,7 @@ def load_pair_history(pair: str,
     """
 
     timerange_startup = deepcopy(timerange)
-    if startup_candles and timerange_startup:
+    if startup_candles > 0 and timerange_startup:
         logger.info('Using indicator startup period: %s ...', startup_candles)
         timerange_startup.subtract_start(timeframe_to_seconds(ticker_interval) * startup_candles)
 

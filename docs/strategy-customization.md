@@ -119,8 +119,8 @@ def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame
 
 ### Strategy startup period
 
-Most indicators have an "instable period", in which they are either not available, or the calculation is incorrect. This can lead to inconsistencies, since Freqtrade does not know how long this instable period should be.
-To account for this, the strategy has an attribute, `startup_candle_count`. 
+Most indicators have an instable startup period, in which they are either not available, or the calculation is incorrect. This can lead to inconsistencies, since Freqtrade does not know how long this instable period should be.
+To account for this, the strategy can be assigned the `startup_candle_count` attribute.
 This should be set to the maximum number of candles that the strategy requires to calculate stable indicators.
 
 In this example strategy, this should be set to 100 (`startup_candle_count = 100`), since the longest needed history is 100 candles.
@@ -132,21 +132,21 @@ In this example strategy, this should be set to 100 (`startup_candle_count = 100
 By letting the bot know how much history is needed, backtest trades can start at the specified timerange during backtesting and hyperopt.
 
 !!! Warning
-    `startup_candle_count` should be below `ohlcv_candle_limit` (which is 500 for most exchanges) - since only this amount of candles will be available during trading operations.
+    `startup_candle_count` should be below `ohlcv_candle_limit` (which is 500 for most exchanges) - since only this amount of candles will be available during Dry-Run/Live Trade operations.
 
 #### Example
 
-Let's try to backtest 1 month (January 2019) of 5m candles.
+Let's try to backtest 1 month (January 2019) of 5m candles using the an example strategy with EMA100, as above.
 
 ``` bash
 freqtrade backtesting --timerange 20190101-20190201 --ticker-interval 5m
 ```
 
-Since backtesting knows it needs 100 candles to generate valid buy-signals, it'll load data from `20190101 - (100 * 5m)` - which is ~2019-12-31 15:30:00.
-If this data is available, Indicators will be calculated with this extended timerange. The startup period (Up to 2019-01-01 00:00:00) will then be removed before starting backtesting.
+Assuming `startup_candle_count` is set to 100, backtesting knows it needs 100 candles to generate valid buy signals. It will load data from `20190101 - (100 * 5m)` - which is ~2019-12-31 15:30:00.
+If this data is available, indicators will be calculated with this extended timerange. The instable startup period (up to 2019-01-01 00:00:00) will then be removed before starting backtesting.
 
 !!! Note
-    If data for the startup-period is not available, then the timerange will be adjusted to account for this startup period - so Backtesting would start at 2019-01-01 08:30:00.
+    If data for the startup period is not available, then the timerange will be adjusted to account for this startup period - so Backtesting would start at 2019-01-01 08:30:00.
 
 ### Buy signal rules
 

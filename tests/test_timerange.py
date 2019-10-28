@@ -55,7 +55,7 @@ def test_adjust_start_if_necessary():
     assert x.startts == 1510694100 + (20 * 300)
 
     x = TimeRange('date', 'date', 1510700100, 1510780500)
-    # Do nothing, startupe is set and different min_date
+    # Do nothing, startup is set and different min_date
     x.adjust_start_if_necessary(300, 20, min_date)
     assert x.startts == 1510694100 + (20 * 300)
 

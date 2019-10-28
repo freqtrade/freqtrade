@@ -52,7 +52,7 @@ class TimeRange:
         """
         if (not self.starttype or (startup_candles
                                    and min_date.timestamp >= self.startts)):
-            # If no startts was defined, or test-data starts at the defined test-date
+            # If no startts was defined, or backtest-data starts at the defined backtest-date
             logger.warning("Moving start-date by %s candles to account for startup time.",
                            startup_candles)
             self.startts = (min_date.timestamp + ticker_interval_secs * startup_candles)
