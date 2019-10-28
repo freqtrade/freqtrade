@@ -15,14 +15,14 @@ At this stage the bot contains the following stoploss support modes:
 1. Static stop loss.
 2. Trailing stop loss.
 3. Trailing stop loss, custom positive loss.
-4. Trailing stop loss only once the trade has reached a certain offset,
+4. Trailing stop loss only once the trade has reached a certain offset.
 
 Those stoploss modes can be *on exchange* or *off exchange*. If the stoploss is *on exchange* it means a stoploss limit order is placed on the exchange immediately after buy order happens successfully. This will protect you against sudden crashes in market as the order will be in the queue immediately and if market goes down then the order has more chance of being fulfilled.
 
 In case of stoploss on exchange there is another parameter called `stoploss_on_exchange_interval`. This configures the interval in seconds at which the bot will check the stoploss and update it if necessary.
 
 For example, assuming the stoploss is on exchange, and trailing stoploss is enabled, and the market is going up, then the bot automatically cancels the previous stoploss order and puts a new one with a stop value higher than the previous stoploss order.
-The bot cannot do this every 5 seconds, otherwise it would get banned by the exchange.
+The bot cannot do this every 5 seconds (at each iteration), otherwise it would get banned by the exchange.
 So this parameter will tell the bot how often it should update the stoploss order. The default value is 60 (1 minute).
 This same logic will reapply a stoploss order on the exchange should you cancel it accidentally.
 
@@ -31,7 +31,7 @@ This same logic will reapply a stoploss order on the exchange should you cancel 
 
 ## Static Stop Loss
 
-This is very simple, you define a stop loss of x. This will try to sell the asset once the loss exceeds the defined loss.
+This is very simple, you define a stop loss of x (as a ratio of price, i.e. x * 100% of price). This will try to sell the asset once the loss exceeds the defined loss.
 
 ## Trailing Stop Loss
 
@@ -51,7 +51,7 @@ For example, simplified math:
 * the stop loss would get triggered once the asset dropps below 98$
 * assuming the asset now increases to 102$
 * the stop loss will now be 2% of 102$ or 99.96$
-* now the asset drops in value to 101$, the stop loss, will still be 99.96$, and would trigger at 99.96$.
+* now the asset drops in value to 101$, the stop loss will still be 99.96$ and would trigger at 99.96$.
 
 In summary: The stoploss will be adjusted to be always be 2% of the highest observed price.
 
