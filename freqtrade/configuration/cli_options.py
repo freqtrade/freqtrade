@@ -34,6 +34,12 @@ AVAILABLE_CLI_OPTIONS = {
         action='count',
         default=0,
     ),
+    "log_to_stderr": Arg(
+        '-E', '--stderr',
+        help='Force log messages to be printed to stderr instead of stdout.',
+        action='store_true',
+        default=False,
+    ),
     "logfile": Arg(
         '--logfile',
         help='Log to the file specified.',

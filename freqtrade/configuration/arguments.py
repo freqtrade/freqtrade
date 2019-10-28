@@ -9,7 +9,8 @@ from typing import Any, Dict, List, Optional
 from freqtrade import constants
 from freqtrade.configuration.cli_options import AVAILABLE_CLI_OPTIONS
 
-ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_data_dir"]
+ARGS_COMMON = ["verbosity", "log_to_stderr", "logfile", "version", "config", "datadir",
+               "user_data_dir"]
 
 ARGS_STRATEGY = ["strategy", "strategy_path"]
 

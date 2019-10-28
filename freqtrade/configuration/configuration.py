@@ -125,6 +125,8 @@ class Configuration:
         # Log level
         config.update({'verbosity': self.args.get("verbosity", 0)})
 
+        config.update({'log_to_stderr': self.args.get("log_to_stderr", False)})
+
         if 'logfile' in self.args and self.args["logfile"]:
             config.update({'logfile': self.args["logfile"]})
 
