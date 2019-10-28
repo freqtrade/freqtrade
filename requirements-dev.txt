@@ -15,4 +15,4 @@ pytest-mock==1.11.1
 pytest-random-order==1.0.4
 
 # Convert jupyter notebooks to markdown documents
-nbconvert==5.6.0
+nbconvert==5.6.1
