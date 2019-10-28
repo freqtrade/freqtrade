@@ -72,6 +72,8 @@ The exported trades can be used for [further analysis](#further-backtest-result-
 freqtrade backtesting --export trades --export-filename=backtest_samplestrategy.json
 ```
 
+Please also read about the [strategy startup period](strategy-customization.md#strategy-startup-period).
+
 #### Supplying custom fee value
 
 Sometimes your account has certain fee rebates (fee reductions starting with a certain account size or monthly volume), which are not visible to ccxt.
