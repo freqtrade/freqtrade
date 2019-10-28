@@ -55,7 +55,7 @@
         "config": {
             "number_assets": 20,
             "sort_key": "quoteVolume",
-            "precision_filter": false
+            "precision_filter": true
         }
     },
     "exchange": {

@@ -26,7 +26,7 @@ class VolumePairList(IPairList):
                 'for "pairlist.config.number_assets"')
         self._number_pairs = self._whitelistconf['number_assets']
         self._sort_key = self._whitelistconf.get('sort_key', 'quoteVolume')
-        self._precision_filter = self._whitelistconf.get('precision_filter', False)
+        self._precision_filter = self._whitelistconf.get('precision_filter', True)
 
         if not self._freqtrade.exchange.exchange_has('fetchTickers'):
             raise OperationalException(
@@ -76,18 +76,19 @@ class VolumePairList(IPairList):
         valid_tickers = [t for t in sorted_tickers if t["symbol"] in valid_pairs]
 
         if self._freqtrade.strategy.stoploss is not None and self._precision_filter:
+            # Precalculate correct stoploss value
+            stoploss = 1 - abs(self._freqtrade.strategy.stoploss)
 
-            stop_prices = [self._freqtrade.get_target_bid(t["symbol"], t)
-                           * (1 - abs(self._freqtrade.strategy.stoploss)) for t in valid_tickers]
-            rates = [sp * 0.99 for sp in stop_prices]
-            logger.debug("\n".join([f"{sp} : {r}" for sp, r in zip(stop_prices[:10], rates[:10])]))
             for i, t in enumerate(valid_tickers):
-                sp = self._freqtrade.exchange.symbol_price_prec(t["symbol"], stop_prices[i])
-                r = self._freqtrade.exchange.symbol_price_prec(t["symbol"], rates[i])
-                logger.debug(f"{t['symbol']} - {sp} : {r}")
-                if sp <= r:
+                stop_price = (self._freqtrade.get_target_bid(t["symbol"], t) * stoploss)
+                # Adjust stop-prices to precision
+                sp = self._freqtrade.exchange.symbol_price_prec(t["symbol"], stop_price)
+                stop_gap_price = self._freqtrade.exchange.symbol_price_prec(t["symbol"],
+                                                                            stop_price * 0.99)
+                logger.debug(f"{t['symbol']} - {sp} : {stop_gap_price}")
+                if sp <= stop_gap_price:
                     logger.info(f"Removed {t['symbol']} from whitelist, "
-                                f"because stop price {sp} would be <= stop limit {r}")
+                                f"because stop price {sp} would be <= stop limit {stop_gap_price}")
                     valid_tickers.remove(t)
 
         pairs = [s['symbol'] for s in valid_tickers]

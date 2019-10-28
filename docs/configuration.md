@@ -423,8 +423,7 @@ section of the configuration.
 * `VolumePairList`
   * It selects `number_assets` top pairs based on `sort_key`, which can be one of
 `askVolume`, `bidVolume` and `quoteVolume`, defaults to `quoteVolume`.
-  * There is a possibility to filter low-value coins that would not allow setting a stop loss
-(set `precision_filter` parameter to `true` for this).
+  * By default, low-value coins that would not allow setting a stop loss are filtered out. (set `precision_filter` parameter to `false` to disable this behaviour).
   * `VolumePairList` does not consider `pair_whitelist`, but builds this automatically based the pairlist configuration.
   * Pairs in `pair_blacklist` are not considered for VolumePairList, even if all other filters would match.
 
@@ -440,7 +439,7 @@ Example:
         "config": {
             "number_assets": 20,
             "sort_key": "quoteVolume",
-            "precision_filter": false
+            "precision_filter": true
         }
     },
 ```
