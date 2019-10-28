@@ -179,6 +179,9 @@ class Configuration:
             config['exchange']['name'] = self.args["exchange"]
             logger.info(f"Using exchange {config['exchange']['name']}")
 
+        if 'pair_whitelist' not in config['exchange']:
+            config['exchange']['pair_whitelist'] = []
+
         if 'user_data_dir' in self.args and self.args["user_data_dir"]:
             config.update({'user_data_dir': self.args["user_data_dir"]})
         elif 'user_data_dir' not in config:

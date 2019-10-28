@@ -177,16 +177,11 @@ def test_symbol_amount_prec(default_conf, mocker):
     '''
     Test rounds down to 4 Decimal places
     '''
-    api_mock = MagicMock()
-    api_mock.load_markets = MagicMock(return_value={
-        'ETH/BTC': '', 'LTC/BTC': '', 'XRP/BTC': '', 'NEO/BTC': ''
-    })
-    mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value='binance'))
 
     markets = PropertyMock(return_value={'ETH/BTC': {'precision': {'amount': 4}}})
-    type(api_mock).markets = markets
 
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    exchange = get_patched_exchange(mocker, default_conf, id="binance")
+    mocker.patch('freqtrade.exchange.Exchange.markets', markets)
 
     amount = 2.34559
     pair = 'ETH/BTC'
@@ -198,16 +193,10 @@ def test_symbol_price_prec(default_conf, mocker):
     '''
     Test rounds up to 4 decimal places
     '''
-    api_mock = MagicMock()
-    api_mock.load_markets = MagicMock(return_value={
-        'ETH/BTC': '', 'LTC/BTC': '', 'XRP/BTC': '', 'NEO/BTC': ''
-    })
-    mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value='binance'))
-
     markets = PropertyMock(return_value={'ETH/BTC': {'precision': {'price': 4}}})
-    type(api_mock).markets = markets
 
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    exchange = get_patched_exchange(mocker, default_conf, id="binance")
+    mocker.patch('freqtrade.exchange.Exchange.markets', markets)
 
     price = 2.34559
     pair = 'ETH/BTC'
@@ -279,7 +268,7 @@ def test__load_markets(default_conf, mocker, caplog):
     api_mock.load_markets = MagicMock(return_value=expected_return)
     type(api_mock).markets = expected_return
     default_conf['exchange']['pair_whitelist'] = ['ETH/BTC']
-    ex = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
+    ex = get_patched_exchange(mocker, default_conf, api_mock, id="binance", mock_markets=False)
     assert ex.markets == expected_return
 
 
@@ -294,7 +283,8 @@ def test__reload_markets(default_conf, mocker, caplog):
     api_mock.load_markets = load_markets
     type(api_mock).markets = initial_markets
     default_conf['exchange']['markets_refresh_interval'] = 10
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance",
+                                    mock_markets=False)
     exchange._last_markets_refresh = arrow.utcnow().timestamp
     updated_markets = {'ETH/BTC': {}, "LTC/BTC": {}}
 
@@ -1715,15 +1705,16 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
           'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
         # active markets
         ([], [], False, True,
-         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/USD', 'LTC/USDT',
-          'TKN/BTC', 'XLTCUSDT']),
+         ['BLK/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD', 'NEO/BTC',
+          'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
         # all pairs
         ([], [], True, False,
          ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD',
           'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XRP/BTC']),
         # active pairs
         ([], [], True, True,
-         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/USD', 'LTC/USDT', 'TKN/BTC']),
+         ['BLK/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD', 'NEO/BTC',
+          'TKN/BTC', 'XRP/BTC']),
         # all markets, base=ETH, LTC
         (['ETH', 'LTC'], [], False, False,
          ['ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),

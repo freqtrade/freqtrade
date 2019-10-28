@@ -77,7 +77,7 @@ class FreqtradeBot:
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
             self.config.get('edge', {}).get('enabled', False) else None
 
-        self.active_pair_whitelist: List[str] = self.config['exchange']['pair_whitelist']
+        self.active_pair_whitelist = self._refresh_whitelist()
 
         persistence.init(self.config.get('db_url', None),
                          clean_open_orders=self.config.get('dry_run', False))
@@ -123,21 +123,10 @@ class FreqtradeBot:
         # Check whether markets have to be reloaded
         self.exchange._reload_markets()
 
-        # Refresh whitelist
-        self.pairlists.refresh_pairlist()
-        self.active_pair_whitelist = self.pairlists.whitelist
-
-        # Calculating Edge positioning
-        if self.edge:
-            self.edge.calculate()
-            self.active_pair_whitelist = self.edge.adjust(self.active_pair_whitelist)
-
         # Query trades from persistence layer
         trades = Trade.get_open_trades()
 
-        # Extend active-pair whitelist with pairs from open trades
-        # It ensures that tickers are downloaded for open trades
-        self._extend_whitelist_with_trades(self.active_pair_whitelist, trades)
+        self.active_pair_whitelist = self._refresh_whitelist(trades)
 
         # Refreshing candles
         self.dataprovider.refresh(self._create_pair_whitelist(self.active_pair_whitelist),
@@ -156,15 +145,28 @@ class FreqtradeBot:
             Trade.session.flush()
 
         if (self.heartbeat_interval
-           and (arrow.utcnow().timestamp - self._heartbeat_msg > self.heartbeat_interval)):
+                and (arrow.utcnow().timestamp - self._heartbeat_msg > self.heartbeat_interval)):
             logger.info(f"Bot heartbeat. PID={getpid()}")
             self._heartbeat_msg = arrow.utcnow().timestamp
 
-    def _extend_whitelist_with_trades(self, whitelist: List[str], trades: List[Any]):
+    def _refresh_whitelist(self, trades: List[Trade] = []) -> List[str]:
         """
-        Extend whitelist with pairs from open trades
+        Refresh whitelist from pairlist or edge and extend it with trades.
         """
-        whitelist.extend([trade.pair for trade in trades if trade.pair not in whitelist])
+        # Refresh whitelist
+        self.pairlists.refresh_pairlist()
+        _whitelist = self.pairlists.whitelist
+
+        # Calculating Edge positioning
+        if self.edge:
+            self.edge.calculate()
+            _whitelist = self.edge.adjust(_whitelist)
+
+        if trades:
+            # Extend active-pair whitelist with pairs from open trades
+            # It ensures that tickers are downloaded for open trades
+            _whitelist.extend([trade.pair for trade in trades if trade.pair not in _whitelist])
+        return _whitelist
 
     def _create_pair_whitelist(self, pairs: List[str]) -> List[Tuple[str, str]]:
         """

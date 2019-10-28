@@ -533,21 +533,22 @@ def test_refresh_backtest_ohlcv_data(mocker, default_conf, markets, caplog, test
 
 def test_download_data_no_markets(mocker, default_conf, caplog, testdatadir):
     dl_mock = mocker.patch('freqtrade.data.history.download_pair_history', MagicMock())
+
+    ex = get_patched_exchange(mocker, default_conf)
     mocker.patch(
         'freqtrade.exchange.Exchange.markets', PropertyMock(return_value={})
     )
-    ex = get_patched_exchange(mocker, default_conf)
     timerange = TimeRange.parse_timerange("20190101-20190102")
-    unav_pairs = refresh_backtest_ohlcv_data(exchange=ex, pairs=["ETH/BTC", "XRP/BTC"],
+    unav_pairs = refresh_backtest_ohlcv_data(exchange=ex, pairs=["BTT/BTC", "LTC/USDT"],
                                              timeframes=["1m", "5m"],
                                              dl_path=testdatadir,
                                              timerange=timerange, erase=False
                                              )
 
     assert dl_mock.call_count == 0
-    assert "ETH/BTC" in unav_pairs
-    assert "XRP/BTC" in unav_pairs
-    assert log_has("Skipping pair ETH/BTC...", caplog)
+    assert "BTT/BTC" in unav_pairs
+    assert "LTC/USDT" in unav_pairs
+    assert log_has("Skipping pair BTT/BTC...", caplog)
 
 
 def test_refresh_backtest_trades_data(mocker, default_conf, markets, caplog, testdatadir):

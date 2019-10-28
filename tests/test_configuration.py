@@ -729,6 +729,30 @@ def test_validate_edge(edge_conf):
     validate_config_consistency(edge_conf)
 
 
+def test_validate_whitelist(default_conf):
+    default_conf['runmode'] = RunMode.DRY_RUN
+    # Test regular case - has whitelist and uses StaticPairlist
+    validate_config_consistency(default_conf)
+    conf = deepcopy(default_conf)
+    del conf['exchange']['pair_whitelist']
+    # Test error case
+    with pytest.raises(OperationalException,
+                       match="StaticPairList requires pair_whitelist to be set."):
+
+        validate_config_consistency(conf)
+
+    conf = deepcopy(default_conf)
+
+    conf.update({"pairlist": {
+        "method": "VolumePairList",
+    }})
+    # Dynamic whitelist should not care about pair_whitelist
+    validate_config_consistency(conf)
+    del conf['exchange']['pair_whitelist']
+
+    validate_config_consistency(conf)
+
+
 def test_load_config_test_comments() -> None:
     """
     Load config with comments
@@ -801,7 +825,7 @@ def test_pairlist_resolving():
 
     args = Arguments(arglist).get_parsed_arg()
 
-    configuration = Configuration(args)
+    configuration = Configuration(args, RunMode.OTHER)
     config = configuration.get_config()
 
     assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
@@ -895,7 +919,7 @@ def test_pairlist_resolving_fallback(mocker):
     # Fix flaky tests if config.json exists
     args["config"] = None
 
-    configuration = Configuration(args)
+    configuration = Configuration(args, RunMode.OTHER)
     config = configuration.get_config()
 
     assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
