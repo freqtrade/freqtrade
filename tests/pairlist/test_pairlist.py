@@ -2,11 +2,12 @@
 
 from unittest.mock import MagicMock, PropertyMock
 
+import pytest
+
 from freqtrade import OperationalException
 from freqtrade.constants import AVAILABLE_PAIRLISTS
 from freqtrade.resolvers import PairListResolver
-from tests.conftest import get_patched_freqtradebot
-import pytest
+from tests.conftest import get_patched_freqtradebot, log_has_re
 
 # whitelist, blacklist
 
@@ -67,20 +68,25 @@ def test_refresh_pairlists(mocker, markets, whitelist_conf):
     assert whitelist_conf['exchange']['pair_blacklist'] == freqtradebot.pairlists.blacklist
 
 
-def test_refresh_pairlist_dynamic(mocker, markets, tickers, whitelist_conf):
+def test_refresh_pairlist_dynamic(mocker, shitcoinmarkets, tickers, whitelist_conf):
     whitelist_conf['pairlist'] = {'method': 'VolumePairList',
-                                  'config': {'number_assets': 5}
+                                  'config': {'number_assets': 5,
+                                             'precision_filter': False}
                                   }
+
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        markets=PropertyMock(return_value=markets),
         get_tickers=tickers,
         exchange_has=MagicMock(return_value=True)
     )
     freqtradebot = get_patched_freqtradebot(mocker, whitelist_conf)
-
+    # Remock markets with shitcoinmarkets since get_patched_freqtradebot uses the markets fixture
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        markets=PropertyMock(return_value=shitcoinmarkets),
+     )
     # argument: use the whitelist dynamically by exchange-volume
-    whitelist = ['ETH/BTC', 'TKN/BTC', 'LTC/BTC']
+    whitelist = ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'HOT/BTC']
     freqtradebot.pairlists.refresh_pairlist()
 
     assert whitelist == freqtradebot.pairlists.whitelist
@@ -108,19 +114,20 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
 
 
 @pytest.mark.parametrize("precision_filter,base_currency,key,whitelist_result", [
-    (False, "BTC", "quoteVolume", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC']),
-    (False, "BTC", "bidVolume", ['LTC/BTC', 'TKN/BTC', 'ETH/BTC']),
+    (False, "BTC", "quoteVolume", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'HOT/BTC']),
+    (False, "BTC", "bidVolume", ['LTC/BTC', 'TKN/BTC', 'ETH/BTC', 'HOT/BTC']),
     (False, "USDT", "quoteVolume", ['ETH/USDT']),
     (False, "ETH", "quoteVolume", []),  # this replaces tests that were removed from test_exchange
     (True, "BTC", "quoteVolume", ["LTC/BTC", "ETH/BTC", "TKN/BTC"]),
     (True, "BTC", "bidVolume", ["LTC/BTC", "TKN/BTC", "ETH/BTC"])
 ])
-def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, markets, tickers, base_currency, key,
-                                      whitelist_result, precision_filter) -> None:
+def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, tickers,
+                                      precision_filter, base_currency, key, whitelist_result,
+                                      caplog) -> None:
     whitelist_conf['pairlist']['method'] = 'VolumePairList'
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
-    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=shitcoinmarkets))
     mocker.patch('freqtrade.exchange.Exchange.get_tickers', tickers)
     mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, p, r: round(r, 8))
 
@@ -128,6 +135,8 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, markets, tickers, 
     freqtrade.config['stake_currency'] = base_currency
     whitelist = freqtrade.pairlists._gen_pair_whitelist(base_currency=base_currency, key=key)
     assert sorted(whitelist) == sorted(whitelist_result)
+    if precision_filter:
+        assert log_has_re(r'^Removed .* from whitelist, because stop price .* would be <= stop limit.*', caplog)
 
 
 def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None:
