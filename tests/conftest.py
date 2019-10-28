@@ -129,8 +129,7 @@ def patch_freqtradebot(mocker, config) -> None:
     patch_exchange(mocker)
     mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
-    mocker.patch('freqtrade.freqtradebot.FreqtradeBot._refresh_whitelist',
-                 MagicMock(return_value=config['exchange']['pair_whitelist']))
+    patch_whitelist(mocker, config)
 
 
 def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
