@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from arrow import Arrow
-from pandas import DataFrame, to_datetime
+from pandas import DataFrame, DateOffset, to_datetime
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
@@ -131,6 +131,24 @@ def test_create_cum_profit(testdatadir):
     cum_profits = create_cum_profit(df.set_index('date'),
                                     bt_data[bt_data["pair"] == 'POWR/BTC'],
                                     "cum_profits")
+    assert "cum_profits" in cum_profits.columns
+    assert cum_profits.iloc[0]['cum_profits'] == 0
+    assert cum_profits.iloc[-1]['cum_profits'] == 0.0798005
+
+
+def test_create_cum_profit1(testdatadir):
+    filename = testdatadir / "backtest-result_test.json"
+    bt_data = load_backtest_data(filename)
+    # Move close-time to "off" the candle, to make sure the logic still works
+    bt_data.loc[:, 'close_time'] = bt_data.loc[:, 'close_time'] + DateOffset(seconds=20)
+    timerange = TimeRange.parse_timerange("20180110-20180112")
+
+    df = load_pair_history(pair="POWR/BTC", ticker_interval='5m',
+                           datadir=testdatadir, timerange=timerange)
+
+    cum_profits = create_cum_profit(df.set_index('date'),
+                                    bt_data[bt_data["pair"] == 'POWR/BTC'],
+                                    "cum_profits", timeframe="5m")
     assert "cum_profits" in cum_profits.columns
     assert cum_profits.iloc[0]['cum_profits'] == 0
     assert cum_profits.iloc[-1]['cum_profits'] == 0.0798005
