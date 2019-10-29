@@ -405,6 +405,52 @@ if self.wallets:
 - `get_used(asset)` - currently tied up balance (open orders)
 - `get_total(asset)` - total available balance - sum of the 2 above
 
+### Additional data (Trades)
+
+A history of Trades can be retrieved in the strategy by querying the database.
+
+At the top of the file, import Trade.
+
+```python
+from freqtrade.persistence import Trade
+```
+
+The following example queries for the current pair and trades from today, however other filters easily be added.
+
+``` python
+if self.config['runmode'] in ('live', 'dry_run'):
+    trades = Trade.get_trades([Trade.pair == metadata['pair'],
+                               Trade.open_date > datetime.utcnow() - timedelta(days=1),
+                               Trade.is_open == False,
+                ]).order_by(Trade.close_date).all()
+    # Summarize profit for this pair.
+    curdayprofit = sum(trade.close_profit for trade in trades)
+```
+
+Get amount of stake_currency currently invested in Trades:
+
+``` python
+if self.config['runmode'] in ('live', 'dry_run'):
+    total_stakes = Trade.total_open_trades_stakes()
+```
+
+Retrieve performance per pair.
+Returns a List of dicts per pair.
+
+``` python
+if self.config['runmode'] in ('live', 'dry_run'):
+    performance = Trade.get_overall_performance()
+```
+
+Sample return value: ETH/BTC had 5 trades, with a total profit of 1.5%.
+
+``` json
+{'pair': "ETH/BTC", 'profit': 1.5, 'count': 5}
+```
+
+!!! Warning
+    Trade history is not available during backtesting or hyperopt.
+
 ### Print created dataframe
 
 To inspect the created dataframe, you can issue a print-statement in either `populate_buy_trend()` or `populate_sell_trend()`.
