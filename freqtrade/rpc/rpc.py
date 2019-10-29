@@ -9,7 +9,6 @@ from enum import Enum
 from typing import Dict, Any, List, Optional
 
 import arrow
-import sqlalchemy as sql
 from numpy import mean, NAN
 from pandas import DataFrame
 
@@ -154,12 +153,11 @@ class RPC:
 
         for day in range(0, timescale):
             profitday = today - timedelta(days=day)
-            trades = Trade.query \
-                .filter(Trade.is_open.is_(False)) \
-                .filter(Trade.close_date >= profitday)\
-                .filter(Trade.close_date < (profitday + timedelta(days=1)))\
-                .order_by(Trade.close_date)\
-                .all()
+            trades = Trade.get_trades(trade_filter=[
+                Trade.is_open.is_(False),
+                Trade.close_date >= profitday,
+                Trade.close_date < (profitday + timedelta(days=1))
+            ]).order_by(Trade.close_date).all()
             curdayprofit = sum(trade.calc_profit() for trade in trades)
             profit_days[profitday] = {
                 'amount': f'{curdayprofit:.8f}',
@@ -192,7 +190,7 @@ class RPC:
     def _rpc_trade_statistics(
             self, stake_currency: str, fiat_display_currency: str) -> Dict[str, Any]:
         """ Returns cumulative profit statistics """
-        trades = Trade.query.order_by(Trade.id).all()
+        trades = Trade.get_trades().order_by(Trade.id).all()
 
         profit_all_coin = []
         profit_all_perc = []
@@ -385,11 +383,8 @@ class RPC:
             return {'result': 'Created sell orders for all open trades.'}
 
         # Query for trade
-        trade = Trade.query.filter(
-            sql.and_(
-                Trade.id == trade_id,
-                Trade.is_open.is_(True)
-            )
+        trade = Trade.get_trades(
+            trade_filter=[Trade.id == trade_id, Trade.is_open.is_(True), ]
         ).first()
         if not trade:
             logger.warning('forcesell: Invalid argument received')
@@ -419,7 +414,7 @@ class RPC:
         # check if valid pair
 
         # check if pair already has an open pair
-        trade = Trade.query.filter(Trade.is_open.is_(True)).filter(Trade.pair.is_(pair)).first()
+        trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair.is_(pair)]).first()
         if trade:
             raise RPCException(f'position for {pair} already open - id: {trade.id}')
 
@@ -428,7 +423,7 @@ class RPC:
 
         # execute buy
         if self._freqtrade.execute_buy(pair, stakeamount, price):
-            trade = Trade.query.filter(Trade.is_open.is_(True)).filter(Trade.pair.is_(pair)).first()
+            trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair.is_(pair)]).first()
             return trade
         else:
             return None

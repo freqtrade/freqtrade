@@ -395,9 +395,12 @@ class Trade(_DECL_BASE):
     @staticmethod
     def get_trades(trade_filter=None) -> Query:
         """
-        Helper function to query Trades using filter.
-        :param trade_filter: Filter to apply to trades
-        :return: Query object
+        Helper function to query Trades using filters.
+        :param trade_filter: Optional filter to apply to trades
+                             Can be either a Filter object, or a List of filters
+                             e.g. `(trade_filter=[Trade.id == trade_id, Trade.is_open.is_(True),])`
+                             e.g. `(trade_filter=Trade.id == trade_id)`
+        :return: unsorted query object
         """
         if trade_filter is not None:
             if not isinstance(trade_filter, list):
