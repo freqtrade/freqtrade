@@ -392,6 +392,13 @@ class Trade(_DECL_BASE):
         return float(f"{profit_percent:.8f}")
 
     @staticmethod
+    def get_open_order_trades():
+        """
+        Returns all open trades
+        """
+        return Trade.query.filter(Trade.open_order_id.isnot(None)).all()
+
+    @staticmethod
     def total_open_trades_stakes() -> float:
         """
         Calculates total invested amount in open trades
@@ -403,7 +410,10 @@ class Trade(_DECL_BASE):
         return total_open_stake_amount or 0
 
     @staticmethod
-    def get_overall_performance() -> Dict:
+    def get_overall_performance() -> List[Dict]:
+        """
+        Returns List of dicts containing all Trades, including profit and trade count
+        """
         pair_rates = Trade.session.query(
             Trade.pair,
             func.sum(Trade.close_profit).label('profit_sum'),
@@ -423,6 +433,9 @@ class Trade(_DECL_BASE):
 
     @staticmethod
     def get_best_pair():
+        """
+        Get best pair with closed trade.
+        """
         best_pair = Trade.session.query(
             Trade.pair, func.sum(Trade.close_profit).label('profit_sum')
         ).filter(Trade.is_open.is_(False)) \
