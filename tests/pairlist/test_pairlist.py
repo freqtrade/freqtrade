@@ -80,7 +80,7 @@ def test_refresh_pairlist_dynamic(mocker, markets, tickers, whitelist_conf):
     freqtradebot = get_patched_freqtradebot(mocker, whitelist_conf)
 
     # argument: use the whitelist dynamically by exchange-volume
-    whitelist = ['ETH/BTC', 'TKN/BTC', 'BTT/BTC']
+    whitelist = ['ETH/BTC', 'TKN/BTC', 'LTC/BTC']
     freqtradebot.pairlists.refresh_pairlist()
 
     assert whitelist == freqtradebot.pairlists.whitelist
@@ -108,12 +108,12 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
 
 
 @pytest.mark.parametrize("precision_filter,base_currency,key,whitelist_result", [
-    (False, "BTC", "quoteVolume", ['ETH/BTC', 'TKN/BTC', 'BTT/BTC']),
-    (False, "BTC", "bidVolume", ['BTT/BTC', 'TKN/BTC', 'ETH/BTC']),
-    (False, "USDT", "quoteVolume", ['ETH/USDT', 'LTC/USDT']),
+    (False, "BTC", "quoteVolume", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC']),
+    (False, "BTC", "bidVolume", ['LTC/BTC', 'TKN/BTC', 'ETH/BTC']),
+    (False, "USDT", "quoteVolume", ['ETH/USDT']),
     (False, "ETH", "quoteVolume", []),  # this replaces tests that were removed from test_exchange
-    (True, "BTC", "quoteVolume", ["ETH/BTC", "TKN/BTC"]),
-    (True, "BTC", "bidVolume", ["TKN/BTC", "ETH/BTC"])
+    (True, "BTC", "quoteVolume", ["LTC/BTC", "ETH/BTC", "TKN/BTC"]),
+    (True, "BTC", "bidVolume", ["LTC/BTC", "TKN/BTC", "ETH/BTC"])
 ])
 def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, markets, tickers, base_currency, key,
                                       whitelist_result, precision_filter) -> None:
@@ -127,7 +127,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, markets, tickers, 
     freqtrade.pairlists._precision_filter = precision_filter
     freqtrade.config['stake_currency'] = base_currency
     whitelist = freqtrade.pairlists._gen_pair_whitelist(base_currency=base_currency, key=key)
-    assert whitelist == whitelist_result
+    assert sorted(whitelist) == sorted(whitelist_result)
 
 
 def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None:
@@ -160,7 +160,7 @@ def test_pairlist_class(mocker, whitelist_conf, markets, pairlist):
     (['ETH/BTC', 'TKN/BTC', 'TRX/ETH'], "is not compatible with exchange"),  # TRX/ETH wrong stake
     (['ETH/BTC', 'TKN/BTC', 'BCH/BTC'], "is not compatible with exchange"),  # BCH/BTC not available
     (['ETH/BTC', 'TKN/BTC', 'BLK/BTC'], "is not compatible with exchange"),  # BLK/BTC in blacklist
-    (['ETH/BTC', 'TKN/BTC', 'LTC/BTC'], "Market is not active")  # LTC/BTC is inactive
+    (['ETH/BTC', 'TKN/BTC', 'BTT/BTC'], "Market is not active")  # BTT/BTC is inactive
 ])
 def test_validate_whitelist(mocker, whitelist_conf, markets, pairlist, whitelist, caplog,
                             log_message):

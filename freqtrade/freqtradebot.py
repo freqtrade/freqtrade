@@ -6,25 +6,26 @@ import logging
 import traceback
 from datetime import datetime
 from math import isclose
+from os import getpid
 from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
 from requests.exceptions import RequestException
 
-from freqtrade import (DependencyException, InvalidOrderException,
-                       __version__, constants, persistence)
+from freqtrade import (DependencyException, InvalidOrderException, __version__,
+                       constants, persistence)
+from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.configuration import validate_config_consistency
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
 from freqtrade.persistence import Trade
+from freqtrade.resolvers import (ExchangeResolver, PairListResolver,
+                                 StrategyResolver)
 from freqtrade.rpc import RPCManager, RPCMessageType
-from freqtrade.resolvers import ExchangeResolver, StrategyResolver, PairListResolver
 from freqtrade.state import State
-from freqtrade.strategy.interface import SellType, IStrategy
+from freqtrade.strategy.interface import IStrategy, SellType
 from freqtrade.wallets import Wallets
-
 
 logger = logging.getLogger(__name__)
 
@@ -50,12 +51,14 @@ class FreqtradeBot:
         # Init objects
         self.config = config
 
+        self._heartbeat_msg = 0
+
+        self.heartbeat_interval = self.config.get('internals', {}).get('heartbeat_interval', 60)
+
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
 
         # Check config consistency here since strategies can set certain options
         validate_config_consistency(config)
-
-        self.rpc: RPCManager = RPCManager(self)
 
         self.exchange = ExchangeResolver(self.config['exchange']['name'], self.config).exchange
 
@@ -74,7 +77,7 @@ class FreqtradeBot:
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
             self.config.get('edge', {}).get('enabled', False) else None
 
-        self.active_pair_whitelist: List[str] = self.config['exchange']['pair_whitelist']
+        self.active_pair_whitelist = self._refresh_whitelist()
 
         persistence.init(self.config.get('db_url', None),
                          clean_open_orders=self.config.get('dry_run', False))
@@ -82,6 +85,13 @@ class FreqtradeBot:
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')
         self.state = State[initial_state.upper()] if initial_state else State.STOPPED
+
+        # RPC runs in separate threads, can start handling external commands just after
+        # initialization, even before Freqtradebot has a chance to start its throttling,
+        # so anything in the Freqtradebot instance should be ready (initialized), including
+        # the initial state of the bot.
+        # Keep this at the end of this initialization method.
+        self.rpc: RPCManager = RPCManager(self)
 
     def cleanup(self) -> None:
         """
@@ -113,21 +123,10 @@ class FreqtradeBot:
         # Check whether markets have to be reloaded
         self.exchange._reload_markets()
 
-        # Refresh whitelist
-        self.pairlists.refresh_pairlist()
-        self.active_pair_whitelist = self.pairlists.whitelist
-
-        # Calculating Edge positioning
-        if self.edge:
-            self.edge.calculate()
-            self.active_pair_whitelist = self.edge.adjust(self.active_pair_whitelist)
-
         # Query trades from persistence layer
         trades = Trade.get_open_trades()
 
-        # Extend active-pair whitelist with pairs from open trades
-        # It ensures that tickers are downloaded for open trades
-        self._extend_whitelist_with_trades(self.active_pair_whitelist, trades)
+        self.active_pair_whitelist = self._refresh_whitelist(trades)
 
         # Refreshing candles
         self.dataprovider.refresh(self._create_pair_whitelist(self.active_pair_whitelist),
@@ -145,11 +144,29 @@ class FreqtradeBot:
             self.check_handle_timedout()
             Trade.session.flush()
 
-    def _extend_whitelist_with_trades(self, whitelist: List[str], trades: List[Any]):
+        if (self.heartbeat_interval
+                and (arrow.utcnow().timestamp - self._heartbeat_msg > self.heartbeat_interval)):
+            logger.info(f"Bot heartbeat. PID={getpid()}")
+            self._heartbeat_msg = arrow.utcnow().timestamp
+
+    def _refresh_whitelist(self, trades: List[Trade] = []) -> List[str]:
         """
-        Extend whitelist with pairs from open trades
+        Refresh whitelist from pairlist or edge and extend it with trades.
         """
-        whitelist.extend([trade.pair for trade in trades if trade.pair not in whitelist])
+        # Refresh whitelist
+        self.pairlists.refresh_pairlist()
+        _whitelist = self.pairlists.whitelist
+
+        # Calculating Edge positioning
+        if self.edge:
+            self.edge.calculate()
+            _whitelist = self.edge.adjust(_whitelist)
+
+        if trades:
+            # Extend active-pair whitelist with pairs from open trades
+            # It ensures that tickers are downloaded for open trades
+            _whitelist.extend([trade.pair for trade in trades if trade.pair not in _whitelist])
+        return _whitelist
 
     def _create_pair_whitelist(self, pairs: List[str]) -> List[Tuple[str, str]]:
         """
@@ -438,7 +455,7 @@ class FreqtradeBot:
         try:
             # Create entity and execute trade
             if not self.create_trades():
-                logger.info('Found no buy signals for whitelisted currencies. Trying again...')
+                logger.debug('Found no buy signals for whitelisted currencies. Trying again...')
         except DependencyException as exception:
             logger.warning('Unable to create trade: %s', exception)
 

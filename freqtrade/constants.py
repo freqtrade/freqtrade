@@ -233,7 +233,7 @@ CONF_SCHEMA = {
                 'ccxt_config': {'type': 'object'},
                 'ccxt_async_config': {'type': 'object'}
             },
-            'required': ['name', 'pair_whitelist']
+            'required': ['name']
         },
         'edge': {
             'type': 'object',

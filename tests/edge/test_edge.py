@@ -256,7 +256,7 @@ def test_edge_heartbeat_calculate(mocker, edge_conf):
 
 
 def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=False,
-                     timerange=None, exchange=None):
+                     timerange=None, exchange=None, *args, **kwargs):
     hz = 0.1
     base = 0.001
 

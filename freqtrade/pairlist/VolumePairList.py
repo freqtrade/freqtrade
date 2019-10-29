@@ -54,7 +54,7 @@ class VolumePairList(IPairList):
         """
         # Generate dynamic whitelist
         self._whitelist = self._gen_pair_whitelist(
-            self._config['stake_currency'], self._sort_key)[:self._number_pairs]
+            self._config['stake_currency'], self._sort_key)
 
     @cached(TTLCache(maxsize=1, ttl=1800))
     def _gen_pair_whitelist(self, base_currency: str, key: str) -> List[str]:
@@ -91,6 +91,6 @@ class VolumePairList(IPairList):
                     valid_tickers.remove(t)
 
         pairs = [s['symbol'] for s in valid_tickers]
-        logger.info(f"Searching pairs: {self._whitelist}")
+        logger.info(f"Searching pairs: {pairs[:self._number_pairs]}")
 
         return pairs

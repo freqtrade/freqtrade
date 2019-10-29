@@ -234,7 +234,7 @@ def test_add_profit(testdatadir):
 
     cum_profits = create_cum_profit(df.set_index('date'),
                                     bt_data[bt_data["pair"] == 'POWR/BTC'],
-                                    "cum_profits")
+                                    "cum_profits", timeframe="5m")
 
     fig1 = add_profit(fig, row=2, data=cum_profits, column='cum_profits', name='Profits')
     figure = fig1.layout.figure
@@ -256,7 +256,7 @@ def test_generate_profit_graph(testdatadir):
                                 )
     trades = trades[trades['pair'].isin(pairs)]
 
-    fig = generate_profit_graph(pairs, tickers, trades)
+    fig = generate_profit_graph(pairs, tickers, trades, timeframe="5m")
     assert isinstance(fig, go.Figure)
 
     assert fig.layout.title.text == "Freqtrade Profit plot"

@@ -8,11 +8,11 @@ flake8==3.7.8
 flake8-type-annotations==0.1.0
 flake8-tidy-imports==3.0.0
 mypy==0.740
-pytest==5.2.1
+pytest==5.2.2
 pytest-asyncio==0.10.0
 pytest-cov==2.8.1
-pytest-mock==1.11.1
+pytest-mock==1.11.2
 pytest-random-order==1.0.4
 
 # Convert jupyter notebooks to markdown documents
-nbconvert==5.6.0
+nbconvert==5.6.1

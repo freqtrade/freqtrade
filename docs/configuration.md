@@ -75,8 +75,8 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `exchange.key` | '' | API key to use for the exchange. Only required when you are in production mode. ***Keep it in secrete, do not disclose publicly.***
 | `exchange.secret` | '' | API secret to use for the exchange. Only required when you are in production mode. ***Keep it in secrete, do not disclose publicly.***
 | `exchange.password` | '' | API password to use for the exchange. Only required when you are in production mode and for exchanges that use password for API requests. ***Keep it in secrete, do not disclose publicly.***
-| `exchange.pair_whitelist` | [] | List of pairs to use by the bot for trading and to check for potential trades during backtesting. Can be overriden by dynamic pairlists (see [below](#dynamic-pairlists)).
-| `exchange.pair_blacklist` | [] | List of pairs the bot must absolutely avoid for trading and backtesting. Can be overriden by dynamic pairlists (see [below](#dynamic-pairlists)).
+| `exchange.pair_whitelist` | [] | List of pairs to use by the bot for trading and to check for potential trades during backtesting. Not used by VolumePairList (see [below](#dynamic-pairlists)).
+| `exchange.pair_blacklist` | [] | List of pairs the bot must absolutely avoid for trading and backtesting (see [below](#dynamic-pairlists)).
 | `exchange.ccxt_config` | None | Additional CCXT parameters passed to the regular ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
 | `exchange.ccxt_async_config` | None | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
 | `exchange.markets_refresh_interval` | 60 | The interval in minutes in which markets are reloaded.
@@ -98,6 +98,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `strategy` | None | **Required** Defines Strategy class to use. Recommended to set via `--strategy NAME`. 
 | `strategy_path` | null | Adds an additional strategy lookup path (must be a directory).
 | `internals.process_throttle_secs` | 5 | **Required.** Set the process throttle. Value in second.
+| `internals.heartbeat_interval` | 60 | Print heartbeat message every X seconds. Set to 0 to disable heartbeat messages.
 | `internals.sd_notify` | false | Enables use of the sd_notify protocol to tell systemd service manager about changes in the bot state and issue keep-alive pings. See [here](installation.md#7-optional-configure-freqtrade-as-a-systemd-service) for more details.
 | `logfile` | | Specify Logfile. Uses a rolling strategy of 10 files, with 1Mb per file.
 | `user_data_dir` | cwd()/user_data | Directory containing user data. Defaults to `./user_data/`.
@@ -134,7 +135,7 @@ To allow the bot to trade all the available `stake_currency` in your account set
 In this case a trade amount is calclulated as:
 
 ```python
-currency_balanse / (max_open_trades - current_open_trades)
+currency_balance / (max_open_trades - current_open_trades)
 ```
 
 ### Understand minimal_roi
@@ -330,7 +331,7 @@ This configuration enables binance, as well as rate limiting to avoid bans from 
     Optimal settings for rate limiting depend on the exchange and the size of the whitelist, so an ideal parameter will vary on many other settings.
     We try to provide sensible defaults per exchange where possible, if you encounter bans please make sure that `"enableRateLimit"` is enabled and increase the `"rateLimit"` parameter step by step.
 
-#### Advanced FreqTrade Exchange configuration
+#### Advanced Freqtrade Exchange configuration
 
 Advanced options can be configured using the `_ft_has_params` setting, which will override Defaults and exchange-specific behaviours.
 
@@ -349,6 +350,13 @@ For example, to test the order type `FOK` with Kraken, and modify candle_limit t
 
 !!! Warning
     Please make sure to fully understand the impacts of these settings before modifying them.
+
+#### Random notes for other exchanges
+
+* The Ocean (ccxt id: 'theocean') exchange uses Web3 functionality and requires web3 package to be installed:
+```shell
+$ pip3 install web3
+```
 
 ### What values can be used for fiat_display_currency?
 
@@ -417,10 +425,16 @@ section of the configuration.
 `askVolume`, `bidVolume` and `quoteVolume`, defaults to `quoteVolume`.
   * There is a possibility to filter low-value coins that would not allow setting a stop loss
 (set `precision_filter` parameter to `true` for this).
+  * `VolumePairList` does not consider `pair_whitelist`, but builds this automatically based the pairlist configuration.
+  * Pairs in `pair_blacklist` are not considered for VolumePairList, even if all other filters would match.
 
 Example:
 
 ```json
+"exchange": {
+    "pair_whitelist": [],
+    "pair_blacklist": ["BNB/BTC"]
+},
 "pairlist": {
         "method": "VolumePairList",
         "config": {

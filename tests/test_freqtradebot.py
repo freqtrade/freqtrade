@@ -23,7 +23,7 @@ from freqtrade.strategy.interface import SellCheckTuple, SellType
 from freqtrade.worker import Worker
 from tests.conftest import (get_patched_freqtradebot, get_patched_worker,
                             log_has, log_has_re, patch_edge, patch_exchange,
-                            patch_get_signal, patch_wallet)
+                            patch_get_signal, patch_wallet, patch_whitelist)
 
 
 def patch_RPCManager(mocker) -> MagicMock:
@@ -1247,11 +1247,10 @@ def test_create_stoploss_order_invalid_order(mocker, default_conf, caplog, fee,
 
 
 def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
-                                              markets, limit_buy_order, limit_sell_order) -> None:
+                                              limit_buy_order, limit_sell_order) -> None:
     # When trailing stoploss is set
     stoploss_limit = MagicMock(return_value={'id': 13434334})
     patch_RPCManager(mocker)
-    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=MagicMock(return_value={
@@ -1262,7 +1261,6 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         sell=MagicMock(return_value={'id': limit_sell_order['id']}),
         get_fee=fee,
-        markets=PropertyMock(return_value=markets),
         stoploss_limit=stoploss_limit
     )
 
@@ -1272,7 +1270,7 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
     # disabling ROI
     default_conf['minimal_roi']['0'] = 999999999
 
-    freqtrade = FreqtradeBot(default_conf)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     # enabling stoploss on exchange
     freqtrade.strategy.order_types['stoploss_on_exchange'] = True
@@ -1521,6 +1519,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
 
 
 def test_process_maybe_execute_buys(mocker, default_conf, caplog) -> None:
+    caplog.set_level(logging.DEBUG)
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.create_trades', MagicMock(return_value=False))
@@ -1824,20 +1823,18 @@ def test_handle_overlpapping_signals(default_conf, ticker, limit_buy_order,
 
 
 def test_handle_trade_roi(default_conf, ticker, limit_buy_order,
-                          fee, mocker, markets, caplog) -> None:
+                          fee, mocker, caplog) -> None:
     caplog.set_level(logging.DEBUG)
 
     patch_RPCManager(mocker)
-    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
-        markets=PropertyMock(return_value=markets)
     )
 
-    freqtrade = FreqtradeBot(default_conf)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
     patch_get_signal(freqtrade, value=(True, False))
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=True)
 
@@ -1858,20 +1855,18 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order,
 
 
 def test_handle_trade_use_sell_signal(
-        default_conf, ticker, limit_buy_order, fee, mocker, markets, caplog) -> None:
+        default_conf, ticker, limit_buy_order, fee, mocker, caplog) -> None:
     # use_sell_signal is True buy default
     caplog.set_level(logging.DEBUG)
     patch_RPCManager(mocker)
-    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
-        markets=PropertyMock(return_value=markets)
     )
 
-    freqtrade = FreqtradeBot(default_conf)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
     freqtrade.create_trades()
@@ -2236,6 +2231,7 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, moc
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
+    patch_whitelist(mocker, default_conf)
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
 
@@ -2282,6 +2278,7 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
+    patch_whitelist(mocker, default_conf)
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
 
@@ -2331,6 +2328,7 @@ def test_execute_sell_down_stoploss_on_exchange_dry_run(default_conf, ticker, fe
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
+    patch_whitelist(mocker, default_conf)
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
 
@@ -2647,6 +2645,7 @@ def test_execute_sell_market_order(default_conf, ticker, fee,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
+    patch_whitelist(mocker, default_conf)
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
 
@@ -2814,14 +2813,13 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, marke
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
 
 
-def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down, markets, mocker, caplog) -> None:
+def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down, mocker, caplog) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         get_fee=fee,
-        markets=PropertyMock(return_value=markets)
     )
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
@@ -2851,7 +2849,7 @@ def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down, markets, mock
     assert log_has(f"Pair {trade.pair} is currently locked.", caplog)
 
 
-def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, markets, mocker) -> None:
+def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -2863,7 +2861,6 @@ def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, markets, m
         }),
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
-        markets=PropertyMock(return_value=markets)
     )
     default_conf['ask_strategy'] = {
         'ignore_roi_if_buy_signal': True
@@ -2885,7 +2882,7 @@ def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, markets, m
     assert trade.sell_reason == SellType.ROI.value
 
 
-def test_trailing_stop_loss(default_conf, limit_buy_order, fee, markets, caplog, mocker) -> None:
+def test_trailing_stop_loss(default_conf, limit_buy_order, fee, caplog, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -2897,9 +2894,9 @@ def test_trailing_stop_loss(default_conf, limit_buy_order, fee, markets, caplog,
         }),
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
-        markets=PropertyMock(return_value=markets),
     )
     default_conf['trailing_stop'] = True
+    patch_whitelist(mocker, default_conf)
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
@@ -2937,7 +2934,7 @@ def test_trailing_stop_loss(default_conf, limit_buy_order, fee, markets, caplog,
     assert trade.sell_reason == SellType.TRAILING_STOP_LOSS.value
 
 
-def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee, markets,
+def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee,
                                      caplog, mocker) -> None:
     buy_price = limit_buy_order['price']
     patch_RPCManager(mocker)
@@ -2951,10 +2948,11 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee, markets
         }),
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
-        markets=PropertyMock(return_value=markets),
     )
     default_conf['trailing_stop'] = True
     default_conf['trailing_stop_positive'] = 0.01
+    patch_whitelist(mocker, default_conf)
+
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
@@ -2994,7 +2992,7 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee, markets
 
 
 def test_trailing_stop_loss_offset(default_conf, limit_buy_order, fee,
-                                   caplog, mocker, markets) -> None:
+                                   caplog, mocker) -> None:
     buy_price = limit_buy_order['price']
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -3007,9 +3005,8 @@ def test_trailing_stop_loss_offset(default_conf, limit_buy_order, fee,
         }),
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
-        markets=PropertyMock(return_value=markets),
     )
-
+    patch_whitelist(mocker, default_conf)
     default_conf['trailing_stop'] = True
     default_conf['trailing_stop_positive'] = 0.01
     default_conf['trailing_stop_positive_offset'] = 0.011
@@ -3054,7 +3051,7 @@ def test_trailing_stop_loss_offset(default_conf, limit_buy_order, fee,
 
 
 def test_tsl_only_offset_reached(default_conf, limit_buy_order, fee,
-                                 caplog, mocker, markets) -> None:
+                                 caplog, mocker) -> None:
     buy_price = limit_buy_order['price']
     # buy_price: 0.00001099
 
@@ -3069,9 +3066,8 @@ def test_tsl_only_offset_reached(default_conf, limit_buy_order, fee,
         }),
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
-        markets=PropertyMock(return_value=markets),
     )
-
+    patch_whitelist(mocker, default_conf)
     default_conf['trailing_stop'] = True
     default_conf['trailing_stop_positive'] = 0.05
     default_conf['trailing_stop_positive_offset'] = 0.055
@@ -3647,3 +3643,27 @@ def test_startup_trade_reinit(default_conf, edge_conf, mocker):
     ftbot = get_patched_freqtradebot(mocker, edge_conf)
     ftbot.startup()
     assert reinit_mock.call_count == 0
+
+
+def test_process_i_am_alive(default_conf, mocker, caplog):
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+
+    ftbot = get_patched_freqtradebot(mocker, default_conf)
+    message = r"Bot heartbeat\. PID=.*"
+    ftbot.process()
+    assert log_has_re(message, caplog)
+    assert ftbot._heartbeat_msg != 0
+
+    caplog.clear()
+    # Message is not shown before interval is up
+    ftbot.process()
+    assert not log_has_re(message, caplog)
+
+    caplog.clear()
+    # Set clock - 70 seconds
+    ftbot._heartbeat_msg -= 70
+
+    ftbot.process()
+    assert log_has_re(message, caplog)

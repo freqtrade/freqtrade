@@ -55,13 +55,16 @@ def patched_configuration_load_config_file(mocker, config) -> None:
     )
 
 
-def patch_exchange(mocker, api_mock=None, id='bittrex') -> None:
+def patch_exchange(mocker, api_mock=None, id='bittrex', mock_markets=True) -> None:
     mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_ordertypes', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.id', PropertyMock(return_value=id))
     mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value=id.title()))
+    if mock_markets:
+        mocker.patch('freqtrade.exchange.Exchange.markets',
+                     PropertyMock(return_value=get_markets()))
 
     if api_mock:
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
@@ -69,8 +72,9 @@ def patch_exchange(mocker, api_mock=None, id='bittrex') -> None:
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock())
 
 
-def get_patched_exchange(mocker, config, api_mock=None, id='bittrex') -> Exchange:
-    patch_exchange(mocker, api_mock, id)
+def get_patched_exchange(mocker, config, api_mock=None, id='bittrex',
+                         mock_markets=True) -> Exchange:
+    patch_exchange(mocker, api_mock, id, mock_markets)
     config["exchange"]["name"] = id
     try:
         exchange = ExchangeResolver(id, config).exchange
@@ -83,6 +87,11 @@ def patch_wallet(mocker, free=999.9) -> None:
     mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(
         return_value=free
     ))
+
+
+def patch_whitelist(mocker, conf) -> None:
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot._refresh_whitelist',
+                 MagicMock(return_value=conf['exchange']['pair_whitelist']))
 
 
 def patch_edge(mocker) -> None:
@@ -120,6 +129,7 @@ def patch_freqtradebot(mocker, config) -> None:
     patch_exchange(mocker)
     mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
+    patch_whitelist(mocker, config)
 
 
 def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
@@ -288,6 +298,10 @@ def ticker_sell_down():
 
 @pytest.fixture
 def markets():
+    return get_markets()
+
+
+def get_markets():
     return {
         'ETH/BTC': {
             'id': 'ethbtc',
@@ -370,7 +384,7 @@ def markets():
             'symbol': 'LTC/BTC',
             'base': 'LTC',
             'quote': 'BTC',
-            'active': False,
+            'active': True,
             'precision': {
                 'price': 8,
                 'amount': 8,
@@ -395,7 +409,7 @@ def markets():
             'symbol': 'XRP/BTC',
             'base': 'XRP',
             'quote': 'BTC',
-            'active': False,
+            'active': True,
             'precision': {
                 'price': 8,
                 'amount': 8,
@@ -420,7 +434,7 @@ def markets():
             'symbol': 'NEO/BTC',
             'base': 'NEO',
             'quote': 'BTC',
-            'active': False,
+            'active': True,
             'precision': {
                 'price': 8,
                 'amount': 8,
@@ -445,7 +459,7 @@ def markets():
             'symbol': 'BTT/BTC',
             'base': 'BTT',
             'quote': 'BTC',
-            'active': True,
+            'active': False,
             'precision': {
                 'base': 8,
                 'quote': 8,
@@ -495,7 +509,7 @@ def markets():
             'symbol': 'LTC/USDT',
             'base': 'LTC',
             'quote': 'USDT',
-            'active': True,
+            'active': False,
             'precision': {
                 'amount': 8,
                 'price': 8
