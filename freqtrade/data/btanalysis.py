@@ -106,7 +106,7 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
                             t.stop_loss, t.initial_stop_loss,
                             t.strategy, t.ticker_interval
                             )
-                           for t in Trade.query.all()],
+                           for t in Trade.get_trades().all()],
                           columns=columns)
 
     return trades

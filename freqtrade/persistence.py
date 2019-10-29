@@ -11,6 +11,7 @@ from sqlalchemy import (Boolean, Column, DateTime, Float, Integer, String,
                         create_engine, desc, func, inspect)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Query
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -392,11 +393,32 @@ class Trade(_DECL_BASE):
         return float(f"{profit_percent:.8f}")
 
     @staticmethod
+    def get_trades(trade_filter=None) -> Query:
+        """
+        Helper function to query Trades using filter.
+        :param trade_filter: Filter to apply to trades
+        :return: Query object
+        """
+        if trade_filter is not None:
+            if not isinstance(trade_filter, list):
+                trade_filter = [trade_filter]
+            return Trade.query.filter(*trade_filter)
+        else:
+            return Trade.query
+
+    @staticmethod
+    def get_open_trades() -> List[Any]:
+        """
+        Query trades from persistence layer
+        """
+        return Trade.get_trades(Trade.is_open.is_(True)).all()
+
+    @staticmethod
     def get_open_order_trades():
         """
         Returns all open trades
         """
-        return Trade.query.filter(Trade.open_order_id.isnot(None)).all()
+        return Trade.get_trades(Trade.open_order_id.isnot(None)).all()
 
     @staticmethod
     def total_open_trades_stakes() -> float:
@@ -442,13 +464,6 @@ class Trade(_DECL_BASE):
             .group_by(Trade.pair) \
             .order_by(desc('profit_sum')).first()
         return best_pair
-
-    @staticmethod
-    def get_open_trades() -> List[Any]:
-        """
-        Query trades from persistence layer
-        """
-        return Trade.query.filter(Trade.is_open.is_(True)).all()
 
     @staticmethod
     def stoploss_reinitialization(desired_stoploss):
