@@ -35,6 +35,8 @@ def create_mock_trades(fee):
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_rate=0.123,
+        close_rate=0.128,
+        close_profit=0.005,
         exchange='bittrex',
         is_open=False,
         open_order_id='dry_run_sell_12345'
@@ -835,3 +837,25 @@ def test_stoploss_reinitialization(default_conf, fee):
     assert trade_adj.stop_loss_pct == -0.04
     assert trade_adj.initial_stop_loss == 0.96
     assert trade_adj.initial_stop_loss_pct == -0.04
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_total_open_trades_stakes(fee):
+
+    res = Trade.total_open_trades_stakes()
+    assert res == 0
+    create_mock_trades(fee)
+    res = Trade.total_open_trades_stakes()
+    assert res == 0.002
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_get_overall_performance(fee):
+
+    create_mock_trades(fee)
+    res = Trade.get_overall_performance()
+
+    assert len(res) == 1
+    assert 'pair' in res[0]
+    assert 'profit' in res[0]
+    assert 'count' in res[0]

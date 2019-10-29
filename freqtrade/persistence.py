@@ -8,16 +8,14 @@ from typing import Any, Dict, List, Optional
 
 import arrow
 from sqlalchemy import (Boolean, Column, DateTime, Float, Integer, String,
-                        create_engine, inspect)
+                        create_engine, desc, func, inspect)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
-from sqlalchemy import func
 from sqlalchemy.pool import StaticPool
 
 from freqtrade import OperationalException
-
 
 logger = logging.getLogger(__name__)
 
@@ -403,6 +401,25 @@ class Trade(_DECL_BASE):
             .filter(Trade.is_open.is_(True))\
             .scalar()
         return total_open_stake_amount or 0
+
+    @staticmethod
+    def get_overall_performance() -> Dict:
+        pair_rates = Trade.session.query(
+            Trade.pair,
+            func.sum(Trade.close_profit).label('profit_sum'),
+            func.count(Trade.pair).label('count')
+        ).filter(Trade.is_open.is_(False))\
+            .group_by(Trade.pair) \
+            .order_by(desc('profit_sum')) \
+            .all()
+        return [
+            {
+                'pair': pair,
+                'profit': round(rate * 100, 2),
+                'count': count
+            }
+            for pair, rate, count in pair_rates
+        ]
 
     @staticmethod
     def get_open_trades() -> List[Any]:
