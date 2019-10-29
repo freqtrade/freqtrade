@@ -61,7 +61,7 @@ def test_init_create_session(default_conf):
     # Check if init create a session
     init(default_conf['db_url'], default_conf['dry_run'])
     assert hasattr(Trade, 'session')
-    assert 'Session' in type(Trade.session).__name__
+    assert 'scoped_session' in type(Trade.session).__name__
 
 
 def test_init_custom_db_url(default_conf, mocker):

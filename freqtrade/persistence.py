@@ -51,9 +51,11 @@ def init(db_url: str, clean_open_orders: bool = False) -> None:
         raise OperationalException(f"Given value for db_url: '{db_url}' "
                                    f"is no valid database URL! (See {_SQL_DOCS_URL})")
 
-    session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
-    Trade.session = session()
-    Trade.query = session.query_property()
+    # https://docs.sqlalchemy.org/en/13/orm/contextual.html#thread-local-scope
+    # Scoped sessions proxy requests to the appropriate thread-local session.
+    # We should use the scoped_session object - not a seperately initialized version
+    Trade.session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
+    Trade.query = Trade.session.query_property()
     _DECL_BASE.metadata.create_all(engine)
     check_migrate(engine)
 
