@@ -27,6 +27,8 @@ class VolumePairList(IPairList):
         self._number_pairs = self._whitelistconf['number_assets']
         self._sort_key = self._whitelistconf.get('sort_key', 'quoteVolume')
         self._precision_filter = self._whitelistconf.get('precision_filter', True)
+        self._low_price_percent_filter = self._whitelistconf.get('low_price_percent_filter', None)
+        print(self._whitelistconf)
 
         if not self._freqtrade.exchange.exchange_has('fetchTickers'):
             raise OperationalException(
@@ -77,6 +79,23 @@ class VolumePairList(IPairList):
             return False
         return True
 
+    def _validate_precision_filter_lowprice(self, ticker) -> bool:
+        """
+        Check if if one price-step is > than a certain barrier.
+        :param ticker: ticker dict as returned from ccxt.load_markets()
+        :param precision: Precision
+        :return: True if the pair can stay, false if it should be removed
+        """
+        precision = self._freqtrade.exchange.markets[ticker['symbol']]['precision']['price']
+
+        compare = ticker['last'] + 1 / pow(10, precision)
+        changeperc = (compare - ticker['last']) / ticker['last']
+        if changeperc > self._low_price_percent_filter:
+            logger.info(f"Removed {ticker['symbol']} from whitelist, "
+                        f"because 1 unit is {changeperc * 100:.3f}%")
+            return False
+        return True
+
     @cached(TTLCache(maxsize=1, ttl=1800))
     def _gen_pair_whitelist(self, base_currency: str, key: str) -> List[str]:
         """
@@ -106,6 +125,10 @@ class VolumePairList(IPairList):
             if (stoploss and self._precision_filter
                 and not self._validate_precision_filter(t, stoploss)):
                 valid_tickers.remove(t)
+                continue
+            if self._low_price_percent_filter and not self._validate_precision_filter_lowprice(t,):
+                valid_tickers.remove(t)
+                continue
 
         pairs = [s['symbol'] for s in valid_tickers]
         logger.info(f"Searching pairs: {pairs[:self._number_pairs]}")
