@@ -26,7 +26,7 @@ def whitelist_conf(default_conf):
         'BLK/BTC'
     ]
     default_conf['pairlist'] = {'method': 'StaticPairList',
-                                'config': {'number_assets': 3}
+                                'config': {'number_assets': 5}
                                 }
 
     return default_conf
@@ -86,7 +86,7 @@ def test_refresh_pairlist_dynamic(mocker, shitcoinmarkets, tickers, whitelist_co
         markets=PropertyMock(return_value=shitcoinmarkets),
      )
     # argument: use the whitelist dynamically by exchange-volume
-    whitelist = ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'HOT/BTC']
+    whitelist = ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'HOT/BTC', 'FUEL/BTC']
     freqtradebot.pairlists.refresh_pairlist()
 
     assert whitelist == freqtradebot.pairlists.whitelist
@@ -113,30 +113,38 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     assert set(whitelist) == set(pairslist)
 
 
-@pytest.mark.parametrize("precision_filter,base_currency,key,whitelist_result", [
-    (False, "BTC", "quoteVolume", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'HOT/BTC']),
-    (False, "BTC", "bidVolume", ['LTC/BTC', 'TKN/BTC', 'ETH/BTC', 'HOT/BTC']),
-    (False, "USDT", "quoteVolume", ['ETH/USDT']),
-    (False, "ETH", "quoteVolume", []),  # this replaces tests that were removed from test_exchange
-    (True, "BTC", "quoteVolume", ["LTC/BTC", "ETH/BTC", "TKN/BTC"]),
-    (True, "BTC", "bidVolume", ["LTC/BTC", "TKN/BTC", "ETH/BTC"])
+@pytest.mark.parametrize("precision_filter,low_price_filter,base_currency,key,whitelist_result", [
+    (False, 0, "BTC", "quoteVolume", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'HOT/BTC', 'FUEL/BTC']),
+    (False, 0, "BTC", "bidVolume", ['LTC/BTC', 'TKN/BTC', 'ETH/BTC', 'HOT/BTC', 'FUEL/BTC']),
+    (False, 0, "USDT", "quoteVolume", ['ETH/USDT']),
+    (False, 0, "ETH", "quoteVolume", []),
+    (True, 0, "BTC", "quoteVolume", ["LTC/BTC", "ETH/BTC", "TKN/BTC", 'FUEL/BTC']),
+    (True, 0, "BTC", "bidVolume", ["LTC/BTC", "TKN/BTC", "ETH/BTC", 'FUEL/BTC']),
+    (False, 0.03, "BTC", "bidVolume", ['LTC/BTC', 'TKN/BTC', 'ETH/BTC', 'FUEL/BTC']),
+    # Hot is removed by precision_filter, Fuel by low_price_filter.
+    (True, 0.02, "BTC", "bidVolume", ['LTC/BTC', 'TKN/BTC', 'ETH/BTC']),
 ])
 def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, tickers,
-                                      precision_filter, base_currency, key, whitelist_result,
-                                      caplog) -> None:
+                                      precision_filter, low_price_filter, base_currency, key,
+                                      whitelist_result, caplog) -> None:
     whitelist_conf['pairlist']['method'] = 'VolumePairList'
+    whitelist_conf['pairlist']['config']['precision_filter'] = precision_filter
+    whitelist_conf['pairlist']['config']['low_price_percent_filter'] = low_price_filter
+
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
     mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=shitcoinmarkets))
     mocker.patch('freqtrade.exchange.Exchange.get_tickers', tickers)
-    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, p, r: round(r, 8))
 
-    freqtrade.pairlists._precision_filter = precision_filter
     freqtrade.config['stake_currency'] = base_currency
     whitelist = freqtrade.pairlists._gen_pair_whitelist(base_currency=base_currency, key=key)
     assert sorted(whitelist) == sorted(whitelist_result)
     if precision_filter:
-        assert log_has_re(r'^Removed .* from whitelist, because stop price .* would be <= stop limit.*', caplog)
+        assert log_has_re(r'^Removed .* from whitelist, because stop price .* '
+                          r'would be <= stop limit.*', caplog)
+
+    if low_price_filter:
+        assert log_has_re(r'^Removed .* from whitelist, because 1 unit is .*%$', caplog)
 
 
 def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None:

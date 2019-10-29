@@ -5,11 +5,14 @@ Provides lists as configured in config.json
 
  """
 import logging
+from copy import deepcopy
 from typing import List
+
 from cachetools import TTLCache, cached
 
-from freqtrade.pairlist.IPairList import IPairList
 from freqtrade import OperationalException
+from freqtrade.pairlist.IPairList import IPairList
+
 logger = logging.getLogger(__name__)
 
 SORT_VALUES = ['askVolume', 'bidVolume', 'quoteVolume']
@@ -28,7 +31,6 @@ class VolumePairList(IPairList):
         self._sort_key = self._whitelistconf.get('sort_key', 'quoteVolume')
         self._precision_filter = self._whitelistconf.get('precision_filter', True)
         self._low_price_percent_filter = self._whitelistconf.get('low_price_percent_filter', None)
-        print(self._whitelistconf)
 
         if not self._freqtrade.exchange.exchange_has('fetchTickers'):
             raise OperationalException(
@@ -64,10 +66,10 @@ class VolumePairList(IPairList):
         low value pairs.
         :param ticker: ticker dict as returned from ccxt.load_markets()
         :param stoploss: stoploss value as set in the configuration
-                        (already cleaned to be guaranteed negative)
+                        (already cleaned to be 1 - stoploss)
         :return: True if the pair can stay, false if it should be removed
         """
-        stop_price = (self._freqtrade.get_target_bid(ticker["symbol"], ticker) * stoploss)
+        stop_price = self._freqtrade.get_target_bid(ticker["symbol"], ticker) * stoploss
         # Adjust stop-prices to precision
         sp = self._freqtrade.exchange.symbol_price_prec(ticker["symbol"], stop_price)
         stop_gap_price = self._freqtrade.exchange.symbol_price_prec(ticker["symbol"],
@@ -120,10 +122,11 @@ class VolumePairList(IPairList):
             # Precalculate sanitized stoploss value to avoid recalculation for every pair
             stoploss = 1 - abs(self._freqtrade.strategy.stoploss)
 
-        for t in valid_tickers:
+        # Copy list since we're modifying this list
+        for t in deepcopy(valid_tickers):
             # Filter out assets which would not allow setting a stoploss
             if (stoploss and self._precision_filter
-                and not self._validate_precision_filter(t, stoploss)):
+               and not self._validate_precision_filter(t, stoploss)):
                 valid_tickers.remove(t)
                 continue
             if self._low_price_percent_filter and not self._validate_precision_filter_lowprice(t,):

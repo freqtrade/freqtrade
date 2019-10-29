@@ -606,6 +606,34 @@ def shitcoinmarkets(markets):
             },
             'info': {},
         },
+        'FUEL/BTC': {
+            'id': 'FUELBTC',
+            'symbol': 'FUEL/BTC',
+            'base': 'FUEL',
+            'quote': 'BTC',
+            'active': True,
+            'precision': {
+                'base': 8,
+                'quote': 8,
+                'amount': 0,
+                'price': 8
+            },
+            'limits': {
+                'amount': {
+                    'min': 1.0,
+                    'max': 90000000.0
+                },
+                'price': {
+                    'min': 1e-08,
+                    'max': 1000.0
+                },
+                'cost': {
+                    'min': 0.001,
+                    'max': None
+                }
+            },
+            'info': {},
+        },
         })
     return shitmarkets
 
@@ -924,6 +952,28 @@ def tickers():
             'average': None,
             'baseVolume': 1442290324.0,
             'quoteVolume': 143.78311994,
+            'info': {}
+        },
+        'FUEL/BTC': {
+            'symbol': 'FUEL/BTC',
+            'timestamp': 1572340250771,
+            'datetime': '2019-10-29T09:10:50.771Z',
+            'high': 0.00000040,
+            'low': 0.00000035,
+            'bid': 0.00000036,
+            'bidVolume': 8932318.0,
+            'ask': 0.00000037,
+            'askVolume': 10140774.0,
+            'vwap': 0.00000037,
+            'open': 0.00000039,
+            'close': 0.00000037,
+            'last': 0.00000037,
+            'previousClose': 0.00000038,
+            'change': -0.00000002,
+            'percentage': -5.128,
+            'average': None,
+            'baseVolume': 168927742.0,
+            'quoteVolume': 62.68220262,
             'info': {}
         },
         'ETH/USDT': {

@@ -427,7 +427,9 @@ section of the configuration.
   * `VolumePairList` does not consider `pair_whitelist`, but builds this automatically based the pairlist configuration.
   * Pairs in `pair_blacklist` are not considered for VolumePairList, even if all other filters would match.
   * `low_price_percent_filter` allows filtering of pairs where a raise of 1 price unit is below the `low_price_percent_filter` ratio.
+    This option is disabled by default, and will only apply if set to <> 0.
     Calculation example: Min price precision is 8 decimals. If price is 0.00000011 - one step would be 0.00000012 - which is almost 10% higher than the previous value.
+    
 
 Example:
 
@@ -442,7 +444,7 @@ Example:
             "number_assets": 20,
             "sort_key": "quoteVolume",
             "precision_filter": true,
-            "low_price_percent_filter": 0.03
+            "low_price_percent_filter": 0.05
         }
     },
 ```
