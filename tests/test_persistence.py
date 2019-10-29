@@ -859,3 +859,16 @@ def test_get_overall_performance(fee):
     assert 'pair' in res[0]
     assert 'profit' in res[0]
     assert 'count' in res[0]
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_get_best_pair(fee):
+
+    res = Trade.get_best_pair()
+    assert res is None
+
+    create_mock_trades(fee)
+    res = Trade.get_best_pair()
+    assert len(res) == 2
+    assert res[0] == 'ETC/BTC'
+    assert res[1] == 0.005

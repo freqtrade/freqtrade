@@ -422,6 +422,15 @@ class Trade(_DECL_BASE):
         ]
 
     @staticmethod
+    def get_best_pair():
+        best_pair = Trade.session.query(
+            Trade.pair, func.sum(Trade.close_profit).label('profit_sum')
+        ).filter(Trade.is_open.is_(False)) \
+            .group_by(Trade.pair) \
+            .order_by(desc('profit_sum')).first()
+        return best_pair
+
+    @staticmethod
     def get_open_trades() -> List[Any]:
         """
         Query trades from persistence layer
