@@ -963,6 +963,16 @@ def test_process_temporary_deprecated_settings(mocker, default_conf, setting, ca
     assert default_conf[setting[0]][setting[1]] == setting[5]
 
 
+def test_process_deprecated_setting_precision_filter(mocker, default_conf, caplog):
+    patched_configuration_load_config_file(mocker, default_conf)
+    default_conf.update({'pairlist': {
+        'config': {'precision_filter': True}
+    }})
+
+    process_temporary_deprecated_settings(default_conf)
+    assert log_has_re(r'DEPRECATED.*precision_filter.*', caplog)
+
+
 def test_check_conflicting_settings(mocker, default_conf, caplog):
     patched_configuration_load_config_file(mocker, default_conf)
 

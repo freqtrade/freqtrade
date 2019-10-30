@@ -15,7 +15,7 @@ class LowPriceFilter(IPairListFilter):
         self._low_price_percent = config['pairlist']['filters']['LowPriceFilter'].get(
             'low_price_percent', 0)
 
-    def _validate_precision_filter_lowprice(self, ticker) -> bool:
+    def _validate_ticker_lowprice(self, ticker) -> bool:
         """
         Check if if one price-step is > than a certain barrier.
         :param ticker: ticker dict as returned from ccxt.load_markets()
@@ -42,7 +42,7 @@ class LowPriceFilter(IPairListFilter):
             ticker = [t for t in tickers if t['symbol'] == p][0]
 
             # Filter out assets which would not allow setting a stoploss
-            if self._low_price_percent and not self._validate_precision_filter_lowprice(ticker):
+            if self._low_price_percent and not self._validate_ticker_lowprice(ticker):
                 pairlist.remove(p)
 
         return pairlist
