@@ -127,7 +127,7 @@ This is called with each iteration of the bot - so consider implementing caching
 
 Assign the resulting whiteslist to `self._whitelist` and `self._blacklist` respectively. These will then be used to run the bot in this iteration. Pairs with open trades will be added to the whitelist to have the sell-methods run correctly.
 
-Please also run `self._validate_whitelist(pairs)` and to check and remove pairs with inactive markets. This function is available in the Parent class (`StaticPairList`) and should ideally not be overwritten.
+Please also run `self.validate_whitelist(pairs, tickers)` (tickers is optional, but should be passed when you're using tickers anyway) and to check and remove pairs with inactive markets. This function is available in the Parent class (`StaticPairList`) and should ideally not be overwritten.
 
 ##### sample
 
@@ -136,7 +136,7 @@ Please also run `self._validate_whitelist(pairs)` and to check and remove pairs 
         # Generate dynamic whitelist
         pairs = self._gen_pair_whitelist(self._config['stake_currency'], self._sort_key)
         # Validate whitelist to only have active market pairs
-        self._whitelist = self._validate_whitelist(pairs)[:self._number_pairs]
+        self._whitelist = self.validate_whitelist(pairs)[:self._number_pairs]
 ```
 
 #### _gen_pair_whitelist
