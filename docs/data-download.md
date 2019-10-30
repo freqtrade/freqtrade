@@ -8,7 +8,7 @@ If no additional parameter is specified, freqtrade will download data for `"1m"`
 Exchange and pairs will come from `config.json` (if specified using `-c/--config`).
 Otherwise `--exchange` becomes mandatory.
 
-!!! Tip Updating existing data
+!!! Tip "Tip: Updating existing data"
     If you already have backtesting data available in your data-directory and would like to refresh this data up to today, use `--days xx` with a number slightly higher than the missing number of days. Freqtrade will keep the available data and only download the missing data.
     Be carefull though: If the number is too small (which would result in a few missing days), the whole dataset will be removed and only xx days will be downloaded.
 
