@@ -15,7 +15,7 @@ from freqtrade import OperationalException
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
@@ -90,6 +90,8 @@ class Backtesting:
         self.ticker_interval = str(self.config.get('ticker_interval'))
         self.ticker_interval_mins = timeframe_to_minutes(self.ticker_interval)
 
+        # Get maximum required startup period
+        self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
         # Load one (first) strategy
         self._set_strategy(self.strategylist[0])
 
@@ -102,6 +104,31 @@ class Backtesting:
         # since a "perfect" stoploss-sell is assumed anyway
         # And the regular "stoploss" function would not apply to that case
         self.strategy.order_types['stoploss_on_exchange'] = False
+
+    def load_bt_data(self):
+        timerange = TimeRange.parse_timerange(None if self.config.get(
+            'timerange') is None else str(self.config.get('timerange')))
+
+        data = history.load_data(
+            datadir=Path(self.config['datadir']),
+            pairs=self.config['exchange']['pair_whitelist'],
+            ticker_interval=self.ticker_interval,
+            timerange=timerange,
+            startup_candles=self.required_startup,
+            fail_without_data=True,
+        )
+
+        min_date, max_date = history.get_timeframe(data)
+
+        logger.info(
+            'Loading data from %s up to %s (%s days)..',
+            min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
+        )
+        # Adjust startts forward if not enough data is available
+        timerange.adjust_start_if_necessary(timeframe_to_seconds(self.ticker_interval),
+                                            self.required_startup, min_date)
+
+        return data, timerange
 
     def _generate_text_table(self, data: Dict[str, Dict], results: DataFrame,
                              skip_nan: bool = False) -> str:
@@ -412,39 +439,18 @@ class Backtesting:
         :return: None
         """
         data: Dict[str, Any] = {}
-        pairs = self.config['exchange']['pair_whitelist']
         logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
         logger.info('Using stake_amount: %s ...', self.config['stake_amount'])
-
-        timerange = TimeRange.parse_timerange(None if self.config.get(
-            'timerange') is None else str(self.config.get('timerange')))
-        data = history.load_data(
-            datadir=Path(self.config['datadir']),
-            pairs=pairs,
-            ticker_interval=self.ticker_interval,
-            timerange=timerange,
-        )
-
-        if not data:
-            logger.critical("No data found. Terminating.")
-            return
         # Use max_open_trades in backtesting, except --disable-max-market-positions is set
         if self.config.get('use_max_market_positions', True):
             max_open_trades = self.config['max_open_trades']
         else:
             logger.info('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
             max_open_trades = 0
+
+        data, timerange = self.load_bt_data()
+
         all_results = {}
-
-        min_date, max_date = history.get_timeframe(data)
-
-        logger.info(
-            'Backtesting with data from %s up to %s (%s days)..',
-            min_date.isoformat(),
-            max_date.isoformat(),
-            (max_date - min_date).days
-        )
-
         for strat in self.strategylist:
             logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
             self._set_strategy(strat)
@@ -452,6 +458,15 @@ class Backtesting:
             # need to reprocess data every time to populate signals
             preprocessed = self.strategy.tickerdata_to_dataframe(data)
 
+            # Trim startup period from analyzed dataframe
+            for pair, df in preprocessed.items():
+                preprocessed[pair] = history.trim_dataframe(df, timerange)
+            min_date, max_date = history.get_timeframe(preprocessed)
+
+            logger.info(
+                'Backtesting with data from %s up to %s (%s days)..',
+                min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
+            )
             # Execute backtest and print results
             all_results[self.strategy.get_strategy_name()] = self.backtest(
                 {

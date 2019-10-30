@@ -523,6 +523,24 @@ def test_validate_order_types_not_in_config(default_conf, mocker):
     Exchange(conf)
 
 
+def test_validate_required_startup_candles(default_conf, mocker, caplog):
+    api_mock = MagicMock()
+    mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value='Binance'))
+
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', api_mock)
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
+
+    default_conf['startup_candle_count'] = 20
+    ex = Exchange(default_conf)
+    assert ex
+    default_conf['startup_candle_count'] = 600
+
+    with pytest.raises(OperationalException, match=r'This strategy requires 600.*'):
+        Exchange(default_conf)
+
+
 def test_exchange_has(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf)
     assert not exchange.exchange_has('ASDFASDF')

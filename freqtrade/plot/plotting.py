@@ -264,12 +264,12 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
 
 
 def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame],
-                          trades: pd.DataFrame) -> go.Figure:
+                          trades: pd.DataFrame, timeframe: str) -> go.Figure:
     # Combine close-values for all pairs, rename columns to "pair"
     df_comb = combine_tickers_with_mean(tickers, "close")
 
     # Add combined cumulative profit
-    df_comb = create_cum_profit(df_comb, trades, 'cum_profit')
+    df_comb = create_cum_profit(df_comb, trades, 'cum_profit', timeframe)
 
     # Plot the pairs average close prices, and total profit growth
     avgclose = go.Scatter(
@@ -293,7 +293,7 @@ def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame],
 
     for pair in pairs:
         profit_col = f'cum_profit_{pair}'
-        df_comb = create_cum_profit(df_comb, trades[trades['pair'] == pair], profit_col)
+        df_comb = create_cum_profit(df_comb, trades[trades['pair'] == pair], profit_col, timeframe)
 
         fig = add_profit(fig, 3, df_comb, profit_col, f"Profit {pair}")
 
@@ -382,9 +382,9 @@ def plot_profit(config: Dict[str, Any]) -> None:
                          )
     # Filter trades to relevant pairs
     trades = trades[trades['pair'].isin(plot_elements["pairs"])]
-
     # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
-    fig = generate_profit_graph(plot_elements["pairs"], plot_elements["tickers"], trades)
+    fig = generate_profit_graph(plot_elements["pairs"], plot_elements["tickers"],
+                                trades, config.get('ticker_interval', '5m'))
     store_plot_file(fig, filename='freqtrade-profit-plot.html',
                     directory=config['user_data_dir'] / "plot", auto_open=True)

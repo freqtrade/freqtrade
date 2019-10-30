@@ -95,6 +95,23 @@ def test_load_data_1min_ticker(ticker_history, mocker, caplog, testdatadir) -> N
     _clean_test_file(file)
 
 
+def test_load_data_startup_candles(mocker, caplog, default_conf, testdatadir) -> None:
+    ltfmock = mocker.patch('freqtrade.data.history.load_tickerdata_file',
+                           MagicMock(return_value=None))
+    timerange = TimeRange('date', None, 1510639620, 0)
+    history.load_pair_history(pair='UNITTEST/BTC', ticker_interval='1m',
+                              datadir=testdatadir, timerange=timerange,
+                              startup_candles=20,
+                              )
+    assert log_has(
+        'Using indicator startup period: 20 ...', caplog
+    )
+    assert ltfmock.call_count == 1
+    assert ltfmock.call_args_list[0][1]['timerange'] != timerange
+    # startts is 20 minutes earlier
+    assert ltfmock.call_args_list[0][1]['timerange'].startts == timerange.startts - 20 * 60
+
+
 def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog,
                                       default_conf, testdatadir) -> None:
     """
@@ -425,6 +442,46 @@ def test_trim_tickerlist(testdatadir) -> None:
     ticker = trim_tickerlist([], timerange)
     assert 0 == len(ticker)
     assert not ticker
+
+
+def test_trim_dataframe(testdatadir) -> None:
+    data = history.load_data(
+        datadir=testdatadir,
+        ticker_interval='1m',
+        pairs=['UNITTEST/BTC']
+    )['UNITTEST/BTC']
+    min_date = int(data.iloc[0]['date'].timestamp())
+    max_date = int(data.iloc[-1]['date'].timestamp())
+    data_modify = data.copy()
+
+    # Remove first 30 minutes (1800 s)
+    tr = TimeRange('date', None, min_date + 1800, 0)
+    data_modify = history.trim_dataframe(data_modify, tr)
+    assert not data_modify.equals(data)
+    assert len(data_modify) < len(data)
+    assert len(data_modify) == len(data) - 30
+    assert all(data_modify.iloc[-1] == data.iloc[-1])
+    assert all(data_modify.iloc[0] == data.iloc[30])
+
+    data_modify = data.copy()
+    # Remove last 30 minutes (1800 s)
+    tr = TimeRange(None, 'date', 0, max_date - 1800)
+    data_modify = history.trim_dataframe(data_modify, tr)
+    assert not data_modify.equals(data)
+    assert len(data_modify) < len(data)
+    assert len(data_modify) == len(data) - 30
+    assert all(data_modify.iloc[0] == data.iloc[0])
+    assert all(data_modify.iloc[-1] == data.iloc[-31])
+
+    data_modify = data.copy()
+    # Remove first 25 and last 30 minutes (1800 s)
+    tr = TimeRange('date', 'date', min_date + 1500, max_date - 1800)
+    data_modify = history.trim_dataframe(data_modify, tr)
+    assert not data_modify.equals(data)
+    assert len(data_modify) < len(data)
+    assert len(data_modify) == len(data) - 55
+    # first row matches 25th original row
+    assert all(data_modify.iloc[0] == data.iloc[25])
 
 
 def test_file_dump_json_tofile(testdatadir) -> None:

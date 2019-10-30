@@ -53,10 +53,10 @@ def test_init_plotscript(default_conf, mocker, testdatadir):
     assert "trades" in ret
     assert "pairs" in ret
 
-    default_conf['pairs'] = ["POWR/BTC", "ADA/BTC"]
+    default_conf['pairs'] = ["TRX/BTC", "ADA/BTC"]
     ret = init_plotscript(default_conf)
     assert "tickers" in ret
-    assert "POWR/BTC" in ret["tickers"]
+    assert "TRX/BTC" in ret["tickers"]
     assert "ADA/BTC" in ret["tickers"]
 
 
@@ -228,13 +228,13 @@ def test_add_profit(testdatadir):
     bt_data = load_backtest_data(filename)
     timerange = TimeRange.parse_timerange("20180110-20180112")
 
-    df = history.load_pair_history(pair="POWR/BTC", ticker_interval='5m',
+    df = history.load_pair_history(pair="TRX/BTC", ticker_interval='5m',
                                    datadir=testdatadir, timerange=timerange)
     fig = generate_empty_figure()
 
     cum_profits = create_cum_profit(df.set_index('date'),
-                                    bt_data[bt_data["pair"] == 'POWR/BTC'],
-                                    "cum_profits")
+                                    bt_data[bt_data["pair"] == 'TRX/BTC'],
+                                    "cum_profits", timeframe="5m")
 
     fig1 = add_profit(fig, row=2, data=cum_profits, column='cum_profits', name='Profits')
     figure = fig1.layout.figure
@@ -247,7 +247,7 @@ def test_generate_profit_graph(testdatadir):
     filename = testdatadir / "backtest-result_test.json"
     trades = load_backtest_data(filename)
     timerange = TimeRange.parse_timerange("20180110-20180112")
-    pairs = ["POWR/BTC", "ADA/BTC"]
+    pairs = ["TRX/BTC", "ADA/BTC"]
 
     tickers = history.load_data(datadir=testdatadir,
                                 pairs=pairs,
@@ -256,7 +256,7 @@ def test_generate_profit_graph(testdatadir):
                                 )
     trades = trades[trades['pair'].isin(pairs)]
 
-    fig = generate_profit_graph(pairs, tickers, trades)
+    fig = generate_profit_graph(pairs, tickers, trades, timeframe="5m")
     assert isinstance(fig, go.Figure)
 
     assert fig.layout.title.text == "Freqtrade Profit plot"
