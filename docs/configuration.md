@@ -215,6 +215,11 @@ If this is configured, the following 4 values (`buy`, `sell`, `stoploss` and
 `emergencysell` is an optional value, which defaults to `market` and is used when creating stoploss on exchange orders fails.
 The below is the default which is used if this is not configured in either strategy or configuration file.
 
+Since `stoploss_on_exchange` uses limit orders, the exchange needs 2 prices, the stoploss_price and the Limit price.
+`stoploss` defines the stop-price - and limit should be slightly below this. This defaults to 0.99 / 1%.
+Calculation example: we bought the asset at 100$.
+Stop-price is 95$, then limit would be `95 * 0.99 = 94.05$` - so the stoploss will happen between 95$ and 94.05$.
+
 Syntax for Strategy:
 
 ```python
@@ -224,7 +229,8 @@ order_types = {
     "emergencysell": "market",
     "stoploss": "market",
     "stoploss_on_exchange": False,
-    "stoploss_on_exchange_interval": 60
+    "stoploss_on_exchange_interval": 60,
+    "stoploss_on_exchange_limit_ratio": 0.99,
 }
 ```
 
