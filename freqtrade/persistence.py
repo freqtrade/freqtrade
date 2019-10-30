@@ -437,7 +437,7 @@ class Trade(_DECL_BASE):
         return total_open_stake_amount or 0
 
     @staticmethod
-    def get_overall_performance() -> List[Dict]:
+    def get_overall_performance() -> List[Dict[str, Any]]:
         """
         Returns List of dicts containing all Trades, including profit and trade count
         """
@@ -452,7 +452,7 @@ class Trade(_DECL_BASE):
         return [
             {
                 'pair': pair,
-                'profit': round(rate * 100, 2),
+                'profit': rate,
                 'count': count
             }
             for pair, rate, count in pair_rates

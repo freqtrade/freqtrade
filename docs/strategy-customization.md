@@ -415,7 +415,7 @@ At the top of the file, import Trade.
 from freqtrade.persistence import Trade
 ```
 
-The following example queries for the current pair and trades from today, however other filters easily be added.
+The following example queries for the current pair and trades from today, however other filters can easily be added.
 
 ``` python
 if self.config['runmode'] in ('live', 'dry_run'):
@@ -442,10 +442,10 @@ if self.config['runmode'] in ('live', 'dry_run'):
     performance = Trade.get_overall_performance()
 ```
 
-Sample return value: ETH/BTC had 5 trades, with a total profit of 1.5%.
+Sample return value: ETH/BTC had 5 trades, with a total profit of 1.5% (ratio of 0.015).
 
 ``` json
-{'pair': "ETH/BTC", 'profit': 1.5, 'count': 5}
+{'pair': "ETH/BTC", 'profit': 0.015, 'count': 5}
 ```
 
 !!! Warning
