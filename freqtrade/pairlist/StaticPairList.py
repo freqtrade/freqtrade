@@ -27,4 +27,4 @@ class StaticPairList(IPairList):
         """
         Refreshes pairlists and assigns them to self._whitelist and self._blacklist respectively
         """
-        self._whitelist = self._validate_whitelist(self._config['exchange']['pair_whitelist'])
+        self._whitelist = self.validate_whitelist(self._config['exchange']['pair_whitelist'])

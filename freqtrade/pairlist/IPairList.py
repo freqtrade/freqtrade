@@ -6,10 +6,11 @@ Provides lists as configured in config.json
  """
 import logging
 from abc import ABC, abstractmethod
-from typing import List
+from typing import Dict, List
 
 from freqtrade.exchange import market_is_active
-
+from freqtrade.pairlist.IPairListFilter import IPairListFilter
+from freqtrade.resolvers.pairlistfilter_resolver import PairListFilterResolver
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,12 @@ class IPairList(ABC):
         self._config = config
         self._whitelist = self._config['exchange']['pair_whitelist']
         self._blacklist = self._config['exchange'].get('pair_blacklist', [])
+        self._filters = self._config.get('pairlist', {}).get('filters', {})
+        self._pairlistfilters: List[IPairListFilter] = []
+        for pl_filter in self._filters.keys():
+            self._pairlistfilters.append(
+                PairListFilterResolver(pl_filter, freqtrade, self._config).pairlistfilter
+                )
 
     @property
     def name(self) -> str:
@@ -60,7 +67,23 @@ class IPairList(ABC):
         -> Please overwrite in subclasses
         """
 
-    def _validate_whitelist(self, whitelist: List[str]) -> List[str]:
+    def validate_whitelist(self, pairlist: List[str],
+                           tickers: List[Dict] = []) -> List[str]:
+        """
+        Validate pairlist against active markets and blacklist.
+        Run PairlistFilters if these are configured.
+        """
+        pairlist = self._whitelist_for_active_markets(pairlist)
+
+        if not tickers:
+            # Refresh tickers if they are not used by the parent Pairlist
+            tickers = self._freqtrade.exchange.get_tickers()
+
+        for pl_filter in self._pairlistfilters:
+            pairlist = pl_filter.filter_pairlist(pairlist, tickers)
+        return pairlist
+
+    def _whitelist_for_active_markets(self, whitelist: List[str]) -> List[str]:
         """
         Check available markets and remove pair from whitelist if necessary
         :param whitelist: the sorted list of pairs the user might want to trade
@@ -69,7 +92,7 @@ class IPairList(ABC):
         """
         markets = self._freqtrade.exchange.markets
 
-        sanitized_whitelist = set()
+        sanitized_whitelist: List[str] = []
         for pair in whitelist:
             # pair is not in the generated dynamic market, or in the blacklist ... ignore it
             if (pair in self.blacklist or pair not in markets
@@ -83,7 +106,8 @@ class IPairList(ABC):
             if not market_is_active(market):
                 logger.info(f"Ignoring {pair} from whitelist. Market is not active.")
                 continue
-            sanitized_whitelist.add(pair)
+            if pair not in sanitized_whitelist:
+                sanitized_whitelist.append(pair)
 
         # We need to remove pairs that are unknown
-        return list(sanitized_whitelist)
+        return sanitized_whitelist

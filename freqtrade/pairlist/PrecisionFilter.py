@@ -1,0 +1,51 @@
+import logging
+from copy import deepcopy
+from typing import Dict, List
+
+from freqtrade.pairlist.IPairListFilter import IPairListFilter
+
+logger = logging.getLogger(__name__)
+
+
+class PrecisionFilter(IPairListFilter):
+
+    def __init__(self, freqtrade, config: dict) -> None:
+        super().__init__(freqtrade, config)
+
+    def _validate_precision_filter(self, ticker: dict, stoploss: float) -> bool:
+        """
+        Check if pair has enough room to add a stoploss to avoid "unsellable" buys of very
+        low value pairs.
+        :param ticker: ticker dict as returned from ccxt.load_markets()
+        :param stoploss: stoploss value as set in the configuration
+                        (already cleaned to be 1 - stoploss)
+        :return: True if the pair can stay, false if it should be removed
+        """
+        stop_price = self._freqtrade.get_target_bid(ticker["symbol"], ticker) * stoploss
+        # Adjust stop-prices to precision
+        sp = self._freqtrade.exchange.symbol_price_prec(ticker["symbol"], stop_price)
+        stop_gap_price = self._freqtrade.exchange.symbol_price_prec(ticker["symbol"],
+                                                                    stop_price * 0.99)
+        logger.debug(f"{ticker['symbol']} - {sp} : {stop_gap_price}")
+        if sp <= stop_gap_price:
+            logger.info(f"Removed {ticker['symbol']} from whitelist, "
+                        f"because stop price {sp} would be <= stop limit {stop_gap_price}")
+            return False
+        return True
+
+    def filter_pairlist(self, pairlist: List[str], tickers: List[Dict]) -> List[str]:
+        """
+        Method doing the filtering
+        """
+        if self._freqtrade.strategy.stoploss is not None:
+            # Precalculate sanitized stoploss value to avoid recalculation for every pair
+            stoploss = 1 - abs(self._freqtrade.strategy.stoploss)
+        # Copy list since we're modifying this list
+        for p in deepcopy(pairlist):
+            ticker = [t for t in tickers if t['symbol'] == p][0]
+            # Filter out assets which would not allow setting a stoploss
+            if (stoploss and not self._validate_precision_filter(ticker, stoploss)):
+                pairlist.remove(p)
+                continue
+
+        return pairlist
