@@ -52,16 +52,17 @@ def load_backtest_data(filename) -> pd.DataFrame:
     return df
 
 
-def evaluate_result_multi(results: pd.DataFrame, freq: str, max_open_trades: int) -> pd.DataFrame:
+def parallel_trade_analysis(results: pd.DataFrame, timeframe: str) -> pd.DataFrame:
     """
     Find overlapping trades by expanding each trade once per period it was open
-    and then counting overlaps
+    and then counting overlaps.
     :param results: Results Dataframe - can be loaded
-    :param freq: Frequency used for the backtest
-    :param max_open_trades: parameter max_open_trades used during backtest run
-    :return: dataframe with open-counts per time-period in freq
+    :param timeframe: Timeframe used for backtest
+    :return: dataframe with open-counts per time-period in timeframe
     """
-    dates = [pd.Series(pd.date_range(row[1].open_time, row[1].close_time, freq=freq))
+    from freqtrade.exchange import timeframe_to_minutes
+    timeframe_min = timeframe_to_minutes(timeframe)
+    dates = [pd.Series(pd.date_range(row[1].open_time, row[1].close_time, freq=f"{timeframe_min}min"))
              for row in results[['open_time', 'close_time']].iterrows()]
     deltas = [len(x) for x in dates]
     dates = pd.Series(pd.concat(dates).values, name='date')
@@ -69,8 +70,23 @@ def evaluate_result_multi(results: pd.DataFrame, freq: str, max_open_trades: int
 
     df2 = pd.concat([dates, df2], axis=1)
     df2 = df2.set_index('date')
-    df_final = df2.resample(freq)[['pair']].count()
-    return df_final[df_final['pair'] > max_open_trades]
+    df_final = df2.resample(f"{timeframe_min}min")[['pair']].count()
+    df_final = df_final.rename({'pair': 'open_trades'}, axis=1)
+    return df_final
+
+
+def evaluate_result_multi(results: pd.DataFrame, timeframe: str,
+                          max_open_trades: int) -> pd.DataFrame:
+    """
+    Find overlapping trades by expanding each trade once per period it was open
+    and then counting overlaps
+    :param results: Results Dataframe - can be loaded
+    :param timeframe: Frequency used for the backtest
+    :param max_open_trades: parameter max_open_trades used during backtest run
+    :return: dataframe with open-counts per time-period in freq
+    """
+    df_final = parallel_trade_analysis(results, timeframe)
+    return df_final[df_final['open_trades'] > max_open_trades]
 
 
 def load_trades_from_db(db_url: str) -> pd.DataFrame:
