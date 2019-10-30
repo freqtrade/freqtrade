@@ -107,6 +107,22 @@ trades = load_trades_from_db("sqlite:///tradesv3.sqlite")
 trades.groupby("pair")["sell_reason"].value_counts()
 ```
 
+## Analyze the loaded trades for trade parallelism
+This can be useful to find the best `max_open_trades` parameter, when used with backtesting in conjunction with `--disable-max-market-positions`.
+
+`parallel_trade_analysis()` returns a timeseries dataframe with an "open_trades" column, specifying the number of open trades for each candle.
+
+
+```python
+from freqtrade.data.btanalysis import parallel_trade_analysis
+
+# Analyze the above
+parallel_trades = parallel_trade_analysis(trades, '5m')
+
+
+parallel_trades.plot()
+```
+
 ## Plot results
 
 Freqtrade offers interactive plotting capabilities based on plotly.
