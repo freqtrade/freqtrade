@@ -125,11 +125,11 @@ def test_create_cum_profit(testdatadir):
     bt_data = load_backtest_data(filename)
     timerange = TimeRange.parse_timerange("20180110-20180112")
 
-    df = load_pair_history(pair="POWR/BTC", ticker_interval='5m',
+    df = load_pair_history(pair="TRX/BTC", ticker_interval='5m',
                            datadir=testdatadir, timerange=timerange)
 
     cum_profits = create_cum_profit(df.set_index('date'),
-                                    bt_data[bt_data["pair"] == 'POWR/BTC'],
+                                    bt_data[bt_data["pair"] == 'TRX/BTC'],
                                     "cum_profits", timeframe="5m")
     assert "cum_profits" in cum_profits.columns
     assert cum_profits.iloc[0]['cum_profits'] == 0
@@ -143,11 +143,11 @@ def test_create_cum_profit1(testdatadir):
     bt_data.loc[:, 'close_time'] = bt_data.loc[:, 'close_time'] + DateOffset(seconds=20)
     timerange = TimeRange.parse_timerange("20180110-20180112")
 
-    df = load_pair_history(pair="POWR/BTC", ticker_interval='5m',
+    df = load_pair_history(pair="TRX/BTC", ticker_interval='5m',
                            datadir=testdatadir, timerange=timerange)
 
     cum_profits = create_cum_profit(df.set_index('date'),
-                                    bt_data[bt_data["pair"] == 'POWR/BTC'],
+                                    bt_data[bt_data["pair"] == 'TRX/BTC'],
                                     "cum_profits", timeframe="5m")
     assert "cum_profits" in cum_profits.columns
     assert cum_profits.iloc[0]['cum_profits'] == 0

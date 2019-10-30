@@ -537,7 +537,7 @@ def test_generate_optimizer(mocker, default_conf) -> None:
                          })
 
     trades = [
-        ('POWR/BTC', 0.023117, 0.000233, 100)
+        ('TRX/BTC', 0.023117, 0.000233, 100)
     ]
     labels = ['currency', 'profit_percent', 'profit_abs', 'trade_duration']
     backtest_result = pd.DataFrame.from_records(trades, columns=labels)
