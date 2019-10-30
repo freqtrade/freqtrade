@@ -377,6 +377,82 @@ The valid values are:
 "BTC", "ETH", "XRP", "LTC", "BCH", "USDT"
 ```
 
+## Pairlists
+
+Pairlists define the list of pairs that the bot should trade.
+There are [`StaticPairList`](#static-pair-list) and dynamic Whitelists available.
+
+In addition to pairlists, [pairlist filters](#available-pairlist-filters) can be configured, which remove certain assets.
+These Filters work with all Pairlist providers and are applied in the sequence they occur.
+
+### Available Pairlists
+
+* [`StaticPairList`](#static-pair-list) (default, if not configured differently)
+* [`VolumePairList`](#volume-pair-list)
+
+#### Static Pair List
+
+By default, the `StaticPairList` method is used, which uses a statically defined pair whitelist from the configuration. Inactive markets and blacklisted pairs are removed from the pair_whitelist.
+
+It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklist`.
+
+#### Volume Pair List
+
+`VolumePairList` selects `number_assets` top pairs based on `sort_key`, which can be one of `askVolume`, `bidVolume` and `quoteVolume` and defaults to `quoteVolume`.
+
+`VolumePairList` does not consider `pair_whitelist`, but selects the top assets from all available markets (with matching stake-currency) on the exchange.
+Pairs in `pair_blacklist` are not considered for `VolumePairList`, even if all other filters would match.
+
+```json
+"pairlist": {
+        "method": "VolumePairList",
+        "config": {
+            "number_assets": 20,
+            "sort_key": "quoteVolume",
+        },
+```
+
+### Available Pairlist Filters
+
+* [`PrecisionFilter`](#precision-filter)
+* [`LowPriceFilter`](#low-price-pair-filter)
+
+#### Precision Filter
+
+Filters low-value coins which would not allow setting a stoploss.
+
+#### Low Price Pair Filter
+
+The `LowPriceFilter` allows filtering of pairs where a raise of 1 price unit is below the `low_price_percent` ratio.
+This option is disabled by default, and will only apply if set to <> 0.
+
+Calculation example:  
+Min price precision is 8 decimals. If price is 0.00000011 - one step would be 0.00000012 - which is almost 10% higher than the previous value. 
+
+These pairs are dangerous since it may be impossible to place the desired stoploss - and often result in high losses.
+
+### Full Pairlist example
+
+The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, sorting by `quoteVolume` and applies both [`PrecisionFilter`](#precision-filter) and [`LowPriceFilter`](#low-price-pair-filter), filtering all assets where 1 priceunit is > 1%.
+
+```json
+"exchange": {
+    "pair_whitelist": [],
+    "pair_blacklist": ["BNB/BTC"]
+},
+"pairlist": {
+        "method": "VolumePairList",
+        "config": {
+            "number_assets": 20,
+            "sort_key": "quoteVolume",
+        },
+        "filters":{
+            "PrecisionFilter": {},
+            "LowPriceFilter": {"low_price_percent": 0.01}
+        }
+    },
+```
+
 ## Switch to Dry-run mode
 
 We recommend starting the bot in the Dry-run mode to see how your bot will
@@ -405,49 +481,6 @@ creating trades on the exchange.
 
 Once you will be happy with your bot performance running in the Dry-run mode,
 you can switch it to production mode.
-
-### Dynamic Pairlists
-
-Dynamic pairlists select pairs for you based on the logic configured.
-The bot runs against all pairs (with that stake) on the exchange, and a number of assets
-(`number_assets`) is selected based on the selected criteria.
-
-By default, the `StaticPairList` method is used.
-The Pairlist method is configured as `pair_whitelist` parameter under the `exchange`
-section of the configuration.
-
-**Available Pairlist methods:**
-
-* `StaticPairList`
-  * It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklist`.
-* `VolumePairList`
-  * It selects `number_assets` top pairs based on `sort_key`, which can be one of
-`askVolume`, `bidVolume` and `quoteVolume`, defaults to `quoteVolume`.
-  * By default, low-value coins that would not allow setting a stop loss are filtered out. (set `precision_filter` parameter to `false` to disable this behaviour).
-  * `VolumePairList` does not consider `pair_whitelist`, but builds this automatically based the pairlist configuration.
-  * Pairs in `pair_blacklist` are not considered for VolumePairList, even if all other filters would match.
-  * `low_price_percent_filter` allows filtering of pairs where a raise of 1 price unit is below the `low_price_percent_filter` ratio.
-    This option is disabled by default, and will only apply if set to <> 0.
-    Calculation example: Min price precision is 8 decimals. If price is 0.00000011 - one step would be 0.00000012 - which is almost 10% higher than the previous value.
-    
-
-Example:
-
-```json
-"exchange": {
-    "pair_whitelist": [],
-    "pair_blacklist": ["BNB/BTC"]
-},
-"pairlist": {
-        "method": "VolumePairList",
-        "config": {
-            "number_assets": 20,
-            "sort_key": "quoteVolume",
-            "precision_filter": true,
-            "low_price_percent_filter": 0.05
-        }
-    },
-```
 
 ## Switch to production mode
 
@@ -479,7 +512,7 @@ you run it in production mode.
 !!! Note
     If you have an exchange API key yet, [see our tutorial](/pre-requisite).
 
-### Using proxy with FreqTrade
+## Using proxy with FreqTrade
 
 To use a proxy with freqtrade, add the kwarg `"aiohttp_trust_env"=true` to the `"ccxt_async_kwargs"` dict in the exchange section of the configuration.
 
@@ -499,14 +532,13 @@ export HTTPS_PROXY="http://addr:port"
 freqtrade
 ```
 
-
-### Embedding Strategies
+## Embedding Strategies
 
 FreqTrade provides you with with an easy way to embed the strategy into your configuration file.
 This is done by utilizing BASE64 encoding and providing this string at the strategy configuration field,
 in your chosen config file.
 
-#### Encoding a string as BASE64
+### Encoding a string as BASE64
 
 This is a quick example, how to generate the BASE64 string in python
 
