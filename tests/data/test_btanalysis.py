@@ -10,7 +10,7 @@ from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
                                        create_cum_profit,
                                        extract_trades_of_period,
                                        load_backtest_data, load_trades,
-                                       load_trades_from_db)
+                                       load_trades_from_db, analyze_trade_parallelism)
 from freqtrade.data.history import load_data, load_pair_history
 from tests.test_persistence import create_mock_trades
 
@@ -32,7 +32,7 @@ def test_load_backtest_data(testdatadir):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_load_trades_db(default_conf, fee, mocker):
+def test_load_trades_from_db(default_conf, fee, mocker):
 
     create_mock_trades(fee)
     # remove init so it does not init again
@@ -82,6 +82,17 @@ def test_extract_trades_of_period(testdatadir):
     assert trades1.iloc[0].close_time == Arrow(2017, 11, 14, 10, 41, 0).datetime
     assert trades1.iloc[-1].open_time == Arrow(2017, 11, 14, 14, 20, 0).datetime
     assert trades1.iloc[-1].close_time == Arrow(2017, 11, 14, 15, 25, 0).datetime
+
+
+def test_analyze_trade_parallelism(default_conf, mocker, testdatadir):
+    filename = testdatadir / "backtest-result_test.json"
+    bt_data = load_backtest_data(filename)
+
+    res = analyze_trade_parallelism(bt_data, "5m")
+    assert isinstance(res, DataFrame)
+    assert 'open_trades' in res.columns
+    assert res['open_trades'].max() == 3
+    assert res['open_trades'].min() == 0
 
 
 def test_load_trades(default_conf, mocker):

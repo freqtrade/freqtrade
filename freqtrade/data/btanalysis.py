@@ -52,7 +52,7 @@ def load_backtest_data(filename) -> pd.DataFrame:
     return df
 
 
-def parallel_trade_analysis(results: pd.DataFrame, timeframe: str) -> pd.DataFrame:
+def analyze_trade_parallelism(results: pd.DataFrame, timeframe: str) -> pd.DataFrame:
     """
     Find overlapping trades by expanding each trade once per period it was open
     and then counting overlaps.
@@ -62,7 +62,8 @@ def parallel_trade_analysis(results: pd.DataFrame, timeframe: str) -> pd.DataFra
     """
     from freqtrade.exchange import timeframe_to_minutes
     timeframe_min = timeframe_to_minutes(timeframe)
-    dates = [pd.Series(pd.date_range(row[1].open_time, row[1].close_time, freq=f"{timeframe_min}min"))
+    dates = [pd.Series(pd.date_range(row[1].open_time, row[1].close_time,
+                                     freq=f"{timeframe_min}min"))
              for row in results[['open_time', 'close_time']].iterrows()]
     deltas = [len(x) for x in dates]
     dates = pd.Series(pd.concat(dates).values, name='date')
@@ -85,7 +86,7 @@ def evaluate_result_multi(results: pd.DataFrame, timeframe: str,
     :param max_open_trades: parameter max_open_trades used during backtest run
     :return: dataframe with open-counts per time-period in freq
     """
-    df_final = parallel_trade_analysis(results, timeframe)
+    df_final = analyze_trade_parallelism(results, timeframe)
     return df_final[df_final['open_trades'] > max_open_trades]
 
 
