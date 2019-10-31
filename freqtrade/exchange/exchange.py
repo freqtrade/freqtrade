@@ -14,135 +14,16 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 import ccxt
 import ccxt.async_support as ccxt_async
-from ccxt.base.decimal_to_precision import ROUND_UP, ROUND_DOWN
+from ccxt.base.decimal_to_precision import ROUND_DOWN, ROUND_UP
 from pandas import DataFrame
 
 from freqtrade import (DependencyException, InvalidOrderException,
                        OperationalException, TemporaryError, constants)
 from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.exchange.common import BAD_EXCHANGES, retrier, retrier_async
 from freqtrade.misc import deep_merge_dicts
 
-
 logger = logging.getLogger(__name__)
-
-
-API_RETRY_COUNT = 4
-BAD_EXCHANGES = {
-    "bitmex": "Various reasons.",
-    "bitstamp": "Does not provide history. "
-                "Details in https://github.com/freqtrade/freqtrade/issues/1983",
-    "hitbtc": "This API cannot be used with Freqtrade. "
-              "Use `hitbtc2` exchange id to access this exchange.",
-    **dict.fromkeys([
-        'adara',
-        'anxpro',
-        'bigone',
-        'coinbase',
-        'coinexchange',
-        'coinmarketcap',
-        'lykke',
-        'xbtce',
-        ], "Does not provide timeframes. ccxt fetchOHLCV: False"),
-    **dict.fromkeys([
-        'bcex',
-        'bit2c',
-        'bitbay',
-        'bitflyer',
-        'bitforex',
-        'bithumb',
-        'bitso',
-        'bitstamp1',
-        'bl3p',
-        'braziliex',
-        'btcbox',
-        'btcchina',
-        'btctradeim',
-        'btctradeua',
-        'bxinth',
-        'chilebit',
-        'coincheck',
-        'coinegg',
-        'coinfalcon',
-        'coinfloor',
-        'coingi',
-        'coinmate',
-        'coinone',
-        'coinspot',
-        'coolcoin',
-        'crypton',
-        'deribit',
-        'exmo',
-        'exx',
-        'flowbtc',
-        'foxbit',
-        'fybse',
-        # 'hitbtc',
-        'ice3x',
-        'independentreserve',
-        'indodax',
-        'itbit',
-        'lakebtc',
-        'latoken',
-        'liquid',
-        'livecoin',
-        'luno',
-        'mixcoins',
-        'negociecoins',
-        'nova',
-        'paymium',
-        'southxchange',
-        'stronghold',
-        'surbitcoin',
-        'therock',
-        'tidex',
-        'vaultoro',
-        'vbtc',
-        'virwox',
-        'yobit',
-        'zaif',
-        ], "Does not provide timeframes. ccxt fetchOHLCV: emulated"),
-    }
-
-MAP_EXCHANGE_CHILDCLASS = {
-    'binanceus': 'binance',
-    'binanceje': 'binance',
-}
-
-
-def retrier_async(f):
-    async def wrapper(*args, **kwargs):
-        count = kwargs.pop('count', API_RETRY_COUNT)
-        try:
-            return await f(*args, **kwargs)
-        except (TemporaryError, DependencyException) as ex:
-            logger.warning('%s() returned exception: "%s"', f.__name__, ex)
-            if count > 0:
-                count -= 1
-                kwargs.update({'count': count})
-                logger.warning('retrying %s() still for %s times', f.__name__, count)
-                return await wrapper(*args, **kwargs)
-            else:
-                logger.warning('Giving up retrying: %s()', f.__name__)
-                raise ex
-    return wrapper
-
-
-def retrier(f):
-    def wrapper(*args, **kwargs):
-        count = kwargs.pop('count', API_RETRY_COUNT)
-        try:
-            return f(*args, **kwargs)
-        except (TemporaryError, DependencyException) as ex:
-            logger.warning('%s() returned exception: "%s"', f.__name__, ex)
-            if count > 0:
-                count -= 1
-                kwargs.update({'count': count})
-                logger.warning('retrying %s() still for %s times', f.__name__, count)
-                return wrapper(*args, **kwargs)
-            else:
-                logger.warning('Giving up retrying: %s()', f.__name__)
-                raise ex
-    return wrapper
 
 
 class Exchange:
