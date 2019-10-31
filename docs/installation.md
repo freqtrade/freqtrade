@@ -95,7 +95,7 @@ sudo apt-get update
 sudo apt-get install build-essential git
 ```
 
-#### Raspberry Pi / Raspbian
+### Raspberry Pi / Raspbian
 
 The following assumes the latest [Raspbian Buster lite image](https://www.raspberrypi.org/downloads/raspbian/) from at least September 2019.
 This image comes with python3.7 preinstalled, making it easy to get freqtrade up and running.
