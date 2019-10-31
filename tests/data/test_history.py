@@ -103,9 +103,7 @@ def test_load_data_startup_candles(mocker, caplog, default_conf, testdatadir) ->
                               datadir=testdatadir, timerange=timerange,
                               startup_candles=20,
                               )
-    assert log_has(
-        'Using indicator startup period: 20 ...', caplog
-    )
+
     assert ltfmock.call_count == 1
     assert ltfmock.call_args_list[0][1]['timerange'] != timerange
     # startts is 20 minutes earlier
@@ -354,8 +352,12 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
     start = arrow.get('2018-01-01T00:00:00')
     end = arrow.get('2018-01-11T00:00:00')
     tickerdata = history.load_data(testdatadir, '5m', ['UNITTEST/BTC'],
+                                   startup_candles=20,
                                    timerange=TimeRange('date', 'date',
                                                        start.timestamp, end.timestamp))
+    assert log_has(
+        'Using indicator startup period: 20 ...', caplog
+    )
     # timedifference in 5 minutes
     td = ((end - start).total_seconds() // 60 // 5) + 1
     assert td != len(tickerdata['UNITTEST/BTC'])
