@@ -204,13 +204,14 @@ This part of the documentation is aimed at maintainers, and shows how to create 
 
 ### Create release branch
 
-``` bash
-# make sure you're in develop branch
-git checkout develop
+First, pick a commit that's about one week old (to not include latest additions to releases).
 
+``` bash
 # create new branch
-git checkout -b new_release
+git checkout -b new_release <commitid>
 ```
+
+Determine if crucial bugfixes have been made between this commit and the current state, and eventually cherry-pick these.
 
 * Edit `freqtrade/__init__.py` and add the version matching the current date (for example `2019.7` for July 2019). Minor versions can be `2019.7-1` should we need to do a second release that month.
 * Commit this part
@@ -219,23 +220,18 @@ git checkout -b new_release
 ### Create changelog from git commits
 
 !!! Note
-    Make sure that both master and develop are up-todate!.
+    Make sure that the master branch is uptodate!
 
 ``` bash
 # Needs to be done before merging / pulling that branch.
-git log --oneline --no-decorate --no-merges master..develop
+git log --oneline --no-decorate --no-merges master..new_release
 ```
 
 ### Create github release / tag
 
 Once the PR against master is merged (best right after merging):
 
-* Use the button "Draft a new release" in the Github UI (subsection releases)
+* Use the button "Draft a new release" in the Github UI (subsection releases).
 * Use the version-number specified as tag.
 * Use "master" as reference (this step comes after the above PR is merged).
-* Use the above changelog as release comment (as codeblock)
-
-### After-release
-
-* Update version in develop by postfixing that with `-dev` (`2019.6 -> 2019.6-dev`).
-* Create a PR against develop to update that branch.
+* Use the above changelog as release comment (as codeblock).
