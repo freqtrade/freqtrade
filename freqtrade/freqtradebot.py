@@ -768,7 +768,7 @@ class FreqtradeBot:
         buy_timeout_threshold = arrow.utcnow().shift(minutes=-buy_timeout).datetime
         sell_timeout_threshold = arrow.utcnow().shift(minutes=-sell_timeout).datetime
 
-        for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
+        for trade in Trade.get_open_order_trades():
             try:
                 # FIXME: Somehow the query above returns results
                 # where the open_order_id is in fact None.
