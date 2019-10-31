@@ -238,6 +238,7 @@ class IStrategy(ABC):
             logger.warning('Empty ticker history for pair %s', pair)
             return False, False
 
+        latest_index = dataframe.index.max()
         try:
             dataframe = self._analyze_ticker_internal(dataframe, {'pair': pair})
         except ValueError as error:
@@ -259,7 +260,7 @@ class IStrategy(ABC):
             logger.warning('Empty dataframe for pair %s', pair)
             return False, False
 
-        latest = dataframe.iloc[-1]
+        latest = dataframe.iloc[latest_index]
 
         # Check if dataframe is out of date
         signal_date = arrow.get(latest['date'])
