@@ -1,11 +1,9 @@
 
-from unittest.mock import MagicMock, PropertyMock
-
+from unittest.mock import MagicMock
 
 from freqtrade.persistence import Trade
 from freqtrade.strategy.interface import SellCheckTuple, SellType
-from tests.conftest import (patch_exchange, get_patched_freqtradebot,
-                            patch_get_signal)
+from tests.conftest import get_patched_freqtradebot, patch_get_signal
 
 
 def test_may_execute_sell_stoploss_on_exchange_multi(default_conf,
