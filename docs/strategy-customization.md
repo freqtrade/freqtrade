@@ -51,13 +51,13 @@ freqtrade --strategy AwesomeStrategy
 **For the following section we will use the [user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/sample_strategy.py)
 file as reference.**
 
-!!! Note Strategies and Backtesting
+!!! Note "Strategies and Backtesting"
     To avoid problems and unexpected differences between Backtesting and dry/live modes, please be aware
     that during backtesting the full time-interval is passed to the `populate_*()` methods at once.
     It is therefore best to use vectorized operations (across the whole dataframe, not loops) and
     avoid index referencing (`df.iloc[-1]`), but instead use `df.shift()` to get to the previous candle.
 
-!!! Warning Using future data
+!!! Warning "Warning: Using future data"
     Since backtesting passes the full time interval to the `populate_*()` methods, the strategy author
     needs to take care to avoid having the strategy utilize data from the future.
     Some common patterns for this are listed in the [Common Mistakes](#common-mistakes-when-developing-strategies) section of this document.
@@ -330,12 +330,12 @@ if self.dp:
                                              ticker_interval=inf_timeframe)
 ```
 
-!!! Warning Warning about backtesting
+!!! Warning "Warning about backtesting"
     Be carefull when using dataprovider in backtesting. `historic_ohlcv()` (and `get_pair_dataframe()`
     for the backtesting runmode) provides the full time-range in one go,
     so please be aware of it and make sure to not "look into the future" to avoid surprises when running in dry/live mode).
 
-!!! Warning Warning in hyperopt
+!!! Warning "Warning in hyperopt"
     This option cannot currently be used during hyperopt.
 
 #### Orderbook
