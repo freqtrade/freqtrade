@@ -2,10 +2,9 @@
 from unittest.mock import MagicMock, PropertyMock
 
 
-from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.strategy.interface import SellCheckTuple, SellType
-from tests.conftest import (patch_exchange,
+from tests.conftest import (patch_exchange, get_patched_freqtradebot,
                             patch_get_signal)
 
 
@@ -22,7 +21,6 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf,
     """
     default_conf['max_open_trades'] = 3
     default_conf['exchange']['name'] = 'binance'
-    patch_exchange(mocker)
 
     stoploss_limit = {
         'id': 123,
@@ -62,14 +60,12 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf,
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         get_fee=fee,
-        markets=PropertyMock(return_value=markets),
         symbol_amount_prec=lambda s, x, y: y,
         symbol_price_prec=lambda s, x, y: y,
         get_order=stoploss_order_mock,
         cancel_order=cancel_order_mock,
     )
 
-    wallets_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.freqtradebot.FreqtradeBot',
         create_stoploss_order=MagicMock(return_value=True),
@@ -77,9 +73,9 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf,
         _notify_sell=MagicMock(),
     )
     mocker.patch("freqtrade.strategy.interface.IStrategy.should_sell", should_sell_mock)
-    mocker.patch("freqtrade.wallets.Wallets.update", wallets_mock)
+    wallets_mock = mocker.patch("freqtrade.wallets.Wallets.update", MagicMock())
 
-    freqtrade = FreqtradeBot(default_conf)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
     freqtrade.strategy.order_types['stoploss_on_exchange'] = True
     # Switch ordertype to market to close trade immediately
     freqtrade.strategy.order_types['sell'] = 'market'
