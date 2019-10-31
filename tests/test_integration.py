@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 from freqtrade.persistence import Trade
 from freqtrade.strategy.interface import SellCheckTuple, SellType
 from tests.conftest import get_patched_freqtradebot, patch_get_signal
+from freqtrade.rpc.rpc import RPC
 
 
 def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
@@ -107,3 +108,52 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
     trade = trades[2]
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
     assert not trade.is_open
+
+
+def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, mocker) -> None:
+    """
+    Tests workflow
+    """
+    default_conf['max_open_trades'] = 5
+    default_conf['forcebuy_enable'] = True
+    default_conf['stake_amount'] = 'unlimited'
+    default_conf['exchange']['name'] = 'binance'
+    default_conf['telegram']['enabled'] = True
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
+    mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(
+        side_effect=[1000, 800, 600, 400, 200]
+    ))
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=ticker,
+        get_fee=fee,
+        symbol_amount_prec=lambda s, x, y: y,
+        symbol_price_prec=lambda s, x, y: y,
+    )
+
+    mocker.patch.multiple(
+        'freqtrade.freqtradebot.FreqtradeBot',
+        create_stoploss_order=MagicMock(return_value=True),
+        update_trade_state=MagicMock(),
+        _notify_sell=MagicMock(),
+    )
+
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    rpc = RPC(freqtrade)
+    freqtrade.strategy.order_types['stoploss_on_exchange'] = True
+    # Switch ordertype to market to close trade immediately
+    freqtrade.strategy.order_types['sell'] = 'market'
+    patch_get_signal(freqtrade)
+
+    # Create 4 trades
+    freqtrade.create_trades()
+
+    trades = Trade.query.all()
+    assert len(trades) == 4
+    rpc._rpc_forcebuy('TKN/BTC', None)
+
+    trades = Trade.query.all()
+    assert len(trades) == 5
+
+    for trade in trades:
+        assert trade.stake_amount == 200
