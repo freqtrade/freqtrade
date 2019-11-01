@@ -55,6 +55,44 @@ If you have restricted pairs in your whitelist, you'll get a warning message in 
 If you're an "International" Customer on the Bittrex exchange, then this warning will probably not impact you.
 If you're a US customer, the bot will fail to create orders for these pairs, and you should remove them from your Whitelist.
 
+### How do I search the bot logs for something?
+
+By default, the bot writes its log into stderr stream. This is implemented this way so that you can easily separate the bot's diagnostics messages from Backtesting, Edge and Hyperopt results, output from other various Freqtrade utility subcommands, as well as from the output of your custom `print()`'s you may have inserted into your strategy. So if you need to search the log messages with the grep utility, you need to redirect stderr to stdout and disregard stdout.
+
+* In unix shells, this normally can be done as simple as:
+```shell
+freqtrade --some-options 2>&1 >/dev/null | grep 'something'
+```
+(note, `2>&1` and `>/dev/null` should be written in this order)
+
+* Bash interpreter also supports so called process substitution syntax, you can grep the log for a string with it as:
+```shell
+$ freqtrade --some-options 2> >(grep 'something') >/dev/null
+```
+or
+```shell
+$ freqtrade --some-options 2> >(grep -v 'something' 1>&2)
+```
+
+* You can also write the copy of Freqtrade log messages to a file with the `--logfile` option:
+```shell
+$ freqtrade --logfile /path/to/mylogfile.log --some-options
+```
+and then grep it as:
+```shell
+$ cat /path/to/mylogfile.log | grep 'something'
+```
+or even on the fly, as the bot works and the logfile grows:
+```shell
+$ tail -f /path/to/mylogfile.log | grep 'something'
+```
+from a separate terminal window.
+
+On Windows, the `--logfilename` option is also supported by Freqtrade and you can use the `findstr` command to search the log for the string of interest:
+```
+> type \path\to\mylogfile.log | findstr "something"
+```
+
 ## Hyperopt module
 
 ### How many epoch do I need to get a good Hyperopt result?
