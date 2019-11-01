@@ -64,14 +64,13 @@ def add_indicators(fig, row, indicators: List[str], data: pd.DataFrame) -> make_
     """
     for indicator in indicators:
         if indicator in data:
-            # TODO: Figure out why scattergl causes problems
-            scattergl = go.Scatter(
+            scatter = go.Scatter(
                 x=data['date'],
                 y=data[indicator].values,
                 mode='lines',
                 name=indicator
             )
-            fig.add_trace(scattergl, row, 1)
+            fig.add_trace(scatter, row, 1)
         else:
             logger.info(
                 'Indicator "%s" ignored. Reason: This indicator is not found '
@@ -92,7 +91,7 @@ def add_profit(fig, row, data: pd.DataFrame, column: str, name: str) -> make_sub
     :param name: Name to use
     :return: fig with added profit plot
     """
-    profit = go.Scattergl(
+    profit = go.Scatter(
         x=data.index,
         y=data[column],
         name=name,
@@ -221,23 +220,27 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
         else:
             logger.warning("No sell-signals found.")
 
+    # TODO: Figure out why scattergl causes problems plotly/plotly.js#2284
     if 'bb_lowerband' in data and 'bb_upperband' in data:
-        bb_lower = go.Scattergl(
+        bb_lower = go.Scatter(
             x=data.date,
             y=data.bb_lowerband,
-            name='BB lower',
+            showlegend=False,
             line={'color': 'rgba(255,255,255,0)'},
         )
-        bb_upper = go.Scattergl(
+        bb_upper = go.Scatter(
             x=data.date,
             y=data.bb_upperband,
-            name='BB upper',
+            name='Bollinger Band',
             fill="tonexty",
             fillcolor="rgba(0,176,246,0.2)",
             line={'color': 'rgba(255,255,255,0)'},
         )
         fig.add_trace(bb_lower, 1, 1)
         fig.add_trace(bb_upper, 1, 1)
+        if 'bb_upperband' in indicators1 and 'bb_lowerband' in indicators1:
+            indicators1.remove('bb_upperband')
+            indicators1.remove('bb_lowerband')
 
     # Add indicators to main plot
     fig = add_indicators(fig=fig, row=1, indicators=indicators1, data=data)
@@ -248,26 +251,28 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     volume = go.Bar(
         x=data['date'],
         y=data['volume'],
-        name='Volume'
-    )
+        name='Volume',
+        marker_color='DarkSlateGrey',
+        marker_line_color='DarkSlateGrey'
+        )
     fig.add_trace(volume, 2, 1)
 
-    # Add indicators to seperate row
+    # Add indicators to separate row
     fig = add_indicators(fig=fig, row=3, indicators=indicators2, data=data)
 
     return fig
 
 
 def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame],
-                          trades: pd.DataFrame) -> go.Figure:
+                          trades: pd.DataFrame, timeframe: str) -> go.Figure:
     # Combine close-values for all pairs, rename columns to "pair"
     df_comb = combine_tickers_with_mean(tickers, "close")
 
     # Add combined cumulative profit
-    df_comb = create_cum_profit(df_comb, trades, 'cum_profit')
+    df_comb = create_cum_profit(df_comb, trades, 'cum_profit', timeframe)
 
     # Plot the pairs average close prices, and total profit growth
-    avgclose = go.Scattergl(
+    avgclose = go.Scatter(
         x=df_comb.index,
         y=df_comb['mean'],
         name='Avg close price',
@@ -288,7 +293,7 @@ def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame],
 
     for pair in pairs:
         profit_col = f'cum_profit_{pair}'
-        df_comb = create_cum_profit(df_comb, trades[trades['pair'] == pair], profit_col)
+        df_comb = create_cum_profit(df_comb, trades[trades['pair'] == pair], profit_col, timeframe)
 
         fig = add_profit(fig, 3, df_comb, profit_col, f"Profit {pair}")
 
@@ -377,9 +382,9 @@ def plot_profit(config: Dict[str, Any]) -> None:
                          )
     # Filter trades to relevant pairs
     trades = trades[trades['pair'].isin(plot_elements["pairs"])]
-
     # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
-    fig = generate_profit_graph(plot_elements["pairs"], plot_elements["tickers"], trades)
+    fig = generate_profit_graph(plot_elements["pairs"], plot_elements["tickers"],
+                                trades, config.get('ticker_interval', '5m'))
     store_plot_file(fig, filename='freqtrade-profit-plot.html',
                     directory=config['user_data_dir'] / "plot", auto_open=True)

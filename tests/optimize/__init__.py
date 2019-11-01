@@ -1,4 +1,4 @@
-from typing import NamedTuple, List
+from typing import Dict, List, NamedTuple
 
 import arrow
 from pandas import DataFrame
@@ -25,7 +25,7 @@ class BTContainer(NamedTuple):
     """
     data: List[float]
     stop_loss: float
-    roi: float
+    roi: Dict[str, float]
     trades: List[BTrade]
     profit_perc: float
     trailing_stop: bool = False

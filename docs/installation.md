@@ -257,14 +257,12 @@ As compiling from source on windows has heavy dependencies (requires a partial v
 ```cmd
 >cd \path\freqtrade-develop
 >python -m venv .env
->cd .env\Scripts
->activate.bat
->cd \path\freqtrade-develop
+>.env\Scripts\activate.bat
 REM optionally install ta-lib from wheel
 REM >pip install TA_Lib‑0.4.17‑cp36‑cp36m‑win32.whl
 >pip install -r requirements.txt
 >pip install -e .
->python freqtrade\main.py
+>freqtrade
 ```
 
 > Thanks [Owdr](https://github.com/Owdr) for the commands. Source: [Issue #222](https://github.com/freqtrade/freqtrade/issues/222)

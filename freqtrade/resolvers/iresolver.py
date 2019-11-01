@@ -7,7 +7,7 @@ import importlib.util
 import inspect
 import logging
 from pathlib import Path
-from typing import Any, List, Optional, Tuple, Type, Union
+from typing import Any, List, Optional, Tuple, Union, Generator
 
 logger = logging.getLogger(__name__)
 
@@ -17,15 +17,29 @@ class IResolver:
     This class contains all the logic to load custom classes
     """
 
+    def build_search_paths(self, config, current_path: Path, user_subdir: str,
+                           extra_dir: Optional[str] = None) -> List[Path]:
+
+        abs_paths = [
+            config['user_data_dir'].joinpath(user_subdir),
+            current_path,
+        ]
+
+        if extra_dir:
+            # Add extra directory to the top of the search paths
+            abs_paths.insert(0, Path(extra_dir).resolve())
+
+        return abs_paths
+
     @staticmethod
     def _get_valid_object(object_type, module_path: Path,
-                          object_name: str) -> Optional[Type[Any]]:
+                          object_name: str) -> Generator[Any, None, None]:
         """
-        Returns the first object with matching object_type and object_name in the path given.
+        Generator returning objects with matching object_type and object_name in the path given.
         :param object_type: object_type (class)
         :param module_path: absolute path to the module
         :param object_name: Class name of the object
-        :return: class or None
+        :return: generator containing matching objects
         """
 
         # Generate spec based on absolute path
@@ -42,7 +56,7 @@ class IResolver:
             obj for name, obj in inspect.getmembers(module, inspect.isclass)
             if object_name == name and object_type in obj.__bases__
         )
-        return next(valid_objects_gen, None)
+        return valid_objects_gen
 
     @staticmethod
     def _search_object(directory: Path, object_type, object_name: str,
@@ -59,9 +73,9 @@ class IResolver:
                 logger.debug('Ignoring %s', entry)
                 continue
             module_path = entry.resolve()
-            obj = IResolver._get_valid_object(
-                object_type, module_path, object_name
-            )
+
+            obj = next(IResolver._get_valid_object(object_type, module_path, object_name), None)
+
             if obj:
                 return (obj(**kwargs), module_path)
         return (None, None)

@@ -60,8 +60,7 @@ file as reference.**
 !!! Warning Using future data
     Since backtesting passes the full time interval to the `populate_*()` methods, the strategy author
     needs to take care to avoid having the strategy utilize data from the future.
-    Samples for usage of future data are `dataframe.shift(-1)`, `dataframe.resample("1h")` (this uses the left border of the interval, so moves data from an hour to the start of the hour).
-    They all use data which is not available during regular operations, so these strategies will perform well during backtesting, but will fail / perform badly in dry-runs.
+    Some common patterns for this are listed in the [Common Mistakes](#common-mistakes-when-developing-strategies) section of this document.
 
 ### Customize Indicators
 
@@ -138,14 +137,18 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     """
     dataframe.loc[
         (
-            (dataframe['adx'] > 30) &
-            (dataframe['tema'] <= dataframe['bb_middleband']) &
-            (dataframe['tema'] > dataframe['tema'].shift(1))
+            (qtpylib.crossed_above(dataframe['rsi'], 30)) &  # Signal: RSI crosses above 30
+            (dataframe['tema'] <= dataframe['bb_middleband']) &  # Guard
+            (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard
+            (dataframe['volume'] > 0)  # Make sure Volume is not 0
         ),
         'buy'] = 1
 
     return dataframe
 ```
+
+!!! Note
+    Buying requires sellers to buy from - therefore volume needs to be > 0 (`dataframe['volume'] > 0`) to make sure that the bot does not buy/sell in no-activity periods.
 
 ### Sell signal rules
 
@@ -168,9 +171,10 @@ def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame
     """
     dataframe.loc[
         (
-            (dataframe['adx'] > 70) &
-            (dataframe['tema'] > dataframe['bb_middleband']) &
-            (dataframe['tema'] < dataframe['tema'].shift(1))
+            (qtpylib.crossed_above(dataframe['rsi'], 70)) &  # Signal: RSI crosses above 70
+            (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard
+            (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard
+            (dataframe['volume'] > 0)  # Make sure Volume is not 0
         ),
         'sell'] = 1
     return dataframe
@@ -246,9 +250,9 @@ Instead, have a look at the section [Storing information](#Storing-information)
 
 ### Storing information
 
-Storing information can be accomplished by crating a new dictionary within the strategy class.
+Storing information can be accomplished by creating a new dictionary within the strategy class.
 
-The name of the variable can be choosen at will, but should be prefixed with `cust_` to avoid naming collisions with predefined strategy variables.
+The name of the variable can be chosen at will, but should be prefixed with `cust_` to avoid naming collisions with predefined strategy variables.
 
 ```python
 class Awesomestrategy(IStrategy):
@@ -282,6 +286,8 @@ Please always check the mode of operation to select the correct method to get da
 - `ohlcv(pair, ticker_interval)` - Currently cached ticker data for the pair, returns DataFrame or empty DataFrame.
 - `historic_ohlcv(pair, ticker_interval)` - Returns historical data stored on disk.
 - `get_pair_dataframe(pair, ticker_interval)` - This is a universal method, which returns either historical data (for backtesting) or cached live data (for the Dry-Run and Live-Run modes).
+- `orderbook(pair, maximum)` - Returns latest orderbook data for the pair, a dict with bids/asks with a total of `maximum` entries.
+- `market(pair)` - Returns market data for the pair: fees, limits, precisions, activity flag, etc. See [ccxt documentation](https://github.com/ccxt/ccxt/wiki/Manual#markets) for more details on Market data structure.
 - `runmode` - Property containing the current runmode.
 
 #### Example: fetch live ohlcv / historic data for the first informative pair
@@ -344,9 +350,9 @@ def informative_pairs(self):
     As these pairs will be refreshed as part of the regular whitelist refresh, it's best to keep this list short.
     All intervals and all pairs can be specified as long as they are available (and active) on the used exchange.
     It is however better to use resampling to longer time-intervals when possible
-    to avoid hammering the exchange with too many requests and risk beeing blocked.
+    to avoid hammering the exchange with too many requests and risk being blocked.
 
-### Additional data - Wallets
+### Additional data (Wallets)
 
 The strategy provides access to the `Wallets` object. This contains the current balances on the exchange.
 
@@ -392,10 +398,10 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
 Printing more than a few rows is also possible (simply use  `print(dataframe)` instead of `print(dataframe.tail())`), however not recommended, as that will be very verbose (~500 lines per pair every 5 seconds).
 
-### Where is the default strategy?
+### Where can i find a strategy template?
 
-The default buy strategy is located in the file
-[freqtrade/default_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/strategy/default_strategy.py).
+The strategy template is located in the file
+[user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/sample_strategy.py).
 
 ### Specify custom strategy location
 
@@ -404,6 +410,18 @@ If you want to use a strategy from a different directory you can pass `--strateg
 ```bash
 freqtrade --strategy AwesomeStrategy --strategy-path /some/directory
 ```
+
+### Common mistakes when developing strategies
+
+Backtesting analyzes the whole time-range at once for performance reasons. Because of this, strategy authors need to make sure that strategies do not look-ahead into the future.
+This is a common pain-point, which can cause huge differences between backtesting and dry/live run methods, since they all use data which is not available during dry/live runs, so these strategies will perform well during backtesting, but will fail / perform badly in real conditions.
+
+The following lists some common patterns which should be avoided to prevent frustration:
+
+- don't use `shift(-1)`. This uses data from the future, which is not available.
+- don't use `.iloc[-1]` or any other absolute position in the dataframe, this will be different between dry-run and backtesting.
+- don't use `dataframe['volume'].mean()`. This uses the full DataFrame for backtesting, including data from the future. Use `dataframe['volume'].rolling(<window>).mean()` instead
+- don't use `.resample('1h')`. This uses the left border of the interval, so moves data from an hour to the start of the hour. Use `.resample('1h', label='right')` instead.
 
 ### Further strategy ideas
 

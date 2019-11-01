@@ -38,13 +38,13 @@ class StrategyResolver(IResolver):
                                                        config=config,
                                                        extra_dir=config.get('strategy_path'))
 
-        # make sure experimental dict is available
-        if 'experimental' not in config:
-            config['experimental'] = {}
+        # make sure ask_strategy dict is available
+        if 'ask_strategy' not in config:
+            config['ask_strategy'] = {}
 
         # Set attributes
         # Check if we need to override configuration
-        # (Attribute name,                              default, experimental)
+        #             (Attribute name,                    default,     ask_strategy)
         attributes = [("minimal_roi",                     {"0": 10.0}, False),
                       ("ticker_interval",                 None,        False),
                       ("stoploss",                        None,        False),
@@ -57,20 +57,20 @@ class StrategyResolver(IResolver):
                       ("order_time_in_force",             None,        False),
                       ("stake_currency",                  None,        False),
                       ("stake_amount",                    None,        False),
-                      ("use_sell_signal",                 False,       True),
+                      ("use_sell_signal",                 True,        True),
                       ("sell_profit_only",                False,       True),
                       ("ignore_roi_if_buy_signal",        False,       True),
                       ]
-        for attribute, default, experimental in attributes:
-            if experimental:
-                self._override_attribute_helper(config['experimental'], attribute, default)
+        for attribute, default, ask_strategy in attributes:
+            if ask_strategy:
+                self._override_attribute_helper(config['ask_strategy'], attribute, default)
             else:
                 self._override_attribute_helper(config, attribute, default)
 
         # Loop this list again to have output combined
         for attribute, _, exp in attributes:
-            if exp and attribute in config['experimental']:
-                logger.info("Strategy using %s: %s", attribute, config['experimental'][attribute])
+            if exp and attribute in config['ask_strategy']:
+                logger.info("Strategy using %s: %s", attribute, config['ask_strategy'][attribute])
             elif attribute in config:
                 logger.info("Strategy using %s: %s", attribute, config[attribute])
 
@@ -95,7 +95,10 @@ class StrategyResolver(IResolver):
             logger.info("Override strategy '%s' with value in config file: %s.",
                         attribute, config[attribute])
         elif hasattr(self.strategy, attribute):
-            config[attribute] = getattr(self.strategy, attribute)
+            val = getattr(self.strategy, attribute)
+            # None's cannot exist in the config, so do not copy them
+            if val is not None:
+                config[attribute] = val
         # Explicitly check for None here as other "falsy" values are possible
         elif default is not None:
             setattr(self.strategy, attribute, default)
@@ -121,14 +124,8 @@ class StrategyResolver(IResolver):
         """
         current_path = Path(__file__).parent.parent.joinpath('strategy').resolve()
 
-        abs_paths = [
-            config['user_data_dir'].joinpath('strategies'),
-            current_path,
-        ]
-
-        if extra_dir:
-            # Add extra strategy directory on top of search paths
-            abs_paths.insert(0, Path(extra_dir).resolve())
+        abs_paths = self.build_search_paths(config, current_path=current_path,
+                                            user_subdir='strategies', extra_dir=extra_dir)
 
         if ":" in strategy_name:
             logger.info("loading base64 encoded strategy")

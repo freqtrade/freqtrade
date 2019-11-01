@@ -106,7 +106,7 @@ def test_get_signal_handles_exceptions(mocker, default_conf):
 def test_tickerdata_to_dataframe(default_conf, testdatadir) -> None:
     strategy = DefaultStrategy(default_conf)
 
-    timerange = TimeRange(None, 'line', 0, -100)
+    timerange = TimeRange.parse_timerange('1510694220-1510700340')
     tick = load_tickerdata_file(testdatadir, 'UNITTEST/BTC', '1m', timerange=timerange)
     tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
                                                          fill_missing=True)}

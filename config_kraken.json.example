@@ -22,7 +22,11 @@
     "ask_strategy":{
         "use_order_book": false,
         "order_book_min": 1,
-        "order_book_max": 9
+        "order_book_max": 9,
+        "use_sell_signal": true,
+        "sell_profit_only": false,
+        "ignore_roi_if_buy_signal": false
+
     },
     "exchange": {
         "name": "kraken",
@@ -66,5 +70,6 @@
     "forcebuy_enable": false,
     "internals": {
         "process_throttle_secs": 5
-    }
+    },
+    "download_trades": true
 }

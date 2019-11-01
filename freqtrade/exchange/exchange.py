@@ -22,15 +22,91 @@ from freqtrade import (DependencyException, InvalidOrderException,
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.misc import deep_merge_dicts
 
+
 logger = logging.getLogger(__name__)
 
 
 API_RETRY_COUNT = 4
 BAD_EXCHANGES = {
-    "bitmex": "Various reasons",
+    "bitmex": "Various reasons.",
     "bitstamp": "Does not provide history. "
                 "Details in https://github.com/freqtrade/freqtrade/issues/1983",
+    "hitbtc": "This API cannot be used with Freqtrade. "
+              "Use `hitbtc2` exchange id to access this exchange.",
+    **dict.fromkeys([
+        'adara',
+        'anxpro',
+        'bigone',
+        'coinbase',
+        'coinexchange',
+        'coinmarketcap',
+        'lykke',
+        'xbtce',
+        ], "Does not provide timeframes. ccxt fetchOHLCV: False"),
+    **dict.fromkeys([
+        'bcex',
+        'bit2c',
+        'bitbay',
+        'bitflyer',
+        'bitforex',
+        'bithumb',
+        'bitso',
+        'bitstamp1',
+        'bl3p',
+        'braziliex',
+        'btcbox',
+        'btcchina',
+        'btctradeim',
+        'btctradeua',
+        'bxinth',
+        'chilebit',
+        'coincheck',
+        'coinegg',
+        'coinfalcon',
+        'coinfloor',
+        'coingi',
+        'coinmate',
+        'coinone',
+        'coinspot',
+        'coolcoin',
+        'crypton',
+        'deribit',
+        'exmo',
+        'exx',
+        'flowbtc',
+        'foxbit',
+        'fybse',
+        # 'hitbtc',
+        'ice3x',
+        'independentreserve',
+        'indodax',
+        'itbit',
+        'lakebtc',
+        'latoken',
+        'liquid',
+        'livecoin',
+        'luno',
+        'mixcoins',
+        'negociecoins',
+        'nova',
+        'paymium',
+        'southxchange',
+        'stronghold',
+        'surbitcoin',
+        'therock',
+        'tidex',
+        'vaultoro',
+        'vbtc',
+        'virwox',
+        'yobit',
+        'zaif',
+        ], "Does not provide timeframes. ccxt fetchOHLCV: emulated"),
     }
+
+MAP_EXCHANGE_CHILDCLASS = {
+    'binanceus': 'binance',
+    'binanceje': 'binance',
+}
 
 
 def retrier_async(f):
@@ -72,6 +148,8 @@ def retrier(f):
 class Exchange:
 
     _config: Dict = {}
+
+    # Parameters to add directly to buy/sell calls (like agreeing to trading agreement)
     _params: Dict = {}
 
     # Dict to specify which options each exchange implements
@@ -82,10 +160,13 @@ class Exchange:
         "order_time_in_force": ["gtc"],
         "ohlcv_candle_limit": 500,
         "ohlcv_partial_candle": True,
+        "trades_pagination": "time",  # Possible are "time" or "id"
+        "trades_pagination_arg": "since",
+
     }
     _ft_has: Dict = {}
 
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: dict, validate: bool = True) -> None:
         """
         Initializes this module with the given config,
         it does basic validation whether the specified exchange and pairs are valid.
@@ -125,6 +206,9 @@ class Exchange:
         self._ohlcv_candle_limit = self._ft_has['ohlcv_candle_limit']
         self._ohlcv_partial_candle = self._ft_has['ohlcv_partial_candle']
 
+        self._trades_pagination = self._ft_has['trades_pagination']
+        self._trades_pagination_arg = self._ft_has['trades_pagination_arg']
+
         # Initialize ccxt objects
         self._api = self._init_ccxt(
             exchange_config, ccxt_kwargs=exchange_config.get('ccxt_config'))
@@ -133,20 +217,21 @@ class Exchange:
 
         logger.info('Using Exchange "%s"', self.name)
 
+        if validate:
+            # Check if timeframe is available
+            self.validate_timeframes(config.get('ticker_interval'))
+
+            # Initial markets load
+            self._load_markets()
+
+            # Check if all pairs are available
+            self.validate_pairs(config['exchange']['pair_whitelist'])
+            self.validate_ordertypes(config.get('order_types', {}))
+            self.validate_order_time_in_force(config.get('order_time_in_force', {}))
+
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
             "markets_refresh_interval", 60) * 60
-        # Initial markets load
-        self._load_markets()
-
-        # Check if all pairs are available
-        self.validate_pairs(config['exchange']['pair_whitelist'])
-        self.validate_ordertypes(config.get('order_types', {}))
-        self.validate_order_time_in_force(config.get('order_time_in_force', {}))
-
-        if config.get('ticker_interval'):
-            # Check if timeframe is available
-            self.validate_timeframes(config['ticker_interval'])
 
     def __del__(self):
         """
@@ -165,7 +250,7 @@ class Exchange:
         # Find matching class for the given exchange name
         name = exchange_config['name']
 
-        if not is_exchange_available(name, ccxt_module):
+        if not is_exchange_known_ccxt(name, ccxt_module):
             raise OperationalException(f'Exchange {name} is not supported by ccxt')
 
         ex_config = {
@@ -200,12 +285,38 @@ class Exchange:
         return self._api.id
 
     @property
+    def timeframes(self) -> List[str]:
+        return list((self._api.timeframes or {}).keys())
+
+    @property
     def markets(self) -> Dict:
         """exchange ccxt markets"""
         if not self._api.markets:
             logger.warning("Markets were not loaded. Loading them now..")
             self._load_markets()
         return self._api.markets
+
+    def get_markets(self, base_currencies: List[str] = None, quote_currencies: List[str] = None,
+                    pairs_only: bool = False, active_only: bool = False) -> Dict:
+        """
+        Return exchange ccxt markets, filtered out by base currency and quote currency
+        if this was requested in parameters.
+
+        TODO: consider moving it to the Dataprovider
+        """
+        markets = self.markets
+        if not markets:
+            raise OperationalException("Markets were not loaded.")
+
+        if base_currencies:
+            markets = {k: v for k, v in markets.items() if v['base'] in base_currencies}
+        if quote_currencies:
+            markets = {k: v for k, v in markets.items() if v['quote'] in quote_currencies}
+        if pairs_only:
+            markets = {k: v for k, v in markets.items() if symbol_is_pair(v['symbol'])}
+        if active_only:
+            markets = {k: v for k, v in markets.items() if market_is_active(v)}
+        return markets
 
     def klines(self, pair_interval: Tuple[str, str], copy=True) -> DataFrame:
         if pair_interval in self._klines:
@@ -291,7 +402,7 @@ class Exchange:
                 return pair
         raise DependencyException(f"Could not combine {curr_1} and {curr_2} to get a valid pair.")
 
-    def validate_timeframes(self, timeframe: List[str]) -> None:
+    def validate_timeframes(self, timeframe: Optional[str]) -> None:
         """
         Checks if ticker interval from config is a supported timeframe on the exchange
         """
@@ -304,10 +415,9 @@ class Exchange:
                 f"for the exchange \"{self.name}\" and this exchange "
                 f"is therefore not supported. ccxt fetchOHLCV: {self.exchange_has('fetchOHLCV')}")
 
-        timeframes = self._api.timeframes
-        if timeframe not in timeframes:
+        if timeframe and (timeframe not in self.timeframes):
             raise OperationalException(
-                f'Invalid ticker {timeframe}, this Exchange supports {timeframes}')
+                f"Invalid ticker interval '{timeframe}'. This exchange supports: {self.timeframes}")
 
     def validate_ordertypes(self, order_types: Dict) -> None:
         """
@@ -665,6 +775,154 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(f'Could not fetch ticker data. Msg: {e}') from e
 
+    @retrier_async
+    async def _async_fetch_trades(self, pair: str,
+                                  since: Optional[int] = None,
+                                  params: Optional[dict] = None) -> List[Dict]:
+        """
+        Asyncronously gets trade history using fetch_trades.
+        Handles exchange errors, does one call to the exchange.
+        :param pair: Pair to fetch trade data for
+        :param since: Since as integer timestamp in milliseconds
+        returns: List of dicts containing trades
+        """
+        try:
+            # fetch trades asynchronously
+            if params:
+                logger.debug("Fetching trades for pair %s, params: %s ", pair, params)
+                trades = await self._api_async.fetch_trades(pair, params=params, limit=1000)
+            else:
+                logger.debug(
+                    "Fetching trades for pair %s, since %s %s...",
+                    pair,  since,
+                    '(' + arrow.get(since // 1000).isoformat() + ') ' if since is not None else ''
+                )
+                trades = await self._api_async.fetch_trades(pair, since=since, limit=1000)
+            return trades
+        except ccxt.NotSupported as e:
+            raise OperationalException(
+                f'Exchange {self._api.name} does not support fetching historical trade data.'
+                f'Message: {e}') from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(f'Could not load trade history due to {e.__class__.__name__}. '
+                                 f'Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(f'Could not fetch trade data. Msg: {e}') from e
+
+    async def _async_get_trade_history_id(self, pair: str,
+                                          until: int,
+                                          since: Optional[int] = None,
+                                          from_id: Optional[str] = None) -> Tuple[str, List[Dict]]:
+        """
+        Asyncronously gets trade history using fetch_trades
+        use this when exchange uses id-based iteration (check `self._trades_pagination`)
+        :param pair: Pair to fetch trade data for
+        :param since: Since as integer timestamp in milliseconds
+        :param until: Until as integer timestamp in milliseconds
+        :param from_id: Download data starting with ID (if id is known). Ignores "since" if set.
+        returns tuple: (pair, trades-list)
+        """
+
+        trades: List[Dict] = []
+
+        if not from_id:
+            # Fetch first elements using timebased method to get an ID to paginate on
+            # Depending on the Exchange, this can introduce a drift at the start of the interval
+            # of up to an hour.
+            # e.g. Binance returns the "last 1000" candles within a 1h time interval
+            # - so we will miss the first trades.
+            t = await self._async_fetch_trades(pair, since=since)
+            from_id = t[-1]['id']
+            trades.extend(t[:-1])
+        while True:
+            t = await self._async_fetch_trades(pair,
+                                               params={self._trades_pagination_arg: from_id})
+            if len(t):
+                # Skip last id since its the key for the next call
+                trades.extend(t[:-1])
+                if from_id == t[-1]['id'] or t[-1]['timestamp'] > until:
+                    logger.debug(f"Stopping because from_id did not change. "
+                                 f"Reached {t[-1]['timestamp']} > {until}")
+                    # Reached the end of the defined-download period - add last trade as well.
+                    trades.extend(t[-1:])
+                    break
+
+                from_id = t[-1]['id']
+            else:
+                break
+
+        return (pair, trades)
+
+    async def _async_get_trade_history_time(self, pair: str, until: int,
+                                            since: Optional[int] = None) -> Tuple[str, List]:
+        """
+        Asyncronously gets trade history using fetch_trades,
+        when the exchange uses time-based iteration (check `self._trades_pagination`)
+        :param pair: Pair to fetch trade data for
+        :param since: Since as integer timestamp in milliseconds
+        :param until: Until as integer timestamp in milliseconds
+        returns tuple: (pair, trades-list)
+        """
+
+        trades: List[Dict] = []
+        while True:
+            t = await self._async_fetch_trades(pair, since=since)
+            if len(t):
+                since = t[-1]['timestamp']
+                trades.extend(t)
+                # Reached the end of the defined-download period
+                if until and t[-1]['timestamp'] > until:
+                    logger.debug(
+                        f"Stopping because until was reached. {t[-1]['timestamp']} > {until}")
+                    break
+            else:
+                break
+
+        return (pair, trades)
+
+    async def _async_get_trade_history(self, pair: str,
+                                       since: Optional[int] = None,
+                                       until: Optional[int] = None,
+                                       from_id: Optional[str] = None) -> Tuple[str, List[Dict]]:
+        """
+        Async wrapper handling downloading trades using either time or id based methods.
+        """
+
+        if self._trades_pagination == 'time':
+            return await self._async_get_trade_history_time(
+                pair=pair, since=since,
+                until=until or ccxt.Exchange.milliseconds())
+        elif self._trades_pagination == 'id':
+            return await self._async_get_trade_history_id(
+                pair=pair, since=since,
+                until=until or ccxt.Exchange.milliseconds(), from_id=from_id
+            )
+        else:
+            raise OperationalException(f"Exchange {self.name} does use neither time, "
+                                       f"nor id based pagination")
+
+    def get_historic_trades(self, pair: str,
+                            since: Optional[int] = None,
+                            until: Optional[int] = None,
+                            from_id: Optional[str] = None) -> Tuple[str, List]:
+        """
+        Gets candle history using asyncio and returns the list of candles.
+        Handles all async doing.
+        Async over one pair, assuming we get `_ohlcv_candle_limit` candles per call.
+        :param pair: Pair to download
+        :param ticker_interval: Interval to get
+        :param since: Timestamp in milliseconds to get history from
+        :param until: Timestamp in milliseconds. Defaults to current timestamp if not defined.
+        :param from_id: Download data starting with ID (if id is known)
+        :returns List of tickers
+        """
+        if not self.exchange_has("fetchTrades"):
+            raise OperationalException("This exchange does not suport downloading Trades.")
+
+        return asyncio.get_event_loop().run_until_complete(
+            self._async_get_trade_history(pair=pair, since=since,
+                                          until=until, from_id=from_id))
+
     @retrier
     def cancel_order(self, order_id: str, pair: str) -> None:
         if self._config['dry_run']:
@@ -768,16 +1026,27 @@ def get_exchange_bad_reason(exchange_name: str) -> str:
     return BAD_EXCHANGES.get(exchange_name, "")
 
 
-def is_exchange_available(exchange_name: str, ccxt_module=None) -> bool:
-    return exchange_name in available_exchanges(ccxt_module)
+def is_exchange_known_ccxt(exchange_name: str, ccxt_module=None) -> bool:
+    return exchange_name in ccxt_exchanges(ccxt_module)
 
 
 def is_exchange_officially_supported(exchange_name: str) -> bool:
     return exchange_name in ['bittrex', 'binance']
 
 
-def available_exchanges(ccxt_module=None) -> List[str]:
+def ccxt_exchanges(ccxt_module=None) -> List[str]:
+    """
+    Return the list of all exchanges known to ccxt
+    """
     return ccxt_module.exchanges if ccxt_module is not None else ccxt.exchanges
+
+
+def available_exchanges(ccxt_module=None) -> List[str]:
+    """
+    Return exchanges available to the bot, i.e. non-bad exchanges in the ccxt list
+    """
+    exchanges = ccxt_exchanges(ccxt_module)
+    return [x for x in exchanges if not is_exchange_bad(x)]
 
 
 def timeframe_to_seconds(ticker_interval: str) -> int:
@@ -830,3 +1099,27 @@ def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
     new_timestamp = ccxt.Exchange.round_timeframe(timeframe, date.timestamp() * 1000,
                                                   ROUND_UP) // 1000
     return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
+
+
+def symbol_is_pair(market_symbol: str, base_currency: str = None, quote_currency: str = None):
+    """
+    Check if the market symbol is a pair, i.e. that its symbol consists of the base currency and the
+    quote currency separated by '/' character. If base_currency and/or quote_currency is passed,
+    it also checks that the symbol contains appropriate base and/or quote currency part before
+    and after the separating character correspondingly.
+    """
+    symbol_parts = market_symbol.split('/')
+    return (len(symbol_parts) == 2 and
+            (symbol_parts[0] == base_currency if base_currency else len(symbol_parts[0]) > 0) and
+            (symbol_parts[1] == quote_currency if quote_currency else len(symbol_parts[1]) > 0))
+
+
+def market_is_active(market):
+    """
+    Return True if the market is active.
+    """
+    # "It's active, if the active flag isn't explicitly set to false. If it's missing or
+    # true then it's true. If it's undefined, then it's most likely true, but not 100% )"
+    # See https://github.com/ccxt/ccxt/issues/4874,
+    # https://github.com/ccxt/ccxt/issues/4075#issuecomment-434760520
+    return market.get('active', True) is not False

@@ -26,6 +26,21 @@ from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 
 
+ORDER_TYPES = [
+    {
+        'buy': 'limit',
+        'sell': 'limit',
+        'stoploss': 'limit',
+        'stoploss_on_exchange': False
+    },
+    {
+        'buy': 'limit',
+        'sell': 'limit',
+        'stoploss': 'limit',
+        'stoploss_on_exchange': True
+    }]
+
+
 def trim_dictlist(dict_list, num):
     new = {}
     for pair, pair_data in dict_list.items():
@@ -34,7 +49,7 @@ def trim_dictlist(dict_list, num):
 
 
 def load_data_test(what, testdatadir):
-    timerange = TimeRange(None, 'line', 0, -101)
+    timerange = TimeRange.parse_timerange('1510694220-1510700340')
     pair = history.load_tickerdata_file(testdatadir, ticker_interval='1m',
                                         pair='UNITTEST/BTC', timerange=timerange)
     datalen = len(pair)
@@ -211,7 +226,8 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
         '--disable-max-market-positions',
         '--timerange', ':100',
         '--export', '/bar/foo',
-        '--export-filename', 'foo_bar.json'
+        '--export-filename', 'foo_bar.json',
+        '--fee', '0',
     ]
 
     config = setup_configuration(get_args(args), RunMode.BACKTEST)
@@ -242,6 +258,9 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
     assert log_has('Parameter --export detected: {} ...'.format(config['export']), caplog)
     assert 'exportfilename' in config
     assert log_has('Storing backtest results to {} ...'.format(config['exportfilename']), caplog)
+
+    assert 'fee' in config
+    assert log_has('Parameter --fee detected, setting fee to: {} ...'.format(config['fee']), caplog)
 
 
 def test_setup_configuration_unlimited_stake_amount(mocker, default_conf, caplog) -> None:
@@ -277,21 +296,6 @@ def test_start(mocker, fee, default_conf, caplog) -> None:
     assert start_mock.call_count == 1
 
 
-ORDER_TYPES = [
-    {
-        'buy': 'limit',
-        'sell': 'limit',
-        'stoploss': 'limit',
-        'stoploss_on_exchange': False
-    },
-    {
-        'buy': 'limit',
-        'sell': 'limit',
-        'stoploss': 'limit',
-        'stoploss_on_exchange': True
-    }]
-
-
 @pytest.mark.parametrize("order_types", ORDER_TYPES)
 def test_backtesting_init(mocker, default_conf, order_types) -> None:
     """
@@ -314,10 +318,6 @@ def test_backtesting_init(mocker, default_conf, order_types) -> None:
 
 
 def test_backtesting_init_no_ticker_interval(mocker, default_conf, caplog) -> None:
-    """
-    Check that stoploss_on_exchange is set to False while backtesting
-    since backtesting assumes a perfect stoploss anyway.
-    """
     patch_exchange(mocker)
     del default_conf['ticker_interval']
     default_conf['strategy_list'] = ['DefaultStrategy',
@@ -330,9 +330,20 @@ def test_backtesting_init_no_ticker_interval(mocker, default_conf, caplog) -> No
             "or as cli argument `--ticker-interval 5m`", caplog)
 
 
+def test_tickerdata_with_fee(default_conf, mocker, testdatadir) -> None:
+    patch_exchange(mocker)
+    default_conf['fee'] = 0.1234
+
+    fee_mock = mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
+    backtesting = Backtesting(default_conf)
+    assert backtesting.fee == 0.1234
+    assert fee_mock.call_count == 0
+
+
 def test_tickerdata_to_dataframe_bt(default_conf, mocker, testdatadir) -> None:
     patch_exchange(mocker)
-    timerange = TimeRange(None, 'line', 0, -100)
+    # timerange = TimeRange(None, 'line', 0, -100)
+    timerange = TimeRange.parse_timerange('1510694220-1510700340')
     tick = history.load_tickerdata_file(testdatadir, 'UNITTEST/BTC', '1m', timerange=timerange)
     tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
                                                          fill_missing=True)}
@@ -464,7 +475,7 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     default_conf['ticker_interval'] = '1m'
     default_conf['datadir'] = testdatadir
     default_conf['export'] = None
-    default_conf['timerange'] = '-100'
+    default_conf['timerange'] = '-1510694220'
 
     backtesting = Backtesting(default_conf)
     backtesting.start()
@@ -507,11 +518,12 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) ->
 
 
 def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
+    default_conf['ask_strategy']['use_sell_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
     pair = 'UNITTEST/BTC'
-    timerange = TimeRange(None, 'line', 0, -201)
+    timerange = TimeRange('date', None, 1517227800, 0)
     data = history.load_data(datadir=testdatadir, ticker_interval='5m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
     data_processed = backtesting.strategy.tickerdata_to_dataframe(data)
@@ -561,12 +573,13 @@ def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
 
 
 def test_backtest_1min_ticker_interval(default_conf, fee, mocker, testdatadir) -> None:
+    default_conf['ask_strategy']['use_sell_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
 
     # Run a backtesting for an exiting 1min ticker_interval
-    timerange = TimeRange(None, 'line', 0, -200)
+    timerange = TimeRange.parse_timerange('1510688220-1510700340')
     data = history.load_data(datadir=testdatadir, ticker_interval='1m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
     processed = backtesting.strategy.tickerdata_to_dataframe(data)
@@ -603,8 +616,6 @@ def test_backtest_pricecontours(default_conf, fee, mocker, testdatadir) -> None:
     # TODO: Evaluate usefullness of this, the patterns and buy-signls are unrealistic
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     tests = [['raise', 19], ['lower', 0], ['sine', 35]]
-    # We need to enable sell-signal - otherwise it sells on ROI!!
-    default_conf['experimental'] = {"use_sell_signal": True}
 
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres, mocker, testdatadir)
@@ -645,8 +656,6 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
     mocker.patch('freqtrade.optimize.backtesting.file_dump_json', MagicMock())
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf,
                                         pair='UNITTEST/BTC', datadir=testdatadir)
-    # We need to enable sell-signal - otherwise it sells on ROI!!
-    default_conf['experimental'] = {"use_sell_signal": True}
     default_conf['ticker_interval'] = '1m'
     backtesting = Backtesting(default_conf)
     backtesting.strategy.advise_buy = _trend_alternate  # Override
@@ -687,8 +696,6 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
 
     # Remove data for one pair from the beginning of the data
     data[pair] = data[pair][tres:].reset_index()
-    # We need to enable sell-signal - otherwise it sells on ROI!!
-    default_conf['experimental'] = {"use_sell_signal": True}
     default_conf['ticker_interval'] = '5m'
 
     backtesting = Backtesting(default_conf)
@@ -817,7 +824,7 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
         '--datadir', str(testdatadir),
         'backtesting',
         '--ticker-interval', '1m',
-        '--timerange', '-100',
+        '--timerange', '1510694220-1510700340',
         '--enable-position-stacking',
         '--disable-max-market-positions'
     ]
@@ -827,7 +834,7 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
     exists = [
         'Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
         'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
-        'Parameter --timerange detected: -100 ...',
+        'Parameter --timerange detected: 1510694220-1510700340 ...',
         f'Using data directory: {testdatadir} ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
@@ -863,7 +870,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         '--datadir', str(testdatadir),
         'backtesting',
         '--ticker-interval', '1m',
-        '--timerange', '-100',
+        '--timerange', '1510694220-1510700340',
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--strategy-list',
@@ -881,7 +888,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
     exists = [
         'Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
         'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
-        'Parameter --timerange detected: -100 ...',
+        'Parameter --timerange detected: 1510694220-1510700340 ...',
         f'Using data directory: {testdatadir} ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',

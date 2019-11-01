@@ -63,9 +63,12 @@ class Backtesting:
         self.config['exchange']['uid'] = ''
         self.config['dry_run'] = True
         self.strategylist: List[IStrategy] = []
-
         self.exchange = ExchangeResolver(self.config['exchange']['name'], self.config).exchange
-        self.fee = self.exchange.get_fee()
+
+        if config.get('fee'):
+            self.fee = config['fee']
+        else:
+            self.fee = self.exchange.get_fee()
 
         if self.config.get('runmode') != RunMode.HYPEROPT:
             self.dataprovider = DataProvider(self.config, self.exchange)
@@ -146,8 +149,8 @@ class Backtesting:
             len(results[results.profit_abs < 0])
         ])
         # Ignore type as floatfmt does allow tuples but mypy does not know that
-        return tabulate(tabular_data, headers=headers,  # type: ignore
-                        floatfmt=floatfmt, tablefmt="pipe")
+        return tabulate(tabular_data, headers=headers,
+                        floatfmt=floatfmt, tablefmt="pipe")  # type: ignore
 
     def _generate_text_table_sell_reason(self, data: Dict[str, Dict], results: DataFrame) -> str:
         """
@@ -185,8 +188,8 @@ class Backtesting:
                 len(results[results.profit_abs < 0])
             ])
         # Ignore type as floatfmt does allow tuples but mypy does not know that
-        return tabulate(tabular_data, headers=headers,  # type: ignore
-                        floatfmt=floatfmt, tablefmt="pipe")
+        return tabulate(tabular_data, headers=headers,
+                        floatfmt=floatfmt, tablefmt="pipe")  # type: ignore
 
     def _store_backtest_result(self, recordfilename: Path, results: DataFrame,
                                strategyname: Optional[str] = None) -> None:
@@ -267,6 +270,11 @@ class Backtesting:
                         # - (Expected abs profit + open_rate + open_fee) / (fee_close -1)
                         closerate = - (trade.open_rate * roi + trade.open_rate *
                                        (1 + trade.fee_open)) / (trade.fee_close - 1)
+
+                        # Use the maximum between closerate and low as we
+                        # cannot sell outside of a candle.
+                        # Applies when using {"xx": -1} as roi to force sells after xx minutes
+                        closerate = max(closerate, sell_row.low)
                     else:
                         # This should not be reached...
                         closerate = sell_row.open

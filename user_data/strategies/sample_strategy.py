@@ -27,40 +27,39 @@ class SampleStrategy(IStrategy):
     - the prototype for the methods: minimal_roi, stoploss, populate_indicators, populate_buy_trend,
     populate_sell_trend, hyperopt_space, buy_strategy_generator
     """
-    # Strategy intervace version - allow new iterations of the strategy interface.
+    # Strategy interface version - allow new iterations of the strategy interface.
     # Check the documentation or the Sample strategy to get the latest version.
     INTERFACE_VERSION = 2
 
     # Minimal ROI designed for the strategy.
-    # This attribute will be overridden if the config file contains "minimal_roi"
+    # This attribute will be overridden if the config file contains "minimal_roi".
     minimal_roi = {
-        "40": 0.0,
-        "30": 0.01,
-        "20": 0.02,
+        "60": 0.01,
+        "30": 0.02,
         "0": 0.04
     }
 
-    # Optimal stoploss designed for the strategy
-    # This attribute will be overridden if the config file contains "stoploss"
+    # Optimal stoploss designed for the strategy.
+    # This attribute will be overridden if the config file contains "stoploss".
     stoploss = -0.10
 
-    # trailing stoploss
+    # Trailing stoploss
     trailing_stop = False
     # trailing_stop_positive = 0.01
     # trailing_stop_positive_offset = 0.0  # Disabled / not configured
 
-    # Optimal ticker interval for the strategy
+    # Optimal ticker interval for the strategy.
     ticker_interval = '5m'
 
-    # run "populate_indicators" only for new candle
+    # Run "populate_indicators()" only for new candle.
     process_only_new_candles = False
 
-    # Experimental settings (configuration will overide these if set)
-    use_sell_signal = False
+    # These values can be overridden in the "ask_strategy" section in the config.
+    use_sell_signal = True
     sell_profit_only = False
     ignore_roi_if_buy_signal = False
 
-    # Optional order type mapping
+    # Optional order type mapping.
     order_types = {
         'buy': 'limit',
         'sell': 'limit',
@@ -68,7 +67,7 @@ class SampleStrategy(IStrategy):
         'stoploss_on_exchange': False
     }
 
-    # Optional order time in force
+    # Optional order time in force.
     order_time_in_force = {
         'buy': 'gtc',
         'sell': 'gtc'
@@ -99,13 +98,16 @@ class SampleStrategy(IStrategy):
         :return: a Dataframe with all mandatory indicators for the strategies
         """
 
-        # Momentum Indicator
+        # Momentum Indicators
         # ------------------------------------
 
+        # RSI
+        dataframe['rsi'] = ta.RSI(dataframe)
+
+        """
         # ADX
         dataframe['adx'] = ta.ADX(dataframe)
 
-        """
         # Awesome oscillator
         dataframe['ao'] = qtpylib.awesome_oscillator(dataframe)
 
@@ -132,9 +134,6 @@ class SampleStrategy(IStrategy):
 
         # ROC
         dataframe['roc'] = ta.ROC(dataframe)
-
-        # RSI
-        dataframe['rsi'] = ta.RSI(dataframe)
 
         # Inverse Fisher transform on RSI, values [-1.0, 1.0] (https://goo.gl/2JGGoy)
         rsi = 0.1 * (dataframe['rsi'] - 50)
@@ -255,7 +254,7 @@ class SampleStrategy(IStrategy):
         dataframe['ha_low'] = heikinashi['low']
         """
 
-        # Retrieve best bid and best ask
+        # Retrieve best bid and best ask from the orderbook
         # ------------------------------------
         """
         # first check if dataprovider is available
@@ -277,9 +276,9 @@ class SampleStrategy(IStrategy):
         """
         dataframe.loc[
             (
-                (dataframe['adx'] > 30) &
-                (dataframe['tema'] <= dataframe['bb_middleband']) &
-                (dataframe['tema'] > dataframe['tema'].shift(1)) &
+                (qtpylib.crossed_above(dataframe['rsi'], 30)) &  # Signal: RSI crosses above 30
+                (dataframe['tema'] <= dataframe['bb_middleband']) &  # Guard: tema below BB middle
+                (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard: tema is raising
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
             'buy'] = 1
@@ -295,9 +294,9 @@ class SampleStrategy(IStrategy):
         """
         dataframe.loc[
             (
-                (dataframe['adx'] > 70) &
-                (dataframe['tema'] > dataframe['bb_middleband']) &
-                (dataframe['tema'] < dataframe['tema'].shift(1)) &
+                (qtpylib.crossed_above(dataframe['rsi'], 70)) &  # Signal: RSI crosses above 70
+                (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard: tema above BB middle
+                (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard: tema is falling
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
             'sell'] = 1

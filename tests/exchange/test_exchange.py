@@ -18,7 +18,9 @@ from freqtrade.exchange.exchange import (API_RETRY_COUNT, timeframe_to_minutes,
                                          timeframe_to_msecs,
                                          timeframe_to_next_date,
                                          timeframe_to_prev_date,
-                                         timeframe_to_seconds)
+                                         timeframe_to_seconds,
+                                         symbol_is_pair,
+                                         market_is_active)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import get_patched_exchange, log_has, log_has_re
 
@@ -141,6 +143,12 @@ def test_exchange_resolver(default_conf, mocker, caplog):
 
     assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
                           caplog)
+
+    # Test mapping
+    exchange = ExchangeResolver('binanceus', default_conf).exchange
+    assert isinstance(exchange, Exchange)
+    assert isinstance(exchange, Binance)
+    assert not isinstance(exchange, Kraken)
 
 
 def test_validate_order_time_in_force(default_conf, mocker, caplog):
@@ -409,7 +417,8 @@ def test_validate_timeframes_failed(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
-    with pytest.raises(OperationalException, match=r'Invalid ticker 3m, this Exchange supports.*'):
+    with pytest.raises(OperationalException,
+                       match=r"Invalid ticker interval '3m'. This exchange supports.*"):
         Exchange(default_conf)
 
 
@@ -922,17 +931,17 @@ def test_get_balances_prod(default_conf, mocker, exchange_name):
 def test_get_tickers(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
     tick = {'ETH/BTC': {
-          'symbol': 'ETH/BTC',
-          'bid': 0.5,
-          'ask': 1,
-          'last': 42,
-      }, 'BCH/BTC': {
-          'symbol': 'BCH/BTC',
-          'bid': 0.6,
-          'ask': 0.5,
-          'last': 41,
-      }
-      }
+        'symbol': 'ETH/BTC',
+        'bid': 0.5,
+        'ask': 1,
+        'last': 42,
+    }, 'BCH/BTC': {
+        'symbol': 'BCH/BTC',
+        'bid': 0.6,
+        'ask': 0.5,
+        'last': 41,
+    }
+    }
     api_mock.fetch_tickers = MagicMock(return_value=tick)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     # retrieve original ticker
@@ -1135,6 +1144,13 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
         await exchange._async_get_candle_history(pair, "5m",
                                                  (arrow.utcnow().timestamp - 2000) * 1000)
 
+    with pytest.raises(OperationalException, match=r'Exchange.* does not support fetching '
+                                                   r'historical candlestick data\..*'):
+        api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.NotSupported("Not supported"))
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+        await exchange._async_get_candle_history(pair, "5m",
+                                                 (arrow.utcnow().timestamp - 2000) * 1000)
+
 
 @pytest.mark.asyncio
 async def test__async_get_candle_history_empty(default_conf, mocker, caplog):
@@ -1306,6 +1322,196 @@ async def test___async_get_candle_history_sort(default_conf, mocker, exchange_na
     assert ticks[9][5] == 2.31452783
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+async def test__async_fetch_trades(default_conf, mocker, caplog, exchange_name,
+                                   trades_history):
+
+    caplog.set_level(logging.DEBUG)
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    # Monkey-patch async function
+    exchange._api_async.fetch_trades = get_mock_coro(trades_history)
+
+    pair = 'ETH/BTC'
+    res = await exchange._async_fetch_trades(pair, since=None, params=None)
+    assert type(res) is list
+    assert isinstance(res[0], dict)
+    assert isinstance(res[1], dict)
+
+    assert exchange._api_async.fetch_trades.call_count == 1
+    assert exchange._api_async.fetch_trades.call_args[0][0] == pair
+    assert exchange._api_async.fetch_trades.call_args[1]['limit'] == 1000
+
+    assert log_has_re(f"Fetching trades for pair {pair}, since .*", caplog)
+    caplog.clear()
+    exchange._api_async.fetch_trades.reset_mock()
+    res = await exchange._async_fetch_trades(pair, since=None, params={'from': '123'})
+    assert exchange._api_async.fetch_trades.call_count == 1
+    assert exchange._api_async.fetch_trades.call_args[0][0] == pair
+    assert exchange._api_async.fetch_trades.call_args[1]['limit'] == 1000
+    assert exchange._api_async.fetch_trades.call_args[1]['params'] == {'from': '123'}
+    assert log_has_re(f"Fetching trades for pair {pair}, params: .*", caplog)
+
+    exchange = Exchange(default_conf)
+    await async_ccxt_exception(mocker, default_conf, MagicMock(),
+                               "_async_fetch_trades", "fetch_trades",
+                               pair='ABCD/BTC', since=None)
+
+    api_mock = MagicMock()
+    with pytest.raises(OperationalException, match=r'Could not fetch trade data*'):
+        api_mock.fetch_trades = MagicMock(side_effect=ccxt.BaseError("Unknown error"))
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+        await exchange._async_fetch_trades(pair, since=(arrow.utcnow().timestamp - 2000) * 1000)
+
+    with pytest.raises(OperationalException, match=r'Exchange.* does not support fetching '
+                                                   r'historical trade data\..*'):
+        api_mock.fetch_trades = MagicMock(side_effect=ccxt.NotSupported("Not supported"))
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+        await exchange._async_fetch_trades(pair, since=(arrow.utcnow().timestamp - 2000) * 1000)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+async def test__async_get_trade_history_id(default_conf, mocker, caplog, exchange_name,
+                                           trades_history):
+
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    pagination_arg = exchange._trades_pagination_arg
+
+    async def mock_get_trade_hist(pair, *args, **kwargs):
+        if 'since' in kwargs:
+            # Return first 3
+            return trades_history[:-2]
+        elif kwargs.get('params', {}).get(pagination_arg) == trades_history[-3]['id']:
+            # Return 2
+            return trades_history[-3:-1]
+        else:
+            # Return last 2
+            return trades_history[-2:]
+    # Monkey-patch async function
+    exchange._async_fetch_trades = MagicMock(side_effect=mock_get_trade_hist)
+
+    pair = 'ETH/BTC'
+    ret = await exchange._async_get_trade_history_id(pair, since=trades_history[0]["timestamp"],
+                                                     until=trades_history[-1]["timestamp"]-1)
+    assert type(ret) is tuple
+    assert ret[0] == pair
+    assert type(ret[1]) is list
+    assert len(ret[1]) == len(trades_history)
+    assert exchange._async_fetch_trades.call_count == 3
+    fetch_trades_cal = exchange._async_fetch_trades.call_args_list
+    # first call (using since, not fromId)
+    assert fetch_trades_cal[0][0][0] == pair
+    assert fetch_trades_cal[0][1]['since'] == trades_history[0]["timestamp"]
+
+    # 2nd call
+    assert fetch_trades_cal[1][0][0] == pair
+    assert 'params' in fetch_trades_cal[1][1]
+    assert exchange._ft_has['trades_pagination_arg'] in fetch_trades_cal[1][1]['params']
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+async def test__async_get_trade_history_time(default_conf, mocker, caplog, exchange_name,
+                                             trades_history):
+
+    caplog.set_level(logging.DEBUG)
+
+    async def mock_get_trade_hist(pair, *args, **kwargs):
+        if kwargs['since'] == trades_history[0]["timestamp"]:
+            return trades_history[:-1]
+        else:
+            return trades_history[-1:]
+
+    caplog.set_level(logging.DEBUG)
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    # Monkey-patch async function
+    exchange._async_fetch_trades = MagicMock(side_effect=mock_get_trade_hist)
+    pair = 'ETH/BTC'
+    ret = await exchange._async_get_trade_history_time(pair, since=trades_history[0]["timestamp"],
+                                                       until=trades_history[-1]["timestamp"]-1)
+    assert type(ret) is tuple
+    assert ret[0] == pair
+    assert type(ret[1]) is list
+    assert len(ret[1]) == len(trades_history)
+    assert exchange._async_fetch_trades.call_count == 2
+    fetch_trades_cal = exchange._async_fetch_trades.call_args_list
+    # first call (using since, not fromId)
+    assert fetch_trades_cal[0][0][0] == pair
+    assert fetch_trades_cal[0][1]['since'] == trades_history[0]["timestamp"]
+
+    # 2nd call
+    assert fetch_trades_cal[1][0][0] == pair
+    assert fetch_trades_cal[0][1]['since'] == trades_history[0]["timestamp"]
+    assert log_has_re(r"Stopping because until was reached.*", caplog)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+async def test__async_get_trade_history_time_empty(default_conf, mocker, caplog, exchange_name,
+                                                   trades_history):
+
+    caplog.set_level(logging.DEBUG)
+
+    async def mock_get_trade_hist(pair, *args, **kwargs):
+        if kwargs['since'] == trades_history[0]["timestamp"]:
+            return trades_history[:-1]
+        else:
+            return []
+
+    caplog.set_level(logging.DEBUG)
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    # Monkey-patch async function
+    exchange._async_fetch_trades = MagicMock(side_effect=mock_get_trade_hist)
+    pair = 'ETH/BTC'
+    ret = await exchange._async_get_trade_history_time(pair, since=trades_history[0]["timestamp"],
+                                                       until=trades_history[-1]["timestamp"]-1)
+    assert type(ret) is tuple
+    assert ret[0] == pair
+    assert type(ret[1]) is list
+    assert len(ret[1]) == len(trades_history) - 1
+    assert exchange._async_fetch_trades.call_count == 2
+    fetch_trades_cal = exchange._async_fetch_trades.call_args_list
+    # first call (using since, not fromId)
+    assert fetch_trades_cal[0][0][0] == pair
+    assert fetch_trades_cal[0][1]['since'] == trades_history[0]["timestamp"]
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_get_historic_trades(default_conf, mocker, caplog, exchange_name, trades_history):
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+
+    pair = 'ETH/BTC'
+
+    exchange._async_get_trade_history_id = get_mock_coro((pair, trades_history))
+    exchange._async_get_trade_history_time = get_mock_coro((pair, trades_history))
+    ret = exchange.get_historic_trades(pair, since=trades_history[0]["timestamp"],
+                                       until=trades_history[-1]["timestamp"])
+
+    # Depending on the exchange, one or the other method should be called
+    assert sum([exchange._async_get_trade_history_id.call_count,
+                exchange._async_get_trade_history_time.call_count]) == 1
+
+    assert len(ret) == 2
+    assert ret[0] == pair
+    assert len(ret[1]) == len(trades_history)
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_get_historic_trades_notsupported(default_conf, mocker, caplog, exchange_name,
+                                          trades_history):
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=False)
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+
+    pair = 'ETH/BTC'
+
+    with pytest.raises(OperationalException,
+                       match="This exchange does not suport downloading Trades."):
+        exchange.get_historic_trades(pair, since=trades_history[0]["timestamp"],
+                                     until=trades_history[-1]["timestamp"])
+
+
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = True
@@ -1452,13 +1658,17 @@ def test_merge_ft_has_dict(default_conf, mocker):
     assert ex._ft_has == Exchange._ft_has_default
 
     ex = Kraken(default_conf)
-    assert ex._ft_has == Exchange._ft_has_default
+    assert ex._ft_has != Exchange._ft_has_default
+    assert ex._ft_has['trades_pagination'] == 'id'
+    assert ex._ft_has['trades_pagination_arg'] == 'since'
 
     # Binance defines different values
     ex = Binance(default_conf)
     assert ex._ft_has != Exchange._ft_has_default
     assert ex._ft_has['stoploss_on_exchange']
     assert ex._ft_has['order_time_in_force'] == ['gtc', 'fok', 'ioc']
+    assert ex._ft_has['trades_pagination'] == 'id'
+    assert ex._ft_has['trades_pagination_arg'] == 'fromId'
 
     conf = copy.deepcopy(default_conf)
     conf['exchange']['_ft_has_params'] = {"DeadBeef": 20,
@@ -1483,6 +1693,74 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
     assert ex.get_valid_pair_combination("BTC", "ETH") == "ETH/BTC"
     with pytest.raises(DependencyException, match=r"Could not combine.* to get a valid pair."):
         ex.get_valid_pair_combination("NOPAIR", "ETH")
+
+
+@pytest.mark.parametrize(
+    "base_currencies, quote_currencies, pairs_only, active_only, expected_keys", [
+        # Testing markets (in conftest.py):
+        # 'BLK/BTC':  'active': True
+        # 'BTT/BTC':  'active': True
+        # 'ETH/BTC':  'active': True
+        # 'ETH/USDT': 'active': True
+        # 'LTC/BTC':  'active': False
+        # 'LTC/USD':  'active': True
+        # 'LTC/USDT': 'active': True
+        # 'NEO/BTC':  'active': False
+        # 'TKN/BTC':  'active'  not set
+        # 'XLTCUSDT': 'active': True, not a pair
+        # 'XRP/BTC':  'active': False
+        # all markets
+        ([], [], False, False,
+         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD',
+          'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
+        # active markets
+        ([], [], False, True,
+         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/USD', 'LTC/USDT',
+          'TKN/BTC', 'XLTCUSDT']),
+        # all pairs
+        ([], [], True, False,
+         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD',
+          'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XRP/BTC']),
+        # active pairs
+        ([], [], True, True,
+         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/USD', 'LTC/USDT', 'TKN/BTC']),
+        # all markets, base=ETH, LTC
+        (['ETH', 'LTC'], [], False, False,
+         ['ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
+        # all markets, base=LTC
+        (['LTC'], [], False, False,
+         ['LTC/BTC', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
+        # all markets, quote=USDT
+        ([], ['USDT'], False, False,
+         ['ETH/USDT', 'LTC/USDT', 'XLTCUSDT']),
+        # all markets, quote=USDT, USD
+        ([], ['USDT', 'USD'], False, False,
+         ['ETH/USDT', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
+        # all markets, base=LTC, quote=USDT
+        (['LTC'], ['USDT'], False, False,
+         ['LTC/USDT', 'XLTCUSDT']),
+        # all pairs, base=LTC, quote=USDT
+        (['LTC'], ['USDT'], True, False,
+         ['LTC/USDT']),
+        # all markets, base=LTC, quote=USDT, NONEXISTENT
+        (['LTC'], ['USDT', 'NONEXISTENT'], False, False,
+         ['LTC/USDT', 'XLTCUSDT']),
+        # all markets, base=LTC, quote=NONEXISTENT
+        (['LTC'], ['NONEXISTENT'], False, False,
+         []),
+    ])
+def test_get_markets(default_conf, mocker, markets,
+                     base_currencies, quote_currencies, pairs_only, active_only,
+                     expected_keys):
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          _init_ccxt=MagicMock(return_value=MagicMock()),
+                          _load_async_markets=MagicMock(),
+                          validate_pairs=MagicMock(),
+                          validate_timeframes=MagicMock(),
+                          markets=PropertyMock(return_value=markets))
+    ex = Exchange(default_conf)
+    pairs = ex.get_markets(base_currencies, quote_currencies, pairs_only, active_only)
+    assert sorted(pairs.keys()) == sorted(expected_keys)
 
 
 def test_timeframe_to_minutes():
@@ -1554,3 +1832,33 @@ def test_timeframe_to_next_date():
 
     date = datetime.now(tz=timezone.utc)
     assert timeframe_to_next_date("5m") > date
+
+
+@pytest.mark.parametrize("market_symbol,base_currency,quote_currency,expected_result", [
+    ("BTC/USDT", None, None, True),
+    ("USDT/BTC", None, None, True),
+    ("BTCUSDT", None, None, False),
+    ("BTC/USDT", None, "USDT", True),
+    ("USDT/BTC", None, "USDT", False),
+    ("BTCUSDT", None, "USDT", False),
+    ("BTC/USDT", "BTC", None, True),
+    ("USDT/BTC", "BTC", None, False),
+    ("BTCUSDT", "BTC", None, False),
+    ("BTC/USDT", "BTC", "USDT", True),
+    ("BTC/USDT", "USDT", "BTC", False),
+    ("BTC/USDT", "BTC", "USD", False),
+    ("BTCUSDT", "BTC", "USDT", False),
+    ("BTC/", None, None, False),
+    ("/USDT", None, None, False),
+])
+def test_symbol_is_pair(market_symbol, base_currency, quote_currency, expected_result) -> None:
+    assert symbol_is_pair(market_symbol, base_currency, quote_currency) == expected_result
+
+
+@pytest.mark.parametrize("market,expected_result", [
+    ({'symbol': 'ETH/BTC', 'active': True}, True),
+    ({'symbol': 'ETH/BTC', 'active': False}, False),
+    ({'symbol': 'ETH/BTC', }, True),
+])
+def test_market_is_active(market, expected_result) -> None:
+    assert market_is_active(market) == expected_result

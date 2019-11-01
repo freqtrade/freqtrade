@@ -2,7 +2,6 @@
 Definition of cli arguments used in arguments.py
 """
 import argparse
-import os
 
 from freqtrade import __version__, constants
 
@@ -141,8 +140,12 @@ AVAILABLE_CLI_OPTIONS = {
         'Requires `--export` to be set as well. '
         'Example: `--export-filename=user_data/backtest_results/backtest_today.json`',
         metavar='PATH',
-        default=os.path.join('user_data', 'backtest_results',
-                             'backtest-result.json'),
+    ),
+    "fee": Arg(
+        '--fee',
+        help='Specify fee ratio. Will be applied twice (on trade entry and exit).',
+        type=float,
+        metavar='FLOAT',
     ),
     # Edge
     "stoploss_range": Arg(
@@ -241,8 +244,49 @@ AVAILABLE_CLI_OPTIONS = {
     # List exchanges
     "print_one_column": Arg(
         '-1', '--one-column',
-        help='Print exchanges in one column.',
+        help='Print output in one column.',
         action='store_true',
+    ),
+    "list_exchanges_all": Arg(
+        '-a', '--all',
+        help='Print all exchanges known to the ccxt library.',
+        action='store_true',
+    ),
+    # List pairs / markets
+    "list_pairs_all": Arg(
+        '-a', '--all',
+        help='Print all pairs or market symbols. By default only active '
+             'ones are shown.',
+        action='store_true',
+    ),
+    "print_list": Arg(
+        '--print-list',
+        help='Print list of pairs or market symbols. By default data is '
+             'printed in the tabular format.',
+        action='store_true',
+    ),
+    "list_pairs_print_json": Arg(
+        '--print-json',
+        help='Print list of pairs or market symbols in JSON format.',
+        action='store_true',
+        default=False,
+    ),
+    "print_csv": Arg(
+        '--print-csv',
+        help='Print exchange pair or market data in the csv format.',
+        action='store_true',
+    ),
+    "quote_currencies": Arg(
+        '--quote',
+        help='Specify quote currency(-ies). Space-separated list.',
+        nargs='+',
+        metavar='QUOTE_CURRENCY',
+    ),
+    "base_currencies": Arg(
+        '--base',
+        help='Specify base currency(-ies). Space-separated list.',
+        nargs='+',
+        metavar='BASE_CURRENCY',
     ),
     # Script options
     "pairs": Arg(
@@ -261,6 +305,12 @@ AVAILABLE_CLI_OPTIONS = {
         help='Download data for given number of days.',
         type=check_int_positive,
         metavar='INT',
+    ),
+    "download_trades": Arg(
+        '--dl-trades',
+        help='Download trades instead of OHLCV data. The bot will resample trades to the '
+             'desired timeframe as specified as --timeframes/-t.',
+        action='store_true',
     ),
     "exchange": Arg(
         '--exchange',
