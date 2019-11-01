@@ -36,13 +36,15 @@ def test_search_strategy():
 
 
 def test_load_strategy(default_conf, result):
-    default_conf.update({'strategy': 'SampleStrategy'})
+    default_conf.update({'strategy': 'SampleStrategy',
+                         'strategy_path': str(Path(__file__).parents[2] / 'freqtrade/templates')
+                         })
     resolver = StrategyResolver(default_conf)
     assert 'rsi' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 
 
 def test_load_strategy_base64(result, caplog, default_conf):
-    with open("user_data/strategies/sample_strategy.py", "rb") as file:
+    with (Path(__file__).parents[2] / 'freqtrade/templates/sample_strategy.py').open("rb") as file:
         encoded_string = urlsafe_b64encode(file.read()).decode("utf-8")
     default_conf.update({'strategy': 'SampleStrategy:{}'.format(encoded_string)})
 
@@ -57,7 +59,7 @@ def test_load_strategy_invalid_directory(result, caplog, default_conf):
     default_conf['strategy'] = 'SampleStrategy'
     resolver = StrategyResolver(default_conf)
     extra_dir = Path.cwd() / 'some/path'
-    resolver._load_strategy('SampleStrategy', config=default_conf, extra_dir=extra_dir)
+    resolver._load_strategy('DefaultStrategy', config=default_conf, extra_dir=extra_dir)
 
     assert log_has_re(r'Path .*' + r'some.*path.*' + r'.* does not exist', caplog)
 
