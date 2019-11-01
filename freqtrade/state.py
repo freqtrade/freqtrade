@@ -25,5 +25,7 @@ class RunMode(Enum):
     BACKTEST = "backtest"
     EDGE = "edge"
     HYPEROPT = "hyperopt"
+    UTIL_EXCHANGE = "util_exchange"
+    UTIL_NO_EXCHANGE = "util_no_exchange"
     PLOT = "plot"
-    OTHER = "other"  # Used for plotting scripts and test
+    OTHER = "other"
