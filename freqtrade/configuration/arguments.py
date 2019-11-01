@@ -39,6 +39,8 @@ ARGS_LIST_PAIRS = ["exchange", "print_list", "list_pairs_print_json", "print_one
 
 ARGS_CREATE_USERDIR = ["user_data_dir", "reset"]
 
+ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy"]
+
 ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "download_trades", "exchange",
                       "timeframes", "erase"]
 
@@ -52,7 +54,7 @@ ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
 NO_CONF_REQURIED = ["download-data", "list-timeframes", "list-markets", "list-pairs",
                     "plot-dataframe", "plot-profit"]
 
-NO_CONF_ALLOWED = ["create-userdir", "list-exchanges"]
+NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-strategy"]
 
 
 class Arguments:
@@ -117,6 +119,7 @@ class Arguments:
         from freqtrade.optimize import start_backtesting, start_hyperopt, start_edge
         from freqtrade.utils import (start_create_userdir, start_download_data,
                                      start_list_exchanges, start_list_markets,
+                                     start_new_strategy,
                                      start_list_timeframes, start_trading)
         from freqtrade.plot.plot_utils import start_plot_dataframe, start_plot_profit
 
@@ -157,6 +160,12 @@ class Arguments:
                                                    )
         create_userdir_cmd.set_defaults(func=start_create_userdir)
         self._build_args(optionlist=ARGS_CREATE_USERDIR, parser=create_userdir_cmd)
+
+        # add new-strategy subcommand
+        build_strategy_cmd = subparsers.add_parser('new-strategy',
+                                                   help="Create new strategy")
+        build_strategy_cmd.set_defaults(func=start_new_strategy)
+        self._build_args(optionlist=ARGS_BUILD_STRATEGY, parser=build_strategy_cmd)
 
         # Add list-exchanges subcommand
         list_exchanges_cmd = subparsers.add_parser(

@@ -18,7 +18,7 @@ from freqtrade.data.history import (convert_trades_to_ohlcv,
                                     refresh_backtest_trades_data)
 from freqtrade.exchange import (available_exchanges, ccxt_exchanges, market_is_active,
                                 symbol_is_pair)
-from freqtrade.misc import plural
+from freqtrade.misc import plural, render_template
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
 
@@ -86,6 +86,27 @@ def start_create_userdir(args: Dict[str, Any]) -> None:
         copy_sample_files(userdir, overwrite=args["reset"])
     else:
         logger.warning("`create-userdir` requires --userdir to be set.")
+        sys.exit(1)
+
+
+def start_new_strategy(args: Dict[str, Any]) -> None:
+
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+
+    if "strategy" in args and args["strategy"]:
+        new_path = config['user_data_dir'] / "strategies" / (args["strategy"] + ".py")
+
+        if new_path.exists():
+            raise OperationalException(f"`{new_path}` already exists. "
+                                       "Please choose another Strategy Name.")
+
+        strategy_text = render_template(template='base_strategy.py.j2',
+                                        arguments={"strategy": args["strategy"]})
+
+        logger.info(f"Writing strategy to `{new_path}`.")
+        new_path.write_text(strategy_text)
+    else:
+        logger.warning("`new-strategy` requires --strategy to be set.")
         sys.exit(1)
 
 
