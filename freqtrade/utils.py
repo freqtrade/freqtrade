@@ -1,4 +1,4 @@
-from freqtrade.loggers import setup_logging
+import csv
 import logging
 import sys
 from collections import OrderedDict
@@ -6,18 +6,20 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import arrow
-import csv
 import rapidjson
 from tabulate import tabulate
 
 from freqtrade import OperationalException
-from freqtrade.configuration import Configuration, TimeRange, remove_credentials
-from freqtrade.configuration.directory_operations import create_userdata_dir, copy_sample_files
+from freqtrade.configuration import (Configuration, TimeRange,
+                                     remove_credentials)
+from freqtrade.configuration.directory_operations import (copy_sample_files,
+                                                          create_userdata_dir)
+from freqtrade.constants import DEFAULT_STRATEGY
 from freqtrade.data.history import (convert_trades_to_ohlcv,
                                     refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
-from freqtrade.exchange import (available_exchanges, ccxt_exchanges, market_is_active,
-                                symbol_is_pair)
+from freqtrade.exchange import (available_exchanges, ccxt_exchanges,
+                                market_is_active, symbol_is_pair)
 from freqtrade.misc import plural, render_template
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
@@ -94,6 +96,9 @@ def start_new_strategy(args: Dict[str, Any]) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     if "strategy" in args and args["strategy"]:
+        if args["strategy"] == DEFAULT_STRATEGY:
+            raise OperationalException("DefaultStrategy is not allowed as name.")
+
         new_path = config['user_data_dir'] / "strategies" / (args["strategy"] + ".py")
 
         if new_path.exists():
