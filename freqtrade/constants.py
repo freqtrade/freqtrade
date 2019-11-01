@@ -28,6 +28,7 @@ USER_DATA_FILES = {
     'sample_hyperopt_advanced.py': 'hyperopts',
     'sample_hyperopt_loss.py': 'hyperopts',
     'sample_hyperopt.py': 'hyperopts',
+    'strategy_analysis_example.ipynb': 'notebooks',
 }
 
 TIMEFRAMES = [

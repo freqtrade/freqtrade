@@ -56,11 +56,12 @@ def test_copy_sample_files(mocker, default_conf, caplog) -> None:
     copymock = mocker.patch('shutil.copy', MagicMock())
 
     copy_sample_files(Path('/tmp/bar'))
-    assert copymock.call_count == 4
+    assert copymock.call_count == 5
     assert copymock.call_args_list[0][0][1] == '/tmp/bar/strategies/sample_strategy.py'
     assert copymock.call_args_list[1][0][1] == '/tmp/bar/hyperopts/sample_hyperopt_advanced.py'
     assert copymock.call_args_list[2][0][1] == '/tmp/bar/hyperopts/sample_hyperopt_loss.py'
     assert copymock.call_args_list[3][0][1] == '/tmp/bar/hyperopts/sample_hyperopt.py'
+    assert copymock.call_args_list[4][0][1] == '/tmp/bar/notebooks/strategy_analysis_example.ipynb'
 
 
 def test_copy_sample_files_errors(mocker, default_conf, caplog) -> None:
