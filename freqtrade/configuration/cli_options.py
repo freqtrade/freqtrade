@@ -62,6 +62,11 @@ AVAILABLE_CLI_OPTIONS = {
         help='Path to userdata directory.',
         metavar='PATH',
     ),
+    "reset": Arg(
+        '--reset',
+        help='Reset sample files to their original state.',
+        action='store_true',
+    ),
     # Main options
     "strategy": Arg(
         '-s', '--strategy',

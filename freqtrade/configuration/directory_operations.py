@@ -53,10 +53,11 @@ def create_userdata_dir(directory: str, create_dir=False) -> Path:
     return folder
 
 
-def copy_sample_files(directory: Path) -> None:
+def copy_sample_files(directory: Path, overwrite: bool = False) -> None:
     """
     Copy files from templates to User data directory.
     :param directory: Directory to copy data to
+    :param overwrite: Overwrite existing sample files
     """
     if not directory.is_dir():
         raise OperationalException(f"Directory `{directory}` does not exist.")
@@ -67,6 +68,9 @@ def copy_sample_files(directory: Path) -> None:
             raise OperationalException(f"Directory `{targetdir}` does not exist.")
         targetfile = targetdir / source
         if targetfile.exists():
-            logger.warning(f"File `{targetfile}` exists already, not deploying sample file.")
-            continue
+            if not overwrite:
+                logger.warning(f"File `{targetfile}` exists already, not deploying sample file.")
+                continue
+            else:
+                logger.warning(f"File `{targetfile}` exists already, overwriting.")
         shutil.copy(str(sourcedir / source), str(targetfile))

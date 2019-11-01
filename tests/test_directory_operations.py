@@ -80,4 +80,7 @@ def test_copy_sample_files_errors(mocker, default_conf, caplog) -> None:
     mocker.patch.object(Path, "is_dir", MagicMock(return_value=True))
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
     copy_sample_files(Path('/tmp/bar'))
-    assert log_has_re(r"File `.*` exists already, not deploying sample.*", caplog)
+    assert log_has_re(r"File `.*` exists already, not deploying sample file\.", caplog)
+    caplog.clear()
+    copy_sample_files(Path('/tmp/bar'), overwrite=True)
+    assert log_has_re(r"File `.*` exists already, overwriting\.", caplog)

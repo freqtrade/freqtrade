@@ -1,3 +1,4 @@
+from freqtrade.loggers import setup_logging
 import logging
 import sys
 from collections import OrderedDict
@@ -82,7 +83,7 @@ def start_create_userdir(args: Dict[str, Any]) -> None:
     """
     if "user_data_dir" in args and args["user_data_dir"]:
         userdir = create_userdata_dir(args["user_data_dir"], create_dir=True)
-        copy_sample_files(userdir)
+        copy_sample_files(userdir, overwrite=args["reset"])
     else:
         logger.warning("`create-userdir` requires --userdir to be set.")
         sys.exit(1)

@@ -37,7 +37,7 @@ ARGS_LIST_TIMEFRAMES = ["exchange", "print_one_column"]
 ARGS_LIST_PAIRS = ["exchange", "print_list", "list_pairs_print_json", "print_one_column",
                    "print_csv", "base_currencies", "quote_currencies", "list_pairs_all"]
 
-ARGS_CREATE_USERDIR = ["user_data_dir"]
+ARGS_CREATE_USERDIR = ["user_data_dir", "reset"]
 
 ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "download_trades", "exchange",
                       "timeframes", "erase"]
