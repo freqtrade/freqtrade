@@ -33,8 +33,8 @@ def setup_logging(config: Dict[str, Any]) -> None:
     # Log level
     verbosity = config['verbosity']
 
-    # Log to stdout, not stderr
-    log_handlers: List[logging.Handler] = [logging.StreamHandler(sys.stdout)]
+    # Log to stderr
+    log_handlers: List[logging.Handler] = [logging.StreamHandler(sys.stderr)]
 
     if config.get('logfile'):
         log_handlers.append(RotatingFileHandler(config['logfile'],
