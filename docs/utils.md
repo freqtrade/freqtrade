@@ -2,6 +2,41 @@
 
 Besides the Live-Trade and Dry-Run run modes, the `backtesting`, `edge` and `hyperopt` optimization subcommands, and the `download-data` subcommand which prepares historical data, the bot contains a number of utility subcommands. They are described in this section.
 
+## Create userdir
+
+Creates the directory structure to hold your files for freqtrade.
+Will also create strategy and hyperopt examples for you to get started.
+Can be used multiple times - using `--reset` will reset the sample strategy and hyperopt files to their default state. 
+
+```
+usage: freqtrade create-userdir [-h] [--userdir PATH] [--reset]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+  --reset               Reset sample files to their original state.
+```
+
+!!! Warning
+    Using `--reset` may result in loss of data, since this will overwrite all sample files without asking again.
+
+```
+├── backtest_results
+├── data
+├── hyperopt_results
+├── hyperopts
+│   ├── sample_hyperopt_advanced.py
+│   ├── sample_hyperopt_loss.py
+│   └── sample_hyperopt.py
+├── notebooks
+│   └── strategy_analysis_example.ipynb
+├── plot
+└── strategies
+    └── sample_strategy.py
+```
+
+
 ## List Exchanges
 
 Use the `list-exchanges` subcommand to see the exchanges available for the bot.
