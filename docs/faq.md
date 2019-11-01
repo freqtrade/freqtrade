@@ -61,7 +61,7 @@ By default, the bot writes its log into stderr stream. This is implemented this 
 
 * In unix shells, this normally can be done as simple as:
 ```shell
-freqtrade --some-options 2>&1 >/dev/null | grep 'something'
+$ freqtrade --some-options 2>&1 >/dev/null | grep 'something'
 ```
 (note, `2>&1` and `>/dev/null` should be written in this order)
 
