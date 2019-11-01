@@ -18,7 +18,7 @@ from freqtrade.configuration.deprecated_settings import (
     check_conflicting_settings, process_deprecated_setting,
     process_temporary_deprecated_settings)
 from freqtrade.configuration.directory_operations import (create_datadir,
-                                                          create_userdata_dir)
+                                                          create_userdata_dir, copy_sample_files)
 from freqtrade.configuration.load_config import load_config_file
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.loggers import _set_loggers
@@ -707,6 +707,38 @@ def test_create_userdata_dir_exists_exception(mocker, default_conf, caplog) -> N
                        match=r'Directory `.{1,2}tmp.{1,2}bar` does not exist.*'):
         create_userdata_dir('/tmp/bar',  create_dir=False)
     assert md.call_count == 0
+
+
+def test_copy_sample_files(mocker, default_conf, caplog) -> None:
+    mocker.patch.object(Path, "is_dir", MagicMock(return_value=True))
+    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
+    copymock = mocker.patch('shutil.copy', MagicMock())
+
+    copy_sample_files(Path('/tmp/bar'))
+    assert copymock.call_count == 4
+    assert copymock.call_args_list[0][0][1] == '/tmp/bar/strategies/sample_strategy.py'
+    assert copymock.call_args_list[1][0][1] == '/tmp/bar/hyperopts/sample_hyperopt_advanced.py'
+    assert copymock.call_args_list[2][0][1] == '/tmp/bar/hyperopts/sample_hyperopt_loss.py'
+    assert copymock.call_args_list[3][0][1] == '/tmp/bar/hyperopts/sample_hyperopt.py'
+
+
+def test_copy_sample_files_errors(mocker, default_conf, caplog) -> None:
+    mocker.patch.object(Path, "is_dir", MagicMock(return_value=False))
+    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
+    mocker.patch('shutil.copy', MagicMock())
+    with pytest.raises(OperationalException,
+                       match=r"Directory `.{1,2}tmp.{1,2}bar` does not exist\."):
+        copy_sample_files(Path('/tmp/bar'))
+
+    mocker.patch.object(Path, "is_dir", MagicMock(side_effect=[True, False]))
+
+    with pytest.raises(OperationalException,
+                       match=r"Directory `.{1,2}tmp.{1,2}bar.{1,2}strategies` does not exist\."):
+        copy_sample_files(Path('/tmp/bar'))
+    mocker.patch.object(Path, "is_dir", MagicMock(return_value=True))
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    copy_sample_files(Path('/tmp/bar'))
+    assert log_has_re(r"File `.*` exists already, not deploying sample.*", caplog)
 
 
 def test_validate_tsl(default_conf):

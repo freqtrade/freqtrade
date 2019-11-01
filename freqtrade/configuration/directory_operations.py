@@ -1,8 +1,10 @@
 import logging
-from typing import Any, Dict, Optional
+import shutil
 from pathlib import Path
+from typing import Any, Dict, Optional
 
 from freqtrade import OperationalException
+from freqtrade.constants import USER_DATA_FILES
 
 logger = logging.getLogger(__name__)
 
@@ -48,3 +50,22 @@ def create_userdata_dir(directory: str, create_dir=False) -> Path:
         if not subfolder.is_dir():
             subfolder.mkdir(parents=False)
     return folder
+
+
+def copy_sample_files(directory: Path) -> None:
+    """
+    Copy files from templates to User data directory.
+    :param directory: Directory to copy data to
+    """
+    if not directory.is_dir():
+        raise OperationalException(f"Directory `{directory}` does not exist.")
+    sourcedir = Path(__file__).parents[1] / "templates"
+    for source, target in USER_DATA_FILES.items():
+        targetdir = directory / target
+        if not targetdir.is_dir():
+            raise OperationalException(f"Directory `{targetdir}` does not exist.")
+        targetfile = targetdir / source
+        if targetfile.exists():
+            logger.warning(f"File `{targetfile}` exists already, not deploying sample file.")
+            continue
+        shutil.copy(str(sourcedir / source), str(targetfile))

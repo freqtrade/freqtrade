@@ -11,7 +11,7 @@ from tabulate import tabulate
 
 from freqtrade import OperationalException
 from freqtrade.configuration import Configuration, TimeRange, remove_credentials
-from freqtrade.configuration.directory_operations import create_userdata_dir
+from freqtrade.configuration.directory_operations import create_userdata_dir, copy_sample_files
 from freqtrade.data.history import (convert_trades_to_ohlcv,
                                     refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
@@ -81,7 +81,8 @@ def start_create_userdir(args: Dict[str, Any]) -> None:
     :return: None
     """
     if "user_data_dir" in args and args["user_data_dir"]:
-        create_userdata_dir(args["user_data_dir"], create_dir=True)
+        userdir = create_userdata_dir(args["user_data_dir"], create_dir=True)
+        copy_sample_files(userdir)
     else:
         logger.warning("`create-userdir` requires --userdir to be set.")
         sys.exit(1)
