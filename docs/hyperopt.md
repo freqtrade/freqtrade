@@ -23,16 +23,22 @@ Configuring hyperopt is similar to writing your own strategy, and many tasks wil
 
 Depending on the space you want to optimize, only some of the below are required:
 
-* fill `populate_indicators` - probably a copy from your strategy
 * fill `buy_strategy_generator` - for buy signal optimization
 * fill `indicator_space` - for buy signal optimzation
 * fill `sell_strategy_generator` - for sell signal optimization
 * fill `sell_indicator_space` - for sell signal optimzation
 
-Optional, but recommended:
+!!! Note
+    `populate_indicators` needs to create all indicators any of thee spaces may use, otherwise hyperopt will not work.
 
+Optional - can also be loaded from a strategy:
+
+* copy `populate_indicators` from your strategy - otherwise default-strategy will be used
 * copy `populate_buy_trend` from your strategy - otherwise default-strategy will be used
 * copy `populate_sell_trend` from your strategy - otherwise default-strategy will be used
+
+!!! Note
+    Assuming the optional methods are not in your hyperopt file, please use `--strategy AweSomeStrategy` which contains these methods so hyperopt can use these methods instead.
 
 Rarely you may also need to override:
 
@@ -156,7 +162,7 @@ that minimizes the value of the [loss function](#loss-functions).
 
 The above setup expects to find ADX, RSI and Bollinger Bands in the populated indicators.
 When you want to test an indicator that isn't used by the bot currently, remember to
-add it to the `populate_indicators()` method in `hyperopt.py`.
+add it to the `populate_indicators()` method in your custom hyperopt file.
 
 ## Loss-functions
 
@@ -270,6 +276,14 @@ For example, to use one month of data, pass the following parameter to the hyper
 freqtrade hyperopt --timerange 20180401-20180501
 ```
 
+### Running Hyperopt using methods from a strategy
+
+Hyperopt can reuse `populate_indicators`, `populate_buy_trend`, `populate_sell_trend` from your strategy, assuming these methods are **not** in your custom hyperopt file, and a strategy is provided.
+
+```bash
+freqtrade --strategy SampleStrategy hyperopt --customhyperopt SampleHyperopt
+```
+
 ### Running Hyperopt with Smaller Search Space
 
 Use the `--spaces` argument to limit the search space used by hyperopt.
@@ -341,8 +355,7 @@ So for example you had `rsi-value: 29.0` so we would look at `rsi`-block, that t
 (dataframe['rsi'] < 29.0)
 ```
 
-Translating your whole hyperopt result as the new buy-signal
-would then look like:
+Translating your whole hyperopt result as the new buy-signal would then look like:
 
 ```python
 def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
