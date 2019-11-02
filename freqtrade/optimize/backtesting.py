@@ -121,7 +121,7 @@ class Backtesting:
             min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
         )
         # Adjust startts forward if not enough data is available
-        timerange.adjust_start_if_necessary(timeframe_to_seconds(self.ticker_interval),
+        timerange.adjust_start_if_necessary(timeframe_to_seconds(self.timeframe),
                                             self.required_startup, min_date)
 
         return data, timerange
