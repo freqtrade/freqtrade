@@ -314,9 +314,9 @@ Please always check the mode of operation to select the correct method to get da
 #### Possible options for DataProvider
 
 - `available_pairs` - Property with tuples listing cached pairs with their intervals (pair, interval).
-- `ohlcv(pair, ticker_interval)` - Currently cached ticker data for the pair, returns DataFrame or empty DataFrame.
-- `historic_ohlcv(pair, ticker_interval)` - Returns historical data stored on disk.
-- `get_pair_dataframe(pair, ticker_interval)` - This is a universal method, which returns either historical data (for backtesting) or cached live data (for the Dry-Run and Live-Run modes).
+- `ohlcv(pair, timeframe)` - Currently cached ticker data for the pair, returns DataFrame or empty DataFrame.
+- `historic_ohlcv(pair, timeframe)` - Returns historical data stored on disk.
+- `get_pair_dataframe(pair, timeframe)` - This is a universal method, which returns either historical data (for backtesting) or cached live data (for the Dry-Run and Live-Run modes).
 - `orderbook(pair, maximum)` - Returns latest orderbook data for the pair, a dict with bids/asks with a total of `maximum` entries.
 - `market(pair)` - Returns market data for the pair: fees, limits, precisions, activity flag, etc. See [ccxt documentation](https://github.com/ccxt/ccxt/wiki/Manual#markets) for more details on Market data structure.
 - `runmode` - Property containing the current runmode.
@@ -327,7 +327,7 @@ Please always check the mode of operation to select the correct method to get da
 if self.dp:
     inf_pair, inf_timeframe = self.informative_pairs()[0]
     informative = self.dp.get_pair_dataframe(pair=inf_pair,
-                                             ticker_interval=inf_timeframe)
+                                             timeframe=inf_timeframe)
 ```
 
 !!! Warning "Warning about backtesting"
