@@ -42,7 +42,7 @@ def test_ohlcv_fill_up_missing_data(testdatadir, caplog):
 
 
 def test_ohlcv_fill_up_missing_data2(caplog):
-    ticker_interval = '5m'
+    timeframe = '5m'
     ticks = [[
             1511686200000,  # 8:50:00
             8.794e-05,  # open
@@ -78,10 +78,10 @@ def test_ohlcv_fill_up_missing_data2(caplog):
     ]
 
     # Generate test-data without filling missing
-    data = parse_ticker_dataframe(ticks, ticker_interval, pair="UNITTEST/BTC", fill_missing=False)
+    data = parse_ticker_dataframe(ticks, timeframe, pair="UNITTEST/BTC", fill_missing=False)
     assert len(data) == 3
     caplog.set_level(logging.DEBUG)
-    data2 = ohlcv_fill_up_missing_data(data, ticker_interval, "UNITTEST/BTC")
+    data2 = ohlcv_fill_up_missing_data(data, timeframe, "UNITTEST/BTC")
     assert len(data2) == 4
     # 3rd candle has been filled
     row = data2.loc[2, :]
@@ -99,7 +99,7 @@ def test_ohlcv_fill_up_missing_data2(caplog):
 
 
 def test_ohlcv_drop_incomplete(caplog):
-    ticker_interval = '1d'
+    timeframe = '1d'
     ticks = [[
             1559750400000,  # 2019-06-04
             8.794e-05,  # open
@@ -134,13 +134,13 @@ def test_ohlcv_drop_incomplete(caplog):
      ]
     ]
     caplog.set_level(logging.DEBUG)
-    data = parse_ticker_dataframe(ticks, ticker_interval, pair="UNITTEST/BTC",
+    data = parse_ticker_dataframe(ticks, timeframe, pair="UNITTEST/BTC",
                                   fill_missing=False, drop_incomplete=False)
     assert len(data) == 4
     assert not log_has("Dropping last candle", caplog)
 
     # Drop last candle
-    data = parse_ticker_dataframe(ticks, ticker_interval, pair="UNITTEST/BTC",
+    data = parse_ticker_dataframe(ticks, timeframe, pair="UNITTEST/BTC",
                                   fill_missing=False, drop_incomplete=True)
     assert len(data) == 3
 

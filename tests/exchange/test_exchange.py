@@ -1047,8 +1047,8 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
     ]
     pair = 'ETH/BTC'
 
-    async def mock_candle_hist(pair, ticker_interval, since_ms):
-        return pair, ticker_interval, tick
+    async def mock_candle_hist(pair, timeframe, since_ms):
+        return pair, timeframe, tick
 
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls

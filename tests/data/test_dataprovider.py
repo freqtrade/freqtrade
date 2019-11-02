@@ -9,32 +9,32 @@ from tests.conftest import get_patched_exchange
 
 def test_ohlcv(mocker, default_conf, ticker_history):
     default_conf["runmode"] = RunMode.DRY_RUN
-    ticker_interval = default_conf["ticker_interval"]
+    timeframe = default_conf["ticker_interval"]
     exchange = get_patched_exchange(mocker, default_conf)
-    exchange._klines[("XRP/BTC", ticker_interval)] = ticker_history
-    exchange._klines[("UNITTEST/BTC", ticker_interval)] = ticker_history
+    exchange._klines[("XRP/BTC", timeframe)] = ticker_history
+    exchange._klines[("UNITTEST/BTC", timeframe)] = ticker_history
 
     dp = DataProvider(default_conf, exchange)
     assert dp.runmode == RunMode.DRY_RUN
-    assert ticker_history.equals(dp.ohlcv("UNITTEST/BTC", ticker_interval))
-    assert isinstance(dp.ohlcv("UNITTEST/BTC", ticker_interval), DataFrame)
-    assert dp.ohlcv("UNITTEST/BTC", ticker_interval) is not ticker_history
-    assert dp.ohlcv("UNITTEST/BTC", ticker_interval, copy=False) is ticker_history
-    assert not dp.ohlcv("UNITTEST/BTC", ticker_interval).empty
-    assert dp.ohlcv("NONESENSE/AAA", ticker_interval).empty
+    assert ticker_history.equals(dp.ohlcv("UNITTEST/BTC", timeframe))
+    assert isinstance(dp.ohlcv("UNITTEST/BTC", timeframe), DataFrame)
+    assert dp.ohlcv("UNITTEST/BTC", timeframe) is not ticker_history
+    assert dp.ohlcv("UNITTEST/BTC", timeframe, copy=False) is ticker_history
+    assert not dp.ohlcv("UNITTEST/BTC", timeframe).empty
+    assert dp.ohlcv("NONESENSE/AAA", timeframe).empty
 
     # Test with and without parameter
-    assert dp.ohlcv("UNITTEST/BTC", ticker_interval).equals(dp.ohlcv("UNITTEST/BTC"))
+    assert dp.ohlcv("UNITTEST/BTC", timeframe).equals(dp.ohlcv("UNITTEST/BTC"))
 
     default_conf["runmode"] = RunMode.LIVE
     dp = DataProvider(default_conf, exchange)
     assert dp.runmode == RunMode.LIVE
-    assert isinstance(dp.ohlcv("UNITTEST/BTC", ticker_interval), DataFrame)
+    assert isinstance(dp.ohlcv("UNITTEST/BTC", timeframe), DataFrame)
 
     default_conf["runmode"] = RunMode.BACKTEST
     dp = DataProvider(default_conf, exchange)
     assert dp.runmode == RunMode.BACKTEST
-    assert dp.ohlcv("UNITTEST/BTC", ticker_interval).empty
+    assert dp.ohlcv("UNITTEST/BTC", timeframe).empty
 
 
 def test_historic_ohlcv(mocker, default_conf, ticker_history):
