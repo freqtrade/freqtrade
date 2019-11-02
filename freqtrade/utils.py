@@ -14,7 +14,7 @@ from freqtrade.configuration import (Configuration, TimeRange,
                                      remove_credentials)
 from freqtrade.configuration.directory_operations import (copy_sample_files,
                                                           create_userdata_dir)
-from freqtrade.constants import DEFAULT_STRATEGY
+from freqtrade.constants import DEFAULT_HYPEROPT, DEFAULT_STRATEGY
 from freqtrade.data.history import (convert_trades_to_ohlcv,
                                     refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
@@ -112,6 +112,30 @@ def start_new_strategy(args: Dict[str, Any]) -> None:
         new_path.write_text(strategy_text)
     else:
         logger.warning("`new-strategy` requires --strategy to be set.")
+        sys.exit(1)
+
+
+def start_new_hyperopt(args: Dict[str, Any]) -> None:
+
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+
+    if "hyperopt" in args and args["hyperopt"]:
+        if args["hyperopt"] == DEFAULT_HYPEROPT:
+            raise OperationalException("DefaultHyperOpt is not allowed as name.")
+
+        new_path = config['user_data_dir'] / "hyperopts" / (args["hyperopt"] + ".py")
+
+        if new_path.exists():
+            raise OperationalException(f"`{new_path}` already exists. "
+                                       "Please choose another Strategy Name.")
+
+        strategy_text = render_template(template='base_hyperopt.py.j2',
+                                        arguments={"hyperopt": args["hyperopt"]})
+
+        logger.info(f"Writing hyperopt to `{new_path}`.")
+        new_path.write_text(strategy_text)
+    else:
+        logger.warning("`new-hyperopt` requires --hyperopt to be set.")
         sys.exit(1)
 
 
