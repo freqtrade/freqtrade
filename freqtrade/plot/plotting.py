@@ -39,7 +39,7 @@ def init_plotscript(config):
     tickers = history.load_data(
         datadir=Path(str(config.get("datadir"))),
         pairs=pairs,
-        ticker_interval=config.get('ticker_interval', '5m'),
+        timeframe=config.get('ticker_interval', '5m'),
         timerange=timerange,
     )
 
@@ -300,12 +300,12 @@ def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame],
     return fig
 
 
-def generate_plot_filename(pair, ticker_interval) -> str:
+def generate_plot_filename(pair, timeframe) -> str:
     """
-    Generate filenames per pair/ticker_interval to be used for storing plots
+    Generate filenames per pair/timeframe to be used for storing plots
     """
     pair_name = pair.replace("/", "_")
-    file_name = 'freqtrade-plot-' + pair_name + '-' + ticker_interval + '.html'
+    file_name = 'freqtrade-plot-' + pair_name + '-' + timeframe + '.html'
 
     logger.info('Generate plot file for %s', pair)
 
@@ -316,8 +316,9 @@ def store_plot_file(fig, filename: str, directory: Path, auto_open: bool = False
     """
     Generate a plot html file from pre populated fig plotly object
     :param fig: Plotly Figure to plot
-    :param pair: Pair to plot (used as filename and Plot title)
-    :param ticker_interval: Used as part of the filename
+    :param filename: Name to store the file as
+    :param directory: Directory to store the file in
+    :param auto_open: Automatically open files saved
     :return: None
     """
     directory.mkdir(parents=True, exist_ok=True)

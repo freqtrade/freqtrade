@@ -64,7 +64,7 @@ def test_add_indicators(default_conf, testdatadir, caplog):
     pair = "UNITTEST/BTC"
     timerange = TimeRange(None, 'line', 0, -1000)
 
-    data = history.load_pair_history(pair=pair, ticker_interval='1m',
+    data = history.load_pair_history(pair=pair, timeframe='1m',
                                      datadir=testdatadir, timerange=timerange)
     indicators1 = ["ema10"]
     indicators2 = ["macd"]
@@ -129,7 +129,7 @@ def test_generate_candlestick_graph_no_signals_no_trades(default_conf, mocker, t
 
     pair = "UNITTEST/BTC"
     timerange = TimeRange(None, 'line', 0, -1000)
-    data = history.load_pair_history(pair=pair, ticker_interval='1m',
+    data = history.load_pair_history(pair=pair, timeframe='1m',
                                      datadir=testdatadir, timerange=timerange)
     data['buy'] = 0
     data['sell'] = 0
@@ -164,7 +164,7 @@ def test_generate_candlestick_graph_no_trades(default_conf, mocker, testdatadir)
                                MagicMock(side_effect=fig_generating_mock))
     pair = 'UNITTEST/BTC'
     timerange = TimeRange(None, 'line', 0, -1000)
-    data = history.load_pair_history(pair=pair, ticker_interval='1m',
+    data = history.load_pair_history(pair=pair, timeframe='1m',
                                      datadir=testdatadir, timerange=timerange)
 
     # Generate buy/sell signals and indicators
@@ -228,7 +228,7 @@ def test_add_profit(testdatadir):
     bt_data = load_backtest_data(filename)
     timerange = TimeRange.parse_timerange("20180110-20180112")
 
-    df = history.load_pair_history(pair="TRX/BTC", ticker_interval='5m',
+    df = history.load_pair_history(pair="TRX/BTC", timeframe='5m',
                                    datadir=testdatadir, timerange=timerange)
     fig = generate_empty_figure()
 
@@ -251,7 +251,7 @@ def test_generate_profit_graph(testdatadir):
 
     tickers = history.load_data(datadir=testdatadir,
                                 pairs=pairs,
-                                ticker_interval='5m',
+                                timeframe='5m',
                                 timerange=timerange
                                 )
     trades = trades[trades['pair'].isin(pairs)]

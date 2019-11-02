@@ -42,29 +42,29 @@ class DataProvider:
         """
         return list(self._exchange._klines.keys())
 
-    def ohlcv(self, pair: str, ticker_interval: str = None, copy: bool = True) -> DataFrame:
+    def ohlcv(self, pair: str, timeframe: str = None, copy: bool = True) -> DataFrame:
         """
         Get ohlcv data for the given pair as DataFrame
         Please use the `available_pairs` method to verify which pairs are currently cached.
         :param pair: pair to get the data for
-        :param ticker_interval: ticker interval to get data for
+        :param timeframe: Ticker timeframe to get data for
         :param copy: copy dataframe before returning if True.
                      Use False only for read-only operations (where the dataframe is not modified)
         """
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
-            return self._exchange.klines((pair, ticker_interval or self._config['ticker_interval']),
+            return self._exchange.klines((pair, timeframe or self._config['ticker_interval']),
                                          copy=copy)
         else:
             return DataFrame()
 
-    def historic_ohlcv(self, pair: str, ticker_interval: str = None) -> DataFrame:
+    def historic_ohlcv(self, pair: str, timeframe: str = None) -> DataFrame:
         """
         Get stored historic ohlcv data
         :param pair: pair to get the data for
-        :param ticker_interval: ticker interval to get data for
+        :param timeframe: ticker interval to get data for
         """
         return load_pair_history(pair=pair,
-                                 ticker_interval=ticker_interval or self._config['ticker_interval'],
+                                 timeframe=timeframe or self._config['ticker_interval'],
                                  datadir=Path(self._config['datadir'])
                                  )
 
@@ -77,10 +77,10 @@ class DataProvider:
         """
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
             # Get live ohlcv data.
-            data = self.ohlcv(pair=pair, ticker_interval=ticker_interval)
+            data = self.ohlcv(pair=pair, timeframe=ticker_interval)
         else:
             # Get historic ohlcv data (cached on disk).
-            data = self.historic_ohlcv(pair=pair, ticker_interval=ticker_interval)
+            data = self.historic_ohlcv(pair=pair, timeframe=ticker_interval)
         if len(data) == 0:
             logger.warning(f"No data found for ({pair}, {ticker_interval}).")
         return data

@@ -45,7 +45,7 @@ def test_historic_ohlcv(mocker, default_conf, ticker_history):
     data = dp.historic_ohlcv("UNITTEST/BTC", "5m")
     assert isinstance(data, DataFrame)
     assert historymock.call_count == 1
-    assert historymock.call_args_list[0][1]["ticker_interval"] == "5m"
+    assert historymock.call_args_list[0][1]["timeframe"] == "5m"
 
 
 def test_get_pair_dataframe(mocker, default_conf, ticker_history):

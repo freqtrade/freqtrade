@@ -108,7 +108,7 @@ class Backtesting:
         data = history.load_data(
             datadir=Path(self.config['datadir']),
             pairs=self.config['exchange']['pair_whitelist'],
-            ticker_interval=self.ticker_interval,
+            timeframe=self.ticker_interval,
             timerange=timerange,
             startup_candles=self.required_startup,
             fail_without_data=True,
