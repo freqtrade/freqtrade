@@ -308,7 +308,7 @@ def download_pair_history(datadir: Path,
         logger.debug("Current End: %s", misc.format_ms_time(data[-1][0]) if data else 'None')
 
         # Default since_ms to 30 days if nothing is given
-        new_data = exchange.get_historic_ohlcv(pair=pair, ticker_interval=timeframe,
+        new_data = exchange.get_historic_ohlcv(pair=pair, timeframe=timeframe,
                                                since_ms=since_ms if since_ms
                                                else
                                                int(arrow.utcnow().shift(

@@ -536,40 +536,40 @@ class Exchange:
             logger.info("returning cached ticker-data for %s", pair)
             return self._cached_ticker[pair]
 
-    def get_historic_ohlcv(self, pair: str, ticker_interval: str,
+    def get_historic_ohlcv(self, pair: str, timeframe: str,
                            since_ms: int) -> List:
         """
         Gets candle history using asyncio and returns the list of candles.
         Handles all async doing.
         Async over one pair, assuming we get `_ohlcv_candle_limit` candles per call.
         :param pair: Pair to download
-        :param ticker_interval: Interval to get
+        :param timeframe: Ticker Timeframe to get
         :param since_ms: Timestamp in milliseconds to get history from
         :returns List of tickers
         """
         return asyncio.get_event_loop().run_until_complete(
-            self._async_get_historic_ohlcv(pair=pair, ticker_interval=ticker_interval,
+            self._async_get_historic_ohlcv(pair=pair, timeframe=timeframe,
                                            since_ms=since_ms))
 
     async def _async_get_historic_ohlcv(self, pair: str,
-                                        ticker_interval: str,
+                                        timeframe: str,
                                         since_ms: int) -> List:
 
-        one_call = timeframe_to_msecs(ticker_interval) * self._ohlcv_candle_limit
+        one_call = timeframe_to_msecs(timeframe) * self._ohlcv_candle_limit
         logger.debug(
             "one_call: %s msecs (%s)",
             one_call,
             arrow.utcnow().shift(seconds=one_call // 1000).humanize(only_distance=True)
         )
         input_coroutines = [self._async_get_candle_history(
-            pair, ticker_interval, since) for since in
+            pair, timeframe, since) for since in
             range(since_ms, arrow.utcnow().timestamp * 1000, one_call)]
 
         tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
 
         # Combine tickers
         data: List = []
-        for p, ticker_interval, ticker in tickers:
+        for p, timeframe, ticker in tickers:
             if p == pair:
                 data.extend(ticker)
         # Sort data again after extending the result - above calls return in "async order"
@@ -589,14 +589,14 @@ class Exchange:
         input_coroutines = []
 
         # Gather coroutines to run
-        for pair, ticker_interval in set(pair_list):
-            if (not ((pair, ticker_interval) in self._klines)
-                    or self._now_is_time_to_refresh(pair, ticker_interval)):
-                input_coroutines.append(self._async_get_candle_history(pair, ticker_interval))
+        for pair, timeframe in set(pair_list):
+            if (not ((pair, timeframe) in self._klines)
+                    or self._now_is_time_to_refresh(pair, timeframe)):
+                input_coroutines.append(self._async_get_candle_history(pair, timeframe))
             else:
                 logger.debug(
-                    "Using cached ohlcv data for pair %s, interval %s ...",
-                    pair, ticker_interval
+                    "Using cached ohlcv data for pair %s, timeframe %s ...",
+                    pair, timeframe
                 )
 
         tickers = asyncio.get_event_loop().run_until_complete(
@@ -608,40 +608,40 @@ class Exchange:
                 logger.warning("Async code raised an exception: %s", res.__class__.__name__)
                 continue
             pair = res[0]
-            ticker_interval = res[1]
+            timeframe = res[1]
             ticks = res[2]
             # keeping last candle time as last refreshed time of the pair
             if ticks:
-                self._pairs_last_refresh_time[(pair, ticker_interval)] = ticks[-1][0] // 1000
+                self._pairs_last_refresh_time[(pair, timeframe)] = ticks[-1][0] // 1000
             # keeping parsed dataframe in cache
-            self._klines[(pair, ticker_interval)] = parse_ticker_dataframe(
-                ticks, ticker_interval, pair=pair, fill_missing=True,
+            self._klines[(pair, timeframe)] = parse_ticker_dataframe(
+                ticks, timeframe, pair=pair, fill_missing=True,
                 drop_incomplete=self._ohlcv_partial_candle)
         return tickers
 
-    def _now_is_time_to_refresh(self, pair: str, ticker_interval: str) -> bool:
+    def _now_is_time_to_refresh(self, pair: str, timeframe: str) -> bool:
         # Calculating ticker interval in seconds
-        interval_in_sec = timeframe_to_seconds(ticker_interval)
+        interval_in_sec = timeframe_to_seconds(timeframe)
 
-        return not ((self._pairs_last_refresh_time.get((pair, ticker_interval), 0)
+        return not ((self._pairs_last_refresh_time.get((pair, timeframe), 0)
                      + interval_in_sec) >= arrow.utcnow().timestamp)
 
     @retrier_async
-    async def _async_get_candle_history(self, pair: str, ticker_interval: str,
+    async def _async_get_candle_history(self, pair: str, timeframe: str,
                                         since_ms: Optional[int] = None) -> Tuple[str, str, List]:
         """
         Asynchronously gets candle histories using fetch_ohlcv
-        returns tuple: (pair, ticker_interval, ohlcv_list)
+        returns tuple: (pair, timeframe, ohlcv_list)
         """
         try:
             # fetch ohlcv asynchronously
             s = '(' + arrow.get(since_ms // 1000).isoformat() + ') ' if since_ms is not None else ''
             logger.debug(
                 "Fetching pair %s, interval %s, since %s %s...",
-                pair, ticker_interval, since_ms, s
+                pair, timeframe, since_ms, s
             )
 
-            data = await self._api_async.fetch_ohlcv(pair, timeframe=ticker_interval,
+            data = await self._api_async.fetch_ohlcv(pair, timeframe=timeframe,
                                                      since=since_ms)
 
             # Because some exchange sort Tickers ASC and other DESC.
@@ -653,9 +653,9 @@ class Exchange:
                     data = sorted(data, key=lambda x: x[0])
             except IndexError:
                 logger.exception("Error loading %s. Result was %s.", pair, data)
-                return pair, ticker_interval, []
-            logger.debug("Done fetching pair %s, interval %s ...", pair, ticker_interval)
-            return pair, ticker_interval, data
+                return pair, timeframe, []
+            logger.debug("Done fetching pair %s, interval %s ...", pair, timeframe)
+            return pair, timeframe, data
 
         except ccxt.NotSupported as e:
             raise OperationalException(
@@ -802,7 +802,6 @@ class Exchange:
         Handles all async doing.
         Async over one pair, assuming we get `_ohlcv_candle_limit` candles per call.
         :param pair: Pair to download
-        :param ticker_interval: Interval to get
         :param since: Timestamp in milliseconds to get history from
         :param until: Timestamp in milliseconds. Defaults to current timestamp if not defined.
         :param from_id: Download data starting with ID (if id is known)
@@ -958,27 +957,27 @@ def available_exchanges(ccxt_module=None) -> List[str]:
     return [x for x in exchanges if not is_exchange_bad(x)]
 
 
-def timeframe_to_seconds(ticker_interval: str) -> int:
+def timeframe_to_seconds(timeframe: str) -> int:
     """
     Translates the timeframe interval value written in the human readable
     form ('1m', '5m', '1h', '1d', '1w', etc.) to the number
     of seconds for one timeframe interval.
     """
-    return ccxt.Exchange.parse_timeframe(ticker_interval)
+    return ccxt.Exchange.parse_timeframe(timeframe)
 
 
-def timeframe_to_minutes(ticker_interval: str) -> int:
+def timeframe_to_minutes(timeframe: str) -> int:
     """
     Same as timeframe_to_seconds, but returns minutes.
     """
-    return ccxt.Exchange.parse_timeframe(ticker_interval) // 60
+    return ccxt.Exchange.parse_timeframe(timeframe) // 60
 
 
-def timeframe_to_msecs(ticker_interval: str) -> int:
+def timeframe_to_msecs(timeframe: str) -> int:
     """
     Same as timeframe_to_seconds, but returns milliseconds.
     """
-    return ccxt.Exchange.parse_timeframe(ticker_interval) * 1000
+    return ccxt.Exchange.parse_timeframe(timeframe) * 1000
 
 
 def timeframe_to_prev_date(timeframe: str, date: datetime = None) -> datetime:
