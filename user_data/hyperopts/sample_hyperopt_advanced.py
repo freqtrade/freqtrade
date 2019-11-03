@@ -233,8 +233,9 @@ class AdvancedSampleHyperOpts(IHyperOpt):
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators.
-        Can be a copy of from the strategy, or will be loaded from the strategy.
-        must align to populate_indicators used (either from this File, or from the strategy)
+        Can be a copy of the corresponding method from the strategy,
+        or will be loaded from the strategy.
+        Must align to populate_indicators used (either from this File, or from the strategy)
         Only used when --spaces does not include buy
         """
         dataframe.loc[
@@ -251,8 +252,9 @@ class AdvancedSampleHyperOpts(IHyperOpt):
     def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators.
-        Can be a copy of from the strategy, or will be loaded from the strategy.
-        must align to populate_indicators used (either from this File, or from the strategy)
+        Can be a copy of the corresponding method from the strategy,
+        or will be loaded from the strategy.
+        Must align to populate_indicators used (either from this File, or from the strategy)
         Only used when --spaces does not include sell
         """
         dataframe.loc[
