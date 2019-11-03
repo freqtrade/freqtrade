@@ -5,10 +5,9 @@ This module defines the interface to apply for hyperopts
 import logging
 import math
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Dict, Any, Callable, List
 
-from pandas import DataFrame
 from skopt.space import Dimension, Integer, Real
 
 from freqtrade import OperationalException
@@ -41,15 +40,6 @@ class IHyperOpt(ABC):
 
         # Assign ticker_interval to be used in hyperopt
         IHyperOpt.ticker_interval = str(config['ticker_interval'])
-
-    @staticmethod
-    @abstractmethod
-    def populate_indicators(dataframe: DataFrame, metadata: dict) -> DataFrame:
-        """
-        Populate indicators that will be used in the Buy and Sell strategy.
-        :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe().
-        :return: A Dataframe with all mandatory indicators for the strategies.
-        """
 
     @staticmethod
     def buy_strategy_generator(params: Dict[str, Any]) -> Callable:

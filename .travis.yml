@@ -32,7 +32,7 @@ jobs:
       name: backtest
     - script:
       - cp config.json.example config.json
-      - freqtrade --datadir tests/testdata hyperopt -e 5
+      - freqtrade --datadir tests/testdata --strategy SampleStrategy hyperopt --customhyperopt SampleHyperOpts -e 5
       name: hyperopt
     - script: flake8
       name: flake8
