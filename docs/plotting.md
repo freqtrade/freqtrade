@@ -103,7 +103,7 @@ The `-p/--pairs` argument can be used to specify pairs you would like to plot.
 Specify custom indicators.
 Use `--indicators1` for the main plot and `--indicators2` for the subplot below (if values are in a different range than prices).
 
-!!! tip
+!!! Tip
     You will almost certainly want to specify a custom strategy! This can be done by adding `-s Classname` / `--strategy ClassName` to the command.
 
 ``` bash

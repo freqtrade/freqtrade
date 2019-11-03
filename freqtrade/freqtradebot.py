@@ -634,8 +634,8 @@ class FreqtradeBot:
         Force-sells the pair (using EmergencySell reason) in case of Problems creating the order.
         :return: True if the order succeeded, and False in case of problems.
         """
-        # Limit price threshold: As limit price should always be below price
-        LIMIT_PRICE_PCT = 0.99
+        # Limit price threshold: As limit price should always be below stop-price
+        LIMIT_PRICE_PCT = self.strategy.order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
 
         try:
             stoploss_order = self.exchange.stoploss_limit(pair=trade.pair, amount=trade.amount,
@@ -768,7 +768,7 @@ class FreqtradeBot:
         buy_timeout_threshold = arrow.utcnow().shift(minutes=-buy_timeout).datetime
         sell_timeout_threshold = arrow.utcnow().shift(minutes=-sell_timeout).datetime
 
-        for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
+        for trade in Trade.get_open_order_trades():
             try:
                 # FIXME: Somehow the query above returns results
                 # where the open_order_id is in fact None.

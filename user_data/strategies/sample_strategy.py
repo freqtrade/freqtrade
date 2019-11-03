@@ -107,16 +107,16 @@ class SampleStrategy(IStrategy):
         # RSI
         dataframe['rsi'] = ta.RSI(dataframe)
 
-        """
+
         # ADX
         dataframe['adx'] = ta.ADX(dataframe)
-
+        """
         # Awesome oscillator
         dataframe['ao'] = qtpylib.awesome_oscillator(dataframe)
 
         # Commodity Channel Index: values Oversold:<-100, Overbought:>100
         dataframe['cci'] = ta.CCI(dataframe)
-
+        """
         # MACD
         macd = ta.MACD(dataframe)
         dataframe['macd'] = macd['macd']
@@ -126,6 +126,7 @@ class SampleStrategy(IStrategy):
         # MFI
         dataframe['mfi'] = ta.MFI(dataframe)
 
+        """
         # Minus Directional Indicator / Movement
         dataframe['minus_dm'] = ta.MINUS_DM(dataframe)
         dataframe['minus_di'] = ta.MINUS_DI(dataframe)
@@ -149,12 +150,13 @@ class SampleStrategy(IStrategy):
         stoch = ta.STOCH(dataframe)
         dataframe['slowd'] = stoch['slowd']
         dataframe['slowk'] = stoch['slowk']
-
+        """
         # Stoch fast
         stoch_fast = ta.STOCHF(dataframe)
         dataframe['fastd'] = stoch_fast['fastd']
         dataframe['fastk'] = stoch_fast['fastk']
 
+        """
         # Stoch RSI
         stoch_rsi = ta.STOCHRSI(dataframe)
         dataframe['fastd_rsi'] = stoch_rsi['fastd']
@@ -178,12 +180,11 @@ class SampleStrategy(IStrategy):
         dataframe['ema50'] = ta.EMA(dataframe, timeperiod=50)
         dataframe['ema100'] = ta.EMA(dataframe, timeperiod=100)
 
-        # SAR Parabol
-        dataframe['sar'] = ta.SAR(dataframe)
-
         # SMA - Simple Moving Average
         dataframe['sma'] = ta.SMA(dataframe, timeperiod=40)
         """
+        # SAR Parabol
+        dataframe['sar'] = ta.SAR(dataframe)
 
         # TEMA - Triple Exponential Moving Average
         dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)

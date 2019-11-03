@@ -714,9 +714,9 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     results = backtesting.backtest(backtest_conf)
 
     # Make sure we have parallel trades
-    assert len(evaluate_result_multi(results, '5min', 2)) > 0
+    assert len(evaluate_result_multi(results, '5m', 2)) > 0
     # make sure we don't have trades with more than configured max_open_trades
-    assert len(evaluate_result_multi(results, '5min', 3)) == 0
+    assert len(evaluate_result_multi(results, '5m', 3)) == 0
 
     backtest_conf = {
         'stake_amount': default_conf['stake_amount'],
@@ -727,7 +727,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
         'end_date': max_date,
     }
     results = backtesting.backtest(backtest_conf)
-    assert len(evaluate_result_multi(results, '5min', 1)) == 0
+    assert len(evaluate_result_multi(results, '5m', 1)) == 0
 
 
 def test_backtest_record(default_conf, fee, mocker):

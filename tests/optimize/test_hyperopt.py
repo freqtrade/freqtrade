@@ -154,6 +154,7 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
 
     hyperopt = DefaultHyperOpt
+    delattr(hyperopt, 'populate_indicators')
     delattr(hyperopt, 'populate_buy_trend')
     delattr(hyperopt, 'populate_sell_trend')
     mocker.patch(
@@ -162,8 +163,11 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
     )
     default_conf.update({'hyperopt': 'DefaultHyperOpt'})
     x = HyperOptResolver(default_conf).hyperopt
+    assert not hasattr(x, 'populate_indicators')
     assert not hasattr(x, 'populate_buy_trend')
     assert not hasattr(x, 'populate_sell_trend')
+    assert log_has("Hyperopt class does not provide populate_indicators() method. "
+                   "Using populate_indicators from the strategy.", caplog)
     assert log_has("Hyperopt class does not provide populate_sell_trend() method. "
                    "Using populate_sell_trend from the strategy.", caplog)
     assert log_has("Hyperopt class does not provide populate_buy_trend() method. "

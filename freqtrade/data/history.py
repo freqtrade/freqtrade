@@ -148,7 +148,6 @@ def load_pair_history(pair: str,
 
     timerange_startup = deepcopy(timerange)
     if startup_candles > 0 and timerange_startup:
-        logger.info('Using indicator startup period: %s ...', startup_candles)
         timerange_startup.subtract_start(timeframe_to_seconds(ticker_interval) * startup_candles)
 
     # The user forced the refresh of pairs
@@ -204,6 +203,8 @@ def load_data(datadir: Path,
         exchange and refresh_pairs are then not needed here nor in load_pair_history.
     """
     result: Dict[str, DataFrame] = {}
+    if startup_candles > 0 and timerange:
+        logger.info(f'Using indicator startup period: {startup_candles} ...')
 
     for pair in pairs:
         hist = load_pair_history(pair=pair, ticker_interval=ticker_interval,

@@ -95,29 +95,26 @@ sudo apt-get update
 sudo apt-get install build-essential git
 ```
 
-#### Raspberry Pi / Raspbian
+### Raspberry Pi / Raspbian
 
-Before installing FreqTrade on a Raspberry Pi running the official Raspbian Image, make sure you have at least Python 3.6 installed. The default image only provides Python 3.5. Probably the easiest way to get a recent version of python is [miniconda](https://repo.continuum.io/miniconda/).
+The following assumes the latest [Raspbian Buster lite image](https://www.raspberrypi.org/downloads/raspbian/) from at least September 2019.
+This image comes with python3.7 preinstalled, making it easy to get freqtrade up and running.
 
-The following assumes that miniconda3 is installed and available in your environment. Since the last miniconda3 installation file uses python 3.4, we will update to python 3.6 on this installation.
-It's recommended to use (mini)conda for this as installation/compilation of `numpy` and `pandas` takes a long time.
-
-Additional package to install on your Raspbian, `libffi-dev` required by cryptography (from python-telegram-bot).
+Tested using a Raspberry Pi 3 with the Raspbian Buster lite image, all updates applied.
 
 ``` bash
-conda config --add channels rpi
-conda install python=3.6
-conda create -n freqtrade python=3.6
-conda activate freqtrade
-conda install pandas numpy
+sudo apt-get install python3-venv libatlas-base-dev
+git clone https://github.com/freqtrade/freqtrade.git
+cd freqtrade
 
-sudo apt install libffi-dev
-python3 -m pip install -r requirements-common.txt
-python3 -m pip install -e .
+bash setup.sh -i
 ```
 
+!!! Note "Installation duration"
+    Depending on your internet speed and the Raspberry Pi version, installation can take multiple hours to complete.
+
 !!! Note
-    This does not install hyperopt dependencies. To install these, please use `python3 -m pip install -e .[hyperopt]`.
+    The above does not install hyperopt dependencies. To install these, please use `python3 -m pip install -e .[hyperopt]`.
     We do not advise to run hyperopt on a Raspberry Pi, since this is a very resource-heavy operation, which should be done on powerful machine.
 
 ### Common

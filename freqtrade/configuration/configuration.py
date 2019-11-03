@@ -17,7 +17,7 @@ from freqtrade.configuration.directory_operations import (create_datadir,
 from freqtrade.configuration.load_config import load_config_file
 from freqtrade.loggers import setup_logging
 from freqtrade.misc import deep_merge_dicts, json_load
-from freqtrade.state import RunMode
+from freqtrade.state import RunMode, TRADING_MODES, NON_UTIL_MODES
 
 logger = logging.getLogger(__name__)
 
@@ -98,13 +98,15 @@ class Configuration:
         # Keep a copy of the original configuration file
         config['original_config'] = deepcopy(config)
 
+        self._process_runmode(config)
+
         self._process_common_options(config)
+
+        self._process_trading_options(config)
 
         self._process_optimize_options(config)
 
         self._process_plot_options(config)
-
-        self._process_runmode(config)
 
         # Check if the exchange set by the user is supported
         check_exchange(config, config.get('experimental', {}).get('block_bad_exchanges', True))
@@ -130,6 +132,22 @@ class Configuration:
 
         setup_logging(config)
 
+    def _process_trading_options(self, config: Dict[str, Any]) -> None:
+        if config['runmode'] not in TRADING_MODES:
+            return
+
+        if config.get('dry_run', False):
+            logger.info('Dry run is enabled')
+            if config.get('db_url') in [None, constants.DEFAULT_DB_PROD_URL]:
+                # Default to in-memory db for dry_run if not specified
+                config['db_url'] = constants.DEFAULT_DB_DRYRUN_URL
+        else:
+            if not config.get('db_url', None):
+                config['db_url'] = constants.DEFAULT_DB_PROD_URL
+            logger.info('Dry run is disabled')
+
+        logger.info(f'Using DB: "{config["db_url"]}"')
+
     def _process_common_options(self, config: Dict[str, Any]) -> None:
 
         self._process_logging_options(config)
@@ -146,24 +164,8 @@ class Configuration:
             config.update({'db_url': self.args["db_url"]})
             logger.info('Parameter --db-url detected ...')
 
-        if config.get('dry_run', False):
-            logger.info('Dry run is enabled')
-            if config.get('db_url') in [None, constants.DEFAULT_DB_PROD_URL]:
-                # Default to in-memory db for dry_run if not specified
-                config['db_url'] = constants.DEFAULT_DB_DRYRUN_URL
-        else:
-            if not config.get('db_url', None):
-                config['db_url'] = constants.DEFAULT_DB_PROD_URL
-            logger.info('Dry run is disabled')
-
-        logger.info(f'Using DB: "{config["db_url"]}"')
-
         if config.get('forcebuy_enable', False):
             logger.warning('`forcebuy` RPC message enabled.')
-
-        # Setting max_open_trades to infinite if -1
-        if config.get('max_open_trades') == -1:
-            config['max_open_trades'] = float('inf')
 
         # Support for sd_notify
         if 'sd_notify' in self.args and self.args["sd_notify"]:
@@ -216,6 +218,10 @@ class Configuration:
         self._args_to_config(config, argname='position_stacking',
                              logstring='Parameter --enable-position-stacking detected ...')
 
+        # Setting max_open_trades to infinite if -1
+        if config.get('max_open_trades') == -1:
+            config['max_open_trades'] = float('inf')
+
         if 'use_max_market_positions' in self.args and not self.args["use_max_market_positions"]:
             config.update({'use_max_market_positions': False})
             logger.info('Parameter --disable-max-market-positions detected ...')
@@ -224,7 +230,7 @@ class Configuration:
             config.update({'max_open_trades': self.args["max_open_trades"]})
             logger.info('Parameter --max_open_trades detected, '
                         'overriding max_open_trades to: %s ...', config.get('max_open_trades'))
-        else:
+        elif config['runmode'] in NON_UTIL_MODES:
             logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
 
         self._args_to_config(config, argname='stake_amount',

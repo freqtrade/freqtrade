@@ -2,12 +2,11 @@
 
 from functools import reduce
 from typing import Any, Callable, Dict, List
-from datetime import datetime
 
-import numpy as np
+import numpy as np  # noqa
 import talib.abstract as ta
 from pandas import DataFrame
-from skopt.space import Categorical, Dimension, Integer, Real
+from skopt.space import Categorical, Dimension, Integer, Real  # noqa
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.optimize.hyperopt_interface import IHyperOpt
@@ -34,34 +33,6 @@ class SampleHyperOpts(IHyperOpt):
     Sample implementation of these methods can be found in
     https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/sample_hyperopt_advanced.py
     """
-    @staticmethod
-    def populate_indicators(dataframe: DataFrame, metadata: dict) -> DataFrame:
-        """
-        Add several indicators needed for buy and sell strategies defined below.
-        """
-        # ADX
-        dataframe['adx'] = ta.ADX(dataframe)
-        # MACD
-        macd = ta.MACD(dataframe)
-        dataframe['macd'] = macd['macd']
-        dataframe['macdsignal'] = macd['macdsignal']
-        # MFI
-        dataframe['mfi'] = ta.MFI(dataframe)
-        # RSI
-        dataframe['rsi'] = ta.RSI(dataframe)
-        # Stochastic Fast
-        stoch_fast = ta.STOCHF(dataframe)
-        dataframe['fastd'] = stoch_fast['fastd']
-        # Minus-DI
-        dataframe['minus_di'] = ta.MINUS_DI(dataframe)
-        # Bollinger bands
-        bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
-        dataframe['bb_lowerband'] = bollinger['lower']
-        dataframe['bb_upperband'] = bollinger['upper']
-        # SAR
-        dataframe['sar'] = ta.SAR(dataframe)
-
-        return dataframe
 
     @staticmethod
     def buy_strategy_generator(params: Dict[str, Any]) -> Callable:

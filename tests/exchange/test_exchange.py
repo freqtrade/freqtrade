@@ -14,13 +14,13 @@ from pandas import DataFrame
 from freqtrade import (DependencyException, InvalidOrderException,
                        OperationalException, TemporaryError)
 from freqtrade.exchange import Binance, Exchange, Kraken
-from freqtrade.exchange.exchange import (API_RETRY_COUNT, timeframe_to_minutes,
+from freqtrade.exchange.common import API_RETRY_COUNT
+from freqtrade.exchange.exchange import (market_is_active, symbol_is_pair,
+                                         timeframe_to_minutes,
                                          timeframe_to_msecs,
                                          timeframe_to_next_date,
                                          timeframe_to_prev_date,
-                                         timeframe_to_seconds,
-                                         symbol_is_pair,
-                                         market_is_active)
+                                         timeframe_to_seconds)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import get_patched_exchange, log_has, log_has_re
 
