@@ -9,7 +9,7 @@ from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.strategy.interface import SellType
 from tests.conftest import patch_exchange
 from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
-                            _get_frame_time_from_offset, tests_ticker_interval)
+                            _get_frame_time_from_offset, tests_timeframe)
 
 # Test 0: Sell with signal sell in candle 3
 # Test with Stop-loss at 1%
@@ -293,7 +293,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     """
     default_conf["stoploss"] = data.stop_loss
     default_conf["minimal_roi"] = data.roi
-    default_conf["ticker_interval"] = tests_ticker_interval
+    default_conf["ticker_interval"] = tests_timeframe
     default_conf["trailing_stop"] = data.trailing_stop
     default_conf["trailing_only_offset_is_reached"] = data.trailing_only_offset_is_reached
     # Only add this to configuration If it's necessary

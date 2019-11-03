@@ -307,7 +307,7 @@ def test_backtesting_init(mocker, default_conf, order_types) -> None:
     get_fee = mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
     backtesting = Backtesting(default_conf)
     assert backtesting.config == default_conf
-    assert backtesting.ticker_interval == '5m'
+    assert backtesting.timeframe == '5m'
     assert callable(backtesting.strategy.tickerdata_to_dataframe)
     assert callable(backtesting.strategy.advise_buy)
     assert callable(backtesting.strategy.advise_sell)
