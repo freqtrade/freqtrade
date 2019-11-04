@@ -545,7 +545,7 @@ def test_check_exchange(default_conf, caplog) -> None:
 
     # Test no exchange...
     default_conf.get('exchange').update({'name': ''})
-    default_conf['runmode'] = RunMode.OTHER
+    default_conf['runmode'] = RunMode.UTIL_EXCHANGE
     with pytest.raises(OperationalException,
                        match=r'This command requires a configured exchange.*'):
         check_exchange(default_conf)
