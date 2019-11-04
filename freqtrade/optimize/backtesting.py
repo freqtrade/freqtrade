@@ -245,7 +245,8 @@ class Backtesting:
         ticker: Dict = {}
         # Create ticker dict
         for pair, pair_data in processed.items():
-            pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
+            pair_data.loc[:, 'buy'] = 0  # cleanup from previous run
+            pair_data.loc[:, 'sell'] = 0  # cleanup from previous run
 
             ticker_data = self.strategy.advise_sell(
                 self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
