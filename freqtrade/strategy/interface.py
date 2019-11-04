@@ -468,7 +468,7 @@ class IStrategy(ABC):
         Creates a dataframe and populates indicators for given candle (OHLCV) data
         Used by optimize operations only, not during dry / live runs.
         """
-        return {pair: self.advise_indicators(pair_data, {'pair': pair})
+        return {pair: self.advise_indicators(pair_data.copy(), {'pair': pair})
                 for pair, pair_data in data.items()}
 
     def advise_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
