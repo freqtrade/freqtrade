@@ -3213,6 +3213,8 @@ def test_order_book_depth_of_market(default_conf, ticker, limit_buy_order, fee, 
     assert trade.open_date is not None
     assert trade.exchange == 'bittrex'
 
+    assert len(Trade.query.all()) == 1
+
     # Simulate fulfilled LIMIT_BUY order for trade
     trade.update(limit_buy_order)
 
