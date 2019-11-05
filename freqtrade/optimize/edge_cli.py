@@ -4,12 +4,13 @@
 This module contains the edge backtesting interface
 """
 import logging
-from typing import Dict, Any
-from tabulate import tabulate
-from freqtrade import constants
-from freqtrade.edge import Edge
+from typing import Any, Dict
 
-from freqtrade.configuration import TimeRange
+from tabulate import tabulate
+
+from freqtrade import constants
+from freqtrade.configuration import TimeRange, remove_credentials
+from freqtrade.edge import Edge
 from freqtrade.exchange import Exchange
 from freqtrade.resolvers import StrategyResolver
 
@@ -29,12 +30,8 @@ class EdgeCli:
         self.config = config
 
         # Reset keys for edge
-        self.config['exchange']['key'] = ''
-        self.config['exchange']['secret'] = ''
-        self.config['exchange']['password'] = ''
-        self.config['exchange']['uid'] = ''
+        remove_credentials(self.config)
         self.config['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
-        self.config['dry_run'] = True
         self.exchange = Exchange(self.config)
         self.strategy = StrategyResolver(self.config).strategy
 

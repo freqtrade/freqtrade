@@ -10,9 +10,10 @@ from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional
 
 from pandas import DataFrame
+from tabulate import tabulate
 
 from freqtrade import OperationalException
-from freqtrade.configuration import TimeRange
+from freqtrade.configuration import TimeRange, remove_credentials
 from freqtrade.data import history
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
@@ -21,7 +22,6 @@ from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
 from freqtrade.strategy.interface import IStrategy, SellType
-from tabulate import tabulate
 
 logger = logging.getLogger(__name__)
 
@@ -57,11 +57,7 @@ class Backtesting:
         self.config = config
 
         # Reset keys for backtesting
-        self.config['exchange']['key'] = ''
-        self.config['exchange']['secret'] = ''
-        self.config['exchange']['password'] = ''
-        self.config['exchange']['uid'] = ''
-        self.config['dry_run'] = True
+        remove_credentials(self.config)
         self.strategylist: List[IStrategy] = []
         self.exchange = ExchangeResolver(self.config['exchange']['name'], self.config).exchange
 

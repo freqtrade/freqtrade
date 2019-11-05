@@ -10,7 +10,7 @@ import rapidjson
 from tabulate import tabulate
 
 from freqtrade import OperationalException
-from freqtrade.configuration import Configuration, TimeRange
+from freqtrade.configuration import Configuration, TimeRange, remove_credentials
 from freqtrade.configuration.directory_operations import create_userdata_dir
 from freqtrade.data.history import (convert_trades_to_ohlcv,
                                     refresh_backtest_ohlcv_data,
@@ -33,10 +33,8 @@ def setup_utils_configuration(args: Dict[str, Any], method: RunMode) -> Dict[str
     configuration = Configuration(args, method)
     config = configuration.get_config()
 
-    config['exchange']['dry_run'] = True
     # Ensure we do not use Exchange credentials
-    config['exchange']['key'] = ''
-    config['exchange']['secret'] = ''
+    remove_credentials(config)
 
     return config
 
