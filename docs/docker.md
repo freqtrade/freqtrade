@@ -170,6 +170,9 @@ docker run -d \
 !!! Note
     All available bot command line parameters can be added to the end of the `docker run` command.
 
+!!! Note
+    You can define a [restart policy](https://docs.docker.com/config/containers/start-containers-automatically/) in docker. It can be useful in some cases to use the `--restart unless-stopped` flag (crash of freqtrade or reboot of your system).
+
 ### Monitor your Docker instance
 
 You can use the following commands to monitor and manage your container:
