@@ -26,7 +26,7 @@ from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
 
 @pytest.fixture(scope='function')
 def hyperopt(default_conf, mocker):
-    default_conf.update({'spaces': ['all']})
+    default_conf.update({'spaces': ['default']})
     patch_exchange(mocker)
     return Hyperopt(default_conf)
 
@@ -108,7 +108,7 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--epochs', '1000',
-        '--spaces', 'all',
+        '--spaces', 'default',
         '--print-all'
     ]
 
@@ -414,7 +414,7 @@ def test_start_calls_optimizer(mocker, default_conf, caplog, capsys) -> None:
     default_conf.update({'config': 'config.json.example',
                          'epochs': 1,
                          'timerange': None,
-                         'spaces': 'all',
+                         'spaces': 'default',
                          'hyperopt_jobs': 1, })
 
     hyperopt = Hyperopt(default_conf)
@@ -463,14 +463,38 @@ def test_format_results(hyperopt):
     assert result.find('Total profit 1.00000000 EUR')
 
 
-def test_has_space(hyperopt):
-    hyperopt.config.update({'spaces': ['buy', 'roi']})
-    assert hyperopt.has_space('roi')
-    assert hyperopt.has_space('buy')
-    assert not hyperopt.has_space('stoploss')
-
-    hyperopt.config.update({'spaces': ['all']})
-    assert hyperopt.has_space('buy')
+@pytest.mark.parametrize("spaces, expected_results", [
+    (['buy'],
+     {'buy': True, 'sell': False, 'roi': False, 'stoploss': False, 'trailing': False}),
+    (['sell'],
+     {'buy': False, 'sell': True, 'roi': False, 'stoploss': False, 'trailing': False}),
+    (['roi'],
+     {'buy': False, 'sell': False, 'roi': True, 'stoploss': False, 'trailing': False}),
+    (['stoploss'],
+     {'buy': False, 'sell': False, 'roi': False, 'stoploss': True, 'trailing': False}),
+    (['trailing'],
+     {'buy': False, 'sell': False, 'roi': False, 'stoploss': False, 'trailing': True}),
+    (['buy', 'sell', 'roi', 'stoploss'],
+     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': False}),
+    (['buy', 'sell', 'roi', 'stoploss', 'trailing'],
+     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': True}),
+    (['buy', 'roi'],
+     {'buy': True, 'sell': False, 'roi': True, 'stoploss': False, 'trailing': False}),
+    (['all'],
+     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': True}),
+    (['default'],
+     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': False}),
+    (['default', 'trailing'],
+     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': True}),
+    (['all', 'buy'],
+     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': True}),
+    (['default', 'buy'],
+     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': False}),
+])
+def test_has_space(hyperopt, spaces, expected_results):
+    for s in ['buy', 'sell', 'roi', 'stoploss', 'trailing']:
+        hyperopt.config.update({'spaces': spaces})
+        assert hyperopt.has_space(s) == expected_results[s]
 
 
 def test_populate_indicators(hyperopt, testdatadir) -> None:
@@ -517,7 +541,7 @@ def test_buy_strategy_generator(hyperopt, testdatadir) -> None:
 def test_generate_optimizer(mocker, default_conf) -> None:
     default_conf.update({'config': 'config.json.example'})
     default_conf.update({'timerange': None})
-    default_conf.update({'spaces': 'all'})
+    default_conf.update({'spaces': 'default'})
     default_conf.update({'hyperopt_min_trades': 1})
 
     trades = [
@@ -584,7 +608,7 @@ def test_clean_hyperopt(mocker, default_conf, caplog):
     default_conf.update({'config': 'config.json.example',
                          'epochs': 1,
                          'timerange': None,
-                         'spaces': 'all',
+                         'spaces': 'default',
                          'hyperopt_jobs': 1,
                          })
     mocker.patch("freqtrade.optimize.hyperopt.Path.is_file", MagicMock(return_value=True))
@@ -600,7 +624,7 @@ def test_continue_hyperopt(mocker, default_conf, caplog):
     default_conf.update({'config': 'config.json.example',
                          'epochs': 1,
                          'timerange': None,
-                         'spaces': 'all',
+                         'spaces': 'default',
                          'hyperopt_jobs': 1,
                          'hyperopt_continue': True
                          })
