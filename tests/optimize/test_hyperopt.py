@@ -1,4 +1,5 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
+import locale
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
@@ -565,8 +566,9 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     }
     response_expected = {
         'loss': 1.9840569076926293,
-        'results_explanation': '     1 trades. Avg profit  2.31%. Total profit  0.00023300 BTC '
-                               '(   2.31Σ%). Avg duration 100.0 mins.',
+        'results_explanation': ('     1 trades. Avg profit  2.31%. Total profit  0.00023300 BTC '
+                                '(   2.31\N{GREEK CAPITAL LETTER SIGMA}%). Avg duration 100.0 mins.'
+                                ).encode(locale.getpreferredencoding(), 'replace').decode('utf-8'),
         'params': optimizer_param,
         'total_profit': 0.00023300
     }
