@@ -37,7 +37,9 @@ cd freqtrade
 ./setup.sh --install
 ```
 
+!!! Note "Version considerations"
     When cloning the repository the default working branch is name `develop`. This branch contains the last features (can be considered as relatively stable thanks to automated tests). The `master` branch contains the code of the last release (done once per month with a one week old snapshot of the `develop` branch to prevent packaging bugs so potentially more stable).
+
 !!! Note
     Windows installation is explained [here](#windows).
 
