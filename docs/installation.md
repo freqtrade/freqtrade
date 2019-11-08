@@ -29,16 +29,18 @@ You will need to create API Keys (Usually you get `key` and `secret`) from the E
 Freqtrade provides a Linux/MacOS script to install all dependencies and help you to configure the bot.
 
 !!! Note
-    Python3.6 or higher and the corresponding pip are assumed to be available. The install-script will warn and stop if that's not the case.
+    Python3.6 or higher and the corresponding `pip` are assumed to be available. The install-script will warn and stop if that's not the case.
 
 ```bash
 git clone git@github.com:freqtrade/freqtrade.git
 cd freqtrade
+git checkout master  # Optional, see (1)
 ./setup.sh --install
 ```
+(1) This command switches the cloned repository to the use of the `master` branch. This command is not needed if you wish to stay on the `develop` branch. You may later switch between branches at any time with the `git checkout master`/`git checkout develop` commands.
 
 !!! Note "Version considerations"
-    When cloning the repository the default working branch is name `develop`. This branch contains the last features (can be considered as relatively stable thanks to automated tests). The `master` branch contains the code of the last release (done once per month with a one week old snapshot of the `develop` branch to prevent packaging bugs so potentially more stable).
+    When cloning the repository the default working branch has the name `develop`. This branch contains all last features (can be considered as relatively stable, thanks to automated tests). The `master` branch contains the code of the last release (done usually once per month on an approximately one week old snapshot of the `develop` branch to prevent packaging bugs, so potentially it's more stable).
 
 !!! Note
     Windows installation is explained [here](#windows).
