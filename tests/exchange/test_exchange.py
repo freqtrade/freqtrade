@@ -1586,8 +1586,20 @@ def test_name(default_conf, mocker, exchange_name):
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_trades_for_order(default_conf, mocker, exchange_name):
+    """
+    Crucial part in this test is the "since" calculation.
+    The "since" argument passed in is coming from the database and is in UTC,
+    as timezone-native datetime object.
+    From the python documentation:
+        > Naive datetime instances are assumed to represent local time
+    Therefore, calling "since.timestamp()" will get the UTC timestamp, after applying the
+    transformation from local timezone to UTC.
+    This works for timezones UTC+ since then the result will contain trades from a few hours
+    instead of from the last 5 seconds, however fails for UTC- timezones,
+    since we're then asking for trades with a "since" argument in the future.
+    """
     order_id = 'ABCD-ABCD'
-    since = datetime(2018, 5, 5, tzinfo=timezone.utc)
+    since = datetime(2018, 5, 5, 0, 0, 0)
     default_conf["dry_run"] = False
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
     api_mock = MagicMock()
@@ -1623,7 +1635,8 @@ def test_get_trades_for_order(default_conf, mocker, exchange_name):
     assert api_mock.fetch_my_trades.call_args[0][0] == 'LTC/BTC'
     # Same test twice, hardcoded number and doing the same calculation
     assert api_mock.fetch_my_trades.call_args[0][1] == 1525478395000
-    assert api_mock.fetch_my_trades.call_args[0][1] == int(since.timestamp() - 5) * 1000
+    assert api_mock.fetch_my_trades.call_args[0][1] == int(since.replace(
+        tzinfo=timezone.utc).timestamp() - 5) * 1000
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            'get_trades_for_order', 'fetch_my_trades',

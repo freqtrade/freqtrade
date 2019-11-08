@@ -875,6 +875,22 @@ class Exchange:
 
     @retrier
     def get_trades_for_order(self, order_id: str, pair: str, since: datetime) -> List:
+        """
+        Fetch Orders using the "fetch_my_trades" endpoint and filter them by order-id.
+        The "since" argument passed in is coming from the database and is in UTC,
+        as timezone-native datetime object.
+        From the python documentation:
+            > Naive datetime instances are assumed to represent local time
+        Therefore, calling "since.timestamp()" will get the UTC timestamp, after applying the
+        transformation from local timezone to UTC.
+        This works for timezones UTC+ since then the result will contain trades from a few hours
+        instead of from the last 5 seconds, however fails for UTC- timezones,
+        since we're then asking for trades with a "since" argument in the future.
+
+        :param order_id order_id: Order-id as given when creating the order
+        :param pair: Pair the order is for
+        :param since: datetime object of the order creation time. Assumes object is in UTC.
+        """
         if self._config['dry_run']:
             return []
         if not self.exchange_has('fetchMyTrades'):
@@ -882,7 +898,8 @@ class Exchange:
         try:
             # Allow 5s offset to catch slight time offsets (discovered in #1185)
             # since needs to be int in milliseconds
-            my_trades = self._api.fetch_my_trades(pair, int((since.timestamp() - 5) * 1000))
+            my_trades = self._api.fetch_my_trades(
+                pair, int((since.replace(tzinfo=timezone.utc).timestamp() - 5) * 1000))
             matched_trades = [trade for trade in my_trades if trade['order'] == order_id]
 
             return matched_trades

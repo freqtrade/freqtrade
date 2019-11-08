@@ -9,12 +9,11 @@ Includes:
 import logging
 import operator
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
-import pytz
 from pandas import DataFrame
 
 from freqtrade import OperationalException, misc
@@ -56,10 +55,10 @@ def trim_dataframe(df: DataFrame, timerange: TimeRange) -> DataFrame:
     Trim dataframe based on given timerange
     """
     if timerange.starttype == 'date':
-        start = datetime.fromtimestamp(timerange.startts, tz=pytz.utc)
+        start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
         df = df.loc[df['date'] >= start, :]
     if timerange.stoptype == 'date':
-        stop = datetime.fromtimestamp(timerange.stopts, tz=pytz.utc)
+        stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
         df = df.loc[df['date'] <= stop, :]
     return df
 
