@@ -7,7 +7,7 @@ from typing import Dict
 
 import numpy as np
 import pandas as pd
-import pytz
+from datetime import timezone
 
 from freqtrade import persistence
 from freqtrade.misc import json_load
@@ -106,8 +106,8 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
                "stop_loss", "initial_stop_loss", "strategy", "ticker_interval"]
 
     trades = pd.DataFrame([(t.pair,
-                            t.open_date.replace(tzinfo=pytz.UTC),
-                            t.close_date.replace(tzinfo=pytz.UTC) if t.close_date else None,
+                            t.open_date.replace(tzinfo=timezone.utc),
+                            t.close_date.replace(tzinfo=timezone.utc) if t.close_date else None,
                             t.calc_profit(), t.calc_profit_percent(),
                             t.open_rate, t.close_rate, t.amount,
                             (round((t.close_date.timestamp() - t.open_date.timestamp()) / 60, 2)
