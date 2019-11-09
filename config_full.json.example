@@ -50,17 +50,22 @@
         "buy": "gtc",
         "sell": "gtc"
     },
-    "pairlist": {
-        "method": "VolumePairList",
-        "config": {
-            "number_assets": 20,
-            "sort_key": "quoteVolume",
+    "pairlists": [
+        {"method": "StaticPairList"},
+        {
+            "method": "VolumePairList",
+            "config": {
+                "number_assets": 20,
+                "sort_key": "quoteVolume"
+            }
         },
-        "filters":{
-            "PrecisionFilter": {},
-            "LowPriceFilter": {"low_price_percent": 0.01}
+        {"method": "PrecisionFilter"},
+        {"method": "LowPriceFilter",
+         "config": {
+            "low_price_percent": 0.01
+            }
         }
-    },
+    ],
     "exchange": {
         "name": "bittrex",
         "sandbox": false,
