@@ -16,6 +16,7 @@ from tests.conftest import get_patched_freqtradebot, log_has_re
 @pytest.fixture(scope="function")
 def whitelist_conf(default_conf):
     default_conf['stake_currency'] = 'BTC'
+    default_conf['exchange']['name'] = 'binance'
     default_conf['exchange']['pair_whitelist'] = [
         'ETH/BTC',
         'TKN/BTC',
@@ -39,13 +40,13 @@ def whitelist_conf(default_conf):
 
 
 @pytest.fixture(scope="function")
-def static_pl_conf(default_conf):
-    default_conf['pairlists'] = [
+def static_pl_conf(whitelist_conf):
+    whitelist_conf['pairlists'] = [
         {
             "method": "StaticPairList",
         },
     ]
-    return default_conf
+    return whitelist_conf
 
 
 def test_load_pairlist_noexist(mocker, markets, default_conf):
@@ -73,7 +74,7 @@ def test_refresh_market_pair_not_in_whitelist(mocker, markets, static_pl_conf):
             freqtradebot.config['exchange']['pair_whitelist'])
 
 
-def test_refresh_pairlists(mocker, markets, static_pl_conf):
+def test_refresh_static_pairlist(mocker, markets, static_pl_conf):
     freqtradebot = get_patched_freqtradebot(mocker, static_pl_conf)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -119,6 +120,10 @@ def test_refresh_pairlist_dynamic(mocker, shitcoinmarkets, tickers, whitelist_co
 
 
 def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        exchange_has=MagicMock(return_value=True),
+    )
     freqtradebot = get_patched_freqtradebot(mocker, whitelist_conf)
     mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets_empty))
 
@@ -179,13 +184,15 @@ def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None
 
 @pytest.mark.parametrize("pairlist", AVAILABLE_PAIRLISTS)
 def test_pairlist_class(mocker, whitelist_conf, markets, pairlist):
-    whitelist_conf['pairlist']['method'] = pairlist
-    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    whitelist_conf['pairlists'][0]['method'] = pairlist
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          markets=PropertyMock(return_value=markets),
+                          exchange_has=MagicMock(return_value=True)
+                          )
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
 
-    assert freqtrade.pairlists.name == pairlist
-    assert pairlist in freqtrade.pairlists.short_desc()
+    assert freqtrade.pairlists.name == str([pairlist])
+    assert pairlist in str(freqtrade.pairlists.short_desc())
     assert isinstance(freqtrade.pairlists.whitelist, list)
     assert isinstance(freqtrade.pairlists.blacklist, list)
 

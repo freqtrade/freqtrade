@@ -41,4 +41,4 @@ class StaticPairList(IPairList):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
-        return self._config['exchange']['pair_whitelist']
+        return self._whitelist_for_active_markets(self._config['exchange']['pair_whitelist'])
