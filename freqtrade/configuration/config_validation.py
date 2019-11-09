@@ -118,7 +118,8 @@ def _validate_whitelist(conf: Dict[str, Any]) -> None:
     """
     Dynamic whitelist does not require pair_whitelist to be set - however StaticWhitelist does.
     """
-    if conf.get('runmode', RunMode.OTHER) in [RunMode.OTHER, RunMode.PLOT]:
+    if conf.get('runmode', RunMode.OTHER) in [RunMode.OTHER, RunMode.PLOT,
+                                              RunMode.UTIL_NO_EXCHANGE, RunMode.UTIL_EXCHANGE]:
         return
 
     for pl in conf.get('pairlists', [{'method': 'StaticPairList'}]):

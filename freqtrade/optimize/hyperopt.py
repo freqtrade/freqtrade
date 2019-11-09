@@ -4,9 +4,9 @@
 This module contains the hyperopt logic
 """
 
+import locale
 import logging
 import sys
-
 from collections import OrderedDict
 from operator import itemgetter
 from pathlib import Path
@@ -14,10 +14,10 @@ from pprint import pprint
 from typing import Any, Dict, List, Optional
 
 import rapidjson
-
-from colorama import init as colorama_init
 from colorama import Fore, Style
-from joblib import Parallel, delayed, dump, load, wrap_non_picklable_objects, cpu_count
+from colorama import init as colorama_init
+from joblib import (Parallel, cpu_count, delayed, dump, load,
+                    wrap_non_picklable_objects)
 from pandas import DataFrame
 from skopt import Optimizer
 from skopt.space import Dimension
@@ -28,8 +28,8 @@ from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
 from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F4
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F4
-from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver, HyperOptLossResolver
-
+from freqtrade.resolvers.hyperopt_resolver import (HyperOptLossResolver,
+                                                   HyperOptResolver)
 
 logger = logging.getLogger(__name__)
 
@@ -216,7 +216,7 @@ class Hyperopt:
             if print_all:
                 print(log_str)
             else:
-                print('\n' + log_str)
+                print(f'\n{log_str}')
         else:
             print('.', end='')
             sys.stdout.flush()
@@ -335,7 +335,9 @@ class Hyperopt:
 
         return (f'{trades:6d} trades. Avg profit {avg_profit: 5.2f}%. '
                 f'Total profit {total_profit: 11.8f} {stake_cur} '
-                f'({profit: 7.2f}Σ%). Avg duration {duration:5.1f} mins.')
+                f'({profit: 7.2f}\N{GREEK CAPITAL LETTER SIGMA}%). '
+                f'Avg duration {duration:5.1f} mins.'
+                ).encode(locale.getpreferredencoding(), 'replace').decode('utf-8')
 
     def get_optimizer(self, dimensions, cpu_count) -> Optimizer:
         return Optimizer(

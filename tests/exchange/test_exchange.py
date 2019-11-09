@@ -14,13 +14,13 @@ from pandas import DataFrame
 from freqtrade import (DependencyException, InvalidOrderException,
                        OperationalException, TemporaryError)
 from freqtrade.exchange import Binance, Exchange, Kraken
-from freqtrade.exchange.exchange import (API_RETRY_COUNT, timeframe_to_minutes,
+from freqtrade.exchange.common import API_RETRY_COUNT
+from freqtrade.exchange.exchange import (market_is_active, symbol_is_pair,
+                                         timeframe_to_minutes,
                                          timeframe_to_msecs,
                                          timeframe_to_next_date,
                                          timeframe_to_prev_date,
-                                         timeframe_to_seconds,
-                                         symbol_is_pair,
-                                         market_is_active)
+                                         timeframe_to_seconds)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import get_patched_exchange, log_has, log_has_re
 
@@ -1586,8 +1586,9 @@ def test_name(default_conf, mocker, exchange_name):
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_trades_for_order(default_conf, mocker, exchange_name):
+
     order_id = 'ABCD-ABCD'
-    since = datetime(2018, 5, 5, tzinfo=timezone.utc)
+    since = datetime(2018, 5, 5, 0, 0, 0)
     default_conf["dry_run"] = False
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
     api_mock = MagicMock()
@@ -1623,7 +1624,8 @@ def test_get_trades_for_order(default_conf, mocker, exchange_name):
     assert api_mock.fetch_my_trades.call_args[0][0] == 'LTC/BTC'
     # Same test twice, hardcoded number and doing the same calculation
     assert api_mock.fetch_my_trades.call_args[0][1] == 1525478395000
-    assert api_mock.fetch_my_trades.call_args[0][1] == int(since.timestamp() - 5) * 1000
+    assert api_mock.fetch_my_trades.call_args[0][1] == int(since.replace(
+        tzinfo=timezone.utc).timestamp() - 5) * 1000
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            'get_trades_for_order', 'fetch_my_trades',

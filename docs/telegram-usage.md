@@ -93,7 +93,7 @@ Once all positions are sold, run `/stop` to completely stop the bot.
 
 `/reload_conf` resets "max_open_trades" to the value set in the configuration and resets this command. 
 
-!!! warning
+!!! Warning
    The stop-buy signal is ONLY active while the bot is running, and is not persisted anyway, so restarting the bot will cause this to reset.
 
 ### /status

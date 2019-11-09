@@ -1,4 +1,5 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
+import locale
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
@@ -149,6 +150,7 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
 
     hyperopt = DefaultHyperOpt
+    delattr(hyperopt, 'populate_indicators')
     delattr(hyperopt, 'populate_buy_trend')
     delattr(hyperopt, 'populate_sell_trend')
     mocker.patch(
@@ -156,8 +158,11 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
         MagicMock(return_value=hyperopt(default_conf))
     )
     x = HyperOptResolver(default_conf, ).hyperopt
+    assert not hasattr(x, 'populate_indicators')
     assert not hasattr(x, 'populate_buy_trend')
     assert not hasattr(x, 'populate_sell_trend')
+    assert log_has("Hyperopt class does not provide populate_indicators() method. "
+                   "Using populate_indicators from the strategy.", caplog)
     assert log_has("Hyperopt class does not provide populate_sell_trend() method. "
                    "Using populate_sell_trend from the strategy.", caplog)
     assert log_has("Hyperopt class does not provide populate_buy_trend() method. "
@@ -561,8 +566,9 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     }
     response_expected = {
         'loss': 1.9840569076926293,
-        'results_explanation': '     1 trades. Avg profit  2.31%. Total profit  0.00023300 BTC '
-                               '(   2.31Σ%). Avg duration 100.0 mins.',
+        'results_explanation': ('     1 trades. Avg profit  2.31%. Total profit  0.00023300 BTC '
+                                '(   2.31\N{GREEK CAPITAL LETTER SIGMA}%). Avg duration 100.0 mins.'
+                                ).encode(locale.getpreferredencoding(), 'replace').decode('utf-8'),
         'params': optimizer_param,
         'total_profit': 0.00023300
     }

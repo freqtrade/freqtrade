@@ -10,13 +10,13 @@ import pytest
 from jsonschema import Draft4Validator, ValidationError, validate
 
 from freqtrade import OperationalException, constants
-from freqtrade.configuration import (Arguments, Configuration,
+from freqtrade.configuration import (Arguments, Configuration, check_exchange,
+                                     remove_credentials,
                                      validate_config_consistency)
-from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.config_validation import validate_config_schema
-from freqtrade.configuration.deprecated_settings import (check_conflicting_settings,
-                                                         process_deprecated_setting,
-                                                         process_temporary_deprecated_settings)
+from freqtrade.configuration.deprecated_settings import (
+    check_conflicting_settings, process_deprecated_setting,
+    process_temporary_deprecated_settings)
 from freqtrade.configuration.directory_operations import (create_datadir,
                                                           create_userdata_dir)
 from freqtrade.configuration.load_config import load_config_file
@@ -545,10 +545,22 @@ def test_check_exchange(default_conf, caplog) -> None:
 
     # Test no exchange...
     default_conf.get('exchange').update({'name': ''})
-    default_conf['runmode'] = RunMode.OTHER
+    default_conf['runmode'] = RunMode.UTIL_EXCHANGE
     with pytest.raises(OperationalException,
                        match=r'This command requires a configured exchange.*'):
         check_exchange(default_conf)
+
+
+def test_remove_credentials(default_conf, caplog) -> None:
+    conf = deepcopy(default_conf)
+    conf['dry_run'] = False
+    remove_credentials(conf)
+
+    assert conf['dry_run'] is True
+    assert conf['exchange']['key'] == ''
+    assert conf['exchange']['secret'] == ''
+    assert conf['exchange']['password'] == ''
+    assert conf['exchange']['uid'] == ''
 
 
 def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:

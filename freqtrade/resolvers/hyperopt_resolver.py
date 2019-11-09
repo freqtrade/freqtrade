@@ -34,6 +34,9 @@ class HyperOptResolver(IResolver):
         self.hyperopt = self._load_hyperopt(hyperopt_name, config,
                                             extra_dir=config.get('hyperopt_path'))
 
+        if not hasattr(self.hyperopt, 'populate_indicators'):
+            logger.warning("Hyperopt class does not provide populate_indicators() method. "
+                           "Using populate_indicators from the strategy.")
         if not hasattr(self.hyperopt, 'populate_buy_trend'):
             logger.warning("Hyperopt class does not provide populate_buy_trend() method. "
                            "Using populate_buy_trend from the strategy.")

@@ -9,12 +9,11 @@ Includes:
 import logging
 import operator
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
-import pytz
 from pandas import DataFrame
 
 from freqtrade import OperationalException, misc
@@ -56,10 +55,10 @@ def trim_dataframe(df: DataFrame, timerange: TimeRange) -> DataFrame:
     Trim dataframe based on given timerange
     """
     if timerange.starttype == 'date':
-        start = datetime.fromtimestamp(timerange.startts, tz=pytz.utc)
+        start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
         df = df.loc[df['date'] >= start, :]
     if timerange.stoptype == 'date':
-        stop = datetime.fromtimestamp(timerange.stopts, tz=pytz.utc)
+        stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
         df = df.loc[df['date'] <= stop, :]
     return df
 
@@ -148,7 +147,6 @@ def load_pair_history(pair: str,
 
     timerange_startup = deepcopy(timerange)
     if startup_candles > 0 and timerange_startup:
-        logger.info('Using indicator startup period: %s ...', startup_candles)
         timerange_startup.subtract_start(timeframe_to_seconds(ticker_interval) * startup_candles)
 
     # The user forced the refresh of pairs
@@ -204,6 +202,8 @@ def load_data(datadir: Path,
         exchange and refresh_pairs are then not needed here nor in load_pair_history.
     """
     result: Dict[str, DataFrame] = {}
+    if startup_candles > 0 and timerange:
+        logger.info(f'Using indicator startup period: {startup_candles} ...')
 
     for pair in pairs:
         hist = load_pair_history(pair=pair, ticker_interval=ticker_interval,

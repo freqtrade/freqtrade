@@ -32,14 +32,15 @@ jobs:
       name: backtest
     - script:
       - cp config.json.example config.json
-      - freqtrade --datadir tests/testdata hyperopt -e 5
+      - freqtrade --datadir tests/testdata --strategy SampleStrategy hyperopt --customhyperopt SampleHyperOpts -e 5
       name: hyperopt
     - script: flake8
       name: flake8
     - script:
       # Test Documentation boxes -
       # !!! <TYPE>: is not allowed!
-      - grep -Er '^!{3}\s\S+:' docs/*; test $? -ne 0
+      # !!! <TYPE> "title" - Title needs to be quoted!
+      - grep -Er '^!{3}\s\S+:|^!{3}\s\S+\s[^"]' docs/*; test $? -ne 0
       name: doc syntax
     - script: mypy freqtrade scripts
       name: mypy

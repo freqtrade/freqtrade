@@ -3,7 +3,6 @@ import logging
 from unittest.mock import MagicMock
 
 import pytest
-from pandas import DataFrame
 
 from freqtrade.data.history import get_timeframe
 from freqtrade.optimize.backtesting import Backtesting
@@ -313,7 +312,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
 
     pair = "UNITTEST/BTC"
     # Dummy data as we mock the analyze functions
-    data_processed = {pair: DataFrame()}
+    data_processed = {pair: frame.copy()}
     min_date, max_date = get_timeframe({pair: frame})
     results = backtesting.backtest(
         {

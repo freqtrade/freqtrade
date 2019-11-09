@@ -10,7 +10,7 @@ import rapidjson
 from tabulate import tabulate
 
 from freqtrade import OperationalException
-from freqtrade.configuration import Configuration, TimeRange
+from freqtrade.configuration import Configuration, TimeRange, remove_credentials
 from freqtrade.configuration.directory_operations import create_userdata_dir
 from freqtrade.data.history import (convert_trades_to_ohlcv,
                                     refresh_backtest_ohlcv_data,
@@ -33,10 +33,8 @@ def setup_utils_configuration(args: Dict[str, Any], method: RunMode) -> Dict[str
     configuration = Configuration(args, method)
     config = configuration.get_config()
 
-    config['exchange']['dry_run'] = True
     # Ensure we do not use Exchange credentials
-    config['exchange']['key'] = ''
-    config['exchange']['secret'] = ''
+    remove_credentials(config)
 
     return config
 
@@ -74,7 +72,7 @@ def start_download_data(args: Dict[str, Any]) -> None:
     """
     Download data (former download_backtest_data.py script)
     """
-    config = setup_utils_configuration(args, RunMode.OTHER)
+    config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
 
     timerange = TimeRange()
     if 'days' in config:
@@ -123,7 +121,7 @@ def start_list_timeframes(args: Dict[str, Any]) -> None:
     """
     Print ticker intervals (timeframes) available on Exchange
     """
-    config = setup_utils_configuration(args, RunMode.OTHER)
+    config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
     # Do not use ticker_interval set in the config
     config['ticker_interval'] = None
 
@@ -144,7 +142,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
     :param pairs_only: if True print only pairs, otherwise print all instruments (markets)
     :return: None
     """
-    config = setup_utils_configuration(args, RunMode.OTHER)
+    config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
 
     # Init exchange
     exchange = ExchangeResolver(config['exchange']['name'], config, validate=False).exchange
