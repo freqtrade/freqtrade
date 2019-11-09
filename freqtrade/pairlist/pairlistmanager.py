@@ -64,7 +64,7 @@ class PairListManager():
         pairlist = self._whitelist.copy()
 
         # tickers should be cached to avoid calling the exchange on each call.
-        tickers: List[Dict] = []
+        tickers: Dict = {}
         if self._tickers_needed:
             tickers = self._exchange.get_tickers()
 

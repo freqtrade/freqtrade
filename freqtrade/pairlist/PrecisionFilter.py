@@ -44,7 +44,7 @@ class PrecisionFilter(IPairList):
             return False
         return True
 
-    def filter_pairlist(self, pairlist: List[str], tickers: List[Dict]) -> List[str]:
+    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
         Filters and sorts pairlists and assigns and returns them again.
         """
@@ -53,9 +53,9 @@ class PrecisionFilter(IPairList):
             stoploss = 1 - abs(self._config.get('stoploss'))
         # Copy list since we're modifying this list
         for p in deepcopy(pairlist):
-            ticker = [t for t in tickers if t['symbol'] == p][0]
+            ticker = tickers.get(p)
             # Filter out assets which would not allow setting a stoploss
-            if (stoploss and not self._validate_precision_filter(ticker, stoploss)):
+            if not ticker or (stoploss and not self._validate_precision_filter(ticker, stoploss)):
                 pairlist.remove(p)
                 continue
 

@@ -46,7 +46,7 @@ class IPairList(ABC):
         """
 
     @abstractmethod
-    def filter_pairlist(self, pairlist: List[str], tickers: List[Dict]) -> List[str]:
+    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
         Filters and sorts pairlist and returns the whitelist again.
         Called on each bot iteration - please use internal caching if necessary
@@ -97,5 +97,6 @@ class IPairList(ABC):
             if pair not in sanitized_whitelist:
                 sanitized_whitelist.append(pair)
 
+        sanitized_whitelist = self._verify_blacklist(sanitized_whitelist)
         # We need to remove pairs that are unknown
         return sanitized_whitelist

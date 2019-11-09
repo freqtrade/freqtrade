@@ -5,9 +5,8 @@ Provides lists as configured in config.json
 
  """
 import logging
+from datetime import datetime
 from typing import Dict, List
-
-from cachetools import TTLCache, cached
 
 from freqtrade import OperationalException
 from freqtrade.pairlist.IPairList import IPairList
@@ -28,6 +27,7 @@ class VolumePairList(IPairList):
                 'for "pairlist.config.number_assets"')
         self._number_pairs = self._pairlistconfig['number_assets']
         self._sort_key = self._pairlistconfig.get('sort_key', 'quoteVolume')
+        self._ttl = self._pairlistconfig.get('ttl', 1800)
 
         if not self._exchange.exchange_has('fetchTickers'):
             raise OperationalException(
@@ -37,6 +37,7 @@ class VolumePairList(IPairList):
         if not self._validate_keys(self._sort_key):
             raise OperationalException(
                 f'key {self._sort_key} not in {SORT_VALUES}')
+        self._last_refresh = 0
 
     @property
     def needstickers(self) -> bool:
@@ -56,7 +57,7 @@ class VolumePairList(IPairList):
         """
         return f"{self.name} - top {self._pairlistconfig['number_assets']} volume pairs."
 
-    def filter_pairlist(self, pairlist: List[str], tickers: List[Dict]) -> List[str]:
+    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
         Filters and sorts pairlist and returns the whitelist again.
         Called on each bot iteration - please use internal caching if necessary
@@ -65,10 +66,17 @@ class VolumePairList(IPairList):
         :return: new whitelist
         """
         # Generate dynamic whitelist
-        return self._gen_pair_whitelist(self._config['stake_currency'], self._sort_key)
+        if self._last_refresh + self._ttl < datetime.now().timestamp():
+            self._last_refresh = datetime.now().timestamp()
+            return self._gen_pair_whitelist(pairlist,
+                                            tickers,
+                                            self._config['stake_currency'],
+                                            self._sort_key,
+                                            )
+        else:
+            return pairlist
 
-    @cached(TTLCache(maxsize=1, ttl=1800))
-    def _gen_pair_whitelist(self, base_currency: str, key: str) -> List[str]:
+    def _gen_pair_whitelist(self, pairlist, tickers, base_currency: str, key: str) -> List[str]:
         """
         Updates the whitelist with with a dynamically generated list
         :param base_currency: base currency as str
@@ -77,7 +85,6 @@ class VolumePairList(IPairList):
         :return: List of pairs
         """
 
-        tickers = self._exchange.get_tickers()
         # check length so that we make sure that '/' is actually in the string
         tickers = [v for k, v in tickers.items()
                    if (len(k.split('/')) == 2 and k.split('/')[1] == base_currency

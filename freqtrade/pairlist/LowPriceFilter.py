@@ -46,7 +46,7 @@ class LowPriceFilter(IPairList):
             return False
         return True
 
-    def filter_pairlist(self, pairlist: List[str], tickers: List[Dict]) -> List[str]:
+    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
 
         """
         Filters and sorts pairlist and returns the whitelist again.
@@ -57,7 +57,9 @@ class LowPriceFilter(IPairList):
         """
         # Copy list since we're modifying this list
         for p in deepcopy(pairlist):
-            ticker = [t for t in tickers if t['symbol'] == p][0]
+            ticker = tickers.get(p)
+            if not ticker:
+                pairlist.remove(p)
 
             # Filter out assets which would not allow setting a stoploss
             if self._low_price_percent and not self._validate_ticker_lowprice(ticker):

@@ -33,7 +33,7 @@ class StaticPairList(IPairList):
         """
         return f"{self.name}"
 
-    def filter_pairlist(self, pairlist: List[str], tickers: List[Dict]) -> List[str]:
+    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
         Filters and sorts pairlist and returns the whitelist again.
         Called on each bot iteration - please use internal caching if necessary
