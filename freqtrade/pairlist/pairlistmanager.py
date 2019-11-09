@@ -4,6 +4,7 @@ Static List provider
 Provides lists as configured in config.json
 
  """
+from cachetools import TTLCache, cached
 import logging
 from typing import Dict, List
 
@@ -68,6 +69,10 @@ class PairListManager():
         """
         return [{p.name: p.short_desc()} for p in self._pairlists]
 
+    @cached(TTLCache(maxsize=1, ttl=1800))
+    def _get_cached_tickers(self):
+        return self._exchange.get_tickers()
+
     def refresh_pairlist(self) -> None:
         """
         Run pairlist through all configured pairlists.
@@ -78,7 +83,7 @@ class PairListManager():
         # tickers should be cached to avoid calling the exchange on each call.
         tickers: Dict = {}
         if self._tickers_needed:
-            tickers = self._exchange.get_tickers()
+            tickers = self._get_cached_tickers()
 
         # Process all pairlists in chain
         for pl in self._pairlists:

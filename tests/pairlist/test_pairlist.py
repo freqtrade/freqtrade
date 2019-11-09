@@ -268,12 +268,14 @@ def test_volumepairlist_caching(mocker, markets, whitelist_conf, tickers):
                           )
     bot = get_patched_freqtradebot(mocker, whitelist_conf)
     assert bot.pairlists._pairlists[0]._last_refresh == 0
-
+    assert tickers.call_count == 0
     bot.pairlists.refresh_pairlist()
+    assert tickers.call_count == 1
 
     assert bot.pairlists._pairlists[0]._last_refresh != 0
     lrf = bot.pairlists._pairlists[0]._last_refresh
     bot.pairlists.refresh_pairlist()
+    assert tickers.call_count == 1
     # Time should not be updated.
     assert bot.pairlists._pairlists[0]._last_refresh == lrf
 
