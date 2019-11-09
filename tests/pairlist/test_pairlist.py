@@ -229,3 +229,31 @@ def test__whitelist_for_active_markets(mocker, whitelist_conf, markets, pairlist
 
     assert set(new_whitelist) == set(['ETH/BTC', 'TKN/BTC'])
     assert log_message in caplog.text
+
+
+def test_volumepairlist_invalid_sortvalue(mocker, markets, whitelist_conf):
+    whitelist_conf['pairlists'][0]['config'].update({"sort_key": "asdf"})
+
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    with pytest.raises(OperationalException,
+                       match=r"key asdf not in .*"):
+        get_patched_freqtradebot(mocker, whitelist_conf)
+
+
+def test_volumepairlist_caching(mocker, markets, whitelist_conf, tickers):
+
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          markets=PropertyMock(return_value=markets),
+                          exchange_has=MagicMock(return_value=True),
+                          get_tickers=tickers
+                          )
+    bot = get_patched_freqtradebot(mocker, whitelist_conf)
+    assert bot.pairlists._pairlists[0]._last_refresh == 0
+
+    bot.pairlists.refresh_pairlist()
+
+    assert bot.pairlists._pairlists[0]._last_refresh != 0
+    lrf = bot.pairlists._pairlists[0]._last_refresh
+    bot.pairlists.refresh_pairlist()
+    # Time should not be updated.
+    assert bot.pairlists._pairlists[0]._last_refresh == lrf

@@ -73,7 +73,7 @@ class IPairList(ABC):
         """
         return IPairList.verify_blacklist(pairlist, self._pairlistmanager.blacklist)
 
-    def _whitelist_for_active_markets(self, whitelist: List[str]) -> List[str]:
+    def _whitelist_for_active_markets(self, pairlist: List[str]) -> List[str]:
         """
         Check available markets and remove pair from whitelist if necessary
         :param whitelist: the sorted list of pairs the user might want to trade
@@ -83,7 +83,7 @@ class IPairList(ABC):
         markets = self._exchange.markets
 
         sanitized_whitelist: List[str] = []
-        for pair in whitelist:
+        for pair in pairlist:
             # pair is not in the generated dynamic market or has the wrong stake currency
             if (pair not in markets or not pair.endswith(self._config['stake_currency'])):
                 logger.warning(f"Pair {pair} is not compatible with exchange "
