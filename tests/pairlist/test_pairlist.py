@@ -257,3 +257,19 @@ def test_volumepairlist_caching(mocker, markets, whitelist_conf, tickers):
     bot.pairlists.refresh_pairlist()
     # Time should not be updated.
     assert bot.pairlists._pairlists[0]._last_refresh == lrf
+
+
+def test_pairlistmanager_no_pairlist(mocker, markets, whitelist_conf, caplog):
+    del whitelist_conf['pairlists'][0]['method']
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    with pytest.raises(OperationalException,
+                       match=r"No Pairlist defined!"):
+        get_patched_freqtradebot(mocker, whitelist_conf)
+    assert log_has_re("No method in .*", caplog)
+
+    whitelist_conf['pairlists'] = []
+
+    with pytest.raises(OperationalException,
+                       match=r"No Pairlist defined!"):
+        get_patched_freqtradebot(mocker, whitelist_conf)
+
