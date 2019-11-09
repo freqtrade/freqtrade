@@ -242,6 +242,9 @@ def default_conf(testdatadir):
                 "HOT/BTC",
             ]
         },
+        "pairlists": [
+            {"method": "StaticPairList"}
+        ],
         "telegram": {
             "enabled": True,
             "token": "token",
