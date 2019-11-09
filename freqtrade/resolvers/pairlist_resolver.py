@@ -20,13 +20,14 @@ class PairListResolver(IResolver):
 
     __slots__ = ['pairlist']
 
-    def __init__(self, pairlist_name: str, exchange, config: dict, pairlistconfig) -> None:
+    def __init__(self, pairlist_name: str, exchange, pairlistmanager, config: dict, pairlistconfig) -> None:
         """
         Load the custom class from config parameter
         :param config: configuration dictionary or None
         """
         self.pairlist = self._load_pairlist(pairlist_name, config,
                                             kwargs={'exchange': exchange,
+                                                    'pairlistmanager': pairlistmanager,
                                                     'config': config,
                                                     'pairlistconfig': pairlistconfig})
 

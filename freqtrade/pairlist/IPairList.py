@@ -6,6 +6,7 @@ Provides lists as configured in config.json
  """
 import logging
 from abc import ABC, abstractmethod, abstractproperty
+from copy import deepcopy
 from typing import Dict, List
 
 from freqtrade.exchange import market_is_active
@@ -15,8 +16,9 @@ logger = logging.getLogger(__name__)
 
 class IPairList(ABC):
 
-    def __init__(self, exchange, config, pairlistconfig: dict) -> None:
+    def __init__(self, exchange, pairlistmanager, config, pairlistconfig: dict) -> None:
         self._exchange = exchange
+        self._pairlistmanager = pairlistmanager
         self._config = config
         self._pairlistconfig = pairlistconfig
 
@@ -53,6 +55,15 @@ class IPairList(ABC):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
+
+    @staticmethod
+    def _verify_blacklist(self, pairlist: List[str]) -> List[str]:
+
+        for pair in deepcopy(pairlist):
+            if pair in self._pairlistmanager.blacklist:
+                logger.warning(f"Pair {pair} in your blacklist. Removing it from whitelist...")
+                pairlist.remove(pair)
+        return pairlist
 
     def _whitelist_for_active_markets(self, whitelist: List[str]) -> List[str]:
         """

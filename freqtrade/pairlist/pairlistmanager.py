@@ -5,7 +5,6 @@ Provides lists as configured in config.json
 
  """
 import logging
-from copy import deepcopy
 from typing import List
 
 from freqtrade.pairlist.IPairList import IPairList
@@ -25,7 +24,7 @@ class PairListManager():
         self._tickers_needed = False
         for pl in self._config.get('pairlists', [{'method': "StaticPairList"}]):
             pairl = PairListResolver(pl.get('method'),
-                                     exchange, config,
+                                     exchange, self, config,
                                      pl.get('config')).pairlist
             self._tickers_needed = pairl.needstickers or self._tickers_needed
             self._pairlists.append(pairl)
@@ -57,18 +56,10 @@ class PairListManager():
         if self._tickers_needed:
             tickers = self._exchange.get_tickers()
 
+        # Process all pairlists in chain
         for pl in self._pairlists:
-            pl.filter_pairlist(pairlist, tickers)
+            pairlist = pl.filter_pairlist(pairlist, tickers)
 
         # Validation against blacklist happens after the pairlists to ensure blacklist is respected.
         pairlist = self.verify_blacklist(pairlist, self.blacklist)
         self._whitelist = pairlist
-
-    @staticmethod
-    def verify_blacklist(pairlist: List[str], blacklist: List[str]) -> List[str]:
-
-        for pair in deepcopy(pairlist):
-            if pair in blacklist:
-                logger.warning(f"Pair {pair} in your blacklist. Removing it from whitelist...")
-                pairlist.remove(pair)
-        return pairlist

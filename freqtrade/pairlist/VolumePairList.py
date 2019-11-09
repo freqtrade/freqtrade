@@ -85,7 +85,9 @@ class VolumePairList(IPairList):
         sorted_tickers = sorted(tickers, reverse=True, key=lambda t: t[key])
         # Validate whitelist to only have active market pairs
         pairs = self._whitelist_for_active_markets([s['symbol'] for s in sorted_tickers])
-
-        logger.info(f"Searching {self._number_pairs} pairs: {pairs[:self._number_pairs]}")
+        pairs = self._verify_blacklist(pairs)
+        # Limit to X number of pairs
+        pairs = pairs[:self._number_pairs]
+        logger.info(f"Searching {self._number_pairs} pairs: {pairs}")
 
         return pairs
