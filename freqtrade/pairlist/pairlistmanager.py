@@ -7,6 +7,7 @@ Provides lists as configured in config.json
 import logging
 from typing import Dict, List
 
+from freqtrade import OperationalException
 from freqtrade.pairlist.IPairList import IPairList
 from freqtrade.resolvers import PairListResolver
 
@@ -22,12 +23,17 @@ class PairListManager():
         self._blacklist = self._config['exchange'].get('pair_blacklist', [])
         self._pairlists: List[IPairList] = []
         self._tickers_needed = False
-        for pl in self._config.get('pairlists', [{'method': "StaticPairList"}]):
+        pairlists = self._config.get('pairlists', None)
+        if not pairlists:
+            pairlists = [{'method': "StaticPairList"}]
+        for pl in pairlists:
             pairl = PairListResolver(pl.get('method'),
                                      exchange, self, config,
                                      pl.get('config')).pairlist
             self._tickers_needed = pairl.needstickers or self._tickers_needed
             self._pairlists.append(pairl)
+        if not self._pairlists:
+            raise OperationalException("No Pairlist defined!!")
 
     @property
     def whitelist(self) -> List[str]:
@@ -45,10 +51,11 @@ class PairListManager():
         return self._blacklist
 
     @property
-    def name(self) -> str:
+    def name_list(self) -> List[str]:
         """
+        Get list of loaded pairlists names
         """
-        return str([p.name for p in self._pairlists])
+        return [p.name for p in self._pairlists]
 
     def short_desc(self) -> List[Dict]:
         """

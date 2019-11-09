@@ -67,7 +67,7 @@ class VolumePairList(IPairList):
         """
         # Generate dynamic whitelist
         if self._last_refresh + self._ttl < datetime.now().timestamp():
-            self._last_refresh = datetime.now().timestamp()
+            self._last_refresh = int(datetime.now().timestamp())
             return self._gen_pair_whitelist(pairlist,
                                             tickers,
                                             self._config['stake_currency'],

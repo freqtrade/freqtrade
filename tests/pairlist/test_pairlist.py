@@ -199,7 +199,7 @@ def test_pairlist_class(mocker, whitelist_conf, markets, pairlist):
                           )
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
 
-    assert freqtrade.pairlists.name == str([pairlist])
+    assert freqtrade.pairlists.name_list == [pairlist]
     assert pairlist in str(freqtrade.pairlists.short_desc())
     assert isinstance(freqtrade.pairlists.whitelist, list)
     assert isinstance(freqtrade.pairlists.blacklist, list)

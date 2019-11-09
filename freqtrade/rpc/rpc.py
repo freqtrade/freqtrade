@@ -469,7 +469,7 @@ class RPC:
 
     def _rpc_whitelist(self) -> Dict:
         """ Returns the currently active whitelist"""
-        res = {'method': self._freqtrade.pairlists.name,
+        res = {'method': self._freqtrade.pairlists.name_list,
                'length': len(self._freqtrade.active_pair_whitelist),
                'whitelist': self._freqtrade.active_pair_whitelist
                }
@@ -484,7 +484,7 @@ class RPC:
                         and pair not in self._freqtrade.pairlists.blacklist):
                     self._freqtrade.pairlists.blacklist.append(pair)
 
-        res = {'method': self._freqtrade.pairlists.name,
+        res = {'method': self._freqtrade.pairlists.name_list,
                'length': len(self._freqtrade.pairlists.blacklist),
                'blacklist': self._freqtrade.pairlists.blacklist,
                }
