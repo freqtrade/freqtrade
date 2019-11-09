@@ -9,6 +9,15 @@ logger = logging.getLogger(__name__)
 
 class PrecisionFilter(IPairList):
 
+    @property
+    def needstickers(self) -> bool:
+        """
+        Boolean property defining if tickers are necessary.
+        If no Pairlist requries tickers, an empty List is passed
+        as tickers argument to filter_pairlist
+        """
+        return True
+
     def short_desc(self) -> str:
         """
         Short whitelist method description - used for startup-messages

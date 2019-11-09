@@ -38,6 +38,15 @@ class VolumePairList(IPairList):
             raise OperationalException(
                 f'key {self._sort_key} not in {SORT_VALUES}')
 
+    @property
+    def needstickers(self) -> bool:
+        """
+        Boolean property defining if tickers are necessary.
+        If no Pairlist requries tickers, an empty List is passed
+        as tickers argument to filter_pairlist
+        """
+        return True
+
     def _validate_keys(self, key):
         return key in SORT_VALUES
 

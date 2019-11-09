@@ -5,7 +5,7 @@ Provides lists as configured in config.json
 
  """
 import logging
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, abstractproperty
 from typing import Dict, List
 
 from freqtrade.exchange import market_is_active
@@ -27,6 +27,14 @@ class IPairList(ABC):
         -> no need to overwrite in subclasses
         """
         return self.__class__.__name__
+
+    @abstractproperty
+    def needstickers(self) -> bool:
+        """
+        Boolean property defining if tickers are necessary.
+        If no Pairlist requries tickers, an empty List is passed
+        as tickers argument to filter_pairlist
+        """
 
     @abstractmethod
     def short_desc(self) -> str:

@@ -17,6 +17,15 @@ class StaticPairList(IPairList):
     def __init__(self, exchange, config, pairlistconfig: dict) -> None:
         super().__init__(exchange, config, pairlistconfig)
 
+    @property
+    def needstickers(self) -> bool:
+        """
+        Boolean property defining if tickers are necessary.
+        If no Pairlist requries tickers, an empty List is passed
+        as tickers argument to filter_pairlist
+        """
+        return False
+
     def short_desc(self) -> str:
         """
         Short whitelist method description - used for startup-messages
@@ -32,4 +41,4 @@ class StaticPairList(IPairList):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
-        return self.validate_whitelist(self._config['exchange']['pair_whitelist'])
+        return self._config['exchange']['pair_whitelist']
