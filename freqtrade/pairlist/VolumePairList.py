@@ -5,7 +5,7 @@ Provides lists as configured in config.json
 
  """
 import logging
-from typing import List
+from typing import List, Dict
 
 from cachetools import TTLCache, cached
 
@@ -19,18 +19,17 @@ SORT_VALUES = ['askVolume', 'bidVolume', 'quoteVolume']
 
 class VolumePairList(IPairList):
 
-    def __init__(self, freqtrade, config: dict) -> None:
-        super().__init__(freqtrade, config)
-        self._whitelistconf = self._config.get('pairlist', {}).get('config')
-        if 'number_assets' not in self._whitelistconf:
+    def __init__(self, exchange, config, pairlistconfig: dict) -> None:
+        super().__init__(exchange, config, pairlistconfig)
+
+        if 'number_assets' not in self._pairlistconfig:
             raise OperationalException(
                 f'`number_assets` not specified. Please check your configuration '
                 'for "pairlist.config.number_assets"')
-        self._number_pairs = self._whitelistconf['number_assets']
-        self._sort_key = self._whitelistconf.get('sort_key', 'quoteVolume')
-        self._precision_filter = self._whitelistconf.get('precision_filter', True)
+        self._number_pairs = self._pairlistconfig['number_assets']
+        self._sort_key = self._pairlistconfig.get('sort_key', 'quoteVolume')
 
-        if not self._freqtrade.exchange.exchange_has('fetchTickers'):
+        if not self._exchange.exchange_has('fetchTickers'):
             raise OperationalException(
                 'Exchange does not support dynamic whitelist.'
                 'Please edit your config and restart the bot'
@@ -45,14 +44,16 @@ class VolumePairList(IPairList):
     def short_desc(self) -> str:
         """
         Short whitelist method description - used for startup-messages
-        -> Please overwrite in subclasses
         """
         return f"{self.name} - top {self._whitelistconf['number_assets']} volume pairs."
 
-    def refresh_pairlist(self) -> None:
+    def filter_pairlist(self, pairlist: List[str], tickers: List[Dict]) -> List[str]:
         """
-        Refreshes pairlists and assigns them to self._whitelist and self._blacklist respectively
-        -> Please overwrite in subclasses
+        Filters and sorts pairlist and returns the whitelist again.
+        Called on each bot iteration - please use internal caching if necessary
+        :param pairlist: pairlist to filter or sort
+        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
+        :return: new whitelist
         """
         # Generate dynamic whitelist
         self._whitelist = self._gen_pair_whitelist(
@@ -64,17 +65,18 @@ class VolumePairList(IPairList):
         Updates the whitelist with with a dynamically generated list
         :param base_currency: base currency as str
         :param key: sort key (defaults to 'quoteVolume')
+        :param tickers: Tickers (from exchange.get_tickers()).
         :return: List of pairs
         """
 
-        tickers = self._freqtrade.exchange.get_tickers()
+        tickers = self._exchange.get_tickers()
         # check length so that we make sure that '/' is actually in the string
         tickers = [v for k, v in tickers.items()
                    if (len(k.split('/')) == 2 and k.split('/')[1] == base_currency
                        and v[key] is not None)]
         sorted_tickers = sorted(tickers, reverse=True, key=lambda t: t[key])
         # Validate whitelist to only have active market pairs
-        pairs = self.validate_whitelist([s['symbol'] for s in sorted_tickers], tickers)
+        pairs = self._whitelist_for_active_markets([s['symbol'] for s in sorted_tickers])
 
         logger.info(f"Searching {self._number_pairs} pairs: {pairs[:self._number_pairs]}")
 

@@ -2,15 +2,18 @@ import logging
 from copy import deepcopy
 from typing import Dict, List
 
-from freqtrade.pairlist.IPairListFilter import IPairListFilter
+from freqtrade.pairlist.IPairList import IPairList
 
 logger = logging.getLogger(__name__)
 
 
-class PrecisionFilter(IPairListFilter):
+class PrecisionFilter(IPairList):
 
-    def __init__(self, freqtrade, config: dict) -> None:
-        super().__init__(freqtrade, config)
+    def short_desc(self) -> str:
+        """
+        Short whitelist method description - used for startup-messages
+        """
+        return f"{self.name} - Filtering untradable pairs."
 
     def _validate_precision_filter(self, ticker: dict, stoploss: float) -> bool:
         """
@@ -35,7 +38,7 @@ class PrecisionFilter(IPairListFilter):
 
     def filter_pairlist(self, pairlist: List[str], tickers: List[Dict]) -> List[str]:
         """
-        Method doing the filtering
+        Filters and sorts pairlists and assigns and returns them again.
         """
         if self._freqtrade.strategy.stoploss is not None:
             # Precalculate sanitized stoploss value to avoid recalculation for every pair

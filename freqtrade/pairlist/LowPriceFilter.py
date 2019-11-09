@@ -2,18 +2,23 @@ import logging
 from copy import deepcopy
 from typing import Dict, List
 
-from freqtrade.pairlist.IPairListFilter import IPairListFilter
+from freqtrade.pairlist.IPairList import IPairList
 
 logger = logging.getLogger(__name__)
 
 
-class LowPriceFilter(IPairListFilter):
+class LowPriceFilter(IPairList):
 
-    def __init__(self, freqtrade, config: dict) -> None:
-        super().__init__(freqtrade, config)
+    def __init__(self, exchange, config, pairlistconfig: dict) -> None:
+        super().__init__(exchange, config, pairlistconfig)
 
-        self._low_price_percent = config['pairlist']['filters']['LowPriceFilter'].get(
-            'low_price_percent', 0)
+        self._low_price_percent = pairlistconfig.get('low_price_percent', 0)
+
+    def short_desc(self) -> str:
+        """
+        Short whitelist method description - used for startup-messages
+        """
+        return f"{self.name} - Filtering pairs priced below {self._low_price_percent * 100}%."
 
     def _validate_ticker_lowprice(self, ticker) -> bool:
         """
@@ -22,7 +27,7 @@ class LowPriceFilter(IPairListFilter):
         :param precision: Precision
         :return: True if the pair can stay, false if it should be removed
         """
-        precision = self._freqtrade.exchange.markets[ticker['symbol']]['precision']['price']
+        precision = self._exchange.markets[ticker['symbol']]['precision']['price']
 
         compare = ticker['last'] + 1 / pow(10, precision)
         changeperc = (compare - ticker['last']) / ticker['last']
@@ -33,10 +38,14 @@ class LowPriceFilter(IPairListFilter):
         return True
 
     def filter_pairlist(self, pairlist: List[str], tickers: List[Dict]) -> List[str]:
-        """
-        Method doing the filtering
-        """
 
+        """
+        Filters and sorts pairlist and returns the whitelist again.
+        Called on each bot iteration - please use internal caching if necessary
+        :param pairlist: pairlist to filter or sort
+        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
+        :return: new whitelist
+        """
         # Copy list since we're modifying this list
         for p in deepcopy(pairlist):
             ticker = [t for t in tickers if t['symbol'] == p][0]
