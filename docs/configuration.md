@@ -410,7 +410,7 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 
 `VolumePairList` selects `number_assets` top pairs based on `sort_key`, which can be one of `askVolume`, `bidVolume` and `quoteVolume` and defaults to `quoteVolume`.
 
-`VolumePairList` does not consider `pair_whitelist`, but selects the top assets from all available markets (with matching stake-currency) on the exchange.
+`VolumePairList` considers outputs of previous pairlists unless  it's the first configured pairlist, it does not consider `pair_whitelist`, but selects the top assets from all available markets (with matching stake-currency) on the exchange.
 
 `ttl` allows setting the period (in seconds), at which the pairlist will be refreshed. Defaults to 1800s (30 minutes).
 
