@@ -5,7 +5,7 @@ Provides lists as configured in config.json
 
  """
 import logging
-from typing import List
+from typing import Dict, List
 
 from freqtrade.pairlist.IPairList import IPairList
 from freqtrade.resolvers import PairListResolver
@@ -44,6 +44,18 @@ class PairListManager():
         """
         return self._blacklist
 
+    @property
+    def name(self) -> str:
+        """
+        """
+        return str([p.name for p in self._pairlists])
+
+    def short_desc(self) -> List[Dict]:
+        """
+        List of short_desc for each pairlist
+        """
+        return [{p.name: p.short_desc()} for p in self._pairlists]
+
     def refresh_pairlist(self) -> None:
         """
         Run pairlist through all pairlists.
@@ -52,7 +64,7 @@ class PairListManager():
         pairlist = self._whitelist.copy()
 
         # tickers should be cached to avoid calling the exchange on each call.
-        tickers = []
+        tickers: List[Dict] = []
         if self._tickers_needed:
             tickers = self._exchange.get_tickers()
 

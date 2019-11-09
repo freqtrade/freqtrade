@@ -19,8 +19,8 @@ SORT_VALUES = ['askVolume', 'bidVolume', 'quoteVolume']
 
 class VolumePairList(IPairList):
 
-    def __init__(self, exchange, config, pairlistconfig: dict) -> None:
-        super().__init__(exchange, config, pairlistconfig)
+    def __init__(self, exchange, pairlistmanager, config, pairlistconfig: dict) -> None:
+        super().__init__(exchange, pairlistmanager, config, pairlistconfig)
 
         if 'number_assets' not in self._pairlistconfig:
             raise OperationalException(

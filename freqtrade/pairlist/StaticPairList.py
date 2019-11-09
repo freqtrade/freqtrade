@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 
 class StaticPairList(IPairList):
 
-    def __init__(self, exchange, config, pairlistconfig: dict) -> None:
-        super().__init__(exchange, config, pairlistconfig)
+    def __init__(self, exchange, pairlistmanager, config, pairlistconfig: dict) -> None:
+        super().__init__(exchange, pairlistmanager, config, pairlistconfig)
 
     @property
     def needstickers(self) -> bool:

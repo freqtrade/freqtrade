@@ -57,7 +57,7 @@ class IPairList(ABC):
         """
 
     @staticmethod
-    def verify_blacklist(self, pairlist: List[str], blacklist: List[str]) -> List[str]:
+    def verify_blacklist(pairlist: List[str], blacklist: List[str]) -> List[str]:
         """
         Verify and remove items from pairlist - returning a filtered pairlist.
         """
