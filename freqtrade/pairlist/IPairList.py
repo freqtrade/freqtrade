@@ -57,13 +57,21 @@ class IPairList(ABC):
         """
 
     @staticmethod
-    def _verify_blacklist(self, pairlist: List[str]) -> List[str]:
-
+    def verify_blacklist(self, pairlist: List[str], blacklist: List[str]) -> List[str]:
+        """
+        Verify and remove items from pairlist - returning a filtered pairlist.
+        """
         for pair in deepcopy(pairlist):
-            if pair in self._pairlistmanager.blacklist:
+            if pair in blacklist:
                 logger.warning(f"Pair {pair} in your blacklist. Removing it from whitelist...")
                 pairlist.remove(pair)
         return pairlist
+
+    def _verify_blacklist(self, pairlist: List[str]) -> List[str]:
+        """
+        Proxy method to verify_blacklist for easy access for child classes.
+        """
+        return IPairList.verify_blacklist(pairlist, self._pairlistmanager.blacklist)
 
     def _whitelist_for_active_markets(self, whitelist: List[str]) -> List[str]:
         """

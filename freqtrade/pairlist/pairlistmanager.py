@@ -61,5 +61,6 @@ class PairListManager():
             pairlist = pl.filter_pairlist(pairlist, tickers)
 
         # Validation against blacklist happens after the pairlists to ensure blacklist is respected.
-        pairlist = self.verify_blacklist(pairlist, self.blacklist)
+        pairlist = IPairList.verify_blacklist(pairlist, self.blacklist)
+
         self._whitelist = pairlist
