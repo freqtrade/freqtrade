@@ -5,7 +5,7 @@ Provides lists as configured in config.json
 
  """
 import logging
-from typing import List, Dict
+from typing import Dict, List
 
 from freqtrade.pairlist.IPairList import IPairList
 
@@ -31,7 +31,7 @@ class StaticPairList(IPairList):
         Short whitelist method description - used for startup-messages
         -> Please overwrite in subclasses
         """
-        return f"{self.name}: {self.whitelist}"
+        return f"{self.name}"
 
     def filter_pairlist(self, pairlist: List[str], tickers: List[Dict]) -> List[str]:
         """

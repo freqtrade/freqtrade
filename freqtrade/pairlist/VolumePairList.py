@@ -5,7 +5,7 @@ Provides lists as configured in config.json
 
  """
 import logging
-from typing import List, Dict
+from typing import Dict, List
 
 from cachetools import TTLCache, cached
 
@@ -54,7 +54,7 @@ class VolumePairList(IPairList):
         """
         Short whitelist method description - used for startup-messages
         """
-        return f"{self.name} - top {self._whitelistconf['number_assets']} volume pairs."
+        return f"{self.name} - top {self._pairlistconfig['number_assets']} volume pairs."
 
     def filter_pairlist(self, pairlist: List[str], tickers: List[Dict]) -> List[str]:
         """
@@ -65,8 +65,7 @@ class VolumePairList(IPairList):
         :return: new whitelist
         """
         # Generate dynamic whitelist
-        self._whitelist = self._gen_pair_whitelist(
-            self._config['stake_currency'], self._sort_key)
+        return self._gen_pair_whitelist(self._config['stake_currency'], self._sort_key)
 
     @cached(TTLCache(maxsize=1, ttl=1800))
     def _gen_pair_whitelist(self, base_currency: str, key: str) -> List[str]:
