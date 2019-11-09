@@ -78,10 +78,8 @@ freqtrade download-data --exchange binance --pairs XRP/ETH ETH/BTC --days 20 --d
 !!! Warning
     The historic trades are not available during Freqtrade dry-run and live trade modes because all exchanges tested provide this data with a delay of few 100 candles, so it's not suitable for real-time trading.
 
-### Historic Kraken data
-
-The Kraken API does only provide 720 historic candles, which is sufficient for FreqTrade dry-run and live trade modes, but is a problem for backtesting.
-To download data for the Kraken exchange, using `--dl-trades` is mandatory, otherwise the bot will download the same 720 candles over and over, and you'll not have enough backtest data.
+!!! Note "Kraken user"
+    Kraken users should read [this](exchanges.md#historic-kraken-data) before starting to download data.
 
 ## Next step
 
