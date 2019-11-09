@@ -135,25 +135,44 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     assert set(whitelist) == set(pairslist)
 
 
-@pytest.mark.parametrize("filters,base_currency,key,whitelist_result", [
-    ([], "BTC", "quoteVolume", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'HOT/BTC', 'FUEL/BTC']),
-    ([], "BTC", "bidVolume", ['LTC/BTC', 'TKN/BTC', 'ETH/BTC', 'HOT/BTC', 'FUEL/BTC']),
-    ([], "USDT", "quoteVolume", ['ETH/USDT']),
-    ([], "ETH", "quoteVolume", []),
-    ([{"method": "PrecisionFilter"}], "BTC",
-        "quoteVolume", ["LTC/BTC", "ETH/BTC", "TKN/BTC", 'FUEL/BTC']),
-    ([{"method": "PrecisionFilter"}],
-        "BTC", "bidVolume", ["LTC/BTC", "TKN/BTC", "ETH/BTC", 'FUEL/BTC']),
-    ([{"method": "LowPriceFilter", "config": {"low_price_percent": 0.03}}],
-        "BTC", "bidVolume", ['LTC/BTC', 'TKN/BTC', 'ETH/BTC', 'FUEL/BTC']),
+@pytest.mark.parametrize("pairlists,base_currency,whitelist_result", [
+    ([{"method": "VolumePairList", "config": {"number_assets": 5, "sort_key": "quoteVolume"}}],
+        "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'HOT/BTC', 'FUEL/BTC']),
+    # Different sorting depending on quote or bid volume
+    ([{"method": "VolumePairList", "config": {"number_assets": 5, "sort_key": "bidVolume"}}],
+        "BTC",  ['HOT/BTC', 'FUEL/BTC', 'LTC/BTC', 'TKN/BTC', 'ETH/BTC']),
+    ([{"method": "VolumePairList", "config": {"number_assets": 5, "sort_key": "quoteVolume"}}],
+        "USDT", ['ETH/USDT']),
+    # No pair for ETH ...
+    ([{"method": "VolumePairList", "config": {"number_assets": 5, "sort_key": "quoteVolume"}}],
+     "ETH", []),
+    # Precisionfilter and quote volume
+    ([{"method": "VolumePairList", "config": {"number_assets": 5, "sort_key": "quoteVolume"}},
+      {"method": "PrecisionFilter"}], "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'FUEL/BTC']),
+    # Precisionfilter bid
+    ([{"method": "VolumePairList", "config": {"number_assets": 5, "sort_key": "bidVolume"}},
+      {"method": "PrecisionFilter"}], "BTC", ['FUEL/BTC', 'LTC/BTC', 'TKN/BTC', 'ETH/BTC']),
+    # Lowpricefilter and VolumePairList
+    ([{"method": "VolumePairList", "config": {"number_assets": 5, "sort_key": "quoteVolume"}},
+      {"method": "LowPriceFilter", "config": {"low_price_percent": 0.03}}],
+        "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'FUEL/BTC']),
     # Hot is removed by precision_filter, Fuel by low_price_filter.
-    ([{"method": "PrecisionFilter"},
+    ([{"method": "VolumePairList", "config": {"number_assets": 5, "sort_key": "quoteVolume"}},
+      {"method": "PrecisionFilter"},
       {"method": "LowPriceFilter", "config": {"low_price_percent": 0.02}}
-      ], "BTC", "bidVolume", ['LTC/BTC', 'TKN/BTC', 'ETH/BTC'])])
+      ], "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC']),
+    # StaticPairlist Only
+    ([{"method": "StaticPairList"},
+      ], "BTC", ['ETH/BTC', 'TKN/BTC']),
+    # Static Pairlist before VolumePairList - sorting changes
+    ([{"method": "StaticPairList"},
+      {"method": "VolumePairList", "config": {"number_assets": 5, "sort_key": "bidVolume"}},
+      ], "BTC", ['TKN/BTC', 'ETH/BTC']),
+])
 def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, tickers,
-                                      filters, base_currency, key, whitelist_result,
+                                      pairlists, base_currency, whitelist_result,
                                       caplog) -> None:
-    whitelist_conf['pairlists'].extend(filters)
+    whitelist_conf['pairlists'] = pairlists
 
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
@@ -167,13 +186,13 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     freqtrade.pairlists.refresh_pairlist()
     whitelist = freqtrade.pairlists.whitelist
 
-    assert sorted(whitelist) == sorted(whitelist_result)
-    if 'PrecisionFilter' in filters:
-        assert log_has_re(r'^Removed .* from whitelist, because stop price .* '
-                          r'would be <= stop limit.*', caplog)
-
-    if 'LowPriceFilter' in filters:
-        assert log_has_re(r'^Removed .* from whitelist, because 1 unit is .*%$', caplog)
+    assert whitelist == whitelist_result
+    for pairlist in pairlists:
+        if pairlist['method'] == 'PrecisionFilter':
+            assert log_has_re(r'^Removed .* from whitelist, because stop price .* '
+                              r'would be <= stop limit.*', caplog)
+        if pairlist['method'] == 'LowPriceFilter':
+            assert log_has_re(r'^Removed .* from whitelist, because 1 unit is .*%$', caplog)
 
 
 def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None:

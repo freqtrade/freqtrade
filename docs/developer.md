@@ -100,13 +100,14 @@ This is a simple provider, which however serves as a good example on how to star
 
 Next, modify the classname of the provider (ideally align this with the Filename).
 
-The base-class provides an instance of the exchange (`self._exchange`) the pairlist manager (`self._pairlistmanager`), as well as the main configuration (`self._config`) and the pairlist dedicated configuration (`self._pairlistconfig`).
+The base-class provides an instance of the exchange (`self._exchange`) the pairlist manager (`self._pairlistmanager`), as well as the main configuration (`self._config`), the pairlist dedicated configuration (`self._pairlistconfig`) and the absolute position within the list of pairlists.
 
 ```python
-        self._freqtrade = freqtrade
+        self._exchange = exchange
+        self._pairlistmanager = pairlistmanager
         self._config = config
-        self._whitelist = self._config['exchange']['pair_whitelist']
-        self._blacklist = self._config['exchange'].get('pair_blacklist', [])
+        self._pairlistconfig = pairlistconfig
+        self._pairlist_pos = pairlist_pos
 ```
 
 Now, let's step through the methods which require actions:
