@@ -383,7 +383,7 @@ There are [`StaticPairList`](#static-pair-list) and dynamic Whitelists available
 
 [`PrecisionFilter`](#precision-filter) and [`LowPriceFilter`](#low-price-pair-filter) act as filters, removing low-value pairs.
 
-All pairlists can be chained, and a combination of all pairlists will become your new whitelist.
+All pairlists can be chained, and a combination of all pairlists will become your new whitelist. Pairlists are executed in the sequence they are configured. You should always configure either `StaticPairList` or `DynamicPairList` as starting pairlists.
 
 Inactive markets and blacklisted pairs are always removed from the resulting `pair_whitelist`.
 
