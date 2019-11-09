@@ -56,7 +56,8 @@
             "method": "VolumePairList",
             "config": {
                 "number_assets": 20,
-                "sort_key": "quoteVolume"
+                "sort_key": "quoteVolume",
+                "ttl": 1800
             }
         },
         {"method": "PrecisionFilter"},

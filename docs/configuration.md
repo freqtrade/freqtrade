@@ -82,8 +82,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `exchange.markets_refresh_interval` | 60 | The interval in minutes in which markets are reloaded.
 | `edge` | false | Please refer to [edge configuration document](edge.md) for detailed explanation.
 | `experimental.block_bad_exchanges` | true | Block exchanges known to not work with freqtrade. Leave on default unless you want to test if that exchange works now.
-| `pairlist.method` | StaticPairList | Use static or dynamic volume-based pairlist. [More information below](#dynamic-pairlists).
-| `pairlist.config` | None | Additional configuration for dynamic pairlists. [More information below](#dynamic-pairlists).
+| `pairlists` | StaticPairList | Define one or more pairlists to be used. [More information below](#dynamic-pairlists).
 | `telegram.enabled` | true | **Required.** Enable or not the usage of Telegram.
 | `telegram.token` | token | Your Telegram bot token. Only required if `telegram.enabled` is `true`. ***Keep it in secrete, do not disclose publicly.***
 | `telegram.chat_id` | chat_id | Your personal Telegram account id. Only required if `telegram.enabled` is `true`. ***Keep it in secrete, do not disclose publicly.***
@@ -382,40 +381,49 @@ The valid values are:
 Pairlists define the list of pairs that the bot should trade.
 There are [`StaticPairList`](#static-pair-list) and dynamic Whitelists available.
 
-In addition to pairlists, [pairlist filters](#available-pairlist-filters) can be configured, which remove certain assets.
-These Filters work with all Pairlist providers and are applied in the sequence they occur.
+[`PrecisionFilter`](#precision-filter) and [`LowPriceFilter`](#low-price-pair-filter) act as filters, removing low-value pairs.
+
+All pairlists can be chained, and a combination of all pairlists will become your new whitelist.
+
+Inactive markets and blacklisted pairs are always removed from the resulting `pair_whitelist`.
 
 ### Available Pairlists
 
 * [`StaticPairList`](#static-pair-list) (default, if not configured differently)
 * [`VolumePairList`](#volume-pair-list)
+* [`PrecisionFilter`](#precision-filter)
+* [`LowPriceFilter`](#low-price-pair-filter)
 
 #### Static Pair List
 
-By default, the `StaticPairList` method is used, which uses a statically defined pair whitelist from the configuration. Inactive markets and blacklisted pairs are removed from the pair_whitelist.
+By default, the `StaticPairList` method is used, which uses a statically defined pair whitelist from the configuration. 
 
 It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklist`.
+
+```json
+"pairlists": [
+    {"method": "StaticPairList"}
+    ],
+```
 
 #### Volume Pair List
 
 `VolumePairList` selects `number_assets` top pairs based on `sort_key`, which can be one of `askVolume`, `bidVolume` and `quoteVolume` and defaults to `quoteVolume`.
 
 `VolumePairList` does not consider `pair_whitelist`, but selects the top assets from all available markets (with matching stake-currency) on the exchange.
-Pairs in `pair_blacklist` are not considered for `VolumePairList`, even if all other filters would match.
+
+`ttl` allows setting the period (in seconds), at which the pairlist will be refreshed. Defaults to 1800s (30 minutes).
 
 ```json
-"pairlist": {
+"pairlists": [{
         "method": "VolumePairList",
         "config": {
             "number_assets": 20,
             "sort_key": "quoteVolume",
-        },
+            "ttl": 1800,
+        }
+],
 ```
-
-### Available Pairlist Filters
-
-* [`PrecisionFilter`](#precision-filter)
-* [`LowPriceFilter`](#low-price-pair-filter)
 
 #### Precision Filter
 
@@ -440,17 +448,19 @@ The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, 
     "pair_whitelist": [],
     "pair_blacklist": ["BNB/BTC"]
 },
-"pairlist": {
+"pairlists": [
+    {
         "method": "VolumePairList",
         "config": {
             "number_assets": 20,
             "sort_key": "quoteVolume",
         },
-        "filters":{
-            "PrecisionFilter": {},
-            "LowPriceFilter": {"low_price_percent": 0.01}
-        }
     },
+    {"method": "PrecisionFilter"},
+    {"method": "LowPriceFilter",
+          "config": {"low_price_percent": 0.01}
+    }
+    }],
 ```
 
 ## Switch to Dry-run mode
