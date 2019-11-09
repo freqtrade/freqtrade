@@ -55,9 +55,7 @@
         ]
     },
     "pairlists": [
-        {
-            "method": "StaticPairList"
-        }
+        {"method": "StaticPairList"}
     ],
     "edge": {
         "enabled": false,

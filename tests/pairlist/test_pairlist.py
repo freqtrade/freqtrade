@@ -291,4 +291,3 @@ def test_pairlistmanager_no_pairlist(mocker, markets, whitelist_conf, caplog):
     with pytest.raises(OperationalException,
                        match=r"No Pairlist defined!"):
         get_patched_freqtradebot(mocker, whitelist_conf)
-
