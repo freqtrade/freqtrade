@@ -23,14 +23,17 @@ class PairListManager():
         self._blacklist = self._config['exchange'].get('pair_blacklist', [])
         self._pairlists: List[IPairList] = []
         self._tickers_needed = False
-
         for pl in self._config.get('pairlists', None):
             if 'method' not in pl:
                 logger.warning(f"No method in {pl}")
                 continue
             pairl = PairListResolver(pl.get('method'),
-                                     exchange, self, config,
-                                     pl.get('config')).pairlist
+                                     exchange=exchange,
+                                     pairlistmanager=self,
+                                     config=config,
+                                     pairlistconfig=pl.get('config'),
+                                     pairlist_pos=len(self._pairlists)
+                                     ).pairlist
             self._tickers_needed = pairl.needstickers or self._tickers_needed
             self._pairlists.append(pairl)
 
@@ -67,7 +70,7 @@ class PairListManager():
 
     def refresh_pairlist(self) -> None:
         """
-        Run pairlist through all pairlists.
+        Run pairlist through all configured pairlists.
         """
 
         pairlist = self._whitelist.copy()

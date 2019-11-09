@@ -55,7 +55,7 @@ def test_load_pairlist_noexist(mocker, markets, default_conf):
     with pytest.raises(OperationalException,
                        match=r"Impossible to load Pairlist 'NonexistingPairList'. "
                              r"This class does not exist or contains Python code errors."):
-        PairListResolver('NonexistingPairList', bot.exchange, plm, default_conf, {})
+        PairListResolver('NonexistingPairList', bot.exchange, plm, default_conf, {}, 1)
 
 
 def test_refresh_market_pair_not_in_whitelist(mocker, markets, static_pl_conf):

@@ -18,8 +18,9 @@ SORT_VALUES = ['askVolume', 'bidVolume', 'quoteVolume']
 
 class VolumePairList(IPairList):
 
-    def __init__(self, exchange, pairlistmanager, config, pairlistconfig: dict) -> None:
-        super().__init__(exchange, pairlistmanager, config, pairlistconfig)
+    def __init__(self, exchange, pairlistmanager, config, pairlistconfig: dict,
+                 pairlist_pos: int) -> None:
+        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
         if 'number_assets' not in self._pairlistconfig:
             raise OperationalException(
@@ -85,11 +86,18 @@ class VolumePairList(IPairList):
         :return: List of pairs
         """
 
-        # check length so that we make sure that '/' is actually in the string
-        tickers = [v for k, v in tickers.items()
-                   if (len(k.split('/')) == 2 and k.split('/')[1] == base_currency
-                       and v[key] is not None)]
-        sorted_tickers = sorted(tickers, reverse=True, key=lambda t: t[key])
+        if self._pairlist_pos == 0:
+            # If VolumePairList is the first in the list, use fresh pairlist
+            # check length so that we make sure that '/' is actually in the string
+            filtered_tickers = [v for k, v in tickers.items()
+                                if (len(k.split('/')) == 2 and k.split('/')[1] == base_currency
+                                    and v[key] is not None)]
+        else:
+            # If other pairlist is in front, use the incomming pairlist.
+            filtered_tickers = [v for k, v in tickers.items() if k in pairlist]
+
+        sorted_tickers = sorted(filtered_tickers, reverse=True, key=lambda t: t[key])
+
         # Validate whitelist to only have active market pairs
         pairs = self._whitelist_for_active_markets([s['symbol'] for s in sorted_tickers])
         pairs = self._verify_blacklist(pairs)

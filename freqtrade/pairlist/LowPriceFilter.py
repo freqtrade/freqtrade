@@ -9,8 +9,9 @@ logger = logging.getLogger(__name__)
 
 class LowPriceFilter(IPairList):
 
-    def __init__(self, exchange, pairlistmanager, config, pairlistconfig: dict) -> None:
-        super().__init__(exchange, pairlistmanager, config, pairlistconfig)
+    def __init__(self, exchange, pairlistmanager, config, pairlistconfig: dict,
+                 pairlist_pos: int) -> None:
+        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
         self._low_price_percent = pairlistconfig.get('low_price_percent', 0)
 
