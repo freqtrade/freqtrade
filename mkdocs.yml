@@ -16,7 +16,7 @@ nav:
     - Hyperopt: hyperopt.md
     - Edge Positioning: edge.md
     - Utility Subcommands: utils.md
-    - Exchanges: exchanges.md
+    - Exchange-specific Notes: exchanges.md
     - FAQ: faq.md
     - Data Analysis:
         - Jupyter Notebooks: data-analysis.md
