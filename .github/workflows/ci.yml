@@ -162,6 +162,7 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         dockerfile: Dockerfile.pi
+        # cache: true
         cache: ${{ github.event_name != 'cron' }}
         tag_names: true
 
