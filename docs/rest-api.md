@@ -22,14 +22,14 @@ Sample configuration:
 !!! Danger "Password selection"
     Please make sure to select a very strong, unique password to protect your bot from unauthorized access.
 
-You can then access the API by going to `http://127.0.0.1:8080/api/v1/ping` to check if the API is running correctly.
+You can then access the API by going to `http://127.0.0.1:8080/api/v1/ping` in a browser to check if the API is running correctly.
 This should return the response:
 
 ``` output
 {"status":"pong"}
 ```
 
-All other endpoints will require authentication, so are not available through a webrowser.
+All other endpoints return sensitive info and require authentication, so are not available through a webrowser.
 
 To generate a secure password, either use a password manager, or use the below code snipped.
 
