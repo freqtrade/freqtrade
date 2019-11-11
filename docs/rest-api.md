@@ -29,7 +29,7 @@ This should return the response:
 {"status":"pong"}
 ```
 
-All other endpoints return sensitive info and require authentication, so are not available through a webrowser.
+All other endpoints return sensitive info and require authentication, so are not available through a web browser.
 
 To generate a secure password, either use a password manager, or use the below code snipped.
 
