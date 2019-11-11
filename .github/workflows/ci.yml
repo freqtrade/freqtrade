@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - develop
+      - github_actions_2
     tags:
   pull_request:
 
@@ -14,7 +15,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-18.04]
+        os: [ ubuntu-18.04 ]
         python-version: [3.7]
 
     steps:
@@ -141,24 +142,30 @@ jobs:
   deploy:
     needs: [ build, build_windows ]
     runs-on: ubuntu-18.04
-    if: github.event_name == 'push' || 1 == 1
+    if: github.event_name == 'push' || github.event_name == 'cron'
     steps:
     - uses: actions/checkout@v1
+
+    - name: Extract branch name
+      shell: bash
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+      id: extract_branch
 
     - name: Build and test and push docker image
       env:
         IMAGE_NAME: freqtradeorg/freqtradetests
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
       # original filter
       # branch in (master, develop, feat/improve_travis) AND (type in (push, cron))
       run: |
         build_helpers/publish_docker.sh
 
-    - name: Build raspberry image
+    - name: Build raspberry image for ${{ steps.extract_branch.outputs.branch }}_pi
       uses: elgohr/Publish-Docker-Github-Action@2.7
       with:
-        name: freqtradeorg/freqtradetests:test_pi
+        name: freqtradeorg/freqtradetests:${{ steps.extract_branch.outputs.branch }}_pi
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         dockerfile: Dockerfile.pi

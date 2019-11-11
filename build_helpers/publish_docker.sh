@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Replace / with _ to create a valid tag
-TAG=$(echo "${GITHUB_REF}" | sed -e "s/\//_/g")
+TAG=$(echo "${BRANCH_NAME}" | sed -e "s/\//_/g")
 echo "Running for ${TAG}"
 
 # Add commit and commit_message to docker container
