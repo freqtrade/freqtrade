@@ -20,7 +20,7 @@ Binance has been split into 3, and users must use the correct ccxt exchange ID f
 * [binance.us](https://www.binance.us/) US based users- ccxt id: `binanceus`
 * [binance.je](https://www.binance.je/) Trading FIAT currencies - ccxt id: `binanceje`
 
-### Kraken
+## Kraken
 
 ### Historic Kraken data
 
@@ -32,4 +32,26 @@ To download data for the Kraken exchange, using `--dl-trades` is mandatory, othe
 * The Ocean (ccxt id: 'theocean') exchange uses Web3 functionality and requires web3 package to be installed:
 ```shell
 $ pip3 install web3
+```
+
+## Bittrex
+
+### Restricted markets
+
+Bittrex split its exchange into US and International versions.
+The International version has more pairs available, however the API always returns all pairs, so there is currently no automated way to detect if you're affected by the restriction.
+
+If you have restricted pairs in your whitelist, you'll get a warning message in the log on FreqTrade startup for each restricted pair.
+If you're an "International" Customer on the Bittrex exchange, then this warning will probably not impact you.
+If you're a US customer, the bot will fail to create orders for these pairs, and you should remove them from your Whitelist.
+
+You can get a list of restricted markets by using the following snipptet:
+
+``` python
+import ccxt
+ct = ccxt.bittrex()
+_ = ct.load_markets()
+res = [ f"{x['MarketCurrency']}/{x['BaseCurrency']}" for x in ct.publicGetMarkets()['result'] if x['IsRestricted']]
+print(res)
+
 ```
