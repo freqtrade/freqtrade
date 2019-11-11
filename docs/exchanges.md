@@ -42,6 +42,13 @@ Bittrex split its exchange into US and International versions.
 The International version has more pairs available, however the API always returns all pairs, so there is currently no automated way to detect if you're affected by the restriction.
 
 If you have restricted pairs in your whitelist, you'll get a warning message in the log on FreqTrade startup for each restricted pair.
+
+The warning message will look similar to the following:
+
+``` output
+[...] Message: bittrex {"success":false,"message":"RESTRICTED_MARKET","result":null,"explanation":null}"
+```
+
 If you're an "International" Customer on the Bittrex exchange, then this warning will probably not impact you.
 If you're a US customer, the bot will fail to create orders for these pairs, and you should remove them from your Whitelist.
 
