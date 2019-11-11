@@ -24,7 +24,7 @@ Binance has been split into 3, and users must use the correct ccxt exchange ID f
 
 ### Historic Kraken data
 
-The Kraken API does only provide 720 historic candles, which is sufficient for FreqTrade dry-run and live trade modes, but is a problem for backtesting.
+The Kraken API does only provide 720 historic candles, which is sufficient for Freqtrade dry-run and live trade modes, but is a problem for backtesting.
 To download data for the Kraken exchange, using `--dl-trades` is mandatory, otherwise the bot will download the same 720 candles over and over, and you'll not have enough backtest data.
 
 ## Bittrex
@@ -45,7 +45,7 @@ The warning message will look similar to the following:
 If you're an "International" customer on the Bittrex exchange, then this warning will probably not impact you.
 If you're a US customer, the bot will fail to create orders for these pairs, and you should remove them from your whitelist.
 
-You can get a list of restricted markets by using the following snipptet:
+You can get a list of restricted markets by using the following snippet:
 
 ``` python
 import ccxt
@@ -53,12 +53,11 @@ ct = ccxt.bittrex()
 _ = ct.load_markets()
 res = [ f"{x['MarketCurrency']}/{x['BaseCurrency']}" for x in ct.publicGetMarkets()['result'] if x['IsRestricted']]
 print(res)
-
 ```
 
 ## Random notes for other exchanges
 
-* The Ocean (ccxt id: 'theocean') exchange uses Web3 functionality and requires web3 package to be installed:
+* The Ocean (exchange id: `theocean`) exchange uses Web3 functionality and requires `web3` python package to be installed:
 ```shell
 $ pip3 install web3
 ```
