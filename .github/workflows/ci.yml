@@ -8,6 +8,8 @@ on:
       - github_actions_2
     tags:
   pull_request:
+  schedule:
+    - cron:  '0 5 * * 4'
 
 jobs:
   build:
@@ -15,7 +17,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-18.04 ]
+        os: [ ubuntu-18.04, macos-latest ]
         python-version: [3.7]
 
     steps:
@@ -142,7 +144,7 @@ jobs:
   deploy:
     needs: [ build, build_windows ]
     runs-on: ubuntu-18.04
-    if: github.event_name == 'push' || github.event_name == 'cron'
+    if: github.event_name == 'push' || github.event_name == 'schedule'
     steps:
     - uses: actions/checkout@v1
 
@@ -157,8 +159,6 @@ jobs:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
-      # original filter
-      # branch in (master, develop, feat/improve_travis) AND (type in (push, cron))
       run: |
         build_helpers/publish_docker.sh
 
@@ -170,6 +170,6 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
         dockerfile: Dockerfile.pi
         # cache: true
-        cache: ${{ github.event_name != 'cron' }}
+        cache: ${{ github.event_name != 'schedule' }}
         tag_names: true
 

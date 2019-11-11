@@ -7,7 +7,7 @@ echo "Running for ${TAG}"
 # Add commit and commit_message to docker container
 echo "${GITHUB_SHA}" > freqtrade_commit
 
-if [ "${GITHUB_EVENT_NAME}" = "cron" ]; then
+if [ "${GITHUB_EVENT_NAME}" = "schedule" ]; then
     echo "event ${GITHUB_EVENT_NAME}: full rebuild - skipping cache"
     docker build -t freqtrade:${TAG} .
 else
