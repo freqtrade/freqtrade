@@ -27,13 +27,6 @@ Binance has been split into 3, and users must use the correct ccxt exchange ID f
 The Kraken API does only provide 720 historic candles, which is sufficient for FreqTrade dry-run and live trade modes, but is a problem for backtesting.
 To download data for the Kraken exchange, using `--dl-trades` is mandatory, otherwise the bot will download the same 720 candles over and over, and you'll not have enough backtest data.
 
-#### Random notes for other exchanges
-
-* The Ocean (ccxt id: 'theocean') exchange uses Web3 functionality and requires web3 package to be installed:
-```shell
-$ pip3 install web3
-```
-
 ## Bittrex
 
 ### Restricted markets
@@ -41,7 +34,7 @@ $ pip3 install web3
 Bittrex split its exchange into US and International versions.
 The International version has more pairs available, however the API always returns all pairs, so there is currently no automated way to detect if you're affected by the restriction.
 
-If you have restricted pairs in your whitelist, you'll get a warning message in the log on FreqTrade startup for each restricted pair.
+If you have restricted pairs in your whitelist, you'll get a warning message in the log on Freqtrade startup for each restricted pair.
 
 The warning message will look similar to the following:
 
@@ -49,8 +42,8 @@ The warning message will look similar to the following:
 [...] Message: bittrex {"success":false,"message":"RESTRICTED_MARKET","result":null,"explanation":null}"
 ```
 
-If you're an "International" Customer on the Bittrex exchange, then this warning will probably not impact you.
-If you're a US customer, the bot will fail to create orders for these pairs, and you should remove them from your Whitelist.
+If you're an "International" customer on the Bittrex exchange, then this warning will probably not impact you.
+If you're a US customer, the bot will fail to create orders for these pairs, and you should remove them from your whitelist.
 
 You can get a list of restricted markets by using the following snipptet:
 
@@ -61,4 +54,11 @@ _ = ct.load_markets()
 res = [ f"{x['MarketCurrency']}/{x['BaseCurrency']}" for x in ct.publicGetMarkets()['result'] if x['IsRestricted']]
 print(res)
 
+```
+
+## Random notes for other exchanges
+
+* The Ocean (ccxt id: 'theocean') exchange uses Web3 functionality and requires web3 package to be installed:
+```shell
+$ pip3 install web3
 ```
