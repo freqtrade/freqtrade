@@ -49,7 +49,7 @@ You can use the `/forcesell all` command from Telegram.
 
 Currently known to happen for US Bittrex users.  
 
-Read [the Bittrex section about restricted markets](exchanges.md#Restricted markets) for more information.
+Read [the Bittrex section about restricted markets](exchanges.md#restricted-markets) for more information.
 
 ### How do I search the bot logs for something?
 
