@@ -109,13 +109,15 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
 
     freqtradebot.state = State.RUNNING
     with pytest.raises(RPCException, match=r'.*no active order*'):
-        rpc._rpc_status_table()
+        rpc._rpc_status_table('USD')
 
     freqtradebot.create_trades()
-    result = rpc._rpc_status_table()
-    assert 'instantly' in result['Since'].all()
-    assert 'ETH/BTC' in result['Pair'].all()
-    assert '-0.59%' in result['Profit'].all()
+    result, headers = rpc._rpc_status_table('USD')
+    assert "Since" in headers
+    assert "Pair" in headers
+    assert 'instantly' in result[0][2]
+    assert 'ETH/BTC' in result[0][1]
+    assert '-0.59%' in result[0][3]
 
     mocker.patch('freqtrade.exchange.Exchange.get_ticker',
                  MagicMock(side_effect=DependencyException(f"Pair 'ETH/BTC' not available")))

@@ -3,16 +3,15 @@ This module contains class to define a RPC communications
 """
 import logging
 from abc import abstractmethod
-from datetime import timedelta, datetime, date
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from enum import Enum
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
-from numpy import mean, NAN
-from pandas import DataFrame
+from numpy import NAN, mean
 
-from freqtrade import TemporaryError, DependencyException
+from freqtrade import DependencyException, TemporaryError
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -117,7 +116,7 @@ class RPC:
                 results.append(trade_dict)
             return results
 
-    def _rpc_status_table(self) -> DataFrame:
+    def _rpc_status_table(self, fiat_display_currency: str) -> Tuple[List, List]:
         trades = Trade.get_open_trades()
         if not trades:
             raise RPCException('no active order')
@@ -135,12 +134,11 @@ class RPC:
                     trade.pair,
                     shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
                     f'{trade_perc:.2f}%'
+
                 ])
 
             columns = ['ID', 'Pair', 'Since', 'Profit']
-            df_statuses = DataFrame.from_records(trades_list, columns=columns)
-            df_statuses = df_statuses.set_index(columns[0])
-            return df_statuses
+            return trades_list, columns
 
     def _rpc_daily_profit(
             self, timescale: int,

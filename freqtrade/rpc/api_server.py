@@ -274,7 +274,7 @@ class ApiServer(RPC):
 
         stats = self._rpc_daily_profit(timescale,
                                        self._config['stake_currency'],
-                                       self._config['fiat_display_currency']
+                                       self._config.get('fiat_display_currency', '')
                                        )
 
         return self.rest_dump(stats)
