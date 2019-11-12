@@ -48,12 +48,8 @@ You can use the `/forcesell all` command from Telegram.
 ### I get the message "RESTRICTED_MARKET"
 
 Currently known to happen for US Bittrex users.  
-Bittrex split its exchange into US and International versions.
-The International version has more pairs available, however the API always returns all pairs, so there is currently no automated way to detect if you're affected by the restriction.
 
-If you have restricted pairs in your whitelist, you'll get a warning message in the log on FreqTrade startup for each restricted pair.
-If you're an "International" Customer on the Bittrex exchange, then this warning will probably not impact you.
-If you're a US customer, the bot will fail to create orders for these pairs, and you should remove them from your Whitelist.
+Read [the Bittrex section about restricted markets](exchanges.md#restricted-markets) for more information.
 
 ### How do I search the bot logs for something?
 

@@ -356,13 +356,6 @@ For example, to test the order type `FOK` with Kraken, and modify candle_limit t
 !!! Warning
     Please make sure to fully understand the impacts of these settings before modifying them.
 
-#### Random notes for other exchanges
-
-* The Ocean (ccxt id: 'theocean') exchange uses Web3 functionality and requires web3 package to be installed:
-```shell
-$ pip3 install web3
-```
-
 ### What values can be used for fiat_display_currency?
 
 The `fiat_display_currency` configuration parameter sets the base currency to use for the
@@ -523,12 +516,14 @@ you run it in production mode.
         "secret": "08a9dc6db3d7b53e1acebd9275677f4b0a04f1a5",
         ...
 }
-
 ```
+
 !!! Note
     If you have an exchange API key yet, [see our tutorial](/pre-requisite).
 
-## Using proxy with FreqTrade
+You should also make sure to read the [Exchanges](exchanges.md) section of the documentation to be aware of potential configuration details specific to your exchange.
+
+### Using proxy with Freqtrade
 
 To use a proxy with freqtrade, add the kwarg `"aiohttp_trust_env"=true` to the `"ccxt_async_kwargs"` dict in the exchange section of the configuration.
 
