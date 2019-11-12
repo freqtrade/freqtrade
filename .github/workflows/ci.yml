@@ -5,7 +5,7 @@ on:
     branches:
       - master
       - develop
-      - github_actions_2
+      - github_actions_tests
     tags:
   pull_request:
   schedule:
