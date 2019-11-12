@@ -9,8 +9,8 @@ from freqtrade.state import RunMode
 from freqtrade.utils import (setup_utils_configuration, start_create_userdir,
                              start_download_data, start_list_exchanges,
                              start_list_markets, start_list_timeframes,
-                             start_trading)
-from tests.conftest import get_args, log_has, patch_exchange
+                             start_new_strategy, start_trading)
+from tests.conftest import get_args, log_has, log_has_re, patch_exchange
 
 
 def test_setup_utils_configuration():
@@ -453,6 +453,32 @@ def test_create_datadir(caplog, mocker):
     assert cud.call_count == 1
     assert csf.call_count == 1
     assert len(caplog.record_tuples) == 0
+
+
+def test_start_new_strategy(mocker, caplog):
+    wt_mock = mocker.patch.object(Path, "write_text", MagicMock())
+    args = [
+        "new-strategy",
+        "--strategy",
+        "CoolNewStrategy"
+    ]
+    start_new_strategy(get_args(args))
+
+    assert wt_mock.call_count == 1
+    assert "CoolNewStrategy" in wt_mock.call_args_list[0][0][0]
+    assert log_has_re("Writing strategy to .*", caplog)
+
+
+
+def test_start_new_strategy_DefaultStrat(mocker, caplog):
+    args = [
+        "new-strategy",
+        "--strategy",
+        "DefaultStrategy"
+    ]
+    with pytest.raises(OperationalException,
+                       match=r"DefaultStrategy is not allowed as name\."):
+        start_new_strategy(get_args(args))
 
 
 def test_download_data_keyboardInterrupt(mocker, caplog, markets):
