@@ -4,7 +4,6 @@ This module contains class to define a RPC communications
 import logging
 from abc import abstractmethod
 from datetime import date, datetime, timedelta
-from decimal import Decimal
 from enum import Enum
 from math import isnan
 from typing import Any, Dict, List, Optional, Tuple
@@ -230,7 +229,7 @@ class RPC:
                 profit_percent = trade.calc_profit_percent(rate=current_rate)
 
             profit_all_coin.append(
-                trade.calc_profit(rate=Decimal(trade.close_rate or current_rate))
+                trade.calc_profit(rate=trade.close_rate or current_rate)
             )
             profit_all_perc.append(profit_percent)
 
