@@ -45,11 +45,11 @@ jobs:
     - script: mypy freqtrade scripts
       name: mypy
 
-    - stage: docker
-      if: branch in (master, develop, feat/improve_travis) AND (type in (push, cron))
-      script:
-        - build_helpers/publish_docker.sh
-      name: "Build and test and push docker image"
+    # - stage: docker
+    #   if: branch in (master, develop, feat/improve_travis) AND (type in (push, cron))
+    #   script:
+    #     - build_helpers/publish_docker.sh
+    #   name: "Build and test and push docker image"
 
 notifications:
   slack:

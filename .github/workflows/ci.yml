@@ -91,6 +91,17 @@ jobs:
       run: |
         ./tests/test_docs.sh
 
+    - name: Slack Notification
+      uses: homoluctus/slatify@v1.8.0
+      if: always()
+      with:
+        type: ${{ job.status }}
+        job_name: '*Freqtrade CI ${{ matrix.os }}*'
+        mention: 'here'
+        mention_if: 'failure'
+        channel: '#notifications'
+        url: ${{ secrets.SLACK_WEBHOOK }}
+
   build_windows:
 
     runs-on: ${{ matrix.os }}
@@ -141,6 +152,17 @@ jobs:
       run: |
         mypy freqtrade scripts
 
+    - name: Slack Notification
+      uses: homoluctus/slatify@v1.8.0
+      if: always()
+      with:
+        type: ${{ job.status }}
+        job_name: '*Freqtrade CI windows*'
+        mention: 'here'
+        mention_if: 'failure'
+        channel: '#notifications'
+        url: ${{ secrets.SLACK_WEBHOOK }}
+
   deploy:
     needs: [ build, build_windows ]
     runs-on: ubuntu-18.04
@@ -172,4 +194,15 @@ jobs:
         # cache: true
         cache: ${{ github.event_name != 'schedule' }}
         tag_names: true
+
+    - name: Slack Notification
+      uses: homoluctus/slatify@v1.8.0
+      if: always()
+      with:
+        type: ${{ job.status }}
+        job_name: '*Freqtrade CI Deploy*'
+        mention: 'here'
+        mention_if: 'failure'
+        channel: '#notifications'
+        url: ${{ secrets.SLACK_WEBHOOK }}
 
