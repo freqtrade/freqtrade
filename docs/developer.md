@@ -198,6 +198,19 @@ jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace user_data/not
 jupyter nbconvert --ClearOutputPreprocessor.enabled=True --to markdown user_data/notebooks/strategy_analysis_example.ipynb --stdout > docs/strategy_analysis_example.md
 ```
 
+## Continuous integration
+
+This documents some decisions taken for the CI Pipeline.
+
+* CI runs on all OS variants, Linux (ubuntu), macOS and Windows.
+* Docker images are build for the branches `master` and `develop`.
+* Raspberry PI Docker images are postfixed with `_pi` - so tags will be `:master_pi` and `develop_pi`.
+* Docker images contain a file, `/freqtrade/freqtrade_commit` containing the commit this image is based of.
+* Full docker image rebuilds are run once a week via schedule.
+* Deployments run on ubuntu.
+* ta-lib binaries are contained in the build_helpers directory to avoid fails related to external unavailability.
+* All tests must pass for a PR to be merged to `master` or `develop`.
+
 ## Creating a release
 
 This part of the documentation is aimed at maintainers, and shows how to create a release.

@@ -177,7 +177,7 @@ jobs:
 
     - name: Build and test and push docker image
       env:
-        IMAGE_NAME: freqtradeorg/freqtradetests
+        IMAGE_NAME: freqtradeorg/freqtrade
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
@@ -187,7 +187,7 @@ jobs:
     - name: Build raspberry image for ${{ steps.extract_branch.outputs.branch }}_pi
       uses: elgohr/Publish-Docker-Github-Action@2.7
       with:
-        name: freqtradeorg/freqtradetests:${{ steps.extract_branch.outputs.branch }}_pi
+        name: freqtradeorg/freqtrade:${{ steps.extract_branch.outputs.branch }}_pi
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         dockerfile: Dockerfile.pi
