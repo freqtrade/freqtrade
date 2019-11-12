@@ -227,10 +227,16 @@ def test_pairlist_class(mocker, whitelist_conf, markets, pairlist):
 @pytest.mark.parametrize("pairlist", AVAILABLE_PAIRLISTS)
 @pytest.mark.parametrize("whitelist,log_message", [
     (['ETH/BTC', 'TKN/BTC'], ""),
-    (['ETH/BTC', 'TKN/BTC', 'TRX/ETH'], "is not compatible with exchange"),  # TRX/ETH wrong stake
-    (['ETH/BTC', 'TKN/BTC', 'BCH/BTC'], "is not compatible with exchange"),  # BCH/BTC not available
-    (['ETH/BTC', 'TKN/BTC', 'BLK/BTC'], "in your blacklist. Removing "),  # BLK/BTC in blacklist
-    (['ETH/BTC', 'TKN/BTC', 'BTT/BTC'], "Market is not active")  # BTT/BTC is inactive
+    # TRX/ETH not in markets
+    (['ETH/BTC', 'TKN/BTC', 'TRX/ETH'], "is not compatible with exchange"),
+    # wrong stake
+    (['ETH/BTC', 'TKN/BTC', 'ETH/USDT'], "is not compatible with your stake currency"),
+    # BCH/BTC not available
+    (['ETH/BTC', 'TKN/BTC', 'BCH/BTC'], "is not compatible with exchange"),
+    # BLK/BTC in blacklist
+    (['ETH/BTC', 'TKN/BTC', 'BLK/BTC'], "in your blacklist. Removing "),
+    # BTT/BTC is inactive
+    (['ETH/BTC', 'TKN/BTC', 'BTT/BTC'], "Market is not active")
 ])
 def test__whitelist_for_active_markets(mocker, whitelist_conf, markets, pairlist, whitelist, caplog,
                                        log_message, tickers):

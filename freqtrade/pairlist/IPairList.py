@@ -94,10 +94,15 @@ class IPairList(ABC):
         sanitized_whitelist: List[str] = []
         for pair in pairlist:
             # pair is not in the generated dynamic market or has the wrong stake currency
-            if (pair not in markets or not pair.endswith(self._config['stake_currency'])):
+            if pair not in markets:
                 logger.warning(f"Pair {pair} is not compatible with exchange "
                                f"{self._exchange.name}. Removing it from whitelist..")
                 continue
+            if not pair.endswith(self._config['stake_currency']):
+                logger.warning(f"Pair {pair} is not compatible with your stake currency "
+                               f"{self._config['stake_currency']}. Removing it from whitelist..")
+                continue
+
             # Check if market is active
             market = markets[pair]
             if not market_is_active(market):
