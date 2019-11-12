@@ -234,7 +234,8 @@ class Telegram(RPC):
         :return: None
         """
         try:
-            statlist, head = self._rpc_status_table(self._config.get('fiat_display_currency', ''))
+            statlist, head = self._rpc_status_table(self._config['stake_currency'],
+                                                    self._config.get('fiat_display_currency', ''))
             message = tabulate(statlist, headers=head, tablefmt='simple')
             self._send_msg(f"<pre>{message}</pre>", parse_mode=ParseMode.HTML)
         except RPCException as e:
