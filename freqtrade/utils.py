@@ -111,8 +111,7 @@ def start_new_strategy(args: Dict[str, Any]) -> None:
         logger.info(f"Writing strategy to `{new_path}`.")
         new_path.write_text(strategy_text)
     else:
-        logger.warning("`new-strategy` requires --strategy to be set.")
-        sys.exit(1)
+        raise OperationalException("`new-strategy` requires --strategy to be set.")
 
 
 def start_new_hyperopt(args: Dict[str, Any]) -> None:
@@ -135,8 +134,7 @@ def start_new_hyperopt(args: Dict[str, Any]) -> None:
         logger.info(f"Writing hyperopt to `{new_path}`.")
         new_path.write_text(strategy_text)
     else:
-        logger.warning("`new-hyperopt` requires --hyperopt to be set.")
-        sys.exit(1)
+        raise OperationalException("`new-hyperopt` requires --hyperopt to be set.")
 
 
 def start_download_data(args: Dict[str, Any]) -> None:

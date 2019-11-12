@@ -56,7 +56,7 @@ ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
 NO_CONF_REQURIED = ["download-data", "list-timeframes", "list-markets", "list-pairs",
                     "plot-dataframe", "plot-profit"]
 
-NO_CONF_ALLOWED = ["create-userdir", "list-exchanges","new-hyperopt", "new-strategy"]
+NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-hyperopt", "new-strategy"]
 
 
 class Arguments:

@@ -469,7 +469,6 @@ def test_start_new_strategy(mocker, caplog):
     assert log_has_re("Writing strategy to .*", caplog)
 
 
-
 def test_start_new_strategy_DefaultStrat(mocker, caplog):
     args = [
         "new-strategy",
@@ -478,6 +477,15 @@ def test_start_new_strategy_DefaultStrat(mocker, caplog):
     ]
     with pytest.raises(OperationalException,
                        match=r"DefaultStrategy is not allowed as name\."):
+        start_new_strategy(get_args(args))
+
+
+def test_start_new_strategy_no_arg(mocker, caplog):
+    args = [
+        "new-strategy",
+    ]
+    with pytest.raises(OperationalException,
+                       match="`new-strategy` requires --strategy to be set."):
         start_new_strategy(get_args(args))
 
 
