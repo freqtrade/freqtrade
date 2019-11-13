@@ -541,7 +541,7 @@ def test_buy_strategy_generator(hyperopt, testdatadir) -> None:
 def test_generate_optimizer(mocker, default_conf) -> None:
     default_conf.update({'config': 'config.json.example'})
     default_conf.update({'timerange': None})
-    default_conf.update({'spaces': 'default'})
+    default_conf.update({'spaces': 'all'})
     default_conf.update({'hyperopt_min_trades': 1})
 
     trades = [
@@ -587,6 +587,10 @@ def test_generate_optimizer(mocker, default_conf) -> None:
         'roi_p2': 0.01,
         'roi_p3': 0.1,
         'stoploss': -0.4,
+        'trailing_stop': True,
+        'trailing_stop_positive': 0.02,
+        'trailing_stop_positive_offset': 0.1,
+        'trailing_only_offset_is_reached': False,
     }
     response_expected = {
         'loss': 1.9840569076926293,
