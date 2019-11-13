@@ -761,7 +761,7 @@ class FreqtradeBot:
         """
         timeout = self.config.get('unfilledtimeout', {}).get(side)
         ordertime = arrow.get(order['datetime']).datetime
-        if timeout:
+        if timeout is not None:
             timeout_threshold = arrow.utcnow().shift(minutes=-timeout).datetime
 
             return (order['status'] == 'open' and order['side'] == side
