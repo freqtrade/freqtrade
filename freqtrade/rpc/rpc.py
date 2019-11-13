@@ -3,16 +3,15 @@ This module contains class to define a RPC communications
 """
 import logging
 from abc import abstractmethod
-from datetime import timedelta, datetime, date
-from decimal import Decimal
+from datetime import date, datetime, timedelta
 from enum import Enum
-from typing import Dict, Any, List, Optional
+from math import isnan
+from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
-from numpy import mean, NAN
-from pandas import DataFrame
+from numpy import NAN, mean
 
-from freqtrade import TemporaryError, DependencyException
+from freqtrade import DependencyException, TemporaryError
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -117,7 +116,7 @@ class RPC:
                 results.append(trade_dict)
             return results
 
-    def _rpc_status_table(self) -> DataFrame:
+    def _rpc_status_table(self, stake_currency, fiat_display_currency: str) -> Tuple[List, List]:
         trades = Trade.get_open_trades()
         if not trades:
             raise RPCException('no active order')
@@ -130,17 +129,28 @@ class RPC:
                 except DependencyException:
                     current_rate = NAN
                 trade_perc = (100 * trade.calc_profit_percent(current_rate))
+                trade_profit = trade.calc_profit(current_rate)
+                profit_str = f'{trade_perc:.2f}%'
+                if self._fiat_converter:
+                    fiat_profit = self._fiat_converter.convert_amount(
+                            trade_profit,
+                            stake_currency,
+                            fiat_display_currency
+                        )
+                    if fiat_profit and not isnan(fiat_profit):
+                        profit_str += f" ({fiat_profit:.2f})"
                 trades_list.append([
                     trade.id,
                     trade.pair,
                     shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
-                    f'{trade_perc:.2f}%'
+                    profit_str
                 ])
+            profitcol = "Profit"
+            if self._fiat_converter:
+                profitcol += " (" + fiat_display_currency + ")"
 
-            columns = ['ID', 'Pair', 'Since', 'Profit']
-            df_statuses = DataFrame.from_records(trades_list, columns=columns)
-            df_statuses = df_statuses.set_index(columns[0])
-            return df_statuses
+            columns = ['ID', 'Pair', 'Since', profitcol]
+            return trades_list, columns
 
     def _rpc_daily_profit(
             self, timescale: int,
@@ -219,7 +229,7 @@ class RPC:
                 profit_percent = trade.calc_profit_percent(rate=current_rate)
 
             profit_all_coin.append(
-                trade.calc_profit(rate=Decimal(trade.close_rate or current_rate))
+                trade.calc_profit(rate=trade.close_rate or current_rate)
             )
             profit_all_perc.append(profit_percent)
 
