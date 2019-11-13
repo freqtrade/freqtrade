@@ -17,5 +17,6 @@ class Bibox(Exchange):
     may still not work as expected.
     """
 
-    # Adjust ccxt exchange API metadata info
-    _ccxt_has: Dict = {"fetchCurrencies": False}
+    # fetchCurrencies API point requires authentication for Bibox,
+    # so switch it off for Freqtrade load_markets()
+    _ccxt_config: Dict = {"has": {"fetchCurrencies": False}}

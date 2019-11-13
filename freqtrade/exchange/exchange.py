@@ -30,8 +30,8 @@ class Exchange:
 
     _config: Dict = {}
 
-    # Adjustments to ccxt exchange API metadata info (ccxt exchange `has` options)
-    _ccxt_has: Dict = {}
+    # Parameters to add directly to ccxt sync/async initialization.
+    _ccxt_config: Dict = {}
 
     # Parameters to add directly to buy/sell calls (like agreeing to trading agreement)
     _params: Dict = {}
@@ -94,10 +94,17 @@ class Exchange:
         self._trades_pagination_arg = self._ft_has['trades_pagination_arg']
 
         # Initialize ccxt objects
+        ccxt_config = self._ccxt_config.copy()
+        ccxt_config = deep_merge_dicts(exchange_config.get('ccxt_config', {}),
+                                       ccxt_config)
         self._api = self._init_ccxt(
-            exchange_config, ccxt_kwargs=exchange_config.get('ccxt_config'))
+            exchange_config, ccxt_kwargs=ccxt_config)
+
+        ccxt_async_config = self._ccxt_config.copy()
+        ccxt_async_config = deep_merge_dicts(exchange_config.get('ccxt_async_config', {}),
+                                             ccxt_async_config)
         self._api_async = self._init_ccxt(
-            exchange_config, ccxt_async, ccxt_kwargs=exchange_config.get('ccxt_async_config'))
+            exchange_config, ccxt_async, ccxt_kwargs=ccxt_async_config)
 
         logger.info('Using Exchange "%s"', self.name)
 
@@ -154,10 +161,6 @@ class Exchange:
             raise OperationalException(f'Exchange {name} is not supported') from e
         except ccxt.BaseError as e:
             raise OperationalException(f"Initialization of ccxt failed. Reason: {e}") from e
-
-        # Adjust ccxt API metadata info (`has` options) for the exchange
-        for k, v in self._ccxt_has.items():
-            api.has[k] = v
 
         self.set_sandbox(api, exchange_config, name)
 
