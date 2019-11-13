@@ -379,7 +379,12 @@ def plot_profit(config: Dict[str, Any]) -> None:
     plot_elements = init_plotscript(config)
     trades = plot_elements['trades']
     # Filter trades to relevant pairs
-    trades = trades[trades['pair'].isin(plot_elements["pairs"])]
+    # Remove open pairs - we don't know the profit yet so can't calculate profit for these.
+    # Also, If only one open pair is left, then the profit-generation would fail.
+    trades = trades[(trades['pair'].isin(plot_elements["pairs"]))
+                    & (~trades['close_time'].isnull())
+                    ]
+
     # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
     fig = generate_profit_graph(plot_elements["pairs"], plot_elements["tickers"],
