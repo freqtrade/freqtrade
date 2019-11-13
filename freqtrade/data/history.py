@@ -50,16 +50,20 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
     return tickerlist[start_index:stop_index]
 
 
-def trim_dataframe(df: DataFrame, timerange: TimeRange) -> DataFrame:
+def trim_dataframe(df: DataFrame, timerange: TimeRange, df_date_col: str = 'date') -> DataFrame:
     """
     Trim dataframe based on given timerange
+    :param df: Dataframe to trim
+    :param timerange: timerange (use start and end date if available)
+    :param: df_date_col: Column in the dataframe to use as Date column
+    :return: trimmed dataframe
     """
     if timerange.starttype == 'date':
         start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
-        df = df.loc[df['date'] >= start, :]
+        df = df.loc[df[df_date_col] >= start, :]
     if timerange.stoptype == 'date':
         stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
-        df = df.loc[df['date'] <= stop, :]
+        df = df.loc[df[df_date_col] <= stop, :]
     return df
 
 

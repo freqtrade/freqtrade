@@ -47,7 +47,7 @@ def init_plotscript(config):
                          db_url=config.get('db_url'),
                          exportfilename=config.get('exportfilename'),
                          )
-
+    trades = history.trim_dataframe(trades, timerange, 'open_time')
     return {"tickers": tickers,
             "trades": trades,
             "pairs": pairs,
@@ -377,12 +377,14 @@ def plot_profit(config: Dict[str, Any]) -> None:
     in helping out to find a good algorithm.
     """
     plot_elements = init_plotscript(config)
-    trades = load_trades(config['trade_source'],
-                         db_url=str(config.get('db_url')),
-                         exportfilename=str(config.get('exportfilename')),
-                         )
+    trades = plot_elements['trades']
     # Filter trades to relevant pairs
-    trades = trades[trades['pair'].isin(plot_elements["pairs"])]
+    # Remove open pairs - we don't know the profit yet so can't calculate profit for these.
+    # Also, If only one open pair is left, then the profit-generation would fail.
+    trades = trades[(trades['pair'].isin(plot_elements["pairs"]))
+                    & (~trades['close_time'].isnull())
+                    ]
+
     # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
     fig = generate_profit_graph(plot_elements["pairs"], plot_elements["tickers"],
