@@ -50,7 +50,7 @@ def trim_dictlist(dict_list, num):
 
 def load_data_test(what, testdatadir):
     timerange = TimeRange.parse_timerange('1510694220-1510700340')
-    pair = history.load_tickerdata_file(testdatadir, ticker_interval='1m',
+    pair = history.load_tickerdata_file(testdatadir, timeframe='1m',
                                         pair='UNITTEST/BTC', timerange=timerange)
     datalen = len(pair)
 
@@ -116,7 +116,7 @@ def simple_backtest(config, contour, num_results, mocker, testdatadir) -> None:
     assert len(results) == num_results
 
 
-def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=False,
+def mocked_load_data(datadir, pairs=[], timeframe='0m', refresh_pairs=False,
                      timerange=None, exchange=None, live=False, *args, **kwargs):
     tickerdata = history.load_tickerdata_file(datadir, 'UNITTEST/BTC', '1m', timerange=timerange)
     pairdata = {'UNITTEST/BTC': parse_ticker_dataframe(tickerdata, '1m', pair="UNITTEST/BTC",
@@ -126,14 +126,14 @@ def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=Fals
 
 # use for mock ccxt.fetch_ohlvc'
 def _load_pair_as_ticks(pair, tickfreq):
-    ticks = history.load_tickerdata_file(None, ticker_interval=tickfreq, pair=pair)
+    ticks = history.load_tickerdata_file(None, timeframe=tickfreq, pair=pair)
     ticks = ticks[-201:]
     return ticks
 
 
 # FIX: fixturize this?
 def _make_backtest_conf(mocker, datadir, conf=None, pair='UNITTEST/BTC', record=None):
-    data = history.load_data(datadir=datadir, ticker_interval='1m', pairs=[pair])
+    data = history.load_data(datadir=datadir, timeframe='1m', pairs=[pair])
     data = trim_dictlist(data, -201)
     patch_exchange(mocker)
     backtesting = Backtesting(conf)
@@ -307,7 +307,7 @@ def test_backtesting_init(mocker, default_conf, order_types) -> None:
     get_fee = mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
     backtesting = Backtesting(default_conf)
     assert backtesting.config == default_conf
-    assert backtesting.ticker_interval == '5m'
+    assert backtesting.timeframe == '5m'
     assert callable(backtesting.strategy.tickerdata_to_dataframe)
     assert callable(backtesting.strategy.advise_buy)
     assert callable(backtesting.strategy.advise_sell)
@@ -522,7 +522,7 @@ def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
     backtesting = Backtesting(default_conf)
     pair = 'UNITTEST/BTC'
     timerange = TimeRange('date', None, 1517227800, 0)
-    data = history.load_data(datadir=testdatadir, ticker_interval='5m', pairs=['UNITTEST/BTC'],
+    data = history.load_data(datadir=testdatadir, timeframe='5m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
     data_processed = backtesting.strategy.tickerdata_to_dataframe(data)
     min_date, max_date = get_timeframe(data_processed)
@@ -576,9 +576,9 @@ def test_backtest_1min_ticker_interval(default_conf, fee, mocker, testdatadir) -
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
 
-    # Run a backtesting for an exiting 1min ticker_interval
+    # Run a backtesting for an exiting 1min timeframe
     timerange = TimeRange.parse_timerange('1510688220-1510700340')
-    data = history.load_data(datadir=testdatadir, ticker_interval='1m', pairs=['UNITTEST/BTC'],
+    data = history.load_data(datadir=testdatadir, timeframe='1m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
     processed = backtesting.strategy.tickerdata_to_dataframe(data)
     min_date, max_date = get_timeframe(processed)
@@ -688,7 +688,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     patch_exchange(mocker)
 
     pairs = ['ADA/BTC', 'DASH/BTC', 'ETH/BTC', 'LTC/BTC', 'NXT/BTC']
-    data = history.load_data(datadir=testdatadir, ticker_interval='5m', pairs=pairs)
+    data = history.load_data(datadir=testdatadir, timeframe='5m', pairs=pairs)
     # Only use 500 lines to increase performance
     data = trim_dictlist(data, -500)
 

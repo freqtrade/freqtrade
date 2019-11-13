@@ -10,7 +10,7 @@ from pathlib import Path
 # Customize these according to your needs.
 
 # Define some constants
-ticker_interval = "5m"
+timeframe = "5m"
 # Name of the strategy class
 strategy_name = 'SampleStrategy'
 # Path to user data
@@ -29,7 +29,7 @@ pair = "BTC_USDT"
 from freqtrade.data.history import load_pair_history
 
 candles = load_pair_history(datadir=data_location,
-                            ticker_interval=ticker_interval,
+                            timeframe=timeframe,
                             pair=pair)
 
 # Confirm success

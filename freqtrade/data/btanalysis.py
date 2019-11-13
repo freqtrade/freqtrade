@@ -178,9 +178,9 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     :return: Returns df with one additional column, col_name, containing the cumulative profit.
     """
     from freqtrade.exchange import timeframe_to_minutes
-    ticker_minutes = timeframe_to_minutes(timeframe)
-    # Resample to ticker_interval to make sure trades match candles
-    _trades_sum = trades.resample(f'{ticker_minutes}min', on='close_time')[['profitperc']].sum()
+    timeframe_minutes = timeframe_to_minutes(timeframe)
+    # Resample to timeframe to make sure trades match candles
+    _trades_sum = trades.resample(f'{timeframe_minutes}min', on='close_time')[['profitperc']].sum()
     df.loc[:, col_name] = _trades_sum.cumsum()
     # Set first value to 0
     df.loc[df.iloc[0].name, col_name] = 0
