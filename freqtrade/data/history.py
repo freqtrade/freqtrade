@@ -279,7 +279,7 @@ def download_pair_history(datadir: Path,
                           timeframe: str = '5m',
                           timerange: Optional[TimeRange] = None) -> bool:
     """
-    Download the latest ticker intervals from the exchange for the pair passed in parameters
+    Download latest candles from the exchange for the pair and timeframe passed in parameters
     The data is downloaded starting from the last correct data that
     exists in a cache. If timerange starts earlier than the data in the cache,
     the full data will be redownloaded

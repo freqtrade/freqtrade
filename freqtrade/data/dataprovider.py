@@ -61,7 +61,7 @@ class DataProvider:
         """
         Get stored historic ohlcv data
         :param pair: pair to get the data for
-        :param timeframe: ticker interval to get data for
+        :param timeframe: timeframe to get data for
         """
         return load_pair_history(pair=pair,
                                  timeframe=timeframe or self._config['ticker_interval'],
@@ -73,7 +73,7 @@ class DataProvider:
         Return pair ohlcv data, either live or cached historical -- depending
         on the runmode.
         :param pair: pair to get the data for
-        :param timeframe: ticker interval to get data for
+        :param timeframe: timeframe to get data for
         :return: Dataframe for this pair
         """
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
