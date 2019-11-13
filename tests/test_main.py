@@ -18,7 +18,7 @@ from tests.conftest import (log_has, log_has_re, patch_exchange,
 def test_parse_args_None(caplog) -> None:
     with pytest.raises(SystemExit):
         main([])
-    assert log_has_re(r"Usage of freqtrade requires a subcommand\.", caplog)
+    assert log_has_re(r"Usage of Freqtrade requires a subcommand.*", caplog)
 
 
 def test_parse_args_backtesting(mocker) -> None:

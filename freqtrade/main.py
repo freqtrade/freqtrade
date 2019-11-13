@@ -38,9 +38,12 @@ def main(sysargv: List[str] = None) -> None:
         else:
             # No subcommand was issued.
             raise OperationalException(
-                "Usage of freqtrade requires a subcommand.\n"
-                "To use the previous behaviour, run freqtrade with `freqtrade trade [...]`.\n"
-                "To see a full list of options, please use `freqtrade --help`"
+                "Usage of Freqtrade requires a subcommand to be specified.\n"
+                "To have the previous behavior (bot executing trades in live/dry-run modes, "
+                "depending on the value of the `dry_run` setting in the config), run freqtrade "
+                "as `freqtrade trade [options...]`.\n"
+                "To see the full list of options available, please use "
+                "`freqtrade --help` or `freqtrade <command> --help`."
                 )
 
     except SystemExit as e:
