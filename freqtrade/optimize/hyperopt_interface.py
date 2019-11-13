@@ -1,6 +1,6 @@
 """
 IHyperOpt interface
-This module defines the interface to apply for hyperopts
+This module defines the interface to apply for hyperopt
 """
 import logging
 import math
@@ -27,8 +27,8 @@ def _format_exception_message(method: str, space: str) -> str:
 
 class IHyperOpt(ABC):
     """
-    Interface for freqtrade hyperopts
-    Defines the mandatory structure must follow any custom hyperopts
+    Interface for freqtrade hyperopt
+    Defines the mandatory structure must follow any custom hyperopt
 
     Class attributes you can use:
         ticker_interval -> int: value of the ticker interval to use for the strategy

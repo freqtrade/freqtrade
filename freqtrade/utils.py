@@ -70,7 +70,7 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
 
 def start_create_userdir(args: Dict[str, Any]) -> None:
     """
-    Create "user_data" directory to contain user data strategies, hyperopts, ...)
+    Create "user_data" directory to contain user data strategies, hyperopt, ...)
     :param args: Cli args from Arguments()
     :return: None
     """

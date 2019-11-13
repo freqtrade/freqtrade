@@ -131,7 +131,7 @@ You can add the entry "user_data_dir" setting to your configuration, to always p
 Alternatively, pass in `--userdir` to every command.
 The bot will fail to start if the directory does not exist, but will create necessary subdirectories.
 
-This directory should contain your custom strategies, custom hyperopts and hyperopt loss functions, backtesting historical data (downloaded using either backtesting command or the download script) and plot outputs.
+This directory should contain your custom strategies, custom hyperopt and hyperopt loss functions, backtesting historical data (downloaded using either backtesting command or the download script) and plot outputs.
 
 It is recommended to use version control to keep track of changes to your strategies.
 
@@ -294,7 +294,7 @@ optional arguments:
                         entry and exit).
   --hyperopt NAME       Specify hyperopt class name which will be used by the
                         bot.
-  --hyperopt-path PATH  Specify additional lookup path for Hyperopts and
+  --hyperopt-path PATH  Specify additional lookup path for Hyperopt and
                         Hyperopt Loss functions.
   --eps, --enable-position-stacking
                         Allow buying the same pair multiple times (position

@@ -1,7 +1,7 @@
 # pragma pylint: disable=attribute-defined-outside-init
 
 """
-This module load custom hyperopts
+This module load custom hyperopt
 """
 import logging
 from pathlib import Path
