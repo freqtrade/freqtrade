@@ -30,6 +30,9 @@ class Exchange:
 
     _config: Dict = {}
 
+    # Adjustments to ccxt exchange API metadata info (ccxt exchange `has` options)
+    _ccxt_has: Dict = {}
+
     # Parameters to add directly to buy/sell calls (like agreeing to trading agreement)
     _params: Dict = {}
 
@@ -151,6 +154,10 @@ class Exchange:
             raise OperationalException(f'Exchange {name} is not supported') from e
         except ccxt.BaseError as e:
             raise OperationalException(f"Initialization of ccxt failed. Reason: {e}") from e
+
+        # Adjust ccxt API metadata info (`has` options) for the exchange
+        for k, v in self._ccxt_has.items():
+            api.has[k] = v
 
         self.set_sandbox(api, exchange_config, name)
 
