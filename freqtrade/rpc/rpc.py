@@ -301,7 +301,11 @@ class RPC:
         """ Returns current account balance per crypto """
         output = []
         total = 0.0
-        tickers = self._freqtrade.exchange.get_tickers()
+        try:
+            tickers = self._freqtrade.exchange.get_tickers()
+        except (TemporaryError, DependencyException):
+            raise RPCException('Error getting current tickers.')
+
         for coin, balance in self._freqtrade.exchange.get_balances().items():
             if not balance['total']:
                 continue
