@@ -45,7 +45,7 @@ freqtrade --datadir user_data/data/bittrex-20180101 backtesting
 #### With a (custom) strategy file
 
 ```bash
-freqtrade -s SampleStrategy backtesting
+freqtrade backtesting -s SampleStrategy
 ```
 
 Where `-s SampleStrategy` refers to the class name within the strategy file `sample_strategy.py` found in the `freqtrade/user_data/strategies` directory.

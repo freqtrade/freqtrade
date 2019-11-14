@@ -281,8 +281,8 @@ def test_generate_profit_graph(testdatadir):
 def test_start_plot_dataframe(mocker):
     aup = mocker.patch("freqtrade.plot.plotting.load_and_plot_trades", MagicMock())
     args = [
-        "--config", "config.json.example",
         "plot-dataframe",
+        "--config", "config.json.example",
         "--pairs", "ETH/BTC"
     ]
     start_plot_dataframe(get_args(args))
@@ -323,8 +323,8 @@ def test_load_and_plot_trades(default_conf, mocker, caplog, testdatadir):
 def test_start_plot_profit(mocker):
     aup = mocker.patch("freqtrade.plot.plotting.plot_profit", MagicMock())
     args = [
-        "--config", "config.json.example",
         "plot-profit",
+        "--config", "config.json.example",
         "--pairs", "ETH/BTC"
     ]
     start_plot_profit(get_args(args))

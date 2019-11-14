@@ -12,7 +12,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.optimize.hyperopt_interface import IHyperOpt
 
 
-class SampleHyperOpts(IHyperOpt):
+class SampleHyperOpt(IHyperOpt):
     """
     This is a sample Hyperopt to inspire you.
     Feel free to customize it.

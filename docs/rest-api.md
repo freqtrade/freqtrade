@@ -65,7 +65,7 @@ docker run -d \
   -v ~/.freqtrade/user_data/:/freqtrade/user_data \
   -v ~/.freqtrade/tradesv3.sqlite:/freqtrade/tradesv3.sqlite \
   -p 127.0.0.1:8080:8080 \
-  freqtrade --db-url sqlite:///tradesv3.sqlite --strategy MyAwesomeStrategy
+  freqtrade trade --db-url sqlite:///tradesv3.sqlite --strategy MyAwesomeStrategy
 ```
 
 !!! Danger "Security warning"
