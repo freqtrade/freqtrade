@@ -72,12 +72,12 @@ jobs:
     - name: Backtesting
       run: |
         cp config.json.example config.json
-        freqtrade --datadir tests/testdata backtesting
+        freqtrade backtesting --datadir tests/testdata --strategy DefaultStrategy
 
     - name: Hyperopt
       run: |
         cp config.json.example config.json
-        freqtrade --datadir tests/testdata --strategy SampleStrategy hyperopt --customhyperopt SampleHyperOpts -e 5
+        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpts
 
     - name: Flake8
       run: |
@@ -137,12 +137,12 @@ jobs:
     - name: Backtesting
       run: |
         cp config.json.example config.json
-        freqtrade --datadir tests/testdata backtesting
+        freqtrade backtesting --datadir tests/testdata --strategy DefaultStrategy
 
     - name: Hyperopt
       run: |
         cp config.json.example config.json
-        freqtrade --datadir tests/testdata --strategy SampleStrategy hyperopt --customhyperopt SampleHyperOpts -e 5
+        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --customhyperopt SampleHyperOpts
 
     - name: Flake8
       run: |
