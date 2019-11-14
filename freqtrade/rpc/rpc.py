@@ -301,6 +301,7 @@ class RPC:
         """ Returns current account balance per crypto """
         output = []
         total = 0.0
+        tickers = self._freqtrade.exchange.get_tickers()
         for coin, balance in self._freqtrade.exchange.get_balances().items():
             if not balance['total']:
                 continue
@@ -310,10 +311,11 @@ class RPC:
             else:
                 try:
                     pair = self._freqtrade.exchange.get_valid_pair_combination(coin, "BTC")
+
                     if pair.startswith("BTC"):
-                        rate = 1.0 / self._freqtrade.get_sell_rate(pair, False)
+                        rate = 1.0 / tickers.get(pair, {}).get('bid', 1)
                     else:
-                        rate = self._freqtrade.get_sell_rate(pair, False)
+                        rate = tickers.get(pair, {}).get('bid', 1)
                 except (TemporaryError, DependencyException):
                     logger.warning(f" Could not get rate for pair {coin}.")
                     continue
