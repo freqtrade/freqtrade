@@ -77,7 +77,7 @@ jobs:
     - name: Hyperopt
       run: |
         cp config.json.example config.json
-        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpts
+        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt
 
     - name: Flake8
       run: |
@@ -142,7 +142,7 @@ jobs:
     - name: Hyperopt
       run: |
         cp config.json.example config.json
-        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --customhyperopt SampleHyperOpts
+        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --customhyperopt SampleHyperOpt
 
     - name: Flake8
       run: |
