@@ -9,8 +9,6 @@ PROCESS_THROTTLE_SECS = 5  # sec
 DEFAULT_TICKER_INTERVAL = 5  # min
 HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
-DEFAULT_STRATEGY = 'DefaultStrategy'
-DEFAULT_HYPEROPT = 'DefaultHyperOpt'
 DEFAULT_HYPEROPT_LOSS = 'DefaultHyperOptLoss'
 DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
 DEFAULT_DB_DRYRUN_URL = 'sqlite://'
@@ -24,7 +22,7 @@ AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList']
 DRY_RUN_WALLET = 999.9
 MATH_CLOSE_PREC = 1e-14  # Precision used for float comparisons
 
-TICKER_INTERVALS = [
+TIMEFRAMES = [
     '1m', '3m', '5m', '15m', '30m',
     '1h', '2h', '4h', '6h', '8h', '12h',
     '1d', '3d', '1w',
@@ -57,7 +55,7 @@ CONF_SCHEMA = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': 'integer', 'minimum': -1},
-        'ticker_interval': {'type': 'string', 'enum': TICKER_INTERVALS},
+        'ticker_interval': {'type': 'string', 'enum': TIMEFRAMES},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'XBT', 'ETH', 'USDT', 'EUR', 'USD']},
         'stake_amount': {
             "type": ["number", "string"],

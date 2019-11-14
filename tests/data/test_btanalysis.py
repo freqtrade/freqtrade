@@ -56,7 +56,7 @@ def test_extract_trades_of_period(testdatadir):
     # 2018-11-14 06:07:00
     timerange = TimeRange('date', None, 1510639620, 0)
 
-    data = load_pair_history(pair=pair, ticker_interval='1m',
+    data = load_pair_history(pair=pair, timeframe='1m',
                              datadir=testdatadir, timerange=timerange)
 
     trades = DataFrame(
@@ -122,7 +122,7 @@ def test_combine_tickers_with_mean(testdatadir):
     pairs = ["ETH/BTC", "ADA/BTC"]
     tickers = load_data(datadir=testdatadir,
                         pairs=pairs,
-                        ticker_interval='5m'
+                        timeframe='5m'
                         )
     df = combine_tickers_with_mean(tickers)
     assert isinstance(df, DataFrame)
@@ -136,7 +136,7 @@ def test_create_cum_profit(testdatadir):
     bt_data = load_backtest_data(filename)
     timerange = TimeRange.parse_timerange("20180110-20180112")
 
-    df = load_pair_history(pair="TRX/BTC", ticker_interval='5m',
+    df = load_pair_history(pair="TRX/BTC", timeframe='5m',
                            datadir=testdatadir, timerange=timerange)
 
     cum_profits = create_cum_profit(df.set_index('date'),
@@ -154,7 +154,7 @@ def test_create_cum_profit1(testdatadir):
     bt_data.loc[:, 'close_time'] = bt_data.loc[:, 'close_time'] + DateOffset(seconds=20)
     timerange = TimeRange.parse_timerange("20180110-20180112")
 
-    df = load_pair_history(pair="TRX/BTC", ticker_interval='5m',
+    df = load_pair_history(pair="TRX/BTC", timeframe='5m',
                            datadir=testdatadir, timerange=timerange)
 
     cum_profits = create_cum_profit(df.set_index('date'),

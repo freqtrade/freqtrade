@@ -64,6 +64,10 @@ def test_api_not_found(botclient):
 
 def test_api_unauthorized(botclient):
     ftbot, client = botclient
+    rc = client.get(f"{BASE_URI}/ping")
+    assert_response(rc)
+    assert rc.json == {'status': 'pong'}
+
     # Don't send user/pass information
     rc = client.get(f"{BASE_URI}/version")
     assert_response(rc, 401)

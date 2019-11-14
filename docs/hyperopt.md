@@ -245,7 +245,7 @@ Because hyperopt tries a lot of combinations to find the best parameters it will
 We strongly recommend to use `screen` or `tmux` to prevent any connection loss.
 
 ```bash
-freqtrade -c config.json hyperopt --customhyperopt <hyperoptname> -e 5000 --spaces all
+freqtrade hyperopt --config config.json --hyperopt <hyperoptname> -e 5000 --spaces all
 ```
 
 Use  `<hyperoptname>` as the name of the custom hyperopt used.
@@ -281,7 +281,7 @@ freqtrade hyperopt --timerange 20180401-20180501
 Hyperopt can reuse `populate_indicators`, `populate_buy_trend`, `populate_sell_trend` from your strategy, assuming these methods are **not** in your custom hyperopt file, and a strategy is provided.
 
 ```bash
-freqtrade --strategy SampleStrategy hyperopt --customhyperopt SampleHyperopt
+freqtrade hyperopt --strategy SampleStrategy --customhyperopt SampleHyperopt
 ```
 
 ### Running Hyperopt with Smaller Search Space

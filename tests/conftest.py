@@ -252,6 +252,7 @@ def default_conf(testdatadir):
         "db_url": "sqlite://",
         "user_data_dir": Path("user_data"),
         "verbosity": 3,
+        "strategy": "DefaultStrategy"
     }
     return configuration
 

@@ -83,8 +83,8 @@ class Backtesting:
         if "ticker_interval" not in self.config:
             raise OperationalException("Ticker-interval needs to be set in either configuration "
                                        "or as cli argument `--ticker-interval 5m`")
-        self.ticker_interval = str(self.config.get('ticker_interval'))
-        self.ticker_interval_mins = timeframe_to_minutes(self.ticker_interval)
+        self.timeframe = str(self.config.get('ticker_interval'))
+        self.timeframe_mins = timeframe_to_minutes(self.timeframe)
 
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
@@ -108,7 +108,7 @@ class Backtesting:
         data = history.load_data(
             datadir=Path(self.config['datadir']),
             pairs=self.config['exchange']['pair_whitelist'],
-            ticker_interval=self.ticker_interval,
+            timeframe=self.timeframe,
             timerange=timerange,
             startup_candles=self.required_startup,
             fail_without_data=True,
@@ -121,7 +121,7 @@ class Backtesting:
             min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
         )
         # Adjust startts forward if not enough data is available
-        timerange.adjust_start_if_necessary(timeframe_to_seconds(self.ticker_interval),
+        timerange.adjust_start_if_necessary(timeframe_to_seconds(self.timeframe),
                                             self.required_startup, min_date)
 
         return data, timerange
@@ -375,7 +375,7 @@ class Backtesting:
         lock_pair_until: Dict = {}
         # Indexes per pair, so some pairs are allowed to have a missing start.
         indexes: Dict = {}
-        tmp = start_date + timedelta(minutes=self.ticker_interval_mins)
+        tmp = start_date + timedelta(minutes=self.timeframe_mins)
 
         # Loop timerange and get candle for each pair at that point in time
         while tmp < end_date:
@@ -427,7 +427,7 @@ class Backtesting:
                     lock_pair_until[pair] = end_date.datetime
 
             # Move time one configured time_interval ahead.
-            tmp += timedelta(minutes=self.ticker_interval_mins)
+            tmp += timedelta(minutes=self.timeframe_mins)
         return DataFrame.from_records(trades, columns=BacktestResult._fields)
 
     def start(self) -> None:

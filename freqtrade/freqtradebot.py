@@ -139,10 +139,9 @@ class FreqtradeBot:
         if len(trades) < self.config['max_open_trades']:
             self.process_maybe_execute_buys()
 
-        if 'unfilledtimeout' in self.config:
-            # Check and handle any timed out open orders
-            self.check_handle_timedout()
-            Trade.session.flush()
+        # Check and handle any timed out open orders
+        self.check_handle_timedout()
+        Trade.session.flush()
 
         if (self.heartbeat_interval
                 and (arrow.utcnow().timestamp - self._heartbeat_msg > self.heartbeat_interval)):
@@ -756,23 +755,28 @@ class FreqtradeBot:
             return True
         return False
 
+    def _check_timed_out(self, side: str, order: dict) -> bool:
+        """
+        Check if timeout is active, and if the order is still open and timed out
+        """
+        timeout = self.config.get('unfilledtimeout', {}).get(side)
+        ordertime = arrow.get(order['datetime']).datetime
+        if timeout is not None:
+            timeout_threshold = arrow.utcnow().shift(minutes=-timeout).datetime
+
+            return (order['status'] == 'open' and order['side'] == side
+                    and ordertime < timeout_threshold)
+        return False
+
     def check_handle_timedout(self) -> None:
         """
         Check if any orders are timed out and cancel if neccessary
         :param timeoutvalue: Number of minutes until order is considered timed out
         :return: None
         """
-        buy_timeout = self.config['unfilledtimeout']['buy']
-        sell_timeout = self.config['unfilledtimeout']['sell']
-        buy_timeout_threshold = arrow.utcnow().shift(minutes=-buy_timeout).datetime
-        sell_timeout_threshold = arrow.utcnow().shift(minutes=-sell_timeout).datetime
 
         for trade in Trade.get_open_order_trades():
             try:
-                # FIXME: Somehow the query above returns results
-                # where the open_order_id is in fact None.
-                # This is probably because the record got
-                # updated via /forcesell in a different thread.
                 if not trade.open_order_id:
                     continue
                 order = self.exchange.get_order(trade.open_order_id, trade.pair)
@@ -782,7 +786,6 @@ class FreqtradeBot:
                     trade,
                     traceback.format_exc())
                 continue
-            ordertime = arrow.get(order['datetime']).datetime
 
             # Check if trade is still actually open
             if float(order['remaining']) == 0.0:
@@ -790,15 +793,13 @@ class FreqtradeBot:
                 continue
 
             if ((order['side'] == 'buy' and order['status'] == 'canceled')
-                or (order['status'] == 'open'
-                    and order['side'] == 'buy' and ordertime < buy_timeout_threshold)):
+                    or (self._check_timed_out('buy', order))):
 
                 self.handle_timedout_limit_buy(trade, order)
                 self.wallets.update()
 
             elif ((order['side'] == 'sell' and order['status'] == 'canceled')
-                  or (order['status'] == 'open'
-                      and order['side'] == 'sell' and ordertime < sell_timeout_threshold)):
+                  or (self._check_timed_out('sell', order))):
                 self.handle_timedout_limit_sell(trade, order)
                 self.wallets.update()
 

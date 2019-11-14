@@ -23,13 +23,15 @@ The `freqtrade plot-dataframe` subcommand shows an interactive graph with three 
 Possible arguments:
 
 ```
-usage: freqtrade plot-dataframe [-h] [-p PAIRS [PAIRS ...]]
+usage: freqtrade plot-dataframe [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                                [-d PATH] [--userdir PATH] [-s NAME]
+                                [--strategy-path PATH] [-p PAIRS [PAIRS ...]]
                                 [--indicators1 INDICATORS1 [INDICATORS1 ...]]
                                 [--indicators2 INDICATORS2 [INDICATORS2 ...]]
                                 [--plot-limit INT] [--db-url PATH]
                                 [--trade-source {DB,file}] [--export EXPORT]
                                 [--export-filename PATH]
-                                [--timerange TIMERANGE]
+                                [--timerange TIMERANGE] [-i TICKER_INTERVAL]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -62,6 +64,28 @@ optional arguments:
                         /backtest_today.json`
   --timerange TIMERANGE
                         Specify what timerange of data to use.
+  -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
+                        Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
+                        `1d`).
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`).
+                        Multiple --config options may be used. Can be set to
+                        `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+
+Strategy arguments:
+  -s NAME, --strategy NAME
+                        Specify strategy class name (default:
+                        `DefaultStrategy`).
+  --strategy-path PATH  Specify additional strategy lookup path.
 
 ```
 
@@ -83,7 +107,7 @@ Use `--indicators1` for the main plot and `--indicators2` for the subplot below 
     You will almost certainly want to specify a custom strategy! This can be done by adding `-s Classname` / `--strategy ClassName` to the command.
 
 ``` bash
-freqtrade --strategy AwesomeStrategy plot-dataframe -p BTC/ETH --indicators1 sma ema --indicators2 macd
+freqtrade plot-dataframe --strategy AwesomeStrategy -p BTC/ETH --indicators1 sma ema --indicators2 macd
 ```
 
 ### Further usage examples
@@ -91,25 +115,25 @@ freqtrade --strategy AwesomeStrategy plot-dataframe -p BTC/ETH --indicators1 sma
 To plot multiple pairs, separate them with a space:
 
 ``` bash
-freqtrade --strategy AwesomeStrategy plot-dataframe -p BTC/ETH XRP/ETH
+freqtrade plot-dataframe --strategy AwesomeStrategy -p BTC/ETH XRP/ETH
 ```
 
 To plot a timerange (to zoom in)
 
 ``` bash
-freqtrade --strategy AwesomeStrategy plot-dataframe -p BTC/ETH --timerange=20180801-20180805
+freqtrade plot-dataframe --strategy AwesomeStrategy -p BTC/ETH --timerange=20180801-20180805
 ```
 
 To plot trades stored in a database use `--db-url` in combination with `--trade-source DB`:
 
 ``` bash
-freqtrade --strategy AwesomeStrategy plot-dataframe --db-url sqlite:///tradesv3.dry_run.sqlite -p BTC/ETH --trade-source DB
+freqtrade plot-dataframe --strategy AwesomeStrategy --db-url sqlite:///tradesv3.dry_run.sqlite -p BTC/ETH --trade-source DB
 ```
 
 To plot trades from a backtesting result, use `--export-filename <filename>`
 
 ``` bash
-freqtrade --strategy AwesomeStrategy plot-dataframe --export-filename user_data/backtest_results/backtest-result.json -p BTC/ETH
+freqtrade plot-dataframe --strategy AwesomeStrategy --export-filename user_data/backtest_results/backtest-result.json -p BTC/ETH
 ```
 
 ## Plot profit
@@ -133,10 +157,11 @@ The third graph can be useful to spot outliers, events in pairs that cause profi
 Possible options for the `freqtrade plot-profit` subcommand:
 
 ```
-usage: freqtrade plot-profit [-h] [-p PAIRS [PAIRS ...]]
+usage: freqtrade plot-profit [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                             [-d PATH] [--userdir PATH] [-p PAIRS [PAIRS ...]]
                              [--timerange TIMERANGE] [--export EXPORT]
                              [--export-filename PATH] [--db-url PATH]
-                             [--trade-source {DB,file}]
+                             [--trade-source {DB,file}] [-i TICKER_INTERVAL]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -159,6 +184,22 @@ optional arguments:
   --trade-source {DB,file}
                         Specify the source for trades (Can be DB or file
                         (backtest file)) Default: file
+  -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
+                        Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
+                        `1d`).
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`).
+                        Multiple --config options may be used. Can be set to
+                        `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
 
 ```
 

@@ -50,26 +50,30 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
     return tickerlist[start_index:stop_index]
 
 
-def trim_dataframe(df: DataFrame, timerange: TimeRange) -> DataFrame:
+def trim_dataframe(df: DataFrame, timerange: TimeRange, df_date_col: str = 'date') -> DataFrame:
     """
     Trim dataframe based on given timerange
+    :param df: Dataframe to trim
+    :param timerange: timerange (use start and end date if available)
+    :param: df_date_col: Column in the dataframe to use as Date column
+    :return: trimmed dataframe
     """
     if timerange.starttype == 'date':
         start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
-        df = df.loc[df['date'] >= start, :]
+        df = df.loc[df[df_date_col] >= start, :]
     if timerange.stoptype == 'date':
         stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
-        df = df.loc[df['date'] <= stop, :]
+        df = df.loc[df[df_date_col] <= stop, :]
     return df
 
 
-def load_tickerdata_file(datadir: Path, pair: str, ticker_interval: str,
+def load_tickerdata_file(datadir: Path, pair: str, timeframe: str,
                          timerange: Optional[TimeRange] = None) -> Optional[list]:
     """
     Load a pair from file, either .json.gz or .json
     :return: tickerlist or None if unsuccessful
     """
-    filename = pair_data_filename(datadir, pair, ticker_interval)
+    filename = pair_data_filename(datadir, pair, timeframe)
     pairdata = misc.file_load_json(filename)
     if not pairdata:
         return []
@@ -80,11 +84,11 @@ def load_tickerdata_file(datadir: Path, pair: str, ticker_interval: str,
 
 
 def store_tickerdata_file(datadir: Path, pair: str,
-                          ticker_interval: str, data: list, is_zip: bool = False):
+                          timeframe: str, data: list, is_zip: bool = False):
     """
     Stores tickerdata to file
     """
-    filename = pair_data_filename(datadir, pair, ticker_interval)
+    filename = pair_data_filename(datadir, pair, timeframe)
     misc.file_dump_json(filename, data, is_zip=is_zip)
 
 
@@ -121,7 +125,7 @@ def _validate_pairdata(pair, pairdata, timerange: TimeRange):
 
 
 def load_pair_history(pair: str,
-                      ticker_interval: str,
+                      timeframe: str,
                       datadir: Path,
                       timerange: Optional[TimeRange] = None,
                       refresh_pairs: bool = False,
@@ -133,7 +137,7 @@ def load_pair_history(pair: str,
     """
     Loads cached ticker history for the given pair.
     :param pair: Pair to load data for
-    :param ticker_interval: Ticker-interval (e.g. "5m")
+    :param timeframe: Ticker timeframe (e.g. "5m")
     :param datadir: Path to the data storage location.
     :param timerange: Limit data to be loaded to this timerange
     :param refresh_pairs: Refresh pairs from exchange.
@@ -147,34 +151,34 @@ def load_pair_history(pair: str,
 
     timerange_startup = deepcopy(timerange)
     if startup_candles > 0 and timerange_startup:
-        timerange_startup.subtract_start(timeframe_to_seconds(ticker_interval) * startup_candles)
+        timerange_startup.subtract_start(timeframe_to_seconds(timeframe) * startup_candles)
 
     # The user forced the refresh of pairs
     if refresh_pairs:
         download_pair_history(datadir=datadir,
                               exchange=exchange,
                               pair=pair,
-                              ticker_interval=ticker_interval,
+                              timeframe=timeframe,
                               timerange=timerange)
 
-    pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange_startup)
+    pairdata = load_tickerdata_file(datadir, pair, timeframe, timerange=timerange_startup)
 
     if pairdata:
         if timerange_startup:
             _validate_pairdata(pair, pairdata, timerange_startup)
-        return parse_ticker_dataframe(pairdata, ticker_interval, pair=pair,
+        return parse_ticker_dataframe(pairdata, timeframe, pair=pair,
                                       fill_missing=fill_up_missing,
                                       drop_incomplete=drop_incomplete)
     else:
         logger.warning(
-            f'No history data for pair: "{pair}", interval: {ticker_interval}. '
+            f'No history data for pair: "{pair}", timeframe: {timeframe}. '
             'Use `freqtrade download-data` to download the data'
         )
         return None
 
 
 def load_data(datadir: Path,
-              ticker_interval: str,
+              timeframe: str,
               pairs: List[str],
               refresh_pairs: bool = False,
               exchange: Optional[Exchange] = None,
@@ -186,7 +190,7 @@ def load_data(datadir: Path,
     """
     Loads ticker history data for a list of pairs
     :param datadir: Path to the data storage location.
-    :param ticker_interval: Ticker-interval (e.g. "5m")
+    :param timeframe: Ticker Timeframe (e.g. "5m")
     :param pairs: List of pairs to load
     :param refresh_pairs: Refresh pairs from exchange.
         (Note: Requires exchange to be passed as well.)
@@ -206,7 +210,7 @@ def load_data(datadir: Path,
         logger.info(f'Using indicator startup period: {startup_candles} ...')
 
     for pair in pairs:
-        hist = load_pair_history(pair=pair, ticker_interval=ticker_interval,
+        hist = load_pair_history(pair=pair, timeframe=timeframe,
                                  datadir=datadir, timerange=timerange,
                                  refresh_pairs=refresh_pairs,
                                  exchange=exchange,
@@ -220,9 +224,9 @@ def load_data(datadir: Path,
     return result
 
 
-def pair_data_filename(datadir: Path, pair: str, ticker_interval: str) -> Path:
+def pair_data_filename(datadir: Path, pair: str, timeframe: str) -> Path:
     pair_s = pair.replace("/", "_")
-    filename = datadir.joinpath(f'{pair_s}-{ticker_interval}.json')
+    filename = datadir.joinpath(f'{pair_s}-{timeframe}.json')
     return filename
 
 
@@ -232,7 +236,7 @@ def pair_trades_filename(datadir: Path, pair: str) -> Path:
     return filename
 
 
-def _load_cached_data_for_updating(datadir: Path, pair: str, ticker_interval: str,
+def _load_cached_data_for_updating(datadir: Path, pair: str, timeframe: str,
                                    timerange: Optional[TimeRange]) -> Tuple[List[Any],
                                                                             Optional[int]]:
     """
@@ -250,12 +254,12 @@ def _load_cached_data_for_updating(datadir: Path, pair: str, ticker_interval: st
         if timerange.starttype == 'date':
             since_ms = timerange.startts * 1000
         elif timerange.stoptype == 'line':
-            num_minutes = timerange.stopts * timeframe_to_minutes(ticker_interval)
+            num_minutes = timerange.stopts * timeframe_to_minutes(timeframe)
             since_ms = arrow.utcnow().shift(minutes=num_minutes).timestamp * 1000
 
     # read the cached file
     # Intentionally don't pass timerange in - since we need to load the full dataset.
-    data = load_tickerdata_file(datadir, pair, ticker_interval)
+    data = load_tickerdata_file(datadir, pair, timeframe)
     # remove the last item, could be incomplete candle
     if data:
         data.pop()
@@ -276,18 +280,18 @@ def _load_cached_data_for_updating(datadir: Path, pair: str, ticker_interval: st
 def download_pair_history(datadir: Path,
                           exchange: Optional[Exchange],
                           pair: str,
-                          ticker_interval: str = '5m',
+                          timeframe: str = '5m',
                           timerange: Optional[TimeRange] = None) -> bool:
     """
-    Download the latest ticker intervals from the exchange for the pair passed in parameters
-    The data is downloaded starting from the last correct ticker interval data that
+    Download latest candles from the exchange for the pair and timeframe passed in parameters
+    The data is downloaded starting from the last correct data that
     exists in a cache. If timerange starts earlier than the data in the cache,
     the full data will be redownloaded
 
     Based on @Rybolov work: https://github.com/rybolov/freqtrade-data
 
     :param pair: pair to download
-    :param ticker_interval: ticker interval
+    :param timeframe: Ticker Timeframe (e.g 5m)
     :param timerange: range of time to download
     :return: bool with success state
     """
@@ -298,17 +302,17 @@ def download_pair_history(datadir: Path,
 
     try:
         logger.info(
-            f'Download history data for pair: "{pair}", interval: {ticker_interval} '
+            f'Download history data for pair: "{pair}", timeframe: {timeframe} '
             f'and store in {datadir}.'
         )
 
-        data, since_ms = _load_cached_data_for_updating(datadir, pair, ticker_interval, timerange)
+        data, since_ms = _load_cached_data_for_updating(datadir, pair, timeframe, timerange)
 
         logger.debug("Current Start: %s", misc.format_ms_time(data[1][0]) if data else 'None')
         logger.debug("Current End: %s", misc.format_ms_time(data[-1][0]) if data else 'None')
 
         # Default since_ms to 30 days if nothing is given
-        new_data = exchange.get_historic_ohlcv(pair=pair, ticker_interval=ticker_interval,
+        new_data = exchange.get_historic_ohlcv(pair=pair, timeframe=timeframe,
                                                since_ms=since_ms if since_ms
                                                else
                                                int(arrow.utcnow().shift(
@@ -318,12 +322,12 @@ def download_pair_history(datadir: Path,
         logger.debug("New Start: %s", misc.format_ms_time(data[0][0]))
         logger.debug("New End: %s", misc.format_ms_time(data[-1][0]))
 
-        store_tickerdata_file(datadir, pair, ticker_interval, data=data)
+        store_tickerdata_file(datadir, pair, timeframe, data=data)
         return True
 
     except Exception as e:
         logger.error(
-            f'Failed to download history data for pair: "{pair}", interval: {ticker_interval}. '
+            f'Failed to download history data for pair: "{pair}", timeframe: {timeframe}. '
             f'Error: {e}'
         )
         return False
@@ -343,17 +347,17 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
             pairs_not_available.append(pair)
             logger.info(f"Skipping pair {pair}...")
             continue
-        for ticker_interval in timeframes:
+        for timeframe in timeframes:
 
-            dl_file = pair_data_filename(dl_path, pair, ticker_interval)
+            dl_file = pair_data_filename(dl_path, pair, timeframe)
             if erase and dl_file.exists():
                 logger.info(
-                    f'Deleting existing data for pair {pair}, interval {ticker_interval}.')
+                    f'Deleting existing data for pair {pair}, interval {timeframe}.')
                 dl_file.unlink()
 
-            logger.info(f'Downloading pair {pair}, interval {ticker_interval}.')
+            logger.info(f'Downloading pair {pair}, interval {timeframe}.')
             download_pair_history(datadir=dl_path, exchange=exchange,
-                                  pair=pair, ticker_interval=str(ticker_interval),
+                                  pair=pair, timeframe=str(timeframe),
                                   timerange=timerange)
     return pairs_not_available
 
@@ -459,7 +463,7 @@ def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]
 
 
 def validate_backtest_data(data: DataFrame, pair: str, min_date: datetime,
-                           max_date: datetime, ticker_interval_mins: int) -> bool:
+                           max_date: datetime, timeframe_mins: int) -> bool:
     """
     Validates preprocessed backtesting data for missing values and shows warnings about it that.
 
@@ -467,10 +471,10 @@ def validate_backtest_data(data: DataFrame, pair: str, min_date: datetime,
     :param pair: pair used for log output.
     :param min_date: start-date of the data
     :param max_date: end-date of the data
-    :param ticker_interval_mins: ticker interval in minutes
+    :param timeframe_mins: ticker Timeframe in minutes
     """
-    # total difference in minutes / interval-minutes
-    expected_frames = int((max_date - min_date).total_seconds() // 60 // ticker_interval_mins)
+    # total difference in minutes / timeframe-minutes
+    expected_frames = int((max_date - min_date).total_seconds() // 60 // timeframe_mins)
     found_missing = False
     dflen = len(data)
     if dflen < expected_frames:

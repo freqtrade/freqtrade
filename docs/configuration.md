@@ -95,7 +95,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `db_url` | `sqlite:///tradesv3.sqlite`| Declares database URL to use. NOTE: This defaults to `sqlite://` if `dry_run` is `True`.
 | `initial_state` | running | Defines the initial application state. More information below.
 | `forcebuy_enable` | false | Enables the RPC Commands to force a buy. More information below.
-| `strategy` | DefaultStrategy | Defines Strategy class to use.
+| `strategy` | None | **Required** Defines Strategy class to use. Recommended to set via `--strategy NAME`. 
 | `strategy_path` | null | Adds an additional strategy lookup path (must be a directory).
 | `internals.process_throttle_secs` | 5 | **Required.** Set the process throttle. Value in second.
 | `internals.heartbeat_interval` | 60 | Print heartbeat message every X seconds. Set to 0 to disable heartbeat messages.
@@ -357,19 +357,12 @@ For example, to test the order type `FOK` with Kraken, and modify candle_limit t
 !!! Warning
     Please make sure to fully understand the impacts of these settings before modifying them.
 
-#### Random notes for other exchanges
-
-* The Ocean (ccxt id: 'theocean') exchange uses Web3 functionality and requires web3 package to be installed:
-```shell
-$ pip3 install web3
-```
-
 ### What values can be used for fiat_display_currency?
 
 The `fiat_display_currency` configuration parameter sets the base currency to use for the
 conversion from coin to fiat in the bot Telegram reports.
 
-The valid values are:
+The valid values are:p
 
 ```json
 "AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK", "DKK", "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN", "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD"
@@ -476,10 +469,12 @@ you run it in production mode.
         "secret": "08a9dc6db3d7b53e1acebd9275677f4b0a04f1a5",
         ...
 }
-
 ```
+
 !!! Note
     If you have an exchange API key yet, [see our tutorial](/pre-requisite).
+
+You should also make sure to read the [Exchanges](exchanges.md) section of the documentation to be aware of potential configuration details specific to your exchange.
 
 ### Using proxy with FreqTrade
 

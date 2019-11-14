@@ -96,6 +96,11 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
 
 
 def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
+    mocker.patch.multiple(
+        'freqtrade.rpc.fiat_convert.Market',
+        ticker=MagicMock(return_value={'price_usd': 15000.0}),
+    )
+    mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -109,22 +114,34 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
 
     freqtradebot.state = State.RUNNING
     with pytest.raises(RPCException, match=r'.*no active order*'):
-        rpc._rpc_status_table()
+        rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
 
     freqtradebot.create_trades()
-    result = rpc._rpc_status_table()
-    assert 'instantly' in result['Since'].all()
-    assert 'ETH/BTC' in result['Pair'].all()
-    assert '-0.59%' in result['Profit'].all()
+
+    result, headers = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
+    assert "Since" in headers
+    assert "Pair" in headers
+    assert 'instantly' == result[0][2]
+    assert 'ETH/BTC' == result[0][1]
+    assert '-0.59%' == result[0][3]
+    # Test with fiatconvert
+
+    rpc._fiat_converter = CryptoToFiatConverter()
+    result, headers = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
+    assert "Since" in headers
+    assert "Pair" in headers
+    assert 'instantly' == result[0][2]
+    assert 'ETH/BTC' == result[0][1]
+    assert '-0.59% (-0.09)' == result[0][3]
 
     mocker.patch('freqtrade.exchange.Exchange.get_ticker',
                  MagicMock(side_effect=DependencyException(f"Pair 'ETH/BTC' not available")))
     # invalidate ticker cache
     rpc._freqtrade.exchange._cached_ticker = {}
-    result = rpc._rpc_status_table()
-    assert 'instantly' in result['Since'].all()
-    assert 'ETH/BTC' in result['Pair'].all()
-    assert 'nan%' in result['Profit'].all()
+    result, headers = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
+    assert 'instantly' == result[0][2]
+    assert 'ETH/BTC' == result[0][1]
+    assert 'nan%' == result[0][3]
 
 
 def test_rpc_daily_profit(default_conf, update, ticker, fee,

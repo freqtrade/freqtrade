@@ -160,7 +160,7 @@ docker run -d \
   -v ~/.freqtrade/config.json:/freqtrade/config.json \
   -v ~/.freqtrade/user_data/:/freqtrade/user_data \
   -v ~/.freqtrade/tradesv3.sqlite:/freqtrade/tradesv3.sqlite \
-  freqtrade --db-url sqlite:///tradesv3.sqlite --strategy MyAwesomeStrategy
+  freqtrade trade --db-url sqlite:///tradesv3.sqlite --strategy MyAwesomeStrategy
 ```
 
 !!! Note
@@ -202,7 +202,7 @@ docker run -d \
   -v ~/.freqtrade/config.json:/freqtrade/config.json \
   -v ~/.freqtrade/tradesv3.sqlite:/freqtrade/tradesv3.sqlite \
   -v ~/.freqtrade/user_data/:/freqtrade/user_data/ \
-  freqtrade --strategy AwsomelyProfitableStrategy backtesting
+  freqtrade backtesting --strategy AwsomelyProfitableStrategy
 ```
 
 Head over to the [Backtesting Documentation](backtesting.md) for more details.
