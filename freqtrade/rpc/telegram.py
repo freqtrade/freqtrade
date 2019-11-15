@@ -325,15 +325,16 @@ class Telegram(RPC):
     def _balance(self, update: Update, context: CallbackContext) -> None:
         """ Handler for /balance """
         try:
-            result = self._rpc_balance(self._config.get('fiat_display_currency', ''))
+            result = self._rpc_balance(self._config['stake_currency'],
+                                       self._config.get('fiat_display_currency', ''))
             output = ''
             for currency in result['currencies']:
-                if currency['est_btc'] > 0.0001:
+                if currency['est_stake'] > 0.0001:
                     curr_output = "*{currency}:*\n" \
                             "\t`Available: {free: .8f}`\n" \
                             "\t`Balance: {balance: .8f}`\n" \
                             "\t`Pending: {used: .8f}`\n" \
-                            "\t`Est. BTC: {est_btc: .8f}`\n".format(**currency)
+                            "\t`Est. {stake}: {est_stake: .8f}`\n".format(**currency)
                 else:
                     curr_output = "*{currency}:* not showing <1$ amount \n".format(**currency)
 

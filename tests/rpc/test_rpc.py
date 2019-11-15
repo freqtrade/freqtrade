@@ -363,7 +363,7 @@ def test_rpc_balance_handle_error(default_conf, mocker):
     rpc = RPC(freqtradebot)
     rpc._fiat_converter = CryptoToFiatConverter()
     with pytest.raises(RPCException, match="Error getting current tickers."):
-        rpc._rpc_balance(default_conf['fiat_display_currency'])
+        rpc._rpc_balance(default_conf['stake_currency'], default_conf['fiat_display_currency'])
 
 
 def test_rpc_balance_handle(default_conf, mocker, tickers):
@@ -404,28 +404,33 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
     rpc = RPC(freqtradebot)
     rpc._fiat_converter = CryptoToFiatConverter()
 
-    result = rpc._rpc_balance(default_conf['fiat_display_currency'])
+    result = rpc._rpc_balance(default_conf['stake_currency'], default_conf['fiat_display_currency'])
     assert prec_satoshi(result['total'], 12.309096315)
     assert prec_satoshi(result['value'], 184636.44472997)
     assert 'USD' == result['symbol']
     assert result['currencies'] == [
         {'currency': 'BTC',
-            'free': 10.0,
-            'balance': 12.0,
-            'used': 2.0,
-            'est_btc': 12.0,
+         'free': 10.0,
+         'balance': 12.0,
+         'used': 2.0,
+         'est_stake': 12.0,
+         'stake': 'BTC',
          },
         {'free': 1.0,
          'balance': 5.0,
          'currency': 'ETH',
-         'est_btc': 0.30794,
-         'used': 4.0
+         'est_stake': 0.30794,
+         'used': 4.0,
+         'stake': 'BTC',
+
          },
         {'free': 5.0,
          'balance': 10.0,
          'currency': 'USDT',
-         'est_btc': 0.0011563153318162476,
-         'used': 5.0}
+         'est_stake': 0.0011563153318162476,
+         'used': 5.0,
+         'stake': 'BTC',
+         }
     ]
     assert result['total'] == 12.309096315331816
 

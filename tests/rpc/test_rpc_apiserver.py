@@ -256,7 +256,8 @@ def test_api_balance(botclient, mocker, rpc_balance):
         'free': 12.0,
         'balance': 12.0,
         'used': 0.0,
-        'est_btc': 12.0,
+        'est_stake': 12.0,
+        'stake': 'BTC',
     }
 
 
