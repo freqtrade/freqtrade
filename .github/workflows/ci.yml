@@ -1,0 +1,208 @@
+name: Freqtrade CI
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+      - github_actions_tests
+    tags:
+  pull_request:
+  schedule:
+    - cron:  '0 5 * * 4'
+
+jobs:
+  build:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-18.04, macos-latest ]
+        python-version: [3.7]
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Set up Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache_dependencies
+      uses: actions/cache@v1
+      id: cache
+      with:
+        path: ~/dependencies/
+        key: ${{ runner.os }}-dependencies
+
+    - name: pip cache (linux)
+      uses: actions/cache@preview
+      if: startsWith(matrix.os, 'ubuntu')
+      with:
+        path: ~/.cache/pip
+        key: test-${{ matrix.os }}-${{ matrix.python-version }}-pip
+
+    - name: pip cache (macOS)
+      uses: actions/cache@preview
+      if: startsWith(matrix.os, 'macOS')
+      with:
+        path: ~/Library/Caches/pip
+        key: test-${{ matrix.os }}-${{ matrix.python-version }}-pip
+
+    - name: TA binary *nix
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        cd build_helpers && ./install_ta-lib.sh ${HOME}/dependencies/; cd ..
+
+    - name: Installation - *nix
+      run: |
+        python -m pip install --upgrade pip
+        export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
+        export TA_LIBRARY_PATH=${HOME}/dependencies/lib
+        export TA_INCLUDE_PATH=${HOME}/dependencies/include
+        pip install -r requirements-dev.txt
+        pip install -e .
+
+    - name: Tests
+      run: |
+        pytest --random-order --cov=freqtrade --cov-config=.coveragerc
+        # Allow failure for coveralls
+        coveralls || true
+
+    - name: Backtesting
+      run: |
+        cp config.json.example config.json
+        freqtrade backtesting --datadir tests/testdata --strategy DefaultStrategy
+
+    - name: Hyperopt
+      run: |
+        cp config.json.example config.json
+        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt
+
+    - name: Flake8
+      run: |
+        flake8
+
+    - name: Mypy
+      run: |
+        mypy freqtrade scripts
+
+    - name: Documentation syntax
+      run: |
+        ./tests/test_docs.sh
+
+    - name: Slack Notification
+      uses: homoluctus/slatify@v1.8.0
+      if: always()
+      with:
+        type: ${{ job.status }}
+        job_name: '*Freqtrade CI ${{ matrix.os }}*'
+        mention: 'here'
+        mention_if: 'failure'
+        channel: '#notifications'
+        url: ${{ secrets.SLACK_WEBHOOK }}
+
+  build_windows:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ windows-latest ]
+        python-version: [3.7]
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Set up Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Pip cache (Windows)
+      uses: actions/cache@preview
+      if: startsWith(runner.os, 'Windows')
+      with:
+        path: ~\AppData\Local\pip\Cache
+        key: ${{ runner.os }}-pip
+        restore-keys: ${{ runner.os }}-pip
+
+    - name: Installation
+      run: |
+        ./build_helpers/install_windows.ps1
+
+    - name: Tests
+      run: |
+        pytest --random-order --cov=freqtrade --cov-config=.coveragerc
+
+    - name: Backtesting
+      run: |
+        cp config.json.example config.json
+        freqtrade backtesting --datadir tests/testdata --strategy DefaultStrategy
+
+    - name: Hyperopt
+      run: |
+        cp config.json.example config.json
+        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt
+
+    - name: Flake8
+      run: |
+        flake8
+
+    - name: Mypy
+      run: |
+        mypy freqtrade scripts
+
+    - name: Slack Notification
+      uses: homoluctus/slatify@v1.8.0
+      if: always()
+      with:
+        type: ${{ job.status }}
+        job_name: '*Freqtrade CI windows*'
+        mention: 'here'
+        mention_if: 'failure'
+        channel: '#notifications'
+        url: ${{ secrets.SLACK_WEBHOOK }}
+
+  deploy:
+    needs: [ build, build_windows ]
+    runs-on: ubuntu-18.04
+    if: github.event_name == 'push' || github.event_name == 'schedule'
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Extract branch name
+      shell: bash
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+      id: extract_branch
+
+    - name: Build and test and push docker image
+      env:
+        IMAGE_NAME: freqtradeorg/freqtrade
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
+      run: |
+        build_helpers/publish_docker.sh
+
+    - name: Build raspberry image for ${{ steps.extract_branch.outputs.branch }}_pi
+      uses: elgohr/Publish-Docker-Github-Action@2.7
+      with:
+        name: freqtradeorg/freqtrade:${{ steps.extract_branch.outputs.branch }}_pi
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        dockerfile: Dockerfile.pi
+        # cache: true
+        cache: ${{ github.event_name != 'schedule' }}
+        tag_names: true
+
+    - name: Slack Notification
+      uses: homoluctus/slatify@v1.8.0
+      if: always()
+      with:
+        type: ${{ job.status }}
+        job_name: '*Freqtrade CI Deploy*'
+        mention: 'here'
+        mention_if: 'failure'
+        channel: '#notifications'
+        url: ${{ secrets.SLACK_WEBHOOK }}
+
