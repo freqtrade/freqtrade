@@ -14,7 +14,6 @@ from freqtrade.configuration import (Configuration, TimeRange,
                                      remove_credentials)
 from freqtrade.configuration.directory_operations import (copy_sample_files,
                                                           create_userdata_dir)
-from freqtrade.constants import DEFAULT_HYPEROPT, DEFAULT_STRATEGY
 from freqtrade.data.history import (convert_trades_to_ohlcv,
                                     refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
@@ -96,7 +95,7 @@ def start_new_strategy(args: Dict[str, Any]) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     if "strategy" in args and args["strategy"]:
-        if args["strategy"] == DEFAULT_STRATEGY:
+        if args["strategy"] == "DefaultStrategy":
             raise OperationalException("DefaultStrategy is not allowed as name.")
 
         new_path = config['user_data_dir'] / "strategies" / (args["strategy"] + ".py")
@@ -119,7 +118,7 @@ def start_new_hyperopt(args: Dict[str, Any]) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     if "hyperopt" in args and args["hyperopt"]:
-        if args["hyperopt"] == DEFAULT_HYPEROPT:
+        if args["hyperopt"] == "DefaultHyperopt":
             raise OperationalException("DefaultHyperOpt is not allowed as name.")
 
         new_path = config['user_data_dir'] / "hyperopts" / (args["hyperopt"] + ".py")
