@@ -45,8 +45,15 @@ def start_trading(args: Dict[str, Any]) -> int:
     """
     from freqtrade.worker import Worker
     # Load and run worker
-    worker = Worker(args)
-    worker.run()
+    try:
+        worker = Worker(args)
+        worker.run()
+    except KeyboardInterrupt:
+        logger.info('SIGINT received, aborting ...')
+    finally:
+        if worker:
+            logger.info("worker found ... calling exit")
+            worker.exit()
     return 0
 
 
