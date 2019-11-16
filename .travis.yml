@@ -24,7 +24,7 @@ jobs:
       script:
       - pytest --random-order --cov=freqtrade --cov-config=.coveragerc
       # Allow failure for coveralls
-      - coveralls || true
+      # - coveralls || true
       name: pytest
     - script:
       - cp config.json.example config.json
