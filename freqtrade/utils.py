@@ -45,6 +45,7 @@ def start_trading(args: Dict[str, Any]) -> int:
     """
     from freqtrade.worker import Worker
     # Load and run worker
+    worker = None
     try:
         worker = Worker(args)
         worker.run()
