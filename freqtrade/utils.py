@@ -119,7 +119,7 @@ def start_new_hyperopt(args: Dict[str, Any]) -> None:
 
     if "hyperopt" in args and args["hyperopt"]:
         if args["hyperopt"] == "DefaultHyperopt":
-            raise OperationalException("DefaultHyperOpt is not allowed as name.")
+            raise OperationalException("DefaultHyperopt is not allowed as name.")
 
         new_path = config['user_data_dir'] / "hyperopts" / (args["hyperopt"] + ".py")
 

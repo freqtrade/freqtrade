@@ -9,7 +9,8 @@ from freqtrade.state import RunMode
 from freqtrade.utils import (setup_utils_configuration, start_create_userdir,
                              start_download_data, start_list_exchanges,
                              start_list_markets, start_list_timeframes,
-                             start_new_strategy, start_trading)
+                             start_new_hyperopt, start_new_strategy,
+                             start_trading)
 from tests.conftest import get_args, log_has, log_has_re, patch_exchange
 
 
@@ -489,6 +490,42 @@ def test_start_new_strategy_no_arg(mocker, caplog):
     with pytest.raises(OperationalException,
                        match="`new-strategy` requires --strategy to be set."):
         start_new_strategy(get_args(args))
+
+
+def test_start_new_hyperopt(mocker, caplog):
+    wt_mock = mocker.patch.object(Path, "write_text", MagicMock())
+    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
+
+    args = [
+        "new-hyperopt",
+        "--hyperopt",
+        "CoolNewhyperopt"
+    ]
+    start_new_hyperopt(get_args(args))
+
+    assert wt_mock.call_count == 1
+    assert "CoolNewhyperopt" in wt_mock.call_args_list[0][0][0]
+    assert log_has_re("Writing hyperopt to .*", caplog)
+
+
+def test_start_new_hyperopt_DefaultHyperopt(mocker, caplog):
+    args = [
+        "new-hyperopt",
+        "--hyperopt",
+        "DefaultHyperopt"
+    ]
+    with pytest.raises(OperationalException,
+                       match=r"DefaultHyperopt is not allowed as name\."):
+        start_new_hyperopt(get_args(args))
+
+
+def test_start_new_hyperopt_no_arg(mocker, caplog):
+    args = [
+        "new-hyperopt",
+    ]
+    with pytest.raises(OperationalException,
+                       match="`new-hyperopt` requires --hyperopt to be set."):
+        start_new_hyperopt(get_args(args))
 
 
 def test_download_data_keyboardInterrupt(mocker, caplog, markets):
