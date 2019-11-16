@@ -27,7 +27,6 @@ def main(sysargv: List[str] = None) -> None:
     """
 
     return_code: Any = 1
-    worker = None
     try:
         arguments = Arguments(sysargv)
         args = arguments.get_parsed_arg()
@@ -57,8 +56,6 @@ def main(sysargv: List[str] = None) -> None:
     except Exception:
         logger.exception('Fatal exception!')
     finally:
-        if worker:
-            worker.exit()
         sys.exit(return_code)
 
 

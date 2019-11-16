@@ -8,7 +8,8 @@ from freqtrade import OperationalException
 from freqtrade.state import RunMode
 from freqtrade.utils import (setup_utils_configuration, start_create_userdir,
                              start_download_data, start_list_exchanges,
-                             start_list_markets, start_list_timeframes)
+                             start_list_markets, start_list_timeframes,
+                             start_trading)
 from tests.conftest import get_args, log_has, patch_exchange
 
 
@@ -22,6 +23,29 @@ def test_setup_utils_configuration():
     assert config['dry_run'] is True
     assert config['exchange']['key'] == ''
     assert config['exchange']['secret'] == ''
+
+
+def test_start_trading_fail(mocker):
+
+    mocker.patch("freqtrade.worker.Worker.run", MagicMock(side_effect=OperationalException))
+
+    mocker.patch("freqtrade.worker.Worker.__init__", MagicMock(return_value=None))
+
+    exitmock = mocker.patch("freqtrade.worker.Worker.exit", MagicMock())
+    args = [
+        'trade',
+        '-c', 'config.json.example'
+    ]
+    with pytest.raises(OperationalException):
+        start_trading(get_args(args))
+    assert exitmock.call_count == 1
+
+    exitmock.reset_mock()
+
+    mocker.patch("freqtrade.worker.Worker.__init__", MagicMock(side_effect=OperationalException))
+    with pytest.raises(OperationalException):
+        start_trading(get_args(args))
+    assert exitmock.call_count == 0
 
 
 def test_list_exchanges(capsys):
