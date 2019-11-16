@@ -457,6 +457,8 @@ def test_create_datadir(caplog, mocker):
 
 def test_start_new_strategy(mocker, caplog):
     wt_mock = mocker.patch.object(Path, "write_text", MagicMock())
+    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
+
     args = [
         "new-strategy",
         "--strategy",

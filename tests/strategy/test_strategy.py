@@ -56,7 +56,7 @@ def test_load_strategy_base64(result, caplog, default_conf):
 
 
 def test_load_strategy_invalid_directory(result, caplog, default_conf):
-    default_conf['strategy'] = 'SampleStrategy'
+    default_conf['strategy'] = 'DefaultStrategy'
     resolver = StrategyResolver(default_conf)
     extra_dir = Path.cwd() / 'some/path'
     resolver._load_strategy('DefaultStrategy', config=default_conf, extra_dir=extra_dir)

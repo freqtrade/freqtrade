@@ -3,13 +3,17 @@
 from functools import reduce
 from typing import Any, Callable, Dict, List
 
-import numpy as np  # noqa
-import talib.abstract as ta
 from pandas import DataFrame
+import pandas as pd  # noqa
+import numpy as np  # noqa
 from skopt.space import Categorical, Dimension, Integer, Real  # noqa
 
-import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.optimize.hyperopt_interface import IHyperOpt
+
+# --------------------------------
+# Add your lib to import here
+import talib.abstract as ta
+import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 
 class {{ hyperopt }}(IHyperOpt):
