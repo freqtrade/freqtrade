@@ -14,6 +14,7 @@ from freqtrade.configuration import (Configuration, TimeRange,
                                      remove_credentials)
 from freqtrade.configuration.directory_operations import (copy_sample_files,
                                                           create_userdata_dir)
+from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGY
 from freqtrade.data.history import (convert_trades_to_ohlcv,
                                     refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
@@ -98,13 +99,13 @@ def start_new_strategy(args: Dict[str, Any]) -> None:
         if args["strategy"] == "DefaultStrategy":
             raise OperationalException("DefaultStrategy is not allowed as name.")
 
-        new_path = config['user_data_dir'] / "strategies" / (args["strategy"] + ".py")
+        new_path = config['user_data_dir'] / USERPATH_STRATEGY / (args["strategy"] + ".py")
 
         if new_path.exists():
             raise OperationalException(f"`{new_path}` already exists. "
                                        "Please choose another Strategy Name.")
 
-        strategy_text = render_template(template='base_strategy.py.j2',
+        strategy_text = render_template(templatefile='base_strategy.py.j2',
                                         arguments={"strategy": args["strategy"]})
 
         logger.info(f"Writing strategy to `{new_path}`.")
@@ -121,13 +122,13 @@ def start_new_hyperopt(args: Dict[str, Any]) -> None:
         if args["hyperopt"] == "DefaultHyperopt":
             raise OperationalException("DefaultHyperopt is not allowed as name.")
 
-        new_path = config['user_data_dir'] / "hyperopts" / (args["hyperopt"] + ".py")
+        new_path = config['user_data_dir'] / USERPATH_HYPEROPTS / (args["hyperopt"] + ".py")
 
         if new_path.exists():
             raise OperationalException(f"`{new_path}` already exists. "
                                        "Please choose another Strategy Name.")
 
-        strategy_text = render_template(template='base_hyperopt.py.j2',
+        strategy_text = render_template(templatefile='base_hyperopt.py.j2',
                                         arguments={"hyperopt": args["hyperopt"]})
 
         logger.info(f"Writing hyperopt to `{new_path}`.")

@@ -4,7 +4,7 @@ from functools import reduce
 from typing import Any, Callable, Dict, List
 
 import numpy as np  # noqa
-import talib.abstract as ta
+import talib.abstract as ta  # noqa
 from pandas import DataFrame
 from skopt.space import Categorical, Dimension, Integer, Real  # noqa
 
