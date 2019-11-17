@@ -95,13 +95,13 @@ class Telegram(RPC):
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
             CommandHandler('reload_conf', self._reload_conf),
+            CommandHandler('show_config', self._show_config),
             CommandHandler('stopbuy', self._stopbuy),
             CommandHandler('whitelist', self._whitelist),
             CommandHandler('blacklist', self._blacklist),
             CommandHandler('edge', self._edge),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
-            CommandHandler('show_config', self._show_config),
         ]
         for handle in handles:
             self._updater.dispatcher.add_handler(handle)
