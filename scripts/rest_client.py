@@ -8,12 +8,14 @@ so it can be used as a standalone script.
 """
 
 import argparse
+import inspect
 import json
 import logging
-import inspect
-from urllib.parse import urlencode, urlparse, urlunparse
+import sys
 from pathlib import Path
+from urllib.parse import urlencode, urlparse, urlunparse
 
+import rapidjson
 import requests
 from requests.exceptions import ConnectionError
 
@@ -190,7 +192,9 @@ class FtRestClient():
 def add_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("command",
-                        help="Positional argument defining the command to execute.")
+                        help="Positional argument defining the command to execute.",
+                        nargs="?"
+                        )
 
     parser.add_argument('--show',
                         help='Show possible methods with this client',
@@ -221,9 +225,12 @@ def load_config(configfile):
     file = Path(configfile)
     if file.is_file():
         with file.open("r") as f:
-            config = json.load(f)
+            config = rapidjson.load(f, parse_mode=rapidjson.PM_COMMENTS |
+                                    rapidjson.PM_TRAILING_COMMAS)
         return config
-    return {}
+    else:
+        logger.warning(f"Could not load config file {file}.")
+        sys.exit(1)
 
 
 def print_commands():
@@ -237,8 +244,9 @@ def print_commands():
 
 def main(args):
 
-    if args.get("help"):
+    if args.get("show"):
         print_commands()
+        sys.exit()
 
     config = load_config(args["config"])
     url = config.get("api_server", {}).get("server_url", "127.0.0.1")
