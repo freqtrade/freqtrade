@@ -93,10 +93,6 @@ jobs:
       run: |
         mypy freqtrade scripts
 
-    - name: Documentation syntax
-      run: |
-        ./tests/test_docs.sh
-
     - name: Slack Notification
       uses: homoluctus/slatify@v1.8.0
       if: always()
@@ -169,8 +165,26 @@ jobs:
         channel: '#notifications'
         url: ${{ secrets.SLACK_WEBHOOK }}
 
+  docs_check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Documentation syntax
+      run: |
+        ./tests/test_docs.sh
+
+    - name: Slack Notification
+      uses: homoluctus/slatify@v1.8.0
+      if: failure()
+      with:
+        type: ${{ job.status }}
+        job_name: '*Freqtrade Docs*'
+        channel: '#notifications'
+        url: ${{ secrets.SLACK_WEBHOOK }}
+
   deploy:
-    needs: [ build, build_windows ]
+    needs: [ build, build_windows, docs_check ]
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event_name == 'schedule'
     steps:
