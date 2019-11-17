@@ -284,6 +284,18 @@ def test_api_count(botclient, mocker, ticker, fee, markets):
     assert rc.json["max"] == 1.0
 
 
+def test_api_show_config(botclient, mocker):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, (True, False))
+
+    rc = client_get(client, f"{BASE_URI}/show_config")
+    assert_response(rc)
+    assert 'dry_run' in rc.json
+    assert rc.json['exchange'] == 'bittrex'
+    assert rc.json['ticker_interval'] == '5m'
+    assert not rc.json['trailing_stop']
+
+
 def test_api_daily(botclient, mocker, ticker, fee, markets):
     ftbot, client = botclient
     patch_get_signal(ftbot, (True, False))
