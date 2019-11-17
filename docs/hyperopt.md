@@ -19,6 +19,9 @@ the sample hyperopt file located in [user_data/hyperopts/](https://github.com/fr
 
 Configuring hyperopt is similar to writing your own strategy, and many tasks will be similar and a lot of code can be copied across from the strategy.
 
+The simplest way to get started is to use `freqtrade new-hyperopt --hyperopt AwesomeHyperopt`.
+This will create a new hyperopt file from a template, which will be located under `user_data/hyperopts/AwesomeHyperopt.py`.
+
 ### Checklist on all tasks / possibilities in hyperopt
 
 Depending on the space you want to optimize, only some of the below are required:

@@ -7,24 +7,28 @@ indicators.
 
 This is very simple. Copy paste your strategy file into the directory `user_data/strategies`.
 
-Let assume you have a class called `AwesomeStrategy` in the file `awesome-strategy.py`:
+Let assume you have a class called `AwesomeStrategy` in the file `AwesomeStrategy.py`:
 
-1. Move your file into `user_data/strategies` (you should have `user_data/strategies/awesome-strategy.py`
+1. Move your file into `user_data/strategies` (you should have `user_data/strategies/AwesomeStrategy.py`
 2. Start the bot with the param `--strategy AwesomeStrategy` (the parameter is the class name)
 
 ```bash
 freqtrade trade --strategy AwesomeStrategy
 ```
 
-## Change your strategy
+## Develop your own strategy
 
-The bot includes a default strategy file. However, we recommend you to
-use your own file to not have to lose your parameters every time the default
-strategy file will be updated on Github. Put your custom strategy file
-into the directory `user_data/strategies`.
+The bot includes a default strategy file.
+Also, several other strategies are available in the [strategy repository](https://github.com/freqtrade/freqtrade-strategies).
 
-Best copy the test-strategy and modify this copy to avoid having bot-updates override your changes.
-`cp  user_data/strategies/sample_strategy.py user_data/strategies/awesome-strategy.py`
+You will however most likely have your own idea for a strategy.
+This Document intends to help you develop one for yourself.
+
+To get started, use `freqtrade new-strategy --strategy AwesomeStrategy`.
+This will create a new strategy file from a template, which will be located under `user_data/strategies/AwesomeStrategy.py`.
+
+!!! Note
+    This is just a template file, which will most likely not be profitable out of the box.
 
 ### Anatomy of a strategy
 

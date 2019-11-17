@@ -36,6 +36,70 @@ optional arguments:
     └── sample_strategy.py
 ```
 
+## Create new strategy
+
+Creates a new strategy from a template similar to SampleStrategy.
+The file will be named inline with your class name, and will not overwrite existing files.
+
+Results will be located in `user_data/strategies/<strategyclassname>.py`.
+
+### Sample usage of new-strategy
+
+```bash
+freqtrade new-strategy --strategy AwesomeStrategy
+```
+
+With custom user directory
+
+```bash
+freqtrade new-strategy --userdir ~/.freqtrade/ --strategy AwesomeStrategy
+```
+
+### new-strategy complete options
+
+``` output
+usage: freqtrade new-strategy [-h] [--userdir PATH] [-s NAME]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+  -s NAME, --strategy NAME
+                        Specify strategy class name which will be used by the
+                        bot.
+```
+
+## Create new hyperopt
+
+Creates a new hyperopt from a template similar to SampleHyperopt.
+The file will be named inline with your class name, and will not overwrite existing files.
+
+Results will be located in `user_data/hyperopts/<classname>.py`.
+
+### Sample usage of new-hyperopt
+
+```bash
+freqtrade new-hyperopt --hyperopt AwesomeHyperopt
+```
+
+With custom user directory
+
+```bash
+freqtrade new-hyperopt --userdir ~/.freqtrade/ --hyperopt AwesomeHyperopt
+```
+
+### new-hyperopt complete options
+
+``` output
+usage: freqtrade new-hyperopt [-h] [--userdir PATH] [--hyperopt NAME]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+  --hyperopt NAME       Specify hyperopt class name which will be used by the
+                        bot.
+```
 
 ## List Exchanges
 

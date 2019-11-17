@@ -28,7 +28,7 @@ jobs:
       name: pytest
     - script:
       - cp config.json.example config.json
-      freqtrade create-userdir --userdir user_data
+      - freqtrade create-userdir --userdir user_data
       - freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
       name: backtest
     - script:
