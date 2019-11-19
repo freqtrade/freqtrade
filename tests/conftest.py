@@ -242,6 +242,9 @@ def default_conf(testdatadir):
                 "HOT/BTC",
             ]
         },
+        "pairlists": [
+            {"method": "StaticPairList"}
+        ],
         "telegram": {
             "enabled": True,
             "token": "token",
@@ -574,6 +577,72 @@ def get_markets():
 
 
 @pytest.fixture
+def shitcoinmarkets(markets):
+    """
+    Fixture with shitcoin markets - used to test filters in pairlists
+    """
+    shitmarkets = deepcopy(markets)
+    shitmarkets.update({'HOT/BTC': {
+            'id': 'HOTBTC',
+            'symbol': 'HOT/BTC',
+            'base': 'HOT',
+            'quote': 'BTC',
+            'active': True,
+            'precision': {
+                'base': 8,
+                'quote': 8,
+                'amount': 0,
+                'price': 8
+            },
+            'limits': {
+                'amount': {
+                    'min': 1.0,
+                    'max': 90000000.0
+                },
+                'price': {
+                    'min': None,
+                    'max': None
+                },
+                'cost': {
+                    'min': 0.001,
+                    'max': None
+                }
+            },
+            'info': {},
+        },
+        'FUEL/BTC': {
+            'id': 'FUELBTC',
+            'symbol': 'FUEL/BTC',
+            'base': 'FUEL',
+            'quote': 'BTC',
+            'active': True,
+            'precision': {
+                'base': 8,
+                'quote': 8,
+                'amount': 0,
+                'price': 8
+            },
+            'limits': {
+                'amount': {
+                    'min': 1.0,
+                    'max': 90000000.0
+                },
+                'price': {
+                    'min': 1e-08,
+                    'max': 1000.0
+                },
+                'cost': {
+                    'min': 0.001,
+                    'max': None
+                }
+            },
+            'info': {},
+        },
+        })
+    return shitmarkets
+
+
+@pytest.fixture
 def markets_empty():
     return MagicMock(return_value=[])
 
@@ -865,6 +934,50 @@ def tickers():
             'average': None,
             'baseVolume': 4886464537.0,
             'quoteVolume': 1215.14489611,
+            'info': {}
+        },
+        'HOT/BTC': {
+            'symbol': 'HOT/BTC',
+            'timestamp': 1572273518661,
+            'datetime': '2019-10-28T14:38:38.661Z',
+            'high': 0.00000011,
+            'low': 0.00000009,
+            'bid': 0.0000001,
+            'bidVolume': 1476027288.0,
+            'ask': 0.00000011,
+            'askVolume': 820153831.0,
+            'vwap': 0.0000001,
+            'open': 0.00000009,
+            'close': 0.00000011,
+            'last': 0.00000011,
+            'previousClose': 0.00000009,
+            'change': 0.00000002,
+            'percentage': 22.222,
+            'average': None,
+            'baseVolume': 1442290324.0,
+            'quoteVolume': 143.78311994,
+            'info': {}
+        },
+        'FUEL/BTC': {
+            'symbol': 'FUEL/BTC',
+            'timestamp': 1572340250771,
+            'datetime': '2019-10-29T09:10:50.771Z',
+            'high': 0.00000040,
+            'low': 0.00000035,
+            'bid': 0.00000036,
+            'bidVolume': 8932318.0,
+            'ask': 0.00000037,
+            'askVolume': 10140774.0,
+            'vwap': 0.00000037,
+            'open': 0.00000039,
+            'close': 0.00000037,
+            'last': 0.00000037,
+            'previousClose': 0.00000038,
+            'change': -0.00000002,
+            'percentage': -5.128,
+            'average': None,
+            'baseVolume': 168927742.0,
+            'quoteVolume': 62.68220262,
             'info': {}
         },
         'ETH/USDT': {

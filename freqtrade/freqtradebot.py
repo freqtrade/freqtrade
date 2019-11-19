@@ -20,9 +20,9 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
 from freqtrade.persistence import Trade
-from freqtrade.resolvers import (ExchangeResolver, PairListResolver,
-                                 StrategyResolver)
+from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager, RPCMessageType
+from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.state import State
 from freqtrade.strategy.interface import IStrategy, SellType
 from freqtrade.wallets import Wallets
@@ -70,8 +70,7 @@ class FreqtradeBot:
         # Attach Wallets to Strategy baseclass
         IStrategy.wallets = self.wallets
 
-        pairlistname = self.config.get('pairlist', {}).get('method', 'StaticPairList')
-        self.pairlists = PairListResolver(pairlistname, self, self.config).pairlist
+        self.pairlists = PairListManager(self.exchange, self.config)
 
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \

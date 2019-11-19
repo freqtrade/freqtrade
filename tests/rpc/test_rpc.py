@@ -736,21 +736,23 @@ def test_rpc_whitelist(mocker, default_conf) -> None:
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     rpc = RPC(freqtradebot)
     ret = rpc._rpc_whitelist()
-    assert ret['method'] == 'StaticPairList'
+    assert len(ret['method']) == 1
+    assert 'StaticPairList' in ret['method']
     assert ret['whitelist'] == default_conf['exchange']['pair_whitelist']
 
 
 def test_rpc_whitelist_dynamic(mocker, default_conf) -> None:
-    default_conf['pairlist'] = {'method': 'VolumePairList',
-                                'config': {'number_assets': 4}
-                                }
+    default_conf['pairlists'] = [{'method': 'VolumePairList',
+                                  'number_assets': 4,
+                                  }]
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     rpc = RPC(freqtradebot)
     ret = rpc._rpc_whitelist()
-    assert ret['method'] == 'VolumePairList'
+    assert len(ret['method']) == 1
+    assert 'VolumePairList' in ret['method']
     assert ret['length'] == 4
     assert ret['whitelist'] == default_conf['exchange']['pair_whitelist']
 
@@ -761,13 +763,14 @@ def test_rpc_blacklist(mocker, default_conf) -> None:
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     rpc = RPC(freqtradebot)
     ret = rpc._rpc_blacklist(None)
-    assert ret['method'] == 'StaticPairList'
+    assert len(ret['method']) == 1
+    assert 'StaticPairList' in ret['method']
     assert len(ret['blacklist']) == 2
     assert ret['blacklist'] == default_conf['exchange']['pair_blacklist']
     assert ret['blacklist'] == ['DOGE/BTC', 'HOT/BTC']
 
     ret = rpc._rpc_blacklist(["ETH/BTC"])
-    assert ret['method'] == 'StaticPairList'
+    assert 'StaticPairList' in ret['method']
     assert len(ret['blacklist']) == 3
     assert ret['blacklist'] == default_conf['exchange']['pair_blacklist']
     assert ret['blacklist'] == ['DOGE/BTC', 'HOT/BTC', 'ETH/BTC']

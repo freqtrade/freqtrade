@@ -17,13 +17,13 @@ class IResolver:
     This class contains all the logic to load custom classes
     """
 
-    def build_search_paths(self, config, current_path: Path, user_subdir: str,
+    def build_search_paths(self, config, current_path: Path, user_subdir: Optional[str] = None,
                            extra_dir: Optional[str] = None) -> List[Path]:
 
-        abs_paths = [
-            config['user_data_dir'].joinpath(user_subdir),
-            current_path,
-        ]
+        abs_paths: List[Path] = [current_path]
+
+        if user_subdir:
+            abs_paths.insert(0, config['user_data_dir'].joinpath(user_subdir))
 
         if extra_dir:
             # Add extra directory to the top of the search paths

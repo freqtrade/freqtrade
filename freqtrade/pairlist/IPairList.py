@@ -5,22 +5,31 @@ Provides lists as configured in config.json
 
  """
 import logging
-from abc import ABC, abstractmethod
-from typing import List
+from abc import ABC, abstractmethod, abstractproperty
+from copy import deepcopy
+from typing import Dict, List
 
 from freqtrade.exchange import market_is_active
-
 
 logger = logging.getLogger(__name__)
 
 
 class IPairList(ABC):
 
-    def __init__(self, freqtrade, config: dict) -> None:
-        self._freqtrade = freqtrade
+    def __init__(self, exchange, pairlistmanager, config, pairlistconfig: dict,
+                 pairlist_pos: int) -> None:
+        """
+        :param exchange: Exchange instance
+        :param pairlistmanager: Instanciating Pairlist manager
+        :param config: Global bot configuration
+        :param pairlistconfig: Configuration for this pairlist - can be empty.
+        :param pairlist_pos: Position of the filter in the pairlist-filter-list
+        """
+        self._exchange = exchange
+        self._pairlistmanager = pairlistmanager
         self._config = config
-        self._whitelist = self._config['exchange']['pair_whitelist']
-        self._blacklist = self._config['exchange'].get('pair_blacklist', [])
+        self._pairlistconfig = pairlistconfig
+        self._pairlist_pos = pairlist_pos
 
     @property
     def name(self) -> str:
@@ -30,21 +39,13 @@ class IPairList(ABC):
         """
         return self.__class__.__name__
 
-    @property
-    def whitelist(self) -> List[str]:
+    @abstractproperty
+    def needstickers(self) -> bool:
         """
-        Has the current whitelist
-        -> no need to overwrite in subclasses
+        Boolean property defining if tickers are necessary.
+        If no Pairlist requries tickers, an empty List is passed
+        as tickers argument to filter_pairlist
         """
-        return self._whitelist
-
-    @property
-    def blacklist(self) -> List[str]:
-        """
-        Has the current blacklist
-        -> no need to overwrite in subclasses
-        """
-        return self._blacklist
 
     @abstractmethod
     def short_desc(self) -> str:
@@ -54,36 +55,62 @@ class IPairList(ABC):
         """
 
     @abstractmethod
-    def refresh_pairlist(self) -> None:
+    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
-        Refreshes pairlists and assigns them to self._whitelist and self._blacklist respectively
+        Filters and sorts pairlist and returns the whitelist again.
+        Called on each bot iteration - please use internal caching if necessary
         -> Please overwrite in subclasses
+        :param pairlist: pairlist to filter or sort
+        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
+        :return: new whitelist
         """
 
-    def _validate_whitelist(self, whitelist: List[str]) -> List[str]:
+    @staticmethod
+    def verify_blacklist(pairlist: List[str], blacklist: List[str]) -> List[str]:
+        """
+        Verify and remove items from pairlist - returning a filtered pairlist.
+        """
+        for pair in deepcopy(pairlist):
+            if pair in blacklist:
+                logger.warning(f"Pair {pair} in your blacklist. Removing it from whitelist...")
+                pairlist.remove(pair)
+        return pairlist
+
+    def _verify_blacklist(self, pairlist: List[str]) -> List[str]:
+        """
+        Proxy method to verify_blacklist for easy access for child classes.
+        """
+        return IPairList.verify_blacklist(pairlist, self._pairlistmanager.blacklist)
+
+    def _whitelist_for_active_markets(self, pairlist: List[str]) -> List[str]:
         """
         Check available markets and remove pair from whitelist if necessary
         :param whitelist: the sorted list of pairs the user might want to trade
         :return: the list of pairs the user wants to trade without those unavailable or
         black_listed
         """
-        markets = self._freqtrade.exchange.markets
+        markets = self._exchange.markets
 
-        sanitized_whitelist = set()
-        for pair in whitelist:
-            # pair is not in the generated dynamic market, or in the blacklist ... ignore it
-            if (pair in self.blacklist or pair not in markets
-                    or not pair.endswith(self._config['stake_currency'])):
+        sanitized_whitelist: List[str] = []
+        for pair in pairlist:
+            # pair is not in the generated dynamic market or has the wrong stake currency
+            if pair not in markets:
                 logger.warning(f"Pair {pair} is not compatible with exchange "
-                               f"{self._freqtrade.exchange.name} or contained in "
-                               f"your blacklist. Removing it from whitelist..")
+                               f"{self._exchange.name}. Removing it from whitelist..")
                 continue
+            if not pair.endswith(self._config['stake_currency']):
+                logger.warning(f"Pair {pair} is not compatible with your stake currency "
+                               f"{self._config['stake_currency']}. Removing it from whitelist..")
+                continue
+
             # Check if market is active
             market = markets[pair]
             if not market_is_active(market):
                 logger.info(f"Ignoring {pair} from whitelist. Market is not active.")
                 continue
-            sanitized_whitelist.add(pair)
+            if pair not in sanitized_whitelist:
+                sanitized_whitelist.append(pair)
 
+        sanitized_whitelist = self._verify_blacklist(sanitized_whitelist)
         # We need to remove pairs that are unknown
-        return list(sanitized_whitelist)
+        return sanitized_whitelist

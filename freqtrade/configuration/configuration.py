@@ -81,6 +81,9 @@ class Configuration:
         if 'ask_strategy' not in config:
             config['ask_strategy'] = {}
 
+        if 'pairlists' not in config:
+            config['pairlists'] = []
+
         # validate configuration before returning
         logger.info('Validating configuration ...')
         validate_config_schema(config)

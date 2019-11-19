@@ -1050,8 +1050,8 @@ def test_whitelist_static(default_conf, update, mocker) -> None:
 
     telegram._whitelist(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
-    assert ('Using whitelist `StaticPairList` with 4 pairs\n`ETH/BTC, LTC/BTC, XRP/BTC, NEO/BTC`'
-            in msg_mock.call_args_list[0][0][0])
+    assert ("Using whitelist `['StaticPairList']` with 4 pairs\n"
+            "`ETH/BTC, LTC/BTC, XRP/BTC, NEO/BTC`" in msg_mock.call_args_list[0][0][0])
 
 
 def test_whitelist_dynamic(default_conf, update, mocker) -> None:
@@ -1062,17 +1062,17 @@ def test_whitelist_dynamic(default_conf, update, mocker) -> None:
         _send_msg=msg_mock
     )
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
-    default_conf['pairlist'] = {'method': 'VolumePairList',
-                                'config': {'number_assets': 4}
-                                }
+    default_conf['pairlists'] = [{'method': 'VolumePairList',
+                                 'number_assets': 4
+                                  }]
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
 
     telegram = Telegram(freqtradebot)
 
     telegram._whitelist(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
-    assert ('Using whitelist `VolumePairList` with 4 pairs\n`ETH/BTC, LTC/BTC, XRP/BTC, NEO/BTC`'
-            in msg_mock.call_args_list[0][0][0])
+    assert ("Using whitelist `['VolumePairList']` with 4 pairs\n"
+            "`ETH/BTC, LTC/BTC, XRP/BTC, NEO/BTC`" in msg_mock.call_args_list[0][0][0])
 
 
 def test_blacklist_static(default_conf, update, mocker) -> None:

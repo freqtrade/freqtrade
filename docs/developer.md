@@ -46,15 +46,18 @@ def test_method_to_test(caplog):
 The fastest and easiest way to start up is to use docker-compose.develop which gives developers the ability to start the bot up with all the required dependencies, *without* needing to install any freqtrade specific dependencies on your local machine.
 
 #### Install
+
 * [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 * [docker](https://docs.docker.com/install/)
 * [docker-compose](https://docs.docker.com/compose/install/)
 
 #### Starting the bot
 ##### Use the develop dockerfile
+
 ``` bash
 rm docker-compose.yml && mv docker-compose.develop.yml docker-compose.yml
 ```
+
 #### Docker Compose
 
 ##### Starting
@@ -62,9 +65,11 @@ rm docker-compose.yml && mv docker-compose.develop.yml docker-compose.yml
 ``` bash
 docker-compose up
 ```
+
 ![Docker compose up](https://user-images.githubusercontent.com/419355/65456322-47f63a80-de06-11e9-90c6-3c74d1bad0b8.png)
 
 ##### Rebuilding
+
 ``` bash
 docker-compose build
 ```
@@ -77,8 +82,8 @@ that can be effected by `docker-compose up` or `docker-compose run freqtrade_dev
 ``` bash
 docker-compose exec freqtrade_develop /bin/bash
 ```
-![image](https://user-images.githubusercontent.com/419355/65456522-ba671a80-de06-11e9-9598-df9ca0d8dcac.png)
 
+![image](https://user-images.githubusercontent.com/419355/65456522-ba671a80-de06-11e9-9598-df9ca0d8dcac.png)
 
 ## Modules
 
@@ -95,22 +100,22 @@ This is a simple provider, which however serves as a good example on how to star
 
 Next, modify the classname of the provider (ideally align this with the Filename).
 
-The base-class provides the an instance of the bot (`self._freqtrade`), as well as the configuration (`self._config`), and initiates both `_blacklist` and `_whitelist`.
+The base-class provides an instance of the exchange (`self._exchange`) the pairlist manager (`self._pairlistmanager`), as well as the main configuration (`self._config`), the pairlist dedicated configuration (`self._pairlistconfig`) and the absolute position within the list of pairlists.
 
 ```python
-        self._freqtrade = freqtrade
+        self._exchange = exchange
+        self._pairlistmanager = pairlistmanager
         self._config = config
-        self._whitelist = self._config['exchange']['pair_whitelist']
-        self._blacklist = self._config['exchange'].get('pair_blacklist', [])
+        self._pairlistconfig = pairlistconfig
+        self._pairlist_pos = pairlist_pos
 ```
-
 
 Now, let's step through the methods which require actions:
 
-#### configuration
+#### Pairlist configuration
 
 Configuration for PairListProvider is done in the bot configuration file in the element `"pairlist"`.
-This Pairlist-object may contain a `"config"` dict with additional configurations for the configured pairlist.
+This Pairlist-object may contain configurations with additional configurations for the configured pairlist.
 By convention, `"number_assets"` is used to specify the maximum number of pairs to keep in the whitelist. Please follow this to ensure a consistent user experience.
 
 Additional elements can be configured as needed. `VolumePairList` uses `"sort_key"` to specify the sorting value - however feel free to specify whatever is necessary for your great algorithm to be successfull and dynamic.
@@ -120,29 +125,30 @@ Additional elements can be configured as needed. `VolumePairList` uses `"sort_ke
 Returns a description used for Telegram messages.
 This should contain the name of the Provider, as well as a short description containing the number of assets. Please follow the format `"PairlistName - top/bottom X pairs"`.
 
-#### refresh_pairlist
+#### filter_pairlist
 
 Override this method and run all calculations needed in this method.
 This is called with each iteration of the bot - so consider implementing caching for compute/network heavy calculations.
 
-Assign the resulting whiteslist to `self._whitelist` and `self._blacklist` respectively. These will then be used to run the bot in this iteration. Pairs with open trades will be added to the whitelist to have the sell-methods run correctly.
+It get's passed a pairlist (which can be the result of previous pairlists) as well as `tickers`, a pre-fetched version of `get_tickers()`.
 
-Please also run `self._validate_whitelist(pairs)` and to check and remove pairs with inactive markets. This function is available in the Parent class (`StaticPairList`) and should ideally not be overwritten.
+It must return the resulting pairlist (which may then be passed into the next pairlist filter).
+
+Validations are optional, the parent class exposes a `_verify_blacklist(pairlist)` and `_whitelist_for_active_markets(pairlist)` to do default filters. Use this if you limit your result to a certain number of pairs - so the endresult is not shorter than expected.
 
 ##### sample
 
 ``` python
-    def refresh_pairlist(self) -> None:
+    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         # Generate dynamic whitelist
-        pairs = self._gen_pair_whitelist(self._config['stake_currency'], self._sort_key)
-        # Validate whitelist to only have active market pairs
-        self._whitelist = self._validate_whitelist(pairs)[:self._number_pairs]
+        pairs = self._calculate_pairlist(pairlist, tickers)
+        return pairs
 ```
 
 #### _gen_pair_whitelist
 
 This is a simple method used by `VolumePairList` - however serves as a good example.
-It implements caching (`@cached(TTLCache(maxsize=1, ttl=1800))`) as well as a configuration option to allow different (but similar) strategies to work with the same PairListProvider.
+In VolumePairList, this implements different methods of sorting, does early validation so only the expected number of pairs is returned.
 
 ## Implement a new Exchange (WIP)
 

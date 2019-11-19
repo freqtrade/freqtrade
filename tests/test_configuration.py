@@ -777,9 +777,9 @@ def test_validate_whitelist(default_conf):
 
     conf = deepcopy(default_conf)
 
-    conf.update({"pairlist": {
+    conf.update({"pairlists": [{
         "method": "VolumePairList",
-    }})
+    }]})
     # Dynamic whitelist should not care about pair_whitelist
     validate_config_consistency(conf)
     del conf['exchange']['pair_whitelist']
@@ -995,6 +995,18 @@ def test_process_temporary_deprecated_settings(mocker, default_conf, setting, ca
     # The value of the new setting shall have been set to the
     # value of the deprecated one
     assert default_conf[setting[0]][setting[1]] == setting[5]
+
+
+def test_process_deprecated_setting_pairlists(mocker, default_conf, caplog):
+    patched_configuration_load_config_file(mocker, default_conf)
+    default_conf.update({'pairlist': {
+        'method': 'VolumePairList',
+        'config': {'precision_filter': True}
+    }})
+
+    process_temporary_deprecated_settings(default_conf)
+    assert log_has_re(r'DEPRECATED.*precision_filter.*', caplog)
+    assert log_has_re(r'DEPRECATED.*in pairlist is deprecated and must be moved*', caplog)
 
 
 def test_check_conflicting_settings(mocker, default_conf, caplog):

@@ -18,7 +18,7 @@ REQUIRED_ORDERTIF = ['buy', 'sell']
 REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
-AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList']
+AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList', 'PrecisionFilter', 'PriceFilter']
 DRY_RUN_WALLET = 999.9
 MATH_CLOSE_PREC = 1e-14  # Precision used for float comparisons
 
@@ -149,13 +149,16 @@ CONF_SCHEMA = {
                 'block_bad_exchanges': {'type': 'boolean'}
             }
         },
-        'pairlist': {
-            'type': 'object',
-            'properties': {
-                'method': {'type': 'string', 'enum': AVAILABLE_PAIRLISTS},
-                'config': {'type': 'object'}
-            },
-            'required': ['method']
+        'pairlists': {
+            'type': 'array',
+            'items': {
+                'type': 'object',
+                'properties': {
+                    'method': {'type': 'string', 'enum': AVAILABLE_PAIRLISTS},
+                    'config': {'type': 'object'}
+                },
+                'required': ['method'],
+            }
         },
         'telegram': {
             'type': 'object',

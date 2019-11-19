@@ -57,3 +57,19 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
                                'experimental', 'sell_profit_only')
     process_deprecated_setting(config, 'ask_strategy', 'ignore_roi_if_buy_signal',
                                'experimental', 'ignore_roi_if_buy_signal')
+
+    if config.get('pairlist', {}).get("method") == 'VolumePairList':
+        logger.warning(
+            "DEPRECATED: "
+            f"Using VolumePairList in pairlist is deprecated and must be moved to pairlists. "
+            "Please refer to the docs on configuration details")
+        pl = {'method': 'VolumePairList'}
+        pl.update(config.get('pairlist', {}).get('config'))
+        config['pairlists'].append(pl)
+
+    if config.get('pairlist', {}).get('config', {}).get('precision_filter'):
+        logger.warning(
+            "DEPRECATED: "
+            f"Using precision_filter setting is deprecated and has been replaced by"
+            "PrecisionFilter. Please refer to the docs on configuration details")
+        config['pairlists'].append({'method': 'PrecisionFilter'})
