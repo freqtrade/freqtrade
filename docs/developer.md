@@ -115,7 +115,7 @@ Now, let's step through the methods which require actions:
 #### Pairlist configuration
 
 Configuration for PairListProvider is done in the bot configuration file in the element `"pairlist"`.
-This Pairlist-object may contain a `"config"` dict with additional configurations for the configured pairlist.
+This Pairlist-object may contain configurations with additional configurations for the configured pairlist.
 By convention, `"number_assets"` is used to specify the maximum number of pairs to keep in the whitelist. Please follow this to ensure a consistent user experience.
 
 Additional elements can be configured as needed. `VolumePairList` uses `"sort_key"` to specify the sorting value - however feel free to specify whatever is necessary for your great algorithm to be successfull and dynamic.

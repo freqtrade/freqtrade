@@ -28,7 +28,7 @@ class VolumePairList(IPairList):
                 'for "pairlist.config.number_assets"')
         self._number_pairs = self._pairlistconfig['number_assets']
         self._sort_key = self._pairlistconfig.get('sort_key', 'quoteVolume')
-        self._ttl = self._pairlistconfig.get('ttl', 1800)
+        self.refresh_period = self._pairlistconfig.get('refresh_period', 1800)
 
         if not self._exchange.exchange_has('fetchTickers'):
             raise OperationalException(
@@ -67,7 +67,7 @@ class VolumePairList(IPairList):
         :return: new whitelist
         """
         # Generate dynamic whitelist
-        if self._last_refresh + self._ttl < datetime.now().timestamp():
+        if self._last_refresh + self.refresh_period < datetime.now().timestamp():
             self._last_refresh = int(datetime.now().timestamp())
             return self._gen_pair_whitelist(pairlist,
                                             tickers,

@@ -54,11 +54,9 @@
         {"method": "StaticPairList"},
         {
             "method": "VolumePairList",
-            "config": {
-                "number_assets": 20,
-                "sort_key": "quoteVolume",
-                "ttl": 1800
-            }
+            "number_assets": 20,
+            "sort_key": "quoteVolume",
+            "refresh_period": 1800
         },
         {"method": "PrecisionFilter"},
         {"method": "PriceFilter", "low_price_ratio": 0.01

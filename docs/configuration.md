@@ -411,14 +411,14 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 
 `VolumePairList` considers outputs of previous pairlists unless  it's the first configured pairlist, it does not consider `pair_whitelist`, but selects the top assets from all available markets (with matching stake-currency) on the exchange.
 
-`ttl` allows setting the period (in seconds), at which the pairlist will be refreshed. Defaults to 1800s (30 minutes).
+`refresh_period` allows setting the period (in seconds), at which the pairlist will be refreshed. Defaults to 1800s (30 minutes).
 
 ```json
 "pairlists": [{
         "method": "VolumePairList",
         "number_assets": 20,
         "sort_key": "quoteVolume",
-        "ttl": 1800,
+        "refresh_period": 1800,
 ],
 ```
 
