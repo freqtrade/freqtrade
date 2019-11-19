@@ -29,10 +29,8 @@ def whitelist_conf(default_conf):
     default_conf['pairlists'] = [
         {
             "method": "VolumePairList",
-            "config": {
-                "number_assets": 5,
-                "sort_key": "quoteVolume",
-                }
+            "number_assets": 5,
+            "sort_key": "quoteVolume",
         },
     ]
     return default_conf
@@ -136,37 +134,37 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
 
 
 @pytest.mark.parametrize("pairlists,base_currency,whitelist_result", [
-    ([{"method": "VolumePairList", "config": {"number_assets": 5, "sort_key": "quoteVolume"}}],
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"}],
         "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'HOT/BTC', 'FUEL/BTC']),
     # Different sorting depending on quote or bid volume
-    ([{"method": "VolumePairList", "config": {"number_assets": 5, "sort_key": "bidVolume"}}],
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "bidVolume"}],
         "BTC",  ['HOT/BTC', 'FUEL/BTC', 'LTC/BTC', 'TKN/BTC', 'ETH/BTC']),
-    ([{"method": "VolumePairList", "config": {"number_assets": 5, "sort_key": "quoteVolume"}}],
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"}],
         "USDT", ['ETH/USDT']),
     # No pair for ETH ...
-    ([{"method": "VolumePairList", "config": {"number_assets": 5, "sort_key": "quoteVolume"}}],
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"}],
      "ETH", []),
     # Precisionfilter and quote volume
-    ([{"method": "VolumePairList", "config": {"number_assets": 5, "sort_key": "quoteVolume"}},
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "PrecisionFilter"}], "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'FUEL/BTC']),
     # Precisionfilter bid
-    ([{"method": "VolumePairList", "config": {"number_assets": 5, "sort_key": "bidVolume"}},
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "bidVolume"},
       {"method": "PrecisionFilter"}], "BTC", ['FUEL/BTC', 'LTC/BTC', 'TKN/BTC', 'ETH/BTC']),
     # Lowpricefilter and VolumePairList
-    ([{"method": "VolumePairList", "config": {"number_assets": 5, "sort_key": "quoteVolume"}},
-      {"method": "LowPriceFilter", "config": {"low_price_percent": 0.03}}],
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
+      {"method": "LowPriceFilter", "low_price_ratio": 0.03}],
         "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'FUEL/BTC']),
     # Hot is removed by precision_filter, Fuel by low_price_filter.
-    ([{"method": "VolumePairList", "config": {"number_assets": 5, "sort_key": "quoteVolume"}},
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "PrecisionFilter"},
-      {"method": "LowPriceFilter", "config": {"low_price_percent": 0.02}}
+      {"method": "LowPriceFilter", "low_price_ratio": 0.02}
       ], "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC']),
     # StaticPairlist Only
     ([{"method": "StaticPairList"},
       ], "BTC", ['ETH/BTC', 'TKN/BTC']),
     # Static Pairlist before VolumePairList - sorting changes
     ([{"method": "StaticPairList"},
-      {"method": "VolumePairList", "config": {"number_assets": 5, "sort_key": "bidVolume"}},
+      {"method": "VolumePairList", "number_assets": 5, "sort_key": "bidVolume"},
       ], "BTC", ['TKN/BTC', 'ETH/BTC']),
 ])
 def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, tickers,
@@ -257,7 +255,7 @@ def test__whitelist_for_active_markets(mocker, whitelist_conf, markets, pairlist
 
 
 def test_volumepairlist_invalid_sortvalue(mocker, markets, whitelist_conf):
-    whitelist_conf['pairlists'][0]['config'].update({"sort_key": "asdf"})
+    whitelist_conf['pairlists'][0].update({"sort_key": "asdf"})
 
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     with pytest.raises(OperationalException,

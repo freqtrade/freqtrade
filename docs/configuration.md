@@ -416,11 +416,9 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 ```json
 "pairlists": [{
         "method": "VolumePairList",
-        "config": {
-            "number_assets": 20,
-            "sort_key": "quoteVolume",
-            "ttl": 1800,
-        }
+        "number_assets": 20,
+        "sort_key": "quoteVolume",
+        "ttl": 1800,
 ],
 ```
 
@@ -430,7 +428,7 @@ Filters low-value coins which would not allow setting a stoploss.
 
 #### Low Price Pair Filter
 
-The `LowPriceFilter` allows filtering of pairs where a raise of 1 price unit is below the `low_price_percent` ratio.
+The `LowPriceFilter` allows filtering of pairs where a raise of 1 price unit is below the `low_price_ratio` ratio.
 This option is disabled by default, and will only apply if set to <> 0.
 
 Calculation example:  
@@ -450,16 +448,12 @@ The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, 
 "pairlists": [
     {
         "method": "VolumePairList",
-        "config": {
-            "number_assets": 20,
-            "sort_key": "quoteVolume",
-        },
+        "number_assets": 20,
+        "sort_key": "quoteVolume",
     },
     {"method": "PrecisionFilter"},
-    {"method": "LowPriceFilter",
-          "config": {"low_price_percent": 0.01}
-    }
-    }],
+    {"method": "LowPriceFilter", "low_price_ratio": 0.01}
+    ],
 ```
 
 ## Switch to Dry-run mode

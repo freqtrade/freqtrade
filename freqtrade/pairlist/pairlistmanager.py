@@ -32,7 +32,7 @@ class PairListManager():
                                      exchange=exchange,
                                      pairlistmanager=self,
                                      config=config,
-                                     pairlistconfig=pl.get('config'),
+                                     pairlistconfig=pl,
                                      pairlist_pos=len(self._pairlists)
                                      ).pairlist
             self._tickers_needed = pairl.needstickers or self._tickers_needed

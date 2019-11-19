@@ -13,7 +13,7 @@ class LowPriceFilter(IPairList):
                  pairlist_pos: int) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
-        self._low_price_percent = pairlistconfig.get('low_price_percent', 0)
+        self._low_price_ratio = pairlistconfig.get('low_price_ratio', 0)
 
     @property
     def needstickers(self) -> bool:
@@ -28,7 +28,7 @@ class LowPriceFilter(IPairList):
         """
         Short whitelist method description - used for startup-messages
         """
-        return f"{self.name} - Filtering pairs priced below {self._low_price_percent * 100}%."
+        return f"{self.name} - Filtering pairs priced below {self._low_price_ratio * 100}%."
 
     def _validate_ticker_lowprice(self, ticker) -> bool:
         """
@@ -41,7 +41,7 @@ class LowPriceFilter(IPairList):
 
         compare = ticker['last'] + 1 / pow(10, precision)
         changeperc = (compare - ticker['last']) / ticker['last']
-        if changeperc > self._low_price_percent:
+        if changeperc > self._low_price_ratio:
             logger.info(f"Removed {ticker['symbol']} from whitelist, "
                         f"because 1 unit is {changeperc * 100:.3f}%")
             return False
@@ -63,7 +63,7 @@ class LowPriceFilter(IPairList):
                 pairlist.remove(p)
 
             # Filter out assets which would not allow setting a stoploss
-            if self._low_price_percent and not self._validate_ticker_lowprice(ticker):
+            if self._low_price_ratio and not self._validate_ticker_lowprice(ticker):
                 pairlist.remove(p)
 
         return pairlist

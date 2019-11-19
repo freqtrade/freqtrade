@@ -1063,7 +1063,7 @@ def test_whitelist_dynamic(default_conf, update, mocker) -> None:
     )
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     default_conf['pairlists'] = [{'method': 'VolumePairList',
-                                 'config': {'number_assets': 4}
+                                 'number_assets': 4
                                   }]
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
 

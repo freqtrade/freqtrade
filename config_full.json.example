@@ -61,10 +61,7 @@
             }
         },
         {"method": "PrecisionFilter"},
-        {"method": "LowPriceFilter",
-         "config": {
-            "low_price_percent": 0.01
-            }
+        {"method": "LowPriceFilter", "low_price_ratio": 0.01
         }
     ],
     "exchange": {
