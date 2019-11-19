@@ -63,9 +63,9 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
             "DEPRECATED: "
             f"Using VolumePairList in pairlist is deprecated and must be moved to pairlists. "
             "Please refer to the docs on configuration details")
-        config['pairlists'].append({'method': 'VolumePairList',
-                                    'config': config.get('pairlist', {}).get('config')
-                                    })
+        pl = {'method': 'VolumePairList'}
+        pl.update(config.get('pairlist', {}).get('config'))
+        config['pairlists'].append(pl)
 
     if config.get('pairlist', {}).get('config', {}).get('precision_filter'):
         logger.warning(
