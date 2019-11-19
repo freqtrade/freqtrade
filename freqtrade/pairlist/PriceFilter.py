@@ -7,7 +7,7 @@ from freqtrade.pairlist.IPairList import IPairList
 logger = logging.getLogger(__name__)
 
 
-class LowPriceFilter(IPairList):
+class PriceFilter(IPairList):
 
     def __init__(self, exchange, pairlistmanager, config, pairlistconfig: dict,
                  pairlist_pos: int) -> None:
@@ -32,7 +32,7 @@ class LowPriceFilter(IPairList):
 
     def _validate_ticker_lowprice(self, ticker) -> bool:
         """
-        Check if if one price-step is > than a certain barrier.
+        Check if if one price-step (pip) is > than a certain barrier.
         :param ticker: ticker dict as returned from ccxt.load_markets()
         :param precision: Precision
         :return: True if the pair can stay, false if it should be removed

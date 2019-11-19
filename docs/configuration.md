@@ -380,7 +380,7 @@ The valid values are:
 Pairlists define the list of pairs that the bot should trade.
 There are [`StaticPairList`](#static-pair-list) and dynamic Whitelists available.
 
-[`PrecisionFilter`](#precision-filter) and [`LowPriceFilter`](#low-price-pair-filter) act as filters, removing low-value pairs.
+[`PrecisionFilter`](#precision-filter) and [`PriceFilter`](#price-pair-filter) act as filters, removing low-value pairs.
 
 All pairlists can be chained, and a combination of all pairlists will become your new whitelist. Pairlists are executed in the sequence they are configured. You should always configure either `StaticPairList` or `DynamicPairList` as starting pairlists.
 
@@ -391,7 +391,7 @@ Inactive markets and blacklisted pairs are always removed from the resulting `pa
 * [`StaticPairList`](#static-pair-list) (default, if not configured differently)
 * [`VolumePairList`](#volume-pair-list)
 * [`PrecisionFilter`](#precision-filter)
-* [`LowPriceFilter`](#low-price-pair-filter)
+* [`PriceFilter`](#price-pair-filter)
 
 #### Static Pair List
 
@@ -426,9 +426,10 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 
 Filters low-value coins which would not allow setting a stoploss.
 
-#### Low Price Pair Filter
+#### Price Pair Filter
 
-The `LowPriceFilter` allows filtering of pairs where a raise of 1 price unit is below the `low_price_ratio` ratio.
+The `PriceFilter` allows filtering of pairs by price.
+Currently, only `low_price_ratio` is implemented, where a raise of 1 price unit (pip) is below the `low_price_ratio` ratio.
 This option is disabled by default, and will only apply if set to <> 0.
 
 Calculation example:  
@@ -438,7 +439,7 @@ These pairs are dangerous since it may be impossible to place the desired stoplo
 
 ### Full Pairlist example
 
-The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, sorting by `quoteVolume` and applies both [`PrecisionFilter`](#precision-filter) and [`LowPriceFilter`](#low-price-pair-filter), filtering all assets where 1 priceunit is > 1%.
+The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, sorting by `quoteVolume` and applies both [`PrecisionFilter`](#precision-filter) and [`PriceFilter`](#price-pair-filter), filtering all assets where 1 priceunit is > 1%.
 
 ```json
 "exchange": {
@@ -452,7 +453,7 @@ The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, 
         "sort_key": "quoteVolume",
     },
     {"method": "PrecisionFilter"},
-    {"method": "LowPriceFilter", "low_price_ratio": 0.01}
+    {"method": "PriceFilter", "low_price_ratio": 0.01}
     ],
 ```
 
