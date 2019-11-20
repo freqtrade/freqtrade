@@ -1804,7 +1804,7 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order,
 def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, open_trade,
                                    fee, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
-    cancel_order_mock = MagicMock()
+    cancel_order_mock = MagicMock(return_value=limit_buy_order_old)
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',

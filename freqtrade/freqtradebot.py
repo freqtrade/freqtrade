@@ -839,7 +839,8 @@ class FreqtradeBot:
         trade.stake_amount = trade.amount * trade.open_rate
         # verify if fees were taken from amount to avoid problems during selling
         try:
-            new_amount = self.get_real_amount(trade, order, trade.amount)
+            new_amount = self.get_real_amount(trade, corder if 'fee' in corder else order,
+                                              trade.amount)
             if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
                 trade.amount = new_amount
                 # Fee was applied, so set to 0
