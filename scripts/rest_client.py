@@ -10,6 +10,7 @@ so it can be used as a standalone script.
 import argparse
 import inspect
 import json
+import re
 import logging
 import sys
 from pathlib import Path
@@ -238,7 +239,8 @@ def print_commands():
     print("Possible commands:\n")
     for x, y in inspect.getmembers(client):
         if not x.startswith('_'):
-            print(f"{x}""\n        "f"{getattr(client, x).__doc__.splitlines()[0]}""\n")
+            doc = re.sub(':return:.*', '', getattr(client, x).__doc__, flags=re.MULTILINE).rstrip()
+            print(f"{x}\n\t{doc}\n")
 
 
 def main(args):
