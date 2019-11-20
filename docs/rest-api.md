@@ -106,6 +106,7 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `stop` | | Stops the trader
 | `stopbuy` | | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
 | `reload_conf` | | Reloads the configuration file
+| `show_config` | | Shows part of the current configuration with relevant settings to operation
 | `status` | | Lists all open trades
 | `count` | | Displays number of trades used and available
 | `profit` | | Display a summary of your profit/loss from close trades and some stats about your performance
@@ -171,6 +172,10 @@ profit
 reload_conf
         Reload configuration
         :returns: json object
+
+show_config
+        Returns part of the configuration, relevant for trading operations.
+        :return: json object containing the version
 
 start
         Start the bot if it's in stopped state.

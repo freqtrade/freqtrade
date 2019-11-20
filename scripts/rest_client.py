@@ -147,6 +147,13 @@ class FtRestClient():
         """
         return self._get("version")
 
+    def show_config(self):
+        """
+        Returns part of the configuration, relevant for trading operations.
+        :return: json object containing the version
+        """
+        return self._get("show_config")
+
     def whitelist(self):
         """
         Show the current whitelist

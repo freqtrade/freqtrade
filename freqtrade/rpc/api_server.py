@@ -169,6 +169,8 @@ class ApiServer(RPC):
                               view_func=self._status, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/version', 'version',
                               view_func=self._version, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/show_config', 'show_config',
+                              view_func=self._show_config, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/ping', 'ping',
                               view_func=self._ping, methods=['GET'])
 
@@ -240,6 +242,14 @@ class ApiServer(RPC):
         Prints the bot's version
         """
         return self.rest_dump({"version": __version__})
+
+    @require_login
+    @rpc_catch_errors
+    def _show_config(self):
+        """
+        Prints the bot's version
+        """
+        return self.rest_dump(self._rpc_show_config())
 
     @require_login
     @rpc_catch_errors

@@ -95,6 +95,7 @@ class Telegram(RPC):
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
             CommandHandler('reload_conf', self._reload_conf),
+            CommandHandler('show_config', self._show_config),
             CommandHandler('stopbuy', self._stopbuy),
             CommandHandler('whitelist', self._whitelist),
             CommandHandler('blacklist', self._blacklist),
@@ -550,6 +551,7 @@ class Telegram(RPC):
                   "*/balance:* `Show account balance per currency`\n" \
                   "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n" \
                   "*/reload_conf:* `Reload configuration file` \n" \
+                  "*/show_config:* `Show running configuration` \n" \
                   "*/whitelist:* `Show current whitelist` \n" \
                   "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs " \
                   "to the blacklist.` \n" \
@@ -569,6 +571,26 @@ class Telegram(RPC):
         :return: None
         """
         self._send_msg('*Version:* `{}`'.format(__version__))
+
+    @authorized_only
+    def _show_config(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /show_config.
+        Show config information information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        val = self._rpc_show_config()
+        self._send_msg(
+            f"*Mode:* `{'Dry-run' if val['dry_run'] else 'Live'}`\n"
+            f"*Exchange:* `{val['exchange']}`\n"
+            f"*Stake per trade:* `{val['stake_amount']} {val['stake_currency']}`\n"
+            f"*Minimum ROI:* `{val['minimal_roi']}`\n"
+            f"*{'Trailing ' if val['trailing_stop'] else ''}Stoploss:* `{val['stoploss']}`\n"
+            f"*Ticker Interval:* `{val['ticker_interval']}`\n"
+            f"*Strategy:* `{val['strategy']}`'"
+        )
 
     def _send_msg(self, msg: str, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
         """
