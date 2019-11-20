@@ -8,12 +8,15 @@ so it can be used as a standalone script.
 """
 
 import argparse
-import json
-import logging
 import inspect
-from urllib.parse import urlencode, urlparse, urlunparse
+import json
+import re
+import logging
+import sys
 from pathlib import Path
+from urllib.parse import urlencode, urlparse, urlunparse
 
+import rapidjson
 import requests
 from requests.exceptions import ConnectionError
 
@@ -63,86 +66,85 @@ class FtRestClient():
         return self._call("POST", apipath, params=params, data=data)
 
     def start(self):
-        """
-        Start the bot if it's in stopped state.
+        """Start the bot if it's in the stopped state.
+
         :return: json object
         """
         return self._post("start")
 
     def stop(self):
-        """
-        Stop the bot. Use start to restart
+        """Stop the bot. Use `start` to restart.
+
         :return: json object
         """
         return self._post("stop")
 
     def stopbuy(self):
-        """
-        Stop buying (but handle sells gracefully).
-        use reload_conf to reset
+        """Stop buying (but handle sells gracefully). Use `reload_conf` to reset.
+
         :return: json object
         """
         return self._post("stopbuy")
 
     def reload_conf(self):
-        """
-        Reload configuration
+        """Reload configuration.
+
         :return: json object
         """
         return self._post("reload_conf")
 
     def balance(self):
-        """
-        Get the account balance
+        """Get the account balance.
+
         :return: json object
         """
         return self._get("balance")
 
     def count(self):
-        """
-        Returns the amount of open trades
+        """Return the amount of open trades.
+
         :return: json object
         """
         return self._get("count")
 
     def daily(self, days=None):
-        """
-        Returns the amount of open trades
+        """Return the amount of open trades.
+
         :return: json object
         """
         return self._get("daily", params={"timescale": days} if days else None)
 
     def edge(self):
-        """
-        Returns information about edge
+        """Return information about edge.
+
         :return: json object
         """
         return self._get("edge")
 
     def profit(self):
-        """
-        Returns the profit summary
+        """Return the profit summary.
+
         :return: json object
         """
         return self._get("profit")
 
     def performance(self):
-        """
-        Returns the performance of the different coins
+        """Return the performance of the different coins.
+
         :return: json object
         """
         return self._get("performance")
 
     def status(self):
-        """
-        Get the status of open trades
+        """Get the status of open trades.
+
         :return: json object
         """
         return self._get("status")
 
     def version(self):
-        """
-        Returns the version of the bot
+        """Return the version of the bot.
+
         :return: json object containing the version
         """
         return self._get("version")
@@ -155,15 +157,15 @@ class FtRestClient():
         return self._get("show_config")
 
     def whitelist(self):
-        """
-        Show the current whitelist
+        """Show the current whitelist.
+
         :return: json object
         """
         return self._get("whitelist")
 
     def blacklist(self, *args):
-        """
-        Show the current blacklist
+        """Show the current blacklist.
+
         :param add: List of coins to add (example: "BNB/BTC")
         :return: json object
         """
@@ -173,8 +175,8 @@ class FtRestClient():
             return self._post("blacklist", data={"blacklist": args})
 
     def forcebuy(self, pair, price=None):
-        """
-        Buy an asset
+        """Buy an asset.
+
         :param pair: Pair to buy (ETH/BTC)
         :param price: Optional - price to buy
         :return: json object of the trade
@@ -185,8 +187,8 @@ class FtRestClient():
         return self._post("forcebuy", data=data)
 
     def forcesell(self, tradeid):
-        """
-        Force-sell a trade
+        """Force-sell a trade.
+
         :param tradeid: Id of the trade (can be received via status command)
         :return: json object
         """
@@ -197,7 +199,9 @@ class FtRestClient():
 def add_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("command",
-                        help="Positional argument defining the command to execute.")
+                        help="Positional argument defining the command to execute.",
+                        nargs="?"
+                        )
 
     parser.add_argument('--show',
                         help='Show possible methods with this client',
@@ -228,24 +232,29 @@ def load_config(configfile):
     file = Path(configfile)
     if file.is_file():
         with file.open("r") as f:
-            config = json.load(f)
+            config = rapidjson.load(f, parse_mode=rapidjson.PM_COMMENTS |
+                                    rapidjson.PM_TRAILING_COMMAS)
         return config
-    return {}
+    else:
+        logger.warning(f"Could not load config file {file}.")
+        sys.exit(1)
 
 
 def print_commands():
     # Print dynamic help for the different commands using the commands doc-strings
     client = FtRestClient(None)
-    print("Possible commands:")
+    print("Possible commands:\n")
     for x, y in inspect.getmembers(client):
         if not x.startswith('_'):
-            print(f"{x} {getattr(client, x).__doc__}")
+            doc = re.sub(':return:.*', '', getattr(client, x).__doc__, flags=re.MULTILINE).rstrip()
+            print(f"{x}\n\t{doc}\n")
 
 
 def main(args):
 
-    if args.get("help"):
+    if args.get("show"):
         print_commands()
+        sys.exit()
 
     config = load_config(args["config"])
     url = config.get("api_server", {}).get("server_url", "127.0.0.1")

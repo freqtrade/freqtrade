@@ -340,8 +340,11 @@ class ApiServer(RPC):
 
         Returns the current status of the trades in json format
         """
-        results = self._rpc_trade_status()
-        return self.rest_dump(results)
+        try:
+            results = self._rpc_trade_status()
+            return self.rest_dump(results)
+        except RPCException:
+            return self.rest_dump([])
 
     @require_login
     @rpc_catch_errors

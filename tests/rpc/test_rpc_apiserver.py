@@ -429,8 +429,8 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     )
 
     rc = client_get(client, f"{BASE_URI}/status")
-    assert_response(rc, 502)
-    assert rc.json == {'error': 'Error querying _status: no active trade'}
+    assert_response(rc, 200)
+    assert rc.json == []
 
     ftbot.create_trades()
     rc = client_get(client, f"{BASE_URI}/status")
