@@ -107,10 +107,16 @@ class SampleStrategy(IStrategy):
         # RSI
         dataframe['rsi'] = ta.RSI(dataframe)
 
-
         # ADX
         dataframe['adx'] = ta.ADX(dataframe)
+
         """
+        # Aroon, Aroon Oscillator
+        aroon = ta.AROON(dataframe)
+        dataframe['aroonup'] = aroon['aroonup']
+        dataframe['aroondown'] = aroon['aroondown']
+        dataframe['aroonosc'] = ta.AROONOSC(dataframe)
+
         # Awesome oscillator
         dataframe['ao'] = qtpylib.awesome_oscillator(dataframe)
 
