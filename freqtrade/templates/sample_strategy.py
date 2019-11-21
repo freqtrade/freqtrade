@@ -131,8 +131,8 @@ class SampleStrategy(IStrategy):
         dataframe['macdsignal'] = macd['macdsignal']
         dataframe['macdhist'] = macd['macdhist']
 
-        # # MFI
-        # dataframe['mfi'] = ta.MFI(dataframe)
+        # MFI
+        dataframe['mfi'] = ta.MFI(dataframe)
 
         # # Minus Directional Indicator / Movement
         # dataframe['minus_dm'] = ta.MINUS_DM(dataframe)
