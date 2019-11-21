@@ -105,9 +105,16 @@ def start_new_strategy(args: Dict[str, Any]) -> None:
             raise OperationalException(f"`{new_path}` already exists. "
                                        "Please choose another Strategy Name.")
 
+        indicators = render_template(templatefile=f"subtemplates/indicators_{args['template']}.j2",)
+        buy_trend = render_template(templatefile=f"subtemplates/buy_trend_{args['template']}.j2",)
+        sell_trend = render_template(templatefile=f"subtemplates/sell_trend_{args['template']}.j2",)
+
         strategy_text = render_template(templatefile='base_strategy.py.j2',
                                         arguments={"strategy": args["strategy"],
-                                                   "subtemplates": args['template']})
+                                                   "indicators": indicators,
+                                                   "buy_trend": buy_trend,
+                                                   "sell_trend": sell_trend,
+                                                   })
 
         logger.info(f"Writing strategy to `{new_path}`.")
         new_path.write_text(strategy_text)

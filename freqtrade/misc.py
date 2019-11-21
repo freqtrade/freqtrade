@@ -129,7 +129,7 @@ def plural(num, singular: str, plural: str = None) -> str:
     return singular if (num == 1 or num == -1) else plural or singular + 's'
 
 
-def render_template(templatefile: str, arguments: dict):
+def render_template(templatefile: str, arguments: dict = {}):
 
     from jinja2 import Environment, PackageLoader, select_autoescape
 

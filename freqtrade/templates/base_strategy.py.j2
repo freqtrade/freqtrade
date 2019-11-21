@@ -102,7 +102,7 @@ class {{ strategy }}(IStrategy):
         :param metadata: Additional information, like the currently traded pair
         :return: a Dataframe with all mandatory indicators for the strategies
         """
-        {% filter indent(8) %}{% include 'subtemplates/indicators_' + subtemplates + '.j2' %}{% endfilter %}
+        {{ indicators | indent(8) }}
 
         return dataframe
 
@@ -115,7 +115,7 @@ class {{ strategy }}(IStrategy):
         """
         dataframe.loc[
             (
-                {% filter indent(16) %}{% include 'subtemplates/buy_trend_' + subtemplates + '.j2' %}{% endfilter %}
+                {{ buy_trend | indent(16) }}
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
             'buy'] = 1
@@ -131,7 +131,7 @@ class {{ strategy }}(IStrategy):
         """
         dataframe.loc[
             (
-                {% filter indent(16) %}{% include 'subtemplates/sell_trend_' + subtemplates + '.j2' %}{% endfilter %}
+                {{ sell_trend | indent(16) }}
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
             'sell'] = 1
