@@ -787,7 +787,7 @@ class FreqtradeBot:
                 continue
 
             # Check if trade is still actually open
-            if float(order['remaining']) == 0.0:
+            if float(order.get('remaining', 0.0)) == 0.0:
                 self.wallets.update()
                 continue
 
@@ -813,7 +813,8 @@ class FreqtradeBot:
         })
 
     def handle_timedout_limit_buy(self, trade: Trade, order: Dict) -> bool:
-        """Buy timeout - cancel order
+        """
+        Buy timeout - cancel order
         :return: True if order was fully cancelled
         """
         reason = "cancelled due to timeout"
@@ -824,18 +825,22 @@ class FreqtradeBot:
             corder = order
             reason = "canceled on Exchange"
 
-        if corder['remaining'] == corder['amount']:
+        if corder.get('remaining', order['remaining']) == order['amount']:
             # if trade is not partially completed, just delete the trade
             self.handle_buy_order_full_cancel(trade, reason)
             return True
 
         # if trade is partially complete, edit the stake details for the trade
         # and close the order
-        trade.amount = corder['amount'] - corder['remaining']
+        # cancel_order may not contain the full order dict, so we need to fallback
+        # to the order dict aquired before cancelling.
+        # we need to fall back to the values from order if corder does not contain these keys.
+        trade.amount = order['amount'] - corder.get('remaining', order['remaining'])
         trade.stake_amount = trade.amount * trade.open_rate
         # verify if fees were taken from amount to avoid problems during selling
         try:
-            new_amount = self.get_real_amount(trade, corder, trade.amount)
+            new_amount = self.get_real_amount(trade, corder if 'fee' in corder else order,
+                                              trade.amount)
             if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
                 trade.amount = new_amount
                 # Fee was applied, so set to 0
