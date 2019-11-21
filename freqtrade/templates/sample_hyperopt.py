@@ -1,15 +1,20 @@
 # pragma pylint: disable=missing-docstring, invalid-name, pointless-string-statement
 
+# --- Do not remove these libs ---
 from functools import reduce
 from typing import Any, Callable, Dict, List
 
 import numpy as np  # noqa
-import talib.abstract as ta  # noqa
+import pandas as pd  # noqa
 from pandas import DataFrame
 from skopt.space import Categorical, Dimension, Integer, Real  # noqa
 
-import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.optimize.hyperopt_interface import IHyperOpt
+
+# --------------------------------
+# Add your lib to import here
+import talib.abstract as ta  # noqa
+import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 
 class SampleHyperOpt(IHyperOpt):

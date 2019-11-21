@@ -1,14 +1,16 @@
+# pragma pylint: disable=missing-docstring, invalid-name, pointless-string-statement
 
 # --- Do not remove these libs ---
-from freqtrade.strategy.interface import IStrategy
+import numpy as np  # noqa
+import pandas as pd  # noqa
 from pandas import DataFrame
-# --------------------------------
 
+from freqtrade.strategy.interface import IStrategy
+
+# --------------------------------
 # Add your lib to import here
 import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
-import pandas as pd  # noqa
-import numpy as np  # noqa
 
 
 # This class is a sample. Feel free to customize it.
