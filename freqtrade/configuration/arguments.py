@@ -39,9 +39,9 @@ ARGS_LIST_PAIRS = ["exchange", "print_list", "list_pairs_print_json", "print_one
 
 ARGS_CREATE_USERDIR = ["user_data_dir", "reset"]
 
-ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy"]
+ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy", "template"]
 
-ARGS_BUILD_HYPEROPT = ["user_data_dir", "hyperopt"]
+ARGS_BUILD_HYPEROPT = ["user_data_dir", "hyperopt", "template"]
 
 ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "download_trades", "exchange",
                       "timeframes", "erase"]

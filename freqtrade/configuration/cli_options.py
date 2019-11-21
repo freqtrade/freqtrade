@@ -339,6 +339,14 @@ AVAILABLE_CLI_OPTIONS = {
         help='Clean all existing data for the selected exchange/pairs/timeframes.',
         action='store_true',
     ),
+    # Templating options
+    "template": Arg(
+        '--template',
+        help='Use a template which is either `minimal` or '
+        '`full` (containing multiple sample indicators).',
+        choices=['full', 'minimal'],
+        default='full',
+    ),
     # Plot dataframe
     "indicators1": Arg(
         '--indicators1',
