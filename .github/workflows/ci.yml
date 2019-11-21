@@ -73,6 +73,8 @@ jobs:
         # Allow failure for coveralls
         # Fake travis environment to get coveralls working correctly
         export TRAVIS_PULL_REQUEST="https://github.com/${GITHUB_REPOSITORY}/pull/$(cat $GITHUB_EVENT_PATH | jq -r .number)"
+        export CI_BRANCH=${GITHUB_REF#"ref/heads"}
+        echo "${CI_BRANCH}"
         coveralls || true
 
     - name: Backtesting
@@ -95,7 +97,7 @@ jobs:
 
     - name: Slack Notification
       uses: homoluctus/slatify@v1.8.0
-      if: always()
+      if: always() && github.repository.fork == true
       with:
         type: ${{ job.status }}
         job_name: '*Freqtrade CI ${{ matrix.os }}*'
@@ -156,7 +158,7 @@ jobs:
 
     - name: Slack Notification
       uses: homoluctus/slatify@v1.8.0
-      if: always()
+      if: always() && github.repository.fork == true
       with:
         type: ${{ job.status }}
         job_name: '*Freqtrade CI windows*'
@@ -176,7 +178,7 @@ jobs:
 
     - name: Slack Notification
       uses: homoluctus/slatify@v1.8.0
-      if: failure()
+      if: failure() && github.repository.fork == true
       with:
         type: ${{ job.status }}
         job_name: '*Freqtrade Docs*'
@@ -186,7 +188,7 @@ jobs:
   deploy:
     needs: [ build, build_windows, docs_check ]
     runs-on: ubuntu-18.04
-    if: github.event_name == 'push' || github.event_name == 'schedule'
+    if: (github.event_name == 'push' || github.event_name == 'schedule') && github.repository == 'freqtrade/freqtrade'
     steps:
     - uses: actions/checkout@v1
 
@@ -217,7 +219,7 @@ jobs:
 
     - name: Slack Notification
       uses: homoluctus/slatify@v1.8.0
-      if: always()
+      if: always() && github.repository.fork == true
       with:
         type: ${{ job.status }}
         job_name: '*Freqtrade CI Deploy*'
