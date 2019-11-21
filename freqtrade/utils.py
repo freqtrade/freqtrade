@@ -106,7 +106,8 @@ def start_new_strategy(args: Dict[str, Any]) -> None:
                                        "Please choose another Strategy Name.")
 
         strategy_text = render_template(templatefile='base_strategy.py.j2',
-                                        arguments={"strategy": args["strategy"]})
+                                        arguments={"strategy": args["strategy"],
+                                                   "subtemplates": 'full'})
 
         logger.info(f"Writing strategy to `{new_path}`.")
         new_path.write_text(strategy_text)
