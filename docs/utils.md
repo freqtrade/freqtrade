@@ -59,6 +59,7 @@ freqtrade new-strategy --userdir ~/.freqtrade/ --strategy AwesomeStrategy
 
 ``` output
 usage: freqtrade new-strategy [-h] [--userdir PATH] [-s NAME]
+                              [--template {full,minimal}]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -67,6 +68,9 @@ optional arguments:
   -s NAME, --strategy NAME
                         Specify strategy class name which will be used by the
                         bot.
+  --template {full,minimal}
+                        Use a template which is either `minimal` or `full`
+                        (containing multiple sample indicators).
 ```
 
 ## Create new hyperopt
@@ -92,6 +96,7 @@ freqtrade new-hyperopt --userdir ~/.freqtrade/ --hyperopt AwesomeHyperopt
 
 ``` output
 usage: freqtrade new-hyperopt [-h] [--userdir PATH] [--hyperopt NAME]
+                              [--template {full,minimal}]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -99,6 +104,9 @@ optional arguments:
                         Path to userdata directory.
   --hyperopt NAME       Specify hyperopt class name which will be used by the
                         bot.
+  --template {full,minimal}
+                        Use a template which is either `minimal` or `full`
+                        (containing multiple sample indicators).
 ```
 
 ## List Exchanges
