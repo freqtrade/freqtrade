@@ -77,6 +77,8 @@ class Hyperopt:
         # Previous evaluations
         self.trials: List = []
 
+        self.num_trials_saved = 0
+
         # Populate functions here (hasattr is slow so should not be run during "regular" operations)
         if hasattr(self.custom_hyperopt, 'populate_indicators'):
             self.backtesting.strategy.advise_indicators = \
@@ -132,13 +134,17 @@ class Hyperopt:
         arg_dict = {dim.name: value for dim, value in zip(dimensions, params)}
         return arg_dict
 
-    def save_trials(self) -> None:
+    def save_trials(self, final: bool = False) -> None:
         """
         Save hyperopt trials to file
         """
-        if self.trials:
-            logger.info("Saving %d evaluations to '%s'", len(self.trials), self.trials_file)
+        num_trials = len(self.trials)
+        if num_trials > self.num_trials_saved:
+            logger.info(f"Saving {num_trials} epochs.")
             dump(self.trials, self.trials_file)
+            self.num_trials_saved = num_trials
+        if final:
+            logger.info(f"{num_trials} epochs were saved to '{self.trials_file}'.")
 
     def read_trials(self) -> List:
         """
@@ -153,6 +159,12 @@ class Hyperopt:
         """
         Display Best hyperopt result
         """
+        # This is printed when Ctrl+C is pressed quickly, before first epochs have
+        # a chance to be evaluated.
+        if not self.trials:
+            print("No epochs evaluated yet, no best result.")
+            return
+
         results = sorted(self.trials, key=itemgetter('loss'))
         best_result = results[0]
         params = best_result['params']
@@ -197,12 +209,20 @@ class Hyperopt:
                 # Also round to 5 digits after the decimal point
                 print(f"Stoploss: {round(params.get('stoploss'), 5)}")
 
+    def is_best(self, results) -> bool:
+        return results['loss'] < self.current_best_loss
+
     def log_results(self, results) -> None:
         """
         Log results if it is better than any previous evaluation
         """
         print_all = self.config.get('print_all', False)
-        is_best_loss = results['loss'] < self.current_best_loss
+        is_best_loss = self.is_best(results)
+
+        if not print_all:
+            print('.', end='' if results['current_epoch'] % 100 != 0 else None)
+            sys.stdout.flush()
+
         if print_all or is_best_loss:
             if is_best_loss:
                 self.current_best_loss = results['loss']
@@ -217,13 +237,9 @@ class Hyperopt:
                 print(log_str)
             else:
                 print(f'\n{log_str}')
-        else:
-            print('.', end='')
-            sys.stdout.flush()
 
     def format_results_logstring(self, results) -> str:
-        # Output human-friendly index here (starting from 1)
-        current = results['current_epoch'] + 1
+        current = results['current_epoch']
         total = self.total_epochs
         res = results['results_explanation']
         loss = results['loss']
@@ -422,15 +438,19 @@ class Hyperopt:
                     self.opt.tell(asked, [v['loss'] for v in f_val])
                     self.fix_optimizer_models_list()
                     for j in range(jobs):
-                        current = i * jobs + j
+                        # Use human-friendly index here (starting from 1)
+                        current = i * jobs + j + 1
                         val = f_val[j]
                         val['current_epoch'] = current
-                        val['is_initial_point'] = current < INITIAL_POINTS
+                        val['is_initial_point'] = current <= INITIAL_POINTS
+                        logger.debug(f"Optimizer epoch evaluated: {val}")
+                        is_best = self.is_best(val)
                         self.log_results(val)
                         self.trials.append(val)
-                        logger.debug(f"Optimizer epoch evaluated: {val}")
+                        if is_best or current % 100 == 0:
+                            self.save_trials()
         except KeyboardInterrupt:
             print('User interrupted..')
 
-        self.save_trials()
+        self.save_trials(final=True)
         self.log_trials_result()
