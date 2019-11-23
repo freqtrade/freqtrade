@@ -9,7 +9,8 @@ from typing import Any, Dict
 from tabulate import tabulate
 
 from freqtrade import constants
-from freqtrade.configuration import TimeRange, remove_credentials
+from freqtrade.configuration import (TimeRange, remove_credentials,
+                                     validate_config_consistency)
 from freqtrade.edge import Edge
 from freqtrade.exchange import Exchange
 from freqtrade.resolvers import StrategyResolver
@@ -34,6 +35,8 @@ class EdgeCli:
         self.config['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
         self.exchange = Exchange(self.config)
         self.strategy = StrategyResolver(self.config).strategy
+
+        validate_config_consistency(self.config)
 
         self.edge = Edge(config, self.exchange, self.strategy)
         # Set refresh_pairs to false for edge-cli (it must be true for edge)
