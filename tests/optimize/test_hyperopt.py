@@ -384,10 +384,11 @@ def test_save_trials_saves_trials(mocker, hyperopt, testdatadir, caplog) -> None
     trials = create_trials(mocker, hyperopt, testdatadir)
     mock_dump = mocker.patch('freqtrade.optimize.hyperopt.dump', return_value=None)
     hyperopt.trials = trials
-    hyperopt.save_trials()
+    hyperopt.save_trials(final=True)
 
     trials_file = testdatadir / 'optimize' / 'ut_trials.pickle'
-    assert log_has("Saving 1 epochs.", caplog)
+    assert log_has("Saving 1 epoch.", caplog)
+    assert log_has(f"1 epoch saved to '{trials_file}'.", caplog)
     mock_dump.assert_called_once()
 
 

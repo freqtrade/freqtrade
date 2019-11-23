@@ -23,7 +23,7 @@ from skopt import Optimizer
 from skopt.space import Dimension
 
 from freqtrade.data.history import get_timeframe, trim_dataframe
-from freqtrade.misc import round_dict
+from freqtrade.misc import plural, round_dict
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
 from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F4
@@ -140,11 +140,12 @@ class Hyperopt:
         """
         num_trials = len(self.trials)
         if num_trials > self.num_trials_saved:
-            logger.info(f"Saving {num_trials} epochs.")
+            logger.info(f"Saving {num_trials} {plural(num_trials, 'epoch')}.")
             dump(self.trials, self.trials_file)
             self.num_trials_saved = num_trials
         if final:
-            logger.info(f"{num_trials} epochs were saved to '{self.trials_file}'.")
+            logger.info(f"{num_trials} {plural(num_trials, 'epoch')} "
+                        f"saved to '{self.trials_file}'.")
 
     def read_trials(self) -> List:
         """
