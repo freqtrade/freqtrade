@@ -718,6 +718,7 @@ def test_print_json_spaces_default(mocker, default_conf, caplog, capsys) -> None
     patch_exchange(mocker)
 
     default_conf.update({'config': 'config.json.example',
+                         'hyperopt': 'DefaultHyperOpt',
                          'epochs': 1,
                          'timerange': None,
                          'spaces': 'default',
