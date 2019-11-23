@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, protected-access, invalid-name
 import json
 import logging
+import sys
 import warnings
 from copy import deepcopy
 from pathlib import Path
@@ -14,9 +15,9 @@ from freqtrade.configuration import (Arguments, Configuration,
                                      validate_config_consistency)
 from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.config_validation import validate_config_schema
-from freqtrade.configuration.deprecated_settings import (check_conflicting_settings,
-                                                         process_deprecated_setting,
-                                                         process_temporary_deprecated_settings)
+from freqtrade.configuration.deprecated_settings import (
+    check_conflicting_settings, process_deprecated_setting,
+    process_temporary_deprecated_settings)
 from freqtrade.configuration.directory_operations import (create_datadir,
                                                           create_userdata_dir)
 from freqtrade.configuration.load_config import load_config_file
@@ -621,6 +622,7 @@ def test_set_loggers_syslog(mocker):
     logger.handlers = orig_handlers
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_set_loggers_journald(mocker):
     logger = logging.getLogger()
     orig_handlers = logger.handlers
