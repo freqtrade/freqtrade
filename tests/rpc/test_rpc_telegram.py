@@ -144,9 +144,9 @@ def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
 
 
 def test_status(default_conf, update, mocker, fee, ticker,) -> None:
-    update.message.chat.id = 123
+    update.message.chat.id = "123"
     default_conf['telegram']['enabled'] = False
-    default_conf['telegram']['chat_id'] = 123
+    default_conf['telegram']['chat_id'] = "123"
 
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',

@@ -23,7 +23,7 @@ _TEST_PASS = "SuperSecurePassword1!"
 def botclient(default_conf, mocker):
     default_conf.update({"api_server": {"enabled": True,
                                         "listen_ip_address": "127.0.0.1",
-                                        "listen_port": "8080",
+                                        "listen_port": 8080,
                                         "username": _TEST_USER,
                                         "password": _TEST_PASS,
                                         }})
@@ -133,7 +133,10 @@ def test_api__init__(default_conf, mocker):
 def test_api_run(default_conf, mocker, caplog):
     default_conf.update({"api_server": {"enabled": True,
                                         "listen_ip_address": "127.0.0.1",
-                                        "listen_port": "8080"}})
+                                        "listen_port": 8080,
+                                        "username": "TestUser",
+                                        "password": "testPass",
+                                        }})
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
     mocker.patch('freqtrade.rpc.api_server.threading.Thread', MagicMock())
 
@@ -146,7 +149,7 @@ def test_api_run(default_conf, mocker, caplog):
     apiserver.run()
     assert server_mock.call_count == 1
     assert server_mock.call_args_list[0][0][0] == "127.0.0.1"
-    assert server_mock.call_args_list[0][0][1] == "8080"
+    assert server_mock.call_args_list[0][0][1] == 8080
     assert isinstance(server_mock.call_args_list[0][0][2], Flask)
     assert hasattr(apiserver, "srv")
 
@@ -158,14 +161,14 @@ def test_api_run(default_conf, mocker, caplog):
     server_mock.reset_mock()
     apiserver._config.update({"api_server": {"enabled": True,
                                              "listen_ip_address": "0.0.0.0",
-                                             "listen_port": "8089",
+                                             "listen_port": 8089,
                                              "password": "",
                                              }})
     apiserver.run()
 
     assert server_mock.call_count == 1
     assert server_mock.call_args_list[0][0][0] == "0.0.0.0"
-    assert server_mock.call_args_list[0][0][1] == "8089"
+    assert server_mock.call_args_list[0][0][1] == 8089
     assert isinstance(server_mock.call_args_list[0][0][2], Flask)
     assert log_has("Starting HTTP Server at 0.0.0.0:8089", caplog)
     assert log_has("Starting Local Rest Server.", caplog)
@@ -186,7 +189,10 @@ def test_api_run(default_conf, mocker, caplog):
 def test_api_cleanup(default_conf, mocker, caplog):
     default_conf.update({"api_server": {"enabled": True,
                                         "listen_ip_address": "127.0.0.1",
-                                        "listen_port": "8080"}})
+                                        "listen_port": 8080,
+                                        "username": "TestUser",
+                                        "password": "testPass",
+                                        }})
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
     mocker.patch('freqtrade.rpc.api_server.threading.Thread', MagicMock())
     mocker.patch('freqtrade.rpc.api_server.make_server', MagicMock())
