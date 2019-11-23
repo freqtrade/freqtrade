@@ -360,7 +360,7 @@ def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
     hyperopt.log_results(
         {
             'loss': 1,
-            'current_epoch': 1,
+            'current_epoch': 2,  # This starts from 1 (in a human-friendly manner)
             'results_explanation': 'foo.',
             'is_initial_point': False
         }
@@ -374,6 +374,7 @@ def test_no_log_if_loss_does_not_improve(hyperopt, caplog) -> None:
     hyperopt.log_results(
         {
             'loss': 3,
+            'current_epoch': 1,
         }
     )
     assert caplog.record_tuples == []
@@ -386,7 +387,7 @@ def test_save_trials_saves_trials(mocker, hyperopt, testdatadir, caplog) -> None
     hyperopt.save_trials()
 
     trials_file = testdatadir / 'optimize' / 'ut_trials.pickle'
-    assert log_has(f"Saving 1 evaluations to '{trials_file}'", caplog)
+    assert log_has("Saving 1 epochs.", caplog)
     mock_dump.assert_called_once()
 
 
