@@ -21,7 +21,7 @@ from freqtrade.configuration.directory_operations import (create_datadir,
                                                           create_userdata_dir)
 from freqtrade.configuration.load_config import load_config_file
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
-from freqtrade.loggers import _set_loggers
+from freqtrade.loggers import _set_loggers, setup_logging
 from freqtrade.state import RunMode
 from tests.conftest import (log_has, log_has_re,
                             patched_configuration_load_config_file)
@@ -602,6 +602,54 @@ def test_set_loggers() -> None:
     assert logging.getLogger('requests').level is logging.DEBUG
     assert logging.getLogger('ccxt.base.exchange').level is logging.DEBUG
     assert logging.getLogger('telegram').level is logging.INFO
+
+
+def test_set_loggers_syslog(mocker):
+    logger = logging.getLogger()
+    orig_handlers = logger.handlers
+    logger.handlers = []
+
+    config = {'verbosity': 2,
+              'logfile': 'syslog:/dev/log',
+              }
+
+    setup_logging(config)
+    assert len(logger.handlers) == 2
+    assert [x for x in logger.handlers if type(x) == logging.handlers.SysLogHandler]
+    assert [x for x in logger.handlers if type(x) == logging.StreamHandler]
+    # reset handlers to not break pytest
+    logger.handlers = orig_handlers
+
+
+def test_set_loggers_journald(mocker):
+    logger = logging.getLogger()
+    orig_handlers = logger.handlers
+    logger.handlers = []
+
+    config = {'verbosity': 2,
+              'logfile': 'journald',
+              }
+
+    setup_logging(config)
+    assert len(logger.handlers) == 2
+    assert [x for x in logger.handlers if type(x).__name__ == "JournaldLogHandler"]
+    assert [x for x in logger.handlers if type(x) == logging.StreamHandler]
+    # reset handlers to not break pytest
+    logger.handlers = orig_handlers
+
+
+def test_set_loggers_journald_importerror(mocker, import_fails):
+    logger = logging.getLogger()
+    orig_handlers = logger.handlers
+    logger.handlers = []
+
+    config = {'verbosity': 2,
+              'logfile': 'journald',
+              }
+    with pytest.raises(OperationalException,
+                       match=r'You need the systemd python package.*'):
+        setup_logging(config)
+    logger.handlers = orig_handlers
 
 
 def test_set_logfile(default_conf, mocker):

@@ -1215,7 +1215,7 @@ def import_fails() -> None:
     realimport = builtins.__import__
 
     def mockedimport(name, *args, **kwargs):
-        if name in ["filelock"]:
+        if name in ["filelock", 'systemd.journal']:
             raise ImportError(f"No module named '{name}'")
         return realimport(name, *args, **kwargs)
 
