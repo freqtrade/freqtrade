@@ -100,7 +100,6 @@ def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
 
     assert validated_conf['max_open_trades'] == 0
     assert 'internals' in validated_conf
-    assert log_has('Validating configuration ...', caplog)
 
 
 def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
@@ -132,7 +131,6 @@ def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
     assert validated_conf['exchange']['pair_whitelist'] == conf2['exchange']['pair_whitelist']
 
     assert 'internals' in validated_conf
-    assert log_has('Validating configuration ...', caplog)
 
 
 def test_from_config(default_conf, mocker, caplog) -> None:
@@ -159,7 +157,6 @@ def test_from_config(default_conf, mocker, caplog) -> None:
     assert validated_conf['exchange']['pair_whitelist'] == conf2['exchange']['pair_whitelist']
     assert validated_conf['fiat_display_currency'] == "EUR"
     assert 'internals' in validated_conf
-    assert log_has('Validating configuration ...', caplog)
     assert isinstance(validated_conf['user_data_dir'], Path)
 
 
@@ -191,7 +188,6 @@ def test_load_config_max_open_trades_minus_one(default_conf, mocker, caplog) -> 
 
     assert validated_conf['max_open_trades'] > 999999999
     assert validated_conf['max_open_trades'] == float('inf')
-    assert log_has('Validating configuration ...', caplog)
     assert "runmode" in validated_conf
     assert validated_conf['runmode'] == RunMode.DRY_RUN
 
