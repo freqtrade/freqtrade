@@ -3,16 +3,15 @@ This module contains class to define a RPC communications
 """
 import logging
 from abc import abstractmethod
-from datetime import timedelta, datetime, date
-from decimal import Decimal
+from datetime import date, datetime, timedelta
 from enum import Enum
-from typing import Dict, Any, List, Optional
+from math import isnan
+from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
-from numpy import mean, NAN
-from pandas import DataFrame
+from numpy import NAN, mean
 
-from freqtrade import TemporaryError, DependencyException
+from freqtrade import DependencyException, TemporaryError
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -81,6 +80,29 @@ class RPC:
     def send_msg(self, msg: Dict[str, str]) -> None:
         """ Sends a message to all registered rpc modules """
 
+    def _rpc_show_config(self) -> Dict[str, Any]:
+        """
+        Return a dict of config options.
+        Explicitly does NOT return the full config to avoid leakage of sensitive
+        information via rpc.
+        """
+        config = self._freqtrade.config
+        val = {
+            'dry_run': config.get('dry_run', False),
+            'stake_currency': config['stake_currency'],
+            'stake_amount': config['stake_amount'],
+            'minimal_roi': config['minimal_roi'].copy(),
+            'stoploss': config['stoploss'],
+            'trailing_stop': config['trailing_stop'],
+            'trailing_stop_positive': config.get('trailing_stop_positive'),
+            'trailing_stop_positive_offset': config.get('trailing_stop_positive_offset'),
+            'trailing_only_offset_is_reached': config.get('trailing_only_offset_is_reached'),
+            'ticker_interval': config['ticker_interval'],
+            'exchange': config['exchange']['name'],
+            'strategy': config['strategy'],
+        }
+        return val
+
     def _rpc_trade_status(self) -> List[Dict[str, Any]]:
         """
         Below follows the RPC backend it is prefixed with rpc_ to raise awareness that it is
@@ -117,7 +139,7 @@ class RPC:
                 results.append(trade_dict)
             return results
 
-    def _rpc_status_table(self) -> DataFrame:
+    def _rpc_status_table(self, stake_currency, fiat_display_currency: str) -> Tuple[List, List]:
         trades = Trade.get_open_trades()
         if not trades:
             raise RPCException('no active order')
@@ -130,17 +152,28 @@ class RPC:
                 except DependencyException:
                     current_rate = NAN
                 trade_perc = (100 * trade.calc_profit_percent(current_rate))
+                trade_profit = trade.calc_profit(current_rate)
+                profit_str = f'{trade_perc:.2f}%'
+                if self._fiat_converter:
+                    fiat_profit = self._fiat_converter.convert_amount(
+                            trade_profit,
+                            stake_currency,
+                            fiat_display_currency
+                        )
+                    if fiat_profit and not isnan(fiat_profit):
+                        profit_str += f" ({fiat_profit:.2f})"
                 trades_list.append([
                     trade.id,
                     trade.pair,
                     shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
-                    f'{trade_perc:.2f}%'
+                    profit_str
                 ])
+            profitcol = "Profit"
+            if self._fiat_converter:
+                profitcol += " (" + fiat_display_currency + ")"
 
-            columns = ['ID', 'Pair', 'Since', 'Profit']
-            df_statuses = DataFrame.from_records(trades_list, columns=columns)
-            df_statuses = df_statuses.set_index(columns[0])
-            return df_statuses
+            columns = ['ID', 'Pair', 'Since', profitcol]
+            return trades_list, columns
 
     def _rpc_daily_profit(
             self, timescale: int,
@@ -219,7 +252,7 @@ class RPC:
                 profit_percent = trade.calc_profit_percent(rate=current_rate)
 
             profit_all_coin.append(
-                trade.calc_profit(rate=Decimal(trade.close_rate or current_rate))
+                trade.calc_profit(rate=trade.close_rate or current_rate)
             )
             profit_all_perc.append(profit_percent)
 
@@ -452,7 +485,7 @@ class RPC:
 
     def _rpc_whitelist(self) -> Dict:
         """ Returns the currently active whitelist"""
-        res = {'method': self._freqtrade.pairlists.name,
+        res = {'method': self._freqtrade.pairlists.name_list,
                'length': len(self._freqtrade.active_pair_whitelist),
                'whitelist': self._freqtrade.active_pair_whitelist
                }
@@ -467,7 +500,7 @@ class RPC:
                         and pair not in self._freqtrade.pairlists.blacklist):
                     self._freqtrade.pairlists.blacklist.append(pair)
 
-        res = {'method': self._freqtrade.pairlists.name,
+        res = {'method': self._freqtrade.pairlists.name_list,
                'length': len(self._freqtrade.pairlists.blacklist),
                'blacklist': self._freqtrade.pairlists.blacklist,
                }

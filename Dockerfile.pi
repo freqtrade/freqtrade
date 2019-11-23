@@ -38,3 +38,4 @@ RUN ~/berryconda3/bin/pip install -e . --no-cache-dir
 RUN [ "cross-build-end" ]
 
 ENTRYPOINT ["/root/berryconda3/bin/python","./freqtrade/main.py"]
+CMD [ "trade" ]

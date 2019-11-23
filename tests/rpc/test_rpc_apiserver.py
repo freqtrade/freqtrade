@@ -64,6 +64,10 @@ def test_api_not_found(botclient):
 
 def test_api_unauthorized(botclient):
     ftbot, client = botclient
+    rc = client.get(f"{BASE_URI}/ping")
+    assert_response(rc)
+    assert rc.json == {'status': 'pong'}
+
     # Don't send user/pass information
     rc = client.get(f"{BASE_URI}/version")
     assert_response(rc, 401)
@@ -280,6 +284,18 @@ def test_api_count(botclient, mocker, ticker, fee, markets):
     assert rc.json["max"] == 1.0
 
 
+def test_api_show_config(botclient, mocker):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, (True, False))
+
+    rc = client_get(client, f"{BASE_URI}/show_config")
+    assert_response(rc)
+    assert 'dry_run' in rc.json
+    assert rc.json['exchange'] == 'bittrex'
+    assert rc.json['ticker_interval'] == '5m'
+    assert not rc.json['trailing_stop']
+
+
 def test_api_daily(botclient, mocker, ticker, fee, markets):
     ftbot, client = botclient
     patch_get_signal(ftbot, (True, False))
@@ -413,8 +429,8 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     )
 
     rc = client_get(client, f"{BASE_URI}/status")
-    assert_response(rc, 502)
-    assert rc.json == {'error': 'Error querying _status: no active trade'}
+    assert_response(rc, 200)
+    assert rc.json == []
 
     ftbot.create_trades()
     rc = client_get(client, f"{BASE_URI}/status")
@@ -456,7 +472,7 @@ def test_api_blacklist(botclient, mocker):
     assert_response(rc)
     assert rc.json == {"blacklist": ["DOGE/BTC", "HOT/BTC"],
                        "length": 2,
-                       "method": "StaticPairList"}
+                       "method": ["StaticPairList"]}
 
     # Add ETH/BTC to blacklist
     rc = client_post(client, f"{BASE_URI}/blacklist",
@@ -464,7 +480,7 @@ def test_api_blacklist(botclient, mocker):
     assert_response(rc)
     assert rc.json == {"blacklist": ["DOGE/BTC", "HOT/BTC", "ETH/BTC"],
                        "length": 3,
-                       "method": "StaticPairList"}
+                       "method": ["StaticPairList"]}
 
 
 def test_api_whitelist(botclient):
@@ -474,7 +490,7 @@ def test_api_whitelist(botclient):
     assert_response(rc)
     assert rc.json == {"whitelist": ['ETH/BTC', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC'],
                        "length": 4,
-                       "method": "StaticPairList"}
+                       "method": ["StaticPairList"]}
 
 
 def test_api_forcebuy(botclient, mocker, fee):

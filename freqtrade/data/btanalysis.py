@@ -7,7 +7,7 @@ from typing import Dict
 
 import numpy as np
 import pandas as pd
-import pytz
+from datetime import timezone
 
 from freqtrade import persistence
 from freqtrade.misc import json_load
@@ -106,8 +106,8 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
                "stop_loss", "initial_stop_loss", "strategy", "ticker_interval"]
 
     trades = pd.DataFrame([(t.pair,
-                            t.open_date.replace(tzinfo=pytz.UTC),
-                            t.close_date.replace(tzinfo=pytz.UTC) if t.close_date else None,
+                            t.open_date.replace(tzinfo=timezone.utc),
+                            t.close_date.replace(tzinfo=timezone.utc) if t.close_date else None,
                             t.calc_profit(), t.calc_profit_percent(),
                             t.open_rate, t.close_rate, t.amount,
                             (round((t.close_date.timestamp() - t.open_date.timestamp()) / 60, 2)
@@ -178,9 +178,9 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     :return: Returns df with one additional column, col_name, containing the cumulative profit.
     """
     from freqtrade.exchange import timeframe_to_minutes
-    ticker_minutes = timeframe_to_minutes(timeframe)
-    # Resample to ticker_interval to make sure trades match candles
-    _trades_sum = trades.resample(f'{ticker_minutes}min', on='close_time')[['profitperc']].sum()
+    timeframe_minutes = timeframe_to_minutes(timeframe)
+    # Resample to timeframe to make sure trades match candles
+    _trades_sum = trades.resample(f'{timeframe_minutes}min', on='close_time')[['profitperc']].sum()
     df.loc[:, col_name] = _trades_sum.cumsum()
     # Set first value to 0
     df.loc[df.iloc[0].name, col_name] = 0

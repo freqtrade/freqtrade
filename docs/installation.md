@@ -26,24 +26,32 @@ You will need to create API Keys (Usually you get `key` and `secret`) from the E
 
 ## Quick start
 
-Freqtrade provides a Linux/MacOS script to install all dependencies and help you to configure the bot.
-
-!!! Note
-    Python3.6 or higher and the corresponding pip are assumed to be available. The install-script will warn and stop if that's not the case.
-
-```bash
-git clone git@github.com:freqtrade/freqtrade.git
-cd freqtrade
-git checkout develop
-./setup.sh --install
-```
+Freqtrade provides the Linux/MacOS Easy Installation script to install all dependencies and help you configure the bot.
 
 !!! Note
     Windows installation is explained [here](#windows).
 
-## Easy Installation - Linux Script
+The easiest way to install and run Freqtrade is to clone the bot GitHub repository and then run the Easy Installation script, if it's available for your platform.
 
-If you are on Debian, Ubuntu or MacOS freqtrade provides a script to Install, Update, Configure, and Reset your bot.
+!!! Note "Version considerations"
+    When cloning the repository the default working branch has the name `develop`. This branch contains all last features (can be considered as relatively stable, thanks to automated tests). The `master` branch contains the code of the last release (done usually once per month on an approximately one week old snapshot of the `develop` branch to prevent packaging bugs, so potentially it's more stable).
+
+!!! Note
+    Python3.6 or higher and the corresponding `pip` are assumed to be available. The install-script will warn you and stop if that's not the case. `git` is also needed to clone the Freqtrade repository.
+
+This can be achieved with the following commands:
+
+```bash
+git clone git@github.com:freqtrade/freqtrade.git
+cd freqtrade
+git checkout master  # Optional, see (1)
+./setup.sh --install
+```
+(1) This command switches the cloned repository to the use of the `master` branch. It's not needed if you wish to stay on the `develop` branch. You may later switch between branches at any time with the `git checkout master`/`git checkout develop` commands.
+
+## Easy Installation Script (Linux/MacOS)
+
+If you are on Debian, Ubuntu or MacOS Freqtrade provides the script to install, update, configure and reset the codebase of your bot.
 
 ```bash
 $ ./setup.sh
@@ -56,25 +64,25 @@ usage:
 
 ** --install **
 
-This script will install everything you need to run the bot:
+With this option, the script will install everything you need to run the bot:
 
 * Mandatory software as: `ta-lib`
 * Setup your virtualenv
 * Configure your `config.json` file
 
-This script is a combination of `install script` `--reset`, `--config`
+This option is a combination of installation tasks, `--reset` and `--config`.
 
 ** --update **
 
-Update parameter will pull the last version of your current branch and update your virtualenv.
+This option will pull the last version of your current branch and update your virtualenv. Run the script with this option periodically to update your bot.
 
 ** --reset **
 
-Reset parameter will hard reset your branch (only if you are on `master` or `develop`) and recreate your virtualenv.
+This option will hard reset your branch (only if you are on either `master` or `develop`) and recreate your virtualenv.
 
 ** --config **
 
-Config parameter is a `config.json` configurator. This script will ask you questions to setup your bot and create your `config.json`.
+Use this option to configure the `config.json` configuration file. The script will interactively ask you questions to setup your bot and create your `config.json`.
 
 ------
 
@@ -184,7 +192,7 @@ python3 -m pip install -e .
 If this is the first time you run the bot, ensure you are running it in Dry-run `"dry_run": true,` otherwise it will start to buy and sell coins.
 
 ```bash
-freqtrade -c config.json
+freqtrade trade -c config.json
 ```
 
 *Note*: If you run the bot on a server, you should consider using [Docker](docker.md) or a terminal multiplexer like `screen` or [`tmux`](https://en.wikipedia.org/wiki/Tmux) to avoid that the bot is stopped on logout.

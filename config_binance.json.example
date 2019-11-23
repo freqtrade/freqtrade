@@ -54,6 +54,9 @@
             "BNB/BTC"
         ]
     },
+    "pairlists": [
+        {"method": "StaticPairList"}
+    ],
     "edge": {
         "enabled": false,
         "process_throttle_secs": 3600,

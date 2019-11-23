@@ -1047,8 +1047,8 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
     ]
     pair = 'ETH/BTC'
 
-    async def mock_candle_hist(pair, ticker_interval, since_ms):
-        return pair, ticker_interval, tick
+    async def mock_candle_hist(pair, timeframe, since_ms):
+        return pair, timeframe, tick
 
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
@@ -1107,7 +1107,7 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m'), ('XRP/ETH', '5m')])
 
     assert exchange._api_async.fetch_ohlcv.call_count == 2
-    assert log_has(f"Using cached ohlcv data for pair {pairs[0][0]}, interval {pairs[0][1]} ...",
+    assert log_has(f"Using cached ohlcv data for pair {pairs[0][0]}, timeframe {pairs[0][1]} ...",
                    caplog)
 
 
@@ -1143,7 +1143,7 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
     # exchange = Exchange(default_conf)
     await async_ccxt_exception(mocker, default_conf, MagicMock(),
                                "_async_get_candle_history", "fetch_ohlcv",
-                               pair='ABCD/BTC', ticker_interval=default_conf['ticker_interval'])
+                               pair='ABCD/BTC', timeframe=default_conf['ticker_interval'])
 
     api_mock = MagicMock()
     with pytest.raises(OperationalException, match=r'Could not fetch ticker data*'):
@@ -1586,8 +1586,9 @@ def test_name(default_conf, mocker, exchange_name):
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_trades_for_order(default_conf, mocker, exchange_name):
+
     order_id = 'ABCD-ABCD'
-    since = datetime(2018, 5, 5, tzinfo=timezone.utc)
+    since = datetime(2018, 5, 5, 0, 0, 0)
     default_conf["dry_run"] = False
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
     api_mock = MagicMock()
@@ -1623,7 +1624,8 @@ def test_get_trades_for_order(default_conf, mocker, exchange_name):
     assert api_mock.fetch_my_trades.call_args[0][0] == 'LTC/BTC'
     # Same test twice, hardcoded number and doing the same calculation
     assert api_mock.fetch_my_trades.call_args[0][1] == 1525478395000
-    assert api_mock.fetch_my_trades.call_args[0][1] == int(since.timestamp() - 5) * 1000
+    assert api_mock.fetch_my_trades.call_args[0][1] == int(since.replace(
+        tzinfo=timezone.utc).timestamp() - 5) * 1000
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            'get_trades_for_order', 'fetch_my_trades',

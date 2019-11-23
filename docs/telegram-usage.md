@@ -53,6 +53,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/stop` | | Stops the trader
 | `/stopbuy` | | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
 | `/reload_conf` | | Reloads the configuration file
+| `/show_config` | | Shows part of the current configuration with relevant settings to operation
 | `/status` | | Lists all open trades
 | `/status table` | | List all open trades in a table format
 | `/count` | | Displays number of trades used and available

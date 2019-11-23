@@ -1804,7 +1804,7 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order,
 def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, open_trade,
                                    fee, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
-    cancel_order_mock = MagicMock()
+    cancel_order_mock = MagicMock(return_value=limit_buy_order_old)
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -2070,6 +2070,29 @@ def test_handle_timedout_limit_buy(mocker, default_conf, limit_buy_order) -> Non
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     cancel_order_mock = MagicMock(return_value=limit_buy_order)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        cancel_order=cancel_order_mock
+    )
+
+    freqtrade = FreqtradeBot(default_conf)
+
+    Trade.session = MagicMock()
+    trade = MagicMock()
+    limit_buy_order['remaining'] = limit_buy_order['amount']
+    assert freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
+    assert cancel_order_mock.call_count == 1
+
+    cancel_order_mock.reset_mock()
+    limit_buy_order['amount'] = 2
+    assert not freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
+    assert cancel_order_mock.call_count == 1
+
+
+def test_handle_timedout_limit_buy_corder_empty(mocker, default_conf, limit_buy_order) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    cancel_order_mock = MagicMock(return_value={})
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         cancel_order=cancel_order_mock

@@ -39,12 +39,12 @@ class TimeRange:
         if self.startts:
             self.startts = self.startts - seconds
 
-    def adjust_start_if_necessary(self, ticker_interval_secs: int, startup_candles: int,
+    def adjust_start_if_necessary(self, timeframe_secs: int, startup_candles: int,
                                   min_date: arrow.Arrow) -> None:
         """
         Adjust startts by <startup_candles> candles.
         Applies only if no startup-candles have been available.
-        :param ticker_interval_secs: Ticker interval in seconds e.g. `timeframe_to_seconds('5m')`
+        :param timeframe_secs: Ticker timeframe in seconds e.g. `timeframe_to_seconds('5m')`
         :param startup_candles: Number of candles to move start-date forward
         :param min_date: Minimum data date loaded. Key kriterium to decide if start-time
                          has to be moved
@@ -55,7 +55,7 @@ class TimeRange:
             # If no startts was defined, or backtest-data starts at the defined backtest-date
             logger.warning("Moving start-date by %s candles to account for startup time.",
                            startup_candles)
-            self.startts = (min_date.timestamp + ticker_interval_secs * startup_candles)
+            self.startts = (min_date.timestamp + timeframe_secs * startup_candles)
             self.starttype = 'date'
 
     @staticmethod

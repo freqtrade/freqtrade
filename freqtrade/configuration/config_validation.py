@@ -122,6 +122,7 @@ def _validate_whitelist(conf: Dict[str, Any]) -> None:
                                               RunMode.UTIL_NO_EXCHANGE, RunMode.UTIL_EXCHANGE]:
         return
 
-    if (conf.get('pairlist', {}).get('method', 'StaticPairList') == 'StaticPairList'
-       and not conf.get('exchange', {}).get('pair_whitelist')):
-        raise OperationalException("StaticPairList requires pair_whitelist to be set.")
+    for pl in conf.get('pairlists', [{'method': 'StaticPairList'}]):
+        if (pl.get('method') == 'StaticPairList'
+                and not conf.get('exchange', {}).get('pair_whitelist')):
+            raise OperationalException("StaticPairList requires pair_whitelist to be set.")

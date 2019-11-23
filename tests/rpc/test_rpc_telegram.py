@@ -73,7 +73,7 @@ def test_init(default_conf, mocker, caplog) -> None:
 
     message_str = "rpc.telegram is listening for following commands: [['status'], ['profit'], " \
                   "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], " \
-                  "['performance'], ['daily'], ['count'], ['reload_conf'], " \
+                  "['performance'], ['daily'], ['count'], ['reload_conf'], ['show_config'], " \
                   "['stopbuy'], ['whitelist'], ['blacklist'], ['edge'], ['help'], ['version']]"
 
     assert log_has(message_str, caplog)
@@ -1050,8 +1050,8 @@ def test_whitelist_static(default_conf, update, mocker) -> None:
 
     telegram._whitelist(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
-    assert ('Using whitelist `StaticPairList` with 4 pairs\n`ETH/BTC, LTC/BTC, XRP/BTC, NEO/BTC`'
-            in msg_mock.call_args_list[0][0][0])
+    assert ("Using whitelist `['StaticPairList']` with 4 pairs\n"
+            "`ETH/BTC, LTC/BTC, XRP/BTC, NEO/BTC`" in msg_mock.call_args_list[0][0][0])
 
 
 def test_whitelist_dynamic(default_conf, update, mocker) -> None:
@@ -1062,17 +1062,17 @@ def test_whitelist_dynamic(default_conf, update, mocker) -> None:
         _send_msg=msg_mock
     )
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
-    default_conf['pairlist'] = {'method': 'VolumePairList',
-                                'config': {'number_assets': 4}
-                                }
+    default_conf['pairlists'] = [{'method': 'VolumePairList',
+                                 'number_assets': 4
+                                  }]
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
 
     telegram = Telegram(freqtradebot)
 
     telegram._whitelist(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
-    assert ('Using whitelist `VolumePairList` with 4 pairs\n`ETH/BTC, LTC/BTC, XRP/BTC, NEO/BTC`'
-            in msg_mock.call_args_list[0][0][0])
+    assert ("Using whitelist `['VolumePairList']` with 4 pairs\n"
+            "`ETH/BTC, LTC/BTC, XRP/BTC, NEO/BTC`" in msg_mock.call_args_list[0][0][0])
 
 
 def test_blacklist_static(default_conf, update, mocker) -> None:
@@ -1172,6 +1172,23 @@ def test_version_handle(default_conf, update, mocker) -> None:
     telegram._version(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
     assert '*Version:* `{}`'.format(__version__) in msg_mock.call_args_list[0][0][0]
+
+
+def test_show_config_handle(default_conf, update, mocker) -> None:
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    telegram = Telegram(freqtradebot)
+
+    telegram._show_config(update=update, context=MagicMock())
+    assert msg_mock.call_count == 1
+    assert '*Mode:* `{}`'.format('Dry-run') in msg_mock.call_args_list[0][0][0]
+    assert '*Exchange:* `bittrex`' in msg_mock.call_args_list[0][0][0]
+    assert '*Strategy:* `DefaultStrategy`' in msg_mock.call_args_list[0][0][0]
 
 
 def test_send_msg_buy_notification(default_conf, mocker) -> None:

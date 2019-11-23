@@ -65,9 +65,8 @@ AVAILABLE_CLI_OPTIONS = {
     # Main options
     "strategy": Arg(
         '-s', '--strategy',
-        help='Specify strategy class name (default: `%(default)s`).',
+        help='Specify strategy class name which will be used by the bot.',
         metavar='NAME',
-        default='DefaultStrategy',
     ),
     "strategy_path": Arg(
         '--strategy-path',
@@ -84,6 +83,11 @@ AVAILABLE_CLI_OPTIONS = {
     "sd_notify": Arg(
         '--sd-notify',
         help='Notify systemd service manager.',
+        action='store_true',
+    ),
+    "dry_run": Arg(
+        '--dry-run',
+        help='Enforce dry-run for trading (removes Exchange secrets and simulates trades).',
         action='store_true',
     ),
     # Optimize common
@@ -136,7 +140,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "exportfilename": Arg(
         '--export-filename',
-        help='Save backtest results to the file with this filename (default: `%(default)s`). '
+        help='Save backtest results to the file with this filename. '
         'Requires `--export` to be set as well. '
         'Example: `--export-filename=user_data/backtest_results/backtest_today.json`',
         metavar='PATH',
@@ -156,14 +160,13 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     # Hyperopt
     "hyperopt": Arg(
-        '--customhyperopt',
-        help='Specify hyperopt class name (default: `%(default)s`).',
+        '--hyperopt',
+        help='Specify hyperopt class name which will be used by the bot.',
         metavar='NAME',
-        default=constants.DEFAULT_HYPEROPT,
     ),
     "hyperopt_path": Arg(
         '--hyperopt-path',
-        help='Specify additional lookup path for Hyperopts and Hyperopt Loss functions.',
+        help='Specify additional lookup path for Hyperopt and Hyperopt Loss functions.',
         metavar='PATH',
     ),
     "epochs": Arg(

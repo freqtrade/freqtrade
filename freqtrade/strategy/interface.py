@@ -109,8 +109,8 @@ class IStrategy(ABC):
     # Class level variables (intentional) containing
     # the dataprovider (dp) (access to other candles, historic data, ...)
     # and wallets - access to the current balance.
-    dp: DataProvider
-    wallets: Wallets
+    dp: Optional[DataProvider] = None
+    wallets: Optional[Wallets] = None
 
     def __init__(self, config: dict) -> None:
         self.config = config

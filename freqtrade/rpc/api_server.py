@@ -169,6 +169,10 @@ class ApiServer(RPC):
                               view_func=self._status, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/version', 'version',
                               view_func=self._version, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/show_config', 'show_config',
+                              view_func=self._show_config, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/ping', 'ping',
+                              view_func=self._ping, methods=['GET'])
 
         # Combined actions and infos
         self.app.add_url_rule(f'{BASE_URI}/blacklist', 'blacklist', view_func=self._blacklist,
@@ -224,6 +228,13 @@ class ApiServer(RPC):
         msg = self._rpc_stopbuy()
         return self.rest_dump(msg)
 
+    @rpc_catch_errors
+    def _ping(self):
+        """
+        simple poing version
+        """
+        return self.rest_dump({"status": "pong"})
+
     @require_login
     @rpc_catch_errors
     def _version(self):
@@ -231,6 +242,14 @@ class ApiServer(RPC):
         Prints the bot's version
         """
         return self.rest_dump({"version": __version__})
+
+    @require_login
+    @rpc_catch_errors
+    def _show_config(self):
+        """
+        Prints the bot's version
+        """
+        return self.rest_dump(self._rpc_show_config())
 
     @require_login
     @rpc_catch_errors
@@ -265,7 +284,7 @@ class ApiServer(RPC):
 
         stats = self._rpc_daily_profit(timescale,
                                        self._config['stake_currency'],
-                                       self._config['fiat_display_currency']
+                                       self._config.get('fiat_display_currency', '')
                                        )
 
         return self.rest_dump(stats)
@@ -321,8 +340,11 @@ class ApiServer(RPC):
 
         Returns the current status of the trades in json format
         """
-        results = self._rpc_trade_status()
-        return self.rest_dump(results)
+        try:
+            results = self._rpc_trade_status()
+            return self.rest_dump(results)
+        except RPCException:
+            return self.rest_dump([])
 
     @require_login
     @rpc_catch_errors
