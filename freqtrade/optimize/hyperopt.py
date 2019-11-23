@@ -220,7 +220,7 @@ class Hyperopt:
         is_best_loss = self.is_best(results)
 
         if not print_all:
-            print('.', end='' if results['current_epoch'] % 100 != 0 else None)
+            print('.', end='' if results['current_epoch'] % 100 != 0 else None)  # type: ignore
             sys.stdout.flush()
 
         if print_all or is_best_loss:
