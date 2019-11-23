@@ -605,6 +605,7 @@ def test_set_loggers() -> None:
     assert logging.getLogger('telegram').level is logging.INFO
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_set_loggers_syslog(mocker):
     logger = logging.getLogger()
     orig_handlers = logger.handlers
@@ -622,7 +623,7 @@ def test_set_loggers_syslog(mocker):
     logger.handlers = orig_handlers
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
+@pytest.mark.skip(reason="systemd is not installed on every system, so we're not testing this.")
 def test_set_loggers_journald(mocker):
     logger = logging.getLogger()
     orig_handlers = logger.handlers
