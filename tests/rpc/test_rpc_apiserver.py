@@ -224,24 +224,6 @@ def test_api_stopbuy(botclient):
 def test_api_balance(botclient, mocker, rpc_balance):
     ftbot, client = botclient
 
-    def mock_ticker(symbol, refresh):
-        if symbol == 'BTC/USDT':
-            return {
-                'bid': 10000.00,
-                'ask': 10000.00,
-                'last': 10000.00,
-            }
-        elif symbol == 'XRP/BTC':
-            return {
-                'bid': 0.00001,
-                'ask': 0.00001,
-                'last': 0.00001,
-            }
-        return {
-            'bid': 0.1,
-            'ask': 0.1,
-            'last': 0.1,
-        }
     mocker.patch('freqtrade.exchange.Exchange.get_balances', return_value=rpc_balance)
     mocker.patch('freqtrade.exchange.Exchange.get_valid_pair_combination',
                  side_effect=lambda a, b: f"{a}/{b}")
