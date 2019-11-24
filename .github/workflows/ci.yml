@@ -73,9 +73,9 @@ jobs:
         # Allow failure for coveralls
         # Fake travis environment to get coveralls working correctly
         export TRAVIS_PULL_REQUEST="https://github.com/${GITHUB_REPOSITORY}/pull/$(cat $GITHUB_EVENT_PATH | jq -r .number)"
-        export CI_BRANCH=${GITHUB_REF#"ref/heads"}
-        export CI_BRANCH=${HEAD_REF}
-        echo "${CI_BRANCH}"
+        export TRAVIS_BRANCH=${GITHUB_REF#"ref/heads"}
+        export TRAVIS_BRANCH=${HEAD_REF}
+        echo "${TRAVIS_BRANCH}"
         coveralls || true
 
     - name: Backtesting

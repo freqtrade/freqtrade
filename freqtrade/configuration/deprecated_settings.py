@@ -58,6 +58,13 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
     process_deprecated_setting(config, 'ask_strategy', 'ignore_roi_if_buy_signal',
                                'experimental', 'ignore_roi_if_buy_signal')
 
+    if not config.get('pairlists') and not config.get('pairlists'):
+        config['pairlists'] = [{'method': 'StaticPairList'}]
+        logger.warning(
+            "DEPRECATED: "
+            "Pairlists must be defined explicitly in the future."
+            "Defaulting to StaticPairList for now.")
+
     if config.get('pairlist', {}).get("method") == 'VolumePairList':
         logger.warning(
             "DEPRECATED: "
