@@ -306,14 +306,14 @@ class RPC:
         except (TemporaryError, DependencyException):
             raise RPCException('Error getting current tickers.')
 
-        for coin, balance in self._freqtrade.exchange.get_balances().items():
-            if not balance['total']:
+        for coin, balance in self._freqtrade.wallets.get_all_balances().items():
+            if not balance.total:
                 continue
 
             est_stake: float = 0
             if coin == stake_currency:
                 rate = 1.0
-                est_stake = balance['total']
+                est_stake = balance.total
             else:
                 try:
                     pair = self._freqtrade.exchange.get_valid_pair_combination(coin, stake_currency)
@@ -321,16 +321,16 @@ class RPC:
                     if rate:
                         if pair.startswith(stake_currency):
                             rate = 1.0 / rate
-                        est_stake = rate * balance['total']
+                        est_stake = rate * balance.total
                 except (TemporaryError, DependencyException):
                     logger.warning(f" Could not get rate for pair {coin}.")
                     continue
             total = total + (est_stake or 0)
             output.append({
                 'currency': coin,
-                'free': balance['free'] if balance['free'] is not None else 0,
-                'balance': balance['total'] if balance['total'] is not None else 0,
-                'used': balance['used'] if balance['used'] is not None else 0,
+                'free': balance.free if balance.free is not None else 0,
+                'balance': balance.total if balance.total is not None else 0,
+                'used': balance.used if balance.used is not None else 0,
                 'est_stake': est_stake or 0,
                 'stake': stake_currency,
             })

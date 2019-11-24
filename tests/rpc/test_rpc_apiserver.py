@@ -243,9 +243,9 @@ def test_api_balance(botclient, mocker, rpc_balance):
             'last': 0.1,
         }
     mocker.patch('freqtrade.exchange.Exchange.get_balances', return_value=rpc_balance)
-    mocker.patch('freqtrade.exchange.Exchange.get_ticker', side_effect=mock_ticker)
     mocker.patch('freqtrade.exchange.Exchange.get_valid_pair_combination',
                  side_effect=lambda a, b: f"{a}/{b}")
+    ftbot.wallets.update()
 
     rc = client_get(client, f"{BASE_URI}/balance")
     assert_response(rc)
