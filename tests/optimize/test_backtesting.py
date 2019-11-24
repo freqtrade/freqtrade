@@ -869,6 +869,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         'backtesting',
         '--config', 'config.json',
         '--datadir', str(testdatadir),
+        '--strategy-path', str(Path(__file__).parents[2] / 'freqtrade/templates'),
         '--ticker-interval', '1m',
         '--timerange', '1510694220-1510700340',
         '--enable-position-stacking',

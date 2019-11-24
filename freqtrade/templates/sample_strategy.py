@@ -1,13 +1,16 @@
+# pragma pylint: disable=missing-docstring, invalid-name, pointless-string-statement
 
 # --- Do not remove these libs ---
-from freqtrade.strategy.interface import IStrategy
+import numpy as np  # noqa
+import pandas as pd  # noqa
 from pandas import DataFrame
-# --------------------------------
 
+from freqtrade.strategy.interface import IStrategy
+
+# --------------------------------
 # Add your lib to import here
 import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
-import numpy  # noqa
 
 
 # This class is a sample. Feel free to customize it.
@@ -110,19 +113,18 @@ class SampleStrategy(IStrategy):
         # ADX
         dataframe['adx'] = ta.ADX(dataframe)
 
-        """
-        # Aroon, Aroon Oscillator
-        aroon = ta.AROON(dataframe)
-        dataframe['aroonup'] = aroon['aroonup']
-        dataframe['aroondown'] = aroon['aroondown']
-        dataframe['aroonosc'] = ta.AROONOSC(dataframe)
+        # # Aroon, Aroon Oscillator
+        # aroon = ta.AROON(dataframe)
+        # dataframe['aroonup'] = aroon['aroonup']
+        # dataframe['aroondown'] = aroon['aroondown']
+        # dataframe['aroonosc'] = ta.AROONOSC(dataframe)
 
-        # Awesome oscillator
-        dataframe['ao'] = qtpylib.awesome_oscillator(dataframe)
+        # # Awesome oscillator
+        # dataframe['ao'] = qtpylib.awesome_oscillator(dataframe)
 
-        # Commodity Channel Index: values Oversold:<-100, Overbought:>100
-        dataframe['cci'] = ta.CCI(dataframe)
-        """
+        # # Commodity Channel Index: values Oversold:<-100, Overbought:>100
+        # dataframe['cci'] = ta.CCI(dataframe)
+
         # MACD
         macd = ta.MACD(dataframe)
         dataframe['macd'] = macd['macd']
@@ -132,42 +134,39 @@ class SampleStrategy(IStrategy):
         # MFI
         dataframe['mfi'] = ta.MFI(dataframe)
 
-        """
-        # Minus Directional Indicator / Movement
-        dataframe['minus_dm'] = ta.MINUS_DM(dataframe)
-        dataframe['minus_di'] = ta.MINUS_DI(dataframe)
+        # # Minus Directional Indicator / Movement
+        # dataframe['minus_dm'] = ta.MINUS_DM(dataframe)
+        # dataframe['minus_di'] = ta.MINUS_DI(dataframe)
 
-        # Plus Directional Indicator / Movement
-        dataframe['plus_dm'] = ta.PLUS_DM(dataframe)
-        dataframe['plus_di'] = ta.PLUS_DI(dataframe)
-        dataframe['minus_di'] = ta.MINUS_DI(dataframe)
+        # # Plus Directional Indicator / Movement
+        # dataframe['plus_dm'] = ta.PLUS_DM(dataframe)
+        # dataframe['plus_di'] = ta.PLUS_DI(dataframe)
+        # dataframe['minus_di'] = ta.MINUS_DI(dataframe)
 
-        # ROC
-        dataframe['roc'] = ta.ROC(dataframe)
+        # # ROC
+        # dataframe['roc'] = ta.ROC(dataframe)
 
-        # Inverse Fisher transform on RSI, values [-1.0, 1.0] (https://goo.gl/2JGGoy)
-        rsi = 0.1 * (dataframe['rsi'] - 50)
-        dataframe['fisher_rsi'] = (numpy.exp(2 * rsi) - 1) / (numpy.exp(2 * rsi) + 1)
+        # # Inverse Fisher transform on RSI, values [-1.0, 1.0] (https://goo.gl/2JGGoy)
+        # rsi = 0.1 * (dataframe['rsi'] - 50)
+        # dataframe['fisher_rsi'] = (np.exp(2 * rsi) - 1) / (np.exp(2 * rsi) + 1)
 
-        # Inverse Fisher transform on RSI normalized, value [0.0, 100.0] (https://goo.gl/2JGGoy)
-        dataframe['fisher_rsi_norma'] = 50 * (dataframe['fisher_rsi'] + 1)
+        # # Inverse Fisher transform on RSI normalized, value [0.0, 100.0] (https://goo.gl/2JGGoy)
+        # dataframe['fisher_rsi_norma'] = 50 * (dataframe['fisher_rsi'] + 1)
 
-        # Stoch
-        stoch = ta.STOCH(dataframe)
-        dataframe['slowd'] = stoch['slowd']
-        dataframe['slowk'] = stoch['slowk']
-        """
+        # # Stoch
+        # stoch = ta.STOCH(dataframe)
+        # dataframe['slowd'] = stoch['slowd']
+        # dataframe['slowk'] = stoch['slowk']
+
         # Stoch fast
         stoch_fast = ta.STOCHF(dataframe)
         dataframe['fastd'] = stoch_fast['fastd']
         dataframe['fastk'] = stoch_fast['fastk']
 
-        """
-        # Stoch RSI
-        stoch_rsi = ta.STOCHRSI(dataframe)
-        dataframe['fastd_rsi'] = stoch_rsi['fastd']
-        dataframe['fastk_rsi'] = stoch_rsi['fastk']
-        """
+        # # Stoch RSI
+        # stoch_rsi = ta.STOCHRSI(dataframe)
+        # dataframe['fastd_rsi'] = stoch_rsi['fastd']
+        # dataframe['fastk_rsi'] = stoch_rsi['fastk']
 
         # Overlap Studies
         # ------------------------------------
@@ -178,17 +177,16 @@ class SampleStrategy(IStrategy):
         dataframe['bb_middleband'] = bollinger['mid']
         dataframe['bb_upperband'] = bollinger['upper']
 
-        """
-        # EMA - Exponential Moving Average
-        dataframe['ema3'] = ta.EMA(dataframe, timeperiod=3)
-        dataframe['ema5'] = ta.EMA(dataframe, timeperiod=5)
-        dataframe['ema10'] = ta.EMA(dataframe, timeperiod=10)
-        dataframe['ema50'] = ta.EMA(dataframe, timeperiod=50)
-        dataframe['ema100'] = ta.EMA(dataframe, timeperiod=100)
+        # # EMA - Exponential Moving Average
+        # dataframe['ema3'] = ta.EMA(dataframe, timeperiod=3)
+        # dataframe['ema5'] = ta.EMA(dataframe, timeperiod=5)
+        # dataframe['ema10'] = ta.EMA(dataframe, timeperiod=10)
+        # dataframe['ema50'] = ta.EMA(dataframe, timeperiod=50)
+        # dataframe['ema100'] = ta.EMA(dataframe, timeperiod=100)
 
-        # SMA - Simple Moving Average
-        dataframe['sma'] = ta.SMA(dataframe, timeperiod=40)
-        """
+        # # SMA - Simple Moving Average
+        # dataframe['sma'] = ta.SMA(dataframe, timeperiod=40)
+
         # SAR Parabol
         dataframe['sar'] = ta.SAR(dataframe)
 
@@ -204,65 +202,57 @@ class SampleStrategy(IStrategy):
 
         # Pattern Recognition - Bullish candlestick patterns
         # ------------------------------------
-        """
-        # Hammer: values [0, 100]
-        dataframe['CDLHAMMER'] = ta.CDLHAMMER(dataframe)
-        # Inverted Hammer: values [0, 100]
-        dataframe['CDLINVERTEDHAMMER'] = ta.CDLINVERTEDHAMMER(dataframe)
-        # Dragonfly Doji: values [0, 100]
-        dataframe['CDLDRAGONFLYDOJI'] = ta.CDLDRAGONFLYDOJI(dataframe)
-        # Piercing Line: values [0, 100]
-        dataframe['CDLPIERCING'] = ta.CDLPIERCING(dataframe) # values [0, 100]
-        # Morningstar: values [0, 100]
-        dataframe['CDLMORNINGSTAR'] = ta.CDLMORNINGSTAR(dataframe) # values [0, 100]
-        # Three White Soldiers: values [0, 100]
-        dataframe['CDL3WHITESOLDIERS'] = ta.CDL3WHITESOLDIERS(dataframe) # values [0, 100]
-        """
+        # # Hammer: values [0, 100]
+        # dataframe['CDLHAMMER'] = ta.CDLHAMMER(dataframe)
+        # # Inverted Hammer: values [0, 100]
+        # dataframe['CDLINVERTEDHAMMER'] = ta.CDLINVERTEDHAMMER(dataframe)
+        # # Dragonfly Doji: values [0, 100]
+        # dataframe['CDLDRAGONFLYDOJI'] = ta.CDLDRAGONFLYDOJI(dataframe)
+        # # Piercing Line: values [0, 100]
+        # dataframe['CDLPIERCING'] = ta.CDLPIERCING(dataframe) # values [0, 100]
+        # # Morningstar: values [0, 100]
+        # dataframe['CDLMORNINGSTAR'] = ta.CDLMORNINGSTAR(dataframe) # values [0, 100]
+        # # Three White Soldiers: values [0, 100]
+        # dataframe['CDL3WHITESOLDIERS'] = ta.CDL3WHITESOLDIERS(dataframe) # values [0, 100]
 
         # Pattern Recognition - Bearish candlestick patterns
         # ------------------------------------
-        """
-        # Hanging Man: values [0, 100]
-        dataframe['CDLHANGINGMAN'] = ta.CDLHANGINGMAN(dataframe)
-        # Shooting Star: values [0, 100]
-        dataframe['CDLSHOOTINGSTAR'] = ta.CDLSHOOTINGSTAR(dataframe)
-        # Gravestone Doji: values [0, 100]
-        dataframe['CDLGRAVESTONEDOJI'] = ta.CDLGRAVESTONEDOJI(dataframe)
-        # Dark Cloud Cover: values [0, 100]
-        dataframe['CDLDARKCLOUDCOVER'] = ta.CDLDARKCLOUDCOVER(dataframe)
-        # Evening Doji Star: values [0, 100]
-        dataframe['CDLEVENINGDOJISTAR'] = ta.CDLEVENINGDOJISTAR(dataframe)
-        # Evening Star: values [0, 100]
-        dataframe['CDLEVENINGSTAR'] = ta.CDLEVENINGSTAR(dataframe)
-        """
+        # # Hanging Man: values [0, 100]
+        # dataframe['CDLHANGINGMAN'] = ta.CDLHANGINGMAN(dataframe)
+        # # Shooting Star: values [0, 100]
+        # dataframe['CDLSHOOTINGSTAR'] = ta.CDLSHOOTINGSTAR(dataframe)
+        # # Gravestone Doji: values [0, 100]
+        # dataframe['CDLGRAVESTONEDOJI'] = ta.CDLGRAVESTONEDOJI(dataframe)
+        # # Dark Cloud Cover: values [0, 100]
+        # dataframe['CDLDARKCLOUDCOVER'] = ta.CDLDARKCLOUDCOVER(dataframe)
+        # # Evening Doji Star: values [0, 100]
+        # dataframe['CDLEVENINGDOJISTAR'] = ta.CDLEVENINGDOJISTAR(dataframe)
+        # # Evening Star: values [0, 100]
+        # dataframe['CDLEVENINGSTAR'] = ta.CDLEVENINGSTAR(dataframe)
 
         # Pattern Recognition - Bullish/Bearish candlestick patterns
         # ------------------------------------
-        """
-        # Three Line Strike: values [0, -100, 100]
-        dataframe['CDL3LINESTRIKE'] = ta.CDL3LINESTRIKE(dataframe)
-        # Spinning Top: values [0, -100, 100]
-        dataframe['CDLSPINNINGTOP'] = ta.CDLSPINNINGTOP(dataframe) # values [0, -100, 100]
-        # Engulfing: values [0, -100, 100]
-        dataframe['CDLENGULFING'] = ta.CDLENGULFING(dataframe) # values [0, -100, 100]
-        # Harami: values [0, -100, 100]
-        dataframe['CDLHARAMI'] = ta.CDLHARAMI(dataframe) # values [0, -100, 100]
-        # Three Outside Up/Down: values [0, -100, 100]
-        dataframe['CDL3OUTSIDE'] = ta.CDL3OUTSIDE(dataframe) # values [0, -100, 100]
-        # Three Inside Up/Down: values [0, -100, 100]
-        dataframe['CDL3INSIDE'] = ta.CDL3INSIDE(dataframe) # values [0, -100, 100]
-        """
+        # # Three Line Strike: values [0, -100, 100]
+        # dataframe['CDL3LINESTRIKE'] = ta.CDL3LINESTRIKE(dataframe)
+        # # Spinning Top: values [0, -100, 100]
+        # dataframe['CDLSPINNINGTOP'] = ta.CDLSPINNINGTOP(dataframe) # values [0, -100, 100]
+        # # Engulfing: values [0, -100, 100]
+        # dataframe['CDLENGULFING'] = ta.CDLENGULFING(dataframe) # values [0, -100, 100]
+        # # Harami: values [0, -100, 100]
+        # dataframe['CDLHARAMI'] = ta.CDLHARAMI(dataframe) # values [0, -100, 100]
+        # # Three Outside Up/Down: values [0, -100, 100]
+        # dataframe['CDL3OUTSIDE'] = ta.CDL3OUTSIDE(dataframe) # values [0, -100, 100]
+        # # Three Inside Up/Down: values [0, -100, 100]
+        # dataframe['CDL3INSIDE'] = ta.CDL3INSIDE(dataframe) # values [0, -100, 100]
 
-        # Chart type
-        # ------------------------------------
-        """
-        # Heikinashi stategy
-        heikinashi = qtpylib.heikinashi(dataframe)
-        dataframe['ha_open'] = heikinashi['open']
-        dataframe['ha_close'] = heikinashi['close']
-        dataframe['ha_high'] = heikinashi['high']
-        dataframe['ha_low'] = heikinashi['low']
-        """
+        # # Chart type
+        # # ------------------------------------
+        # # Heikinashi stategy
+        # heikinashi = qtpylib.heikinashi(dataframe)
+        # dataframe['ha_open'] = heikinashi['open']
+        # dataframe['ha_close'] = heikinashi['close']
+        # dataframe['ha_high'] = heikinashi['high']
+        # dataframe['ha_low'] = heikinashi['low']
 
         # Retrieve best bid and best ask from the orderbook
         # ------------------------------------

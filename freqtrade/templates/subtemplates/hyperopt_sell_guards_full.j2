@@ -1,0 +1,8 @@
+if params.get('sell-mfi-enabled'):
+    conditions.append(dataframe['mfi'] > params['sell-mfi-value'])
+if params.get('sell-fastd-enabled'):
+    conditions.append(dataframe['fastd'] > params['sell-fastd-value'])
+if params.get('sell-adx-enabled'):
+    conditions.append(dataframe['adx'] < params['sell-adx-value'])
+if params.get('sell-rsi-enabled'):
+    conditions.append(dataframe['rsi'] > params['sell-rsi-value'])

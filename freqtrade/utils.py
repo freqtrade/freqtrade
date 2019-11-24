@@ -1,3 +1,4 @@
+import csv
 import logging
 import sys
 from collections import OrderedDict
@@ -5,19 +6,21 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import arrow
-import csv
 import rapidjson
 from tabulate import tabulate
 
 from freqtrade import OperationalException
-from freqtrade.configuration import Configuration, TimeRange, remove_credentials
-from freqtrade.configuration.directory_operations import create_userdata_dir
+from freqtrade.configuration import (Configuration, TimeRange,
+                                     remove_credentials)
+from freqtrade.configuration.directory_operations import (copy_sample_files,
+                                                          create_userdata_dir)
+from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGY
 from freqtrade.data.history import (convert_trades_to_ohlcv,
                                     refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
-from freqtrade.exchange import (available_exchanges, ccxt_exchanges, market_is_active,
-                                symbol_is_pair)
-from freqtrade.misc import plural
+from freqtrade.exchange import (available_exchanges, ccxt_exchanges,
+                                market_is_active, symbol_is_pair)
+from freqtrade.misc import plural, render_template
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
 
@@ -81,10 +84,93 @@ def start_create_userdir(args: Dict[str, Any]) -> None:
     :return: None
     """
     if "user_data_dir" in args and args["user_data_dir"]:
-        create_userdata_dir(args["user_data_dir"], create_dir=True)
+        userdir = create_userdata_dir(args["user_data_dir"], create_dir=True)
+        copy_sample_files(userdir, overwrite=args["reset"])
     else:
         logger.warning("`create-userdir` requires --userdir to be set.")
         sys.exit(1)
+
+
+def deploy_new_strategy(strategy_name, strategy_path: Path, subtemplate: str):
+    """
+    Deploy new strategy from template to strategy_path
+    """
+    indicators = render_template(templatefile=f"subtemplates/indicators_{subtemplate}.j2",)
+    buy_trend = render_template(templatefile=f"subtemplates/buy_trend_{subtemplate}.j2",)
+    sell_trend = render_template(templatefile=f"subtemplates/sell_trend_{subtemplate}.j2",)
+
+    strategy_text = render_template(templatefile='base_strategy.py.j2',
+                                    arguments={"strategy": strategy_name,
+                                               "indicators": indicators,
+                                               "buy_trend": buy_trend,
+                                               "sell_trend": sell_trend,
+                                               })
+
+    logger.info(f"Writing strategy to `{strategy_path}`.")
+    strategy_path.write_text(strategy_text)
+
+
+def start_new_strategy(args: Dict[str, Any]) -> None:
+
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+
+    if "strategy" in args and args["strategy"]:
+        if args["strategy"] == "DefaultStrategy":
+            raise OperationalException("DefaultStrategy is not allowed as name.")
+
+        new_path = config['user_data_dir'] / USERPATH_STRATEGY / (args["strategy"] + ".py")
+
+        if new_path.exists():
+            raise OperationalException(f"`{new_path}` already exists. "
+                                       "Please choose another Strategy Name.")
+
+        deploy_new_strategy(args['strategy'], new_path, args['template'])
+
+    else:
+        raise OperationalException("`new-strategy` requires --strategy to be set.")
+
+
+def deploy_new_hyperopt(hyperopt_name, hyperopt_path: Path, subtemplate: str):
+    """
+    Deploys a new hyperopt template to hyperopt_path
+    """
+    buy_guards = render_template(
+        templatefile=f"subtemplates/hyperopt_buy_guards_{subtemplate}.j2",)
+    sell_guards = render_template(
+        templatefile=f"subtemplates/hyperopt_sell_guards_{subtemplate}.j2",)
+    buy_space = render_template(
+        templatefile=f"subtemplates/hyperopt_buy_space_{subtemplate}.j2",)
+    sell_space = render_template(
+        templatefile=f"subtemplates/hyperopt_sell_space_{subtemplate}.j2",)
+
+    strategy_text = render_template(templatefile='base_hyperopt.py.j2',
+                                    arguments={"hyperopt": hyperopt_name,
+                                               "buy_guards": buy_guards,
+                                               "sell_guards": sell_guards,
+                                               "buy_space": buy_space,
+                                               "sell_space": sell_space,
+                                               })
+
+    logger.info(f"Writing hyperopt to `{hyperopt_path}`.")
+    hyperopt_path.write_text(strategy_text)
+
+
+def start_new_hyperopt(args: Dict[str, Any]) -> None:
+
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+
+    if "hyperopt" in args and args["hyperopt"]:
+        if args["hyperopt"] == "DefaultHyperopt":
+            raise OperationalException("DefaultHyperopt is not allowed as name.")
+
+        new_path = config['user_data_dir'] / USERPATH_HYPEROPTS / (args["hyperopt"] + ".py")
+
+        if new_path.exists():
+            raise OperationalException(f"`{new_path}` already exists. "
+                                       "Please choose another Strategy Name.")
+        deploy_new_hyperopt(args['hyperopt'], new_path, args['template'])
+    else:
+        raise OperationalException("`new-hyperopt` requires --hyperopt to be set.")
 
 
 def start_download_data(args: Dict[str, Any]) -> None:

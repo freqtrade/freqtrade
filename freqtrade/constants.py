@@ -22,6 +22,18 @@ AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList', 'PrecisionFilter', 'P
 DRY_RUN_WALLET = 999.9
 MATH_CLOSE_PREC = 1e-14  # Precision used for float comparisons
 
+USERPATH_HYPEROPTS = 'hyperopts'
+USERPATH_STRATEGY = 'strategies'
+
+# Soure files with destination directories within user-directory
+USER_DATA_FILES = {
+    'sample_strategy.py': USERPATH_STRATEGY,
+    'sample_hyperopt_advanced.py': USERPATH_HYPEROPTS,
+    'sample_hyperopt_loss.py': USERPATH_HYPEROPTS,
+    'sample_hyperopt.py': USERPATH_HYPEROPTS,
+    'strategy_analysis_example.ipynb': 'notebooks',
+}
+
 TIMEFRAMES = [
     '1m', '3m', '5m', '15m', '30m',
     '1h', '2h', '4h', '6h', '8h', '12h',

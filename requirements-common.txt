@@ -12,6 +12,7 @@ jsonschema==3.1.1
 TA-Lib==0.4.17
 tabulate==0.8.6
 coinmarketcap==5.0.3
+jinja2==2.10.3
 
 # find first, C search in arrays
 py_find_1st==1.1.4
