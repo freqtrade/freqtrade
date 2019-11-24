@@ -343,7 +343,7 @@ AVAILABLE_CLI_OPTIONS = {
     "template": Arg(
         '--template',
         help='Use a template which is either `minimal` or '
-        '`full` (containing multiple sample indicators).',
+        '`full` (containing multiple sample indicators). Default: `%(default)s`.',
         choices=['full', 'minimal'],
         default='full',
     ),

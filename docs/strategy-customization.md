@@ -22,7 +22,7 @@ The bot includes a default strategy file.
 Also, several other strategies are available in the [strategy repository](https://github.com/freqtrade/freqtrade-strategies).
 
 You will however most likely have your own idea for a strategy.
-This Document intends to help you develop one for yourself.
+This document intends to help you develop one for yourself.
 
 To get started, use `freqtrade new-strategy --strategy AwesomeStrategy`.
 This will create a new strategy file from a template, which will be located under `user_data/strategies/AwesomeStrategy.py`.

@@ -70,7 +70,9 @@ optional arguments:
                         bot.
   --template {full,minimal}
                         Use a template which is either `minimal` or `full`
-                        (containing multiple sample indicators).
+                        (containing multiple sample indicators). Default:
+                        `full`.
+
 ```
 
 ## Create new hyperopt
@@ -106,7 +108,8 @@ optional arguments:
                         bot.
   --template {full,minimal}
                         Use a template which is either `minimal` or `full`
-                        (containing multiple sample indicators).
+                        (containing multiple sample indicators). Default:
+                        `full`.
 ```
 
 ## List Exchanges
