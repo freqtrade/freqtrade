@@ -40,12 +40,12 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 
 |  Command | Default | Description |
 |----------|---------|-------------|
-| `max_open_trades` | 3 | **Required.** Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades)
-| `stake_currency` | BTC | **Required.** Crypto-currency used for trading.
-| `stake_amount` | 0.05 | **Required.** Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to `"unlimited"` to allow the bot to use all available balance.
+| `max_open_trades` |  | **Required.** Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades)
+| `stake_currency` | | **Required.** Crypto-currency used for trading.
+| `stake_amount` | | **Required.** Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to `"unlimited"` to allow the bot to use all available balance.
 | `amount_reserve_percent` | 0.05 | Reserve some amount in min pair stake amount. Default is 5%. The bot will reserve `amount_reserve_percent` + stop-loss value when calculating min pair stake amount in order to avoid possible trade refusals.
-| `ticker_interval` | [1m, 5m, 15m, 30m, 1h, 1d, ...] | The ticker interval to use (1min, 5 min, 15 min, 30 min, 1 hour or 1 day). Default is 5 minutes. [Strategy Override](#parameters-in-the-strategy).
-| `fiat_display_currency` | USD | **Required.** Fiat currency used to show your profits. More information below.
+| `ticker_interval` | 5m | The ticker interval to use (1min, 5 min, 15 min, 30 min, 1 hour or 1 day). Default is 5 minutes. [Strategy Override](#parameters-in-the-strategy).
+| `fiat_display_currency` | | Fiat currency used to show your profits. More information below.
 | `dry_run` | true | **Required.** Define if the bot must be in Dry-run or production mode.
 | `dry_run_wallet` | 999.9 | Overrides the default amount of 999.9 stake currency units in the wallet used by the bot running in the Dry Run mode if you need it for any reason.
 | `process_only_new_candles` | false | If set to true indicators are processed only once a new candle arrives. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. [Strategy Override](#parameters-in-the-strategy).
@@ -94,8 +94,8 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `db_url` | `sqlite:///tradesv3.sqlite`| Declares database URL to use. NOTE: This defaults to `sqlite://` if `dry_run` is `True`.
 | `initial_state` | running | Defines the initial application state. More information below.
 | `forcebuy_enable` | false | Enables the RPC Commands to force a buy. More information below.
-| `strategy` | None | **Required** Defines Strategy class to use. Recommended to set via `--strategy NAME`. 
-| `strategy_path` | null | Adds an additional strategy lookup path (must be a directory).
+| `strategy` | | **Required** Defines Strategy class to use. Recommended to set via `--strategy NAME`.
+| `strategy_path` | | Adds an additional strategy lookup path (must be a directory).
 | `internals.process_throttle_secs` | 5 | **Required.** Set the process throttle. Value in second.
 | `internals.heartbeat_interval` | 60 | Print heartbeat message every X seconds. Set to 0 to disable heartbeat messages.
 | `internals.sd_notify` | false | Enables use of the sd_notify protocol to tell systemd service manager about changes in the bot state and issue keep-alive pings. See [here](installation.md#7-optional-configure-freqtrade-as-a-systemd-service) for more details.
