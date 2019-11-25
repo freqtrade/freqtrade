@@ -66,7 +66,7 @@ MINIMAL_CONFIG = {
 CONF_SCHEMA = {
     'type': 'object',
     'properties': {
-        'max_open_trades': {'type': 'integer', 'minimum': -1},
+        'max_open_trades': {'type': ['integer', 'number'], 'minimum': -1},
         'ticker_interval': {'type': 'string', 'enum': TIMEFRAMES},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'XBT', 'ETH', 'USDT', 'EUR', 'USD']},
         'stake_amount': {
