@@ -6,7 +6,6 @@ bot constants
 DEFAULT_CONFIG = 'config.json'
 DEFAULT_EXCHANGE = 'bittrex'
 PROCESS_THROTTLE_SECS = 5  # sec
-DEFAULT_TICKER_INTERVAL = 5  # min
 HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
 DEFAULT_HYPEROPT_LOSS = 'DefaultHyperOptLoss'
@@ -280,5 +279,6 @@ CONF_SCHEMA = {
         'dry_run',
         'bid_strategy',
         'unfilledtimeout',
+        'stoploss',
     ]
 }

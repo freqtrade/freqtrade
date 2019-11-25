@@ -312,7 +312,7 @@ class ApiServer(RPC):
         logger.info("LocalRPC - Profit Command Called")
 
         stats = self._rpc_trade_statistics(self._config['stake_currency'],
-                                           self._config['fiat_display_currency']
+                                           self._config.get('fiat_display_currency')
                                            )
 
         return self.rest_dump(stats)
