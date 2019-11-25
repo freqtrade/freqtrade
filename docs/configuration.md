@@ -41,19 +41,19 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 |  Command | Description |
 |----------|-------------|
 | `max_open_trades` | **Required.** Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades)
-| `stake_currency` | **Required.** Crypto-currency used for trading.
-| `stake_amount` | **Required.** Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to `"unlimited"` to allow the bot to use all available balance.
+| `stake_currency` | **Required.** Crypto-currency used for trading. [Strategy Override](#parameters-in-the-strategy).
+| `stake_amount` | **Required.** Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to `"unlimited"` to allow the bot to use all available balance. [Strategy Override](#parameters-in-the-strategy).
 | `amount_reserve_percent` | Reserve some amount in min pair stake amount. The bot will reserve `amount_reserve_percent` + stop-loss value when calculating min pair stake amount in order to avoid possible trade refusals. <br>*Defaults to `0.05` (5%).*
 | `ticker_interval` | The ticker interval to use (1min, 5 min, 15 min, 30 min, 1 hour or 1 day). Default is 5 minutes. [Strategy Override](#parameters-in-the-strategy).
 | `fiat_display_currency` | Fiat currency used to show your profits. More information below.
 | `dry_run` | **Required.** Define if the bot must be in Dry-run or production mode. <br>*Defaults to `true`.*
 | `dry_run_wallet` | Overrides the default amount of 999.9 stake currency units in the wallet used by the bot running in the Dry Run mode if you need it for any reason.
-| `process_only_new_candles` | Enable processing of indicators only when new candles arrive. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. <br>*Defaults to `false`.* [Strategy Override](#parameters-in-the-strategy).
+| `process_only_new_candles` | Enable processing of indicators only when new candles arrive. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*
 | `minimal_roi` | **Required.** Set the threshold in percent the bot will use to sell a trade. More information below. [Strategy Override](#parameters-in-the-strategy).
 | `stoploss` |  **Required.** Value of the stoploss in percent used by the bot. More information below. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy).
 | `trailing_stop` | Enables trailing stop-loss (based on `stoploss` in either configuration or strategy file). More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy).
 | `trailing_stop_positive` | Changes stop-loss once profit has been reached. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy).
-| `trailing_stop_positive_offset` | Offset on when to apply `trailing_stop_positive`. Percentage value which should be positive. <br>*Defaults to `0.0` (no offset).* More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy).
+| `trailing_stop_positive_offset` | Offset on when to apply `trailing_stop_positive`. Percentage value which should be positive. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `0.0` (no offset).*
 | `trailing_only_offset_is_reached` | Only apply trailing stoploss when the offset is reached. [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.* 
 | `unfilledtimeout.buy` | **Required.** How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled.
 | `unfilledtimeout.sell` | **Required.** How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled.
@@ -107,15 +107,18 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 The following parameters can be set in either configuration file or strategy.
 Values set in the configuration file always overwrite values set in the strategy.
 
-* `ticker_interval`
 * `minimal_roi`
+* `ticker_interval`
 * `stoploss`
 * `trailing_stop`
 * `trailing_stop_positive`
 * `trailing_stop_positive_offset`
+* `trailing_only_offset_is_reached`
 * `process_only_new_candles`
 * `order_types`
 * `order_time_in_force`
+* `stake_currency`
+* `stake_amount`
 * `use_sell_signal` (ask_strategy)
 * `sell_profit_only` (ask_strategy)
 * `ignore_roi_if_buy_signal` (ask_strategy)
