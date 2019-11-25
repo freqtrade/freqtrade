@@ -70,9 +70,9 @@ CONF_SCHEMA = {
         'ticker_interval': {'type': 'string', 'enum': TIMEFRAMES},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'XBT', 'ETH', 'USDT', 'EUR', 'USD']},
         'stake_amount': {
-            "type": ["number", "string"],
-            "minimum": 0.0001,
-            "pattern": UNLIMITED_STAKE_AMOUNT
+            'type': ['number', 'string'],
+            'minimum': 0.0001,
+            'pattern': UNLIMITED_STAKE_AMOUNT
         },
         'fiat_display_currency': {'type': 'string', 'enum': SUPPORTED_FIAT},
         'dry_run': {'type': 'boolean'},
@@ -197,8 +197,8 @@ CONF_SCHEMA = {
                 'listen_ip_address': {'format': 'ipv4'},
                 'listen_port': {
                     'type': 'integer',
-                    "minimum": 1024,
-                    "maximum": 65535
+                    'minimum': 1024,
+                    'maximum': 65535
                 },
                 'username': {'type': 'string'},
                 'password': {'type': 'string'},
@@ -253,19 +253,19 @@ CONF_SCHEMA = {
         'edge': {
             'type': 'object',
             'properties': {
-                "enabled": {'type': 'boolean'},
-                "process_throttle_secs": {'type': 'integer', 'minimum': 600},
-                "calculate_since_number_of_days": {'type': 'integer'},
-                "allowed_risk": {'type': 'number'},
-                "capital_available_percentage": {'type': 'number'},
-                "stoploss_range_min": {'type': 'number'},
-                "stoploss_range_max": {'type': 'number'},
-                "stoploss_range_step": {'type': 'number'},
-                "minimum_winrate": {'type': 'number'},
-                "minimum_expectancy": {'type': 'number'},
-                "min_trade_number": {'type': 'number'},
-                "max_trade_duration_minute": {'type': 'integer'},
-                "remove_pumps": {'type': 'boolean'}
+                'enabled': {'type': 'boolean'},
+                'process_throttle_secs': {'type': 'integer', 'minimum': 600},
+                'calculate_since_number_of_days': {'type': 'integer'},
+                'allowed_risk': {'type': 'number'},
+                'capital_available_percentage': {'type': 'number'},
+                'stoploss_range_min': {'type': 'number'},
+                'stoploss_range_max': {'type': 'number'},
+                'stoploss_range_step': {'type': 'number'},
+                'minimum_winrate': {'type': 'number'},
+                'minimum_expectancy': {'type': 'number'},
+                'min_trade_number': {'type': 'number'},
+                'max_trade_duration_minute': {'type': 'integer'},
+                'remove_pumps': {'type': 'boolean'}
             },
             'required': ['process_throttle_secs', 'allowed_risk', 'capital_available_percentage']
         }
