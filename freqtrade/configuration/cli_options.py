@@ -74,6 +74,11 @@ AVAILABLE_CLI_OPTIONS = {
         help='Path to userdata directory.',
         metavar='PATH',
     ),
+    "reset": Arg(
+        '--reset',
+        help='Reset sample files to their original state.',
+        action='store_true',
+    ),
     # Main options
     "strategy": Arg(
         '-s', '--strategy',
@@ -345,6 +350,14 @@ AVAILABLE_CLI_OPTIONS = {
         '--erase',
         help='Clean all existing data for the selected exchange/pairs/timeframes.',
         action='store_true',
+    ),
+    # Templating options
+    "template": Arg(
+        '--template',
+        help='Use a template which is either `minimal` or '
+        '`full` (containing multiple sample indicators). Default: `%(default)s`.',
+        choices=['full', 'minimal'],
+        default='full',
     ),
     # Plot dataframe
     "indicators1": Arg(

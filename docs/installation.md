@@ -162,7 +162,7 @@ Clone the git repository:
 
 ```bash
 git clone https://github.com/freqtrade/freqtrade.git
-
+cd freqtrade
 ```
 
 Optionally checkout the master branch to get the latest stable release:
@@ -171,21 +171,23 @@ Optionally checkout the master branch to get the latest stable release:
 git checkout master
 ```
 
-#### 4. Initialize the configuration
-
-```bash
-cd freqtrade
-cp config.json.example config.json
-```
-
-> *To edit the config please refer to [Bot Configuration](configuration.md).*
-
-#### 5. Install python dependencies
+#### 4. Install python dependencies
 
 ``` bash
 python3 -m pip install --upgrade pip
 python3 -m pip install -e .
 ```
+
+#### 5. Initialize the configuration
+
+```bash
+# Initialize the user_directory
+freqtrade create-userdir --userdir user_data/
+
+cp config.json.example config.json
+```
+
+> *To edit the config please refer to [Bot Configuration](configuration.md).*
 
 #### 6. Run the Bot
 
@@ -227,7 +229,7 @@ If that is not available on your system, feel free to try the instructions below
     Make sure to use 64bit Windows and 64bit Python to avoid problems with backtesting or hyperopt due to the memory constraints 32bit applications have under Windows.
 
 !!! Hint
-    Using the [Anaconda Distribution](https://www.anaconda.com/distribution/) under Windows can greatly help with installation problems. Check out the [Conda section](#using-conda) in this document.
+    Using the [Anaconda Distribution](https://www.anaconda.com/distribution/) under Windows can greatly help with installation problems. Check out the [Conda section](#using-conda) in this document for more information.
 
 #### Clone the git repository
 
