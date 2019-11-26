@@ -460,6 +460,7 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
     result = freqtrade._get_min_pair_stake_amount('ETH/BTC', 0.020405)
     assert round(result, 8) == round(max(0.0001, 0.001 * 0.020405) / 0.9, 8)
 
+
 def test_create_trades(default_conf, ticker, limit_buy_order, fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
