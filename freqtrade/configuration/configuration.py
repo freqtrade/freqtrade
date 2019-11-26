@@ -308,6 +308,21 @@ class Configuration:
         self._args_to_config(config, argname='hyperopt_loss',
                              logstring='Using Hyperopt loss class name: {}')
 
+        self._args_to_config(config, argname='hyperopt_show_index',
+                             logstring='Parameter -n/--index detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_best',
+                             logstring='Parameter --best detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_profitable',
+                             logstring='Parameter --profitable detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_no_details',
+                             logstring='Parameter --no-details detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_show_no_header',
+                             logstring='Parameter --no-header detected: {}')
+
     def _process_plot_options(self, config: Dict[str, Any]) -> None:
 
         self._args_to_config(config, argname='pairs',

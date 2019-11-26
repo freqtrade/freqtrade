@@ -1,12 +1,14 @@
 import logging
 import sys
 from collections import OrderedDict
+from operator import itemgetter
 from pathlib import Path
 from typing import Any, Dict, List
 
 import arrow
 import csv
 import rapidjson
+from colorama import init as colorama_init
 from tabulate import tabulate
 
 from freqtrade import OperationalException
@@ -18,6 +20,7 @@ from freqtrade.data.history import (convert_trades_to_ohlcv,
 from freqtrade.exchange import (available_exchanges, ccxt_exchanges, market_is_active,
                                 symbol_is_pair)
 from freqtrade.misc import plural
+from freqtrade.optimize.hyperopt import Hyperopt
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
 
@@ -236,3 +239,99 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
                   args.get('list_pairs_print_json', False) or
                   args.get('print_csv', False)):
             print(f"{summary_str}.")
+
+
+def start_hyperopt_list(args: Dict[str, Any]) -> None:
+    """
+    """
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+
+    only_best = config.get('hyperopt_list_best', False)
+    only_profitable = config.get('hyperopt_list_profitable', False)
+    print_colorized = config.get('print_colorized', False)
+    print_json = config.get('print_json', False)
+    no_details = config.get('hyperopt_list_no_details', False)
+    no_header = False
+
+    trials_file = (config['user_data_dir'] /
+                   'hyperopt_results' / 'hyperopt_results.pickle')
+
+    # Previous evaluations
+    trials = Hyperopt.load_previous_results(trials_file)
+    total_epochs = len(trials)
+
+    trials = _hyperopt_filter_trials(trials, only_best, only_profitable)
+
+    # TODO: fetch the interval for epochs to print from the cli option
+    epoch_start, epoch_stop = 0, None
+
+    if print_colorized:
+        colorama_init(autoreset=True)
+
+    try:
+        # Human-friendly indexes used here (starting from 1)
+        for val in trials[epoch_start:epoch_stop]:
+            Hyperopt.print_results_explanation(val, total_epochs, not only_best, print_colorized)
+
+    except KeyboardInterrupt:
+        print('User interrupted..')
+
+    if trials and not no_details:
+        sorted_trials = sorted(trials, key=itemgetter('loss'))
+        results = sorted_trials[0]
+        Hyperopt.print_epoch_details(results, total_epochs, print_json, no_header)
+
+
+def start_hyperopt_show(args: Dict[str, Any]) -> None:
+    """
+    """
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+
+    only_best = config.get('hyperopt_list_best', False)
+    only_profitable = config.get('hyperopt_list_profitable', False)
+    no_header = config.get('hyperopt_show_no_header', False)
+
+    trials_file = (config['user_data_dir'] /
+                   'hyperopt_results' / 'hyperopt_results.pickle')
+
+    # Previous evaluations
+    trials = Hyperopt.load_previous_results(trials_file)
+    total_epochs = len(trials)
+
+    trials = _hyperopt_filter_trials(trials, only_best, only_profitable)
+
+    n = config.get('hyperopt_show_index', -1)
+    if n > total_epochs:
+        raise OperationalException(
+                f"The index of the epoch to show should be less than {total_epochs + 1}.")
+    if n < -total_epochs:
+        raise OperationalException(
+                f"The index of the epoch to showshould be greater than {-total_epochs - 1}.")
+
+    # Translate epoch index from human-readable format to pythonic
+    if n > 0:
+        n -= 1
+
+    print_json = config.get('print_json', False)
+
+    if trials:
+        val = trials[n]
+        Hyperopt.print_epoch_details(val, total_epochs, print_json, no_header,
+                                     header_str="Epoch details")
+
+
+def _hyperopt_filter_trials(trials: List, only_best: bool, only_profitable: bool) -> List:
+    """
+    Filter our items from the list of hyperopt results
+    """
+    if only_best:
+        trials = [x for x in trials if x['is_best']]
+    if only_profitable:
+        trials = [x for x in trials if x['results_metrics']['profit'] > 0]
+
+    logger.info(f"{len(trials)} " +
+                ("best " if only_best else "") +
+                ("profitable " if only_profitable else "") +
+                "epochs found.")
+
+    return trials
