@@ -76,7 +76,7 @@ jobs:
         # export CI_PULL_REQUEST="$(cat $GITHUB_EVENT_PATH | jq -r .number)"
         # export TRAVIS_BRANCH=${GITHUB_REF#"ref/heads"}
         # export CI_BRANCH=${GITHUB_REF#"ref/heads"}
-        export CI_BRANCH=${GITHUB_REF#"ref/heads"}
+        export CI_BRANCH=${GITHUB_REF}
         # echo "${CI_BRANCH}"
         coveralls || true
 
