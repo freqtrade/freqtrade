@@ -82,7 +82,7 @@ jobs:
         # export CI_BRANCH=${GITHUB_REF#"ref/heads"}
         export TRAVIS_BRANCH=${GITHUB_REF}
         echo "${TRAVIS_BRANCH}"
-        coveralls || true
+        coveralls -v || true
 
     - name: Backtesting
       run: |
