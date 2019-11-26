@@ -299,7 +299,7 @@ def test_total_open_trades_stakes(mocker, default_conf, ticker,
                                   limit_buy_order, fee) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    default_conf['stake_amount'] = 0.0000098751
+    default_conf['stake_amount'] = 0.00098751
     default_conf['max_open_trades'] = 2
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -313,7 +313,7 @@ def test_total_open_trades_stakes(mocker, default_conf, ticker,
     trade = Trade.query.first()
 
     assert trade is not None
-    assert trade.stake_amount == 0.0000098751
+    assert trade.stake_amount == 0.00098751
     assert trade.is_open
     assert trade.open_date is not None
 
@@ -321,11 +321,11 @@ def test_total_open_trades_stakes(mocker, default_conf, ticker,
     trade = Trade.query.order_by(Trade.id.desc()).first()
 
     assert trade is not None
-    assert trade.stake_amount == 0.0000098751
+    assert trade.stake_amount == 0.00098751
     assert trade.is_open
     assert trade.open_date is not None
 
-    assert Trade.total_open_trades_stakes() == 1.97502e-05
+    assert Trade.total_open_trades_stakes() == 1.97502e-03
 
 
 def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
