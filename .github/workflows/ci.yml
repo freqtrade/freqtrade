@@ -76,12 +76,12 @@ jobs:
       run: |
         # Allow failure for coveralls
         # Fake travis environment to get coveralls working correctly
-        export CI_PULL_REQUEST="$(cat $GITHUB_EVENT_PATH | jq -r .number)"
-        echo ${CI_PULL_REQUEST}
+        export TRAVIS_PULL_REQUEST="$(cat $GITHUB_EVENT_PATH | jq -r .number)"
+        echo ${TRAVIS_PULL_REQUEST}
         # export TRAVIS_BRANCH=${GITHUB_REF#"ref/heads"}
         # export CI_BRANCH=${GITHUB_REF#"ref/heads"}
-        # export CI_BRANCH=${GITHUB_REF}
-        echo "${CI_BRANCH}"
+        export TRAVIS_BRANCH=${GITHUB_REF}
+        echo "${TRAVIS_BRANCH}"
         set
         coveralls || true
 
