@@ -266,7 +266,7 @@ class FreqtradeBot:
             amount_reserve_percent += self.strategy.stoploss
         # it should not be more than 50%
         amount_reserve_percent = max(amount_reserve_percent, 0.5)
-        return min(min_stake_amounts) / amount_reserve_percent
+        return max(min_stake_amounts) / amount_reserve_percent
 
     def create_trades(self) -> bool:
         """
