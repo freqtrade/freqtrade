@@ -80,7 +80,8 @@ jobs:
         echo ${TRAVIS_PULL_REQUEST}
         # export TRAVIS_BRANCH=${GITHUB_REF#"ref/heads"}
         # export CI_BRANCH=${GITHUB_REF#"ref/heads"}
-        export TRAVIS_BRANCH=${GITHUB_REF}
+        export TRAVIS_BRANCH=$(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.ref)
+        if [ -z ${TRAVIS_BRANCH} ]; then export TRAVIS_BRANCH=${GITHUB_REF#"ref/heads"}; fi
         echo "${TRAVIS_BRANCH}"
         coveralls -v || true
 
