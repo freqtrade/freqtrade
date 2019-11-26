@@ -64,12 +64,16 @@ jobs:
         pip install -e .
 
     - name: Tests
+      run: |
+        pytest --random-order --cov=freqtrade --cov-config=.coveragerc
+
+    - name: coveralls
+      if: startsWith(matrix.os, 'ubuntu')
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
         COVERALLS_SERVICE_NAME: travis-ci
         JENKINS_HOME: "true"
       run: |
-        pytest --random-order --cov=freqtrade --cov-config=.coveragerc
         # Allow failure for coveralls
         # Fake travis environment to get coveralls working correctly
         # export CI_PULL_REQUEST="https://github.com/${GITHUB_REPOSITORY}/pull/$(cat $GITHUB_EVENT_PATH | jq -r .number)"
