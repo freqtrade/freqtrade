@@ -325,7 +325,7 @@ def get_markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -351,7 +351,7 @@ def get_markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -376,7 +376,7 @@ def get_markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -401,7 +401,7 @@ def get_markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -426,7 +426,7 @@ def get_markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -451,7 +451,7 @@ def get_markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -479,7 +479,7 @@ def get_markets():
                     'max': None
                 },
                 'cost': {
-                    'min': 0.001,
+                    'min': 0.0001,
                     'max': None
                 }
             },
