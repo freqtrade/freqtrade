@@ -269,10 +269,8 @@ CONF_SCHEMA = {
             'required': ['process_throttle_secs', 'allowed_risk', 'capital_available_percentage']
         }
     },
-    'anyOf': [
-        {'required': ['exchange']}
-    ],
     'required': [
+        'exchange',
         'max_open_trades',
         'stake_currency',
         'stake_amount',

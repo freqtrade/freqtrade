@@ -40,10 +40,16 @@ def test_load_config_invalid_pair(default_conf) -> None:
 
 
 def test_load_config_missing_attributes(default_conf) -> None:
-    default_conf.pop('exchange')
+    conf = deepcopy(default_conf)
+    conf.pop('exchange')
 
     with pytest.raises(ValidationError, match=r".*'exchange' is a required property.*"):
-        validate_config_schema(default_conf)
+        validate_config_schema(conf)
+
+    conf = deepcopy(default_conf)
+    conf.pop('stake_currency')
+    with pytest.raises(ValidationError, match=r".*'stake_currency' is a required property.*"):
+        validate_config_schema(conf)
 
 
 def test_load_config_incorrect_stake_amount(default_conf) -> None:
