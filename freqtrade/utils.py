@@ -23,7 +23,6 @@ from freqtrade.data.history import (convert_trades_to_ohlcv,
 from freqtrade.exchange import (available_exchanges, ccxt_exchanges,
                                 market_is_active, symbol_is_pair)
 from freqtrade.misc import plural, render_template
-from freqtrade.optimize.hyperopt import Hyperopt
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
 
@@ -330,6 +329,8 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
 def start_hyperopt_list(args: Dict[str, Any]) -> None:
     """
     """
+    from freqtrade.optimize.hyperopt import Hyperopt
+
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     only_best = config.get('hyperopt_list_best', False)
@@ -371,6 +372,8 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
 def start_hyperopt_show(args: Dict[str, Any]) -> None:
     """
     """
+    from freqtrade.optimize.hyperopt import Hyperopt
+
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     only_best = config.get('hyperopt_list_best', False)
