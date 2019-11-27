@@ -40,10 +40,10 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 
 |  Command | Description |
 |----------|-------------|
-| `max_open_trades` | **Required.** Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades).<br> ***Datatype:*** *Positive integer (-1 to use `"unlimited"` trades).*
+| `max_open_trades` | **Required.** Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades).<br> ***Datatype:*** *Positive integer or -1.*
 | `stake_currency` | **Required.** Crypto-currency used for trading. [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *String*
-| `stake_amount` | **Required.** Amount of crypto-currency your bot will use for each trade. Set it to `"unlimited"` to allow the bot to use all available balance. [More information below](#understand-stake_amount). [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *Positive number or `"unlimited"`.*
-| `amount_reserve_percent` | Reserve some amount in min pair stake amount. The bot will reserve `amount_reserve_percent` + stoploss value when calculating min pair stake amount in order to avoid possible trade refusals. <br>*Defaults to `0.05` (5%).* <br> ***Datatype:*** *Positive number as ratio.*
+| `stake_amount` | **Required.** Amount of crypto-currency your bot will use for each trade. Set it to `"unlimited"` to allow the bot to use all available balance. [More information below](#understand-stake_amount). [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *Positive float or `"unlimited"`.*
+| `amount_reserve_percent` | Reserve some amount in min pair stake amount. The bot will reserve `amount_reserve_percent` + stoploss value when calculating min pair stake amount in order to avoid possible trade refusals. <br>*Defaults to `0.05` (5%).* <br> ***Datatype:*** *Positive Float as ratio.*
 | `ticker_interval` | The ticker interval to use (e.g `1m`, `5m`, `15m`, `30m`, `1h` ...). [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *String*
 | `fiat_display_currency` | Fiat currency used to show your profits. [More information below](#what-values-can-be-used-for-fiat_display_currency). <br> ***Datatype:*** *String*
 | `dry_run` | **Required.** Define if the bot must be in Dry Run or production mode. <br>*Defaults to `true`.* <br> ***Datatype:*** *Boolean*
@@ -79,7 +79,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `exchange.pair_blacklist` | List of pairs the bot must absolutely avoid for trading and backtesting (see [below](#dynamic-pairlists)). <br> ***Datatype:*** *List*
 | `exchange.ccxt_config` | Additional CCXT parameters passed to the regular ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> ***Datatype:*** *Dict*
 | `exchange.ccxt_async_config` | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> ***Datatype:*** *Dict*
-| `exchange.markets_refresh_interval` | The interval in minutes in which markets are reloaded. <br>*Defaults to `60` minutes.* <br> ***Datatype:*** *Integer*
+| `exchange.markets_refresh_interval` | The interval in minutes in which markets are reloaded. <br>*Defaults to `60` minutes.* <br> ***Datatype:*** *Positive Integer*
 | `edge.*` | Please refer to [edge configuration document](edge.md) for detailed explanation.
 | `experimental.block_bad_exchanges` | Block exchanges known to not work with freqtrade. Leave on default unless you want to test if that exchange works now. <br>*Defaults to `true`.* <br> ***Datatype:*** *Boolean*
 | `pairlists` | Define one or more pairlists to be used. [More information below](#dynamic-pairlists). <br>*Defaults to `StaticPairList`.*  <br> ***Datatype:*** *List of Dicts*
@@ -87,7 +87,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `telegram.token` | Your Telegram bot token. Only required if `telegram.enabled` is `true`. **Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
 | `telegram.chat_id` | Your personal Telegram account id. Only required if `telegram.enabled` is `true`. **Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
 | `webhook.enabled` | Enable usage of Webhook notifications <br> ***Datatype:*** *Boolean*
-| `webhook.url` | URL for the webhook. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> ***Datatype:*** *Boolean*
+| `webhook.url` | URL for the webhook. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> ***Datatype:*** *String*
 | `webhook.webhookbuy` | Payload to send on buy. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details. <br> ***Datatype:*** *String*
 | `webhook.webhooksell` | Payload to send on sell. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details. <br> ***Datatype:*** *String*
 | `webhook.webhookstatus` | Payload to send on status calls. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details. <br> ***Datatype:*** *String*
@@ -101,8 +101,8 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `forcebuy_enable` | Enables the RPC Commands to force a buy. More information below. <br> ***Datatype:*** *Boolean*
 | `strategy` | **Required** Defines Strategy class to use. Recommended to be set via `--strategy NAME`. <br> ***Datatype:*** *ClassName*
 | `strategy_path` | Adds an additional strategy lookup path (must be a directory). <br> ***Datatype:*** *String*
-| `internals.process_throttle_secs` | Set the process throttle. Value in second. <br>*Defaults to `5` seconds.* <br> ***Datatype:*** *Integer*
-| `internals.heartbeat_interval` | Print heartbeat message every N seconds. Set to 0 to disable heartbeat messages. <br>*Defaults to `60` seconds.* <br> ***Datatype:*** *Integer*
+| `internals.process_throttle_secs` | Set the process throttle. Value in second. <br>*Defaults to `5` seconds.* <br> ***Datatype:*** *Positive Integer*
+| `internals.heartbeat_interval` | Print heartbeat message every N seconds. Set to 0 to disable heartbeat messages. <br>*Defaults to `60` seconds.* <br> ***Datatype:*** *Positive Integer or 0*
 | `internals.sd_notify` | Enables use of the sd_notify protocol to tell systemd service manager about changes in the bot state and issue keep-alive pings. See [here](installation.md#7-optional-configure-freqtrade-as-a-systemd-service) for more details. <br> ***Datatype:*** *Boolean*
 | `logfile` | Specifies logfile name. Uses a rolling strategy for log file rotation for 10 files with the 1MB limit per file. <br> ***Datatype:*** *String*
 | `user_data_dir` | Directory containing user data. <br> *Defaults to `./user_data/`*. <br> ***Datatype:*** *String*
