@@ -299,7 +299,7 @@ def test_total_open_trades_stakes(mocker, default_conf, ticker,
                                   limit_buy_order, fee) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    default_conf['stake_amount'] = 0.0000098751
+    default_conf['stake_amount'] = 0.00098751
     default_conf['max_open_trades'] = 2
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -313,7 +313,7 @@ def test_total_open_trades_stakes(mocker, default_conf, ticker,
     trade = Trade.query.first()
 
     assert trade is not None
-    assert trade.stake_amount == 0.0000098751
+    assert trade.stake_amount == 0.00098751
     assert trade.is_open
     assert trade.open_date is not None
 
@@ -321,11 +321,11 @@ def test_total_open_trades_stakes(mocker, default_conf, ticker,
     trade = Trade.query.order_by(Trade.id.desc()).first()
 
     assert trade is not None
-    assert trade.stake_amount == 0.0000098751
+    assert trade.stake_amount == 0.00098751
     assert trade.is_open
     assert trade.open_date is not None
 
-    assert Trade.total_open_trades_stakes() == 1.97502e-05
+    assert Trade.total_open_trades_stakes() == 1.97502e-03
 
 
 def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
@@ -334,6 +334,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     freqtrade = FreqtradeBot(default_conf)
     freqtrade.strategy.stoploss = -0.05
     markets = {'ETH/BTC': {'symbol': 'ETH/BTC'}}
+
     # no pair found
     mocker.patch(
         'freqtrade.exchange.Exchange.markets',
@@ -425,7 +426,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = freqtrade._get_min_pair_stake_amount('ETH/BTC', 2)
-    assert result == min(2, 2 * 2) / 0.9
+    assert result == max(2, 2 * 2) / 0.9
 
     # min amount and cost are set (amount is minial)
     markets["ETH/BTC"]["limits"] = {
@@ -437,7 +438,27 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = freqtrade._get_min_pair_stake_amount('ETH/BTC', 2)
-    assert result == min(8, 2 * 2) / 0.9
+    assert result == max(8, 2 * 2) / 0.9
+
+
+def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    freqtrade = FreqtradeBot(default_conf)
+    freqtrade.strategy.stoploss = -0.05
+    markets = {'ETH/BTC': {'symbol': 'ETH/BTC'}}
+
+    # Real Binance data
+    markets["ETH/BTC"]["limits"] = {
+        'cost': {'min': 0.0001},
+        'amount': {'min': 0.001}
+    }
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets',
+        PropertyMock(return_value=markets)
+    )
+    result = freqtrade._get_min_pair_stake_amount('ETH/BTC', 0.020405)
+    assert round(result, 8) == round(max(0.0001, 0.001 * 0.020405) / 0.9, 8)
 
 
 def test_create_trades(default_conf, ticker, limit_buy_order, fee, mocker) -> None:
