@@ -42,7 +42,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 |----------|-------------|
 | `max_open_trades` | **Required.** Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades)
 | `stake_currency` | **Required.** Crypto-currency used for trading. [Strategy Override](#parameters-in-the-strategy).
-| `stake_amount` | **Required.** Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to `"unlimited"` to allow the bot to use all available balance. [Strategy Override](#parameters-in-the-strategy).
+| `stake_amount` | **Required.** Amount of crypto-currency your bot will use for each trade. Set it to `"unlimited"` to allow the bot to use all available balance. [More information below](#understand-stake_amount). [Strategy Override](#parameters-in-the-strategy).
 | `amount_reserve_percent` | Reserve some amount in min pair stake amount. The bot will reserve `amount_reserve_percent` + stoploss value when calculating min pair stake amount in order to avoid possible trade refusals. <br>*Defaults to `0.05` (5%).*
 | `ticker_interval` | The ticker interval to use (e.g `1m`, `5m`, `15m`, `30m`, `1h` ...). [Strategy Override](#parameters-in-the-strategy).
 | `fiat_display_currency` | Fiat currency used to show your profits. [More information below](#what-values-can-be-used-for-fiat_display_currency).
@@ -126,15 +126,19 @@ Values set in the configuration file always overwrite values set in the strategy
 ### Understand stake_amount
 
 The `stake_amount` configuration parameter is an amount of crypto-currency your bot will use for each trade.
-The minimal value is 0.0005. If there is not enough crypto-currency in
-the account an exception is generated.
+
+The minimal configuration value is 0.0001. Please check your exchange's trading minimums to avoid problems.
+
+This setting works in combination with `max_open_trades`. The maximum capital engaged in trades is `stake_amount * max_open_trades`.
+For example, the bot will at most use (0.05 BTC x 3) = 0.15 BTC, assuming a configuration of `max_open_trades=3` and `stake_amount=0.05`.
+
 To allow the bot to trade all the available `stake_currency` in your account set
 
 ```json
 "stake_amount" : "unlimited",
 ```
 
-In this case a trade amount is calclulated as:
+In this case a trade amount is calculated as:
 
 ```python
 currency_balance / (max_open_trades - current_open_trades)
