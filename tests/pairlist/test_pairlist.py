@@ -100,7 +100,7 @@ def test_refresh_pairlist_dynamic(mocker, shitcoinmarkets, tickers, whitelist_co
         markets=PropertyMock(return_value=shitcoinmarkets),
      )
     # argument: use the whitelist dynamically by exchange-volume
-    whitelist = ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'HOT/BTC', 'FUEL/BTC']
+    whitelist = ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC', 'HOT/BTC']
     bot.pairlists.refresh_pairlist()
 
     assert whitelist == bot.pairlists.whitelist
@@ -135,10 +135,10 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
 
 @pytest.mark.parametrize("pairlists,base_currency,whitelist_result", [
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"}],
-        "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'HOT/BTC', 'FUEL/BTC']),
+        "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC', 'HOT/BTC']),
     # Different sorting depending on quote or bid volume
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "bidVolume"}],
-        "BTC",  ['HOT/BTC', 'FUEL/BTC', 'LTC/BTC', 'TKN/BTC', 'ETH/BTC']),
+        "BTC",  ['HOT/BTC', 'FUEL/BTC', 'XRP/BTC', 'LTC/BTC', 'TKN/BTC']),
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"}],
         "USDT", ['ETH/USDT']),
     # No pair for ETH ...
@@ -146,19 +146,19 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
      "ETH", []),
     # Precisionfilter and quote volume
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
-      {"method": "PrecisionFilter"}], "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'FUEL/BTC']),
+      {"method": "PrecisionFilter"}], "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC']),
     # Precisionfilter bid
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "bidVolume"},
-      {"method": "PrecisionFilter"}], "BTC", ['FUEL/BTC', 'LTC/BTC', 'TKN/BTC', 'ETH/BTC']),
+      {"method": "PrecisionFilter"}], "BTC", ['FUEL/BTC', 'XRP/BTC', 'LTC/BTC', 'TKN/BTC']),
     # PriceFilter and VolumePairList
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "PriceFilter", "low_price_ratio": 0.03}],
-        "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'FUEL/BTC']),
+        "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC']),
     # Hot is removed by precision_filter, Fuel by low_price_filter.
-    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
+    ([{"method": "VolumePairList", "number_assets": 6, "sort_key": "quoteVolume"},
       {"method": "PrecisionFilter"},
       {"method": "PriceFilter", "low_price_ratio": 0.02}
-      ], "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC']),
+      ], "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC']),
     # StaticPairlist Only
     ([{"method": "StaticPairList"},
       ], "BTC", ['ETH/BTC', 'TKN/BTC']),
