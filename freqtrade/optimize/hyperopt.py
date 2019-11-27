@@ -181,7 +181,7 @@ class Hyperopt:
         """
         Display details of the hyperopt result
         """
-        params = results['params_details']
+        params = results.get('params_details', {})
 
         # Default header string
         if header_str is None:
@@ -335,6 +335,11 @@ class Hyperopt:
                 'end_date': max_date,
             }
         )
+        return self._get_results_dict(backtesting_results, min_date, max_date,
+                                      params_dict, params_details)
+
+    def _get_results_dict(self, backtesting_results, min_date, max_date,
+                          params_dict, params_details):
         results_metrics = self._calculate_results_metrics(backtesting_results)
         results_explanation = self._format_results_explanation_string(results_metrics)
 
