@@ -74,7 +74,7 @@ jobs:
         # Fake travis environment to get coveralls working correctly
         export TRAVIS_PULL_REQUEST="https://github.com/${GITHUB_REPOSITORY}/pull/$(cat $GITHUB_EVENT_PATH | jq -r .number)"
         export TRAVIS_BRANCH=${GITHUB_REF#"ref/heads"}
-        export TRAVIS_BRANCH=${HEAD_REF}
+        export CI_BRANCH=${GITHUB_REF#"ref/heads"}
         echo "${TRAVIS_BRANCH}"
         coveralls || true
 

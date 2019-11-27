@@ -2,7 +2,7 @@
 """ Wallet """
 
 import logging
-from typing import Dict, NamedTuple
+from typing import Dict, NamedTuple, Any
 from freqtrade.exchange import Exchange
 from freqtrade import constants
 
@@ -72,3 +72,6 @@ class Wallets:
             )
 
         logger.info('Wallets synced.')
+
+    def get_all_balances(self) -> Dict[str, Any]:
+        return self._wallets

@@ -354,7 +354,8 @@ class ApiServer(RPC):
 
         Returns the current status of the trades in json format
         """
-        results = self._rpc_balance(self._config.get('fiat_display_currency', ''))
+        results = self._rpc_balance(self._config['stake_currency'],
+                                    self._config.get('fiat_display_currency', ''))
         return self.rest_dump(results)
 
     @require_login

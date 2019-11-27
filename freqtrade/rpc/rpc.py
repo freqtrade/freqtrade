@@ -297,34 +297,42 @@ class RPC:
             'best_rate': round(bp_rate * 100, 2),
         }
 
-    def _rpc_balance(self, fiat_display_currency: str) -> Dict:
+    def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> Dict:
         """ Returns current account balance per crypto """
         output = []
         total = 0.0
-        for coin, balance in self._freqtrade.exchange.get_balances().items():
-            if not balance['total']:
+        try:
+            tickers = self._freqtrade.exchange.get_tickers()
+        except (TemporaryError, DependencyException):
+            raise RPCException('Error getting current tickers.')
+
+        for coin, balance in self._freqtrade.wallets.get_all_balances().items():
+            if not balance.total:
                 continue
 
-            if coin == 'BTC':
+            est_stake: float = 0
+            if coin == stake_currency:
                 rate = 1.0
+                est_stake = balance.total
             else:
                 try:
-                    pair = self._freqtrade.exchange.get_valid_pair_combination(coin, "BTC")
-                    if pair.startswith("BTC"):
-                        rate = 1.0 / self._freqtrade.get_sell_rate(pair, False)
-                    else:
-                        rate = self._freqtrade.get_sell_rate(pair, False)
+                    pair = self._freqtrade.exchange.get_valid_pair_combination(coin, stake_currency)
+                    rate = tickers.get(pair, {}).get('bid', None)
+                    if rate:
+                        if pair.startswith(stake_currency):
+                            rate = 1.0 / rate
+                        est_stake = rate * balance.total
                 except (TemporaryError, DependencyException):
                     logger.warning(f" Could not get rate for pair {coin}.")
                     continue
-            est_btc: float = rate * balance['total']
-            total = total + est_btc
+            total = total + (est_stake or 0)
             output.append({
                 'currency': coin,
-                'free': balance['free'] if balance['free'] is not None else 0,
-                'balance': balance['total'] if balance['total'] is not None else 0,
-                'used': balance['used'] if balance['used'] is not None else 0,
-                'est_btc': est_btc,
+                'free': balance.free if balance.free is not None else 0,
+                'balance': balance.total if balance.total is not None else 0,
+                'used': balance.used if balance.used is not None else 0,
+                'est_stake': est_stake or 0,
+                'stake': stake_currency,
             })
         if total == 0.0:
             if self._freqtrade.config.get('dry_run', False):
