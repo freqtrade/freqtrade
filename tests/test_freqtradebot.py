@@ -426,7 +426,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = freqtrade._get_min_pair_stake_amount('ETH/BTC', 2)
-    assert result == min(2, 2 * 2) / 0.9
+    assert result == max(2, 2 * 2) / 0.9
 
     # min amount and cost are set (amount is minial)
     markets["ETH/BTC"]["limits"] = {
@@ -438,7 +438,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = freqtrade._get_min_pair_stake_amount('ETH/BTC', 2)
-    assert result == min(8, 2 * 2) / 0.9
+    assert result == max(8, 2 * 2) / 0.9
 
 
 def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
