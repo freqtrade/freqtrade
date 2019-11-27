@@ -106,7 +106,7 @@ CONF_SCHEMA = {
                     'maximum': 1,
                     'exclusiveMaximum': False,
                     'use_order_book': {'type': 'boolean'},
-                    'order_book_top': {'type': 'number', 'maximum': 20, 'minimum': 1},
+                    'order_book_top': {'type': 'integer', 'maximum': 20, 'minimum': 1},
                     'check_depth_of_market': {
                         'type': 'object',
                         'properties': {
@@ -122,8 +122,8 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'use_order_book': {'type': 'boolean'},
-                'order_book_min': {'type': 'number', 'minimum': 1},
-                'order_book_max': {'type': 'number', 'minimum': 1, 'maximum': 50},
+                'order_book_min': {'type': 'integer', 'minimum': 1},
+                'order_book_max': {'type': 'integer', 'minimum': 1, 'maximum': 50},
                 'use_sell_signal': {'type': 'boolean'},
                 'sell_profit_only': {'type': 'boolean'},
                 'ignore_roi_if_buy_signal': {'type': 'boolean'}
@@ -210,7 +210,7 @@ CONF_SCHEMA = {
         'internals': {
             'type': 'object',
             'properties': {
-                'process_throttle_secs': {'type': 'number'},
+                'process_throttle_secs': {'type': 'integer'},
                 'interval': {'type': 'integer'},
                 'sd_notify': {'type': 'boolean'},
             }
@@ -278,5 +278,6 @@ CONF_SCHEMA = {
         'bid_strategy',
         'unfilledtimeout',
         'stoploss',
+        'minimal_roi',
     ]
 }
