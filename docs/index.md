@@ -12,8 +12,7 @@
 <!-- Place this tag where you want the button to render. -->
 <a class="github-button" href="https://github.com/freqtrade" data-size="large" aria-label="Follow @freqtrade on GitHub">Follow @freqtrade</a>
 ## Introduction
-Freqtrade is a cryptocurrency trading bot written in Python.
-
+Freqtrade is a crypto-currency algorithmic trading software develop in python (3.6+) supported on windows, macOs and Linux.
 !!! Danger "DISCLAIMER"
     This software is for educational purposes only. Do not risk money which you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS AND ALL AFFILIATES ASSUME NO RESPONSIBILITY FOR YOUR TRADING RESULTS.
 
