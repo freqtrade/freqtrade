@@ -89,9 +89,9 @@ The bot allows you to use multiple configuration files by specifying multiple
 defined in the latter configuration files override parameters with the same name
 defined in the previous configuration files specified in the command line earlier.
 
-For example, you can make a separate configuration file with your key and secrete
+For example, you can make a separate configuration file with your key and secret
 for the Exchange you use for trading, specify default configuration file with
-empty key and secrete values while running in the Dry Mode (which does not actually
+empty key and secret values while running in the Dry Mode (which does not actually
 require them):
 
 ```bash
@@ -104,7 +104,7 @@ and specify both configuration files when running in the normal Live Trade Mode:
 freqtrade trade -c ./config.json -c path/to/secrets/keys.config.json
 ```
 
-This could help you hide your private Exchange key and Exchange secrete on you local machine
+This could help you hide your private Exchange key and Exchange secret on you local machine
 by setting appropriate file permissions for the file which contains actual secrets and, additionally,
 prevent unintended disclosure of sensitive private data when you publish examples
 of your configuration in the project issues or in the Internet.

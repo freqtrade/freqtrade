@@ -543,8 +543,9 @@ def test_create_trades_too_small_stake_amount(default_conf, ticker, limit_buy_or
         get_fee=fee,
     )
 
-    default_conf['stake_amount'] = 0.000000005
     freqtrade = FreqtradeBot(default_conf)
+    freqtrade.config['stake_amount'] = 0.000000005
+
     patch_get_signal(freqtrade)
 
     assert not freqtrade.create_trades()

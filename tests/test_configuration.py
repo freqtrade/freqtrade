@@ -40,10 +40,16 @@ def test_load_config_invalid_pair(default_conf) -> None:
 
 
 def test_load_config_missing_attributes(default_conf) -> None:
-    default_conf.pop('exchange')
+    conf = deepcopy(default_conf)
+    conf.pop('exchange')
 
     with pytest.raises(ValidationError, match=r".*'exchange' is a required property.*"):
-        validate_config_schema(default_conf)
+        validate_config_schema(conf)
+
+    conf = deepcopy(default_conf)
+    conf.pop('stake_currency')
+    with pytest.raises(ValidationError, match=r".*'stake_currency' is a required property.*"):
+        validate_config_schema(conf)
 
 
 def test_load_config_incorrect_stake_amount(default_conf) -> None:
@@ -100,7 +106,6 @@ def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
 
     assert validated_conf['max_open_trades'] == 0
     assert 'internals' in validated_conf
-    assert log_has('Validating configuration ...', caplog)
 
 
 def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
@@ -132,7 +137,6 @@ def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
     assert validated_conf['exchange']['pair_whitelist'] == conf2['exchange']['pair_whitelist']
 
     assert 'internals' in validated_conf
-    assert log_has('Validating configuration ...', caplog)
 
 
 def test_from_config(default_conf, mocker, caplog) -> None:
@@ -159,7 +163,6 @@ def test_from_config(default_conf, mocker, caplog) -> None:
     assert validated_conf['exchange']['pair_whitelist'] == conf2['exchange']['pair_whitelist']
     assert validated_conf['fiat_display_currency'] == "EUR"
     assert 'internals' in validated_conf
-    assert log_has('Validating configuration ...', caplog)
     assert isinstance(validated_conf['user_data_dir'], Path)
 
 
@@ -191,7 +194,6 @@ def test_load_config_max_open_trades_minus_one(default_conf, mocker, caplog) -> 
 
     assert validated_conf['max_open_trades'] > 999999999
     assert validated_conf['max_open_trades'] == float('inf')
-    assert log_has('Validating configuration ...', caplog)
     assert "runmode" in validated_conf
     assert validated_conf['runmode'] == RunMode.DRY_RUN
 
