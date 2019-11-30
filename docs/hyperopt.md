@@ -466,8 +466,8 @@ Best result:
 Trailing stop:
 {   'trailing_only_offset_is_reached': True,
     'trailing_stop': True,
-    'trailing_stop_positive': -0.02005,
-    'trailing_stop_positive_offset': 0.05726}
+    'trailing_stop_positive': 0.02001,
+    'trailing_stop_positive_offset': 0.06038}
 ```
 
 In order to use these best trailing stop parameters found by Hyperopt in backtesting and for live trades/dry-run, copy-paste them as the values of the corresponding attributes of your custom strategy:
@@ -476,15 +476,15 @@ In order to use these best trailing stop parameters found by Hyperopt in backtes
     # Trailing stop
     # These attributes will be overridden if the config file contains corresponding values.
     trailing_stop = True
-    trailing_stop_positive = -0.02005
-    trailing_stop_positive_offset = 0.05726
+    trailing_stop_positive = 0.02001
+    trailing_stop_positive_offset = 0.06038
     trailing_only_offset_is_reached = True
 ```
 As stated in the comment, you can also use it as the values of the corresponding settings in the configuration file.
 
 #### Default Trailing Stop Search Space
 
-If you are optimizing trailing stop values, Freqtrade creates the 'trailing' optimization hyperspace for you. By default, the `trailing_stop` parameter is always set to True in that hyperspace, the value of the `trailing_only_offset_is_reached` vary between True and False, the values of the `trailing_stop_positive` and `trailing_stop_positive_offset` parameters vary in the ranges -0.35...-0.02 and 0.01...0.1 correspondingly, which is sufficient in most cases.
+If you are optimizing trailing stop values, Freqtrade creates the 'trailing' optimization hyperspace for you. By default, the `trailing_stop` parameter is always set to True in that hyperspace, the value of the `trailing_only_offset_is_reached` vary between True and False, the values of the `trailing_stop_positive` and `trailing_stop_positive_offset` parameters vary in the ranges 0.02...0.35 and 0.01...0.1 correspondingly, which is sufficient in most cases.
 
 Override the `trailing_space()` method and define the desired range in it if you need values of the trailing stop parameters to vary in other ranges during hyperoptimization. A sample for this method can be found in [user_data/hyperopts/sample_hyperopt_advanced.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/sample_hyperopt_advanced.py).
 

@@ -190,7 +190,7 @@ class IHyperOpt(ABC):
             # other 'trailing' hyperspace parameters.
             Categorical([True], name='trailing_stop'),
 
-            Real(-0.35, -0.02, name='trailing_stop_positive'),
+            Real(0.02, 0.35, name='trailing_stop_positive'),
             Real(0.01, 0.1, name='trailing_stop_positive_offset'),
             Categorical([True, False], name='trailing_only_offset_is_reached'),
         ]
