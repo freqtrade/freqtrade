@@ -7,7 +7,7 @@ from typing import Dict
 
 import numpy as np
 import pandas as pd
-import pytz
+from datetime import timezone
 
 from freqtrade import persistence
 from freqtrade.misc import json_load
@@ -52,16 +52,18 @@ def load_backtest_data(filename) -> pd.DataFrame:
     return df
 
 
-def evaluate_result_multi(results: pd.DataFrame, freq: str, max_open_trades: int) -> pd.DataFrame:
+def analyze_trade_parallelism(results: pd.DataFrame, timeframe: str) -> pd.DataFrame:
     """
     Find overlapping trades by expanding each trade once per period it was open
-    and then counting overlaps
+    and then counting overlaps.
     :param results: Results Dataframe - can be loaded
-    :param freq: Frequency used for the backtest
-    :param max_open_trades: parameter max_open_trades used during backtest run
-    :return: dataframe with open-counts per time-period in freq
+    :param timeframe: Timeframe used for backtest
+    :return: dataframe with open-counts per time-period in timeframe
     """
-    dates = [pd.Series(pd.date_range(row[1].open_time, row[1].close_time, freq=freq))
+    from freqtrade.exchange import timeframe_to_minutes
+    timeframe_min = timeframe_to_minutes(timeframe)
+    dates = [pd.Series(pd.date_range(row[1].open_time, row[1].close_time,
+                                     freq=f"{timeframe_min}min"))
              for row in results[['open_time', 'close_time']].iterrows()]
     deltas = [len(x) for x in dates]
     dates = pd.Series(pd.concat(dates).values, name='date')
@@ -69,8 +71,23 @@ def evaluate_result_multi(results: pd.DataFrame, freq: str, max_open_trades: int
 
     df2 = pd.concat([dates, df2], axis=1)
     df2 = df2.set_index('date')
-    df_final = df2.resample(freq)[['pair']].count()
-    return df_final[df_final['pair'] > max_open_trades]
+    df_final = df2.resample(f"{timeframe_min}min")[['pair']].count()
+    df_final = df_final.rename({'pair': 'open_trades'}, axis=1)
+    return df_final
+
+
+def evaluate_result_multi(results: pd.DataFrame, timeframe: str,
+                          max_open_trades: int) -> pd.DataFrame:
+    """
+    Find overlapping trades by expanding each trade once per period it was open
+    and then counting overlaps
+    :param results: Results Dataframe - can be loaded
+    :param timeframe: Frequency used for the backtest
+    :param max_open_trades: parameter max_open_trades used during backtest run
+    :return: dataframe with open-counts per time-period in freq
+    """
+    df_final = analyze_trade_parallelism(results, timeframe)
+    return df_final[df_final['open_trades'] > max_open_trades]
 
 
 def load_trades_from_db(db_url: str) -> pd.DataFrame:
@@ -89,8 +106,8 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
                "stop_loss", "initial_stop_loss", "strategy", "ticker_interval"]
 
     trades = pd.DataFrame([(t.pair,
-                            t.open_date.replace(tzinfo=pytz.UTC),
-                            t.close_date.replace(tzinfo=pytz.UTC) if t.close_date else None,
+                            t.open_date.replace(tzinfo=timezone.utc),
+                            t.close_date.replace(tzinfo=timezone.utc) if t.close_date else None,
                             t.calc_profit(), t.calc_profit_percent(),
                             t.open_rate, t.close_rate, t.amount,
                             (round((t.close_date.timestamp() - t.open_date.timestamp()) / 60, 2)
@@ -106,7 +123,7 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
                             t.stop_loss, t.initial_stop_loss,
                             t.strategy, t.ticker_interval
                             )
-                           for t in Trade.query.all()],
+                           for t in Trade.get_trades().all()],
                           columns=columns)
 
     return trades
@@ -150,15 +167,21 @@ def combine_tickers_with_mean(tickers: Dict[str, pd.DataFrame], column: str = "c
     return df_comb
 
 
-def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str) -> pd.DataFrame:
+def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
+                      timeframe: str) -> pd.DataFrame:
     """
     Adds a column `col_name` with the cumulative profit for the given trades array.
     :param df: DataFrame with date index
     :param trades: DataFrame containing trades (requires columns close_time and profitperc)
+    :param col_name: Column name that will be assigned the results
+    :param timeframe: Timeframe used during the operations
     :return: Returns df with one additional column, col_name, containing the cumulative profit.
     """
-    # Use groupby/sum().cumsum() to avoid errors when multiple trades sold at the same candle.
-    df[col_name] = trades.groupby('close_time')['profitperc'].sum().cumsum()
+    from freqtrade.exchange import timeframe_to_minutes
+    timeframe_minutes = timeframe_to_minutes(timeframe)
+    # Resample to timeframe to make sure trades match candles
+    _trades_sum = trades.resample(f'{timeframe_minutes}min', on='close_time')[['profitperc']].sum()
+    df.loc[:, col_name] = _trades_sum.cumsum()
     # Set first value to 0
     df.loc[df.iloc[0].name, col_name] = 0
     # FFill to get continuous

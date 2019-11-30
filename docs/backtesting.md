@@ -45,7 +45,7 @@ freqtrade --datadir user_data/data/bittrex-20180101 backtesting
 #### With a (custom) strategy file
 
 ```bash
-freqtrade -s SampleStrategy backtesting
+freqtrade backtesting -s SampleStrategy
 ```
 
 Where `-s SampleStrategy` refers to the class name within the strategy file `sample_strategy.py` found in the `freqtrade/user_data/strategies` directory.
@@ -71,6 +71,8 @@ The exported trades can be used for [further analysis](#further-backtest-result-
 ```bash
 freqtrade backtesting --export trades --export-filename=backtest_samplestrategy.json
 ```
+
+Please also read about the [strategy startup period](strategy-customization.md#strategy-startup-period).
 
 #### Supplying custom fee value
 

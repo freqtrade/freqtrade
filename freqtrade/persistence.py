@@ -8,16 +8,15 @@ from typing import Any, Dict, List, Optional
 
 import arrow
 from sqlalchemy import (Boolean, Column, DateTime, Float, Integer, String,
-                        create_engine, inspect)
+                        create_engine, desc, func, inspect)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Query
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
-from sqlalchemy import func
 from sqlalchemy.pool import StaticPool
 
 from freqtrade import OperationalException
-
 
 logger = logging.getLogger(__name__)
 
@@ -52,9 +51,11 @@ def init(db_url: str, clean_open_orders: bool = False) -> None:
         raise OperationalException(f"Given value for db_url: '{db_url}' "
                                    f"is no valid database URL! (See {_SQL_DOCS_URL})")
 
-    session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
-    Trade.session = session()
-    Trade.query = session.query_property()
+    # https://docs.sqlalchemy.org/en/13/orm/contextual.html#thread-local-scope
+    # Scoped sessions proxy requests to the appropriate thread-local session.
+    # We should use the scoped_session object - not a seperately initialized version
+    Trade.session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
+    Trade.query = Trade.session.query_property()
     _DECL_BASE.metadata.create_all(engine)
     check_migrate(engine)
 
@@ -394,6 +395,37 @@ class Trade(_DECL_BASE):
         return float(f"{profit_percent:.8f}")
 
     @staticmethod
+    def get_trades(trade_filter=None) -> Query:
+        """
+        Helper function to query Trades using filters.
+        :param trade_filter: Optional filter to apply to trades
+                             Can be either a Filter object, or a List of filters
+                             e.g. `(trade_filter=[Trade.id == trade_id, Trade.is_open.is_(True),])`
+                             e.g. `(trade_filter=Trade.id == trade_id)`
+        :return: unsorted query object
+        """
+        if trade_filter is not None:
+            if not isinstance(trade_filter, list):
+                trade_filter = [trade_filter]
+            return Trade.query.filter(*trade_filter)
+        else:
+            return Trade.query
+
+    @staticmethod
+    def get_open_trades() -> List[Any]:
+        """
+        Query trades from persistence layer
+        """
+        return Trade.get_trades(Trade.is_open.is_(True)).all()
+
+    @staticmethod
+    def get_open_order_trades():
+        """
+        Returns all open trades
+        """
+        return Trade.get_trades(Trade.open_order_id.isnot(None)).all()
+
+    @staticmethod
     def total_open_trades_stakes() -> float:
         """
         Calculates total invested amount in open trades
@@ -405,11 +437,38 @@ class Trade(_DECL_BASE):
         return total_open_stake_amount or 0
 
     @staticmethod
-    def get_open_trades() -> List[Any]:
+    def get_overall_performance() -> List[Dict[str, Any]]:
         """
-        Query trades from persistence layer
+        Returns List of dicts containing all Trades, including profit and trade count
         """
-        return Trade.query.filter(Trade.is_open.is_(True)).all()
+        pair_rates = Trade.session.query(
+            Trade.pair,
+            func.sum(Trade.close_profit).label('profit_sum'),
+            func.count(Trade.pair).label('count')
+        ).filter(Trade.is_open.is_(False))\
+            .group_by(Trade.pair) \
+            .order_by(desc('profit_sum')) \
+            .all()
+        return [
+            {
+                'pair': pair,
+                'profit': rate,
+                'count': count
+            }
+            for pair, rate, count in pair_rates
+        ]
+
+    @staticmethod
+    def get_best_pair():
+        """
+        Get best pair with closed trade.
+        """
+        best_pair = Trade.session.query(
+            Trade.pair, func.sum(Trade.close_profit).label('profit_sum')
+        ).filter(Trade.is_open.is_(False)) \
+            .group_by(Trade.pair) \
+            .order_by(desc('profit_sum')).first()
+        return best_pair
 
     @staticmethod
     def stoploss_reinitialization(desired_stoploss):

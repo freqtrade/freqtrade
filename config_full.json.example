@@ -50,14 +50,18 @@
         "buy": "gtc",
         "sell": "gtc"
     },
-    "pairlist": {
-        "method": "VolumePairList",
-        "config": {
+    "pairlists": [
+        {"method": "StaticPairList"},
+        {
+            "method": "VolumePairList",
             "number_assets": 20,
             "sort_key": "quoteVolume",
-            "precision_filter": false
+            "refresh_period": 1800
+        },
+        {"method": "PrecisionFilter"},
+        {"method": "PriceFilter", "low_price_ratio": 0.01
         }
-    },
+    ],
     "exchange": {
         "name": "bittrex",
         "sandbox": false,
@@ -78,7 +82,7 @@
             "ZEC/BTC",
             "XLM/BTC",
             "NXT/BTC",
-            "POWR/BTC",
+            "TRX/BTC",
             "ADA/BTC",
             "XMR/BTC"
         ],

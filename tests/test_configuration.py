@@ -11,15 +11,13 @@ import pytest
 from jsonschema import Draft4Validator, ValidationError, validate
 
 from freqtrade import OperationalException, constants
-from freqtrade.configuration import (Arguments, Configuration,
+from freqtrade.configuration import (Arguments, Configuration, check_exchange,
+                                     remove_credentials,
                                      validate_config_consistency)
-from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.config_validation import validate_config_schema
 from freqtrade.configuration.deprecated_settings import (
     check_conflicting_settings, process_deprecated_setting,
     process_temporary_deprecated_settings)
-from freqtrade.configuration.directory_operations import (create_datadir,
-                                                          create_userdata_dir)
 from freqtrade.configuration.load_config import load_config_file
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.loggers import _set_loggers, setup_logging
@@ -43,10 +41,16 @@ def test_load_config_invalid_pair(default_conf) -> None:
 
 
 def test_load_config_missing_attributes(default_conf) -> None:
-    default_conf.pop('exchange')
+    conf = deepcopy(default_conf)
+    conf.pop('exchange')
 
     with pytest.raises(ValidationError, match=r".*'exchange' is a required property.*"):
-        validate_config_schema(default_conf)
+        validate_config_schema(conf)
+
+    conf = deepcopy(default_conf)
+    conf.pop('stake_currency')
+    with pytest.raises(ValidationError, match=r".*'stake_currency' is a required property.*"):
+        validate_config_schema(conf)
 
 
 def test_load_config_incorrect_stake_amount(default_conf) -> None:
@@ -69,7 +73,7 @@ def test_load_config_file(default_conf, mocker, caplog) -> None:
 
 def test__args_to_config(caplog):
 
-    arg_list = ['--strategy-path', 'TestTest']
+    arg_list = ['trade', '--strategy-path', 'TestTest']
     args = Arguments(arg_list).get_parsed_arg()
     configuration = Configuration(args)
     config = {}
@@ -97,13 +101,12 @@ def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
     default_conf['max_open_trades'] = 0
     patched_configuration_load_config_file(mocker, default_conf)
 
-    args = Arguments([]).get_parsed_arg()
+    args = Arguments(['trade']).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
     assert validated_conf['max_open_trades'] == 0
     assert 'internals' in validated_conf
-    assert log_has('Validating configuration ...', caplog)
 
 
 def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
@@ -122,7 +125,7 @@ def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
         configsmock
     )
 
-    arg_list = ['-c', 'test_conf.json', '--config', 'test2_conf.json', ]
+    arg_list = ['trade', '-c', 'test_conf.json', '--config', 'test2_conf.json', ]
     args = Arguments(arg_list).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
@@ -135,7 +138,6 @@ def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
     assert validated_conf['exchange']['pair_whitelist'] == conf2['exchange']['pair_whitelist']
 
     assert 'internals' in validated_conf
-    assert log_has('Validating configuration ...', caplog)
 
 
 def test_from_config(default_conf, mocker, caplog) -> None:
@@ -162,7 +164,6 @@ def test_from_config(default_conf, mocker, caplog) -> None:
     assert validated_conf['exchange']['pair_whitelist'] == conf2['exchange']['pair_whitelist']
     assert validated_conf['fiat_display_currency'] == "EUR"
     assert 'internals' in validated_conf
-    assert log_has('Validating configuration ...', caplog)
     assert isinstance(validated_conf['user_data_dir'], Path)
 
 
@@ -188,13 +189,12 @@ def test_load_config_max_open_trades_minus_one(default_conf, mocker, caplog) -> 
     default_conf['max_open_trades'] = -1
     patched_configuration_load_config_file(mocker, default_conf)
 
-    args = Arguments([]).get_parsed_arg()
+    args = Arguments(['trade']).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
     assert validated_conf['max_open_trades'] > 999999999
     assert validated_conf['max_open_trades'] == float('inf')
-    assert log_has('Validating configuration ...', caplog)
     assert "runmode" in validated_conf
     assert validated_conf['runmode'] == RunMode.DRY_RUN
 
@@ -212,11 +212,10 @@ def test_load_config_file_exception(mocker) -> None:
 def test_load_config(default_conf, mocker) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
 
-    args = Arguments([]).get_parsed_arg()
+    args = Arguments(['trade']).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
-    assert validated_conf.get('strategy') == 'DefaultStrategy'
     assert validated_conf.get('strategy_path') is None
     assert 'edge' not in validated_conf
 
@@ -225,6 +224,7 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
 
     arglist = [
+        'trade',
         '--strategy', 'TestStrategy',
         '--strategy-path', '/some/path',
         '--db-url', 'sqlite:///someurl',
@@ -244,6 +244,7 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     patched_configuration_load_config_file(mocker, conf)
 
     arglist = [
+        'trade',
         '--strategy', 'TestStrategy',
         '--strategy-path', '/some/path'
     ]
@@ -260,6 +261,7 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     patched_configuration_load_config_file(mocker, conf)
 
     arglist = [
+        'trade',
         '--strategy', 'TestStrategy',
         '--strategy-path', '/some/path'
     ]
@@ -276,6 +278,7 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     patched_configuration_load_config_file(mocker, conf)
 
     arglist = [
+        'trade',
         '--strategy', 'TestStrategy',
         '--strategy-path', '/some/path'
     ]
@@ -294,6 +297,7 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     patched_configuration_load_config_file(mocker, conf)
 
     arglist = [
+        'trade',
         '--strategy', 'TestStrategy',
         '--strategy-path', '/some/path'
     ]
@@ -304,6 +308,23 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     assert validated_conf.get('db_url') == DEFAULT_DB_DRYRUN_URL
 
 
+@pytest.mark.parametrize("config_value,expected,arglist", [
+    (True, True, ['trade', '--dry-run']),  # Leave config untouched
+    (False, True, ['trade', '--dry-run']),  # Override config untouched
+    (False, False, ['trade']),  # Leave config untouched
+    (True, True, ['trade']),  # Leave config untouched
+])
+def test_load_dry_run(default_conf, mocker, config_value, expected, arglist) -> None:
+
+    default_conf['dry_run'] = config_value
+    patched_configuration_load_config_file(mocker, default_conf)
+
+    configuration = Configuration(Arguments(arglist).get_parsed_arg())
+    validated_conf = configuration.load_config()
+
+    assert validated_conf.get('dry_run') is expected
+
+
 def test_load_custom_strategy(default_conf, mocker) -> None:
     default_conf.update({
         'strategy': 'CustomStrategy',
@@ -311,7 +332,7 @@ def test_load_custom_strategy(default_conf, mocker) -> None:
     })
     patched_configuration_load_config_file(mocker, default_conf)
 
-    args = Arguments([]).get_parsed_arg()
+    args = Arguments(['trade']).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
@@ -323,6 +344,7 @@ def test_show_info(default_conf, mocker, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
 
     arglist = [
+        'trade',
         '--strategy', 'TestStrategy',
         '--db-url', 'sqlite:///tmp/testdb',
     ]
@@ -339,9 +361,9 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     patched_configuration_load_config_file(mocker, default_conf)
 
     arglist = [
+        'backtesting',
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
-        'backtesting'
     ]
 
     args = Arguments(arglist).get_parsed_arg()
@@ -377,11 +399,11 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         lambda x, *args, **kwargs: Path(x)
     )
     arglist = [
+        'backtesting',
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
         '--datadir', '/foo/bar',
         '--userdir', "/tmp/freqtrade",
-        'backtesting',
         '--ticker-interval', '1m',
         '--enable-position-stacking',
         '--disable-max-market-positions',
@@ -428,8 +450,8 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
     patched_configuration_load_config_file(mocker, default_conf)
 
     arglist = [
-        '--config', 'config.json',
         'backtesting',
+        '--config', 'config.json',
         '--ticker-interval', '1m',
         '--export', '/bar/foo',
         '--strategy-list',
@@ -546,10 +568,22 @@ def test_check_exchange(default_conf, caplog) -> None:
 
     # Test no exchange...
     default_conf.get('exchange').update({'name': ''})
-    default_conf['runmode'] = RunMode.OTHER
+    default_conf['runmode'] = RunMode.UTIL_EXCHANGE
     with pytest.raises(OperationalException,
                        match=r'This command requires a configured exchange.*'):
         check_exchange(default_conf)
+
+
+def test_remove_credentials(default_conf, caplog) -> None:
+    conf = deepcopy(default_conf)
+    conf['dry_run'] = False
+    remove_credentials(conf)
+
+    assert conf['dry_run'] is True
+    assert conf['exchange']['key'] == ''
+    assert conf['exchange']['secret'] == ''
+    assert conf['exchange']['password'] == ''
+    assert conf['exchange']['uid'] == ''
 
 
 def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
@@ -557,7 +591,7 @@ def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
 
     # Prevent setting loggers
     mocker.patch('freqtrade.loggers._set_loggers', MagicMock)
-    arglist = ['-vvv']
+    arglist = ['trade', '-vvv']
     args = Arguments(arglist).get_parsed_arg()
 
     configuration = Configuration(args)
@@ -659,7 +693,7 @@ def test_set_logfile(default_conf, mocker):
     patched_configuration_load_config_file(mocker, default_conf)
 
     arglist = [
-        '--logfile', 'test_file.log',
+        'trade', '--logfile', 'test_file.log',
     ]
     args = Arguments(arglist).get_parsed_arg()
     configuration = Configuration(args)
@@ -675,7 +709,7 @@ def test_load_config_warn_forcebuy(default_conf, mocker, caplog) -> None:
     default_conf['forcebuy_enable'] = True
     patched_configuration_load_config_file(mocker, default_conf)
 
-    args = Arguments([]).get_parsed_arg()
+    args = Arguments(['trade']).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
@@ -685,45 +719,6 @@ def test_load_config_warn_forcebuy(default_conf, mocker, caplog) -> None:
 
 def test_validate_default_conf(default_conf) -> None:
     validate(default_conf, constants.CONF_SCHEMA, Draft4Validator)
-
-
-def test_create_datadir(mocker, default_conf, caplog) -> None:
-    mocker.patch.object(Path, "is_dir", MagicMock(return_value=False))
-    md = mocker.patch.object(Path, 'mkdir', MagicMock())
-
-    create_datadir(default_conf, '/foo/bar')
-    assert md.call_args[1]['parents'] is True
-    assert log_has('Created data directory: /foo/bar', caplog)
-
-
-def test_create_userdata_dir(mocker, default_conf, caplog) -> None:
-    mocker.patch.object(Path, "is_dir", MagicMock(return_value=False))
-    md = mocker.patch.object(Path, 'mkdir', MagicMock())
-
-    x = create_userdata_dir('/tmp/bar', create_dir=True)
-    assert md.call_count == 7
-    assert md.call_args[1]['parents'] is False
-    assert log_has(f'Created user-data directory: {Path("/tmp/bar")}', caplog)
-    assert isinstance(x, Path)
-    assert str(x) == str(Path("/tmp/bar"))
-
-
-def test_create_userdata_dir_exists(mocker, default_conf, caplog) -> None:
-    mocker.patch.object(Path, "is_dir", MagicMock(return_value=True))
-    md = mocker.patch.object(Path, 'mkdir', MagicMock())
-
-    create_userdata_dir('/tmp/bar')
-    assert md.call_count == 0
-
-
-def test_create_userdata_dir_exists_exception(mocker, default_conf, caplog) -> None:
-    mocker.patch.object(Path, "is_dir", MagicMock(return_value=False))
-    md = mocker.patch.object(Path, 'mkdir', MagicMock())
-
-    with pytest.raises(OperationalException,
-                       match=r'Directory `.{1,2}tmp.{1,2}bar` does not exist.*'):
-        create_userdata_dir('/tmp/bar',  create_dir=False)
-    assert md.call_count == 0
 
 
 def test_validate_tsl(default_conf):
@@ -778,6 +773,30 @@ def test_validate_edge(edge_conf):
         "method": "StaticPairList",
     }})
     validate_config_consistency(edge_conf)
+
+
+def test_validate_whitelist(default_conf):
+    default_conf['runmode'] = RunMode.DRY_RUN
+    # Test regular case - has whitelist and uses StaticPairlist
+    validate_config_consistency(default_conf)
+    conf = deepcopy(default_conf)
+    del conf['exchange']['pair_whitelist']
+    # Test error case
+    with pytest.raises(OperationalException,
+                       match="StaticPairList requires pair_whitelist to be set."):
+
+        validate_config_consistency(conf)
+
+    conf = deepcopy(default_conf)
+
+    conf.update({"pairlists": [{
+        "method": "VolumePairList",
+    }]})
+    # Dynamic whitelist should not care about pair_whitelist
+    validate_config_consistency(conf)
+    del conf['exchange']['pair_whitelist']
+
+    validate_config_consistency(conf)
 
 
 def test_load_config_test_comments() -> None:
@@ -852,7 +871,7 @@ def test_pairlist_resolving():
 
     args = Arguments(arglist).get_parsed_arg()
 
-    configuration = Configuration(args)
+    configuration = Configuration(args, RunMode.OTHER)
     config = configuration.get_config()
 
     assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
@@ -862,8 +881,8 @@ def test_pairlist_resolving():
 def test_pairlist_resolving_with_config(mocker, default_conf):
     patched_configuration_load_config_file(mocker, default_conf)
     arglist = [
-        '--config', 'config.json',
         'download-data',
+        '--config', 'config.json',
     ]
 
     args = Arguments(arglist).get_parsed_arg()
@@ -876,8 +895,8 @@ def test_pairlist_resolving_with_config(mocker, default_conf):
 
     # Override pairs
     arglist = [
-        '--config', 'config.json',
         'download-data',
+        '--config', 'config.json',
         '--pairs', 'ETH/BTC', 'XRP/BTC',
     ]
 
@@ -898,8 +917,8 @@ def test_pairlist_resolving_with_config_pl(mocker, default_conf):
     mocker.patch.object(Path, "open", MagicMock(return_value=MagicMock()))
 
     arglist = [
-        '--config', 'config.json',
         'download-data',
+        '--config', 'config.json',
         '--pairs-file', 'pairs.json',
     ]
 
@@ -920,8 +939,8 @@ def test_pairlist_resolving_with_config_pl_not_exists(mocker, default_conf):
     mocker.patch.object(Path, "exists", MagicMock(return_value=False))
 
     arglist = [
-        '--config', 'config.json',
         'download-data',
+        '--config', 'config.json',
         '--pairs-file', 'pairs.json',
     ]
 
@@ -946,7 +965,7 @@ def test_pairlist_resolving_fallback(mocker):
     # Fix flaky tests if config.json exists
     args["config"] = None
 
-    configuration = Configuration(args)
+    configuration = Configuration(args, RunMode.OTHER)
     config = configuration.get_config()
 
     assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
@@ -988,6 +1007,18 @@ def test_process_temporary_deprecated_settings(mocker, default_conf, setting, ca
     # The value of the new setting shall have been set to the
     # value of the deprecated one
     assert default_conf[setting[0]][setting[1]] == setting[5]
+
+
+def test_process_deprecated_setting_pairlists(mocker, default_conf, caplog):
+    patched_configuration_load_config_file(mocker, default_conf)
+    default_conf.update({'pairlist': {
+        'method': 'VolumePairList',
+        'config': {'precision_filter': True}
+    }})
+
+    process_temporary_deprecated_settings(default_conf)
+    assert log_has_re(r'DEPRECATED.*precision_filter.*', caplog)
+    assert log_has_re(r'DEPRECATED.*in pairlist is deprecated and must be moved*', caplog)
 
 
 def test_check_conflicting_settings(mocker, default_conf, caplog):

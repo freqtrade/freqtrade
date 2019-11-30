@@ -53,10 +53,10 @@ def test_init_plotscript(default_conf, mocker, testdatadir):
     assert "trades" in ret
     assert "pairs" in ret
 
-    default_conf['pairs'] = ["POWR/BTC", "ADA/BTC"]
+    default_conf['pairs'] = ["TRX/BTC", "ADA/BTC"]
     ret = init_plotscript(default_conf)
     assert "tickers" in ret
-    assert "POWR/BTC" in ret["tickers"]
+    assert "TRX/BTC" in ret["tickers"]
     assert "ADA/BTC" in ret["tickers"]
 
 
@@ -64,7 +64,7 @@ def test_add_indicators(default_conf, testdatadir, caplog):
     pair = "UNITTEST/BTC"
     timerange = TimeRange(None, 'line', 0, -1000)
 
-    data = history.load_pair_history(pair=pair, ticker_interval='1m',
+    data = history.load_pair_history(pair=pair, timeframe='1m',
                                      datadir=testdatadir, timerange=timerange)
     indicators1 = ["ema10"]
     indicators2 = ["macd"]
@@ -129,7 +129,7 @@ def test_generate_candlestick_graph_no_signals_no_trades(default_conf, mocker, t
 
     pair = "UNITTEST/BTC"
     timerange = TimeRange(None, 'line', 0, -1000)
-    data = history.load_pair_history(pair=pair, ticker_interval='1m',
+    data = history.load_pair_history(pair=pair, timeframe='1m',
                                      datadir=testdatadir, timerange=timerange)
     data['buy'] = 0
     data['sell'] = 0
@@ -164,7 +164,7 @@ def test_generate_candlestick_graph_no_trades(default_conf, mocker, testdatadir)
                                MagicMock(side_effect=fig_generating_mock))
     pair = 'UNITTEST/BTC'
     timerange = TimeRange(None, 'line', 0, -1000)
-    data = history.load_pair_history(pair=pair, ticker_interval='1m',
+    data = history.load_pair_history(pair=pair, timeframe='1m',
                                      datadir=testdatadir, timerange=timerange)
 
     # Generate buy/sell signals and indicators
@@ -212,9 +212,9 @@ def test_generate_plot_file(mocker, caplog):
     fig = generate_empty_figure()
     plot_mock = mocker.patch("freqtrade.plot.plotting.plot", MagicMock())
     store_plot_file(fig, filename="freqtrade-plot-UNITTEST_BTC-5m.html",
-                    directory=Path("user_data/plots"))
+                    directory=Path("user_data/plot"))
 
-    expected_fn = str(Path("user_data/plots/freqtrade-plot-UNITTEST_BTC-5m.html"))
+    expected_fn = str(Path("user_data/plot/freqtrade-plot-UNITTEST_BTC-5m.html"))
     assert plot_mock.call_count == 1
     assert plot_mock.call_args[0][0] == fig
     assert (plot_mock.call_args_list[0][1]['filename']
@@ -228,13 +228,13 @@ def test_add_profit(testdatadir):
     bt_data = load_backtest_data(filename)
     timerange = TimeRange.parse_timerange("20180110-20180112")
 
-    df = history.load_pair_history(pair="POWR/BTC", ticker_interval='5m',
+    df = history.load_pair_history(pair="TRX/BTC", timeframe='5m',
                                    datadir=testdatadir, timerange=timerange)
     fig = generate_empty_figure()
 
     cum_profits = create_cum_profit(df.set_index('date'),
-                                    bt_data[bt_data["pair"] == 'POWR/BTC'],
-                                    "cum_profits")
+                                    bt_data[bt_data["pair"] == 'TRX/BTC'],
+                                    "cum_profits", timeframe="5m")
 
     fig1 = add_profit(fig, row=2, data=cum_profits, column='cum_profits', name='Profits')
     figure = fig1.layout.figure
@@ -247,16 +247,16 @@ def test_generate_profit_graph(testdatadir):
     filename = testdatadir / "backtest-result_test.json"
     trades = load_backtest_data(filename)
     timerange = TimeRange.parse_timerange("20180110-20180112")
-    pairs = ["POWR/BTC", "ADA/BTC"]
+    pairs = ["TRX/BTC", "ADA/BTC"]
 
     tickers = history.load_data(datadir=testdatadir,
                                 pairs=pairs,
-                                ticker_interval='5m',
+                                timeframe='5m',
                                 timerange=timerange
                                 )
     trades = trades[trades['pair'].isin(pairs)]
 
-    fig = generate_profit_graph(pairs, tickers, trades)
+    fig = generate_profit_graph(pairs, tickers, trades, timeframe="5m")
     assert isinstance(fig, go.Figure)
 
     assert fig.layout.title.text == "Freqtrade Profit plot"
@@ -281,8 +281,8 @@ def test_generate_profit_graph(testdatadir):
 def test_start_plot_dataframe(mocker):
     aup = mocker.patch("freqtrade.plot.plotting.load_and_plot_trades", MagicMock())
     args = [
-        "--config", "config.json.example",
         "plot-dataframe",
+        "--config", "config.json.example",
         "--pairs", "ETH/BTC"
     ]
     start_plot_dataframe(get_args(args))
@@ -323,8 +323,8 @@ def test_load_and_plot_trades(default_conf, mocker, caplog, testdatadir):
 def test_start_plot_profit(mocker):
     aup = mocker.patch("freqtrade.plot.plotting.plot_profit", MagicMock())
     args = [
-        "--config", "config.json.example",
         "plot-profit",
+        "--config", "config.json.example",
         "--pairs", "ETH/BTC"
     ]
     start_plot_profit(get_args(args))

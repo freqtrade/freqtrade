@@ -63,12 +63,16 @@ AVAILABLE_CLI_OPTIONS = {
         help='Path to userdata directory.',
         metavar='PATH',
     ),
+    "reset": Arg(
+        '--reset',
+        help='Reset sample files to their original state.',
+        action='store_true',
+    ),
     # Main options
     "strategy": Arg(
         '-s', '--strategy',
-        help='Specify strategy class name (default: `%(default)s`).',
+        help='Specify strategy class name which will be used by the bot.',
         metavar='NAME',
-        default='DefaultStrategy',
     ),
     "strategy_path": Arg(
         '--strategy-path',
@@ -85,6 +89,11 @@ AVAILABLE_CLI_OPTIONS = {
     "sd_notify": Arg(
         '--sd-notify',
         help='Notify systemd service manager.',
+        action='store_true',
+    ),
+    "dry_run": Arg(
+        '--dry-run',
+        help='Enforce dry-run for trading (removes Exchange secrets and simulates trades).',
         action='store_true',
     ),
     # Optimize common
@@ -137,7 +146,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "exportfilename": Arg(
         '--export-filename',
-        help='Save backtest results to the file with this filename (default: `%(default)s`). '
+        help='Save backtest results to the file with this filename. '
         'Requires `--export` to be set as well. '
         'Example: `--export-filename=user_data/backtest_results/backtest_today.json`',
         metavar='PATH',
@@ -157,14 +166,13 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     # Hyperopt
     "hyperopt": Arg(
-        '--customhyperopt',
-        help='Specify hyperopt class name (default: `%(default)s`).',
+        '--hyperopt',
+        help='Specify hyperopt class name which will be used by the bot.',
         metavar='NAME',
-        default=constants.DEFAULT_HYPEROPT,
     ),
     "hyperopt_path": Arg(
         '--hyperopt-path',
-        help='Specify additional lookup path for Hyperopts and Hyperopt Loss functions.',
+        help='Specify additional lookup path for Hyperopt and Hyperopt Loss functions.',
         metavar='PATH',
     ),
     "epochs": Arg(
@@ -175,7 +183,7 @@ AVAILABLE_CLI_OPTIONS = {
         default=constants.HYPEROPT_EPOCH,
     ),
     "spaces": Arg(
-        '-s', '--spaces',
+        '--spaces',
         help='Specify which parameters to hyperopt. Space-separated list. '
         'Default: `%(default)s`.',
         choices=['all', 'buy', 'sell', 'roi', 'stoploss'],
@@ -331,6 +339,14 @@ AVAILABLE_CLI_OPTIONS = {
         '--erase',
         help='Clean all existing data for the selected exchange/pairs/timeframes.',
         action='store_true',
+    ),
+    # Templating options
+    "template": Arg(
+        '--template',
+        help='Use a template which is either `minimal` or '
+        '`full` (containing multiple sample indicators). Default: `%(default)s`.',
+        choices=['full', 'minimal'],
+        default='full',
     ),
     # Plot dataframe
     "indicators1": Arg(

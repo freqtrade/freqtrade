@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from arrow import Arrow
-from pandas import DataFrame, to_datetime
+from pandas import DataFrame, DateOffset, to_datetime
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
@@ -10,7 +10,7 @@ from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
                                        create_cum_profit,
                                        extract_trades_of_period,
                                        load_backtest_data, load_trades,
-                                       load_trades_from_db)
+                                       load_trades_from_db, analyze_trade_parallelism)
 from freqtrade.data.history import load_data, load_pair_history
 from tests.test_persistence import create_mock_trades
 
@@ -32,7 +32,7 @@ def test_load_backtest_data(testdatadir):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_load_trades_db(default_conf, fee, mocker):
+def test_load_trades_from_db(default_conf, fee, mocker):
 
     create_mock_trades(fee)
     # remove init so it does not init again
@@ -56,7 +56,7 @@ def test_extract_trades_of_period(testdatadir):
     # 2018-11-14 06:07:00
     timerange = TimeRange('date', None, 1510639620, 0)
 
-    data = load_pair_history(pair=pair, ticker_interval='1m',
+    data = load_pair_history(pair=pair, timeframe='1m',
                              datadir=testdatadir, timerange=timerange)
 
     trades = DataFrame(
@@ -82,6 +82,17 @@ def test_extract_trades_of_period(testdatadir):
     assert trades1.iloc[0].close_time == Arrow(2017, 11, 14, 10, 41, 0).datetime
     assert trades1.iloc[-1].open_time == Arrow(2017, 11, 14, 14, 20, 0).datetime
     assert trades1.iloc[-1].close_time == Arrow(2017, 11, 14, 15, 25, 0).datetime
+
+
+def test_analyze_trade_parallelism(default_conf, mocker, testdatadir):
+    filename = testdatadir / "backtest-result_test.json"
+    bt_data = load_backtest_data(filename)
+
+    res = analyze_trade_parallelism(bt_data, "5m")
+    assert isinstance(res, DataFrame)
+    assert 'open_trades' in res.columns
+    assert res['open_trades'].max() == 3
+    assert res['open_trades'].min() == 0
 
 
 def test_load_trades(default_conf, mocker):
@@ -111,7 +122,7 @@ def test_combine_tickers_with_mean(testdatadir):
     pairs = ["ETH/BTC", "ADA/BTC"]
     tickers = load_data(datadir=testdatadir,
                         pairs=pairs,
-                        ticker_interval='5m'
+                        timeframe='5m'
                         )
     df = combine_tickers_with_mean(tickers)
     assert isinstance(df, DataFrame)
@@ -125,12 +136,30 @@ def test_create_cum_profit(testdatadir):
     bt_data = load_backtest_data(filename)
     timerange = TimeRange.parse_timerange("20180110-20180112")
 
-    df = load_pair_history(pair="POWR/BTC", ticker_interval='5m',
+    df = load_pair_history(pair="TRX/BTC", timeframe='5m',
                            datadir=testdatadir, timerange=timerange)
 
     cum_profits = create_cum_profit(df.set_index('date'),
-                                    bt_data[bt_data["pair"] == 'POWR/BTC'],
-                                    "cum_profits")
+                                    bt_data[bt_data["pair"] == 'TRX/BTC'],
+                                    "cum_profits", timeframe="5m")
+    assert "cum_profits" in cum_profits.columns
+    assert cum_profits.iloc[0]['cum_profits'] == 0
+    assert cum_profits.iloc[-1]['cum_profits'] == 0.0798005
+
+
+def test_create_cum_profit1(testdatadir):
+    filename = testdatadir / "backtest-result_test.json"
+    bt_data = load_backtest_data(filename)
+    # Move close-time to "off" the candle, to make sure the logic still works
+    bt_data.loc[:, 'close_time'] = bt_data.loc[:, 'close_time'] + DateOffset(seconds=20)
+    timerange = TimeRange.parse_timerange("20180110-20180112")
+
+    df = load_pair_history(pair="TRX/BTC", timeframe='5m',
+                           datadir=testdatadir, timerange=timerange)
+
+    cum_profits = create_cum_profit(df.set_index('date'),
+                                    bt_data[bt_data["pair"] == 'TRX/BTC'],
+                                    "cum_profits", timeframe="5m")
     assert "cum_profits" in cum_profits.columns
     assert cum_profits.iloc[0]['cum_profits'] == 0
     assert cum_profits.iloc[-1]['cum_profits'] == 0.0798005

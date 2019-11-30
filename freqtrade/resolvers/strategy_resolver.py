@@ -32,8 +32,11 @@ class StrategyResolver(IResolver):
         """
         config = config or {}
 
-        # Verify the strategy is in the configuration, otherwise fallback to the default strategy
-        strategy_name = config.get('strategy') or constants.DEFAULT_STRATEGY
+        if not config.get('strategy'):
+            raise OperationalException("No strategy set. Please use `--strategy` to specify "
+                                       "the strategy class to use.")
+
+        strategy_name = config['strategy']
         self.strategy: IStrategy = self._load_strategy(strategy_name,
                                                        config=config,
                                                        extra_dir=config.get('strategy_path'))
@@ -57,6 +60,7 @@ class StrategyResolver(IResolver):
                       ("order_time_in_force",             None,        False),
                       ("stake_currency",                  None,        False),
                       ("stake_amount",                    None,        False),
+                      ("startup_candle_count",            None,        False),
                       ("use_sell_signal",                 True,        True),
                       ("sell_profit_only",                False,       True),
                       ("ignore_roi_if_buy_signal",        False,       True),
@@ -125,7 +129,8 @@ class StrategyResolver(IResolver):
         current_path = Path(__file__).parent.parent.joinpath('strategy').resolve()
 
         abs_paths = self.build_search_paths(config, current_path=current_path,
-                                            user_subdir='strategies', extra_dir=extra_dir)
+                                            user_subdir=constants.USERPATH_STRATEGY,
+                                            extra_dir=extra_dir)
 
         if ":" in strategy_name:
             logger.info("loading base64 encoded strategy")

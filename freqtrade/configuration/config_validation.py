@@ -5,7 +5,7 @@ from jsonschema import Draft4Validator, validators
 from jsonschema.exceptions import ValidationError, best_match
 
 from freqtrade import constants, OperationalException
-
+from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
 
@@ -61,9 +61,15 @@ def validate_config_consistency(conf: Dict[str, Any]) -> None:
     :param conf: Config in JSON format
     :return: Returns None if everything is ok, otherwise throw an OperationalException
     """
+
     # validating trailing stoploss
     _validate_trailing_stoploss(conf)
     _validate_edge(conf)
+    _validate_whitelist(conf)
+
+    # validate configuration before returning
+    logger.info('Validating configuration ...')
+    validate_config_schema(conf)
 
 
 def _validate_trailing_stoploss(conf: Dict[str, Any]) -> None:
@@ -111,3 +117,17 @@ def _validate_edge(conf: Dict[str, Any]) -> None:
             "Edge and VolumePairList are incompatible, "
             "Edge will override whatever pairs VolumePairlist selects."
         )
+
+
+def _validate_whitelist(conf: Dict[str, Any]) -> None:
+    """
+    Dynamic whitelist does not require pair_whitelist to be set - however StaticWhitelist does.
+    """
+    if conf.get('runmode', RunMode.OTHER) in [RunMode.OTHER, RunMode.PLOT,
+                                              RunMode.UTIL_NO_EXCHANGE, RunMode.UTIL_EXCHANGE]:
+        return
+
+    for pl in conf.get('pairlists', [{'method': 'StaticPairList'}]):
+        if (pl.get('method') == 'StaticPairList'
+                and not conf.get('exchange', {}).get('pair_whitelist')):
+            raise OperationalException("StaticPairList requires pair_whitelist to be set.")

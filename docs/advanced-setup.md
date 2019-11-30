@@ -8,6 +8,9 @@ If you do not know what things mentioned here mean, you probably do not need it.
 
 Copy the `freqtrade.service` file to your systemd user directory (usually `~/.config/systemd/user`) and update `WorkingDirectory` and `ExecStart` to match your setup.
 
+!!! Note
+    Certain systems (like Raspbian) don't load service unit files from the user directory. In this case, copy `freqtrade.service` into `/etc/systemd/user/` (requires superuser permissions).
+
 After that you can start the daemon with:
 
 ```bash

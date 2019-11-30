@@ -4,9 +4,9 @@
 This module contains the hyperopt logic
 """
 
+import locale
 import logging
 import sys
-
 from collections import OrderedDict
 from operator import itemgetter
 from pathlib import Path
@@ -14,23 +14,22 @@ from pprint import pprint
 from typing import Any, Dict, List, Optional
 
 import rapidjson
-
-from colorama import init as colorama_init
 from colorama import Fore, Style
-from joblib import Parallel, delayed, dump, load, wrap_non_picklable_objects, cpu_count
+from colorama import init as colorama_init
+from joblib import (Parallel, cpu_count, delayed, dump, load,
+                    wrap_non_picklable_objects)
 from pandas import DataFrame
 from skopt import Optimizer
 from skopt.space import Dimension
 
-from freqtrade.configuration import TimeRange
-from freqtrade.data.history import load_data, get_timeframe
-from freqtrade.misc import round_dict
+from freqtrade.data.history import get_timeframe, trim_dataframe
+from freqtrade.misc import plural, round_dict
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
 from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F4
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F4
-from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver, HyperOptLossResolver
-
+from freqtrade.resolvers.hyperopt_resolver import (HyperOptLossResolver,
+                                                   HyperOptResolver)
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +76,8 @@ class Hyperopt:
 
         # Previous evaluations
         self.trials: List = []
+
+        self.num_trials_saved = 0
 
         # Populate functions here (hasattr is slow so should not be run during "regular" operations)
         if hasattr(self.custom_hyperopt, 'populate_indicators'):
@@ -133,13 +134,18 @@ class Hyperopt:
         arg_dict = {dim.name: value for dim, value in zip(dimensions, params)}
         return arg_dict
 
-    def save_trials(self) -> None:
+    def save_trials(self, final: bool = False) -> None:
         """
         Save hyperopt trials to file
         """
-        if self.trials:
-            logger.info("Saving %d evaluations to '%s'", len(self.trials), self.trials_file)
+        num_trials = len(self.trials)
+        if num_trials > self.num_trials_saved:
+            logger.info(f"Saving {num_trials} {plural(num_trials, 'epoch')}.")
             dump(self.trials, self.trials_file)
+            self.num_trials_saved = num_trials
+        if final:
+            logger.info(f"{num_trials} {plural(num_trials, 'epoch')} "
+                        f"saved to '{self.trials_file}'.")
 
     def read_trials(self) -> List:
         """
@@ -154,6 +160,12 @@ class Hyperopt:
         """
         Display Best hyperopt result
         """
+        # This is printed when Ctrl+C is pressed quickly, before first epochs have
+        # a chance to be evaluated.
+        if not self.trials:
+            print("No epochs evaluated yet, no best result.")
+            return
+
         results = sorted(self.trials, key=itemgetter('loss'))
         best_result = results[0]
         params = best_result['params']
@@ -198,12 +210,20 @@ class Hyperopt:
                 # Also round to 5 digits after the decimal point
                 print(f"Stoploss: {round(params.get('stoploss'), 5)}")
 
+    def is_best(self, results) -> bool:
+        return results['loss'] < self.current_best_loss
+
     def log_results(self, results) -> None:
         """
         Log results if it is better than any previous evaluation
         """
         print_all = self.config.get('print_all', False)
-        is_best_loss = results['loss'] < self.current_best_loss
+        is_best_loss = self.is_best(results)
+
+        if not print_all:
+            print('.', end='' if results['current_epoch'] % 100 != 0 else None)  # type: ignore
+            sys.stdout.flush()
+
         if print_all or is_best_loss:
             if is_best_loss:
                 self.current_best_loss = results['loss']
@@ -217,14 +237,10 @@ class Hyperopt:
             if print_all:
                 print(log_str)
             else:
-                print('\n' + log_str)
-        else:
-            print('.', end='')
-            sys.stdout.flush()
+                print(f'\n{log_str}')
 
     def format_results_logstring(self, results) -> str:
-        # Output human-friendly index here (starting from 1)
-        current = results['current_epoch'] + 1
+        current = results['current_epoch']
         total = self.total_epochs
         res = results['results_explanation']
         loss = results['loss']
@@ -336,7 +352,9 @@ class Hyperopt:
 
         return (f'{trades:6d} trades. Avg profit {avg_profit: 5.2f}%. '
                 f'Total profit {total_profit: 11.8f} {stake_cur} '
-                f'({profit: 7.2f}Σ%). Avg duration {duration:5.1f} mins.')
+                f'({profit: 7.2f}\N{GREEK CAPITAL LETTER SIGMA}%). '
+                f'Avg duration {duration:5.1f} mins.'
+                ).encode(locale.getpreferredencoding(), 'replace').decode('utf-8')
 
     def get_optimizer(self, dimensions, cpu_count) -> Optimizer:
         return Optimizer(
@@ -379,30 +397,19 @@ class Hyperopt:
             )
 
     def start(self) -> None:
-        timerange = TimeRange.parse_timerange(None if self.config.get(
-            'timerange') is None else str(self.config.get('timerange')))
-        data = load_data(
-            datadir=Path(self.config['datadir']),
-            pairs=self.config['exchange']['pair_whitelist'],
-            ticker_interval=self.backtesting.ticker_interval,
-            timerange=timerange
-        )
+        data, timerange = self.backtesting.load_bt_data()
 
-        if not data:
-            logger.critical("No data found. Terminating.")
-            return
+        preprocessed = self.backtesting.strategy.tickerdata_to_dataframe(data)
 
+        # Trim startup period from analyzed dataframe
+        for pair, df in preprocessed.items():
+            preprocessed[pair] = trim_dataframe(df, timerange)
         min_date, max_date = get_timeframe(data)
 
         logger.info(
             'Hyperopting with data from %s up to %s (%s days)..',
-            min_date.isoformat(),
-            max_date.isoformat(),
-            (max_date - min_date).days
+            min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
         )
-
-        preprocessed = self.backtesting.strategy.tickerdata_to_dataframe(data)
-
         dump(preprocessed, self.tickerdata_pickle)
 
         # We don't need exchange instance anymore while running hyperopt
@@ -432,15 +439,19 @@ class Hyperopt:
                     self.opt.tell(asked, [v['loss'] for v in f_val])
                     self.fix_optimizer_models_list()
                     for j in range(jobs):
-                        current = i * jobs + j
+                        # Use human-friendly index here (starting from 1)
+                        current = i * jobs + j + 1
                         val = f_val[j]
                         val['current_epoch'] = current
-                        val['is_initial_point'] = current < INITIAL_POINTS
+                        val['is_initial_point'] = current <= INITIAL_POINTS
+                        logger.debug(f"Optimizer epoch evaluated: {val}")
+                        is_best = self.is_best(val)
                         self.log_results(val)
                         self.trials.append(val)
-                        logger.debug(f"Optimizer epoch evaluated: {val}")
+                        if is_best or current % 100 == 0:
+                            self.save_trials()
         except KeyboardInterrupt:
             print('User interrupted..')
 
-        self.save_trials()
+        self.save_trials(final=True)
         self.log_trials_result()

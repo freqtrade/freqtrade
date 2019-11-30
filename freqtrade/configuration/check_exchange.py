@@ -10,6 +10,19 @@ from freqtrade.state import RunMode
 logger = logging.getLogger(__name__)
 
 
+def remove_credentials(config: Dict[str, Any]):
+    """
+    Removes exchange keys from the configuration and specifies dry-run
+    Used for backtesting / hyperopt / edge and utils.
+    Modifies the input dict!
+    """
+    config['exchange']['key'] = ''
+    config['exchange']['secret'] = ''
+    config['exchange']['password'] = ''
+    config['exchange']['uid'] = ''
+    config['dry_run'] = True
+
+
 def check_exchange(config: Dict[str, Any], check_for_bad: bool = True) -> bool:
     """
     Check if the exchange name in the config file is supported by Freqtrade
@@ -21,7 +34,8 @@ def check_exchange(config: Dict[str, Any], check_for_bad: bool = True) -> bool:
              and thus is not known for the Freqtrade at all.
     """
 
-    if config['runmode'] in [RunMode.PLOT] and not config.get('exchange', {}).get('name'):
+    if (config['runmode'] in [RunMode.PLOT, RunMode.UTIL_NO_EXCHANGE, RunMode.OTHER]
+       and not config.get('exchange', {}).get('name')):
         # Skip checking exchange in plot mode, since it requires no exchange
         return True
     logger.info("Checking exchange...")

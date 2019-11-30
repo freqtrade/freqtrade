@@ -20,9 +20,9 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
 from freqtrade.persistence import Trade
-from freqtrade.resolvers import (ExchangeResolver, PairListResolver,
-                                 StrategyResolver)
+from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager, RPCMessageType
+from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.state import State
 from freqtrade.strategy.interface import IStrategy, SellType
 from freqtrade.wallets import Wallets
@@ -70,14 +70,13 @@ class FreqtradeBot:
         # Attach Wallets to Strategy baseclass
         IStrategy.wallets = self.wallets
 
-        pairlistname = self.config.get('pairlist', {}).get('method', 'StaticPairList')
-        self.pairlists = PairListResolver(pairlistname, self, self.config).pairlist
+        self.pairlists = PairListManager(self.exchange, self.config)
 
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
             self.config.get('edge', {}).get('enabled', False) else None
 
-        self.active_pair_whitelist: List[str] = self.config['exchange']['pair_whitelist']
+        self.active_pair_whitelist = self._refresh_whitelist()
 
         persistence.init(self.config.get('db_url', None),
                          clean_open_orders=self.config.get('dry_run', False))
@@ -123,21 +122,10 @@ class FreqtradeBot:
         # Check whether markets have to be reloaded
         self.exchange._reload_markets()
 
-        # Refresh whitelist
-        self.pairlists.refresh_pairlist()
-        self.active_pair_whitelist = self.pairlists.whitelist
-
-        # Calculating Edge positioning
-        if self.edge:
-            self.edge.calculate()
-            self.active_pair_whitelist = self.edge.adjust(self.active_pair_whitelist)
-
         # Query trades from persistence layer
         trades = Trade.get_open_trades()
 
-        # Extend active-pair whitelist with pairs from open trades
-        # It ensures that tickers are downloaded for open trades
-        self._extend_whitelist_with_trades(self.active_pair_whitelist, trades)
+        self.active_pair_whitelist = self._refresh_whitelist(trades)
 
         # Refreshing candles
         self.dataprovider.refresh(self._create_pair_whitelist(self.active_pair_whitelist),
@@ -150,21 +138,33 @@ class FreqtradeBot:
         if len(trades) < self.config['max_open_trades']:
             self.process_maybe_execute_buys()
 
-        if 'unfilledtimeout' in self.config:
-            # Check and handle any timed out open orders
-            self.check_handle_timedout()
-            Trade.session.flush()
+        # Check and handle any timed out open orders
+        self.check_handle_timedout()
+        Trade.session.flush()
 
         if (self.heartbeat_interval
-           and (arrow.utcnow().timestamp - self._heartbeat_msg > self.heartbeat_interval)):
+                and (arrow.utcnow().timestamp - self._heartbeat_msg > self.heartbeat_interval)):
             logger.info(f"Bot heartbeat. PID={getpid()}")
             self._heartbeat_msg = arrow.utcnow().timestamp
 
-    def _extend_whitelist_with_trades(self, whitelist: List[str], trades: List[Any]):
+    def _refresh_whitelist(self, trades: List[Trade] = []) -> List[str]:
         """
-        Extend whitelist with pairs from open trades
+        Refresh whitelist from pairlist or edge and extend it with trades.
         """
-        whitelist.extend([trade.pair for trade in trades if trade.pair not in whitelist])
+        # Refresh whitelist
+        self.pairlists.refresh_pairlist()
+        _whitelist = self.pairlists.whitelist
+
+        # Calculating Edge positioning
+        if self.edge:
+            self.edge.calculate()
+            _whitelist = self.edge.adjust(_whitelist)
+
+        if trades:
+            # Extend active-pair whitelist with pairs from open trades
+            # It ensures that tickers are downloaded for open trades
+            _whitelist.extend([trade.pair for trade in trades if trade.pair not in _whitelist])
+        return _whitelist
 
     def _create_pair_whitelist(self, pairs: List[str]) -> List[Tuple[str, str]]:
         """
@@ -266,7 +266,11 @@ class FreqtradeBot:
             amount_reserve_percent += self.strategy.stoploss
         # it should not be more than 50%
         amount_reserve_percent = max(amount_reserve_percent, 0.5)
-        return min(min_stake_amounts) / amount_reserve_percent
+
+        # The value returned should satisfy both limits: for amount (base currency) and
+        # for cost (quote, stake currency), so max() is used here.
+        # See also #2575 at github.
+        return max(min_stake_amounts) / amount_reserve_percent
 
     def create_trades(self) -> bool:
         """
@@ -317,8 +321,7 @@ class FreqtradeBot:
                         (bidstrat_check_depth_of_market.get('bids_to_ask_delta', 0) > 0):
                     if self._check_depth_of_market_buy(_pair, bidstrat_check_depth_of_market):
                         buycount += self.execute_buy(_pair, stake_amount)
-                    else:
-                        continue
+                    continue
 
                 buycount += self.execute_buy(_pair, stake_amount)
 
@@ -632,8 +635,8 @@ class FreqtradeBot:
         Force-sells the pair (using EmergencySell reason) in case of Problems creating the order.
         :return: True if the order succeeded, and False in case of problems.
         """
-        # Limit price threshold: As limit price should always be below price
-        LIMIT_PRICE_PCT = 0.99
+        # Limit price threshold: As limit price should always be below stop-price
+        LIMIT_PRICE_PCT = self.strategy.order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
 
         try:
             stoploss_order = self.exchange.stoploss_limit(pair=trade.pair, amount=trade.amount,
@@ -755,23 +758,28 @@ class FreqtradeBot:
             return True
         return False
 
+    def _check_timed_out(self, side: str, order: dict) -> bool:
+        """
+        Check if timeout is active, and if the order is still open and timed out
+        """
+        timeout = self.config.get('unfilledtimeout', {}).get(side)
+        ordertime = arrow.get(order['datetime']).datetime
+        if timeout is not None:
+            timeout_threshold = arrow.utcnow().shift(minutes=-timeout).datetime
+
+            return (order['status'] == 'open' and order['side'] == side
+                    and ordertime < timeout_threshold)
+        return False
+
     def check_handle_timedout(self) -> None:
         """
         Check if any orders are timed out and cancel if neccessary
         :param timeoutvalue: Number of minutes until order is considered timed out
         :return: None
         """
-        buy_timeout = self.config['unfilledtimeout']['buy']
-        sell_timeout = self.config['unfilledtimeout']['sell']
-        buy_timeout_threshold = arrow.utcnow().shift(minutes=-buy_timeout).datetime
-        sell_timeout_threshold = arrow.utcnow().shift(minutes=-sell_timeout).datetime
 
-        for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
+        for trade in Trade.get_open_order_trades():
             try:
-                # FIXME: Somehow the query above returns results
-                # where the open_order_id is in fact None.
-                # This is probably because the record got
-                # updated via /forcesell in a different thread.
                 if not trade.open_order_id:
                     continue
                 order = self.exchange.get_order(trade.open_order_id, trade.pair)
@@ -781,23 +789,20 @@ class FreqtradeBot:
                     trade,
                     traceback.format_exc())
                 continue
-            ordertime = arrow.get(order['datetime']).datetime
 
             # Check if trade is still actually open
-            if float(order['remaining']) == 0.0:
+            if float(order.get('remaining', 0.0)) == 0.0:
                 self.wallets.update()
                 continue
 
             if ((order['side'] == 'buy' and order['status'] == 'canceled')
-                or (order['status'] == 'open'
-                    and order['side'] == 'buy' and ordertime < buy_timeout_threshold)):
+                    or (self._check_timed_out('buy', order))):
 
                 self.handle_timedout_limit_buy(trade, order)
                 self.wallets.update()
 
             elif ((order['side'] == 'sell' and order['status'] == 'canceled')
-                  or (order['status'] == 'open'
-                      and order['side'] == 'sell' and ordertime < sell_timeout_threshold)):
+                  or (self._check_timed_out('sell', order))):
                 self.handle_timedout_limit_sell(trade, order)
                 self.wallets.update()
 
@@ -812,7 +817,8 @@ class FreqtradeBot:
         })
 
     def handle_timedout_limit_buy(self, trade: Trade, order: Dict) -> bool:
-        """Buy timeout - cancel order
+        """
+        Buy timeout - cancel order
         :return: True if order was fully cancelled
         """
         reason = "cancelled due to timeout"
@@ -823,18 +829,22 @@ class FreqtradeBot:
             corder = order
             reason = "canceled on Exchange"
 
-        if corder['remaining'] == corder['amount']:
+        if corder.get('remaining', order['remaining']) == order['amount']:
             # if trade is not partially completed, just delete the trade
             self.handle_buy_order_full_cancel(trade, reason)
             return True
 
         # if trade is partially complete, edit the stake details for the trade
         # and close the order
-        trade.amount = corder['amount'] - corder['remaining']
+        # cancel_order may not contain the full order dict, so we need to fallback
+        # to the order dict aquired before cancelling.
+        # we need to fall back to the values from order if corder does not contain these keys.
+        trade.amount = order['amount'] - corder.get('remaining', order['remaining'])
         trade.stake_amount = trade.amount * trade.open_rate
         # verify if fees were taken from amount to avoid problems during selling
         try:
-            new_amount = self.get_real_amount(trade, corder, trade.amount)
+            new_amount = self.get_real_amount(trade, corder if 'fee' in corder else order,
+                                              trade.amount)
             if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
                 trade.amount = new_amount
                 # Fee was applied, so set to 0

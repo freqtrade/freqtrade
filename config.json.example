@@ -44,7 +44,7 @@
             "ZEC/BTC",
             "XLM/BTC",
             "NXT/BTC",
-            "POWR/BTC",
+            "TRX/BTC",
             "ADA/BTC",
             "XMR/BTC"
         ],
@@ -52,6 +52,9 @@
             "DOGE/BTC"
         ]
     },
+    "pairlists": [
+        {"method": "StaticPairList"}
+    ],
     "edge": {
         "enabled": false,
         "process_throttle_secs": 3600,
@@ -68,7 +71,7 @@
         "remove_pumps": false
     },
     "telegram": {
-        "enabled": true,
+        "enabled": false,
         "token": "your_telegram_token",
         "chat_id": "your_telegram_chat_id"
     },

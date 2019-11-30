@@ -55,13 +55,16 @@ def patched_configuration_load_config_file(mocker, config) -> None:
     )
 
 
-def patch_exchange(mocker, api_mock=None, id='bittrex') -> None:
+def patch_exchange(mocker, api_mock=None, id='bittrex', mock_markets=True) -> None:
     mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_ordertypes', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.id', PropertyMock(return_value=id))
     mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value=id.title()))
+    if mock_markets:
+        mocker.patch('freqtrade.exchange.Exchange.markets',
+                     PropertyMock(return_value=get_markets()))
 
     if api_mock:
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
@@ -69,8 +72,9 @@ def patch_exchange(mocker, api_mock=None, id='bittrex') -> None:
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock())
 
 
-def get_patched_exchange(mocker, config, api_mock=None, id='bittrex') -> Exchange:
-    patch_exchange(mocker, api_mock, id)
+def get_patched_exchange(mocker, config, api_mock=None, id='bittrex',
+                         mock_markets=True) -> Exchange:
+    patch_exchange(mocker, api_mock, id, mock_markets)
     config["exchange"]["name"] = id
     try:
         exchange = ExchangeResolver(id, config).exchange
@@ -83,6 +87,11 @@ def patch_wallet(mocker, free=999.9) -> None:
     mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(
         return_value=free
     ))
+
+
+def patch_whitelist(mocker, conf) -> None:
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot._refresh_whitelist',
+                 MagicMock(return_value=conf['exchange']['pair_whitelist']))
 
 
 def patch_edge(mocker) -> None:
@@ -120,6 +129,7 @@ def patch_freqtradebot(mocker, config) -> None:
     patch_exchange(mocker)
     mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
+    patch_whitelist(mocker, config)
 
 
 def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
@@ -232,6 +242,9 @@ def default_conf(testdatadir):
                 "HOT/BTC",
             ]
         },
+        "pairlists": [
+            {"method": "StaticPairList"}
+        ],
         "telegram": {
             "enabled": True,
             "token": "token",
@@ -242,6 +255,7 @@ def default_conf(testdatadir):
         "db_url": "sqlite://",
         "user_data_dir": Path("user_data"),
         "verbosity": 3,
+        "strategy": "DefaultStrategy"
     }
     return configuration
 
@@ -287,6 +301,10 @@ def ticker_sell_down():
 
 @pytest.fixture
 def markets():
+    return get_markets()
+
+
+def get_markets():
     return {
         'ETH/BTC': {
             'id': 'ethbtc',
@@ -307,7 +325,7 @@ def markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -333,7 +351,7 @@ def markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -358,7 +376,7 @@ def markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -369,7 +387,7 @@ def markets():
             'symbol': 'LTC/BTC',
             'base': 'LTC',
             'quote': 'BTC',
-            'active': False,
+            'active': True,
             'precision': {
                 'price': 8,
                 'amount': 8,
@@ -383,7 +401,7 @@ def markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -394,7 +412,7 @@ def markets():
             'symbol': 'XRP/BTC',
             'base': 'XRP',
             'quote': 'BTC',
-            'active': False,
+            'active': True,
             'precision': {
                 'price': 8,
                 'amount': 8,
@@ -408,7 +426,7 @@ def markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -419,7 +437,7 @@ def markets():
             'symbol': 'NEO/BTC',
             'base': 'NEO',
             'quote': 'BTC',
-            'active': False,
+            'active': True,
             'precision': {
                 'price': 8,
                 'amount': 8,
@@ -433,7 +451,7 @@ def markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -444,7 +462,7 @@ def markets():
             'symbol': 'BTT/BTC',
             'base': 'BTT',
             'quote': 'BTC',
-            'active': True,
+            'active': False,
             'precision': {
                 'base': 8,
                 'quote': 8,
@@ -461,7 +479,7 @@ def markets():
                     'max': None
                 },
                 'cost': {
-                    'min': 0.001,
+                    'min': 0.0001,
                     'max': None
                 }
             },
@@ -494,7 +512,7 @@ def markets():
             'symbol': 'LTC/USDT',
             'base': 'LTC',
             'quote': 'USDT',
-            'active': True,
+            'active': False,
             'precision': {
                 'amount': 8,
                 'price': 8
@@ -556,6 +574,72 @@ def markets():
             'info': {},
         }
     }
+
+
+@pytest.fixture
+def shitcoinmarkets(markets):
+    """
+    Fixture with shitcoin markets - used to test filters in pairlists
+    """
+    shitmarkets = deepcopy(markets)
+    shitmarkets.update({'HOT/BTC': {
+            'id': 'HOTBTC',
+            'symbol': 'HOT/BTC',
+            'base': 'HOT',
+            'quote': 'BTC',
+            'active': True,
+            'precision': {
+                'base': 8,
+                'quote': 8,
+                'amount': 0,
+                'price': 8
+            },
+            'limits': {
+                'amount': {
+                    'min': 1.0,
+                    'max': 90000000.0
+                },
+                'price': {
+                    'min': None,
+                    'max': None
+                },
+                'cost': {
+                    'min': 0.001,
+                    'max': None
+                }
+            },
+            'info': {},
+        },
+        'FUEL/BTC': {
+            'id': 'FUELBTC',
+            'symbol': 'FUEL/BTC',
+            'base': 'FUEL',
+            'quote': 'BTC',
+            'active': True,
+            'precision': {
+                'base': 8,
+                'quote': 8,
+                'amount': 0,
+                'price': 8
+            },
+            'limits': {
+                'amount': {
+                    'min': 1.0,
+                    'max': 90000000.0
+                },
+                'price': {
+                    'min': 1e-08,
+                    'max': 1000.0
+                },
+                'cost': {
+                    'min': 0.001,
+                    'max': None
+                }
+            },
+            'info': {},
+        },
+        })
+    return shitmarkets
 
 
 @pytest.fixture
@@ -852,6 +936,72 @@ def tickers():
             'quoteVolume': 1215.14489611,
             'info': {}
         },
+        'HOT/BTC': {
+            'symbol': 'HOT/BTC',
+            'timestamp': 1572273518661,
+            'datetime': '2019-10-28T14:38:38.661Z',
+            'high': 0.00000011,
+            'low': 0.00000009,
+            'bid': 0.0000001,
+            'bidVolume': 1476027288.0,
+            'ask': 0.00000011,
+            'askVolume': 820153831.0,
+            'vwap': 0.0000001,
+            'open': 0.00000009,
+            'close': 0.00000011,
+            'last': 0.00000011,
+            'previousClose': 0.00000009,
+            'change': 0.00000002,
+            'percentage': 22.222,
+            'average': None,
+            'baseVolume': 1442290324.0,
+            'quoteVolume': 143.78311994,
+            'info': {}
+        },
+        'FUEL/BTC': {
+            'symbol': 'FUEL/BTC',
+            'timestamp': 1572340250771,
+            'datetime': '2019-10-29T09:10:50.771Z',
+            'high': 0.00000040,
+            'low': 0.00000035,
+            'bid': 0.00000036,
+            'bidVolume': 8932318.0,
+            'ask': 0.00000037,
+            'askVolume': 10140774.0,
+            'vwap': 0.00000037,
+            'open': 0.00000039,
+            'close': 0.00000037,
+            'last': 0.00000037,
+            'previousClose': 0.00000038,
+            'change': -0.00000002,
+            'percentage': -5.128,
+            'average': None,
+            'baseVolume': 168927742.0,
+            'quoteVolume': 62.68220262,
+            'info': {}
+        },
+        'BTC/USDT': {
+            'symbol': 'BTC/USDT',
+            'timestamp': 1573758371399,
+            'datetime': '2019-11-14T19:06:11.399Z',
+            'high': 8800.0,
+            'low': 8582.6,
+            'bid': 8648.16,
+            'bidVolume': 0.238771,
+            'ask': 8648.72,
+            'askVolume': 0.016253,
+            'vwap': 8683.13647806,
+            'open': 8759.7,
+            'close': 8648.72,
+            'last': 8648.72,
+            'previousClose': 8759.67,
+            'change': -110.98,
+            'percentage': -1.267,
+            'average': None,
+            'baseVolume': 35025.943355,
+            'quoteVolume': 304135046.4242901,
+            'info': {}
+        },
         'ETH/USDT': {
             'symbol': 'ETH/USDT',
             'timestamp': 1522014804118,
@@ -939,7 +1089,29 @@ def tickers():
             'baseVolume': 59698.79897,
             'quoteVolume': 29132399.743954,
             'info': {}
-        }
+        },
+        'XRP/BTC': {
+            'symbol': 'XRP/BTC',
+            'timestamp': 1573758257534,
+            'datetime': '2019-11-14T19:04:17.534Z',
+            'high': 3.126e-05,
+            'low': 3.061e-05,
+            'bid': 3.093e-05,
+            'bidVolume': 27901.0,
+            'ask': 3.095e-05,
+            'askVolume': 10551.0,
+            'vwap': 3.091e-05,
+            'open': 3.119e-05,
+            'close': 3.094e-05,
+            'last': 3.094e-05,
+            'previousClose': 3.117e-05,
+            'change': -2.5e-07,
+            'percentage': -0.802,
+            'average': None,
+            'baseVolume': 37334921.0,
+            'quoteVolume': 1154.19266394,
+            'info': {}
+        },
     })
 
 
@@ -1189,8 +1361,8 @@ def rpc_balance():
             'used': 0.0
         },
         'XRP': {
-            'total': 1.0,
-            'free': 1.0,
+            'total': 0.1,
+            'free': 0.01,
             'used': 0.0
             },
         'EUR': {

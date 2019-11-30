@@ -39,7 +39,7 @@ def init_plotscript(config):
     tickers = history.load_data(
         datadir=Path(str(config.get("datadir"))),
         pairs=pairs,
-        ticker_interval=config.get('ticker_interval', '5m'),
+        timeframe=config.get('ticker_interval', '5m'),
         timerange=timerange,
     )
 
@@ -47,7 +47,7 @@ def init_plotscript(config):
                          db_url=config.get('db_url'),
                          exportfilename=config.get('exportfilename'),
                          )
-
+    trades = history.trim_dataframe(trades, timerange, 'open_time')
     return {"tickers": tickers,
             "trades": trades,
             "pairs": pairs,
@@ -264,12 +264,12 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
 
 
 def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame],
-                          trades: pd.DataFrame) -> go.Figure:
+                          trades: pd.DataFrame, timeframe: str) -> go.Figure:
     # Combine close-values for all pairs, rename columns to "pair"
     df_comb = combine_tickers_with_mean(tickers, "close")
 
     # Add combined cumulative profit
-    df_comb = create_cum_profit(df_comb, trades, 'cum_profit')
+    df_comb = create_cum_profit(df_comb, trades, 'cum_profit', timeframe)
 
     # Plot the pairs average close prices, and total profit growth
     avgclose = go.Scatter(
@@ -293,19 +293,19 @@ def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame],
 
     for pair in pairs:
         profit_col = f'cum_profit_{pair}'
-        df_comb = create_cum_profit(df_comb, trades[trades['pair'] == pair], profit_col)
+        df_comb = create_cum_profit(df_comb, trades[trades['pair'] == pair], profit_col, timeframe)
 
         fig = add_profit(fig, 3, df_comb, profit_col, f"Profit {pair}")
 
     return fig
 
 
-def generate_plot_filename(pair, ticker_interval) -> str:
+def generate_plot_filename(pair, timeframe) -> str:
     """
-    Generate filenames per pair/ticker_interval to be used for storing plots
+    Generate filenames per pair/timeframe to be used for storing plots
     """
     pair_name = pair.replace("/", "_")
-    file_name = 'freqtrade-plot-' + pair_name + '-' + ticker_interval + '.html'
+    file_name = 'freqtrade-plot-' + pair_name + '-' + timeframe + '.html'
 
     logger.info('Generate plot file for %s', pair)
 
@@ -316,8 +316,9 @@ def store_plot_file(fig, filename: str, directory: Path, auto_open: bool = False
     """
     Generate a plot html file from pre populated fig plotly object
     :param fig: Plotly Figure to plot
-    :param pair: Pair to plot (used as filename and Plot title)
-    :param ticker_interval: Used as part of the filename
+    :param filename: Name to store the file as
+    :param directory: Directory to store the file in
+    :param auto_open: Automatically open files saved
     :return: None
     """
     directory.mkdir(parents=True, exist_ok=True)
@@ -376,15 +377,17 @@ def plot_profit(config: Dict[str, Any]) -> None:
     in helping out to find a good algorithm.
     """
     plot_elements = init_plotscript(config)
-    trades = load_trades(config['trade_source'],
-                         db_url=str(config.get('db_url')),
-                         exportfilename=str(config.get('exportfilename')),
-                         )
+    trades = plot_elements['trades']
     # Filter trades to relevant pairs
-    trades = trades[trades['pair'].isin(plot_elements["pairs"])]
+    # Remove open pairs - we don't know the profit yet so can't calculate profit for these.
+    # Also, If only one open pair is left, then the profit-generation would fail.
+    trades = trades[(trades['pair'].isin(plot_elements["pairs"]))
+                    & (~trades['close_time'].isnull())
+                    ]
 
     # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
-    fig = generate_profit_graph(plot_elements["pairs"], plot_elements["tickers"], trades)
+    fig = generate_profit_graph(plot_elements["pairs"], plot_elements["tickers"],
+                                trades, config.get('ticker_interval', '5m'))
     store_plot_file(fig, filename='freqtrade-profit-plot.html',
                     directory=config['user_data_dir'] / "plot", auto_open=True)

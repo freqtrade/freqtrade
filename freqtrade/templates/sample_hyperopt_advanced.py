@@ -1,20 +1,23 @@
 # pragma pylint: disable=missing-docstring, invalid-name, pointless-string-statement
 
+# --- Do not remove these libs ---
 from functools import reduce
-from math import exp
 from typing import Any, Callable, Dict, List
-from datetime import datetime
 
-import numpy as np# noqa F401
-import talib.abstract as ta
+import numpy as np  # noqa
+import pandas as pd  # noqa
 from pandas import DataFrame
-from skopt.space import Categorical, Dimension, Integer, Real
+from skopt.space import Categorical, Dimension, Integer, Real  # noqa
 
-import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.optimize.hyperopt_interface import IHyperOpt
 
+# --------------------------------
+# Add your lib to import here
+import talib.abstract as ta  # noqa
+import freqtrade.vendor.qtpylib.indicators as qtpylib
 
-class AdvancedSampleHyperOpts(IHyperOpt):
+
+class AdvancedSampleHyperOpt(IHyperOpt):
     """
     This is a sample hyperopt to inspire you.
     Feel free to customize it.
@@ -37,6 +40,9 @@ class AdvancedSampleHyperOpts(IHyperOpt):
     """
     @staticmethod
     def populate_indicators(dataframe: DataFrame, metadata: dict) -> DataFrame:
+        """
+        This method can also be loaded from the strategy, if it doesn't exist in the hyperopt class.
+        """
         dataframe['adx'] = ta.ADX(dataframe)
         macd = ta.MACD(dataframe)
         dataframe['macd'] = macd['macd']
@@ -229,8 +235,10 @@ class AdvancedSampleHyperOpts(IHyperOpt):
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
-        Based on TA indicators. Should be a copy of from strategy
-        must align to populate_indicators in this file
+        Based on TA indicators.
+        Can be a copy of the corresponding method from the strategy,
+        or will be loaded from the strategy.
+        Must align to populate_indicators used (either from this File, or from the strategy)
         Only used when --spaces does not include buy
         """
         dataframe.loc[
@@ -246,8 +254,10 @@ class AdvancedSampleHyperOpts(IHyperOpt):
 
     def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
-        Based on TA indicators. Should be a copy of from strategy
-        must align to populate_indicators in this file
+        Based on TA indicators.
+        Can be a copy of the corresponding method from the strategy,
+        or will be loaded from the strategy.
+        Must align to populate_indicators used (either from this File, or from the strategy)
         Only used when --spaces does not include sell
         """
         dataframe.loc[

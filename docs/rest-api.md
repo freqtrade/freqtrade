@@ -16,13 +16,20 @@ Sample configuration:
     },
 ```
 
-!!! Danger Security warning
-  By default, the configuration listens on localhost only (so it's not reachable from other systems). We strongly recommend to not expose this API to the internet and choose a strong, unique password, since others will potentially be able to control your bot.
+!!! Danger "Security warning"
+    By default, the configuration listens on localhost only (so it's not reachable from other systems). We strongly recommend to not expose this API to the internet and choose a strong, unique password, since others will potentially be able to control your bot.
 
-!!! Danger Password selection
-  Please make sure to select a very strong, unique password to protect your bot from unauthorized access.
+!!! Danger "Password selection"
+    Please make sure to select a very strong, unique password to protect your bot from unauthorized access.
 
-You can then access the API by going to `http://127.0.0.1:8080/api/v1/version` to check if the API is running correctly.
+You can then access the API by going to `http://127.0.0.1:8080/api/v1/ping` in a browser to check if the API is running correctly.
+This should return the response:
+
+``` output
+{"status":"pong"}
+```
+
+All other endpoints return sensitive info and require authentication, so are not available through a web browser.
 
 To generate a secure password, either use a password manager, or use the below code snipped.
 
@@ -58,7 +65,7 @@ docker run -d \
   -v ~/.freqtrade/user_data/:/freqtrade/user_data \
   -v ~/.freqtrade/tradesv3.sqlite:/freqtrade/tradesv3.sqlite \
   -p 127.0.0.1:8080:8080 \
-  freqtrade --db-url sqlite:///tradesv3.sqlite --strategy MyAwesomeStrategy
+  freqtrade trade --db-url sqlite:///tradesv3.sqlite --strategy MyAwesomeStrategy
 ```
 
 !!! Danger "Security warning"
@@ -99,6 +106,7 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `stop` | | Stops the trader
 | `stopbuy` | | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
 | `reload_conf` | | Reloads the configuration file
+| `show_config` | | Shows part of the current configuration with relevant settings to operation
 | `status` | | Lists all open trades
 | `count` | | Displays number of trades used and available
 | `profit` | | Display a summary of your profit/loss from close trades and some stats about your performance
@@ -164,6 +172,10 @@ profit
 reload_conf
         Reload configuration
         :returns: json object
+
+show_config
+        Returns part of the configuration, relevant for trading operations.
+        :return: json object containing the version
 
 start
         Start the bot if it's in stopped state.

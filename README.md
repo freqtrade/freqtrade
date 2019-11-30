@@ -62,7 +62,6 @@ git checkout develop
 
 For any other type of installation please refer to [Installation doc](https://www.freqtrade.io/en/latest/installation/).
 
-
 ## Basic Usage
 
 ### Bot commands
@@ -106,7 +105,7 @@ optional arguments:
 
 ### Telegram RPC commands
 
-Telegram is not mandatory. However, this is a great way to control your bot. More details on our [documentation](https://www.freqtrade.io/en/latest/telegram-usage/)
+Telegram is not mandatory. However, this is a great way to control your bot. More details and the full command list on our [documentation](https://www.freqtrade.io/en/latest/telegram-usage/)
 
 - `/start`: Starts the trader
 - `/stop`: Stops the trader
@@ -128,11 +127,6 @@ The project is currently setup in two main branches:
 - `develop` - This branch has often new features, but might also cause breaking changes.
 - `master` - This branch contains the latest stable release. The bot 'should' be stable on this branch, and is generally well tested.
 - `feat/*` - These are feature branches, which are being worked on heavily. Please don't use these unless you want to test a specific feature.
-
-## A note on Binance
-
-For Binance, please add `"BNB/<STAKE>"` to your blacklist to avoid issues.
-Accounts having BNB accounts use this to pay for fees - if your first trade happens to be on `BNB`, further trades will consume this position and make the initial BNB order unsellable as the expected amount is not there anymore.
 
 ## Support
 
