@@ -37,6 +37,8 @@ ARGS_LIST_TIMEFRAMES = ["exchange", "print_one_column"]
 ARGS_LIST_PAIRS = ["exchange", "print_list", "list_pairs_print_json", "print_one_column",
                    "print_csv", "base_currencies", "quote_currencies", "list_pairs_all"]
 
+ARGS_TEST_PAIRLIST = ["config", "quote_currencies"]
+
 ARGS_CREATE_USERDIR = ["user_data_dir", "reset"]
 
 ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy", "template"]
@@ -63,6 +65,7 @@ class Arguments:
     """
     Arguments Class. Manage the arguments received by the cli
     """
+
     def __init__(self, args: Optional[List[str]]) -> None:
         self.args = args
         self._parsed_arg: Optional[argparse.Namespace] = None
@@ -122,7 +125,7 @@ class Arguments:
         from freqtrade.utils import (start_create_userdir, start_download_data,
                                      start_list_exchanges, start_list_markets,
                                      start_new_hyperopt, start_new_strategy,
-                                     start_list_timeframes, start_trading)
+                                     start_list_timeframes, start_test_pairlist, start_trading)
         from freqtrade.plot.plot_utils import start_plot_dataframe, start_plot_profit
 
         subparsers = self.parser.add_subparsers(dest='command',
@@ -210,6 +213,14 @@ class Arguments:
         )
         list_pairs_cmd.set_defaults(func=partial(start_list_markets, pairs_only=True))
         self._build_args(optionlist=ARGS_LIST_PAIRS, parser=list_pairs_cmd)
+
+        # Add test-pairlist subcommand
+        test_pairlist_cmd = subparsers.add_parser(
+            'test-pairlist',
+            help='Test your pairlist configuration.',
+        )
+        test_pairlist_cmd.set_defaults(func=start_test_pairlist)
+        self._build_args(optionlist=ARGS_TEST_PAIRLIST, parser=test_pairlist_cmd)
 
         # Add download-data subcommand
         download_data_cmd = subparsers.add_parser(

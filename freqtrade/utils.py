@@ -322,3 +322,23 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
                   args.get('list_pairs_print_json', False) or
                   args.get('print_csv', False)):
             print(f"{summary_str}.")
+
+
+def start_test_pairlist(args: Dict[str, Any]) -> None:
+    """
+    Test Pairlists
+    """
+    from freqtrade.pairlist.pairlistmanager import PairListManager
+    config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
+
+    exchange = ExchangeResolver(config['exchange']['name'], config, validate=False).exchange
+
+    quote_currencies = args.get('quote_currencies', [config.get('stake_currency')])
+
+    for curr in quote_currencies:
+        config['stake_currency'] = curr
+        # Do not use ticker_interval set in the config
+        pairlists = PairListManager(exchange, config)
+        pairlists.refresh_pairlist()
+        print(f"Pairs for {curr}: ")
+        print(pairlists.whitelist)
