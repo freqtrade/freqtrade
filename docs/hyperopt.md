@@ -43,8 +43,9 @@ Optional - can also be loaded from a strategy:
 Rarely you may also need to override:
 
 * `roi_space` - for custom ROI optimization (if you need the ranges for the ROI parameters in the optimization hyperspace that differ from default)
-* `generate_roi_table` - for custom ROI optimization (if you need more than 4 entries in the ROI table)
+* `generate_roi_table` - for custom ROI optimization (if you need more than 4 entries in the ROI table or the ranges of the values in the ROI table that differ from default)
 * `stoploss_space` - for custom stoploss optimization (if you need the range for the stoploss parameter in the optimization hyperspace that differs from default)
+* `trailing_space` - for custom trailing stop optimization (if you need the ranges for the trailing stopl parameters in the optimization hyperspace that differ from default)
 
 ### 1. Install a Custom Hyperopt File
 
@@ -250,10 +251,10 @@ freqtrade hyperopt --config config.json --hyperopt <hyperoptname> -e 5000 --spac
 
 Use  `<hyperoptname>` as the name of the custom hyperopt used.
 
-The `-e` flag will set how many evaluations hyperopt will do. We recommend
+The `-e` option will set how many evaluations hyperopt will do. We recommend
 running at least several thousand evaluations.
 
-The `--spaces all` flag determines that all possible parameters should be optimized. Possibilities are listed below.
+The `--spaces all` option determines that all possible parameters should be optimized. Possibilities are listed below.
 
 !!! Note
     By default, hyperopt will erase previous results and start from scratch. Continuation can be archived by using `--continue`.
@@ -286,7 +287,7 @@ freqtrade hyperopt --strategy SampleStrategy --customhyperopt SampleHyperopt
 
 ### Running Hyperopt with Smaller Search Space
 
-Use the `--spaces` argument to limit the search space used by hyperopt.
+Use the `--spaces` option to limit the search space used by hyperopt.
 Letting Hyperopt optimize everything is a huuuuge search space. Often it
 might make more sense to start by just searching for initial buy algorithm.
 Or maybe you just want to optimize your stoploss or roi table for that awesome
@@ -299,7 +300,11 @@ Legal values are:
 * `sell`: just search for a new sell strategy
 * `roi`: just optimize the minimal profit table for your strategy
 * `stoploss`: search for the best stoploss value
+* `trailing`: search for the best trailing stop values
+* `default`: `all` except `trailing`
 * space-separated list of any of the above values for example `--spaces roi stoploss`
+
+The default Hyperopt Search Space, used when no `--space` command line option is specified, does not include the `trailing` hyperspace. We recommend you to run optimization for the `trailing` hyperspace separately, when the best parameters for other hyperspaces were found, validated and pasted into your custom strategy.
 
 ### Position stacking and disabling max market positions
 
@@ -374,7 +379,7 @@ You can use the `--print-all` command line option if you would like to see all r
 
 ### Understand Hyperopt ROI results
 
-If you are optimizing ROI (i.e. if optimization search-space contains 'all' or 'roi'), your result will look as follows and include a ROI table:
+If you are optimizing ROI (i.e. if optimization search-space contains 'all', 'default' or 'roi'), your result will look as follows and include a ROI table:
 
 ```
 Best result:
@@ -421,7 +426,7 @@ Override the `roi_space()` method if you need components of the ROI tables to va
 
 ### Understand Hyperopt Stoploss results
 
-If you are optimizing stoploss values (i.e. if optimization search-space contains 'all' or 'stoploss'), your result will look as follows and include stoploss:
+If you are optimizing stoploss values (i.e. if optimization search-space contains 'all', 'default' or 'stoploss'), your result will look as follows and include stoploss:
 
 ```
 Best result:
