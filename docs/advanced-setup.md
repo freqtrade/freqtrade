@@ -84,6 +84,9 @@ To send Freqtrade log messages to `journald` system service use the `--logfilena
 
 Log messages are send to `journald` with the `user` facility. So you can see them with the following commands:
 
-* `journalctl -f` -- shows Freqtrade log messages sent to `journald` along with other log messages fetched by `journald`. There are many options to filter the messages, see manual pages for the `journalctl` utility.
+* `journalctl -f` -- shows Freqtrade log messages sent to `journald` along with other log messages fetched by `journald`.
+* `journalctl -f -u freqtrade.service` -- this command can be used when the bot is run as a `systemd` service.
+
+There are many other options in the `journalctl` utility to filter the messages, see manual pages for this utility.
 
 On many systems `syslog` (`rsyslog`) fetches data from `journald` (and vice versa), so both `--logfilename syslog` or `--logfilename journald` can be used and the messages be viewed with both `journalctl` and a syslog viewer utility. You can combine this in any way which suites you better.
