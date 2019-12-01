@@ -36,7 +36,8 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "logfile": Arg(
         '--logfile',
-        help='Log to the file specified.',
+        help="Log to the file specified. Special values are: 'syslog', 'journald'. "
+             "See the documentation for more details.",
         metavar='FILE',
     ),
     "version": Arg(
