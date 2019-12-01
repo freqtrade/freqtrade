@@ -156,7 +156,7 @@ class Hyperopt:
         self.trials_file.unlink()
         return trials
 
-    def log_trials_result(self) -> None:  # noqa: C901
+    def log_trials_result(self) -> None:
         """
         Display Best hyperopt result
         """
@@ -170,57 +170,43 @@ class Hyperopt:
         best_result = results[0]
         params = best_result['params']
         log_str = self.format_results_logstring(best_result)
+
         print(f"\nBest result:\n\n{log_str}\n")
 
         if self.config.get('print_json'):
             result_dict: Dict = {}
+            for s in ['buy', 'sell', 'roi', 'stoploss', 'trailing']:
+                self._params_update_for_json(result_dict, params, s)
+            print(rapidjson.dumps(result_dict, default=str, number_mode=rapidjson.NM_NATIVE))
 
-            if self.has_space('buy') or self.has_space('sell'):
-                result_dict['params'] = {}
+        else:
+            self._params_pretty_print(params, 'buy', "Buy hyperspace params:")
+            self._params_pretty_print(params, 'sell', "Sell hyperspace params:")
+            self._params_pretty_print(params, 'roi', "ROI table:")
+            self._params_pretty_print(params, 'stoploss', "Stoploss:")
+            self._params_pretty_print(params, 'trailing', "Trailing stop:")
 
-            if self.has_space('buy'):
-                result_dict['params'].update(self.space_params(params, 'buy'))
-
-            if self.has_space('sell'):
-                result_dict['params'].update(self.space_params(params, 'sell'))
-
-            if self.has_space('roi'):
+    def _params_update_for_json(self, result_dict, params, space: str):
+        if self.has_space(space):
+            space_params = self.space_params(params, space)
+            if space in ['buy', 'sell']:
+                result_dict.setdefault('params', {}).update(space_params)
+            elif space == 'roi':
                 # Convert keys in min_roi dict to strings because
                 # rapidjson cannot dump dicts with integer keys...
                 # OrderedDict is used to keep the numeric order of the items
                 # in the dict.
                 result_dict['minimal_roi'] = OrderedDict(
-                    (str(k), v) for k, v in self.custom_hyperopt.generate_roi_table(params).items()
+                    (str(k), v) for k, v in space_params.items()
                 )
+            else:  # 'stoploss', 'trailing'
+                result_dict.update(space_params)
 
-            if self.has_space('stoploss'):
-                result_dict.update(self.space_params(params, 'stoploss'))
-
-            if self.has_space('trailing'):
-                result_dict.update(self.space_params(params, 'trailing'))
-
-            print(rapidjson.dumps(result_dict, default=str, number_mode=rapidjson.NM_NATIVE))
-        else:
-            if self.has_space('buy'):
-                print('Buy hyperspace params:')
-                pprint(self.space_params(params, 'buy', 5), indent=4)
-
-            if self.has_space('sell'):
-                print('Sell hyperspace params:')
-                pprint(self.space_params(params, 'sell', 5), indent=4)
-
-            if self.has_space('roi'):
-                print("ROI table:")
-                # Round printed values to 5 digits after the decimal point
-                pprint(round_dict(self.custom_hyperopt.generate_roi_table(params), 5), indent=4)
-
-            if self.has_space('stoploss'):
-                print(f"Stoploss:")
-                pprint(self.space_params(params, 'stoploss', 5), indent=4)
-
-            if self.has_space('trailing'):
-                print('Trailing stop:')
-                pprint(self.space_params(params, 'trailing', 5), indent=4)
+    def _params_pretty_print(self, params, space: str, header: str):
+        if self.has_space(space):
+            space_params = self.space_params(params, space, 5)
+            print(header)
+            pprint(space_params, indent=4)
 
     def is_best(self, results) -> bool:
         return results['loss'] < self.current_best_loss
@@ -302,7 +288,10 @@ class Hyperopt:
         return spaces
 
     def space_params(self, params, space: str, r: int = None) -> Dict:
-        d = {p.name: params.get(p.name) for p in self.hyperopt_space(space)}
+        if space == 'roi':
+            d = self.custom_hyperopt.generate_roi_table(params)
+        else:
+            d = {p.name: params.get(p.name) for p in self.hyperopt_space(space)}
         # Round floats to `r` digits after the decimal point if requested
         return round_dict(d, r) if r else d
 
