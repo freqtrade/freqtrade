@@ -475,7 +475,21 @@ def test_format_results(hyperopt):
     labels = ['currency', 'profit_percent', 'profit_abs', 'trade_duration']
     df = pd.DataFrame.from_records(trades, columns=labels)
     results_metrics = hyperopt._calculate_results_metrics(df)
-    result = hyperopt._format_explanation_string(results_metrics, 1)
+    results_explanation = hyperopt._format_results_explanation_string(results_metrics)
+    total_profit = results_metrics['total_profit']
+
+    results = {
+        'loss': 0.0,
+        'params_dict': None,
+        'params_details': None,
+        'results_metrics': results_metrics,
+        'results_explanation': results_explanation,
+        'total_profit': total_profit,
+        'current_epoch': 1,
+        'is_initial_point': True,
+    }
+
+    result = hyperopt._format_explanation_string(results, 1)
     assert result.find(' 66.67%')
     assert result.find('Total profit 1.00000000 BTC')
     assert result.find('2.0000Σ %')
@@ -488,7 +502,8 @@ def test_format_results(hyperopt):
     ]
     df = pd.DataFrame.from_records(trades, columns=labels)
     results_metrics = hyperopt._calculate_results_metrics(df)
-    result = hyperopt._format_explanation_string(results_metrics, 1)
+    results['total_profit'] = results_metrics['total_profit']
+    result = hyperopt._format_explanation_string(results, 1)
     assert result.find('Total profit 1.00000000 EUR')
 
 
