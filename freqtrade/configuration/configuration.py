@@ -9,8 +9,6 @@ from typing import Any, Callable, Dict, List, Optional
 
 from freqtrade import OperationalException, constants
 from freqtrade.configuration.check_exchange import check_exchange
-from freqtrade.configuration.config_validation import (validate_config_consistency,
-                                                       validate_config_schema)
 from freqtrade.configuration.deprecated_settings import process_temporary_deprecated_settings
 from freqtrade.configuration.directory_operations import (create_datadir,
                                                           create_userdata_dir)
@@ -84,10 +82,6 @@ class Configuration:
         if 'pairlists' not in config:
             config['pairlists'] = []
 
-        # validate configuration before returning
-        logger.info('Validating configuration ...')
-        validate_config_schema(config)
-
         return config
 
     def load_config(self) -> Dict[str, Any]:
@@ -117,8 +111,6 @@ class Configuration:
         self._resolve_pairs_list(config)
 
         process_temporary_deprecated_settings(config)
-
-        validate_config_consistency(config)
 
         return config
 

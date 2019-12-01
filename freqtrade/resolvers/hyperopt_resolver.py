@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Optional, Dict
 
 from freqtrade import OperationalException
-from freqtrade.constants import DEFAULT_HYPEROPT_LOSS
+from freqtrade.constants import DEFAULT_HYPEROPT_LOSS, USERPATH_HYPEROPTS
 from freqtrade.optimize.hyperopt_interface import IHyperOpt
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss
 from freqtrade.resolvers import IResolver
@@ -58,7 +58,7 @@ class HyperOptResolver(IResolver):
         current_path = Path(__file__).parent.parent.joinpath('optimize').resolve()
 
         abs_paths = self.build_search_paths(config, current_path=current_path,
-                                            user_subdir='hyperopts', extra_dir=extra_dir)
+                                            user_subdir=USERPATH_HYPEROPTS, extra_dir=extra_dir)
 
         hyperopt = self._load_object(paths=abs_paths, object_type=IHyperOpt,
                                      object_name=hyperopt_name, kwargs={'config': config})
@@ -110,7 +110,7 @@ class HyperOptLossResolver(IResolver):
         current_path = Path(__file__).parent.parent.joinpath('optimize').resolve()
 
         abs_paths = self.build_search_paths(config, current_path=current_path,
-                                            user_subdir='hyperopts', extra_dir=extra_dir)
+                                            user_subdir=USERPATH_HYPEROPTS, extra_dir=extra_dir)
 
         hyperoptloss = self._load_object(paths=abs_paths, object_type=IHyperOptLoss,
                                          object_name=hyper_loss_name)

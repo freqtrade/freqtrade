@@ -13,7 +13,8 @@ from pandas import DataFrame
 from tabulate import tabulate
 
 from freqtrade import OperationalException
-from freqtrade.configuration import TimeRange, remove_credentials
+from freqtrade.configuration import (TimeRange, remove_credentials,
+                                     validate_config_consistency)
 from freqtrade.data import history
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
@@ -75,10 +76,12 @@ class Backtesting:
                 stratconf = deepcopy(self.config)
                 stratconf['strategy'] = strat
                 self.strategylist.append(StrategyResolver(stratconf).strategy)
+                validate_config_consistency(stratconf)
 
         else:
             # No strategy list specified, only one strategy
             self.strategylist.append(StrategyResolver(self.config).strategy)
+            validate_config_consistency(self.config)
 
         if "ticker_interval" not in self.config:
             raise OperationalException("Ticker-interval needs to be set in either configuration "

@@ -113,7 +113,7 @@ def test_send_msg(default_conf, mocker):
 
 def test_exception_send_msg(default_conf, mocker, caplog):
     default_conf["webhook"] = get_webhook_dict()
-    default_conf["webhook"]["webhookbuy"] = None
+    del default_conf["webhook"]["webhookbuy"]
 
     webhook = Webhook(get_patched_freqtradebot(mocker, default_conf))
     webhook.send_msg({'type': RPCMessageType.BUY_NOTIFICATION})

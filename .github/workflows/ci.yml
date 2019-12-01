@@ -73,18 +73,21 @@ jobs:
         # Allow failure for coveralls
         # Fake travis environment to get coveralls working correctly
         export TRAVIS_PULL_REQUEST="https://github.com/${GITHUB_REPOSITORY}/pull/$(cat $GITHUB_EVENT_PATH | jq -r .number)"
+        export TRAVIS_BRANCH=${GITHUB_REF#"ref/heads"}
         export CI_BRANCH=${GITHUB_REF#"ref/heads"}
-        echo "${CI_BRANCH}"
+        echo "${TRAVIS_BRANCH}"
         coveralls || true
 
     - name: Backtesting
       run: |
         cp config.json.example config.json
-        freqtrade backtesting --datadir tests/testdata --strategy DefaultStrategy
+        freqtrade create-userdir --userdir user_data
+        freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
 
     - name: Hyperopt
       run: |
         cp config.json.example config.json
+        freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt
 
     - name: Flake8
@@ -97,7 +100,7 @@ jobs:
 
     - name: Slack Notification
       uses: homoluctus/slatify@v1.8.0
-      if: always() && github.repository.fork == true
+      if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
         job_name: '*Freqtrade CI ${{ matrix.os }}*'
@@ -141,11 +144,13 @@ jobs:
     - name: Backtesting
       run: |
         cp config.json.example config.json
-        freqtrade backtesting --datadir tests/testdata --strategy DefaultStrategy
+        freqtrade create-userdir --userdir user_data
+        freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
 
     - name: Hyperopt
       run: |
         cp config.json.example config.json
+        freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt
 
     - name: Flake8
@@ -158,7 +163,7 @@ jobs:
 
     - name: Slack Notification
       uses: homoluctus/slatify@v1.8.0
-      if: always() && github.repository.fork == true
+      if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
         job_name: '*Freqtrade CI windows*'
@@ -178,7 +183,7 @@ jobs:
 
     - name: Slack Notification
       uses: homoluctus/slatify@v1.8.0
-      if: failure() && github.repository.fork == true
+      if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
         job_name: '*Freqtrade Docs*'
@@ -219,7 +224,7 @@ jobs:
 
     - name: Slack Notification
       uses: homoluctus/slatify@v1.8.0
-      if: always() && github.repository.fork == true
+      if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
         job_name: '*Freqtrade CI Deploy*'

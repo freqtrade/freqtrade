@@ -78,6 +78,7 @@ setup(name='freqtrade',
           'python-rapidjson',
           'sdnotify',
           'colorama',
+          'jinja2',
           # from requirements.txt
           'numpy',
           'pandas',

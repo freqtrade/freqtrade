@@ -325,7 +325,7 @@ def get_markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -351,7 +351,7 @@ def get_markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -376,7 +376,7 @@ def get_markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -401,7 +401,7 @@ def get_markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -426,7 +426,7 @@ def get_markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -451,7 +451,7 @@ def get_markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -479,7 +479,7 @@ def get_markets():
                     'max': None
                 },
                 'cost': {
-                    'min': 0.001,
+                    'min': 0.0001,
                     'max': None
                 }
             },
@@ -980,6 +980,28 @@ def tickers():
             'quoteVolume': 62.68220262,
             'info': {}
         },
+        'BTC/USDT': {
+            'symbol': 'BTC/USDT',
+            'timestamp': 1573758371399,
+            'datetime': '2019-11-14T19:06:11.399Z',
+            'high': 8800.0,
+            'low': 8582.6,
+            'bid': 8648.16,
+            'bidVolume': 0.238771,
+            'ask': 8648.72,
+            'askVolume': 0.016253,
+            'vwap': 8683.13647806,
+            'open': 8759.7,
+            'close': 8648.72,
+            'last': 8648.72,
+            'previousClose': 8759.67,
+            'change': -110.98,
+            'percentage': -1.267,
+            'average': None,
+            'baseVolume': 35025.943355,
+            'quoteVolume': 304135046.4242901,
+            'info': {}
+        },
         'ETH/USDT': {
             'symbol': 'ETH/USDT',
             'timestamp': 1522014804118,
@@ -1067,7 +1089,29 @@ def tickers():
             'baseVolume': 59698.79897,
             'quoteVolume': 29132399.743954,
             'info': {}
-        }
+        },
+        'XRP/BTC': {
+            'symbol': 'XRP/BTC',
+            'timestamp': 1573758257534,
+            'datetime': '2019-11-14T19:04:17.534Z',
+            'high': 3.126e-05,
+            'low': 3.061e-05,
+            'bid': 3.093e-05,
+            'bidVolume': 27901.0,
+            'ask': 3.095e-05,
+            'askVolume': 10551.0,
+            'vwap': 3.091e-05,
+            'open': 3.119e-05,
+            'close': 3.094e-05,
+            'last': 3.094e-05,
+            'previousClose': 3.117e-05,
+            'change': -2.5e-07,
+            'percentage': -0.802,
+            'average': None,
+            'baseVolume': 37334921.0,
+            'quoteVolume': 1154.19266394,
+            'info': {}
+        },
     })
 
 
@@ -1317,8 +1361,8 @@ def rpc_balance():
             'used': 0.0
         },
         'XRP': {
-            'total': 1.0,
-            'free': 1.0,
+            'total': 0.1,
+            'free': 0.01,
             'used': 0.0
             },
         'EUR': {

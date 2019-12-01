@@ -144,9 +144,9 @@ def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
 
 
 def test_status(default_conf, update, mocker, fee, ticker,) -> None:
-    update.message.chat.id = 123
+    update.message.chat.id = "123"
     default_conf['telegram']['enabled'] = False
-    default_conf['telegram']['chat_id'] = 123
+    default_conf['telegram']['chat_id'] = "123"
 
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -461,29 +461,10 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     assert '*Best Performing:* `ETH/BTC: 6.20%`' in msg_mock.call_args_list[-1][0][0]
 
 
-def test_telegram_balance_handle(default_conf, update, mocker, rpc_balance) -> None:
-
-    def mock_ticker(symbol, refresh):
-        if symbol == 'BTC/USDT':
-            return {
-                'bid': 10000.00,
-                'ask': 10000.00,
-                'last': 10000.00,
-            }
-        elif symbol == 'XRP/BTC':
-            return {
-                'bid': 0.00001,
-                'ask': 0.00001,
-                'last': 0.00001,
-            }
-        return {
-            'bid': 0.1,
-            'ask': 0.1,
-            'last': 0.1,
-        }
+def test_telegram_balance_handle(default_conf, update, mocker, rpc_balance, tickers) -> None:
 
     mocker.patch('freqtrade.exchange.Exchange.get_balances', return_value=rpc_balance)
-    mocker.patch('freqtrade.exchange.Exchange.get_ticker', side_effect=mock_ticker)
+    mocker.patch('freqtrade.exchange.Exchange.get_tickers', tickers)
     mocker.patch('freqtrade.exchange.Exchange.get_valid_pair_combination',
                  side_effect=lambda a, b: f"{a}/{b}")
 
@@ -564,7 +545,8 @@ def test_balance_handle_too_large_response(default_conf, update, mocker) -> None
             'free': 1.0,
             'used': 0.5,
             'balance': i,
-            'est_btc': 1
+            'est_stake': 1,
+            'stake': 'BTC',
         })
     mocker.patch('freqtrade.rpc.rpc.RPC._rpc_balance', return_value={
         'currencies': balances,

@@ -355,29 +355,18 @@ def test_rpc_balance_handle_error(default_conf, mocker):
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=mock_balance),
-        get_ticker=MagicMock(side_effect=TemporaryError('Could not load ticker due to xxx'))
+        get_tickers=MagicMock(side_effect=TemporaryError('Could not load ticker due to xxx'))
     )
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)
     rpc._fiat_converter = CryptoToFiatConverter()
-
-    result = rpc._rpc_balance(default_conf['fiat_display_currency'])
-    assert prec_satoshi(result['total'], 12)
-    assert prec_satoshi(result['value'], 180000)
-    assert 'USD' == result['symbol']
-    assert result['currencies'] == [{
-        'currency': 'BTC',
-        'free': 10.0,
-        'balance': 12.0,
-        'used': 2.0,
-        'est_btc': 12.0,
-    }]
-    assert result['total'] == 12.0
+    with pytest.raises(RPCException, match="Error getting current tickers."):
+        rpc._rpc_balance(default_conf['stake_currency'], default_conf['fiat_display_currency'])
 
 
-def test_rpc_balance_handle(default_conf, mocker):
+def test_rpc_balance_handle(default_conf, mocker, tickers):
     mock_balance = {
         'BTC': {
             'free': 10.0,
@@ -389,7 +378,7 @@ def test_rpc_balance_handle(default_conf, mocker):
             'total': 5.0,
             'used': 4.0,
         },
-        'PAX': {
+        'USDT': {
             'free': 5.0,
             'total': 10.0,
             'used': 5.0,
@@ -405,10 +394,9 @@ def test_rpc_balance_handle(default_conf, mocker):
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=mock_balance),
-        get_ticker=MagicMock(
-            side_effect=lambda p, r: {'bid': 100} if p == "BTC/PAX" else {'bid': 0.01}),
+        get_tickers=tickers,
         get_valid_pair_combination=MagicMock(
-            side_effect=lambda a, b: f"{b}/{a}" if a == "PAX" else f"{a}/{b}")
+            side_effect=lambda a, b: f"{b}/{a}" if a == "USDT" else f"{a}/{b}")
     )
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
@@ -416,30 +404,35 @@ def test_rpc_balance_handle(default_conf, mocker):
     rpc = RPC(freqtradebot)
     rpc._fiat_converter = CryptoToFiatConverter()
 
-    result = rpc._rpc_balance(default_conf['fiat_display_currency'])
-    assert prec_satoshi(result['total'], 12.15)
-    assert prec_satoshi(result['value'], 182250)
+    result = rpc._rpc_balance(default_conf['stake_currency'], default_conf['fiat_display_currency'])
+    assert prec_satoshi(result['total'], 12.309096315)
+    assert prec_satoshi(result['value'], 184636.44472997)
     assert 'USD' == result['symbol']
     assert result['currencies'] == [
         {'currency': 'BTC',
-            'free': 10.0,
-            'balance': 12.0,
-            'used': 2.0,
-            'est_btc': 12.0,
+         'free': 10.0,
+         'balance': 12.0,
+         'used': 2.0,
+         'est_stake': 12.0,
+         'stake': 'BTC',
          },
         {'free': 1.0,
          'balance': 5.0,
          'currency': 'ETH',
-         'est_btc': 0.05,
-         'used': 4.0
+         'est_stake': 0.30794,
+         'used': 4.0,
+         'stake': 'BTC',
+
          },
         {'free': 5.0,
          'balance': 10.0,
-         'currency': 'PAX',
-         'est_btc': 0.1,
-         'used': 5.0}
+         'currency': 'USDT',
+         'est_stake': 0.0011563153318162476,
+         'used': 5.0,
+         'stake': 'BTC',
+         }
     ]
-    assert result['total'] == 12.15
+    assert result['total'] == 12.309096315331816
 
 
 def test_rpc_start(mocker, default_conf) -> None:
@@ -697,8 +690,8 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order) -> None
     pair = 'XRP/BTC'
 
     # Test not buying
-    default_conf['stake_amount'] = 0.0000001
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    freqtradebot.config['stake_amount'] = 0.0000001
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)
     pair = 'TKN/BTC'
