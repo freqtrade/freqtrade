@@ -359,7 +359,7 @@ def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
     hyperopt.total_epochs = 2
     hyperopt.print_results(
         {
-            'is_best': False,
+            'is_best': True,
             'loss': 1,
             'current_epoch': 2,  # This starts from 1 (in a human-friendly manner)
             'results_explanation': 'foo.',
