@@ -184,11 +184,10 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "spaces": Arg(
         '--spaces',
-        help='Specify which parameters to hyperopt. Space-separated list. '
-        'Default: `%(default)s`.',
-        choices=['all', 'buy', 'sell', 'roi', 'stoploss'],
+        help='Specify which parameters to hyperopt. Space-separated list.',
+        choices=['all', 'buy', 'sell', 'roi', 'stoploss', 'trailing', 'default'],
         nargs='+',
-        default='all',
+        default='default',
     ),
     "print_all": Arg(
         '--print-all',

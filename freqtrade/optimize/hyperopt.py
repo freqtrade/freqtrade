@@ -170,45 +170,43 @@ class Hyperopt:
         best_result = results[0]
         params = best_result['params']
         log_str = self.format_results_logstring(best_result)
+
         print(f"\nBest result:\n\n{log_str}\n")
 
         if self.config.get('print_json'):
             result_dict: Dict = {}
-            if self.has_space('buy') or self.has_space('sell'):
-                result_dict['params'] = {}
-            if self.has_space('buy'):
-                result_dict['params'].update({p.name: params.get(p.name)
-                                             for p in self.hyperopt_space('buy')})
-            if self.has_space('sell'):
-                result_dict['params'].update({p.name: params.get(p.name)
-                                             for p in self.hyperopt_space('sell')})
-            if self.has_space('roi'):
+            for s in ['buy', 'sell', 'roi', 'stoploss', 'trailing']:
+                self._params_update_for_json(result_dict, params, s)
+            print(rapidjson.dumps(result_dict, default=str, number_mode=rapidjson.NM_NATIVE))
+
+        else:
+            self._params_pretty_print(params, 'buy', "Buy hyperspace params:")
+            self._params_pretty_print(params, 'sell', "Sell hyperspace params:")
+            self._params_pretty_print(params, 'roi', "ROI table:")
+            self._params_pretty_print(params, 'stoploss', "Stoploss:")
+            self._params_pretty_print(params, 'trailing', "Trailing stop:")
+
+    def _params_update_for_json(self, result_dict, params, space: str):
+        if self.has_space(space):
+            space_params = self.space_params(params, space)
+            if space in ['buy', 'sell']:
+                result_dict.setdefault('params', {}).update(space_params)
+            elif space == 'roi':
                 # Convert keys in min_roi dict to strings because
                 # rapidjson cannot dump dicts with integer keys...
                 # OrderedDict is used to keep the numeric order of the items
                 # in the dict.
                 result_dict['minimal_roi'] = OrderedDict(
-                    (str(k), v) for k, v in self.custom_hyperopt.generate_roi_table(params).items()
+                    (str(k), v) for k, v in space_params.items()
                 )
-            if self.has_space('stoploss'):
-                result_dict['stoploss'] = params.get('stoploss')
-            print(rapidjson.dumps(result_dict, default=str, number_mode=rapidjson.NM_NATIVE))
-        else:
-            if self.has_space('buy'):
-                print('Buy hyperspace params:')
-                pprint({p.name: params.get(p.name) for p in self.hyperopt_space('buy')},
-                       indent=4)
-            if self.has_space('sell'):
-                print('Sell hyperspace params:')
-                pprint({p.name: params.get(p.name) for p in self.hyperopt_space('sell')},
-                       indent=4)
-            if self.has_space('roi'):
-                print("ROI table:")
-                # Round printed values to 5 digits after the decimal point
-                pprint(round_dict(self.custom_hyperopt.generate_roi_table(params), 5), indent=4)
-            if self.has_space('stoploss'):
-                # Also round to 5 digits after the decimal point
-                print(f"Stoploss: {round(params.get('stoploss'), 5)}")
+            else:  # 'stoploss', 'trailing'
+                result_dict.update(space_params)
+
+    def _params_pretty_print(self, params, space: str, header: str):
+        if self.has_space(space):
+            space_params = self.space_params(params, space, 5)
+            print(header)
+            pprint(space_params, indent=4)
 
     def is_best(self, results) -> bool:
         return results['loss'] < self.current_best_loss
@@ -250,9 +248,13 @@ class Hyperopt:
 
     def has_space(self, space: str) -> bool:
         """
-        Tell if a space value is contained in the configuration
+        Tell if the space value is contained in the configuration
         """
-        return any(s in self.config['spaces'] for s in [space, 'all'])
+        # The 'trailing' space is not included in the 'default' set of spaces
+        if space == 'trailing':
+            return any(s in self.config['spaces'] for s in [space, 'all'])
+        else:
+            return any(s in self.config['spaces'] for s in [space, 'all', 'default'])
 
     def hyperopt_space(self, space: Optional[str] = None) -> List[Dimension]:
         """
@@ -262,19 +264,36 @@ class Hyperopt:
         for all hyperspaces used.
         """
         spaces: List[Dimension] = []
+
         if space == 'buy' or (space is None and self.has_space('buy')):
             logger.debug("Hyperopt has 'buy' space")
             spaces += self.custom_hyperopt.indicator_space()
+
         if space == 'sell' or (space is None and self.has_space('sell')):
             logger.debug("Hyperopt has 'sell' space")
             spaces += self.custom_hyperopt.sell_indicator_space()
+
         if space == 'roi' or (space is None and self.has_space('roi')):
             logger.debug("Hyperopt has 'roi' space")
             spaces += self.custom_hyperopt.roi_space()
+
         if space == 'stoploss' or (space is None and self.has_space('stoploss')):
             logger.debug("Hyperopt has 'stoploss' space")
             spaces += self.custom_hyperopt.stoploss_space()
+
+        if space == 'trailing' or (space is None and self.has_space('trailing')):
+            logger.debug("Hyperopt has 'trailing' space")
+            spaces += self.custom_hyperopt.trailing_space()
+
         return spaces
+
+    def space_params(self, params, space: str, r: int = None) -> Dict:
+        if space == 'roi':
+            d = self.custom_hyperopt.generate_roi_table(params)
+        else:
+            d = {p.name: params.get(p.name) for p in self.hyperopt_space(space)}
+        # Round floats to `r` digits after the decimal point if requested
+        return round_dict(d, r) if r else d
 
     def generate_optimizer(self, _params: Dict, iteration=None) -> Dict:
         """
@@ -297,6 +316,14 @@ class Hyperopt:
 
         if self.has_space('stoploss'):
             self.backtesting.strategy.stoploss = params['stoploss']
+
+        if self.has_space('trailing'):
+            self.backtesting.strategy.trailing_stop = params['trailing_stop']
+            self.backtesting.strategy.trailing_stop_positive = params['trailing_stop_positive']
+            self.backtesting.strategy.trailing_stop_positive_offset = \
+                params['trailing_stop_positive_offset']
+            self.backtesting.strategy.trailing_only_offset_is_reached = \
+                params['trailing_only_offset_is_reached']
 
         processed = load(self.tickerdata_pickle)
 
