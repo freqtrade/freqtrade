@@ -74,7 +74,7 @@ For `syslog` (`rsyslog`), the reduction mode can be switched on. This will reduc
 $RepeatedMsgReduction on
 ```
 
-## Logging to journald
+### Logging to journald
 
 This needs the `systemd` python package installed as the dependency, which is not available on Windows. Hence, the whole journald logging functionality is not available for a bot running on Windows.
 
