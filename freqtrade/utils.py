@@ -334,11 +334,14 @@ def start_test_pairlist(args: Dict[str, Any]) -> None:
     exchange = ExchangeResolver(config['exchange']['name'], config, validate=False).exchange
 
     quote_currencies = args.get('quote_currencies', [config.get('stake_currency')])
-
+    results = {}
     for curr in quote_currencies:
         config['stake_currency'] = curr
         # Do not use ticker_interval set in the config
         pairlists = PairListManager(exchange, config)
         pairlists.refresh_pairlist()
+        results[curr] = pairlists.whitelist
+
+    for curr, pairlist in results.items():
         print(f"Pairs for {curr}: ")
-        print(pairlists.whitelist)
+        print(pairlist)
