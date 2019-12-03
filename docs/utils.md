@@ -234,3 +234,35 @@ $ freqtrade -c config_binance.json list-pairs --all --base BTC ETH --quote USDT 
 ```
 $ freqtrade list-markets --exchange kraken --all
 ```
+
+## Test pairlist
+
+Use the `test-pairlist` subcommand to test the configuration of [dynamic pairlists](configuration.md#pairlists).
+
+Requires a configuration with specified `pairlists` attribute.
+Can be used to generate static pairlists to be used during backtesting / hyperopt.
+
+### Examples
+
+Show whitelist when using a [dynamic pairlist](configuration.md#pairlists).
+
+```
+freqtrade test-pairlist --config config.json --quote USDT BTC
+```
+
+```
+usage: freqtrade test-pairlist [-h] [-c PATH]
+                               [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]]
+                               [-1] [--print-json]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`).
+                        Multiple --config options may be used. Can be set to
+                        `-` to read config from stdin.
+  --quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]
+                        Specify quote currency(-ies). Space-separated list.
+  -1, --one-column      Print output in one column.
+  --print-json          Print list of pairs or market symbols in JSON format.
+```

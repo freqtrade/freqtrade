@@ -405,6 +405,9 @@ Inactive markets and blacklisted pairs are always removed from the resulting `pa
 * [`PrecisionFilter`](#precision-filter)
 * [`PriceFilter`](#price-pair-filter)
 
+!!! Tip "Testing pairlists"
+    Pairlist configurations can be quite tricky to get right. Best use the [`test-pairlist`](utils.md#test-pairlist) subcommand to test your configuration quickly.
+
 #### Static Pair List
 
 By default, the `StaticPairList` method is used, which uses a statically defined pair whitelist from the configuration. 
