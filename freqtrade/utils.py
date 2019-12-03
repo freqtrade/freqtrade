@@ -326,7 +326,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
 
 def start_test_pairlist(args: Dict[str, Any]) -> None:
     """
-    Test Pairlists
+    Test Pairlist configuration
     """
     from freqtrade.pairlist.pairlistmanager import PairListManager
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
