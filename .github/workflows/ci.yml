@@ -83,6 +83,7 @@ jobs:
         export TRAVIS_BRANCH=$(cat $GITHUB_EVENT_PATH | jq -r .pull_request.base.ref)
         if [ -z ${TRAVIS_BRANCH} ]; then export TRAVIS_BRANCH=${GITHUB_REF#"ref/heads"}; fi
         echo "${TRAVIS_BRANCH}"
+        export TRAVIS_JOB_ID=620176068
         coveralls -v || true
 
     - name: Backtesting
