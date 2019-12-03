@@ -1,15 +1,15 @@
 # Advanced Hyperopt
 
-This page explains some advanced Hyperopt issues that may require higher
+This page explains some advanced Hyperopt topics that may require higher
 coding skills and Python knowledge than creation of an ordinal hyperoptimization
 class.
 
 ## Creating and using a custom loss function
 
 To use a custom loss function class, make sure that the function `hyperopt_loss_function` is defined in your custom hyperopt loss class.
-For the sample below, you then need to add the command line parameter `--hyperopt-loss SuperDuperHyperOptLoss` to your hyperopt call so this fuction is being used.
+For the sample below, you then need to add the command line parameter `--hyperopt-loss SuperDuperHyperOptLoss` to your hyperopt call so this function is being used.
 
-A sample of this can be found below, which is identical to the Default Hyperopt loss implementation. A full sample can be found [user_data/hyperopts/](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/sample_hyperopt_loss.py)
+A sample of this can be found below, which is identical to the Default Hyperopt loss implementation. A full sample can be found in [freqtrade/templates/](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt_loss.py)
 
 ``` python
 from freqtrade.optimize.hyperopt import IHyperOptLoss
