@@ -333,7 +333,9 @@ def start_test_pairlist(args: Dict[str, Any]) -> None:
 
     exchange = ExchangeResolver(config['exchange']['name'], config, validate=False).exchange
 
-    quote_currencies = args.get('quote_currencies', [config.get('stake_currency')])
+    quote_currencies = args.get('quote_currencies')
+    if not quote_currencies:
+        quote_currencies = [config.get('stake_currency')]
     results = {}
     for curr in quote_currencies:
         config['stake_currency'] = curr
