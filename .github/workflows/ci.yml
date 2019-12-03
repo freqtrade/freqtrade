@@ -68,22 +68,11 @@ jobs:
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc
 
     - name: Coveralls
-      if: startsWith(matrix.os, 'macOS')
+      if: startsWith(matrix.os, 'ubuntu')
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        COVERALLS_SERVICE_NAME: travis-ci
-        TRAVIS: "true"
       run: |
         # Allow failure for coveralls
-        # Fake travis environment to get coveralls working correctly
-        export TRAVIS_PULL_REQUEST="$(cat $GITHUB_EVENT_PATH | jq -r .number)"
-        echo ${TRAVIS_PULL_REQUEST}
-        # export TRAVIS_BRANCH=${GITHUB_REF#"ref/heads"}
-        # export CI_BRANCH=${GITHUB_REF#"ref/heads"}
-        export TRAVIS_BRANCH=$(cat $GITHUB_EVENT_PATH | jq -r .pull_request.base.ref)
-        if [ -z ${TRAVIS_BRANCH} ]; then export TRAVIS_BRANCH=${GITHUB_REF#"ref/heads"}; fi
-        echo "${TRAVIS_BRANCH}"
-        export TRAVIS_JOB_ID=620176068
         coveralls -v || true
 
     - name: Backtesting
