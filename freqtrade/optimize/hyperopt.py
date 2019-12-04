@@ -165,13 +165,16 @@ class Hyperopt:
         result: Dict = {}
 
         if self.has_space('buy'):
-            result['buy'] = {p.name: params.get(p.name) for p in self.hyperopt_space('buy')}
+            result['buy'] = {p.name: params.get(p.name)
+                             for p in self.hyperopt_space('buy')}
         if self.has_space('sell'):
-            result['sell'] = {p.name: params.get(p.name) for p in self.hyperopt_space('sell')}
+            result['sell'] = {p.name: params.get(p.name)
+                              for p in self.hyperopt_space('sell')}
         if self.has_space('roi'):
             result['roi'] = self.custom_hyperopt.generate_roi_table(params)
         if self.has_space('stoploss'):
-            result['stoploss'] = params.get('stoploss')
+            result['stoploss'] = {p.name: params.get(p.name)
+                                  for p in self.hyperopt_space('stoploss')}
 
         return result
 
@@ -193,38 +196,48 @@ class Hyperopt:
 
         if print_json:
             result_dict: Dict = {}
-            result_params_dict: Dict = {}
-            if 'buy' in params:
-                result_params_dict.update(params['buy'])
-            if 'sell' in params:
-                result_params_dict.update(params['sell'])
-            if result_params_dict:
-                result_dict['params'] = result_params_dict
-            if 'roi' in params:
+            for s in ['buy', 'sell', 'roi', 'stoploss']:
+                Hyperopt._params_update_for_json(result_dict, params, s)
+            print(rapidjson.dumps(result_dict, default=str, number_mode=rapidjson.NM_NATIVE))
+
+        else:
+            Hyperopt._params_pretty_print(params, 'buy', "Buy hyperspace params:")
+            Hyperopt._params_pretty_print(params, 'sell', "Sell hyperspace params:")
+            Hyperopt._params_pretty_print(params, 'roi', "ROI table:")
+            Hyperopt._params_pretty_print(params, 'stoploss', "Stoploss:")
+
+    @staticmethod
+    def _params_update_for_json(result_dict, params, space: str):
+        if space in params:
+            space_params = Hyperopt._space_params(params, space)
+            if space in ['buy', 'sell']:
+                result_dict.setdefault('params', {}).update(space_params)
+            elif space == 'roi':
                 # Convert keys in min_roi dict to strings because
                 # rapidjson cannot dump dicts with integer keys...
                 # OrderedDict is used to keep the numeric order of the items
                 # in the dict.
                 result_dict['minimal_roi'] = OrderedDict(
-                    (str(k), v) for k, v in params['roi'].items()
+                    (str(k), v) for k, v in space_params.items()
                 )
-            if 'stoploss' in params:
-                result_dict['stoploss'] = params['stoploss']
-            print(rapidjson.dumps(result_dict, default=str, number_mode=rapidjson.NM_NATIVE))
-        else:
-            if 'buy' in params:
-                print('Buy hyperspace params:')
-                pprint(params['buy'], indent=4)
-            if 'sell' in params:
-                print('Sell hyperspace params:')
-                pprint(params['sell'], indent=4)
-            if 'roi' in params:
-                print("ROI table:")
-                # Round printed values to 5 digits after the decimal point
-                pprint(round_dict(params['roi'], 5), indent=4)
-            if 'stoploss' in params:
-                # Also round to 5 digits after the decimal point
-                print(f"Stoploss: {round(params['stoploss'], 5)}")
+            else:  # 'stoploss'
+                result_dict.update(space_params)
+
+    @staticmethod
+    def _params_pretty_print(params, space: str, header: str):
+        if space in params:
+            space_params = Hyperopt._space_params(params, space, 5)
+            if space == 'stoploss':
+                print(header, space_params.get('stoploss'))
+            else:
+                print(header)
+                pprint(space_params, indent=4)
+
+    @staticmethod
+    def _space_params(params, space: str, r: int = None) -> Dict:
+        d = params[space]
+        # Round floats to `r` digits after the decimal point if requested
+        return round_dict(d, r) if r else d
 
     @staticmethod
     def is_best_loss(results, current_best_loss) -> bool:
