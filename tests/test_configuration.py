@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, protected-access, invalid-name
 import json
 import logging
+import sys
 import warnings
 from copy import deepcopy
 from pathlib import Path
@@ -19,7 +20,7 @@ from freqtrade.configuration.deprecated_settings import (
     process_temporary_deprecated_settings)
 from freqtrade.configuration.load_config import load_config_file
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
-from freqtrade.loggers import _set_loggers
+from freqtrade.loggers import _set_loggers, setup_logging
 from freqtrade.state import RunMode
 from tests.conftest import (log_has, log_has_re,
                             patched_configuration_load_config_file)
@@ -40,10 +41,16 @@ def test_load_config_invalid_pair(default_conf) -> None:
 
 
 def test_load_config_missing_attributes(default_conf) -> None:
-    default_conf.pop('exchange')
+    conf = deepcopy(default_conf)
+    conf.pop('exchange')
 
     with pytest.raises(ValidationError, match=r".*'exchange' is a required property.*"):
-        validate_config_schema(default_conf)
+        validate_config_schema(conf)
+
+    conf = deepcopy(default_conf)
+    conf.pop('stake_currency')
+    with pytest.raises(ValidationError, match=r".*'stake_currency' is a required property.*"):
+        validate_config_schema(conf)
 
 
 def test_load_config_incorrect_stake_amount(default_conf) -> None:
@@ -100,7 +107,6 @@ def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
 
     assert validated_conf['max_open_trades'] == 0
     assert 'internals' in validated_conf
-    assert log_has('Validating configuration ...', caplog)
 
 
 def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
@@ -132,7 +138,6 @@ def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
     assert validated_conf['exchange']['pair_whitelist'] == conf2['exchange']['pair_whitelist']
 
     assert 'internals' in validated_conf
-    assert log_has('Validating configuration ...', caplog)
 
 
 def test_from_config(default_conf, mocker, caplog) -> None:
@@ -159,7 +164,6 @@ def test_from_config(default_conf, mocker, caplog) -> None:
     assert validated_conf['exchange']['pair_whitelist'] == conf2['exchange']['pair_whitelist']
     assert validated_conf['fiat_display_currency'] == "EUR"
     assert 'internals' in validated_conf
-    assert log_has('Validating configuration ...', caplog)
     assert isinstance(validated_conf['user_data_dir'], Path)
 
 
@@ -191,7 +195,6 @@ def test_load_config_max_open_trades_minus_one(default_conf, mocker, caplog) -> 
 
     assert validated_conf['max_open_trades'] > 999999999
     assert validated_conf['max_open_trades'] == float('inf')
-    assert log_has('Validating configuration ...', caplog)
     assert "runmode" in validated_conf
     assert validated_conf['runmode'] == RunMode.DRY_RUN
 
@@ -634,6 +637,56 @@ def test_set_loggers() -> None:
     assert logging.getLogger('requests').level is logging.DEBUG
     assert logging.getLogger('ccxt.base.exchange').level is logging.DEBUG
     assert logging.getLogger('telegram').level is logging.INFO
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
+def test_set_loggers_syslog(mocker):
+    logger = logging.getLogger()
+    orig_handlers = logger.handlers
+    logger.handlers = []
+
+    config = {'verbosity': 2,
+              'logfile': 'syslog:/dev/log',
+              }
+
+    setup_logging(config)
+    assert len(logger.handlers) == 2
+    assert [x for x in logger.handlers if type(x) == logging.handlers.SysLogHandler]
+    assert [x for x in logger.handlers if type(x) == logging.StreamHandler]
+    # reset handlers to not break pytest
+    logger.handlers = orig_handlers
+
+
+@pytest.mark.skip(reason="systemd is not installed on every system, so we're not testing this.")
+def test_set_loggers_journald(mocker):
+    logger = logging.getLogger()
+    orig_handlers = logger.handlers
+    logger.handlers = []
+
+    config = {'verbosity': 2,
+              'logfile': 'journald',
+              }
+
+    setup_logging(config)
+    assert len(logger.handlers) == 2
+    assert [x for x in logger.handlers if type(x).__name__ == "JournaldLogHandler"]
+    assert [x for x in logger.handlers if type(x) == logging.StreamHandler]
+    # reset handlers to not break pytest
+    logger.handlers = orig_handlers
+
+
+def test_set_loggers_journald_importerror(mocker, import_fails):
+    logger = logging.getLogger()
+    orig_handlers = logger.handlers
+    logger.handlers = []
+
+    config = {'verbosity': 2,
+              'logfile': 'journald',
+              }
+    with pytest.raises(OperationalException,
+                       match=r'You need the systemd python package.*'):
+        setup_logging(config)
+    logger.handlers = orig_handlers
 
 
 def test_set_logfile(default_conf, mocker):

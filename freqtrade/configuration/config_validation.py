@@ -61,10 +61,15 @@ def validate_config_consistency(conf: Dict[str, Any]) -> None:
     :param conf: Config in JSON format
     :return: Returns None if everything is ok, otherwise throw an OperationalException
     """
+
     # validating trailing stoploss
     _validate_trailing_stoploss(conf)
     _validate_edge(conf)
     _validate_whitelist(conf)
+
+    # validate configuration before returning
+    logger.info('Validating configuration ...')
+    validate_config_schema(conf)
 
 
 def _validate_trailing_stoploss(conf: Dict[str, Any]) -> None:

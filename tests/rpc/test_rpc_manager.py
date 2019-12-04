@@ -173,7 +173,10 @@ def test_init_apiserver_enabled(mocker, default_conf, caplog) -> None:
     default_conf["telegram"]["enabled"] = False
     default_conf["api_server"] = {"enabled": True,
                                   "listen_ip_address": "127.0.0.1",
-                                  "listen_port": "8080"}
+                                  "listen_port": 8080,
+                                  "username": "TestUser",
+                                  "password": "TestPass",
+                                  }
     rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
 
     # Sleep to allow the thread to start

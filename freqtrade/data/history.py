@@ -146,7 +146,7 @@ def load_pair_history(pair: str,
     :param fill_up_missing: Fill missing values with "No action"-candles
     :param drop_incomplete: Drop last candle assuming it may be incomplete.
     :param startup_candles: Additional candles to load at the start of the period
-    :return: DataFrame with ohlcv data
+    :return: DataFrame with ohlcv data, or empty DataFrame
     """
 
     timerange_startup = deepcopy(timerange)
@@ -174,7 +174,7 @@ def load_pair_history(pair: str,
             f'No history data for pair: "{pair}", timeframe: {timeframe}. '
             'Use `freqtrade download-data` to download the data'
         )
-        return None
+        return DataFrame()
 
 
 def load_data(datadir: Path,
@@ -216,7 +216,7 @@ def load_data(datadir: Path,
                                  exchange=exchange,
                                  fill_up_missing=fill_up_missing,
                                  startup_candles=startup_candles)
-        if hist is not None:
+        if not hist.empty:
             result[pair] = hist
 
     if fail_without_data and not result:

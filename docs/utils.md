@@ -43,20 +43,6 @@ The file will be named inline with your class name, and will not overwrite exist
 
 Results will be located in `user_data/strategies/<strategyclassname>.py`.
 
-### Sample usage of new-strategy
-
-```bash
-freqtrade new-strategy --strategy AwesomeStrategy
-```
-
-With custom user directory
-
-```bash
-freqtrade new-strategy --userdir ~/.freqtrade/ --strategy AwesomeStrategy
-```
-
-### new-strategy complete options
-
 ``` output
 usage: freqtrade new-strategy [-h] [--userdir PATH] [-s NAME]
                               [--template {full,minimal}]
@@ -75,26 +61,24 @@ optional arguments:
 
 ```
 
+### Sample usage of new-strategy
+
+```bash
+freqtrade new-strategy --strategy AwesomeStrategy
+```
+
+With custom user directory
+
+```bash
+freqtrade new-strategy --userdir ~/.freqtrade/ --strategy AwesomeStrategy
+```
+
 ## Create new hyperopt
 
 Creates a new hyperopt from a template similar to SampleHyperopt.
 The file will be named inline with your class name, and will not overwrite existing files.
 
 Results will be located in `user_data/hyperopts/<classname>.py`.
-
-### Sample usage of new-hyperopt
-
-```bash
-freqtrade new-hyperopt --hyperopt AwesomeHyperopt
-```
-
-With custom user directory
-
-```bash
-freqtrade new-hyperopt --userdir ~/.freqtrade/ --hyperopt AwesomeHyperopt
-```
-
-### new-hyperopt complete options
 
 ``` output
 usage: freqtrade new-hyperopt [-h] [--userdir PATH] [--hyperopt NAME]
@@ -110,6 +94,18 @@ optional arguments:
                         Use a template which is either `minimal` or `full`
                         (containing multiple sample indicators). Default:
                         `full`.
+```
+
+### Sample usage of new-hyperopt
+
+```bash
+freqtrade new-hyperopt --hyperopt AwesomeHyperopt
+```
+
+With custom user directory
+
+```bash
+freqtrade new-hyperopt --userdir ~/.freqtrade/ --hyperopt AwesomeHyperopt
 ```
 
 ## List Exchanges
@@ -233,4 +229,36 @@ $ freqtrade -c config_binance.json list-pairs --all --base BTC ETH --quote USDT 
 
 ```
 $ freqtrade list-markets --exchange kraken --all
+```
+
+## Test pairlist
+
+Use the `test-pairlist` subcommand to test the configuration of [dynamic pairlists](configuration.md#pairlists).
+
+Requires a configuration with specified `pairlists` attribute.
+Can be used to generate static pairlists to be used during backtesting / hyperopt.
+
+```
+usage: freqtrade test-pairlist [-h] [-c PATH]
+                               [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]]
+                               [-1] [--print-json]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`).
+                        Multiple --config options may be used. Can be set to
+                        `-` to read config from stdin.
+  --quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]
+                        Specify quote currency(-ies). Space-separated list.
+  -1, --one-column      Print output in one column.
+  --print-json          Print list of pairs or market symbols in JSON format.
+```
+
+### Examples
+
+Show whitelist when using a [dynamic pairlist](configuration.md#pairlists).
+
+```
+freqtrade test-pairlist --config config.json --quote USDT BTC
 ```

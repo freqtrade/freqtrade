@@ -1,4 +1,4 @@
-# Optimization
+# Strategy Customization
 
 This page explains where to customize your strategies, and add new
 indicators.

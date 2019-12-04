@@ -6,7 +6,6 @@ bot constants
 DEFAULT_CONFIG = 'config.json'
 DEFAULT_EXCHANGE = 'bittrex'
 PROCESS_THROTTLE_SECS = 5  # sec
-DEFAULT_TICKER_INTERVAL = 5  # min
 HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
 DEFAULT_HYPEROPT_LOSS = 'DefaultHyperOptLoss'
@@ -66,13 +65,13 @@ MINIMAL_CONFIG = {
 CONF_SCHEMA = {
     'type': 'object',
     'properties': {
-        'max_open_trades': {'type': 'integer', 'minimum': -1},
+        'max_open_trades': {'type': ['integer', 'number'], 'minimum': -1},
         'ticker_interval': {'type': 'string', 'enum': TIMEFRAMES},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'XBT', 'ETH', 'USDT', 'EUR', 'USD']},
         'stake_amount': {
-            "type": ["number", "string"],
-            "minimum": 0.0005,
-            "pattern": UNLIMITED_STAKE_AMOUNT
+            'type': ['number', 'string'],
+            'minimum': 0.0001,
+            'pattern': UNLIMITED_STAKE_AMOUNT
         },
         'fiat_display_currency': {'type': 'string', 'enum': SUPPORTED_FIAT},
         'dry_run': {'type': 'boolean'},
@@ -94,8 +93,8 @@ CONF_SCHEMA = {
         'unfilledtimeout': {
             'type': 'object',
             'properties': {
-                'buy': {'type': 'number', 'minimum': 3},
-                'sell': {'type': 'number', 'minimum': 10}
+                'buy': {'type': 'number', 'minimum': 1},
+                'sell': {'type': 'number', 'minimum': 1}
             }
         },
         'bid_strategy': {
@@ -107,7 +106,7 @@ CONF_SCHEMA = {
                     'maximum': 1,
                     'exclusiveMaximum': False,
                     'use_order_book': {'type': 'boolean'},
-                    'order_book_top': {'type': 'number', 'maximum': 20, 'minimum': 1},
+                    'order_book_top': {'type': 'integer', 'maximum': 20, 'minimum': 1},
                     'check_depth_of_market': {
                         'type': 'object',
                         'properties': {
@@ -123,8 +122,8 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'use_order_book': {'type': 'boolean'},
-                'order_book_min': {'type': 'number', 'minimum': 1},
-                'order_book_max': {'type': 'number', 'minimum': 1, 'maximum': 50},
+                'order_book_min': {'type': 'integer', 'minimum': 1},
+                'order_book_max': {'type': 'integer', 'minimum': 1, 'maximum': 50},
                 'use_sell_signal': {'type': 'boolean'},
                 'sell_profit_only': {'type': 'boolean'},
                 'ignore_roi_if_buy_signal': {'type': 'boolean'}
@@ -197,8 +196,8 @@ CONF_SCHEMA = {
                 'listen_ip_address': {'format': 'ipv4'},
                 'listen_port': {
                     'type': 'integer',
-                    "minimum": 1024,
-                    "maximum": 65535
+                    'minimum': 1024,
+                    'maximum': 65535
                 },
                 'username': {'type': 'string'},
                 'password': {'type': 'string'},
@@ -211,7 +210,7 @@ CONF_SCHEMA = {
         'internals': {
             'type': 'object',
             'properties': {
-                'process_throttle_secs': {'type': 'number'},
+                'process_throttle_secs': {'type': 'integer'},
                 'interval': {'type': 'integer'},
                 'sd_notify': {'type': 'boolean'},
             }
@@ -253,32 +252,32 @@ CONF_SCHEMA = {
         'edge': {
             'type': 'object',
             'properties': {
-                "enabled": {'type': 'boolean'},
-                "process_throttle_secs": {'type': 'integer', 'minimum': 600},
-                "calculate_since_number_of_days": {'type': 'integer'},
-                "allowed_risk": {'type': 'number'},
-                "capital_available_percentage": {'type': 'number'},
-                "stoploss_range_min": {'type': 'number'},
-                "stoploss_range_max": {'type': 'number'},
-                "stoploss_range_step": {'type': 'number'},
-                "minimum_winrate": {'type': 'number'},
-                "minimum_expectancy": {'type': 'number'},
-                "min_trade_number": {'type': 'number'},
-                "max_trade_duration_minute": {'type': 'integer'},
-                "remove_pumps": {'type': 'boolean'}
+                'enabled': {'type': 'boolean'},
+                'process_throttle_secs': {'type': 'integer', 'minimum': 600},
+                'calculate_since_number_of_days': {'type': 'integer'},
+                'allowed_risk': {'type': 'number'},
+                'capital_available_percentage': {'type': 'number'},
+                'stoploss_range_min': {'type': 'number'},
+                'stoploss_range_max': {'type': 'number'},
+                'stoploss_range_step': {'type': 'number'},
+                'minimum_winrate': {'type': 'number'},
+                'minimum_expectancy': {'type': 'number'},
+                'min_trade_number': {'type': 'number'},
+                'max_trade_duration_minute': {'type': 'integer'},
+                'remove_pumps': {'type': 'boolean'}
             },
             'required': ['process_throttle_secs', 'allowed_risk', 'capital_available_percentage']
         }
     },
-    'anyOf': [
-        {'required': ['exchange']}
-    ],
     'required': [
+        'exchange',
         'max_open_trades',
         'stake_currency',
         'stake_amount',
         'dry_run',
         'bid_strategy',
         'unfilledtimeout',
+        'stoploss',
+        'minimal_roi',
     ]
 }

@@ -10,8 +10,9 @@ from freqtrade.utils import (setup_utils_configuration, start_create_userdir,
                              start_download_data, start_list_exchanges,
                              start_list_markets, start_list_timeframes,
                              start_new_hyperopt, start_new_strategy,
-                             start_trading)
-from tests.conftest import get_args, log_has, log_has_re, patch_exchange
+                             start_test_pairlist, start_trading)
+from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
+                            patched_configuration_load_config_file)
 
 
 def test_setup_utils_configuration():
@@ -573,7 +574,7 @@ def test_download_data_no_exchange(mocker, caplog):
     )
     args = [
         "download-data",
-        ]
+    ]
     pargs = get_args(args)
     pargs['config'] = None
     with pytest.raises(OperationalException,
@@ -623,3 +624,36 @@ def test_download_data_trades(mocker, caplog):
     assert dl_mock.call_args[1]['timerange'].starttype == "date"
     assert dl_mock.call_count == 1
     assert convert_mock.call_count == 1
+
+
+def test_start_test_pairlist(mocker, caplog, markets, tickers, default_conf, capsys):
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          markets=PropertyMock(return_value=markets),
+                          exchange_has=MagicMock(return_value=True),
+                          get_tickers=tickers
+                          )
+
+    default_conf['pairlists'] = [
+        {
+            "method": "VolumePairList",
+            "number_assets": 5,
+            "sort_key": "quoteVolume",
+        },
+        {"method": "PrecisionFilter"},
+        {"method": "PriceFilter", "low_price_ratio": 0.02},
+    ]
+
+    patched_configuration_load_config_file(mocker, default_conf)
+    args = [
+        'test-pairlist',
+        '-c', 'config.json.example'
+    ]
+
+    start_test_pairlist(get_args(args))
+
+    assert log_has_re(r"^Using resolved pairlist VolumePairList.*", caplog)
+    assert log_has_re(r"^Using resolved pairlist PrecisionFilter.*", caplog)
+    assert log_has_re(r"^Using resolved pairlist PriceFilter.*", caplog)
+    captured = capsys.readouterr()
+    assert re.match(r"Pairs for .*", captured.out)
+    assert re.match("['ETH/BTC', 'TKN/BTC', 'BLK/BTC', 'LTC/BTC', 'XRP/BTC']", captured.out)

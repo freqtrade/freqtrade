@@ -175,6 +175,9 @@ class Hyperopt:
         if self.has_space('stoploss'):
             result['stoploss'] = {p.name: params.get(p.name)
                                   for p in self.hyperopt_space('stoploss')}
+        if self.has_space('trailing'):
+            result['trailing'] = {p.name: params.get(p.name)
+                                  for p in self.hyperopt_space('trailing')}
 
         return result
 
@@ -196,7 +199,7 @@ class Hyperopt:
 
         if print_json:
             result_dict: Dict = {}
-            for s in ['buy', 'sell', 'roi', 'stoploss']:
+            for s in ['buy', 'sell', 'roi', 'stoploss', 'trailing']:
                 Hyperopt._params_update_for_json(result_dict, params, s)
             print(rapidjson.dumps(result_dict, default=str, number_mode=rapidjson.NM_NATIVE))
 
@@ -205,6 +208,7 @@ class Hyperopt:
             Hyperopt._params_pretty_print(params, 'sell', "Sell hyperspace params:")
             Hyperopt._params_pretty_print(params, 'roi', "ROI table:")
             Hyperopt._params_pretty_print(params, 'stoploss', "Stoploss:")
+            Hyperopt._params_pretty_print(params, 'trailing', "Trailing stop:")
 
     @staticmethod
     def _params_update_for_json(result_dict, params, space: str):
@@ -220,7 +224,7 @@ class Hyperopt:
                 result_dict['minimal_roi'] = OrderedDict(
                     (str(k), v) for k, v in space_params.items()
                 )
-            else:  # 'stoploss'
+            else:  # 'stoploss', 'trailing'
                 result_dict.update(space_params)
 
     @staticmethod
@@ -285,9 +289,13 @@ class Hyperopt:
 
     def has_space(self, space: str) -> bool:
         """
-        Tell if a space value is contained in the configuration
+        Tell if the space value is contained in the configuration
         """
-        return any(s in self.config['spaces'] for s in [space, 'all'])
+        # The 'trailing' space is not included in the 'default' set of spaces
+        if space == 'trailing':
+            return any(s in self.config['spaces'] for s in [space, 'all'])
+        else:
+            return any(s in self.config['spaces'] for s in [space, 'all', 'default'])
 
     def hyperopt_space(self, space: Optional[str] = None) -> List[Dimension]:
         """
@@ -297,18 +305,27 @@ class Hyperopt:
         for all hyperspaces used.
         """
         spaces: List[Dimension] = []
+
         if space == 'buy' or (space is None and self.has_space('buy')):
             logger.debug("Hyperopt has 'buy' space")
             spaces += self.custom_hyperopt.indicator_space()
+
         if space == 'sell' or (space is None and self.has_space('sell')):
             logger.debug("Hyperopt has 'sell' space")
             spaces += self.custom_hyperopt.sell_indicator_space()
+
         if space == 'roi' or (space is None and self.has_space('roi')):
             logger.debug("Hyperopt has 'roi' space")
             spaces += self.custom_hyperopt.roi_space()
+
         if space == 'stoploss' or (space is None and self.has_space('stoploss')):
             logger.debug("Hyperopt has 'stoploss' space")
             spaces += self.custom_hyperopt.stoploss_space()
+
+        if space == 'trailing' or (space is None and self.has_space('trailing')):
+            logger.debug("Hyperopt has 'trailing' space")
+            spaces += self.custom_hyperopt.trailing_space()
+
         return spaces
 
     def generate_optimizer(self, raw_params: List[Any], iteration=None) -> Dict:
@@ -333,6 +350,15 @@ class Hyperopt:
 
         if self.has_space('stoploss'):
             self.backtesting.strategy.stoploss = params_dict['stoploss']
+
+        if self.has_space('trailing'):
+            self.backtesting.strategy.trailing_stop = params_dict['trailing_stop']
+            self.backtesting.strategy.trailing_stop_positive = \
+                    params_dict['trailing_stop_positive']
+            self.backtesting.strategy.trailing_stop_positive_offset = \
+                    params_dict['trailing_stop_positive_offset']
+            self.backtesting.strategy.trailing_only_offset_is_reached = \
+                    params_dict['trailing_only_offset_is_reached']
 
         processed = load(self.tickerdata_pickle)
 

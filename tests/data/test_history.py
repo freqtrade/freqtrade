@@ -74,8 +74,8 @@ def test_load_data_30min_ticker(mocker, caplog, default_conf, testdatadir) -> No
 
 def test_load_data_7min_ticker(mocker, caplog, default_conf, testdatadir) -> None:
     ld = history.load_pair_history(pair='UNITTEST/BTC', timeframe='7m', datadir=testdatadir)
-    assert not isinstance(ld, DataFrame)
-    assert ld is None
+    assert isinstance(ld, DataFrame)
+    assert ld.empty
     assert log_has(
         'No history data for pair: "UNITTEST/BTC", timeframe: 7m. '
         'Use `freqtrade download-data` to download the data', caplog
