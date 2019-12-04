@@ -346,11 +346,8 @@ def start_test_pairlist(args: Dict[str, Any]) -> None:
 
     for curr, pairlist in results.items():
         print(f"Pairs for {curr}: ")
-        summary_str = ""
-        if args.get('print_list', False):
-            # print data as a list, with human-readable summary
-            print(f"{summary_str}: {', '.join(pairlist)}.")
-        elif args.get('print_one_column', False):
+
+        if args.get('print_one_column', False):
             print('\n'.join(pairlist))
         elif args.get('list_pairs_print_json', False):
             print(rapidjson.dumps(list(pairlist), default=str))
