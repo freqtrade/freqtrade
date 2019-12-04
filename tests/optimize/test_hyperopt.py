@@ -249,7 +249,7 @@ def test_start(mocker, default_conf, caplog) -> None:
 
 def test_start_no_data(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
-    mocker.patch('freqtrade.data.history.load_pair_history', MagicMock(return_value=None))
+    mocker.patch('freqtrade.data.history.load_pair_history', MagicMock(return_value=pd.DataFrame))
     mocker.patch(
         'freqtrade.optimize.hyperopt.get_timeframe',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
