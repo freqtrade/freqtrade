@@ -494,7 +494,7 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) ->
     def get_timeframe(input1):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
-    mocker.patch('freqtrade.data.history.load_pair_history', MagicMock(return_value=None))
+    mocker.patch('freqtrade.data.history.load_pair_history', MagicMock(return_value=pd.DataFrame()))
     mocker.patch('freqtrade.data.history.get_timeframe', get_timeframe)
     mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', MagicMock())
     patch_exchange(mocker)
