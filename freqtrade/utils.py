@@ -345,7 +345,8 @@ def start_test_pairlist(args: Dict[str, Any]) -> None:
         results[curr] = pairlists.whitelist
 
     for curr, pairlist in results.items():
-        print(f"Pairs for {curr}: ")
+        if not args.get('print_one_column', False):
+            print(f"Pairs for {curr}: ")
 
         if args.get('print_one_column', False):
             print('\n'.join(pairlist))
