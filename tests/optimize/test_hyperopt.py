@@ -637,7 +637,7 @@ def test_generate_optimizer(mocker, default_conf) -> None:
                                     'sell-rsi-enabled': False,
                                     'sell-rsi-value': 0,
                                     'sell-trigger': 'macd_cross_signal'},
-                           'stoploss': -0.4},
+                           'stoploss': {'stoploss': -0.4}},
         'params_dict': optimizer_param,
         'results_metrics': {'avg_profit': 2.3117,
                             'duration': 100.0,
@@ -702,7 +702,7 @@ def test_print_json_spaces_all(mocker, default_conf, caplog, capsys) -> None:
         MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {},
                                  'params_details': {'buy': {'mfi-value': None},
                                                     'sell': {'sell-mfi-value': None},
-                                                    'roi': {}, 'stoploss': None}}])
+                                                    'roi': {}, 'stoploss': {'stoploss': None}}}])
     )
     patch_exchange(mocker)
 
@@ -742,7 +742,7 @@ def test_print_json_spaces_roi_stoploss(mocker, default_conf, caplog, capsys) ->
     parallel = mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
         MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {},
-                                'params_details': {'roi': {}, 'stoploss': None}}])
+                                 'params_details': {'roi': {}, 'stoploss': {'stoploss': None}}}])
     )
     patch_exchange(mocker)
 
