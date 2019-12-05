@@ -360,6 +360,7 @@ def start_test_pairlist(args: Dict[str, Any]) -> None:
 
 def start_hyperopt_list(args: Dict[str, Any]) -> None:
     """
+    List hyperopt epochs previously evaluated
     """
     from freqtrade.optimize.hyperopt import Hyperopt
 
@@ -403,6 +404,7 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
 
 def start_hyperopt_show(args: Dict[str, Any]) -> None:
     """
+    Show details of a hyperopt epoch previously evaluated
     """
     from freqtrade.optimize.hyperopt import Hyperopt
 
