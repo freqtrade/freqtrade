@@ -50,6 +50,16 @@ Rarely you may also need to override:
 * `stoploss_space` - for custom stoploss optimization (if you need the range for the stoploss parameter in the optimization hyperspace that differs from default)
 * `trailing_space` - for custom trailing stop optimization (if you need the ranges for the trailing stop parameters in the optimization hyperspace that differ from default)
 
+!!! Tip "Quickly optimize ROI, stoploss and trailing stoploss"
+    You can quickly optimize the spaces `roi`, `stoploss` and `trailing_stoploss` without changing anything from the default hyperopt template by relying on your strategy to do most of the calculations.
+
+    ``` python
+    # Have a working strategy at hand.
+    freqtrade new-hyperopt --hyperopt EmptyHyperopt
+
+    freqtrade hyperopt --hyperopt EmptyHyperopt --spaces roi stoploss trailing --strategy MyWorkingStrategy --config config.json -e 100
+    ``` 
+
 ### 1. Install a Custom Hyperopt File
 
 Put your hyperopt file into the directory `user_data/hyperopts`.
