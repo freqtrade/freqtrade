@@ -262,3 +262,68 @@ Show whitelist when using a [dynamic pairlist](configuration.md#pairlists).
 ```
 freqtrade test-pairlist --config config.json --quote USDT BTC
 ```
+
+## List Hyperopt results
+
+You can list the hyperoptimization epochs the Hyperopt module evaluated previously with the `hyperopt-list` subcommand.
+
+```
+usage: freqtrade hyperopt-list [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                               [-d PATH] [--userdir PATH] [--best]
+                               [--profitable] [--no-color] [--print-json]
+                               [--no-details]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --best                Select only best epochs.
+  --profitable          Select only profitable epochs.
+  --no-color            Disable colorization of hyperopt results. May be
+                        useful if you are redirecting output to a file.
+  --print-json          Print best result detailization in JSON format.
+  --no-details          Do not print best epoch details.
+ ```
+ 
+### Examples
+
+List all results, print details of the best result at the end:
+```
+freqtrade hyperopt-list
+```
+
+List only epochs with positive profit. Do not print the details of the best epoch, so that the list can be iterated in a script:
+```
+freqtrade hyperopt-list --profitable --no-details
+```
+
+## Show details of Hyperopt results
+
+You can show the details of any hyperoptimization epoch previously evaluated by the Hyperopt module with the `hyperopt-show` subcommand.
+
+```
+usage: freqtrade hyperopt-show [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                               [-d PATH] [--userdir PATH] [--best]
+                               [--profitable] [-n INT] [--print-json]
+                               [--no-header]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --best                Select only best epochs.
+  --profitable          Select only profitable epochs.
+  -n INT, --index INT   Specify the index of the epoch to print details for.
+  --print-json          Print best result detailization in JSON format.
+  --no-header           Do not print epoch details header.
+```
+
+### Examples
+
+Print details for the epoch 168 (the number of the epoch is shown by the `hyperopt-list` subcommand or by Hyperopt itself during hyperoptimization run):
+
+```
+freqtrade hyperopt-show -n 168
+```
+
+Prints JSON data with details for the last best epoch (i.e., the best of all epochs):
+
+```
+freqtrade hyperopt-show --best -n -1 --print-json --no-header
+```
