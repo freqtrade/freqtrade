@@ -54,9 +54,9 @@ class Hyperopt:
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
 
-        self.custom_hyperopt = HyperOptResolver(self.config).hyperopt
-
         self.backtesting = Backtesting(self.config)
+
+        self.custom_hyperopt = HyperOptResolver(self.config).hyperopt
 
         self.custom_hyperoptloss = HyperOptLossResolver(self.config).hyperoptloss
         self.calculate_loss = self.custom_hyperoptloss.hyperopt_loss_function
