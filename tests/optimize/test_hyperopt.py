@@ -435,7 +435,8 @@ def test_start_calls_optimizer(mocker, default_conf, caplog, capsys) -> None:
                                  'params': {'buy': {}, 'sell': {}, 'roi': {}, 'stoploss': 0.0}}])
     )
     patch_exchange(mocker)
-
+    # Co-test loading ticker-interval from strategy
+    del default_conf['ticker_interval']
     default_conf.update({'config': 'config.json.example',
                          'hyperopt': 'DefaultHyperOpt',
                          'epochs': 1,
