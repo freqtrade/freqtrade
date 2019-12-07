@@ -801,7 +801,7 @@ def test_validate_whitelist(default_conf):
     conf = deepcopy(default_conf)
     conf['stake_currency'] = 'USDT'
     with pytest.raises(OperationalException,
-                       match="Stake-currency USDT not compatible with pair-whitelist."):
+                       match=r"Stake-currency 'USDT' not compatible with pair-whitelist.*"):
         validate_config_consistency(conf)
 
 
