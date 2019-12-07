@@ -38,7 +38,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Tag as latest for develop builds
-if [ "${GITHUB_REF}" = "develop" ]; then
+if [ "${TAG}" = "develop" ]; then
     docker tag freqtrade:$TAG ${IMAGE_NAME}:latest
 fi
 
