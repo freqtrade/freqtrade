@@ -262,13 +262,22 @@ class Backtesting:
         return ticker
 
     def _get_close_rate(self, sell_row, trade: Trade, sell, trade_dur) -> float:
+        """
+        Get close rate for backtesting result
+        """
         # Special handling if high or low hit STOP_LOSS or ROI
         if sell.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
             # Set close_rate to stoploss
-            closerate = trade.stop_loss
+            return trade.stop_loss
         elif sell.sell_type == (SellType.ROI):
             roi_entry, roi = self.strategy.min_roi_reached_entry(trade_dur)
             if roi is not None:
+                if roi == -1 and roi_entry % self.timeframe_mins == 0:
+                    # When forceselling with ROI=-1, the roi-entry will always be "on the entry".
+                    # If that entry is a multiple of the timeframe (so on open)
+                    # - we'll use open instead of close
+                    return sell_row.open
+
                 # - (Expected abs profit + open_rate + open_fee) / (fee_close -1)
                 closerate = - (trade.open_rate * roi + trade.open_rate *
                                (1 + trade.fee_open)) / (trade.fee_close - 1)
@@ -276,19 +285,13 @@ class Backtesting:
                 # Use the maximum between closerate and low as we
                 # cannot sell outside of a candle.
                 # Applies when a new ROI setting comes in place and the whole candle is above that.
-                closerate = max(closerate, sell_row.low)
-                if roi == -1 and roi_entry % self.timeframe_mins == 0:
-                    # When forceselling with ROI=-1, the roi-entry will always be "on the entry".
-                    # If that entry is a multiple of the timeframe (so on open)
-                    # - we'll use open instead of close
-                    closerate = max(closerate, sell_row.open)
+                return max(closerate, sell_row.low)
 
             else:
                 # This should not be reached...
-                closerate = sell_row.open
+                return sell_row.open
         else:
-            closerate = sell_row.open
-        return closerate
+            return sell_row.open
 
     def _get_sell_trade_entry(
             self, pair: str, buy_row: DataFrame,
