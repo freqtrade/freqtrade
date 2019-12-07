@@ -194,7 +194,10 @@ Since backtesting lacks some detailed information about what happens within a ca
 - Buys happen at open-price
 - Sell signal sells happen at open-price of the following candle
 - Low happens before high for stoploss, protecting capital first.
-- ROI sells are compared to high - but the ROI value is used (e.g. ROI = 2%, high=5% - so the sell will be at 2%)
+- ROI
+  - sells are compared to high - but the ROI value is used (e.g. ROI = 2%, high=5% - so the sell will be at 2%)
+  - sells are never "below the candle", so a ROI of 2% may result in a sell at 2.4% if low was at 2.4% profit
+  - Forcesells caused by `<N>=-1` ROI entries use low as sell value, unless N falls on the candle open (e.g. `120: -1` for 1h candles)
 - Stoploss sells happen exactly at stoploss price, even if low was lower
 - Trailing stoploss
   - High happens first - adjusting stoploss
