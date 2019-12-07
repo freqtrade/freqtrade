@@ -131,3 +131,15 @@ def _validate_whitelist(conf: Dict[str, Any]) -> None:
         if (pl.get('method') == 'StaticPairList'
                 and not conf.get('exchange', {}).get('pair_whitelist')):
             raise OperationalException("StaticPairList requires pair_whitelist to be set.")
+
+        if pl.get('method') == 'StaticPairList':
+            stake = conf['stake_currency']
+            invalid_pairs = []
+            for pair in conf['exchange'].get('pair_whitelist'):
+                if not pair.endswith(f'/{stake}'):
+                    invalid_pairs.append(pair)
+
+            if invalid_pairs:
+                raise OperationalException(
+                    f"Stake-currency '{stake}' not compatible with pair-whitelist. "
+                    f"Please remove the following pairs: {invalid_pairs}")
