@@ -6,7 +6,7 @@ import re
 from datetime import datetime
 from random import choice, randint
 from string import ascii_uppercase
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import ANY, MagicMock, PropertyMock
 
 import arrow
 import pytest
@@ -736,7 +736,9 @@ def test_forcesell_handle(default_conf, update, ticker, fee,
         'profit_percent': 0.0611052,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
-        'sell_reason': SellType.FORCE_SELL.value
+        'sell_reason': SellType.FORCE_SELL.value,
+        'open_date': ANY,
+        'close_date': ANY,
     } == last_msg
 
 
@@ -793,7 +795,9 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee,
         'profit_percent': -0.05478342,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
-        'sell_reason': SellType.FORCE_SELL.value
+        'sell_reason': SellType.FORCE_SELL.value,
+        'open_date': ANY,
+        'close_date': ANY,
     } == last_msg
 
 
@@ -839,7 +843,9 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
         'profit_percent': -0.00589291,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
-        'sell_reason': SellType.FORCE_SELL.value
+        'sell_reason': SellType.FORCE_SELL.value,
+        'open_date': ANY,
+        'close_date': ANY,
     } == msg
 
 
@@ -1224,7 +1230,9 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'profit_percent': -0.57405275,
         'stake_currency': 'ETH',
         'fiat_currency': 'USD',
-        'sell_reason': SellType.STOP_LOSS.value
+        'sell_reason': SellType.STOP_LOSS.value,
+        'open_date': arrow.utcnow().shift(hours=-1),
+        'close_date': arrow.utcnow(),
     })
     assert msg_mock.call_args[0][0] \
         == ('*Binance:* Selling KEY/ETH\n'
@@ -1233,6 +1241,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
             '*Sell Reason:* `stop_loss`\n'
+            '*Duration:* `1:00:00`\n'
             '*Profit:* `-57.41%`` (loss: -0.05746268 ETH`` / -24.812 USD)`')
 
     msg_mock.reset_mock()
@@ -1249,7 +1258,9 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'profit_amount': -0.05746268,
         'profit_percent': -0.57405275,
         'stake_currency': 'ETH',
-        'sell_reason': SellType.STOP_LOSS.value
+        'sell_reason': SellType.STOP_LOSS.value,
+        'open_date': arrow.utcnow().shift(hours=-2, minutes=-30),
+        'close_date': arrow.utcnow(),
     })
     assert msg_mock.call_args[0][0] \
         == ('*Binance:* Selling KEY/ETH\n'
@@ -1258,6 +1269,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
             '*Sell Reason:* `stop_loss`\n'
+            '*Duration:* `2:30:00`\n'
             '*Profit:* `-57.41%`')
     # Reset singleton function to avoid random breaks
     telegram._fiat_converter.convert_amount = old_convamount
@@ -1377,7 +1389,9 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
         'profit_percent': -0.57405275,
         'stake_currency': 'ETH',
         'fiat_currency': 'USD',
-        'sell_reason': SellType.STOP_LOSS.value
+        'sell_reason': SellType.STOP_LOSS.value,
+        'open_date': arrow.utcnow().shift(hours=-2, minutes=-35, seconds=-3),
+        'close_date': arrow.utcnow(),
     })
     assert msg_mock.call_args[0][0] \
         == '*Binance:* Selling KEY/ETH\n' \
@@ -1386,6 +1400,7 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
            '*Open Rate:* `0.00007500`\n' \
            '*Current Rate:* `0.00003201`\n' \
            '*Sell Reason:* `stop_loss`\n' \
+           '*Duration:* `2:35:03`\n' \
            '*Profit:* `-57.41%`'
 
 
