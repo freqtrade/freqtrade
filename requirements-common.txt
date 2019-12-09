@@ -27,4 +27,4 @@ sdnotify==0.3.2
 flask==1.1.1
 
 # Support for colorized terminal output
-colorama==0.4.1
+colorama==0.4.3
