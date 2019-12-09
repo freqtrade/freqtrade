@@ -10,7 +10,8 @@ from freqtrade.utils import (setup_utils_configuration, start_create_userdir,
                              start_download_data, start_list_exchanges,
                              start_list_markets, start_list_timeframes,
                              start_new_hyperopt, start_new_strategy,
-                             start_test_pairlist, start_trading)
+                             start_test_pairlist, start_trading,
+                             start_hyperopt_list, start_hyperopt_show)
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 
@@ -657,3 +658,131 @@ def test_start_test_pairlist(mocker, caplog, markets, tickers, default_conf, cap
     captured = capsys.readouterr()
     assert re.match(r"Pairs for .*", captured.out)
     assert re.match("['ETH/BTC', 'TKN/BTC', 'BLK/BTC', 'LTC/BTC', 'XRP/BTC']", captured.out)
+
+
+def test_hyperopt_list(mocker, capsys, hyperopt_results):
+    mocker.patch(
+        'freqtrade.optimize.hyperopt.Hyperopt.load_previous_results',
+        MagicMock(return_value=hyperopt_results)
+    )
+
+    args = [
+        "hyperopt-list",
+        "--no-details"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_list(pargs)
+    captured = capsys.readouterr()
+    assert all(x in captured.out
+               for x in [" 1/12", " 2/12", " 3/12", " 4/12", " 5/12",
+                         " 6/12", " 7/12", " 8/12", " 9/12", " 10/12",
+                         " 11/12", " 12/12"])
+    args = [
+        "hyperopt-list",
+        "--best",
+        "--no-details"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_list(pargs)
+    captured = capsys.readouterr()
+    assert all(x in captured.out
+               for x in [" 1/12", " 5/12", " 10/12"])
+    assert all(x not in captured.out
+               for x in [" 2/12", " 3/12", " 4/12", " 6/12", " 7/12", " 8/12", " 9/12",
+                         " 11/12", " 12/12"])
+    args = [
+        "hyperopt-list",
+        "--profitable",
+        "--no-details"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_list(pargs)
+    captured = capsys.readouterr()
+    assert all(x in captured.out
+               for x in [" 2/12", " 10/12"])
+    assert all(x not in captured.out
+               for x in [" 1/12", " 3/12", " 4/12", " 5/12", " 6/12", " 7/12", " 8/12", " 9/12",
+                         " 11/12", " 12/12"])
+
+
+def test_hyperopt_show(mocker, capsys, hyperopt_results):
+    mocker.patch(
+        'freqtrade.optimize.hyperopt.Hyperopt.load_previous_results',
+        MagicMock(return_value=hyperopt_results)
+    )
+
+    args = [
+        "hyperopt-show",
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_show(pargs)
+    captured = capsys.readouterr()
+    assert " 12/12" in captured.out
+
+    args = [
+        "hyperopt-show",
+        "--best"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_show(pargs)
+    captured = capsys.readouterr()
+    assert " 10/12" in captured.out
+
+    args = [
+        "hyperopt-show",
+        "-n", "1"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_show(pargs)
+    captured = capsys.readouterr()
+    assert " 1/12" in captured.out
+
+    args = [
+        "hyperopt-show",
+        "--best",
+        "-n", "2"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_show(pargs)
+    captured = capsys.readouterr()
+    assert " 5/12" in captured.out
+
+    args = [
+        "hyperopt-show",
+        "--best",
+        "-n", "-1"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_show(pargs)
+    captured = capsys.readouterr()
+    assert " 10/12" in captured.out
+
+    args = [
+        "hyperopt-show",
+        "--best",
+        "-n", "-4"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    with pytest.raises(OperationalException,
+                       match="The index of the epoch to show should be greater than -4."):
+        start_hyperopt_show(pargs)
+
+    args = [
+        "hyperopt-show",
+        "--best",
+        "-n", "4"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    with pytest.raises(OperationalException,
+                       match="The index of the epoch to show should be less than 4."):
+        start_hyperopt_show(pargs)

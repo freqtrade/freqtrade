@@ -357,8 +357,9 @@ def test_onlyprofit_loss_prefers_higher_profits(default_conf, hyperopt_results) 
 def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
     hyperopt.current_best_loss = 2
     hyperopt.total_epochs = 2
-    hyperopt.log_results(
+    hyperopt.print_results(
         {
+            'is_best': True,
             'loss': 1,
             'current_epoch': 2,  # This starts from 1 (in a human-friendly manner)
             'results_explanation': 'foo.',
@@ -371,8 +372,9 @@ def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
 
 def test_no_log_if_loss_does_not_improve(hyperopt, caplog) -> None:
     hyperopt.current_best_loss = 2
-    hyperopt.log_results(
+    hyperopt.print_results(
         {
+            'is_best': False,
             'loss': 3,
             'current_epoch': 1,
         }
@@ -400,8 +402,8 @@ def test_save_trials_saves_trials(mocker, hyperopt, testdatadir, caplog) -> None
 def test_read_trials_returns_trials_file(mocker, hyperopt, testdatadir, caplog) -> None:
     trials = create_trials(mocker, hyperopt, testdatadir)
     mock_load = mocker.patch('freqtrade.optimize.hyperopt.load', return_value=trials)
-    hyperopt_trial = hyperopt.read_trials()
     trials_file = testdatadir / 'optimize' / 'ut_trials.pickle'
+    hyperopt_trial = hyperopt._read_trials(trials_file)
     assert log_has(f"Reading Trials from '{trials_file}'", caplog)
     assert hyperopt_trial == trials
     mock_load.assert_called_once()
@@ -473,8 +475,22 @@ def test_format_results(hyperopt):
     ]
     labels = ['currency', 'profit_percent', 'profit_abs', 'trade_duration']
     df = pd.DataFrame.from_records(trades, columns=labels)
+    results_metrics = hyperopt._calculate_results_metrics(df)
+    results_explanation = hyperopt._format_results_explanation_string(results_metrics)
+    total_profit = results_metrics['total_profit']
 
-    result = hyperopt.format_results(df)
+    results = {
+        'loss': 0.0,
+        'params_dict': None,
+        'params_details': None,
+        'results_metrics': results_metrics,
+        'results_explanation': results_explanation,
+        'total_profit': total_profit,
+        'current_epoch': 1,
+        'is_initial_point': True,
+    }
+
+    result = hyperopt._format_explanation_string(results, 1)
     assert result.find(' 66.67%')
     assert result.find('Total profit 1.00000000 BTC')
     assert result.find('2.0000Σ %')
@@ -486,7 +502,9 @@ def test_format_results(hyperopt):
         ('XPR/EUR', -1, -2, -246)
     ]
     df = pd.DataFrame.from_records(trades, columns=labels)
-    result = hyperopt.format_results(df)
+    results_metrics = hyperopt._calculate_results_metrics(df)
+    results['total_profit'] = results_metrics['total_profit']
+    result = hyperopt._format_explanation_string(results, 1)
     assert result.find('Total profit 1.00000000 EUR')
 
 
@@ -623,10 +641,42 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     }
     response_expected = {
         'loss': 1.9840569076926293,
-        'results_explanation': ('     1 trades. Avg profit  2.31%. Total profit  0.00023300 BTC '
+        'results_explanation': ('     1 trades. Avg profit   2.31%. Total profit  0.00023300 BTC '
                                 '(   2.31\N{GREEK CAPITAL LETTER SIGMA}%). Avg duration 100.0 mins.'
                                 ).encode(locale.getpreferredencoding(), 'replace').decode('utf-8'),
-        'params': optimizer_param,
+        'params_details': {'buy': {'adx-enabled': False,
+                                   'adx-value': 0,
+                                   'fastd-enabled': True,
+                                   'fastd-value': 35,
+                                   'mfi-enabled': False,
+                                   'mfi-value': 0,
+                                   'rsi-enabled': False,
+                                   'rsi-value': 0,
+                                   'trigger': 'macd_cross_signal'},
+                           'roi': {0: 0.12000000000000001,
+                                   20.0: 0.02,
+                                   50.0: 0.01,
+                                   110.0: 0},
+                           'sell': {'sell-adx-enabled': False,
+                                    'sell-adx-value': 0,
+                                    'sell-fastd-enabled': True,
+                                    'sell-fastd-value': 75,
+                                    'sell-mfi-enabled': False,
+                                    'sell-mfi-value': 0,
+                                    'sell-rsi-enabled': False,
+                                    'sell-rsi-value': 0,
+                                    'sell-trigger': 'macd_cross_signal'},
+                           'stoploss': {'stoploss': -0.4},
+                           'trailing': {'trailing_only_offset_is_reached': False,
+                                        'trailing_stop': True,
+                                        'trailing_stop_positive': 0.02,
+                                        'trailing_stop_positive_offset': 0.1}},
+        'params_dict': optimizer_param,
+        'results_metrics': {'avg_profit': 2.3117,
+                            'duration': 100.0,
+                            'profit': 2.3117,
+                            'total_profit': 0.000233,
+                            'trade_count': 1},
         'total_profit': 0.00023300
     }
 
@@ -682,7 +732,11 @@ def test_print_json_spaces_all(mocker, default_conf, caplog, capsys) -> None:
 
     parallel = mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
-        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {}}])
+        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {},
+                                 'params_details': {'buy': {'mfi-value': None},
+                                                    'sell': {'sell-mfi-value': None},
+                                                    'roi': {}, 'stoploss': {'stoploss': None},
+                                                    'trailing': {'trailing_stop': None}}}])
     )
     patch_exchange(mocker)
 
@@ -704,7 +758,7 @@ def test_print_json_spaces_all(mocker, default_conf, caplog, capsys) -> None:
     parallel.assert_called_once()
 
     out, err = capsys.readouterr()
-    assert '{"params":{"mfi-value":null,"fastd-value":null,"adx-value":null,"rsi-value":null,"mfi-enabled":null,"fastd-enabled":null,"adx-enabled":null,"rsi-enabled":null,"trigger":null,"sell-mfi-value":null,"sell-fastd-value":null,"sell-adx-value":null,"sell-rsi-value":null,"sell-mfi-enabled":null,"sell-fastd-enabled":null,"sell-adx-enabled":null,"sell-rsi-enabled":null,"sell-trigger":null},"minimal_roi":{},"stoploss":null,"trailing_stop":null,"trailing_stop_positive":null,"trailing_stop_positive_offset":null,"trailing_only_offset_is_reached":null}' in out  # noqa: E501
+    assert '{"params":{"mfi-value":null,"sell-mfi-value":null},"minimal_roi":{},"stoploss":null,"trailing_stop":null}' in out  # noqa: E501
     assert dumper.called
     # Should be called twice, once for tickerdata, once to save evaluations
     assert dumper.call_count == 2
@@ -721,7 +775,10 @@ def test_print_json_spaces_default(mocker, default_conf, caplog, capsys) -> None
 
     parallel = mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
-        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {}}])
+        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {},
+                                 'params_details': {'buy': {'mfi-value': None},
+                                                    'sell': {'sell-mfi-value': None},
+                                                    'roi': {}, 'stoploss': {'stoploss': None}}}])
     )
     patch_exchange(mocker)
 
@@ -743,7 +800,7 @@ def test_print_json_spaces_default(mocker, default_conf, caplog, capsys) -> None
     parallel.assert_called_once()
 
     out, err = capsys.readouterr()
-    assert '{"params":{"mfi-value":null,"fastd-value":null,"adx-value":null,"rsi-value":null,"mfi-enabled":null,"fastd-enabled":null,"adx-enabled":null,"rsi-enabled":null,"trigger":null,"sell-mfi-value":null,"sell-fastd-value":null,"sell-adx-value":null,"sell-rsi-value":null,"sell-mfi-enabled":null,"sell-fastd-enabled":null,"sell-adx-enabled":null,"sell-rsi-enabled":null,"sell-trigger":null},"minimal_roi":{},"stoploss":null}' in out  # noqa: E501
+    assert '{"params":{"mfi-value":null,"sell-mfi-value":null},"minimal_roi":{},"stoploss":null}' in out  # noqa: E501
     assert dumper.called
     # Should be called twice, once for tickerdata, once to save evaluations
     assert dumper.call_count == 2
@@ -760,7 +817,8 @@ def test_print_json_spaces_roi_stoploss(mocker, default_conf, caplog, capsys) ->
 
     parallel = mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
-        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {}}])
+        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {},
+                                 'params_details': {'roi': {}, 'stoploss': {'stoploss': None}}}])
     )
     patch_exchange(mocker)
 

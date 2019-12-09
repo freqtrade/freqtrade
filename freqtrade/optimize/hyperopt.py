@@ -22,6 +22,7 @@ from pandas import DataFrame
 from skopt import Optimizer
 from skopt.space import Dimension
 
+from freqtrade import OperationalException
 from freqtrade.data.history import get_timeframe, trim_dataframe
 from freqtrade.misc import plural, round_dict
 from freqtrade.optimize.backtesting import Backtesting
@@ -74,10 +75,10 @@ class Hyperopt:
         else:
             logger.info("Continuing on previous hyperopt results.")
 
+        self.num_trials_saved = 0
+
         # Previous evaluations
         self.trials: List = []
-
-        self.num_trials_saved = 0
 
         # Populate functions here (hasattr is slow so should not be run during "regular" operations)
         if hasattr(self.custom_hyperopt, 'populate_indicators'):
@@ -104,6 +105,10 @@ class Hyperopt:
                 self.config['ask_strategy'] = {}
             self.config['ask_strategy']['use_sell_signal'] = True
 
+        self.print_all = self.config.get('print_all', False)
+        self.print_colorized = self.config.get('print_colorized', False)
+        self.print_json = self.config.get('print_json', False)
+
     @staticmethod
     def get_lock_filename(config) -> str:
 
@@ -119,20 +124,18 @@ class Hyperopt:
                 logger.info(f"Removing `{p}`.")
                 p.unlink()
 
-    def get_args(self, params):
+    def _get_params_dict(self, raw_params: List[Any]) -> Dict:
 
-        dimensions = self.dimensions
+        dimensions: List[Dimension] = self.dimensions
 
         # Ensure the number of dimensions match
-        # the number of parameters in the list x.
-        if len(params) != len(dimensions):
-            raise ValueError('Mismatch in number of search-space dimensions. '
-                             f'len(dimensions)=={len(dimensions)} and len(x)=={len(params)}')
+        # the number of parameters in the list.
+        if len(raw_params) != len(dimensions):
+            raise ValueError('Mismatch in number of search-space dimensions.')
 
-        # Create a dict where the keys are the names of the dimensions
-        # and the values are taken from the list of parameters x.
-        arg_dict = {dim.name: value for dim, value in zip(dimensions, params)}
-        return arg_dict
+        # Return a dict where the keys are the names of the dimensions
+        # and the values are taken from the list of parameters.
+        return {d.name: v for d, v in zip(dimensions, raw_params)}
 
     def save_trials(self, final: bool = False) -> None:
         """
@@ -147,48 +150,71 @@ class Hyperopt:
             logger.info(f"{num_trials} {plural(num_trials, 'epoch')} "
                         f"saved to '{self.trials_file}'.")
 
-    def read_trials(self) -> List:
+    @staticmethod
+    def _read_trials(trials_file) -> List:
         """
         Read hyperopt trials file
         """
-        logger.info("Reading Trials from '%s'", self.trials_file)
-        trials = load(self.trials_file)
-        self.trials_file.unlink()
+        logger.info("Reading Trials from '%s'", trials_file)
+        trials = load(trials_file)
         return trials
 
-    def log_trials_result(self) -> None:
+    def _get_params_details(self, params: Dict) -> Dict:
         """
-        Display Best hyperopt result
+        Return the params for each space
         """
-        # This is printed when Ctrl+C is pressed quickly, before first epochs have
-        # a chance to be evaluated.
-        if not self.trials:
-            print("No epochs evaluated yet, no best result.")
-            return
+        result: Dict = {}
 
-        results = sorted(self.trials, key=itemgetter('loss'))
-        best_result = results[0]
-        params = best_result['params']
-        log_str = self.format_results_logstring(best_result)
+        if self.has_space('buy'):
+            result['buy'] = {p.name: params.get(p.name)
+                             for p in self.hyperopt_space('buy')}
+        if self.has_space('sell'):
+            result['sell'] = {p.name: params.get(p.name)
+                              for p in self.hyperopt_space('sell')}
+        if self.has_space('roi'):
+            result['roi'] = self.custom_hyperopt.generate_roi_table(params)
+        if self.has_space('stoploss'):
+            result['stoploss'] = {p.name: params.get(p.name)
+                                  for p in self.hyperopt_space('stoploss')}
+        if self.has_space('trailing'):
+            result['trailing'] = {p.name: params.get(p.name)
+                                  for p in self.hyperopt_space('trailing')}
 
-        print(f"\nBest result:\n\n{log_str}\n")
+        return result
 
-        if self.config.get('print_json'):
+    @staticmethod
+    def print_epoch_details(results, total_epochs, print_json: bool,
+                            no_header: bool = False, header_str: str = None) -> None:
+        """
+        Display details of the hyperopt result
+        """
+        params = results.get('params_details', {})
+
+        # Default header string
+        if header_str is None:
+            header_str = "Best result"
+
+        if not no_header:
+            explanation_str = Hyperopt._format_explanation_string(results, total_epochs)
+            print(f"\n{header_str}:\n\n{explanation_str}\n")
+
+        if print_json:
             result_dict: Dict = {}
             for s in ['buy', 'sell', 'roi', 'stoploss', 'trailing']:
-                self._params_update_for_json(result_dict, params, s)
+                Hyperopt._params_update_for_json(result_dict, params, s)
             print(rapidjson.dumps(result_dict, default=str, number_mode=rapidjson.NM_NATIVE))
 
         else:
-            self._params_pretty_print(params, 'buy', "Buy hyperspace params:")
-            self._params_pretty_print(params, 'sell', "Sell hyperspace params:")
-            self._params_pretty_print(params, 'roi', "ROI table:")
-            self._params_pretty_print(params, 'stoploss', "Stoploss:")
-            self._params_pretty_print(params, 'trailing', "Trailing stop:")
+            Hyperopt._params_pretty_print(params, 'buy', "Buy hyperspace params:")
+            Hyperopt._params_pretty_print(params, 'sell', "Sell hyperspace params:")
+            Hyperopt._params_pretty_print(params, 'roi', "ROI table:")
+            Hyperopt._params_pretty_print(params, 'stoploss', "Stoploss:")
+            Hyperopt._params_pretty_print(params, 'trailing', "Trailing stop:")
 
-    def _params_update_for_json(self, result_dict, params, space: str):
-        if self.has_space(space):
-            space_params = self.space_params(params, space)
+    @staticmethod
+    def _params_update_for_json(result_dict, params, space: str):
+        if space in params:
+            space_params = Hyperopt._space_params(params, space)
             if space in ['buy', 'sell']:
                 result_dict.setdefault('params', {}).update(space_params)
             elif space == 'roi':
@@ -202,49 +228,65 @@ class Hyperopt:
             else:  # 'stoploss', 'trailing'
                 result_dict.update(space_params)
 
-    def _params_pretty_print(self, params, space: str, header: str):
-        if self.has_space(space):
-            space_params = self.space_params(params, space, 5)
-            print(header)
-            pprint(space_params, indent=4)
+    @staticmethod
+    def _params_pretty_print(params, space: str, header: str):
+        if space in params:
+            space_params = Hyperopt._space_params(params, space, 5)
+            if space == 'stoploss':
+                print(header, space_params.get('stoploss'))
+            else:
+                print(header)
+                pprint(space_params, indent=4)
 
-    def is_best(self, results) -> bool:
-        return results['loss'] < self.current_best_loss
+    @staticmethod
+    def _space_params(params, space: str, r: int = None) -> Dict:
+        d = params[space]
+        # Round floats to `r` digits after the decimal point if requested
+        return round_dict(d, r) if r else d
 
-    def log_results(self, results) -> None:
+    @staticmethod
+    def is_best_loss(results, current_best_loss) -> bool:
+        return results['loss'] < current_best_loss
+
+    def print_results(self, results) -> None:
         """
         Log results if it is better than any previous evaluation
         """
-        print_all = self.config.get('print_all', False)
-        is_best_loss = self.is_best(results)
-
-        if not print_all:
+        is_best = results['is_best']
+        if not self.print_all:
+            # Print '\n' after each 100th epoch to separate dots from the log messages.
+            # Otherwise output is messy on a terminal.
             print('.', end='' if results['current_epoch'] % 100 != 0 else None)  # type: ignore
             sys.stdout.flush()
 
-        if print_all or is_best_loss:
-            if is_best_loss:
-                self.current_best_loss = results['loss']
-            log_str = self.format_results_logstring(results)
-            # Colorize output
-            if self.config.get('print_colorized', False):
-                if results['total_profit'] > 0:
-                    log_str = Fore.GREEN + log_str
-                if print_all and is_best_loss:
-                    log_str = Style.BRIGHT + log_str
-            if print_all:
-                print(log_str)
-            else:
-                print(f'\n{log_str}')
+        if self.print_all or is_best:
+            if not self.print_all:
+                # Separate the results explanation string from dots
+                print("\n")
+            self.print_results_explanation(results, self.total_epochs, self.print_all,
+                                           self.print_colorized)
 
-    def format_results_logstring(self, results) -> str:
-        current = results['current_epoch']
-        total = self.total_epochs
-        res = results['results_explanation']
-        loss = results['loss']
-        log_str = f'{current:5d}/{total}: {res} Objective: {loss:.5f}'
-        log_str = f'*{log_str}' if results['is_initial_point'] else f' {log_str}'
-        return log_str
+    @staticmethod
+    def print_results_explanation(results, total_epochs, highlight_best: bool,
+                                  print_colorized: bool) -> None:
+        """
+        Log results explanation string
+        """
+        explanation_str = Hyperopt._format_explanation_string(results, total_epochs)
+        # Colorize output
+        if print_colorized:
+            if results['total_profit'] > 0:
+                explanation_str = Fore.GREEN + explanation_str
+            if highlight_best and results['is_best']:
+                explanation_str = Style.BRIGHT + explanation_str
+        print(explanation_str)
+
+    @staticmethod
+    def _format_explanation_string(results, total_epochs) -> str:
+        return (("*" if results['is_initial_point'] else " ") +
+                f"{results['current_epoch']:5d}/{total_epochs}: " +
+                f"{results['results_explanation']} " +
+                f"Objective: {results['loss']:.5f}")
 
     def has_space(self, space: str) -> bool:
         """
@@ -287,49 +329,43 @@ class Hyperopt:
 
         return spaces
 
-    def space_params(self, params, space: str, r: int = None) -> Dict:
-        if space == 'roi':
-            d = self.custom_hyperopt.generate_roi_table(params)
-        else:
-            d = {p.name: params.get(p.name) for p in self.hyperopt_space(space)}
-        # Round floats to `r` digits after the decimal point if requested
-        return round_dict(d, r) if r else d
-
-    def generate_optimizer(self, _params: Dict, iteration=None) -> Dict:
+    def generate_optimizer(self, raw_params: List[Any], iteration=None) -> Dict:
         """
         Used Optimize function. Called once per epoch to optimize whatever is configured.
         Keep this function as optimized as possible!
         """
-        params = self.get_args(_params)
+        params_dict = self._get_params_dict(raw_params)
+        params_details = self._get_params_details(params_dict)
 
         if self.has_space('roi'):
             self.backtesting.strategy.minimal_roi = \
-                    self.custom_hyperopt.generate_roi_table(params)
+                    self.custom_hyperopt.generate_roi_table(params_dict)
 
         if self.has_space('buy'):
             self.backtesting.strategy.advise_buy = \
-                    self.custom_hyperopt.buy_strategy_generator(params)
+                    self.custom_hyperopt.buy_strategy_generator(params_dict)
 
         if self.has_space('sell'):
             self.backtesting.strategy.advise_sell = \
-                    self.custom_hyperopt.sell_strategy_generator(params)
+                    self.custom_hyperopt.sell_strategy_generator(params_dict)
 
         if self.has_space('stoploss'):
-            self.backtesting.strategy.stoploss = params['stoploss']
+            self.backtesting.strategy.stoploss = params_dict['stoploss']
 
         if self.has_space('trailing'):
-            self.backtesting.strategy.trailing_stop = params['trailing_stop']
-            self.backtesting.strategy.trailing_stop_positive = params['trailing_stop_positive']
+            self.backtesting.strategy.trailing_stop = params_dict['trailing_stop']
+            self.backtesting.strategy.trailing_stop_positive = \
+                params_dict['trailing_stop_positive']
             self.backtesting.strategy.trailing_stop_positive_offset = \
-                params['trailing_stop_positive_offset']
+                params_dict['trailing_stop_positive_offset']
             self.backtesting.strategy.trailing_only_offset_is_reached = \
-                params['trailing_only_offset_is_reached']
+                params_dict['trailing_only_offset_is_reached']
 
         processed = load(self.tickerdata_pickle)
 
         min_date, max_date = get_timeframe(processed)
 
-        results = self.backtesting.backtest(
+        backtesting_results = self.backtesting.backtest(
             {
                 'stake_amount': self.config['stake_amount'],
                 'processed': processed,
@@ -339,58 +375,63 @@ class Hyperopt:
                 'end_date': max_date,
             }
         )
-        results_explanation = self.format_results(results)
+        return self._get_results_dict(backtesting_results, min_date, max_date,
+                                      params_dict, params_details)
 
-        trade_count = len(results.index)
-        total_profit = results.profit_abs.sum()
+    def _get_results_dict(self, backtesting_results, min_date, max_date,
+                          params_dict, params_details):
+        results_metrics = self._calculate_results_metrics(backtesting_results)
+        results_explanation = self._format_results_explanation_string(results_metrics)
+
+        trade_count = results_metrics['trade_count']
+        total_profit = results_metrics['total_profit']
 
         # If this evaluation contains too short amount of trades to be
         # interesting -- consider it as 'bad' (assigned max. loss value)
         # in order to cast this hyperspace point away from optimization
         # path. We do not want to optimize 'hodl' strategies.
-        if trade_count < self.config['hyperopt_min_trades']:
-            return {
-                'loss': MAX_LOSS,
-                'params': params,
-                'results_explanation': results_explanation,
-                'total_profit': total_profit,
-            }
-
-        loss = self.calculate_loss(results=results, trade_count=trade_count,
-                                   min_date=min_date.datetime, max_date=max_date.datetime)
-
+        loss: float = MAX_LOSS
+        if trade_count >= self.config['hyperopt_min_trades']:
+            loss = self.calculate_loss(results=backtesting_results, trade_count=trade_count,
+                                       min_date=min_date.datetime, max_date=max_date.datetime)
         return {
             'loss': loss,
-            'params': params,
+            'params_dict': params_dict,
+            'params_details': params_details,
+            'results_metrics': results_metrics,
             'results_explanation': results_explanation,
             'total_profit': total_profit,
         }
 
-    def format_results(self, results: DataFrame) -> str:
+    def _calculate_results_metrics(self, backtesting_results: DataFrame) -> Dict:
+        return {
+            'trade_count': len(backtesting_results.index),
+            'avg_profit': backtesting_results.profit_percent.mean() * 100.0,
+            'total_profit': backtesting_results.profit_abs.sum(),
+            'profit': backtesting_results.profit_percent.sum() * 100.0,
+            'duration': backtesting_results.trade_duration.mean(),
+        }
+
+    def _format_results_explanation_string(self, results_metrics: Dict) -> str:
         """
         Return the formatted results explanation in a string
         """
-        trades = len(results.index)
-        avg_profit = results.profit_percent.mean() * 100.0
-        total_profit = results.profit_abs.sum()
         stake_cur = self.config['stake_currency']
-        profit = results.profit_percent.sum() * 100.0
-        duration = results.trade_duration.mean()
-
-        return (f'{trades:6d} trades. Avg profit {avg_profit: 5.2f}%. '
-                f'Total profit {total_profit: 11.8f} {stake_cur} '
-                f'({profit: 7.2f}\N{GREEK CAPITAL LETTER SIGMA}%). '
-                f'Avg duration {duration:5.1f} mins.'
+        return (f"{results_metrics['trade_count']:6d} trades. "
+                f"Avg profit {results_metrics['avg_profit']: 6.2f}%. "
+                f"Total profit {results_metrics['total_profit']: 11.8f} {stake_cur} "
+                f"({results_metrics['profit']: 7.2f}\N{GREEK CAPITAL LETTER SIGMA}%). "
+                f"Avg duration {results_metrics['duration']:5.1f} mins."
                 ).encode(locale.getpreferredencoding(), 'replace').decode('utf-8')
 
-    def get_optimizer(self, dimensions, cpu_count) -> Optimizer:
+    def get_optimizer(self, dimensions: List[Dimension], cpu_count) -> Optimizer:
         return Optimizer(
             dimensions,
             base_estimator="ET",
             acq_optimizer="auto",
             n_initial_points=INITIAL_POINTS,
             acq_optimizer_kwargs={'n_jobs': cpu_count},
-            random_state=self.config.get('hyperopt_random_state', None)
+            random_state=self.config.get('hyperopt_random_state', None),
         )
 
     def fix_optimizer_models_list(self):
@@ -414,14 +455,20 @@ class Hyperopt:
         return parallel(delayed(
                         wrap_non_picklable_objects(self.generate_optimizer))(v, i) for v in asked)
 
-    def load_previous_results(self):
-        """ read trials file if we have one """
-        if self.trials_file.is_file() and self.trials_file.stat().st_size > 0:
-            self.trials = self.read_trials()
-            logger.info(
-                'Loaded %d previous evaluations from disk.',
-                len(self.trials)
-            )
+    @staticmethod
+    def load_previous_results(trials_file) -> List:
+        """
+        Load data for epochs from the file if we have one
+        """
+        trials: List = []
+        if trials_file.is_file() and trials_file.stat().st_size > 0:
+            trials = Hyperopt._read_trials(trials_file)
+            if trials[0].get('is_best') is None:
+                raise OperationalException(
+                        "The file with Hyperopt results is incompatible with this version "
+                        "of Freqtrade and cannot be loaded.")
+            logger.info(f"Loaded {len(trials)} previous evaluations from disk.")
+        return trials
 
     def start(self) -> None:
         data, timerange = self.backtesting.load_bt_data()
@@ -442,17 +489,17 @@ class Hyperopt:
         # We don't need exchange instance anymore while running hyperopt
         self.backtesting.exchange = None  # type: ignore
 
-        self.load_previous_results()
+        self.trials = self.load_previous_results(self.trials_file)
 
         cpus = cpu_count()
         logger.info(f"Found {cpus} CPU cores. Let's make them scream!")
         config_jobs = self.config.get('hyperopt_jobs', -1)
         logger.info(f'Number of parallel jobs set as: {config_jobs}')
 
-        self.dimensions = self.hyperopt_space()
+        self.dimensions: List[Dimension] = self.hyperopt_space()
         self.opt = self.get_optimizer(self.dimensions, config_jobs)
 
-        if self.config.get('print_colorized', False):
+        if self.print_colorized:
             colorama_init(autoreset=True)
 
         try:
@@ -466,19 +513,38 @@ class Hyperopt:
                     self.opt.tell(asked, [v['loss'] for v in f_val])
                     self.fix_optimizer_models_list()
                     for j in range(jobs):
-                        # Use human-friendly index here (starting from 1)
+                        # Use human-friendly indexes here (starting from 1)
                         current = i * jobs + j + 1
                         val = f_val[j]
                         val['current_epoch'] = current
                         val['is_initial_point'] = current <= INITIAL_POINTS
                         logger.debug(f"Optimizer epoch evaluated: {val}")
-                        is_best = self.is_best(val)
-                        self.log_results(val)
+
+                        is_best = self.is_best_loss(val, self.current_best_loss)
+                        # This value is assigned here and not in the optimization method
+                        # to keep proper order in the list of results. That's because
+                        # evaluations can take different time. Here they are aligned in the
+                        # order they will be shown to the user.
+                        val['is_best'] = is_best
+
+                        self.print_results(val)
+
+                        if is_best:
+                            self.current_best_loss = val['loss']
                         self.trials.append(val)
+                        # Save results after each best epoch and every 100 epochs
                         if is_best or current % 100 == 0:
                             self.save_trials()
         except KeyboardInterrupt:
             print('User interrupted..')
 
         self.save_trials(final=True)
-        self.log_trials_result()
+
+        if self.trials:
+            sorted_trials = sorted(self.trials, key=itemgetter('loss'))
+            results = sorted_trials[0]
+            self.print_epoch_details(results, self.total_epochs, self.print_json)
+        else:
+            # This is printed when Ctrl+C is pressed quickly, before first epochs have
+            # a chance to be evaluated.
+            print("No epochs evaluated yet, no best result.")

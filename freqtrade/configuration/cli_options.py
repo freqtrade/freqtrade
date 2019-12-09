@@ -18,6 +18,18 @@ def check_int_positive(value: str) -> int:
     return uint
 
 
+def check_int_nonzero(value: str) -> int:
+    try:
+        uint = int(value)
+        if uint == 0:
+            raise ValueError
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"{value} is invalid for this parameter, should be a non-zero integer value"
+        )
+    return uint
+
+
 class Arg:
     # Optional CLI arguments
     def __init__(self, *args, **kwargs):
@@ -376,5 +388,32 @@ AVAILABLE_CLI_OPTIONS = {
         'Default: %(default)s',
         choices=["DB", "file"],
         default="file",
+    ),
+    # hyperopt-list, hyperopt-show
+    "hyperopt_list_profitable": Arg(
+        '--profitable',
+        help='Select only profitable epochs.',
+        action='store_true',
+    ),
+    "hyperopt_list_best": Arg(
+        '--best',
+        help='Select only best epochs.',
+        action='store_true',
+    ),
+    "hyperopt_list_no_details": Arg(
+        '--no-details',
+        help='Do not print best epoch details.',
+        action='store_true',
+    ),
+    "hyperopt_show_index": Arg(
+        '-n', '--index',
+        help='Specify the index of the epoch to print details for.',
+        type=check_int_nonzero,
+        metavar='INT',
+    ),
+    "hyperopt_show_no_header": Arg(
+        '--no-header',
+        help='Do not print epoch details header.',
+        action='store_true',
     ),
 }

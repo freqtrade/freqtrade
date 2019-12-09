@@ -55,8 +55,14 @@ ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "ticker_interval"]
 
+ARGS_HYPEROPT_LIST = ["hyperopt_list_best", "hyperopt_list_profitable", "print_colorized",
+                      "print_json", "hyperopt_list_no_details"]
+
+ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperopt_show_index",
+                      "print_json", "hyperopt_show_no_header"]
+
 NO_CONF_REQURIED = ["download-data", "list-timeframes", "list-markets", "list-pairs",
-                    "plot-dataframe", "plot-profit"]
+                    "hyperopt-list", "hyperopt-show", "plot-dataframe", "plot-profit"]
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-hyperopt", "new-strategy"]
 
@@ -123,6 +129,7 @@ class Arguments:
 
         from freqtrade.optimize import start_backtesting, start_hyperopt, start_edge
         from freqtrade.utils import (start_create_userdir, start_download_data,
+                                     start_hyperopt_list, start_hyperopt_show,
                                      start_list_exchanges, start_list_markets,
                                      start_new_hyperopt, start_new_strategy,
                                      start_list_timeframes, start_test_pairlist, start_trading)
@@ -248,3 +255,21 @@ class Arguments:
         )
         plot_profit_cmd.set_defaults(func=start_plot_profit)
         self._build_args(optionlist=ARGS_PLOT_PROFIT, parser=plot_profit_cmd)
+
+        # Add hyperopt-list subcommand
+        hyperopt_list_cmd = subparsers.add_parser(
+            'hyperopt-list',
+            help='List Hyperopt results',
+            parents=[_common_parser],
+        )
+        hyperopt_list_cmd.set_defaults(func=start_hyperopt_list)
+        self._build_args(optionlist=ARGS_HYPEROPT_LIST, parser=hyperopt_list_cmd)
+
+        # Add hyperopt-show subcommand
+        hyperopt_show_cmd = subparsers.add_parser(
+            'hyperopt-show',
+            help='Show details of Hyperopt results',
+            parents=[_common_parser],
+        )
+        hyperopt_show_cmd.set_defaults(func=start_hyperopt_show)
+        self._build_args(optionlist=ARGS_HYPEROPT_SHOW, parser=hyperopt_show_cmd)

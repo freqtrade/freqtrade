@@ -450,7 +450,11 @@ If you are optimizing trailing stop values, Freqtrade creates the 'trailing' opt
 
 Override the `trailing_space()` method and define the desired range in it if you need values of the trailing stop parameters to vary in other ranges during hyperoptimization. A sample for this method can be found in [user_data/hyperopts/sample_hyperopt_advanced.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/sample_hyperopt_advanced.py).
 
-### Validate backtesting results
+## Show details of Hyperopt results
+
+After you run Hyperopt for the desired amount of epochs, you can later list all results for analysis, select only best or profitable once, and show the details for any of the epochs previously evaluated. This can be done with the `hyperopt-list` and `hyperopt-show` subcommands. The usage of these subcommands is described in the [Utils](utils.md#list-hyperopt-results) chapter.
+
+## Validate backtesting results
 
 Once the optimized strategy has been implemented into your strategy, you should backtest this strategy to make sure everything is working as expected.
 
