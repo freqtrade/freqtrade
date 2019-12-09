@@ -281,7 +281,7 @@ optional arguments:
                         useful if you are redirecting output to a file.
   --print-json          Print best result detailization in JSON format.
   --no-details          Do not print best epoch details.
- ```
+```
  
 ### Examples
 
