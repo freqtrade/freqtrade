@@ -422,14 +422,15 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
     total_epochs = len(trials)
 
     trials = _hyperopt_filter_trials(trials, only_best, only_profitable)
+    trials_epochs = len(trials)
 
     n = config.get('hyperopt_show_index', -1)
-    if n > total_epochs:
+    if n > trials_epochs:
         raise OperationalException(
-                f"The index of the epoch to show should be less than {total_epochs + 1}.")
-    if n < -total_epochs:
+                f"The index of the epoch to show should be less than {trials_epochs + 1}.")
+    if n < -trials_epochs:
         raise OperationalException(
-                f"The index of the epoch to show should be greater than {-total_epochs - 1}.")
+                f"The index of the epoch to show should be greater than {-trials_epochs - 1}.")
 
     # Translate epoch index from human-readable format to pythonic
     if n > 0:
