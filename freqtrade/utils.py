@@ -429,7 +429,7 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
                 f"The index of the epoch to show should be less than {total_epochs + 1}.")
     if n < -total_epochs:
         raise OperationalException(
-                f"The index of the epoch to showshould be greater than {-total_epochs - 1}.")
+                f"The index of the epoch to show should be greater than {-total_epochs - 1}.")
 
     # Translate epoch index from human-readable format to pythonic
     if n > 0:
