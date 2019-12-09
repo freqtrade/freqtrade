@@ -764,3 +764,25 @@ def test_hyperopt_show(mocker, capsys, hyperopt_results):
     start_hyperopt_show(pargs)
     captured = capsys.readouterr()
     assert " 10/12" in captured.out
+
+    args = [
+        "hyperopt-show",
+        "--best",
+        "-n", "-4"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    with pytest.raises(OperationalException,
+                       match="The index of the epoch to show should be greater than -4."):
+        start_hyperopt_show(pargs)
+
+    args = [
+        "hyperopt-show",
+        "--best",
+        "-n", "4"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    with pytest.raises(OperationalException,
+                       match="The index of the epoch to show should be less than 4."):
+        start_hyperopt_show(pargs)
