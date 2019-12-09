@@ -670,7 +670,9 @@ def test_hyperopt_list(mocker, capsys, hyperopt_results):
         "hyperopt-list",
         "--no-details"
     ]
-    start_hyperopt_list(get_args(args))
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_list(pargs)
     captured = capsys.readouterr()
     assert all(x in captured.out
                for x in [" 1/12", " 2/12", " 3/12", " 4/12", " 5/12",
@@ -681,7 +683,9 @@ def test_hyperopt_list(mocker, capsys, hyperopt_results):
         "--best",
         "--no-details"
     ]
-    start_hyperopt_list(get_args(args))
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_list(pargs)
     captured = capsys.readouterr()
     assert all(x in captured.out
                for x in [" 1/12", " 5/12", " 10/12"])
@@ -693,7 +697,9 @@ def test_hyperopt_list(mocker, capsys, hyperopt_results):
         "--profitable",
         "--no-details"
     ]
-    start_hyperopt_list(get_args(args))
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_list(pargs)
     captured = capsys.readouterr()
     assert all(x in captured.out
                for x in [" 2/12", " 10/12"])
@@ -711,7 +717,9 @@ def test_hyperopt_show(mocker, capsys, hyperopt_results):
     args = [
         "hyperopt-show",
     ]
-    start_hyperopt_show(get_args(args))
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_show(pargs)
     captured = capsys.readouterr()
     assert " 12/12" in captured.out
 
@@ -719,7 +727,9 @@ def test_hyperopt_show(mocker, capsys, hyperopt_results):
         "hyperopt-show",
         "--best"
     ]
-    start_hyperopt_show(get_args(args))
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_show(pargs)
     captured = capsys.readouterr()
     assert " 10/12" in captured.out
 
@@ -727,7 +737,9 @@ def test_hyperopt_show(mocker, capsys, hyperopt_results):
         "hyperopt-show",
         "-n", "1"
     ]
-    start_hyperopt_show(get_args(args))
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_show(pargs)
     captured = capsys.readouterr()
     assert " 1/12" in captured.out
 
@@ -736,7 +748,9 @@ def test_hyperopt_show(mocker, capsys, hyperopt_results):
         "--best",
         "-n", "2"
     ]
-    start_hyperopt_show(get_args(args))
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_show(pargs)
     captured = capsys.readouterr()
     assert " 5/12" in captured.out
 
@@ -745,6 +759,8 @@ def test_hyperopt_show(mocker, capsys, hyperopt_results):
         "--best",
         "-n", "-1"
     ]
-    start_hyperopt_show(get_args(args))
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_show(pargs)
     captured = capsys.readouterr()
     assert " 10/12" in captured.out
