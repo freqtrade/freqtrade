@@ -636,7 +636,7 @@ def test_generate_optimizer(mocker, default_conf) -> None:
         'stoploss': -0.4,
         'trailing_stop': True,
         'trailing_stop_positive': 0.02,
-        'trailing_stop_positive_offset': 0.1,
+        'trailing_stop_positive_offset_p1': 0.05,
         'trailing_only_offset_is_reached': False,
     }
     response_expected = {
@@ -670,7 +670,7 @@ def test_generate_optimizer(mocker, default_conf) -> None:
                            'trailing': {'trailing_only_offset_is_reached': False,
                                         'trailing_stop': True,
                                         'trailing_stop_positive': 0.02,
-                                        'trailing_stop_positive_offset': 0.1}},
+                                        'trailing_stop_positive_offset': 0.07}},
         'params_dict': optimizer_param,
         'results_metrics': {'avg_profit': 2.3117,
                             'duration': 100.0,
