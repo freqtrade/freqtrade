@@ -7,6 +7,7 @@ This module contains the hyperopt logic
 import locale
 import logging
 import sys
+import warnings
 from collections import OrderedDict
 from operator import itemgetter
 from pathlib import Path
@@ -19,8 +20,12 @@ from colorama import init as colorama_init
 from joblib import (Parallel, cpu_count, delayed, dump, load,
                     wrap_non_picklable_objects)
 from pandas import DataFrame
-from skopt import Optimizer
-from skopt.space import Dimension
+
+# Suppress scikit-learn FutureWarnings from skopt
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    from skopt import Optimizer
+    from skopt.space import Dimension
 
 from freqtrade.data.history import get_timeframe, trim_dataframe
 from freqtrade.misc import plural, round_dict
