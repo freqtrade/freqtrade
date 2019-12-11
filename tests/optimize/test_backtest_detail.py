@@ -250,7 +250,7 @@ tc15 = BTContainer(data=[
             BTrade(sell_reason=SellType.STOP_LOSS, open_tick=2, close_tick=2)]
 )
 
-# Test 16: Buy, hold for 65 mins, then forcesell using roi=-1
+# Test 16: Buy, hold for 65 min, then forcesell using roi=-1
 # Causes negative profit even though sell-reason is ROI.
 # stop-loss: 10%, ROI: 10% (should not apply), -100% after 65 minutes (limits trade duration)
 tc16 = BTContainer(data=[

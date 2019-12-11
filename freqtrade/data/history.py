@@ -463,7 +463,7 @@ def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]
 
 
 def validate_backtest_data(data: DataFrame, pair: str, min_date: datetime,
-                           max_date: datetime, timeframe_mins: int) -> bool:
+                           max_date: datetime, timeframe_min: int) -> bool:
     """
     Validates preprocessed backtesting data for missing values and shows warnings about it that.
 
@@ -471,10 +471,10 @@ def validate_backtest_data(data: DataFrame, pair: str, min_date: datetime,
     :param pair: pair used for log output.
     :param min_date: start-date of the data
     :param max_date: end-date of the data
-    :param timeframe_mins: ticker Timeframe in minutes
+    :param timeframe_min: ticker Timeframe in minutes
     """
     # total difference in minutes / timeframe-minutes
-    expected_frames = int((max_date - min_date).total_seconds() // 60 // timeframe_mins)
+    expected_frames = int((max_date - min_date).total_seconds() // 60 // timeframe_min)
     found_missing = False
     dflen = len(data)
     if dflen < expected_frames:
