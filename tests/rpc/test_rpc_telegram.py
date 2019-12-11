@@ -1241,7 +1241,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
             '*Sell Reason:* `stop_loss`\n'
-            '*Duration:* `1:00:00 (60 mins)`\n'
+            '*Duration:* `1:00:00 (60.0 min)`\n'
             '*Profit:* `-57.41%`` (loss: -0.05746268 ETH`` / -24.812 USD)`')
 
     msg_mock.reset_mock()
@@ -1269,7 +1269,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
             '*Sell Reason:* `stop_loss`\n'
-            '*Duration:* `1 day, 2:30:00 (1590 mins)`\n'
+            '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
             '*Profit:* `-57.41%`')
     # Reset singleton function to avoid random breaks
     telegram._fiat_converter.convert_amount = old_convamount
@@ -1400,7 +1400,7 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
            '*Open Rate:* `0.00007500`\n' \
            '*Current Rate:* `0.00003201`\n' \
            '*Sell Reason:* `stop_loss`\n' \
-           '*Duration:* `2:35:03 (155 mins)`\n' \
+           '*Duration:* `2:35:03 (155.1 min)`\n' \
            '*Profit:* `-57.41%`'
 
 

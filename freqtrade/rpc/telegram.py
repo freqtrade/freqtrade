@@ -12,7 +12,6 @@ from telegram.error import NetworkError, TelegramError
 from telegram.ext import CallbackContext, CommandHandler, Updater
 
 from freqtrade.__init__ import __version__
-from freqtrade.misc import plural
 from freqtrade.rpc import RPC, RPCException, RPCMessageType
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 
@@ -147,8 +146,7 @@ class Telegram(RPC):
             msg['profit_percent'] = round(msg['profit_percent'] * 100, 2)
             msg['duration'] = msg['close_date'].replace(
                 microsecond=0) - msg['open_date'].replace(microsecond=0)
-            duration_tmp = msg['duration'].total_seconds() // 60
-            msg['duration_mins'] = f"{duration_tmp:.0f} {plural(duration_tmp, 'min')}"
+            msg['duration_min'] = msg['duration'].total_seconds() / 60
 
             message = ("*{exchange}:* Selling {pair}\n"
                        "*Rate:* `{limit:.8f}`\n"
@@ -156,7 +154,7 @@ class Telegram(RPC):
                        "*Open Rate:* `{open_rate:.8f}`\n"
                        "*Current Rate:* `{current_rate:.8f}`\n"
                        "*Sell Reason:* `{sell_reason}`\n"
-                       "*Duration:* `{duration} ({duration_mins})`\n"
+                       "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
                        "*Profit:* `{profit_percent:.2f}%`").format(**msg)
 
             # Check if all sell properties are available.
