@@ -183,8 +183,7 @@ class Hyperopt:
             result['stoploss'] = {p.name: params.get(p.name)
                                   for p in self.hyperopt_space('stoploss')}
         if self.has_space('trailing'):
-            result['trailing'] = {p.name: params.get(p.name)
-                                  for p in self.hyperopt_space('trailing')}
+            result['trailing'] = self.custom_hyperopt.generate_trailing_params(params)
 
         return result
 
@@ -359,13 +358,13 @@ class Hyperopt:
             self.backtesting.strategy.stoploss = params_dict['stoploss']
 
         if self.has_space('trailing'):
-            self.backtesting.strategy.trailing_stop = params_dict['trailing_stop']
-            self.backtesting.strategy.trailing_stop_positive = \
-                params_dict['trailing_stop_positive']
+            d = self.custom_hyperopt.generate_trailing_params(params_dict)
+            self.backtesting.strategy.trailing_stop = d['trailing_stop']
+            self.backtesting.strategy.trailing_stop_positive = d['trailing_stop_positive']
             self.backtesting.strategy.trailing_stop_positive_offset = \
-                params_dict['trailing_stop_positive_offset']
+                d['trailing_stop_positive_offset']
             self.backtesting.strategy.trailing_only_offset_is_reached = \
-                params_dict['trailing_only_offset_is_reached']
+                d['trailing_only_offset_is_reached']
 
         processed = load(self.tickerdata_pickle)
 
