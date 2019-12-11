@@ -5,7 +5,7 @@ import logging
 import time
 from copy import deepcopy
 from math import isclose
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import ANY, MagicMock, PropertyMock
 
 import arrow
 import pytest
@@ -2199,7 +2199,9 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, mocker) -> N
         'profit_percent': 0.0611052,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
-        'sell_reason': SellType.ROI.value
+        'sell_reason': SellType.ROI.value,
+        'open_date': ANY,
+        'close_date': ANY,
     } == last_msg
 
 
@@ -2246,7 +2248,9 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, mocker) 
         'profit_percent': -0.05478342,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
-        'sell_reason': SellType.STOP_LOSS.value
+        'sell_reason': SellType.STOP_LOSS.value,
+        'open_date': ANY,
+        'close_date': ANY,
     } == last_msg
 
 
@@ -2300,7 +2304,9 @@ def test_execute_sell_down_stoploss_on_exchange_dry_run(default_conf, ticker, fe
         'profit_percent': -0.01493766,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
-        'sell_reason': SellType.STOP_LOSS.value
+        'sell_reason': SellType.STOP_LOSS.value,
+        'open_date': ANY,
+        'close_date': ANY,
 
     } == last_msg
 
@@ -2497,7 +2503,9 @@ def test_execute_sell_market_order(default_conf, ticker, fee,
         'profit_percent': 0.0611052,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
-        'sell_reason': SellType.ROI.value
+        'sell_reason': SellType.ROI.value,
+        'open_date': ANY,
+        'close_date': ANY,
 
     } == last_msg
 

@@ -962,7 +962,9 @@ class FreqtradeBot:
             'current_rate': current_rate,
             'profit_amount': profit_trade,
             'profit_percent': profit_percent,
-            'sell_reason': trade.sell_reason
+            'sell_reason': trade.sell_reason,
+            'open_date': trade.open_date,
+            'close_date': trade.close_date or datetime.utcnow()
         }
 
         # For regular case, when the configuration exists
