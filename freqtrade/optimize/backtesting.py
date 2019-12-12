@@ -87,7 +87,7 @@ class Backtesting:
             raise OperationalException("Ticker-interval needs to be set in either configuration "
                                        "or as cli argument `--ticker-interval 5m`")
         self.timeframe = str(self.config.get('ticker_interval'))
-        self.timeframe_mins = timeframe_to_minutes(self.timeframe)
+        self.timeframe_min = timeframe_to_minutes(self.timeframe)
 
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
@@ -378,7 +378,7 @@ class Backtesting:
         lock_pair_until: Dict = {}
         # Indexes per pair, so some pairs are allowed to have a missing start.
         indexes: Dict = {}
-        tmp = start_date + timedelta(minutes=self.timeframe_mins)
+        tmp = start_date + timedelta(minutes=self.timeframe_min)
 
         # Loop timerange and get candle for each pair at that point in time
         while tmp < end_date:
@@ -430,7 +430,7 @@ class Backtesting:
                     lock_pair_until[pair] = end_date.datetime
 
             # Move time one configured time_interval ahead.
-            tmp += timedelta(minutes=self.timeframe_mins)
+            tmp += timedelta(minutes=self.timeframe_min)
         return DataFrame.from_records(trades, columns=BacktestResult._fields)
 
     def start(self) -> None:

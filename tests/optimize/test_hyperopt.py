@@ -642,7 +642,7 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     response_expected = {
         'loss': 1.9840569076926293,
         'results_explanation': ('     1 trades. Avg profit   2.31%. Total profit  0.00023300 BTC '
-                                '(   2.31\N{GREEK CAPITAL LETTER SIGMA}%). Avg duration 100.0 mins.'
+                                '(   2.31\N{GREEK CAPITAL LETTER SIGMA}%). Avg duration 100.0 min.'
                                 ).encode(locale.getpreferredencoding(), 'replace').decode('utf-8'),
         'params_details': {'buy': {'adx-enabled': False,
                                    'adx-value': 0,
