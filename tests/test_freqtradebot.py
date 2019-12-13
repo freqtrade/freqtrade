@@ -786,7 +786,10 @@ def test_process_trade_no_whitelist_pair(default_conf, ticker, limit_buy_order,
     )
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
-    pair = 'NOCLUE/BTC'
+    pair = 'BLK/BTC'
+    # Ensure the pair is not in the whitelist!
+    assert pair not in default_conf['exchange']['pair_whitelist']
+
     # create open trade not in whitelist
     Trade.session.add(Trade(
         pair=pair,
