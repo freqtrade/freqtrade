@@ -279,30 +279,28 @@ class Backtesting:
             return bt_res
         return None
 
-    def backtest(self, args: Dict) -> DataFrame:
+    def backtest(self, processed: Dict, stake_amount: int,
+                 start_date, end_date,
+                 max_open_trades: int = 0, position_stacking: bool = False) -> DataFrame:
         """
-        Implements backtesting functionality
+        Implement backtesting functionality
 
         NOTE: This method is used by Hyperopt at each iteration. Please keep it optimized.
         Of course try to not have ugly code. By some accessor are sometime slower than functions.
-        Avoid, logging on this method
+        Avoid extensive logging in this method and functions it calls.
 
-        :param args: a dict containing:
-            stake_amount: btc amount to use for each trade
-            processed: a processed dictionary with format {pair, data}
-            max_open_trades: maximum number of concurrent trades (default: 0, disabled)
-            position_stacking: do we allow position stacking? (default: False)
-        :return: DataFrame
+        :param processed: a processed dictionary with format {pair, data}
+        :param stake_amount: amount to use for each trade
+        :param start_date: backtesting timerange start datetime
+        :param end_date: backtesting timerange end datetime
+        :param max_open_trades: maximum number of concurrent trades, <= 0 means unlimited
+        :param position_stacking: do we allow position stacking?
+        :return: DataFrame with trades (results of backtesting)
         """
-        # Arguments are long and noisy, so this is commented out.
-        # Uncomment if you need to debug the backtest() method.
-        # logger.debug(f"Start backtest, args: {args}")
-        processed = args['processed']
-        stake_amount = args['stake_amount']
-        max_open_trades = args.get('max_open_trades', 0)
-        position_stacking = args.get('position_stacking', False)
-        start_date = args['start_date']
-        end_date = args['end_date']
+        logger.debug(f"Run backtest, stake_amount: {stake_amount}, "
+                     f"start_date: {start_date}, end_date: {end_date}, "
+                     f"max_open_trades: {max_open_trades}, position_stacking: {position_stacking}"
+        )
         trades = []
         trade_count_lock: Dict = {}
 
@@ -369,18 +367,21 @@ class Backtesting:
 
     def start(self) -> None:
         """
-        Run a backtesting end-to-end
+        Run backtesting end-to-end
         :return: None
         """
         data: Dict[str, Any] = {}
+
         logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
         logger.info('Using stake_amount: %s ...', self.config['stake_amount'])
+
         # Use max_open_trades in backtesting, except --disable-max-market-positions is set
         if self.config.get('use_max_market_positions', True):
             max_open_trades = self.config['max_open_trades']
         else:
             logger.info('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
             max_open_trades = 0
+        position_stacking = self.config.get('position_stacking', False)
 
         data, timerange = self.load_bt_data()
 
@@ -403,14 +404,12 @@ class Backtesting:
             )
             # Execute backtest and print results
             all_results[self.strategy.get_strategy_name()] = self.backtest(
-                {
-                    'stake_amount': self.config.get('stake_amount'),
-                    'processed': preprocessed,
-                    'max_open_trades': max_open_trades,
-                    'position_stacking': self.config.get('position_stacking', False),
-                    'start_date': min_date,
-                    'end_date': max_date,
-                }
+                    processed=preprocessed,
+                    stake_amount=self.config.get('stake_amount'),
+                    start_date=min_date,
+                    end_date=max_date,
+                    max_open_trades=max_open_trades,
+                    position_stacking=position_stacking,
             )
 
         for strategy, results in all_results.items():
