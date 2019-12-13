@@ -247,8 +247,10 @@ class Backtesting:
             pair_data.loc[:, 'buy'] = 0  # cleanup from previous run
             pair_data.loc[:, 'sell'] = 0  # cleanup from previous run
 
-            ticker_data = self.strategy.advise_sell(
-                self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
+            ticker_data = self.strategy.analyze_ticker(
+                pair_data, {'pair': pair},
+                populate_indicators=False,
+            )[headers].copy()
 
             # to avoid using data from future, we buy/sell with signal from previous candle
             ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)
