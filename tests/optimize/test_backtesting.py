@@ -103,14 +103,12 @@ def simple_backtest(config, contour, num_results, mocker, testdatadir) -> None:
     min_date, max_date = get_timerange(processed)
     assert isinstance(processed, dict)
     results = backtesting.backtest(
-        {
-            'stake_amount': config['stake_amount'],
-            'processed': processed,
-            'max_open_trades': 1,
-            'position_stacking': False,
-            'start_date': min_date,
-            'end_date': max_date,
-        }
+        processed=processed,
+        stake_amount=config['stake_amount'],
+        start_date=min_date,
+        end_date=max_date,
+        max_open_trades=1,
+        position_stacking=False,
     )
     # results :: <class 'pandas.core.frame.DataFrame'>
     assert len(results) == num_results
@@ -132,7 +130,7 @@ def _load_pair_as_ticks(pair, tickfreq):
 
 
 # FIX: fixturize this?
-def _make_backtest_conf(mocker, datadir, conf=None, pair='UNITTEST/BTC', record=None):
+def _make_backtest_conf(mocker, datadir, conf=None, pair='UNITTEST/BTC'):
     data = history.load_data(datadir=datadir, timeframe='1m', pairs=[pair])
     data = trim_dictlist(data, -201)
     patch_exchange(mocker)
@@ -140,13 +138,12 @@ def _make_backtest_conf(mocker, datadir, conf=None, pair='UNITTEST/BTC', record=
     processed = backtesting.strategy.tickerdata_to_dataframe(data)
     min_date, max_date = get_timerange(processed)
     return {
-        'stake_amount': conf['stake_amount'],
         'processed': processed,
-        'max_open_trades': 10,
-        'position_stacking': False,
-        'record': record,
+        'stake_amount': conf['stake_amount'],
         'start_date': min_date,
         'end_date': max_date,
+        'max_open_trades': 10,
+        'position_stacking': False,
     }
 
 
@@ -422,14 +419,12 @@ def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
     data_processed = backtesting.strategy.tickerdata_to_dataframe(data)
     min_date, max_date = get_timerange(data_processed)
     results = backtesting.backtest(
-        {
-            'stake_amount': default_conf['stake_amount'],
-            'processed': data_processed,
-            'max_open_trades': 10,
-            'position_stacking': False,
-            'start_date': min_date,
-            'end_date': max_date,
-        }
+        processed=data_processed,
+        stake_amount=default_conf['stake_amount'],
+        start_date=min_date,
+        end_date=max_date,
+        max_open_trades=10,
+        position_stacking=False,
     )
     assert not results.empty
     assert len(results) == 2
@@ -478,14 +473,12 @@ def test_backtest_1min_ticker_interval(default_conf, fee, mocker, testdatadir) -
     processed = backtesting.strategy.tickerdata_to_dataframe(data)
     min_date, max_date = get_timerange(processed)
     results = backtesting.backtest(
-        {
-            'stake_amount': default_conf['stake_amount'],
-            'processed': processed,
-            'max_open_trades': 1,
-            'position_stacking': False,
-            'start_date': min_date,
-            'end_date': max_date,
-        }
+        processed=processed,
+        stake_amount=default_conf['stake_amount'],
+        start_date=min_date,
+        end_date=max_date,
+        max_open_trades=1,
+        position_stacking=False,
     )
     assert not results.empty
     assert len(results) == 1
@@ -525,7 +518,7 @@ def test_backtest_clash_buy_sell(mocker, default_conf, testdatadir):
     backtesting = Backtesting(default_conf)
     backtesting.strategy.advise_buy = fun  # Override
     backtesting.strategy.advise_sell = fun  # Override
-    results = backtesting.backtest(backtest_conf)
+    results = backtesting.backtest(**backtest_conf)
     assert results.empty
 
 
@@ -540,7 +533,7 @@ def test_backtest_only_sell(mocker, default_conf, testdatadir):
     backtesting = Backtesting(default_conf)
     backtesting.strategy.advise_buy = fun  # Override
     backtesting.strategy.advise_sell = fun  # Override
-    results = backtesting.backtest(backtest_conf)
+    results = backtesting.backtest(**backtest_conf)
     assert results.empty
 
 
@@ -553,7 +546,7 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
     backtesting = Backtesting(default_conf)
     backtesting.strategy.advise_buy = _trend_alternate  # Override
     backtesting.strategy.advise_sell = _trend_alternate  # Override
-    results = backtesting.backtest(backtest_conf)
+    results = backtesting.backtest(**backtest_conf)
     backtesting._store_backtest_result("test_.json", results)
     # 200 candles in backtest data
     # won't buy on first (shifted by 1)
@@ -598,15 +591,15 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     data_processed = backtesting.strategy.tickerdata_to_dataframe(data)
     min_date, max_date = get_timerange(data_processed)
     backtest_conf = {
-        'stake_amount': default_conf['stake_amount'],
         'processed': data_processed,
-        'max_open_trades': 3,
-        'position_stacking': False,
+        'stake_amount': default_conf['stake_amount'],
         'start_date': min_date,
         'end_date': max_date,
+        'max_open_trades': 3,
+        'position_stacking': False,
     }
 
-    results = backtesting.backtest(backtest_conf)
+    results = backtesting.backtest(**backtest_conf)
 
     # Make sure we have parallel trades
     assert len(evaluate_result_multi(results, '5m', 2)) > 0
@@ -614,14 +607,14 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     assert len(evaluate_result_multi(results, '5m', 3)) == 0
 
     backtest_conf = {
-        'stake_amount': default_conf['stake_amount'],
         'processed': data_processed,
-        'max_open_trades': 1,
-        'position_stacking': False,
+        'stake_amount': default_conf['stake_amount'],
         'start_date': min_date,
         'end_date': max_date,
+        'max_open_trades': 1,
+        'position_stacking': False,
     }
-    results = backtesting.backtest(backtest_conf)
+    results = backtesting.backtest(**backtest_conf)
     assert len(evaluate_result_multi(results, '5m', 1)) == 0
 
 
