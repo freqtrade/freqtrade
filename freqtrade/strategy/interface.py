@@ -182,7 +182,10 @@ class IStrategy(ABC):
             return False
         return self._pair_locked_until[pair] >= datetime.now(timezone.utc)
 
-    def analyze_ticker(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def analyze_ticker(self, dataframe: DataFrame, metadata: dict,
+                       populate_indicators: bool = True,
+                       populate_buy: bool = True,
+                       populate_sell: bool = True) -> DataFrame:
         """
         Parses the given ticker history and returns a populated DataFrame
         add several TA indicators and buy signal to it
@@ -191,9 +194,12 @@ class IStrategy(ABC):
         :return: DataFrame with ticker data and indicator data
         """
         logger.debug("TA Analysis Launched")
-        dataframe = self.advise_indicators(dataframe, metadata)
-        dataframe = self.advise_buy(dataframe, metadata)
-        dataframe = self.advise_sell(dataframe, metadata)
+        if populate_indicators:
+            dataframe = self.advise_indicators(dataframe, metadata)
+        if populate_buy:
+            dataframe = self.advise_buy(dataframe, metadata)
+        if populate_sell:
+            dataframe = self.advise_sell(dataframe, metadata)
         return dataframe
 
     def _analyze_ticker_internal(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
