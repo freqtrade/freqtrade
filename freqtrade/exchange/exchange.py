@@ -921,7 +921,7 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def get_fee(self, symbol='ETH/BTC', type='', side='', amount=1,
+    def get_fee(self, symbol, type='', side='', amount=1,
                 price=1, taker_or_maker='maker') -> float:
         try:
             # validate that markets are loaded before trying to get fee

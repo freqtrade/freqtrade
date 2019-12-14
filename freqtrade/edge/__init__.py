@@ -80,7 +80,7 @@ class Edge:
         if config.get('fee'):
             self.fee = config['fee']
         else:
-            self.fee = self.exchange.get_fee()
+            self.fee = self.exchange.get_fee(symbol=self.config['exchange']['pair_whitelist'][0])
 
     def calculate(self) -> bool:
         pairs = self.config['exchange']['pair_whitelist']

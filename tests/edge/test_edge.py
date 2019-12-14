@@ -334,7 +334,7 @@ def test_process_expectancy(mocker, edge_conf):
     edge_conf['edge']['min_trade_number'] = 2
     freqtrade = get_patched_freqtradebot(mocker, edge_conf)
 
-    def get_fee():
+    def get_fee(*args, **kwargs):
         return 0.001
 
     freqtrade.exchange.get_fee = get_fee

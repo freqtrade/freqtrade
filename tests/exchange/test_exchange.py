@@ -1646,10 +1646,10 @@ def test_get_fee(default_conf, mocker, exchange_name):
     })
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
 
-    assert exchange.get_fee() == 0.025
+    assert exchange.get_fee('ETH/BTC') == 0.025
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
-                           'get_fee', 'calculate_fee')
+                           'get_fee', 'calculate_fee', symbol="ETH/BTC")
 
 
 def test_stoploss_limit_order_unsupported_exchange(default_conf, mocker):
