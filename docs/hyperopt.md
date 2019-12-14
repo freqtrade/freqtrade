@@ -286,7 +286,7 @@ You can also enable position stacking in the configuration file by explicitly se
 
 ### Reproducible results
 
-The search for optimal parameters starts with a few (currently 30) random combinations in the hyperspace of parameters, random Hyperopt epochs. These random epochs are marked with a leading asterisk sign at the Hyperop output.
+The search for optimal parameters starts with a few (currently 30) random combinations in the hyperspace of parameters, random Hyperopt epochs. These random epochs are marked with a leading asterisk sign at the Hyperopt output.
 
 The initial state for generation of these random values (random state) is controlled by the value of the `--random-state` command line option. You can set it to some arbitrary value of your choice to obtain reproducible results.
 
