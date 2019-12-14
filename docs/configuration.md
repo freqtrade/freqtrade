@@ -169,6 +169,9 @@ This parameter can be set in either Strategy or Configuration file. If you use i
 `minimal_roi` value from the strategy file.
 If it is not set in either Strategy or Configuration, a default of 1000% `{"0": 10}` is used, and minimal roi is disabled unless your trade generates 1000% profit.
 
+!!! Note "Special case to forcesell after a specific time"
+    A special case presents using `"<N>": -1` as ROI. This forces the bot to sell a trade after N Minutes, no matter if it's positive or negative, so represents a time-limited force-sell.
+
 ### Understand stoploss
 
 Go to the [stoploss documentation](stoploss.md) for more details.
