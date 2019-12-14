@@ -234,9 +234,9 @@ class Backtesting:
             logger.info(f'Dumping backtest results to {recordfilename}')
             file_dump_json(recordfilename, records)
 
-    def _get_ticker_list(self, processed) -> Dict[str, DataFrame]:
+    def _analyze_tickers(self, processed) -> Dict[str, DataFrame]:
         """
-        Helper function to convert a processed tickerlist into a list for performance reasons.
+        Prepare processed dataframes for backtesting.
 
         Used by backtest() - so keep this optimized for performance.
         """
@@ -258,9 +258,19 @@ class Backtesting:
 
             ticker_data.drop(ticker_data.head(1).index, inplace=True)
 
-            # Convert from Pandas to list for performance reasons
-            # (Looping Pandas is slow.)
-            ticker[pair] = [x for x in ticker_data.itertuples()]
+            ticker[pair] = ticker_data
+
+        return ticker
+
+    def _get_ticker_lists(self, processed: Dict[str, DataFrame]) -> Dict[str, List]:
+        """
+        Helper function to convert a processed dataframe into a list for performance reasons.
+
+        Convert from Pandas to lists (looping Pandas is slow).
+        """
+        ticker: Dict = {}
+        for pair, pair_data in processed.items():
+            ticker[pair] = [x for x in pair_data.itertuples()]
         return ticker
 
     def _get_sell_trade_entry(
@@ -374,7 +384,7 @@ class Backtesting:
         trade_count_lock: Dict = {}
 
         # Dict of ticker-lists for performance (looping lists is a lot faster than dataframes)
-        ticker: Dict = self._get_ticker_list(processed)
+        ticker: Dict = self._get_ticker_lists(self._analyze_tickers(processed))
 
         lock_pair_until: Dict = {}
         # Indexes per pair, so some pairs are allowed to have a missing start.
