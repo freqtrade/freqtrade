@@ -234,7 +234,10 @@ class Backtesting:
             logger.info(f'Dumping backtest results to {recordfilename}')
             file_dump_json(recordfilename, records)
 
-    def _analyze_tickers(self, processed) -> Dict[str, DataFrame]:
+    def _analyze_tickers(self, processed,
+                         populate_indicators: bool,
+                         populate_buy: bool,
+                         populate_sell: bool) -> Dict[str, DataFrame]:
         """
         Prepare processed dataframes for backtesting.
 
@@ -249,7 +252,9 @@ class Backtesting:
 
             ticker_data = self.strategy.analyze_ticker(
                 pair_data, {'pair': pair},
-                populate_indicators=False,
+                populate_indicators=populate_indicators,
+                populate_buy=populate_buy,
+                populate_sell=populate_sell,
             )[headers].copy()
 
             # to avoid using data from future, we buy/sell with signal from previous candle
@@ -359,7 +364,10 @@ class Backtesting:
 
     def backtest(self, processed, stake_amount: float,
                  start_date, end_date,
-                 max_open_trades: int = 0, position_stacking: bool = False) -> DataFrame:
+                 max_open_trades: int = 0, position_stacking: bool = False,
+                 populate_indicators: bool = False,
+                 populate_buy: bool = True,
+                 populate_sell: bool = True) -> DataFrame:
         """
         Implement backtesting functionality
 
@@ -384,7 +392,12 @@ class Backtesting:
         trade_count_lock: Dict = {}
 
         # Dict of ticker-lists for performance (looping lists is a lot faster than dataframes)
-        ticker: Dict = self._get_ticker_lists(self._analyze_tickers(processed))
+        ticker: Dict = self._get_ticker_lists(
+            self._analyze_tickers(processed,
+                                  populate_indicators=populate_indicators,
+                                  populate_buy=populate_buy,
+                                  populate_sell=populate_sell)
+        )
 
         lock_pair_until: Dict = {}
         # Indexes per pair, so some pairs are allowed to have a missing start.
