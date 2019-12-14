@@ -347,7 +347,7 @@ class Backtesting:
             return bt_res
         return None
 
-    def backtest(self, processed: Dict, stake_amount: int,
+    def backtest(self, processed, stake_amount: float,
                  start_date, end_date,
                  max_open_trades: int = 0, position_stacking: bool = False) -> DataFrame:
         """
@@ -444,6 +444,8 @@ class Backtesting:
         logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
         logger.info('Using stake_amount: %s ...', self.config['stake_amount'])
 
+        stake_amount = self.config['stake_amount']
+
         # Use max_open_trades in backtesting, except --disable-max-market-positions is set
         if self.config.get('use_max_market_positions', True):
             max_open_trades = self.config['max_open_trades']
@@ -474,7 +476,7 @@ class Backtesting:
             # Execute backtest and print results
             all_results[self.strategy.get_strategy_name()] = self.backtest(
                     processed=preprocessed,
-                    stake_amount=self.config.get('stake_amount'),
+                    stake_amount=stake_amount,
                     start_date=min_date,
                     end_date=max_date,
                     max_open_trades=max_open_trades,
