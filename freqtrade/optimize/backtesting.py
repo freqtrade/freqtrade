@@ -243,7 +243,6 @@ class Backtesting:
 
         Used by backtest() - so keep this optimized for performance.
         """
-        headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
         ticker: Dict = {}
         # Create ticker dict
         for pair, pair_data in processed.items():
@@ -255,7 +254,7 @@ class Backtesting:
                 populate_indicators=populate_indicators,
                 populate_buy=populate_buy,
                 populate_sell=populate_sell,
-            )[headers].copy()
+            )
 
             # to avoid using data from future, we buy/sell with signal from previous candle
             ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)
@@ -273,9 +272,10 @@ class Backtesting:
 
         Convert from Pandas to lists (looping Pandas is slow).
         """
+        headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
         ticker: Dict = {}
         for pair, pair_data in processed.items():
-            ticker[pair] = [x for x in pair_data.itertuples()]
+            ticker[pair] = [x for x in pair_data[headers].itertuples()]
         return ticker
 
     def _get_sell_trade_entry(
