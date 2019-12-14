@@ -477,7 +477,7 @@ class Hyperopt:
         return trials
 
     def _set_random_state(self, random_state: Optional[int]) -> int:
-        return random_state or random.randint(1, 2**32 - 1)
+        return random_state or random.randint(1, 2**16 - 1)
 
     def start(self) -> None:
         self.random_state = self._set_random_state(self.config.get('hyperopt_random_state', None))
