@@ -6,6 +6,7 @@ This module contains the hyperopt logic
 
 import locale
 import logging
+import random
 import sys
 import warnings
 from collections import OrderedDict
@@ -436,7 +437,7 @@ class Hyperopt:
             acq_optimizer="auto",
             n_initial_points=INITIAL_POINTS,
             acq_optimizer_kwargs={'n_jobs': cpu_count},
-            random_state=self.config.get('hyperopt_random_state', None),
+            random_state=self.random_state,
         )
 
     def fix_optimizer_models_list(self):
@@ -475,7 +476,13 @@ class Hyperopt:
             logger.info(f"Loaded {len(trials)} previous evaluations from disk.")
         return trials
 
+    def _set_random_state(self, random_state: Optional[int]) -> int:
+        return random_state or random.randint(1, 2**16 - 1)
+
     def start(self) -> None:
+        self.random_state = self._set_random_state(self.config.get('hyperopt_random_state', None))
+        logger.info(f"Using optimizer random state: {self.random_state}")
+
         data, timerange = self.backtesting.load_bt_data()
 
         preprocessed = self.backtesting.strategy.tickerdata_to_dataframe(data)
