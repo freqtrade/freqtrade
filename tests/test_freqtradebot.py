@@ -211,6 +211,7 @@ def test_edge_overrides_stake_amount(mocker, edge_conf) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     patch_edge(mocker)
+    edge_conf['dry_run_wallet'] = 999.9
     freqtrade = FreqtradeBot(edge_conf)
 
     assert freqtrade._get_trade_stake_amount('NEO/BTC') == (999.9 * 0.5 * 0.01) / 0.20
@@ -1338,6 +1339,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
     patch_exchange(mocker)
     patch_edge(mocker)
     edge_conf['max_open_trades'] = float('inf')
+    edge_conf['dry_run_wallet'] = 999.9
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=MagicMock(return_value={
