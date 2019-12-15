@@ -25,7 +25,7 @@ from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.state import State
 from freqtrade.strategy.interface import IStrategy, SellType
-from freqtrade.wallets import Wallets
+from freqtrade.wallets import Wallets, WalletsDry
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,13 @@ class FreqtradeBot:
 
         self.exchange = ExchangeResolver(self.config['exchange']['name'], self.config).exchange
 
-        self.wallets = Wallets(self.config, self.exchange)
+        persistence.init(self.config.get('db_url', None),
+                         clean_open_orders=self.config.get('dry_run', False))
+
+        if self.config['dry_run']:
+            self.wallets = WalletsDry(self.config, self.exchange)
+        else:
+            self.wallets = Wallets(self.config, self.exchange)
         self.dataprovider = DataProvider(self.config, self.exchange)
 
         # Attach Dataprovider to Strategy baseclass
@@ -77,9 +83,6 @@ class FreqtradeBot:
             self.config.get('edge', {}).get('enabled', False) else None
 
         self.active_pair_whitelist = self._refresh_whitelist()
-
-        persistence.init(self.config.get('db_url', None),
-                         clean_open_orders=self.config.get('dry_run', False))
 
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')

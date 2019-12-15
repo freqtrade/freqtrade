@@ -331,7 +331,13 @@ class Telegram(RPC):
         try:
             result = self._rpc_balance(self._config['stake_currency'],
                                        self._config.get('fiat_display_currency', ''))
+
             output = ''
+            if self._config['dry_run']:
+                output += (
+                    f"Simulated balances - starting capital: "
+                    f"`{self._config['dry_run_wallet']}` {self._config['stake_currency']}.\n"
+                    )
             for currency in result['currencies']:
                 if currency['est_stake'] > 0.0001:
                     curr_output = "*{currency}:*\n" \

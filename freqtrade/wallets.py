@@ -28,9 +28,6 @@ class Wallets:
 
     def get_free(self, currency) -> float:
 
-        if self._config['dry_run']:
-            return self._config.get('dry_run_wallet', constants.DRY_RUN_WALLET)
-
         balance = self._wallets.get(currency)
         if balance and balance.free:
             return balance.free
@@ -39,9 +36,6 @@ class Wallets:
 
     def get_used(self, currency) -> float:
 
-        if self._config['dry_run']:
-            return self._config.get('dry_run_wallet', constants.DRY_RUN_WALLET)
-
         balance = self._wallets.get(currency)
         if balance and balance.used:
             return balance.used
@@ -49,9 +43,6 @@ class Wallets:
             return 0
 
     def get_total(self, currency) -> float:
-
-        if self._config['dry_run']:
-            return self._config.get('dry_run_wallet', constants.DRY_RUN_WALLET)
 
         balance = self._wallets.get(currency)
         if balance and balance.total:
@@ -75,3 +66,35 @@ class Wallets:
 
     def get_all_balances(self) -> Dict[str, Any]:
         return self._wallets
+
+
+class WalletsDry(Wallets):
+
+    def __init__(self, config: dict, exchange: Exchange) -> None:
+        self.start_cap = config['dry_run_wallet']
+        super().__init__(config, exchange)
+
+    def update(self) -> None:
+        """ Update does not do anything in dry-mode..."""
+        from freqtrade.persistence import Trade
+        closed_trades = Trade.get_trades(Trade.is_open.is_(False)).all()
+        print(len(closed_trades))
+        tot_profit = sum([trade.calc_profit() for trade in closed_trades])
+        current_stake = self.start_cap + tot_profit
+        self._wallets[self._config['stake_currency']] = Wallet(
+            self._config['stake_currency'],
+            current_stake,
+            0,
+            current_stake
+        )
+        open_trades = Trade.get_trades(Trade.is_open.is_(True)).all()
+
+        for trade in open_trades:
+            curr = trade.pair.split('/')[0]
+            trade.amount
+            self._wallets[curr] = Wallet(
+                curr,
+                trade.amount,
+                0,
+                trade.amount
+            )
