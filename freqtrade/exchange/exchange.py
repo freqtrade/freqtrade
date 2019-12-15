@@ -479,7 +479,7 @@ class Exchange:
     @retrier
     def get_balance(self, currency: str) -> float:
         if self._config['dry_run']:
-            return constants.DRY_RUN_WALLET
+            return self._config['dry_run_wallet']
 
         # ccxt exception is already handled by get_balances
         balances = self.get_balances()
