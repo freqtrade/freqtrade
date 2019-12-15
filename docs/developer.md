@@ -246,6 +246,17 @@ Determine if crucial bugfixes have been made between this commit and the current
 git log --oneline --no-decorate --no-merges master..new_release
 ```
 
+To keep the release-log short, best wrap the full git changelog into a collapsible details secction.
+
+```markdown
+<details>
+<summary>Expand full changelog</summary>
+
+... Full git changelog
+
+</details>
+```
+
 ### Create github release / tag
 
 Once the PR against master is merged (best right after merging):
