@@ -3514,4 +3514,3 @@ def test_sync_wallet_dry_run(mocker, default_conf, ticker, fee, limit_buy_order)
             DependencyException,
             match=r"Available balance \(0 BTC\) is lower than stake amount \(0.001 BTC\)"):
         bot.create_trades()
-

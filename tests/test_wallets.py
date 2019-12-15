@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring
-from tests.conftest import get_patched_freqtradebot
 from unittest.mock import MagicMock
+
+from tests.conftest import get_patched_freqtradebot
 
 
 def test_sync_wallet_at_boot(mocker, default_conf):

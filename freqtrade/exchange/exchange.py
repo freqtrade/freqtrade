@@ -18,7 +18,7 @@ from ccxt.base.decimal_to_precision import ROUND_DOWN, ROUND_UP
 from pandas import DataFrame
 
 from freqtrade import (DependencyException, InvalidOrderException,
-                       OperationalException, TemporaryError, constants)
+                       OperationalException, TemporaryError)
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.exchange.common import BAD_EXCHANGES, retrier, retrier_async
 from freqtrade.misc import deep_merge_dicts
