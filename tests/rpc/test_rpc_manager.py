@@ -1,5 +1,5 @@
 # pragma pylint: disable=missing-docstring, C0103
-
+import time
 import logging
 from unittest.mock import MagicMock
 
@@ -173,9 +173,14 @@ def test_init_apiserver_enabled(mocker, default_conf, caplog) -> None:
     default_conf["telegram"]["enabled"] = False
     default_conf["api_server"] = {"enabled": True,
                                   "listen_ip_address": "127.0.0.1",
-                                  "listen_port": "8080"}
+                                  "listen_port": 8080,
+                                  "username": "TestUser",
+                                  "password": "TestPass",
+                                  }
     rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
 
+    # Sleep to allow the thread to start
+    time.sleep(0.5)
     assert log_has('Enabling rpc.api_server', caplog)
     assert len(rpc_manager.registered_modules) == 1
     assert 'apiserver' in [mod.name for mod in rpc_manager.registered_modules]

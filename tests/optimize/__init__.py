@@ -7,7 +7,7 @@ from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.strategy.interface import SellType
 
 ticker_start_time = arrow.get(2018, 10, 3)
-tests_ticker_interval = '1h'
+tests_timeframe = '1h'
 
 
 class BTrade(NamedTuple):
@@ -36,7 +36,7 @@ class BTContainer(NamedTuple):
 
 
 def _get_frame_time_from_offset(offset):
-    return ticker_start_time.shift(minutes=(offset * timeframe_to_minutes(tests_ticker_interval))
+    return ticker_start_time.shift(minutes=(offset * timeframe_to_minutes(tests_timeframe))
                                    ).datetime
 
 

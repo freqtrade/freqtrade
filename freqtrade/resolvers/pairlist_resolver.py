@@ -20,13 +20,18 @@ class PairListResolver(IResolver):
 
     __slots__ = ['pairlist']
 
-    def __init__(self, pairlist_name: str, freqtrade, config: dict) -> None:
+    def __init__(self, pairlist_name: str, exchange, pairlistmanager,
+                 config: dict, pairlistconfig: dict, pairlist_pos: int) -> None:
         """
         Load the custom class from config parameter
         :param config: configuration dictionary or None
         """
-        self.pairlist = self._load_pairlist(pairlist_name, config, kwargs={'freqtrade': freqtrade,
-                                                                           'config': config})
+        self.pairlist = self._load_pairlist(pairlist_name, config,
+                                            kwargs={'exchange': exchange,
+                                                    'pairlistmanager': pairlistmanager,
+                                                    'config': config,
+                                                    'pairlistconfig': pairlistconfig,
+                                                    'pairlist_pos': pairlist_pos})
 
     def _load_pairlist(
             self, pairlist_name: str, config: dict, kwargs: dict) -> IPairList:
@@ -40,7 +45,7 @@ class PairListResolver(IResolver):
         current_path = Path(__file__).parent.parent.joinpath('pairlist').resolve()
 
         abs_paths = self.build_search_paths(config, current_path=current_path,
-                                            user_subdir='pairlist', extra_dir=None)
+                                            user_subdir=None, extra_dir=None)
 
         pairlist = self._load_object(paths=abs_paths, object_type=IPairList,
                                      object_name=pairlist_name, kwargs=kwargs)

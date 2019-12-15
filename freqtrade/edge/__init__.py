@@ -97,10 +97,11 @@ class Edge:
         data = history.load_data(
             datadir=Path(self.config['datadir']),
             pairs=pairs,
-            ticker_interval=self.strategy.ticker_interval,
+            timeframe=self.strategy.ticker_interval,
             refresh_pairs=self._refresh_pairs,
             exchange=self.exchange,
-            timerange=self._timerange
+            timerange=self._timerange,
+            startup_candles=self.strategy.startup_candle_count,
         )
 
         if not data:

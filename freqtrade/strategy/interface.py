@@ -103,11 +103,14 @@ class IStrategy(ABC):
     # run "populate_indicators" only for new candle
     process_only_new_candles: bool = False
 
+    # Count of candles the strategy requires before producing valid signals
+    startup_candle_count: int = 0
+
     # Class level variables (intentional) containing
     # the dataprovider (dp) (access to other candles, historic data, ...)
     # and wallets - access to the current balance.
-    dp: DataProvider
-    wallets: Wallets
+    dp: Optional[DataProvider] = None
+    wallets: Optional[Wallets] = None
 
     def __init__(self, config: dict) -> None:
         self.config = config
@@ -421,6 +424,7 @@ class IStrategy(ABC):
     def tickerdata_to_dataframe(self, tickerdata: Dict[str, List]) -> Dict[str, DataFrame]:
         """
         Creates a dataframe and populates indicators for given ticker data
+        Used by optimize operations only, not during dry / live runs.
         """
         return {pair: self.advise_indicators(pair_data, {'pair': pair})
                 for pair, pair_data in tickerdata.items()}

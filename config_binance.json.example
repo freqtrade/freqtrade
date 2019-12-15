@@ -37,23 +37,29 @@
             "rateLimit": 200
         },
         "pair_whitelist": [
-            "AST/BTC",
-            "ETC/BTC",
-            "ETH/BTC",
+            "ALGO/BTC",
+            "ATOM/BTC",
+            "BAT/BTC",
+            "BCH/BTC",
+            "BRD/BTC",
             "EOS/BTC",
+            "ETH/BTC",
             "IOTA/BTC",
+            "LINK/BTC",
             "LTC/BTC",
-            "MTH/BTC",
-            "NCASH/BTC",
-            "TNT/BTC",
+            "NEO/BTC",
+            "NXS/BTC",
             "XMR/BTC",
-            "XLM/BTC",
-            "XRP/BTC"
+            "XRP/BTC",
+            "XTZ/BTC"
         ],
         "pair_blacklist": [
             "BNB/BTC"
         ]
     },
+    "pairlists": [
+        {"method": "StaticPairList"}
+    ],
     "edge": {
         "enabled": false,
         "process_throttle_secs": 3600,

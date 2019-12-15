@@ -1,4 +1,4 @@
-# Optimization
+# Strategy Customization
 
 This page explains where to customize your strategies, and add new
 indicators.
@@ -7,24 +7,28 @@ indicators.
 
 This is very simple. Copy paste your strategy file into the directory `user_data/strategies`.
 
-Let assume you have a class called `AwesomeStrategy` in the file `awesome-strategy.py`:
+Let assume you have a class called `AwesomeStrategy` in the file `AwesomeStrategy.py`:
 
-1. Move your file into `user_data/strategies` (you should have `user_data/strategies/awesome-strategy.py`
+1. Move your file into `user_data/strategies` (you should have `user_data/strategies/AwesomeStrategy.py`
 2. Start the bot with the param `--strategy AwesomeStrategy` (the parameter is the class name)
 
 ```bash
-freqtrade --strategy AwesomeStrategy
+freqtrade trade --strategy AwesomeStrategy
 ```
 
-## Change your strategy
+## Develop your own strategy
 
-The bot includes a default strategy file. However, we recommend you to
-use your own file to not have to lose your parameters every time the default
-strategy file will be updated on Github. Put your custom strategy file
-into the directory `user_data/strategies`.
+The bot includes a default strategy file.
+Also, several other strategies are available in the [strategy repository](https://github.com/freqtrade/freqtrade-strategies).
 
-Best copy the test-strategy and modify this copy to avoid having bot-updates override your changes.
-`cp  user_data/strategies/sample_strategy.py user_data/strategies/awesome-strategy.py`
+You will however most likely have your own idea for a strategy.
+This document intends to help you develop one for yourself.
+
+To get started, use `freqtrade new-strategy --strategy AwesomeStrategy`.
+This will create a new strategy file from a template, which will be located under `user_data/strategies/AwesomeStrategy.py`.
+
+!!! Note
+    This is just a template file, which will most likely not be profitable out of the box.
 
 ### Anatomy of a strategy
 
@@ -45,19 +49,19 @@ The current version is 2 - which is also the default when it's not set explicitl
 Future versions will require this to be set.
 
 ```bash
-freqtrade --strategy AwesomeStrategy
+freqtrade trade --strategy AwesomeStrategy
 ```
 
-**For the following section we will use the [user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/sample_strategy.py)
+**For the following section we will use the [user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_strategy.py)
 file as reference.**
 
-!!! Note Strategies and Backtesting
+!!! Note "Strategies and Backtesting"
     To avoid problems and unexpected differences between Backtesting and dry/live modes, please be aware
     that during backtesting the full time-interval is passed to the `populate_*()` methods at once.
     It is therefore best to use vectorized operations (across the whole dataframe, not loops) and
     avoid index referencing (`df.iloc[-1]`), but instead use `df.shift()` to get to the previous candle.
 
-!!! Warning Using future data
+!!! Warning "Warning: Using future data"
     Since backtesting passes the full time interval to the `populate_*()` methods, the strategy author
     needs to take care to avoid having the strategy utilize data from the future.
     Some common patterns for this are listed in the [Common Mistakes](#common-mistakes-when-developing-strategies) section of this document.
@@ -114,8 +118,39 @@ def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame
 ```
 
 !!! Note "Want more indicator examples?"
-    Look into the [user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/sample_strategy.py).
+    Look into the [user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_strategy.py).
     Then uncomment indicators you need.
+
+### Strategy startup period
+
+Most indicators have an instable startup period, in which they are either not available, or the calculation is incorrect. This can lead to inconsistencies, since Freqtrade does not know how long this instable period should be.
+To account for this, the strategy can be assigned the `startup_candle_count` attribute.
+This should be set to the maximum number of candles that the strategy requires to calculate stable indicators.
+
+In this example strategy, this should be set to 100 (`startup_candle_count = 100`), since the longest needed history is 100 candles.
+
+``` python
+    dataframe['ema100'] = ta.EMA(dataframe, timeperiod=100)
+```
+
+By letting the bot know how much history is needed, backtest trades can start at the specified timerange during backtesting and hyperopt.
+
+!!! Warning
+    `startup_candle_count` should be below `ohlcv_candle_limit` (which is 500 for most exchanges) - since only this amount of candles will be available during Dry-Run/Live Trade operations.
+
+#### Example
+
+Let's try to backtest 1 month (January 2019) of 5m candles using the an example strategy with EMA100, as above.
+
+``` bash
+freqtrade backtesting --timerange 20190101-20190201 --ticker-interval 5m
+```
+
+Assuming `startup_candle_count` is set to 100, backtesting knows it needs 100 candles to generate valid buy signals. It will load data from `20190101 - (100 * 5m)` - which is ~2019-12-31 15:30:00.
+If this data is available, indicators will be calculated with this extended timerange. The instable startup period (up to 2019-01-01 00:00:00) will then be removed before starting backtesting.
+
+!!! Note
+    If data for the startup period is not available, then the timerange will be adjusted to account for this startup period - so Backtesting would start at 2019-01-01 08:30:00.
 
 ### Buy signal rules
 
@@ -267,10 +302,10 @@ class Awesomestrategy(IStrategy):
 ```
 
 !!! Warning
-  The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
+    The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
 
 !!! Note
-  If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
+    If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
 
 ### Additional data (DataProvider)
 
@@ -283,9 +318,9 @@ Please always check the mode of operation to select the correct method to get da
 #### Possible options for DataProvider
 
 - `available_pairs` - Property with tuples listing cached pairs with their intervals (pair, interval).
-- `ohlcv(pair, ticker_interval)` - Currently cached ticker data for the pair, returns DataFrame or empty DataFrame.
-- `historic_ohlcv(pair, ticker_interval)` - Returns historical data stored on disk.
-- `get_pair_dataframe(pair, ticker_interval)` - This is a universal method, which returns either historical data (for backtesting) or cached live data (for the Dry-Run and Live-Run modes).
+- `ohlcv(pair, timeframe)` - Currently cached ticker data for the pair, returns DataFrame or empty DataFrame.
+- `historic_ohlcv(pair, timeframe)` - Returns historical data stored on disk.
+- `get_pair_dataframe(pair, timeframe)` - This is a universal method, which returns either historical data (for backtesting) or cached live data (for the Dry-Run and Live-Run modes).
 - `orderbook(pair, maximum)` - Returns latest orderbook data for the pair, a dict with bids/asks with a total of `maximum` entries.
 - `market(pair)` - Returns market data for the pair: fees, limits, precisions, activity flag, etc. See [ccxt documentation](https://github.com/ccxt/ccxt/wiki/Manual#markets) for more details on Market data structure.
 - `runmode` - Property containing the current runmode.
@@ -296,15 +331,15 @@ Please always check the mode of operation to select the correct method to get da
 if self.dp:
     inf_pair, inf_timeframe = self.informative_pairs()[0]
     informative = self.dp.get_pair_dataframe(pair=inf_pair,
-                                             ticker_interval=inf_timeframe)
+                                             timeframe=inf_timeframe)
 ```
 
-!!! Warning Warning about backtesting
+!!! Warning "Warning about backtesting"
     Be carefull when using dataprovider in backtesting. `historic_ohlcv()` (and `get_pair_dataframe()`
     for the backtesting runmode) provides the full time-range in one go,
     so please be aware of it and make sure to not "look into the future" to avoid surprises when running in dry/live mode).
 
-!!! Warning Warning in hyperopt
+!!! Warning "Warning in hyperopt"
     This option cannot currently be used during hyperopt.
 
 #### Orderbook
@@ -374,6 +409,52 @@ if self.wallets:
 - `get_used(asset)` - currently tied up balance (open orders)
 - `get_total(asset)` - total available balance - sum of the 2 above
 
+### Additional data (Trades)
+
+A history of Trades can be retrieved in the strategy by querying the database.
+
+At the top of the file, import Trade.
+
+```python
+from freqtrade.persistence import Trade
+```
+
+The following example queries for the current pair and trades from today, however other filters can easily be added.
+
+``` python
+if self.config['runmode'] in ('live', 'dry_run'):
+    trades = Trade.get_trades([Trade.pair == metadata['pair'],
+                               Trade.open_date > datetime.utcnow() - timedelta(days=1),
+                               Trade.is_open == False,
+                ]).order_by(Trade.close_date).all()
+    # Summarize profit for this pair.
+    curdayprofit = sum(trade.close_profit for trade in trades)
+```
+
+Get amount of stake_currency currently invested in Trades:
+
+``` python
+if self.config['runmode'] in ('live', 'dry_run'):
+    total_stakes = Trade.total_open_trades_stakes()
+```
+
+Retrieve performance per pair.
+Returns a List of dicts per pair.
+
+``` python
+if self.config['runmode'] in ('live', 'dry_run'):
+    performance = Trade.get_overall_performance()
+```
+
+Sample return value: ETH/BTC had 5 trades, with a total profit of 1.5% (ratio of 0.015).
+
+``` json
+{'pair': "ETH/BTC", 'profit': 0.015, 'count': 5}
+```
+
+!!! Warning
+    Trade history is not available during backtesting or hyperopt.
+
 ### Print created dataframe
 
 To inspect the created dataframe, you can issue a print-statement in either `populate_buy_trend()` or `populate_sell_trend()`.
@@ -401,14 +482,14 @@ Printing more than a few rows is also possible (simply use  `print(dataframe)` i
 ### Where can i find a strategy template?
 
 The strategy template is located in the file
-[user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/sample_strategy.py).
+[user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_strategy.py).
 
 ### Specify custom strategy location
 
 If you want to use a strategy from a different directory you can pass `--strategy-path`
 
 ```bash
-freqtrade --strategy AwesomeStrategy --strategy-path /some/directory
+freqtrade trade --strategy AwesomeStrategy --strategy-path /some/directory
 ```
 
 ### Common mistakes when developing strategies

@@ -95,6 +95,7 @@ class Telegram(RPC):
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
             CommandHandler('reload_conf', self._reload_conf),
+            CommandHandler('show_config', self._show_config),
             CommandHandler('stopbuy', self._stopbuy),
             CommandHandler('whitelist', self._whitelist),
             CommandHandler('blacklist', self._blacklist),
@@ -234,8 +235,9 @@ class Telegram(RPC):
         :return: None
         """
         try:
-            df_statuses = self._rpc_status_table()
-            message = tabulate(df_statuses, headers='keys', tablefmt='simple')
+            statlist, head = self._rpc_status_table(self._config['stake_currency'],
+                                                    self._config.get('fiat_display_currency', ''))
+            message = tabulate(statlist, headers=head, tablefmt='simple')
             self._send_msg(f"<pre>{message}</pre>", parse_mode=ParseMode.HTML)
         except RPCException as e:
             self._send_msg(str(e))
@@ -323,15 +325,16 @@ class Telegram(RPC):
     def _balance(self, update: Update, context: CallbackContext) -> None:
         """ Handler for /balance """
         try:
-            result = self._rpc_balance(self._config.get('fiat_display_currency', ''))
+            result = self._rpc_balance(self._config['stake_currency'],
+                                       self._config.get('fiat_display_currency', ''))
             output = ''
             for currency in result['currencies']:
-                if currency['est_btc'] > 0.0001:
+                if currency['est_stake'] > 0.0001:
                     curr_output = "*{currency}:*\n" \
                             "\t`Available: {free: .8f}`\n" \
                             "\t`Balance: {balance: .8f}`\n" \
                             "\t`Pending: {used: .8f}`\n" \
-                            "\t`Est. BTC: {est_btc: .8f}`\n".format(**currency)
+                            "\t`Est. {stake}: {est_stake: .8f}`\n".format(**currency)
                 else:
                     curr_output = "*{currency}:* not showing <1$ amount \n".format(**currency)
 
@@ -549,6 +552,7 @@ class Telegram(RPC):
                   "*/balance:* `Show account balance per currency`\n" \
                   "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n" \
                   "*/reload_conf:* `Reload configuration file` \n" \
+                  "*/show_config:* `Show running configuration` \n" \
                   "*/whitelist:* `Show current whitelist` \n" \
                   "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs " \
                   "to the blacklist.` \n" \
@@ -568,6 +572,26 @@ class Telegram(RPC):
         :return: None
         """
         self._send_msg('*Version:* `{}`'.format(__version__))
+
+    @authorized_only
+    def _show_config(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /show_config.
+        Show config information information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        val = self._rpc_show_config()
+        self._send_msg(
+            f"*Mode:* `{'Dry-run' if val['dry_run'] else 'Live'}`\n"
+            f"*Exchange:* `{val['exchange']}`\n"
+            f"*Stake per trade:* `{val['stake_amount']} {val['stake_currency']}`\n"
+            f"*Minimum ROI:* `{val['minimal_roi']}`\n"
+            f"*{'Trailing ' if val['trailing_stop'] else ''}Stoploss:* `{val['stoploss']}`\n"
+            f"*Ticker Interval:* `{val['ticker_interval']}`\n"
+            f"*Strategy:* `{val['strategy']}`'"
+        )
 
     def _send_msg(self, msg: str, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
         """

@@ -18,6 +18,18 @@ def check_int_positive(value: str) -> int:
     return uint
 
 
+def check_int_nonzero(value: str) -> int:
+    try:
+        uint = int(value)
+        if uint == 0:
+            raise ValueError
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"{value} is invalid for this parameter, should be a non-zero integer value"
+        )
+    return uint
+
+
 class Arg:
     # Optional CLI arguments
     def __init__(self, *args, **kwargs):
@@ -36,7 +48,8 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "logfile": Arg(
         '--logfile',
-        help='Log to the file specified.',
+        help="Log to the file specified. Special values are: 'syslog', 'journald'. "
+             "See the documentation for more details.",
         metavar='FILE',
     ),
     "version": Arg(
@@ -62,12 +75,16 @@ AVAILABLE_CLI_OPTIONS = {
         help='Path to userdata directory.',
         metavar='PATH',
     ),
+    "reset": Arg(
+        '--reset',
+        help='Reset sample files to their original state.',
+        action='store_true',
+    ),
     # Main options
     "strategy": Arg(
         '-s', '--strategy',
-        help='Specify strategy class name (default: `%(default)s`).',
+        help='Specify strategy class name which will be used by the bot.',
         metavar='NAME',
-        default='DefaultStrategy',
     ),
     "strategy_path": Arg(
         '--strategy-path',
@@ -84,6 +101,11 @@ AVAILABLE_CLI_OPTIONS = {
     "sd_notify": Arg(
         '--sd-notify',
         help='Notify systemd service manager.',
+        action='store_true',
+    ),
+    "dry_run": Arg(
+        '--dry-run',
+        help='Enforce dry-run for trading (removes Exchange secrets and simulates trades).',
         action='store_true',
     ),
     # Optimize common
@@ -136,7 +158,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "exportfilename": Arg(
         '--export-filename',
-        help='Save backtest results to the file with this filename (default: `%(default)s`). '
+        help='Save backtest results to the file with this filename. '
         'Requires `--export` to be set as well. '
         'Example: `--export-filename=user_data/backtest_results/backtest_today.json`',
         metavar='PATH',
@@ -156,14 +178,13 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     # Hyperopt
     "hyperopt": Arg(
-        '--customhyperopt',
-        help='Specify hyperopt class name (default: `%(default)s`).',
+        '--hyperopt',
+        help='Specify hyperopt class name which will be used by the bot.',
         metavar='NAME',
-        default=constants.DEFAULT_HYPEROPT,
     ),
     "hyperopt_path": Arg(
         '--hyperopt-path',
-        help='Specify additional lookup path for Hyperopts and Hyperopt Loss functions.',
+        help='Specify additional lookup path for Hyperopt and Hyperopt Loss functions.',
         metavar='PATH',
     ),
     "epochs": Arg(
@@ -174,12 +195,11 @@ AVAILABLE_CLI_OPTIONS = {
         default=constants.HYPEROPT_EPOCH,
     ),
     "spaces": Arg(
-        '-s', '--spaces',
-        help='Specify which parameters to hyperopt. Space-separated list. '
-        'Default: `%(default)s`.',
-        choices=['all', 'buy', 'sell', 'roi', 'stoploss'],
+        '--spaces',
+        help='Specify which parameters to hyperopt. Space-separated list.',
+        choices=['all', 'buy', 'sell', 'roi', 'stoploss', 'trailing', 'default'],
         nargs='+',
-        default='all',
+        default='default',
     ),
     "print_all": Arg(
         '--print-all',
@@ -331,6 +351,14 @@ AVAILABLE_CLI_OPTIONS = {
         help='Clean all existing data for the selected exchange/pairs/timeframes.',
         action='store_true',
     ),
+    # Templating options
+    "template": Arg(
+        '--template',
+        help='Use a template which is either `minimal` or '
+        '`full` (containing multiple sample indicators). Default: `%(default)s`.',
+        choices=['full', 'minimal'],
+        default='full',
+    ),
     # Plot dataframe
     "indicators1": Arg(
         '--indicators1',
@@ -360,5 +388,32 @@ AVAILABLE_CLI_OPTIONS = {
         'Default: %(default)s',
         choices=["DB", "file"],
         default="file",
+    ),
+    # hyperopt-list, hyperopt-show
+    "hyperopt_list_profitable": Arg(
+        '--profitable',
+        help='Select only profitable epochs.',
+        action='store_true',
+    ),
+    "hyperopt_list_best": Arg(
+        '--best',
+        help='Select only best epochs.',
+        action='store_true',
+    ),
+    "hyperopt_list_no_details": Arg(
+        '--no-details',
+        help='Do not print best epoch details.',
+        action='store_true',
+    ),
+    "hyperopt_show_index": Arg(
+        '-n', '--index',
+        help='Specify the index of the epoch to print details for.',
+        type=check_int_nonzero,
+        metavar='INT',
+    ),
+    "hyperopt_show_no_header": Arg(
+        '--no-header',
+        help='Do not print epoch details header.',
+        action='store_true',
     ),
 }

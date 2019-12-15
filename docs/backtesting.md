@@ -11,13 +11,14 @@ Now you have good Buy and Sell strategies and some historic data, you want to te
 real data. This is what we call
 [backtesting](https://en.wikipedia.org/wiki/Backtesting).
 
-Backtesting will use the crypto-currencies (pairs) from your config file
-and load ticker data from `user_data/data/<exchange>` by default.
-If no data is available for the exchange / pair / ticker interval combination, backtesting will
-ask you to download them first using `freqtrade download-data`.
+Backtesting will use the crypto-currencies (pairs) from your config file and load ticker data from `user_data/data/<exchange>` by default.
+If no data is available for the exchange / pair / ticker interval combination, backtesting will ask you to download them first using `freqtrade download-data`.
 For details on downloading, please refer to the [Data Downloading](data-download.md) section in the documentation.
 
 The result of backtesting will confirm if your bot has better odds of making a profit than a loss.
+
+!!! Tip "Using dynamic pairlists for backtesting"
+    While using dynamic pairlists during backtesting is not possible, a dynamic pairlist using current data can be generated via the [`test-pairlist`](utils.md#test-pairlist) command, and needs to be specified as `"pair_whitelist"` attribute in the configuration.
 
 ### Run a backtesting against the currencies listed in your config file
 
@@ -45,7 +46,7 @@ freqtrade --datadir user_data/data/bittrex-20180101 backtesting
 #### With a (custom) strategy file
 
 ```bash
-freqtrade -s SampleStrategy backtesting
+freqtrade backtesting -s SampleStrategy
 ```
 
 Where `-s SampleStrategy` refers to the class name within the strategy file `sample_strategy.py` found in the `freqtrade/user_data/strategies` directory.
@@ -71,6 +72,8 @@ The exported trades can be used for [further analysis](#further-backtest-result-
 ```bash
 freqtrade backtesting --export trades --export-filename=backtest_samplestrategy.json
 ```
+
+Please also read about the [strategy startup period](strategy-customization.md#strategy-startup-period).
 
 #### Supplying custom fee value
 

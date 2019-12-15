@@ -55,13 +55,16 @@ def patched_configuration_load_config_file(mocker, config) -> None:
     )
 
 
-def patch_exchange(mocker, api_mock=None, id='bittrex') -> None:
+def patch_exchange(mocker, api_mock=None, id='bittrex', mock_markets=True) -> None:
     mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_ordertypes', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.id', PropertyMock(return_value=id))
     mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value=id.title()))
+    if mock_markets:
+        mocker.patch('freqtrade.exchange.Exchange.markets',
+                     PropertyMock(return_value=get_markets()))
 
     if api_mock:
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
@@ -69,8 +72,9 @@ def patch_exchange(mocker, api_mock=None, id='bittrex') -> None:
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock())
 
 
-def get_patched_exchange(mocker, config, api_mock=None, id='bittrex') -> Exchange:
-    patch_exchange(mocker, api_mock, id)
+def get_patched_exchange(mocker, config, api_mock=None, id='bittrex',
+                         mock_markets=True) -> Exchange:
+    patch_exchange(mocker, api_mock, id, mock_markets)
     config["exchange"]["name"] = id
     try:
         exchange = ExchangeResolver(id, config).exchange
@@ -83,6 +87,11 @@ def patch_wallet(mocker, free=999.9) -> None:
     mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(
         return_value=free
     ))
+
+
+def patch_whitelist(mocker, conf) -> None:
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot._refresh_whitelist',
+                 MagicMock(return_value=conf['exchange']['pair_whitelist']))
 
 
 def patch_edge(mocker) -> None:
@@ -120,6 +129,7 @@ def patch_freqtradebot(mocker, config) -> None:
     patch_exchange(mocker)
     mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
+    patch_whitelist(mocker, config)
 
 
 def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
@@ -232,6 +242,9 @@ def default_conf(testdatadir):
                 "HOT/BTC",
             ]
         },
+        "pairlists": [
+            {"method": "StaticPairList"}
+        ],
         "telegram": {
             "enabled": True,
             "token": "token",
@@ -242,6 +255,7 @@ def default_conf(testdatadir):
         "db_url": "sqlite://",
         "user_data_dir": Path("user_data"),
         "verbosity": 3,
+        "strategy": "DefaultStrategy"
     }
     return configuration
 
@@ -287,6 +301,10 @@ def ticker_sell_down():
 
 @pytest.fixture
 def markets():
+    return get_markets()
+
+
+def get_markets():
     return {
         'ETH/BTC': {
             'id': 'ethbtc',
@@ -307,7 +325,7 @@ def markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -333,7 +351,7 @@ def markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -358,7 +376,7 @@ def markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -369,7 +387,7 @@ def markets():
             'symbol': 'LTC/BTC',
             'base': 'LTC',
             'quote': 'BTC',
-            'active': False,
+            'active': True,
             'precision': {
                 'price': 8,
                 'amount': 8,
@@ -383,7 +401,7 @@ def markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -394,7 +412,7 @@ def markets():
             'symbol': 'XRP/BTC',
             'base': 'XRP',
             'quote': 'BTC',
-            'active': False,
+            'active': True,
             'precision': {
                 'price': 8,
                 'amount': 8,
@@ -408,7 +426,7 @@ def markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -419,7 +437,7 @@ def markets():
             'symbol': 'NEO/BTC',
             'base': 'NEO',
             'quote': 'BTC',
-            'active': False,
+            'active': True,
             'precision': {
                 'price': 8,
                 'amount': 8,
@@ -433,7 +451,7 @@ def markets():
                 },
                 'price': 500000,
                 'cost': {
-                    'min': 1,
+                    'min': 0.0001,
                     'max': 500000,
                 },
             },
@@ -444,7 +462,7 @@ def markets():
             'symbol': 'BTT/BTC',
             'base': 'BTT',
             'quote': 'BTC',
-            'active': True,
+            'active': False,
             'precision': {
                 'base': 8,
                 'quote': 8,
@@ -461,7 +479,7 @@ def markets():
                     'max': None
                 },
                 'cost': {
-                    'min': 0.001,
+                    'min': 0.0001,
                     'max': None
                 }
             },
@@ -494,7 +512,7 @@ def markets():
             'symbol': 'LTC/USDT',
             'base': 'LTC',
             'quote': 'USDT',
-            'active': True,
+            'active': False,
             'precision': {
                 'amount': 8,
                 'price': 8
@@ -556,6 +574,72 @@ def markets():
             'info': {},
         }
     }
+
+
+@pytest.fixture
+def shitcoinmarkets(markets):
+    """
+    Fixture with shitcoin markets - used to test filters in pairlists
+    """
+    shitmarkets = deepcopy(markets)
+    shitmarkets.update({'HOT/BTC': {
+            'id': 'HOTBTC',
+            'symbol': 'HOT/BTC',
+            'base': 'HOT',
+            'quote': 'BTC',
+            'active': True,
+            'precision': {
+                'base': 8,
+                'quote': 8,
+                'amount': 0,
+                'price': 8
+            },
+            'limits': {
+                'amount': {
+                    'min': 1.0,
+                    'max': 90000000.0
+                },
+                'price': {
+                    'min': None,
+                    'max': None
+                },
+                'cost': {
+                    'min': 0.001,
+                    'max': None
+                }
+            },
+            'info': {},
+        },
+        'FUEL/BTC': {
+            'id': 'FUELBTC',
+            'symbol': 'FUEL/BTC',
+            'base': 'FUEL',
+            'quote': 'BTC',
+            'active': True,
+            'precision': {
+                'base': 8,
+                'quote': 8,
+                'amount': 0,
+                'price': 8
+            },
+            'limits': {
+                'amount': {
+                    'min': 1.0,
+                    'max': 90000000.0
+                },
+                'price': {
+                    'min': 1e-08,
+                    'max': 1000.0
+                },
+                'cost': {
+                    'min': 0.001,
+                    'max': None
+                }
+            },
+            'info': {},
+        },
+        })
+    return shitmarkets
 
 
 @pytest.fixture
@@ -852,6 +936,72 @@ def tickers():
             'quoteVolume': 1215.14489611,
             'info': {}
         },
+        'HOT/BTC': {
+            'symbol': 'HOT/BTC',
+            'timestamp': 1572273518661,
+            'datetime': '2019-10-28T14:38:38.661Z',
+            'high': 0.00000011,
+            'low': 0.00000009,
+            'bid': 0.0000001,
+            'bidVolume': 1476027288.0,
+            'ask': 0.00000011,
+            'askVolume': 820153831.0,
+            'vwap': 0.0000001,
+            'open': 0.00000009,
+            'close': 0.00000011,
+            'last': 0.00000011,
+            'previousClose': 0.00000009,
+            'change': 0.00000002,
+            'percentage': 22.222,
+            'average': None,
+            'baseVolume': 1442290324.0,
+            'quoteVolume': 143.78311994,
+            'info': {}
+        },
+        'FUEL/BTC': {
+            'symbol': 'FUEL/BTC',
+            'timestamp': 1572340250771,
+            'datetime': '2019-10-29T09:10:50.771Z',
+            'high': 0.00000040,
+            'low': 0.00000035,
+            'bid': 0.00000036,
+            'bidVolume': 8932318.0,
+            'ask': 0.00000037,
+            'askVolume': 10140774.0,
+            'vwap': 0.00000037,
+            'open': 0.00000039,
+            'close': 0.00000037,
+            'last': 0.00000037,
+            'previousClose': 0.00000038,
+            'change': -0.00000002,
+            'percentage': -5.128,
+            'average': None,
+            'baseVolume': 168927742.0,
+            'quoteVolume': 62.68220262,
+            'info': {}
+        },
+        'BTC/USDT': {
+            'symbol': 'BTC/USDT',
+            'timestamp': 1573758371399,
+            'datetime': '2019-11-14T19:06:11.399Z',
+            'high': 8800.0,
+            'low': 8582.6,
+            'bid': 8648.16,
+            'bidVolume': 0.238771,
+            'ask': 8648.72,
+            'askVolume': 0.016253,
+            'vwap': 8683.13647806,
+            'open': 8759.7,
+            'close': 8648.72,
+            'last': 8648.72,
+            'previousClose': 8759.67,
+            'change': -110.98,
+            'percentage': -1.267,
+            'average': None,
+            'baseVolume': 35025.943355,
+            'quoteVolume': 304135046.4242901,
+            'info': {}
+        },
         'ETH/USDT': {
             'symbol': 'ETH/USDT',
             'timestamp': 1522014804118,
@@ -939,7 +1089,29 @@ def tickers():
             'baseVolume': 59698.79897,
             'quoteVolume': 29132399.743954,
             'info': {}
-        }
+        },
+        'XRP/BTC': {
+            'symbol': 'XRP/BTC',
+            'timestamp': 1573758257534,
+            'datetime': '2019-11-14T19:04:17.534Z',
+            'high': 3.126e-05,
+            'low': 3.061e-05,
+            'bid': 3.093e-05,
+            'bidVolume': 27901.0,
+            'ask': 3.095e-05,
+            'askVolume': 10551.0,
+            'vwap': 3.091e-05,
+            'open': 3.119e-05,
+            'close': 3.094e-05,
+            'last': 3.094e-05,
+            'previousClose': 3.117e-05,
+            'change': -2.5e-07,
+            'percentage': -0.802,
+            'average': None,
+            'baseVolume': 37334921.0,
+            'quoteVolume': 1154.19266394,
+            'info': {}
+        },
     })
 
 
@@ -1189,8 +1361,8 @@ def rpc_balance():
             'used': 0.0
         },
         'XRP': {
-            'total': 1.0,
-            'free': 1.0,
+            'total': 0.1,
+            'free': 0.01,
             'used': 0.0
             },
         'EUR': {
@@ -1215,7 +1387,7 @@ def import_fails() -> None:
     realimport = builtins.__import__
 
     def mockedimport(name, *args, **kwargs):
-        if name in ["filelock"]:
+        if name in ["filelock", 'systemd.journal']:
             raise ImportError(f"No module named '{name}'")
         return realimport(name, *args, **kwargs)
 
@@ -1242,3 +1414,8 @@ def open_trade():
         open_date=arrow.utcnow().shift(minutes=-601).datetime,
         is_open=True
     )
+
+
+@pytest.fixture
+def hyperopt_results():
+    return [{'loss': 0.4366182531161519, 'params_dict': {'mfi-value': 15, 'fastd-value': 20, 'adx-value': 25, 'rsi-value': 28, 'mfi-enabled': False, 'fastd-enabled': True, 'adx-enabled': True, 'rsi-enabled': True, 'trigger': 'macd_cross_signal', 'sell-mfi-value': 88, 'sell-fastd-value': 97, 'sell-adx-value': 51, 'sell-rsi-value': 67, 'sell-mfi-enabled': False, 'sell-fastd-enabled': False, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-bb_upper', 'roi_t1': 1190, 'roi_t2': 541, 'roi_t3': 408, 'roi_p1': 0.026035863879169705, 'roi_p2': 0.12508730043628782, 'roi_p3': 0.27766427921605896, 'stoploss': -0.2562930402099556}, 'params_details': {'buy': {'mfi-value': 15, 'fastd-value': 20, 'adx-value': 25, 'rsi-value': 28, 'mfi-enabled': False, 'fastd-enabled': True, 'adx-enabled': True, 'rsi-enabled': True, 'trigger': 'macd_cross_signal'}, 'sell': {'sell-mfi-value': 88, 'sell-fastd-value': 97, 'sell-adx-value': 51, 'sell-rsi-value': 67, 'sell-mfi-enabled': False, 'sell-fastd-enabled': False, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-bb_upper'}, 'roi': {0: 0.4287874435315165, 408: 0.15112316431545753, 949: 0.026035863879169705, 2139: 0}, 'stoploss': {'stoploss': -0.2562930402099556}}, 'results_metrics': {'trade_count': 2, 'avg_profit': -1.254995, 'total_profit': -0.00125625, 'profit': -2.50999, 'duration': 3930.0}, 'results_explanation': '     2 trades. Avg profit  -1.25%. Total profit -0.00125625 BTC (  -2.51Σ%). Avg duration 3930.0 mins.', 'total_profit': -0.00125625, 'current_epoch': 1, 'is_initial_point': True, 'is_best': True}, {'loss': 20.0, 'params_dict': {'mfi-value': 17, 'fastd-value': 38, 'adx-value': 48, 'rsi-value': 22, 'mfi-enabled': True, 'fastd-enabled': False, 'adx-enabled': True, 'rsi-enabled': True, 'trigger': 'macd_cross_signal', 'sell-mfi-value': 96, 'sell-fastd-value': 68, 'sell-adx-value': 63, 'sell-rsi-value': 81, 'sell-mfi-enabled': False, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-sar_reversal', 'roi_t1': 334, 'roi_t2': 683, 'roi_t3': 140, 'roi_p1': 0.06403981740598495, 'roi_p2': 0.055519840060645045, 'roi_p3': 0.3253712811342459, 'stoploss': -0.338070047333259}, 'params_details': {'buy': {'mfi-value': 17, 'fastd-value': 38, 'adx-value': 48, 'rsi-value': 22, 'mfi-enabled': True, 'fastd-enabled': False, 'adx-enabled': True, 'rsi-enabled': True, 'trigger': 'macd_cross_signal'}, 'sell': {'sell-mfi-value': 96, 'sell-fastd-value': 68, 'sell-adx-value': 63, 'sell-rsi-value': 81, 'sell-mfi-enabled': False, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-sar_reversal'}, 'roi': {0: 0.4449309386008759, 140: 0.11955965746663, 823: 0.06403981740598495, 1157: 0}, 'stoploss': {'stoploss': -0.338070047333259}}, 'results_metrics': {'trade_count': 1, 'avg_profit': 0.12357, 'total_profit': 6.185e-05, 'profit': 0.12357, 'duration': 1200.0}, 'results_explanation': '     1 trades. Avg profit   0.12%. Total profit  0.00006185 BTC (   0.12Σ%). Avg duration 1200.0 mins.', 'total_profit': 6.185e-05, 'current_epoch': 2, 'is_initial_point': True, 'is_best': False}, {'loss': 14.241196856510731, 'params_dict': {'mfi-value': 25, 'fastd-value': 16, 'adx-value': 29, 'rsi-value': 20, 'mfi-enabled': False, 'fastd-enabled': False, 'adx-enabled': False, 'rsi-enabled': False, 'trigger': 'macd_cross_signal', 'sell-mfi-value': 98, 'sell-fastd-value': 72, 'sell-adx-value': 51, 'sell-rsi-value': 82, 'sell-mfi-enabled': True, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-macd_cross_signal', 'roi_t1': 889, 'roi_t2': 533, 'roi_t3': 263, 'roi_p1': 0.04759065393663096, 'roi_p2': 0.1488819964638463, 'roi_p3': 0.4102801822104605, 'stoploss': -0.05394588767607611}, 'params_details': {'buy': {'mfi-value': 25, 'fastd-value': 16, 'adx-value': 29, 'rsi-value': 20, 'mfi-enabled': False, 'fastd-enabled': False, 'adx-enabled': False, 'rsi-enabled': False, 'trigger': 'macd_cross_signal'}, 'sell': {'sell-mfi-value': 98, 'sell-fastd-value': 72, 'sell-adx-value': 51, 'sell-rsi-value': 82, 'sell-mfi-enabled': True, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-macd_cross_signal'}, 'roi': {0: 0.6067528326109377, 263: 0.19647265040047726, 796: 0.04759065393663096, 1685: 0}, 'stoploss': {'stoploss': -0.05394588767607611}}, 'results_metrics': {'trade_count': 621, 'avg_profit': -0.43883302093397747, 'total_profit': -0.13639474, 'profit': -272.515306, 'duration': 1691.207729468599}, 'results_explanation': '   621 trades. Avg profit  -0.44%. Total profit -0.13639474 BTC (-272.52Σ%). Avg duration 1691.2 mins.', 'total_profit': -0.13639474, 'current_epoch': 3, 'is_initial_point': True, 'is_best': False}, {'loss': 100000, 'params_dict': {'mfi-value': 13, 'fastd-value': 35, 'adx-value': 39, 'rsi-value': 29, 'mfi-enabled': True, 'fastd-enabled': False, 'adx-enabled': False, 'rsi-enabled': True, 'trigger': 'macd_cross_signal', 'sell-mfi-value': 87, 'sell-fastd-value': 54, 'sell-adx-value': 63, 'sell-rsi-value': 93, 'sell-mfi-enabled': False, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-bb_upper', 'roi_t1': 1402, 'roi_t2': 676, 'roi_t3': 215, 'roi_p1': 0.06264755784937427, 'roi_p2': 0.14258587851894644, 'roi_p3': 0.20671291201040828, 'stoploss': -0.11818343570194478}, 'params_details': {'buy': {'mfi-value': 13, 'fastd-value': 35, 'adx-value': 39, 'rsi-value': 29, 'mfi-enabled': True, 'fastd-enabled': False, 'adx-enabled': False, 'rsi-enabled': True, 'trigger': 'macd_cross_signal'}, 'sell': {'sell-mfi-value': 87, 'sell-fastd-value': 54, 'sell-adx-value': 63, 'sell-rsi-value': 93, 'sell-mfi-enabled': False, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-bb_upper'}, 'roi': {0: 0.411946348378729, 215: 0.2052334363683207, 891: 0.06264755784937427, 2293: 0}, 'stoploss': {'stoploss': -0.11818343570194478}}, 'results_metrics': {'trade_count': 0, 'avg_profit': None, 'total_profit': 0, 'profit': 0.0, 'duration': None}, 'results_explanation': '     0 trades. Avg profit    nan%. Total profit  0.00000000 BTC (   0.00Σ%). Avg duration   nan mins.', 'total_profit': 0, 'current_epoch': 4, 'is_initial_point': True, 'is_best': False}, {'loss': 0.22195522184191518, 'params_dict': {'mfi-value': 17, 'fastd-value': 21, 'adx-value': 38, 'rsi-value': 33, 'mfi-enabled': True, 'fastd-enabled': False, 'adx-enabled': True, 'rsi-enabled': False, 'trigger': 'macd_cross_signal', 'sell-mfi-value': 87, 'sell-fastd-value': 82, 'sell-adx-value': 78, 'sell-rsi-value': 69, 'sell-mfi-enabled': True, 'sell-fastd-enabled': False, 'sell-adx-enabled': True, 'sell-rsi-enabled': False, 'sell-trigger': 'sell-macd_cross_signal', 'roi_t1': 1269, 'roi_t2': 601, 'roi_t3': 444, 'roi_p1': 0.07280999507931168, 'roi_p2': 0.08946698095898986, 'roi_p3': 0.1454876733325284, 'stoploss': -0.18181041180901014}, 'params_details': {'buy': {'mfi-value': 17, 'fastd-value': 21, 'adx-value': 38, 'rsi-value': 33, 'mfi-enabled': True, 'fastd-enabled': False, 'adx-enabled': True, 'rsi-enabled': False, 'trigger': 'macd_cross_signal'}, 'sell': {'sell-mfi-value': 87, 'sell-fastd-value': 82, 'sell-adx-value': 78, 'sell-rsi-value': 69, 'sell-mfi-enabled': True, 'sell-fastd-enabled': False, 'sell-adx-enabled': True, 'sell-rsi-enabled': False, 'sell-trigger': 'sell-macd_cross_signal'}, 'roi': {0: 0.3077646493708299, 444: 0.16227697603830155, 1045: 0.07280999507931168, 2314: 0}, 'stoploss': {'stoploss': -0.18181041180901014}}, 'results_metrics': {'trade_count': 14, 'avg_profit': -0.3539515, 'total_profit': -0.002480140000000001, 'profit': -4.955321, 'duration': 3402.8571428571427}, 'results_explanation': '    14 trades. Avg profit  -0.35%. Total profit -0.00248014 BTC (  -4.96Σ%). Avg duration 3402.9 mins.', 'total_profit': -0.002480140000000001, 'current_epoch': 5, 'is_initial_point': True, 'is_best': True}, {'loss': 0.545315889154162, 'params_dict': {'mfi-value': 22, 'fastd-value': 43, 'adx-value': 46, 'rsi-value': 20, 'mfi-enabled': False, 'fastd-enabled': False, 'adx-enabled': True, 'rsi-enabled': True, 'trigger': 'bb_lower', 'sell-mfi-value': 87, 'sell-fastd-value': 65, 'sell-adx-value': 94, 'sell-rsi-value': 63, 'sell-mfi-enabled': False, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-macd_cross_signal', 'roi_t1': 319, 'roi_t2': 556, 'roi_t3': 216, 'roi_p1': 0.06251955472249589, 'roi_p2': 0.11659519602202795, 'roi_p3': 0.0953744132197762, 'stoploss': -0.024551752215582423}, 'params_details': {'buy': {'mfi-value': 22, 'fastd-value': 43, 'adx-value': 46, 'rsi-value': 20, 'mfi-enabled': False, 'fastd-enabled': False, 'adx-enabled': True, 'rsi-enabled': True, 'trigger': 'bb_lower'}, 'sell': {'sell-mfi-value': 87, 'sell-fastd-value': 65, 'sell-adx-value': 94, 'sell-rsi-value': 63, 'sell-mfi-enabled': False, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-macd_cross_signal'}, 'roi': {0: 0.2744891639643, 216: 0.17911475074452382, 772: 0.06251955472249589, 1091: 0}, 'stoploss': {'stoploss': -0.024551752215582423}}, 'results_metrics': {'trade_count': 39, 'avg_profit': -0.21400679487179478, 'total_profit': -0.0041773, 'profit': -8.346264999999997, 'duration': 636.9230769230769}, 'results_explanation': '    39 trades. Avg profit  -0.21%. Total profit -0.00417730 BTC (  -8.35Σ%). Avg duration 636.9 mins.', 'total_profit': -0.0041773, 'current_epoch': 6, 'is_initial_point': True, 'is_best': False}, {'loss': 4.713497421432944, 'params_dict': {'mfi-value': 13, 'fastd-value': 41, 'adx-value': 21, 'rsi-value': 29, 'mfi-enabled': False, 'fastd-enabled': True, 'adx-enabled': False, 'rsi-enabled': False, 'trigger': 'bb_lower', 'sell-mfi-value': 99, 'sell-fastd-value': 60, 'sell-adx-value': 81, 'sell-rsi-value': 69, 'sell-mfi-enabled': True, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': False, 'sell-trigger': 'sell-macd_cross_signal', 'roi_t1': 771, 'roi_t2': 620, 'roi_t3': 145, 'roi_p1': 0.0586919200378493, 'roi_p2': 0.04984118697312542, 'roi_p3': 0.37521058680247044, 'stoploss': -0.14613268022709905}, 'params_details': {'buy': {'mfi-value': 13, 'fastd-value': 41, 'adx-value': 21, 'rsi-value': 29, 'mfi-enabled': False, 'fastd-enabled': True, 'adx-enabled': False, 'rsi-enabled': False, 'trigger': 'bb_lower'}, 'sell': {'sell-mfi-value': 99, 'sell-fastd-value': 60, 'sell-adx-value': 81, 'sell-rsi-value': 69, 'sell-mfi-enabled': True, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': False, 'sell-trigger': 'sell-macd_cross_signal'}, 'roi': {0: 0.4837436938134452, 145: 0.10853310701097472, 765: 0.0586919200378493, 1536: 0}, 'stoploss': {'stoploss': -0.14613268022709905}}, 'results_metrics': {'trade_count': 318, 'avg_profit': -0.39833954716981146, 'total_profit': -0.06339929, 'profit': -126.67197600000004, 'duration': 3140.377358490566}, 'results_explanation': '   318 trades. Avg profit  -0.40%. Total profit -0.06339929 BTC (-126.67Σ%). Avg duration 3140.4 mins.', 'total_profit': -0.06339929, 'current_epoch': 7, 'is_initial_point': True, 'is_best': False}, {'loss': 20.0, 'params_dict': {'mfi-value': 24, 'fastd-value': 43, 'adx-value': 33, 'rsi-value': 20, 'mfi-enabled': False, 'fastd-enabled': True, 'adx-enabled': True, 'rsi-enabled': True, 'trigger': 'sar_reversal', 'sell-mfi-value': 89, 'sell-fastd-value': 74, 'sell-adx-value': 70, 'sell-rsi-value': 70, 'sell-mfi-enabled': False, 'sell-fastd-enabled': False, 'sell-adx-enabled': False, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-sar_reversal', 'roi_t1': 1149, 'roi_t2': 375, 'roi_t3': 289, 'roi_p1': 0.05571820757172588, 'roi_p2': 0.0606240398618907, 'roi_p3': 0.1729012220156157, 'stoploss': -0.1588514289110401}, 'params_details': {'buy': {'mfi-value': 24, 'fastd-value': 43, 'adx-value': 33, 'rsi-value': 20, 'mfi-enabled': False, 'fastd-enabled': True, 'adx-enabled': True, 'rsi-enabled': True, 'trigger': 'sar_reversal'}, 'sell': {'sell-mfi-value': 89, 'sell-fastd-value': 74, 'sell-adx-value': 70, 'sell-rsi-value': 70, 'sell-mfi-enabled': False, 'sell-fastd-enabled': False, 'sell-adx-enabled': False, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-sar_reversal'}, 'roi': {0: 0.2892434694492323, 289: 0.11634224743361658, 664: 0.05571820757172588, 1813: 0}, 'stoploss': {'stoploss': -0.1588514289110401}}, 'results_metrics': {'trade_count': 1, 'avg_profit': 0.0, 'total_profit': 0.0, 'profit': 0.0, 'duration': 5340.0}, 'results_explanation': '     1 trades. Avg profit   0.00%. Total profit  0.00000000 BTC (   0.00Σ%). Avg duration 5340.0 mins.', 'total_profit': 0.0, 'current_epoch': 8, 'is_initial_point': True, 'is_best': False}, {'loss': 2.4731817780991223, 'params_dict': {'mfi-value': 22, 'fastd-value': 20, 'adx-value': 29, 'rsi-value': 40, 'mfi-enabled': False, 'fastd-enabled': False, 'adx-enabled': False, 'rsi-enabled': False, 'trigger': 'sar_reversal', 'sell-mfi-value': 97, 'sell-fastd-value': 65, 'sell-adx-value': 81, 'sell-rsi-value': 64, 'sell-mfi-enabled': True, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-bb_upper', 'roi_t1': 1012, 'roi_t2': 584, 'roi_t3': 422, 'roi_p1': 0.036764323603472565, 'roi_p2': 0.10335480573205287, 'roi_p3': 0.10322347377503042, 'stoploss': -0.2780610808108503}, 'params_details': {'buy': {'mfi-value': 22, 'fastd-value': 20, 'adx-value': 29, 'rsi-value': 40, 'mfi-enabled': False, 'fastd-enabled': False, 'adx-enabled': False, 'rsi-enabled': False, 'trigger': 'sar_reversal'}, 'sell': {'sell-mfi-value': 97, 'sell-fastd-value': 65, 'sell-adx-value': 81, 'sell-rsi-value': 64, 'sell-mfi-enabled': True, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-bb_upper'}, 'roi': {0: 0.2433426031105559, 422: 0.14011912933552545, 1006: 0.036764323603472565, 2018: 0}, 'stoploss': {'stoploss': -0.2780610808108503}}, 'results_metrics': {'trade_count': 229, 'avg_profit': -0.38433433624454144, 'total_profit': -0.044050070000000004, 'profit': -88.01256299999999, 'duration': 6505.676855895196}, 'results_explanation': '   229 trades. Avg profit  -0.38%. Total profit -0.04405007 BTC ( -88.01Σ%). Avg duration 6505.7 mins.', 'total_profit': -0.044050070000000004, 'current_epoch': 9, 'is_initial_point': True, 'is_best': False}, {'loss': -0.2604606005845212, 'params_dict': {'mfi-value': 23, 'fastd-value': 24, 'adx-value': 22, 'rsi-value': 24, 'mfi-enabled': False, 'fastd-enabled': False, 'adx-enabled': False, 'rsi-enabled': True, 'trigger': 'macd_cross_signal', 'sell-mfi-value': 97, 'sell-fastd-value': 70, 'sell-adx-value': 64, 'sell-rsi-value': 80, 'sell-mfi-enabled': False, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-sar_reversal', 'roi_t1': 792, 'roi_t2': 464, 'roi_t3': 215, 'roi_p1': 0.04594053535385903, 'roi_p2': 0.09623192684243963, 'roi_p3': 0.04428219070850663, 'stoploss': -0.16992287161634415}, 'params_details': {'buy': {'mfi-value': 23, 'fastd-value': 24, 'adx-value': 22, 'rsi-value': 24, 'mfi-enabled': False, 'fastd-enabled': False, 'adx-enabled': False, 'rsi-enabled': True, 'trigger': 'macd_cross_signal'}, 'sell': {'sell-mfi-value': 97, 'sell-fastd-value': 70, 'sell-adx-value': 64, 'sell-rsi-value': 80, 'sell-mfi-enabled': False, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-sar_reversal'}, 'roi': {0: 0.18645465290480528, 215: 0.14217246219629864, 679: 0.04594053535385903, 1471: 0}, 'stoploss': {'stoploss': -0.16992287161634415}}, 'results_metrics': {'trade_count': 4, 'avg_profit': 0.1080385, 'total_profit': 0.00021629, 'profit': 0.432154, 'duration': 2850.0}, 'results_explanation': '     4 trades. Avg profit   0.11%. Total profit  0.00021629 BTC (   0.43Σ%). Avg duration 2850.0 mins.', 'total_profit': 0.00021629, 'current_epoch': 10, 'is_initial_point': True, 'is_best': True}, {'loss': 4.876465945994304, 'params_dict': {'mfi-value': 20, 'fastd-value': 32, 'adx-value': 49, 'rsi-value': 23, 'mfi-enabled': True, 'fastd-enabled': True, 'adx-enabled': False, 'rsi-enabled': False, 'trigger': 'bb_lower', 'sell-mfi-value': 75, 'sell-fastd-value': 56, 'sell-adx-value': 61, 'sell-rsi-value': 62, 'sell-mfi-enabled': False, 'sell-fastd-enabled': False, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-macd_cross_signal', 'roi_t1': 579, 'roi_t2': 614, 'roi_t3': 273, 'roi_p1': 0.05307643172744114, 'roi_p2': 0.1352282078262871, 'roi_p3': 0.1913307406325751, 'stoploss': -0.25728526022513887}, 'params_details': {'buy': {'mfi-value': 20, 'fastd-value': 32, 'adx-value': 49, 'rsi-value': 23, 'mfi-enabled': True, 'fastd-enabled': True, 'adx-enabled': False, 'rsi-enabled': False, 'trigger': 'bb_lower'}, 'sell': {'sell-mfi-value': 75, 'sell-fastd-value': 56, 'sell-adx-value': 61, 'sell-rsi-value': 62, 'sell-mfi-enabled': False, 'sell-fastd-enabled': False, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-macd_cross_signal'}, 'roi': {0: 0.3796353801863034, 273: 0.18830463955372825, 887: 0.05307643172744114, 1466: 0}, 'stoploss': {'stoploss': -0.25728526022513887}}, 'results_metrics': {'trade_count': 117, 'avg_profit': -1.2698609145299145, 'total_profit': -0.07436117, 'profit': -148.573727, 'duration': 4282.5641025641025}, 'results_explanation': '   117 trades. Avg profit  -1.27%. Total profit -0.07436117 BTC (-148.57Σ%). Avg duration 4282.6 mins.', 'total_profit': -0.07436117, 'current_epoch': 11, 'is_initial_point': True, 'is_best': False}, {'loss': 100000, 'params_dict': {'mfi-value': 10, 'fastd-value': 36, 'adx-value': 31, 'rsi-value': 22, 'mfi-enabled': True, 'fastd-enabled': True, 'adx-enabled': True, 'rsi-enabled': False, 'trigger': 'sar_reversal', 'sell-mfi-value': 80, 'sell-fastd-value': 71, 'sell-adx-value': 60, 'sell-rsi-value': 85, 'sell-mfi-enabled': False, 'sell-fastd-enabled': False, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-bb_upper', 'roi_t1': 1156, 'roi_t2': 581, 'roi_t3': 408, 'roi_p1': 0.06860454019988212, 'roi_p2': 0.12473718444931989, 'roi_p3': 0.2896360635226823, 'stoploss': -0.30889015124682806}, 'params_details': {'buy': {'mfi-value': 10, 'fastd-value': 36, 'adx-value': 31, 'rsi-value': 22, 'mfi-enabled': True, 'fastd-enabled': True, 'adx-enabled': True, 'rsi-enabled': False, 'trigger': 'sar_reversal'}, 'sell': {'sell-mfi-value': 80, 'sell-fastd-value': 71, 'sell-adx-value': 60, 'sell-rsi-value': 85, 'sell-mfi-enabled': False, 'sell-fastd-enabled': False, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-bb_upper'}, 'roi': {0: 0.4829777881718843, 408: 0.19334172464920202, 989: 0.06860454019988212, 2145: 0}, 'stoploss': {'stoploss': -0.30889015124682806}}, 'results_metrics': {'trade_count': 0, 'avg_profit': None, 'total_profit': 0, 'profit': 0.0, 'duration': None}, 'results_explanation': '     0 trades. Avg profit    nan%. Total profit  0.00000000 BTC (   0.00Σ%). Avg duration   nan mins.', 'total_profit': 0, 'current_epoch': 12, 'is_initial_point': True, 'is_best': False}]  # noqa: E501

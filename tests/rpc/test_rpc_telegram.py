@@ -22,7 +22,7 @@ from freqtrade.rpc.telegram import Telegram, authorized_only
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType
 from tests.conftest import (get_patched_freqtradebot, log_has, patch_exchange,
-                            patch_get_signal)
+                            patch_get_signal, patch_whitelist)
 
 
 class DummyCls(Telegram):
@@ -73,7 +73,7 @@ def test_init(default_conf, mocker, caplog) -> None:
 
     message_str = "rpc.telegram is listening for following commands: [['status'], ['profit'], " \
                   "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], " \
-                  "['performance'], ['daily'], ['count'], ['reload_conf'], " \
+                  "['performance'], ['daily'], ['count'], ['reload_conf'], ['show_config'], " \
                   "['stopbuy'], ['whitelist'], ['blacklist'], ['edge'], ['help'], ['version']]"
 
     assert log_has(message_str, caplog)
@@ -143,17 +143,15 @@ def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
     assert log_has('Exception occurred within Telegram module', caplog)
 
 
-def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
-    update.message.chat.id = 123
+def test_status(default_conf, update, mocker, fee, ticker,) -> None:
+    update.message.chat.id = "123"
     default_conf['telegram']['enabled'] = False
-    default_conf['telegram']['chat_id'] = 123
+    default_conf['telegram']['chat_id'] = "123"
 
-    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         get_fee=fee,
-        markets=PropertyMock(markets)
     )
     msg_mock = MagicMock()
     status_table = MagicMock()
@@ -184,9 +182,8 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
         _status_table=status_table,
         _send_msg=msg_mock
     )
-    mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(default_conf)
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
@@ -204,13 +201,11 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
     assert status_table.call_count == 1
 
 
-def test_status_handle(default_conf, update, ticker, fee, markets, mocker) -> None:
-    patch_exchange(mocker)
+def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         get_fee=fee,
-        markets=PropertyMock(markets)
     )
     msg_mock = MagicMock()
     status_table = MagicMock()
@@ -220,9 +215,9 @@ def test_status_handle(default_conf, update, ticker, fee, markets, mocker) -> No
         _status_table=status_table,
         _send_msg=msg_mock
     )
-    mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(default_conf)
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+
     patch_get_signal(freqtradebot, (True, False))
 
     telegram = Telegram(freqtradebot)
@@ -256,14 +251,12 @@ def test_status_handle(default_conf, update, ticker, fee, markets, mocker) -> No
     assert 'ETH/BTC' in msg_mock.call_args_list[0][0][0]
 
 
-def test_status_table_handle(default_conf, update, ticker, fee, markets, mocker) -> None:
-    patch_exchange(mocker)
+def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': 'mocked_order_id'}),
         get_fee=fee,
-        markets=PropertyMock(markets)
     )
     msg_mock = MagicMock()
     mocker.patch.multiple(
@@ -271,10 +264,9 @@ def test_status_table_handle(default_conf, update, ticker, fee, markets, mocker)
         _init=MagicMock(),
         _send_msg=msg_mock
     )
-    mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
     default_conf['stake_amount'] = 15.0
-    freqtradebot = FreqtradeBot(default_conf)
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     patch_get_signal(freqtradebot, (True, False))
 
     telegram = Telegram(freqtradebot)
@@ -307,8 +299,7 @@ def test_status_table_handle(default_conf, update, ticker, fee, markets, mocker)
 
 
 def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
-                      limit_sell_order, markets, mocker) -> None:
-    patch_exchange(mocker)
+                      limit_sell_order, mocker) -> None:
     default_conf['max_open_trades'] = 1
     mocker.patch(
         'freqtrade.rpc.rpc.CryptoToFiatConverter._find_price',
@@ -318,7 +309,6 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         get_fee=fee,
-        markets=PropertyMock(markets)
     )
     msg_mock = MagicMock()
     mocker.patch.multiple(
@@ -326,9 +316,8 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
         _init=MagicMock(),
         _send_msg=msg_mock
     )
-    mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(default_conf)
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
@@ -382,7 +371,6 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
 
 
 def test_daily_wrong_input(default_conf, update, ticker, mocker) -> None:
-    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=ticker
@@ -393,9 +381,8 @@ def test_daily_wrong_input(default_conf, update, ticker, mocker) -> None:
         _init=MagicMock(),
         _send_msg=msg_mock
     )
-    mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(default_conf)
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
@@ -420,14 +407,12 @@ def test_daily_wrong_input(default_conf, update, ticker, mocker) -> None:
 
 
 def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
-                       limit_buy_order, limit_sell_order, markets, mocker) -> None:
-    patch_exchange(mocker)
+                       limit_buy_order, limit_sell_order, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         get_fee=fee,
-        markets=PropertyMock(markets)
     )
     msg_mock = MagicMock()
     mocker.patch.multiple(
@@ -435,9 +420,8 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
         _init=MagicMock(),
         _send_msg=msg_mock
     )
-    mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(default_conf)
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
@@ -477,29 +461,10 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     assert '*Best Performing:* `ETH/BTC: 6.20%`' in msg_mock.call_args_list[-1][0][0]
 
 
-def test_telegram_balance_handle(default_conf, update, mocker, rpc_balance) -> None:
-
-    def mock_ticker(symbol, refresh):
-        if symbol == 'BTC/USDT':
-            return {
-                'bid': 10000.00,
-                'ask': 10000.00,
-                'last': 10000.00,
-            }
-        elif symbol == 'XRP/BTC':
-            return {
-                'bid': 0.00001,
-                'ask': 0.00001,
-                'last': 0.00001,
-            }
-        return {
-            'bid': 0.1,
-            'ask': 0.1,
-            'last': 0.1,
-        }
+def test_telegram_balance_handle(default_conf, update, mocker, rpc_balance, tickers) -> None:
 
     mocker.patch('freqtrade.exchange.Exchange.get_balances', return_value=rpc_balance)
-    mocker.patch('freqtrade.exchange.Exchange.get_ticker', side_effect=mock_ticker)
+    mocker.patch('freqtrade.exchange.Exchange.get_tickers', tickers)
     mocker.patch('freqtrade.exchange.Exchange.get_valid_pair_combination',
                  side_effect=lambda a, b: f"{a}/{b}")
 
@@ -580,7 +545,8 @@ def test_balance_handle_too_large_response(default_conf, update, mocker) -> None
             'free': 1.0,
             'used': 0.5,
             'balance': i,
-            'est_btc': 1
+            'est_stake': 1,
+            'stake': 'BTC',
         })
     mocker.patch('freqtrade.rpc.rpc.RPC._rpc_balance', return_value={
         'currencies': balances,
@@ -724,16 +690,16 @@ def test_reload_conf_handle(default_conf, update, mocker) -> None:
 
 
 def test_forcesell_handle(default_conf, update, ticker, fee,
-                          ticker_sell_up, markets, mocker) -> None:
+                          ticker_sell_up, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     rpc_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
     patch_exchange(mocker)
+    patch_whitelist(mocker, default_conf)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         get_fee=fee,
-        markets=PropertyMock(return_value=markets),
     )
 
     freqtradebot = FreqtradeBot(default_conf)
@@ -775,17 +741,18 @@ def test_forcesell_handle(default_conf, update, ticker, fee,
 
 
 def test_forcesell_down_handle(default_conf, update, ticker, fee,
-                               ticker_sell_down, markets, mocker) -> None:
+                               ticker_sell_down, mocker) -> None:
     mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._find_price',
                  return_value=15000.0)
     rpc_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
     patch_exchange(mocker)
+    patch_whitelist(mocker, default_conf)
+
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         get_fee=fee,
-        markets=PropertyMock(return_value=markets),
     )
 
     freqtradebot = FreqtradeBot(default_conf)
@@ -830,17 +797,17 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee,
     } == last_msg
 
 
-def test_forcesell_all_handle(default_conf, update, ticker, fee, markets, mocker) -> None:
+def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None:
     patch_exchange(mocker)
     mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._find_price',
                  return_value=15000.0)
     rpc_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
+    patch_whitelist(mocker, default_conf)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         get_fee=fee,
-        markets=PropertyMock(return_value=markets),
     )
     default_conf['max_open_trades'] = 4
     freqtradebot = FreqtradeBot(default_conf)
@@ -885,9 +852,8 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
         _init=MagicMock(),
         _send_msg=msg_mock
     )
-    patch_exchange(mocker)
 
-    freqtradebot = FreqtradeBot(default_conf)
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
@@ -980,8 +946,7 @@ def test_forcebuy_handle_exception(default_conf, update, markets, mocker) -> Non
 
 
 def test_performance_handle(default_conf, update, ticker, fee,
-                            limit_buy_order, limit_sell_order, markets, mocker) -> None:
-    patch_exchange(mocker)
+                            limit_buy_order, limit_sell_order, mocker) -> None:
     msg_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
@@ -992,10 +957,8 @@ def test_performance_handle(default_conf, update, ticker, fee,
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         get_fee=fee,
-        markets=PropertyMock(markets),
     )
-    mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
-    freqtradebot = FreqtradeBot(default_conf)
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
@@ -1018,8 +981,7 @@ def test_performance_handle(default_conf, update, ticker, fee,
     assert '<code>ETH/BTC\t6.20% (1)</code>' in msg_mock.call_args_list[0][0][0]
 
 
-def test_count_handle(default_conf, update, ticker, fee, markets, mocker) -> None:
-    patch_exchange(mocker)
+def test_count_handle(default_conf, update, ticker, fee, mocker) -> None:
     msg_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
@@ -1030,10 +992,9 @@ def test_count_handle(default_conf, update, ticker, fee, markets, mocker) -> Non
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': 'mocked_order_id'}),
-        markets=PropertyMock(markets)
+        get_fee=fee,
     )
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    freqtradebot = FreqtradeBot(default_conf)
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
@@ -1071,8 +1032,8 @@ def test_whitelist_static(default_conf, update, mocker) -> None:
 
     telegram._whitelist(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
-    assert ('Using whitelist `StaticPairList` with 4 pairs\n`ETH/BTC, LTC/BTC, XRP/BTC, NEO/BTC`'
-            in msg_mock.call_args_list[0][0][0])
+    assert ("Using whitelist `['StaticPairList']` with 4 pairs\n"
+            "`ETH/BTC, LTC/BTC, XRP/BTC, NEO/BTC`" in msg_mock.call_args_list[0][0][0])
 
 
 def test_whitelist_dynamic(default_conf, update, mocker) -> None:
@@ -1083,17 +1044,17 @@ def test_whitelist_dynamic(default_conf, update, mocker) -> None:
         _send_msg=msg_mock
     )
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
-    default_conf['pairlist'] = {'method': 'VolumePairList',
-                                'config': {'number_assets': 4}
-                                }
+    default_conf['pairlists'] = [{'method': 'VolumePairList',
+                                 'number_assets': 4
+                                  }]
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
 
     telegram = Telegram(freqtradebot)
 
     telegram._whitelist(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
-    assert ('Using whitelist `VolumePairList` with 4 pairs\n`ETH/BTC, LTC/BTC, XRP/BTC, NEO/BTC`'
-            in msg_mock.call_args_list[0][0][0])
+    assert ("Using whitelist `['VolumePairList']` with 4 pairs\n"
+            "`ETH/BTC, LTC/BTC, XRP/BTC, NEO/BTC`" in msg_mock.call_args_list[0][0][0])
 
 
 def test_blacklist_static(default_conf, update, mocker) -> None:
@@ -1193,6 +1154,23 @@ def test_version_handle(default_conf, update, mocker) -> None:
     telegram._version(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
     assert '*Version:* `{}`'.format(__version__) in msg_mock.call_args_list[0][0][0]
+
+
+def test_show_config_handle(default_conf, update, mocker) -> None:
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    telegram = Telegram(freqtradebot)
+
+    telegram._show_config(update=update, context=MagicMock())
+    assert msg_mock.call_count == 1
+    assert '*Mode:* `{}`'.format('Dry-run') in msg_mock.call_args_list[0][0][0]
+    assert '*Exchange:* `bittrex`' in msg_mock.call_args_list[0][0][0]
+    assert '*Strategy:* `DefaultStrategy`' in msg_mock.call_args_list[0][0][0]
 
 
 def test_send_msg_buy_notification(default_conf, mocker) -> None:

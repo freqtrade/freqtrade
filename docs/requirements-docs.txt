@@ -1,2 +1,2 @@
-mkdocs-material==4.4.3
+mkdocs-material==4.5.1
 mdx_truly_sane_lists==1.2

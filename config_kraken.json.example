@@ -38,14 +38,34 @@
             "rateLimit": 1000
         },
         "pair_whitelist": [
-            "ETH/EUR",
+            "ADA/EUR",
+            "ATOM/EUR",
+            "BAT/EUR",
+            "BCH/EUR",
             "BTC/EUR",
-            "BCH/EUR"
+            "DAI/EUR",
+            "DASH/EUR",
+            "EOS/EUR",
+            "ETC/EUR",
+            "ETH/EUR",
+            "LINK/EUR",
+            "LTC/EUR",
+            "QTUM/EUR",
+            "REP/EUR",
+            "WAVES/EUR",
+            "XLM/EUR",
+            "XMR/EUR",
+            "XRP/EUR",
+            "XTZ/EUR",
+            "ZEC/EUR"
         ],
         "pair_blacklist": [
 
         ]
     },
+    "pairlists": [
+        {"method": "StaticPairList"}
+    ],
     "edge": {
         "enabled": false,
         "process_throttle_secs": 3600,

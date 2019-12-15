@@ -14,140 +14,24 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 import ccxt
 import ccxt.async_support as ccxt_async
-from ccxt.base.decimal_to_precision import ROUND_UP, ROUND_DOWN
+from ccxt.base.decimal_to_precision import ROUND_DOWN, ROUND_UP
 from pandas import DataFrame
 
 from freqtrade import (DependencyException, InvalidOrderException,
                        OperationalException, TemporaryError, constants)
 from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.exchange.common import BAD_EXCHANGES, retrier, retrier_async
 from freqtrade.misc import deep_merge_dicts
 
-
 logger = logging.getLogger(__name__)
-
-
-API_RETRY_COUNT = 4
-BAD_EXCHANGES = {
-    "bitmex": "Various reasons.",
-    "bitstamp": "Does not provide history. "
-                "Details in https://github.com/freqtrade/freqtrade/issues/1983",
-    "hitbtc": "This API cannot be used with Freqtrade. "
-              "Use `hitbtc2` exchange id to access this exchange.",
-    **dict.fromkeys([
-        'adara',
-        'anxpro',
-        'bigone',
-        'coinbase',
-        'coinexchange',
-        'coinmarketcap',
-        'lykke',
-        'xbtce',
-        ], "Does not provide timeframes. ccxt fetchOHLCV: False"),
-    **dict.fromkeys([
-        'bcex',
-        'bit2c',
-        'bitbay',
-        'bitflyer',
-        'bitforex',
-        'bithumb',
-        'bitso',
-        'bitstamp1',
-        'bl3p',
-        'braziliex',
-        'btcbox',
-        'btcchina',
-        'btctradeim',
-        'btctradeua',
-        'bxinth',
-        'chilebit',
-        'coincheck',
-        'coinegg',
-        'coinfalcon',
-        'coinfloor',
-        'coingi',
-        'coinmate',
-        'coinone',
-        'coinspot',
-        'coolcoin',
-        'crypton',
-        'deribit',
-        'exmo',
-        'exx',
-        'flowbtc',
-        'foxbit',
-        'fybse',
-        # 'hitbtc',
-        'ice3x',
-        'independentreserve',
-        'indodax',
-        'itbit',
-        'lakebtc',
-        'latoken',
-        'liquid',
-        'livecoin',
-        'luno',
-        'mixcoins',
-        'negociecoins',
-        'nova',
-        'paymium',
-        'southxchange',
-        'stronghold',
-        'surbitcoin',
-        'therock',
-        'tidex',
-        'vaultoro',
-        'vbtc',
-        'virwox',
-        'yobit',
-        'zaif',
-        ], "Does not provide timeframes. ccxt fetchOHLCV: emulated"),
-    }
-
-MAP_EXCHANGE_CHILDCLASS = {
-    'binanceus': 'binance',
-    'binanceje': 'binance',
-}
-
-
-def retrier_async(f):
-    async def wrapper(*args, **kwargs):
-        count = kwargs.pop('count', API_RETRY_COUNT)
-        try:
-            return await f(*args, **kwargs)
-        except (TemporaryError, DependencyException) as ex:
-            logger.warning('%s() returned exception: "%s"', f.__name__, ex)
-            if count > 0:
-                count -= 1
-                kwargs.update({'count': count})
-                logger.warning('retrying %s() still for %s times', f.__name__, count)
-                return await wrapper(*args, **kwargs)
-            else:
-                logger.warning('Giving up retrying: %s()', f.__name__)
-                raise ex
-    return wrapper
-
-
-def retrier(f):
-    def wrapper(*args, **kwargs):
-        count = kwargs.pop('count', API_RETRY_COUNT)
-        try:
-            return f(*args, **kwargs)
-        except (TemporaryError, DependencyException) as ex:
-            logger.warning('%s() returned exception: "%s"', f.__name__, ex)
-            if count > 0:
-                count -= 1
-                kwargs.update({'count': count})
-                logger.warning('retrying %s() still for %s times', f.__name__, count)
-                return wrapper(*args, **kwargs)
-            else:
-                logger.warning('Giving up retrying: %s()', f.__name__)
-                raise ex
-    return wrapper
 
 
 class Exchange:
 
     _config: Dict = {}
+
+    # Parameters to add directly to ccxt sync/async initialization.
+    _ccxt_config: Dict = {}
 
     # Parameters to add directly to buy/sell calls (like agreeing to trading agreement)
     _params: Dict = {}
@@ -210,10 +94,17 @@ class Exchange:
         self._trades_pagination_arg = self._ft_has['trades_pagination_arg']
 
         # Initialize ccxt objects
+        ccxt_config = self._ccxt_config.copy()
+        ccxt_config = deep_merge_dicts(exchange_config.get('ccxt_config', {}),
+                                       ccxt_config)
         self._api = self._init_ccxt(
-            exchange_config, ccxt_kwargs=exchange_config.get('ccxt_config'))
+            exchange_config, ccxt_kwargs=ccxt_config)
+
+        ccxt_async_config = self._ccxt_config.copy()
+        ccxt_async_config = deep_merge_dicts(exchange_config.get('ccxt_async_config', {}),
+                                             ccxt_async_config)
         self._api_async = self._init_ccxt(
-            exchange_config, ccxt_async, ccxt_kwargs=exchange_config.get('ccxt_async_config'))
+            exchange_config, ccxt_async, ccxt_kwargs=ccxt_async_config)
 
         logger.info('Using Exchange "%s"', self.name)
 
@@ -228,6 +119,7 @@ class Exchange:
             self.validate_pairs(config['exchange']['pair_whitelist'])
             self.validate_ordertypes(config.get('order_types', {}))
             self.validate_order_time_in_force(config.get('order_time_in_force', {}))
+            self.validate_required_startup_candles(config.get('startup_candle_count', 0))
 
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
@@ -443,6 +335,16 @@ class Exchange:
             raise OperationalException(
                 f'Time in force policies are not supported for {self.name} yet.')
 
+    def validate_required_startup_candles(self, startup_candles) -> None:
+        """
+        Checks if required startup_candles is more than ohlcv_candle_limit.
+        Requires a grace-period of 5 candles - so a startup-period up to 494 is allowed by default.
+        """
+        if startup_candles + 5 > self._ft_has['ohlcv_candle_limit']:
+            raise OperationalException(
+                f"This strategy requires {startup_candles} candles to start. "
+                f"{self.name} only provides {self._ft_has['ohlcv_candle_limit']}.")
+
     def exchange_has(self, endpoint: str) -> bool:
         """
         Checks if exchange implements a specific API endpoint.
@@ -644,40 +546,40 @@ class Exchange:
             logger.info("returning cached ticker-data for %s", pair)
             return self._cached_ticker[pair]
 
-    def get_historic_ohlcv(self, pair: str, ticker_interval: str,
+    def get_historic_ohlcv(self, pair: str, timeframe: str,
                            since_ms: int) -> List:
         """
         Gets candle history using asyncio and returns the list of candles.
         Handles all async doing.
         Async over one pair, assuming we get `_ohlcv_candle_limit` candles per call.
         :param pair: Pair to download
-        :param ticker_interval: Interval to get
+        :param timeframe: Ticker Timeframe to get
         :param since_ms: Timestamp in milliseconds to get history from
         :returns List of tickers
         """
         return asyncio.get_event_loop().run_until_complete(
-            self._async_get_historic_ohlcv(pair=pair, ticker_interval=ticker_interval,
+            self._async_get_historic_ohlcv(pair=pair, timeframe=timeframe,
                                            since_ms=since_ms))
 
     async def _async_get_historic_ohlcv(self, pair: str,
-                                        ticker_interval: str,
+                                        timeframe: str,
                                         since_ms: int) -> List:
 
-        one_call = timeframe_to_msecs(ticker_interval) * self._ohlcv_candle_limit
+        one_call = timeframe_to_msecs(timeframe) * self._ohlcv_candle_limit
         logger.debug(
             "one_call: %s msecs (%s)",
             one_call,
             arrow.utcnow().shift(seconds=one_call // 1000).humanize(only_distance=True)
         )
         input_coroutines = [self._async_get_candle_history(
-            pair, ticker_interval, since) for since in
+            pair, timeframe, since) for since in
             range(since_ms, arrow.utcnow().timestamp * 1000, one_call)]
 
         tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
 
         # Combine tickers
         data: List = []
-        for p, ticker_interval, ticker in tickers:
+        for p, timeframe, ticker in tickers:
             if p == pair:
                 data.extend(ticker)
         # Sort data again after extending the result - above calls return in "async order"
@@ -697,14 +599,14 @@ class Exchange:
         input_coroutines = []
 
         # Gather coroutines to run
-        for pair, ticker_interval in set(pair_list):
-            if (not ((pair, ticker_interval) in self._klines)
-                    or self._now_is_time_to_refresh(pair, ticker_interval)):
-                input_coroutines.append(self._async_get_candle_history(pair, ticker_interval))
+        for pair, timeframe in set(pair_list):
+            if (not ((pair, timeframe) in self._klines)
+                    or self._now_is_time_to_refresh(pair, timeframe)):
+                input_coroutines.append(self._async_get_candle_history(pair, timeframe))
             else:
                 logger.debug(
-                    "Using cached ohlcv data for pair %s, interval %s ...",
-                    pair, ticker_interval
+                    "Using cached ohlcv data for pair %s, timeframe %s ...",
+                    pair, timeframe
                 )
 
         tickers = asyncio.get_event_loop().run_until_complete(
@@ -716,40 +618,40 @@ class Exchange:
                 logger.warning("Async code raised an exception: %s", res.__class__.__name__)
                 continue
             pair = res[0]
-            ticker_interval = res[1]
+            timeframe = res[1]
             ticks = res[2]
             # keeping last candle time as last refreshed time of the pair
             if ticks:
-                self._pairs_last_refresh_time[(pair, ticker_interval)] = ticks[-1][0] // 1000
+                self._pairs_last_refresh_time[(pair, timeframe)] = ticks[-1][0] // 1000
             # keeping parsed dataframe in cache
-            self._klines[(pair, ticker_interval)] = parse_ticker_dataframe(
-                ticks, ticker_interval, pair=pair, fill_missing=True,
+            self._klines[(pair, timeframe)] = parse_ticker_dataframe(
+                ticks, timeframe, pair=pair, fill_missing=True,
                 drop_incomplete=self._ohlcv_partial_candle)
         return tickers
 
-    def _now_is_time_to_refresh(self, pair: str, ticker_interval: str) -> bool:
+    def _now_is_time_to_refresh(self, pair: str, timeframe: str) -> bool:
         # Calculating ticker interval in seconds
-        interval_in_sec = timeframe_to_seconds(ticker_interval)
+        interval_in_sec = timeframe_to_seconds(timeframe)
 
-        return not ((self._pairs_last_refresh_time.get((pair, ticker_interval), 0)
+        return not ((self._pairs_last_refresh_time.get((pair, timeframe), 0)
                      + interval_in_sec) >= arrow.utcnow().timestamp)
 
     @retrier_async
-    async def _async_get_candle_history(self, pair: str, ticker_interval: str,
+    async def _async_get_candle_history(self, pair: str, timeframe: str,
                                         since_ms: Optional[int] = None) -> Tuple[str, str, List]:
         """
         Asynchronously gets candle histories using fetch_ohlcv
-        returns tuple: (pair, ticker_interval, ohlcv_list)
+        returns tuple: (pair, timeframe, ohlcv_list)
         """
         try:
             # fetch ohlcv asynchronously
             s = '(' + arrow.get(since_ms // 1000).isoformat() + ') ' if since_ms is not None else ''
             logger.debug(
                 "Fetching pair %s, interval %s, since %s %s...",
-                pair, ticker_interval, since_ms, s
+                pair, timeframe, since_ms, s
             )
 
-            data = await self._api_async.fetch_ohlcv(pair, timeframe=ticker_interval,
+            data = await self._api_async.fetch_ohlcv(pair, timeframe=timeframe,
                                                      since=since_ms)
 
             # Because some exchange sort Tickers ASC and other DESC.
@@ -761,9 +663,9 @@ class Exchange:
                     data = sorted(data, key=lambda x: x[0])
             except IndexError:
                 logger.exception("Error loading %s. Result was %s.", pair, data)
-                return pair, ticker_interval, []
-            logger.debug("Done fetching pair %s, interval %s ...", pair, ticker_interval)
-            return pair, ticker_interval, data
+                return pair, timeframe, []
+            logger.debug("Done fetching pair %s, interval %s ...", pair, timeframe)
+            return pair, timeframe, data
 
         except ccxt.NotSupported as e:
             raise OperationalException(
@@ -910,7 +812,6 @@ class Exchange:
         Handles all async doing.
         Async over one pair, assuming we get `_ohlcv_candle_limit` candles per call.
         :param pair: Pair to download
-        :param ticker_interval: Interval to get
         :param since: Timestamp in milliseconds to get history from
         :param until: Timestamp in milliseconds. Defaults to current timestamp if not defined.
         :param from_id: Download data starting with ID (if id is known)
@@ -983,6 +884,22 @@ class Exchange:
 
     @retrier
     def get_trades_for_order(self, order_id: str, pair: str, since: datetime) -> List:
+        """
+        Fetch Orders using the "fetch_my_trades" endpoint and filter them by order-id.
+        The "since" argument passed in is coming from the database and is in UTC,
+        as timezone-native datetime object.
+        From the python documentation:
+            > Naive datetime instances are assumed to represent local time
+        Therefore, calling "since.timestamp()" will get the UTC timestamp, after applying the
+        transformation from local timezone to UTC.
+        This works for timezones UTC+ since then the result will contain trades from a few hours
+        instead of from the last 5 seconds, however fails for UTC- timezones,
+        since we're then asking for trades with a "since" argument in the future.
+
+        :param order_id order_id: Order-id as given when creating the order
+        :param pair: Pair the order is for
+        :param since: datetime object of the order creation time. Assumes object is in UTC.
+        """
         if self._config['dry_run']:
             return []
         if not self.exchange_has('fetchMyTrades'):
@@ -990,7 +907,8 @@ class Exchange:
         try:
             # Allow 5s offset to catch slight time offsets (discovered in #1185)
             # since needs to be int in milliseconds
-            my_trades = self._api.fetch_my_trades(pair, int((since.timestamp() - 5) * 1000))
+            my_trades = self._api.fetch_my_trades(
+                pair, int((since.replace(tzinfo=timezone.utc).timestamp() - 5) * 1000))
             matched_trades = [trade for trade in my_trades if trade['order'] == order_id]
 
             return matched_trades
@@ -1049,27 +967,27 @@ def available_exchanges(ccxt_module=None) -> List[str]:
     return [x for x in exchanges if not is_exchange_bad(x)]
 
 
-def timeframe_to_seconds(ticker_interval: str) -> int:
+def timeframe_to_seconds(timeframe: str) -> int:
     """
     Translates the timeframe interval value written in the human readable
     form ('1m', '5m', '1h', '1d', '1w', etc.) to the number
     of seconds for one timeframe interval.
     """
-    return ccxt.Exchange.parse_timeframe(ticker_interval)
+    return ccxt.Exchange.parse_timeframe(timeframe)
 
 
-def timeframe_to_minutes(ticker_interval: str) -> int:
+def timeframe_to_minutes(timeframe: str) -> int:
     """
     Same as timeframe_to_seconds, but returns minutes.
     """
-    return ccxt.Exchange.parse_timeframe(ticker_interval) // 60
+    return ccxt.Exchange.parse_timeframe(timeframe) // 60
 
 
-def timeframe_to_msecs(ticker_interval: str) -> int:
+def timeframe_to_msecs(timeframe: str) -> int:
     """
     Same as timeframe_to_seconds, but returns milliseconds.
     """
-    return ccxt.Exchange.parse_timeframe(ticker_interval) * 1000
+    return ccxt.Exchange.parse_timeframe(timeframe) * 1000
 
 
 def timeframe_to_prev_date(timeframe: str, date: datetime = None) -> datetime:

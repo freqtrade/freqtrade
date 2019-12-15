@@ -24,31 +24,34 @@ jobs:
       script:
       - pytest --random-order --cov=freqtrade --cov-config=.coveragerc
       # Allow failure for coveralls
-      - coveralls || true
+      # - coveralls || true
       name: pytest
     - script:
       - cp config.json.example config.json
-      - freqtrade --datadir tests/testdata backtesting
+      - freqtrade create-userdir --userdir user_data
+      - freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
       name: backtest
     - script:
       - cp config.json.example config.json
-      - freqtrade --datadir tests/testdata hyperopt -e 5
+      - freqtrade create-userdir --userdir user_data
+      - freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt
       name: hyperopt
     - script: flake8
       name: flake8
     - script:
       # Test Documentation boxes -
       # !!! <TYPE>: is not allowed!
-      - grep -Er '^!{3}\s\S+:' docs/*; test $? -ne 0
+      # !!! <TYPE> "title" - Title needs to be quoted!
+      - grep -Er '^!{3}\s\S+:|^!{3}\s\S+\s[^"]' docs/*; test $? -ne 0
       name: doc syntax
     - script: mypy freqtrade scripts
       name: mypy
 
-    - stage: docker
-      if: branch in (master, develop, feat/improve_travis) AND (type in (push, cron))
-      script:
-        - build_helpers/publish_docker.sh
-      name: "Build and test and push docker image"
+    # - stage: docker
+    #   if: branch in (master, develop, feat/improve_travis) AND (type in (push, cron))
+    #   script:
+    #     - build_helpers/publish_docker.sh
+    #   name: "Build and test and push docker image"
 
 notifications:
   slack:

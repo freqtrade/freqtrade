@@ -26,24 +26,32 @@ You will need to create API Keys (Usually you get `key` and `secret`) from the E
 
 ## Quick start
 
-Freqtrade provides a Linux/MacOS script to install all dependencies and help you to configure the bot.
-
-!!! Note
-    Python3.6 or higher and the corresponding pip are assumed to be available. The install-script will warn and stop if that's not the case.
-
-```bash
-git clone git@github.com:freqtrade/freqtrade.git
-cd freqtrade
-git checkout develop
-./setup.sh --install
-```
+Freqtrade provides the Linux/MacOS Easy Installation script to install all dependencies and help you configure the bot.
 
 !!! Note
     Windows installation is explained [here](#windows).
 
-## Easy Installation - Linux Script
+The easiest way to install and run Freqtrade is to clone the bot GitHub repository and then run the Easy Installation script, if it's available for your platform.
 
-If you are on Debian, Ubuntu or MacOS freqtrade provides a script to Install, Update, Configure, and Reset your bot.
+!!! Note "Version considerations"
+    When cloning the repository the default working branch has the name `develop`. This branch contains all last features (can be considered as relatively stable, thanks to automated tests). The `master` branch contains the code of the last release (done usually once per month on an approximately one week old snapshot of the `develop` branch to prevent packaging bugs, so potentially it's more stable).
+
+!!! Note
+    Python3.6 or higher and the corresponding `pip` are assumed to be available. The install-script will warn you and stop if that's not the case. `git` is also needed to clone the Freqtrade repository.
+
+This can be achieved with the following commands:
+
+```bash
+git clone git@github.com:freqtrade/freqtrade.git
+cd freqtrade
+git checkout master  # Optional, see (1)
+./setup.sh --install
+```
+(1) This command switches the cloned repository to the use of the `master` branch. It's not needed if you wish to stay on the `develop` branch. You may later switch between branches at any time with the `git checkout master`/`git checkout develop` commands.
+
+## Easy Installation Script (Linux/MacOS)
+
+If you are on Debian, Ubuntu or MacOS Freqtrade provides the script to install, update, configure and reset the codebase of your bot.
 
 ```bash
 $ ./setup.sh
@@ -56,25 +64,25 @@ usage:
 
 ** --install **
 
-This script will install everything you need to run the bot:
+With this option, the script will install everything you need to run the bot:
 
 * Mandatory software as: `ta-lib`
 * Setup your virtualenv
 * Configure your `config.json` file
 
-This script is a combination of `install script` `--reset`, `--config`
+This option is a combination of installation tasks, `--reset` and `--config`.
 
 ** --update **
 
-Update parameter will pull the last version of your current branch and update your virtualenv.
+This option will pull the last version of your current branch and update your virtualenv. Run the script with this option periodically to update your bot.
 
 ** --reset **
 
-Reset parameter will hard reset your branch (only if you are on `master` or `develop`) and recreate your virtualenv.
+This option will hard reset your branch (only if you are on either `master` or `develop`) and recreate your virtualenv.
 
 ** --config **
 
-Config parameter is a `config.json` configurator. This script will ask you questions to setup your bot and create your `config.json`.
+Use this option to configure the `config.json` configuration file. The script will interactively ask you questions to setup your bot and create your `config.json`.
 
 ------
 
@@ -95,29 +103,26 @@ sudo apt-get update
 sudo apt-get install build-essential git
 ```
 
-#### Raspberry Pi / Raspbian
+### Raspberry Pi / Raspbian
 
-Before installing FreqTrade on a Raspberry Pi running the official Raspbian Image, make sure you have at least Python 3.6 installed. The default image only provides Python 3.5. Probably the easiest way to get a recent version of python is [miniconda](https://repo.continuum.io/miniconda/).
+The following assumes the latest [Raspbian Buster lite image](https://www.raspberrypi.org/downloads/raspbian/) from at least September 2019.
+This image comes with python3.7 preinstalled, making it easy to get freqtrade up and running.
 
-The following assumes that miniconda3 is installed and available in your environment. Since the last miniconda3 installation file uses python 3.4, we will update to python 3.6 on this installation.
-It's recommended to use (mini)conda for this as installation/compilation of `numpy` and `pandas` takes a long time.
-
-Additional package to install on your Raspbian, `libffi-dev` required by cryptography (from python-telegram-bot).
+Tested using a Raspberry Pi 3 with the Raspbian Buster lite image, all updates applied.
 
 ``` bash
-conda config --add channels rpi
-conda install python=3.6
-conda create -n freqtrade python=3.6
-conda activate freqtrade
-conda install pandas numpy
+sudo apt-get install python3-venv libatlas-base-dev
+git clone https://github.com/freqtrade/freqtrade.git
+cd freqtrade
 
-sudo apt install libffi-dev
-python3 -m pip install -r requirements-common.txt
-python3 -m pip install -e .
+bash setup.sh -i
 ```
 
+!!! Note "Installation duration"
+    Depending on your internet speed and the Raspberry Pi version, installation can take multiple hours to complete.
+
 !!! Note
-    This does not install hyperopt dependencies. To install these, please use `python3 -m pip install -e .[hyperopt]`.
+    The above does not install hyperopt dependencies. To install these, please use `python3 -m pip install -e .[hyperopt]`.
     We do not advise to run hyperopt on a Raspberry Pi, since this is a very resource-heavy operation, which should be done on powerful machine.
 
 ### Common
@@ -151,13 +156,13 @@ python3 -m venv .env
 source .env/bin/activate
 ```
 
-#### 3. Install FreqTrade
+#### 3. Install Freqtrade
 
 Clone the git repository:
 
 ```bash
 git clone https://github.com/freqtrade/freqtrade.git
-
+cd freqtrade
 ```
 
 Optionally checkout the master branch to get the latest stable release:
@@ -166,59 +171,37 @@ Optionally checkout the master branch to get the latest stable release:
 git checkout master
 ```
 
-#### 4. Initialize the configuration
-
-```bash
-cd freqtrade
-cp config.json.example config.json
-```
-
-> *To edit the config please refer to [Bot Configuration](configuration.md).*
-
-#### 5. Install python dependencies
+#### 4. Install python dependencies
 
 ``` bash
 python3 -m pip install --upgrade pip
 python3 -m pip install -e .
 ```
 
+#### 5. Initialize the configuration
+
+```bash
+# Initialize the user_directory
+freqtrade create-userdir --userdir user_data/
+
+cp config.json.example config.json
+```
+
+> *To edit the config please refer to [Bot Configuration](configuration.md).*
+
 #### 6. Run the Bot
 
 If this is the first time you run the bot, ensure you are running it in Dry-run `"dry_run": true,` otherwise it will start to buy and sell coins.
 
 ```bash
-freqtrade -c config.json
+freqtrade trade -c config.json
 ```
 
 *Note*: If you run the bot on a server, you should consider using [Docker](docker.md) or a terminal multiplexer like `screen` or [`tmux`](https://en.wikipedia.org/wiki/Tmux) to avoid that the bot is stopped on logout.
 
-#### 7. [Optional] Configure `freqtrade` as a `systemd` service
+#### 7. (Optional) Post-installation Tasks
 
-From the freqtrade repo... copy `freqtrade.service` to your systemd user directory (usually `~/.config/systemd/user`) and update `WorkingDirectory` and `ExecStart` to match your setup.
-
-After that you can start the daemon with:
-
-```bash
-systemctl --user start freqtrade
-```
-
-For this to be persistent (run when user is logged out) you'll need to enable `linger` for your freqtrade user.
-
-```bash
-sudo loginctl enable-linger "$USER"
-```
-
-If you run the bot as a service, you can use systemd service manager as a software watchdog monitoring freqtrade bot 
-state and restarting it in the case of failures. If the `internals.sd_notify` parameter is set to true in the 
-configuration or the `--sd-notify` command line option is used, the bot will send keep-alive ping messages to systemd 
-using the sd_notify (systemd notifications) protocol and will also tell systemd its current state (Running or Stopped) 
-when it changes. 
-
-The `freqtrade.service.watchdog` file contains an example of the service unit configuration file which uses systemd 
-as the watchdog.
-
-!!! Note
-    The sd_notify communication between the bot and the systemd service manager will not work if the bot runs in a Docker container.
+On Linux, as an optional post-installation task, you may wish to setup the bot to run as a `systemd` service or configure it to send the log messages to the `syslog`/`rsyslog` or `journald` daemons. See [Advanced Logging](advanced-setup.md#advanced-logging) for details.
 
 ------
 
@@ -241,6 +224,12 @@ If that is not possible, try using the Windows Linux subsystem (WSL) - for which
 If that is not available on your system, feel free to try the instructions below, which led to success for some.
 
 ### Install freqtrade manually
+
+!!! Note
+    Make sure to use 64bit Windows and 64bit Python to avoid problems with backtesting or hyperopt due to the memory constraints 32bit applications have under Windows.
+
+!!! Hint
+    Using the [Anaconda Distribution](https://www.anaconda.com/distribution/) under Windows can greatly help with installation problems. Check out the [Conda section](#using-conda) in this document for more information.
 
 #### Clone the git repository
 

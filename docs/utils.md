@@ -2,6 +2,112 @@
 
 Besides the Live-Trade and Dry-Run run modes, the `backtesting`, `edge` and `hyperopt` optimization subcommands, and the `download-data` subcommand which prepares historical data, the bot contains a number of utility subcommands. They are described in this section.
 
+## Create userdir
+
+Creates the directory structure to hold your files for freqtrade.
+Will also create strategy and hyperopt examples for you to get started.
+Can be used multiple times - using `--reset` will reset the sample strategy and hyperopt files to their default state. 
+
+```
+usage: freqtrade create-userdir [-h] [--userdir PATH] [--reset]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+  --reset               Reset sample files to their original state.
+```
+
+!!! Warning
+    Using `--reset` may result in loss of data, since this will overwrite all sample files without asking again.
+
+```
+├── backtest_results
+├── data
+├── hyperopt_results
+├── hyperopts
+│   ├── sample_hyperopt_advanced.py
+│   ├── sample_hyperopt_loss.py
+│   └── sample_hyperopt.py
+├── notebooks
+│   └── strategy_analysis_example.ipynb
+├── plot
+└── strategies
+    └── sample_strategy.py
+```
+
+## Create new strategy
+
+Creates a new strategy from a template similar to SampleStrategy.
+The file will be named inline with your class name, and will not overwrite existing files.
+
+Results will be located in `user_data/strategies/<strategyclassname>.py`.
+
+``` output
+usage: freqtrade new-strategy [-h] [--userdir PATH] [-s NAME]
+                              [--template {full,minimal}]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+  -s NAME, --strategy NAME
+                        Specify strategy class name which will be used by the
+                        bot.
+  --template {full,minimal}
+                        Use a template which is either `minimal` or `full`
+                        (containing multiple sample indicators). Default:
+                        `full`.
+
+```
+
+### Sample usage of new-strategy
+
+```bash
+freqtrade new-strategy --strategy AwesomeStrategy
+```
+
+With custom user directory
+
+```bash
+freqtrade new-strategy --userdir ~/.freqtrade/ --strategy AwesomeStrategy
+```
+
+## Create new hyperopt
+
+Creates a new hyperopt from a template similar to SampleHyperopt.
+The file will be named inline with your class name, and will not overwrite existing files.
+
+Results will be located in `user_data/hyperopts/<classname>.py`.
+
+``` output
+usage: freqtrade new-hyperopt [-h] [--userdir PATH] [--hyperopt NAME]
+                              [--template {full,minimal}]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+  --hyperopt NAME       Specify hyperopt class name which will be used by the
+                        bot.
+  --template {full,minimal}
+                        Use a template which is either `minimal` or `full`
+                        (containing multiple sample indicators). Default:
+                        `full`.
+```
+
+### Sample usage of new-hyperopt
+
+```bash
+freqtrade new-hyperopt --hyperopt AwesomeHyperopt
+```
+
+With custom user directory
+
+```bash
+freqtrade new-hyperopt --userdir ~/.freqtrade/ --hyperopt AwesomeHyperopt
+```
+
 ## List Exchanges
 
 Use the `list-exchanges` subcommand to see the exchanges available for the bot.
@@ -123,4 +229,101 @@ $ freqtrade -c config_binance.json list-pairs --all --base BTC ETH --quote USDT 
 
 ```
 $ freqtrade list-markets --exchange kraken --all
+```
+
+## Test pairlist
+
+Use the `test-pairlist` subcommand to test the configuration of [dynamic pairlists](configuration.md#pairlists).
+
+Requires a configuration with specified `pairlists` attribute.
+Can be used to generate static pairlists to be used during backtesting / hyperopt.
+
+```
+usage: freqtrade test-pairlist [-h] [-c PATH]
+                               [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]]
+                               [-1] [--print-json]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`).
+                        Multiple --config options may be used. Can be set to
+                        `-` to read config from stdin.
+  --quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]
+                        Specify quote currency(-ies). Space-separated list.
+  -1, --one-column      Print output in one column.
+  --print-json          Print list of pairs or market symbols in JSON format.
+```
+
+### Examples
+
+Show whitelist when using a [dynamic pairlist](configuration.md#pairlists).
+
+```
+freqtrade test-pairlist --config config.json --quote USDT BTC
+```
+
+## List Hyperopt results
+
+You can list the hyperoptimization epochs the Hyperopt module evaluated previously with the `hyperopt-list` subcommand.
+
+```
+usage: freqtrade hyperopt-list [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                               [-d PATH] [--userdir PATH] [--best]
+                               [--profitable] [--no-color] [--print-json]
+                               [--no-details]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --best                Select only best epochs.
+  --profitable          Select only profitable epochs.
+  --no-color            Disable colorization of hyperopt results. May be
+                        useful if you are redirecting output to a file.
+  --print-json          Print best result detailization in JSON format.
+  --no-details          Do not print best epoch details.
+```
+ 
+### Examples
+
+List all results, print details of the best result at the end:
+```
+freqtrade hyperopt-list
+```
+
+List only epochs with positive profit. Do not print the details of the best epoch, so that the list can be iterated in a script:
+```
+freqtrade hyperopt-list --profitable --no-details
+```
+
+## Show details of Hyperopt results
+
+You can show the details of any hyperoptimization epoch previously evaluated by the Hyperopt module with the `hyperopt-show` subcommand.
+
+```
+usage: freqtrade hyperopt-show [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                               [-d PATH] [--userdir PATH] [--best]
+                               [--profitable] [-n INT] [--print-json]
+                               [--no-header]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --best                Select only best epochs.
+  --profitable          Select only profitable epochs.
+  -n INT, --index INT   Specify the index of the epoch to print details for.
+  --print-json          Print best result detailization in JSON format.
+  --no-header           Do not print epoch details header.
+```
+
+### Examples
+
+Print details for the epoch 168 (the number of the epoch is shown by the `hyperopt-list` subcommand or by Hyperopt itself during hyperoptimization run):
+
+```
+freqtrade hyperopt-show -n 168
+```
+
+Prints JSON data with details for the last best epoch (i.e., the best of all epochs):
+
+```
+freqtrade hyperopt-show --best -n -1 --print-json --no-header
 ```
