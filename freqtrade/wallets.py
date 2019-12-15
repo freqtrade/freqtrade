@@ -4,7 +4,7 @@
 import logging
 from typing import Dict, NamedTuple, Any
 from freqtrade.exchange import Exchange
-from freqtrade import constants
+from freqtrade.persistence import Trade
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +23,7 @@ class Wallets:
         self._config = config
         self._exchange = exchange
         self._wallets: Dict[str, Wallet] = {}
+        self.start_cap = config['dry_run_wallet']
 
         self.update()
 
@@ -50,36 +51,12 @@ class Wallets:
         else:
             return 0
 
-    def update(self) -> None:
-
-        balances = self._exchange.get_balances()
-
-        for currency in balances:
-            self._wallets[currency] = Wallet(
-                currency,
-                balances[currency].get('free', None),
-                balances[currency].get('used', None),
-                balances[currency].get('total', None)
-            )
-
-        logger.info('Wallets synced.')
-
-    def get_all_balances(self) -> Dict[str, Any]:
-        return self._wallets
-
-
-class WalletsDry(Wallets):
-
-    def __init__(self, config: dict, exchange: Exchange) -> None:
-        self.start_cap = config['dry_run_wallet']
-        super().__init__(config, exchange)
-
-    def update(self) -> None:
-        """ Update does not do anything in dry-mode..."""
-        from freqtrade.persistence import Trade
+    def _update_dry(self) -> None:
+        """ Update from database in dry-run mode"""
         closed_trades = Trade.get_trades(Trade.is_open.is_(False)).all()
-        print(len(closed_trades))
+
         tot_profit = sum([trade.calc_profit() for trade in closed_trades])
+
         current_stake = self.start_cap + tot_profit
         self._wallets[self._config['stake_currency']] = Wallet(
             self._config['stake_currency'],
@@ -98,3 +75,32 @@ class WalletsDry(Wallets):
                 0,
                 trade.amount
             )
+
+    def _update_live(self) -> None:
+
+        balances = self._exchange.get_balances()
+
+        for currency in balances:
+            self._wallets[currency] = Wallet(
+                currency,
+                balances[currency].get('free', None),
+                balances[currency].get('used', None),
+                balances[currency].get('total', None)
+            )
+
+    def update(self) -> None:
+        if self._config['dry_run']:
+            self._update_dry()
+        else:
+            self._update_live()
+        logger.info('Wallets synced.')
+
+    def get_all_balances(self) -> Dict[str, Any]:
+        return self._wallets
+
+
+class WalletsDry(Wallets):
+
+    def __init__(self, config: dict, exchange: Exchange) -> None:
+
+        super().__init__(config, exchange)

@@ -335,7 +335,7 @@ class Telegram(RPC):
             output = ''
             if self._config['dry_run']:
                 output += (
-                    f"Simulated balances - starting capital: "
+                    f"*Warning:*Simulated balances in Dry Mode.\nStarting capital: "
                     f"`{self._config['dry_run_wallet']}` {self._config['stake_currency']}.\n"
                     )
             for currency in result['currencies']:
