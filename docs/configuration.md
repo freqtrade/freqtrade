@@ -47,7 +47,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `ticker_interval` | The ticker interval to use (e.g `1m`, `5m`, `15m`, `30m`, `1h` ...). [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *String*
 | `fiat_display_currency` | Fiat currency used to show your profits. [More information below](#what-values-can-be-used-for-fiat_display_currency). <br> ***Datatype:*** *String*
 | `dry_run` | **Required.** Define if the bot must be in Dry Run or production mode. <br>*Defaults to `true`.* <br> ***Datatype:*** *Boolean*
-| `dry_run_wallet` | Overrides the default amount of 1000 stake currency units in the wallet used by the bot running in the Dry Run mode if you need it for any reason. <br> ***Datatype:*** *Float*
+| `dry_run_wallet` | Define the starting amount in stake currency for the simulated wallet used by the bot running in the Dry Run mode.<br>*Defaults to `1000`.* <br> ***Datatype:*** *Float*
 | `process_only_new_candles` | Enable processing of indicators only when new candles arrive. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*  <br> ***Datatype:*** *Boolean*
 | `minimal_roi` | **Required.** Set the threshold in percent the bot will use to sell a trade. [More information below](#understand-minimal_roi). [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *Dict*
 | `stoploss` |  **Required.** Value of the stoploss in percent used by the bot. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy).  <br> ***Datatype:*** *Float (as ratio)*
@@ -498,8 +498,10 @@ creating trades on the exchange.
 }
 ```
 
-Once you will be happy with your bot performance running in the Dry-run mode,
-you can switch it to production mode.
+Once you will be happy with your bot performance running in the Dry-run mode, you can switch it to production mode.
+
+!!! Note
+    A simulated wallet is available during dry-run mode, and will assume a starting capital of `dry_run_wallet` (defaults to 1000).
 
 ## Switch to production mode
 
@@ -529,7 +531,7 @@ you run it in production mode.
 ```
 
 !!! Note
-    If you have an exchange API key yet, [see our tutorial](/pre-requisite).
+    If you have an exchange API key yet, [see our tutorial](installation.md#setup-your-exchange-account).
 
 You should also make sure to read the [Exchanges](exchanges.md) section of the documentation to be aware of potential configuration details specific to your exchange.
 

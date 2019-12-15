@@ -96,10 +96,3 @@ class Wallets:
 
     def get_all_balances(self) -> Dict[str, Any]:
         return self._wallets
-
-
-class WalletsDry(Wallets):
-
-    def __init__(self, config: dict, exchange: Exchange) -> None:
-
-        super().__init__(config, exchange)
