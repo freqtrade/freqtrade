@@ -149,6 +149,9 @@ In this case a trade amount is calculated as:
 currency_balance / (max_open_trades - current_open_trades)
 ```
 
+!!! Note "When using Dry-Run Mode"
+    When using `"stake_amount" : "unlimited",` in combination with Dry-Run, the balance will be simulated starting with a stake of `dry_run_wallet` which will evolve over time. It is therefore important to set `dry_run_wallet` to a sensible value, otherwise it may simulate trades with 100 BTC (or more) at once - which may not correspond to your real available balance.
+
 ### Understand minimal_roi
 
 The `minimal_roi` configuration parameter is a JSON object where the key is a duration
