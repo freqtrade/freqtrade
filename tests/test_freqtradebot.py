@@ -3485,3 +3485,33 @@ def test_process_i_am_alive(default_conf, mocker, caplog):
 
     ftbot.process()
     assert log_has_re(message, caplog)
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_sync_wallet_dry_run(mocker, default_conf, ticker, fee, limit_buy_order):
+    default_conf['dry_run'] = True
+    # Initialize to 2 times stake amount
+    default_conf['dry_run_wallet'] = 0.002
+    default_conf['max_open_trades'] = 2
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=ticker,
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
+    )
+
+    bot = get_patched_freqtradebot(mocker, default_conf)
+    patch_get_signal(bot)
+    assert bot.wallets.get_free('BTC') == 0.002
+
+    bot.create_trades()
+    trades = Trade.query.all()
+    assert len(trades) == 2
+
+    bot.config['max_open_trades'] = 3
+    with pytest.raises(
+            DependencyException,
+            match=r"Available balance \(0 BTC\) is lower than stake amount \(0.001 BTC\)"):
+        bot.create_trades()
+
