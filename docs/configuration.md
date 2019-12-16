@@ -150,7 +150,7 @@ currency_balance / (max_open_trades - current_open_trades)
 ```
 
 !!! Note "When using Dry-Run Mode"
-    When using `"stake_amount" : "unlimited",` in combination with Dry-Run, the balance will be simulated starting with a stake of `dry_run_wallet` which will evolve over time. It is therefore important to set `dry_run_wallet` to a sensible value, otherwise it may simulate trades with 100 BTC (or more) at once - which may not correspond to your real available balance.
+    When using `"stake_amount" : "unlimited",` in combination with Dry-Run, the balance will be simulated starting with a stake of `dry_run_wallet` which will evolve over time. It is therefore important to set `dry_run_wallet` to a sensible value (like 0.05 or 0.01 for BTC and 1000 or 100 for USDT, for example), otherwise it may simulate trades with 100 BTC (or more) or 0.05 USDT (or less) at once - which may not correspond to your real available balance or is less than the exchange minimal limit for the order amount for the stake currency.
 
 ### Understand minimal_roi
 
