@@ -211,6 +211,7 @@ def test_edge_overrides_stake_amount(mocker, edge_conf) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     patch_edge(mocker)
+    edge_conf['dry_run_wallet'] = 999.9
     freqtrade = FreqtradeBot(edge_conf)
 
     assert freqtrade._get_trade_stake_amount('NEO/BTC') == (999.9 * 0.5 * 0.01) / 0.20
@@ -1338,6 +1339,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
     patch_exchange(mocker)
     patch_edge(mocker)
     edge_conf['max_open_trades'] = float('inf')
+    edge_conf['dry_run_wallet'] = 999.9
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=MagicMock(return_value={
@@ -3483,3 +3485,32 @@ def test_process_i_am_alive(default_conf, mocker, caplog):
 
     ftbot.process()
     assert log_has_re(message, caplog)
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_sync_wallet_dry_run(mocker, default_conf, ticker, fee, limit_buy_order):
+    default_conf['dry_run'] = True
+    # Initialize to 2 times stake amount
+    default_conf['dry_run_wallet'] = 0.002
+    default_conf['max_open_trades'] = 2
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=ticker,
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
+    )
+
+    bot = get_patched_freqtradebot(mocker, default_conf)
+    patch_get_signal(bot)
+    assert bot.wallets.get_free('BTC') == 0.002
+
+    bot.create_trades()
+    trades = Trade.query.all()
+    assert len(trades) == 2
+
+    bot.config['max_open_trades'] = 3
+    with pytest.raises(
+            DependencyException,
+            match=r"Available balance \(0 BTC\) is lower than stake amount \(0.001 BTC\)"):
+        bot.create_trades()

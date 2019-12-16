@@ -348,6 +348,7 @@ class RPC:
             'total': total,
             'symbol': symbol,
             'value': value,
+            'note': 'Simulated balances' if self._freqtrade.config.get('dry_run', False) else ''
         }
 
     def _rpc_start(self) -> Dict[str, str]:

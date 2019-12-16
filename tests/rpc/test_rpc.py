@@ -398,7 +398,7 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
         get_valid_pair_combination=MagicMock(
             side_effect=lambda a, b: f"{b}/{a}" if a == "USDT" else f"{a}/{b}")
     )
-
+    default_conf['dry_run'] = False
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)

@@ -18,7 +18,7 @@ REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList', 'PrecisionFilter', 'PriceFilter']
-DRY_RUN_WALLET = 999.9
+DRY_RUN_WALLET = 1000
 MATH_CLOSE_PREC = 1e-14  # Precision used for float comparisons
 
 USERPATH_HYPEROPTS = 'hyperopts'
@@ -75,7 +75,7 @@ CONF_SCHEMA = {
         },
         'fiat_display_currency': {'type': 'string', 'enum': SUPPORTED_FIAT},
         'dry_run': {'type': 'boolean'},
-        'dry_run_wallet': {'type': 'number'},
+        'dry_run_wallet': {'type': 'number', 'default': DRY_RUN_WALLET},
         'process_only_new_candles': {'type': 'boolean'},
         'minimal_roi': {
             'type': 'object',
@@ -275,6 +275,7 @@ CONF_SCHEMA = {
         'stake_currency',
         'stake_amount',
         'dry_run',
+        'dry_run_wallet',
         'bid_strategy',
         'unfilledtimeout',
         'stoploss',
