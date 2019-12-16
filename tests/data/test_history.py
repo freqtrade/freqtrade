@@ -14,9 +14,9 @@ from freqtrade import OperationalException
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.history import (_load_cached_data_for_updating,
+                                    _download_pair_history,
+                                    _download_trades_history,
                                     convert_trades_to_ohlcv,
-                                    download_pair_history,
-                                    download_trades_history,
                                     load_tickerdata_file, pair_data_filename,
                                     pair_trades_filename,
                                     refresh_backtest_ohlcv_data,
@@ -267,12 +267,12 @@ def test_download_pair_history(ticker_history_list, mocker, default_conf, testda
     assert not file1_1.is_file()
     assert not file2_1.is_file()
 
-    assert download_pair_history(datadir=testdatadir, exchange=exchange,
-                                 pair='MEME/BTC',
-                                 timeframe='1m')
-    assert download_pair_history(datadir=testdatadir, exchange=exchange,
-                                 pair='CFI/BTC',
-                                 timeframe='1m')
+    assert _download_pair_history(datadir=testdatadir, exchange=exchange,
+                                  pair='MEME/BTC',
+                                  timeframe='1m')
+    assert _download_pair_history(datadir=testdatadir, exchange=exchange,
+                                  pair='CFI/BTC',
+                                  timeframe='1m')
     assert not exchange._pairs_last_refresh_time
     assert file1_1.is_file()
     assert file2_1.is_file()
@@ -284,12 +284,12 @@ def test_download_pair_history(ticker_history_list, mocker, default_conf, testda
     assert not file1_5.is_file()
     assert not file2_5.is_file()
 
-    assert download_pair_history(datadir=testdatadir, exchange=exchange,
-                                 pair='MEME/BTC',
-                                 timeframe='5m')
-    assert download_pair_history(datadir=testdatadir, exchange=exchange,
-                                 pair='CFI/BTC',
-                                 timeframe='5m')
+    assert _download_pair_history(datadir=testdatadir, exchange=exchange,
+                                  pair='MEME/BTC',
+                                  timeframe='5m')
+    assert _download_pair_history(datadir=testdatadir, exchange=exchange,
+                                  pair='CFI/BTC',
+                                  timeframe='5m')
     assert not exchange._pairs_last_refresh_time
     assert file1_5.is_file()
     assert file2_5.is_file()
@@ -307,8 +307,8 @@ def test_download_pair_history2(mocker, default_conf, testdatadir) -> None:
     json_dump_mock = mocker.patch('freqtrade.misc.file_dump_json', return_value=None)
     mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=tick)
     exchange = get_patched_exchange(mocker, default_conf)
-    download_pair_history(testdatadir, exchange, pair="UNITTEST/BTC", timeframe='1m')
-    download_pair_history(testdatadir, exchange, pair="UNITTEST/BTC", timeframe='3m')
+    _download_pair_history(testdatadir, exchange, pair="UNITTEST/BTC", timeframe='1m')
+    _download_pair_history(testdatadir, exchange, pair="UNITTEST/BTC", timeframe='3m')
     assert json_dump_mock.call_count == 2
 
 
@@ -324,9 +324,9 @@ def test_download_backtesting_data_exception(ticker_history, mocker, caplog,
     _backup_file(file1_1)
     _backup_file(file1_5)
 
-    assert not download_pair_history(datadir=testdatadir, exchange=exchange,
-                                     pair='MEME/BTC',
-                                     timeframe='1m')
+    assert not _download_pair_history(datadir=testdatadir, exchange=exchange,
+                                      pair='MEME/BTC',
+                                      timeframe='1m')
     # clean files freshly downloaded
     _clean_test_file(file1_1)
     _clean_test_file(file1_5)
@@ -570,7 +570,7 @@ def test_validate_backtest_data(default_conf, mocker, caplog, testdatadir) -> No
 
 
 def test_refresh_backtest_ohlcv_data(mocker, default_conf, markets, caplog, testdatadir):
-    dl_mock = mocker.patch('freqtrade.data.history.download_pair_history', MagicMock())
+    dl_mock = mocker.patch('freqtrade.data.history._download_pair_history', MagicMock())
     mocker.patch(
         'freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets)
     )
@@ -591,7 +591,7 @@ def test_refresh_backtest_ohlcv_data(mocker, default_conf, markets, caplog, test
 
 
 def test_download_data_no_markets(mocker, default_conf, caplog, testdatadir):
-    dl_mock = mocker.patch('freqtrade.data.history.download_pair_history', MagicMock())
+    dl_mock = mocker.patch('freqtrade.data.history._download_pair_history', MagicMock())
 
     ex = get_patched_exchange(mocker, default_conf)
     mocker.patch(
@@ -611,7 +611,7 @@ def test_download_data_no_markets(mocker, default_conf, caplog, testdatadir):
 
 
 def test_refresh_backtest_trades_data(mocker, default_conf, markets, caplog, testdatadir):
-    dl_mock = mocker.patch('freqtrade.data.history.download_trades_history', MagicMock())
+    dl_mock = mocker.patch('freqtrade.data.history._download_trades_history', MagicMock())
     mocker.patch(
         'freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets)
     )
@@ -646,8 +646,8 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
 
     assert not file1.is_file()
 
-    assert download_trades_history(datadir=testdatadir, exchange=exchange,
-                                   pair='ETH/BTC')
+    assert _download_trades_history(datadir=testdatadir, exchange=exchange,
+                                    pair='ETH/BTC')
     assert log_has("New Amount of trades: 5", caplog)
     assert file1.is_file()
 
@@ -657,8 +657,8 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
     mocker.patch('freqtrade.exchange.Exchange.get_historic_trades',
                  MagicMock(side_effect=ValueError))
 
-    assert not download_trades_history(datadir=testdatadir, exchange=exchange,
-                                       pair='ETH/BTC')
+    assert not _download_trades_history(datadir=testdatadir, exchange=exchange,
+                                        pair='ETH/BTC')
     assert log_has_re('Failed to download historic trades for pair: "ETH/BTC".*', caplog)
 
 
