@@ -61,3 +61,24 @@ print(res)
 ```shell
 $ pip3 install web3
 ```
+
+### Send incomplete candles to the strategy
+
+Most exchanges return incomplete candles via their ohlcv / klines interface.
+By default, Freqtrade assumes that incomplete candles are returned and removes the last candle assuming it's an incomplete candle.
+
+Wether your exchange returns incomplete candles or not can be checked using [the helper script](developer.md#Incomplete-candles) from the Contributor documentation.
+
+If the exchange does return incomplete candles and you would like to have incomplete candles in your strategy, you can set the following parameter in the configuration file.
+
+``` json
+{
+
+    "exchange": {
+        "_ft_has_params": {"ohlcv_partial_candle": false}
+    }
+}
+```
+
+!!! Warning "Danger of repainting"
+    Changing this parameter makes the strategy responsible to avoid repainting and handle this accordingly. Doing this is therefore not recommended, and should only be performed by experienced users who are fully aware of the impact this setting has.
