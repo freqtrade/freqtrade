@@ -307,11 +307,12 @@ def _download_pair_history(datadir: Path,
         logger.debug("Current End: %s", misc.format_ms_time(data[-1][0]) if data else 'None')
 
         # Default since_ms to 30 days if nothing is given
-        new_data = exchange.get_historic_ohlcv(pair=pair, timeframe=timeframe,
-                                               since_ms=since_ms if since_ms
-                                               else
+        new_data = exchange.get_historic_ohlcv(pair=pair,
+                                               timeframe=timeframe,
+                                               since_ms=since_ms if since_ms else
                                                int(arrow.utcnow().shift(
-                                                   days=-30).float_timestamp) * 1000)
+                                                   days=-30).float_timestamp) * 1000
+                                               )
         data.extend(new_data)
 
         logger.debug("New Start: %s", misc.format_ms_time(data[0][0]))
@@ -376,11 +377,11 @@ def _download_trades_history(datadir: Path,
         logger.debug("Current Start: %s", trades[0]['datetime'] if trades else 'None')
         logger.debug("Current End: %s", trades[-1]['datetime'] if trades else 'None')
 
+        # Default since_ms to 30 days if nothing is given
         new_trades = exchange.get_historic_trades(pair=pair,
                                                   since=since if since else
                                                   int(arrow.utcnow().shift(
                                                       days=-30).float_timestamp) * 1000,
-                                                  #  until=xxx,
                                                   from_id=from_id,
                                                   )
         trades.extend(new_trades[1])
