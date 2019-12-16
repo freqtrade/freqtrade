@@ -580,7 +580,7 @@ def test_refresh_backtest_ohlcv_data(mocker, default_conf, markets, caplog, test
     ex = get_patched_exchange(mocker, default_conf)
     timerange = TimeRange.parse_timerange("20190101-20190102")
     refresh_backtest_ohlcv_data(exchange=ex, pairs=["ETH/BTC", "XRP/BTC"],
-                                timeframes=["1m", "5m"], dl_path=testdatadir,
+                                timeframes=["1m", "5m"], datadir=testdatadir,
                                 timerange=timerange, erase=True
                                 )
 
@@ -600,7 +600,7 @@ def test_download_data_no_markets(mocker, default_conf, caplog, testdatadir):
     timerange = TimeRange.parse_timerange("20190101-20190102")
     unav_pairs = refresh_backtest_ohlcv_data(exchange=ex, pairs=["BTT/BTC", "LTC/USDT"],
                                              timeframes=["1m", "5m"],
-                                             dl_path=testdatadir,
+                                             datadir=testdatadir,
                                              timerange=timerange, erase=False
                                              )
 

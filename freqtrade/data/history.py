@@ -334,12 +334,12 @@ def download_pair_history(datadir: Path,
 
 
 def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes: List[str],
-                                dl_path: Path, timerange: Optional[TimeRange] = None,
+                                datadir: Path, timerange: Optional[TimeRange] = None,
                                 erase=False) -> List[str]:
     """
     Refresh stored ohlcv data for backtesting and hyperopt operations.
-    Used by freqtrade download-data
-    :return: Pairs not available
+    Used by freqtrade download-data subcommand.
+    :return: List of pairs that are not available.
     """
     pairs_not_available = []
     for pair in pairs:
@@ -349,14 +349,14 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
             continue
         for timeframe in timeframes:
 
-            dl_file = pair_data_filename(dl_path, pair, timeframe)
+            dl_file = pair_data_filename(datadir, pair, timeframe)
             if erase and dl_file.exists():
                 logger.info(
                     f'Deleting existing data for pair {pair}, interval {timeframe}.')
                 dl_file.unlink()
 
             logger.info(f'Downloading pair {pair}, interval {timeframe}.')
-            download_pair_history(datadir=dl_path, exchange=exchange,
+            download_pair_history(datadir=datadir, exchange=exchange,
                                   pair=pair, timeframe=str(timeframe),
                                   timerange=timerange)
     return pairs_not_available
@@ -407,9 +407,9 @@ def download_trades_history(datadir: Path,
 def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: Path,
                                  timerange: TimeRange, erase=False) -> List[str]:
     """
-    Refresh stored trades data.
-    Used by freqtrade download-data
-    :return: Pairs not available
+    Refresh stored trades data for backtesting and hyperopt operations.
+    Used by freqtrade download-data subcommand.
+    :return: List of pairs that are not available.
     """
     pairs_not_available = []
     for pair in pairs:
