@@ -295,11 +295,6 @@ def _download_pair_history(datadir: Path,
     :param timerange: range of time to download
     :return: bool with success state
     """
-    if not exchange:
-        raise OperationalException(
-            "Exchange needs to be initialized when downloading pair history data"
-        )
-
     try:
         logger.info(
             f'Download history data for pair: "{pair}", timeframe: {timeframe} '
