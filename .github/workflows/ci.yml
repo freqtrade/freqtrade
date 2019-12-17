@@ -69,7 +69,7 @@ jobs:
         COVERALLS_SERVICE_NAME: travis-ci
         TRAVIS: "true"
       run: |
-        pytest --random-order --cov=freqtrade --cov-config=.coveragerc --random-order-seed=834267
+        pytest --random-order --cov=freqtrade --cov-config=.coveragerc
         # Allow failure for coveralls
         # Fake travis environment to get coveralls working correctly
         export TRAVIS_PULL_REQUEST="https://github.com/${GITHUB_REPOSITORY}/pull/$(cat $GITHUB_EVENT_PATH | jq -r .number)"
