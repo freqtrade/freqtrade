@@ -216,7 +216,7 @@ class Trade(_DECL_BASE):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.open_trade_price = self._calc_open_trade_price()
+        self.recalc_open_trade_price()
 
     def __repr__(self):
         open_since = self.open_date.strftime('%Y-%m-%d %H:%M:%S') if self.is_open else 'closed'
@@ -310,7 +310,7 @@ class Trade(_DECL_BASE):
             # Update open rate and actual amount
             self.open_rate = Decimal(order['price'])
             self.amount = Decimal(order['amount'])
-            self.open_trade_price = self._calc_open_trade_price()
+            self.recalc_open_trade_price()
             logger.info('%s_BUY has been fulfilled for %s.', order_type.upper(), self)
             self.open_order_id = None
         elif order_type in ('market', 'limit') and order['side'] == 'sell':
@@ -351,6 +351,13 @@ class Trade(_DECL_BASE):
         fees = buy_trade * Decimal(self.fee_open)
         return float(buy_trade + fees)
 
+    def recalc_open_trade_price(self) -> None:
+        """
+        Recalculate open_trade_price.
+        Must be called whenever open_rate or fee_open is changed.
+        """
+        self.open_trade_price - self._calc_open_trade_price()
+
     def calc_close_trade_price(self, rate: Optional[float] = None,
                                fee: Optional[float] = None) -> float:
         """
@@ -378,12 +385,11 @@ class Trade(_DECL_BASE):
         If rate is not set self.close_rate will be used
         :return:  profit in stake currency as float
         """
-        open_trade_price = self._calc_open_trade_price()
         close_trade_price = self.calc_close_trade_price(
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
-        profit = close_trade_price - open_trade_price
+        profit = close_trade_price - self.open_trade_price
         return float(f"{profit:.8f}")
 
     def calc_profit_percent(self, rate: Optional[float] = None,
@@ -395,12 +401,11 @@ class Trade(_DECL_BASE):
         :param fee: fee to use on the close rate (optional).
         :return: profit in percentage as float
         """
-        open_trade_price = self._calc_open_trade_price()
         close_trade_price = self.calc_close_trade_price(
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
-        profit_percent = (close_trade_price / open_trade_price) - 1
+        profit_percent = (close_trade_price / self.open_trade_price) - 1
         return float(f"{profit_percent:.8f}")
 
     @staticmethod

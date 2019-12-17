@@ -498,7 +498,7 @@ def test_migrate_old(mocker, default_conf, fee):
     assert trade.max_rate == 0.0
     assert trade.stop_loss == 0.0
     assert trade.initial_stop_loss == 0.0
-    assert trade.open_trade_price == 0.26758131848350003
+    assert trade.open_trade_price == trade._calc_open_trade_price()
 
 
 def test_migrate_new(mocker, default_conf, fee, caplog):
@@ -581,7 +581,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert log_has("trying trades_bak1", caplog)
     assert log_has("trying trades_bak2", caplog)
     assert log_has("Running database migration - backup available as trades_bak2", caplog)
-    assert trade.open_trade_price == 0.26758131848350003
+    assert trade.open_trade_price == trade._calc_open_trade_price()
 
 
 def test_migrate_mid_state(mocker, default_conf, fee, caplog):

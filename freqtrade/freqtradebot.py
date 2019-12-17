@@ -555,6 +555,7 @@ class FreqtradeBot:
                     order['amount'] = new_amount
                     # Fee was applied, so set to 0
                     trade.fee_open = 0
+                    trade.recalc_open_trade_price()
 
             except DependencyException as exception:
                 logger.warning("Could not update trade amount: %s", exception)
@@ -850,6 +851,7 @@ class FreqtradeBot:
                 trade.amount = new_amount
                 # Fee was applied, so set to 0
                 trade.fee_open = 0
+                trade.recalc_open_trade_price()
         except DependencyException as e:
             logger.warning("Could not update trade amount: %s", e)
 
