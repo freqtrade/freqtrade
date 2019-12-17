@@ -346,7 +346,7 @@ class Trade(_DECL_BASE):
         Calculate the open_rate including open_fee.
         :return: Price in of the open trade incl. Fees
         """
-        buy_trade = (Decimal(self.amount) * Decimal(self.open_rate))
+        buy_trade = Decimal(self.amount) * Decimal(self.open_rate)
         fees = buy_trade * Decimal(self.fee_open)
         return float(buy_trade + fees)
 
@@ -370,7 +370,7 @@ class Trade(_DECL_BASE):
         if rate is None and not self.close_rate:
             return 0.0
 
-        sell_trade = (Decimal(self.amount) * Decimal(rate or self.close_rate))
+        sell_trade = Decimal(self.amount) * Decimal(rate or self.close_rate)
         fees = sell_trade * Decimal(fee or self.fee_close)
         return float(sell_trade - fees)
 
