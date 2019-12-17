@@ -139,7 +139,7 @@ jobs:
 
     - name: Tests
       run: |
-        pytest --random-order --cov=freqtrade --cov-config=.coveragerc --random-order-seed=781055
+        pytest --random-order --cov=freqtrade --cov-config=.coveragerc
 
     - name: Backtesting
       run: |
