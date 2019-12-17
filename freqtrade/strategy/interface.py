@@ -296,7 +296,7 @@ class IStrategy(ABC):
         """
         # Set current rate to low for backtesting sell
         current_rate = low or rate
-        current_profit = trade.calc_profit_percent(current_rate)
+        current_profit = trade.calc_profit_ratio(current_rate)
 
         trade.adjust_min_max_rates(high or current_rate)
 
@@ -311,7 +311,7 @@ class IStrategy(ABC):
 
         # Set current rate to high for backtesting sell
         current_rate = high or rate
-        current_profit = trade.calc_profit_percent(current_rate)
+        current_profit = trade.calc_profit_ratio(current_rate)
         config_ask_strategy = self.config.get('ask_strategy', {})
 
         if buy and config_ask_strategy.get('ignore_roi_if_buy_signal', False):
@@ -360,7 +360,7 @@ class IStrategy(ABC):
             sl_offset = self.trailing_stop_positive_offset
 
             # Make sure current_profit is calculated using high for backtesting.
-            high_profit = current_profit if not high else trade.calc_profit_percent(high)
+            high_profit = current_profit if not high else trade.calc_profit_ratio(high)
 
             # Don't update stoploss if trailing_only_offset_is_reached is true.
             if not (self.trailing_only_offset_is_reached and high_profit < sl_offset):

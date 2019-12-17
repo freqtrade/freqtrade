@@ -125,6 +125,7 @@ def test_min_roi_reached(default_conf, fee) -> None:
         trade = Trade(
             pair='ETH/BTC',
             stake_amount=0.001,
+            amount=5,
             open_date=arrow.utcnow().shift(hours=-1).datetime,
             fee_open=fee.return_value,
             fee_close=fee.return_value,
@@ -162,6 +163,7 @@ def test_min_roi_reached2(default_conf, fee) -> None:
         trade = Trade(
             pair='ETH/BTC',
             stake_amount=0.001,
+            amount=5,
             open_date=arrow.utcnow().shift(hours=-1).datetime,
             fee_open=fee.return_value,
             fee_close=fee.return_value,
@@ -195,6 +197,7 @@ def test_min_roi_reached3(default_conf, fee) -> None:
     trade = Trade(
             pair='ETH/BTC',
             stake_amount=0.001,
+            amount=5,
             open_date=arrow.utcnow().shift(hours=-1).datetime,
             fee_open=fee.return_value,
             fee_close=fee.return_value,

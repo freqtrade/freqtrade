@@ -555,6 +555,7 @@ class FreqtradeBot:
                     order['amount'] = new_amount
                     # Fee was applied, so set to 0
                     trade.fee_open = 0
+                    trade.recalc_open_trade_price()
 
             except DependencyException as exception:
                 logger.warning("Could not update trade amount: %s", exception)
@@ -850,6 +851,7 @@ class FreqtradeBot:
                 trade.amount = new_amount
                 # Fee was applied, so set to 0
                 trade.fee_open = 0
+                trade.recalc_open_trade_price()
         except DependencyException as e:
             logger.warning("Could not update trade amount: %s", e)
 
@@ -948,7 +950,7 @@ class FreqtradeBot:
         profit_trade = trade.calc_profit(rate=profit_rate)
         # Use cached ticker here - it was updated seconds ago.
         current_rate = self.get_sell_rate(trade.pair, False)
-        profit_percent = trade.calc_profit_percent(profit_rate)
+        profit_percent = trade.calc_profit_ratio(profit_rate)
         gain = "profit" if profit_percent > 0 else "loss"
 
         msg = {

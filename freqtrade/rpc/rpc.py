@@ -123,7 +123,7 @@ class RPC:
                     current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
                 except DependencyException:
                     current_rate = NAN
-                current_profit = trade.calc_profit_percent(current_rate)
+                current_profit = trade.calc_profit_ratio(current_rate)
                 fmt_close_profit = (f'{round(trade.close_profit * 100, 2):.2f}%'
                                     if trade.close_profit else None)
                 trade_dict = trade.to_json()
@@ -151,7 +151,7 @@ class RPC:
                     current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
                 except DependencyException:
                     current_rate = NAN
-                trade_perc = (100 * trade.calc_profit_percent(current_rate))
+                trade_perc = (100 * trade.calc_profit_ratio(current_rate))
                 trade_profit = trade.calc_profit(current_rate)
                 profit_str = f'{trade_perc:.2f}%'
                 if self._fiat_converter:
@@ -240,7 +240,7 @@ class RPC:
                 durations.append((trade.close_date - trade.open_date).total_seconds())
 
             if not trade.is_open:
-                profit_percent = trade.calc_profit_percent()
+                profit_percent = trade.calc_profit_ratio()
                 profit_closed_coin.append(trade.calc_profit())
                 profit_closed_perc.append(profit_percent)
             else:
@@ -249,7 +249,7 @@ class RPC:
                     current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
                 except DependencyException:
                     current_rate = NAN
-                profit_percent = trade.calc_profit_percent(rate=current_rate)
+                profit_percent = trade.calc_profit_ratio(rate=current_rate)
 
             profit_all_coin.append(
                 trade.calc_profit(rate=trade.close_rate or current_rate)

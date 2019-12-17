@@ -329,7 +329,7 @@ class Backtesting:
                 closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
 
                 return BacktestResult(pair=pair,
-                                      profit_percent=trade.calc_profit_percent(rate=closerate),
+                                      profit_percent=trade.calc_profit_ratio(rate=closerate),
                                       profit_abs=trade.calc_profit(rate=closerate),
                                       open_time=buy_row.date,
                                       close_time=sell_row.date,
@@ -345,7 +345,7 @@ class Backtesting:
             # no sell condition found - trade stil open at end of backtest period
             sell_row = partial_ticker[-1]
             bt_res = BacktestResult(pair=pair,
-                                    profit_percent=trade.calc_profit_percent(rate=sell_row.open),
+                                    profit_percent=trade.calc_profit_ratio(rate=sell_row.open),
                                     profit_abs=trade.calc_profit(rate=sell_row.open),
                                     open_time=buy_row.date,
                                     close_time=sell_row.date,
