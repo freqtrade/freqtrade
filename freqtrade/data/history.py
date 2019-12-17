@@ -206,7 +206,6 @@ def refresh_data(datadir: Path,
                  pairs: List[str],
                  exchange: Exchange,
                  timerange: Optional[TimeRange] = None,
-                 startup_candles: int = 0,
                  ) -> None:
     """
     Refresh ticker history data for a list of pairs.
@@ -216,11 +215,7 @@ def refresh_data(datadir: Path,
     :param pairs: List of pairs to load
     :param exchange: Exchange object
     :param timerange: Limit data to be loaded to this timerange
-    :param startup_candles: Additional candles to load at the start of the period
     """
-    if startup_candles > 0 and timerange:
-        logger.info(f'Using indicator startup period: {startup_candles} ...')
-
     for pair in pairs:
         _download_pair_history(pair=pair, timeframe=timeframe,
                                datadir=datadir, timerange=timerange,

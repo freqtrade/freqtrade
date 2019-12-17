@@ -101,7 +101,6 @@ class Edge:
                 exchange=self.exchange,
                 timeframe=self.strategy.ticker_interval,
                 timerange=self._timerange,
-                startup_candles=self.strategy.startup_candle_count,
             )
 
         data = history.load_data(
