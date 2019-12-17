@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from freqtrade.data.history import get_timeframe
+from freqtrade.data.history import get_timerange
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.strategy.interface import SellType
 from tests.conftest import patch_exchange
@@ -380,7 +380,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     pair = "UNITTEST/BTC"
     # Dummy data as we mock the analyze functions
     data_processed = {pair: frame.copy()}
-    min_date, max_date = get_timeframe({pair: frame})
+    min_date, max_date = get_timerange({pair: frame})
     results = backtesting.backtest(
         {
             'stake_amount': default_conf['stake_amount'],

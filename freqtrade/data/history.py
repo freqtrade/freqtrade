@@ -68,7 +68,7 @@ def trim_dataframe(df: DataFrame, timerange: TimeRange, df_date_col: str = 'date
 
 
 def load_tickerdata_file(datadir: Path, pair: str, timeframe: str,
-                         timerange: Optional[TimeRange] = None) -> Optional[list]:
+                         timerange: Optional[TimeRange] = None) -> List[Dict]:
     """
     Load a pair from file, either .json.gz or .json
     :return: tickerlist or None if unsuccessful
@@ -276,7 +276,7 @@ def _load_cached_data_for_updating(datadir: Path, pair: str, timeframe: str,
 
 
 def _download_pair_history(datadir: Path,
-                           exchange: Optional[Exchange],
+                           exchange: Exchange,
                            pair: str,
                            timeframe: str = '5m',
                            timerange: Optional[TimeRange] = None) -> bool:
@@ -293,11 +293,6 @@ def _download_pair_history(datadir: Path,
     :param timerange: range of time to download
     :return: bool with success state
     """
-    if not exchange:
-        raise OperationalException(
-            "Exchange needs to be initialized when downloading pair history data"
-        )
-
     try:
         logger.info(
             f'Download history data for pair: "{pair}", timeframe: {timeframe} '
@@ -447,18 +442,19 @@ def convert_trades_to_ohlcv(pairs: List[str], timeframes: List[str],
             store_tickerdata_file(datadir, pair, timeframe, data=ohlcv)
 
 
-def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:
+def get_timerange(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:
     """
-    Get the maximum timeframe for the given backtest data
+    Get the maximum common timerange for the given backtest data.
+
     :param data: dictionary with preprocessed backtesting data
     :return: tuple containing min_date, max_date
     """
-    timeframe = [
+    timeranges = [
         (arrow.get(frame['date'].min()), arrow.get(frame['date'].max()))
         for frame in data.values()
     ]
-    return min(timeframe, key=operator.itemgetter(0))[0], \
-        max(timeframe, key=operator.itemgetter(1))[1]
+    return (min(timeranges, key=operator.itemgetter(0))[0],
+            max(timeranges, key=operator.itemgetter(1))[1])
 
 
 def validate_backtest_data(data: DataFrame, pair: str, min_date: datetime,

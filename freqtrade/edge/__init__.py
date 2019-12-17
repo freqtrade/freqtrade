@@ -120,7 +120,7 @@ class Edge:
         preprocessed = self.strategy.tickerdata_to_dataframe(data)
 
         # Print timeframe
-        min_date, max_date = history.get_timeframe(preprocessed)
+        min_date, max_date = history.get_timerange(preprocessed)
         logger.info(
             'Measuring data from %s up to %s (%s days) ...',
             min_date.isoformat(),

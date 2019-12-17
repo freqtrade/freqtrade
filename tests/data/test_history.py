@@ -7,15 +7,13 @@ from shutil import copyfile
 from unittest.mock import MagicMock, PropertyMock
 
 import arrow
-import pytest
 from pandas import DataFrame
 
-from freqtrade import OperationalException
 from freqtrade.configuration import TimeRange
 from freqtrade.data.history import (_download_pair_history,
                                     _download_trades_history,
                                     _load_cached_data_for_updating,
-                                    convert_trades_to_ohlcv, get_timeframe,
+                                    convert_trades_to_ohlcv, get_timerange,
                                     load_data, load_pair_history,
                                     load_tickerdata_file, pair_data_filename,
                                     pair_trades_filename,
@@ -138,9 +136,6 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog,
         'Download history data for pair: "MEME/BTC", timeframe: 1m '
         'and store in .*', caplog
     )
-    with pytest.raises(OperationalException, match=r'Exchange needs to be initialized when.*'):
-        refresh_data(datadir=testdatadir, timeframe='1m', pairs=['MEME/BTC'],
-                     exchange=None)
     _clean_test_file(file)
 
 
@@ -512,7 +507,7 @@ def test_file_dump_json_tofile(testdatadir) -> None:
     _clean_test_file(file)
 
 
-def test_get_timeframe(default_conf, mocker, testdatadir) -> None:
+def test_get_timerange(default_conf, mocker, testdatadir) -> None:
     patch_exchange(mocker)
     strategy = DefaultStrategy(default_conf)
 
@@ -523,7 +518,7 @@ def test_get_timeframe(default_conf, mocker, testdatadir) -> None:
             pairs=['UNITTEST/BTC']
         )
     )
-    min_date, max_date = get_timeframe(data)
+    min_date, max_date = get_timerange(data)
     assert min_date.isoformat() == '2017-11-04T23:02:00+00:00'
     assert max_date.isoformat() == '2017-11-14T22:58:00+00:00'
 
@@ -540,7 +535,7 @@ def test_validate_backtest_data_warn(default_conf, mocker, caplog, testdatadir) 
             fill_up_missing=False
         )
     )
-    min_date, max_date = get_timeframe(data)
+    min_date, max_date = get_timerange(data)
     caplog.clear()
     assert validate_backtest_data(data['UNITTEST/BTC'], 'UNITTEST/BTC',
                                   min_date, max_date, timeframe_to_minutes('1m'))
@@ -564,7 +559,7 @@ def test_validate_backtest_data(default_conf, mocker, caplog, testdatadir) -> No
         )
     )
 
-    min_date, max_date = get_timeframe(data)
+    min_date, max_date = get_timerange(data)
     caplog.clear()
     assert not validate_backtest_data(data['UNITTEST/BTC'], 'UNITTEST/BTC',
                                       min_date, max_date, timeframe_to_minutes('5m'))

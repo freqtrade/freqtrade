@@ -23,7 +23,7 @@ from joblib import (Parallel, cpu_count, delayed, dump, load,
 from pandas import DataFrame
 
 from freqtrade import OperationalException
-from freqtrade.data.history import get_timeframe, trim_dataframe
+from freqtrade.data.history import get_timerange, trim_dataframe
 from freqtrade.misc import plural, round_dict
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
@@ -369,7 +369,7 @@ class Hyperopt:
 
         processed = load(self.tickerdata_pickle)
 
-        min_date, max_date = get_timeframe(processed)
+        min_date, max_date = get_timerange(processed)
 
         backtesting_results = self.backtesting.backtest(
             {
@@ -490,7 +490,7 @@ class Hyperopt:
         # Trim startup period from analyzed dataframe
         for pair, df in preprocessed.items():
             preprocessed[pair] = trim_dataframe(df, timerange)
-        min_date, max_date = get_timeframe(data)
+        min_date, max_date = get_timerange(data)
 
         logger.info(
             'Hyperopting with data from %s up to %s (%s days)..',
