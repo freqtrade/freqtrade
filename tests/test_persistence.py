@@ -641,6 +641,7 @@ def test_migrate_mid_state(mocker, default_conf, fee, caplog):
     assert trade.max_rate == 0.0
     assert trade.stop_loss == 0.0
     assert trade.initial_stop_loss == 0.0
+    assert trade.open_trade_price == trade._calc_open_trade_price()
     assert log_has("trying trades_bak0", caplog)
     assert log_has("Running database migration - backup available as trades_bak0", caplog)
 
