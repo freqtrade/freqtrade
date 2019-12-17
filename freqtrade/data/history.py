@@ -164,34 +164,6 @@ def load_pair_history(pair: str,
         return DataFrame()
 
 
-def refresh_pair_history(pair: str,
-                         timeframe: str,
-                         datadir: Path,
-                         exchange: Exchange,
-                         timerange: Optional[TimeRange] = None,
-                         startup_candles: int = 0,
-                         ) -> None:
-    """
-    Refresh cached ticker history for the given pair.
-
-    :param pair: Pair to load data for
-    :param timeframe: Ticker timeframe (e.g. "5m")
-    :param datadir: Path to the data storage location.
-    :param timerange: Limit data to be loaded to this timerange
-    :param exchange: Exchange object
-    :param startup_candles: Additional candles to load at the start of the period
-    """
-    timerange_startup = deepcopy(timerange)
-    if startup_candles > 0 and timerange_startup:
-        timerange_startup.subtract_start(timeframe_to_seconds(timeframe) * startup_candles)
-
-    _download_pair_history(datadir=datadir,
-                           exchange=exchange,
-                           pair=pair,
-                           timeframe=timeframe,
-                           timerange=timerange)
-
-
 def load_data(datadir: Path,
               timeframe: str,
               pairs: List[str],
@@ -250,10 +222,9 @@ def refresh_data(datadir: Path,
         logger.info(f'Using indicator startup period: {startup_candles} ...')
 
     for pair in pairs:
-        refresh_pair_history(pair=pair, timeframe=timeframe,
-                             datadir=datadir, timerange=timerange,
-                             exchange=exchange,
-                             startup_candles=startup_candles)
+        _download_pair_history(pair=pair, timeframe=timeframe,
+                               datadir=datadir, timerange=timerange,
+                               exchange=exchange)
 
 
 def pair_data_filename(datadir: Path, pair: str, timeframe: str) -> Path:
