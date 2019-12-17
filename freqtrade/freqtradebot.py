@@ -950,7 +950,7 @@ class FreqtradeBot:
         profit_trade = trade.calc_profit(rate=profit_rate)
         # Use cached ticker here - it was updated seconds ago.
         current_rate = self.get_sell_rate(trade.pair, False)
-        profit_percent = trade.calc_profit_percent(profit_rate)
+        profit_percent = trade.calc_profit_ratio(profit_rate)
         gain = "profit" if profit_percent > 0 else "loss"
 
         msg = {

@@ -226,7 +226,7 @@ def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order, fee):
     assert trade.calc_profit() == 0.00006217
 
     # Profit in percent
-    assert trade.calc_profit_percent() == 0.06201058
+    assert trade.calc_profit_ratio() == 0.06201058
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -367,7 +367,7 @@ def test_calc_profit(limit_buy_order, limit_sell_order, fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_profit_percent(limit_buy_order, limit_sell_order, fee):
+def test_calc_profit_ratio(limit_buy_order, limit_sell_order, fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
@@ -381,17 +381,17 @@ def test_calc_profit_percent(limit_buy_order, limit_sell_order, fee):
     trade.update(limit_buy_order)  # Buy @ 0.00001099
 
     # Get percent of profit with a custom rate (Higher than open rate)
-    assert trade.calc_profit_percent(rate=0.00001234) == 0.11723875
+    assert trade.calc_profit_ratio(rate=0.00001234) == 0.11723875
 
     # Get percent of profit with a custom rate (Lower than open rate)
-    assert trade.calc_profit_percent(rate=0.00000123) == -0.88863828
+    assert trade.calc_profit_ratio(rate=0.00000123) == -0.88863828
 
     # Test when we apply a Sell order. Sell higher than open rate @ 0.00001173
     trade.update(limit_sell_order)
-    assert trade.calc_profit_percent() == 0.06201058
+    assert trade.calc_profit_ratio() == 0.06201058
 
     # Test with a custom fee rate on the close trade
-    assert trade.calc_profit_percent(fee=0.003) == 0.06147824
+    assert trade.calc_profit_ratio(fee=0.003) == 0.06147824
 
 
 @pytest.mark.usefixtures("init_persistence")

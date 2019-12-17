@@ -381,7 +381,7 @@ def test_api_performance(botclient, mocker, ticker, fee):
         close_rate=0.265441,
 
     )
-    trade.close_profit = trade.calc_profit_percent()
+    trade.close_profit = trade.calc_profit_ratio()
     Trade.session.add(trade)
 
     trade = Trade(
@@ -396,7 +396,7 @@ def test_api_performance(botclient, mocker, ticker, fee):
         fee_open=fee.return_value,
         close_rate=0.391
     )
-    trade.close_profit = trade.calc_profit_percent()
+    trade.close_profit = trade.calc_profit_ratio()
     Trade.session.add(trade)
     Trade.session.flush()
 

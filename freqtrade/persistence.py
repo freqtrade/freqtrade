@@ -185,6 +185,7 @@ class Trade(_DECL_BASE):
     fee_close = Column(Float, nullable=False, default=0.0)
     open_rate = Column(Float)
     open_rate_requested = Column(Float)
+    # open_trade_price - calcuated via _calc_open_trade_price
     open_trade_price = Column(Float)
     close_rate = Column(Float)
     close_rate_requested = Column(Float)
@@ -331,7 +332,7 @@ class Trade(_DECL_BASE):
         and marks trade as closed
         """
         self.close_rate = Decimal(rate)
-        self.close_profit = self.calc_profit_percent()
+        self.close_profit = self.calc_profit_ratio()
         self.close_date = datetime.utcnow()
         self.is_open = False
         self.open_order_id = None
@@ -361,9 +362,9 @@ class Trade(_DECL_BASE):
         """
         Calculate the close_rate including fee
         :param fee: fee to use on the close rate (optional).
-        If rate is not set self.fee will be used
+            If rate is not set self.fee will be used
         :param rate: rate to compare with (optional).
-        If rate is not set self.close_rate will be used
+            If rate is not set self.close_rate will be used
         :return: Price in BTC of the open trade
         """
         if rate is None and not self.close_rate:
@@ -378,9 +379,9 @@ class Trade(_DECL_BASE):
         """
         Calculate the absolute profit in stake currency between Close and Open trade
         :param fee: fee to use on the close rate (optional).
-        If rate is not set self.fee will be used
+            If rate is not set self.fee will be used
         :param rate: close rate to compare with (optional).
-        If rate is not set self.close_rate will be used
+            If rate is not set self.close_rate will be used
         :return:  profit in stake currency as float
         """
         close_trade_price = self.calc_close_trade_price(
@@ -390,14 +391,14 @@ class Trade(_DECL_BASE):
         profit = close_trade_price - self.open_trade_price
         return float(f"{profit:.8f}")
 
-    def calc_profit_percent(self, rate: Optional[float] = None,
-                            fee: Optional[float] = None) -> float:
+    def calc_profit_ratio(self, rate: Optional[float] = None,
+                          fee: Optional[float] = None) -> float:
         """
-        Calculates the profit in percentage (including fee).
+        Calculates the profit as ratio (including fee).
         :param rate: rate to compare with (optional).
-        If rate is not set self.close_rate will be used
+            If rate is not set self.close_rate will be used
         :param fee: fee to use on the close rate (optional).
-        :return: profit in percentage as float
+        :return: profit ratio as float
         """
         close_trade_price = self.calc_close_trade_price(
             rate=(rate or self.close_rate),

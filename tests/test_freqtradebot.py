@@ -1543,7 +1543,8 @@ def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> No
     assert log_has_re('Found open order for.*', caplog)
 
 
-def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_buy_order, fee, mocker):
+def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_buy_order, fee,
+                                          mocker):
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     # get_order should not be called!!
     mocker.patch('freqtrade.exchange.Exchange.get_order', MagicMock(side_effect=ValueError))
