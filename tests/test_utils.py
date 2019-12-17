@@ -444,6 +444,9 @@ def test_create_datadir_failed(caplog):
 
 
 def test_create_datadir(caplog, mocker):
+    # Ensure that caplog is empty before starting ...
+    # Should prevent random failures.
+    caplog.clear()
     cud = mocker.patch("freqtrade.utils.create_userdata_dir", MagicMock())
     csf = mocker.patch("freqtrade.utils.copy_sample_files", MagicMock())
     args = [
