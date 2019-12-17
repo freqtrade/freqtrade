@@ -86,7 +86,7 @@ def check_migrate(engine) -> None:
         logger.debug(f'trying {table_back_name}')
 
     # Check for latest column
-    if not has_column(cols, 'stop_loss_pct'):
+    if not has_column(cols, 'open_trade_price'):
         logger.info(f'Running database migration - backup available as {table_back_name}')
 
         fee_open = get_column_def(cols, 'fee_open', 'fee')
@@ -104,6 +104,8 @@ def check_migrate(engine) -> None:
         sell_reason = get_column_def(cols, 'sell_reason', 'null')
         strategy = get_column_def(cols, 'strategy', 'null')
         ticker_interval = get_column_def(cols, 'ticker_interval', 'null')
+        open_trade_price = get_column_def(cols, 'open_trade_price',
+                                          f'amount * open_rate * (1 + {fee_open})')
 
         # Schema migration necessary
         engine.execute(f"alter table trades rename to {table_back_name}")
@@ -121,7 +123,7 @@ def check_migrate(engine) -> None:
                 stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
                 stoploss_order_id, stoploss_last_update,
                 max_rate, min_rate, sell_reason, strategy,
-                ticker_interval
+                ticker_interval, open_trade_price
                 )
             select id, lower(exchange),
                 case
@@ -140,7 +142,8 @@ def check_migrate(engine) -> None:
                 {initial_stop_loss_pct} initial_stop_loss_pct,
                 {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
                 {max_rate} max_rate, {min_rate} min_rate, {sell_reason} sell_reason,
-                {strategy} strategy, {ticker_interval} ticker_interval
+                {strategy} strategy, {ticker_interval} ticker_interval,
+                {open_trade_price} open_trade_price
                 from {table_back_name}
              """)
 
@@ -182,6 +185,7 @@ class Trade(_DECL_BASE):
     fee_close = Column(Float, nullable=False, default=0.0)
     open_rate = Column(Float)
     open_rate_requested = Column(Float)
+    open_trade_price = Column(Float)
     close_rate = Column(Float)
     close_rate_requested = Column(Float)
     close_profit = Column(Float)
@@ -209,6 +213,10 @@ class Trade(_DECL_BASE):
     sell_reason = Column(String, nullable=True)
     strategy = Column(String, nullable=True)
     ticker_interval = Column(Integer, nullable=True)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.open_trade_price = self._calc_open_trade_price()
 
     def __repr__(self):
         open_since = self.open_date.strftime('%Y-%m-%d %H:%M:%S') if self.is_open else 'closed'
@@ -302,6 +310,7 @@ class Trade(_DECL_BASE):
             # Update open rate and actual amount
             self.open_rate = Decimal(order['price'])
             self.amount = Decimal(order['amount'])
+            self.open_trade_price = self._calc_open_trade_price()
             logger.info('%s_BUY has been fulfilled for %s.', order_type.upper(), self)
             self.open_order_id = None
         elif order_type in ('market', 'limit') and order['side'] == 'sell':
@@ -331,7 +340,7 @@ class Trade(_DECL_BASE):
             self
         )
 
-    def calc_open_trade_price(self, fee: Optional[float] = None) -> float:
+    def _calc_open_trade_price(self) -> float:
         """
         Calculate the open_rate including fee.
         :param fee: fee to use on the open rate (optional).
@@ -339,7 +348,7 @@ class Trade(_DECL_BASE):
         :return: Price in of the open trade incl. Fees
         """
         buy_trade = (Decimal(self.amount) * Decimal(self.open_rate))
-        fees = buy_trade * Decimal(fee or self.fee_open)
+        fees = buy_trade * Decimal(self.fee_open)
         return float(buy_trade + fees)
 
     def calc_close_trade_price(self, rate: Optional[float] = None,
@@ -369,7 +378,7 @@ class Trade(_DECL_BASE):
         If rate is not set self.close_rate will be used
         :return:  profit in stake currency as float
         """
-        open_trade_price = self.calc_open_trade_price()
+        open_trade_price = self._calc_open_trade_price()
         close_trade_price = self.calc_close_trade_price(
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
@@ -386,7 +395,7 @@ class Trade(_DECL_BASE):
         :param fee: fee to use on the close rate (optional).
         :return: profit in percentage as float
         """
-        open_trade_price = self.calc_open_trade_price()
+        open_trade_price = self._calc_open_trade_price()
         close_trade_price = self.calc_close_trade_price(
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
