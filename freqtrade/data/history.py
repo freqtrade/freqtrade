@@ -155,11 +155,11 @@ def load_pair_history(pair: str,
 
     # The user forced the refresh of pairs
     if refresh_pairs:
-        download_pair_history(datadir=datadir,
-                              exchange=exchange,
-                              pair=pair,
-                              timeframe=timeframe,
-                              timerange=timerange)
+        _download_pair_history(datadir=datadir,
+                               exchange=exchange,
+                               pair=pair,
+                               timeframe=timeframe,
+                               timerange=timerange)
 
     pairdata = load_tickerdata_file(datadir, pair, timeframe, timerange=timerange_startup)
 
@@ -277,11 +277,11 @@ def _load_cached_data_for_updating(datadir: Path, pair: str, timeframe: str,
     return (data, since_ms)
 
 
-def download_pair_history(datadir: Path,
-                          exchange: Optional[Exchange],
-                          pair: str,
-                          timeframe: str = '5m',
-                          timerange: Optional[TimeRange] = None) -> bool:
+def _download_pair_history(datadir: Path,
+                           exchange: Optional[Exchange],
+                           pair: str,
+                           timeframe: str = '5m',
+                           timerange: Optional[TimeRange] = None) -> bool:
     """
     Download latest candles from the exchange for the pair and timeframe passed in parameters
     The data is downloaded starting from the last correct data that
@@ -312,11 +312,12 @@ def download_pair_history(datadir: Path,
         logger.debug("Current End: %s", misc.format_ms_time(data[-1][0]) if data else 'None')
 
         # Default since_ms to 30 days if nothing is given
-        new_data = exchange.get_historic_ohlcv(pair=pair, timeframe=timeframe,
-                                               since_ms=since_ms if since_ms
-                                               else
+        new_data = exchange.get_historic_ohlcv(pair=pair,
+                                               timeframe=timeframe,
+                                               since_ms=since_ms if since_ms else
                                                int(arrow.utcnow().shift(
-                                                   days=-30).float_timestamp) * 1000)
+                                                   days=-30).float_timestamp) * 1000
+                                               )
         data.extend(new_data)
 
         logger.debug("New Start: %s", misc.format_ms_time(data[0][0]))
@@ -334,12 +335,12 @@ def download_pair_history(datadir: Path,
 
 
 def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes: List[str],
-                                dl_path: Path, timerange: Optional[TimeRange] = None,
+                                datadir: Path, timerange: Optional[TimeRange] = None,
                                 erase=False) -> List[str]:
     """
     Refresh stored ohlcv data for backtesting and hyperopt operations.
-    Used by freqtrade download-data
-    :return: Pairs not available
+    Used by freqtrade download-data subcommand.
+    :return: List of pairs that are not available.
     """
     pairs_not_available = []
     for pair in pairs:
@@ -349,23 +350,23 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
             continue
         for timeframe in timeframes:
 
-            dl_file = pair_data_filename(dl_path, pair, timeframe)
+            dl_file = pair_data_filename(datadir, pair, timeframe)
             if erase and dl_file.exists():
                 logger.info(
                     f'Deleting existing data for pair {pair}, interval {timeframe}.')
                 dl_file.unlink()
 
             logger.info(f'Downloading pair {pair}, interval {timeframe}.')
-            download_pair_history(datadir=dl_path, exchange=exchange,
-                                  pair=pair, timeframe=str(timeframe),
-                                  timerange=timerange)
+            _download_pair_history(datadir=datadir, exchange=exchange,
+                                   pair=pair, timeframe=str(timeframe),
+                                   timerange=timerange)
     return pairs_not_available
 
 
-def download_trades_history(datadir: Path,
-                            exchange: Exchange,
-                            pair: str,
-                            timerange: Optional[TimeRange] = None) -> bool:
+def _download_trades_history(datadir: Path,
+                             exchange: Exchange,
+                             pair: str,
+                             timerange: Optional[TimeRange] = None) -> bool:
     """
     Download trade history from the exchange.
     Appends to previously downloaded trades data.
@@ -381,11 +382,11 @@ def download_trades_history(datadir: Path,
         logger.debug("Current Start: %s", trades[0]['datetime'] if trades else 'None')
         logger.debug("Current End: %s", trades[-1]['datetime'] if trades else 'None')
 
+        # Default since_ms to 30 days if nothing is given
         new_trades = exchange.get_historic_trades(pair=pair,
                                                   since=since if since else
                                                   int(arrow.utcnow().shift(
                                                       days=-30).float_timestamp) * 1000,
-                                                  #  until=xxx,
                                                   from_id=from_id,
                                                   )
         trades.extend(new_trades[1])
@@ -407,9 +408,9 @@ def download_trades_history(datadir: Path,
 def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: Path,
                                  timerange: TimeRange, erase=False) -> List[str]:
     """
-    Refresh stored trades data.
-    Used by freqtrade download-data
-    :return: Pairs not available
+    Refresh stored trades data for backtesting and hyperopt operations.
+    Used by freqtrade download-data subcommand.
+    :return: List of pairs that are not available.
     """
     pairs_not_available = []
     for pair in pairs:
@@ -425,9 +426,9 @@ def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: 
             dl_file.unlink()
 
         logger.info(f'Downloading trades for pair {pair}.')
-        download_trades_history(datadir=datadir, exchange=exchange,
-                                pair=pair,
-                                timerange=timerange)
+        _download_trades_history(datadir=datadir, exchange=exchange,
+                                 pair=pair,
+                                 timerange=timerange)
     return pairs_not_available
 
 
