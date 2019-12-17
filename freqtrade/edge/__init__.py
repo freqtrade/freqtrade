@@ -94,12 +94,19 @@ class Edge:
         logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
         logger.info('Using local backtesting data (using whitelist in given config) ...')
 
+        if self._refresh_pairs:
+            history.refresh_data(
+                datadir=Path(self.config['datadir']),
+                pairs=pairs,
+                exchange=self.exchange,
+                timeframe=self.strategy.ticker_interval,
+                timerange=self._timerange,
+            )
+
         data = history.load_data(
             datadir=Path(self.config['datadir']),
             pairs=pairs,
             timeframe=self.strategy.ticker_interval,
-            refresh_pairs=self._refresh_pairs,
-            exchange=self.exchange,
             timerange=self._timerange,
             startup_candles=self.strategy.startup_candle_count,
         )

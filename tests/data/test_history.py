@@ -21,6 +21,7 @@ from freqtrade.data.history import (_download_pair_history,
                                     pair_trades_filename,
                                     refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data,
+                                    refresh_data,
                                     trim_dataframe, trim_tickerlist,
                                     validate_backtest_data)
 from freqtrade.exchange import timeframe_to_minutes
@@ -129,16 +130,17 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog,
     )
 
     # download a new pair if refresh_pairs is set
-    load_pair_history(datadir=testdatadir, timeframe='1m',
-                      refresh_pairs=True, exchange=exchange, pair='MEME/BTC')
+    refresh_data(datadir=testdatadir, timeframe='1m', pairs=['MEME/BTC'],
+                 exchange=exchange)
+    load_pair_history(datadir=testdatadir, timeframe='1m', pair='MEME/BTC')
     assert file.is_file()
     assert log_has_re(
         'Download history data for pair: "MEME/BTC", timeframe: 1m '
         'and store in .*', caplog
     )
     with pytest.raises(OperationalException, match=r'Exchange needs to be initialized when.*'):
-        load_pair_history(datadir=testdatadir, timeframe='1m',
-                          refresh_pairs=True, exchange=None, pair='MEME/BTC')
+        refresh_data(datadir=testdatadir, timeframe='1m', pairs=['MEME/BTC'],
+                     exchange=None)
     _clean_test_file(file)
 
 
@@ -372,12 +374,24 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
 
 
 def test_init(default_conf, mocker) -> None:
-    exchange = get_patched_exchange(mocker, default_conf)
     assert {} == load_data(
         datadir='',
-        exchange=exchange,
         pairs=[],
-        refresh_pairs=True,
+        timeframe=default_conf['ticker_interval']
+    )
+
+
+def test_init_with_refresh(default_conf, mocker) -> None:
+    exchange = get_patched_exchange(mocker, default_conf)
+    refresh_data(
+        datadir='',
+        pairs=[],
+        timeframe=default_conf['ticker_interval'],
+        exchange=exchange
+    )
+    assert {} == load_data(
+        datadir='',
+        pairs=[],
         timeframe=default_conf['ticker_interval']
     )
 
