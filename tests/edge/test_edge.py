@@ -255,8 +255,8 @@ def test_edge_heartbeat_calculate(mocker, edge_conf):
     assert edge.calculate() is False
 
 
-def mocked_load_data(datadir, pairs=[], timeframe='0m', refresh_pairs=False,
-                     timerange=None, exchange=None, *args, **kwargs):
+def mocked_load_data(datadir, pairs=[], timeframe='0m',
+                     timerange=None, *args, **kwargs):
     hz = 0.1
     base = 0.001
 
@@ -290,6 +290,7 @@ def mocked_load_data(datadir, pairs=[], timeframe='0m', refresh_pairs=False,
 def test_edge_process_downloaded_data(mocker, edge_conf):
     freqtrade = get_patched_freqtradebot(mocker, edge_conf)
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.001))
+    mocker.patch('freqtrade.data.history.refresh_data', MagicMock())
     mocker.patch('freqtrade.data.history.load_data', mocked_load_data)
     edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
 
@@ -301,6 +302,7 @@ def test_edge_process_downloaded_data(mocker, edge_conf):
 def test_edge_process_no_data(mocker, edge_conf, caplog):
     freqtrade = get_patched_freqtradebot(mocker, edge_conf)
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.001))
+    mocker.patch('freqtrade.data.history.refresh_data', MagicMock())
     mocker.patch('freqtrade.data.history.load_data', MagicMock(return_value={}))
     edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
 
@@ -313,6 +315,7 @@ def test_edge_process_no_data(mocker, edge_conf, caplog):
 def test_edge_process_no_trades(mocker, edge_conf, caplog):
     freqtrade = get_patched_freqtradebot(mocker, edge_conf)
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.001))
+    mocker.patch('freqtrade.data.history.refresh_data', MagicMock())
     mocker.patch('freqtrade.data.history.load_data', mocked_load_data)
     # Return empty
     mocker.patch('freqtrade.edge.Edge._find_trades_for_stoploss_range', MagicMock(return_value=[]))
