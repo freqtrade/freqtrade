@@ -342,9 +342,7 @@ class Trade(_DECL_BASE):
 
     def _calc_open_trade_price(self) -> float:
         """
-        Calculate the open_rate including fee.
-        :param fee: fee to use on the open rate (optional).
-        If rate is not set self.fee will be used
+        Calculate the open_rate including open_fee.
         :return: Price in of the open trade incl. Fees
         """
         buy_trade = (Decimal(self.amount) * Decimal(self.open_rate))
