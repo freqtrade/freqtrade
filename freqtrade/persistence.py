@@ -354,7 +354,7 @@ class Trade(_DECL_BASE):
         Recalculate open_trade_price.
         Must be called whenever open_rate or fee_open is changed.
         """
-        self.open_trade_price - self._calc_open_trade_price()
+        self.open_trade_price = self._calc_open_trade_price()
 
     def calc_close_trade_price(self, rate: Optional[float] = None,
                                fee: Optional[float] = None) -> float:
