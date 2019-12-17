@@ -136,12 +136,13 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order, fee, caplog):
         id=2,
         pair='ETH/BTC',
         stake_amount=0.001,
+        open_rate=0.01,
+        amount=5,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='bittrex',
     )
     assert trade.open_order_id is None
-    assert trade.open_rate is None
     assert trade.close_profit is None
     assert trade.close_date is None
 
@@ -173,6 +174,8 @@ def test_update_market_order(market_buy_order, market_sell_order, fee, caplog):
         id=1,
         pair='ETH/BTC',
         stake_amount=0.001,
+        amount=5,
+        open_rate=0.01,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='bittrex',
@@ -205,6 +208,8 @@ def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order, fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
+        open_rate=0.01,
+        amount=5,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='bittrex',
@@ -212,7 +217,7 @@ def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order, fee):
 
     trade.open_order_id = 'something'
     trade.update(limit_buy_order)
-    assert trade.calc_open_trade_price() == 0.0010024999999225068
+    assert trade._calc_open_trade_price() == 0.0010024999999225068
 
     trade.update(limit_sell_order)
     assert trade.calc_close_trade_price() == 0.0010646656050132426
@@ -229,6 +234,8 @@ def test_calc_close_trade_price_exception(limit_buy_order, fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
+        open_rate=0.1,
+        amount=5,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='bittrex',
@@ -244,13 +251,14 @@ def test_update_open_order(limit_buy_order):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=1.00,
+        open_rate=0.01,
+        amount=5,
         fee_open=0.1,
         fee_close=0.1,
         exchange='bittrex',
     )
 
     assert trade.open_order_id is None
-    assert trade.open_rate is None
     assert trade.close_profit is None
     assert trade.close_date is None
 
@@ -258,7 +266,6 @@ def test_update_open_order(limit_buy_order):
     trade.update(limit_buy_order)
 
     assert trade.open_order_id is None
-    assert trade.open_rate is None
     assert trade.close_profit is None
     assert trade.close_date is None
 
@@ -268,6 +275,8 @@ def test_update_invalid_order(limit_buy_order):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=1.00,
+        amount=5,
+        open_rate=0.001,
         fee_open=0.1,
         fee_close=0.1,
         exchange='bittrex',
@@ -282,6 +291,8 @@ def test_calc_open_trade_price(limit_buy_order, fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
+        amount=5,
+        open_rate=0.00001099,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='bittrex',
@@ -290,10 +301,10 @@ def test_calc_open_trade_price(limit_buy_order, fee):
     trade.update(limit_buy_order)  # Buy @ 0.00001099
 
     # Get the open rate price with the standard fee rate
-    assert trade.calc_open_trade_price() == 0.0010024999999225068
-
+    assert trade._calc_open_trade_price() == 0.0010024999999225068
+    trade.fee_open = 0.003
     # Get the open rate price with a custom fee rate
-    assert trade.calc_open_trade_price(fee=0.003) == 0.001002999999922468
+    assert trade._calc_open_trade_price() == 0.001002999999922468
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -301,6 +312,8 @@ def test_calc_close_trade_price(limit_buy_order, limit_sell_order, fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
+        amount=5,
+        open_rate=0.00001099,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='bittrex',
@@ -324,6 +337,8 @@ def test_calc_profit(limit_buy_order, limit_sell_order, fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
+        amount=5,
+        open_rate=0.00001099,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='bittrex',
@@ -356,6 +371,8 @@ def test_calc_profit_percent(limit_buy_order, limit_sell_order, fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
+        amount=5,
+        open_rate=0.00001099,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='bittrex',
@@ -630,6 +647,7 @@ def test_adjust_stop_loss(fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
+        amount=5,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='bittrex',
@@ -681,6 +699,7 @@ def test_adjust_min_max_rates(fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
+        amount=5,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='bittrex',
