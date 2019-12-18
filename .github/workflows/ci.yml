@@ -64,19 +64,16 @@ jobs:
         pip install -e .
 
     - name: Tests
-      env:
-        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        COVERALLS_SERVICE_NAME: travis-ci
-        TRAVIS: "true"
       run: |
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc
+
+    - name: Coveralls
+      if: startsWith(matrix.os, 'ubuntu')
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
         # Allow failure for coveralls
-        # Fake travis environment to get coveralls working correctly
-        export TRAVIS_PULL_REQUEST="https://github.com/${GITHUB_REPOSITORY}/pull/$(cat $GITHUB_EVENT_PATH | jq -r .number)"
-        export TRAVIS_BRANCH=${GITHUB_REF#"ref/heads"}
-        export CI_BRANCH=${GITHUB_REF#"ref/heads"}
-        echo "${TRAVIS_BRANCH}"
-        coveralls || true
+        coveralls -v  || true
 
     - name: Backtesting
       run: |
