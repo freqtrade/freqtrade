@@ -398,11 +398,13 @@ The valid values are:
 Prices for regular orders can be controlled via the parameter structures `bid_strategy` for Buying, and `ask_strategy` for selling.
 Prices are always retrieved right before an order is placed, either by querying the `fetch_ticker()` endpoint of the exchange (usually `/ticker`), or by using the orderbook.
 
-### Buy price with Orderbook enabled
+### Buy price 
+
+#### Buy price with Orderbook enabled
 
 When buying with the orderbook enabled (`bid_strategy.use_order_book=True`) - Freqtrade will fetch the `bid_strategy.order_book_top` entries in the orderbook, and will then use the entry specified as `bid_strategy.order_book_top` on the `bids` side of the orderbook. 1 specifies the topmost entry in the Orderbook - while 2 would use the 2nd entry in the Orderbook.
 
-### Buy price without Orderbook
+#### Buy price without Orderbook
 
 When not using orderbook (`bid_strategy.use_order_book=False`), then Freqtrade will use the best `ask` price based on a call to `fetch_ticker()` if it's below the `last` traded price.
 Otherwise, it'll use the following formula to calculate the rate:
@@ -413,7 +415,9 @@ ticker['ask'] + ask_last_balance * (ticker['last'] - ticker['ask'])
 
 This means - it uses the difference between last and ask (which must be negative, since ask was checked to be higher than last) and multiplies this with `bid_strategy.ask_last_balance` - lowering the price by `balance * (difference between last and ask).
 
-### Sell price with Orderbook enabled
+### Sell price 
+
+#### Sell price with Orderbook enabled
 
 When selling with the Orderbook enabled (`ask_strategy.use_order_book=True`) - Freqtrade will fetch the `ask_strategy.order_book_max` entries in the orderbook. Freqtrade will then validate each of the orderbook steps between `ask_strategy.order_book_min` and `ask_strategy.order_book_max` on the `ask` side for a profitable sell-possibility and will place a sell order at the first profitable spot.
 
@@ -424,7 +428,7 @@ A fixed slot (mirroring `bid_strategy.order_book_top`) can be defined by setting
     Using `ask_strategy.order_book_max` higher than 1 may increase the risk, since an eventual [stoploss on exchange](#understand-order_types) will be need to be cancelled as soon as the order is placed.
 
 
-### Sell price without orderbook
+#### Sell price without orderbook
 
 When not using orderbook (`ask_strategy.use_order_book=False`), then the best `bid` will be used as sell rate based on a call to `fetch_ticker()`.
 
