@@ -57,12 +57,12 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `trailing_only_offset_is_reached` | Only apply trailing stoploss when the offset is reached. [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*  <br> ***Datatype:*** *Boolean*
 | `unfilledtimeout.buy` | **Required.** How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled.  <br> ***Datatype:*** *Integer*
 | `unfilledtimeout.sell` | **Required.** How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled. <br> ***Datatype:*** *Integer*
-| `bid_strategy.ask_last_balance` | **Required.** Set the bidding price. More information [below](#understand-ask_last_balance). 
-| `bid_strategy.use_order_book` | Enable buying using the rates in Order Book Bids. <br> ***Datatype:*** *Boolean*
-| `bid_strategy.order_book_top` | Bot will use the top N rate in Order Book Bids. I.e. a value of 2 will allow the bot to pick the 2nd bid rate in Order Book Bids.  *Defaults to `1`.*  <br> ***Datatype:*** *Positive Integer*
-| `bid_strategy. check_depth_of_market.enabled` | Do not buy if the difference of buy orders and sell orders is met in Order Book. <br>*Defaults to `false`.* <br> ***Datatype:*** *Boolean*
-| `bid_strategy. check_depth_of_market.bids_to_ask_delta` | The % difference of buy orders and sell orders found in Order Book. A value lesser than 1 means sell orders is greater, while value greater than 1 means buy orders is higher.  *Defaults to `0`.*  <br> ***Datatype:*** *Float (as ratio)*
-| `ask_strategy.use_order_book` | Enable selling of open trades using Order Book Asks. <br> ***Datatype:*** *Boolean*
+| `bid_strategy.ask_last_balance` | **Required.** Set the bidding price. More information [below](#buy-price-without-orderbook). 
+| `bid_strategy.use_order_book` | Enable buying using the rates in [Order Book Bids](#buy-price-with-orderbook-enabled). <br> ***Datatype:*** *Boolean*
+| `bid_strategy.order_book_top` | Bot will use the top N rate in Order Book Bids to buy. I.e. a value of 2 will allow the bot to pick the 2nd bid rate in [Order Book Bids](#buy-price-with-orderbook-enabled). <br>*Defaults to `1`.*  <br> ***Datatype:*** *Positive Integer*
+| `bid_strategy. check_depth_of_market.enabled` | Do not buy if the difference of buy orders and sell orders is met in Order Book. [Check market depth](#check-depth-of-market). <br>*Defaults to `false`.* <br> ***Datatype:*** *Boolean*
+| `bid_strategy. check_depth_of_market.bids_to_ask_delta` | The difference ratio of buy orders and sell orders found in Order Book. A value below 1 means sell order size is greater, while value greater than 1 means buy order size is higher. [Check market depth](#check-depth-of-market) <br> *Defaults to `0`.*  <br> ***Datatype:*** *Float (as ratio)*
+| `ask_strategy.use_order_book` | Enable selling of open trades using [Order Book Asks](#sell-price-with-orderbook-enabled). <br> ***Datatype:*** *Boolean*
 | `ask_strategy.order_book_min` | Bot will scan from the top min to max Order Book Asks searching for a profitable rate. <br>*Defaults to `1`.* <br> ***Datatype:*** *Positive Integer*
 | `ask_strategy.order_book_max` | Bot will scan from the top min to max Order Book Asks searching for a profitable rate. <br>*Defaults to `1`.* <br> ***Datatype:*** *Positive Integer*
 | `ask_strategy.use_sell_signal` | Use sell signals produced by the strategy in addition to the `minimal_roi`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `true`.* <br> ***Datatype:*** *Boolean*
@@ -88,9 +88,9 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `telegram.chat_id` | Your personal Telegram account id. Only required if `telegram.enabled` is `true`. **Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
 | `webhook.enabled` | Enable usage of Webhook notifications <br> ***Datatype:*** *Boolean*
 | `webhook.url` | URL for the webhook. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> ***Datatype:*** *String*
-| `webhook.webhookbuy` | Payload to send on buy. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details. <br> ***Datatype:*** *String*
-| `webhook.webhooksell` | Payload to send on sell. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details. <br> ***Datatype:*** *String*
-| `webhook.webhookstatus` | Payload to send on status calls. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details. <br> ***Datatype:*** *String*
+| `webhook.webhookbuy` | Payload to send on buy. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> ***Datatype:*** *String*
+| `webhook.webhooksell` | Payload to send on sell. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> ***Datatype:*** *String*
+| `webhook.webhookstatus` | Payload to send on status calls. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> ***Datatype:*** *String*
 | `api_server.enabled` | Enable usage of API Server. See the [API Server documentation](rest-api.md) for more details. <br> ***Datatype:*** *Boolean*
 | `api_server.listen_ip_address` | Bind IP address. See the [API Server documentation](rest-api.md) for more details. <br> ***Datatype:*** *IPv4*
 | `api_server.listen_port` | Bind Port. See the [API Server documentation](rest-api.md) for more details. <br> ***Datatype:*** *Integer between 1024 and 65535*
@@ -206,13 +206,6 @@ The `process_throttle_secs` configuration parameter is an optional field that de
 before asking the strategy if we should buy or a sell an asset. After each wait period, the strategy is asked again for
 every opened trade wether or not we should sell, and for all the remaining pairs (either the dynamic list of pairs or
 the static list of pairs) if we should buy.
-
-### Understand ask_last_balance
-
-The `ask_last_balance` configuration parameter sets the bidding price. Value `0.0` will use `ask` price, `1.0` will
-use the `last` price and values between those interpolate between ask and last
-price. Using `ask` price will guarantee quick success in bid, but bot will also
-end up paying more then would probably have been necessary.
 
 ### Understand order_types
 
@@ -398,13 +391,15 @@ The valid values are:
 Prices for regular orders can be controlled via the parameter structures `bid_strategy` for Buying, and `ask_strategy` for selling.
 Prices are always retrieved right before an order is placed, either by querying the `fetch_ticker()` endpoint of the exchange (usually `/ticker`), or by using the orderbook.
 
-### Buy price 
+### Buy price
 
 #### Check depth of market
 
-When enabling `bid_strategy.check_depth_of_market=True`, then buy signals will be filtered based on the orderbook size.
+When enabling `bid_strategy.check_depth_of_market.enabled=True`, then buy signals will be filtered based on the orderbook size for each size (sum of all amounts).
+Orderbook bid size is then divided by Orderbook ask size - and the resulting delta is compared to `bid_strategy.check_depth_of_market.bids_to_ask_delta`, and a buy is only executed if the orderbook delta is bigger or equal to the configured delta.
 
-#TODO: Finish this section
+!!! Note:
+    A calculated delta below 1 means that sell order size is greater, while value greater than 1 means buy order size is higher
 
 #### Buy price with Orderbook enabled
 
@@ -413,15 +408,13 @@ When buying with the orderbook enabled (`bid_strategy.use_order_book=True`) - Fr
 #### Buy price without Orderbook
 
 When not using orderbook (`bid_strategy.use_order_book=False`), then Freqtrade will use the best `ask` price based on a call to `fetch_ticker()` if it's below the `last` traded price.
-Otherwise, it'll use the following formula to calculate the rate:
+Otherwise, it'll calculate a rate between `ask` and `last` price.
 
-``` python
-ticker['ask'] + ask_last_balance * (ticker['last'] - ticker['ask'])
-```
+The `bid_strategy.ask_last_balance` configuration parameter controls this. A value of `0.0` will use `ask` price, `1.0` will use the `last` price and values between those interpolate between ask and last
+price.
+Using `ask` price will guarantee quick success in bid, but bot will also end up paying more than what would have been necessary.
 
-This means - it uses the difference between last and ask (which must be negative, since ask was checked to be higher than last) and multiplies this with `bid_strategy.ask_last_balance` - lowering the price by `balance * (difference between last and ask).
-
-### Sell price 
+### Sell price
 
 #### Sell price with Orderbook enabled
 
