@@ -117,7 +117,7 @@ class Backtesting:
             fail_without_data=True,
         )
 
-        min_date, max_date = history.get_timeframe(data)
+        min_date, max_date = history.get_timerange(data)
 
         logger.info(
             'Loading data from %s up to %s (%s days)..',
@@ -481,7 +481,7 @@ class Backtesting:
             # Trim startup period from analyzed dataframe
             for pair, df in preprocessed.items():
                 preprocessed[pair] = history.trim_dataframe(df, timerange)
-            min_date, max_date = history.get_timeframe(preprocessed)
+            min_date, max_date = history.get_timerange(preprocessed)
 
             logger.info(
                 'Backtesting with data from %s up to %s (%s days)..',
