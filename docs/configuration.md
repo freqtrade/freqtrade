@@ -398,7 +398,7 @@ Prices are always retrieved right before an order is placed, either by querying 
 When enabling `bid_strategy.check_depth_of_market.enabled=True`, then buy signals will be filtered based on the orderbook size for each size (sum of all amounts).
 Orderbook bid size is then divided by Orderbook ask size - and the resulting delta is compared to `bid_strategy.check_depth_of_market.bids_to_ask_delta`, and a buy is only executed if the orderbook delta is bigger or equal to the configured delta.
 
-!!! Note:
+!!! Note
     A calculated delta below 1 means that sell order size is greater, while value greater than 1 means buy order size is higher
 
 #### Buy price with Orderbook enabled
