@@ -1682,6 +1682,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, fee, mock
     time.sleep(0.01)  # Race condition fix
     trade.update(limit_buy_order)
     assert trade.is_open is True
+    freqtrade.wallets.update()
 
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
@@ -2549,6 +2550,7 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order,
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
+    freqtrade.wallets.update()
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
@@ -2579,6 +2581,7 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order,
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
+    freqtrade.wallets.update()
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
@@ -2639,6 +2642,7 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, mocke
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
+    freqtrade.wallets.update()
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
@@ -2676,7 +2680,7 @@ def test_sell_not_enough_balance(default_conf, limit_buy_order,
     assert trade.amount != amnt
 
 
-def test__safe_sell_amount(default_conf, caplog, mocker):
+def test__safe_sell_amount(default_conf, fee, caplog, mocker):
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     amount = 95.33
@@ -2687,7 +2691,9 @@ def test__safe_sell_amount(default_conf, caplog, mocker):
         amount=amount,
         exchange='binance',
         open_rate=0.245441,
-        open_order_id="123456"
+        open_order_id="123456",
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
     )
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
@@ -2696,7 +2702,7 @@ def test__safe_sell_amount(default_conf, caplog, mocker):
     assert log_has_re(r'.*Falling back to wallet-amount.', caplog)
 
 
-def test__safe_sell_amount_error(default_conf, caplog, mocker):
+def test__safe_sell_amount_error(default_conf, fee, caplog, mocker):
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     amount = 95.33
@@ -2707,7 +2713,9 @@ def test__safe_sell_amount_error(default_conf, caplog, mocker):
         amount=amount,
         exchange='binance',
         open_rate=0.245441,
-        open_order_id="123456"
+        open_order_id="123456",
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
     )
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
@@ -2775,6 +2783,7 @@ def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, mocker) ->
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
+    freqtrade.wallets.update()
     patch_get_signal(freqtrade, value=(True, True))
     assert freqtrade.handle_trade(trade) is False
 
@@ -3512,6 +3521,7 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order, limit_sell_order
 
     time.sleep(0.01)  # Race condition fix
     trade.update(limit_buy_order)
+    freqtrade.wallets.update()
     assert trade.is_open is True
 
     patch_get_signal(freqtrade, value=(False, True))

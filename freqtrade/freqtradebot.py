@@ -898,7 +898,7 @@ class FreqtradeBot:
         Should be trade.amount - but will fall back to the available amount if necessary.
         This should cover cases where get_real_amount() was not able to update the amount
         for whatever reason.
-        :param pair: pair - used for logging
+        :param pair: Pair we're trying to sell
         :param amount: amount we expect to be available
         :return: amount to sell
         :raise: DependencyException: if available balance is not within 2% of the available amount.
