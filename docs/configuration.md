@@ -400,6 +400,12 @@ Prices are always retrieved right before an order is placed, either by querying 
 
 ### Buy price 
 
+#### Check depth of market
+
+When enabling `bid_strategy.check_depth_of_market=True`, then buy signals will be filtered based on the orderbook size.
+
+#TODO: Finish this section
+
 #### Buy price with Orderbook enabled
 
 When buying with the orderbook enabled (`bid_strategy.use_order_book=True`) - Freqtrade will fetch the `bid_strategy.order_book_top` entries in the orderbook, and will then use the entry specified as `bid_strategy.order_book_top` on the `bids` side of the orderbook. 1 specifies the topmost entry in the Orderbook - while 2 would use the 2nd entry in the Orderbook.
@@ -419,7 +425,7 @@ This means - it uses the difference between last and ask (which must be negative
 
 #### Sell price with Orderbook enabled
 
-When selling with the Orderbook enabled (`ask_strategy.use_order_book=True`) - Freqtrade will fetch the `ask_strategy.order_book_max` entries in the orderbook. Freqtrade will then validate each of the orderbook steps between `ask_strategy.order_book_min` and `ask_strategy.order_book_max` on the `ask` side for a profitable sell-possibility and will place a sell order at the first profitable spot.
+When selling with the Orderbook enabled (`ask_strategy.use_order_book=True`) - Freqtrade will fetch the `ask_strategy.order_book_max` entries in the orderbook. Freqtrade will then validate each of the orderbook steps between `ask_strategy.order_book_min` and `ask_strategy.order_book_max` on the `ask` side for a profitable sell-possibility based on the strategy configuration and will place a sell order at the first profitable spot.
 
 The idea here is to place the sell-order early, to be ahead in the queue.
 A fixed slot (mirroring `bid_strategy.order_book_top`) can be defined by setting `ask_strategy.order_book_min` and `ask_strategy.order_book_max` to the same number.
