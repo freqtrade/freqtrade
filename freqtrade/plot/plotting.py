@@ -121,7 +121,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
         )
         # Create description for sell summarizing the trade
         desc = trades.apply(lambda row: f"{round(row['profitperc'], 3)}%, {row['sell_reason']}, "
-                                        f"{row['duration']}min",
+                                        f"{row['duration']} min",
                             axis=1)
         trade_sells = go.Scatter(
             x=trades["close_time"],

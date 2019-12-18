@@ -213,7 +213,7 @@ def start_download_data(args: Dict[str, Any]) -> None:
         else:
             pairs_not_available = refresh_backtest_ohlcv_data(
                 exchange, pairs=config["pairs"], timeframes=config["timeframes"],
-                dl_path=Path(config['datadir']), timerange=timerange, erase=config.get("erase"))
+                datadir=Path(config['datadir']), timerange=timerange, erase=config.get("erase"))
 
     except KeyboardInterrupt:
         sys.exit("SIGINT received, aborting ...")

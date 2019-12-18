@@ -462,7 +462,7 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
 
 
 def test_telegram_balance_handle(default_conf, update, mocker, rpc_balance, tickers) -> None:
-
+    default_conf['dry_run'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_balances', return_value=rpc_balance)
     mocker.patch('freqtrade.exchange.Exchange.get_tickers', tickers)
     mocker.patch('freqtrade.exchange.Exchange.get_valid_pair_combination',
@@ -494,6 +494,7 @@ def test_telegram_balance_handle(default_conf, update, mocker, rpc_balance, tick
 
 
 def test_balance_handle_empty_response(default_conf, update, mocker) -> None:
+    default_conf['dry_run'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_balances', return_value={})
 
     msg_mock = MagicMock()
@@ -533,7 +534,8 @@ def test_balance_handle_empty_response_dry(default_conf, update, mocker) -> None
     telegram._balance(update=update, context=MagicMock())
     result = msg_mock.call_args_list[0][0][0]
     assert msg_mock.call_count == 1
-    assert "Running in Dry Run, balances are not available." in result
+    assert "*Warning:*Simulated balances in Dry Mode." in result
+    assert "Starting capital: `1000` BTC" in result
 
 
 def test_balance_handle_too_large_response(default_conf, update, mocker) -> None:
@@ -1177,6 +1179,16 @@ def test_show_config_handle(default_conf, update, mocker) -> None:
     assert '*Mode:* `{}`'.format('Dry-run') in msg_mock.call_args_list[0][0][0]
     assert '*Exchange:* `bittrex`' in msg_mock.call_args_list[0][0][0]
     assert '*Strategy:* `DefaultStrategy`' in msg_mock.call_args_list[0][0][0]
+    assert '*Stoploss:* `-0.1`' in msg_mock.call_args_list[0][0][0]
+
+    msg_mock.reset_mock()
+    freqtradebot.config['trailing_stop'] = True
+    telegram._show_config(update=update, context=MagicMock())
+    assert msg_mock.call_count == 1
+    assert '*Mode:* `{}`'.format('Dry-run') in msg_mock.call_args_list[0][0][0]
+    assert '*Exchange:* `bittrex`' in msg_mock.call_args_list[0][0][0]
+    assert '*Strategy:* `DefaultStrategy`' in msg_mock.call_args_list[0][0][0]
+    assert '*Initial Stoploss:* `-0.1`' in msg_mock.call_args_list[0][0][0]
 
 
 def test_send_msg_buy_notification(default_conf, mocker) -> None:

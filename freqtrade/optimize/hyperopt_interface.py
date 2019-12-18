@@ -106,7 +106,7 @@ class IHyperOpt(ABC):
         roi_t_alpha = 1.0
         roi_p_alpha = 1.0
 
-        timeframe_mins = timeframe_to_minutes(IHyperOpt.ticker_interval)
+        timeframe_min = timeframe_to_minutes(IHyperOpt.ticker_interval)
 
         # We define here limits for the ROI space parameters automagically adapted to the
         # timeframe used by the bot:
@@ -117,8 +117,8 @@ class IHyperOpt(ABC):
         #
         # The scaling is designed so that it maps exactly to the legacy Freqtrade roi_space()
         # method for the 5m ticker interval.
-        roi_t_scale = timeframe_mins / 5
-        roi_p_scale = math.log1p(timeframe_mins) / math.log1p(5)
+        roi_t_scale = timeframe_min / 5
+        roi_p_scale = math.log1p(timeframe_min) / math.log1p(5)
         roi_limits = {
             'roi_t1_min': int(10 * roi_t_scale * roi_t_alpha),
             'roi_t1_max': int(120 * roi_t_scale * roi_t_alpha),

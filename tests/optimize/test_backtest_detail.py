@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from freqtrade.data.history import get_timeframe
+from freqtrade.data.history import get_timerange
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.strategy.interface import SellType
 from tests.conftest import patch_exchange
@@ -250,7 +250,7 @@ tc15 = BTContainer(data=[
             BTrade(sell_reason=SellType.STOP_LOSS, open_tick=2, close_tick=2)]
 )
 
-# Test 16: Buy, hold for 65 mins, then forcesell using roi=-1
+# Test 16: Buy, hold for 65 min, then forcesell using roi=-1
 # Causes negative profit even though sell-reason is ROI.
 # stop-loss: 10%, ROI: 10% (should not apply), -100% after 65 minutes (limits trade duration)
 tc16 = BTContainer(data=[
@@ -264,6 +264,69 @@ tc16 = BTContainer(data=[
     stop_loss=-0.10, roi={"0": 0.10, "65": -1}, profit_perc=-0.012,
     trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=3)]
 )
+
+# Test 17: Buy, hold for 120 mins, then forcesell using roi=-1
+# Causes negative profit even though sell-reason is ROI.
+# stop-loss: 10%, ROI: 10% (should not apply), -100% after 100 minutes (limits trade duration)
+# Uses open as sell-rate (special case) - since the roi-time is a multiple of the ticker interval.
+tc17 = BTContainer(data=[
+    # D  O     H     L     C     V    B  S
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
+    [1, 5000, 5025, 4975, 4987, 6172, 0, 0],
+    [2, 4987, 5300, 4950, 5050, 6172, 0, 0],
+    [3, 4980, 5000, 4940, 4962, 6172, 0, 0],  # ForceSell on ROI (roi=-1)
+    [4, 4962, 4987, 4972, 4950, 6172, 0, 0],
+    [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.10, "120": -1}, profit_perc=-0.004,
+    trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=3)]
+)
+
+
+# Test 18: Buy, hold for 120 mins, then drop ROI to 1%, causing a sell in candle 3.
+# stop-loss: 10%, ROI: 10% (should not apply), -100% after 100 minutes (limits trade duration)
+# uses open_rate as sell-price
+tc18 = BTContainer(data=[
+    # D  O     H     L     C     V    B  S
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
+    [1, 5000, 5025, 4975, 4987, 6172, 0, 0],
+    [2, 4987, 5300, 4950, 5200, 6172, 0, 0],
+    [3, 5200, 5220, 4940, 4962, 6172, 0, 0],  # Sell on ROI (sells on open)
+    [4, 4962, 4987, 4972, 4950, 6172, 0, 0],
+    [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.10, "120": 0.01}, profit_perc=0.04,
+    trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=3)]
+)
+
+# Test 19: Buy, hold for 119 mins, then drop ROI to 1%, causing a sell in candle 3.
+# stop-loss: 10%, ROI: 10% (should not apply), -100% after 100 minutes (limits trade duration)
+# uses calculated ROI (1%) as sell rate, otherwise identical to tc18
+tc19 = BTContainer(data=[
+    # D  O     H     L     C     V    B  S
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
+    [1, 5000, 5025, 4975, 4987, 6172, 0, 0],
+    [2, 4987, 5300, 4950, 5200, 6172, 0, 0],
+    [3, 5000, 5300, 4940, 4962, 6172, 0, 0],  # Sell on ROI
+    [4, 4962, 4987, 4972, 4950, 6172, 0, 0],
+    [5, 4550, 4975, 4925, 4950, 6172, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.10, "120": 0.01}, profit_perc=0.01,
+    trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=3)]
+)
+
+# Test 20: Buy, hold for 119 mins, then drop ROI to 1%, causing a sell in candle 3.
+# stop-loss: 10%, ROI: 10% (should not apply), -100% after 100 minutes (limits trade duration)
+# uses calculated ROI (1%) as sell rate, otherwise identical to tc18
+tc20 = BTContainer(data=[
+    # D  O     H     L     C     V    B  S
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
+    [1, 5000, 5025, 4975, 4987, 6172, 0, 0],
+    [2, 4987, 5300, 4950, 5200, 6172, 0, 0],
+    [3, 5200, 5300, 4940, 4962, 6172, 0, 0],  # Sell on ROI
+    [4, 4962, 4987, 4972, 4950, 6172, 0, 0],
+    [5, 4550, 4975, 4925, 4950, 6172, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.10, "119": 0.01}, profit_perc=0.01,
+    trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=3)]
+)
+
 
 TESTS = [
     tc0,
@@ -283,6 +346,10 @@ TESTS = [
     tc14,
     tc15,
     tc16,
+    tc17,
+    tc18,
+    tc19,
+    tc20,
 ]
 
 
@@ -313,7 +380,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     pair = "UNITTEST/BTC"
     # Dummy data as we mock the analyze functions
     data_processed = {pair: frame.copy()}
-    min_date, max_date = get_timeframe({pair: frame})
+    min_date, max_date = get_timerange({pair: frame})
     results = backtesting.backtest(
         {
             'stake_amount': default_conf['stake_amount'],

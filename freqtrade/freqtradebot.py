@@ -62,7 +62,11 @@ class FreqtradeBot:
 
         self.exchange = ExchangeResolver(self.config['exchange']['name'], self.config).exchange
 
+        persistence.init(self.config.get('db_url', None),
+                         clean_open_orders=self.config.get('dry_run', False))
+
         self.wallets = Wallets(self.config, self.exchange)
+
         self.dataprovider = DataProvider(self.config, self.exchange)
 
         # Attach Dataprovider to Strategy baseclass
@@ -77,9 +81,6 @@ class FreqtradeBot:
             self.config.get('edge', {}).get('enabled', False) else None
 
         self.active_pair_whitelist = self._refresh_whitelist()
-
-        persistence.init(self.config.get('db_url', None),
-                         clean_open_orders=self.config.get('dry_run', False))
 
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')
@@ -231,8 +232,8 @@ class FreqtradeBot:
         # Check if stake_amount is fulfilled
         if available_amount < stake_amount:
             raise DependencyException(
-                f"Available balance({available_amount} {self.config['stake_currency']}) is "
-                f"lower than stake amount({stake_amount} {self.config['stake_currency']})"
+                f"Available balance ({available_amount} {self.config['stake_currency']}) is "
+                f"lower than stake amount ({stake_amount} {self.config['stake_currency']})"
             )
 
         return stake_amount
@@ -554,6 +555,7 @@ class FreqtradeBot:
                     order['amount'] = new_amount
                     # Fee was applied, so set to 0
                     trade.fee_open = 0
+                    trade.recalc_open_trade_price()
 
             except DependencyException as exception:
                 logger.warning("Could not update trade amount: %s", exception)
@@ -849,6 +851,7 @@ class FreqtradeBot:
                 trade.amount = new_amount
                 # Fee was applied, so set to 0
                 trade.fee_open = 0
+                trade.recalc_open_trade_price()
         except DependencyException as e:
             logger.warning("Could not update trade amount: %s", e)
 
@@ -970,7 +973,7 @@ class FreqtradeBot:
         profit_trade = trade.calc_profit(rate=profit_rate)
         # Use cached ticker here - it was updated seconds ago.
         current_rate = self.get_sell_rate(trade.pair, False)
-        profit_percent = trade.calc_profit_percent(profit_rate)
+        profit_percent = trade.calc_profit_ratio(profit_rate)
         gain = "profit" if profit_percent > 0 else "loss"
 
         msg = {

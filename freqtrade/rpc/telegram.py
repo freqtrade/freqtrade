@@ -331,7 +331,15 @@ class Telegram(RPC):
         try:
             result = self._rpc_balance(self._config['stake_currency'],
                                        self._config.get('fiat_display_currency', ''))
+
             output = ''
+            if self._config['dry_run']:
+                output += (
+                    f"*Warning:*Simulated balances in Dry Mode.\n"
+                    "This mode is still experimental!\n"
+                    "Starting capital: "
+                    f"`{self._config['dry_run_wallet']}` {self._config['stake_currency']}.\n"
+                    )
             for currency in result['currencies']:
                 if currency['est_stake'] > 0.0001:
                     curr_output = "*{currency}:*\n" \
@@ -587,14 +595,25 @@ class Telegram(RPC):
         :return: None
         """
         val = self._rpc_show_config()
+        if val['trailing_stop']:
+            sl_info = (
+                f"*Initial Stoploss:* `{val['stoploss']}`\n"
+                f"*Trailing stop positive:* `{val['trailing_stop_positive']}`\n"
+                f"*Trailing stop offset:* `{val['trailing_stop_positive_offset']}`\n"
+                f"*Only trail above offset:* `{val['trailing_only_offset_is_reached']}`\n"
+            )
+
+        else:
+            sl_info = f"*Stoploss:* `{val['stoploss']}`\n"
+
         self._send_msg(
             f"*Mode:* `{'Dry-run' if val['dry_run'] else 'Live'}`\n"
             f"*Exchange:* `{val['exchange']}`\n"
             f"*Stake per trade:* `{val['stake_amount']} {val['stake_currency']}`\n"
             f"*Minimum ROI:* `{val['minimal_roi']}`\n"
-            f"*{'Trailing ' if val['trailing_stop'] else ''}Stoploss:* `{val['stoploss']}`\n"
+            f"{sl_info}"
             f"*Ticker Interval:* `{val['ticker_interval']}`\n"
-            f"*Strategy:* `{val['strategy']}`'"
+            f"*Strategy:* `{val['strategy']}`"
         )
 
     def _send_msg(self, msg: str, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:

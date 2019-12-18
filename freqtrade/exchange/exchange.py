@@ -18,7 +18,7 @@ from ccxt.base.decimal_to_precision import ROUND_DOWN, ROUND_UP
 from pandas import DataFrame
 
 from freqtrade import (DependencyException, InvalidOrderException,
-                       OperationalException, TemporaryError, constants)
+                       OperationalException, TemporaryError)
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.exchange.common import BAD_EXCHANGES, retrier, retrier_async
 from freqtrade.misc import deep_merge_dicts
@@ -379,15 +379,16 @@ class Exchange:
     def dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                       rate: float, params: Dict = {}) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{randint(0, 10**6)}'
+        _amount = self.symbol_amount_prec(pair, amount)
         dry_order = {
             "id": order_id,
             'pair': pair,
             'price': rate,
-            'amount': amount,
-            "cost": amount * rate,
+            'amount': _amount,
+            "cost": _amount * rate,
             'type': ordertype,
             'side': side,
-            'remaining': amount,
+            'remaining': _amount,
             'datetime': arrow.utcnow().isoformat(),
             'status': "closed" if ordertype == "market" else "open",
             'fee': None,
@@ -478,7 +479,7 @@ class Exchange:
     @retrier
     def get_balance(self, currency: str) -> float:
         if self._config['dry_run']:
-            return constants.DRY_RUN_WALLET
+            return self._config['dry_run_wallet']
 
         # ccxt exception is already handled by get_balances
         balances = self.get_balances()
@@ -920,7 +921,7 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def get_fee(self, symbol='ETH/BTC', type='', side='', amount=1,
+    def get_fee(self, symbol, type='', side='', amount=1,
                 price=1, taker_or_maker='maker') -> float:
         try:
             # validate that markets are loaded before trying to get fee

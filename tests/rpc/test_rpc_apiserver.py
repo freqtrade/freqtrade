@@ -230,6 +230,7 @@ def test_api_stopbuy(botclient):
 def test_api_balance(botclient, mocker, rpc_balance):
     ftbot, client = botclient
 
+    ftbot.config['dry_run'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_balances', return_value=rpc_balance)
     mocker.patch('freqtrade.exchange.Exchange.get_valid_pair_combination',
                  side_effect=lambda a, b: f"{a}/{b}")
@@ -380,7 +381,7 @@ def test_api_performance(botclient, mocker, ticker, fee):
         close_rate=0.265441,
 
     )
-    trade.close_profit = trade.calc_profit_percent()
+    trade.close_profit = trade.calc_profit_ratio()
     Trade.session.add(trade)
 
     trade = Trade(
@@ -395,7 +396,7 @@ def test_api_performance(botclient, mocker, ticker, fee):
         fee_open=fee.return_value,
         close_rate=0.391
     )
-    trade.close_profit = trade.calc_profit_percent()
+    trade.close_profit = trade.calc_profit_ratio()
     Trade.session.add(trade)
     Trade.session.flush()
 

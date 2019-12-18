@@ -211,6 +211,7 @@ def test_edge_overrides_stake_amount(mocker, edge_conf) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     patch_edge(mocker)
+    edge_conf['dry_run_wallet'] = 999.9
     freqtrade = FreqtradeBot(edge_conf)
 
     assert freqtrade._get_trade_stake_amount('NEO/BTC') == (999.9 * 0.5 * 0.01) / 0.20
@@ -786,7 +787,10 @@ def test_process_trade_no_whitelist_pair(default_conf, ticker, limit_buy_order,
     )
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
-    pair = 'NOCLUE/BTC'
+    pair = 'BLK/BTC'
+    # Ensure the pair is not in the whitelist!
+    assert pair not in default_conf['exchange']['pair_whitelist']
+
     # create open trade not in whitelist
     Trade.session.add(Trade(
         pair=pair,
@@ -1335,6 +1339,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
     patch_exchange(mocker)
     patch_edge(mocker)
     edge_conf['max_open_trades'] = float('inf')
+    edge_conf['dry_run_wallet'] = 999.9
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=MagicMock(return_value={
@@ -1507,13 +1512,15 @@ def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> No
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
                  return_value=limit_buy_order['amount'])
 
-    trade = Trade()
-    # Mock session away
-    Trade.session = MagicMock()
-    trade.open_order_id = '123'
-    trade.open_fee = 0.001
+    trade = Trade(
+        open_order_id=123,
+        fee_open=0.001,
+        fee_close=0.001,
+        open_rate=0.01,
+        open_date=arrow.utcnow().datetime,
+        amount=11,
+    )
     # Add datetime explicitly since sqlalchemy defaults apply only once written to database
-    trade.open_date = arrow.utcnow().datetime
     freqtrade.update_trade_state(trade)
     # Test amount not modified by fee-logic
     assert not log_has_re(r'Applying fee to .*', caplog)
@@ -1536,7 +1543,8 @@ def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> No
     assert log_has_re('Found open order for.*', caplog)
 
 
-def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_buy_order, mocker):
+def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_buy_order, fee,
+                                          mocker):
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     # get_order should not be called!!
     mocker.patch('freqtrade.exchange.Exchange.get_order', MagicMock(side_effect=ValueError))
@@ -1549,6 +1557,8 @@ def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_
         amount=amount,
         exchange='binance',
         open_rate=0.245441,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
         open_order_id="123456",
         is_open=True,
     )
@@ -1557,7 +1567,7 @@ def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_
     assert trade.amount == limit_buy_order['amount']
 
 
-def test_update_trade_state_withorderdict_rounding_fee(default_conf, trades_for_order,
+def test_update_trade_state_withorderdict_rounding_fee(default_conf, trades_for_order, fee,
                                                        limit_buy_order, mocker, caplog):
     trades_for_order[0]['amount'] = limit_buy_order['amount'] + 1e-14
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
@@ -1572,6 +1582,8 @@ def test_update_trade_state_withorderdict_rounding_fee(default_conf, trades_for_
         amount=amount,
         exchange='binance',
         open_rate=0.245441,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
         open_order_id="123456",
         is_open=True,
         open_date=arrow.utcnow().datetime,
@@ -3039,7 +3051,7 @@ def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order,
     assert trade.sell_reason == SellType.STOP_LOSS.value
 
 
-def test_get_real_amount_quote(default_conf, trades_for_order, buy_order_fee, caplog, mocker):
+def test_get_real_amount_quote(default_conf, trades_for_order, buy_order_fee, fee, caplog, mocker):
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -3049,6 +3061,8 @@ def test_get_real_amount_quote(default_conf, trades_for_order, buy_order_fee, ca
         amount=amount,
         exchange='binance',
         open_rate=0.245441,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
         open_order_id="123456"
     )
     freqtrade = FreqtradeBot(default_conf)
@@ -3061,7 +3075,7 @@ def test_get_real_amount_quote(default_conf, trades_for_order, buy_order_fee, ca
                    caplog)
 
 
-def test_get_real_amount_no_trade(default_conf, buy_order_fee, caplog, mocker):
+def test_get_real_amount_no_trade(default_conf, buy_order_fee, caplog, mocker, fee):
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=[])
 
     patch_RPCManager(mocker)
@@ -3072,6 +3086,8 @@ def test_get_real_amount_no_trade(default_conf, buy_order_fee, caplog, mocker):
         amount=amount,
         exchange='binance',
         open_rate=0.245441,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
         open_order_id="123456"
     )
     freqtrade = FreqtradeBot(default_conf)
@@ -3084,7 +3100,7 @@ def test_get_real_amount_no_trade(default_conf, buy_order_fee, caplog, mocker):
                    caplog)
 
 
-def test_get_real_amount_stake(default_conf, trades_for_order, buy_order_fee, mocker):
+def test_get_real_amount_stake(default_conf, trades_for_order, buy_order_fee, fee, mocker):
     trades_for_order[0]['fee']['currency'] = 'ETH'
 
     patch_RPCManager(mocker)
@@ -3095,6 +3111,8 @@ def test_get_real_amount_stake(default_conf, trades_for_order, buy_order_fee, mo
         pair='LTC/ETH',
         amount=amount,
         exchange='binance',
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
         open_rate=0.245441,
         open_order_id="123456"
     )
@@ -3105,7 +3123,8 @@ def test_get_real_amount_stake(default_conf, trades_for_order, buy_order_fee, mo
     assert freqtrade.get_real_amount(trade, buy_order_fee) == amount
 
 
-def test_get_real_amount_no_currency_in_fee(default_conf, trades_for_order, buy_order_fee, mocker):
+def test_get_real_amount_no_currency_in_fee(default_conf, trades_for_order, buy_order_fee,
+                                            fee, mocker):
 
     limit_buy_order = deepcopy(buy_order_fee)
     limit_buy_order['fee'] = {'cost': 0.004, 'currency': None}
@@ -3119,6 +3138,8 @@ def test_get_real_amount_no_currency_in_fee(default_conf, trades_for_order, buy_
         pair='LTC/ETH',
         amount=amount,
         exchange='binance',
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
         open_rate=0.245441,
         open_order_id="123456"
     )
@@ -3129,7 +3150,7 @@ def test_get_real_amount_no_currency_in_fee(default_conf, trades_for_order, buy_
     assert freqtrade.get_real_amount(trade, limit_buy_order) == amount
 
 
-def test_get_real_amount_BNB(default_conf, trades_for_order, buy_order_fee, mocker):
+def test_get_real_amount_BNB(default_conf, trades_for_order, buy_order_fee, fee, mocker):
     trades_for_order[0]['fee']['currency'] = 'BNB'
     trades_for_order[0]['fee']['cost'] = 0.00094518
 
@@ -3141,6 +3162,8 @@ def test_get_real_amount_BNB(default_conf, trades_for_order, buy_order_fee, mock
         pair='LTC/ETH',
         amount=amount,
         exchange='binance',
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
         open_rate=0.245441,
         open_order_id="123456"
     )
@@ -3151,7 +3174,7 @@ def test_get_real_amount_BNB(default_conf, trades_for_order, buy_order_fee, mock
     assert freqtrade.get_real_amount(trade, buy_order_fee) == amount
 
 
-def test_get_real_amount_multi(default_conf, trades_for_order2, buy_order_fee, caplog, mocker):
+def test_get_real_amount_multi(default_conf, trades_for_order2, buy_order_fee, caplog, fee, mocker):
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order2)
@@ -3160,6 +3183,8 @@ def test_get_real_amount_multi(default_conf, trades_for_order2, buy_order_fee, c
         pair='LTC/ETH',
         amount=amount,
         exchange='binance',
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
         open_rate=0.245441,
         open_order_id="123456"
     )
@@ -3173,7 +3198,8 @@ def test_get_real_amount_multi(default_conf, trades_for_order2, buy_order_fee, c
                    caplog)
 
 
-def test_get_real_amount_fromorder(default_conf, trades_for_order, buy_order_fee, caplog, mocker):
+def test_get_real_amount_fromorder(default_conf, trades_for_order, buy_order_fee, fee,
+                                   caplog, mocker):
     limit_buy_order = deepcopy(buy_order_fee)
     limit_buy_order['fee'] = {'cost': 0.004, 'currency': 'LTC'}
 
@@ -3186,6 +3212,8 @@ def test_get_real_amount_fromorder(default_conf, trades_for_order, buy_order_fee
         pair='LTC/ETH',
         amount=amount,
         exchange='binance',
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
         open_rate=0.245441,
         open_order_id="123456"
     )
@@ -3199,7 +3227,7 @@ def test_get_real_amount_fromorder(default_conf, trades_for_order, buy_order_fee
                    caplog)
 
 
-def test_get_real_amount_invalid_order(default_conf, trades_for_order, buy_order_fee, mocker):
+def test_get_real_amount_invalid_order(default_conf, trades_for_order, buy_order_fee, fee, mocker):
     limit_buy_order = deepcopy(buy_order_fee)
     limit_buy_order['fee'] = {'cost': 0.004}
 
@@ -3211,6 +3239,8 @@ def test_get_real_amount_invalid_order(default_conf, trades_for_order, buy_order
         pair='LTC/ETH',
         amount=amount,
         exchange='binance',
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
         open_rate=0.245441,
         open_order_id="123456"
     )
@@ -3221,7 +3251,7 @@ def test_get_real_amount_invalid_order(default_conf, trades_for_order, buy_order
     assert freqtrade.get_real_amount(trade, limit_buy_order) == amount
 
 
-def test_get_real_amount_wrong_amount(default_conf, trades_for_order, buy_order_fee, mocker):
+def test_get_real_amount_wrong_amount(default_conf, trades_for_order, buy_order_fee, fee, mocker):
     limit_buy_order = deepcopy(buy_order_fee)
     limit_buy_order['amount'] = limit_buy_order['amount'] - 0.001
 
@@ -3234,6 +3264,8 @@ def test_get_real_amount_wrong_amount(default_conf, trades_for_order, buy_order_
         amount=amount,
         exchange='binance',
         open_rate=0.245441,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
         open_order_id="123456"
     )
     freqtrade = FreqtradeBot(default_conf)
@@ -3244,7 +3276,7 @@ def test_get_real_amount_wrong_amount(default_conf, trades_for_order, buy_order_
         freqtrade.get_real_amount(trade, limit_buy_order)
 
 
-def test_get_real_amount_wrong_amount_rounding(default_conf, trades_for_order, buy_order_fee,
+def test_get_real_amount_wrong_amount_rounding(default_conf, trades_for_order, buy_order_fee, fee,
                                                mocker):
     # Floats should not be compared directly.
     limit_buy_order = deepcopy(buy_order_fee)
@@ -3258,6 +3290,8 @@ def test_get_real_amount_wrong_amount_rounding(default_conf, trades_for_order, b
         pair='LTC/ETH',
         amount=amount,
         exchange='binance',
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
         open_rate=0.245441,
         open_order_id="123456"
     )
@@ -3269,7 +3303,7 @@ def test_get_real_amount_wrong_amount_rounding(default_conf, trades_for_order, b
                    abs_tol=MATH_CLOSE_PREC,)
 
 
-def test_get_real_amount_invalid(default_conf, trades_for_order, buy_order_fee, mocker):
+def test_get_real_amount_invalid(default_conf, trades_for_order, buy_order_fee, fee, mocker):
     # Remove "Currency" from fee dict
     trades_for_order[0]['fee'] = {'cost': 0.008}
 
@@ -3282,6 +3316,9 @@ def test_get_real_amount_invalid(default_conf, trades_for_order, buy_order_fee, 
         amount=amount,
         exchange='binance',
         open_rate=0.245441,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+
         open_order_id="123456"
     )
     freqtrade = FreqtradeBot(default_conf)
@@ -3290,7 +3327,7 @@ def test_get_real_amount_invalid(default_conf, trades_for_order, buy_order_fee, 
     assert freqtrade.get_real_amount(trade, buy_order_fee) == amount
 
 
-def test_get_real_amount_open_trade(default_conf, mocker):
+def test_get_real_amount_open_trade(default_conf, fee, mocker):
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     amount = 12345
@@ -3299,6 +3336,8 @@ def test_get_real_amount_open_trade(default_conf, mocker):
         amount=amount,
         exchange='binance',
         open_rate=0.245441,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
         open_order_id="123456"
     )
     order = {
@@ -3552,3 +3591,32 @@ def test_process_i_am_alive(default_conf, mocker, caplog):
 
     ftbot.process()
     assert log_has_re(message, caplog)
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_sync_wallet_dry_run(mocker, default_conf, ticker, fee, limit_buy_order):
+    default_conf['dry_run'] = True
+    # Initialize to 2 times stake amount
+    default_conf['dry_run_wallet'] = 0.002
+    default_conf['max_open_trades'] = 2
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=ticker,
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
+    )
+
+    bot = get_patched_freqtradebot(mocker, default_conf)
+    patch_get_signal(bot)
+    assert bot.wallets.get_free('BTC') == 0.002
+
+    bot.create_trades()
+    trades = Trade.query.all()
+    assert len(trades) == 2
+
+    bot.config['max_open_trades'] = 3
+    with pytest.raises(
+            DependencyException,
+            match=r"Available balance \(0 BTC\) is lower than stake amount \(0.001 BTC\)"):
+        bot.create_trades()

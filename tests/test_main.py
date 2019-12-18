@@ -79,6 +79,7 @@ def test_main_keyboard_interrupt(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.worker.Worker._worker', MagicMock(side_effect=KeyboardInterrupt))
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
+    mocker.patch('freqtrade.wallets.Wallets.update', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
 
     args = ['trade', '-c', 'config.json.example']
@@ -98,6 +99,7 @@ def test_main_operational_exception(mocker, default_conf, caplog) -> None:
         MagicMock(side_effect=OperationalException('Oh snap!'))
     )
     patched_configuration_load_config_file(mocker, default_conf)
+    mocker.patch('freqtrade.wallets.Wallets.update', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
 
@@ -120,6 +122,7 @@ def test_main_reload_conf(mocker, default_conf, caplog) -> None:
                                          OperationalException("Oh snap!")])
     mocker.patch('freqtrade.worker.Worker._worker', worker_mock)
     patched_configuration_load_config_file(mocker, default_conf)
+    mocker.patch('freqtrade.wallets.Wallets.update', MagicMock())
     reconfigure_mock = mocker.patch('freqtrade.worker.Worker._reconfigure', MagicMock())
 
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
@@ -143,6 +146,7 @@ def test_reconfigure(mocker, default_conf) -> None:
         'freqtrade.worker.Worker._worker',
         MagicMock(side_effect=OperationalException('Oh snap!'))
     )
+    mocker.patch('freqtrade.wallets.Wallets.update', MagicMock())
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())

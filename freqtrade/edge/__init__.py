@@ -80,7 +80,7 @@ class Edge:
         if config.get('fee'):
             self.fee = config['fee']
         else:
-            self.fee = self.exchange.get_fee()
+            self.fee = self.exchange.get_fee(symbol=self.config['exchange']['pair_whitelist'][0])
 
     def calculate(self) -> bool:
         pairs = self.config['exchange']['pair_whitelist']
@@ -94,12 +94,19 @@ class Edge:
         logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
         logger.info('Using local backtesting data (using whitelist in given config) ...')
 
+        if self._refresh_pairs:
+            history.refresh_data(
+                datadir=Path(self.config['datadir']),
+                pairs=pairs,
+                exchange=self.exchange,
+                timeframe=self.strategy.ticker_interval,
+                timerange=self._timerange,
+            )
+
         data = history.load_data(
             datadir=Path(self.config['datadir']),
             pairs=pairs,
             timeframe=self.strategy.ticker_interval,
-            refresh_pairs=self._refresh_pairs,
-            exchange=self.exchange,
             timerange=self._timerange,
             startup_candles=self.strategy.startup_candle_count,
         )
@@ -113,7 +120,7 @@ class Edge:
         preprocessed = self.strategy.tickerdata_to_dataframe(data)
 
         # Print timeframe
-        min_date, max_date = history.get_timeframe(preprocessed)
+        min_date, max_date = history.get_timerange(preprocessed)
         logger.info(
             'Measuring data from %s up to %s (%s days) ...',
             min_date.isoformat(),

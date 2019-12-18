@@ -65,7 +65,7 @@ class Backtesting:
         if config.get('fee'):
             self.fee = config['fee']
         else:
-            self.fee = self.exchange.get_fee()
+            self.fee = self.exchange.get_fee(symbol=self.config['exchange']['pair_whitelist'][0])
 
         if self.config.get('runmode') != RunMode.HYPEROPT:
             self.dataprovider = DataProvider(self.config, self.exchange)
@@ -87,7 +87,7 @@ class Backtesting:
             raise OperationalException("Ticker-interval needs to be set in either configuration "
                                        "or as cli argument `--ticker-interval 5m`")
         self.timeframe = str(self.config.get('ticker_interval'))
-        self.timeframe_mins = timeframe_to_minutes(self.timeframe)
+        self.timeframe_min = timeframe_to_minutes(self.timeframe)
 
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
@@ -117,7 +117,7 @@ class Backtesting:
             fail_without_data=True,
         )
 
-        min_date, max_date = history.get_timeframe(data)
+        min_date, max_date = history.get_timerange(data)
 
         logger.info(
             'Loading data from %s up to %s (%s days)..',
@@ -261,6 +261,45 @@ class Backtesting:
             ticker[pair] = [x for x in ticker_data.itertuples()]
         return ticker
 
+    def _get_close_rate(self, sell_row, trade: Trade, sell, trade_dur) -> float:
+        """
+        Get close rate for backtesting result
+        """
+        # Special handling if high or low hit STOP_LOSS or ROI
+        if sell.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
+            # Set close_rate to stoploss
+            return trade.stop_loss
+        elif sell.sell_type == (SellType.ROI):
+            roi_entry, roi = self.strategy.min_roi_reached_entry(trade_dur)
+            if roi is not None:
+                if roi == -1 and roi_entry % self.timeframe_min == 0:
+                    # When forceselling with ROI=-1, the roi time will always be equal to trade_dur.
+                    # If that entry is a multiple of the timeframe (so on candle open)
+                    # - we'll use open instead of close
+                    return sell_row.open
+
+                # - (Expected abs profit + open_rate + open_fee) / (fee_close -1)
+                close_rate = - (trade.open_rate * roi + trade.open_rate *
+                                (1 + trade.fee_open)) / (trade.fee_close - 1)
+
+                if (trade_dur > 0 and trade_dur == roi_entry
+                        and roi_entry % self.timeframe_min == 0
+                        and sell_row.open > close_rate):
+                    # new ROI entry came into effect.
+                    # use Open rate if open_rate > calculated sell rate
+                    return sell_row.open
+
+                # Use the maximum between close_rate and low as we
+                # cannot sell outside of a candle.
+                # Applies when a new ROI setting comes in place and the whole candle is above that.
+                return max(close_rate, sell_row.low)
+
+            else:
+                # This should not be reached...
+                return sell_row.open
+        else:
+            return sell_row.open
+
     def _get_sell_trade_entry(
             self, pair: str, buy_row: DataFrame,
             partial_ticker: List, trade_count_lock: Dict,
@@ -287,29 +326,10 @@ class Backtesting:
                                              sell_row.sell, low=sell_row.low, high=sell_row.high)
             if sell.sell_flag:
                 trade_dur = int((sell_row.date - buy_row.date).total_seconds() // 60)
-                # Special handling if high or low hit STOP_LOSS or ROI
-                if sell.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
-                    # Set close_rate to stoploss
-                    closerate = trade.stop_loss
-                elif sell.sell_type == (SellType.ROI):
-                    roi = self.strategy.min_roi_reached_entry(trade_dur)
-                    if roi is not None:
-                        # - (Expected abs profit + open_rate + open_fee) / (fee_close -1)
-                        closerate = - (trade.open_rate * roi + trade.open_rate *
-                                       (1 + trade.fee_open)) / (trade.fee_close - 1)
-
-                        # Use the maximum between closerate and low as we
-                        # cannot sell outside of a candle.
-                        # Applies when using {"xx": -1} as roi to force sells after xx minutes
-                        closerate = max(closerate, sell_row.low)
-                    else:
-                        # This should not be reached...
-                        closerate = sell_row.open
-                else:
-                    closerate = sell_row.open
+                closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
 
                 return BacktestResult(pair=pair,
-                                      profit_percent=trade.calc_profit_percent(rate=closerate),
+                                      profit_percent=trade.calc_profit_ratio(rate=closerate),
                                       profit_abs=trade.calc_profit(rate=closerate),
                                       open_time=buy_row.date,
                                       close_time=sell_row.date,
@@ -325,7 +345,7 @@ class Backtesting:
             # no sell condition found - trade stil open at end of backtest period
             sell_row = partial_ticker[-1]
             bt_res = BacktestResult(pair=pair,
-                                    profit_percent=trade.calc_profit_percent(rate=sell_row.open),
+                                    profit_percent=trade.calc_profit_ratio(rate=sell_row.open),
                                     profit_abs=trade.calc_profit(rate=sell_row.open),
                                     open_time=buy_row.date,
                                     close_time=sell_row.date,
@@ -378,7 +398,7 @@ class Backtesting:
         lock_pair_until: Dict = {}
         # Indexes per pair, so some pairs are allowed to have a missing start.
         indexes: Dict = {}
-        tmp = start_date + timedelta(minutes=self.timeframe_mins)
+        tmp = start_date + timedelta(minutes=self.timeframe_min)
 
         # Loop timerange and get candle for each pair at that point in time
         while tmp < end_date:
@@ -430,7 +450,7 @@ class Backtesting:
                     lock_pair_until[pair] = end_date.datetime
 
             # Move time one configured time_interval ahead.
-            tmp += timedelta(minutes=self.timeframe_mins)
+            tmp += timedelta(minutes=self.timeframe_min)
         return DataFrame.from_records(trades, columns=BacktestResult._fields)
 
     def start(self) -> None:
@@ -461,7 +481,7 @@ class Backtesting:
             # Trim startup period from analyzed dataframe
             for pair, df in preprocessed.items():
                 preprocessed[pair] = history.trim_dataframe(df, timerange)
-            min_date, max_date = history.get_timeframe(preprocessed)
+            min_date, max_date = history.get_timerange(preprocessed)
 
             logger.info(
                 'Backtesting with data from %s up to %s (%s days)..',

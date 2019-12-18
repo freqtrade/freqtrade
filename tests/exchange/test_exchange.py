@@ -876,6 +876,7 @@ def test_sell_considers_time_in_force(default_conf, mocker, exchange_name):
 
 def test_get_balance_dry_run(default_conf, mocker):
     default_conf['dry_run'] = True
+    default_conf['dry_run_wallet'] = 999.9
 
     exchange = get_patched_exchange(mocker, default_conf)
     assert exchange.get_balance(currency='BTC') == 999.9
@@ -1646,10 +1647,10 @@ def test_get_fee(default_conf, mocker, exchange_name):
     })
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
 
-    assert exchange.get_fee() == 0.025
+    assert exchange.get_fee('ETH/BTC') == 0.025
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
-                           'get_fee', 'calculate_fee')
+                           'get_fee', 'calculate_fee', symbol="ETH/BTC")
 
 
 def test_stoploss_limit_order_unsupported_exchange(default_conf, mocker):
