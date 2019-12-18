@@ -192,7 +192,7 @@ class FreqtradeBot:
         else:
             if not tick:
                 logger.info('Using Last Ask / Last Price')
-                ticker = self.exchange.get_ticker(pair)
+                ticker = self.exchange.fetch_ticker(pair)
             else:
                 ticker = tick
             if ticker['ask'] < ticker['last']:
@@ -570,7 +570,7 @@ class FreqtradeBot:
         """
         Get sell rate - either using get-ticker bid or first bid based on orderbook
         The orderbook portion is only used for rpc messaging, which would otherwise fail
-        for BitMex (has no bid/ask in get_ticker)
+        for BitMex (has no bid/ask in fetch_ticker)
         or remain static in any other case since it's not updating.
         :return: Bid rate
         """
@@ -582,7 +582,7 @@ class FreqtradeBot:
             rate = order_book['bids'][0][0]
 
         else:
-            rate = self.exchange.get_ticker(pair, refresh)['bid']
+            rate = self.exchange.fetch_ticker(pair, refresh)['bid']
         return rate
 
     def handle_trade(self, trade: Trade) -> bool:

@@ -524,7 +524,7 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def get_ticker(self, pair: str, refresh: Optional[bool] = True) -> dict:
+    def fetch_ticker(self, pair: str, refresh: Optional[bool] = True) -> dict:
         if refresh or pair not in self._cached_ticker.keys():
             try:
                 if pair not in self._api.markets or not self._api.markets[pair].get('active'):

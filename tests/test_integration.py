@@ -55,7 +55,7 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
     mocker.patch('freqtrade.exchange.Binance.stoploss_limit', stoploss_limit)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
         symbol_amount_prec=lambda s, x, y: y,
         symbol_price_prec=lambda s, x, y: y,
@@ -126,7 +126,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
     ))
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
         symbol_amount_prec=lambda s, x, y: y,
         symbol_price_prec=lambda s, x, y: y,
