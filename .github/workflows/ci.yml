@@ -70,7 +70,8 @@ jobs:
     - name: Coveralls
       if: startsWith(matrix.os, 'ubuntu')
       env:
-        COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Coveralls token. Not used as secret due to github not providing secrets to forked repositories
+        COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
       run: |
         # Allow failure for coveralls
         coveralls -v  || true
