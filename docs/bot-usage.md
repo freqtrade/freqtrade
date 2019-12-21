@@ -192,8 +192,8 @@ Backtesting also uses the config specified via `-c/--config`.
 usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                              [-d PATH] [--userdir PATH] [-s NAME]
                              [--strategy-path PATH] [-i TICKER_INTERVAL]
-                             [--timerange TIMERANGE] [--max_open_trades INT]
-                             [--stake_amount STAKE_AMOUNT] [--fee FLOAT]
+                             [--timerange TIMERANGE] [--max-open-trades INT]
+                             [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
                              [--eps] [--dmmp]
                              [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
                              [--export EXPORT] [--export-filename PATH]
@@ -205,10 +205,12 @@ optional arguments:
                         `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
-  --max_open_trades INT
-                        Specify max_open_trades to use.
-  --stake_amount STAKE_AMOUNT
-                        Specify stake_amount.
+  --max-open-trades INT
+                        Override the value of the `max_open_trades`
+                        configuration setting.
+  --stake-amount STAKE_AMOUNT
+                        Override the value of the `stake_amount` configuration
+                        setting.
   --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
                         entry and exit).
   --eps, --enable-position-stacking
@@ -270,8 +272,8 @@ to find optimal parameter values for your stategy.
 usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                           [--userdir PATH] [-s NAME] [--strategy-path PATH]
                           [-i TICKER_INTERVAL] [--timerange TIMERANGE]
-                          [--max_open_trades INT]
-                          [--stake_amount STAKE_AMOUNT] [--fee FLOAT]
+                          [--max-open-trades INT]
+                          [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
                           [--hyperopt NAME] [--hyperopt-path PATH] [--eps]
                           [-e INT]
                           [--spaces {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
@@ -286,10 +288,12 @@ optional arguments:
                         `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
-  --max_open_trades INT
-                        Specify max_open_trades to use.
-  --stake_amount STAKE_AMOUNT
-                        Specify stake_amount.
+  --max-open-trades INT
+                        Override the value of the `max_open_trades`
+                        configuration setting.
+  --stake-amount STAKE_AMOUNT
+                        Override the value of the `stake_amount` configuration
+                        setting.
   --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
                         entry and exit).
   --hyperopt NAME       Specify hyperopt class name which will be used by the
@@ -360,7 +364,7 @@ To know your trade expectancy and winrate against historical data, you can use E
 usage: freqtrade edge [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                       [--userdir PATH] [-s NAME] [--strategy-path PATH]
                       [-i TICKER_INTERVAL] [--timerange TIMERANGE]
-                      [--max_open_trades INT] [--stake_amount STAKE_AMOUNT]
+                      [--max-open-trades INT] [--stake-amount STAKE_AMOUNT]
                       [--fee FLOAT] [--stoplosses STOPLOSS_RANGE]
 
 optional arguments:
@@ -370,10 +374,12 @@ optional arguments:
                         `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
-  --max_open_trades INT
-                        Specify max_open_trades to use.
-  --stake_amount STAKE_AMOUNT
-                        Specify stake_amount.
+  --max-open-trades INT
+                        Override the value of the `max_open_trades`
+                        configuration setting.
+  --stake-amount STAKE_AMOUNT
+                        Override the value of the `stake_amount` configuration
+                        setting.
   --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
                         entry and exit).
   --stoplosses STOPLOSS_RANGE
