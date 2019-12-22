@@ -224,6 +224,14 @@ def start_download_data(args: Dict[str, Any]) -> None:
                         f"on exchange {exchange.name}.")
 
 
+def start_list_strategies(args: Dict[str, Any]) -> None:
+    """
+    Print Strategies available in a folder
+    """
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+    print(config)
+
+
 def start_list_timeframes(args: Dict[str, Any]) -> None:
     """
     Print ticker intervals (timeframes) available on Exchange
