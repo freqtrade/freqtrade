@@ -168,11 +168,24 @@ class IStrategy(ABC):
         """
         Locks pair until a given timestamp happens.
         Locked pairs are not analyzed, and are prevented from opening new trades.
+        Locks can only count up (allowing users to lock pairs for a longer period of time).
+        To remove a lock from a pair, use `unlock_pair()`
         :param pair: Pair to lock
         :param until: datetime in UTC until the pair should be blocked from opening new trades.
                 Needs to be timezone aware `datetime.now(timezone.utc)`
         """
-        self._pair_locked_until[pair] = until
+        if pair not in self._pair_locked_until or self._pair_locked_until[pair] < until:
+            self._pair_locked_until[pair] = until
+
+    def unlock_pair(self, pair) -> None:
+        """
+        Unlocks a pair previously locked using lock_pair.
+        Not used by freqtrade itself, but intended to be used if users lock pairs
+        manually from within the strategy, to allow an easy way to unlock pairs.
+        :param pair: Unlock pair to allow trading again
+        """
+        if pair in self._pair_locked_until:
+            del self._pair_locked_until[pair]
 
     def is_pair_locked(self, pair: str) -> bool:
         """
