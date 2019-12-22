@@ -118,14 +118,14 @@ AVAILABLE_CLI_OPTIONS = {
         help='Specify what timerange of data to use.',
     ),
     "max_open_trades": Arg(
-        '--max_open_trades',
-        help='Specify max_open_trades to use.',
+        '--max-open-trades',
+        help='Override the value of the `max_open_trades` configuration setting.',
         type=int,
         metavar='INT',
     ),
     "stake_amount": Arg(
-        '--stake_amount',
-        help='Specify stake_amount.',
+        '--stake-amount',
+        help='Override the value of the `stake_amount` configuration setting.',
         type=float,
     ),
     # Backtesting
