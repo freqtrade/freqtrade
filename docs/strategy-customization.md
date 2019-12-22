@@ -466,9 +466,11 @@ Locked pairs will show the message `Pair <pair> is currently locked.`.
 Sometimes it may be desired to lock a pair after certain events happen (e.g. multiple losing trades in a row).
 
 Freqtrade has an easy method to do this from within the strategy, by calling `self.lock_pair(pair, until)`.
-Until should be a time in the future, after which trading will be reenabled for that pair.
+`until` must be a datetime object in the future, after which trading will be reenabled for that pair.
 
 Locks can also be lifted manually, by calling `self.unlock_pair(pair)`.
+
+To verify if a pair is currently locked, use `self.is_pair_locked(pair)`.
 
 !!! Note
     Locked pairs are not persisted, so a restart of the bot, or calling `/reload_conf` will reset locked pairs.
