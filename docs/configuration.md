@@ -55,8 +55,8 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `trailing_stop_positive` | Changes stoploss once profit has been reached. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *Float*
 | `trailing_stop_positive_offset` | Offset on when to apply `trailing_stop_positive`. Percentage value which should be positive. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `0.0` (no offset).* <br> ***Datatype:*** *Float*
 | `trailing_only_offset_is_reached` | Only apply trailing stoploss when the offset is reached. [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*  <br> ***Datatype:*** *Boolean*
-| `unfilledtimeout.buy` | **Required.** How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled.  <br> ***Datatype:*** *Integer*
-| `unfilledtimeout.sell` | **Required.** How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled. <br> ***Datatype:*** *Integer*
+| `unfilledtimeout.buy` | **Required.** How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled. [Strategy Override](#parameters-in-the-strategy).<br> ***Datatype:*** *Integer*
+| `unfilledtimeout.sell` | **Required.** How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled. [Strategy Override](#parameters-in-the-strategy).<br> ***Datatype:*** *Integer*
 | `bid_strategy.ask_last_balance` | **Required.** Set the bidding price. More information [below](#understand-ask_last_balance). 
 | `bid_strategy.use_order_book` | Enable buying using the rates in Order Book Bids. <br> ***Datatype:*** *Boolean*
 | `bid_strategy.order_book_top` | Bot will use the top N rate in Order Book Bids. I.e. a value of 2 will allow the bot to pick the 2nd bid rate in Order Book Bids.  *Defaults to `1`.*  <br> ***Datatype:*** *Positive Integer*
@@ -124,6 +124,7 @@ Values set in the configuration file always overwrite values set in the strategy
 * `order_time_in_force`
 * `stake_currency`
 * `stake_amount`
+* `unfilledtimeout`
 * `use_sell_signal` (ask_strategy)
 * `sell_profit_only` (ask_strategy)
 * `ignore_roi_if_buy_signal` (ask_strategy)
