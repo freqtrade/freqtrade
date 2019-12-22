@@ -476,7 +476,7 @@ To verify if a pair is currently locked, use `self.is_pair_locked(pair)`.
     Locked pairs are not persisted, so a restart of the bot, or calling `/reload_conf` will reset locked pairs.
 
 !!! Warning
-    Locking pairs is not functional during backtesting.
+    Locking pairs is not functioning during backtesting.
 
 ##### Pair locking example
 
@@ -496,8 +496,8 @@ if self.config['runmode'] in ('live', 'dry_run'):
     # Analyze the conditions you'd like to lock the pair .... will probably be different for every strategy
     sumprofit = sum(trade.close_profit for trade in trades)
     if sumprofit < 0:
-        # Lock pair for 2 days
-        self.lock_pair(metadata['pair'], until=datetime.now(timezone.utc) + timedelta(days=2))
+        # Lock pair for 12 hours
+        self.lock_pair(metadata['pair'], until=datetime.now(timezone.utc) + timedelta(hours=12))
 ```
 
 ### Print created dataframe
