@@ -266,4 +266,29 @@ Once the PR against master is merged (best right after merging):
 * Use the button "Draft a new release" in the Github UI (subsection releases).
 * Use the version-number specified as tag.
 * Use "master" as reference (this step comes after the above PR is merged).
-* Use the above changelog as release comment (as codeblock).
+* Use the above changelog as release comment (as codeblock)
+
+### After-release
+
+* Update version in develop by postfixing that with `-dev` (`2019.6 -> 2019.6-dev`).
+* Create a PR against develop to update that branch.
+
+## Releases
+
+### pypi
+
+To create a pypi release, please run the following commands:
+
+Additional requirement: `wheel`, `twine` (for uploading), account on pypi with proper permissions.
+
+``` bash
+python setup.py sdist bdist_wheel
+
+# For pypi test (to check if some change to the installation did work)
+twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+
+# For production:
+twine upload dist/*
+```
+
+Please don't push non-releases to the productive / real pypi instance.
