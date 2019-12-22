@@ -479,11 +479,6 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
 Printing more than a few rows is also possible (simply use  `print(dataframe)` instead of `print(dataframe.tail())`), however not recommended, as that will be very verbose (~500 lines per pair every 5 seconds).
 
-### Where can i find a strategy template?
-
-The strategy template is located in the file
-[user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_strategy.py).
-
 ### Specify custom strategy location
 
 If you want to use a strategy from a different directory you can pass `--strategy-path`
