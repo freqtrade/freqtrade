@@ -455,6 +455,51 @@ Sample return value: ETH/BTC had 5 trades, with a total profit of 1.5% (ratio of
 !!! Warning
     Trade history is not available during backtesting or hyperopt.
 
+### Prevent trades from happening for a specific pair
+
+Freqtrade locks pairs automatically for the current candle (until that candle is over) when a pair is sold, preventing an immediate re-buy of that pair.
+
+Locked pairs will show the message `Pair <pair> is currently locked.`.
+
+#### Locking pairs from within the strategy
+
+Sometimes it may be desired to lock a pair after certain events happen (e.g. multiple losing trades in a row).
+
+Freqtrade has an easy method to do this from within the strategy, by calling `self.lock_pair(pair, until)`.
+`until` must be a datetime object in the future, after which trading will be reenabled for that pair.
+
+Locks can also be lifted manually, by calling `self.unlock_pair(pair)`.
+
+To verify if a pair is currently locked, use `self.is_pair_locked(pair)`.
+
+!!! Note
+    Locked pairs are not persisted, so a restart of the bot, or calling `/reload_conf` will reset locked pairs.
+
+!!! Warning
+    Locking pairs is not functioning during backtesting.
+
+##### Pair locking example
+
+``` python
+from freqtrade.persistence import Trade
+from datetime import timedelta, datetime, timezone
+# Put the above lines a the top of the strategy file, next to all the other imports
+# --------
+
+# Within populate indicators (or populate_buy):
+if self.config['runmode'] in ('live', 'dry_run'):
+   # fetch closed trades for the last 2 days
+    trades = Trade.get_trades([Trade.pair == metadata['pair'],
+                               Trade.open_date > datetime.utcnow() - timedelta(days=2),
+                               Trade.is_open == False,
+                ]).all()
+    # Analyze the conditions you'd like to lock the pair .... will probably be different for every strategy
+    sumprofit = sum(trade.close_profit for trade in trades)
+    if sumprofit < 0:
+        # Lock pair for 12 hours
+        self.lock_pair(metadata['pair'], until=datetime.now(timezone.utc) + timedelta(hours=12))
+```
+
 ### Print created dataframe
 
 To inspect the created dataframe, you can issue a print-statement in either `populate_buy_trend()` or `populate_sell_trend()`.
@@ -478,11 +523,6 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 ```
 
 Printing more than a few rows is also possible (simply use  `print(dataframe)` instead of `print(dataframe.tail())`), however not recommended, as that will be very verbose (~500 lines per pair every 5 seconds).
-
-### Where can i find a strategy template?
-
-The strategy template is located in the file
-[user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_strategy.py).
 
 ### Specify custom strategy location
 
