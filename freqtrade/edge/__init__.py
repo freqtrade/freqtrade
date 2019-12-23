@@ -1,7 +1,6 @@
 # pragma pylint: disable=W0603
 """ Edge positioning package """
 import logging
-from pathlib import Path
 from typing import Any, Dict, NamedTuple
 
 import arrow
