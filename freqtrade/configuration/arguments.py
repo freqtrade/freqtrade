@@ -65,9 +65,9 @@ ARGS_HYPEROPT_LIST = ["hyperopt_list_best", "hyperopt_list_profitable", "print_c
 ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperopt_show_index",
                       "print_json", "hyperopt_show_no_header"]
 
-NO_CONF_REQURIED = ["download-data", "list-timeframes", "list-markets", "list-pairs",
-                    "list-strategies", "hyperopt-list", "hyperopt-show", "plot-dataframe",
-                    "plot-profit"]
+NO_CONF_REQURIED = ["convert-data", "download-data", "list-timeframes", "list-markets",
+                    "list-pairs", "list-strategies", "hyperopt-list", "hyperopt-show",
+                    "plot-dataframe", "plot-profit"]
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-hyperopt", "new-strategy"]
 
