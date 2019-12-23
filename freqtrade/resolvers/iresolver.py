@@ -17,7 +17,8 @@ class IResolver:
     This class contains all the logic to load custom classes
     """
 
-    def build_search_paths(self, config, current_path: Path, user_subdir: Optional[str] = None,
+    @staticmethod
+    def build_search_paths(config, current_path: Path, user_subdir: Optional[str] = None,
                            extra_dir: Optional[str] = None) -> List[Path]:
 
         abs_paths: List[Path] = [current_path]

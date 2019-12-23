@@ -34,7 +34,7 @@ class EdgeCli:
         remove_credentials(self.config)
         self.config['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
         self.exchange = Exchange(self.config)
-        self.strategy = StrategyResolver(self.config).strategy
+        self.strategy = StrategyResolver.load_strategy(self.config)
 
         validate_config_consistency(self.config)
 

@@ -39,8 +39,8 @@ def test_load_strategy(default_conf, result):
     default_conf.update({'strategy': 'SampleStrategy',
                          'strategy_path': str(Path(__file__).parents[2] / 'freqtrade/templates')
                          })
-    resolver = StrategyResolver(default_conf)
-    assert 'rsi' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
+    strategy = StrategyResolver.load_strategy(default_conf)
+    assert 'rsi' in strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 
 
 def test_load_strategy_base64(result, caplog, default_conf):
@@ -48,8 +48,8 @@ def test_load_strategy_base64(result, caplog, default_conf):
         encoded_string = urlsafe_b64encode(file.read()).decode("utf-8")
     default_conf.update({'strategy': 'SampleStrategy:{}'.format(encoded_string)})
 
-    resolver = StrategyResolver(default_conf)
-    assert 'rsi' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
+    strategy = StrategyResolver.load_strategy(default_conf)
+    assert 'rsi' in strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
     # Make sure strategy was loaded from base64 (using temp directory)!!
     assert log_has_re(r"Using resolved strategy SampleStrategy from '"
                       r".*(/|\\).*(/|\\)SampleStrategy\.py'\.\.\.", caplog)
@@ -57,13 +57,13 @@ def test_load_strategy_base64(result, caplog, default_conf):
 
 def test_load_strategy_invalid_directory(result, caplog, default_conf):
     default_conf['strategy'] = 'DefaultStrategy'
-    resolver = StrategyResolver(default_conf)
     extra_dir = Path.cwd() / 'some/path'
-    resolver._load_strategy('DefaultStrategy', config=default_conf, extra_dir=extra_dir)
+    strategy = StrategyResolver._load_strategy('DefaultStrategy', config=default_conf,
+                                               extra_dir=extra_dir)
 
     assert log_has_re(r'Path .*' + r'some.*path.*' + r'.* does not exist', caplog)
 
-    assert 'rsi' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
+    assert 'rsi' in strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 
 
 def test_load_not_found_strategy(default_conf):
@@ -71,7 +71,7 @@ def test_load_not_found_strategy(default_conf):
     with pytest.raises(OperationalException,
                        match=r"Impossible to load Strategy 'NotFoundStrategy'. "
                              r"This class does not exist or contains Python code errors."):
-        StrategyResolver(default_conf)
+        StrategyResolver.load_strategy(default_conf)
 
 
 def test_load_strategy_noname(default_conf):
@@ -79,30 +79,30 @@ def test_load_strategy_noname(default_conf):
     with pytest.raises(OperationalException,
                        match="No strategy set. Please use `--strategy` to specify "
                              "the strategy class to use."):
-        StrategyResolver(default_conf)
+        StrategyResolver.load_strategy(default_conf)
 
 
 def test_strategy(result, default_conf):
     default_conf.update({'strategy': 'DefaultStrategy'})
 
-    resolver = StrategyResolver(default_conf)
+    strategy = StrategyResolver.load_strategy(default_conf)
     metadata = {'pair': 'ETH/BTC'}
-    assert resolver.strategy.minimal_roi[0] == 0.04
+    assert strategy.minimal_roi[0] == 0.04
     assert default_conf["minimal_roi"]['0'] == 0.04
 
-    assert resolver.strategy.stoploss == -0.10
+    assert strategy.stoploss == -0.10
     assert default_conf['stoploss'] == -0.10
 
-    assert resolver.strategy.ticker_interval == '5m'
+    assert strategy.ticker_interval == '5m'
     assert default_conf['ticker_interval'] == '5m'
 
-    df_indicators = resolver.strategy.advise_indicators(result, metadata=metadata)
+    df_indicators = strategy.advise_indicators(result, metadata=metadata)
     assert 'adx' in df_indicators
 
-    dataframe = resolver.strategy.advise_buy(df_indicators, metadata=metadata)
+    dataframe = strategy.advise_buy(df_indicators, metadata=metadata)
     assert 'buy' in dataframe.columns
 
-    dataframe = resolver.strategy.advise_sell(df_indicators, metadata=metadata)
+    dataframe = strategy.advise_sell(df_indicators, metadata=metadata)
     assert 'sell' in dataframe.columns
 
 
@@ -114,9 +114,9 @@ def test_strategy_override_minimal_roi(caplog, default_conf):
             "0": 0.5
         }
     })
-    resolver = StrategyResolver(default_conf)
+    strategy = StrategyResolver.load_strategy(default_conf)
 
-    assert resolver.strategy.minimal_roi[0] == 0.5
+    assert strategy.minimal_roi[0] == 0.5
     assert log_has("Override strategy 'minimal_roi' with value in config file: {'0': 0.5}.", caplog)
 
 
@@ -126,9 +126,9 @@ def test_strategy_override_stoploss(caplog, default_conf):
         'strategy': 'DefaultStrategy',
         'stoploss': -0.5
     })
-    resolver = StrategyResolver(default_conf)
+    strategy = StrategyResolver.load_strategy(default_conf)
 
-    assert resolver.strategy.stoploss == -0.5
+    assert strategy.stoploss == -0.5
     assert log_has("Override strategy 'stoploss' with value in config file: -0.5.", caplog)
 
 
@@ -138,10 +138,10 @@ def test_strategy_override_trailing_stop(caplog, default_conf):
         'strategy': 'DefaultStrategy',
         'trailing_stop': True
     })
-    resolver = StrategyResolver(default_conf)
+    strategy = StrategyResolver.load_strategy(default_conf)
 
-    assert resolver.strategy.trailing_stop
-    assert isinstance(resolver.strategy.trailing_stop, bool)
+    assert strategy.trailing_stop
+    assert isinstance(strategy.trailing_stop, bool)
     assert log_has("Override strategy 'trailing_stop' with value in config file: True.", caplog)
 
 
@@ -153,13 +153,13 @@ def test_strategy_override_trailing_stop_positive(caplog, default_conf):
         'trailing_stop_positive_offset': -0.2
 
     })
-    resolver = StrategyResolver(default_conf)
+    strategy = StrategyResolver.load_strategy(default_conf)
 
-    assert resolver.strategy.trailing_stop_positive == -0.1
+    assert strategy.trailing_stop_positive == -0.1
     assert log_has("Override strategy 'trailing_stop_positive' with value in config file: -0.1.",
                    caplog)
 
-    assert resolver.strategy.trailing_stop_positive_offset == -0.2
+    assert strategy.trailing_stop_positive_offset == -0.2
     assert log_has("Override strategy 'trailing_stop_positive' with value in config file: -0.1.",
                    caplog)
 
@@ -172,10 +172,10 @@ def test_strategy_override_ticker_interval(caplog, default_conf):
         'ticker_interval': 60,
         'stake_currency': 'ETH'
     })
-    resolver = StrategyResolver(default_conf)
+    strategy = StrategyResolver.load_strategy(default_conf)
 
-    assert resolver.strategy.ticker_interval == 60
-    assert resolver.strategy.stake_currency == 'ETH'
+    assert strategy.ticker_interval == 60
+    assert strategy.stake_currency == 'ETH'
     assert log_has("Override strategy 'ticker_interval' with value in config file: 60.",
                    caplog)
 
@@ -187,9 +187,9 @@ def test_strategy_override_process_only_new_candles(caplog, default_conf):
         'strategy': 'DefaultStrategy',
         'process_only_new_candles': True
     })
-    resolver = StrategyResolver(default_conf)
+    strategy = StrategyResolver.load_strategy(default_conf)
 
-    assert resolver.strategy.process_only_new_candles
+    assert strategy.process_only_new_candles
     assert log_has("Override strategy 'process_only_new_candles' with value in config file: True.",
                    caplog)
 
@@ -207,11 +207,11 @@ def test_strategy_override_order_types(caplog, default_conf):
         'strategy': 'DefaultStrategy',
         'order_types': order_types
     })
-    resolver = StrategyResolver(default_conf)
+    strategy = StrategyResolver.load_strategy(default_conf)
 
-    assert resolver.strategy.order_types
+    assert strategy.order_types
     for method in ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']:
-        assert resolver.strategy.order_types[method] == order_types[method]
+        assert strategy.order_types[method] == order_types[method]
 
     assert log_has("Override strategy 'order_types' with value in config file:"
                    " {'buy': 'market', 'sell': 'limit', 'stoploss': 'limit',"
@@ -225,7 +225,7 @@ def test_strategy_override_order_types(caplog, default_conf):
     with pytest.raises(ImportError,
                        match=r"Impossible to load Strategy 'DefaultStrategy'. "
                              r"Order-types mapping is incomplete."):
-        StrategyResolver(default_conf)
+        StrategyResolver.load_strategy(default_conf)
 
 
 def test_strategy_override_order_tif(caplog, default_conf):
@@ -240,11 +240,11 @@ def test_strategy_override_order_tif(caplog, default_conf):
         'strategy': 'DefaultStrategy',
         'order_time_in_force': order_time_in_force
     })
-    resolver = StrategyResolver(default_conf)
+    strategy = StrategyResolver.load_strategy(default_conf)
 
-    assert resolver.strategy.order_time_in_force
+    assert strategy.order_time_in_force
     for method in ['buy', 'sell']:
-        assert resolver.strategy.order_time_in_force[method] == order_time_in_force[method]
+        assert strategy.order_time_in_force[method] == order_time_in_force[method]
 
     assert log_has("Override strategy 'order_time_in_force' with value in config file:"
                    " {'buy': 'fok', 'sell': 'gtc'}.", caplog)
@@ -257,7 +257,7 @@ def test_strategy_override_order_tif(caplog, default_conf):
     with pytest.raises(ImportError,
                        match=r"Impossible to load Strategy 'DefaultStrategy'. "
                              r"Order-time-in-force mapping is incomplete."):
-        StrategyResolver(default_conf)
+        StrategyResolver.load_strategy(default_conf)
 
 
 def test_strategy_override_use_sell_signal(caplog, default_conf):
@@ -265,9 +265,9 @@ def test_strategy_override_use_sell_signal(caplog, default_conf):
     default_conf.update({
         'strategy': 'DefaultStrategy',
     })
-    resolver = StrategyResolver(default_conf)
-    assert resolver.strategy.use_sell_signal
-    assert isinstance(resolver.strategy.use_sell_signal, bool)
+    strategy = StrategyResolver.load_strategy(default_conf)
+    assert strategy.use_sell_signal
+    assert isinstance(strategy.use_sell_signal, bool)
     # must be inserted to configuration
     assert 'use_sell_signal' in default_conf['ask_strategy']
     assert default_conf['ask_strategy']['use_sell_signal']
@@ -278,10 +278,10 @@ def test_strategy_override_use_sell_signal(caplog, default_conf):
             'use_sell_signal': False,
         },
     })
-    resolver = StrategyResolver(default_conf)
+    strategy = StrategyResolver.load_strategy(default_conf)
 
-    assert not resolver.strategy.use_sell_signal
-    assert isinstance(resolver.strategy.use_sell_signal, bool)
+    assert not strategy.use_sell_signal
+    assert isinstance(strategy.use_sell_signal, bool)
     assert log_has("Override strategy 'use_sell_signal' with value in config file: False.", caplog)
 
 
@@ -290,9 +290,9 @@ def test_strategy_override_use_sell_profit_only(caplog, default_conf):
     default_conf.update({
         'strategy': 'DefaultStrategy',
     })
-    resolver = StrategyResolver(default_conf)
-    assert not resolver.strategy.sell_profit_only
-    assert isinstance(resolver.strategy.sell_profit_only, bool)
+    strategy = StrategyResolver.load_strategy(default_conf)
+    assert not strategy.sell_profit_only
+    assert isinstance(strategy.sell_profit_only, bool)
     # must be inserted to configuration
     assert 'sell_profit_only' in default_conf['ask_strategy']
     assert not default_conf['ask_strategy']['sell_profit_only']
@@ -303,10 +303,10 @@ def test_strategy_override_use_sell_profit_only(caplog, default_conf):
             'sell_profit_only': True,
         },
     })
-    resolver = StrategyResolver(default_conf)
+    strategy = StrategyResolver.load_strategy(default_conf)
 
-    assert resolver.strategy.sell_profit_only
-    assert isinstance(resolver.strategy.sell_profit_only, bool)
+    assert strategy.sell_profit_only
+    assert isinstance(strategy.sell_profit_only, bool)
     assert log_has("Override strategy 'sell_profit_only' with value in config file: True.", caplog)
 
 
@@ -315,11 +315,11 @@ def test_deprecate_populate_indicators(result, default_conf):
     default_location = path.join(path.dirname(path.realpath(__file__)))
     default_conf.update({'strategy': 'TestStrategyLegacy',
                          'strategy_path': default_location})
-    resolver = StrategyResolver(default_conf)
+    strategy = StrategyResolver.load_strategy(default_conf)
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
-        indicators = resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
+        indicators = strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
         assert len(w) == 1
         assert issubclass(w[-1].category, DeprecationWarning)
         assert "deprecated - check out the Sample strategy to see the current function headers!" \
@@ -328,7 +328,7 @@ def test_deprecate_populate_indicators(result, default_conf):
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
-        resolver.strategy.advise_buy(indicators, {'pair': 'ETH/BTC'})
+        strategy.advise_buy(indicators, {'pair': 'ETH/BTC'})
         assert len(w) == 1
         assert issubclass(w[-1].category, DeprecationWarning)
         assert "deprecated - check out the Sample strategy to see the current function headers!" \
@@ -337,7 +337,7 @@ def test_deprecate_populate_indicators(result, default_conf):
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
-        resolver.strategy.advise_sell(indicators, {'pair': 'ETH_BTC'})
+        strategy.advise_sell(indicators, {'pair': 'ETH_BTC'})
         assert len(w) == 1
         assert issubclass(w[-1].category, DeprecationWarning)
         assert "deprecated - check out the Sample strategy to see the current function headers!" \
@@ -349,47 +349,47 @@ def test_call_deprecated_function(result, monkeypatch, default_conf):
     default_location = path.join(path.dirname(path.realpath(__file__)))
     default_conf.update({'strategy': 'TestStrategyLegacy',
                          'strategy_path': default_location})
-    resolver = StrategyResolver(default_conf)
+    strategy = StrategyResolver.load_strategy(default_conf)
     metadata = {'pair': 'ETH/BTC'}
 
     # Make sure we are using a legacy function
-    assert resolver.strategy._populate_fun_len == 2
-    assert resolver.strategy._buy_fun_len == 2
-    assert resolver.strategy._sell_fun_len == 2
-    assert resolver.strategy.INTERFACE_VERSION == 1
+    assert strategy._populate_fun_len == 2
+    assert strategy._buy_fun_len == 2
+    assert strategy._sell_fun_len == 2
+    assert strategy.INTERFACE_VERSION == 1
 
-    indicator_df = resolver.strategy.advise_indicators(result, metadata=metadata)
+    indicator_df = strategy.advise_indicators(result, metadata=metadata)
     assert isinstance(indicator_df, DataFrame)
     assert 'adx' in indicator_df.columns
 
-    buydf = resolver.strategy.advise_buy(result, metadata=metadata)
+    buydf = strategy.advise_buy(result, metadata=metadata)
     assert isinstance(buydf, DataFrame)
     assert 'buy' in buydf.columns
 
-    selldf = resolver.strategy.advise_sell(result, metadata=metadata)
+    selldf = strategy.advise_sell(result, metadata=metadata)
     assert isinstance(selldf, DataFrame)
     assert 'sell' in selldf
 
 
 def test_strategy_interface_versioning(result, monkeypatch, default_conf):
     default_conf.update({'strategy': 'DefaultStrategy'})
-    resolver = StrategyResolver(default_conf)
+    strategy = StrategyResolver.load_strategy(default_conf)
     metadata = {'pair': 'ETH/BTC'}
 
     # Make sure we are using a legacy function
-    assert resolver.strategy._populate_fun_len == 3
-    assert resolver.strategy._buy_fun_len == 3
-    assert resolver.strategy._sell_fun_len == 3
-    assert resolver.strategy.INTERFACE_VERSION == 2
+    assert strategy._populate_fun_len == 3
+    assert strategy._buy_fun_len == 3
+    assert strategy._sell_fun_len == 3
+    assert strategy.INTERFACE_VERSION == 2
 
-    indicator_df = resolver.strategy.advise_indicators(result, metadata=metadata)
+    indicator_df = strategy.advise_indicators(result, metadata=metadata)
     assert isinstance(indicator_df, DataFrame)
     assert 'adx' in indicator_df.columns
 
-    buydf = resolver.strategy.advise_buy(result, metadata=metadata)
+    buydf = strategy.advise_buy(result, metadata=metadata)
     assert isinstance(buydf, DataFrame)
     assert 'buy' in buydf.columns
 
-    selldf = resolver.strategy.advise_sell(result, metadata=metadata)
+    selldf = strategy.advise_sell(result, metadata=metadata)
     assert isinstance(selldf, DataFrame)
     assert 'sell' in selldf
