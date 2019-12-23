@@ -66,7 +66,7 @@ class Hyperopt:
 
         self.custom_hyperopt = HyperOptResolver.load_hyperopt(self.config)
 
-        self.custom_hyperoptloss = HyperOptLossResolver(self.config).hyperoptloss
+        self.custom_hyperoptloss = HyperOptLossResolver.load_hyperoptloss(self.config)
         self.calculate_loss = self.custom_hyperoptloss.hyperopt_loss_function
 
         self.trials_file = (self.config['user_data_dir'] /

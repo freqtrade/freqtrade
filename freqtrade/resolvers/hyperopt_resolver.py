@@ -77,9 +77,9 @@ class HyperOptLossResolver(IResolver):
     """
     This class contains all the logic to load custom hyperopt loss class
     """
-    __slots__ = ['hyperoptloss']
 
-    def __init__(self, config: Dict) -> None:
+    @staticmethod
+    def load_hyperoptloss(config: Dict) -> IHyperOptLoss:
         """
         Load the custom class from config parameter
         :param config: configuration dictionary
@@ -89,20 +89,21 @@ class HyperOptLossResolver(IResolver):
         # default hyperopt loss
         hyperoptloss_name = config.get('hyperopt_loss') or DEFAULT_HYPEROPT_LOSS
 
-        self.hyperoptloss = self._load_hyperoptloss(
+        hyperoptloss = HyperOptLossResolver._load_hyperoptloss(
             hyperoptloss_name, config, extra_dir=config.get('hyperopt_path'))
 
         # Assign ticker_interval to be used in hyperopt
-        self.hyperoptloss.__class__.ticker_interval = str(config['ticker_interval'])
+        hyperoptloss.__class__.ticker_interval = str(config['ticker_interval'])
 
-        if not hasattr(self.hyperoptloss, 'hyperopt_loss_function'):
+        if not hasattr(hyperoptloss, 'hyperopt_loss_function'):
             raise OperationalException(
                 f"Found HyperoptLoss class {hyperoptloss_name} does not "
                 "implement `hyperopt_loss_function`.")
+        return hyperoptloss
 
-    def _load_hyperoptloss(
-            self, hyper_loss_name: str, config: Dict,
-            extra_dir: Optional[str] = None) -> IHyperOptLoss:
+    @staticmethod
+    def _load_hyperoptloss(hyper_loss_name: str, config: Dict,
+                           extra_dir: Optional[str] = None) -> IHyperOptLoss:
         """
         Search and loads the specified hyperopt loss class.
         :param hyper_loss_name: name of the module to import
@@ -112,11 +113,12 @@ class HyperOptLossResolver(IResolver):
         """
         current_path = Path(__file__).parent.parent.joinpath('optimize').resolve()
 
-        abs_paths = self.build_search_paths(config, current_path=current_path,
-                                            user_subdir=USERPATH_HYPEROPTS, extra_dir=extra_dir)
+        abs_paths = IResolver.build_search_paths(config, current_path=current_path,
+                                                 user_subdir=USERPATH_HYPEROPTS,
+                                                 extra_dir=extra_dir)
 
-        hyperoptloss = self._load_object(paths=abs_paths, object_type=IHyperOptLoss,
-                                         object_name=hyper_loss_name)
+        hyperoptloss = IResolver._load_object(paths=abs_paths, object_type=IHyperOptLoss,
+                                              object_name=hyper_loss_name)
         if hyperoptloss:
             return hyperoptloss
 
