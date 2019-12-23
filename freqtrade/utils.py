@@ -191,9 +191,8 @@ def start_download_data(args: Dict[str, Any]) -> None:
             "Downloading data requires a list of pairs. "
             "Please check the documentation on how to configure this.")
 
-    dl_path = Path(config['datadir'])
     logger.info(f'About to download pairs: {config["pairs"]}, '
-                f'intervals: {config["timeframes"]} to {dl_path}')
+                f'intervals: {config["timeframes"]} to {config["datadir"]}')
 
     pairs_not_available: List[str] = []
 
@@ -203,17 +202,17 @@ def start_download_data(args: Dict[str, Any]) -> None:
 
         if config.get('download_trades'):
             pairs_not_available = refresh_backtest_trades_data(
-                exchange, pairs=config["pairs"], datadir=Path(config['datadir']),
+                exchange, pairs=config["pairs"], datadir=config['datadir'],
                 timerange=timerange, erase=config.get("erase"))
 
             # Convert downloaded trade data to different timeframes
             convert_trades_to_ohlcv(
                 pairs=config["pairs"], timeframes=config["timeframes"],
-                datadir=Path(config['datadir']), timerange=timerange, erase=config.get("erase"))
+                datadir=config['datadir'], timerange=timerange, erase=config.get("erase"))
         else:
             pairs_not_available = refresh_backtest_ohlcv_data(
                 exchange, pairs=config["pairs"], timeframes=config["timeframes"],
-                datadir=Path(config['datadir']), timerange=timerange, erase=config.get("erase"))
+                datadir=config['datadir'], timerange=timerange, erase=config.get("erase"))
 
     except KeyboardInterrupt:
         sys.exit("SIGINT received, aborting ...")
