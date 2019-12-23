@@ -109,7 +109,7 @@ class Backtesting:
             'timerange') is None else str(self.config.get('timerange')))
 
         data = history.load_data(
-            datadir=Path(self.config['datadir']),
+            datadir=self.config['datadir'],
             pairs=self.config['exchange']['pair_whitelist'],
             timeframe=self.timeframe,
             timerange=timerange,
