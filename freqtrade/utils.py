@@ -17,6 +17,7 @@ from freqtrade.configuration import (Configuration, TimeRange,
 from freqtrade.configuration.directory_operations import (copy_sample_files,
                                                           create_userdata_dir)
 from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGY
+from freqtrade.data.datahandlers import get_datahandlerclass
 from freqtrade.data.history import (convert_trades_to_ohlcv,
                                     refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
@@ -241,12 +242,53 @@ def start_list_strategies(args: Dict[str, Any]) -> None:
         print(tabulate(strats_to_print, headers='keys', tablefmt='pipe'))
 
 
+def convert_trades_format(config: Dict[str, Any], convert_from: str, convert_to: str):
+    """
+    TODO: move this to converter.py (?)
+    """
+    SrcClass = get_datahandlerclass(convert_from)
+    TrgClass = get_datahandlerclass(convert_to)
+
+    if 'pairs' not in config:
+        config['pairs'] = SrcClass.trades_get_pairs(config['datadir'])
+        logger.info(f"Converting trades for {config['pairs']}")
+
+    for pair in config['pairs']:
+        src = SrcClass(config['datadir'], pair)
+        trg = TrgClass(config['datadir'], pair)
+        data = src.trades_load()
+        logger.info(f"Converting {len(data)} trades for {pair}")
+        trg.trades_store(data)
+
+
+def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: str):
+    """
+    TODO: move this to converter.py (?)
+    """
+    SrcClass = get_datahandlerclass(convert_from)
+    TrgClass = get_datahandlerclass(convert_to)
+
+    if 'pairs' not in config:
+        config['pairs'] = SrcClass.ohclv_get_pairs(config['datadir'], config['ticker_interval'])
+        logger.info(f"Converting OHLCV for {config['pairs']}")
+
+    for pair in config['pairs']:
+        src = SrcClass(config['datadir'], pair)
+        trg = TrgClass(config['datadir'], pair)
+        data = src.ohlcv_load()
+        logger.info(f"Converting {len(data)} candles for {pair}")
+        trg.ohlcv_store(data)
+
+
 def start_convert_data(args: Dict[str, Any]) -> None:
     """
     Convert data from one format to another
     """
-    config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
-    print(config)
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+    from pprint import pprint
+    pprint(config)
+
+    # convert_trades_format(config, 'json', 'jsongz')
 
 
 def start_list_timeframes(args: Dict[str, Any]) -> None:
@@ -452,10 +494,10 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
     n = config.get('hyperopt_show_index', -1)
     if n > trials_epochs:
         raise OperationalException(
-                f"The index of the epoch to show should be less than {trials_epochs + 1}.")
+            f"The index of the epoch to show should be less than {trials_epochs + 1}.")
     if n < -trials_epochs:
         raise OperationalException(
-                f"The index of the epoch to show should be greater than {-trials_epochs - 1}.")
+            f"The index of the epoch to show should be greater than {-trials_epochs - 1}.")
 
     # Translate epoch index from human-readable format to pythonic
     if n > 0:
