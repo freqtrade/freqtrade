@@ -340,7 +340,7 @@ def load_and_plot_trades(config: Dict[str, Any]):
     - Generate plot files
     :return: None
     """
-    strategy = StrategyResolver(config).strategy
+    strategy = StrategyResolver.load_strategy(config)
 
     plot_elements = init_plotscript(config)
     trades = plot_elements['trades']

@@ -44,9 +44,9 @@ candles.head()
 ```python
 # Load strategy using values set above
 from freqtrade.resolvers import StrategyResolver
-strategy = StrategyResolver({'strategy': strategy_name,
-                            'user_data_dir': user_data_dir,
-                            'strategy_path': strategy_location}).strategy
+strategy = StrategyResolver.load_strategy({'strategy': strategy_name,
+                                          'user_data_dir': user_data_dir,
+                                          'strategy_path': strategy_location})
 
 # Generate buy/sell signals using strategy
 df = strategy.analyze_ticker(candles, {'pair': pair})

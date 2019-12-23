@@ -55,7 +55,7 @@ class FreqtradeBot:
 
         self.heartbeat_interval = self.config.get('internals', {}).get('heartbeat_interval', 60)
 
-        self.strategy: IStrategy = StrategyResolver(self.config).strategy
+        self.strategy: IStrategy = StrategyResolver.load_strategy(self.config)
 
         # Check config consistency here since strategies can set certain options
         validate_config_consistency(config)
