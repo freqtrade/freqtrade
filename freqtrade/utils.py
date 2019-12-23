@@ -241,6 +241,14 @@ def start_list_strategies(args: Dict[str, Any]) -> None:
         print(tabulate(strats_to_print, headers='keys', tablefmt='pipe'))
 
 
+def start_convert_data(args: Dict[str, Any]) -> None:
+    """
+    Convert data from one format to another
+    """
+    config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
+    print(config)
+
+
 def start_list_timeframes(args: Dict[str, Any]) -> None:
     """
     Print ticker intervals (timeframes) available on Exchange

@@ -47,6 +47,8 @@ ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy", "template"]
 
 ARGS_BUILD_HYPEROPT = ["user_data_dir", "hyperopt", "template"]
 
+ARGS_CONVERT_DATA = []
+
 ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "download_trades", "exchange",
                       "timeframes", "erase"]
 
@@ -131,7 +133,7 @@ class Arguments:
         self._build_args(optionlist=['version'], parser=self.parser)
 
         from freqtrade.optimize import start_backtesting, start_hyperopt, start_edge
-        from freqtrade.utils import (start_create_userdir, start_download_data,
+        from freqtrade.utils import (start_create_userdir, start_convert_data, start_download_data,
                                      start_hyperopt_list, start_hyperopt_show,
                                      start_list_exchanges, start_list_markets,
                                      start_list_strategies, start_new_hyperopt,
@@ -250,6 +252,15 @@ class Arguments:
         )
         download_data_cmd.set_defaults(func=start_download_data)
         self._build_args(optionlist=ARGS_DOWNLOAD_DATA, parser=download_data_cmd)
+
+        # Add convert-data subcommand
+        convert_data_cmd = subparsers.add_parser(
+            'convert-data',
+            help='Convert data from one format to another.',
+            parents=[_common_parser],
+        )
+        convert_data_cmd.set_defaults(func=start_convert_data)
+        self._build_args(optionlist=ARGS_CONVERT_DATA, parser=convert_data_cmd)
 
         # Add Plotting subcommand
         plot_dataframe_cmd = subparsers.add_parser(
