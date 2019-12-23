@@ -58,7 +58,8 @@ def test_load_strategy_base64(result, caplog, default_conf):
 def test_load_strategy_invalid_directory(result, caplog, default_conf):
     default_conf['strategy'] = 'DefaultStrategy'
     extra_dir = Path.cwd() / 'some/path'
-    strategy = StrategyResolver._load_strategy('DefaultStrategy', config=default_conf, extra_dir=extra_dir)
+    strategy = StrategyResolver._load_strategy('DefaultStrategy', config=default_conf,
+                                               extra_dir=extra_dir)
 
     assert log_has_re(r'Path .*' + r'some.*path.*' + r'.* does not exist', caplog)
 
