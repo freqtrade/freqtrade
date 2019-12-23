@@ -18,6 +18,7 @@ REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList', 'PrecisionFilter', 'PriceFilter']
+AVAILABLE_DATAHANDLERS = ['json', 'jsongz']
 DRY_RUN_WALLET = 1000
 MATH_CLOSE_PREC = 1e-14  # Precision used for float comparisons
 
@@ -213,6 +214,16 @@ CONF_SCHEMA = {
                 'process_throttle_secs': {'type': 'integer'},
                 'interval': {'type': 'integer'},
                 'sd_notify': {'type': 'boolean'},
+                'dataformat_ohlcv': {
+                    'type': 'string',
+                    'enum': AVAILABLE_DATAHANDLERS,
+                    'default': 'json'
+                },
+                'dataformat_trades': {
+                    'type': 'string',
+                    'enum': AVAILABLE_DATAHANDLERS,
+                    'default': 'jsongz'
+                }
             }
         }
     },
@@ -280,5 +291,6 @@ CONF_SCHEMA = {
         'unfilledtimeout',
         'stoploss',
         'minimal_roi',
+        'internals',
     ]
 }
