@@ -163,7 +163,7 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
         MagicMock(return_value=hyperopt(default_conf))
     )
     default_conf.update({'hyperopt': 'DefaultHyperOpt'})
-    x = HyperOptResolver(default_conf).hyperopt
+    x = HyperOptResolver.load_hyperopt(default_conf)
     assert not hasattr(x, 'populate_indicators')
     assert not hasattr(x, 'populate_buy_trend')
     assert not hasattr(x, 'populate_sell_trend')
@@ -180,7 +180,7 @@ def test_hyperoptresolver_wrongname(mocker, default_conf, caplog) -> None:
     default_conf.update({'hyperopt': "NonExistingHyperoptClass"})
 
     with pytest.raises(OperationalException, match=r'Impossible to load Hyperopt.*'):
-        HyperOptResolver(default_conf).hyperopt
+        HyperOptResolver.load_hyperopt(default_conf)
 
 
 def test_hyperoptresolver_noname(default_conf):
@@ -188,7 +188,7 @@ def test_hyperoptresolver_noname(default_conf):
     with pytest.raises(OperationalException,
                        match="No Hyperopt set. Please use `--hyperopt` to specify "
                              "the Hyperopt class to use."):
-        HyperOptResolver(default_conf)
+        HyperOptResolver.load_hyperopt(default_conf)
 
 
 def test_hyperoptlossresolver(mocker, default_conf, caplog) -> None:

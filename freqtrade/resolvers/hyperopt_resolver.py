@@ -20,11 +20,11 @@ class HyperOptResolver(IResolver):
     """
     This class contains all the logic to load custom hyperopt class
     """
-    __slots__ = ['hyperopt']
 
-    def __init__(self, config: Dict) -> None:
+    @staticmethod
+    def load_hyperopt(config: Dict) -> IHyperOpt:
         """
-        Load the custom class from config parameter
+        Load the custom hyperopt class from config parameter
         :param config: configuration dictionary
         """
         if not config.get('hyperopt'):
@@ -33,21 +33,23 @@ class HyperOptResolver(IResolver):
 
         hyperopt_name = config['hyperopt']
 
-        self.hyperopt = self._load_hyperopt(hyperopt_name, config,
-                                            extra_dir=config.get('hyperopt_path'))
+        hyperopt = HyperOptResolver._load_hyperopt(hyperopt_name, config,
+                                                   extra_dir=config.get('hyperopt_path'))
 
-        if not hasattr(self.hyperopt, 'populate_indicators'):
+        if not hasattr(hyperopt, 'populate_indicators'):
             logger.warning("Hyperopt class does not provide populate_indicators() method. "
                            "Using populate_indicators from the strategy.")
-        if not hasattr(self.hyperopt, 'populate_buy_trend'):
+        if not hasattr(hyperopt, 'populate_buy_trend'):
             logger.warning("Hyperopt class does not provide populate_buy_trend() method. "
                            "Using populate_buy_trend from the strategy.")
-        if not hasattr(self.hyperopt, 'populate_sell_trend'):
+        if not hasattr(hyperopt, 'populate_sell_trend'):
             logger.warning("Hyperopt class does not provide populate_sell_trend() method. "
                            "Using populate_sell_trend from the strategy.")
+        return hyperopt
 
+    @staticmethod
     def _load_hyperopt(
-            self, hyperopt_name: str, config: Dict, extra_dir: Optional[str] = None) -> IHyperOpt:
+            hyperopt_name: str, config: Dict, extra_dir: Optional[str] = None) -> IHyperOpt:
         """
         Search and loads the specified hyperopt.
         :param hyperopt_name: name of the module to import
@@ -57,11 +59,12 @@ class HyperOptResolver(IResolver):
         """
         current_path = Path(__file__).parent.parent.joinpath('optimize').resolve()
 
-        abs_paths = self.build_search_paths(config, current_path=current_path,
-                                            user_subdir=USERPATH_HYPEROPTS, extra_dir=extra_dir)
+        abs_paths = IResolver.build_search_paths(config, current_path=current_path,
+                                                 user_subdir=USERPATH_HYPEROPTS,
+                                                 extra_dir=extra_dir)
 
-        hyperopt = self._load_object(paths=abs_paths, object_type=IHyperOpt,
-                                     object_name=hyperopt_name, kwargs={'config': config})
+        hyperopt = IResolver._load_object(paths=abs_paths, object_type=IHyperOpt,
+                                          object_name=hyperopt_name, kwargs={'config': config})
         if hyperopt:
             return hyperopt
         raise OperationalException(
