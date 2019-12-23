@@ -198,7 +198,7 @@ def start_download_data(args: Dict[str, Any]) -> None:
     pairs_not_available: List[str] = []
 
     # Init exchange
-    exchange = ExchangeResolver(config['exchange']['name'], config).exchange
+    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config)
     try:
 
         if config.get('download_trades'):
@@ -233,7 +233,7 @@ def start_list_timeframes(args: Dict[str, Any]) -> None:
     config['ticker_interval'] = None
 
     # Init exchange
-    exchange = ExchangeResolver(config['exchange']['name'], config, validate=False).exchange
+    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
 
     if args['print_one_column']:
         print('\n'.join(exchange.timeframes))
@@ -252,7 +252,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
 
     # Init exchange
-    exchange = ExchangeResolver(config['exchange']['name'], config, validate=False).exchange
+    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
 
     # By default only active pairs/markets are to be shown
     active_only = not args.get('list_pairs_all', False)
@@ -333,7 +333,7 @@ def start_test_pairlist(args: Dict[str, Any]) -> None:
     from freqtrade.pairlist.pairlistmanager import PairListManager
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
 
-    exchange = ExchangeResolver(config['exchange']['name'], config, validate=False).exchange
+    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
 
     quote_currencies = args.get('quote_currencies')
     if not quote_currencies:

@@ -18,8 +18,6 @@ class PairListResolver(IResolver):
     This class contains all the logic to load custom PairList class
     """
 
-    __slots__ = []
-
     @staticmethod
     def load_pairlist(pairlist_name: str, exchange, pairlistmanager,
                       config: dict, pairlistconfig: dict, pairlist_pos: int) -> IPairList:
@@ -40,7 +38,6 @@ class PairListResolver(IResolver):
                                                        'config': config,
                                                        'pairlistconfig': pairlistconfig,
                                                        'pairlist_pos': pairlist_pos})
-
 
     @staticmethod
     def _load_pairlist(pairlist_name: str, config: dict, kwargs: dict) -> IPairList:
