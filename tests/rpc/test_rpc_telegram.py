@@ -534,7 +534,7 @@ def test_balance_handle_empty_response_dry(default_conf, update, mocker) -> None
     telegram._balance(update=update, context=MagicMock())
     result = msg_mock.call_args_list[0][0][0]
     assert msg_mock.call_count == 1
-    assert "*Warning:*Simulated balances in Dry Mode." in result
+    assert "*Warning:* Simulated balances in Dry Mode." in result
     assert "Starting capital: `1000` BTC" in result
 
 
