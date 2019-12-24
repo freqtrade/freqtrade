@@ -7,7 +7,7 @@ import importlib.util
 import inspect
 import logging
 from pathlib import Path
-from typing import Any, Generator, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, Generator, List, Optional, Tuple, Type, Union
 
 from freqtrade import OperationalException
 
@@ -41,7 +41,7 @@ class IResolver:
 
     @classmethod
     def _get_valid_object(cls, module_path: Path,
-                          object_name: str) -> Generator[Any, None, None]:
+                          object_name: Optional[str]) -> Generator[Any, None, None]:
         """
         Generator returning objects with matching object_type and object_name in the path given.
         :param module_path: absolute path to the module
@@ -51,7 +51,7 @@ class IResolver:
 
         # Generate spec based on absolute path
         # Pass object_name as first argument to have logging print a reasonable name.
-        spec = importlib.util.spec_from_file_location(object_name, str(module_path))
+        spec = importlib.util.spec_from_file_location(object_name or "", str(module_path))
         module = importlib.util.module_from_spec(spec)
         try:
             spec.loader.exec_module(module)  # type: ignore # importlib does not use typehints
@@ -61,7 +61,7 @@ class IResolver:
 
         valid_objects_gen = (
             obj for name, obj in inspect.getmembers(module, inspect.isclass)
-            if object_name == name and cls.object_type in obj.__bases__
+            if (object_name is None or object_name == name) and cls.object_type in obj.__bases__
         )
         return valid_objects_gen
 
@@ -74,8 +74,7 @@ class IResolver:
         :param object_name: ClassName of the object to load
         :return: object class
         """
-        logger.debug("Searching for %s %s in '%s'",
-                     cls.object_type.__name__, object_name, directory)
+        logger.debug(f"Searching for {cls.object_type.__name__} {object_name} in '{directory}'")
         for entry in directory.iterdir():
             # Only consider python files
             if not str(entry).endswith('.py'):
@@ -134,3 +133,27 @@ class IResolver:
             f"Impossible to load {cls.object_type_str} '{object_name}'. This class does not exist "
             "or contains Python code errors."
         )
+
+    @classmethod
+    def search_all_objects(cls, directory: Path) -> List[Dict[str, Any]]:
+        """
+        Searches a directory for valid objects
+        :param directory: Path to search
+        :return: List of dicts containing 'name', 'class' and 'location' entires
+        """
+        logger.debug(f"Searching for {cls.object_type.__name__} '{directory}'")
+        objects = []
+        for entry in directory.iterdir():
+            # Only consider python files
+            if not str(entry).endswith('.py'):
+                logger.debug('Ignoring %s', entry)
+                continue
+            module_path = entry.resolve()
+            logger.info(f"Path {module_path}")
+            for obj in cls._get_valid_object(module_path, object_name=None):
+                objects.append(
+                    {'name': obj.__name__,
+                     'class': obj,
+                     'location': entry,
+                     })
+        return objects
