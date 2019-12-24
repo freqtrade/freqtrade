@@ -15,19 +15,16 @@ from tests.conftest import log_has, log_has_re
 
 
 def test_search_strategy():
-    default_config = {}
     default_location = Path(__file__).parent.parent.joinpath('strategy').resolve()
 
     s, _ = StrategyResolver._search_object(
         directory=default_location,
-        kwargs={'config': default_config},
         object_name='DefaultStrategy'
     )
-    assert isinstance(s, IStrategy)
+    assert issubclass(s, IStrategy)
 
     s, _ = StrategyResolver._search_object(
         directory=default_location,
-        kwargs={'config': default_config},
         object_name='NotFoundStrategy'
     )
     assert s is None

@@ -66,13 +66,13 @@ class IResolver:
         return valid_objects_gen
 
     @classmethod
-    def _search_object(cls, directory: Path, object_name: str,
-                       kwargs: dict = {}) -> Union[Tuple[Any, Path], Tuple[None, None]]:
+    def _search_object(cls, directory: Path, object_name: str
+                       ) -> Union[Tuple[Any, Path], Tuple[None, None]]:
         """
         Search for the objectname in the given directory
         :param directory: relative or absolute directory path
         :param object_name: ClassName of the object to load
-        :return: object instance
+        :return: object class
         """
         logger.debug("Searching for %s %s in '%s'",
                      cls.object_type.__name__, object_name, directory)
@@ -86,7 +86,7 @@ class IResolver:
             obj = next(cls._get_valid_object(module_path, object_name), None)
 
             if obj:
-                return (obj(**kwargs), module_path)
+                return (obj, module_path)
         return (None, None)
 
     @classmethod
@@ -99,13 +99,12 @@ class IResolver:
         for _path in paths:
             try:
                 (module, module_path) = cls._search_object(directory=_path,
-                                                           object_name=object_name,
-                                                           kwargs=kwargs)
+                                                           object_name=object_name)
                 if module:
                     logger.info(
                         f"Using resolved {cls.object_type.__name__.lower()[1:]} {object_name} "
                         f"from '{module_path}'...")
-                    return module
+                    return module(**kwargs)
             except FileNotFoundError:
                 logger.warning('Path "%s" does not exist.', _path.resolve())
 
