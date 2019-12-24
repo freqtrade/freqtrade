@@ -11,7 +11,9 @@ from inspect import getfullargspec
 from pathlib import Path
 from typing import Dict, Optional
 
-from freqtrade import constants, OperationalException
+from freqtrade import OperationalException
+from freqtrade.constants import (REQUIRED_ORDERTIF, REQUIRED_ORDERTYPES,
+                                 USERPATH_STRATEGY)
 from freqtrade.resolvers import IResolver
 from freqtrade.strategy.interface import IStrategy
 
@@ -23,6 +25,9 @@ class StrategyResolver(IResolver):
     This class contains the logic to load custom strategy class
     """
     object_type = IStrategy
+    object_type_str = "Strategy"
+    user_subdir = USERPATH_STRATEGY
+    initial_search_path = Path(__file__).parent.parent.joinpath('strategy').resolve()
 
     @staticmethod
     def load_strategy(config: Optional[Dict] = None) -> IStrategy:
@@ -115,11 +120,11 @@ class StrategyResolver(IResolver):
 
     @staticmethod
     def _strategy_sanity_validations(strategy):
-        if not all(k in strategy.order_types for k in constants.REQUIRED_ORDERTYPES):
+        if not all(k in strategy.order_types for k in REQUIRED_ORDERTYPES):
             raise ImportError(f"Impossible to load Strategy '{strategy.__class__.__name__}'. "
                               f"Order-types mapping is incomplete.")
 
-        if not all(k in strategy.order_time_in_force for k in constants.REQUIRED_ORDERTIF):
+        if not all(k in strategy.order_time_in_force for k in REQUIRED_ORDERTIF):
             raise ImportError(f"Impossible to load Strategy '{strategy.__class__.__name__}'. "
                               f"Order-time-in-force mapping is incomplete.")
 
@@ -133,10 +138,9 @@ class StrategyResolver(IResolver):
         :param extra_dir: additional directory to search for the given strategy
         :return: Strategy instance or None
         """
-        current_path = Path(__file__).parent.parent.joinpath('strategy').resolve()
 
-        abs_paths = StrategyResolver.build_search_paths(config, current_path=current_path,
-                                                        user_subdir=constants.USERPATH_STRATEGY,
+        abs_paths = StrategyResolver.build_search_paths(config,
+                                                        user_subdir=USERPATH_STRATEGY,
                                                         extra_dir=extra_dir)
 
         if ":" in strategy_name:

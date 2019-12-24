@@ -159,7 +159,7 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
     delattr(hyperopt, 'populate_buy_trend')
     delattr(hyperopt, 'populate_sell_trend')
     mocker.patch(
-        'freqtrade.resolvers.hyperopt_resolver.HyperOptResolver._load_hyperopt',
+        'freqtrade.resolvers.hyperopt_resolver.HyperOptResolver.load_object',
         MagicMock(return_value=hyperopt(default_conf))
     )
     default_conf.update({'hyperopt': 'DefaultHyperOpt'})
@@ -195,7 +195,7 @@ def test_hyperoptlossresolver(mocker, default_conf, caplog) -> None:
 
     hl = DefaultHyperOptLoss
     mocker.patch(
-        'freqtrade.resolvers.hyperopt_resolver.HyperOptLossResolver._load_hyperoptloss',
+        'freqtrade.resolvers.hyperopt_resolver.HyperOptLossResolver.load_object',
         MagicMock(return_value=hl)
     )
     x = HyperOptLossResolver.load_hyperoptloss(default_conf)

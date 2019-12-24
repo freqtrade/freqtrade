@@ -9,6 +9,8 @@ import logging
 from pathlib import Path
 from typing import Any, Generator, List, Optional, Tuple, Type, Union
 
+from freqtrade import OperationalException
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,12 +20,15 @@ class IResolver:
     """
     # Childclasses need to override this
     object_type: Type[Any]
+    object_type_str: str
+    user_subdir: Optional[str] = None
+    initial_search_path: Path
 
-    @staticmethod
-    def build_search_paths(config, current_path: Path, user_subdir: Optional[str] = None,
+    @classmethod
+    def build_search_paths(cls, config, user_subdir: Optional[str] = None,
                            extra_dir: Optional[str] = None) -> List[Path]:
 
-        abs_paths: List[Path] = [current_path]
+        abs_paths: List[Path] = [cls.initial_search_path]
 
         if user_subdir:
             abs_paths.insert(0, config['user_data_dir'].joinpath(user_subdir))
@@ -105,3 +110,28 @@ class IResolver:
                 logger.warning('Path "%s" does not exist.', _path.resolve())
 
         return None
+
+    @classmethod
+    def load_object(cls, object_name: str, config: dict, kwargs: dict,
+                    extra_dir: Optional[str] = None) -> Any:
+        """
+        Search and loads the specified object as configured in hte child class.
+        :param objectname: name of the module to import
+        :param config: configuration dictionary
+        :param extra_dir: additional directory to search for the given pairlist
+        :raises: OperationalException if the class is invalid or does not exist.
+        :return: Object instance or None
+        """
+
+        abs_paths = cls.build_search_paths(config,
+                                           user_subdir=cls.user_subdir,
+                                           extra_dir=extra_dir)
+
+        pairlist = cls._load_object(paths=abs_paths, object_name=object_name,
+                                    kwargs=kwargs)
+        if pairlist:
+            return pairlist
+        raise OperationalException(
+            f"Impossible to load {cls.object_type_str} '{object_name}'. This class does not exist "
+            "or contains Python code errors."
+        )
