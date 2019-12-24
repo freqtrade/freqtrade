@@ -60,7 +60,7 @@ class Backtesting:
         # Reset keys for backtesting
         remove_credentials(self.config)
         self.strategylist: List[IStrategy] = []
-        self.exchange = ExchangeResolver(self.config['exchange']['name'], self.config).exchange
+        self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
 
         if config.get('fee'):
             self.fee = config['fee']
@@ -75,12 +75,12 @@ class Backtesting:
             for strat in list(self.config['strategy_list']):
                 stratconf = deepcopy(self.config)
                 stratconf['strategy'] = strat
-                self.strategylist.append(StrategyResolver(stratconf).strategy)
+                self.strategylist.append(StrategyResolver.load_strategy(stratconf))
                 validate_config_consistency(stratconf)
 
         else:
             # No strategy list specified, only one strategy
-            self.strategylist.append(StrategyResolver(self.config).strategy)
+            self.strategylist.append(StrategyResolver.load_strategy(self.config))
             validate_config_consistency(self.config)
 
         if "ticker_interval" not in self.config:

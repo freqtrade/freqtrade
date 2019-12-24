@@ -55,8 +55,8 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `trailing_stop_positive` | Changes stoploss once profit has been reached. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *Float*
 | `trailing_stop_positive_offset` | Offset on when to apply `trailing_stop_positive`. Percentage value which should be positive. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `0.0` (no offset).* <br> ***Datatype:*** *Float*
 | `trailing_only_offset_is_reached` | Only apply trailing stoploss when the offset is reached. [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*  <br> ***Datatype:*** *Boolean*
-| `unfilledtimeout.buy` | **Required.** How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled.  <br> ***Datatype:*** *Integer*
-| `unfilledtimeout.sell` | **Required.** How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled. <br> ***Datatype:*** *Integer*
+| `unfilledtimeout.buy` | **Required.** How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled. [Strategy Override](#parameters-in-the-strategy).<br> ***Datatype:*** *Integer*
+| `unfilledtimeout.sell` | **Required.** How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled. [Strategy Override](#parameters-in-the-strategy).<br> ***Datatype:*** *Integer*
 | `bid_strategy.ask_last_balance` | **Required.** Set the bidding price. More information [below](#buy-price-without-orderbook). 
 | `bid_strategy.use_order_book` | Enable buying using the rates in [Order Book Bids](#buy-price-with-orderbook-enabled). <br> ***Datatype:*** *Boolean*
 | `bid_strategy.order_book_top` | Bot will use the top N rate in Order Book Bids to buy. I.e. a value of 2 will allow the bot to pick the 2nd bid rate in [Order Book Bids](#buy-price-with-orderbook-enabled). <br>*Defaults to `1`.*  <br> ***Datatype:*** *Positive Integer*
@@ -96,7 +96,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `api_server.listen_port` | Bind Port. See the [API Server documentation](rest-api.md) for more details. <br> ***Datatype:*** *Integer between 1024 and 65535*
 | `api_server.username` | Username for API server. See the [API Server documentation](rest-api.md) for more details. **Keep it in secret, do not disclose publicly.**<br> ***Datatype:*** *String*
 | `api_server.password` | Password for API server. See the [API Server documentation](rest-api.md) for more details. **Keep it in secret, do not disclose publicly.**<br> ***Datatype:*** *String*
-| `db_url` | Declares database URL to use. NOTE: This defaults to `sqlite://` if `dry_run` is `true`, and to `sqlite:///tradesv3.sqlite` for production instances. <br> ***Datatype:*** *String, SQLAlchemy connect string*
+| `db_url` | Declares database URL to use. NOTE: This defaults to `sqlite:///tradesv3.dryrun.sqlite` if `dry_run` is `true`, and to `sqlite:///tradesv3.sqlite` for production instances. <br> ***Datatype:*** *String, SQLAlchemy connect string*
 | `initial_state` | Defines the initial application state. More information below. <br>*Defaults to `stopped`.* <br> ***Datatype:*** *Enum, either `stopped` or `running`*
 | `forcebuy_enable` | Enables the RPC Commands to force a buy. More information below. <br> ***Datatype:*** *Boolean*
 | `strategy` | **Required** Defines Strategy class to use. Recommended to be set via `--strategy NAME`. <br> ***Datatype:*** *ClassName*
@@ -124,6 +124,7 @@ Values set in the configuration file always overwrite values set in the strategy
 * `order_time_in_force`
 * `stake_currency`
 * `stake_amount`
+* `unfilledtimeout`
 * `use_sell_signal` (ask_strategy)
 * `sell_profit_only` (ask_strategy)
 * `ignore_roi_if_buy_signal` (ask_strategy)

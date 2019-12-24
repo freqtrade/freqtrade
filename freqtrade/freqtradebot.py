@@ -55,12 +55,12 @@ class FreqtradeBot:
 
         self.heartbeat_interval = self.config.get('internals', {}).get('heartbeat_interval', 60)
 
-        self.strategy: IStrategy = StrategyResolver(self.config).strategy
+        self.strategy: IStrategy = StrategyResolver.load_strategy(self.config)
 
         # Check config consistency here since strategies can set certain options
         validate_config_consistency(config)
 
-        self.exchange = ExchangeResolver(self.config['exchange']['name'], self.config).exchange
+        self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
 
         persistence.init(self.config.get('db_url', None),
                          clean_open_orders=self.config.get('dry_run', False))

@@ -18,23 +18,29 @@ class PairListResolver(IResolver):
     This class contains all the logic to load custom PairList class
     """
 
-    __slots__ = ['pairlist']
-
-    def __init__(self, pairlist_name: str, exchange, pairlistmanager,
-                 config: dict, pairlistconfig: dict, pairlist_pos: int) -> None:
+    @staticmethod
+    def load_pairlist(pairlist_name: str, exchange, pairlistmanager,
+                      config: dict, pairlistconfig: dict, pairlist_pos: int) -> IPairList:
         """
-        Load the custom class from config parameter
-        :param config: configuration dictionary or None
+        Load the pairlist with pairlist_name
+        :param pairlist_name: Classname of the pairlist
+        :param exchange: Initialized exchange class
+        :param pairlistmanager: Initialized pairlist manager
+        :param config: configuration dictionary
+        :param pairlistconfig: Configuration dedicated to this pairlist
+        :param pairlist_pos: Position of the pairlist in the list of pairlists
+        :return: initialized Pairlist class
         """
-        self.pairlist = self._load_pairlist(pairlist_name, config,
-                                            kwargs={'exchange': exchange,
-                                                    'pairlistmanager': pairlistmanager,
-                                                    'config': config,
-                                                    'pairlistconfig': pairlistconfig,
-                                                    'pairlist_pos': pairlist_pos})
 
-    def _load_pairlist(
-            self, pairlist_name: str, config: dict, kwargs: dict) -> IPairList:
+        return PairListResolver._load_pairlist(pairlist_name, config,
+                                               kwargs={'exchange': exchange,
+                                                       'pairlistmanager': pairlistmanager,
+                                                       'config': config,
+                                                       'pairlistconfig': pairlistconfig,
+                                                       'pairlist_pos': pairlist_pos})
+
+    @staticmethod
+    def _load_pairlist(pairlist_name: str, config: dict, kwargs: dict) -> IPairList:
         """
         Search and loads the specified pairlist.
         :param pairlist_name: name of the module to import
@@ -44,11 +50,11 @@ class PairListResolver(IResolver):
         """
         current_path = Path(__file__).parent.parent.joinpath('pairlist').resolve()
 
-        abs_paths = self.build_search_paths(config, current_path=current_path,
-                                            user_subdir=None, extra_dir=None)
+        abs_paths = IResolver.build_search_paths(config, current_path=current_path,
+                                                 user_subdir=None, extra_dir=None)
 
-        pairlist = self._load_object(paths=abs_paths, object_type=IPairList,
-                                     object_name=pairlist_name, kwargs=kwargs)
+        pairlist = IResolver._load_object(paths=abs_paths, object_type=IPairList,
+                                          object_name=pairlist_name, kwargs=kwargs)
         if pairlist:
             return pairlist
         raise OperationalException(

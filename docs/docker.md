@@ -164,8 +164,7 @@ docker run -d \
 ```
 
 !!! Note
-    db-url defaults to `sqlite:///tradesv3.sqlite` but it defaults to `sqlite://` if `dry_run=True` is being used.
-    To override this behaviour use a custom db-url value: i.e.: `--db-url sqlite:///tradesv3.dryrun.sqlite`
+    When using docker, it's best to specify `--db-url` explicitly to ensure that the database URL and the mounted database file match.
 
 !!! Note
     All available bot command line parameters can be added to the end of the `docker run` command.

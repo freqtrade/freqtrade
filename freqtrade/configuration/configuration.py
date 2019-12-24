@@ -223,13 +223,13 @@ class Configuration:
             logger.info('max_open_trades set to unlimited ...')
         elif 'max_open_trades' in self.args and self.args["max_open_trades"]:
             config.update({'max_open_trades': self.args["max_open_trades"]})
-            logger.info('Parameter --max_open_trades detected, '
+            logger.info('Parameter --max-open-trades detected, '
                         'overriding max_open_trades to: %s ...', config.get('max_open_trades'))
         elif config['runmode'] in NON_UTIL_MODES:
             logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
 
         self._args_to_config(config, argname='stake_amount',
-                             logstring='Parameter --stake_amount detected, '
+                             logstring='Parameter --stake-amount detected, '
                              'overriding stake_amount to: {} ...')
 
         self._args_to_config(config, argname='fee',

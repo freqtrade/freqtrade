@@ -28,13 +28,13 @@ class PairListManager():
             if 'method' not in pl:
                 logger.warning(f"No method in {pl}")
                 continue
-            pairl = PairListResolver(pl.get('method'),
-                                     exchange=exchange,
-                                     pairlistmanager=self,
-                                     config=config,
-                                     pairlistconfig=pl,
-                                     pairlist_pos=len(self._pairlists)
-                                     ).pairlist
+            pairl = PairListResolver.load_pairlist(pl.get('method'),
+                                                   exchange=exchange,
+                                                   pairlistmanager=self,
+                                                   config=config,
+                                                   pairlistconfig=pl,
+                                                   pairlist_pos=len(self._pairlists)
+                                                   )
             self._tickers_needed = pairl.needstickers or self._tickers_needed
             self._pairlists.append(pairl)
 
