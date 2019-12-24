@@ -118,12 +118,10 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
     default_conf['max_open_trades'] = 5
     default_conf['forcebuy_enable'] = True
     default_conf['stake_amount'] = 'unlimited'
+    default_conf['dry_run_wallet'] = 1000
     default_conf['exchange']['name'] = 'binance'
     default_conf['telegram']['enabled'] = True
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
-    mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(
-        side_effect=[1000, 800, 600, 400, 200]
-    ))
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
@@ -138,6 +136,14 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
         update_trade_state=MagicMock(),
         _notify_sell=MagicMock(),
     )
+    should_sell_mock = MagicMock(side_effect=[
+        SellCheckTuple(sell_flag=False, sell_type=SellType.NONE),
+        SellCheckTuple(sell_flag=True, sell_type=SellType.SELL_SIGNAL),
+        SellCheckTuple(sell_flag=False, sell_type=SellType.NONE),
+        SellCheckTuple(sell_flag=False, sell_type=SellType.NONE),
+        SellCheckTuple(sell_flag=None, sell_type=SellType.NONE)]
+    )
+    mocker.patch("freqtrade.strategy.interface.IStrategy.should_sell", should_sell_mock)
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     rpc = RPC(freqtrade)
@@ -158,3 +164,20 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
 
     for trade in trades:
         assert trade.stake_amount == 200
+        # Reset trade open order id's
+        trade.open_order_id = None
+    trades = Trade.get_open_trades()
+    assert len(trades) == 5
+    bals = freqtrade.wallets.get_all_balances()
+
+    freqtrade.process_maybe_execute_sells(trades)
+    trades = Trade.get_open_trades()
+    # One trade sold
+    assert len(trades) == 4
+    # Validate that balance of sold trade is not in dry-run balances anymore.
+    bals2 = freqtrade.wallets.get_all_balances()
+    assert bals != bals2
+    assert len(bals) == 6
+    assert len(bals2) == 5
+    assert 'LTC' in bals
+    assert 'LTC' not in bals2
