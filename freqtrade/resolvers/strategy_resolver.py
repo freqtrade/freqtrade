@@ -22,6 +22,7 @@ class StrategyResolver(IResolver):
     """
     This class contains the logic to load custom strategy class
     """
+    object_type = IStrategy
 
     @staticmethod
     def load_strategy(config: Optional[Dict] = None) -> IStrategy:
@@ -134,9 +135,9 @@ class StrategyResolver(IResolver):
         """
         current_path = Path(__file__).parent.parent.joinpath('strategy').resolve()
 
-        abs_paths = IResolver.build_search_paths(config, current_path=current_path,
-                                                 user_subdir=constants.USERPATH_STRATEGY,
-                                                 extra_dir=extra_dir)
+        abs_paths = StrategyResolver.build_search_paths(config, current_path=current_path,
+                                                        user_subdir=constants.USERPATH_STRATEGY,
+                                                        extra_dir=extra_dir)
 
         if ":" in strategy_name:
             logger.info("loading base64 encoded strategy")
@@ -154,8 +155,9 @@ class StrategyResolver(IResolver):
                 # register temp path with the bot
                 abs_paths.insert(0, temp.resolve())
 
-        strategy = IResolver._load_object(paths=abs_paths, object_type=IStrategy,
-                                          object_name=strategy_name, kwargs={'config': config})
+        strategy = StrategyResolver._load_object(paths=abs_paths,
+                                                 object_name=strategy_name,
+                                                 kwargs={'config': config})
         if strategy:
             strategy._populate_fun_len = len(getfullargspec(strategy.populate_indicators).args)
             strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)

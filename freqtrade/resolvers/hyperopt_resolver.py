@@ -20,6 +20,7 @@ class HyperOptResolver(IResolver):
     """
     This class contains all the logic to load custom hyperopt class
     """
+    object_type = IHyperOpt
 
     @staticmethod
     def load_hyperopt(config: Dict) -> IHyperOpt:
@@ -59,12 +60,13 @@ class HyperOptResolver(IResolver):
         """
         current_path = Path(__file__).parent.parent.joinpath('optimize').resolve()
 
-        abs_paths = IResolver.build_search_paths(config, current_path=current_path,
-                                                 user_subdir=USERPATH_HYPEROPTS,
-                                                 extra_dir=extra_dir)
+        abs_paths = HyperOptResolver.build_search_paths(config, current_path=current_path,
+                                                        user_subdir=USERPATH_HYPEROPTS,
+                                                        extra_dir=extra_dir)
 
-        hyperopt = IResolver._load_object(paths=abs_paths, object_type=IHyperOpt,
-                                          object_name=hyperopt_name, kwargs={'config': config})
+        hyperopt = HyperOptResolver._load_object(paths=abs_paths,
+                                                 object_name=hyperopt_name,
+                                                 kwargs={'config': config})
         if hyperopt:
             return hyperopt
         raise OperationalException(
@@ -77,6 +79,7 @@ class HyperOptLossResolver(IResolver):
     """
     This class contains all the logic to load custom hyperopt loss class
     """
+    object_type = IHyperOptLoss
 
     @staticmethod
     def load_hyperoptloss(config: Dict) -> IHyperOptLoss:
@@ -113,12 +116,12 @@ class HyperOptLossResolver(IResolver):
         """
         current_path = Path(__file__).parent.parent.joinpath('optimize').resolve()
 
-        abs_paths = IResolver.build_search_paths(config, current_path=current_path,
-                                                 user_subdir=USERPATH_HYPEROPTS,
-                                                 extra_dir=extra_dir)
+        abs_paths = HyperOptLossResolver.build_search_paths(config, current_path=current_path,
+                                                            user_subdir=USERPATH_HYPEROPTS,
+                                                            extra_dir=extra_dir)
 
-        hyperoptloss = IResolver._load_object(paths=abs_paths, object_type=IHyperOptLoss,
-                                              object_name=hyper_loss_name)
+        hyperoptloss = HyperOptLossResolver._load_object(paths=abs_paths,
+                                                         object_name=hyper_loss_name)
         if hyperoptloss:
             return hyperoptloss
 

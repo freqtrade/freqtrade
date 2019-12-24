@@ -17,6 +17,7 @@ class PairListResolver(IResolver):
     """
     This class contains all the logic to load custom PairList class
     """
+    object_type = IPairList
 
     @staticmethod
     def load_pairlist(pairlist_name: str, exchange, pairlistmanager,
@@ -53,8 +54,9 @@ class PairListResolver(IResolver):
         abs_paths = IResolver.build_search_paths(config, current_path=current_path,
                                                  user_subdir=None, extra_dir=None)
 
-        pairlist = IResolver._load_object(paths=abs_paths, object_type=IPairList,
-                                          object_name=pairlist_name, kwargs=kwargs)
+        pairlist = PairListResolver._load_object(paths=abs_paths,
+                                                 object_name=pairlist_name,
+                                                 kwargs=kwargs)
         if pairlist:
             return pairlist
         raise OperationalException(

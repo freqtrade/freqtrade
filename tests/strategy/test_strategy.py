@@ -20,7 +20,6 @@ def test_search_strategy():
 
     s, _ = StrategyResolver._search_object(
         directory=default_location,
-        object_type=IStrategy,
         kwargs={'config': default_config},
         object_name='DefaultStrategy'
     )
@@ -28,7 +27,6 @@ def test_search_strategy():
 
     s, _ = StrategyResolver._search_object(
         directory=default_location,
-        object_type=IStrategy,
         kwargs={'config': default_config},
         object_name='NotFoundStrategy'
     )

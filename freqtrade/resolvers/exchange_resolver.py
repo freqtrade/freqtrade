@@ -14,6 +14,7 @@ class ExchangeResolver(IResolver):
     """
     This class contains all the logic to load a custom exchange class
     """
+    object_type = Exchange
 
     @staticmethod
     def load_exchange(exchange_name: str, config: dict, validate: bool = True) -> Exchange:
