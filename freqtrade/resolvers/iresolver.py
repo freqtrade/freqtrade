@@ -149,7 +149,7 @@ class IResolver:
                 logger.debug('Ignoring %s', entry)
                 continue
             module_path = entry.resolve()
-            logger.info(f"Path {module_path}")
+            logger.debug(f"Path {module_path}")
             for obj in cls._get_valid_object(module_path, object_name=None):
                 objects.append(
                     {'name': obj.__name__,

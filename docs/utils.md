@@ -132,8 +132,11 @@ Common arguments:
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
-
 ```
+
+!!! Warning
+    Using this command will try to load all python files from a folder. This can be a security risk if untrusted files reside in this folder, since all module-level code is executed.
+
 Example: search default strategy folder within userdir
 
 ``` bash
