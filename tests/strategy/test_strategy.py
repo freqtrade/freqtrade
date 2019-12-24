@@ -30,6 +30,14 @@ def test_search_strategy():
     assert s is None
 
 
+def test_search_all_strategies():
+    directory = Path(__file__).parent
+    strategies = StrategyResolver.search_all_objects(directory)
+    assert isinstance(strategies, list)
+    assert len(strategies) == 3
+    assert isinstance(strategies[0], dict)
+
+
 def test_load_strategy(default_conf, result):
     default_conf.update({'strategy': 'SampleStrategy',
                          'strategy_path': str(Path(__file__).parents[2] / 'freqtrade/templates')

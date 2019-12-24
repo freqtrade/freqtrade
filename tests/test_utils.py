@@ -7,11 +7,12 @@ import pytest
 from freqtrade import OperationalException
 from freqtrade.state import RunMode
 from freqtrade.utils import (setup_utils_configuration, start_create_userdir,
-                             start_download_data, start_list_exchanges,
-                             start_list_markets, start_list_timeframes,
-                             start_new_hyperopt, start_new_strategy,
-                             start_test_pairlist, start_trading,
-                             start_hyperopt_list, start_hyperopt_show)
+                             start_download_data, start_hyperopt_list,
+                             start_hyperopt_show, start_list_exchanges,
+                             start_list_markets, start_list_strategies,
+                             start_list_timeframes, start_new_hyperopt,
+                             start_new_strategy, start_test_pairlist,
+                             start_trading)
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 
@@ -628,6 +629,37 @@ def test_download_data_trades(mocker, caplog):
     assert dl_mock.call_args[1]['timerange'].starttype == "date"
     assert dl_mock.call_count == 1
     assert convert_mock.call_count == 1
+
+
+def test_start_list_strategies(mocker, caplog, capsys):
+
+    args = [
+        "list-strategies",
+        "--strategy-path",
+        str(Path(__file__).parent / "strategy"),
+        "-1"
+    ]
+    pargs = get_args(args)
+    # pargs['config'] = None
+    start_list_strategies(pargs)
+    captured = capsys.readouterr()
+    assert "TestStrategyLegacy" in captured.out
+    assert "strategy/legacy_strategy.py" not in captured.out
+    assert "DefaultStrategy" in captured.out
+
+    # Test regular output
+    args = [
+        "list-strategies",
+        "--strategy-path",
+        str(Path(__file__).parent / "strategy"),
+    ]
+    pargs = get_args(args)
+    # pargs['config'] = None
+    start_list_strategies(pargs)
+    captured = capsys.readouterr()
+    assert "TestStrategyLegacy" in captured.out
+    assert "strategy/legacy_strategy.py" in captured.out
+    assert "DefaultStrategy" in captured.out
 
 
 def test_start_test_pairlist(mocker, caplog, markets, tickers, default_conf, capsys):
