@@ -183,9 +183,11 @@ class Backtesting:
         Generate small table outlining Backtest results
         """
         tabular_data = []
-        headers = ['Sell Reason', 'Count']
+        headers = ['Sell Reason', 'Count', 'Profit', 'Loss']
         for reason, count in results['sell_reason'].value_counts().iteritems():
-            tabular_data.append([reason.value,  count])
+            profit = len(results[(results['sell_reason'] == reason) & (results['profit_abs'] >= 0)])
+            loss = len(results[(results['sell_reason'] == reason) & (results['profit_abs'] < 0)])
+            tabular_data.append([reason.value, count, profit, loss])
         return tabulate(tabular_data, headers=headers, tablefmt="pipe")
 
     def _generate_text_table_strategy(self, all_results: dict) -> str:
