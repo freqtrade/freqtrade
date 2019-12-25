@@ -245,17 +245,18 @@ def start_list_strategies(args: Dict[str, Any]) -> None:
 def convert_trades_format(config: Dict[str, Any], convert_from: str, convert_to: str):
     """
     TODO: move this to converter.py (?)
+    TODO: remove Path conversation once PR is merged and this is rebased
     """
     SrcClass = get_datahandlerclass(convert_from)
     TrgClass = get_datahandlerclass(convert_to)
 
     if 'pairs' not in config:
-        config['pairs'] = SrcClass.trades_get_pairs(config['datadir'])
+        config['pairs'] = SrcClass.trades_get_pairs(Path(config['datadir']))
         logger.info(f"Converting trades for {config['pairs']}")
 
     for pair in config['pairs']:
-        src = SrcClass(config['datadir'], pair)
-        trg = TrgClass(config['datadir'], pair)
+        src = SrcClass(Path(config['datadir'], pair))
+        trg = TrgClass(Path(config['datadir'], pair))
         data = src.trades_load()
         logger.info(f"Converting {len(data)} trades for {pair}")
         trg.trades_store(data)
@@ -264,17 +265,18 @@ def convert_trades_format(config: Dict[str, Any], convert_from: str, convert_to:
 def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: str):
     """
     TODO: move this to converter.py (?)
+    TODO: remove Path conversation once PR is merged and this is rebased
     """
     SrcClass = get_datahandlerclass(convert_from)
     TrgClass = get_datahandlerclass(convert_to)
 
     if 'pairs' not in config:
-        config['pairs'] = SrcClass.ohclv_get_pairs(config['datadir'], config['ticker_interval'])
+        config['pairs'] = SrcClass.ohclv_get_pairs(Path(config['datadir']), config['ticker_interval'])
         logger.info(f"Converting OHLCV for {config['pairs']}")
 
     for pair in config['pairs']:
-        src = SrcClass(config['datadir'], pair)
-        trg = TrgClass(config['datadir'], pair)
+        src = SrcClass(Path(config['datadir']), pair)
+        trg = TrgClass(Path(config['datadir']), pair)
         data = src.ohlcv_load()
         logger.info(f"Converting {len(data)} candles for {pair}")
         trg.ohlcv_store(data)
