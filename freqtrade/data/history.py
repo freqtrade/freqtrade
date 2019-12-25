@@ -8,7 +8,6 @@ Includes:
 
 import logging
 import operator
-from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -18,8 +17,9 @@ from pandas import DataFrame
 
 from freqtrade import OperationalException, misc
 from freqtrade.configuration import TimeRange
-from freqtrade.data.converter import parse_ticker_dataframe, trades_to_ohlcv
-from freqtrade.exchange import Exchange, timeframe_to_minutes, timeframe_to_seconds
+from freqtrade.data.converter import trades_to_ohlcv
+from freqtrade.exchange import Exchange, timeframe_to_minutes
+from .datahandlers import get_datahandlerclass
 
 logger = logging.getLogger(__name__)
 
@@ -126,11 +126,12 @@ def _validate_pairdata(pair, pairdata, timerange: TimeRange):
 
 def load_pair_history(pair: str,
                       timeframe: str,
-                      datadir: Path,
+                      datadir: Path, *,
                       timerange: Optional[TimeRange] = None,
                       fill_up_missing: bool = True,
                       drop_incomplete: bool = True,
                       startup_candles: int = 0,
+                      data_format: str = 'json'
                       ) -> DataFrame:
     """
     Load cached ticker history for the given pair.
@@ -142,26 +143,18 @@ def load_pair_history(pair: str,
     :param fill_up_missing: Fill missing values with "No action"-candles
     :param drop_incomplete: Drop last candle assuming it may be incomplete.
     :param startup_candles: Additional candles to load at the start of the period
+    :param data_format: Format of the data
     :return: DataFrame with ohlcv data, or empty DataFrame
     """
-    timerange_startup = deepcopy(timerange)
-    if startup_candles > 0 and timerange_startup:
-        timerange_startup.subtract_start(timeframe_to_seconds(timeframe) * startup_candles)
-
-    pairdata = load_tickerdata_file(datadir, pair, timeframe, timerange=timerange_startup)
-
-    if pairdata:
-        if timerange_startup:
-            _validate_pairdata(pair, pairdata, timerange_startup)
-        return parse_ticker_dataframe(pairdata, timeframe, pair=pair,
-                                      fill_missing=fill_up_missing,
-                                      drop_incomplete=drop_incomplete)
-    else:
-        logger.warning(
-            f'No history data for pair: "{pair}", timeframe: {timeframe}. '
-            'Use `freqtrade download-data` to download the data'
-        )
-        return DataFrame()
+    HandlerClass = get_datahandlerclass(data_format)
+    loader = HandlerClass(datadir)
+    return loader.ohlcv_load(pair=pair,
+                             timeframe=timeframe,
+                             timerange=timerange,
+                             fill_missing=fill_up_missing,
+                             drop_incomplete=drop_incomplete,
+                             startup_candles=startup_candles,
+                             )
 
 
 def load_data(datadir: Path,

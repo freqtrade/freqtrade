@@ -96,8 +96,9 @@ def test_load_data_1min_ticker(ticker_history, mocker, caplog, testdatadir) -> N
 
 
 def test_load_data_startup_candles(mocker, caplog, default_conf, testdatadir) -> None:
-    ltfmock = mocker.patch('freqtrade.data.history.load_tickerdata_file',
-                           MagicMock(return_value=None))
+    ltfmock = mocker.patch(
+        'freqtrade.data.datahandlers.jsondatahandler.JsonDataHandler._ohlcv_load',
+        MagicMock(return_value=DataFrame()))
     timerange = TimeRange('date', None, 1510639620, 0)
     load_pair_history(pair='UNITTEST/BTC', timeframe='1m',
                       datadir=testdatadir, timerange=timerange,
@@ -361,8 +362,8 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
     # timedifference in 5 minutes
     td = ((end - start).total_seconds() // 60 // 5) + 1
     assert td != len(tickerdata['UNITTEST/BTC'])
-    # Shift endtime with +5 - as last candle is dropped (partial candle)
-    end_real = arrow.get(tickerdata['UNITTEST/BTC'].iloc[-1, 0]).shift(minutes=5)
+    # This validation happens now after parsing to pandas.
+    end_real = arrow.get(tickerdata['UNITTEST/BTC'].iloc[-1, 0])
     assert log_has(f'Missing data at end for pair '
                    f'UNITTEST/BTC, data ends at {end_real.strftime("%Y-%m-%d %H:%M:%S")}',
                    caplog)
