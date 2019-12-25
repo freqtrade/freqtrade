@@ -50,23 +50,6 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
     return tickerlist[start_index:stop_index]
 
 
-def trim_dataframe(df: DataFrame, timerange: TimeRange, df_date_col: str = 'date') -> DataFrame:
-    """
-    Trim dataframe based on given timerange
-    :param df: Dataframe to trim
-    :param timerange: timerange (use start and end date if available)
-    :param: df_date_col: Column in the dataframe to use as Date column
-    :return: trimmed dataframe
-    """
-    if timerange.starttype == 'date':
-        start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
-        df = df.loc[df[df_date_col] >= start, :]
-    if timerange.stoptype == 'date':
-        stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
-        df = df.loc[df[df_date_col] <= stop, :]
-    return df
-
-
 def load_tickerdata_file(datadir: Path, pair: str, timeframe: str,
                          timerange: Optional[TimeRange] = None) -> List[Dict]:
     """
@@ -113,15 +96,6 @@ def store_trades_file(datadir: Path, pair: str,
     """
     filename = pair_trades_filename(datadir, pair)
     misc.file_dump_json(filename, data, is_zip=is_zip)
-
-
-def _validate_pairdata(pair, pairdata, timerange: TimeRange):
-    if timerange.starttype == 'date' and pairdata[0][0] > timerange.startts * 1000:
-        logger.warning('Missing data at start for pair %s, data starts at %s',
-                       pair, arrow.get(pairdata[0][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
-    if timerange.stoptype == 'date' and pairdata[-1][0] < timerange.stopts * 1000:
-        logger.warning('Missing data at end for pair %s, data ends at %s',
-                       pair, arrow.get(pairdata[-1][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
 
 
 def load_pair_history(pair: str,

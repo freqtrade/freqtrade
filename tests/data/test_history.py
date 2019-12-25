@@ -18,10 +18,8 @@ from freqtrade.data.history import (_download_pair_history,
                                     load_tickerdata_file, pair_data_filename,
                                     pair_trades_filename,
                                     refresh_backtest_ohlcv_data,
-                                    refresh_backtest_trades_data,
-                                    refresh_data,
-                                    trim_dataframe, trim_tickerlist,
-                                    validate_backtest_data)
+                                    refresh_backtest_trades_data, refresh_data,
+                                    trim_tickerlist, validate_backtest_data)
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.strategy.default_strategy import DefaultStrategy
@@ -442,46 +440,6 @@ def test_trim_tickerlist(testdatadir) -> None:
     ticker = trim_tickerlist([], timerange)
     assert 0 == len(ticker)
     assert not ticker
-
-
-def test_trim_dataframe(testdatadir) -> None:
-    data = load_data(
-        datadir=testdatadir,
-        timeframe='1m',
-        pairs=['UNITTEST/BTC']
-    )['UNITTEST/BTC']
-    min_date = int(data.iloc[0]['date'].timestamp())
-    max_date = int(data.iloc[-1]['date'].timestamp())
-    data_modify = data.copy()
-
-    # Remove first 30 minutes (1800 s)
-    tr = TimeRange('date', None, min_date + 1800, 0)
-    data_modify = trim_dataframe(data_modify, tr)
-    assert not data_modify.equals(data)
-    assert len(data_modify) < len(data)
-    assert len(data_modify) == len(data) - 30
-    assert all(data_modify.iloc[-1] == data.iloc[-1])
-    assert all(data_modify.iloc[0] == data.iloc[30])
-
-    data_modify = data.copy()
-    # Remove last 30 minutes (1800 s)
-    tr = TimeRange(None, 'date', 0, max_date - 1800)
-    data_modify = trim_dataframe(data_modify, tr)
-    assert not data_modify.equals(data)
-    assert len(data_modify) < len(data)
-    assert len(data_modify) == len(data) - 30
-    assert all(data_modify.iloc[0] == data.iloc[0])
-    assert all(data_modify.iloc[-1] == data.iloc[-31])
-
-    data_modify = data.copy()
-    # Remove first 25 and last 30 minutes (1800 s)
-    tr = TimeRange('date', 'date', min_date + 1500, max_date - 1800)
-    data_modify = trim_dataframe(data_modify, tr)
-    assert not data_modify.equals(data)
-    assert len(data_modify) < len(data)
-    assert len(data_modify) == len(data) - 55
-    # first row matches 25th original row
-    assert all(data_modify.iloc[0] == data.iloc[25])
 
 
 def test_file_dump_json_tofile(testdatadir) -> None:

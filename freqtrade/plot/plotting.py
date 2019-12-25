@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 import pandas as pd
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
+from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.btanalysis import (combine_tickers_with_mean,
                                        create_cum_profit,
                                        extract_trades_of_period, load_trades)
@@ -47,7 +48,7 @@ def init_plotscript(config):
                          db_url=config.get('db_url'),
                          exportfilename=config.get('exportfilename'),
                          )
-    trades = history.trim_dataframe(trades, timerange, 'open_time')
+    trades = trim_dataframe(trades, timerange, 'open_time')
     return {"tickers": tickers,
             "trades": trades,
             "pairs": pairs,

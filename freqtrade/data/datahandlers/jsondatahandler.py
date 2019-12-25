@@ -7,8 +7,7 @@ from pandas import DataFrame, read_json, to_datetime
 
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
-from freqtrade.data.converter import clean_ohlcv_dataframe
-from freqtrade.data.history import trim_dataframe
+from freqtrade.data.converter import clean_ohlcv_dataframe, trim_dataframe
 
 from .idatahandler import IDataHandler
 

@@ -2,10 +2,12 @@
 Functions to convert data from one format to another
 """
 import logging
+from datetime import datetime, timezone
 
 import pandas as pd
 from pandas import DataFrame, to_datetime
 
+from freqtrade.configuration.timerange import TimeRange
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +111,23 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
     len_after = len(df)
     if len_before != len_after:
         logger.info(f"Missing data fillup for {pair}: before: {len_before} - after: {len_after}")
+    return df
+
+
+def trim_dataframe(df: DataFrame, timerange: TimeRange, df_date_col: str = 'date') -> DataFrame:
+    """
+    Trim dataframe based on given timerange
+    :param df: Dataframe to trim
+    :param timerange: timerange (use start and end date if available)
+    :param: df_date_col: Column in the dataframe to use as Date column
+    :return: trimmed dataframe
+    """
+    if timerange.starttype == 'date':
+        start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
+        df = df.loc[df[df_date_col] >= start, :]
+    if timerange.stoptype == 'date':
+        stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
+        df = df.loc[df[df_date_col] <= stop, :]
     return df
 
 
