@@ -48,6 +48,7 @@ ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy", "template"]
 ARGS_BUILD_HYPEROPT = ["user_data_dir", "hyperopt", "template"]
 
 ARGS_CONVERT_DATA = ["format_from", "format_to"]
+ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes"]
 
 ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "download_trades", "exchange",
                       "timeframes", "erase"]
@@ -261,7 +262,7 @@ class Arguments:
             parents=[_common_parser],
         )
         convert_data_cmd.set_defaults(func=partial(start_convert_data, ohlcv=True))
-        self._build_args(optionlist=ARGS_CONVERT_DATA, parser=convert_data_cmd)
+        self._build_args(optionlist=ARGS_CONVERT_DATA_OHLCV, parser=convert_data_cmd)
 
         # Add convert-data subcommand
         convert_data_cmd = subparsers.add_parser(
