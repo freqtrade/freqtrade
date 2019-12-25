@@ -37,7 +37,7 @@ class IDataHandler(ABC):
         :param pair: Pair to load data for
         :param timeframe: Ticker timeframe (e.g. "5m")
         :param timerange: Limit data to be loaded to this timerange
-        :param fill_up_missing: Fill missing values with "No action"-candles
+        :param fill_missing: Fill missing values with "No action"-candles
         :param drop_incomplete: Drop last candle assuming it may be incomplete.
         :param startup_candles: Additional candles to load at the start of the period
         :return: DataFrame with ohlcv data, or empty DataFrame
@@ -75,30 +75,3 @@ class IDataHandler(ABC):
         if timerange.stoptype == 'date' and pairdata[-1][0] < timerange.stopts * 1000:
             logger.warning('Missing data at end for pair %s, data ends at %s',
                            pair, arrow.get(pairdata[-1][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
-
-    @staticmethod
-    def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
-        """
-        TODO: investigate if this is needed ... we can probably cover this in a dataframe
-        Trim tickerlist based on given timerange
-        """
-        if not tickerlist:
-            return tickerlist
-
-        start_index = 0
-        stop_index = len(tickerlist)
-
-        if timerange.starttype == 'date':
-            while (start_index < len(tickerlist) and
-                   tickerlist[start_index][0] < timerange.startts * 1000):
-                start_index += 1
-
-        if timerange.stoptype == 'date':
-            while (stop_index > 0 and
-                   tickerlist[stop_index-1][0] > timerange.stopts * 1000):
-                stop_index -= 1
-
-        if start_index > stop_index:
-            raise ValueError(f'The timerange [{timerange.startts},{timerange.stopts}] is incorrect')
-
-        return tickerlist[start_index:stop_index]

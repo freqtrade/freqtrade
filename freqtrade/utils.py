@@ -285,6 +285,7 @@ def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: 
     for timeframe in timeframes:
         for pair in config['pairs']:
             data = src.ohlcv_load(pair=pair, timeframe=timeframe,
+                                  timerange=None,
                                   fill_missing=False,
                                   drop_incomplete=False,
                                   startup_candles=0)

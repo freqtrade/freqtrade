@@ -8,6 +8,7 @@ from pandas import DataFrame, read_json, to_datetime
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
 from freqtrade.data.converter import clean_ohlcv_dataframe
+from freqtrade.data.history import trim_dataframe
 
 from .idatahandler import IDataHandler
 
@@ -54,9 +55,15 @@ class JsonDataHandler(IDataHandler):
                     drop_incomplete: bool = True,
                     ) -> DataFrame:
         """
-        Load data for one pair from disk.
+        Internal method used to load data for one pair from disk.
         Implements the loading and conversation to a Pandas dataframe.
-        :return: Dataframe
+        :param pair: Pair to load data for
+        :param timeframe: Ticker timeframe (e.g. "5m")
+        :param timerange: Limit data to be loaded to this timerange
+        :param fill_missing: Fill missing values with "No action"-candles
+        :param drop_incomplete: Drop last candle assuming it may be incomplete.
+        :param startup_candles: Additional candles to load at the start of the period
+        :return: DataFrame with ohlcv data, or empty DataFrame
         """
         filename = self._pair_data_filename(self._datadir, pair, timeframe)
         pairdata = read_json(filename, orient='values')
@@ -67,7 +74,7 @@ class JsonDataHandler(IDataHandler):
                                        infer_datetime_format=True)
 
         if timerange:
-            pairdata = IDataHandler.trim_tickerlist(pairdata, timerange)
+            pairdata = trim_dataframe(pairdata, timerange)
 
         return clean_ohlcv_dataframe(pairdata, timeframe,
                                      pair=pair,
