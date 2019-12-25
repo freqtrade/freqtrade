@@ -2,11 +2,12 @@ import re
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from pandas import DataFrame
+import numpy as np
+from pandas import DataFrame, read_json, to_datetime
 
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
-from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.data.converter import clean_ohlcv_dataframe
 
 from .idatahandler import IDataHandler
 
@@ -14,6 +15,7 @@ from .idatahandler import IDataHandler
 class JsonDataHandler(IDataHandler):
 
     _use_zip = False
+    _columns = ['date', 'open', 'high', 'low', 'close', 'volume']
 
     @classmethod
     def ohlcv_get_pairs(cls, datadir: Path, timeframe: str) -> List[str]:
@@ -28,20 +30,27 @@ class JsonDataHandler(IDataHandler):
 
     def ohlcv_store(self, pair: str, timeframe: str, data: DataFrame) -> None:
         """
-        Store data
+        Store data in json format "values".
+            format looks as follows:
+            [[<date>,<open>,<high>,<low>,<close>]]
+        :param pair: Pair - used to generate filename
+        :timeframe: Timeframe - used to generate filename
+        :data: Dataframe containing OHLCV data
+        :return: None
         """
-        filename = JsonDataHandler._pair_data_filename(self._datadir, pair, timeframe)
-        misc.file_dump_json(filename, data, is_zip=self._use_zip)
+        filename = self._pair_data_filename(self._datadir, pair, timeframe)
+        _data = data.copy()
+        # Convert date to int
+        _data['date'] = _data['date'].astype(np.int64) // 1000 // 1000
 
-    def ohlcv_append(self, pair: str, timeframe: str, data: DataFrame) -> None:
-        """
-        Append data to existing files
-        """
-        raise NotImplementedError()
+        # Reset index, select only appropriate columns and save as json
+        _data.reset_index(drop=True).loc[:, self._columns].to_json(
+            filename, orient="values",
+            compression='gzip' if self._use_zip else None)
 
     def _ohlcv_load(self, pair: str, timeframe: str,
                     timerange: Optional[TimeRange] = None,
-                    fill_up_missing: bool = True,
+                    fill_missing: bool = True,
                     drop_incomplete: bool = True,
                     ) -> DataFrame:
         """
@@ -49,18 +58,31 @@ class JsonDataHandler(IDataHandler):
         Implements the loading and conversation to a Pandas dataframe.
         :return: Dataframe
         """
-        filename = JsonDataHandler._pair_data_filename(self._datadir, pair, timeframe)
-        pairdata = misc.file_load_json(filename)
-        if not pairdata:
-            return DataFrame()
+        filename = self._pair_data_filename(self._datadir, pair, timeframe)
+        pairdata = read_json(filename, orient='values')
+        pairdata.columns = self._columns
+        pairdata['date'] = to_datetime(pairdata['date'],
+                                       unit='ms',
+                                       utc=True,
+                                       infer_datetime_format=True)
 
         if timerange:
             pairdata = IDataHandler.trim_tickerlist(pairdata, timerange)
-        return parse_ticker_dataframe(pairdata, timeframe,
-                                      pair=self._pair,
-                                      fill_missing=fill_up_missing,
-                                      drop_incomplete=drop_incomplete)
-        return pairdata
+
+        return clean_ohlcv_dataframe(pairdata, timeframe,
+                                     pair=pair,
+                                     fill_missing=fill_missing,
+                                     drop_incomplete=drop_incomplete)
+
+    def ohlcv_append(self, pair: str, timeframe: str, data: DataFrame) -> None:
+        """
+        Append data to existing data structures
+        :param pair: Pair
+        :param timeframe: Timeframe this ohlcv data is for
+        :param data: Data to append.
+
+        """
+        raise NotImplementedError()
 
     @classmethod
     def trades_get_pairs(cls, datadir: Path) -> List[str]:
