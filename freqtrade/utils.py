@@ -280,15 +280,19 @@ def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: 
         trg.ohlcv_store(data)
 
 
-def start_convert_data(args: Dict[str, Any]) -> None:
+def start_convert_data(args: Dict[str, Any], ohlcv: bool = True) -> None:
     """
     Convert data from one format to another
     """
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
     from pprint import pprint
     pprint(config)
-
-    # convert_trades_format(config, 'json', 'jsongz')
+    if ohlcv:
+        convert_ohlcv_format(config,
+                             convert_from=args['format_from'], convert_to=args['format_to'])
+    else:
+        convert_trades_format(config,
+                              convert_from=args['format_from'], convert_to=args['format_to'])
 
 
 def start_list_timeframes(args: Dict[str, Any]) -> None:

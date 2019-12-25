@@ -47,7 +47,7 @@ ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy", "template"]
 
 ARGS_BUILD_HYPEROPT = ["user_data_dir", "hyperopt", "template"]
 
-ARGS_CONVERT_DATA = []
+ARGS_CONVERT_DATA = ["format_from", "format_to"]
 
 ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "download_trades", "exchange",
                       "timeframes", "erase"]
@@ -65,8 +65,9 @@ ARGS_HYPEROPT_LIST = ["hyperopt_list_best", "hyperopt_list_profitable", "print_c
 ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperopt_show_index",
                       "print_json", "hyperopt_show_no_header"]
 
-NO_CONF_REQURIED = ["convert-data", "download-data", "list-timeframes", "list-markets",
-                    "list-pairs", "list-strategies", "hyperopt-list", "hyperopt-show",
+NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data",
+                    "list-timeframes", "list-markets", "list-pairs",
+                    "list-strategies", "hyperopt-list", "hyperopt-show",
                     "plot-dataframe", "plot-profit"]
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-hyperopt", "new-strategy"]
@@ -256,10 +257,19 @@ class Arguments:
         # Add convert-data subcommand
         convert_data_cmd = subparsers.add_parser(
             'convert-data',
-            help='Convert data from one format to another.',
+            help='Convert OHLCV data from one format to another.',
             parents=[_common_parser],
         )
-        convert_data_cmd.set_defaults(func=start_convert_data)
+        convert_data_cmd.set_defaults(func=partial(start_convert_data, ohlcv=True))
+        self._build_args(optionlist=ARGS_CONVERT_DATA, parser=convert_data_cmd)
+
+        # Add convert-data subcommand
+        convert_data_cmd = subparsers.add_parser(
+            'convert-trade-data',
+            help='Convert trade-data from one format to another.',
+            parents=[_common_parser],
+        )
+        convert_data_cmd.set_defaults(func=partial(start_convert_data, ohlcv=False))
         self._build_args(optionlist=ARGS_CONVERT_DATA, parser=convert_data_cmd)
 
         # Add Plotting subcommand

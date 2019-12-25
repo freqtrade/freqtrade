@@ -332,6 +332,18 @@ AVAILABLE_CLI_OPTIONS = {
              'desired timeframe as specified as --timeframes/-t.',
         action='store_true',
     ),
+    "format_from": Arg(
+        '--format-from',
+        help='Source format for data conversation.',
+        choices=constants.AVAILABLE_DATAHANDLERS,
+        required=True,
+    ),
+    "format_to": Arg(
+        '--format-to',
+        help='Destination format for data conversation.',
+        choices=constants.AVAILABLE_DATAHANDLERS,
+        required=True,
+    ),
     "exchange": Arg(
         '--exchange',
         help=f'Exchange name (default: `{constants.DEFAULT_EXCHANGE}`). '
