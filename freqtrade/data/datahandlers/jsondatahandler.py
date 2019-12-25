@@ -25,13 +25,13 @@ class JsonDataHandler(IDataHandler):
         # Check if regex found something and only return these results
         return [match[0].replace('_', '/') for match in _tmp if match]
 
-    def ohlcv_store(self, timeframe: str, data: DataFrame):
+    def ohlcv_store(self, timeframe: str, data: DataFrame) -> None:
         """
         Store data
         """
         raise NotImplementedError()
 
-    def ohlcv_append(self, timeframe: str, data: DataFrame):
+    def ohlcv_append(self, timeframe: str, data: DataFrame) -> None:
         """
         Append data to existing files
         """

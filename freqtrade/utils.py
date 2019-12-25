@@ -286,9 +286,9 @@ def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: 
         for pair in config['pairs']:
             src = SrcClass(Path(config['datadir']), pair)
             trg = TrgClass(Path(config['datadir']), pair)
-            data = src.ohlcv_load(timeframe)
+            data = src.ohlcv_load(timeframe=timeframe)
             logger.info(f"Converting {len(data)} candles for {pair}")
-        #     trg.ohlcv_store(data)
+            trg.ohlcv_store(timeframe=timeframe, data=data)
 
 
 def start_convert_data(args: Dict[str, Any], ohlcv: bool = True) -> None:
