@@ -1,7 +1,9 @@
+from typing import Type
+
 from .idatahandler import IDataHandler
 
 
-def get_datahandlerclass(datatype: str) -> IDataHandler:
+def get_datahandlerclass(datatype: str) -> Type[IDataHandler]:
     """
     Get datahandler class.
     Could be done using Resolvers, but since this may be called often and resolvers
