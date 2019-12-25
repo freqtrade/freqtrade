@@ -3,71 +3,77 @@ Abstract datahandler interface.
 It's subclasses handle and storing data from disk.
 
 """
-
+import logging
 from abc import ABC, abstractmethod, abstractclassmethod
 from pathlib import Path
 from typing import Dict, List, Optional
-
+from copy import deepcopy
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
+from freqtrade.exchange import timeframe_to_seconds
+from freqtrade.data.converter import parse_ticker_dataframe
+
+logger = logging.getLogger(__name__)
 
 
 class IDataHandler(ABC):
 
-    def __init__(self, datadir: Path, pair: str) -> None:
+    def __init__(self, datadir: Path) -> None:
         self._datadir = datadir
-        self._pair = pair
 
-    @abstractclassmethod
-    def ohlcv_get_pairs(cls, datadir: Path, timeframe: str) -> List[str]:
+    # TODO: create abstract interface
+
+    def ohlcv_load(self, pair, timeframe: str,
+                   timerange: Optional[TimeRange] = None,
+                   fill_up_missing: bool = True,
+                   drop_incomplete: bool = True,
+                   startup_candles: int = 0,
+                   ) -> DataFrame:
         """
-        Returns a list of all pairs available in this datadir
+        Load cached ticker history for the given pair.
+
+        :param pair: Pair to load data for
+        :param timeframe: Ticker timeframe (e.g. "5m")
+        :param timerange: Limit data to be loaded to this timerange
+        :param fill_up_missing: Fill missing values with "No action"-candles
+        :param drop_incomplete: Drop last candle assuming it may be incomplete.
+        :param startup_candles: Additional candles to load at the start of the period
+        :return: DataFrame with ohlcv data, or empty DataFrame
+        """
+        # Fix startup period
+        timerange_startup = deepcopy(timerange)
+        if startup_candles > 0 and timerange_startup:
+            timerange_startup.subtract_start(timeframe_to_seconds(timeframe) * startup_candles)
+
+        pairdf = self._ohlcv_load(pair, timeframe,
+                                  timerange=timerange_startup,
+                                  fill_missing=fill_up_missing,
+                                  drop_incomplete=drop_incomplete)
+        if pairdf.empty():
+            logger.warning(
+                f'No history data for pair: "{pair}", timeframe: {timeframe}. '
+                'Use `freqtrade download-data` to download the data'
+            )
+            return pairdf
+        else:
+            if timerange_startup:
+                self._validate_pairdata(pair, pairdf, timerange_startup)
+            return pairdf
+
+    def _validate_pairdata(pair, pairdata: DataFrame, timerange: TimeRange):
+        """
+        Validates pairdata for missing data at start end end and logs warnings.
+        :param pairdata: Dataframe to validate
+        :param timerange: Timerange specified for start and end dates
         """
 
-    @abstractmethod
-    def ohlcv_store(self, timeframe: str, data: DataFrame):
-        """
-        Store data
-        """
-
-    @abstractmethod
-    def ohlcv_append(self, timeframe: str, data: DataFrame):
-        """
-        Append data to existing files
-        """
-
-    @abstractmethod
-    def ohlcv_load(self, timeframe: str, timerange: Optional[TimeRange] = None) -> DataFrame:
-        """
-        Load data for one pair
-        :return: Dataframe
-        """
-
-    @abstractclassmethod
-    def trades_get_pairs(cls, datadir: Path) -> List[str]:
-        """
-        Returns a list of all pairs available in this datadir
-        """
-
-    @abstractmethod
-    def trades_store(self, data: DataFrame):
-        """
-        Store data
-        """
-
-    @abstractmethod
-    def trades_append(self, data: DataFrame):
-        """
-        Append data to existing files
-        """
-
-    @abstractmethod
-    def trades_load(self, timerange: Optional[TimeRange] = None):
-        """
-        Load data for one pair
-        :return: Dataframe
-        """
+        if timerange.starttype == 'date' and pairdata[0][0] > timerange.startts * 1000:
+            logger.warning('Missing data at start for pair %s, data starts at %s',
+                           pair, arrow.get(pairdata[0][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
+        if timerange.stoptype == 'date' and pairdata[-1][0] < timerange.stopts * 1000:
+            logger.warning('Missing data at end for pair %s, data ends at %s',
+                           pair, arrow.get(pairdata[-1][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
 
     @staticmethod
     def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
