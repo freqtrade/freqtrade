@@ -284,7 +284,10 @@ def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: 
 
     for timeframe in timeframes:
         for pair in config['pairs']:
-            data = src.ohlcv_load(pair=pair, timeframe=timeframe)
+            data = src.ohlcv_load(pair=pair, timeframe=timeframe,
+                                  fill_missing=False,
+                                  drop_incomplete=False,
+                                  startup_candles=0)
             logger.info(f"Converting {len(data)} candles for {pair}")
             trg.ohlcv_store(pair=pair, timeframe=timeframe, data=data)
 
@@ -294,8 +297,6 @@ def start_convert_data(args: Dict[str, Any], ohlcv: bool = True) -> None:
     Convert data from one format to another
     """
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
-    from pprint import pprint
-    pprint(config)
     if ohlcv:
         convert_ohlcv_format(config,
                              convert_from=args['format_from'], convert_to=args['format_to'])
