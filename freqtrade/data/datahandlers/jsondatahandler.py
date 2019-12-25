@@ -29,7 +29,8 @@ class JsonDataHandler(IDataHandler):
         """
         Store data
         """
-        raise NotImplementedError()
+        filename = JsonDataHandler._pair_data_filename(self._datadir, self._pair, timeframe)
+        misc.file_dump_json(filename, data, is_zip=self._use_zip)
 
     def ohlcv_append(self, timeframe: str, data: DataFrame) -> None:
         """
