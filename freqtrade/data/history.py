@@ -18,9 +18,9 @@ from pandas import DataFrame
 from freqtrade import OperationalException, misc
 from freqtrade.configuration import TimeRange
 from freqtrade.data.converter import trades_to_ohlcv
+from freqtrade.data.datahandlers import get_datahandler, get_datahandlerclass
 from freqtrade.data.datahandlers.idatahandler import IDataHandler
 from freqtrade.exchange import Exchange, timeframe_to_minutes
-from .datahandlers import get_datahandlerclass
 
 logger = logging.getLogger(__name__)
 
@@ -106,8 +106,8 @@ def load_pair_history(pair: str,
                       fill_up_missing: bool = True,
                       drop_incomplete: bool = True,
                       startup_candles: int = 0,
-                      data_format: str = 'json',
-                      data_handler: IDataHandler,
+                      data_format: str = None,
+                      data_handler: IDataHandler = None,
                       ) -> DataFrame:
     """
     Load cached ticker history for the given pair.
@@ -115,18 +115,17 @@ def load_pair_history(pair: str,
     :param pair: Pair to load data for
     :param timeframe: Ticker timeframe (e.g. "5m")
     :param datadir: Path to the data storage location.
+    :param data_format: Format of the data. Ignored if data_handler is set.
     :param timerange: Limit data to be loaded to this timerange
     :param fill_up_missing: Fill missing values with "No action"-candles
     :param drop_incomplete: Drop last candle assuming it may be incomplete.
     :param startup_candles: Additional candles to load at the start of the period
-    :param data_format: Format of the data. Ignored if data_handler is set.
     :param data_handler: Initialized data-handler to use.
                          Will be initialized from data_format if not set
     :return: DataFrame with ohlcv data, or empty DataFrame
     """
-    if not data_handler:
-        HandlerClass = get_datahandlerclass(data_format)
-        data_handler = HandlerClass(datadir)
+    data_handler = get_datahandler(datadir, data_format, data_handler)
+
     return data_handler.ohlcv_load(pair=pair,
                                    timeframe=timeframe,
                                    timerange=timerange,
@@ -138,7 +137,7 @@ def load_pair_history(pair: str,
 
 def load_data(datadir: Path,
               timeframe: str,
-              pairs: List[str],
+              pairs: List[str], *,
               timerange: Optional[TimeRange] = None,
               fill_up_missing: bool = True,
               startup_candles: int = 0,
@@ -162,8 +161,7 @@ def load_data(datadir: Path,
     if startup_candles > 0 and timerange:
         logger.info(f'Using indicator startup period: {startup_candles} ...')
 
-    HandlerClass = get_datahandlerclass(data_format)
-    data_handler = HandlerClass(datadir)
+    data_handler = get_datahandler(datadir, data_format)
 
     for pair in pairs:
         hist = load_pair_history(pair=pair, timeframe=timeframe,
@@ -184,6 +182,7 @@ def refresh_data(datadir: Path,
                  timeframe: str,
                  pairs: List[str],
                  exchange: Exchange,
+                 data_format: str = None,
                  timerange: Optional[TimeRange] = None,
                  ) -> None:
     """
@@ -195,10 +194,11 @@ def refresh_data(datadir: Path,
     :param exchange: Exchange object
     :param timerange: Limit data to be loaded to this timerange
     """
+    data_handler = get_datahandler(datadir, data_format)
     for pair in pairs:
         _download_pair_history(pair=pair, timeframe=timeframe,
                                datadir=datadir, timerange=timerange,
-                               exchange=exchange)
+                               exchange=exchange, data_handler=data_handler)
 
 
 def pair_data_filename(datadir: Path, pair: str, timeframe: str) -> Path:
@@ -256,9 +256,10 @@ def _load_cached_data_for_updating(datadir: Path, pair: str, timeframe: str,
 
 def _download_pair_history(datadir: Path,
                            exchange: Exchange,
-                           pair: str,
+                           pair: str, *,
                            timeframe: str = '5m',
-                           timerange: Optional[TimeRange] = None) -> bool:
+                           timerange: Optional[TimeRange] = None,
+                           data_handler: IDataHandler = None) -> bool:
     """
     Download latest candles from the exchange for the pair and timeframe passed in parameters
     The data is downloaded starting from the last correct data that
@@ -272,6 +273,8 @@ def _download_pair_history(datadir: Path,
     :param timerange: range of time to download
     :return: bool with success state
     """
+    data_handler = get_datahandler(datadir)
+
     try:
         logger.info(
             f'Download history data for pair: "{pair}", timeframe: {timeframe} '
@@ -308,13 +311,14 @@ def _download_pair_history(datadir: Path,
 
 def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes: List[str],
                                 datadir: Path, timerange: Optional[TimeRange] = None,
-                                erase=False) -> List[str]:
+                                erase=False, data_format: str = None) -> List[str]:
     """
     Refresh stored ohlcv data for backtesting and hyperopt operations.
     Used by freqtrade download-data subcommand.
     :return: List of pairs that are not available.
     """
     pairs_not_available = []
+    data_handler = get_datahandler(datadir, data_format)
     for pair in pairs:
         if pair not in exchange.markets:
             pairs_not_available.append(pair)
@@ -331,7 +335,7 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
             logger.info(f'Downloading pair {pair}, interval {timeframe}.')
             _download_pair_history(datadir=datadir, exchange=exchange,
                                    pair=pair, timeframe=str(timeframe),
-                                   timerange=timerange)
+                                   timerange=timerange, data_handler=data_handler)
     return pairs_not_available
 
 
