@@ -8,7 +8,7 @@ Includes:
 
 import logging
 import operator
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -18,6 +18,7 @@ from pandas import DataFrame
 from freqtrade import OperationalException, misc
 from freqtrade.configuration import TimeRange
 from freqtrade.data.converter import trades_to_ohlcv
+from freqtrade.data.datahandlers.idatahandler import IDataHandler
 from freqtrade.exchange import Exchange, timeframe_to_minutes
 from .datahandlers import get_datahandlerclass
 
@@ -105,7 +106,8 @@ def load_pair_history(pair: str,
                       fill_up_missing: bool = True,
                       drop_incomplete: bool = True,
                       startup_candles: int = 0,
-                      data_format: str = 'json'
+                      data_format: str = 'json',
+                      data_handler: IDataHandler,
                       ) -> DataFrame:
     """
     Load cached ticker history for the given pair.
@@ -117,18 +119,21 @@ def load_pair_history(pair: str,
     :param fill_up_missing: Fill missing values with "No action"-candles
     :param drop_incomplete: Drop last candle assuming it may be incomplete.
     :param startup_candles: Additional candles to load at the start of the period
-    :param data_format: Format of the data
+    :param data_format: Format of the data. Ignored if data_handler is set.
+    :param data_handler: Initialized data-handler to use.
+                         Will be initialized from data_format if not set
     :return: DataFrame with ohlcv data, or empty DataFrame
     """
-    HandlerClass = get_datahandlerclass(data_format)
-    loader = HandlerClass(datadir)
-    return loader.ohlcv_load(pair=pair,
-                             timeframe=timeframe,
-                             timerange=timerange,
-                             fill_missing=fill_up_missing,
-                             drop_incomplete=drop_incomplete,
-                             startup_candles=startup_candles,
-                             )
+    if not data_handler:
+        HandlerClass = get_datahandlerclass(data_format)
+        data_handler = HandlerClass(datadir)
+    return data_handler.ohlcv_load(pair=pair,
+                                   timeframe=timeframe,
+                                   timerange=timerange,
+                                   fill_missing=fill_up_missing,
+                                   drop_incomplete=drop_incomplete,
+                                   startup_candles=startup_candles,
+                                   )
 
 
 def load_data(datadir: Path,
@@ -137,7 +142,8 @@ def load_data(datadir: Path,
               timerange: Optional[TimeRange] = None,
               fill_up_missing: bool = True,
               startup_candles: int = 0,
-              fail_without_data: bool = False
+              fail_without_data: bool = False,
+              data_format: str = 'json',
               ) -> Dict[str, DataFrame]:
     """
     Load ticker history data for a list of pairs.
@@ -149,17 +155,23 @@ def load_data(datadir: Path,
     :param fill_up_missing: Fill missing values with "No action"-candles
     :param startup_candles: Additional candles to load at the start of the period
     :param fail_without_data: Raise OperationalException if no data is found.
+    :param data_handler: Initialized data-handler to use.
     :return: dict(<pair>:<Dataframe>)
     """
     result: Dict[str, DataFrame] = {}
     if startup_candles > 0 and timerange:
         logger.info(f'Using indicator startup period: {startup_candles} ...')
 
+    HandlerClass = get_datahandlerclass(data_format)
+    data_handler = HandlerClass(datadir)
+
     for pair in pairs:
         hist = load_pair_history(pair=pair, timeframe=timeframe,
                                  datadir=datadir, timerange=timerange,
                                  fill_up_missing=fill_up_missing,
-                                 startup_candles=startup_candles)
+                                 startup_candles=startup_candles,
+                                 data_handler=data_handler
+                                 )
         if not hist.empty:
             result[pair] = hist
 
