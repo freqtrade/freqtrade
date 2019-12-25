@@ -20,7 +20,11 @@ class JsonDataHandler(IDataHandler):
     @classmethod
     def ohlcv_get_pairs(cls, datadir: Path, timeframe: str) -> List[str]:
         """
-        Returns a list of all pairs available in this datadir
+        Returns a list of all pairs with ohlcv data available in this datadir
+        for the specified timeframe
+        :param datadir: Directory to search for ohlcv files
+        :param timeframe: Timeframe to search pairs for
+        :return: List of Pairs
         """
 
         _tmp = [re.search(r'^(\S+)(?=\-' + timeframe + '.json)', p.name)
@@ -56,7 +60,7 @@ class JsonDataHandler(IDataHandler):
         """
         Internal method used to load data for one pair from disk.
         Implements the loading and conversation to a Pandas dataframe.
-        :param pair: Pair to load data for
+        :param pair: Pair to load data
         :param timeframe: Ticker timeframe (e.g. "5m")
         :param timerange: Limit data to be loaded to this timerange
         :param fill_missing: Fill missing values with "No action"-candles
@@ -95,16 +99,20 @@ class JsonDataHandler(IDataHandler):
     @classmethod
     def trades_get_pairs(cls, datadir: Path) -> List[str]:
         """
-        Returns a list of all pairs available in this datadir
+        Returns a list of all pairs for which trade data is available in this
+        :param datadir: Directory to search for ohlcv files
+        :return: List of Pairs
         """
         _tmp = [re.search(r'^(\S+)(?=\-trades.json)', p.name)
                 for p in datadir.glob(f"*trades.{cls._get_file_extension()}")]
         # Check if regex found something and only return these results to avoid exceptions.
         return [match[0].replace('_', '/') for match in _tmp if match]
 
-    def trades_store(self, pair: str, data: List[Dict]):
+    def trades_store(self, pair: str, data: List[Dict]) -> None:
         """
-        Store data
+        Store trades data (list of Dicts) to file
+        :param pair: Pair - used for filename
+        :param data: List of Dicts containing trade data
         """
         filename = self._pair_trades_filename(self._datadir, pair)
         misc.file_dump_json(filename, data, is_zip=self._use_zip)
@@ -112,13 +120,17 @@ class JsonDataHandler(IDataHandler):
     def trades_append(self, pair: str, data: DataFrame):
         """
         Append data to existing files
+        :param pair: Pair - used for filename
+        :param data: List of Dicts containing trade data
         """
         raise NotImplementedError()
 
     def trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> List[Dict]:
         """
         Load a pair from file, either .json.gz or .json
-        # TODO: validate timerange ...
+        # TODO: respect timerange ...
+        :param pair: Load trades for this pair
+        :param timerange: Timerange to load trades for - currently not implemented
         :return: List of trades
         """
         filename = self._pair_trades_filename(self._datadir, pair)
