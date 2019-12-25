@@ -210,6 +210,7 @@ CONF_SCHEMA = {
         'forcebuy_enable': {'type': 'boolean'},
         'internals': {
             'type': 'object',
+            'default': {},
             'properties': {
                 'process_throttle_secs': {'type': 'integer'},
                 'interval': {'type': 'integer'},
