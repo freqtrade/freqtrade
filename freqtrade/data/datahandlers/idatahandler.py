@@ -8,8 +8,7 @@ from abc import ABC, abstractclassmethod, abstractmethod
 from copy import deepcopy
 from pathlib import Path
 from typing import Dict, List, Optional
-
-import arrow
+from datetime import datetime, timezone
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
@@ -70,8 +69,12 @@ class IDataHandler(ABC):
         """
 
         if timerange.starttype == 'date' and pairdata[0][0] > timerange.startts * 1000:
-            logger.warning('Missing data at start for pair %s, data starts at %s',
-                           pair, arrow.get(pairdata[0][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
+            start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
+            if pairdata.iloc[0]['date'] > start:
+                logger.warning(f"Missing data at start for pair {pair}, "
+                               f"data starts at {pairdata.iloc[0]['date']}")
         if timerange.stoptype == 'date' and pairdata[-1][0] < timerange.stopts * 1000:
-            logger.warning('Missing data at end for pair %s, data ends at %s',
-                           pair, arrow.get(pairdata[-1][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
+            stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
+            if pairdata.iloc[-1]['date'] < stop:
+                logger.warning(f"Missing data at end for pair {pair},"
+                               f"data ends at {pairdata.iloc[-1]['date']}")
