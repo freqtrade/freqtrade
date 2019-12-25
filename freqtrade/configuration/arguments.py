@@ -47,7 +47,7 @@ ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy", "template"]
 
 ARGS_BUILD_HYPEROPT = ["user_data_dir", "hyperopt", "template"]
 
-ARGS_CONVERT_DATA = ["format_from", "format_to"]
+ARGS_CONVERT_DATA = ["pairs", "format_from", "format_to"]
 ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes"]
 
 ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "download_trades", "exchange",
