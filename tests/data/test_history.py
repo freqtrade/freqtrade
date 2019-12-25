@@ -10,6 +10,7 @@ import arrow
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
+from freqtrade.data.datahandlers import get_datahandler
 from freqtrade.data.history import (_download_pair_history,
                                     _download_trades_history,
                                     _load_cached_data_for_updating,
@@ -597,12 +598,12 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
                  ght_mock)
     exchange = get_patched_exchange(mocker, default_conf)
     file1 = testdatadir / 'ETH_BTC-trades.json.gz'
-
+    data_handler = get_datahandler(testdatadir, data_format='jsongz')
     _backup_file(file1)
 
     assert not file1.is_file()
 
-    assert _download_trades_history(datadir=testdatadir, exchange=exchange,
+    assert _download_trades_history(data_handler=data_handler, exchange=exchange,
                                     pair='ETH/BTC')
     assert log_has("New Amount of trades: 5", caplog)
     assert file1.is_file()
@@ -613,7 +614,7 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
     mocker.patch('freqtrade.exchange.Exchange.get_historic_trades',
                  MagicMock(side_effect=ValueError))
 
-    assert not _download_trades_history(datadir=testdatadir, exchange=exchange,
+    assert not _download_trades_history(data_handler=data_handler, exchange=exchange,
                                         pair='ETH/BTC')
     assert log_has_re('Failed to download historic trades for pair: "ETH/BTC".*', caplog)
 

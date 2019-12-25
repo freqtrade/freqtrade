@@ -18,7 +18,7 @@ from pandas import DataFrame
 from freqtrade import OperationalException, misc
 from freqtrade.configuration import TimeRange
 from freqtrade.data.converter import trades_to_ohlcv
-from freqtrade.data.datahandlers import get_datahandler, get_datahandlerclass
+from freqtrade.data.datahandlers import get_datahandler
 from freqtrade.data.datahandlers.idatahandler import IDataHandler
 from freqtrade.exchange import Exchange, timeframe_to_minutes
 
@@ -88,15 +88,6 @@ def load_trades_file(datadir: Path, pair: str,
         return []
 
     return tradesdata
-
-
-def store_trades_file(datadir: Path, pair: str,
-                      data: list, is_zip: bool = True):
-    """
-    Stores tickerdata to file
-    """
-    filename = pair_trades_filename(datadir, pair)
-    misc.file_dump_json(filename, data, is_zip=is_zip)
 
 
 def load_pair_history(pair: str,
@@ -339,10 +330,11 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
     return pairs_not_available
 
 
-def _download_trades_history(datadir: Path,
-                             exchange: Exchange,
-                             pair: str,
-                             timerange: Optional[TimeRange] = None) -> bool:
+def _download_trades_history(exchange: Exchange,
+                             pair: str, *,
+                             timerange: Optional[TimeRange] = None,
+                             data_handler: IDataHandler
+                             ) -> bool:
     """
     Download trade history from the exchange.
     Appends to previously downloaded trades data.
@@ -351,7 +343,7 @@ def _download_trades_history(datadir: Path,
 
         since = timerange.startts * 1000 if timerange and timerange.starttype == 'date' else None
 
-        trades = load_trades_file(datadir, pair)
+        trades = data_handler.trades_load(pair)
 
         from_id = trades[-1]['id'] if trades else None
 
@@ -366,7 +358,7 @@ def _download_trades_history(datadir: Path,
                                                   from_id=from_id,
                                                   )
         trades.extend(new_trades[1])
-        store_trades_file(datadir, pair, trades)
+        data_handler.trades_store(pair, data=trades)
 
         logger.debug("New Start: %s", trades[0]['datetime'])
         logger.debug("New End: %s", trades[-1]['datetime'])
@@ -382,13 +374,15 @@ def _download_trades_history(datadir: Path,
 
 
 def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: Path,
-                                 timerange: TimeRange, erase=False) -> List[str]:
+                                 timerange: TimeRange, erase=False,
+                                 data_format: str = 'jsongz') -> List[str]:
     """
     Refresh stored trades data for backtesting and hyperopt operations.
     Used by freqtrade download-data subcommand.
     :return: List of pairs that are not available.
     """
     pairs_not_available = []
+    data_handler = get_datahandler(datadir, data_format=data_format)
     for pair in pairs:
         if pair not in exchange.markets:
             pairs_not_available.append(pair)
@@ -404,7 +398,8 @@ def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: 
         logger.info(f'Downloading trades for pair {pair}.')
         _download_trades_history(datadir=datadir, exchange=exchange,
                                  pair=pair,
-                                 timerange=timerange)
+                                 timerange=timerange,
+                                 data_handler=data_handler)
     return pairs_not_available
 
 
@@ -413,8 +408,11 @@ def convert_trades_to_ohlcv(pairs: List[str], timeframes: List[str],
     """
     Convert stored trades data to ohlcv data
     """
+    data_handler_trades = get_datahandler(datadir, data_format='jsongz')
+    data_handler_ohlcv = get_datahandler(datadir, data_format='json')
+
     for pair in pairs:
-        trades = load_trades_file(datadir, pair)
+        trades = data_handler_trades.trades_load(pair)
         for timeframe in timeframes:
             ohlcv_file = pair_data_filename(datadir, pair, timeframe)
             if erase and ohlcv_file.exists():
@@ -422,7 +420,7 @@ def convert_trades_to_ohlcv(pairs: List[str], timeframes: List[str],
                 ohlcv_file.unlink()
             ohlcv = trades_to_ohlcv(trades, timeframe)
             # Store ohlcv
-            store_tickerdata_file(datadir, pair, timeframe, data=ohlcv)
+            data_handler_ohlcv.ohlcv_store(pair, timeframe, data=ohlcv)
 
 
 def get_timerange(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:
