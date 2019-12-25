@@ -68,13 +68,13 @@ class IDataHandler(ABC):
         :param timerange: Timerange specified for start and end dates
         """
 
-        if timerange.starttype == 'date' and pairdata[0][0] > timerange.startts * 1000:
+        if timerange.starttype == 'date':
             start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
             if pairdata.iloc[0]['date'] > start:
                 logger.warning(f"Missing data at start for pair {pair}, "
-                               f"data starts at {pairdata.iloc[0]['date']}")
-        if timerange.stoptype == 'date' and pairdata[-1][0] < timerange.stopts * 1000:
+                               f"data starts at {pairdata.iloc[0]['date']:%Y-%m-%d %H:%M:%S}")
+        if timerange.stoptype == 'date':
             stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
             if pairdata.iloc[-1]['date'] < stop:
-                logger.warning(f"Missing data at end for pair {pair},"
-                               f"data ends at {pairdata.iloc[-1]['date']}")
+                logger.warning(f"Missing data at end for pair {pair}, "
+                               f"data ends at {pairdata.iloc[-1]['date']:%Y-%m-%d %H:%M:%S}")
