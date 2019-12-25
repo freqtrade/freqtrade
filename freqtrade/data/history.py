@@ -76,20 +76,6 @@ def store_tickerdata_file(datadir: Path, pair: str,
     misc.file_dump_json(filename, data, is_zip=is_zip)
 
 
-def load_trades_file(datadir: Path, pair: str,
-                     timerange: Optional[TimeRange] = None) -> List[Dict]:
-    """
-    Load a pair from file, either .json.gz or .json
-    :return: tradelist or empty list if unsuccesful
-    """
-    filename = pair_trades_filename(datadir, pair)
-    tradesdata = misc.file_load_json(filename)
-    if not tradesdata:
-        return []
-
-    return tradesdata
-
-
 def load_pair_history(pair: str,
                       timeframe: str,
                       datadir: Path, *,
@@ -195,12 +181,6 @@ def refresh_data(datadir: Path,
 def pair_data_filename(datadir: Path, pair: str, timeframe: str) -> Path:
     pair_s = pair.replace("/", "_")
     filename = datadir.joinpath(f'{pair_s}-{timeframe}.json')
-    return filename
-
-
-def pair_trades_filename(datadir: Path, pair: str) -> Path:
-    pair_s = pair.replace("/", "_")
-    filename = datadir.joinpath(f'{pair_s}-trades.json.gz')
     return filename
 
 

@@ -11,13 +11,14 @@ from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.datahandlers import get_datahandler
+from freqtrade.data.datahandlers.jsondatahandler import (JsonDataHandler,
+                                                         JsonGzDataHandler)
 from freqtrade.data.history import (_download_pair_history,
                                     _download_trades_history,
                                     _load_cached_data_for_updating,
                                     convert_trades_to_ohlcv, get_timerange,
                                     load_data, load_pair_history,
-                                    load_tickerdata_file, pair_data_filename,
-                                    pair_trades_filename,
+                                    load_tickerdata_file,
                                     refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data, refresh_data,
                                     trim_tickerlist, validate_backtest_data)
@@ -143,14 +144,21 @@ def test_testdata_path(testdatadir) -> None:
     assert str(Path('tests') / 'testdata') in str(testdatadir)
 
 
-def test_pair_data_filename():
-    fn = pair_data_filename(Path('freqtrade/hello/world'), 'ETH/BTC', '5m')
+def test_json_pair_data_filename():
+    fn = JsonDataHandler._pair_data_filename(Path('freqtrade/hello/world'), 'ETH/BTC', '5m')
     assert isinstance(fn, Path)
     assert fn == Path('freqtrade/hello/world/ETH_BTC-5m.json')
+    fn = JsonGzDataHandler._pair_data_filename(Path('freqtrade/hello/world'), 'ETH/BTC', '5m')
+    assert isinstance(fn, Path)
+    assert fn == Path('freqtrade/hello/world/ETH_BTC-5m.json.gz')
 
 
-def test_pair_trades_filename():
-    fn = pair_trades_filename(Path('freqtrade/hello/world'), 'ETH/BTC')
+def test_json_pair_trades_filename():
+    fn = JsonDataHandler._pair_trades_filename(Path('freqtrade/hello/world'), 'ETH/BTC')
+    assert isinstance(fn, Path)
+    assert fn == Path('freqtrade/hello/world/ETH_BTC-trades.json')
+
+    fn = JsonGzDataHandler._pair_trades_filename(Path('freqtrade/hello/world'), 'ETH/BTC')
     assert isinstance(fn, Path)
     assert fn == Path('freqtrade/hello/world/ETH_BTC-trades.json.gz')
 
