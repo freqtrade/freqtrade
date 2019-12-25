@@ -37,9 +37,29 @@ def parse_ticker_dataframe(ticker: list, timeframe: str, pair: str, *,
     # and fail with exception...
     frame = frame.astype(dtype={'open': 'float', 'high': 'float', 'low': 'float', 'close': 'float',
                                 'volume': 'float'})
+    return clean_ohlcv_dataframe(frame, timeframe, pair,
+                                 fill_missing=fill_missing,
+                                 drop_incomplete=drop_incomplete)
 
+
+def clean_ohlcv_dataframe(data: DataFrame, timeframe: str, pair: str, *,
+                          fill_missing: bool = True,
+                          drop_incomplete: bool = True) -> DataFrame:
+    """
+    Clense a ohlcv dataframe by
+      * Grouping it by date (removes duplicate tics)
+      * dropping last candles if requested
+      * Filling up missing data (if requested)
+    :param data: DataFrame containing ohlcv data.
+    :param timeframe: timeframe (e.g. 5m). Used to fill up eventual missing data
+    :param pair: Pair this data is for (used to warn if fillup was necessary)
+    :param fill_missing: fill up missing candles with 0 candles
+                         (see ohlcv_fill_up_missing_data for details)
+    :param drop_incomplete: Drop the last candle of the dataframe, assuming it's incomplete
+    :return: DataFrame
+    """
     # group by index and aggregate results to eliminate duplicate ticks
-    frame = frame.groupby(by='date', as_index=False, sort=True).agg({
+    data = data.groupby(by='date', as_index=False, sort=True).agg({
         'open': 'first',
         'high': 'max',
         'low': 'min',
@@ -48,13 +68,13 @@ def parse_ticker_dataframe(ticker: list, timeframe: str, pair: str, *,
     })
     # eliminate partial candle
     if drop_incomplete:
-        frame.drop(frame.tail(1).index, inplace=True)
+        data.drop(data.tail(1).index, inplace=True)
         logger.debug('Dropping last candle')
 
     if fill_missing:
-        return ohlcv_fill_up_missing_data(frame, timeframe, pair)
+        return ohlcv_fill_up_missing_data(data, timeframe, pair)
     else:
-        return frame
+        return data
 
 
 def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) -> DataFrame:
