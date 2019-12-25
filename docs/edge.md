@@ -147,8 +147,8 @@ Edge module has following configuration options:
 |------------|-------------|
 | `enabled` | If true, then Edge will run periodically. <br>*Defaults to `false`.* <br> ***Datatype:*** *Boolean*
 | `process_throttle_secs` | How often should Edge run in seconds. <br>*Defaults to `3600` (once per hour).* <br> ***Datatype:*** *Integer*
-| `calculate_since_number_of_days` | Number of days of data against which Edge calculates Win Rate, Risk Reward and Expectancy. <br> **Note** that it downloads historical data so increasing this number would lead to slowing down the bot. <br>*Defaults to `7` (once per hour).* <br> ***Datatype:*** *Integer*
-| `capital_available_percentage` | This is the percentage of the total capital on exchange in stake currency. <br>As an example if you have 10 ETH available in your wallet on the exchange and this value is 0.5 (which is 50%), then the bot will use a maximum amount of 5 ETH for trading and considers it as available capital. <br>*Defaults to `0.5` (once per hour).* <br> ***Datatype:*** *Float*
+| `calculate_since_number_of_days` | Number of days of data against which Edge calculates Win Rate, Risk Reward and Expectancy. <br> **Note** that it downloads historical data so increasing this number would lead to slowing down the bot. <br>*Defaults to `7`.* <br> ***Datatype:*** *Integer*
+| `capital_available_percentage` | This is the percentage of the total capital on exchange in stake currency. <br>As an example if you have 10 ETH available in your wallet on the exchange and this value is 0.5 (which is 50%), then the bot will use a maximum amount of 5 ETH for trading and considers it as available capital. <br>*Defaults to `0.5`.* <br> ***Datatype:*** *Float*
 | `allowed_risk` | Ratio of allowed risk per trade. <br>*Defaults to `0.01` (1%)).* <br> ***Datatype:*** *Float*
 | `stoploss_range_min` | Minimum stoploss. <br>*Defaults to `-0.01`.* <br> ***Datatype:*** *Float*
 | `stoploss_range_max` | Maximum stoploss. <br>*Defaults to `-0.10`.* <br> ***Datatype:*** *Float*
