@@ -4,15 +4,16 @@ It's subclasses handle and storing data from disk.
 
 """
 import logging
-from abc import ABC, abstractmethod, abstractclassmethod
+from abc import ABC, abstractclassmethod, abstractmethod
+from copy import deepcopy
 from pathlib import Path
 from typing import Dict, List, Optional
-from copy import deepcopy
+
+import arrow
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.exchange import timeframe_to_seconds
-from freqtrade.data.converter import parse_ticker_dataframe
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class IDataHandler(ABC):
 
     def ohlcv_load(self, pair, timeframe: str,
                    timerange: Optional[TimeRange] = None,
-                   fill_up_missing: bool = True,
+                   fill_missing: bool = True,
                    drop_incomplete: bool = True,
                    startup_candles: int = 0,
                    ) -> DataFrame:
@@ -48,9 +49,9 @@ class IDataHandler(ABC):
 
         pairdf = self._ohlcv_load(pair, timeframe,
                                   timerange=timerange_startup,
-                                  fill_missing=fill_up_missing,
+                                  fill_missing=fill_missing,
                                   drop_incomplete=drop_incomplete)
-        if pairdf.empty():
+        if pairdf.empty:
             logger.warning(
                 f'No history data for pair: "{pair}", timeframe: {timeframe}. '
                 'Use `freqtrade download-data` to download the data'
@@ -61,7 +62,7 @@ class IDataHandler(ABC):
                 self._validate_pairdata(pair, pairdf, timerange_startup)
             return pairdf
 
-    def _validate_pairdata(pair, pairdata: DataFrame, timerange: TimeRange):
+    def _validate_pairdata(self, pair, pairdata: DataFrame, timerange: TimeRange):
         """
         Validates pairdata for missing data at start end end and logs warnings.
         :param pairdata: Dataframe to validate

@@ -253,14 +253,12 @@ def convert_trades_format(config: Dict[str, Any], convert_from: str, convert_to:
     if 'pairs' not in config:
         config['pairs'] = SrcClass.trades_get_pairs(Path(config['datadir']))
     logger.info(f"Converting trades for {config['pairs']}")
-
+    src = SrcClass(Path(config['datadir']))
+    trg = TrgClass(Path(config['datadir']))
     for pair in config['pairs']:
-        print(pair)
-        src = SrcClass(Path(config['datadir']), pair)
-        trg = TrgClass(Path(config['datadir']), pair)
-        data = src.trades_load()
+        data = src.trades_load(pair=pair)
         logger.info(f"Converting {len(data)} trades for {pair}")
-        trg.trades_store(data)
+        trg.trades_store(pair, data)
 
 
 def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: str):
@@ -281,14 +279,14 @@ def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: 
                                                             timeframe))
     logger.info(f"Converting OHLCV for {config['pairs']}")
 
-    for timeframe in timeframes:
+    src = SrcClass(Path(config['datadir']))
+    trg = TrgClass(Path(config['datadir']))
 
+    for timeframe in timeframes:
         for pair in config['pairs']:
-            src = SrcClass(Path(config['datadir']), pair)
-            trg = TrgClass(Path(config['datadir']), pair)
-            data = src.ohlcv_load(timeframe=timeframe)
+            data = src.ohlcv_load(pair=pair, timeframe=timeframe)
             logger.info(f"Converting {len(data)} candles for {pair}")
-            trg.ohlcv_store(timeframe=timeframe, data=data)
+            trg.ohlcv_store(pair=pair, timeframe=timeframe, data=data)
 
 
 def start_convert_data(args: Dict[str, Any], ohlcv: bool = True) -> None:
