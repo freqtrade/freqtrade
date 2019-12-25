@@ -38,8 +38,8 @@ The prevelance for all Options is as follows:
 
 Mandatory parameters are marked as **Required**, which means that they are required to be set in one of the possible ways.
 
-|  Command | Description |
-|----------|-------------|
+|  Parameter | Description |
+|------------|-------------|
 | `max_open_trades` | **Required.** Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades).<br> ***Datatype:*** *Positive integer or -1.*
 | `stake_currency` | **Required.** Crypto-currency used for trading. [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *String*
 | `stake_amount` | **Required.** Amount of crypto-currency your bot will use for each trade. Set it to `"unlimited"` to allow the bot to use all available balance. [More information below](#understand-stake_amount). [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *Positive float or `"unlimited"`.*
@@ -72,9 +72,9 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `order_time_in_force` | Configure time in force for buy and sell orders. [More information below](#understand-order_time_in_force). [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *Dict*
 | `exchange.name` | **Required.** Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename). <br> ***Datatype:*** *String*
 | `exchange.sandbox` | Use the 'sandbox' version of the exchange, where the exchange provides a sandbox for risk-free integration. See [here](sandbox-testing.md) in more details.<br> ***Datatype:*** *Boolean*
-| `exchange.key` | API key to use for the exchange. Only required when you are in production mode. **Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
-| `exchange.secret` | API secret to use for the exchange. Only required when you are in production mode. **Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
-| `exchange.password` | API password to use for the exchange. Only required when you are in production mode and for exchanges that use password for API requests. **Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
+| `exchange.key` | API key to use for the exchange. Only required when you are in production mode.<br>**Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
+| `exchange.secret` | API secret to use for the exchange. Only required when you are in production mode.<br>**Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
+| `exchange.password` | API password to use for the exchange. Only required when you are in production mode and for exchanges that use password for API requests.<br>**Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
 | `exchange.pair_whitelist` | List of pairs to use by the bot for trading and to check for potential trades during backtesting. Not used by VolumePairList (see [below](#dynamic-pairlists)). <br> ***Datatype:*** *List*
 | `exchange.pair_blacklist` | List of pairs the bot must absolutely avoid for trading and backtesting (see [below](#dynamic-pairlists)). <br> ***Datatype:*** *List*
 | `exchange.ccxt_config` | Additional CCXT parameters passed to the regular ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> ***Datatype:*** *Dict*
@@ -84,8 +84,8 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `experimental.block_bad_exchanges` | Block exchanges known to not work with freqtrade. Leave on default unless you want to test if that exchange works now. <br>*Defaults to `true`.* <br> ***Datatype:*** *Boolean*
 | `pairlists` | Define one or more pairlists to be used. [More information below](#dynamic-pairlists). <br>*Defaults to `StaticPairList`.*  <br> ***Datatype:*** *List of Dicts*
 | `telegram.enabled` | Enable the usage of Telegram. <br> ***Datatype:*** *Boolean*
-| `telegram.token` | Your Telegram bot token. Only required if `telegram.enabled` is `true`. **Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
-| `telegram.chat_id` | Your personal Telegram account id. Only required if `telegram.enabled` is `true`. **Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
+| `telegram.token` | Your Telegram bot token. Only required if `telegram.enabled` is `true`. <br>**Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
+| `telegram.chat_id` | Your personal Telegram account id. Only required if `telegram.enabled` is `true`. <br>**Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
 | `webhook.enabled` | Enable usage of Webhook notifications <br> ***Datatype:*** *Boolean*
 | `webhook.url` | URL for the webhook. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> ***Datatype:*** *String*
 | `webhook.webhookbuy` | Payload to send on buy. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> ***Datatype:*** *String*
@@ -93,9 +93,9 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `webhook.webhookstatus` | Payload to send on status calls. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> ***Datatype:*** *String*
 | `api_server.enabled` | Enable usage of API Server. See the [API Server documentation](rest-api.md) for more details. <br> ***Datatype:*** *Boolean*
 | `api_server.listen_ip_address` | Bind IP address. See the [API Server documentation](rest-api.md) for more details. <br> ***Datatype:*** *IPv4*
-| `api_server.listen_port` | Bind Port. See the [API Server documentation](rest-api.md) for more details. <br> ***Datatype:*** *Integer between 1024 and 65535*
-| `api_server.username` | Username for API server. See the [API Server documentation](rest-api.md) for more details. **Keep it in secret, do not disclose publicly.**<br> ***Datatype:*** *String*
-| `api_server.password` | Password for API server. See the [API Server documentation](rest-api.md) for more details. **Keep it in secret, do not disclose publicly.**<br> ***Datatype:*** *String*
+| `api_server.listen_port` | Bind Port. See the [API Server documentation](rest-api.md) for more details. <br>***Datatype:*** *Integer between 1024 and 65535*
+| `api_server.username` | Username for API server. See the [API Server documentation](rest-api.md) for more details. <br>**Keep it in secret, do not disclose publicly.**<br> ***Datatype:*** *String*
+| `api_server.password` | Password for API server. See the [API Server documentation](rest-api.md) for more details. <br>**Keep it in secret, do not disclose publicly.**<br> ***Datatype:*** *String*
 | `db_url` | Declares database URL to use. NOTE: This defaults to `sqlite:///tradesv3.dryrun.sqlite` if `dry_run` is `true`, and to `sqlite:///tradesv3.sqlite` for production instances. <br> ***Datatype:*** *String, SQLAlchemy connect string*
 | `initial_state` | Defines the initial application state. More information below. <br>*Defaults to `stopped`.* <br> ***Datatype:*** *Enum, either `stopped` or `running`*
 | `forcebuy_enable` | Enables the RPC Commands to force a buy. More information below. <br> ***Datatype:*** *Boolean*
