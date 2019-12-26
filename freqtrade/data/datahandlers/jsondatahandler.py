@@ -74,6 +74,19 @@ class JsonDataHandler(IDataHandler):
                                        infer_datetime_format=True)
         return pairdata
 
+    def ohlcv_purge(self, pair: str, timeframe: str) -> bool:
+        """
+        Remove data for this pair
+        :param pair: Delete data for this pair.
+        :param timeframe: Ticker timeframe (e.g. "5m")
+        :return: True when deleted, false if file did not exist.
+        """
+        filename = self._pair_data_filename(self._datadir, pair, timeframe)
+        if filename.is_file():
+            filename.unlink()
+            return True
+        return False
+
     def ohlcv_append(self, pair: str, timeframe: str, data: DataFrame) -> None:
         """
         Append data to existing data structures

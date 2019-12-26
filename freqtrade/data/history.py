@@ -374,7 +374,7 @@ def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: 
                 logger.info(f'Deleting existing data for pair {pair}.')
 
         logger.info(f'Downloading trades for pair {pair}.')
-        _download_trades_history(datadir=datadir, exchange=exchange,
+        _download_trades_history(exchange=exchange,
                                  pair=pair,
                                  timerange=timerange,
                                  data_handler=data_handler)
@@ -392,10 +392,9 @@ def convert_trades_to_ohlcv(pairs: List[str], timeframes: List[str],
     for pair in pairs:
         trades = data_handler_trades.trades_load(pair)
         for timeframe in timeframes:
-            ohlcv_file = pair_data_filename(datadir, pair, timeframe)
-            if erase and ohlcv_file.exists():
-                logger.info(f'Deleting existing data for pair {pair}, interval {timeframe}.')
-                ohlcv_file.unlink()
+            if erase:
+                if data_handler_ohlcv.ohlcv_purge(pair, timeframe):
+                    logger.info(f'Deleting existing data for pair {pair}, interval {timeframe}.')
             ohlcv = trades_to_ohlcv(trades, timeframe)
             # Store ohlcv
             data_handler_ohlcv.ohlcv_store(pair, timeframe, data=ohlcv)
