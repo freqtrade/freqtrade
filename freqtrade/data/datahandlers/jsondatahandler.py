@@ -7,7 +7,6 @@ from pandas import DataFrame, read_json, to_datetime
 
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
-from freqtrade.data.converter import clean_ohlcv_dataframe, trim_dataframe
 
 from .idatahandler import IDataHandler
 
@@ -54,18 +53,14 @@ class JsonDataHandler(IDataHandler):
 
     def _ohlcv_load(self, pair: str, timeframe: str,
                     timerange: Optional[TimeRange] = None,
-                    fill_missing: bool = True,
-                    drop_incomplete: bool = True,
                     ) -> DataFrame:
         """
         Internal method used to load data for one pair from disk.
         Implements the loading and conversation to a Pandas dataframe.
+        Timerange trimming and dataframe validation happens outside of this method.
         :param pair: Pair to load data
         :param timeframe: Ticker timeframe (e.g. "5m")
-        :param timerange: Limit data to be loaded to this timerange
-        :param fill_missing: Fill missing values with "No action"-candles
-        :param drop_incomplete: Drop last candle assuming it may be incomplete.
-        :param startup_candles: Additional candles to load at the start of the period
+        :param timerange: Limit data to be loaded to this timerange.
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
         filename = self._pair_data_filename(self._datadir, pair, timeframe)
@@ -77,19 +72,7 @@ class JsonDataHandler(IDataHandler):
                                        unit='ms',
                                        utc=True,
                                        infer_datetime_format=True)
-
-        enddate = pairdata.iloc[-1]['date']
-
-        if timerange:
-            self._validate_pairdata(pair, pairdata, timerange)
-            pairdata = trim_dataframe(pairdata, timerange)
-
-        # incomplete candles should only be dropped if we didn't trim the end beforehand.
-        return clean_ohlcv_dataframe(pairdata, timeframe,
-                                     pair=pair,
-                                     fill_missing=fill_missing,
-                                     drop_incomplete=(drop_incomplete and
-                                                      enddate == pairdata.iloc[-1]['date']))
+        return pairdata
 
     def ohlcv_append(self, pair: str, timeframe: str, data: DataFrame) -> None:
         """
