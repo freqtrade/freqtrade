@@ -7,6 +7,7 @@ from pandas import DataFrame, read_json, to_datetime
 
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
+from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
 
 from .idatahandler import IDataHandler
 
@@ -14,7 +15,7 @@ from .idatahandler import IDataHandler
 class JsonDataHandler(IDataHandler):
 
     _use_zip = False
-    _columns = ['date', 'open', 'high', 'low', 'close', 'volume']
+    _columns = DEFAULT_DATAFRAME_COLUMNS
 
     @classmethod
     def ohlcv_get_pairs(cls, datadir: Path, timeframe: str) -> List[str]:

@@ -8,6 +8,7 @@ import pandas as pd
 from pandas import DataFrame, to_datetime
 
 from freqtrade.configuration.timerange import TimeRange
+from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ def parse_ticker_dataframe(ticker: list, timeframe: str, pair: str, *,
     :return: DataFrame
     """
     logger.debug("Parsing tickerlist to dataframe")
-    cols = ['date', 'open', 'high', 'low', 'close', 'volume']
+    cols = DEFAULT_DATAFRAME_COLUMNS
     frame = DataFrame(ticker, columns=cols)
 
     frame['date'] = to_datetime(frame['date'],
@@ -173,4 +174,4 @@ def trades_to_ohlcv(trades: list, timeframe: str) -> DataFrame:
     df_new['date'] = df_new.index
     # Drop 0 volume rows
     df_new = df_new.dropna()
-    return df_new[['date', 'open', 'high', 'low', 'close', 'volume']]
+    return df_new[DEFAULT_DATAFRAME_COLUMNS]
