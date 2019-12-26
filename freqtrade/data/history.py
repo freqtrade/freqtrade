@@ -369,11 +369,9 @@ def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: 
             logger.info(f"Skipping pair {pair}...")
             continue
 
-        dl_file = pair_trades_filename(datadir, pair)
-        if erase and dl_file.exists():
-            logger.info(
-                f'Deleting existing data for pair {pair}.')
-            dl_file.unlink()
+        if erase:
+            if data_handler.trades_purge(pair):
+                logger.info(f'Deleting existing data for pair {pair}.')
 
         logger.info(f'Downloading trades for pair {pair}.')
         _download_trades_history(datadir=datadir, exchange=exchange,

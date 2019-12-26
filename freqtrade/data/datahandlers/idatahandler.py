@@ -55,11 +55,7 @@ class IDataHandler(ABC):
                 f'No history data for pair: "{pair}", timeframe: {timeframe}. '
                 'Use `freqtrade download-data` to download the data'
             )
-            return pairdf
-        else:
-            if timerange_startup:
-                self._validate_pairdata(pair, pairdf, timerange_startup)
-            return pairdf
+        return pairdf
 
     def _validate_pairdata(self, pair, pairdata: DataFrame, timerange: TimeRange):
         """

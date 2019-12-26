@@ -78,13 +78,18 @@ class JsonDataHandler(IDataHandler):
                                        utc=True,
                                        infer_datetime_format=True)
 
+        enddate = pairdata.iloc[-1]['date']
+
         if timerange:
+            self._validate_pairdata(pair, pairdata, timerange)
             pairdata = trim_dataframe(pairdata, timerange)
 
+        # incomplete candles should only be dropped if we didn't trim the end beforehand.
         return clean_ohlcv_dataframe(pairdata, timeframe,
                                      pair=pair,
                                      fill_missing=fill_missing,
-                                     drop_incomplete=drop_incomplete)
+                                     drop_incomplete=(drop_incomplete and
+                                                      enddate == pairdata.iloc[-1]['date']))
 
     def ohlcv_append(self, pair: str, timeframe: str, data: DataFrame) -> None:
         """
@@ -139,6 +144,18 @@ class JsonDataHandler(IDataHandler):
             return []
 
         return tradesdata
+
+    def trades_purge(self, pair: str) -> bool:
+        """
+        Remove data for this pair
+        :param pair: Delete data for this pair.
+        :return: True when deleted, false if file did not exist.
+        """
+        filename = self._pair_trades_filename(self._datadir, pair)
+        if filename.is_file():
+            filename.unlink()
+            return True
+        return False
 
     @classmethod
     def _pair_data_filename(cls, datadir: Path, pair: str, timeframe: str) -> Path:
