@@ -434,7 +434,7 @@ class IStrategy(ABC):
         else:
             return current_profit > roi
 
-    def tickerdata_to_dataframe(self, tickerdata: Dict[str, List]) -> Dict[str, DataFrame]:
+    def tickerdata_to_dataframe(self, tickerdata: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
         Creates a dataframe and populates indicators for given ticker data
         Used by optimize operations only, not during dry / live runs.
