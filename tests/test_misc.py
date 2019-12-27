@@ -5,7 +5,6 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 from freqtrade.data.converter import parse_ticker_dataframe
-from freqtrade.data.history import pair_data_filename
 from freqtrade.misc import (datesarray_to_datetimearray, file_dump_json,
                             file_load_json, format_ms_time, plural, shorten_date)
 
@@ -48,13 +47,13 @@ def test_file_dump_json(mocker) -> None:
 def test_file_load_json(mocker, testdatadir) -> None:
 
     # 7m .json does not exist
-    ret = file_load_json(pair_data_filename(testdatadir, 'UNITTEST/BTC', '7m'))
+    ret = file_load_json(testdatadir / 'UNITTEST_BTC-7m.json')
     assert not ret
     # 1m json exists (but no .gz exists)
-    ret = file_load_json(pair_data_filename(testdatadir, 'UNITTEST/BTC', '1m'))
+    ret = file_load_json(testdatadir / 'UNITTEST_BTC-1m.json')
     assert ret
     # 8 .json is empty and will fail if it's loaded. .json.gz is a copy of 1.json
-    ret = file_load_json(pair_data_filename(testdatadir, 'UNITTEST/BTC', '8m'))
+    ret = file_load_json(testdatadir / 'UNITTEST_BTC-8m.json')
     assert ret
 
 
