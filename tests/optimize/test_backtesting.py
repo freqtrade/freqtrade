@@ -116,14 +116,6 @@ def simple_backtest(config, contour, num_results, mocker, testdatadir) -> None:
     assert len(results) == num_results
 
 
-def mocked_load_data(datadir, pairs=[], timeframe='0m',
-                     timerange=None, *args, **kwargs):
-    tickerdata = history.load_tickerdata_file(datadir, 'UNITTEST/BTC', '1m', timerange=timerange)
-    pairdata = {'UNITTEST/BTC': parse_ticker_dataframe(tickerdata, '1m', pair="UNITTEST/BTC",
-                                                       fill_missing=True)}
-    return pairdata
-
-
 # use for mock ccxt.fetch_ohlvc'
 def _load_pair_as_ticks(pair, tickfreq):
     ticks = history.load_tickerdata_file(None, timeframe=tickfreq, pair=pair)
@@ -460,7 +452,6 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     def get_timerange(input1):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
-    mocker.patch('freqtrade.data.history.load_data', mocked_load_data)
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', MagicMock())
     patch_exchange(mocker)
