@@ -10,8 +10,7 @@ from arrow import Arrow
 from filelock import Timeout
 
 from freqtrade import OperationalException
-from freqtrade.data.converter import parse_ticker_dataframe
-from freqtrade.data.history import load_tickerdata_file
+from freqtrade.data.history import load_data
 from freqtrade.optimize import setup_configuration, start_hyperopt
 from freqtrade.optimize.default_hyperopt import DefaultHyperOpt
 from freqtrade.optimize.default_hyperopt_loss import DefaultHyperOptLoss
@@ -543,9 +542,7 @@ def test_has_space(hyperopt, spaces, expected_results):
 
 
 def test_populate_indicators(hyperopt, testdatadir) -> None:
-    tick = load_tickerdata_file(testdatadir, 'UNITTEST/BTC', '1m')
-    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
-                                                         fill_missing=True)}
+    tickerlist = load_data(testdatadir, '1m', ['UNITTEST/BTC'], fill_up_missing=True)
     dataframes = hyperopt.backtesting.strategy.tickerdata_to_dataframe(tickerlist)
     dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
                                                              {'pair': 'UNITTEST/BTC'})
@@ -557,9 +554,7 @@ def test_populate_indicators(hyperopt, testdatadir) -> None:
 
 
 def test_buy_strategy_generator(hyperopt, testdatadir) -> None:
-    tick = load_tickerdata_file(testdatadir, 'UNITTEST/BTC', '1m')
-    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
-                                                         fill_missing=True)}
+    tickerlist = load_data(testdatadir, '1m', ['UNITTEST/BTC'], fill_up_missing=True)
     dataframes = hyperopt.backtesting.strategy.tickerdata_to_dataframe(tickerlist)
     dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
                                                              {'pair': 'UNITTEST/BTC'})
