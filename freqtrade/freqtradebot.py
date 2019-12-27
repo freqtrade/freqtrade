@@ -209,6 +209,7 @@ class FreqtradeBot:
         Calculate stake amount for the trade
         :return: float: Stake amount
         """
+        stake_amount: Optional[float]
         if self.edge:
             stake_amount = self.edge.stake_amount(
                 pair,
