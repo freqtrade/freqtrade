@@ -210,7 +210,7 @@ class FreqtradeBot:
         :return: float: Stake amount
         """
         if self.edge:
-            return self.edge.stake_amount(
+            stake_amount = self.edge.stake_amount(
                 pair,
                 self.wallets.get_free(self.config['stake_currency']),
                 self.wallets.get_total(self.config['stake_currency']),
@@ -218,9 +218,8 @@ class FreqtradeBot:
             )
         else:
             stake_amount = self.config['stake_amount']
-
-        if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
-            return self._calculate_unlimited_stake_amount()
+            if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
+                stake_amount = self._calculate_unlimited_stake_amount()
 
         return self._check_available_stake_amount(stake_amount)
 
@@ -236,7 +235,7 @@ class FreqtradeBot:
         available_amount = self.wallets.get_free(self.config['stake_currency'])
         return available_amount / (self.config['max_open_trades'] - open_trades)
 
-    def _check_available_stake_amount(self, stake_amount) -> float:
+    def _check_available_stake_amount(self, stake_amount: Optional[float]) -> Optional[float]:
         """
         Check if stake amount can be fulfilled with the available balance
         for the stake currency
@@ -244,7 +243,7 @@ class FreqtradeBot:
         """
         available_amount = self.wallets.get_free(self.config['stake_currency'])
 
-        if available_amount < stake_amount:
+        if stake_amount is not None and available_amount < stake_amount:
             raise DependencyException(
                 f"Available balance ({available_amount} {self.config['stake_currency']}) is "
                 f"lower than stake amount ({stake_amount} {self.config['stake_currency']})"
