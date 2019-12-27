@@ -220,14 +220,21 @@ class FreqtradeBot:
             stake_amount = self.config['stake_amount']
 
         if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
-            open_trades = len(Trade.get_open_trades())
-            if open_trades >= self.config['max_open_trades']:
-                logger.warning("Can't open a new trade: max number of trades is reached")
-                return None
-            available_amount = self.wallets.get_free(self.config['stake_currency'])
-            return available_amount / (self.config['max_open_trades'] - open_trades)
+            return self._calculate_unlimited_stake_amount()
 
         return self._check_available_stake_amount(stake_amount)
+
+    def _calculate_unlimited_stake_amount(self) -> Optional[float]:
+        """
+        Calculate stake amount for "unlimited" stake amount
+        :return: None if max number of trades reached
+        """
+        open_trades = len(Trade.get_open_trades())
+        if open_trades >= self.config['max_open_trades']:
+            logger.warning("Can't open a new trade: max number of trades is reached")
+            return None
+        available_amount = self.wallets.get_free(self.config['stake_currency'])
+        return available_amount / (self.config['max_open_trades'] - open_trades)
 
     def _check_available_stake_amount(self, stake_amount) -> float:
         """
