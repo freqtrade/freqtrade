@@ -116,13 +116,6 @@ def simple_backtest(config, contour, num_results, mocker, testdatadir) -> None:
     assert len(results) == num_results
 
 
-# use for mock ccxt.fetch_ohlvc'
-def _load_pair_as_ticks(pair, tickfreq):
-    ticks = history.load_tickerdata_file(None, timeframe=tickfreq, pair=pair)
-    ticks = ticks[-201:]
-    return ticks
-
-
 # FIX: fixturize this?
 def _make_backtest_conf(mocker, datadir, conf=None, pair='UNITTEST/BTC', record=None):
     data = history.load_data(datadir=datadir, timeframe='1m', pairs=[pair])
@@ -795,13 +788,7 @@ def test_backtest_record(default_conf, fee, mocker):
 def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
 
-    async def load_pairs(pair, timeframe, since):
-        return _load_pair_as_ticks(pair, timeframe)
-
-    api_mock = MagicMock()
-    api_mock.fetch_ohlcv = load_pairs
-
-    patch_exchange(mocker, api_mock)
+    patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', MagicMock())
     mocker.patch('freqtrade.optimize.backtesting.Backtesting._generate_text_table', MagicMock())
     patched_configuration_load_config_file(mocker, default_conf)
@@ -840,12 +827,7 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
 def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
 
-    async def load_pairs(pair, timeframe, since):
-        return _load_pair_as_ticks(pair, timeframe)
-    api_mock = MagicMock()
-    api_mock.fetch_ohlcv = load_pairs
-
-    patch_exchange(mocker, api_mock)
+    patch_exchange(mocker)
     backtestmock = MagicMock()
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
     gen_table_mock = MagicMock()
