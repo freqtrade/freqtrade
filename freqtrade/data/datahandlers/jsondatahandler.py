@@ -65,7 +65,7 @@ class JsonDataHandler(IDataHandler):
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
         filename = self._pair_data_filename(self._datadir, pair, timeframe)
-        if not filename.is_file():
+        if not filename.exists():
             return DataFrame(columns=self._columns)
         pairdata = read_json(filename, orient='values')
         pairdata.columns = self._columns
@@ -149,7 +149,7 @@ class JsonDataHandler(IDataHandler):
         :return: True when deleted, false if file did not exist.
         """
         filename = self._pair_trades_filename(self._datadir, pair)
-        if filename.is_file():
+        if filename.exists():
             filename.unlink()
             return True
         return False
