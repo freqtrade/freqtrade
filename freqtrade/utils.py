@@ -204,16 +204,22 @@ def start_download_data(args: Dict[str, Any]) -> None:
         if config.get('download_trades'):
             pairs_not_available = refresh_backtest_trades_data(
                 exchange, pairs=config["pairs"], datadir=config['datadir'],
-                timerange=timerange, erase=config.get("erase"))
+                timerange=timerange, erase=config.get("erase"),
+                data_format=config['dataformat_trades'])
 
             # Convert downloaded trade data to different timeframes
             convert_trades_to_ohlcv(
                 pairs=config["pairs"], timeframes=config["timeframes"],
-                datadir=config['datadir'], timerange=timerange, erase=config.get("erase"))
+                datadir=config['datadir'], timerange=timerange, erase=config.get("erase"),
+                data_format_ohlcv=config['dataformat_ohlcv'],
+                data_format_trades=config['dataformat_trades'],
+                )
+
         else:
             pairs_not_available = refresh_backtest_ohlcv_data(
                 exchange, pairs=config["pairs"], timeframes=config["timeframes"],
-                datadir=config['datadir'], timerange=timerange, erase=config.get("erase"))
+                datadir=config['datadir'], timerange=timerange, erase=config.get("erase"),
+                data_format=config['dataformat_ohlcv'])
 
     except KeyboardInterrupt:
         sys.exit("SIGINT received, aborting ...")

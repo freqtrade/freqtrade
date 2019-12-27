@@ -106,6 +106,8 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `internals.sd_notify` | Enables use of the sd_notify protocol to tell systemd service manager about changes in the bot state and issue keep-alive pings. See [here](installation.md#7-optional-configure-freqtrade-as-a-systemd-service) for more details. <br> ***Datatype:*** *Boolean*
 | `logfile` | Specifies logfile name. Uses a rolling strategy for log file rotation for 10 files with the 1MB limit per file. <br> ***Datatype:*** *String*
 | `user_data_dir` | Directory containing user data. <br> *Defaults to `./user_data/`*. <br> ***Datatype:*** *String*
+| `dataformat_ohlcv` | Data format to use to store OHLCV historic data. <br> *Defaults to `json`*. <br> ***Datatype:*** *String*
+| `dataformat_trades` | Data format to use to store trades historic data. <br> *Defaults to `jsongz`*. <br> ***Datatype:*** *String*
 
 ### Parameters in the strategy
 

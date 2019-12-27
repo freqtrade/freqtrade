@@ -216,17 +216,17 @@ CONF_SCHEMA = {
                 'process_throttle_secs': {'type': 'integer'},
                 'interval': {'type': 'integer'},
                 'sd_notify': {'type': 'boolean'},
-                'dataformat_ohlcv': {
-                    'type': 'string',
+            }
+        },
+        'dataformat_ohlcv': {
+            'type': 'string',
                     'enum': AVAILABLE_DATAHANDLERS,
                     'default': 'json'
-                },
-                'dataformat_trades': {
-                    'type': 'string',
+        },
+        'dataformat_trades': {
+            'type': 'string',
                     'enum': AVAILABLE_DATAHANDLERS,
                     'default': 'jsongz'
-                }
-            }
         }
     },
     'definitions': {

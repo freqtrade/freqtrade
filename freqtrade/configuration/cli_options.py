@@ -344,6 +344,18 @@ AVAILABLE_CLI_OPTIONS = {
         choices=constants.AVAILABLE_DATAHANDLERS,
         required=True,
     ),
+    "dataformat_ohlcv": Arg(
+        '--data-format',
+        help='Storage format for downloaded ohlcv data. (default: `%(default)s`).',
+        choices=constants.AVAILABLE_DATAHANDLERS,
+        default='json'
+    ),
+    "dataformat_trades": Arg(
+        '--data-format-trades',
+        help='Storage format for downloaded trades data. (default: `%(default)s`).',
+        choices=constants.AVAILABLE_DATAHANDLERS,
+        default='jsongz'
+    ),
     "exchange": Arg(
         '--exchange',
         help=f'Exchange name (default: `{constants.DEFAULT_EXCHANGE}`). '

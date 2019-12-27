@@ -178,7 +178,7 @@ def _download_pair_history(datadir: Path,
     :param timerange: range of time to download
     :return: bool with success state
     """
-    data_handler = get_datahandler(datadir)
+    data_handler = get_datahandler(datadir, data_handler=data_handler)
 
     try:
         logger.info(
@@ -327,12 +327,14 @@ def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: 
 
 
 def convert_trades_to_ohlcv(pairs: List[str], timeframes: List[str],
-                            datadir: Path, timerange: TimeRange, erase=False) -> None:
+                            datadir: Path, timerange: TimeRange, erase=False,
+                            data_format_ohlcv: str = 'json',
+                            data_format_trades: str = 'jsongz') -> None:
     """
     Convert stored trades data to ohlcv data
     """
-    data_handler_trades = get_datahandler(datadir, data_format='jsongz')
-    data_handler_ohlcv = get_datahandler(datadir, data_format='json')
+    data_handler_trades = get_datahandler(datadir, data_format=data_format_trades)
+    data_handler_ohlcv = get_datahandler(datadir, data_format=data_format_ohlcv)
 
     for pair in pairs:
         trades = data_handler_trades.trades_load(pair)
