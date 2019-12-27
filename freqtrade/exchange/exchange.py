@@ -278,7 +278,15 @@ class Exchange:
                 raise OperationalException(
                     f'Pair {pair} is not available on {self.name}. '
                     f'Please remove {pair} from your whitelist.')
-            elif self.markets[pair].get('info', {}).get('IsRestricted', False):
+
+                # From ccxt Documentation:
+                # markets.info: An associative array of non-common market properties,
+                # including fees, rates, limits and other general market information.
+                # The internal info array is different for each particular market,
+                # its contents depend on the exchange.
+                # It can also be a string or similar ... so we need to verify that first.
+            elif (isinstance(self.markets[pair].get('info', None), dict)
+                  and self.markets[pair].get('info', {}).get('IsRestricted', False)):
                 # Warn users about restricted pairs in whitelist.
                 # We cannot determine reliably if Users are affected.
                 logger.warning(f"Pair {pair} is restricted for some users on this exchange."

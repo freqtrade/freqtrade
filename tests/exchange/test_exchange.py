@@ -364,7 +364,8 @@ def test_validate_pairs_restricted(default_conf, mocker, caplog):
     api_mock = MagicMock()
     type(api_mock).markets = PropertyMock(return_value={
         'ETH/BTC': {}, 'LTC/BTC': {}, 'NEO/BTC': {},
-        'XRP/BTC': {'info': {'IsRestricted': True}}
+        'XRP/BTC': {'info': {'IsRestricted': True}},
+        'NEO/BTC': {'info': 'TestString'},  # info can also be a string ...
     })
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
