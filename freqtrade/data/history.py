@@ -10,7 +10,7 @@ import logging
 import operator
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import arrow
 from pandas import DataFrame
@@ -21,7 +21,7 @@ from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
 from freqtrade.data.converter import parse_ticker_dataframe, trades_to_ohlcv
 from freqtrade.data.datahandlers import get_datahandler
 from freqtrade.data.datahandlers.idatahandler import IDataHandler
-from freqtrade.exchange import Exchange, timeframe_to_minutes
+from freqtrade.exchange import Exchange
 
 logger = logging.getLogger(__name__)
 
@@ -66,15 +66,6 @@ def load_tickerdata_file(datadir: Path, pair: str, timeframe: str,
     if timerange:
         pairdata = trim_tickerlist(pairdata, timerange)
     return pairdata
-
-
-def store_tickerdata_file(datadir: Path, pair: str,
-                          timeframe: str, data: list, is_zip: bool = False):
-    """
-    Stores tickerdata to file
-    """
-    filename = pair_data_filename(datadir, pair, timeframe)
-    misc.file_dump_json(filename, data, is_zip=is_zip)
 
 
 def load_pair_history(pair: str,
