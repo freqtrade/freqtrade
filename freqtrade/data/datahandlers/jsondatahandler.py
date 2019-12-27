@@ -83,7 +83,7 @@ class JsonDataHandler(IDataHandler):
         :return: True when deleted, false if file did not exist.
         """
         filename = self._pair_data_filename(self._datadir, pair, timeframe)
-        if filename.is_file():
+        if filename.exists():
             filename.unlink()
             return True
         return False
@@ -119,7 +119,7 @@ class JsonDataHandler(IDataHandler):
         filename = self._pair_trades_filename(self._datadir, pair)
         misc.file_dump_json(filename, data, is_zip=self._use_zip)
 
-    def trades_append(self, pair: str, data: DataFrame):
+    def trades_append(self, pair: str, data: List[Dict]):
         """
         Append data to existing files
         :param pair: Pair - used for filename

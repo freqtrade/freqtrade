@@ -7,6 +7,7 @@ from shutil import copyfile
 from unittest.mock import MagicMock, PropertyMock
 
 import arrow
+import pytest
 from pandas import DataFrame
 from pandas.testing import assert_frame_equal
 
@@ -561,3 +562,52 @@ def test_convert_trades_to_ohlcv(mocker, default_conf, testdatadir, caplog):
 
     _clean_test_file(file1)
     _clean_test_file(file5)
+
+
+def test_jsondatahandler_ohlcv_get_pairs(testdatadir):
+    pairs = JsonDataHandler.ohlcv_get_pairs(testdatadir, '5m')
+    # Convert to set to avoid failures due to sorting
+    assert set(pairs) == {'UNITTEST/BTC', 'XLM/BTC', 'ETH/BTC', 'TRX/BTC', 'LTC/BTC',
+                          'XMR/BTC', 'ZEC/BTC', 'ADA/BTC', 'ETC/BTC', 'NXT/BTC',
+                          'DASH/BTC', 'XRP/ETH'}
+
+    pairs = JsonGzDataHandler.ohlcv_get_pairs(testdatadir, '8m')
+    assert set(pairs) == {'UNITTEST/BTC'}
+
+
+def test_jsondatahandler_trades_get_pairs(testdatadir):
+    pairs = JsonGzDataHandler.trades_get_pairs(testdatadir)
+    # Convert to set to avoid failures due to sorting
+    assert set(pairs) == {'XRP/ETH'}
+
+
+def test_jsondatahandler_ohlcv_purge(mocker, testdatadir):
+    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
+    mocker.patch.object(Path, "unlink", MagicMock())
+    dh = JsonGzDataHandler(testdatadir)
+    assert not dh.ohlcv_purge('UNITTEST/NONEXIST', '5m')
+
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    assert dh.ohlcv_purge('UNITTEST/NONEXIST', '5m')
+
+
+def test_jsondatahandler_trades_purge(mocker, testdatadir):
+    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
+    mocker.patch.object(Path, "unlink", MagicMock())
+    dh = JsonGzDataHandler(testdatadir)
+    assert not dh.trades_purge('UNITTEST/NONEXIST')
+
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    assert dh.trades_purge('UNITTEST/NONEXIST')
+
+
+def test_jsondatahandler_ohlcv_append(testdatadir):
+    dh = JsonGzDataHandler(testdatadir)
+    with pytest.raises(NotImplementedError):
+        dh.ohlcv_append('UNITTEST/ETH', '5m', DataFrame())
+
+
+def test_jsondatahandler_trades_append(testdatadir):
+    dh = JsonGzDataHandler(testdatadir)
+    with pytest.raises(NotImplementedError):
+        dh.trades_append('UNITTEST/ETH', [])
