@@ -13,7 +13,8 @@ from pandas.testing import assert_frame_equal
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.converter import parse_ticker_dataframe
-from freqtrade.data.datahandlers import get_datahandler
+from freqtrade.data.datahandlers import get_datahandler, get_datahandlerclass
+from freqtrade.data.datahandlers.idatahandler import IDataHandler
 from freqtrade.data.datahandlers.jsondatahandler import (JsonDataHandler,
                                                          JsonGzDataHandler)
 from freqtrade.data.history import (_download_pair_history,
@@ -611,3 +612,24 @@ def test_jsondatahandler_trades_append(testdatadir):
     dh = JsonGzDataHandler(testdatadir)
     with pytest.raises(NotImplementedError):
         dh.trades_append('UNITTEST/ETH', [])
+
+
+def test_gethandlerclass():
+    cl = get_datahandlerclass('json')
+    assert cl == JsonDataHandler
+    assert issubclass(cl, IDataHandler)
+    cl = get_datahandlerclass('jsongz')
+    assert cl == JsonGzDataHandler
+    assert issubclass(cl, IDataHandler)
+    assert issubclass(cl, JsonDataHandler)
+    with pytest.raises(ValueError, match=r"No datahandler for .*"):
+        get_datahandlerclass('DeadBeef')
+
+
+def test_get_datahandler(testdatadir):
+    dh = get_datahandler(testdatadir, 'json')
+    assert type(dh) == JsonDataHandler
+    dh = get_datahandler(testdatadir, 'jsongz')
+    assert type(dh) == JsonGzDataHandler
+    dh1 = get_datahandler(testdatadir, 'jsongz', dh)
+    assert id(dh1) == id(dh)
