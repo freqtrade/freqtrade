@@ -8,7 +8,7 @@ Includes:
 
 import logging
 import operator
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -17,7 +17,8 @@ from pandas import DataFrame
 
 from freqtrade import OperationalException, misc
 from freqtrade.configuration import TimeRange
-from freqtrade.data.converter import trades_to_ohlcv
+from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
+from freqtrade.data.converter import parse_ticker_dataframe, trades_to_ohlcv
 from freqtrade.data.datahandlers import get_datahandler
 from freqtrade.data.datahandlers.idatahandler import IDataHandler
 from freqtrade.exchange import Exchange, timeframe_to_minutes
@@ -184,9 +185,9 @@ def pair_data_filename(datadir: Path, pair: str, timeframe: str) -> Path:
     return filename
 
 
-def _load_cached_data_for_updating(datadir: Path, pair: str, timeframe: str,
-                                   timerange: Optional[TimeRange]) -> Tuple[List[Any],
-                                                                            Optional[int]]:
+def _load_cached_data_for_updating_old(datadir: Path, pair: str, timeframe: str,
+                                       timerange: Optional[TimeRange]) -> Tuple[List[Any],
+                                                                                Optional[int]]:
     """
     Load cached data to download more data.
     If timerange is passed in, checks whether data from an before the stored data will be
@@ -225,6 +226,27 @@ def _load_cached_data_for_updating(datadir: Path, pair: str, timeframe: str,
     return (data, since_ms)
 
 
+def _load_cached_data_for_updating(pair: str, timeframe: str, timerange: Optional[TimeRange],
+                                   data_handler: IDataHandler) -> Tuple[DataFrame, Optional[int]]:
+    start = None
+    if timerange:
+        if timerange.starttype == 'date':
+            # TODO: convert to date for conversation
+            start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
+
+    # Intentionally don't pass timerange in - since we need to load the full dataset.
+    data = data_handler.ohlcv_load(pair, timeframe=timeframe,
+                                   timerange=None, fill_missing=False,
+                                   drop_incomplete=True, warn_no_data=False)
+    if not data.empty:
+        if start < data.iloc[0]['date']:
+            # Earlier data than existing data requested, redownload all
+            return DataFrame(columns=DEFAULT_DATAFRAME_COLUMNS), None
+        start = data.iloc[-1]['date']
+    start_ms = int(start.timestamp() * 1000) if start else None
+    return data, start_ms
+
+
 def _download_pair_history(datadir: Path,
                            exchange: Exchange,
                            pair: str, *,
@@ -252,10 +274,14 @@ def _download_pair_history(datadir: Path,
             f'and store in {datadir}.'
         )
 
-        data, since_ms = _load_cached_data_for_updating(datadir, pair, timeframe, timerange)
+        # data, since_ms = _load_cached_data_for_updating_old(datadir, pair, timeframe, timerange)
+        data, since_ms = _load_cached_data_for_updating(pair, timeframe, timerange,
+                                                        data_handler=data_handler)
 
-        logger.debug("Current Start: %s", misc.format_ms_time(data[1][0]) if data else 'None')
-        logger.debug("Current End: %s", misc.format_ms_time(data[-1][0]) if data else 'None')
+        logger.debug("Current Start: %s",
+                     f"{data.iloc[0]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')
+        logger.debug("Current End: %s",
+                     f"{data.iloc[-1]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')
 
         # Default since_ms to 30 days if nothing is given
         new_data = exchange.get_historic_ohlcv(pair=pair,
@@ -264,12 +290,20 @@ def _download_pair_history(datadir: Path,
                                                int(arrow.utcnow().shift(
                                                    days=-30).float_timestamp) * 1000
                                                )
-        data.extend(new_data)
+        # TODO: Maybe move parsing to exchange class (?)
+        new_dataframe = parse_ticker_dataframe(new_data, timeframe, pair,
+                                               fill_missing=False, drop_incomplete=True)
+        if data.empty:
+            data = new_dataframe
+        else:
+            data = data.append(new_dataframe)
 
-        logger.debug("New Start: %s", misc.format_ms_time(data[0][0]))
-        logger.debug("New End: %s", misc.format_ms_time(data[-1][0]))
+        logger.debug("New  Start: %s",
+                     f"{data.iloc[0]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')
+        logger.debug("New End: %s",
+                     f"{data.iloc[-1]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')
 
-        store_tickerdata_file(datadir, pair, timeframe, data=data)
+        data_handler.ohlcv_store(pair, timeframe, data=data)
         return True
 
     except Exception as e:
