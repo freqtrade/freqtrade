@@ -22,7 +22,7 @@ from freqtrade.data.history import (_download_pair_history,
                                     load_data, load_pair_history,
                                     refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data, refresh_data,
-                                    trim_tickerlist, validate_backtest_data)
+                                    validate_backtest_data)
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.strategy.default_strategy import DefaultStrategy
@@ -356,58 +356,6 @@ def test_init_with_refresh(default_conf, mocker) -> None:
         pairs=[],
         timeframe=default_conf['ticker_interval']
     )
-
-
-def test_trim_tickerlist(testdatadir) -> None:
-    file = testdatadir / 'UNITTEST_BTC-1m.json'
-    with open(file) as data_file:
-        ticker_list = json.load(data_file)
-    ticker_list_len = len(ticker_list)
-
-    # Test the pattern ^(\d{8})-(\d{8})$
-    # This pattern extract a window between the dates
-    timerange = TimeRange('date', 'date', ticker_list[5][0] / 1000, ticker_list[10][0] / 1000 - 1)
-    ticker = trim_tickerlist(ticker_list, timerange)
-    ticker_len = len(ticker)
-
-    assert ticker_len == 5
-    assert ticker_list[0] is not ticker[0]  # The first element should be different
-    assert ticker_list[5] is ticker[0]  # The list starts at the index 5
-    assert ticker_list[9] is ticker[-1]  # The list ends at the index 9 (5 elements)
-
-    # Test the pattern ^-(\d{8})$
-    # This pattern extracts elements from the start to the date
-    timerange = TimeRange(None, 'date', 0, ticker_list[10][0] / 1000 - 1)
-    ticker = trim_tickerlist(ticker_list, timerange)
-    ticker_len = len(ticker)
-
-    assert ticker_len == 10
-    assert ticker_list[0] is ticker[0]  # The start of the list is included
-    assert ticker_list[9] is ticker[-1]  # The element 10 is not included
-
-    # Test the pattern ^(\d{8})-$
-    # This pattern extracts elements from the date to now
-    timerange = TimeRange('date', None, ticker_list[10][0] / 1000 - 1, None)
-    ticker = trim_tickerlist(ticker_list, timerange)
-    ticker_len = len(ticker)
-
-    assert ticker_len == ticker_list_len - 10
-    assert ticker_list[10] is ticker[0]  # The first element is element #10
-    assert ticker_list[-1] is ticker[-1]  # The last element is the same
-
-    # Test a wrong pattern
-    # This pattern must return the list unchanged
-    timerange = TimeRange(None, None, None, 5)
-    ticker = trim_tickerlist(ticker_list, timerange)
-    ticker_len = len(ticker)
-
-    assert ticker_list_len == ticker_len
-
-    # passing empty list
-    timerange = TimeRange(None, None, None, 5)
-    ticker = trim_tickerlist([], timerange)
-    assert 0 == len(ticker)
-    assert not ticker
 
 
 def test_file_dump_json_tofile(testdatadir) -> None:

@@ -15,7 +15,7 @@ from typing import Dict, List, Optional, Tuple
 import arrow
 from pandas import DataFrame
 
-from freqtrade import OperationalException, misc
+from freqtrade import OperationalException
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
 from freqtrade.data.converter import parse_ticker_dataframe, trades_to_ohlcv
@@ -24,48 +24,6 @@ from freqtrade.data.datahandlers.idatahandler import IDataHandler
 from freqtrade.exchange import Exchange
 
 logger = logging.getLogger(__name__)
-
-
-def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
-    """
-    Trim tickerlist based on given timerange
-    """
-    if not tickerlist:
-        return tickerlist
-
-    start_index = 0
-    stop_index = len(tickerlist)
-
-    if timerange.starttype == 'date':
-        while (start_index < len(tickerlist) and
-               tickerlist[start_index][0] < timerange.startts * 1000):
-            start_index += 1
-
-    if timerange.stoptype == 'date':
-        while (stop_index > 0 and
-               tickerlist[stop_index-1][0] > timerange.stopts * 1000):
-            stop_index -= 1
-
-    if start_index > stop_index:
-        raise ValueError(f'The timerange [{timerange.startts},{timerange.stopts}] is incorrect')
-
-    return tickerlist[start_index:stop_index]
-
-
-def load_tickerdata_file(datadir: Path, pair: str, timeframe: str,
-                         timerange: Optional[TimeRange] = None) -> List[Dict]:
-    """
-    Load a pair from file, either .json.gz or .json
-    :return: tickerlist or None if unsuccessful
-    """
-    filename = pair_data_filename(datadir, pair, timeframe)
-    pairdata = misc.file_load_json(filename)
-    if not pairdata:
-        return []
-
-    if timerange:
-        pairdata = trim_tickerlist(pairdata, timerange)
-    return pairdata
 
 
 def load_pair_history(pair: str,
@@ -168,12 +126,6 @@ def refresh_data(datadir: Path,
         _download_pair_history(pair=pair, timeframe=timeframe,
                                datadir=datadir, timerange=timerange,
                                exchange=exchange, data_handler=data_handler)
-
-
-def pair_data_filename(datadir: Path, pair: str, timeframe: str) -> Path:
-    pair_s = pair.replace("/", "_")
-    filename = datadir.joinpath(f'{pair_s}-{timeframe}.json')
-    return filename
 
 
 def _load_cached_data_for_updating(pair: str, timeframe: str, timerange: Optional[TimeRange],
@@ -291,11 +243,10 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
             continue
         for timeframe in timeframes:
 
-            dl_file = pair_data_filename(datadir, pair, timeframe)
-            if erase and dl_file.exists():
-                logger.info(
-                    f'Deleting existing data for pair {pair}, interval {timeframe}.')
-                dl_file.unlink()
+            if erase:
+                if data_handler.ohlcv_purge(pair, timeframe):
+                    logger.info(
+                        f'Deleting existing data for pair {pair}, interval {timeframe}.')
 
             logger.info(f'Downloading pair {pair}, interval {timeframe}.')
             _download_pair_history(datadir=datadir, exchange=exchange,
