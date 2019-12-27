@@ -7,8 +7,7 @@ import arrow
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
-from freqtrade.data.converter import parse_ticker_dataframe
-from freqtrade.data.history import load_tickerdata_file
+from freqtrade.data.history import load_data
 from freqtrade.persistence import Trade
 from tests.conftest import get_patched_exchange, log_has
 from freqtrade.strategy.default_strategy import DefaultStrategy
@@ -107,9 +106,8 @@ def test_tickerdata_to_dataframe(default_conf, testdatadir) -> None:
     strategy = DefaultStrategy(default_conf)
 
     timerange = TimeRange.parse_timerange('1510694220-1510700340')
-    tick = load_tickerdata_file(testdatadir, 'UNITTEST/BTC', '1m', timerange=timerange)
-    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
-                                                         fill_missing=True)}
+    tickerlist = load_data(testdatadir, '1m', ['UNITTEST/BTC'], timerange=timerange,
+                           fill_up_missing=True)
     data = strategy.tickerdata_to_dataframe(tickerlist)
     assert len(data['UNITTEST/BTC']) == 102       # partial candle was removed
 
