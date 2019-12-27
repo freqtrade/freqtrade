@@ -363,7 +363,7 @@ def test_validate_pairs_exception(default_conf, mocker, caplog):
 def test_validate_pairs_restricted(default_conf, mocker, caplog):
     api_mock = MagicMock()
     type(api_mock).markets = PropertyMock(return_value={
-        'ETH/BTC': {}, 'LTC/BTC': {}, 'NEO/BTC': {},
+        'ETH/BTC': {}, 'LTC/BTC': {},
         'XRP/BTC': {'info': {'IsRestricted': True}},
         'NEO/BTC': {'info': 'TestString'},  # info can also be a string ...
     })
