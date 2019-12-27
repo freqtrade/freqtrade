@@ -30,6 +30,7 @@ class IDataHandler(ABC):
                    fill_missing: bool = True,
                    drop_incomplete: bool = True,
                    startup_candles: int = 0,
+                   warn_no_data: bool = True
                    ) -> DataFrame:
         """
         Load cached ticker history for the given pair.
@@ -40,6 +41,7 @@ class IDataHandler(ABC):
         :param fill_missing: Fill missing values with "No action"-candles
         :param drop_incomplete: Drop last candle assuming it may be incomplete.
         :param startup_candles: Additional candles to load at the start of the period
+        :param warn_no_data: Log a warning message when no data is found
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
         # Fix startup period
@@ -50,10 +52,11 @@ class IDataHandler(ABC):
         pairdf = self._ohlcv_load(pair, timeframe,
                                   timerange=timerange_startup)
         if pairdf.empty:
-            logger.warning(
-                f'No history data for pair: "{pair}", timeframe: {timeframe}. '
-                'Use `freqtrade download-data` to download the data'
-            )
+            if warn_no_data:
+                logger.warning(
+                    f'No history data for pair: "{pair}", timeframe: {timeframe}. '
+                    'Use `freqtrade download-data` to download the data'
+                )
             return pairdf
         else:
             enddate = pairdf.iloc[-1]['date']
