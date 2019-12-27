@@ -8,8 +8,10 @@ from unittest.mock import MagicMock, PropertyMock
 
 import arrow
 from pandas import DataFrame
+from pandas.testing import assert_frame_equal
 
 from freqtrade.configuration import TimeRange
+from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.datahandlers import get_datahandler
 from freqtrade.data.datahandlers.jsondatahandler import (JsonDataHandler,
                                                          JsonGzDataHandler)
@@ -163,14 +165,17 @@ def test_json_pair_trades_filename():
     assert fn == Path('freqtrade/hello/world/ETH_BTC-trades.json.gz')
 
 
-def test_load_cached_data_for_updating(mocker) -> None:
-    datadir = Path(__file__).parent.parent.joinpath('testdata')
+def test_load_cached_data_for_updating(mocker, testdatadir) -> None:
+
+    data_handler = get_datahandler(testdatadir, 'json')
 
     test_data = None
-    test_filename = datadir.joinpath('UNITTEST_BTC-1m.json')
+    test_filename = testdatadir.joinpath('UNITTEST_BTC-1m.json')
     with open(test_filename, "rt") as file:
         test_data = json.load(file)
 
+    test_data_df = parse_ticker_dataframe(test_data, '1m', 'UNITTEST/BTC',
+                                          fill_missing=False, drop_incomplete=False)
     # now = last cached item + 1 hour
     now_ts = test_data[-1][0] / 1000 + 60 * 60
     mocker.patch('arrow.utcnow', return_value=arrow.get(now_ts))
@@ -178,35 +183,36 @@ def test_load_cached_data_for_updating(mocker) -> None:
     # timeframe starts earlier than the cached data
     # should fully update data
     timerange = TimeRange('date', None, test_data[0][0] / 1000 - 1, 0)
-    data, start_ts = _load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
-    assert data == []
+    data, start_ts = _load_cached_data_for_updating('UNITTEST/BTC', '1m', timerange, data_handler)
+    assert data.empty
     assert start_ts == test_data[0][0] - 1000
 
     # timeframe starts in the center of the cached data
     # should return the chached data w/o the last item
     timerange = TimeRange('date', None, test_data[0][0] / 1000 + 1, 0)
-    data, start_ts = _load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
-    assert data == test_data[:-1]
-    assert test_data[-2][0] < start_ts < test_data[-1][0]
+    data, start_ts = _load_cached_data_for_updating('UNITTEST/BTC', '1m', timerange, data_handler)
+
+    assert_frame_equal(data, test_data_df.iloc[:-1])
+    assert test_data[-2][0] <= start_ts < test_data[-1][0]
 
     # timeframe starts after the chached data
     # should return the chached data w/o the last item
-    timerange = TimeRange('date', None, test_data[-1][0] / 1000 + 1, 0)
-    data, start_ts = _load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
-    assert data == test_data[:-1]
-    assert test_data[-2][0] < start_ts < test_data[-1][0]
+    timerange = TimeRange('date', None, test_data[-1][0] / 1000 + 100, 0)
+    data, start_ts = _load_cached_data_for_updating('UNITTEST/BTC', '1m', timerange, data_handler)
+    assert_frame_equal(data, test_data_df.iloc[:-1])
+    assert test_data[-2][0] <= start_ts < test_data[-1][0]
 
     # no datafile exist
     # should return timestamp start time
     timerange = TimeRange('date', None, now_ts - 10000, 0)
-    data, start_ts = _load_cached_data_for_updating(datadir, 'NONEXIST/BTC', '1m', timerange)
-    assert data == []
+    data, start_ts = _load_cached_data_for_updating('NONEXIST/BTC', '1m', timerange, data_handler)
+    assert data.empty
     assert start_ts == (now_ts - 10000) * 1000
 
     # no datafile exist, no timeframe is set
     # should return an empty array and None
-    data, start_ts = _load_cached_data_for_updating(datadir, 'NONEXIST/BTC', '1m', None)
-    assert data == []
+    data, start_ts = _load_cached_data_for_updating('NONEXIST/BTC', '1m', None, data_handler)
+    assert data.empty
     assert start_ts is None
 
 
