@@ -301,7 +301,9 @@ def test_download_pair_history2(mocker, default_conf, testdatadir) -> None:
         [1509836520000, 0.00162008, 0.00162008, 0.00162008, 0.00162008, 108.14853839],
         [1509836580000, 0.00161, 0.00161, 0.00161, 0.00161, 82.390199]
     ]
-    json_dump_mock = mocker.patch('freqtrade.misc.file_dump_json', return_value=None)
+    json_dump_mock = mocker.patch(
+        'freqtrade.data.datahandlers.jsondatahandler.JsonDataHandler.ohlcv_store',
+        return_value=None)
     mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=tick)
     exchange = get_patched_exchange(mocker, default_conf)
     _download_pair_history(testdatadir, exchange, pair="UNITTEST/BTC", timeframe='1m')

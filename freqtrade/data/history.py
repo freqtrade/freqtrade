@@ -239,10 +239,12 @@ def _load_cached_data_for_updating(pair: str, timeframe: str, timerange: Optiona
                                    timerange=None, fill_missing=False,
                                    drop_incomplete=True, warn_no_data=False)
     if not data.empty:
-        if start < data.iloc[0]['date']:
+        if start and start < data.iloc[0]['date']:
             # Earlier data than existing data requested, redownload all
             return DataFrame(columns=DEFAULT_DATAFRAME_COLUMNS), None
+
         start = data.iloc[-1]['date']
+
     start_ms = int(start.timestamp() * 1000) if start else None
     return data, start_ms
 
