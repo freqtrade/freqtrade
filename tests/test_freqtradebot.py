@@ -136,7 +136,7 @@ def test_get_trade_stake_amount(default_conf, ticker, mocker) -> None:
 
     freqtrade = FreqtradeBot(default_conf)
 
-    result = freqtrade._get_trade_stake_amount('ETH/BTC')
+    result = freqtrade.get_trade_stake_amount('ETH/BTC')
     assert result == default_conf['stake_amount']
 
 
@@ -147,7 +147,7 @@ def test_get_trade_stake_amount_no_stake_amount(default_conf, mocker) -> None:
     freqtrade = FreqtradeBot(default_conf)
 
     with pytest.raises(DependencyException, match=r'.*stake amount.*'):
-        freqtrade._get_trade_stake_amount('ETH/BTC')
+        freqtrade.get_trade_stake_amount('ETH/BTC')
 
 
 def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker,
@@ -170,25 +170,25 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker,
     patch_get_signal(freqtrade)
 
     # no open trades, order amount should be 'balance / max_open_trades'
-    result = freqtrade._get_trade_stake_amount('ETH/BTC')
+    result = freqtrade.get_trade_stake_amount('ETH/BTC')
     assert result == default_conf['stake_amount'] / conf['max_open_trades']
 
     # create one trade, order amount should be 'balance / (max_open_trades - num_open_trades)'
     freqtrade.execute_buy('ETH/BTC', result)
 
-    result = freqtrade._get_trade_stake_amount('LTC/BTC')
+    result = freqtrade.get_trade_stake_amount('LTC/BTC')
     assert result == default_conf['stake_amount'] / (conf['max_open_trades'] - 1)
 
     # create 2 trades, order amount should be None
     freqtrade.execute_buy('LTC/BTC', result)
 
-    result = freqtrade._get_trade_stake_amount('XRP/BTC')
+    result = freqtrade.get_trade_stake_amount('XRP/BTC')
     assert result is None
 
     # set max_open_trades = None, so do not trade
     conf['max_open_trades'] = 0
     freqtrade = FreqtradeBot(conf)
-    result = freqtrade._get_trade_stake_amount('NEO/BTC')
+    result = freqtrade.get_trade_stake_amount('NEO/BTC')
     assert result is None
 
 
@@ -214,8 +214,8 @@ def test_edge_overrides_stake_amount(mocker, edge_conf) -> None:
     edge_conf['dry_run_wallet'] = 999.9
     freqtrade = FreqtradeBot(edge_conf)
 
-    assert freqtrade._get_trade_stake_amount('NEO/BTC') == (999.9 * 0.5 * 0.01) / 0.20
-    assert freqtrade._get_trade_stake_amount('LTC/BTC') == (999.9 * 0.5 * 0.01) / 0.21
+    assert freqtrade.get_trade_stake_amount('NEO/BTC') == (999.9 * 0.5 * 0.01) / 0.20
+    assert freqtrade.get_trade_stake_amount('LTC/BTC') == (999.9 * 0.5 * 0.01) / 0.21
 
 
 def test_edge_overrides_stoploss(limit_buy_order, fee, caplog, mocker, edge_conf) -> None:
@@ -570,7 +570,7 @@ def test_create_trades_limit_reached(default_conf, ticker, limit_buy_order,
     patch_get_signal(freqtrade)
 
     assert not freqtrade.create_trades()
-    assert freqtrade._get_trade_stake_amount('ETH/BTC') is None
+    assert freqtrade.get_trade_stake_amount('ETH/BTC') is None
 
 
 def test_create_trades_no_pairs_let(default_conf, ticker, limit_buy_order, fee,

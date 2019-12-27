@@ -204,7 +204,7 @@ class FreqtradeBot:
 
         return used_rate
 
-    def _get_trade_stake_amount(self, pair) -> Optional[float]:
+    def get_trade_stake_amount(self, pair) -> Optional[float]:
         """
         Check if stake amount can be fulfilled with the available balance
         for the stake currency
@@ -309,7 +309,7 @@ class FreqtradeBot:
                 self.dataprovider.ohlcv(_pair, self.strategy.ticker_interval))
 
             if buy and not sell and len(Trade.get_open_trades()) < self.config['max_open_trades']:
-                stake_amount = self._get_trade_stake_amount(_pair)
+                stake_amount = self.get_trade_stake_amount(_pair)
                 if not stake_amount:
                     continue
 
