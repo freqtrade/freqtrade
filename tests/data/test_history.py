@@ -171,7 +171,6 @@ def test_load_cached_data_for_updating(mocker) -> None:
     with open(test_filename, "rt") as file:
         test_data = json.load(file)
 
-    # change now time to test 'line' cases
     # now = last cached item + 1 hour
     now_ts = test_data[-1][0] / 1000 + 60 * 60
     mocker.patch('arrow.utcnow', return_value=arrow.get(now_ts))
@@ -183,23 +182,9 @@ def test_load_cached_data_for_updating(mocker) -> None:
     assert data == []
     assert start_ts == test_data[0][0] - 1000
 
-    # same with 'line' timeframe
-    num_lines = (test_data[-1][0] - test_data[1][0]) / 1000 / 60 + 120
-    data, start_ts = _load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m',
-                                                    TimeRange(None, 'line', 0, -num_lines))
-    assert data == []
-    assert start_ts < test_data[0][0] - 1
-
     # timeframe starts in the center of the cached data
     # should return the chached data w/o the last item
     timerange = TimeRange('date', None, test_data[0][0] / 1000 + 1, 0)
-    data, start_ts = _load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
-    assert data == test_data[:-1]
-    assert test_data[-2][0] < start_ts < test_data[-1][0]
-
-    # same with 'line' timeframe
-    num_lines = (test_data[-1][0] - test_data[1][0]) / 1000 / 60 + 30
-    timerange = TimeRange(None, 'line', 0, -num_lines)
     data, start_ts = _load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
     assert data == test_data[:-1]
     assert test_data[-2][0] < start_ts < test_data[-1][0]
@@ -211,35 +196,12 @@ def test_load_cached_data_for_updating(mocker) -> None:
     assert data == test_data[:-1]
     assert test_data[-2][0] < start_ts < test_data[-1][0]
 
-    # Try loading last 30 lines.
-    # Not supported by _load_cached_data_for_updating, we always need to get the full data.
-    num_lines = 30
-    timerange = TimeRange(None, 'line', 0, -num_lines)
-    data, start_ts = _load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
-    assert data == test_data[:-1]
-    assert test_data[-2][0] < start_ts < test_data[-1][0]
-
-    # no timeframe is set
-    # should return the chached data w/o the last item
-    num_lines = 30
-    timerange = TimeRange(None, 'line', 0, -num_lines)
-    data, start_ts = _load_cached_data_for_updating(datadir, 'UNITTEST/BTC', '1m', timerange)
-    assert data == test_data[:-1]
-    assert test_data[-2][0] < start_ts < test_data[-1][0]
-
     # no datafile exist
     # should return timestamp start time
     timerange = TimeRange('date', None, now_ts - 10000, 0)
     data, start_ts = _load_cached_data_for_updating(datadir, 'NONEXIST/BTC', '1m', timerange)
     assert data == []
     assert start_ts == (now_ts - 10000) * 1000
-
-    # same with 'line' timeframe
-    num_lines = 30
-    timerange = TimeRange(None, 'line', 0, -num_lines)
-    data, start_ts = _load_cached_data_for_updating(datadir, 'NONEXIST/BTC', '1m', timerange)
-    assert data == []
-    assert start_ts == (now_ts - num_lines * 60) * 1000
 
     # no datafile exist, no timeframe is set
     # should return an empty array and None

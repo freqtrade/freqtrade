@@ -342,7 +342,6 @@ def test_tickerdata_with_fee(default_conf, mocker, testdatadir) -> None:
 
 def test_tickerdata_to_dataframe_bt(default_conf, mocker, testdatadir) -> None:
     patch_exchange(mocker)
-    # timerange = TimeRange(None, 'line', 0, -100)
     timerange = TimeRange.parse_timerange('1510694220-1510700340')
     tick = history.load_tickerdata_file(testdatadir, 'UNITTEST/BTC', '1m', timerange=timerange)
     tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
