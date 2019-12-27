@@ -20,7 +20,6 @@ from freqtrade.data.history import (_download_pair_history,
                                     _load_cached_data_for_updating,
                                     convert_trades_to_ohlcv, get_timerange,
                                     load_data, load_pair_history,
-                                    load_tickerdata_file,
                                     refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data, refresh_data,
                                     trim_tickerlist, validate_backtest_data)
@@ -301,17 +300,6 @@ def test_download_backtesting_data_exception(ticker_history, mocker, caplog,
         'Failed to download history data for pair: "MEME/BTC", timeframe: 1m. '
         'Error: File Error', caplog
     )
-
-
-def test_load_tickerdata_file(testdatadir) -> None:
-    # 7 does not exist in either format.
-    assert not load_tickerdata_file(testdatadir, 'UNITTEST/BTC', '7m')
-    # 1 exists only as a .json
-    tickerdata = load_tickerdata_file(testdatadir, 'UNITTEST/BTC', '1m')
-    assert _BTC_UNITTEST_LENGTH == len(tickerdata)
-    # 8 .json is empty and will fail if it's loaded. .json.gz is a copy of 1.json
-    tickerdata = load_tickerdata_file(testdatadir, 'UNITTEST/BTC', '8m')
-    assert _BTC_UNITTEST_LENGTH == len(tickerdata)
 
 
 def test_load_partial_missing(testdatadir, caplog) -> None:
