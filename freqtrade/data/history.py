@@ -185,49 +185,16 @@ def pair_data_filename(datadir: Path, pair: str, timeframe: str) -> Path:
     return filename
 
 
-def _load_cached_data_for_updating_old(datadir: Path, pair: str, timeframe: str,
-                                       timerange: Optional[TimeRange]) -> Tuple[List[Any],
-                                                                                Optional[int]]:
+def _load_cached_data_for_updating(pair: str, timeframe: str, timerange: Optional[TimeRange],
+                                   data_handler: IDataHandler) -> Tuple[DataFrame, Optional[int]]:
     """
     Load cached data to download more data.
     If timerange is passed in, checks whether data from an before the stored data will be
     downloaded.
     If that's the case then what's available should be completely overwritten.
-    Only used by download_pair_history().
+    Otherwise downloads always start at the end of the available data to avoid data gaps.
+    Note: Only used by download_pair_history().
     """
-
-    since_ms = None
-
-    # user sets timerange, so find the start time
-    if timerange:
-        if timerange.starttype == 'date':
-            since_ms = timerange.startts * 1000
-        elif timerange.stoptype == 'line':
-            num_minutes = timerange.stopts * timeframe_to_minutes(timeframe)
-            since_ms = arrow.utcnow().shift(minutes=num_minutes).timestamp * 1000
-
-    # read the cached file
-    # Intentionally don't pass timerange in - since we need to load the full dataset.
-    data = load_tickerdata_file(datadir, pair, timeframe)
-    # remove the last item, could be incomplete candle
-    if data:
-        data.pop()
-    else:
-        data = []
-
-    if data:
-        if since_ms and since_ms < data[0][0]:
-            # Earlier data than existing data requested, redownload all
-            data = []
-        else:
-            # a part of the data was already downloaded, so download unexist data only
-            since_ms = data[-1][0] + 1
-
-    return (data, since_ms)
-
-
-def _load_cached_data_for_updating(pair: str, timeframe: str, timerange: Optional[TimeRange],
-                                   data_handler: IDataHandler) -> Tuple[DataFrame, Optional[int]]:
     start = None
     if timerange:
         if timerange.starttype == 'date':
