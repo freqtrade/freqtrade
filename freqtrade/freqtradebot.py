@@ -351,7 +351,6 @@ class FreqtradeBot:
         :param pair: pair for which we want to create a LIMIT_BUY
         :return: None
         """
-        pair_s = pair.replace('_', '/')
         stake_currency = self.config['stake_currency']
         fiat_currency = self.config.get('fiat_display_currency', None)
         time_in_force = self.strategy.order_time_in_force['buy']
@@ -362,10 +361,10 @@ class FreqtradeBot:
             # Calculate amount
             buy_limit_requested = self.get_target_bid(pair)
 
-        min_stake_amount = self._get_min_pair_stake_amount(pair_s, buy_limit_requested)
+        min_stake_amount = self._get_min_pair_stake_amount(pair, buy_limit_requested)
         if min_stake_amount is not None and min_stake_amount > stake_amount:
             logger.warning(
-                f"Can't open a new trade for {pair_s}: stake amount "
+                f"Can't open a new trade for {pair}: stake amount "
                 f"is too small ({stake_amount} < {min_stake_amount})"
             )
             return False
@@ -388,7 +387,7 @@ class FreqtradeBot:
             if float(order['filled']) == 0:
                 logger.warning('Buy %s order with time in force %s for %s is %s by %s.'
                                ' zero amount is fulfilled.',
-                               order_tif, order_type, pair_s, order_status, self.exchange.name)
+                               order_tif, order_type, pair, order_status, self.exchange.name)
                 return False
             else:
                 # the order is partially fulfilled
@@ -396,7 +395,7 @@ class FreqtradeBot:
                 # if the order is fulfilled fully or partially
                 logger.warning('Buy %s order with time in force %s for %s is %s by %s.'
                                ' %s amount fulfilled out of %s (%s remaining which is canceled).',
-                               order_tif, order_type, pair_s, order_status, self.exchange.name,
+                               order_tif, order_type, pair, order_status, self.exchange.name,
                                order['filled'], order['amount'], order['remaining']
                                )
                 stake_amount = order['cost']
@@ -413,7 +412,7 @@ class FreqtradeBot:
         self.rpc.send_msg({
             'type': RPCMessageType.BUY_NOTIFICATION,
             'exchange': self.exchange.name.capitalize(),
-            'pair': pair_s,
+            'pair': pair,
             'limit': buy_limit_filled_price,
             'order_type': order_type,
             'stake_amount': stake_amount,
