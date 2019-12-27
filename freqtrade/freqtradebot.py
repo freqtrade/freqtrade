@@ -299,17 +299,17 @@ class FreqtradeBot:
 
         buycount = 0
         # running get_signal on historical data fetched
-        for _pair in whitelist:
-            if self.strategy.is_pair_locked(_pair):
-                logger.info(f"Pair {_pair} is currently locked.")
+        for pair in whitelist:
+            if self.strategy.is_pair_locked(pair):
+                logger.info(f"Pair {pair} is currently locked.")
                 continue
 
             (buy, sell) = self.strategy.get_signal(
-                _pair, self.strategy.ticker_interval,
-                self.dataprovider.ohlcv(_pair, self.strategy.ticker_interval))
+                pair, self.strategy.ticker_interval,
+                self.dataprovider.ohlcv(pair, self.strategy.ticker_interval))
 
             if buy and not sell and len(Trade.get_open_trades()) < self.config['max_open_trades']:
-                stake_amount = self.get_trade_stake_amount(_pair)
+                stake_amount = self.get_trade_stake_amount(pair)
                 if not stake_amount:
                     continue
 
@@ -320,11 +320,11 @@ class FreqtradeBot:
                     get('check_depth_of_market', {})
                 if (bidstrat_check_depth_of_market.get('enabled', False)) and\
                         (bidstrat_check_depth_of_market.get('bids_to_ask_delta', 0) > 0):
-                    if self._check_depth_of_market_buy(_pair, bidstrat_check_depth_of_market):
-                        buycount += self.execute_buy(_pair, stake_amount)
+                    if self._check_depth_of_market_buy(pair, bidstrat_check_depth_of_market):
+                        buycount += self.execute_buy(pair, stake_amount)
                     continue
 
-                buycount += self.execute_buy(_pair, stake_amount)
+                buycount += self.execute_buy(pair, stake_amount)
 
         return buycount > 0
 
