@@ -23,7 +23,7 @@ from freqtrade.data.history import (convert_trades_to_ohlcv,
 from freqtrade.exchange import (available_exchanges, ccxt_exchanges,
                                 market_is_active, symbol_is_pair)
 from freqtrade.misc import plural, render_template
-from freqtrade.resolvers import ExchangeResolver
+from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
@@ -221,6 +221,24 @@ def start_download_data(args: Dict[str, Any]) -> None:
         if pairs_not_available:
             logger.info(f"Pairs [{','.join(pairs_not_available)}] not available "
                         f"on exchange {exchange.name}.")
+
+
+def start_list_strategies(args: Dict[str, Any]) -> None:
+    """
+    Print Strategies available in a directory
+    """
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+
+    directory = Path(config.get('strategy_path', config['user_data_dir'] / USERPATH_STRATEGY))
+    strategies = StrategyResolver.search_all_objects(directory)
+    # Sort alphabetically
+    strategies = sorted(strategies, key=lambda x: x['name'])
+    strats_to_print = [{'name': s['name'], 'location': s['location'].name} for s in strategies]
+
+    if args['print_one_column']:
+        print('\n'.join([s['name'] for s in strategies]))
+    else:
+        print(tabulate(strats_to_print, headers='keys', tablefmt='pipe'))
 
 
 def start_list_timeframes(args: Dict[str, Any]) -> None:

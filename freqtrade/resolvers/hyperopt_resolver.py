@@ -5,7 +5,7 @@ This module load custom hyperopt
 """
 import logging
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Dict
 
 from freqtrade import OperationalException
 from freqtrade.constants import DEFAULT_HYPEROPT_LOSS, USERPATH_HYPEROPTS
@@ -20,6 +20,10 @@ class HyperOptResolver(IResolver):
     """
     This class contains all the logic to load custom hyperopt class
     """
+    object_type = IHyperOpt
+    object_type_str = "Hyperopt"
+    user_subdir = USERPATH_HYPEROPTS
+    initial_search_path = Path(__file__).parent.parent.joinpath('optimize').resolve()
 
     @staticmethod
     def load_hyperopt(config: Dict) -> IHyperOpt:
@@ -33,8 +37,9 @@ class HyperOptResolver(IResolver):
 
         hyperopt_name = config['hyperopt']
 
-        hyperopt = HyperOptResolver._load_hyperopt(hyperopt_name, config,
-                                                   extra_dir=config.get('hyperopt_path'))
+        hyperopt = HyperOptResolver.load_object(hyperopt_name, config,
+                                                kwargs={'config': config},
+                                                extra_dir=config.get('hyperopt_path'))
 
         if not hasattr(hyperopt, 'populate_indicators'):
             logger.warning("Hyperopt class does not provide populate_indicators() method. "
@@ -47,36 +52,15 @@ class HyperOptResolver(IResolver):
                            "Using populate_sell_trend from the strategy.")
         return hyperopt
 
-    @staticmethod
-    def _load_hyperopt(
-            hyperopt_name: str, config: Dict, extra_dir: Optional[str] = None) -> IHyperOpt:
-        """
-        Search and loads the specified hyperopt.
-        :param hyperopt_name: name of the module to import
-        :param config: configuration dictionary
-        :param extra_dir: additional directory to search for the given hyperopt
-        :return: HyperOpt instance or None
-        """
-        current_path = Path(__file__).parent.parent.joinpath('optimize').resolve()
-
-        abs_paths = IResolver.build_search_paths(config, current_path=current_path,
-                                                 user_subdir=USERPATH_HYPEROPTS,
-                                                 extra_dir=extra_dir)
-
-        hyperopt = IResolver._load_object(paths=abs_paths, object_type=IHyperOpt,
-                                          object_name=hyperopt_name, kwargs={'config': config})
-        if hyperopt:
-            return hyperopt
-        raise OperationalException(
-            f"Impossible to load Hyperopt '{hyperopt_name}'. This class does not exist "
-            "or contains Python code errors."
-        )
-
 
 class HyperOptLossResolver(IResolver):
     """
     This class contains all the logic to load custom hyperopt loss class
     """
+    object_type = IHyperOptLoss
+    object_type_str = "HyperoptLoss"
+    user_subdir = USERPATH_HYPEROPTS
+    initial_search_path = Path(__file__).parent.parent.joinpath('optimize').resolve()
 
     @staticmethod
     def load_hyperoptloss(config: Dict) -> IHyperOptLoss:
@@ -89,8 +73,9 @@ class HyperOptLossResolver(IResolver):
         # default hyperopt loss
         hyperoptloss_name = config.get('hyperopt_loss') or DEFAULT_HYPEROPT_LOSS
 
-        hyperoptloss = HyperOptLossResolver._load_hyperoptloss(
-            hyperoptloss_name, config, extra_dir=config.get('hyperopt_path'))
+        hyperoptloss = HyperOptLossResolver.load_object(hyperoptloss_name,
+                                                        config, kwargs={},
+                                                        extra_dir=config.get('hyperopt_path'))
 
         # Assign ticker_interval to be used in hyperopt
         hyperoptloss.__class__.ticker_interval = str(config['ticker_interval'])
@@ -100,29 +85,3 @@ class HyperOptLossResolver(IResolver):
                 f"Found HyperoptLoss class {hyperoptloss_name} does not "
                 "implement `hyperopt_loss_function`.")
         return hyperoptloss
-
-    @staticmethod
-    def _load_hyperoptloss(hyper_loss_name: str, config: Dict,
-                           extra_dir: Optional[str] = None) -> IHyperOptLoss:
-        """
-        Search and loads the specified hyperopt loss class.
-        :param hyper_loss_name: name of the module to import
-        :param config: configuration dictionary
-        :param extra_dir: additional directory to search for the given hyperopt
-        :return: HyperOptLoss instance or None
-        """
-        current_path = Path(__file__).parent.parent.joinpath('optimize').resolve()
-
-        abs_paths = IResolver.build_search_paths(config, current_path=current_path,
-                                                 user_subdir=USERPATH_HYPEROPTS,
-                                                 extra_dir=extra_dir)
-
-        hyperoptloss = IResolver._load_object(paths=abs_paths, object_type=IHyperOptLoss,
-                                              object_name=hyper_loss_name)
-        if hyperoptloss:
-            return hyperoptloss
-
-        raise OperationalException(
-            f"Impossible to load HyperoptLoss '{hyper_loss_name}'. This class does not exist "
-            "or contains Python code errors."
-        )
