@@ -135,6 +135,7 @@ def trim_dataframe(df: DataFrame, timerange: TimeRange, df_date_col: str = 'date
 
 def order_book_to_dataframe(bids: list, asks: list) -> DataFrame:
     """
+    TODO: This should get a dedicated test
     Gets order book list, returns dataframe with below format per suggested by creslin
     -------------------------------------------------------------------
      b_sum       b_size       bids       asks       a_size       a_sum
@@ -160,6 +161,7 @@ def order_book_to_dataframe(bids: list, asks: list) -> DataFrame:
 def trades_to_ohlcv(trades: list, timeframe: str) -> DataFrame:
     """
     Converts trades list to ohlcv list
+    TODO: This should get a dedicated test
     :param trades: List of trades, as returned by ccxt.fetch_trades.
     :param timeframe: Ticker timeframe to resample data to
     :return: ohlcv Dataframe.

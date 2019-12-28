@@ -2,7 +2,8 @@
 import logging
 
 from freqtrade.configuration.timerange import TimeRange
-from freqtrade.data.converter import (convert_trades_format,
+from freqtrade.data.converter import (convert_ohlcv_format,
+                                      convert_trades_format,
                                       ohlcv_fill_up_missing_data,
                                       parse_ticker_dataframe, trim_dataframe)
 from freqtrade.data.history import (get_timerange, load_data,
@@ -218,3 +219,45 @@ def test_convert_trades_format(mocker, default_conf, testdatadir):
     _clean_test_file(file)
     if file_new.exists():
         file_new.unlink()
+
+
+def test_convert_ohlcv_format(mocker, default_conf, testdatadir):
+    file1 = testdatadir / "XRP_ETH-5m.json"
+    file1_new = testdatadir / "XRP_ETH-5m.json.gz"
+    file2 = testdatadir / "XRP_ETH-1m.json"
+    file2_new = testdatadir / "XRP_ETH-1m.json.gz"
+    _backup_file(file1, copy_file=True)
+    _backup_file(file2, copy_file=True)
+    default_conf['datadir'] = testdatadir
+    default_conf['pairs'] = ['XRP_ETH']
+    default_conf['timeframes'] = ['1m', '5m']
+
+    assert not file1_new.exists()
+    assert not file2_new.exists()
+
+    convert_ohlcv_format(default_conf, convert_from='json',
+                         convert_to='jsongz', erase=False)
+
+    assert file1_new.exists()
+    assert file2_new.exists()
+    assert file1.exists()
+    assert file2.exists()
+
+    # Remove original files
+    file1.unlink()
+    file2.unlink()
+    # Convert back
+    convert_ohlcv_format(default_conf, convert_from='jsongz',
+                         convert_to='json', erase=True)
+
+    assert file1.exists()
+    assert file2.exists()
+    assert not file1_new.exists()
+    assert not file2_new.exists()
+
+    _clean_test_file(file1)
+    _clean_test_file(file2)
+    if file1_new.exists():
+        file1_new.unlink()
+    if file2_new.exists():
+        file2_new.unlink()
