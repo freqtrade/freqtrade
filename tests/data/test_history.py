@@ -13,18 +13,15 @@ from pandas.testing import assert_frame_equal
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.converter import parse_ticker_dataframe
-from freqtrade.data.datahandlers import get_datahandler, get_datahandlerclass
-from freqtrade.data.datahandlers.idatahandler import IDataHandler
-from freqtrade.data.datahandlers.jsondatahandler import (JsonDataHandler,
-                                                         JsonGzDataHandler)
-from freqtrade.data.history import (_download_pair_history,
-                                    _download_trades_history,
-                                    _load_cached_data_for_updating,
-                                    convert_trades_to_ohlcv, get_timerange,
-                                    load_data, load_pair_history,
-                                    refresh_backtest_ohlcv_data,
-                                    refresh_backtest_trades_data, refresh_data,
-                                    validate_backtest_data)
+from freqtrade.data.history import get_datahandler, get_datahandlerclass
+from freqtrade.data.history.history_utils import (
+    _download_pair_history, _download_trades_history,
+    _load_cached_data_for_updating, convert_trades_to_ohlcv, get_timerange,
+    load_data, load_pair_history, refresh_backtest_ohlcv_data,
+    refresh_backtest_trades_data, refresh_data, validate_backtest_data)
+from freqtrade.data.history.idatahandler import IDataHandler
+from freqtrade.data.history.jsondatahandler import (JsonDataHandler,
+                                                    JsonGzDataHandler)
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.strategy.default_strategy import DefaultStrategy
@@ -100,7 +97,7 @@ def test_load_data_1min_ticker(ticker_history, mocker, caplog, testdatadir) -> N
 
 def test_load_data_startup_candles(mocker, caplog, default_conf, testdatadir) -> None:
     ltfmock = mocker.patch(
-        'freqtrade.data.datahandlers.jsondatahandler.JsonDataHandler._ohlcv_load',
+        'freqtrade.data.history.jsondatahandler.JsonDataHandler._ohlcv_load',
         MagicMock(return_value=DataFrame()))
     timerange = TimeRange('date', None, 1510639620, 0)
     load_pair_history(pair='UNITTEST/BTC', timeframe='1m',
@@ -271,7 +268,7 @@ def test_download_pair_history2(mocker, default_conf, testdatadir) -> None:
         [1509836580000, 0.00161, 0.00161, 0.00161, 0.00161, 82.390199]
     ]
     json_dump_mock = mocker.patch(
-        'freqtrade.data.datahandlers.jsondatahandler.JsonDataHandler.ohlcv_store',
+        'freqtrade.data.history.jsondatahandler.JsonDataHandler.ohlcv_store',
         return_value=None)
     mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=tick)
     exchange = get_patched_exchange(mocker, default_conf)
@@ -444,7 +441,8 @@ def test_validate_backtest_data(default_conf, mocker, caplog, testdatadir) -> No
 
 
 def test_refresh_backtest_ohlcv_data(mocker, default_conf, markets, caplog, testdatadir):
-    dl_mock = mocker.patch('freqtrade.data.history._download_pair_history', MagicMock())
+    dl_mock = mocker.patch('freqtrade.data.history.history_utils._download_pair_history',
+                           MagicMock())
     mocker.patch(
         'freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets)
     )
@@ -465,7 +463,7 @@ def test_refresh_backtest_ohlcv_data(mocker, default_conf, markets, caplog, test
 
 
 def test_download_data_no_markets(mocker, default_conf, caplog, testdatadir):
-    dl_mock = mocker.patch('freqtrade.data.history._download_pair_history', MagicMock())
+    dl_mock = mocker.patch('freqtrade.data.history.history_utils._download_pair_history', MagicMock())
 
     ex = get_patched_exchange(mocker, default_conf)
     mocker.patch(
@@ -485,7 +483,8 @@ def test_download_data_no_markets(mocker, default_conf, caplog, testdatadir):
 
 
 def test_refresh_backtest_trades_data(mocker, default_conf, markets, caplog, testdatadir):
-    dl_mock = mocker.patch('freqtrade.data.history._download_trades_history', MagicMock())
+    dl_mock = mocker.patch('freqtrade.data.history.history_utils._download_trades_history',
+                           MagicMock())
     mocker.patch(
         'freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets)
     )

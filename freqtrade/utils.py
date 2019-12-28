@@ -17,8 +17,8 @@ from freqtrade.configuration import (Configuration, TimeRange,
 from freqtrade.configuration.directory_operations import (copy_sample_files,
                                                           create_userdata_dir)
 from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGY
-from freqtrade.data.datahandlers import get_datahandlerclass
 from freqtrade.data.history import (convert_trades_to_ohlcv,
+                                    get_datahandlerclass,
                                     refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
 from freqtrade.exchange import (available_exchanges, ccxt_exchanges,

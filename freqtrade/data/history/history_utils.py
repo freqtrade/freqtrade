@@ -1,11 +1,3 @@
-"""
-Handle historic data (ohlcv).
-
-Includes:
-* load data for a pair (or a list of pairs) from disk
-* download data from exchange and store to disk
-"""
-
 import logging
 import operator
 from datetime import datetime, timezone
@@ -19,8 +11,7 @@ from freqtrade import OperationalException
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
 from freqtrade.data.converter import parse_ticker_dataframe, trades_to_ohlcv
-from freqtrade.data.datahandlers import get_datahandler
-from freqtrade.data.datahandlers.idatahandler import IDataHandler
+from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
 from freqtrade.exchange import Exchange
 
 logger = logging.getLogger(__name__)

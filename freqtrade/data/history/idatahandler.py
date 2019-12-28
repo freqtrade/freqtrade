@@ -6,13 +6,14 @@ It's subclasses handle and storing data from disk.
 import logging
 from abc import ABC, abstractclassmethod, abstractmethod
 from copy import deepcopy
-from pathlib import Path
-from typing import Dict, List, Optional
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import Dict, List, Optional, Type
+
 from pandas import DataFrame
-from freqtrade.data.converter import clean_ohlcv_dataframe, trim_dataframe
 
 from freqtrade.configuration import TimeRange
+from freqtrade.data.converter import clean_ohlcv_dataframe, trim_dataframe
 from freqtrade.exchange import timeframe_to_seconds
 
 logger = logging.getLogger(__name__)
@@ -89,3 +90,36 @@ class IDataHandler(ABC):
             if pairdata.iloc[-1]['date'] < stop:
                 logger.warning(f"Missing data at end for pair {pair}, "
                                f"data ends at {pairdata.iloc[-1]['date']:%Y-%m-%d %H:%M:%S}")
+
+
+def get_datahandlerclass(datatype: str) -> Type[IDataHandler]:
+    """
+    Get datahandler class.
+    Could be done using Resolvers, but since this may be called often and resolvers
+    are rather expensive, doing this directly should improve performance.
+    :param datatype: datatype to use.
+    :return: Datahandler class
+    """
+
+    if datatype == 'json':
+        from .jsondatahandler import JsonDataHandler
+        return JsonDataHandler
+    elif datatype == 'jsongz':
+        from .jsondatahandler import JsonGzDataHandler
+        return JsonGzDataHandler
+    else:
+        raise ValueError(f"No datahandler for datatype {datatype} available.")
+
+
+def get_datahandler(datadir: Path, data_format: str = None,
+                    data_handler: IDataHandler = None) -> IDataHandler:
+    """
+    :param datadir: Folder to save data
+    :data_format: dataformat to use
+    :data_handler: returns this datahandler if it exists or initializes a new one
+    """
+
+    if not data_handler:
+        HandlerClass = get_datahandlerclass(data_format or 'json')
+        data_handler = HandlerClass(datadir)
+    return data_handler
