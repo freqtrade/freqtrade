@@ -12,6 +12,152 @@ Otherwise `--exchange` becomes mandatory.
     If you already have backtesting data available in your data-directory and would like to refresh this data up to today, use `--days xx` with a number slightly higher than the missing number of days. Freqtrade will keep the available data and only download the missing data.
     Be carefull though: If the number is too small (which would result in a few missing days), the whole dataset will be removed and only xx days will be downloaded.
 
+### Usage
+
+```
+usage: freqtrade download-data [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH] [--userdir PATH] [-p PAIRS [PAIRS ...]]
+                               [--pairs-file FILE] [--days INT] [--dl-trades] [--exchange EXCHANGE]
+                               [-t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} ...]]
+                               [--erase] [--data-format {json,jsongz}] [--data-format-trades {json,jsongz}]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
+                        Show profits for only these pairs. Pairs are space-separated.
+  --pairs-file FILE     File containing a list of pairs to download.
+  --days INT            Download data for given number of days.
+  --dl-trades           Download trades instead of OHLCV data. The bot will resample trades to the desired timeframe as specified as
+                        --timeframes/-t.
+  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no config is provided.
+  -t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} ...], --timeframes {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} ...]
+                        Specify which tickers to download. Space-separated list. Default: `1m 5m`.
+  --erase               Clean all existing data for the selected exchange/pairs/timeframes.
+  --data-format {json,jsongz}
+                        Storage format for downloaded ohlcv data. (default: `json`).
+  --data-format-trades {json,jsongz}
+                        Storage format for downloaded trades data. (default: `jsongz`).
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are: 'syslog', 'journald'. See the documentation for more details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`). Multiple --config options may be used. Can be set to `-`
+                        to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+```
+
+### Data format
+
+Freqtrade currently supports 2 dataformats, `json` and `jsongz`, a zipped version of json files.
+By default, OHLCV data is stored as json data, while trades data is stored as `jsongz` data.
+
+This can be changed via the `--data-format` and `--data-format-trades` parameters respectivly.
+
+If the default dataformat has been changed during download, then the keys `dataformat_ohlcv` and `dataformat_trades` in the configuration file need to be adjusted to the selected dataformat as well.
+
+!!! Note
+    You can convert between data-formats using the [convert-data](#subcommand-convert-data) and [convert-trade-data](#subcommand-convert-trade-data) methods.
+
+#### Subcommand convert data
+
+```
+usage: freqtrade convert-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                              [-d PATH] [--userdir PATH]
+                              [-p PAIRS [PAIRS ...]] --format-from
+                              {json,jsongz} --format-to {json,jsongz}
+                              [--erase]
+                              [-t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} ...]]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
+                        Show profits for only these pairs. Pairs are space-
+                        separated.
+  --format-from {json,jsongz}
+                        Source format for data conversation.
+  --format-to {json,jsongz}
+                        Destination format for data conversation.
+  --erase               Clean all existing data for the selected
+                        exchange/pairs/timeframes.
+  -t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} ...], --timeframes {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} ...]
+                        Specify which tickers to download. Space-separated
+                        list. Default: `1m 5m`.
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`).
+                        Multiple --config options may be used. Can be set to
+                        `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+```
+
+##### Example converting data
+
+The following command will convert all Candle data available in `~/.freqtrade/data/binance` from json to jsongz, saving diskspace in the process.
+It'll also remove source files (`--erase` parameter).
+
+``` bash
+freqtrade convert-data --format-from json --format-to jsongz --data-dir ~/.freqtrade/data/binance -t 5m 15m --erase
+```
+
+#### Subcommand convert-trade data
+
+```
+usage: freqtrade convert-trade-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                                    [-d PATH] [--userdir PATH]
+                                    [-p PAIRS [PAIRS ...]] --format-from
+                                    {json,jsongz} --format-to {json,jsongz}
+                                    [--erase]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
+                        Show profits for only these pairs. Pairs are space-
+                        separated.
+  --format-from {json,jsongz}
+                        Source format for data conversation.
+  --format-to {json,jsongz}
+                        Destination format for data conversation.
+  --erase               Clean all existing data for the selected
+                        exchange/pairs/timeframes.
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`).
+                        Multiple --config options may be used. Can be set to
+                        `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+```
+
+##### Example converting trades
+
+The following command will convert all available trade-data in `~/.freqtrade/data/kraken` from json to jsongz, saving diskspace in the process.
+It'll also remove source files (`--erase` parameter).
+
+``` bash
+freqtrade convert-trade-data --format-from jsongz --format-to json --data-dir ~/.freqtrade/data/kraken --erase
+```
+
 ### Pairs file
 
 In alternative to the whitelist from `config.json`, a `pairs.json` file can be used.

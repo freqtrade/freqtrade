@@ -127,5 +127,7 @@
         "heartbeat_interval": 60
     },
     "strategy": "DefaultStrategy",
-    "strategy_path": "user_data/strategies/"
+    "strategy_path": "user_data/strategies/",
+    "dataformat_ohlcv": "json",
+    "dataformat_trades": "jsongz"
 }
