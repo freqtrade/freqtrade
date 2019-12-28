@@ -136,7 +136,7 @@ class FreqtradeBot:
         self.process_maybe_execute_sells(trades)
 
         # Then looking for buy opportunities
-        if len(trades) < self.config['max_open_trades']:
+        if self.get_free_open_trades():
             self.process_maybe_execute_buys()
 
         # Check and handle any timed out open orders
@@ -172,6 +172,14 @@ class FreqtradeBot:
         Create pair-whitelist tuple with (pair, ticker_interval)
         """
         return [(pair, self.config['ticker_interval']) for pair in pairs]
+
+    def get_free_open_trades(self):
+        """
+        Return the number of free open trades slots or 0 if
+        max number of open trades reached
+        """
+        open_trades = len(Trade.get_open_trades())
+        return max(0, self.config['max_open_trades'] - open_trades)
 
     def get_target_bid(self, pair: str, tick: Dict = None) -> float:
         """
@@ -229,11 +237,11 @@ class FreqtradeBot:
         Calculate stake amount for "unlimited" stake amount
         :return: None if max number of trades reached
         """
-        open_trades = len(Trade.get_open_trades())
-        if open_trades >= self.config['max_open_trades']:
+        free_open_trades = self.get_free_open_trades()
+        if not free_open_trades:
             return None
         available_amount = self.wallets.get_free(self.config['stake_currency'])
-        return available_amount / (self.config['max_open_trades'] - open_trades)
+        return available_amount / free_open_trades
 
     def _check_available_stake_amount(self, stake_amount: Optional[float]) -> Optional[float]:
         """
@@ -321,12 +329,12 @@ class FreqtradeBot:
                 pair, self.strategy.ticker_interval,
                 self.dataprovider.ohlcv(pair, self.strategy.ticker_interval))
 
-            if buy and not sell and len(Trade.get_open_trades()) < self.config['max_open_trades']:
-                stake_amount = self.get_trade_stake_amount(pair)
-                if stake_amount is None:
+            if buy and not sell:
+                if not self.get_free_open_trades():
                     logger.warning("Can't open a new trade: max number of trades is reached")
                     continue
 
+                stake_amount = self.get_trade_stake_amount(pair)
                 logger.info(f"Buy signal found: about create a new trade with stake_amount: "
                             f"{stake_amount} ...")
 
