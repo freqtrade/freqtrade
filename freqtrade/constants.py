@@ -294,5 +294,7 @@ CONF_SCHEMA = {
         'stoploss',
         'minimal_roi',
         'internals',
+        'dataformat_ohlcv',
+        'dataformat_trades',
     ]
 }
