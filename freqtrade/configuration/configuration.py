@@ -403,7 +403,7 @@ class Configuration:
             config['pairs'] = config.get('exchange', {}).get('pair_whitelist')
         else:
             # Fall back to /dl_path/pairs.json
-            pairs_file = Path(config['datadir']) / "pairs.json"
+            pairs_file = config['datadir'] / "pairs.json"
             if pairs_file.exists():
                 with pairs_file.open('r') as f:
                     config['pairs'] = json_load(f)

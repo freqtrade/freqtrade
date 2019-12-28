@@ -5,7 +5,6 @@ including Klines, tickers, historic data
 Common Interface for bot and strategy to access data.
 """
 import logging
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from pandas import DataFrame
@@ -65,7 +64,7 @@ class DataProvider:
         """
         return load_pair_history(pair=pair,
                                  timeframe=timeframe or self._config['ticker_interval'],
-                                 datadir=Path(self._config['datadir'])
+                                 datadir=self._config['datadir']
                                  )
 
     def get_pair_dataframe(self, pair: str, timeframe: str = None) -> DataFrame:

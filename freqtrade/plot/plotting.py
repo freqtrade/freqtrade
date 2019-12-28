@@ -37,7 +37,7 @@ def init_plotscript(config):
     timerange = TimeRange.parse_timerange(config.get("timerange"))
 
     tickers = history.load_data(
-        datadir=Path(str(config.get("datadir"))),
+        datadir=config.get("datadir"),
         pairs=pairs,
         timeframe=config.get('ticker_interval', '5m'),
         timerange=timerange,

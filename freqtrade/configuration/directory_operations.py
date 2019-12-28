@@ -9,7 +9,7 @@ from freqtrade.constants import USER_DATA_FILES
 logger = logging.getLogger(__name__)
 
 
-def create_datadir(config: Dict[str, Any], datadir: Optional[str] = None) -> str:
+def create_datadir(config: Dict[str, Any], datadir: Optional[str] = None) -> Path:
 
     folder = Path(datadir) if datadir else Path(f"{config['user_data_dir']}/data")
     if not datadir:
@@ -20,7 +20,7 @@ def create_datadir(config: Dict[str, Any], datadir: Optional[str] = None) -> str
     if not folder.is_dir():
         folder.mkdir(parents=True)
         logger.info(f'Created data directory: {datadir}')
-    return str(folder)
+    return folder
 
 
 def create_userdata_dir(directory: str, create_dir=False) -> Path:
