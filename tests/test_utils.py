@@ -6,13 +6,13 @@ import pytest
 
 from freqtrade import OperationalException
 from freqtrade.state import RunMode
-from freqtrade.utils import (setup_utils_configuration, start_create_userdir,
-                             start_download_data, start_hyperopt_list,
-                             start_hyperopt_show, start_list_exchanges,
-                             start_list_markets, start_list_strategies,
-                             start_list_timeframes, start_new_hyperopt,
-                             start_new_strategy, start_test_pairlist,
-                             start_trading)
+from freqtrade.utils import (setup_utils_configuration, start_convert_data,
+                             start_create_userdir, start_download_data,
+                             start_hyperopt_list, start_hyperopt_show,
+                             start_list_exchanges, start_list_markets,
+                             start_list_strategies, start_list_timeframes,
+                             start_new_hyperopt, start_new_strategy,
+                             start_test_pairlist, start_trading)
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 
@@ -821,3 +821,47 @@ def test_hyperopt_show(mocker, capsys, hyperopt_results):
     with pytest.raises(OperationalException,
                        match="The index of the epoch to show should be less than 4."):
         start_hyperopt_show(pargs)
+
+
+def test_convert_data(mocker, testdatadir):
+    ohlcv_mock = mocker.patch("freqtrade.utils.convert_ohlcv_format", MagicMock())
+    trades_mock = mocker.patch("freqtrade.utils.convert_trades_format", MagicMock())
+    args = [
+        "convert-data",
+        "--format-from",
+        "json",
+        "--format-to",
+        "jsongz",
+        "--datadir",
+        str(testdatadir),
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_convert_data(pargs, True)
+    assert trades_mock.call_count == 0
+    assert ohlcv_mock.call_count == 1
+    assert ohlcv_mock.call_args[1]['convert_from'] == 'json'
+    assert ohlcv_mock.call_args[1]['convert_to'] == 'jsongz'
+    assert ohlcv_mock.call_args[1]['erase'] is False
+
+
+def test_convert_data_trades(mocker, testdatadir):
+    ohlcv_mock = mocker.patch("freqtrade.utils.convert_ohlcv_format", MagicMock())
+    trades_mock = mocker.patch("freqtrade.utils.convert_trades_format", MagicMock())
+    args = [
+        "convert-trade-data",
+        "--format-from",
+        "jsongz",
+        "--format-to",
+        "json",
+        "--datadir",
+        str(testdatadir),
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_convert_data(pargs, False)
+    assert ohlcv_mock.call_count == 0
+    assert trades_mock.call_count == 1
+    assert trades_mock.call_args[1]['convert_from'] == 'jsongz'
+    assert trades_mock.call_args[1]['convert_to'] == 'json'
+    assert trades_mock.call_args[1]['erase'] is False
