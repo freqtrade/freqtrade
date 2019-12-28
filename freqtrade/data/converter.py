@@ -8,7 +8,6 @@ from typing import Any, Dict
 import pandas as pd
 from pandas import DataFrame, to_datetime
 
-from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
 
 logger = logging.getLogger(__name__)
@@ -116,7 +115,7 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
     return df
 
 
-def trim_dataframe(df: DataFrame, timerange: TimeRange, df_date_col: str = 'date') -> DataFrame:
+def trim_dataframe(df: DataFrame, timerange, df_date_col: str = 'date') -> DataFrame:
     """
     Trim dataframe based on given timerange
     :param df: Dataframe to trim
