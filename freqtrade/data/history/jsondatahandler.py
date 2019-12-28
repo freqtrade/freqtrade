@@ -96,7 +96,6 @@ class JsonDataHandler(IDataHandler):
         :param pair: Pair
         :param timeframe: Timeframe this ohlcv data is for
         :param data: Data to append.
-
         """
         raise NotImplementedError()
 

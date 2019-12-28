@@ -24,7 +24,102 @@ class IDataHandler(ABC):
     def __init__(self, datadir: Path) -> None:
         self._datadir = datadir
 
-    # TODO: create abstract interface
+    @abstractclassmethod
+    def ohlcv_get_pairs(cls, datadir: Path, timeframe: str) -> List[str]:
+        """
+        Returns a list of all pairs with ohlcv data available in this datadir
+        for the specified timeframe
+        :param datadir: Directory to search for ohlcv files
+        :param timeframe: Timeframe to search pairs for
+        :return: List of Pairs
+        """
+
+    @abstractmethod
+    def ohlcv_store(self, pair: str, timeframe: str, data: DataFrame) -> None:
+        """
+        Store data in json format "values".
+            format looks as follows:
+            [[<date>,<open>,<high>,<low>,<close>]]
+        :param pair: Pair - used to generate filename
+        :timeframe: Timeframe - used to generate filename
+        :data: Dataframe containing OHLCV data
+        :return: None
+        """
+
+    @abstractmethod
+    def _ohlcv_load(self, pair: str, timeframe: str,
+                    timerange: Optional[TimeRange] = None,
+                    ) -> DataFrame:
+        """
+        Internal method used to load data for one pair from disk.
+        Implements the loading and conversation to a Pandas dataframe.
+        Timerange trimming and dataframe validation happens outside of this method.
+        :param pair: Pair to load data
+        :param timeframe: Ticker timeframe (e.g. "5m")
+        :param timerange: Limit data to be loaded to this timerange.
+                        Optionally implemented by subclasses to avoid loading
+                        all data where possible.
+        :return: DataFrame with ohlcv data, or empty DataFrame
+        """
+
+    @abstractmethod
+    def ohlcv_purge(self, pair: str, timeframe: str) -> bool:
+        """
+        Remove data for this pair
+        :param pair: Delete data for this pair.
+        :param timeframe: Ticker timeframe (e.g. "5m")
+        :return: True when deleted, false if file did not exist.
+        """
+
+    @abstractmethod
+    def ohlcv_append(self, pair: str, timeframe: str, data: DataFrame) -> None:
+        """
+        Append data to existing data structures
+        :param pair: Pair
+        :param timeframe: Timeframe this ohlcv data is for
+        :param data: Data to append.
+        """
+
+    @abstractclassmethod
+    def trades_get_pairs(cls, datadir: Path) -> List[str]:
+        """
+        Returns a list of all pairs for which trade data is available in this
+        :param datadir: Directory to search for ohlcv files
+        :return: List of Pairs
+        """
+
+    @abstractmethod
+    def trades_store(self, pair: str, data: List[Dict]) -> None:
+        """
+        Store trades data (list of Dicts) to file
+        :param pair: Pair - used for filename
+        :param data: List of Dicts containing trade data
+        """
+
+    @abstractmethod
+    def trades_append(self, pair: str, data: List[Dict]):
+        """
+        Append data to existing files
+        :param pair: Pair - used for filename
+        :param data: List of Dicts containing trade data
+        """
+
+    @abstractmethod
+    def trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> List[Dict]:
+        """
+        Load a pair from file, either .json.gz or .json
+        :param pair: Load trades for this pair
+        :param timerange: Timerange to load trades for - currently not implemented
+        :return: List of trades
+        """
+
+    @abstractmethod
+    def trades_purge(self, pair: str) -> bool:
+        """
+        Remove data for this pair
+        :param pair: Delete data for this pair.
+        :return: True when deleted, false if file did not exist.
+        """
 
     def ohlcv_load(self, pair, timeframe: str,
                    timerange: Optional[TimeRange] = None,
