@@ -231,7 +231,6 @@ class FreqtradeBot:
         """
         open_trades = len(Trade.get_open_trades())
         if open_trades >= self.config['max_open_trades']:
-            logger.warning("Can't open a new trade: max number of trades is reached")
             return None
         available_amount = self.wallets.get_free(self.config['stake_currency'])
         return available_amount / (self.config['max_open_trades'] - open_trades)
@@ -324,7 +323,8 @@ class FreqtradeBot:
 
             if buy and not sell and len(Trade.get_open_trades()) < self.config['max_open_trades']:
                 stake_amount = self.get_trade_stake_amount(pair)
-                if not stake_amount:
+                if stake_amount is None:
+                    logger.warning("Can't open a new trade: max number of trades is reached")
                     continue
 
                 logger.info(f"Buy signal found: about create a new trade with stake_amount: "
