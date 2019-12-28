@@ -335,6 +335,10 @@ class FreqtradeBot:
                     continue
 
                 stake_amount = self.get_trade_stake_amount(pair)
+                if not stake_amount:
+                    logger.warning("Stake amount is 0, ignoring trade")
+                    continue
+
                 logger.info(f"Buy signal found: about create a new trade with stake_amount: "
                             f"{stake_amount} ...")
 
