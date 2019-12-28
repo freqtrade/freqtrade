@@ -251,16 +251,15 @@ def start_list_strategies(args: Dict[str, Any]) -> None:
 def convert_trades_format(config: Dict[str, Any], convert_from: str, convert_to: str):
     """
     TODO: move this to converter.py (?)
-    TODO: remove Path conversation once PR is merged and this is rebased
     """
     SrcClass = get_datahandlerclass(convert_from)
     TrgClass = get_datahandlerclass(convert_to)
 
     if 'pairs' not in config:
-        config['pairs'] = SrcClass.trades_get_pairs(Path(config['datadir']))
+        config['pairs'] = SrcClass.trades_get_pairs(config['datadir'])
     logger.info(f"Converting trades for {config['pairs']}")
-    src = SrcClass(Path(config['datadir']))
-    trg = TrgClass(Path(config['datadir']))
+    src = SrcClass(config['datadir'])
+    trg = TrgClass(config['datadir'])
     for pair in config['pairs']:
         data = src.trades_load(pair=pair)
         logger.info(f"Converting {len(data)} trades for {pair}")
@@ -270,7 +269,6 @@ def convert_trades_format(config: Dict[str, Any], convert_from: str, convert_to:
 def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: str):
     """
     TODO: move this to converter.py (?)
-    TODO: remove Path conversation once PR is merged and this is rebased
     """
     SrcClass = get_datahandlerclass(convert_from)
     TrgClass = get_datahandlerclass(convert_to)
@@ -281,12 +279,12 @@ def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: 
         config['pairs'] = []
         # Check timeframes or fall back to ticker_interval.
         for timeframe in timeframes:
-            config['pairs'].extend(SrcClass.ohlcv_get_pairs(Path(config['datadir']),
+            config['pairs'].extend(SrcClass.ohlcv_get_pairs(config['datadir'],
                                                             timeframe))
     logger.info(f"Converting OHLCV for {config['pairs']}")
 
-    src = SrcClass(Path(config['datadir']))
-    trg = TrgClass(Path(config['datadir']))
+    src = SrcClass(config['datadir'])
+    trg = TrgClass(config['datadir'])
 
     for timeframe in timeframes:
         for pair in config['pairs']:
