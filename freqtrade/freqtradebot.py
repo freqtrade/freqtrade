@@ -331,12 +331,12 @@ class FreqtradeBot:
 
             if buy and not sell:
                 if not self.get_free_open_trades():
-                    logger.warning("Can't open a new trade: max number of trades is reached")
+                    logger.debug("Can't open a new trade: max number of trades is reached")
                     continue
 
                 stake_amount = self.get_trade_stake_amount(pair)
                 if not stake_amount:
-                    logger.warning("Stake amount is 0, ignoring trade")
+                    logger.debug("Stake amount is 0, ignoring possible trade for {pair}.")
                     continue
 
                 logger.info(f"Buy signal found: about create a new trade with stake_amount: "
