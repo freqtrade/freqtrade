@@ -124,19 +124,19 @@ def test_exchange_resolver(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
-    exchange = ExchangeResolver('Bittrex', default_conf).exchange
+    exchange = ExchangeResolver.load_exchange('Bittrex', default_conf)
     assert isinstance(exchange, Exchange)
     assert log_has_re(r"No .* specific subclass found. Using the generic class instead.", caplog)
     caplog.clear()
 
-    exchange = ExchangeResolver('kraken', default_conf).exchange
+    exchange = ExchangeResolver.load_exchange('kraken', default_conf)
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Kraken)
     assert not isinstance(exchange, Binance)
     assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
                           caplog)
 
-    exchange = ExchangeResolver('binance', default_conf).exchange
+    exchange = ExchangeResolver.load_exchange('binance', default_conf)
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Binance)
     assert not isinstance(exchange, Kraken)
@@ -145,7 +145,7 @@ def test_exchange_resolver(default_conf, mocker, caplog):
                           caplog)
 
     # Test mapping
-    exchange = ExchangeResolver('binanceus', default_conf).exchange
+    exchange = ExchangeResolver.load_exchange('binanceus', default_conf)
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Binance)
     assert not isinstance(exchange, Kraken)
@@ -363,8 +363,9 @@ def test_validate_pairs_exception(default_conf, mocker, caplog):
 def test_validate_pairs_restricted(default_conf, mocker, caplog):
     api_mock = MagicMock()
     type(api_mock).markets = PropertyMock(return_value={
-        'ETH/BTC': {}, 'LTC/BTC': {}, 'NEO/BTC': {},
-        'XRP/BTC': {'info': {'IsRestricted': True}}
+        'ETH/BTC': {}, 'LTC/BTC': {},
+        'XRP/BTC': {'info': {'IsRestricted': True}},
+        'NEO/BTC': {'info': 'TestString'},  # info can also be a string ...
     })
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
@@ -977,7 +978,7 @@ def test_get_tickers(default_conf, mocker, exchange_name):
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_get_ticker(default_conf, mocker, exchange_name):
+def test_fetch_ticker(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
     tick = {
         'symbol': 'ETH/BTC',
@@ -989,7 +990,7 @@ def test_get_ticker(default_conf, mocker, exchange_name):
     api_mock.markets = {'ETH/BTC': {'active': True}}
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     # retrieve original ticker
-    ticker = exchange.get_ticker(pair='ETH/BTC')
+    ticker = exchange.fetch_ticker(pair='ETH/BTC')
 
     assert ticker['bid'] == 0.00001098
     assert ticker['ask'] == 0.00001099
@@ -1006,7 +1007,7 @@ def test_get_ticker(default_conf, mocker, exchange_name):
 
     # if not caching the result we should get the same ticker
     # if not fetching a new result we should get the cached ticker
-    ticker = exchange.get_ticker(pair='ETH/BTC')
+    ticker = exchange.fetch_ticker(pair='ETH/BTC')
 
     assert api_mock.fetch_ticker.call_count == 1
     assert ticker['bid'] == 0.5
@@ -1018,19 +1019,19 @@ def test_get_ticker(default_conf, mocker, exchange_name):
 
     # Test caching
     api_mock.fetch_ticker = MagicMock()
-    exchange.get_ticker(pair='ETH/BTC', refresh=False)
+    exchange.fetch_ticker(pair='ETH/BTC', refresh=False)
     assert api_mock.fetch_ticker.call_count == 0
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
-                           "get_ticker", "fetch_ticker",
+                           "fetch_ticker", "fetch_ticker",
                            pair='ETH/BTC', refresh=True)
 
     api_mock.fetch_ticker = MagicMock(return_value={})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-    exchange.get_ticker(pair='ETH/BTC', refresh=True)
+    exchange.fetch_ticker(pair='ETH/BTC', refresh=True)
 
     with pytest.raises(DependencyException, match=r'Pair XRP/ETH not available'):
-        exchange.get_ticker(pair='XRP/ETH', refresh=True)
+        exchange.fetch_ticker(pair='XRP/ETH', refresh=True)
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)

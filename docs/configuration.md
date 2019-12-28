@@ -38,8 +38,8 @@ The prevelance for all Options is as follows:
 
 Mandatory parameters are marked as **Required**, which means that they are required to be set in one of the possible ways.
 
-|  Command | Description |
-|----------|-------------|
+|  Parameter | Description |
+|------------|-------------|
 | `max_open_trades` | **Required.** Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades).<br> ***Datatype:*** *Positive integer or -1.*
 | `stake_currency` | **Required.** Crypto-currency used for trading. [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *String*
 | `stake_amount` | **Required.** Amount of crypto-currency your bot will use for each trade. Set it to `"unlimited"` to allow the bot to use all available balance. [More information below](#understand-stake_amount). [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *Positive float or `"unlimited"`.*
@@ -55,14 +55,14 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `trailing_stop_positive` | Changes stoploss once profit has been reached. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *Float*
 | `trailing_stop_positive_offset` | Offset on when to apply `trailing_stop_positive`. Percentage value which should be positive. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `0.0` (no offset).* <br> ***Datatype:*** *Float*
 | `trailing_only_offset_is_reached` | Only apply trailing stoploss when the offset is reached. [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*  <br> ***Datatype:*** *Boolean*
-| `unfilledtimeout.buy` | **Required.** How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled.  <br> ***Datatype:*** *Integer*
-| `unfilledtimeout.sell` | **Required.** How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled. <br> ***Datatype:*** *Integer*
-| `bid_strategy.ask_last_balance` | **Required.** Set the bidding price. More information [below](#understand-ask_last_balance). 
-| `bid_strategy.use_order_book` | Enable buying using the rates in Order Book Bids. <br> ***Datatype:*** *Boolean*
-| `bid_strategy.order_book_top` | Bot will use the top N rate in Order Book Bids. I.e. a value of 2 will allow the bot to pick the 2nd bid rate in Order Book Bids.  *Defaults to `1`.*  <br> ***Datatype:*** *Positive Integer*
-| `bid_strategy. check_depth_of_market.enabled` | Do not buy if the difference of buy orders and sell orders is met in Order Book. <br>*Defaults to `false`.* <br> ***Datatype:*** *Boolean*
-| `bid_strategy. check_depth_of_market.bids_to_ask_delta` | The % difference of buy orders and sell orders found in Order Book. A value lesser than 1 means sell orders is greater, while value greater than 1 means buy orders is higher.  *Defaults to `0`.*  <br> ***Datatype:*** *Float (as ratio)*
-| `ask_strategy.use_order_book` | Enable selling of open trades using Order Book Asks. <br> ***Datatype:*** *Boolean*
+| `unfilledtimeout.buy` | **Required.** How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled. [Strategy Override](#parameters-in-the-strategy).<br> ***Datatype:*** *Integer*
+| `unfilledtimeout.sell` | **Required.** How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled. [Strategy Override](#parameters-in-the-strategy).<br> ***Datatype:*** *Integer*
+| `bid_strategy.ask_last_balance` | **Required.** Set the bidding price. More information [below](#buy-price-without-orderbook). 
+| `bid_strategy.use_order_book` | Enable buying using the rates in [Order Book Bids](#buy-price-with-orderbook-enabled). <br> ***Datatype:*** *Boolean*
+| `bid_strategy.order_book_top` | Bot will use the top N rate in Order Book Bids to buy. I.e. a value of 2 will allow the bot to pick the 2nd bid rate in [Order Book Bids](#buy-price-with-orderbook-enabled). <br>*Defaults to `1`.*  <br> ***Datatype:*** *Positive Integer*
+| `bid_strategy. check_depth_of_market.enabled` | Do not buy if the difference of buy orders and sell orders is met in Order Book. [Check market depth](#check-depth-of-market). <br>*Defaults to `false`.* <br> ***Datatype:*** *Boolean*
+| `bid_strategy. check_depth_of_market.bids_to_ask_delta` | The difference ratio of buy orders and sell orders found in Order Book. A value below 1 means sell order size is greater, while value greater than 1 means buy order size is higher. [Check market depth](#check-depth-of-market) <br> *Defaults to `0`.*  <br> ***Datatype:*** *Float (as ratio)*
+| `ask_strategy.use_order_book` | Enable selling of open trades using [Order Book Asks](#sell-price-with-orderbook-enabled). <br> ***Datatype:*** *Boolean*
 | `ask_strategy.order_book_min` | Bot will scan from the top min to max Order Book Asks searching for a profitable rate. <br>*Defaults to `1`.* <br> ***Datatype:*** *Positive Integer*
 | `ask_strategy.order_book_max` | Bot will scan from the top min to max Order Book Asks searching for a profitable rate. <br>*Defaults to `1`.* <br> ***Datatype:*** *Positive Integer*
 | `ask_strategy.use_sell_signal` | Use sell signals produced by the strategy in addition to the `minimal_roi`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `true`.* <br> ***Datatype:*** *Boolean*
@@ -72,9 +72,9 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `order_time_in_force` | Configure time in force for buy and sell orders. [More information below](#understand-order_time_in_force). [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *Dict*
 | `exchange.name` | **Required.** Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename). <br> ***Datatype:*** *String*
 | `exchange.sandbox` | Use the 'sandbox' version of the exchange, where the exchange provides a sandbox for risk-free integration. See [here](sandbox-testing.md) in more details.<br> ***Datatype:*** *Boolean*
-| `exchange.key` | API key to use for the exchange. Only required when you are in production mode. **Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
-| `exchange.secret` | API secret to use for the exchange. Only required when you are in production mode. **Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
-| `exchange.password` | API password to use for the exchange. Only required when you are in production mode and for exchanges that use password for API requests. **Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
+| `exchange.key` | API key to use for the exchange. Only required when you are in production mode.<br>**Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
+| `exchange.secret` | API secret to use for the exchange. Only required when you are in production mode.<br>**Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
+| `exchange.password` | API password to use for the exchange. Only required when you are in production mode and for exchanges that use password for API requests.<br>**Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
 | `exchange.pair_whitelist` | List of pairs to use by the bot for trading and to check for potential trades during backtesting. Not used by VolumePairList (see [below](#dynamic-pairlists)). <br> ***Datatype:*** *List*
 | `exchange.pair_blacklist` | List of pairs the bot must absolutely avoid for trading and backtesting (see [below](#dynamic-pairlists)). <br> ***Datatype:*** *List*
 | `exchange.ccxt_config` | Additional CCXT parameters passed to the regular ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> ***Datatype:*** *Dict*
@@ -84,19 +84,19 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `experimental.block_bad_exchanges` | Block exchanges known to not work with freqtrade. Leave on default unless you want to test if that exchange works now. <br>*Defaults to `true`.* <br> ***Datatype:*** *Boolean*
 | `pairlists` | Define one or more pairlists to be used. [More information below](#dynamic-pairlists). <br>*Defaults to `StaticPairList`.*  <br> ***Datatype:*** *List of Dicts*
 | `telegram.enabled` | Enable the usage of Telegram. <br> ***Datatype:*** *Boolean*
-| `telegram.token` | Your Telegram bot token. Only required if `telegram.enabled` is `true`. **Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
-| `telegram.chat_id` | Your personal Telegram account id. Only required if `telegram.enabled` is `true`. **Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
+| `telegram.token` | Your Telegram bot token. Only required if `telegram.enabled` is `true`. <br>**Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
+| `telegram.chat_id` | Your personal Telegram account id. Only required if `telegram.enabled` is `true`. <br>**Keep it in secret, do not disclose publicly.** <br> ***Datatype:*** *String*
 | `webhook.enabled` | Enable usage of Webhook notifications <br> ***Datatype:*** *Boolean*
 | `webhook.url` | URL for the webhook. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> ***Datatype:*** *String*
-| `webhook.webhookbuy` | Payload to send on buy. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details. <br> ***Datatype:*** *String*
-| `webhook.webhooksell` | Payload to send on sell. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details. <br> ***Datatype:*** *String*
-| `webhook.webhookstatus` | Payload to send on status calls. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details. <br> ***Datatype:*** *String*
+| `webhook.webhookbuy` | Payload to send on buy. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> ***Datatype:*** *String*
+| `webhook.webhooksell` | Payload to send on sell. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> ***Datatype:*** *String*
+| `webhook.webhookstatus` | Payload to send on status calls. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> ***Datatype:*** *String*
 | `api_server.enabled` | Enable usage of API Server. See the [API Server documentation](rest-api.md) for more details. <br> ***Datatype:*** *Boolean*
 | `api_server.listen_ip_address` | Bind IP address. See the [API Server documentation](rest-api.md) for more details. <br> ***Datatype:*** *IPv4*
-| `api_server.listen_port` | Bind Port. See the [API Server documentation](rest-api.md) for more details. <br> ***Datatype:*** *Integer between 1024 and 65535*
-| `api_server.username` | Username for API server. See the [API Server documentation](rest-api.md) for more details. **Keep it in secret, do not disclose publicly.**<br> ***Datatype:*** *String*
-| `api_server.password` | Password for API server. See the [API Server documentation](rest-api.md) for more details. **Keep it in secret, do not disclose publicly.**<br> ***Datatype:*** *String*
-| `db_url` | Declares database URL to use. NOTE: This defaults to `sqlite://` if `dry_run` is `true`, and to `sqlite:///tradesv3.sqlite` for production instances. <br> ***Datatype:*** *String, SQLAlchemy connect string*
+| `api_server.listen_port` | Bind Port. See the [API Server documentation](rest-api.md) for more details. <br>***Datatype:*** *Integer between 1024 and 65535*
+| `api_server.username` | Username for API server. See the [API Server documentation](rest-api.md) for more details. <br>**Keep it in secret, do not disclose publicly.**<br> ***Datatype:*** *String*
+| `api_server.password` | Password for API server. See the [API Server documentation](rest-api.md) for more details. <br>**Keep it in secret, do not disclose publicly.**<br> ***Datatype:*** *String*
+| `db_url` | Declares database URL to use. NOTE: This defaults to `sqlite:///tradesv3.dryrun.sqlite` if `dry_run` is `true`, and to `sqlite:///tradesv3.sqlite` for production instances. <br> ***Datatype:*** *String, SQLAlchemy connect string*
 | `initial_state` | Defines the initial application state. More information below. <br>*Defaults to `stopped`.* <br> ***Datatype:*** *Enum, either `stopped` or `running`*
 | `forcebuy_enable` | Enables the RPC Commands to force a buy. More information below. <br> ***Datatype:*** *Boolean*
 | `strategy` | **Required** Defines Strategy class to use. Recommended to be set via `--strategy NAME`. <br> ***Datatype:*** *ClassName*
@@ -124,6 +124,7 @@ Values set in the configuration file always overwrite values set in the strategy
 * `order_time_in_force`
 * `stake_currency`
 * `stake_amount`
+* `unfilledtimeout`
 * `use_sell_signal` (ask_strategy)
 * `sell_profit_only` (ask_strategy)
 * `ignore_roi_if_buy_signal` (ask_strategy)
@@ -206,13 +207,6 @@ The `process_throttle_secs` configuration parameter is an optional field that de
 before asking the strategy if we should buy or a sell an asset. After each wait period, the strategy is asked again for
 every opened trade wether or not we should sell, and for all the remaining pairs (either the dynamic list of pairs or
 the static list of pairs) if we should buy.
-
-### Understand ask_last_balance
-
-The `ask_last_balance` configuration parameter sets the bidding price. Value `0.0` will use `ask` price, `1.0` will
-use the `last` price and values between those interpolate between ask and last
-price. Using `ask` price will guarantee quick success in bid, but bot will also
-end up paying more then would probably have been necessary.
 
 ### Understand order_types
 
@@ -392,6 +386,54 @@ The valid values are:
 ```json
 "BTC", "ETH", "XRP", "LTC", "BCH", "USDT"
 ```
+
+## Prices used for orders
+
+Prices for regular orders can be controlled via the parameter structures `bid_strategy` for buying and `ask_strategy` for selling.
+Prices are always retrieved right before an order is placed, either by querying the exchange tickers or by using the orderbook data.
+
+!!! Note
+    Orderbook data used by Freqtrade are the data retrieved from exchange by the ccxt's function `fetch_order_book()`, i.e. are usually data from the L2-aggregated orderbook, while the ticker data are the structures returned by the ccxt's `fetch_ticker()`/`fetch_tickers()` functions. Refer to the ccxt library [documentation](https://github.com/ccxt/ccxt/wiki/Manual#market-data) for more details.
+
+### Buy price
+
+#### Check depth of market
+
+When check depth of market is enabled (`bid_strategy.check_depth_of_market.enabled=True`), the buy signals are filtered based on the orderbook depth (sum of all amounts) for each orderbook side.
+
+Orderbook `bid` (buy) side depth is then divided by the orderbook `ask` (sell) side depth and the resulting delta is compared to the value of the `bid_strategy.check_depth_of_market.bids_to_ask_delta` parameter. The buy order is only executed if the orderbook delta is greater than or equal to the configured delta value.
+
+!!! Note
+    A delta value below 1 means that `ask` (sell) orderbook side depth is greater than the depth of the `bid` (buy) orderbook side, while a value greater than 1 means opposite (depth of the buy side is higher than the depth of the sell side).
+
+#### Buy price with Orderbook enabled
+
+When buying with the orderbook enabled (`bid_strategy.use_order_book=True`), Freqtrade fetches the `bid_strategy.order_book_top` entries from the orderbook and then uses the entry specified as `bid_strategy.order_book_top` on the `bid` (buy) side of the orderbook. 1 specifies the topmost entry in the orderbook, while 2 would use the 2nd entry in the orderbook, and so on.
+
+#### Buy price without Orderbook enabled
+
+When not using orderbook (`bid_strategy.use_order_book=False`), Freqtrade uses the best `ask` (sell) price from the ticker if it's below the `last` traded price from the ticker. Otherwise (when the `ask` price is not below the `last` price), it calculates a rate between `ask` and `last` price.
+
+The `bid_strategy.ask_last_balance` configuration parameter controls this. A value of `0.0` will use `ask` price, while `1.0` will use the `last` price and values between those interpolate between ask and last price.
+
+Using `ask` price often guarantees quicker success in the bid, but the bot can also end up paying more than what would have been necessary.
+
+### Sell price
+
+#### Sell price with Orderbook enabled
+
+When selling with the orderbook enabled (`ask_strategy.use_order_book=True`), Freqtrade fetches the `ask_strategy.order_book_max` entries in the orderbook. Then each of the orderbook steps between `ask_strategy.order_book_min` and `ask_strategy.order_book_max` on the `ask` orderbook side are validated for a profitable sell-possibility based on the strategy configuration and the sell order is placed at the first profitable spot.
+
+The idea here is to place the sell order early, to be ahead in the queue.
+
+A fixed slot (mirroring `bid_strategy.order_book_top`) can be defined by setting `ask_strategy.order_book_min` and `ask_strategy.order_book_max` to the same number.
+
+!!! Warning "Orderbook and stoploss_on_exchange"
+    Using `ask_strategy.order_book_max` higher than 1 may increase the risk, since an eventual [stoploss on exchange](#understand-order_types) will be needed to be cancelled as soon as the order is placed.
+
+#### Sell price without Orderbook enabled
+
+When not using orderbook (`ask_strategy.use_order_book=False`), the `bid` price from the ticker will be used as the sell price.
 
 ## Pairlists
 

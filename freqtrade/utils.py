@@ -191,29 +191,28 @@ def start_download_data(args: Dict[str, Any]) -> None:
             "Downloading data requires a list of pairs. "
             "Please check the documentation on how to configure this.")
 
-    dl_path = Path(config['datadir'])
     logger.info(f'About to download pairs: {config["pairs"]}, '
-                f'intervals: {config["timeframes"]} to {dl_path}')
+                f'intervals: {config["timeframes"]} to {config["datadir"]}')
 
     pairs_not_available: List[str] = []
 
     # Init exchange
-    exchange = ExchangeResolver(config['exchange']['name'], config).exchange
+    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config)
     try:
 
         if config.get('download_trades'):
             pairs_not_available = refresh_backtest_trades_data(
-                exchange, pairs=config["pairs"], datadir=Path(config['datadir']),
+                exchange, pairs=config["pairs"], datadir=config['datadir'],
                 timerange=timerange, erase=config.get("erase"))
 
             # Convert downloaded trade data to different timeframes
             convert_trades_to_ohlcv(
                 pairs=config["pairs"], timeframes=config["timeframes"],
-                datadir=Path(config['datadir']), timerange=timerange, erase=config.get("erase"))
+                datadir=config['datadir'], timerange=timerange, erase=config.get("erase"))
         else:
             pairs_not_available = refresh_backtest_ohlcv_data(
                 exchange, pairs=config["pairs"], timeframes=config["timeframes"],
-                datadir=Path(config['datadir']), timerange=timerange, erase=config.get("erase"))
+                datadir=config['datadir'], timerange=timerange, erase=config.get("erase"))
 
     except KeyboardInterrupt:
         sys.exit("SIGINT received, aborting ...")
@@ -233,7 +232,7 @@ def start_list_timeframes(args: Dict[str, Any]) -> None:
     config['ticker_interval'] = None
 
     # Init exchange
-    exchange = ExchangeResolver(config['exchange']['name'], config, validate=False).exchange
+    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
 
     if args['print_one_column']:
         print('\n'.join(exchange.timeframes))
@@ -252,7 +251,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
 
     # Init exchange
-    exchange = ExchangeResolver(config['exchange']['name'], config, validate=False).exchange
+    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
 
     # By default only active pairs/markets are to be shown
     active_only = not args.get('list_pairs_all', False)
@@ -333,7 +332,7 @@ def start_test_pairlist(args: Dict[str, Any]) -> None:
     from freqtrade.pairlist.pairlistmanager import PairListManager
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
 
-    exchange = ExchangeResolver(config['exchange']['name'], config, validate=False).exchange
+    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
 
     quote_currencies = args.get('quote_currencies')
     if not quote_currencies:

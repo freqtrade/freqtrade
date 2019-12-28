@@ -23,58 +23,43 @@ The `freqtrade plot-dataframe` subcommand shows an interactive graph with three 
 Possible arguments:
 
 ```
-usage: freqtrade plot-dataframe [-h] [-v] [--logfile FILE] [-V] [-c PATH]
-                                [-d PATH] [--userdir PATH] [-s NAME]
-                                [--strategy-path PATH] [-p PAIRS [PAIRS ...]]
-                                [--indicators1 INDICATORS1 [INDICATORS1 ...]]
-                                [--indicators2 INDICATORS2 [INDICATORS2 ...]]
-                                [--plot-limit INT] [--db-url PATH]
-                                [--trade-source {DB,file}] [--export EXPORT]
-                                [--export-filename PATH]
-                                [--timerange TIMERANGE] [-i TICKER_INTERVAL]
+usage: freqtrade plot-dataframe [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH] [--userdir PATH] [-s NAME]
+                                [--strategy-path PATH] [-p PAIRS [PAIRS ...]] [--indicators1 INDICATORS1 [INDICATORS1 ...]]
+                                [--indicators2 INDICATORS2 [INDICATORS2 ...]] [--plot-limit INT] [--db-url PATH]
+                                [--trade-source {DB,file}] [--export EXPORT] [--export-filename PATH] [--timerange TIMERANGE]
+                                [-i TICKER_INTERVAL]
 
 optional arguments:
   -h, --help            show this help message and exit
   -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
-                        Show profits for only these pairs. Pairs are space-
-                        separated.
+                        Show profits for only these pairs. Pairs are space-separated.
   --indicators1 INDICATORS1 [INDICATORS1 ...]
-                        Set indicators from your strategy you want in the
-                        first row of the graph. Space-separated list. Example:
+                        Set indicators from your strategy you want in the first row of the graph. Space-separated list. Example:
                         `ema3 ema5`. Default: `['sma', 'ema3', 'ema5']`.
   --indicators2 INDICATORS2 [INDICATORS2 ...]
-                        Set indicators from your strategy you want in the
-                        third row of the graph. Space-separated list. Example:
+                        Set indicators from your strategy you want in the third row of the graph. Space-separated list. Example:
                         `fastd fastk`. Default: `['macd', 'macdsignal']`.
-  --plot-limit INT      Specify tick limit for plotting. Notice: too high
-                        values cause huge files. Default: 750.
-  --db-url PATH         Override trades database URL, this is useful in custom
-                        deployments (default: `sqlite:///tradesv3.sqlite` for
-                        Live Run mode, `sqlite://` for Dry Run).
+  --plot-limit INT      Specify tick limit for plotting. Notice: too high values cause huge files. Default: 750.
+  --db-url PATH         Override trades database URL, this is useful in custom deployments (default: `sqlite:///tradesv3.sqlite`
+                        for Live Run mode, `sqlite:///tradesv3.dryrun.sqlite` for Dry Run).
   --trade-source {DB,file}
-                        Specify the source for trades (Can be DB or file
-                        (backtest file)) Default: file
-  --export EXPORT       Export backtest results, argument are: trades.
-                        Example: `--export=trades`
+                        Specify the source for trades (Can be DB or file (backtest file)) Default: file
+  --export EXPORT       Export backtest results, argument are: trades. Example: `--export=trades`
   --export-filename PATH
-                        Save backtest results to the file with this filename
-                        (default: `user_data/backtest_results/backtest-
-                        result.json`). Requires `--export` to be set as well.
-                        Example: `--export-filename=user_data/backtest_results
-                        /backtest_today.json`
+                        Save backtest results to the file with this filename. Requires `--export` to be set as well. Example:
+                        `--export-filename=user_data/backtest_results/backtest_today.json`
   --timerange TIMERANGE
                         Specify what timerange of data to use.
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
-                        Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
-                        `1d`).
+                        Specify ticker interval (`1m`, `5m`, `30m`, `1h`, `1d`).
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified.
+  --logfile FILE        Log to the file specified. Special values are: 'syslog', 'journald'. See the documentation for more
+                        details.
   -V, --version         show program's version number and exit
   -c PATH, --config PATH
-                        Specify configuration file (default: `config.json`).
-                        Multiple --config options may be used. Can be set to
+                        Specify configuration file (default: `config.json`). Multiple --config options may be used. Can be set to
                         `-` to read config from stdin.
   -d PATH, --datadir PATH
                         Path to directory with historical backtesting data.
@@ -83,8 +68,7 @@ Common arguments:
 
 Strategy arguments:
   -s NAME, --strategy NAME
-                        Specify strategy class name (default:
-                        `DefaultStrategy`).
+                        Specify strategy class name which will be used by the bot.
   --strategy-path PATH  Specify additional strategy lookup path.
 
 ```
@@ -173,14 +157,14 @@ optional arguments:
   --export EXPORT       Export backtest results, argument are: trades.
                         Example: `--export=trades`
   --export-filename PATH
-                        Save backtest results to the file with this filename
-                        (default: `user_data/backtest_results/backtest-
-                        result.json`). Requires `--export` to be set as well.
-                        Example: `--export-filename=user_data/backtest_results
-                        /backtest_today.json`
+                        Save backtest results to the file with this filename.
+                        Requires `--export` to be set as well. Example:
+                        `--export-filename=user_data/backtest_results/backtest
+                        _today.json`
   --db-url PATH         Override trades database URL, this is useful in custom
                         deployments (default: `sqlite:///tradesv3.sqlite` for
-                        Live Run mode, `sqlite://` for Dry Run).
+                        Live Run mode, `sqlite:///tradesv3.dryrun.sqlite` for
+                        Dry Run).
   --trade-source {DB,file}
                         Specify the source for trades (Can be DB or file
                         (backtest file)) Default: file
@@ -190,7 +174,9 @@ optional arguments:
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified.
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
   -V, --version         show program's version number and exit
   -c PATH, --config PATH
                         Specify configuration file (default: `config.json`).

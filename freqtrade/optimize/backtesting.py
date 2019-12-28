@@ -60,7 +60,7 @@ class Backtesting:
         # Reset keys for backtesting
         remove_credentials(self.config)
         self.strategylist: List[IStrategy] = []
-        self.exchange = ExchangeResolver(self.config['exchange']['name'], self.config).exchange
+        self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
 
         if config.get('fee'):
             self.fee = config['fee']
@@ -75,12 +75,12 @@ class Backtesting:
             for strat in list(self.config['strategy_list']):
                 stratconf = deepcopy(self.config)
                 stratconf['strategy'] = strat
-                self.strategylist.append(StrategyResolver(stratconf).strategy)
+                self.strategylist.append(StrategyResolver.load_strategy(stratconf))
                 validate_config_consistency(stratconf)
 
         else:
             # No strategy list specified, only one strategy
-            self.strategylist.append(StrategyResolver(self.config).strategy)
+            self.strategylist.append(StrategyResolver.load_strategy(self.config))
             validate_config_consistency(self.config)
 
         if "ticker_interval" not in self.config:
@@ -109,7 +109,7 @@ class Backtesting:
             'timerange') is None else str(self.config.get('timerange')))
 
         data = history.load_data(
-            datadir=Path(self.config['datadir']),
+            datadir=self.config['datadir'],
             pairs=self.config['exchange']['pair_whitelist'],
             timeframe=self.timeframe,
             timerange=timerange,
@@ -183,9 +183,11 @@ class Backtesting:
         Generate small table outlining Backtest results
         """
         tabular_data = []
-        headers = ['Sell Reason', 'Count']
+        headers = ['Sell Reason', 'Count', 'Profit', 'Loss']
         for reason, count in results['sell_reason'].value_counts().iteritems():
-            tabular_data.append([reason.value,  count])
+            profit = len(results[(results['sell_reason'] == reason) & (results['profit_abs'] >= 0)])
+            loss = len(results[(results['sell_reason'] == reason) & (results['profit_abs'] < 0)])
+            tabular_data.append([reason.value, count, profit, loss])
         return tabulate(tabular_data, headers=headers, tablefmt="pipe")
 
     def _generate_text_table_strategy(self, all_results: dict) -> str:

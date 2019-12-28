@@ -341,13 +341,14 @@ class RPC:
                 raise RPCException('All balances are zero.')
 
         symbol = fiat_display_currency
-        value = self._fiat_converter.convert_amount(total, 'BTC',
+        value = self._fiat_converter.convert_amount(total, stake_currency,
                                                     symbol) if self._fiat_converter else 0
         return {
             'currencies': output,
             'total': total,
             'symbol': symbol,
             'value': value,
+            'stake': stake_currency,
             'note': 'Simulated balances' if self._freqtrade.config.get('dry_run', False) else ''
         }
 

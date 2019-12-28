@@ -58,13 +58,15 @@ class Wallets:
         - Subtract currently tied up stake_amount in open trades
         - update balances for currencies currently in trades
         """
+        # Recreate _wallets to reset closed trade balances
+        _wallets = {}
         closed_trades = Trade.get_trades(Trade.is_open.is_(False)).all()
         open_trades = Trade.get_trades(Trade.is_open.is_(True)).all()
         tot_profit = sum([trade.calc_profit() for trade in closed_trades])
         tot_in_trades = sum([trade.stake_amount for trade in open_trades])
 
         current_stake = self.start_cap + tot_profit - tot_in_trades
-        self._wallets[self._config['stake_currency']] = Wallet(
+        _wallets[self._config['stake_currency']] = Wallet(
             self._config['stake_currency'],
             current_stake,
             0,
@@ -73,12 +75,13 @@ class Wallets:
 
         for trade in open_trades:
             curr = trade.pair.split('/')[0]
-            self._wallets[curr] = Wallet(
+            _wallets[curr] = Wallet(
                 curr,
                 trade.amount,
                 0,
                 trade.amount
             )
+        self._wallets = _wallets
 
     def _update_live(self) -> None:
 

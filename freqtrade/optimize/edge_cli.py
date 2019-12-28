@@ -34,7 +34,7 @@ class EdgeCli:
         remove_credentials(self.config)
         self.config['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
         self.exchange = Exchange(self.config)
-        self.strategy = StrategyResolver(self.config).strategy
+        self.strategy = StrategyResolver.load_strategy(self.config)
 
         validate_config_consistency(self.config)
 
@@ -42,10 +42,8 @@ class EdgeCli:
         # Set refresh_pairs to false for edge-cli (it must be true for edge)
         self.edge._refresh_pairs = False
 
-        self.timerange = TimeRange.parse_timerange(None if self.config.get(
+        self.edge._timerange = TimeRange.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
-
-        self.edge._timerange = self.timerange
 
     def _generate_edge_table(self, results: dict) -> str:
 

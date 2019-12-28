@@ -100,7 +100,7 @@ def test_init_dryrun_db(default_conf, mocker):
 
     init(default_conf['db_url'], default_conf['dry_run'])
     assert create_engine_mock.call_count == 1
-    assert create_engine_mock.mock_calls[0][1][0] == 'sqlite://'
+    assert create_engine_mock.mock_calls[0][1][0] == 'sqlite:///tradesv3.dryrun.sqlite'
 
 
 @pytest.mark.usefixtures("init_persistence")

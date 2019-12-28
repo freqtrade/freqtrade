@@ -150,7 +150,7 @@ def test_status(default_conf, update, mocker, fee, ticker,) -> None:
 
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
     )
     msg_mock = MagicMock()
@@ -204,7 +204,7 @@ def test_status(default_conf, update, mocker, fee, ticker,) -> None:
 def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
     )
     msg_mock = MagicMock()
@@ -254,7 +254,7 @@ def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
 def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         buy=MagicMock(return_value={'id': 'mocked_order_id'}),
         get_fee=fee,
     )
@@ -307,7 +307,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
     )
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
     )
     msg_mock = MagicMock()
@@ -373,7 +373,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
 def test_daily_wrong_input(default_conf, update, ticker, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_ticker=ticker
+        fetch_ticker=ticker
     )
     msg_mock = MagicMock()
     mocker.patch.multiple(
@@ -411,7 +411,7 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
     )
     msg_mock = MagicMock()
@@ -443,7 +443,7 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     msg_mock.reset_mock()
 
     # Update the ticker with a market going up
-    mocker.patch('freqtrade.exchange.Exchange.get_ticker', ticker_sell_up)
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', ticker_sell_up)
     trade.update(limit_sell_order)
 
     trade.close_date = datetime.utcnow()
@@ -534,7 +534,7 @@ def test_balance_handle_empty_response_dry(default_conf, update, mocker) -> None
     telegram._balance(update=update, context=MagicMock())
     result = msg_mock.call_args_list[0][0][0]
     assert msg_mock.call_count == 1
-    assert "*Warning:*Simulated balances in Dry Mode." in result
+    assert "*Warning:* Simulated balances in Dry Mode." in result
     assert "Starting capital: `1000` BTC" in result
 
 
@@ -700,7 +700,7 @@ def test_forcesell_handle(default_conf, update, ticker, fee,
     patch_whitelist(mocker, default_conf)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
     )
 
@@ -715,7 +715,7 @@ def test_forcesell_handle(default_conf, update, ticker, fee,
     assert trade
 
     # Increase the price and sell it
-    mocker.patch('freqtrade.exchange.Exchange.get_ticker', ticker_sell_up)
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', ticker_sell_up)
 
     # /forcesell 1
     context = MagicMock()
@@ -755,7 +755,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee,
 
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
     )
 
@@ -769,7 +769,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee,
     # Decrease the price and sell it
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_ticker=ticker_sell_down
+        fetch_ticker=ticker_sell_down
     )
 
     trade = Trade.query.first()
@@ -812,7 +812,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
     patch_whitelist(mocker, default_conf)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
     )
     default_conf['max_open_trades'] = 4
@@ -963,7 +963,7 @@ def test_performance_handle(default_conf, update, ticker, fee,
     )
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
     )
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
@@ -998,7 +998,7 @@ def test_count_handle(default_conf, update, ticker, fee, mocker) -> None:
     )
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         buy=MagicMock(return_value={'id': 'mocked_order_id'}),
         get_fee=fee,
     )

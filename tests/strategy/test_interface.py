@@ -302,6 +302,19 @@ def test_is_pair_locked(default_conf):
     # ETH/BTC locked for 4 minutes
     assert strategy.is_pair_locked(pair)
 
+    # Test lock does not change
+    lock = strategy._pair_locked_until[pair]
+    strategy.lock_pair(pair, arrow.utcnow().shift(minutes=2).datetime)
+    assert lock == strategy._pair_locked_until[pair]
+
     # XRP/BTC should not be locked now
     pair = 'XRP/BTC'
+    assert not strategy.is_pair_locked(pair)
+
+    # Unlocking a pair that's not locked should not raise an error
+    strategy.unlock_pair(pair)
+
+    # Unlock original pair
+    pair = 'ETH/BTC'
+    strategy.unlock_pair(pair)
     assert not strategy.is_pair_locked(pair)

@@ -37,7 +37,7 @@ def init_plotscript(config):
     timerange = TimeRange.parse_timerange(config.get("timerange"))
 
     tickers = history.load_data(
-        datadir=Path(str(config.get("datadir"))),
+        datadir=config.get("datadir"),
         pairs=pairs,
         timeframe=config.get('ticker_interval', '5m'),
         timerange=timerange,
@@ -340,7 +340,7 @@ def load_and_plot_trades(config: Dict[str, Any]):
     - Generate plot files
     :return: None
     """
-    strategy = StrategyResolver(config).strategy
+    strategy = StrategyResolver.load_strategy(config)
 
     plot_elements = init_plotscript(config)
     trades = plot_elements['trades']

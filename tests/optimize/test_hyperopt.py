@@ -163,7 +163,7 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
         MagicMock(return_value=hyperopt(default_conf))
     )
     default_conf.update({'hyperopt': 'DefaultHyperOpt'})
-    x = HyperOptResolver(default_conf).hyperopt
+    x = HyperOptResolver.load_hyperopt(default_conf)
     assert not hasattr(x, 'populate_indicators')
     assert not hasattr(x, 'populate_buy_trend')
     assert not hasattr(x, 'populate_sell_trend')
@@ -180,7 +180,7 @@ def test_hyperoptresolver_wrongname(mocker, default_conf, caplog) -> None:
     default_conf.update({'hyperopt': "NonExistingHyperoptClass"})
 
     with pytest.raises(OperationalException, match=r'Impossible to load Hyperopt.*'):
-        HyperOptResolver(default_conf).hyperopt
+        HyperOptResolver.load_hyperopt(default_conf)
 
 
 def test_hyperoptresolver_noname(default_conf):
@@ -188,7 +188,7 @@ def test_hyperoptresolver_noname(default_conf):
     with pytest.raises(OperationalException,
                        match="No Hyperopt set. Please use `--hyperopt` to specify "
                              "the Hyperopt class to use."):
-        HyperOptResolver(default_conf)
+        HyperOptResolver.load_hyperopt(default_conf)
 
 
 def test_hyperoptlossresolver(mocker, default_conf, caplog) -> None:
@@ -198,7 +198,7 @@ def test_hyperoptlossresolver(mocker, default_conf, caplog) -> None:
         'freqtrade.resolvers.hyperopt_resolver.HyperOptLossResolver._load_hyperoptloss',
         MagicMock(return_value=hl)
     )
-    x = HyperOptLossResolver(default_conf).hyperoptloss
+    x = HyperOptLossResolver.load_hyperoptloss(default_conf)
     assert hasattr(x, "hyperopt_loss_function")
 
 
@@ -206,7 +206,7 @@ def test_hyperoptlossresolver_wrongname(mocker, default_conf, caplog) -> None:
     default_conf.update({'hyperopt_loss': "NonExistingLossClass"})
 
     with pytest.raises(OperationalException, match=r'Impossible to load HyperoptLoss.*'):
-        HyperOptLossResolver(default_conf).hyperopt
+        HyperOptLossResolver.load_hyperoptloss(default_conf)
 
 
 def test_start_not_installed(mocker, default_conf, caplog, import_fails) -> None:
@@ -286,7 +286,7 @@ def test_start_filelock(mocker, default_conf, caplog) -> None:
 
 
 def test_loss_calculation_prefer_correct_trade_count(default_conf, hyperopt_results) -> None:
-    hl = HyperOptLossResolver(default_conf).hyperoptloss
+    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
     correct = hl.hyperopt_loss_function(hyperopt_results, 600)
     over = hl.hyperopt_loss_function(hyperopt_results, 600 + 100)
     under = hl.hyperopt_loss_function(hyperopt_results, 600 - 100)
@@ -298,7 +298,7 @@ def test_loss_calculation_prefer_shorter_trades(default_conf, hyperopt_results) 
     resultsb = hyperopt_results.copy()
     resultsb.loc[1, 'trade_duration'] = 20
 
-    hl = HyperOptLossResolver(default_conf).hyperoptloss
+    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
     longer = hl.hyperopt_loss_function(hyperopt_results, 100)
     shorter = hl.hyperopt_loss_function(resultsb, 100)
     assert shorter < longer
@@ -310,7 +310,7 @@ def test_loss_calculation_has_limited_profit(default_conf, hyperopt_results) -> 
     results_under = hyperopt_results.copy()
     results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
 
-    hl = HyperOptLossResolver(default_conf).hyperoptloss
+    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
     correct = hl.hyperopt_loss_function(hyperopt_results, 600)
     over = hl.hyperopt_loss_function(results_over, 600)
     under = hl.hyperopt_loss_function(results_under, 600)
@@ -325,7 +325,7 @@ def test_sharpe_loss_prefers_higher_profits(default_conf, hyperopt_results) -> N
     results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
 
     default_conf.update({'hyperopt_loss': 'SharpeHyperOptLoss'})
-    hl = HyperOptLossResolver(default_conf).hyperoptloss
+    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
     correct = hl.hyperopt_loss_function(hyperopt_results, len(hyperopt_results),
                                         datetime(2019, 1, 1), datetime(2019, 5, 1))
     over = hl.hyperopt_loss_function(results_over, len(hyperopt_results),
@@ -343,7 +343,7 @@ def test_onlyprofit_loss_prefers_higher_profits(default_conf, hyperopt_results) 
     results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
 
     default_conf.update({'hyperopt_loss': 'OnlyProfitHyperOptLoss'})
-    hl = HyperOptLossResolver(default_conf).hyperoptloss
+    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
     correct = hl.hyperopt_loss_function(hyperopt_results, len(hyperopt_results),
                                         datetime(2019, 1, 1), datetime(2019, 5, 1))
     over = hl.hyperopt_loss_function(results_over, len(hyperopt_results),

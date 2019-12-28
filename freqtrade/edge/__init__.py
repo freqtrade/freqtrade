@@ -1,7 +1,6 @@
 # pragma pylint: disable=W0603
 """ Edge positioning package """
 import logging
-from pathlib import Path
 from typing import Any, Dict, NamedTuple
 
 import arrow
@@ -96,7 +95,7 @@ class Edge:
 
         if self._refresh_pairs:
             history.refresh_data(
-                datadir=Path(self.config['datadir']),
+                datadir=self.config['datadir'],
                 pairs=pairs,
                 exchange=self.exchange,
                 timeframe=self.strategy.ticker_interval,
@@ -104,7 +103,7 @@ class Edge:
             )
 
         data = history.load_data(
-            datadir=Path(self.config['datadir']),
+            datadir=self.config['datadir'],
             pairs=pairs,
             timeframe=self.strategy.ticker_interval,
             timerange=self._timerange,
