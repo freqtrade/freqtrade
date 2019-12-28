@@ -72,7 +72,7 @@ def load_data(datadir: Path,
     :param fill_up_missing: Fill missing values with "No action"-candles
     :param startup_candles: Additional candles to load at the start of the period
     :param fail_without_data: Raise OperationalException if no data is found.
-    :param data_handler: Initialized data-handler to use.
+    :param data_format: Data format which should be used. Defaults to json
     :return: dict(<pair>:<Dataframe>)
     """
     result: Dict[str, DataFrame] = {}

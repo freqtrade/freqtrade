@@ -108,6 +108,7 @@ class Edge:
             timeframe=self.strategy.ticker_interval,
             timerange=self._timerange,
             startup_candles=self.strategy.startup_candle_count,
+            data_format=self.config.get('dataformat_ohlcv', 'json'),
         )
 
         if not data:

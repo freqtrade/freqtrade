@@ -42,6 +42,7 @@ def init_plotscript(config):
         pairs=pairs,
         timeframe=config.get('ticker_interval', '5m'),
         timerange=timerange,
+        data_format=config.get('dataformat_ohlcv', 'json'),
     )
 
     trades = load_trades(config['trade_source'],

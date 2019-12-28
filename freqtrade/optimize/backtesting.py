@@ -116,6 +116,7 @@ class Backtesting:
             timerange=timerange,
             startup_candles=self.required_startup,
             fail_without_data=True,
+            data_format=self.config.get('dataformat_ohlcv', 'json'),
         )
 
         min_date, max_date = history.get_timerange(data)
