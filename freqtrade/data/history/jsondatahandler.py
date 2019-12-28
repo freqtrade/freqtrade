@@ -62,6 +62,8 @@ class JsonDataHandler(IDataHandler):
         :param pair: Pair to load data
         :param timeframe: Ticker timeframe (e.g. "5m")
         :param timerange: Limit data to be loaded to this timerange.
+                        Optionally implemented by subclasses to avoid loading
+                        all data where possible.
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
         filename = self._pair_data_filename(self._datadir, pair, timeframe)

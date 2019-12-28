@@ -17,8 +17,9 @@ from freqtrade.configuration import (Configuration, TimeRange,
 from freqtrade.configuration.directory_operations import (copy_sample_files,
                                                           create_userdata_dir)
 from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGY
+from freqtrade.data.converter import (convert_ohlcv_format,
+                                      convert_trades_format)
 from freqtrade.data.history import (convert_trades_to_ohlcv,
-                                    get_datahandlerclass,
                                     refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
 from freqtrade.exchange import (available_exchanges, ccxt_exchanges,
@@ -248,55 +249,6 @@ def start_list_strategies(args: Dict[str, Any]) -> None:
         print(tabulate(strats_to_print, headers='keys', tablefmt='pipe'))
 
 
-def convert_trades_format(config: Dict[str, Any], convert_from: str, convert_to: str):
-    """
-    TODO: move this to converter.py (?)
-    """
-    SrcClass = get_datahandlerclass(convert_from)
-    TrgClass = get_datahandlerclass(convert_to)
-
-    if 'pairs' not in config:
-        config['pairs'] = SrcClass.trades_get_pairs(config['datadir'])
-    logger.info(f"Converting trades for {config['pairs']}")
-    src = SrcClass(config['datadir'])
-    trg = TrgClass(config['datadir'])
-    for pair in config['pairs']:
-        data = src.trades_load(pair=pair)
-        logger.info(f"Converting {len(data)} trades for {pair}")
-        trg.trades_store(pair, data)
-
-
-def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: str):
-    """
-    TODO: move this to converter.py (?)
-    """
-    SrcClass = get_datahandlerclass(convert_from)
-    TrgClass = get_datahandlerclass(convert_to)
-    timeframes = config.get('timeframes', [config.get('ticker_interval')])
-    logger.info(f"Converting OHLCV for timeframe {timeframes}")
-
-    if 'pairs' not in config:
-        config['pairs'] = []
-        # Check timeframes or fall back to ticker_interval.
-        for timeframe in timeframes:
-            config['pairs'].extend(SrcClass.ohlcv_get_pairs(config['datadir'],
-                                                            timeframe))
-    logger.info(f"Converting OHLCV for {config['pairs']}")
-
-    src = SrcClass(config['datadir'])
-    trg = TrgClass(config['datadir'])
-
-    for timeframe in timeframes:
-        for pair in config['pairs']:
-            data = src.ohlcv_load(pair=pair, timeframe=timeframe,
-                                  timerange=None,
-                                  fill_missing=False,
-                                  drop_incomplete=False,
-                                  startup_candles=0)
-            logger.info(f"Converting {len(data)} candles for {pair}")
-            trg.ohlcv_store(pair=pair, timeframe=timeframe, data=data)
-
-
 def start_convert_data(args: Dict[str, Any], ohlcv: bool = True) -> None:
     """
     Convert data from one format to another
@@ -304,10 +256,12 @@ def start_convert_data(args: Dict[str, Any], ohlcv: bool = True) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
     if ohlcv:
         convert_ohlcv_format(config,
-                             convert_from=args['format_from'], convert_to=args['format_to'])
+                             convert_from=args['format_from'], convert_to=args['format_to'],
+                             erase=args['erase'])
     else:
         convert_trades_format(config,
-                              convert_from=args['format_from'], convert_to=args['format_to'])
+                              convert_from=args['format_from'], convert_to=args['format_to'],
+                              erase=args['erase'])
 
 
 def start_list_timeframes(args: Dict[str, Any]) -> None:

@@ -3,6 +3,7 @@ Functions to convert data from one format to another
 """
 import logging
 from datetime import datetime, timezone
+from typing import Any, Dict
 
 import pandas as pd
 from pandas import DataFrame, to_datetime
@@ -175,3 +176,64 @@ def trades_to_ohlcv(trades: list, timeframe: str) -> DataFrame:
     # Drop 0 volume rows
     df_new = df_new.dropna()
     return df_new[DEFAULT_DATAFRAME_COLUMNS]
+
+
+def convert_trades_format(config: Dict[str, Any], convert_from: str, convert_to: str, erase: bool):
+    """
+    Convert trades from one format to another format.
+    :param config: Config dictionary
+    :param convert_from: Source format
+    :param convert_to: Target format
+    :param erase: Erase souce data (does not apply if source and target format are identical)
+    """
+    from freqtrade.data.history.idatahandler import get_datahandler
+    src = get_datahandler(config['datadir'], convert_from)
+    trg = get_datahandler(config['datadir'], convert_to)
+
+    if 'pairs' not in config:
+        config['pairs'] = src.trades_get_pairs(config['datadir'])
+    logger.info(f"Converting trades for {config['pairs']}")
+
+    for pair in config['pairs']:
+        data = src.trades_load(pair=pair)
+        logger.info(f"Converting {len(data)} trades for {pair}")
+        trg.trades_store(pair, data)
+        if erase and convert_from != convert_to:
+            logger.info(f"Deleting source Trade data for {pair}.")
+            src.trades_purge(pair=pair)
+
+
+def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: str, erase: bool):
+    """
+    Convert ohlcv from one format to another format.
+    :param config: Config dictionary
+    :param convert_from: Source format
+    :param convert_to: Target format
+    :param erase: Erase souce data (does not apply if source and target format are identical)
+    """
+    from freqtrade.data.history.idatahandler import get_datahandler
+    src = get_datahandler(config['datadir'], convert_from)
+    trg = get_datahandler(config['datadir'], convert_to)
+    timeframes = config.get('timeframes', [config.get('ticker_interval')])
+    logger.info(f"Converting OHLCV for timeframe {timeframes}")
+
+    if 'pairs' not in config:
+        config['pairs'] = []
+        # Check timeframes or fall back to ticker_interval.
+        for timeframe in timeframes:
+            config['pairs'].extend(src.ohlcv_get_pairs(config['datadir'],
+                                                       timeframe))
+    logger.info(f"Converting OHLCV for {config['pairs']}")
+
+    for timeframe in timeframes:
+        for pair in config['pairs']:
+            data = src.ohlcv_load(pair=pair, timeframe=timeframe,
+                                  timerange=None,
+                                  fill_missing=False,
+                                  drop_incomplete=False,
+                                  startup_candles=0)
+            logger.info(f"Converting {len(data)} candles for {pair}")
+            trg.ohlcv_store(pair=pair, timeframe=timeframe, data=data)
+            if erase and convert_from != convert_to:
+                logger.info(f"Deleting source data for {pair} / {timeframe}")
+                src.ohlcv_purge(pair=pair, timeframe=timeframe)

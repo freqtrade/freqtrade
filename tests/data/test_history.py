@@ -463,7 +463,8 @@ def test_refresh_backtest_ohlcv_data(mocker, default_conf, markets, caplog, test
 
 
 def test_download_data_no_markets(mocker, default_conf, caplog, testdatadir):
-    dl_mock = mocker.patch('freqtrade.data.history.history_utils._download_pair_history', MagicMock())
+    dl_mock = mocker.patch('freqtrade.data.history.history_utils._download_pair_history',
+                           MagicMock())
 
     ex = get_patched_exchange(mocker, default_conf)
     mocker.patch(
