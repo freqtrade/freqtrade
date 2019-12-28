@@ -2,11 +2,13 @@
 import logging
 
 from freqtrade.configuration.timerange import TimeRange
-from freqtrade.data.converter import (ohlcv_fill_up_missing_data,
+from freqtrade.data.converter import (convert_trades_format,
+                                      ohlcv_fill_up_missing_data,
                                       parse_ticker_dataframe, trim_dataframe)
 from freqtrade.data.history import (get_timerange, load_data,
                                     load_pair_history, validate_backtest_data)
 from tests.conftest import log_has
+from tests.data.test_history import _backup_file, _clean_test_file
 
 
 def test_dataframe_correct_columns(result):
@@ -188,3 +190,31 @@ def test_trim_dataframe(testdatadir) -> None:
     assert len(data_modify) == len(data) - 55
     # first row matches 25th original row
     assert all(data_modify.iloc[0] == data.iloc[25])
+
+
+def test_convert_trades_format(mocker, default_conf, testdatadir):
+    file = testdatadir / "XRP_ETH-trades.json.gz"
+    file_new = testdatadir / "XRP_ETH-trades.json"
+    _backup_file(file, copy_file=True)
+    default_conf['datadir'] = testdatadir
+
+    assert not file_new.exists()
+
+    convert_trades_format(default_conf, convert_from='jsongz',
+                          convert_to='json', erase=False)
+
+    assert file_new.exists()
+    assert file.exists()
+
+    # Remove original file
+    file.unlink()
+    # Convert back
+    convert_trades_format(default_conf, convert_from='json',
+                          convert_to='jsongz', erase=True)
+
+    assert file.exists()
+    assert not file_new.exists()
+
+    _clean_test_file(file)
+    if file_new.exists():
+        file_new.unlink()
