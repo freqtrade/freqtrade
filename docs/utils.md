@@ -110,7 +110,7 @@ freqtrade new-hyperopt --userdir ~/.freqtrade/ --hyperopt AwesomeHyperopt
 
 ## List Strategies
 
-Use the `list-strategies` subcommand to see all strategies in one particular folder.
+Use the `list-strategies` subcommand to see all strategies in one particular directory.
 
 ```
 freqtrade list-strategies --help
@@ -135,12 +135,12 @@ Common arguments:
 ```
 
 !!! Warning
-    Using this command will try to load all python files from a folder. This can be a security risk if untrusted files reside in this folder, since all module-level code is executed.
+    Using this command will try to load all python files from a directory. This can be a security risk if untrusted files reside in this directory, since all module-level code is executed.
 
-Example: search default strategy folder within userdir
+Example: search default strategy directory within userdir
 
 ``` bash
-freqtrade list-strategies --user-data ~/.freqtrade/
+freqtrade list-strategies --userdir ~/.freqtrade/
 ```
 
 Example: search dedicated strategy path
