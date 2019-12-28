@@ -917,6 +917,27 @@ class FreqtradeBot:
         # TODO: figure out how to handle partially complete sell orders
         return False
 
+    def _safe_sell_amount(self, pair: str, amount: float) -> float:
+        """
+        Get sellable amount.
+        Should be trade.amount - but will fall back to the available amount if necessary.
+        This should cover cases where get_real_amount() was not able to update the amount
+        for whatever reason.
+        :param pair: Pair we're trying to sell
+        :param amount: amount we expect to be available
+        :return: amount to sell
+        :raise: DependencyException: if available balance is not within 2% of the available amount.
+        """
+        wallet_amount = self.wallets.get_free(pair.split('/')[0])
+        logger.debug(f"{pair} - Wallet: {wallet_amount} - Trade-amount: {amount}")
+        if wallet_amount > amount:
+            return amount
+        elif wallet_amount > amount * 0.98:
+            logger.info(f"{pair} - Falling back to wallet-amount.")
+            return wallet_amount
+        else:
+            raise DependencyException("Not enough amount to sell.")
+
     def execute_sell(self, trade: Trade, limit: float, sell_reason: SellType) -> None:
         """
         Executes a limit sell for the given trade and limit
@@ -947,10 +968,12 @@ class FreqtradeBot:
             # Emergencysells (default to market!)
             ordertype = self.strategy.order_types.get("emergencysell", "market")
 
+        amount = self._safe_sell_amount(trade.pair, trade.amount)
+
         # Execute sell and update trade record
         order = self.exchange.sell(pair=str(trade.pair),
                                    ordertype=ordertype,
-                                   amount=trade.amount, rate=limit,
+                                   amount=amount, rate=limit,
                                    time_in_force=self.strategy.order_time_in_force['sell']
                                    )
 

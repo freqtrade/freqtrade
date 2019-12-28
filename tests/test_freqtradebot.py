@@ -887,7 +887,7 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order) -> None:
         'freqtrade.freqtradebot.FreqtradeBot',
         get_target_bid=get_bid,
         _get_min_pair_stake_amount=MagicMock(return_value=1)
-        )
+    )
     buy_mm = MagicMock(return_value={'id': limit_buy_order['id']})
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -1682,6 +1682,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, fee, mock
     time.sleep(0.01)  # Race condition fix
     trade.update(limit_buy_order)
     assert trade.is_open is True
+    freqtrade.wallets.update()
 
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
@@ -2326,6 +2327,7 @@ def test_execute_sell_down_stoploss_on_exchange_dry_run(default_conf, ticker, fe
 def test_execute_sell_sloe_cancel_exception(mocker, default_conf, ticker, fee, caplog) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.cancel_order', side_effect=InvalidOrderException())
+    mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(return_value=300))
     sellmock = MagicMock()
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -2548,6 +2550,7 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order,
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
+    freqtrade.wallets.update()
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
@@ -2578,6 +2581,7 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order,
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
+    freqtrade.wallets.update()
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
@@ -2603,7 +2607,7 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, fee, mocker
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.stop_loss_reached = MagicMock(return_value=SellCheckTuple(
-            sell_flag=False, sell_type=SellType.NONE))
+        sell_flag=False, sell_type=SellType.NONE))
     freqtrade.create_trades()
 
     trade = Trade.query.first()
@@ -2638,9 +2642,85 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, mocke
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
+    freqtrade.wallets.update()
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
+
+
+def test_sell_not_enough_balance(default_conf, limit_buy_order,
+                                 fee, mocker, caplog) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=MagicMock(return_value={
+            'bid': 0.00002172,
+            'ask': 0.00002173,
+            'last': 0.00002172
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
+    )
+
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+    freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
+
+    freqtrade.create_trades()
+
+    trade = Trade.query.first()
+    amnt = trade.amount
+    trade.update(limit_buy_order)
+    patch_get_signal(freqtrade, value=(False, True))
+    mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(return_value=trade.amount * 0.985))
+
+    assert freqtrade.handle_trade(trade) is True
+    assert log_has_re(r'.*Falling back to wallet-amount.', caplog)
+    assert trade.amount != amnt
+
+
+def test__safe_sell_amount(default_conf, fee, caplog, mocker):
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    amount = 95.33
+    amount_wallet = 95.29
+    mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(return_value=amount_wallet))
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=amount,
+        exchange='binance',
+        open_rate=0.245441,
+        open_order_id="123456",
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+    )
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+
+    assert freqtrade._safe_sell_amount(trade.pair, trade.amount) == amount_wallet
+    assert log_has_re(r'.*Falling back to wallet-amount.', caplog)
+
+
+def test__safe_sell_amount_error(default_conf, fee, caplog, mocker):
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    amount = 95.33
+    amount_wallet = 91.29
+    mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(return_value=amount_wallet))
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=amount,
+        exchange='binance',
+        open_rate=0.245441,
+        open_order_id="123456",
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+    )
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+    with pytest.raises(DependencyException, match=r"Not enough amount to sell."):
+        assert freqtrade._safe_sell_amount(trade.pair, trade.amount)
 
 
 def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down, mocker, caplog) -> None:
@@ -2703,6 +2783,7 @@ def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, mocker) ->
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
+    freqtrade.wallets.update()
     patch_get_signal(freqtrade, value=(True, True))
     assert freqtrade.handle_trade(trade) is False
 
@@ -3440,6 +3521,7 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order, limit_sell_order
 
     time.sleep(0.01)  # Race condition fix
     trade.update(limit_buy_order)
+    freqtrade.wallets.update()
     assert trade.is_open is True
 
     patch_get_signal(freqtrade, value=(False, True))
