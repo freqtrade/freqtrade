@@ -11,4 +11,4 @@ from .history_utils import (convert_trades_to_ohlcv,  # noqa: F401
                             refresh_backtest_ohlcv_data,
                             refresh_backtest_trades_data, refresh_data,
                             validate_backtest_data)
-from .idatahandler import get_datahandler, get_datahandlerclass  # noqa: F401
+from .idatahandler import get_datahandler  # noqa: F401

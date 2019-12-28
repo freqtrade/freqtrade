@@ -13,13 +13,13 @@ from pandas.testing import assert_frame_equal
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.converter import parse_ticker_dataframe
-from freqtrade.data.history import get_datahandler, get_datahandlerclass
 from freqtrade.data.history.history_utils import (
     _download_pair_history, _download_trades_history,
     _load_cached_data_for_updating, convert_trades_to_ohlcv, get_timerange,
     load_data, load_pair_history, refresh_backtest_ohlcv_data,
     refresh_backtest_trades_data, refresh_data, validate_backtest_data)
-from freqtrade.data.history.idatahandler import IDataHandler
+from freqtrade.data.history.idatahandler import (IDataHandler, get_datahandler,
+                                                 get_datahandlerclass)
 from freqtrade.data.history.jsondatahandler import (JsonDataHandler,
                                                     JsonGzDataHandler)
 from freqtrade.exchange import timeframe_to_minutes
