@@ -463,32 +463,32 @@ class FreqtradeBot:
         Tries to execute buy orders for trades in a safe way
         """
         result = False
-        try:
-            whitelist = copy.deepcopy(self.active_pair_whitelist)
+
+        whitelist = copy.deepcopy(self.active_pair_whitelist)
+        if not whitelist:
+            logger.info("Active pair whitelist is empty.")
+        else:
+            # Remove currently opened and latest pairs from whitelist
+            for trade in Trade.get_open_trades():
+                if trade.pair in whitelist:
+                    whitelist.remove(trade.pair)
+                    logger.debug('Ignoring %s in pair whitelist', trade.pair)
 
             if not whitelist:
-                logger.info("Active pair whitelist is empty.")
+                logger.info("No currency pair in active pair whitelist, "
+                            "but checking to sell open trades.")
             else:
-                # Remove currently opened and latest pairs from whitelist
-                for trade in Trade.get_open_trades():
-                    if trade.pair in whitelist:
-                        whitelist.remove(trade.pair)
-                        logger.debug('Ignoring %s in pair whitelist', trade.pair)
-
-                if not whitelist:
-                    logger.info("No currency pair in active pair whitelist, "
-                                "but checking to sell open trades.")
-                else:
-                    # Create entity and execute trade for each pair from whitelist
-                    for pair in whitelist:
+                # Create entity and execute trade for each pair from whitelist
+                for pair in whitelist:
+                    try:
                         if self.create_trade(pair):
                             result = True
+                    except DependencyException as exception:
+                        logger.warning('Unable to create trade: %s', exception)
 
-            if not result:
-                logger.debug('Found no buy signals for whitelisted currencies. Trying again...')
-
-        except DependencyException as exception:
-            logger.warning('Unable to create trade: %s', exception)
+                if not result:
+                    logger.debug("Found no buy signals for whitelisted currencies. "
+                                 "Trying again...")
 
     def process_maybe_execute_sells(self, trades: List[Any]) -> None:
         """
