@@ -275,13 +275,13 @@ def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
     # Status table is also enabled when stopped
     telegram._status_table(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
-    assert 'no active order' in msg_mock.call_args_list[0][0][0]
+    assert 'no active trade' in msg_mock.call_args_list[0][0][0]
     msg_mock.reset_mock()
 
     freqtradebot.state = State.RUNNING
     telegram._status_table(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
-    assert 'no active order' in msg_mock.call_args_list[0][0][0]
+    assert 'no active trade' in msg_mock.call_args_list[0][0][0]
     msg_mock.reset_mock()
 
     # Create some test data

@@ -113,7 +113,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     rpc = RPC(freqtradebot)
 
     freqtradebot.state = State.RUNNING
-    with pytest.raises(RPCException, match=r'.*no active order*'):
+    with pytest.raises(RPCException, match=r'.*no active trade*'):
         rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
 
     freqtradebot.create_trades()
