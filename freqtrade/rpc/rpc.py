@@ -142,7 +142,7 @@ class RPC:
     def _rpc_status_table(self, stake_currency, fiat_display_currency: str) -> Tuple[List, List]:
         trades = Trade.get_open_trades()
         if not trades:
-            raise RPCException('no active order')
+            raise RPCException('no active trade')
         else:
             trades_list = []
             for trade in trades:
