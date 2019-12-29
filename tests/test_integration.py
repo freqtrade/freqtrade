@@ -80,7 +80,7 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
     patch_get_signal(freqtrade)
 
     # Create some test data
-    freqtrade.create_trades()
+    freqtrade.process_maybe_execute_buys()
     wallets_mock.reset_mock()
     Trade.session = MagicMock()
 
@@ -153,7 +153,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
     patch_get_signal(freqtrade)
 
     # Create 4 trades
-    freqtrade.create_trades()
+    freqtrade.process_maybe_execute_buys()
 
     trades = Trade.query.all()
     assert len(trades) == 4
