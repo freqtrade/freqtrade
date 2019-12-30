@@ -137,7 +137,7 @@ class FreqtradeBot:
 
         # Then looking for buy opportunities
         if self.get_free_open_trades():
-            self.process_maybe_execute_buys()
+            self.enter_positions()
 
         # Check and handle any timed out open orders
         self.check_handle_timedout()
@@ -460,9 +460,9 @@ class FreqtradeBot:
 
         return True
 
-    def process_maybe_execute_buys(self) -> int:
+    def enter_positions(self) -> int:
         """
-        Tries to execute buy orders for trades in a safe way
+        Tries to execute buy orders for new trades (positions)
         """
         trades_created = 0
 
