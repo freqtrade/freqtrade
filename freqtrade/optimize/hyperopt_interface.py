@@ -4,16 +4,14 @@ This module defines the interface to apply for hyperopt
 """
 import logging
 import math
-
 from abc import ABC
-from typing import Dict, Any, Callable, List
+from typing import Any, Callable, Dict, List
 
 from skopt.space import Categorical, Dimension, Integer, Real
 
-from freqtrade import OperationalException
+from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import round_dict
-
 
 logger = logging.getLogger(__name__)
 

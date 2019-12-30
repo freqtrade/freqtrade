@@ -16,10 +16,12 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 from pandas import DataFrame
 
-from freqtrade import OperationalException, misc
+from freqtrade import misc
 from freqtrade.configuration import TimeRange
 from freqtrade.data.converter import parse_ticker_dataframe, trades_to_ohlcv
-from freqtrade.exchange import Exchange, timeframe_to_minutes, timeframe_to_seconds
+from freqtrade.exceptions import OperationalException
+from freqtrade.exchange import (Exchange, timeframe_to_minutes,
+                                timeframe_to_seconds)
 
 logger = logging.getLogger(__name__)
 

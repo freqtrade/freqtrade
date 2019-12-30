@@ -6,7 +6,8 @@ import arrow
 import pytest
 from sqlalchemy import create_engine
 
-from freqtrade import OperationalException, constants
+from freqtrade import constants
+from freqtrade.exceptions import OperationalException
 from freqtrade.persistence import Trade, clean_dry_run_db, init
 from tests.conftest import log_has
 

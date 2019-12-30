@@ -7,15 +7,16 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-from freqtrade import OperationalException, constants
+from freqtrade import constants
 from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.deprecated_settings import process_temporary_deprecated_settings
 from freqtrade.configuration.directory_operations import (create_datadir,
                                                           create_userdata_dir)
 from freqtrade.configuration.load_config import load_config_file
+from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import setup_logging
 from freqtrade.misc import deep_merge_dicts, json_load
-from freqtrade.state import RunMode, TRADING_MODES, NON_UTIL_MODES
+from freqtrade.state import NON_UTIL_MODES, TRADING_MODES, RunMode
 
 logger = logging.getLogger(__name__)
 

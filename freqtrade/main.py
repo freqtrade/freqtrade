@@ -13,8 +13,8 @@ if sys.version_info < (3, 6):
 import logging
 from typing import Any, List
 
-from freqtrade import OperationalException
 from freqtrade.configuration import Arguments
+from freqtrade.exceptions import OperationalException
 
 
 logger = logging.getLogger('freqtrade')

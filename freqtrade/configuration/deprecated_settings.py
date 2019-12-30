@@ -5,7 +5,7 @@ Functions to handle deprecated settings
 import logging
 from typing import Any, Dict
 
-from freqtrade import OperationalException
+from freqtrade.exceptions import OperationalException
 
 
 logger = logging.getLogger(__name__)

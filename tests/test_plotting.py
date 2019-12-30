@@ -7,17 +7,17 @@ import plotly.graph_objects as go
 import pytest
 from plotly.subplots import make_subplots
 
-from freqtrade import OperationalException
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import create_cum_profit, load_backtest_data
+from freqtrade.exceptions import OperationalException
 from freqtrade.plot.plot_utils import start_plot_dataframe, start_plot_profit
 from freqtrade.plot.plotting import (add_indicators, add_profit,
-                                     load_and_plot_trades,
                                      generate_candlestick_graph,
                                      generate_plot_filename,
                                      generate_profit_graph, init_plotscript,
-                                     plot_profit, plot_trades, store_plot_file)
+                                     load_and_plot_trades, plot_profit,
+                                     plot_trades, store_plot_file)
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from tests.conftest import get_args, log_has, log_has_re
 

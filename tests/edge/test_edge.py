@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 from pandas import DataFrame, to_datetime
 
-from freqtrade import OperationalException
+from freqtrade.exceptions import OperationalException
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.strategy.interface import SellType

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
-from freqtrade import OperationalException
+from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
 from freqtrade.utils import (setup_utils_configuration, start_create_userdir,
                              start_download_data, start_hyperopt_list,

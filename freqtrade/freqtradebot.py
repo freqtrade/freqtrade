@@ -12,17 +12,17 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 from requests.exceptions import RequestException
 
-from freqtrade import (DependencyException, InvalidOrderException, __version__,
-                       constants, persistence)
+from freqtrade import __version__, constants, persistence
 from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
+from freqtrade.exceptions import DependencyException, InvalidOrderException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
+from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager, RPCMessageType
-from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.state import State
 from freqtrade.strategy.interface import IStrategy, SellType
 from freqtrade.wallets import Wallets

@@ -4,7 +4,8 @@ from typing import Any, Dict
 from jsonschema import Draft4Validator, validators
 from jsonschema.exceptions import ValidationError, best_match
 
-from freqtrade import constants, OperationalException
+from freqtrade import constants
+from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)

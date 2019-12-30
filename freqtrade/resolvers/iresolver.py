@@ -9,7 +9,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Tuple, Type, Union
 
-from freqtrade import OperationalException
+from freqtrade.exceptions import OperationalException
 
 logger = logging.getLogger(__name__)
 
