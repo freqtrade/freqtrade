@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from freqtrade import OperationalException
+from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
 from freqtrade.utils import setup_utils_configuration
 

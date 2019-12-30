@@ -11,9 +11,9 @@ from inspect import getfullargspec
 from pathlib import Path
 from typing import Dict, Optional
 
-from freqtrade import OperationalException
 from freqtrade.constants import (REQUIRED_ORDERTIF, REQUIRED_ORDERTYPES,
                                  USERPATH_STRATEGY)
+from freqtrade.exceptions import OperationalException
 from freqtrade.resolvers import IResolver
 from freqtrade.strategy.interface import IStrategy
 

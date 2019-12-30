@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
-from freqtrade import OperationalException
+from freqtrade.exceptions import OperationalException
 from freqtrade.constants import AVAILABLE_PAIRLISTS
 from freqtrade.resolvers import PairListResolver
 from freqtrade.pairlist.pairlistmanager import PairListManager

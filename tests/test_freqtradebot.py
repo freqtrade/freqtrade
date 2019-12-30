@@ -11,9 +11,9 @@ import arrow
 import pytest
 import requests
 
-from freqtrade import (DependencyException, InvalidOrderException,
-                       OperationalException, TemporaryError, constants)
-from freqtrade.constants import MATH_CLOSE_PREC
+from freqtrade.constants import MATH_CLOSE_PREC, UNLIMITED_STAKE_AMOUNT
+from freqtrade.exceptions import (DependencyException, InvalidOrderException,
+                                  OperationalException, TemporaryError)
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
@@ -163,7 +163,7 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker,
     )
 
     conf = deepcopy(default_conf)
-    conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
+    conf['stake_amount'] = UNLIMITED_STAKE_AMOUNT
     conf['max_open_trades'] = 2
 
     freqtrade = FreqtradeBot(conf)
@@ -564,7 +564,7 @@ def test_create_trades_limit_reached(default_conf, ticker, limit_buy_order,
         get_fee=fee,
     )
     default_conf['max_open_trades'] = 0
-    default_conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
+    default_conf['stake_amount'] = UNLIMITED_STAKE_AMOUNT
 
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)

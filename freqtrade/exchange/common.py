@@ -1,6 +1,6 @@
 import logging
 
-from freqtrade import DependencyException, TemporaryError
+from freqtrade.exceptions import DependencyException, TemporaryError
 
 logger = logging.getLogger(__name__)
 

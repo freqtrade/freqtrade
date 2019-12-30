@@ -9,7 +9,7 @@ import pytest
 from arrow import Arrow
 from filelock import Timeout
 
-from freqtrade import OperationalException
+from freqtrade.exceptions import OperationalException
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.history import load_tickerdata_file
 from freqtrade.optimize import setup_configuration, start_hyperopt

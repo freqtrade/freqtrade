@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 from numpy import NAN, mean
 
-from freqtrade import DependencyException, TemporaryError
+from freqtrade.exceptions import DependencyException, TemporaryError
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter

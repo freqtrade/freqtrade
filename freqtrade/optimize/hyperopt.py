@@ -22,13 +22,13 @@ from joblib import (Parallel, cpu_count, delayed, dump, load,
                     wrap_non_picklable_objects)
 from pandas import DataFrame
 
-from freqtrade import OperationalException
 from freqtrade.data.history import get_timerange, trim_dataframe
+from freqtrade.exceptions import OperationalException
 from freqtrade.misc import plural, round_dict
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
-from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F4
-from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F4
+from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F401
+from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F401
 from freqtrade.resolvers.hyperopt_resolver import (HyperOptLossResolver,
                                                    HyperOptResolver)
 

@@ -11,8 +11,8 @@ import ccxt
 import pytest
 from pandas import DataFrame
 
-from freqtrade import (DependencyException, InvalidOrderException,
-                       OperationalException, TemporaryError)
+from freqtrade.exceptions import (DependencyException, InvalidOrderException,
+                                  OperationalException, TemporaryError)
 from freqtrade.exchange import Binance, Exchange, Kraken
 from freqtrade.exchange.common import API_RETRY_COUNT
 from freqtrade.exchange.exchange import (market_is_active, symbol_is_pair,
