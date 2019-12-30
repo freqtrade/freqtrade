@@ -8,7 +8,7 @@ import logging
 from datetime import datetime
 from typing import Dict, List
 
-from freqtrade import OperationalException
+from freqtrade.exceptions import OperationalException
 from freqtrade.pairlist.IPairList import IPairList
 
 logger = logging.getLogger(__name__)

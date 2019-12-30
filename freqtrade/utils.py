@@ -11,7 +11,6 @@ import rapidjson
 from colorama import init as colorama_init
 from tabulate import tabulate
 
-from freqtrade import OperationalException
 from freqtrade.configuration import (Configuration, TimeRange,
                                      remove_credentials)
 from freqtrade.configuration.directory_operations import (copy_sample_files,
@@ -20,10 +19,11 @@ from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGY
 from freqtrade.data.history import (convert_trades_to_ohlcv,
                                     refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
+from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import (available_exchanges, ccxt_exchanges,
                                 market_is_active, symbol_is_pair)
 from freqtrade.misc import plural, render_template
-from freqtrade.resolvers import ExchangeResolver
+from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
@@ -191,29 +191,28 @@ def start_download_data(args: Dict[str, Any]) -> None:
             "Downloading data requires a list of pairs. "
             "Please check the documentation on how to configure this.")
 
-    dl_path = Path(config['datadir'])
     logger.info(f'About to download pairs: {config["pairs"]}, '
-                f'intervals: {config["timeframes"]} to {dl_path}')
+                f'intervals: {config["timeframes"]} to {config["datadir"]}')
 
     pairs_not_available: List[str] = []
 
     # Init exchange
-    exchange = ExchangeResolver(config['exchange']['name'], config).exchange
+    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config)
     try:
 
         if config.get('download_trades'):
             pairs_not_available = refresh_backtest_trades_data(
-                exchange, pairs=config["pairs"], datadir=Path(config['datadir']),
+                exchange, pairs=config["pairs"], datadir=config['datadir'],
                 timerange=timerange, erase=config.get("erase"))
 
             # Convert downloaded trade data to different timeframes
             convert_trades_to_ohlcv(
                 pairs=config["pairs"], timeframes=config["timeframes"],
-                datadir=Path(config['datadir']), timerange=timerange, erase=config.get("erase"))
+                datadir=config['datadir'], timerange=timerange, erase=config.get("erase"))
         else:
             pairs_not_available = refresh_backtest_ohlcv_data(
                 exchange, pairs=config["pairs"], timeframes=config["timeframes"],
-                dl_path=Path(config['datadir']), timerange=timerange, erase=config.get("erase"))
+                datadir=config['datadir'], timerange=timerange, erase=config.get("erase"))
 
     except KeyboardInterrupt:
         sys.exit("SIGINT received, aborting ...")
@@ -222,6 +221,24 @@ def start_download_data(args: Dict[str, Any]) -> None:
         if pairs_not_available:
             logger.info(f"Pairs [{','.join(pairs_not_available)}] not available "
                         f"on exchange {exchange.name}.")
+
+
+def start_list_strategies(args: Dict[str, Any]) -> None:
+    """
+    Print Strategies available in a directory
+    """
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+
+    directory = Path(config.get('strategy_path', config['user_data_dir'] / USERPATH_STRATEGY))
+    strategies = StrategyResolver.search_all_objects(directory)
+    # Sort alphabetically
+    strategies = sorted(strategies, key=lambda x: x['name'])
+    strats_to_print = [{'name': s['name'], 'location': s['location'].name} for s in strategies]
+
+    if args['print_one_column']:
+        print('\n'.join([s['name'] for s in strategies]))
+    else:
+        print(tabulate(strats_to_print, headers='keys', tablefmt='pipe'))
 
 
 def start_list_timeframes(args: Dict[str, Any]) -> None:
@@ -233,7 +250,7 @@ def start_list_timeframes(args: Dict[str, Any]) -> None:
     config['ticker_interval'] = None
 
     # Init exchange
-    exchange = ExchangeResolver(config['exchange']['name'], config, validate=False).exchange
+    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
 
     if args['print_one_column']:
         print('\n'.join(exchange.timeframes))
@@ -252,7 +269,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
 
     # Init exchange
-    exchange = ExchangeResolver(config['exchange']['name'], config, validate=False).exchange
+    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
 
     # By default only active pairs/markets are to be shown
     active_only = not args.get('list_pairs_all', False)
@@ -333,7 +350,7 @@ def start_test_pairlist(args: Dict[str, Any]) -> None:
     from freqtrade.pairlist.pairlistmanager import PairListManager
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
 
-    exchange = ExchangeResolver(config['exchange']['name'], config, validate=False).exchange
+    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
 
     quote_currencies = args.get('quote_currencies')
     if not quote_currencies:

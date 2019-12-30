@@ -8,9 +8,8 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from jsonschema import Draft4Validator, ValidationError, validate
+from jsonschema import ValidationError
 
-from freqtrade import OperationalException, constants
 from freqtrade.configuration import (Arguments, Configuration, check_exchange,
                                      remove_credentials,
                                      validate_config_consistency)
@@ -20,6 +19,7 @@ from freqtrade.configuration.deprecated_settings import (
     process_temporary_deprecated_settings)
 from freqtrade.configuration.load_config import load_config_file
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
+from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import _set_loggers, setup_logging
 from freqtrade.state import RunMode
 from tests.conftest import (log_has, log_has_re,
@@ -718,7 +718,8 @@ def test_load_config_warn_forcebuy(default_conf, mocker, caplog) -> None:
 
 
 def test_validate_default_conf(default_conf) -> None:
-    validate(default_conf, constants.CONF_SCHEMA, Draft4Validator)
+    # Validate via our validator - we allow setting defaults!
+    validate_config_schema(default_conf)
 
 
 def test_validate_tsl(default_conf):
@@ -976,7 +977,7 @@ def test_pairlist_resolving_fallback(mocker):
 
     assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
     assert config['exchange']['name'] == 'binance'
-    assert config['datadir'] == str(Path.cwd() / "user_data/data/binance")
+    assert config['datadir'] == Path.cwd() / "user_data/data/binance"
 
 
 @pytest.mark.parametrize("setting", [

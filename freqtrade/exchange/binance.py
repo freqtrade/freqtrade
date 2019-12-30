@@ -4,8 +4,8 @@ from typing import Dict
 
 import ccxt
 
-from freqtrade import (DependencyException, InvalidOrderException,
-                       OperationalException, TemporaryError)
+from freqtrade.exceptions import (DependencyException, InvalidOrderException,
+                                  OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
 
 logger = logging.getLogger(__name__)

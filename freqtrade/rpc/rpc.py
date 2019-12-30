@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 from numpy import NAN, mean
 
-from freqtrade import DependencyException, TemporaryError
+from freqtrade.exceptions import DependencyException, TemporaryError
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -123,7 +123,7 @@ class RPC:
                     current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
                 except DependencyException:
                     current_rate = NAN
-                current_profit = trade.calc_profit_percent(current_rate)
+                current_profit = trade.calc_profit_ratio(current_rate)
                 fmt_close_profit = (f'{round(trade.close_profit * 100, 2):.2f}%'
                                     if trade.close_profit else None)
                 trade_dict = trade.to_json()
@@ -142,7 +142,7 @@ class RPC:
     def _rpc_status_table(self, stake_currency, fiat_display_currency: str) -> Tuple[List, List]:
         trades = Trade.get_open_trades()
         if not trades:
-            raise RPCException('no active order')
+            raise RPCException('no active trade')
         else:
             trades_list = []
             for trade in trades:
@@ -151,7 +151,7 @@ class RPC:
                     current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
                 except DependencyException:
                     current_rate = NAN
-                trade_perc = (100 * trade.calc_profit_percent(current_rate))
+                trade_perc = (100 * trade.calc_profit_ratio(current_rate))
                 trade_profit = trade.calc_profit(current_rate)
                 profit_str = f'{trade_perc:.2f}%'
                 if self._fiat_converter:
@@ -240,7 +240,7 @@ class RPC:
                 durations.append((trade.close_date - trade.open_date).total_seconds())
 
             if not trade.is_open:
-                profit_percent = trade.calc_profit_percent()
+                profit_percent = trade.calc_profit_ratio()
                 profit_closed_coin.append(trade.calc_profit())
                 profit_closed_perc.append(profit_percent)
             else:
@@ -249,7 +249,7 @@ class RPC:
                     current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
                 except DependencyException:
                     current_rate = NAN
-                profit_percent = trade.calc_profit_percent(rate=current_rate)
+                profit_percent = trade.calc_profit_ratio(rate=current_rate)
 
             profit_all_coin.append(
                 trade.calc_profit(rate=trade.close_rate or current_rate)
@@ -341,13 +341,15 @@ class RPC:
                 raise RPCException('All balances are zero.')
 
         symbol = fiat_display_currency
-        value = self._fiat_converter.convert_amount(total, 'BTC',
+        value = self._fiat_converter.convert_amount(total, stake_currency,
                                                     symbol) if self._fiat_converter else 0
         return {
             'currencies': output,
             'total': total,
             'symbol': symbol,
             'value': value,
+            'stake': stake_currency,
+            'note': 'Simulated balances' if self._freqtrade.config.get('dry_run', False) else ''
         }
 
     def _rpc_start(self) -> Dict[str, str]:
@@ -460,7 +462,7 @@ class RPC:
             raise RPCException(f'position for {pair} already open - id: {trade.id}')
 
         # gen stake amount
-        stakeamount = self._freqtrade._get_trade_stake_amount(pair)
+        stakeamount = self._freqtrade.get_trade_stake_amount(pair)
 
         # execute buy
         if self._freqtrade.execute_buy(pair, stakeamount, price):

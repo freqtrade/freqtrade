@@ -4,7 +4,7 @@ from typing import Dict
 
 import ccxt
 
-from freqtrade import OperationalException, TemporaryError
+from freqtrade.exceptions import OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.exchange import retrier
 

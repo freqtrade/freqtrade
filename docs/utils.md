@@ -108,6 +108,47 @@ With custom user directory
 freqtrade new-hyperopt --userdir ~/.freqtrade/ --hyperopt AwesomeHyperopt
 ```
 
+## List Strategies
+
+Use the `list-strategies` subcommand to see all strategies in one particular directory.
+
+```
+freqtrade list-strategies --help
+usage: freqtrade list-strategies [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH] [--userdir PATH] [--strategy-path PATH] [-1]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --strategy-path PATH  Specify additional strategy lookup path.
+  -1, --one-column      Print output in one column.
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are: 'syslog', 'journald'. See the documentation for more details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`). Multiple --config options may be used. Can be set to `-`
+                        to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+```
+
+!!! Warning
+    Using this command will try to load all python files from a directory. This can be a security risk if untrusted files reside in this directory, since all module-level code is executed.
+
+Example: search default strategy directory within userdir
+
+``` bash
+freqtrade list-strategies --userdir ~/.freqtrade/
+```
+
+Example: search dedicated strategy path
+
+``` bash
+freqtrade list-strategies --strategy-path ~/.freqtrade/strategies/
+```
+
 ## List Exchanges
 
 Use the `list-exchanges` subcommand to see the exchanges available for the bot.

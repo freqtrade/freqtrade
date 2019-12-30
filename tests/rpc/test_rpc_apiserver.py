@@ -230,6 +230,7 @@ def test_api_stopbuy(botclient):
 def test_api_balance(botclient, mocker, rpc_balance):
     ftbot, client = botclient
 
+    ftbot.config['dry_run'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_balances', return_value=rpc_balance)
     mocker.patch('freqtrade.exchange.Exchange.get_valid_pair_combination',
                  side_effect=lambda a, b: f"{a}/{b}")
@@ -255,7 +256,7 @@ def test_api_count(botclient, mocker, ticker, fee, markets):
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
@@ -291,7 +292,7 @@ def test_api_daily(botclient, mocker, ticker, fee, markets):
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
@@ -307,7 +308,7 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
@@ -322,7 +323,7 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
@@ -380,7 +381,7 @@ def test_api_performance(botclient, mocker, ticker, fee):
         close_rate=0.265441,
 
     )
-    trade.close_profit = trade.calc_profit_percent()
+    trade.close_profit = trade.calc_profit_ratio()
     Trade.session.add(trade)
 
     trade = Trade(
@@ -395,7 +396,7 @@ def test_api_performance(botclient, mocker, ticker, fee):
         fee_open=fee.return_value,
         close_rate=0.391
     )
-    trade.close_profit = trade.calc_profit_percent()
+    trade.close_profit = trade.calc_profit_ratio()
     Trade.session.add(trade)
     Trade.session.flush()
 
@@ -412,7 +413,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
@@ -540,7 +541,7 @@ def test_api_forcesell(botclient, mocker, ticker, fee, markets):
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )

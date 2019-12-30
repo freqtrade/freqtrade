@@ -4,8 +4,8 @@ from unittest.mock import MagicMock
 import ccxt
 import pytest
 
-from freqtrade import (DependencyException, InvalidOrderException,
-                       OperationalException, TemporaryError)
+from freqtrade.exceptions import (DependencyException, InvalidOrderException,
+                                  OperationalException, TemporaryError)
 from tests.conftest import get_patched_exchange
 
 

@@ -137,12 +137,12 @@ A backtesting result will look like that:
 | ZEC/BTC  |          22 |          -0.46 |         -10.18 |      -0.00050971 |          -5.09 | 2:22:00        |        7 |     15 |
 | TOTAL    |         429 |           0.36 |         152.41 |       0.00762792 |          76.20 | 4:12:00        |      186 |    243 |
 ========================================================= SELL REASON STATS =========================================================
-| Sell Reason        |   Count |
-|:-------------------|--------:|
-| trailing_stop_loss |     205 |
-| stop_loss          |     166 |
-| sell_signal        |      56 |
-| force_sell         |       2 |
+| Sell Reason        |   Count |   Profit |   Loss |
+|:-------------------|--------:|---------:|-------:|
+| trailing_stop_loss |     205 |      150 |     55 |
+| stop_loss          |     166 |        0 |    166 |
+| sell_signal        |      56 |       36 |     20 |
+| force_sell         |       2 |        0 |      2 |
 ====================================================== LEFT OPEN TRADES REPORT ======================================================
 | pair     |   buy count |   avg profit % |   cum profit % |   tot profit BTC |   tot profit % | avg duration   |   profit |   loss |
 |:---------|------------:|---------------:|---------------:|-----------------:|---------------:|:---------------|---------:|-------:|
@@ -154,6 +154,7 @@ A backtesting result will look like that:
 The 1st table contains all trades the bot made, including "left open trades".
 
 The 2nd table contains a recap of sell reasons.
+This table can tell you which area needs some additional work (i.e. all `sell_signal` trades are losses, so we should disable the sell-signal or work on improving that).
 
 The 3rd table contains all trades the bot had to `forcesell` at the end of the backtest period to present a full picture.
 This is necessary to simulate realistic behaviour, since the backtest period has to end at some point, while realistically, you could leave the bot running forever.

@@ -17,9 +17,9 @@ import ccxt.async_support as ccxt_async
 from ccxt.base.decimal_to_precision import ROUND_DOWN, ROUND_UP
 from pandas import DataFrame
 
-from freqtrade import (DependencyException, InvalidOrderException,
-                       OperationalException, TemporaryError, constants)
 from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.exceptions import (DependencyException, InvalidOrderException,
+                                  OperationalException, TemporaryError)
 from freqtrade.exchange.common import BAD_EXCHANGES, retrier, retrier_async
 from freqtrade.misc import deep_merge_dicts
 
@@ -278,7 +278,15 @@ class Exchange:
                 raise OperationalException(
                     f'Pair {pair} is not available on {self.name}. '
                     f'Please remove {pair} from your whitelist.')
-            elif self.markets[pair].get('info', {}).get('IsRestricted', False):
+
+                # From ccxt Documentation:
+                # markets.info: An associative array of non-common market properties,
+                # including fees, rates, limits and other general market information.
+                # The internal info array is different for each particular market,
+                # its contents depend on the exchange.
+                # It can also be a string or similar ... so we need to verify that first.
+            elif (isinstance(self.markets[pair].get('info', None), dict)
+                  and self.markets[pair].get('info', {}).get('IsRestricted', False)):
                 # Warn users about restricted pairs in whitelist.
                 # We cannot determine reliably if Users are affected.
                 logger.warning(f"Pair {pair} is restricted for some users on this exchange."
@@ -479,7 +487,7 @@ class Exchange:
     @retrier
     def get_balance(self, currency: str) -> float:
         if self._config['dry_run']:
-            return constants.DRY_RUN_WALLET
+            return self._config['dry_run_wallet']
 
         # ccxt exception is already handled by get_balances
         balances = self.get_balances()
@@ -524,7 +532,7 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def get_ticker(self, pair: str, refresh: Optional[bool] = True) -> dict:
+    def fetch_ticker(self, pair: str, refresh: Optional[bool] = True) -> dict:
         if refresh or pair not in self._cached_ticker.keys():
             try:
                 if pair not in self._api.markets or not self._api.markets[pair].get('active'):

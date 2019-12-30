@@ -1,5 +1,5 @@
 # Include all requirements to run the bot.
 -r requirements.txt
 
-plotly==4.3.0
+plotly==4.4.1
 
