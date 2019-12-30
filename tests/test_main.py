@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, PropertyMock
 import pytest
 
 from freqtrade.configuration import Arguments
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import OperationalException, FreqtradeException
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.main import main
 from freqtrade.state import State
@@ -96,7 +96,7 @@ def test_main_operational_exception(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.cleanup', MagicMock())
     mocker.patch(
         'freqtrade.worker.Worker._worker',
-        MagicMock(side_effect=OperationalException('Oh snap!'))
+        MagicMock(side_effect=FreqtradeException('Oh snap!'))
     )
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.wallets.Wallets.update', MagicMock())

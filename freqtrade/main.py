@@ -4,6 +4,7 @@ Main Freqtrade bot script.
 Read the documentation to know what cli arguments you need.
 """
 
+from freqtrade.exceptions import FreqtradeException, OperationalException
 import sys
 # check min. python version
 if sys.version_info < (3, 6):
@@ -14,7 +15,6 @@ import logging
 from typing import Any, List
 
 from freqtrade.configuration import Arguments
-from freqtrade.exceptions import OperationalException
 
 
 logger = logging.getLogger('freqtrade')
@@ -50,7 +50,7 @@ def main(sysargv: List[str] = None) -> None:
     except KeyboardInterrupt:
         logger.info('SIGINT received, aborting ...')
         return_code = 0
-    except OperationalException as e:
+    except FreqtradeException as e:
         logger.error(str(e))
         return_code = 2
     except Exception:

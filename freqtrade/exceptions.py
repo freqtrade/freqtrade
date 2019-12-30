@@ -1,21 +1,27 @@
 
 
-class DependencyException(Exception):
+class FreqtradeException(Exception):
+    """
+    Freqtrade base exception. Handled at the outermost level.
+    All other exception types are subclasses of this exception type.
+    """
+
+
+class OperationalException(FreqtradeException):
+    """
+    Requires manual intervention and will stop the bot.
+    Most of the time, this is caused by an invalid Configuration.
+    """
+
+
+class DependencyException(FreqtradeException):
     """
     Indicates that an assumed dependency is not met.
     This could happen when there is currently not enough money on the account.
     """
 
 
-class OperationalException(Exception):
-    """
-    Requires manual intervention and will usually stop the bot.
-    This happens when an exchange returns an unexpected error during runtime
-    or given configuration is invalid.
-    """
-
-
-class InvalidOrderException(Exception):
+class InvalidOrderException(FreqtradeException):
     """
     This is returned when the order is not valid. Example:
     If stoploss on exchange order is hit, then trying to cancel the order
@@ -23,7 +29,7 @@ class InvalidOrderException(Exception):
     """
 
 
-class TemporaryError(Exception):
+class TemporaryError(FreqtradeException):
     """
     Temporary network or exchange related error.
     This could happen when an exchange is congested, unavailable, or the user
