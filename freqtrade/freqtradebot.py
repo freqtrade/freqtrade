@@ -132,8 +132,8 @@ class FreqtradeBot:
         self.dataprovider.refresh(self._create_pair_whitelist(self.active_pair_whitelist),
                                   self.strategy.informative_pairs())
 
-        # First process current opened trades
-        self.process_maybe_execute_sells(trades)
+        # First process current opened trades (positions)
+        self.exit_positions(trades)
 
         # Then looking for buy opportunities
         if self.get_free_open_trades():
@@ -493,9 +493,9 @@ class FreqtradeBot:
 
         return trades_created
 
-    def process_maybe_execute_sells(self, trades: List[Any]) -> int:
+    def exit_positions(self, trades: List[Any]) -> int:
         """
-        Tries to execute sell orders for trades in a safe way
+        Tries to execute sell orders for open trades (positions)
         """
         trades_closed = 0
         for trade in trades:
