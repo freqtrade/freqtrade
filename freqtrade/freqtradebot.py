@@ -313,7 +313,7 @@ class FreqtradeBot:
 
         if buy and not sell:
             if not self.get_free_open_trades():
-                logger.debug("Can't open a new trade: max number of trades is reached")
+                logger.debug("Can't open a new trade: max number of trades is reached.")
                 return False
 
             stake_amount = self.get_trade_stake_amount(pair)
@@ -324,11 +324,10 @@ class FreqtradeBot:
             logger.info(f"Buy signal found: about create a new trade with stake_amount: "
                         f"{stake_amount} ...")
 
-            bidstrat_check_depth_of_market = self.config.get('bid_strategy', {}).\
-                get('check_depth_of_market', {})
-            if (bidstrat_check_depth_of_market.get('enabled', False)) and\
-                    (bidstrat_check_depth_of_market.get('bids_to_ask_delta', 0) > 0):
-                if self._check_depth_of_market_buy(pair, bidstrat_check_depth_of_market):
+            bid_check_dom = self.config.get('bid_strategy', {}).get('check_depth_of_market', {})
+            if ((bid_check_dom.get('enabled', False)) and
+                    (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
+                if self._check_depth_of_market_buy(pair, bid_check_dom):
                     return self.execute_buy(pair, stake_amount)
                 else:
                     return False
