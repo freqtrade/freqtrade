@@ -8,11 +8,11 @@ import numpy as np
 import utils_find_1st as utf1st
 from pandas import DataFrame
 
-from freqtrade import constants, OperationalException
+from freqtrade import constants
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
+from freqtrade.exceptions import OperationalException
 from freqtrade.strategy.interface import SellType
-
 
 logger = logging.getLogger(__name__)
 

@@ -4,10 +4,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from freqtrade import OperationalException
 from freqtrade.configuration.directory_operations import (copy_sample_files,
                                                           create_datadir,
                                                           create_userdata_dir)
+from freqtrade.exceptions import OperationalException
 from tests.conftest import log_has, log_has_re
 
 

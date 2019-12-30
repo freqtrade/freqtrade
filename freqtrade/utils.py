@@ -11,7 +11,6 @@ import rapidjson
 from colorama import init as colorama_init
 from tabulate import tabulate
 
-from freqtrade import OperationalException
 from freqtrade.configuration import (Configuration, TimeRange,
                                      remove_credentials)
 from freqtrade.configuration.directory_operations import (copy_sample_files,
@@ -22,6 +21,7 @@ from freqtrade.data.converter import (convert_ohlcv_format,
 from freqtrade.data.history import (convert_trades_to_ohlcv,
                                     refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
+from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import (available_exchanges, ccxt_exchanges,
                                 market_is_active, symbol_is_pair)
 from freqtrade.misc import plural, render_template

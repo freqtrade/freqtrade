@@ -8,9 +8,9 @@ from typing import Any, Callable, Dict, Optional
 
 import sdnotify
 
-from freqtrade import (OperationalException, TemporaryError, __version__,
-                       constants)
+from freqtrade import __version__, constants
 from freqtrade.configuration import Configuration
+from freqtrade.exceptions import OperationalException, TemporaryError
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.rpc import RPCMessageType
 from freqtrade.state import State

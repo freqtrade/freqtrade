@@ -9,13 +9,14 @@ import pandas as pd
 import pytest
 from arrow import Arrow
 
-from freqtrade import DependencyException, OperationalException, constants
+from freqtrade import constants
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import evaluate_result_multi
 from freqtrade.data.converter import clean_ohlcv_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange
+from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.optimize import setup_configuration, start_backtesting
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.state import RunMode
@@ -23,7 +24,6 @@ from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import SellType
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
-
 
 ORDER_TYPES = [
     {

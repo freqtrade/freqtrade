@@ -5,7 +5,7 @@ from logging import Formatter
 from logging.handlers import RotatingFileHandler, SysLogHandler
 from typing import Any, Dict, List
 
-from freqtrade import OperationalException
+from freqtrade.exceptions import OperationalException
 
 
 logger = logging.getLogger(__name__)

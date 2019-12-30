@@ -7,13 +7,13 @@ from unittest.mock import ANY, MagicMock, PropertyMock
 import pytest
 from numpy import isnan
 
-from freqtrade import DependencyException, TemporaryError
 from freqtrade.edge import PairInfo
+from freqtrade.exceptions import DependencyException, TemporaryError
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.state import State
-from tests.conftest import patch_get_signal, get_patched_freqtradebot
+from tests.conftest import get_patched_freqtradebot, patch_get_signal
 
 
 # Functions for recurrent object patching
@@ -113,7 +113,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     rpc = RPC(freqtradebot)
 
     freqtradebot.state = State.RUNNING
-    with pytest.raises(RPCException, match=r'.*no active order*'):
+    with pytest.raises(RPCException, match=r'.*no active trade*'):
         rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
 
     freqtradebot.create_trades()

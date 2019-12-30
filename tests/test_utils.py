@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
-from freqtrade import OperationalException
+from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
 from freqtrade.utils import (setup_utils_configuration, start_convert_data,
                              start_create_userdir, start_download_data,
@@ -448,6 +448,9 @@ def test_create_datadir(caplog, mocker):
     # Ensure that caplog is empty before starting ...
     # Should prevent random failures.
     caplog.clear()
+    # Added assert here to analyze random test-failures ...
+    assert len(caplog.record_tuples) == 0
+
     cud = mocker.patch("freqtrade.utils.create_userdata_dir", MagicMock())
     csf = mocker.patch("freqtrade.utils.copy_sample_files", MagicMock())
     args = [

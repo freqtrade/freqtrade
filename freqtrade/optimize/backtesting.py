@@ -12,12 +12,12 @@ from typing import Any, Dict, List, NamedTuple, Optional
 from pandas import DataFrame
 from tabulate import tabulate
 
-from freqtrade import OperationalException
 from freqtrade.configuration import (TimeRange, remove_credentials,
                                      validate_config_consistency)
 from freqtrade.data import history
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade

@@ -4,11 +4,12 @@ Static List provider
 Provides lists as configured in config.json
 
  """
-from cachetools import TTLCache, cached
 import logging
 from typing import Dict, List
 
-from freqtrade import OperationalException
+from cachetools import TTLCache, cached
+
+from freqtrade.exceptions import OperationalException
 from freqtrade.pairlist.IPairList import IPairList
 from freqtrade.resolvers import PairListResolver
 

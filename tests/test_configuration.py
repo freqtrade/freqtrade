@@ -10,7 +10,6 @@ from unittest.mock import MagicMock
 import pytest
 from jsonschema import ValidationError
 
-from freqtrade import OperationalException
 from freqtrade.configuration import (Arguments, Configuration, check_exchange,
                                      remove_credentials,
                                      validate_config_consistency)
@@ -20,6 +19,7 @@ from freqtrade.configuration.deprecated_settings import (
     process_temporary_deprecated_settings)
 from freqtrade.configuration.load_config import load_config_file
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
+from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import _set_loggers, setup_logging
 from freqtrade.state import RunMode
 from tests.conftest import (log_has, log_has_re,

@@ -9,8 +9,8 @@ import pytest
 from arrow import Arrow
 from filelock import Timeout
 
-from freqtrade import OperationalException
 from freqtrade.data.history import load_data
+from freqtrade.exceptions import OperationalException
 from freqtrade.optimize import setup_configuration, start_hyperopt
 from freqtrade.optimize.default_hyperopt import DefaultHyperOpt
 from freqtrade.optimize.default_hyperopt_loss import DefaultHyperOptLoss

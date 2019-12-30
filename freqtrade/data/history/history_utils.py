@@ -7,11 +7,11 @@ from typing import Dict, List, Optional, Tuple
 import arrow
 from pandas import DataFrame
 
-from freqtrade import OperationalException
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
 from freqtrade.data.converter import parse_ticker_dataframe, trades_to_ohlcv
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
+from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 
 logger = logging.getLogger(__name__)

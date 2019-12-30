@@ -16,7 +16,7 @@ from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from freqtrade import OperationalException
+from freqtrade.exceptions import OperationalException
 
 logger = logging.getLogger(__name__)
 
