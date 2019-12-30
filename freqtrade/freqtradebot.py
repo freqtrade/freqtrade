@@ -296,8 +296,11 @@ class FreqtradeBot:
 
     def create_trade(self, pair: str) -> bool:
         """
-        Check the implemented trading strategy for buy-signals.
-        If the pair triggers the buy_signal a new trade record gets created.
+        Check the implemented trading strategy for buy signals.
+
+        If the pair triggers the buy signal a new trade record gets created
+        and the buy-order opening the trade gets issued towards the exchange.
+
         :return: True if a trade has been created.
         """
         logger.debug(f"create_trade for pair {pair}")
@@ -467,7 +470,7 @@ class FreqtradeBot:
         if not whitelist:
             logger.info("Active pair whitelist is empty.")
         else:
-            # Remove currently opened and latest pairs from whitelist
+            # Remove pairs for currently opened trades from the whitelist
             for trade in Trade.get_open_trades():
                 if trade.pair in whitelist:
                     whitelist.remove(trade.pair)
