@@ -460,11 +460,11 @@ class FreqtradeBot:
 
         return True
 
-    def process_maybe_execute_buys(self) -> None:
+    def process_maybe_execute_buys(self) -> int:
         """
         Tries to execute buy orders for trades in a safe way
         """
-        result = False
+        trades_created = 0
 
         whitelist = copy.deepcopy(self.active_pair_whitelist)
         if not whitelist:
@@ -483,38 +483,41 @@ class FreqtradeBot:
                 # Create entity and execute trade for each pair from whitelist
                 for pair in whitelist:
                     try:
-                        if self.create_trade(pair):
-                            result = True
+                        trades_created += self.create_trade(pair)
                     except DependencyException as exception:
                         logger.warning('Unable to create trade: %s', exception)
 
-                if not result:
+                if not trades_created:
                     logger.debug("Found no buy signals for whitelisted currencies. "
                                  "Trying again...")
 
-    def process_maybe_execute_sells(self, trades: List[Any]) -> None:
+        return trades_created
+
+    def process_maybe_execute_sells(self, trades: List[Any]) -> int:
         """
         Tries to execute sell orders for trades in a safe way
         """
-        result = False
+        trades_closed = 0
         for trade in trades:
             try:
                 self.update_trade_state(trade)
 
                 if (self.strategy.order_types.get('stoploss_on_exchange') and
                         self.handle_stoploss_on_exchange(trade)):
-                    result = True
+                    trades_closed += 1
                     continue
                 # Check if we can sell our current pair
                 if trade.open_order_id is None and self.handle_trade(trade):
-                    result = True
+                    trades_closed += 1
 
             except DependencyException as exception:
                 logger.warning('Unable to sell trade: %s', exception)
 
         # Updating wallets if any trade occured
-        if result:
+        if trades_closed:
             self.wallets.update()
+
+        return trades_closed
 
     def get_real_amount(self, trade: Trade, order: Dict, order_amount: float = None) -> float:
         """
