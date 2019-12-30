@@ -12,8 +12,7 @@ from freqtrade import constants
 from freqtrade.configuration import (TimeRange, remove_credentials,
                                      validate_config_consistency)
 from freqtrade.edge import Edge
-from freqtrade.exchange import Exchange
-from freqtrade.resolvers import StrategyResolver
+from freqtrade.resolvers import StrategyResolver, ExchangeResolver
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +32,7 @@ class EdgeCli:
         # Reset keys for edge
         remove_credentials(self.config)
         self.config['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
-        self.exchange = Exchange(self.config)
+        self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
         self.strategy = StrategyResolver.load_strategy(self.config)
 
         validate_config_consistency(self.config)
