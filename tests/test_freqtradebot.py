@@ -1454,7 +1454,8 @@ def test_enter_positions(mocker, default_conf, caplog) -> None:
     n = freqtrade.enter_positions()
     assert n == 0
     assert log_has('Found no buy signals for whitelisted currencies. Trying again...', caplog)
-    assert mock_ct.call_count == 4
+    # create_trade should be called once for every pair in the whitelist.
+    assert mock_ct.call_count == len(default_conf['exchange']['pair_whitelist'])
 
 
 def test_enter_positions_exception(mocker, default_conf, caplog) -> None:
