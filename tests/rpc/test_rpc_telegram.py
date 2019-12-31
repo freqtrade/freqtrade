@@ -148,11 +148,6 @@ def test_status(default_conf, update, mocker, fee, ticker,) -> None:
     default_conf['telegram']['enabled'] = False
     default_conf['telegram']['chat_id'] = "123"
 
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker,
-        get_fee=fee,
-    )
     msg_mock = MagicMock()
     status_table = MagicMock()
     mocker.patch.multiple(
@@ -184,12 +179,7 @@ def test_status(default_conf, update, mocker, fee, ticker,) -> None:
     )
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
-
-    # Create some test data
-    n = freqtradebot.enter_positions()
-    assert n == 1
 
     telegram._status(update=update, context=MagicMock())
     assert msg_mock.call_count == 1

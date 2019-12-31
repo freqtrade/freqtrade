@@ -1458,12 +1458,13 @@ def test_enter_positions(mocker, default_conf, caplog) -> None:
 def test_enter_positions_exception(mocker, default_conf, caplog) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
-    mocker.patch(
+    mock_ct = mocker.patch(
         'freqtrade.freqtradebot.FreqtradeBot.create_trade',
         MagicMock(side_effect=DependencyException)
     )
     n = freqtrade.enter_positions()
     assert n == 0
+    assert mock_ct.call_count == len(default_conf['exchange']['pair_whitelist'])
     assert log_has('Unable to create trade: ', caplog)
 
 
