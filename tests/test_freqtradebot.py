@@ -1449,10 +1449,12 @@ def test_enter_positions(mocker, default_conf, caplog) -> None:
     caplog.set_level(logging.DEBUG)
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
-    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.create_trade', MagicMock(return_value=False))
+    mock_ct = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.create_trade',
+                           MagicMock(return_value=False))
     n = freqtrade.enter_positions()
     assert n == 0
     assert log_has('Found no buy signals for whitelisted currencies. Trying again...', caplog)
+    assert mock_ct.call_count == 4
 
 
 def test_enter_positions_exception(mocker, default_conf, caplog) -> None:
