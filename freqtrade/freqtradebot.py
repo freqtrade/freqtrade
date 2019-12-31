@@ -132,12 +132,12 @@ class FreqtradeBot:
         self.dataprovider.refresh(self._create_pair_whitelist(self.active_pair_whitelist),
                                   self.strategy.informative_pairs())
 
-        # First process current opened trades
-        self.process_maybe_execute_sells(trades)
+        # First process current opened trades (positions)
+        self.exit_positions(trades)
 
         # Then looking for buy opportunities
         if self.get_free_open_trades():
-            self.process_maybe_execute_buys()
+            self.enter_positions()
 
         # Check and handle any timed out open orders
         self.check_handle_timedout()
@@ -294,65 +294,50 @@ class FreqtradeBot:
         # See also #2575 at github.
         return max(min_stake_amounts) / amount_reserve_percent
 
-    def create_trades(self) -> bool:
+    def create_trade(self, pair: str) -> bool:
         """
-        Checks the implemented trading strategy for buy-signals, using the active pair whitelist.
-        If a pair triggers the buy_signal a new trade record gets created.
-        Checks pairs as long as the open trade count is below `max_open_trades`.
-        :return: True if at least one trade has been created.
-        """
-        whitelist = copy.deepcopy(self.active_pair_whitelist)
+        Check the implemented trading strategy for buy signals.
 
-        if not whitelist:
-            logger.info("Active pair whitelist is empty.")
+        If the pair triggers the buy signal a new trade record gets created
+        and the buy-order opening the trade gets issued towards the exchange.
+
+        :return: True if a trade has been created.
+        """
+        logger.debug(f"create_trade for pair {pair}")
+
+        if self.strategy.is_pair_locked(pair):
+            logger.info(f"Pair {pair} is currently locked.")
             return False
 
-        # Remove currently opened and latest pairs from whitelist
-        for trade in Trade.get_open_trades():
-            if trade.pair in whitelist:
-                whitelist.remove(trade.pair)
-                logger.debug('Ignoring %s in pair whitelist', trade.pair)
-
-        if not whitelist:
-            logger.info("No currency pair in active pair whitelist, "
-                        "but checking to sell open trades.")
-            return False
-
-        buycount = 0
         # running get_signal on historical data fetched
-        for pair in whitelist:
-            if self.strategy.is_pair_locked(pair):
-                logger.info(f"Pair {pair} is currently locked.")
-                continue
+        (buy, sell) = self.strategy.get_signal(
+            pair, self.strategy.ticker_interval,
+            self.dataprovider.ohlcv(pair, self.strategy.ticker_interval))
 
-            (buy, sell) = self.strategy.get_signal(
-                pair, self.strategy.ticker_interval,
-                self.dataprovider.ohlcv(pair, self.strategy.ticker_interval))
+        if buy and not sell:
+            if not self.get_free_open_trades():
+                logger.debug("Can't open a new trade: max number of trades is reached.")
+                return False
 
-            if buy and not sell:
-                if not self.get_free_open_trades():
-                    logger.debug("Can't open a new trade: max number of trades is reached")
-                    continue
+            stake_amount = self.get_trade_stake_amount(pair)
+            if not stake_amount:
+                logger.debug("Stake amount is 0, ignoring possible trade for {pair}.")
+                return False
 
-                stake_amount = self.get_trade_stake_amount(pair)
-                if not stake_amount:
-                    logger.debug("Stake amount is 0, ignoring possible trade for {pair}.")
-                    continue
+            logger.info(f"Buy signal found: about create a new trade with stake_amount: "
+                        f"{stake_amount} ...")
 
-                logger.info(f"Buy signal found: about create a new trade with stake_amount: "
-                            f"{stake_amount} ...")
+            bid_check_dom = self.config.get('bid_strategy', {}).get('check_depth_of_market', {})
+            if ((bid_check_dom.get('enabled', False)) and
+                    (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
+                if self._check_depth_of_market_buy(pair, bid_check_dom):
+                    return self.execute_buy(pair, stake_amount)
+                else:
+                    return False
 
-                bidstrat_check_depth_of_market = self.config.get('bid_strategy', {}).\
-                    get('check_depth_of_market', {})
-                if (bidstrat_check_depth_of_market.get('enabled', False)) and\
-                        (bidstrat_check_depth_of_market.get('bids_to_ask_delta', 0) > 0):
-                    if self._check_depth_of_market_buy(pair, bidstrat_check_depth_of_market):
-                        buycount += self.execute_buy(pair, stake_amount)
-                    continue
-
-                buycount += self.execute_buy(pair, stake_amount)
-
-        return buycount > 0
+            return self.execute_buy(pair, stake_amount)
+        else:
+            return False
 
     def _check_depth_of_market_buy(self, pair: str, conf: Dict) -> bool:
         """
@@ -475,40 +460,64 @@ class FreqtradeBot:
 
         return True
 
-    def process_maybe_execute_buys(self) -> None:
+    def enter_positions(self) -> int:
         """
-        Tries to execute buy orders for trades in a safe way
+        Tries to execute buy orders for new trades (positions)
         """
-        try:
-            # Create entity and execute trade
-            if not self.create_trades():
-                logger.debug('Found no buy signals for whitelisted currencies. Trying again...')
-        except DependencyException as exception:
-            logger.warning('Unable to create trade: %s', exception)
+        trades_created = 0
 
-    def process_maybe_execute_sells(self, trades: List[Any]) -> None:
+        whitelist = copy.deepcopy(self.active_pair_whitelist)
+        if not whitelist:
+            logger.info("Active pair whitelist is empty.")
+        else:
+            # Remove pairs for currently opened trades from the whitelist
+            for trade in Trade.get_open_trades():
+                if trade.pair in whitelist:
+                    whitelist.remove(trade.pair)
+                    logger.debug('Ignoring %s in pair whitelist', trade.pair)
+
+            if not whitelist:
+                logger.info("No currency pair in active pair whitelist, "
+                            "but checking to sell open trades.")
+            else:
+                # Create entity and execute trade for each pair from whitelist
+                for pair in whitelist:
+                    try:
+                        trades_created += self.create_trade(pair)
+                    except DependencyException as exception:
+                        logger.warning('Unable to create trade for %s: %s', pair, exception)
+
+                if not trades_created:
+                    logger.debug("Found no buy signals for whitelisted currencies. "
+                                 "Trying again...")
+
+        return trades_created
+
+    def exit_positions(self, trades: List[Any]) -> int:
         """
-        Tries to execute sell orders for trades in a safe way
+        Tries to execute sell orders for open trades (positions)
         """
-        result = False
+        trades_closed = 0
         for trade in trades:
             try:
                 self.update_trade_state(trade)
 
                 if (self.strategy.order_types.get('stoploss_on_exchange') and
                         self.handle_stoploss_on_exchange(trade)):
-                    result = True
+                    trades_closed += 1
                     continue
                 # Check if we can sell our current pair
                 if trade.open_order_id is None and self.handle_trade(trade):
-                    result = True
+                    trades_closed += 1
 
             except DependencyException as exception:
                 logger.warning('Unable to sell trade: %s', exception)
 
         # Updating wallets if any trade occured
-        if result:
+        if trades_closed:
             self.wallets.update()
+
+        return trades_closed
 
     def get_real_amount(self, trade: Trade, order: Dict, order_amount: float = None) -> float:
         """
