@@ -485,7 +485,7 @@ class FreqtradeBot:
                     try:
                         trades_created += self.create_trade(pair)
                     except DependencyException as exception:
-                        logger.warning('Unable to create trade: %s', exception)
+                        logger.warning('Unable to create trade for %s: %s', pair, exception)
 
                 if not trades_created:
                     logger.debug("Found no buy signals for whitelisted currencies. "

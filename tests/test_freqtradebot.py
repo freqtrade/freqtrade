@@ -1468,7 +1468,7 @@ def test_enter_positions_exception(mocker, default_conf, caplog) -> None:
     n = freqtrade.enter_positions()
     assert n == 0
     assert mock_ct.call_count == len(default_conf['exchange']['pair_whitelist'])
-    assert log_has('Unable to create trade: ', caplog)
+    assert log_has('Unable to create trade for ETH/BTC: ', caplog)
 
 
 def test_exit_positions(mocker, default_conf, limit_buy_order, caplog) -> None:
@@ -3642,6 +3642,6 @@ def test_sync_wallet_dry_run(mocker, default_conf, ticker, fee, limit_buy_order,
     bot.config['max_open_trades'] = 3
     n = bot.enter_positions()
     assert n == 0
-    assert log_has_re(r"Unable to create trade: "
+    assert log_has_re(r"Unable to create trade for XRP/BTC: "
                       r"Available balance \(0 BTC\) is lower than stake amount \(0.001 BTC\)",
                       caplog)
