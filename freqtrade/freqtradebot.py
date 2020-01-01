@@ -27,6 +27,7 @@ from freqtrade.state import State
 from freqtrade.strategy.interface import IStrategy, SellType
 from freqtrade.wallets import Wallets
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -180,6 +181,43 @@ class FreqtradeBot:
         """
         open_trades = len(Trade.get_open_trades())
         return max(0, self.config['max_open_trades'] - open_trades)
+
+#
+# BUY / enter positions / open trades part
+#
+
+    def enter_positions(self) -> int:
+        """
+        Tries to execute buy orders for new trades (positions)
+        """
+        trades_created = 0
+
+        whitelist = copy.deepcopy(self.active_pair_whitelist)
+        if not whitelist:
+            logger.info("Active pair whitelist is empty.")
+        else:
+            # Remove pairs for currently opened trades from the whitelist
+            for trade in Trade.get_open_trades():
+                if trade.pair in whitelist:
+                    whitelist.remove(trade.pair)
+                    logger.debug('Ignoring %s in pair whitelist', trade.pair)
+
+            if not whitelist:
+                logger.info("No currency pair in active pair whitelist, "
+                            "but checking to sell open trades.")
+            else:
+                # Create entity and execute trade for each pair from whitelist
+                for pair in whitelist:
+                    try:
+                        trades_created += self.create_trade(pair)
+                    except DependencyException as exception:
+                        logger.warning('Unable to create trade for %s: %s', pair, exception)
+
+                if not trades_created:
+                    logger.debug("Found no buy signals for whitelisted currencies. "
+                                 "Trying again...")
+
+        return trades_created
 
     def get_target_bid(self, pair: str, tick: Dict = None) -> float:
         """
@@ -460,38 +498,9 @@ class FreqtradeBot:
 
         return True
 
-    def enter_positions(self) -> int:
-        """
-        Tries to execute buy orders for new trades (positions)
-        """
-        trades_created = 0
-
-        whitelist = copy.deepcopy(self.active_pair_whitelist)
-        if not whitelist:
-            logger.info("Active pair whitelist is empty.")
-        else:
-            # Remove pairs for currently opened trades from the whitelist
-            for trade in Trade.get_open_trades():
-                if trade.pair in whitelist:
-                    whitelist.remove(trade.pair)
-                    logger.debug('Ignoring %s in pair whitelist', trade.pair)
-
-            if not whitelist:
-                logger.info("No currency pair in active pair whitelist, "
-                            "but checking to sell open trades.")
-            else:
-                # Create entity and execute trade for each pair from whitelist
-                for pair in whitelist:
-                    try:
-                        trades_created += self.create_trade(pair)
-                    except DependencyException as exception:
-                        logger.warning('Unable to create trade for %s: %s', pair, exception)
-
-                if not trades_created:
-                    logger.debug("Found no buy signals for whitelisted currencies. "
-                                 "Trying again...")
-
-        return trades_created
+#
+# SELL / exit positions / close trades part
+#
 
     def exit_positions(self, trades: List[Any]) -> int:
         """
