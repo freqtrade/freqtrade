@@ -913,16 +913,16 @@ class FreqtradeBot:
             except InvalidOrderException:
                 logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
 
-        ordertype = self.strategy.order_types[sell_type]
+        order_type = self.strategy.order_types[sell_type]
         if sell_reason == SellType.EMERGENCY_SELL:
             # Emergencysells (default to market!)
-            ordertype = self.strategy.order_types.get("emergencysell", "market")
+            order_type = self.strategy.order_types.get("emergencysell", "market")
 
         amount = self._safe_sell_amount(trade.pair, trade.amount)
 
         # Execute sell and update trade record
         order = self.exchange.sell(pair=str(trade.pair),
-                                   ordertype=ordertype,
+                                   ordertype=order_type,
                                    amount=amount, rate=limit,
                                    time_in_force=self.strategy.order_time_in_force['sell']
                                    )
@@ -938,7 +938,7 @@ class FreqtradeBot:
         # Lock pair for one candle to prevent immediate rebuys
         self.strategy.lock_pair(trade.pair, timeframe_to_next_date(self.config['ticker_interval']))
 
-        self._notify_sell(trade, ordertype)
+        self._notify_sell(trade, order_type)
 
     def _notify_sell(self, trade: Trade, order_type: str):
         """
