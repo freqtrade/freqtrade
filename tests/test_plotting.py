@@ -119,6 +119,7 @@ def test_plot_trades(testdatadir, caplog):
     assert trade_sell.yaxis == 'y'
     assert len(trades) == len(trade_sell.x)
     assert trade_sell.marker.color == 'red'
+    assert trade_sell.text[0] == "4.0%, roi, 15 min"
 
 
 def test_generate_candlestick_graph_no_signals_no_trades(default_conf, mocker, testdatadir, caplog):
