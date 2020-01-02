@@ -407,7 +407,7 @@ class FreqtradeBot:
         if price:
             buy_limit_requested = price
         else:
-            # Calculate amount
+            # Calculate price
             buy_limit_requested = self.get_target_bid(pair)
 
         min_stake_amount = self._get_min_pair_stake_amount(pair, buy_limit_requested)
