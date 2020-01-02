@@ -9,7 +9,12 @@ def generate_text_table(data: Dict[str, Dict], stake_currency: str, max_open_tra
                         results: DataFrame, skip_nan: bool = False) -> str:
     """
     Generates and returns a text table for the given backtest data and the results dataframe
-    :return: pretty printed table with tabulate as str
+    :param data: Dict of <pair: dataframe> containing data that was used during backtesting.
+    :param stake_currency: stake-currency - used to correctly name headers
+    :param max_open_trades: Maximum allowed open trades
+    :param results: Dataframe containing the backtest results
+    :param skip_nan: Print "left open" open trades
+    :return: pretty printed table with tabulate as string
     """
 
     floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.2f', 'd', '.1f', '.1f')
@@ -56,6 +61,9 @@ def generate_text_table(data: Dict[str, Dict], stake_currency: str, max_open_tra
 def generate_text_table_sell_reason(data: Dict[str, Dict], results: DataFrame) -> str:
     """
     Generate small table outlining Backtest results
+    :param data: Dict of <pair: dataframe> containing data that was used during backtesting.
+    :param results: Dataframe containing the backtest results
+    :return: pretty printed table with tabulate as string
     """
     tabular_data = []
     headers = ['Sell Reason', 'Count', 'Profit', 'Loss']
@@ -70,6 +78,10 @@ def generate_text_table_strategy(stake_currency: str, max_open_trades: str,
                                  all_results: Dict) -> str:
     """
     Generate summary table per strategy
+    :param stake_currency: stake-currency - used to correctly name headers
+    :param max_open_trades: Maximum allowed open trades used for backtest
+    :param all_results: Dict of <Strategyname: BacktestResult> containing results for all strategies
+    :return: pretty printed table with tabulate as string
     """
 
     floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.2f', 'd', '.1f', '.1f')
