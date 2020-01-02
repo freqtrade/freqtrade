@@ -120,7 +120,10 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
 def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, mocker, balance_ratio,
                                  result1) -> None:
     """
-    Tests workflow
+    Tests workflow unlimited stake-amount
+    Buy 4 trades, forcebuy a 5th trade
+    Sell one trade, calculated stake amount should now be lower than before since
+    one trade was sold at a loss.
     """
     default_conf['max_open_trades'] = 5
     default_conf['forcebuy_enable'] = True
@@ -166,6 +169,8 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
 
     trades = Trade.query.all()
     assert len(trades) == 4
+    assert freqtrade.get_trade_stake_amount('XRP/BTC') == result1
+
     rpc._rpc_forcebuy('TKN/BTC', None)
 
     trades = Trade.query.all()
@@ -184,6 +189,8 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
     trades = Trade.get_open_trades()
     # One trade sold
     assert len(trades) == 4
+    # stake-amount should now be reduced, since one trade was sold at a loss.
+    assert freqtrade.get_trade_stake_amount('XRP/BTC') < result1
     # Validate that balance of sold trade is not in dry-run balances anymore.
     bals2 = freqtrade.wallets.get_all_balances()
     assert bals != bals2
