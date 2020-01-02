@@ -148,7 +148,7 @@ To allow the bot to trade all the available `stake_currency` in your account set
 When using `stake_amount="unlimited"`, we recommend to also set `tradable_balance_ratio=0.99` (99%) - to keep a minimum balance for eventual fees.
 This will keep 1% of your account balance "untradable" in your account.
 
-!!! Note:
+!!! Note
     This configuration will allow increasing / decreasing stakes depending on the performance of the bot (lower stake if bot is loosing, higher stakes if the bot has a winning record, since higher balances are available).
 
 In this case a trade amount is calculated as:
