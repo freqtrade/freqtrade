@@ -366,11 +366,8 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', MagicMock())
     patch_exchange(mocker)
-    mocker.patch.multiple(
-        'freqtrade.optimize.backtesting.Backtesting',
-        backtest=MagicMock(),
-        _generate_text_table=MagicMock(return_value='1'),
-    )
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', MagicMock())
+    mocker.patch('freqtrade.optimize.backtesting.generate_text_table', MagicMock(return_value=1))
 
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
     default_conf['ticker_interval'] = '1m'
@@ -399,11 +396,8 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) ->
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', MagicMock())
     patch_exchange(mocker)
-    mocker.patch.multiple(
-        'freqtrade.optimize.backtesting.Backtesting',
-        backtest=MagicMock(),
-        _generate_text_table=MagicMock(return_value='1'),
-    )
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', MagicMock())
+    mocker.patch('freqtrade.optimize.backtesting.generate_text_table', MagicMock(return_value=1))
 
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
     default_conf['ticker_interval'] = "1m"
@@ -714,7 +708,8 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
 
     patch_exchange(mocker, api_mock)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', MagicMock())
-    mocker.patch('freqtrade.optimize.backtesting.Backtesting._generate_text_table', MagicMock())
+    mocker.patch('freqtrade.optimize.backtesting.generate_text_table', MagicMock())
+
     patched_configuration_load_config_file(mocker, default_conf)
 
     args = [
@@ -760,10 +755,9 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
     backtestmock = MagicMock()
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
     gen_table_mock = MagicMock()
-    mocker.patch('freqtrade.optimize.backtesting.Backtesting._generate_text_table', gen_table_mock)
+    mocker.patch('freqtrade.optimize.backtesting.generate_text_table', gen_table_mock)
     gen_strattable_mock = MagicMock()
-    mocker.patch('freqtrade.optimize.backtesting.Backtesting._generate_text_table_strategy',
-                 gen_strattable_mock)
+    mocker.patch('freqtrade.optimize.backtesting.generate_text_table_strategy', gen_strattable_mock)
     patched_configuration_load_config_file(mocker, default_conf)
 
     args = [
