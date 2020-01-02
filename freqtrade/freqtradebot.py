@@ -400,8 +400,6 @@ class FreqtradeBot:
         :param pair: pair for which we want to create a LIMIT_BUY
         :return: None
         """
-        stake_currency = self.config['stake_currency']
-        fiat_currency = self.config.get('fiat_display_currency', None)
         time_in_force = self.strategy.order_time_in_force['buy']
 
         if price:
@@ -458,17 +456,6 @@ class FreqtradeBot:
             amount = order['amount']
             buy_limit_filled_price = order['price']
 
-        self.rpc.send_msg({
-            'type': RPCMessageType.BUY_NOTIFICATION,
-            'exchange': self.exchange.name.capitalize(),
-            'pair': pair,
-            'limit': buy_limit_filled_price,
-            'order_type': order_type,
-            'stake_amount': stake_amount,
-            'stake_currency': stake_currency,
-            'fiat_currency': fiat_currency
-        })
-
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
         trade = Trade(
@@ -486,6 +473,8 @@ class FreqtradeBot:
             ticker_interval=timeframe_to_minutes(self.config['ticker_interval'])
         )
 
+        self._notify_buy(trade, order_type)
+
         # Update fees if order is closed
         if order_status == 'closed':
             self.update_trade_state(trade, order)
@@ -497,6 +486,30 @@ class FreqtradeBot:
         self.wallets.update()
 
         return True
+
+    def _notify_buy(self, trade: Trade, order_type: str):
+        """
+        Sends rpc notification when a buy occured.
+        """
+        msg = {
+            'type': RPCMessageType.BUY_NOTIFICATION,
+            'exchange': self.exchange.name.capitalize(),
+            'pair': trade.pair,
+            'limit': trade.open_rate,
+            'order_type': order_type,
+            'stake_amount': trade.stake_amount,
+        }
+
+        if 'stake_currency' in self.config and 'fiat_display_currency' in self.config:
+            stake_currency = self.config['stake_currency']
+            fiat_currency = self.config['fiat_display_currency']
+            msg.update({
+                'stake_currency': stake_currency,
+                'fiat_currency': fiat_currency,
+            })
+
+        # Send the message
+        self.rpc.send_msg(msg)
 
 #
 # SELL / exit positions / close trades logic and methods
@@ -952,10 +965,9 @@ class FreqtradeBot:
             'profit_percent': profit_percent,
             'sell_reason': trade.sell_reason,
             'open_date': trade.open_date,
-            'close_date': trade.close_date or datetime.utcnow()
+            'close_date': trade.close_date or datetime.utcnow(),
         }
 
-        # For regular case, when the configuration exists
         if 'stake_currency' in self.config and 'fiat_display_currency' in self.config:
             stake_currency = self.config['stake_currency']
             fiat_currency = self.config['fiat_display_currency']
