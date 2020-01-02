@@ -14,6 +14,7 @@ from tabulate import tabulate
 
 from freqtrade.configuration import (TimeRange, remove_credentials,
                                      validate_config_consistency)
+from freqtrade.optimize.backtest_reports import generate_text_table
 from freqtrade.data import history
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException
@@ -128,55 +129,6 @@ class Backtesting:
                                             self.required_startup, min_date)
 
         return data, timerange
-
-    def _generate_text_table(self, data: Dict[str, Dict], results: DataFrame,
-                             skip_nan: bool = False) -> str:
-        """
-        Generates and returns a text table for the given backtest data and the results dataframe
-        :return: pretty printed table with tabulate as str
-        """
-        stake_currency = str(self.config.get('stake_currency'))
-        max_open_trades = self.config.get('max_open_trades')
-
-        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.2f', 'd', '.1f', '.1f')
-        tabular_data = []
-        headers = ['pair', 'buy count', 'avg profit %', 'cum profit %',
-                   'tot profit ' + stake_currency, 'tot profit %', 'avg duration',
-                   'profit', 'loss']
-        for pair in data:
-            result = results[results.pair == pair]
-            if skip_nan and result.profit_abs.isnull().all():
-                continue
-
-            tabular_data.append([
-                pair,
-                len(result.index),
-                result.profit_percent.mean() * 100.0,
-                result.profit_percent.sum() * 100.0,
-                result.profit_abs.sum(),
-                result.profit_percent.sum() * 100.0 / max_open_trades,
-                str(timedelta(
-                    minutes=round(result.trade_duration.mean()))) if not result.empty else '0:00',
-                len(result[result.profit_abs > 0]),
-                len(result[result.profit_abs < 0])
-            ])
-
-        # Append Total
-        tabular_data.append([
-            'TOTAL',
-            len(results.index),
-            results.profit_percent.mean() * 100.0,
-            results.profit_percent.sum() * 100.0,
-            results.profit_abs.sum(),
-            results.profit_percent.sum() * 100.0 / max_open_trades,
-            str(timedelta(
-                minutes=round(results.trade_duration.mean()))) if not results.empty else '0:00',
-            len(results[results.profit_abs > 0]),
-            len(results[results.profit_abs < 0])
-        ])
-        # Ignore type as floatfmt does allow tuples but mypy does not know that
-        return tabulate(tabular_data, headers=headers,
-                        floatfmt=floatfmt, tablefmt="pipe")  # type: ignore
 
     def _generate_text_table_sell_reason(self, data: Dict[str, Dict], results: DataFrame) -> str:
         """
@@ -509,13 +461,19 @@ class Backtesting:
 
             print(f"Result for strategy {strategy}")
             print(' BACKTESTING REPORT '.center(133, '='))
-            print(self._generate_text_table(data, results))
+            print(generate_text_table(data,
+                                      stake_currency=self.config['stake_currency'],
+                                      max_open_trades=self.config['max_open_trades'],
+                                      results=results))
 
             print(' SELL REASON STATS '.center(133, '='))
             print(self._generate_text_table_sell_reason(data, results))
 
             print(' LEFT OPEN TRADES REPORT '.center(133, '='))
-            print(self._generate_text_table(data, results.loc[results.open_at_end], True))
+            print(generate_text_table(data,
+                                      stake_currency=self.config['stake_currency'],
+                                      max_open_trades=self.config['max_open_trades'],
+                                      results=results.loc[results.open_at_end], skip_nan=True))
             print()
         if len(all_results) > 1:
             # Print Strategy summary table
