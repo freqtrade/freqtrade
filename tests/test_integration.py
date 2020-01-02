@@ -1,10 +1,11 @@
-
 from unittest.mock import MagicMock
 
+import pytest
+
 from freqtrade.persistence import Trade
+from freqtrade.rpc.rpc import RPC
 from freqtrade.strategy.interface import SellCheckTuple, SellType
 from tests.conftest import get_patched_freqtradebot, patch_get_signal
-from freqtrade.rpc.rpc import RPC
 
 
 def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
@@ -112,13 +113,19 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
     assert not trade.is_open
 
 
-def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, mocker) -> None:
+@pytest.mark.parametrize("balance_ratio,result1", [
+                        (1, 200),
+                        (0.99, 198),
+])
+def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, mocker, balance_ratio,
+                                 result1) -> None:
     """
     Tests workflow
     """
     default_conf['max_open_trades'] = 5
     default_conf['forcebuy_enable'] = True
     default_conf['stake_amount'] = 'unlimited'
+    default_conf['tradable_balance_ratio'] = balance_ratio
     default_conf['dry_run_wallet'] = 1000
     default_conf['exchange']['name'] = 'binance'
     default_conf['telegram']['enabled'] = True
@@ -165,7 +172,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
     assert len(trades) == 5
 
     for trade in trades:
-        assert trade.stake_amount == 200
+        assert trade.stake_amount == result1
         # Reset trade open order id's
         trade.open_order_id = None
     trades = Trade.get_open_trades()
