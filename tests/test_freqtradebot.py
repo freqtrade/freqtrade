@@ -150,12 +150,13 @@ def test_get_trade_stake_amount_no_stake_amount(default_conf, mocker) -> None:
         freqtrade.get_trade_stake_amount('ETH/BTC')
 
 
-@pytest.mark.parametrize("balance_ratio,result1,result2", [
-                        (1, 0.005, 0.005),
-                        (0.99, 0.00495, 0.00495),
+@pytest.mark.parametrize("balance_ratio,result1", [
+                        (1, 0.005),
+                        (0.99, 0.00495),
+                        (0.50, 0.0025),
                         ])
 def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_ratio, result1,
-                                                 result2, limit_buy_order, fee, mocker) -> None:
+                                                 limit_buy_order, fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -182,7 +183,7 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_r
     freqtrade.execute_buy('ETH/BTC', result)
 
     result = freqtrade.get_trade_stake_amount('LTC/BTC')
-    assert result == result2
+    assert result == result1
 
     # create 2 trades, order amount should be None
     freqtrade.execute_buy('LTC/BTC', result)
