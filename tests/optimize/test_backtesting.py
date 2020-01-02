@@ -20,7 +20,8 @@ from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.optimize import setup_configuration, start_backtesting
 from freqtrade.optimize.backtest_reports import (
-    generate_text_table, generate_text_table_sell_reason)
+    generate_text_table, generate_text_table_sell_reason,
+    generate_text_table_strategy)
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.state import RunMode
 from freqtrade.strategy.default_strategy import DefaultStrategy
@@ -361,7 +362,6 @@ def test_tickerdata_to_dataframe_bt(default_conf, mocker, testdatadir) -> None:
 
 
 def test_generate_text_table(default_conf, mocker):
-    patch_exchange(mocker)
 
     results = pd.DataFrame(
         {
@@ -390,7 +390,6 @@ def test_generate_text_table(default_conf, mocker):
 
 
 def test_generate_text_table_sell_reason(default_conf, mocker):
-    patch_exchange(mocker)
 
     results = pd.DataFrame(
         {
@@ -414,13 +413,7 @@ def test_generate_text_table_sell_reason(default_conf, mocker):
         data={'ETH/BTC': {}}, results=results) == result_str
 
 
-def test_generate_text_table_strategyn(default_conf, mocker):
-    """
-    Test Backtesting.generate_text_table_sell_reason() method
-    """
-    patch_exchange(mocker)
-    default_conf['max_open_trades'] = 2
-    backtesting = Backtesting(default_conf)
+def test_generate_text_table_strategy(default_conf, mocker):
     results = {}
     results['ETH/BTC'] = pd.DataFrame(
         {
@@ -455,7 +448,7 @@ def test_generate_text_table_strategyn(default_conf, mocker):
         '| LTC/BTC    |           3 |          30.00 |          90.00 '
         '|       1.30000000 |          45.00 | 0:20:00        |        3 |      0 |'
     )
-    assert backtesting._generate_text_table_strategy(all_results=results) == result_str
+    assert generate_text_table_strategy('BTC', 2, all_results=results) == result_str
 
 
 def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:

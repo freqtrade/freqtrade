@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional
 
 from pandas import DataFrame
-from tabulate import tabulate
 
 from freqtrade.configuration import (TimeRange, remove_credentials,
                                      validate_config_consistency)
@@ -20,7 +19,8 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.misc import file_dump_json
 from freqtrade.optimize.backtest_reports import (
-    generate_text_table, generate_text_table_sell_reason)
+    generate_text_table, generate_text_table_sell_reason,
+    generate_text_table_strategy)
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
@@ -130,37 +130,6 @@ class Backtesting:
                                             self.required_startup, min_date)
 
         return data, timerange
-
-
-
-    def _generate_text_table_strategy(self, all_results: dict) -> str:
-        """
-        Generate summary table per strategy
-        """
-        stake_currency = str(self.config.get('stake_currency'))
-        max_open_trades = self.config.get('max_open_trades')
-
-        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.2f', 'd', '.1f', '.1f')
-        tabular_data = []
-        headers = ['Strategy', 'buy count', 'avg profit %', 'cum profit %',
-                   'tot profit ' + stake_currency, 'tot profit %', 'avg duration',
-                   'profit', 'loss']
-        for strategy, results in all_results.items():
-            tabular_data.append([
-                strategy,
-                len(results.index),
-                results.profit_percent.mean() * 100.0,
-                results.profit_percent.sum() * 100.0,
-                results.profit_abs.sum(),
-                results.profit_percent.sum() * 100.0 / max_open_trades,
-                str(timedelta(
-                    minutes=round(results.trade_duration.mean()))) if not results.empty else '0:00',
-                len(results[results.profit_abs > 0]),
-                len(results[results.profit_abs < 0])
-            ])
-        # Ignore type as floatfmt does allow tuples but mypy does not know that
-        return tabulate(tabular_data, headers=headers,
-                        floatfmt=floatfmt, tablefmt="pipe")  # type: ignore
 
     def _store_backtest_result(self, recordfilename: Path, results: DataFrame,
                                strategyname: Optional[str] = None) -> None:
@@ -469,5 +438,7 @@ class Backtesting:
         if len(all_results) > 1:
             # Print Strategy summary table
             print(' Strategy Summary '.center(133, '='))
-            print(self._generate_text_table_strategy(all_results))
+            print(generate_text_table_strategy(self.config['stake_currency'],
+                                               self.config['max_open_trades'],
+                                               all_results=all_results))
             print('\nFor more details, please look at the detail tables above')
