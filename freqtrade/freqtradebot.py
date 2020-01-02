@@ -964,9 +964,8 @@ class FreqtradeBot:
         }
 
         if 'fiat_display_currency' in self.config:
-            fiat_currency = self.config['fiat_display_currency']
             msg.update({
-                'fiat_currency': fiat_currency,
+                'fiat_currency': self.config['fiat_display_currency'],
             })
 
         # Send the message
