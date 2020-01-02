@@ -498,15 +498,9 @@ class FreqtradeBot:
             'limit': trade.open_rate,
             'order_type': order_type,
             'stake_amount': trade.stake_amount,
+            'stake_currency': self.config['stake_currency'],
+            'fiat_currency': self.config.get('fiat_display_currency', None),
         }
-
-        if 'stake_currency' in self.config and 'fiat_display_currency' in self.config:
-            stake_currency = self.config['stake_currency']
-            fiat_currency = self.config['fiat_display_currency']
-            msg.update({
-                'stake_currency': stake_currency,
-                'fiat_currency': fiat_currency,
-            })
 
         # Send the message
         self.rpc.send_msg(msg)
@@ -966,13 +960,12 @@ class FreqtradeBot:
             'sell_reason': trade.sell_reason,
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.utcnow(),
+            'stake_currency': self.config['stake_currency'],
         }
 
-        if 'stake_currency' in self.config and 'fiat_display_currency' in self.config:
-            stake_currency = self.config['stake_currency']
+        if 'fiat_display_currency' in self.config:
             fiat_currency = self.config['fiat_display_currency']
             msg.update({
-                'stake_currency': stake_currency,
                 'fiat_currency': fiat_currency,
             })
 
