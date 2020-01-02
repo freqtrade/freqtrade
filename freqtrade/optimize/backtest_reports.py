@@ -51,3 +51,16 @@ def generate_text_table(data: Dict[str, Dict], stake_currency: str, max_open_tra
     # Ignore type as floatfmt does allow tuples but mypy does not know that
     return tabulate(tabular_data, headers=headers,
                     floatfmt=floatfmt, tablefmt="pipe")  # type: ignore
+
+
+def generate_text_table_sell_reason(data: Dict[str, Dict], results: DataFrame) -> str:
+    """
+    Generate small table outlining Backtest results
+    """
+    tabular_data = []
+    headers = ['Sell Reason', 'Count', 'Profit', 'Loss']
+    for reason, count in results['sell_reason'].value_counts().iteritems():
+        profit = len(results[(results['sell_reason'] == reason) & (results['profit_abs'] >= 0)])
+        loss = len(results[(results['sell_reason'] == reason) & (results['profit_abs'] < 0)])
+        tabular_data.append([reason.value, count, profit, loss])
+    return tabulate(tabular_data, headers=headers, tablefmt="pipe")

@@ -14,12 +14,13 @@ from tabulate import tabulate
 
 from freqtrade.configuration import (TimeRange, remove_credentials,
                                      validate_config_consistency)
-from freqtrade.optimize.backtest_reports import generate_text_table
 from freqtrade.data import history
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.misc import file_dump_json
+from freqtrade.optimize.backtest_reports import (
+    generate_text_table, generate_text_table_sell_reason)
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
@@ -130,17 +131,7 @@ class Backtesting:
 
         return data, timerange
 
-    def _generate_text_table_sell_reason(self, data: Dict[str, Dict], results: DataFrame) -> str:
-        """
-        Generate small table outlining Backtest results
-        """
-        tabular_data = []
-        headers = ['Sell Reason', 'Count', 'Profit', 'Loss']
-        for reason, count in results['sell_reason'].value_counts().iteritems():
-            profit = len(results[(results['sell_reason'] == reason) & (results['profit_abs'] >= 0)])
-            loss = len(results[(results['sell_reason'] == reason) & (results['profit_abs'] < 0)])
-            tabular_data.append([reason.value, count, profit, loss])
-        return tabulate(tabular_data, headers=headers, tablefmt="pipe")
+
 
     def _generate_text_table_strategy(self, all_results: dict) -> str:
         """
@@ -467,7 +458,7 @@ class Backtesting:
                                       results=results))
 
             print(' SELL REASON STATS '.center(133, '='))
-            print(self._generate_text_table_sell_reason(data, results))
+            print(generate_text_table_sell_reason(data, results))
 
             print(' LEFT OPEN TRADES REPORT '.center(133, '='))
             print(generate_text_table(data,
