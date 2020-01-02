@@ -74,7 +74,7 @@ CONF_SCHEMA = {
             'pattern': UNLIMITED_STAKE_AMOUNT
         },
         'tradable_balance_ratio': {
-            'type': ['number'],
+            'type': 'number',
             'minimum': 0.1,
             'maximum': 1,
             'default': 0.99
