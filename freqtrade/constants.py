@@ -73,6 +73,12 @@ CONF_SCHEMA = {
             'minimum': 0.0001,
             'pattern': UNLIMITED_STAKE_AMOUNT
         },
+        'tradable_balance_ratio': {
+            'type': ['number'],
+            'minimum': 0.1,
+            'maximum': 1,
+            'default': 0.99
+        },
         'fiat_display_currency': {'type': 'string', 'enum': SUPPORTED_FIAT},
         'dry_run': {'type': 'boolean'},
         'dry_run_wallet': {'type': 'number', 'default': DRY_RUN_WALLET},

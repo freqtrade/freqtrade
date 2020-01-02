@@ -43,6 +43,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `max_open_trades` | **Required.** Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades).<br> ***Datatype:*** *Positive integer or -1.*
 | `stake_currency` | **Required.** Crypto-currency used for trading. [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *String*
 | `stake_amount` | **Required.** Amount of crypto-currency your bot will use for each trade. Set it to `"unlimited"` to allow the bot to use all available balance. [More information below](#understand-stake_amount). [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *Positive float or `"unlimited"`.*
+| `tradable_balance_ratio` | Ratio of the total account balance the bot is allowed to trade. Only applies when `stake_amount="unlimited"`. [More information below](#understand-stake_amount). <br>*Defaults to `0.99` 99%).*<br> ***Datatype:*** *Positive float between `0.0` and `1.0`.*
 | `amount_reserve_percent` | Reserve some amount in min pair stake amount. The bot will reserve `amount_reserve_percent` + stoploss value when calculating min pair stake amount in order to avoid possible trade refusals. <br>*Defaults to `0.05` (5%).* <br> ***Datatype:*** *Positive Float as ratio.*
 | `ticker_interval` | The ticker interval to use (e.g `1m`, `5m`, `15m`, `30m`, `1h` ...). [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *String*
 | `fiat_display_currency` | Fiat currency used to show your profits. [More information below](#what-values-can-be-used-for-fiat_display_currency). <br> ***Datatype:*** *String*
@@ -143,6 +144,12 @@ To allow the bot to trade all the available `stake_currency` in your account set
 ```json
 "stake_amount" : "unlimited",
 ```
+
+When using `stake_amount="unlimited"`, we recommend to also set `tradable_balance_ratio=0.99` (99%) - to keep a minimum balance for eventual fees.
+This will keep 1% of your account balance "untradable" in your account.
+
+!!! Note:
+    This configuration will allow increasing / decreasing stakes depending on the performance of the bot (lower stake if bot is loosing, higher stakes if the bot has a winning record, since higher balances are available).
 
 In this case a trade amount is calculated as:
 
