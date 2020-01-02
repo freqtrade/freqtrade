@@ -278,7 +278,15 @@ class FreqtradeBot:
         free_open_trades = self.get_free_open_trades()
         if not free_open_trades:
             return None
-        available_amount = self.wallets.get_free(self.config['stake_currency'])
+
+        val_tied_up = Trade.total_open_trades_stakes()
+
+        # Ensure 1% is used from the overall balance
+        # Otherwise we'd risk lowering stakes with each open trade.
+        # (tied up + current free) * ratio) - tied up
+        available_amount = ((val_tied_up + self.wallets.get_free(self.config['stake_currency'])) *
+                            self.config['tradable_balance_ratio']) - val_tied_up
+
         return available_amount / free_open_trades
 
     def _check_available_stake_amount(self, stake_amount: Optional[float]) -> Optional[float]:
