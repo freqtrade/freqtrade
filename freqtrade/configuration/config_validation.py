@@ -51,7 +51,7 @@ def validate_config_schema(conf: Dict[str, Any]) -> Dict[str, Any]:
         # Dynamically allow empty stake-currency
         # Since the minimal config specifies this too.
         # It's not allowed for Dry-run or live modes
-        conf_schema['properties']['stake_currency']['enum'] += ['']
+        conf_schema['properties']['stake_currency']['enum'] += ['']  # type: ignore
 
     try:
         FreqtradeValidator(conf_schema).validate(conf)
