@@ -270,6 +270,22 @@ class FreqtradeBot:
 
         return self._check_available_stake_amount(stake_amount)
 
+    def _get_available_stake_amount(self) -> float:
+        """
+        Return the total currently available balance in stake currency,
+        respecting tradable_balance_ratio.
+        Calculated as
+        <open_trade stakes> + free amount ) * tradable_balance_ratio - <open_trade stakes>
+        """
+        val_tied_up = Trade.total_open_trades_stakes()
+
+        # Ensure <tradable_balance_ratio>% is used from the overall balance
+        # Otherwise we'd risk lowering stakes with each open trade.
+        # (tied up + current free) * ratio) - tied up
+        available_amount = ((val_tied_up + self.wallets.get_free(self.config['stake_currency'])) *
+                            self.config['tradable_balance_ratio']) - val_tied_up
+        return available_amount
+
     def _calculate_unlimited_stake_amount(self) -> Optional[float]:
         """
         Calculate stake amount for "unlimited" stake amount
@@ -279,13 +295,7 @@ class FreqtradeBot:
         if not free_open_trades:
             return None
 
-        val_tied_up = Trade.total_open_trades_stakes()
-
-        # Ensure 1% is used from the overall balance
-        # Otherwise we'd risk lowering stakes with each open trade.
-        # (tied up + current free) * ratio) - tied up
-        available_amount = ((val_tied_up + self.wallets.get_free(self.config['stake_currency'])) *
-                            self.config['tradable_balance_ratio']) - val_tied_up
+        available_amount = self._get_available_stake_amount()
 
         return available_amount / free_open_trades
 
