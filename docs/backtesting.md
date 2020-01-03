@@ -86,7 +86,7 @@ freqtrade backtesting --fee 0.001
 ```
 
 !!! Note
-    Only supply this parameter if you want to experiment with different fee values. By default, Backtesting fetches the exchange's default fee from the exchange.
+    Only supply this option (or the corresponding configuration parameter) if you want to experiment with different fee values. By default, Backtesting fetches the default fee from the exchange pair/market info.
 
 #### Running backtest with smaller testset by using timerange
 
