@@ -641,11 +641,15 @@ def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
 
 
 @pytest.mark.parametrize("max_open", range(0, 5))
-def test_create_trades_multiple_trades(default_conf, ticker,
-                                       fee, mocker, max_open) -> None:
+@pytest.mark.parametrize("tradable_balance_ratio,modifier", [(1.0, 1), (0.99, 0.8), (0.5, 0.5)])
+def test_create_trades_multiple_trades(default_conf, ticker, fee, mocker,
+                                       max_open, tradable_balance_ratio, modifier) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     default_conf['max_open_trades'] = max_open
+    default_conf['tradable_balance_ratio'] = tradable_balance_ratio
+    default_conf['dry_run_wallet'] = 0.001 * max_open
+
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
@@ -656,10 +660,11 @@ def test_create_trades_multiple_trades(default_conf, ticker,
     patch_get_signal(freqtrade)
 
     n = freqtrade.enter_positions()
-    assert n == max_open
-
     trades = Trade.get_open_trades()
-    assert len(trades) == max_open
+    # Expected trades should be max_open * a modified value
+    # depending on the configured tradable_balance
+    assert n == max(int(max_open * modifier), 0)
+    assert len(trades) == max(int(max_open * modifier), 0)
 
 
 def test_create_trades_preopen(default_conf, ticker, fee, mocker) -> None:
