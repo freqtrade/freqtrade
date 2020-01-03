@@ -2,6 +2,7 @@
     "max_open_trades": 3,
     "stake_currency": "BTC",
     "stake_amount": 0.05,
+    "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "USD",
     "ticker_interval" : "5m",
     "dry_run": false,
