@@ -1317,12 +1317,12 @@ def buy_order_fee():
 def edge_conf(default_conf):
     conf = deepcopy(default_conf)
     conf['max_open_trades'] = -1
+    conf['tradable_balance_ratio'] = 0.5
     conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
     conf['edge'] = {
         "enabled": True,
         "process_throttle_secs": 1800,
         "calculate_since_number_of_days": 14,
-        "capital_available_percentage": 0.5,
         "allowed_risk": 0.01,
         "stoploss_range_min": -0.01,
         "stoploss_range_max": -0.1,

@@ -1036,6 +1036,16 @@ def test_process_deprecated_setting_pairlists(mocker, default_conf, caplog):
     assert log_has_re(r'DEPRECATED.*in pairlist is deprecated and must be moved*', caplog)
 
 
+def test_process_deprecated_setting_edge(mocker, edge_conf, caplog):
+    patched_configuration_load_config_file(mocker, edge_conf)
+    edge_conf.update({'edge': {
+        'capital_available_percentage': 0.5,
+    }})
+
+    process_temporary_deprecated_settings(edge_conf)
+    assert log_has_re(r"DEPRECATED.*Using 'edge.capital_available_percentage'*", caplog)
+
+
 def test_check_conflicting_settings(mocker, default_conf, caplog):
     patched_configuration_load_config_file(mocker, default_conf)
 
