@@ -722,6 +722,14 @@ def test_validate_default_conf(default_conf) -> None:
     validate_config_schema(default_conf)
 
 
+def test_validate_max_open_trades(default_conf):
+    default_conf['max_open_trades'] = float('inf')
+    default_conf['stake_amount'] = 'unlimited'
+    with pytest.raises(OperationalException, match='`max_open_trades` and `stake_amount` '
+                                                   'cannot both be unlimited.'):
+        validate_config_consistency(default_conf)
+
+
 def test_validate_tsl(default_conf):
     default_conf['stoploss'] = 0.0
     with pytest.raises(OperationalException, match='The config stoploss needs to be different '
