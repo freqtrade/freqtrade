@@ -146,7 +146,7 @@ For example, if you have 10 ETH available in your wallet on the exchange and `tr
 !!! Warning
     `tradable_balance_ratio` applies to the current balance (free balance + tied up in trades). Therefore, assuming a starting balance of 1000, a configuration of `tradable_balance_ratio=0.99` will not guarantee that 10 units will always remain available on the exchange. The free amount may reduce to 5 units if the total balance is reduce to 500 (either by a losing streak, or by withdrawing balance).
 
-#### Static Stake amount
+#### Static stake amount
 
 The `stake_amount` configuration statically configures the amount of stake-currency your bot will use for each trade.
 

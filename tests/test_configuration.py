@@ -1039,6 +1039,7 @@ def test_process_deprecated_setting_pairlists(mocker, default_conf, caplog):
 def test_process_deprecated_setting_edge(mocker, edge_conf, caplog):
     patched_configuration_load_config_file(mocker, edge_conf)
     edge_conf.update({'edge': {
+        'enabled': True,
         'capital_available_percentage': 0.5,
     }})
 
