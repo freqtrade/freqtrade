@@ -3628,6 +3628,7 @@ def test_sync_wallet_dry_run(mocker, default_conf, ticker, fee, limit_buy_order,
     # Initialize to 2 times stake amount
     default_conf['dry_run_wallet'] = 0.002
     default_conf['max_open_trades'] = 2
+    default_conf['tradable_balance_ratio'] = 1.0
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -3649,5 +3650,5 @@ def test_sync_wallet_dry_run(mocker, default_conf, ticker, fee, limit_buy_order,
     n = bot.enter_positions()
     assert n == 0
     assert log_has_re(r"Unable to create trade for XRP/BTC: "
-                      r"Available balance \(0 BTC\) is lower than stake amount \(0.001 BTC\)",
+                      r"Available balance \(0.0 BTC\) is lower than stake amount \(0.001 BTC\)",
                       caplog)

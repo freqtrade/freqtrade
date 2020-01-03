@@ -305,7 +305,7 @@ class FreqtradeBot:
         for the stake currency
         :return: float: Stake amount
         """
-        available_amount = self.wallets.get_free(self.config['stake_currency'])
+        available_amount = self._get_available_stake_amount()
 
         if stake_amount is not None and available_amount < stake_amount:
             raise DependencyException(
