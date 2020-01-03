@@ -157,6 +157,9 @@ In this case a trade amount is calculated as:
 currency_balance / (max_open_trades - current_open_trades)
 ```
 
+!!! Warning
+    `tradable_balance_ratio` applies to the current balance (free balance + tied up in trades). Therefore, assuming a starting balance of 1000, a configuration of `tradable_balance_ratio=0.99` will not guarantee that 10 units will always remain available on the exchange. The free amount may reduce to 5 units if the total balance is reduce to 500 (either by a losing streak, or by withdrawing balance).
+
 !!! Note "When using Dry-Run Mode"
     When using `"stake_amount" : "unlimited",` in combination with Dry-Run, the balance will be simulated starting with a stake of `dry_run_wallet` which will evolve over time. It is therefore important to set `dry_run_wallet` to a sensible value (like 0.05 or 0.01 for BTC and 1000 or 100 for USDT, for example), otherwise it may simulate trades with 100 BTC (or more) or 0.05 USDT (or less) at once - which may not correspond to your real available balance or is less than the exchange minimal limit for the order amount for the stake currency.
 
