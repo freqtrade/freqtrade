@@ -271,14 +271,13 @@ The easiest way is to download install Microsoft Visual Studio Community [here](
 Now you have an environment ready, the next step is
 [Bot Configuration](configuration.md).
 
-
-## Trouble shooting
+## Troubleshooting
 
 ### MacOS installation error
 
-Newer versions of MacOS may have installation fail with errors like `error: command 'g++' failed with exit status 1`.
+Newer versions of MacOS may have installation failed with errors like `error: command 'g++' failed with exit status 1`.
 
-This error will require an explicit installation of the SDK Headers, which are not installed by default in this version of MacOS.
+This error will require explicit installation of the SDK Headers, which are not installed by default in this version of MacOS.
 For MacOS 10.14, this can be accomplished with the below command.
 
 ``` bash
