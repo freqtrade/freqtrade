@@ -96,11 +96,15 @@ def _add_indicators_dict(fig, row, indicators: Dict[str, Dict],
     for indicator, conf in indicators.items():
         print(conf)
         if indicator in data:
+            kwargs = {'x': data['date'],
+                      'y': data[indicator].values,
+                      'mode': 'lines',
+                      'name': indicator
+                      }
+            if 'color' in conf:
+                kwargs.update({'line': {'color': conf['color']}})
             scatter = go.Scatter(
-                x=data['date'],
-                y=data[indicator].values,
-                mode='lines',
-                name=indicator
+                **kwargs
             )
             fig.add_trace(scatter, row, 1)
         else:
@@ -123,9 +127,9 @@ def add_indicators(fig, row, indicators: IndicatorType, data: pd.DataFrame) -> m
     :param data: candlestick DataFrame
     """
     if isinstance(indicators, list):
-        _add_indicators_list(fig, row, indicators, data)
+        return _add_indicators_list(fig, row, indicators, data)
     else:
-        _add_indicators_dict(fig, row, indicators, data)
+        return _add_indicators_dict(fig, row, indicators, data)
 
 
 def add_profit(fig, row, data: pd.DataFrame, column: str, name: str) -> make_subplots:
@@ -376,6 +380,17 @@ def store_plot_file(fig, filename: str, directory: Path, auto_open: bool = False
     logger.info(f"Stored plot as {_filename}")
 
 
+def _get_plot_indicators(config, strategy):
+
+    if hasattr(strategy, 'plot_config'):
+        indicators1 = strategy.plot_config['main_plot']
+        indicators2 = strategy.plot_config['subplots']
+    else:
+        indicators1 = config.get("indicators1")
+        indicators2 = config.get("indicators2")
+    return indicators1, indicators2
+
+
 def load_and_plot_trades(config: Dict[str, Any]):
     """
     From configuration provided
@@ -402,8 +417,7 @@ def load_and_plot_trades(config: Dict[str, Any]):
         trades_pair = trades.loc[trades['pair'] == pair]
         trades_pair = extract_trades_of_period(dataframe, trades_pair)
 
-        indicators1 = config["indicators1"]
-        indicators2 = config["indicators2"]
+        indicators1, indicators2 = _get_plot_indicators(config, strategy)
 
         fig = generate_candlestick_graph(
             pair=pair,
