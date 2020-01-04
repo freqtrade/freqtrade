@@ -66,8 +66,8 @@ def test_add_indicators(default_conf, testdatadir, caplog):
 
     data = history.load_pair_history(pair=pair, timeframe='1m',
                                      datadir=testdatadir, timerange=timerange)
-    indicators1 = ["ema10"]
-    indicators2 = ["macd"]
+    indicators1 = {"ema10": {}}
+    indicators2 = {"macd": {"color": "red"}}
 
     # Generate buy/sell signals and indicators
     strat = DefaultStrategy(default_conf)
@@ -86,9 +86,10 @@ def test_add_indicators(default_conf, testdatadir, caplog):
     macd = find_trace_in_fig_data(figure.data, "macd")
     assert isinstance(macd, go.Scatter)
     assert macd.yaxis == "y3"
+    assert macd.line.color == "red"
 
     # No indicator found
-    fig3 = add_indicators(fig=deepcopy(fig), row=3, indicators=['no_indicator'], data=data)
+    fig3 = add_indicators(fig=deepcopy(fig), row=3, indicators={'no_indicator': {}}, data=data)
     assert fig == fig3
     assert log_has_re(r'Indicator "no_indicator" ignored\..*', caplog)
 

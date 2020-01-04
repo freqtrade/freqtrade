@@ -177,6 +177,7 @@ def create_plotconfig(indicators1: List[str], indicators2: List[str], plot_confi
 
     if 'subplots' not in plot_config:
         plot_config['subplots'] = {}
+    return plot_config
 
 
 def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFrame = None, *,
@@ -195,7 +196,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     :param plot_config: Dict of Dicts containing advanced plot configuration
     :return: Plotly figure
     """
-    plot_config = create_plotconfig(indicators1, indicators2)
+    plot_config = create_plotconfig(indicators1, indicators2, plot_config)
 
     rows = 2 + len(plot_config['subplots'])
     row_widths = [1 for _ in plot_config['subplots']]
