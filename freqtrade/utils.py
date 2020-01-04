@@ -12,7 +12,8 @@ from colorama import init as colorama_init
 from tabulate import tabulate
 
 from freqtrade.configuration import (Configuration, TimeRange,
-                                     remove_credentials)
+                                     remove_credentials,
+                                     validate_config_consistency)
 from freqtrade.configuration.directory_operations import (copy_sample_files,
                                                           create_userdata_dir)
 from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGY
@@ -42,6 +43,7 @@ def setup_utils_configuration(args: Dict[str, Any], method: RunMode) -> Dict[str
 
     # Ensure we do not use Exchange credentials
     remove_credentials(config)
+    validate_config_consistency(config)
 
     return config
 

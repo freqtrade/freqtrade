@@ -282,19 +282,27 @@ CONF_SCHEMA = {
             'required': ['process_throttle_secs', 'allowed_risk', 'capital_available_percentage']
         }
     },
-    'required': [
-        'exchange',
-        'max_open_trades',
-        'stake_currency',
-        'stake_amount',
-        'dry_run',
-        'dry_run_wallet',
-        'bid_strategy',
-        'unfilledtimeout',
-        'stoploss',
-        'minimal_roi',
-        'internals',
-        'dataformat_ohlcv',
-        'dataformat_trades',
-    ]
 }
+
+SCHEMA_TRADE_REQUIRED = [
+    'exchange',
+    'max_open_trades',
+    'stake_currency',
+    'stake_amount',
+    'dry_run',
+    'dry_run_wallet',
+    'bid_strategy',
+    'unfilledtimeout',
+    'stoploss',
+    'minimal_roi',
+    'internals',
+    'dataformat_ohlcv',
+    'dataformat_trades',
+]
+
+SCHEMA_MINIMAL_REQUIRED = [
+    'exchange',
+    'dry_run',
+    'dataformat_ohlcv',
+    'dataformat_trades',
+]

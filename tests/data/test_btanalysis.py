@@ -20,7 +20,7 @@ def test_load_backtest_data(testdatadir):
     filename = testdatadir / "backtest-result_test.json"
     bt_data = load_backtest_data(filename)
     assert isinstance(bt_data, DataFrame)
-    assert list(bt_data.columns) == BT_DATA_COLUMNS + ["profitabs"]
+    assert list(bt_data.columns) == BT_DATA_COLUMNS + ["profit"]
     assert len(bt_data) == 179
 
     # Test loading from string (must yield same result)

@@ -80,7 +80,7 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
     patch_get_signal(freqtrade)
 
     # Create some test data
-    freqtrade.create_trades()
+    freqtrade.enter_positions()
     wallets_mock.reset_mock()
     Trade.session = MagicMock()
 
@@ -90,7 +90,8 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
         trade.stoploss_order_id = 3
         trade.open_order_id = None
 
-    freqtrade.process_maybe_execute_sells(trades)
+    n = freqtrade.exit_positions(trades)
+    assert n == 2
     assert should_sell_mock.call_count == 2
 
     # Only order for 3rd trade needs to be cancelled
@@ -153,7 +154,8 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
     patch_get_signal(freqtrade)
 
     # Create 4 trades
-    freqtrade.create_trades()
+    n = freqtrade.enter_positions()
+    assert n == 4
 
     trades = Trade.query.all()
     assert len(trades) == 4
@@ -170,7 +172,8 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
     assert len(trades) == 5
     bals = freqtrade.wallets.get_all_balances()
 
-    freqtrade.process_maybe_execute_sells(trades)
+    n = freqtrade.exit_positions(trades)
+    assert n == 1
     trades = Trade.get_open_trades()
     # One trade sold
     assert len(trades) == 4
