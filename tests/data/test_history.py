@@ -159,6 +159,7 @@ def test_testdata_path(testdatadir) -> None:
     ("CMT@18/ETH", 'CMT_18_ETH'),
     ("LBTC:1022/SAI", 'LBTC_1022_SAI'),
     ("$PAC/BTC", '_PAC_BTC'),
+    ("ACC_OLD/BTC", 'ACC_OLD_BTC'),
 ])
 def test_pair_to_filename(pair, expected_result):
     pair_s = pair_to_filename(pair)
@@ -171,6 +172,7 @@ def test_pair_to_filename(pair, expected_result):
     ("ETHH20", 'freqtrade/hello/world/ETHH20-5m.json'),
     (".XBTBON2H", 'freqtrade/hello/world/_XBTBON2H-5m.json'),
     ("ETHUSD.d", 'freqtrade/hello/world/ETHUSD_d-5m.json'),
+    ("ACC_OLD/BTC", 'freqtrade/hello/world/ACC_OLD_BTC-5m.json'),
 ])
 def test_pair_data_filename(pair, expected_result):
     fn = pair_data_filename(Path('freqtrade/hello/world'), pair, '5m')
@@ -184,6 +186,7 @@ def test_pair_data_filename(pair, expected_result):
     ("ETHH20", 'freqtrade/hello/world/ETHH20-trades.json.gz'),
     (".XBTBON2H", 'freqtrade/hello/world/_XBTBON2H-trades.json.gz'),
     ("ETHUSD.d", 'freqtrade/hello/world/ETHUSD_d-trades.json.gz'),
+    ("ACC_OLD_BTC", 'freqtrade/hello/world/ACC_OLD_BTC-trades.json.gz'),
 ])
 def test_pair_trades_filename(pair, expected_result):
     fn = pair_trades_filename(Path('freqtrade/hello/world'), pair)
