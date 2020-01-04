@@ -7,6 +7,7 @@ from shutil import copyfile
 from unittest.mock import MagicMock, PropertyMock
 
 import arrow
+import pytest
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
@@ -15,7 +16,9 @@ from freqtrade.data.history import (_download_pair_history,
                                     _load_cached_data_for_updating,
                                     convert_trades_to_ohlcv, get_timerange,
                                     load_data, load_pair_history,
-                                    load_tickerdata_file, pair_data_filename,
+                                    load_tickerdata_file,
+                                    pair_data_filename,
+                                    pair_to_filename,
                                     pair_trades_filename,
                                     refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data,
@@ -143,16 +146,42 @@ def test_testdata_path(testdatadir) -> None:
     assert str(Path('tests') / 'testdata') in str(testdatadir)
 
 
-def test_pair_data_filename():
-    fn = pair_data_filename(Path('freqtrade/hello/world'), 'ETH/BTC', '5m')
-    assert isinstance(fn, Path)
-    assert fn == Path('freqtrade/hello/world/ETH_BTC-5m.json')
+@pytest.mark.parametrize("pair,expected_result", [
+    ("ETH/BTC", 'ETH_BTC'),
+    ("Fabric Token/ETH", 'Fabric_Token_ETH'),
+    ("ETHH20", 'ETHH20'),
+    (".XBTBON2H", '_XBTBON2H'),
+    ("ETHUSD.d", 'ETHUSD_d'),
+])
+def test_pair_to_filename(pair, expected_result):
+    pair_s = pair_to_filename(pair)
+    assert pair_s == expected_result
 
 
-def test_pair_trades_filename():
-    fn = pair_trades_filename(Path('freqtrade/hello/world'), 'ETH/BTC')
+@pytest.mark.parametrize("pair,expected_result", [
+    ("ETH/BTC", 'freqtrade/hello/world/ETH_BTC-5m.json'),
+    ("Fabric Token/ETH", 'freqtrade/hello/world/Fabric_Token_ETH-5m.json'),
+    ("ETHH20", 'freqtrade/hello/world/ETHH20-5m.json'),
+    (".XBTBON2H", 'freqtrade/hello/world/_XBTBON2H-5m.json'),
+    ("ETHUSD.d", 'freqtrade/hello/world/ETHUSD_d-5m.json'),
+])
+def test_pair_data_filename(pair, expected_result):
+    fn = pair_data_filename(Path('freqtrade/hello/world'), pair, '5m')
     assert isinstance(fn, Path)
-    assert fn == Path('freqtrade/hello/world/ETH_BTC-trades.json.gz')
+    assert fn == Path(expected_result)
+
+
+@pytest.mark.parametrize("pair,expected_result", [
+    ("ETH/BTC", 'freqtrade/hello/world/ETH_BTC-trades.json.gz'),
+    ("Fabric Token/ETH", 'freqtrade/hello/world/Fabric_Token_ETH-trades.json.gz'),
+    ("ETHH20", 'freqtrade/hello/world/ETHH20-trades.json.gz'),
+    (".XBTBON2H", 'freqtrade/hello/world/_XBTBON2H-trades.json.gz'),
+    ("ETHUSD.d", 'freqtrade/hello/world/ETHUSD_d-trades.json.gz'),
+])
+def test_pair_trades_filename(pair, expected_result):
+    fn = pair_trades_filename(Path('freqtrade/hello/world'), pair)
+    assert isinstance(fn, Path)
+    assert fn == Path(expected_result)
 
 
 def test_load_cached_data_for_updating(mocker) -> None:
