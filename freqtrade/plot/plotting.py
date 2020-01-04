@@ -113,11 +113,31 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
     """
     # Trades can be empty
     if trades is not None and len(trades) > 0:
+        # Create description for sell summarizing the trade
+        trades['desc'] = trades.apply(lambda row: f"{round(row['profitperc'] * 100, 1)}%, "
+                                                  f"{row['sell_reason']}, {row['duration']} min",
+                                                  axis=1)
         trade_buys = go.Scatter(
             x=trades["open_time"],
             y=trades["open_rate"],
             mode='markers',
-            name='trade_buy',
+            name='Trade buy',
+            text=trades["desc"],
+            marker=dict(
+                symbol='circle-open',
+                size=11,
+                line=dict(width=2),
+                color='cyan'
+
+            )
+        )
+
+        trade_sells = go.Scatter(
+            x=trades.loc[trades['profitperc'] > 0, "close_time"],
+            y=trades.loc[trades['profitperc'] > 0, "close_rate"],
+            text=trades.loc[trades['profitperc'] > 0, "desc"],
+            mode='markers',
+            name='Sell - Profit',
             marker=dict(
                 symbol='square-open',
                 size=11,
@@ -125,16 +145,12 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
                 color='green'
             )
         )
-        # Create description for sell summarizing the trade
-        desc = trades.apply(lambda row: f"{round(row['profitperc'] * 100, 1)}%, "
-                                        f"{row['sell_reason']}, {row['duration']} min",
-                            axis=1)
-        trade_sells = go.Scatter(
-            x=trades["close_time"],
-            y=trades["close_rate"],
-            text=desc,
+        trade_sells_loss = go.Scatter(
+            x=trades.loc[trades['profitperc'] <= 0, "close_time"],
+            y=trades.loc[trades['profitperc'] <= 0, "close_rate"],
+            text=trades.loc[trades['profitperc'] <= 0, "desc"],
             mode='markers',
-            name='trade_sell',
+            name='Sell - Loss',
             marker=dict(
                 symbol='square-open',
                 size=11,
@@ -144,6 +160,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
         )
         fig.add_trace(trade_buys, 1, 1)
         fig.add_trace(trade_sells, 1, 1)
+        fig.add_trace(trade_sells_loss, 1, 1)
     else:
         logger.warning("No trades found.")
     return fig

@@ -110,18 +110,29 @@ def test_plot_trades(testdatadir, caplog):
     figure = fig1.layout.figure
 
     # Check buys - color, should be in first graph, ...
-    trade_buy = find_trace_in_fig_data(figure.data, "trade_buy")
+    trade_buy = find_trace_in_fig_data(figure.data, 'Trade buy')
     assert isinstance(trade_buy, go.Scatter)
     assert trade_buy.yaxis == 'y'
     assert len(trades) == len(trade_buy.x)
-    assert trade_buy.marker.color == 'green'
+    assert trade_buy.marker.color == 'cyan'
+    assert trade_buy.marker.symbol == 'circle-open'
+    assert trade_buy.text[0] == '4.0%, roi, 15 min'
 
-    trade_sell = find_trace_in_fig_data(figure.data, "trade_sell")
+    trade_sell = find_trace_in_fig_data(figure.data, 'Sell - Profit')
     assert isinstance(trade_sell, go.Scatter)
     assert trade_sell.yaxis == 'y'
-    assert len(trades) == len(trade_sell.x)
-    assert trade_sell.marker.color == 'red'
-    assert trade_sell.text[0] == "4.0%, roi, 15 min"
+    assert len(trades.loc[trades['profitperc'] > 0]) == len(trade_sell.x)
+    assert trade_sell.marker.color == 'green'
+    assert trade_sell.marker.symbol == 'square-open'
+    assert trade_sell.text[0] == '4.0%, roi, 15 min'
+
+    trade_sell_loss = find_trace_in_fig_data(figure.data, 'Sell - Loss')
+    assert isinstance(trade_sell_loss, go.Scatter)
+    assert trade_sell_loss.yaxis == 'y'
+    assert len(trades.loc[trades['profitperc'] <= 0]) == len(trade_sell_loss.x)
+    assert trade_sell_loss.marker.color == 'red'
+    assert trade_sell_loss.marker.symbol == 'square-open'
+    assert trade_sell_loss.text[5] == '-10.4%, stop_loss, 720 min'
 
 
 def test_generate_candlestick_graph_no_signals_no_trades(default_conf, mocker, testdatadir, caplog):
@@ -310,7 +321,7 @@ def test_load_and_plot_trades(default_conf, mocker, caplog, testdatadir):
         "freqtrade.plot.plotting",
         generate_candlestick_graph=candle_mock,
         store_plot_file=store_mock
-        )
+    )
     load_and_plot_trades(default_conf)
 
     # Both mocks should be called once per pair
