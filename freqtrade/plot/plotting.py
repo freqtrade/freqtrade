@@ -165,7 +165,7 @@ def create_plotconfig(indicators1: List[str], indicators2: List[str], plot_confi
         if not indicators1:
             indicators1 = ['sma', 'ema3', 'ema5']
         if not indicators2:
-            indicators1 = ['macd', 'macdsignal']
+            indicators2 = ['macd', 'macdsignal']
 
         # Create subplot configuration if plot_config is not available.
         plot_config = {

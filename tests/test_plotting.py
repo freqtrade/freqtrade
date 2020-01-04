@@ -13,6 +13,7 @@ from freqtrade.data.btanalysis import create_cum_profit, load_backtest_data
 from freqtrade.exceptions import OperationalException
 from freqtrade.plot.plot_utils import start_plot_dataframe, start_plot_profit
 from freqtrade.plot.plotting import (add_indicators, add_profit,
+                                     create_plotconfig,
                                      generate_candlestick_graph,
                                      generate_plot_filename,
                                      generate_profit_graph, init_plotscript,
@@ -372,3 +373,26 @@ def test_plot_profit(default_conf, mocker, testdatadir, caplog):
 
     assert profit_mock.call_args_list[0][0][0] == default_conf['pairs']
     assert store_mock.call_args_list[0][1]['auto_open'] is True
+
+
+@pytest.mark.parametrize("ind1,ind2,plot_conf,exp", [
+    ([], [], {},
+     {'main_plot': {'sma': {}, 'ema3': {}, 'ema5': {}},
+      'subplots': {'Other': {'macd': {}, 'macdsignal': {}}}}),
+    (['sma', 'ema3'], ['macd'], {},
+     {'main_plot': {'sma': {}, 'ema3': {}}, 'subplots': {'Other': {'macd': {}}}}
+     ),
+    ([], [], {'main_plot': {'sma': {}}},
+     {'main_plot': {'sma': {}}, 'subplots': {}}),
+    ([], [], {'subplots': {'RSI': {'rsi': {'color': 'red'}}}},
+     {'main_plot': {}, 'subplots': {'RSI': {'rsi': {'color': 'red'}}}}),
+])
+def test_create_plotconfig(ind1, ind2, plot_conf, exp):
+
+    res = create_plotconfig(ind1, ind2, plot_conf)
+    assert 'main_plot' in res
+    assert 'subplots' in res
+    assert isinstance(res['main_plot'], dict)
+    assert isinstance(res['subplots'], dict)
+
+    assert res == exp
