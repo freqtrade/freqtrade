@@ -152,6 +152,13 @@ def test_testdata_path(testdatadir) -> None:
     ("ETHH20", 'ETHH20'),
     (".XBTBON2H", '_XBTBON2H'),
     ("ETHUSD.d", 'ETHUSD_d'),
+    ("ADA-0327", 'ADA_0327'),
+    ("BTC-USD-200110", 'BTC_USD_200110'),
+    ("F-AKRO/USDT", 'F_AKRO_USDT'),
+    ("LC+/ETH", 'LC__ETH'),
+    ("CMT@18/ETH", 'CMT_18_ETH'),
+    ("LBTC:1022/SAI", 'LBTC_1022_SAI'),
+    ("$PAC/BTC", '_PAC_BTC'),
 ])
 def test_pair_to_filename(pair, expected_result):
     pair_s = pair_to_filename(pair)

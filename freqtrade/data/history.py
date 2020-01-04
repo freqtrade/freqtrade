@@ -225,7 +225,7 @@ def refresh_data(datadir: Path,
 
 
 def pair_to_filename(pair: str) -> str:
-    for ch in ['/', ' ', '.']:
+    for ch in ['/', '-', ' ', '.', '@', '$', '+', ':']:
         pair = pair.replace(ch, '_')
     return pair
 
