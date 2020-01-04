@@ -224,14 +224,20 @@ def refresh_data(datadir: Path,
                                exchange=exchange)
 
 
+def pair_to_filename(pair: str) -> str:
+    for ch in ['/', ' ', '.']:
+        pair = pair.replace(ch, '_')
+    return pair
+
+
 def pair_data_filename(datadir: Path, pair: str, timeframe: str) -> Path:
-    pair_s = pair.replace("/", "_")
+    pair_s = pair_to_filename(pair)
     filename = datadir.joinpath(f'{pair_s}-{timeframe}.json')
     return filename
 
 
 def pair_trades_filename(datadir: Path, pair: str) -> Path:
-    pair_s = pair.replace("/", "_")
+    pair_s = pair_to_filename(pair)
     filename = datadir.joinpath(f'{pair_s}-trades.json.gz')
     return filename
 
