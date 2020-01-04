@@ -92,6 +92,12 @@ def file_load_json(file):
     return pairdata
 
 
+def pair_to_filename(pair: str) -> str:
+    for ch in ['/', ' ', '.']:
+        pair = pair.replace(ch, '_')
+    return pair
+
+
 def format_ms_time(date: int) -> str:
     """
     convert MS date to readable format.
