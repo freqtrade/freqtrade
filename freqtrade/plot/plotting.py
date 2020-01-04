@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List
 
 import pandas as pd
 from freqtrade.configuration import TimeRange
@@ -12,8 +12,6 @@ from freqtrade.resolvers import StrategyResolver
 
 logger = logging.getLogger(__name__)
 
-
-IndicatorType = Union[List[str], Dict[str, Dict]]
 
 try:
     from plotly.subplots import make_subplots
@@ -151,7 +149,8 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
     return fig
 
 
-def create_plotconfig(indicators1: List[str], indicators2: List[str], plot_config: Dict[str, Dict]) -> Dict[str, Dict]:
+def create_plotconfig(indicators1: List[str], indicators2: List[str],
+                      plot_config: Dict[str, Dict]) -> Dict[str, Dict]:
     """
     Combines indicators 1 and indicators 2 into plot_config if necessary
     :param indicators1: List containing Main plot indicators

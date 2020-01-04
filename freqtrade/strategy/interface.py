@@ -112,7 +112,8 @@ class IStrategy(ABC):
     dp: Optional[DataProvider] = None
     wallets: Optional[Wallets] = None
 
-    plot_config: Dict
+    # Definition of plot_config. See plotting documentation for more details.
+    plot_config: Dict = {}
 
     def __init__(self, config: dict) -> None:
         self.config = config
