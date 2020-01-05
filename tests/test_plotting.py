@@ -387,16 +387,37 @@ def test_plot_profit(default_conf, mocker, testdatadir, caplog):
 
 
 @pytest.mark.parametrize("ind1,ind2,plot_conf,exp", [
+    # No indicators, use plot_conf
     ([], [], {},
      {'main_plot': {'sma': {}, 'ema3': {}, 'ema5': {}},
       'subplots': {'Other': {'macd': {}, 'macdsignal': {}}}}),
+    # use indicators
     (['sma', 'ema3'], ['macd'], {},
-     {'main_plot': {'sma': {}, 'ema3': {}}, 'subplots': {'Other': {'macd': {}}}}
-     ),
+     {'main_plot': {'sma': {}, 'ema3': {}}, 'subplots': {'Other': {'macd': {}}}}),
+    # only main_plot - adds empty subplots
     ([], [], {'main_plot': {'sma': {}}},
      {'main_plot': {'sma': {}}, 'subplots': {}}),
+    # Main and subplots
+    ([], [], {'main_plot': {'sma': {}}, 'subplots': {'RSI': {'rsi': {'color': 'red'}}}},
+     {'main_plot': {'sma': {}}, 'subplots': {'RSI': {'rsi': {'color': 'red'}}}}),
+    # no main_plot, adds empty main_plot
     ([], [], {'subplots': {'RSI': {'rsi': {'color': 'red'}}}},
      {'main_plot': {}, 'subplots': {'RSI': {'rsi': {'color': 'red'}}}}),
+    # indicator 1 / 2 should have prevelance
+    (['sma', 'ema3'], ['macd'],
+     {'main_plot': {'sma': {}}, 'subplots': {'RSI': {'rsi': {'color': 'red'}}}},
+     {'main_plot': {'sma': {}, 'ema3': {}}, 'subplots': {'Other': {'macd': {}}}}
+     ),
+    # indicator 1 - overrides plot_config main_plot
+    (['sma', 'ema3'], [],
+     {'main_plot': {'sma': {}}, 'subplots': {'RSI': {'rsi': {'color': 'red'}}}},
+     {'main_plot': {'sma': {}, 'ema3': {}}, 'subplots': {'RSI': {'rsi': {'color': 'red'}}}}
+     ),
+    # indicator 2 - overrides plot_config subplots
+    ([], ['macd', 'macd_signal'],
+     {'main_plot': {'sma': {}}, 'subplots': {'RSI': {'rsi': {'color': 'red'}}}},
+     {'main_plot': {'sma': {}}, 'subplots': {'Other': {'macd': {}, 'macd_signal': {}}}}
+     ),
 ])
 def test_create_plotconfig(ind1, ind2, plot_conf, exp):
 
