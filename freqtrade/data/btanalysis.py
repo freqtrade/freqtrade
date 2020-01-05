@@ -47,7 +47,7 @@ def load_backtest_data(filename) -> pd.DataFrame:
                                       utc=True,
                                       infer_datetime_format=True
                                       )
-    df['profitabs'] = df['close_rate'] - df['open_rate']
+    df['profit'] = df['close_rate'] - df['open_rate']
     df = df.sort_values("open_time").reset_index(drop=True)
     return df
 

@@ -49,6 +49,7 @@ def test_load_config_missing_attributes(default_conf) -> None:
 
     conf = deepcopy(default_conf)
     conf.pop('stake_currency')
+    conf['runmode'] = RunMode.DRY_RUN
     with pytest.raises(ValidationError, match=r".*'stake_currency' is a required property.*"):
         validate_config_schema(conf)
 
