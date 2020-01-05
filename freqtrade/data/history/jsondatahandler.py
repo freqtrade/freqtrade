@@ -30,7 +30,7 @@ class JsonDataHandler(IDataHandler):
         _tmp = [re.search(r'^(\S+)(?=\-' + timeframe + '.json)', p.name)
                 for p in datadir.glob(f"*{timeframe}.{cls._get_file_extension()}")]
         # Check if regex found something and only return these results
-        return [misc.pair_to_filename(match[0]) for match in _tmp if match]
+        return [match[0].replace('_', '/') for match in _tmp if match]
 
     def ohlcv_store(self, pair: str, timeframe: str, data: DataFrame) -> None:
         """
@@ -109,7 +109,7 @@ class JsonDataHandler(IDataHandler):
         _tmp = [re.search(r'^(\S+)(?=\-trades.json)', p.name)
                 for p in datadir.glob(f"*trades.{cls._get_file_extension()}")]
         # Check if regex found something and only return these results to avoid exceptions.
-        return [misc.pair_to_filename(match[0]) for match in _tmp if match]
+        return [match[0].replace('_', '/') for match in _tmp if match]
 
     def trades_store(self, pair: str, data: List[Dict]) -> None:
         """
