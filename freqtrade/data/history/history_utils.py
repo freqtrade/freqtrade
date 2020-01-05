@@ -132,7 +132,7 @@ def _load_cached_data_for_updating(pair: str, timeframe: str, timerange: Optiona
     start = None
     if timerange:
         if timerange.starttype == 'date':
-            # TODO: convert to date for conversation
+            # TODO: convert to date for conversion
             start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
 
     # Intentionally don't pass timerange in - since we need to load the full dataset.

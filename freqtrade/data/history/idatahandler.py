@@ -52,7 +52,7 @@ class IDataHandler(ABC):
                     ) -> DataFrame:
         """
         Internal method used to load data for one pair from disk.
-        Implements the loading and conversation to a Pandas dataframe.
+        Implements the loading and conversion to a Pandas dataframe.
         Timerange trimming and dataframe validation happens outside of this method.
         :param pair: Pair to load data
         :param timeframe: Ticker timeframe (e.g. "5m")

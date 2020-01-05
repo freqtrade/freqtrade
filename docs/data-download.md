@@ -78,9 +78,9 @@ optional arguments:
                         Show profits for only these pairs. Pairs are space-
                         separated.
   --format-from {json,jsongz}
-                        Source format for data conversation.
+                        Source format for data conversion.
   --format-to {json,jsongz}
-                        Destination format for data conversation.
+                        Destination format for data conversion.
   --erase               Clean all existing data for the selected
                         exchange/pairs/timeframes.
   -t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} ...], --timeframes {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} ...]
@@ -127,9 +127,9 @@ optional arguments:
                         Show profits for only these pairs. Pairs are space-
                         separated.
   --format-from {json,jsongz}
-                        Source format for data conversation.
+                        Source format for data conversion.
   --format-to {json,jsongz}
-                        Destination format for data conversation.
+                        Destination format for data conversion.
   --erase               Clean all existing data for the selected
                         exchange/pairs/timeframes.
 

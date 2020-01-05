@@ -264,14 +264,14 @@ class Arguments:
         convert_data_cmd.set_defaults(func=partial(start_convert_data, ohlcv=True))
         self._build_args(optionlist=ARGS_CONVERT_DATA_OHLCV, parser=convert_data_cmd)
 
-        # Add convert-data subcommand
-        convert_data_cmd = subparsers.add_parser(
+        # Add convert-trade-data subcommand
+        convert_trade_data_cmd = subparsers.add_parser(
             'convert-trade-data',
             help='Convert trade-data from one format to another.',
             parents=[_common_parser],
         )
-        convert_data_cmd.set_defaults(func=partial(start_convert_data, ohlcv=False))
-        self._build_args(optionlist=ARGS_CONVERT_DATA, parser=convert_data_cmd)
+        convert_trade_data_cmd.set_defaults(func=partial(start_convert_data, ohlcv=False))
+        self._build_args(optionlist=ARGS_CONVERT_DATA, parser=convert_trade_data_cmd)
 
         # Add Plotting subcommand
         plot_dataframe_cmd = subparsers.add_parser(

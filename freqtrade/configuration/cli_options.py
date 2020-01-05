@@ -334,13 +334,13 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "format_from": Arg(
         '--format-from',
-        help='Source format for data conversation.',
+        help='Source format for data conversion.',
         choices=constants.AVAILABLE_DATAHANDLERS,
         required=True,
     ),
     "format_to": Arg(
         '--format-to',
-        help='Destination format for data conversation.',
+        help='Destination format for data conversion.',
         choices=constants.AVAILABLE_DATAHANDLERS,
         required=True,
     ),
