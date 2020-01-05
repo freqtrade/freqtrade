@@ -189,13 +189,13 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_r
     freqtrade.execute_buy('LTC/BTC', result)
 
     result = freqtrade.get_trade_stake_amount('XRP/BTC')
-    assert result is None
+    assert result == 0
 
     # set max_open_trades = None, so do not trade
     conf['max_open_trades'] = 0
     freqtrade = FreqtradeBot(conf)
     result = freqtrade.get_trade_stake_amount('NEO/BTC')
-    assert result is None
+    assert result == 0
 
 
 def test_edge_called_in_process(mocker, edge_conf) -> None:
@@ -576,7 +576,7 @@ def test_create_trade_limit_reached(default_conf, ticker, limit_buy_order,
     patch_get_signal(freqtrade)
 
     assert not freqtrade.create_trade('ETH/BTC')
-    assert freqtrade.get_trade_stake_amount('ETH/BTC') is None
+    assert freqtrade.get_trade_stake_amount('ETH/BTC') == 0
 
 
 def test_enter_positions_no_pairs_left(default_conf, ticker, limit_buy_order, fee,
