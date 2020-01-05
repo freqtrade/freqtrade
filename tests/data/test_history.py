@@ -144,23 +144,39 @@ def test_testdata_path(testdatadir) -> None:
     assert str(Path('tests') / 'testdata') in str(testdatadir)
 
 
-def test_json_pair_data_filename():
-    fn = JsonDataHandler._pair_data_filename(Path('freqtrade/hello/world'), 'ETH/BTC', '5m')
+@pytest.mark.parametrize("pair,expected_result", [
+    ("ETH/BTC", 'freqtrade/hello/world/ETH_BTC-5m.json'),
+    ("Fabric Token/ETH", 'freqtrade/hello/world/Fabric_Token_ETH-5m.json'),
+    ("ETHH20", 'freqtrade/hello/world/ETHH20-5m.json'),
+    (".XBTBON2H", 'freqtrade/hello/world/_XBTBON2H-5m.json'),
+    ("ETHUSD.d", 'freqtrade/hello/world/ETHUSD_d-5m.json'),
+    ("ACC_OLD/BTC", 'freqtrade/hello/world/ACC_OLD_BTC-5m.json'),
+])
+def test_json_pair_data_filename(pair, expected_result):
+    fn = JsonDataHandler._pair_data_filename(Path('freqtrade/hello/world'), pair, '5m')
     assert isinstance(fn, Path)
-    assert fn == Path('freqtrade/hello/world/ETH_BTC-5m.json')
-    fn = JsonGzDataHandler._pair_data_filename(Path('freqtrade/hello/world'), 'ETH/BTC', '5m')
+    assert fn == Path(expected_result)
+    fn = JsonGzDataHandler._pair_data_filename(Path('freqtrade/hello/world'), pair, '5m')
     assert isinstance(fn, Path)
-    assert fn == Path('freqtrade/hello/world/ETH_BTC-5m.json.gz')
+    assert fn == Path(expected_result + '.gz')
 
 
-def test_json_pair_trades_filename():
-    fn = JsonDataHandler._pair_trades_filename(Path('freqtrade/hello/world'), 'ETH/BTC')
+@pytest.mark.parametrize("pair,expected_result", [
+    ("ETH/BTC", 'freqtrade/hello/world/ETH_BTC-trades.json'),
+    ("Fabric Token/ETH", 'freqtrade/hello/world/Fabric_Token_ETH-trades.json'),
+    ("ETHH20", 'freqtrade/hello/world/ETHH20-trades.json'),
+    (".XBTBON2H", 'freqtrade/hello/world/_XBTBON2H-trades.json'),
+    ("ETHUSD.d", 'freqtrade/hello/world/ETHUSD_d-trades.json'),
+    ("ACC_OLD_BTC", 'freqtrade/hello/world/ACC_OLD_BTC-trades.json'),
+])
+def test_json_pair_trades_filename(pair, expected_result):
+    fn = JsonDataHandler._pair_trades_filename(Path('freqtrade/hello/world'), pair)
     assert isinstance(fn, Path)
-    assert fn == Path('freqtrade/hello/world/ETH_BTC-trades.json')
+    assert fn == Path(expected_result)
 
-    fn = JsonGzDataHandler._pair_trades_filename(Path('freqtrade/hello/world'), 'ETH/BTC')
+    fn = JsonGzDataHandler._pair_trades_filename(Path('freqtrade/hello/world'), pair)
     assert isinstance(fn, Path)
-    assert fn == Path('freqtrade/hello/world/ETH_BTC-trades.json.gz')
+    assert fn == Path(expected_result + '.gz')
 
 
 def test_load_cached_data_for_updating(mocker, testdatadir) -> None:

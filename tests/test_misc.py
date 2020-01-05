@@ -4,9 +4,12 @@ import datetime
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pytest
+
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.misc import (datesarray_to_datetimearray, file_dump_json,
-                            file_load_json, format_ms_time, plural, shorten_date)
+                            file_load_json, format_ms_time, pair_to_filename,
+                            plural, shorten_date)
 
 
 def test_shorten_date() -> None:
@@ -55,6 +58,26 @@ def test_file_load_json(mocker, testdatadir) -> None:
     # 8 .json is empty and will fail if it's loaded. .json.gz is a copy of 1.json
     ret = file_load_json(testdatadir / 'UNITTEST_BTC-8m.json')
     assert ret
+
+
+@pytest.mark.parametrize("pair,expected_result", [
+    ("ETH/BTC", 'ETH_BTC'),
+    ("Fabric Token/ETH", 'Fabric_Token_ETH'),
+    ("ETHH20", 'ETHH20'),
+    (".XBTBON2H", '_XBTBON2H'),
+    ("ETHUSD.d", 'ETHUSD_d'),
+    ("ADA-0327", 'ADA_0327'),
+    ("BTC-USD-200110", 'BTC_USD_200110'),
+    ("F-AKRO/USDT", 'F_AKRO_USDT'),
+    ("LC+/ETH", 'LC__ETH'),
+    ("CMT@18/ETH", 'CMT_18_ETH'),
+    ("LBTC:1022/SAI", 'LBTC_1022_SAI'),
+    ("$PAC/BTC", '_PAC_BTC'),
+    ("ACC_OLD/BTC", 'ACC_OLD_BTC'),
+])
+def test_pair_to_filename(pair, expected_result):
+    pair_s = pair_to_filename(pair)
+    assert pair_s == expected_result
 
 
 def test_format_ms_time() -> None:
