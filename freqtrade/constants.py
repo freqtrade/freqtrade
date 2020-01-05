@@ -79,6 +79,7 @@ CONF_SCHEMA = {
             'maximum': 1,
             'default': 0.99
         },
+        'amend_last_stake_amount': {'type': 'boolean', 'default': False},
         'fiat_display_currency': {'type': 'string', 'enum': SUPPORTED_FIAT},
         'dry_run': {'type': 'boolean'},
         'dry_run_wallet': {'type': 'number', 'default': DRY_RUN_WALLET},
@@ -282,6 +283,7 @@ SCHEMA_TRADE_REQUIRED = [
     'max_open_trades',
     'stake_currency',
     'stake_amount',
+    'tradable_balance_ratio',
     'dry_run',
     'dry_run_wallet',
     'bid_strategy',

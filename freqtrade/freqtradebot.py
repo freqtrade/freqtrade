@@ -308,6 +308,9 @@ class FreqtradeBot:
         """
         available_amount = self._get_available_stake_amount()
 
+        if self.config['amend_last_stake_amount']:
+            stake_amount = min(stake_amount, available_amount)
+
         if available_amount < stake_amount:
             raise DependencyException(
                 f"Available balance ({available_amount} {self.config['stake_currency']}) is "

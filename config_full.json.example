@@ -5,6 +5,7 @@
     "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "USD",
     "amount_reserve_percent" : 0.05,
+    "amend_last_stake_amount": false,
     "dry_run": false,
     "ticker_interval": "5m",
     "trailing_stop": false,
