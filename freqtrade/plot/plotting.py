@@ -176,6 +176,12 @@ def create_plotconfig(indicators1: List[str], indicators2: List[str],
     :return: plot_config - eventually with indicators 1 and 2
     """
 
+    if plot_config:
+        if indicators1:
+            plot_config['main_plot'] = {ind: {} for ind in indicators1}
+        if indicators2:
+            plot_config['subplots'] = {'Other': {ind: {} for ind in indicators2}}
+
     if not plot_config:
         # If no indicators and no plot-config given, use defaults.
         if not indicators1:
