@@ -140,11 +140,45 @@ def test_get_trade_stake_amount(default_conf, ticker, mocker) -> None:
     assert result == default_conf['stake_amount']
 
 
+@pytest.mark.parametrize("amend_last,wallet,max_open,expected", [
+                        (False, 0.002, 2, [0.001, None]),
+                        (True, 0.002, 2, [0.001, 0.00098]),
+                        (False, 0.003, 3, [0.001, 0.001, None]),
+                        (True, 0.003, 3, [0.001, 0.001, 0.00097]),
+                        ])
+def test_check_available_stake_amount(default_conf, ticker, mocker, fee, limit_buy_order,
+                                      amend_last, wallet, max_open, expected) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker,
+        get_balance=MagicMock(return_value=default_conf['stake_amount'] * 2),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee
+    )
+    default_conf['dry_run_wallet'] = wallet
+
+    default_conf['amend_last_stake_amount'] = amend_last
+    freqtrade = FreqtradeBot(default_conf)
+
+    for i in range(0, max_open):
+
+        if expected[i] is not None:
+            result = freqtrade.get_trade_stake_amount('ETH/BTC')
+            assert pytest.approx(result) == expected[i]
+            freqtrade.execute_buy('ETH/BTC', result)
+        else:
+            with pytest.raises(DependencyException):
+                freqtrade.get_trade_stake_amount('ETH/BTC')
+
+
 def test_get_trade_stake_amount_no_stake_amount(default_conf, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     patch_wallet(mocker, free=default_conf['stake_amount'] * 0.5)
     freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
 
     with pytest.raises(DependencyException, match=r'.*stake amount.*'):
         freqtrade.get_trade_stake_amount('ETH/BTC')
