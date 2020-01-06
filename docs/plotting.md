@@ -120,6 +120,62 @@ To plot trades from a backtesting result, use `--export-filename <filename>`
 freqtrade plot-dataframe --strategy AwesomeStrategy --export-filename user_data/backtest_results/backtest-result.json -p BTC/ETH
 ```
 
+### Plot dataframe basics
+
+![plot-dataframe](assets/plot-dataframe.png)
+
+plot-dataframe will require backtesting data, a strategy as well as either a backtesting-results file or a Database file, containing trades corresponding to the strategy.
+
+The resulting plot will have the following elements:
+
+* Green triangles: Buy signals from the strategy. (Note: not every Buy-signal also generates a trade)
+* Red triangles: Sell signals from the strategy.
+* Cyan Circles: Trade entry
+* Red Square: Trade exit for loss or 0% profit
+* Green Square: Trade exit for profit
+* Indicators corresponding to the candle scale (e.g. SMA/EMA), as specified with `--indicators1`.
+* Indicators with different scales (e.g. MACD, RSI) below the volume bars, as specified via `--indicators2`.
+* Volume (bar chart at the bottom of the main chart)
+
+#### Advanced Plot configuration
+
+An advanced plot-configuration can be specified in the strategy.
+
+This configuration allows to specify fixed colors (otherwise consecutive plots may produce different colorschemes each time, making comparisons diffiult.).
+It also allows multiple subplots to display both MACD and RSI at the same time.
+
+Additional features when using plot_config:
+
+* Specify colors per indicator
+* Specify additional subplots
+
+Sample configuration with inline comments explaining the process:
+
+``` python
+    plot_config = {
+        'main_plot': {
+            # Configuration for main plot indicators.
+            # Specifies `ema10` to be red, and `ema50` to be a shade of gray
+            'ema10': {'color': 'red'},
+            'ema50': {'color': '#CCCCCC'},
+        },
+        'subplots': {
+            # Create subplot MACD
+            "MACD": {
+                'macd': {'color': 'blue'},
+                'macdsignal': {'color': 'orange'},
+            },
+            # Additional subplot RSI
+            "RSI": {
+                'rsi': {'color': 'red'},
+            }
+        }
+    }
+```
+
+!!! Note
+    The above configuration assumes that `ema10`, `ema50`, `macd`, `macdsignal` and `rsi` are columns in the DataFrame created by the strategy.
+
 ## Plot profit
 
 ![plot-profit](assets/plot-profit.png)
