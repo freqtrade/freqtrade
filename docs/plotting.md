@@ -137,6 +137,9 @@ The resulting plot will have the following elements:
 * Indicators with different scales (e.g. MACD, RSI) below the volume bars, as specified via `--indicators2`.
 * Volume (bar chart at the bottom of the main chart)
 
+!!! Note "Bollinger Bands"
+    Bollinger bands are automatically added to the plot if the columns `bb_lowerband` and `bb_upperband` exist, and are painted as a light blue Area spanning from the lower band to the upper band.
+
 #### Advanced Plot configuration
 
 An advanced plot-configuration can be specified in the strategy.
