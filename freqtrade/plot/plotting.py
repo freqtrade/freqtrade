@@ -429,8 +429,8 @@ def load_and_plot_trades(config: Dict[str, Any]):
             pair=pair,
             data=dataframe,
             trades=trades_pair,
-            indicators1=config["indicators1"],
-            indicators2=config["indicators2"],
+            indicators1=config.get("indicators1", []),
+            indicators2=config.get("indicators2", []),
             plot_config=strategy.plot_config if hasattr(strategy, 'plot_config') else {}
         )
 

@@ -122,7 +122,7 @@ freqtrade plot-dataframe --strategy AwesomeStrategy --export-filename user_data/
 
 ### Plot dataframe basics
 
-![plot-dataframe](assets/plot-dataframe.png)
+![plot-dataframe2](assets/plot-dataframe2.png)
 
 plot-dataframe will require backtesting data, a strategy as well as either a backtesting-results file or a Database file, containing trades corresponding to the strategy.
 
