@@ -161,6 +161,8 @@ Sample configuration with inline comments explaining the process:
             # Specifies `ema10` to be red, and `ema50` to be a shade of gray
             'ema10': {'color': 'red'},
             'ema50': {'color': '#CCCCCC'},
+            # By omitting color, a random color is selected.
+            'sar': {},
         },
         'subplots': {
             # Create subplot MACD
