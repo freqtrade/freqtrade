@@ -22,13 +22,13 @@ Freqtrade is a crypto-currency algorithmic trading software develop in python (3
 
 ## Features
 
- 1. Download markets datas : download historical datas of the exchange and the markets your may want to trade with. 
- 2. Select markets : create your list or use an automatic one based on top traded volume (not available during backtesting). You can blacklist markets you don't want to trade.
- 3. Backtest : Test your strategy on past datas (based on [ohcl](https://en.wikipedia.org/wiki/Open-high-low-close_chart) candles).
- 4. Optimize : Find the best parameters for your strategy (use machining learning). You can optimize buy, sell, take profit and stop-loss.
- 5. Run : Run the bot on exchange without playing money (dry-run) or with money (live).
- 6. Run using edge (optionnal module) : the concept is to find the best historical [trade expectancy](https://www.freqtrade.io/en/latest/edge/#expectancy) by markets based on variation of the stop-loss and then allow/reject markets to trade (the sizing of the trade is based on a risk of a percentage of your capital)
- 7. Control/Monitor/Analyse : use Telegram or a REST API (start/stop the bot, profit/loss, daily summary, current open trades results...). Futher analysis can be done as trades are saved (SQLite database)
+ 1. Download market data: Download historical data of the exchange and the markets your may want to trade with.
+ 2. Select markets: Create your list or use an automatic one based on top traded volume (not available during backtesting). You can blacklist markets you don't want to trade.
+ 3. Backtest: Test your strategy on past data (based on [ohlcv](https://en.wikipedia.org/wiki/Open-high-low-close_chart) candles).
+ 4. Optimize: Find the best parameters for your strategy using machining learning. You can optimize buy, sell, take profit (ROI) and stop-loss.
+ 5. Run: Run the bot on exchange with simulated money (dry-run) or with real money (live).
+ 6. Run using edge (optional module): The concept is to find the best historical [trade expectancy](https://www.freqtrade.io/en/latest/edge/#expectancy) by markets based on variation of the stop-loss and then allow/reject markets to trade (the sizing of the trade is based on a risk of a percentage of your capital).
+ 7. Control/Monitor/Analyse: Use Telegram or a REST API (start/stop the bot, profit/loss, daily summary, current open trades results...). Futher analysis can be done as trades are saved (SQLite database).
 
 ## Requirements
 
