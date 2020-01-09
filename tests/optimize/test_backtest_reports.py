@@ -39,8 +39,8 @@ def test_generate_text_table_sell_reason(default_conf, mocker):
     results = pd.DataFrame(
         {
             'pair': ['ETH/BTC', 'ETH/BTC', 'ETH/BTC'],
-            'profit_percent': [0.1, 0.2, -0.3],
-            'profit_abs': [0.2, 0.4, -0.5],
+            'profit_percent': [0.1, 0.2, -0.1],
+            'profit_abs': [0.2, 0.4, -0.2],
             'trade_duration': [10, 30, 10],
             'profit': [2, 0, 0],
             'loss': [0, 0, 1],
@@ -49,10 +49,10 @@ def test_generate_text_table_sell_reason(default_conf, mocker):
     )
 
     result_str = (
-        '| Sell Reason   |   Count |   Profit |   Loss |\n'
-        '|:--------------|--------:|---------:|-------:|\n'
-        '| roi           |       2 |        2 |      0 |\n'
-        '| stop_loss     |       1 |        0 |      1 |'
+        '| Sell Reason   |   Count |   Profit |   Loss |   Profit % |\n'
+        '|:--------------|--------:|---------:|-------:|-----------:|\n'
+        '| roi           |       2 |        2 |      0 |         15 |\n'
+        '| stop_loss     |       1 |        0 |      1 |        -10 |'
     )
     assert generate_text_table_sell_reason(
         data={'ETH/BTC': {}}, results=results) == result_str

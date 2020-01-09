@@ -66,11 +66,13 @@ def generate_text_table_sell_reason(data: Dict[str, Dict], results: DataFrame) -
     :return: pretty printed table with tabulate as string
     """
     tabular_data = []
-    headers = ['Sell Reason', 'Count', 'Profit', 'Loss']
+    headers = ['Sell Reason', 'Count', 'Profit', 'Loss', 'Profit %']
     for reason, count in results['sell_reason'].value_counts().iteritems():
-        profit = len(results[(results['sell_reason'] == reason) & (results['profit_abs'] >= 0)])
-        loss = len(results[(results['sell_reason'] == reason) & (results['profit_abs'] < 0)])
-        tabular_data.append([reason.value, count, profit, loss])
+        result = results.loc[results['sell_reason'] == reason]
+        profit = len(result[result['profit_abs'] >= 0])
+        loss = len(result[results['profit_abs'] < 0])
+        profit_mean = round(result['profit_percent'].mean() * 100.0, 2)
+        tabular_data.append([reason.value, count, profit, loss, profit_mean])
     return tabulate(tabular_data, headers=headers, tablefmt="pipe")
 
 
