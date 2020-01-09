@@ -114,8 +114,8 @@ def generate_edge_table(results: dict) -> str:
     floatfmt = ('s', '.10g', '.2f', '.2f', '.2f', '.2f', 'd', '.d')
     tabular_data = []
     headers = ['pair', 'stoploss', 'win rate', 'risk reward ratio',
-                'required risk reward', 'expectancy', 'total number of trades',
-                'average duration (min)']
+               'required risk reward', 'expectancy', 'total number of trades',
+               'average duration (min)']
 
     for result in results.items():
         if result[1].nb_trades > 0:
