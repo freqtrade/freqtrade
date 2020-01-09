@@ -257,6 +257,9 @@ class FreqtradeBot:
         :raise: DependencyException if the available stake amount is too low
         """
         stake_amount: float
+        # Ensure wallets are uptodate.
+        self.wallets.update()
+
         if self.edge:
             stake_amount = self.edge.stake_amount(
                 pair,
