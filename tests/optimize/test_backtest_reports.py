@@ -1,7 +1,8 @@
 import pandas as pd
 
-from freqtrade.optimize.backtest_reports import (
-    generate_text_table, generate_text_table_sell_reason,
+from freqtrade.edge import PairInfo
+from freqtrade.optimize.optimize_reports import (
+    generate_edge_table, generate_text_table, generate_text_table_sell_reason,
     generate_text_table_strategy)
 from freqtrade.strategy.interface import SellType
 
@@ -94,3 +95,14 @@ def test_generate_text_table_strategy(default_conf, mocker):
         '|       1.30000000 |          45.00 | 0:20:00        |        3 |      0 |'
     )
     assert generate_text_table_strategy('BTC', 2, all_results=results) == result_str
+
+
+def test_generate_edge_table(edge_conf, mocker):
+
+    results = {}
+    results['ETH/BTC'] = PairInfo(-0.01, 0.60, 2, 1, 3, 10, 60)
+
+    assert generate_edge_table(results).count(':|') == 7
+    assert generate_edge_table(results).count('| ETH/BTC |') == 1
+    assert generate_edge_table(results).count(
+        '|   risk reward ratio |   required risk reward |   expectancy |') == 1

@@ -3,7 +3,6 @@
 
 from unittest.mock import MagicMock
 
-from freqtrade.edge import PairInfo
 from freqtrade.optimize import setup_configuration, start_edge
 from freqtrade.optimize.edge_cli import EdgeCli
 from freqtrade.state import RunMode
@@ -106,16 +105,3 @@ def test_edge_init_fee(mocker, edge_conf) -> None:
     edge_cli = EdgeCli(edge_conf)
     assert edge_cli.edge.fee == 0.1234
     assert fee_mock.call_count == 0
-
-
-def test_generate_edge_table(edge_conf, mocker):
-    patch_exchange(mocker)
-    edge_cli = EdgeCli(edge_conf)
-
-    results = {}
-    results['ETH/BTC'] = PairInfo(-0.01, 0.60, 2, 1, 3, 10, 60)
-
-    assert edge_cli._generate_edge_table(results).count(':|') == 7
-    assert edge_cli._generate_edge_table(results).count('| ETH/BTC |') == 1
-    assert edge_cli._generate_edge_table(results).count(
-        '|   risk reward ratio |   required risk reward |   expectancy |') == 1
