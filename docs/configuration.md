@@ -149,7 +149,7 @@ For example, if you have 10 ETH available in your wallet on the exchange and `tr
 
 #### Amend last stake amount
 
-Assuming we have a `balance=1000` (USDT), `stake_amount=400`, and `max_open_trades=3`.
+Assuming we have the tradable balance of 1000 USDT (`balance=1000`), `stake_amount=400`, and `max_open_trades=3` (This example assumes `tradable_balance_ratio=1`).
 The bot would open 2 trades, and will be unable to fill the last trading slot, since the requested 400 USDT are no longer available, since 800 USDT are already tied in other trades.
 
 To overcome this, the option `amend_last_stake_amount` can be set to `True`, which will enable the bot to reduce stake_amount to the available balance in order to fill the last trade slot.
