@@ -66,11 +66,13 @@ def generate_text_table_sell_reason(data: Dict[str, Dict], results: DataFrame) -
     :return: pretty printed table with tabulate as string
     """
     tabular_data = []
-    headers = ['Sell Reason', 'Count', 'Profit', 'Loss']
+    headers = ['Sell Reason', 'Count', 'Profit', 'Loss', 'Profit %']
     for reason, count in results['sell_reason'].value_counts().iteritems():
-        profit = len(results[(results['sell_reason'] == reason) & (results['profit_abs'] >= 0)])
-        loss = len(results[(results['sell_reason'] == reason) & (results['profit_abs'] < 0)])
-        tabular_data.append([reason.value, count, profit, loss])
+        result = results.loc[results['sell_reason'] == reason]
+        profit = len(result[result['profit_abs'] >= 0])
+        loss = len(result[results['profit_abs'] < 0])
+        profit_mean = round(result['profit_percent'].mean() * 100.0, 2)
+        tabular_data.append([reason.value, count, profit, loss, profit_mean])
     return tabulate(tabular_data, headers=headers, tablefmt="pipe")
 
 
@@ -102,6 +104,32 @@ def generate_text_table_strategy(stake_currency: str, max_open_trades: str,
             len(results[results.profit_abs > 0]),
             len(results[results.profit_abs < 0])
         ])
+    # Ignore type as floatfmt does allow tuples but mypy does not know that
+    return tabulate(tabular_data, headers=headers,
+                    floatfmt=floatfmt, tablefmt="pipe")  # type: ignore
+
+
+def generate_edge_table(results: dict) -> str:
+
+    floatfmt = ('s', '.10g', '.2f', '.2f', '.2f', '.2f', 'd', '.d')
+    tabular_data = []
+    headers = ['pair', 'stoploss', 'win rate', 'risk reward ratio',
+               'required risk reward', 'expectancy', 'total number of trades',
+               'average duration (min)']
+
+    for result in results.items():
+        if result[1].nb_trades > 0:
+            tabular_data.append([
+                result[0],
+                result[1].stoploss,
+                result[1].winrate,
+                result[1].risk_reward_ratio,
+                result[1].required_risk_reward,
+                result[1].expectancy,
+                result[1].nb_trades,
+                round(result[1].avg_trade_duration)
+            ])
+
     # Ignore type as floatfmt does allow tuples but mypy does not know that
     return tabulate(tabular_data, headers=headers,
                     floatfmt=floatfmt, tablefmt="pipe")  # type: ignore

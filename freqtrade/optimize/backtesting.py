@@ -18,7 +18,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.misc import file_dump_json
-from freqtrade.optimize.backtest_reports import (
+from freqtrade.optimize.optimize_reports import (
     generate_text_table, generate_text_table_sell_reason,
     generate_text_table_strategy)
 from freqtrade.persistence import Trade
