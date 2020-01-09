@@ -25,11 +25,11 @@ Freqtrade is a crypto-currency algorithmic trading software developed in python 
 
 ## Features
 
-- Download market data: Download historical data of the exchange and the markets your may want to trade with. The historical data can be based on [OHLCV](https://en.wikipedia.org/wiki/Open-high-low-close_chart) candles or be trade ticks (for exchanges that support this).
+- Run: Run the bot on exchange with simulated money (Dry-Run mode) or with real money (Live-Trade mode).
 - Select markets: Create your static list or use an automatic one based on top traded volumes and/or prices (not available during backtesting). You can also explicitly blacklist markets you don't want to trade.
+- Download market data: Download historical data of the exchange and the markets your may want to trade with. The historical data can be based on [OHLCV](https://en.wikipedia.org/wiki/Open-high-low-close_chart) candles or be trade ticks (for exchanges that support this).
 - Backtest: Test your strategy on downloaded historical data.
 - Optimize: Find the best parameters for your strategy using hyperoptimization which employs machining learning methods. You can optimize buy, sell, take profit (ROI), stop-loss and trailing stop-loss parameters for your strategy.
-- Run: Run the bot on exchange with simulated money (Dry-Run mode) or with real money (Live-Trade mode).
 - Run using Edge (optional module): The concept is to find the best historical [trade expectancy](https://www.freqtrade.io/en/latest/edge/#expectancy) by markets based on variation of the stop-loss and then allow/reject markets to trade. The sizing of the trade is based on a risk of a percentage of your capital.
 - Control/Monitor/Analyse: Use Telegram or a REST API (start/stop the bot, show profit/loss, daily summary, current open trades results, etc.) Further analysis can be done as trades are saved (SQLite persistence database).
 
