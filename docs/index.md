@@ -11,8 +11,11 @@
 <a class="github-button" href="https://github.com/freqtrade/freqtrade/archive/master.zip" data-icon="octicon-cloud-download" data-size="large" aria-label="Download freqtrade/freqtrade on GitHub">Download</a>
 <!-- Place this tag where you want the button to render. -->
 <a class="github-button" href="https://github.com/freqtrade" data-size="large" aria-label="Follow @freqtrade on GitHub">Follow @freqtrade</a>
+
 ## Introduction
-Freqtrade is a crypto-currency algorithmic trading software develop in python (3.6+) supported on windows, macOs and Linux.
+
+Freqtrade is a crypto-currency algorithmic trading software developed in python (3.6+) and supported on Windows, macOS and Linux.
+
 !!! Danger "DISCLAIMER"
     This software is for educational purposes only. Do not risk money which you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS AND ALL AFFILIATES ASSUME NO RESPONSIBILITY FOR YOUR TRADING RESULTS.
 
@@ -22,13 +25,13 @@ Freqtrade is a crypto-currency algorithmic trading software develop in python (3
 
 ## Features
 
- 1. Download market data: Download historical data of the exchange and the markets your may want to trade with.
- 2. Select markets: Create your list or use an automatic one based on top traded volume (not available during backtesting). You can blacklist markets you don't want to trade.
- 3. Backtest: Test your strategy on past data (based on [ohlcv](https://en.wikipedia.org/wiki/Open-high-low-close_chart) candles).
- 4. Optimize: Find the best parameters for your strategy using machining learning. You can optimize buy, sell, take profit (ROI) and stop-loss.
- 5. Run: Run the bot on exchange with simulated money (dry-run) or with real money (live).
- 6. Run using edge (optional module): The concept is to find the best historical [trade expectancy](https://www.freqtrade.io/en/latest/edge/#expectancy) by markets based on variation of the stop-loss and then allow/reject markets to trade (the sizing of the trade is based on a risk of a percentage of your capital).
- 7. Control/Monitor/Analyse: Use Telegram or a REST API (start/stop the bot, profit/loss, daily summary, current open trades results...). Futher analysis can be done as trades are saved (SQLite database).
+- Download market data: Download historical data of the exchange and the markets your may want to trade with. The historical data can be based on [OHLCV](https://en.wikipedia.org/wiki/Open-high-low-close_chart) candles or be trade ticks (for exchanges that support this).
+- Select markets: Create your static list or use an automatic one based on top traded volumes and/or prices (not available during backtesting). You can also explicitly blacklist markets you don't want to trade.
+- Backtest: Test your strategy on downloaded historical data.
+- Optimize: Find the best parameters for your strategy using hyperoptimization which employs machining learning methods. You can optimize buy, sell, take profit (ROI), stop-loss and trailing stop-loss parameters for your strategy.
+- Run: Run the bot on exchange with simulated money (Dry-Run mode) or with real money (Live-Trade mode).
+- Run using Edge (optional module): The concept is to find the best historical [trade expectancy](https://www.freqtrade.io/en/latest/edge/#expectancy) by markets based on variation of the stop-loss and then allow/reject markets to trade. The sizing of the trade is based on a risk of a percentage of your capital.
+- Control/Monitor/Analyse: Use Telegram or a REST API (start/stop the bot, show profit/loss, daily summary, current open trades results, etc.) Further analysis can be done as trades are saved (SQLite persistence database).
 
 ## Requirements
 
@@ -55,10 +58,10 @@ To run this bot we recommend you a cloud instance with a minimum of:
 
 ## Support
 
-Help / Slack
-For any questions not covered by the documentation or for further information about the bot, we encourage you to join our Slack channel.
+### Help / Slack
+For any questions not covered by the documentation or for further information about the bot, we encourage you to join our passionate  Slack community.
 
-Click [here](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE) to join Slack channel.
+Click [here](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE) to join the Freqtrade Slack channel.
 
 ## Ready to try?
 
