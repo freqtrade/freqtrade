@@ -45,6 +45,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `stake_amount` | **Required.** Amount of crypto-currency your bot will use for each trade. Set it to `"unlimited"` to allow the bot to use all available balance. [More information below](#configuring-amount-per-trade). [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *Positive float or `"unlimited"`.*
 | `tradable_balance_ratio` | Ratio of the total account balance the bot is allowed to trade. [More information below](#configuring-amount-per-trade). <br>*Defaults to `0.99` 99%).*<br> ***Datatype:*** *Positive float between `0.1` and `1.0`.*
 | `amend_last_stake_amount` | **Required.** Use reduced last stake amount if necessary. [More information below](#configuring-amount-per-trade). <br>*Defaults to `false`.* <br> ***Datatype:*** *Boolean*
+| `last_stake_amount_min_ratio` | **Required.** Minimum amount that has to be left. Applies only to "last_stake_amount" if `amend_last_stake_amount=True` [More information below](#configuring-amount-per-trade). <br>*Defaults to `0.5`.* <br> ***Datatype:*** *Float (as ratio)*
 | `amount_reserve_percent` | Reserve some amount in min pair stake amount. The bot will reserve `amount_reserve_percent` + stoploss value when calculating min pair stake amount in order to avoid possible trade refusals. <br>*Defaults to `0.05` (5%).* <br> ***Datatype:*** *Positive Float as ratio.*
 | `ticker_interval` | The ticker interval to use (e.g `1m`, `5m`, `15m`, `30m`, `1h` ...). [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *String*
 | `fiat_display_currency` | Fiat currency used to show your profits. [More information below](#what-values-can-be-used-for-fiat_display_currency). <br> ***Datatype:*** *String*
@@ -149,7 +150,7 @@ For example, if you have 10 ETH available in your wallet on the exchange and `tr
 
 #### Amend last stake amount
 
-Assuming we have the tradable balance of 1000 USDT, `stake_amount=400`, and `max_open_trades=3` (This example assumes `tradable_balance_ratio=1`).
+Assuming we have the tradable balance of 1000 USDT, `stake_amount=400`, and `max_open_trades=3`.
 The bot would open 2 trades, and will be unable to fill the last trading slot, since the requested 400 USDT are no longer available, since 800 USDT are already tied in other trades.
 
 To overcome this, the option `amend_last_stake_amount` can be set to `True`, which will enable the bot to reduce stake_amount to the available balance in order to fill the last trade slot.
@@ -162,6 +163,9 @@ In the example above this would mean:
 
 !!! Note
    This option only applies with [Static stake amount](#static-stake-amount) - since [Dynamic stake amount](#dynamic-stake-amount) divides the balances evenly.
+
+!!! Note
+    The minimum last stake amount can be configured using `amend_last_stake_amount` - which defaults to 0.5 (50%). This means that the minimum stake-amount that's ever used is `stake_amount * 0.5`. This avoids very low stake-amounts, close to the minimum tradable amount.
 
 #### Static stake amount
 

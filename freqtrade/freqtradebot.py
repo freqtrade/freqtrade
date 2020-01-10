@@ -312,7 +312,12 @@ class FreqtradeBot:
         available_amount = self._get_available_stake_amount()
 
         if self.config['amend_last_stake_amount']:
-            stake_amount = min(stake_amount, available_amount)
+            # Remaining amount needs to be at least stake_amount * last_stake_amount_min_ratio
+            # Otherwise the remaining amount is too low to trade.
+            if available_amount > (stake_amount * self.config['last_stake_amount_min_ratio']):
+                stake_amount = min(stake_amount, available_amount)
+            else:
+                stake_amount = 0
 
         if available_amount < stake_amount:
             raise DependencyException(
