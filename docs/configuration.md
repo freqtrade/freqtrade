@@ -143,10 +143,10 @@ Freqtrade will reserve 1% for eventual fees when entering a trade and will there
 
 You can configure the "untouched" amount by using the `tradable_balance_ratio` setting.
 
-For example, if you have 10 ETH available in your wallet on the exchange and `tradable_balance_ratio=0.5` (which is 50%), then the bot will use a maximum amount of 5 ETH for trading and considers this as available balance.
+For example, if you have 10 ETH available in your wallet on the exchange and `tradable_balance_ratio=0.5` (which is 50%), then the bot will use a maximum amount of 5 ETH for trading and considers this as available balance. The rest of the wallet is untouched by the trades.
 
 !!! Warning
-    `tradable_balance_ratio` applies to the current balance (free balance + tied up in trades). Therefore, assuming a starting balance of 1000, a configuration of `tradable_balance_ratio=0.99` will not guarantee that 10 units will always remain available on the exchange. The free amount may reduce to 5 units if the total balance is reduce to 500 (either by a losing streak, or by withdrawing balance).
+    The `tradable_balance_ratio` setting applies to the current balance (free balance + tied up in trades). Therefore, assuming the starting balance of 1000, a configuration with `tradable_balance_ratio=0.99` will not guarantee that 10 currency units will always remain available on the exchange. For example, the free amount may reduce to 5 units if the total balance is reduced to 500 (either by a losing streak, or by withdrawing balance).
 
 #### Amend last stake amount
 
@@ -162,10 +162,10 @@ In the example above this would mean:
 - Trade3: 200 USDT
 
 !!! Note
-   This option only applies with [Static stake amount](#static-stake-amount) - since [Dynamic stake amount](#dynamic-stake-amount) divides the balances evenly.
+    This option only applies with [Static stake amount](#static-stake-amount) - since [Dynamic stake amount](#dynamic-stake-amount) divides the balances evenly.
 
 !!! Note
-    The minimum last stake amount can be configured using `amend_last_stake_amount` - which defaults to 0.5 (50%). This means that the minimum stake-amount that's ever used is `stake_amount * 0.5`. This avoids very low stake-amounts, close to the minimum tradable amount.
+    The minimum last stake amount can be configured using `amend_last_stake_amount` - which defaults to 0.5 (50%). This means that the minimum stake amount that's ever used is `stake_amount * 0.5`. This avoids very low stake amounts, that are close to the minimum tradable amount for the pair and can be refused by the exchange.
 
 #### Static stake amount
 
