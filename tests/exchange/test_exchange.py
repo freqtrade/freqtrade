@@ -333,6 +333,23 @@ def test_validate_stake_currency(default_conf, stake_currency, mocker, caplog):
     Exchange(default_conf)
 
 
+def test_validate_stake_currency_error(default_conf, mocker, caplog):
+    default_conf['stake_currency'] = 'XRP'
+    api_mock = MagicMock()
+    type(api_mock).markets = PropertyMock(return_value={
+        'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
+        'XRP/ETH': {'quote': 'ETH'}, 'NEO/USDT': {'quote': 'USDT'},
+    })
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
+    mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
+    with pytest.raises(OperationalException,
+                       match=r'XRP is not available as stake on .*'
+                       'Available currencies are: BTC, ETH, USDT'):
+        Exchange(default_conf)
+
+
 def test_get_quote_currencies(default_conf, mocker):
     ex = get_patched_exchange(mocker, default_conf)
 

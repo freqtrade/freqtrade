@@ -216,8 +216,9 @@ class Exchange:
         Return a list of supported quote currencies
         """
         markets = self.markets
-        currencies = set([x.get('quote') for _, x in markets.items()])
-        return list(currencies)
+        currencies = list(set([x.get('quote') for _, x in markets.items()]))
+        currencies.sort()
+        return currencies
 
     def klines(self, pair_interval: Tuple[str, str], copy=True) -> DataFrame:
         if pair_interval in self._klines:
@@ -277,8 +278,8 @@ class Exchange:
         quote_currencies = self.get_quote_currencies()
         if stake_currency not in quote_currencies:
             raise OperationalException(
-                    f"{stake_currency} is not available as stake on {self.name}."
-                    f"Available currencies are: {','.join(quote_currencies)}")
+                    f"{stake_currency} is not available as stake on {self.name}. "
+                    f"Available currencies are: {', '.join(quote_currencies)}")
 
     def validate_pairs(self, pairs: List[str]) -> None:
         """
