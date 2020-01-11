@@ -61,7 +61,7 @@ CONF_SCHEMA = {
     'properties': {
         'max_open_trades': {'type': ['integer', 'number'], 'minimum': -1},
         'ticker_interval': {'type': 'string'},
-        'stake_currency': {'type': 'string', 'enum': ['BTC', 'XBT', 'ETH', 'USDT', 'EUR', 'USD']},
+        'stake_currency': {'type': 'string'},
         'stake_amount': {
             'type': ['number', 'string'],
             'minimum': 0.0001,
