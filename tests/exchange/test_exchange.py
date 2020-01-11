@@ -318,6 +318,27 @@ def test__reload_markets_exception(default_conf, mocker, caplog):
     assert log_has_re(r"Could not reload markets.*", caplog)
 
 
+@pytest.mark.parametrize("stake_currency", ['ETH', 'BTC', 'USDT'])
+def test_validate_stake_currency(default_conf, stake_currency, mocker, caplog):
+    default_conf['stake_currency'] = stake_currency
+    api_mock = MagicMock()
+    type(api_mock).markets = PropertyMock(return_value={
+        'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
+        'XRP/ETH': {'quote': 'ETH'}, 'NEO/USDT': {'quote': 'USDT'},
+    })
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
+    mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
+    Exchange(default_conf)
+
+
+def test_get_quote_currencies(default_conf, mocker):
+    ex = get_patched_exchange(mocker, default_conf)
+
+    assert set(ex.get_quote_currencies()) == set(['USD', 'BTC', 'USDT'])
+
+
 def test_validate_pairs(default_conf, mocker):  # test exchange.validate_pairs directly
     api_mock = MagicMock()
     type(api_mock).markets = PropertyMock(return_value={

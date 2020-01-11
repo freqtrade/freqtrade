@@ -216,7 +216,7 @@ class Exchange:
         Return a list of supported quote currencies
         """
         markets = self.markets
-        currencies = set([x['quote'] for _, x in markets.items()])
+        currencies = set([x.get('quote') for _, x in markets.items()])
         return list(currencies)
 
     def klines(self, pair_interval: Tuple[str, str], copy=True) -> DataFrame:
