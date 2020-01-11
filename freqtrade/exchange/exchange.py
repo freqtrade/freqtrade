@@ -319,6 +319,10 @@ class Exchange:
             raise OperationalException(
                 f"Invalid ticker interval '{timeframe}'. This exchange supports: {self.timeframes}")
 
+        if timeframe_to_minutes(timeframe) < 1:
+            raise OperationalException(
+                f"Timeframes < 1m are currently not supported by Freqtrade.")
+
     def validate_ordertypes(self, order_types: Dict) -> None:
         """
         Checks if order-types configured in strategy/config are supported

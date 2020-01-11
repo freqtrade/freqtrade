@@ -377,8 +377,11 @@ def test_validate_pairs_restricted(default_conf, mocker, caplog):
                    f"on the exchange and eventually remove XRP/BTC from your whitelist.", caplog)
 
 
-def test_validate_timeframes(default_conf, mocker):
-    default_conf["ticker_interval"] = "5m"
+@pytest.mark.parametrize("timeframe", [
+    ('5m'), ("1m"), ("15m"), ("1h")
+])
+def test_validate_timeframes(default_conf, mocker, timeframe):
+    default_conf["ticker_interval"] = timeframe
     api_mock = MagicMock()
     id_mock = PropertyMock(return_value='test_exchange')
     type(api_mock).id = id_mock
@@ -399,7 +402,8 @@ def test_validate_timeframes_failed(default_conf, mocker):
     api_mock = MagicMock()
     id_mock = PropertyMock(return_value='test_exchange')
     type(api_mock).id = id_mock
-    timeframes = PropertyMock(return_value={'1m': '1m',
+    timeframes = PropertyMock(return_value={'15s': '15s',
+                                            '1m': '1m',
                                             '5m': '5m',
                                             '15m': '15m',
                                             '1h': '1h'})
@@ -410,6 +414,11 @@ def test_validate_timeframes_failed(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     with pytest.raises(OperationalException,
                        match=r"Invalid ticker interval '3m'. This exchange supports.*"):
+        Exchange(default_conf)
+    default_conf["ticker_interval"] = "15s"
+
+    with pytest.raises(OperationalException,
+                       match=r"Timeframes < 1m are currently not supported by Freqtrade."):
         Exchange(default_conf)
 
 
