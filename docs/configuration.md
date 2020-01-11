@@ -40,9 +40,12 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 
 |  Parameter | Description |
 |------------|-------------|
-| `max_open_trades` | **Required.** Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades).<br> ***Datatype:*** *Positive integer or -1.*
+| `max_open_trades` | **Required.** Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades). [More information below](#configuring-amount-per-trade).<br> ***Datatype:*** *Positive integer or -1.*
 | `stake_currency` | **Required.** Crypto-currency used for trading. [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *String*
-| `stake_amount` | **Required.** Amount of crypto-currency your bot will use for each trade. Set it to `"unlimited"` to allow the bot to use all available balance. [More information below](#understand-stake_amount). [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *Positive float or `"unlimited"`.*
+| `stake_amount` | **Required.** Amount of crypto-currency your bot will use for each trade. Set it to `"unlimited"` to allow the bot to use all available balance. [More information below](#configuring-amount-per-trade). [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *Positive float or `"unlimited"`.*
+| `tradable_balance_ratio` | Ratio of the total account balance the bot is allowed to trade. [More information below](#configuring-amount-per-trade). <br>*Defaults to `0.99` 99%).*<br> ***Datatype:*** *Positive float between `0.1` and `1.0`.*
+| `amend_last_stake_amount` | Use reduced last stake amount if necessary. [More information below](#configuring-amount-per-trade). <br>*Defaults to `false`.* <br> ***Datatype:*** *Boolean*
+| `last_stake_amount_min_ratio` | Defines minimum stake amount that has to be left and executed. Applies only to the last stake amount when it's amended to a reduced value (i.e. if `amend_last_stake_amount` is set to `true`). [More information below](#configuring-amount-per-trade). <br>*Defaults to `0.5`.* <br> ***Datatype:*** *Float (as ratio)*
 | `amount_reserve_percent` | Reserve some amount in min pair stake amount. The bot will reserve `amount_reserve_percent` + stoploss value when calculating min pair stake amount in order to avoid possible trade refusals. <br>*Defaults to `0.05` (5%).* <br> ***Datatype:*** *Positive Float as ratio.*
 | `ticker_interval` | The ticker interval to use (e.g `1m`, `5m`, `15m`, `30m`, `1h` ...). [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *String*
 | `fiat_display_currency` | Fiat currency used to show your profits. [More information below](#what-values-can-be-used-for-fiat_display_currency). <br> ***Datatype:*** *String*
@@ -129,26 +132,74 @@ Values set in the configuration file always overwrite values set in the strategy
 * `sell_profit_only` (ask_strategy)
 * `ignore_roi_if_buy_signal` (ask_strategy)
 
-### Understand stake_amount
+### Configuring amount per trade
 
-The `stake_amount` configuration parameter is an amount of crypto-currency your bot will use for each trade.
+There are several methods to configure how much of the stake currency the bot will use to enter a trade. All methods respect the [available balance configuration](#available-balance) as explained below.
 
-The minimal configuration value is 0.0001. Please check your exchange's trading minimums to avoid problems.
+#### Available balance
+
+By default, the bot assumes that the `complete amount - 1%` is at it's disposal, and when using [dynamic stake amount](#dynamic-stake-amount), it will split the complete balance into `max_open_trades` buckets per trade.
+Freqtrade will reserve 1% for eventual fees when entering a trade and will therefore not touch that by default.
+
+You can configure the "untouched" amount by using the `tradable_balance_ratio` setting.
+
+For example, if you have 10 ETH available in your wallet on the exchange and `tradable_balance_ratio=0.5` (which is 50%), then the bot will use a maximum amount of 5 ETH for trading and considers this as available balance. The rest of the wallet is untouched by the trades.
+
+!!! Warning
+    The `tradable_balance_ratio` setting applies to the current balance (free balance + tied up in trades). Therefore, assuming the starting balance of 1000, a configuration with `tradable_balance_ratio=0.99` will not guarantee that 10 currency units will always remain available on the exchange. For example, the free amount may reduce to 5 units if the total balance is reduced to 500 (either by a losing streak, or by withdrawing balance).
+
+#### Amend last stake amount
+
+Assuming we have the tradable balance of 1000 USDT, `stake_amount=400`, and `max_open_trades=3`.
+The bot would open 2 trades, and will be unable to fill the last trading slot, since the requested 400 USDT are no longer available, since 800 USDT are already tied in other trades.
+
+To overcome this, the option `amend_last_stake_amount` can be set to `True`, which will enable the bot to reduce stake_amount to the available balance in order to fill the last trade slot.
+
+In the example above this would mean:
+
+- Trade1: 400 USDT
+- Trade2: 400 USDT
+- Trade3: 200 USDT
+
+!!! Note
+    This option only applies with [Static stake amount](#static-stake-amount) - since [Dynamic stake amount](#dynamic-stake-amount) divides the balances evenly.
+
+!!! Note
+    The minimum last stake amount can be configured using `amend_last_stake_amount` - which defaults to 0.5 (50%). This means that the minimum stake amount that's ever used is `stake_amount * 0.5`. This avoids very low stake amounts, that are close to the minimum tradable amount for the pair and can be refused by the exchange.
+
+#### Static stake amount
+
+The `stake_amount` configuration statically configures the amount of stake-currency your bot will use for each trade.
+
+The minimal configuration value is 0.0001, however, please check your exchange's trading minimums for the stake currency you're using to avoid problems.
 
 This setting works in combination with `max_open_trades`. The maximum capital engaged in trades is `stake_amount * max_open_trades`.
 For example, the bot will at most use (0.05 BTC x 3) = 0.15 BTC, assuming a configuration of `max_open_trades=3` and `stake_amount=0.05`.
 
-To allow the bot to trade all the available `stake_currency` in your account set
+!!! Note
+    This setting respects the [available balance configuration](#available-balance).
 
-```json
-"stake_amount" : "unlimited",
-```
+#### Dynamic stake amount
+
+Alternatively, you can use a dynamic stake amount, which will use the available balance on the exchange, and divide that equally by the amount of allowed trades (`max_open_trades`).
+
+To configure this, set `stake_amount="unlimited"`. We also recommend to set `tradable_balance_ratio=0.99` (99%) - to keep a minimum balance for eventual fees.
 
 In this case a trade amount is calculated as:
 
 ```python
 currency_balance / (max_open_trades - current_open_trades)
 ```
+
+To allow the bot to trade all the available `stake_currency` in your account (minus `tradable_balance_ratio`) set
+
+```json
+"stake_amount" : "unlimited",
+"tradable_balance_ratio": 0.99,
+```
+
+!!! Note
+    This configuration will allow increasing / decreasing stakes depending on the performance of the bot (lower stake if bot is loosing, higher stakes if the bot has a winning record, since higher balances are available).
 
 !!! Note "When using Dry-Run Mode"
     When using `"stake_amount" : "unlimited",` in combination with Dry-Run, the balance will be simulated starting with a stake of `dry_run_wallet` which will evolve over time. It is therefore important to set `dry_run_wallet` to a sensible value (like 0.05 or 0.01 for BTC and 1000 or 100 for USDT, for example), otherwise it may simulate trades with 100 BTC (or more) or 0.05 USDT (or less) at once - which may not correspond to your real available balance or is less than the exchange minimal limit for the order amount for the stake currency.

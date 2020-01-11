@@ -140,21 +140,65 @@ def test_get_trade_stake_amount(default_conf, ticker, mocker) -> None:
     assert result == default_conf['stake_amount']
 
 
+@pytest.mark.parametrize("amend_last,wallet,max_open,lsamr,expected", [
+                        (False, 0.002, 2, 0.5, [0.001, None]),
+                        (True, 0.002, 2, 0.5, [0.001, 0.00098]),
+                        (False, 0.003, 3, 0.5, [0.001, 0.001, None]),
+                        (True, 0.003, 3, 0.5, [0.001, 0.001, 0.00097]),
+                        (False, 0.0022, 3, 0.5, [0.001, 0.001, None]),
+                        (True, 0.0022, 3, 0.5, [0.001, 0.001, 0.0]),
+                        (True, 0.0027, 3, 0.5, [0.001, 0.001, 0.000673]),
+                        (True, 0.0022, 3, 1, [0.001, 0.001, 0.0]),
+                        ])
+def test_check_available_stake_amount(default_conf, ticker, mocker, fee, limit_buy_order,
+                                      amend_last, wallet, max_open, lsamr, expected) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker,
+        get_balance=MagicMock(return_value=default_conf['stake_amount'] * 2),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee
+    )
+    default_conf['dry_run_wallet'] = wallet
+
+    default_conf['amend_last_stake_amount'] = amend_last
+    default_conf['last_stake_amount_min_ratio'] = lsamr
+
+    freqtrade = FreqtradeBot(default_conf)
+
+    for i in range(0, max_open):
+
+        if expected[i] is not None:
+            result = freqtrade.get_trade_stake_amount('ETH/BTC')
+            assert pytest.approx(result) == expected[i]
+            freqtrade.execute_buy('ETH/BTC', result)
+        else:
+            with pytest.raises(DependencyException):
+                freqtrade.get_trade_stake_amount('ETH/BTC')
+
+
 def test_get_trade_stake_amount_no_stake_amount(default_conf, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     patch_wallet(mocker, free=default_conf['stake_amount'] * 0.5)
     freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
 
     with pytest.raises(DependencyException, match=r'.*stake amount.*'):
         freqtrade.get_trade_stake_amount('ETH/BTC')
 
 
-def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker,
+@pytest.mark.parametrize("balance_ratio,result1", [
+                        (1, 0.005),
+                        (0.99, 0.00495),
+                        (0.50, 0.0025),
+                        ])
+def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_ratio, result1,
                                                  limit_buy_order, fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    patch_wallet(mocker, free=default_conf['stake_amount'])
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
@@ -164,32 +208,34 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker,
 
     conf = deepcopy(default_conf)
     conf['stake_amount'] = UNLIMITED_STAKE_AMOUNT
+    conf['dry_run_wallet'] = 0.01
     conf['max_open_trades'] = 2
+    conf['tradable_balance_ratio'] = balance_ratio
 
     freqtrade = FreqtradeBot(conf)
     patch_get_signal(freqtrade)
 
     # no open trades, order amount should be 'balance / max_open_trades'
     result = freqtrade.get_trade_stake_amount('ETH/BTC')
-    assert result == default_conf['stake_amount'] / conf['max_open_trades']
+    assert result == result1
 
     # create one trade, order amount should be 'balance / (max_open_trades - num_open_trades)'
     freqtrade.execute_buy('ETH/BTC', result)
 
     result = freqtrade.get_trade_stake_amount('LTC/BTC')
-    assert result == default_conf['stake_amount'] / (conf['max_open_trades'] - 1)
+    assert result == result1
 
     # create 2 trades, order amount should be None
     freqtrade.execute_buy('LTC/BTC', result)
 
     result = freqtrade.get_trade_stake_amount('XRP/BTC')
-    assert result is None
+    assert result == 0
 
     # set max_open_trades = None, so do not trade
     conf['max_open_trades'] = 0
     freqtrade = FreqtradeBot(conf)
     result = freqtrade.get_trade_stake_amount('NEO/BTC')
-    assert result is None
+    assert result == 0
 
 
 def test_edge_called_in_process(mocker, edge_conf) -> None:
@@ -570,7 +616,7 @@ def test_create_trade_limit_reached(default_conf, ticker, limit_buy_order,
     patch_get_signal(freqtrade)
 
     assert not freqtrade.create_trade('ETH/BTC')
-    assert freqtrade.get_trade_stake_amount('ETH/BTC') is None
+    assert freqtrade.get_trade_stake_amount('ETH/BTC') == 0
 
 
 def test_enter_positions_no_pairs_left(default_conf, ticker, limit_buy_order, fee,
@@ -635,11 +681,15 @@ def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
 
 
 @pytest.mark.parametrize("max_open", range(0, 5))
-def test_create_trades_multiple_trades(default_conf, ticker,
-                                       fee, mocker, max_open) -> None:
+@pytest.mark.parametrize("tradable_balance_ratio,modifier", [(1.0, 1), (0.99, 0.8), (0.5, 0.5)])
+def test_create_trades_multiple_trades(default_conf, ticker, fee, mocker,
+                                       max_open, tradable_balance_ratio, modifier) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     default_conf['max_open_trades'] = max_open
+    default_conf['tradable_balance_ratio'] = tradable_balance_ratio
+    default_conf['dry_run_wallet'] = 0.001 * max_open
+
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
@@ -650,10 +700,11 @@ def test_create_trades_multiple_trades(default_conf, ticker,
     patch_get_signal(freqtrade)
 
     n = freqtrade.enter_positions()
-    assert n == max_open
-
     trades = Trade.get_open_trades()
-    assert len(trades) == max_open
+    # Expected trades should be max_open * a modified value
+    # depending on the configured tradable_balance
+    assert n == max(int(max_open * modifier), 0)
+    assert len(trades) == max(int(max_open * modifier), 0)
 
 
 def test_create_trades_preopen(default_conf, ticker, fee, mocker) -> None:
@@ -3622,6 +3673,7 @@ def test_sync_wallet_dry_run(mocker, default_conf, ticker, fee, limit_buy_order,
     # Initialize to 2 times stake amount
     default_conf['dry_run_wallet'] = 0.002
     default_conf['max_open_trades'] = 2
+    default_conf['tradable_balance_ratio'] = 1.0
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -3643,5 +3695,5 @@ def test_sync_wallet_dry_run(mocker, default_conf, ticker, fee, limit_buy_order,
     n = bot.enter_positions()
     assert n == 0
     assert log_has_re(r"Unable to create trade for XRP/BTC: "
-                      r"Available balance \(0 BTC\) is lower than stake amount \(0.001 BTC\)",
+                      r"Available balance \(0.0 BTC\) is lower than stake amount \(0.001 BTC\)",
                       caplog)

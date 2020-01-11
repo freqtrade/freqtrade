@@ -78,10 +78,22 @@ def validate_config_consistency(conf: Dict[str, Any]) -> None:
     _validate_trailing_stoploss(conf)
     _validate_edge(conf)
     _validate_whitelist(conf)
+    _validate_unlimited_amount(conf)
 
     # validate configuration before returning
     logger.info('Validating configuration ...')
     validate_config_schema(conf)
+
+
+def _validate_unlimited_amount(conf: Dict[str, Any]) -> None:
+    """
+    If edge is disabled, either max_open_trades or stake_amount need to be set.
+    :raise: OperationalException if config validation failed
+    """
+    if (not conf.get('edge', {}).get('enabled')
+       and conf.get('max_open_trades') == float('inf')
+       and conf.get('stake_amount') == constants.UNLIMITED_STAKE_AMOUNT):
+        raise OperationalException("`max_open_trades` and `stake_amount` cannot both be unlimited.")
 
 
 def _validate_trailing_stoploss(conf: Dict[str, Any]) -> None:

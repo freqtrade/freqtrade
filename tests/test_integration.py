@@ -1,10 +1,11 @@
-
 from unittest.mock import MagicMock
 
+import pytest
+
 from freqtrade.persistence import Trade
+from freqtrade.rpc.rpc import RPC
 from freqtrade.strategy.interface import SellCheckTuple, SellType
 from tests.conftest import get_patched_freqtradebot, patch_get_signal
-from freqtrade.rpc.rpc import RPC
 
 
 def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
@@ -112,13 +113,22 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
     assert not trade.is_open
 
 
-def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, mocker) -> None:
+@pytest.mark.parametrize("balance_ratio,result1", [
+                        (1, 200),
+                        (0.99, 198),
+])
+def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, mocker, balance_ratio,
+                                 result1) -> None:
     """
-    Tests workflow
+    Tests workflow unlimited stake-amount
+    Buy 4 trades, forcebuy a 5th trade
+    Sell one trade, calculated stake amount should now be lower than before since
+    one trade was sold at a loss.
     """
     default_conf['max_open_trades'] = 5
     default_conf['forcebuy_enable'] = True
     default_conf['stake_amount'] = 'unlimited'
+    default_conf['tradable_balance_ratio'] = balance_ratio
     default_conf['dry_run_wallet'] = 1000
     default_conf['exchange']['name'] = 'binance'
     default_conf['telegram']['enabled'] = True
@@ -159,13 +169,15 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
 
     trades = Trade.query.all()
     assert len(trades) == 4
+    assert freqtrade.get_trade_stake_amount('XRP/BTC') == result1
+
     rpc._rpc_forcebuy('TKN/BTC', None)
 
     trades = Trade.query.all()
     assert len(trades) == 5
 
     for trade in trades:
-        assert trade.stake_amount == 200
+        assert trade.stake_amount == result1
         # Reset trade open order id's
         trade.open_order_id = None
     trades = Trade.get_open_trades()
@@ -177,6 +189,8 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
     trades = Trade.get_open_trades()
     # One trade sold
     assert len(trades) == 4
+    # stake-amount should now be reduced, since one trade was sold at a loss.
+    assert freqtrade.get_trade_stake_amount('XRP/BTC') < result1
     # Validate that balance of sold trade is not in dry-run balances anymore.
     bals2 = freqtrade.wallets.get_all_balances()
     assert bals != bals2

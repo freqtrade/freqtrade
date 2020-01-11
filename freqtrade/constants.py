@@ -73,6 +73,16 @@ CONF_SCHEMA = {
             'minimum': 0.0001,
             'pattern': UNLIMITED_STAKE_AMOUNT
         },
+        'tradable_balance_ratio': {
+            'type': 'number',
+            'minimum': 0.1,
+            'maximum': 1,
+            'default': 0.99
+        },
+        'amend_last_stake_amount': {'type': 'boolean', 'default': False},
+        'last_stake_amount_min_ratio': {
+            'type': 'number', 'minimum': 0.0, 'maximum': 1.0, 'default': 0.5
+            },
         'fiat_display_currency': {'type': 'string', 'enum': SUPPORTED_FIAT},
         'dry_run': {'type': 'boolean'},
         'dry_run_wallet': {'type': 'number', 'default': DRY_RUN_WALLET},
@@ -266,7 +276,7 @@ CONF_SCHEMA = {
                 'max_trade_duration_minute': {'type': 'integer'},
                 'remove_pumps': {'type': 'boolean'}
             },
-            'required': ['process_throttle_secs', 'allowed_risk', 'capital_available_percentage']
+            'required': ['process_throttle_secs', 'allowed_risk']
         }
     },
 }
@@ -276,6 +286,8 @@ SCHEMA_TRADE_REQUIRED = [
     'max_open_trades',
     'stake_currency',
     'stake_amount',
+    'tradable_balance_ratio',
+    'last_stake_amount_min_ratio',
     'dry_run',
     'dry_run_wallet',
     'bid_strategy',

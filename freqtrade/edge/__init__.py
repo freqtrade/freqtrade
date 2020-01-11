@@ -57,7 +57,9 @@ class Edge:
         if self.config['stake_amount'] != constants.UNLIMITED_STAKE_AMOUNT:
             raise OperationalException('Edge works only with unlimited stake amount')
 
-        self._capital_percentage: float = self.edge_config.get('capital_available_percentage')
+        # Deprecated capital_available_percentage. Will use tradable_balance_ratio in the future.
+        self._capital_percentage: float = self.edge_config.get(
+            'capital_available_percentage', self.config['tradable_balance_ratio'])
         self._allowed_risk: float = self.edge_config.get('allowed_risk')
         self._since_number_of_days: int = self.edge_config.get('calculate_since_number_of_days', 14)
         self._last_updated: int = 0  # Timestamp of pairs last updated time
