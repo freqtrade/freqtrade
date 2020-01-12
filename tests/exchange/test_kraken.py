@@ -21,8 +21,8 @@ def test_buy_kraken_trading_agreement(default_conf, mocker):
     })
     default_conf['dry_run'] = False
 
-    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
-    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="kraken")
 
     order = exchange.buy(pair='ETH/BTC', ordertype=order_type,
@@ -53,8 +53,8 @@ def test_sell_kraken_trading_agreement(default_conf, mocker):
     })
     default_conf['dry_run'] = False
 
-    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
-    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="kraken")
 
     order = exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)

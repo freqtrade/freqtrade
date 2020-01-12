@@ -173,7 +173,7 @@ def test_validate_order_time_in_force(default_conf, mocker, caplog):
     ex.validate_order_time_in_force(tif2)
 
 
-def test_symbol_amount_prec(default_conf, mocker):
+def test_amount_to_precision(default_conf, mocker):
     '''
     Test rounds down to 4 Decimal places
     '''
@@ -190,17 +190,17 @@ def test_symbol_amount_prec(default_conf, mocker):
 
     amount = 2.34559
     pair = 'ETH/BTC'
-    amount = exchange.symbol_amount_prec(pair, amount)
+    amount = exchange.amount_to_precision(pair, amount)
     assert amount == 2.3455
 
     markets = PropertyMock(return_value={'ETH/BTC': {'precision': {'amount': 0.0001}}})
     mocker.patch('freqtrade.exchange.Exchange.precisionMode', PropertyMock(return_value=4))
     mocker.patch('freqtrade.exchange.Exchange.markets', markets)
-    amount = exchange.symbol_amount_prec(pair, amount)
+    amount = exchange.amount_to_precision(pair, amount)
     assert amount == 2.3455
 
 
-def test_symbol_price_prec(default_conf, mocker):
+def test_sprice_to_precision(default_conf, mocker):
     '''
     Test rounds up to 4 decimal places
     '''
@@ -212,14 +212,14 @@ def test_symbol_price_prec(default_conf, mocker):
 
     price = 2.34559
     pair = 'ETH/BTC'
-    price = exchange.symbol_price_prec(pair, price)
+    price = exchange.price_to_precision(pair, price)
     assert price == 2.3456
 
     markets = PropertyMock(return_value={'ETH/BTC': {'precision': {'price': 0.0001}}})
     mocker.patch('freqtrade.exchange.Exchange.precisionMode', PropertyMock(return_value=4))
     mocker.patch('freqtrade.exchange.Exchange.markets', markets)
 
-    price = exchange.symbol_price_prec(pair, price)
+    price = exchange.price_to_precision(pair, price)
     assert price == 2.3456
 
 
@@ -615,8 +615,8 @@ def test_create_order(default_conf, mocker, side, ordertype, rate, marketprice, 
         }
     })
     default_conf['dry_run'] = False
-    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
-    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
 
     order = exchange.create_order(
@@ -656,8 +656,8 @@ def test_buy_prod(default_conf, mocker, exchange_name):
         }
     })
     default_conf['dry_run'] = False
-    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
-    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
 
     order = exchange.buy(pair='ETH/BTC', ordertype=order_type,
@@ -730,8 +730,8 @@ def test_buy_considers_time_in_force(default_conf, mocker, exchange_name):
         }
     })
     default_conf['dry_run'] = False
-    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
-    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
 
     order_type = 'limit'
@@ -792,8 +792,8 @@ def test_sell_prod(default_conf, mocker, exchange_name):
     })
     default_conf['dry_run'] = False
 
-    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
-    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
 
     order = exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
@@ -856,8 +856,8 @@ def test_sell_considers_time_in_force(default_conf, mocker, exchange_name):
     })
     api_mock.options = {}
     default_conf['dry_run'] = False
-    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
-    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
 
     order_type = 'limit'

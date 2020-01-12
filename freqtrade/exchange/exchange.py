@@ -7,7 +7,6 @@ import inspect
 import logging
 from copy import deepcopy
 from datetime import datetime, timezone
-from math import ceil
 from random import randint
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -368,10 +367,11 @@ class Exchange:
         """
         return endpoint in self._api.has and self._api.has[endpoint]
 
-    def symbol_amount_prec(self, pair, amount: float) -> float:
+    def amount_to_precision(self, pair, amount: float) -> float:
         '''
         Returns the amount to buy or sell to a precision the Exchange accepts
-        Rounded down
+        Reimplementation of ccxt internal methods - ensuring we can test the result is correct
+        based on our definitions.
         '''
         if self.markets[pair]['precision']['amount']:
             amount = float(decimal_to_precision(amount, rounding_mode=TRUNCATE,
@@ -381,10 +381,11 @@ class Exchange:
 
         return amount
 
-    def symbol_price_prec(self, pair, price: float) -> float:
+    def price_to_precision(self, pair, price: float) -> float:
         '''
         Returns the price buying or selling with to the precision the Exchange accepts
-        Rounds up
+        Reimplementation of ccxt internal methods - ensuring we can test the result is correct
+        based on our definitions.
         '''
         if self.markets[pair]['precision']['price']:
             price = float(decimal_to_precision(price, rounding_mode=ROUND,
@@ -396,7 +397,7 @@ class Exchange:
     def dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                       rate: float, params: Dict = {}) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{randint(0, 10**6)}'
-        _amount = self.symbol_amount_prec(pair, amount)
+        _amount = self.amount_to_precision(pair, amount)
         dry_order = {
             "id": order_id,
             'pair': pair,
@@ -431,13 +432,13 @@ class Exchange:
                      rate: float, params: Dict = {}) -> Dict:
         try:
             # Set the precision for amount and price(rate) as accepted by the exchange
-            amount = self.symbol_amount_prec(pair, amount)
+            amount = self.amount_to_precision(pair, amount)
             needs_price = (ordertype != 'market'
                            or self._api.options.get("createMarketBuyOrderRequiresPrice", False))
-            rate = self.symbol_price_prec(pair, rate) if needs_price else None
+            rate_for_order = self.price_to_precision(pair, rate) if needs_price else None
 
             return self._api.create_order(pair, ordertype, side,
-                                          amount, rate, params)
+                                          amount, rate_for_order, params)
 
         except ccxt.InsufficientFunds as e:
             raise DependencyException(

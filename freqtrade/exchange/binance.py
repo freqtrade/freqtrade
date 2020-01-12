@@ -41,7 +41,7 @@ class Binance(Exchange):
         """
         ordertype = "stop_loss_limit"
 
-        stop_price = self.symbol_price_prec(pair, stop_price)
+        stop_price = self.price_to_precision(pair, stop_price)
 
         # Ensure rate is less than stop price
         if stop_price <= rate:
@@ -57,9 +57,9 @@ class Binance(Exchange):
             params = self._params.copy()
             params.update({'stopPrice': stop_price})
 
-            amount = self.symbol_amount_prec(pair, amount)
+            amount = self.amount_to_precision(pair, amount)
 
-            rate = self.symbol_price_prec(pair, rate)
+            rate = self.price_to_precision(pair, rate)
 
             order = self._api.create_order(pair, ordertype, 'sell',
                                            amount, rate, params)
