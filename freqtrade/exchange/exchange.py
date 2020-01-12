@@ -188,6 +188,11 @@ class Exchange:
             self._load_markets()
         return self._api.markets
 
+    @property
+    def precisionMode(self) -> str:
+        """exchange ccxt precisionMode"""
+        return self._api.precisionMode
+
     def get_markets(self, base_currencies: List[str] = None, quote_currencies: List[str] = None,
                     pairs_only: bool = False, active_only: bool = False) -> Dict:
         """
