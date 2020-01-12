@@ -116,6 +116,7 @@ class Exchange:
             self._load_markets()
 
             # Check if all pairs are available
+            self.validate_stakecurrency(config['stake_currency'])
             self.validate_pairs(config['exchange']['pair_whitelist'])
             self.validate_ordertypes(config.get('order_types', {}))
             self.validate_order_time_in_force(config.get('order_time_in_force', {}))
@@ -210,6 +211,13 @@ class Exchange:
             markets = {k: v for k, v in markets.items() if market_is_active(v)}
         return markets
 
+    def get_quote_currencies(self) -> List[str]:
+        """
+        Return a list of supported quote currencies
+        """
+        markets = self.markets
+        return sorted(set([x['quote'] for _, x in markets.items()]))
+
     def klines(self, pair_interval: Tuple[str, str], copy=True) -> DataFrame:
         if pair_interval in self._klines:
             return self._klines[pair_interval].copy() if copy else self._klines[pair_interval]
@@ -259,11 +267,23 @@ class Exchange:
         except ccxt.BaseError:
             logger.exception("Could not reload markets.")
 
+    def validate_stakecurrency(self, stake_currency) -> None:
+        """
+        Checks stake-currency against available currencies on the exchange.
+        :param stake_currency: Stake-currency to validate
+        :raise: OperationalException if stake-currency is not available.
+        """
+        quote_currencies = self.get_quote_currencies()
+        if stake_currency not in quote_currencies:
+            raise OperationalException(
+                    f"{stake_currency} is not available as stake on {self.name}. "
+                    f"Available currencies are: {', '.join(quote_currencies)}")
+
     def validate_pairs(self, pairs: List[str]) -> None:
         """
         Checks if all given pairs are tradable on the current exchange.
-        Raises OperationalException if one pair is not available.
         :param pairs: list of pairs
+        :raise: OperationalException if one pair is not available
         :return: None
         """
 
@@ -318,6 +338,10 @@ class Exchange:
         if timeframe and (timeframe not in self.timeframes):
             raise OperationalException(
                 f"Invalid ticker interval '{timeframe}'. This exchange supports: {self.timeframes}")
+
+        if timeframe and timeframe_to_minutes(timeframe) < 1:
+            raise OperationalException(
+                f"Timeframes < 1m are currently not supported by Freqtrade.")
 
     def validate_ordertypes(self, order_types: Dict) -> None:
         """

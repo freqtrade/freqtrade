@@ -33,12 +33,6 @@ USER_DATA_FILES = {
     'strategy_analysis_example.ipynb': 'notebooks',
 }
 
-TIMEFRAMES = [
-    '1m', '3m', '5m', '15m', '30m',
-    '1h', '2h', '4h', '6h', '8h', '12h',
-    '1d', '3d', '1w',
-]
-
 SUPPORTED_FIAT = [
     "AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK", "DKK",
     "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY",
@@ -66,8 +60,8 @@ CONF_SCHEMA = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': ['integer', 'number'], 'minimum': -1},
-        'ticker_interval': {'type': 'string', 'enum': TIMEFRAMES},
-        'stake_currency': {'type': 'string', 'enum': ['BTC', 'XBT', 'ETH', 'USDT', 'EUR', 'USD']},
+        'ticker_interval': {'type': 'string'},
+        'stake_currency': {'type': 'string'},
         'stake_amount': {
             'type': ['number', 'string'],
             'minimum': 0.0001,
