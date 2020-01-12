@@ -181,10 +181,21 @@ def test_symbol_amount_prec(default_conf, mocker):
     markets = PropertyMock(return_value={'ETH/BTC': {'precision': {'amount': 4}}})
 
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
+    # digits counting mode
+    # DECIMAL_PLACES = 2
+    # SIGNIFICANT_DIGITS = 3
+    # TICK_SIZE = 4
+    mocker.patch('freqtrade.exchange.Exchange.precisionMode', PropertyMock(return_value=2))
     mocker.patch('freqtrade.exchange.Exchange.markets', markets)
 
     amount = 2.34559
     pair = 'ETH/BTC'
+    amount = exchange.symbol_amount_prec(pair, amount)
+    assert amount == 2.3455
+
+    markets = PropertyMock(return_value={'ETH/BTC': {'precision': {'amount': 0.0001}}})
+    mocker.patch('freqtrade.exchange.Exchange.precisionMode', PropertyMock(return_value=4))
+    mocker.patch('freqtrade.exchange.Exchange.markets', markets)
     amount = exchange.symbol_amount_prec(pair, amount)
     assert amount == 2.3455
 
@@ -197,9 +208,17 @@ def test_symbol_price_prec(default_conf, mocker):
 
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     mocker.patch('freqtrade.exchange.Exchange.markets', markets)
+    mocker.patch('freqtrade.exchange.Exchange.precisionMode', PropertyMock(return_value=2))
 
     price = 2.34559
     pair = 'ETH/BTC'
+    price = exchange.symbol_price_prec(pair, price)
+    assert price == 2.3456
+
+    markets = PropertyMock(return_value={'ETH/BTC': {'precision': {'price': 0.0001}}})
+    mocker.patch('freqtrade.exchange.Exchange.precisionMode', PropertyMock(return_value=4))
+    mocker.patch('freqtrade.exchange.Exchange.markets', markets)
+
     price = exchange.symbol_price_prec(pair, price)
     assert price == 2.3456
 

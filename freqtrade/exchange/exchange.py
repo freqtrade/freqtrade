@@ -7,14 +7,15 @@ import inspect
 import logging
 from copy import deepcopy
 from datetime import datetime, timezone
-from math import ceil, floor
+from math import ceil
 from random import randint
 from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
 import ccxt
 import ccxt.async_support as ccxt_async
-from ccxt.base.decimal_to_precision import ROUND_DOWN, ROUND_UP
+from ccxt.base.decimal_to_precision import (ROUND, ROUND_DOWN, ROUND_UP,
+                                            TRUNCATE, decimal_to_precision)
 from pandas import DataFrame
 
 from freqtrade.data.converter import parse_ticker_dataframe
@@ -367,26 +368,29 @@ class Exchange:
         """
         return endpoint in self._api.has and self._api.has[endpoint]
 
-    def symbol_amount_prec(self, pair, amount: float):
+    def symbol_amount_prec(self, pair, amount: float) -> float:
         '''
         Returns the amount to buy or sell to a precision the Exchange accepts
         Rounded down
         '''
         if self.markets[pair]['precision']['amount']:
-            symbol_prec = self.markets[pair]['precision']['amount']
-            big_amount = amount * pow(10, symbol_prec)
-            amount = floor(big_amount) / pow(10, symbol_prec)
+            amount = float(decimal_to_precision(amount, rounding_mode=TRUNCATE,
+                                                precision=self.markets[pair]['precision']['amount'],
+                                                counting_mode=self.precisionMode,
+                                                ))
+
         return amount
 
-    def symbol_price_prec(self, pair, price: float):
+    def symbol_price_prec(self, pair, price: float) -> float:
         '''
         Returns the price buying or selling with to the precision the Exchange accepts
         Rounds up
         '''
         if self.markets[pair]['precision']['price']:
-            symbol_prec = self.markets[pair]['precision']['price']
-            big_price = price * pow(10, symbol_prec)
-            price = ceil(big_price) / pow(10, symbol_prec)
+            price = float(decimal_to_precision(price, rounding_mode=ROUND,
+                                               precision=self.markets[pair]['precision']['price'],
+                                               counting_mode=self.precisionMode,
+                                               ))
         return price
 
     def dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
