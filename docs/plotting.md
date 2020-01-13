@@ -124,33 +124,33 @@ freqtrade plot-dataframe --strategy AwesomeStrategy --export-filename user_data/
 
 ![plot-dataframe2](assets/plot-dataframe2.png)
 
-plot-dataframe will require backtesting data, a strategy as well as either a backtesting-results file or a Database file, containing trades corresponding to the strategy.
+The plot-dataframe subcommand requires backtesting data, a strategy and either a backtesting-results file or a database, containing trades corresponding to the strategy.
 
 The resulting plot will have the following elements:
 
-* Green triangles: Buy signals from the strategy. (Note: not every Buy-signal also generates a trade)
-* Red triangles: Sell signals from the strategy.
-* Cyan Circles: Trade entry
-* Red Square: Trade exit for loss or 0% profit
-* Green Square: Trade exit for profit
-* Indicators corresponding to the candle scale (e.g. SMA/EMA), as specified with `--indicators1`.
-* Indicators with different scales (e.g. MACD, RSI) below the volume bars, as specified via `--indicators2`.
-* Volume (bar chart at the bottom of the main chart)
+* Green triangles: Buy signals from the strategy. (Note: not every buy signal generates a trade, compare to cyan circles.)
+* Red triangles: Sell signals from the strategy. (Also, not every sell signal terminates a trade, compare to red and green squares.)
+* Cyan circles: Trade entry points.
+* Red squares: Trade exit points for trades with loss or 0% profit.
+* Green squares: Trade exit points for profitable trades.
+* Indicators with values corresponding to the candle scale (e.g. SMA/EMA), as specified with `--indicators1`.
+* Volume (bar chart at the bottom of the main chart).
+* Indicators with values in different scales (e.g. MACD, RSI) below the volume bars, as specified with `--indicators2`.
 
 !!! Note "Bollinger Bands"
-    Bollinger bands are automatically added to the plot if the columns `bb_lowerband` and `bb_upperband` exist, and are painted as a light blue Area spanning from the lower band to the upper band.
+    Bollinger bands are automatically added to the plot if the columns `bb_lowerband` and `bb_upperband` exist, and are painted as a light blue area spanning from the lower band to the upper band.
 
-#### Advanced Plot configuration
+#### Advanced plot configuration
 
-An advanced plot-configuration can be specified in the strategy.
+An advanced plot configuration can be specified in the strategy in the `plot_config` parameter.
 
-This configuration allows to specify fixed colors (otherwise consecutive plots may produce different colorschemes each time, making comparisons diffiult.).
-It also allows multiple subplots to display both MACD and RSI at the same time.
-
-Additional features when using plot_config:
+Additional features when using plot_config include:
 
 * Specify colors per indicator
 * Specify additional subplots
+
+The sample plot configuration below specifies fixed colors for the indicators. Otherwise consecutive plots may produce different colorschemes each time, making comparisons difficult.
+It also allows multiple subplots to display both MACD and RSI at the same time.
 
 Sample configuration with inline comments explaining the process:
 
