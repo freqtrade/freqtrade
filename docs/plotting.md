@@ -120,16 +120,77 @@ To plot trades from a backtesting result, use `--export-filename <filename>`
 freqtrade plot-dataframe --strategy AwesomeStrategy --export-filename user_data/backtest_results/backtest-result.json -p BTC/ETH
 ```
 
+### Plot dataframe basics
+
+![plot-dataframe2](assets/plot-dataframe2.png)
+
+The `plot-dataframe` subcommand requires backtesting data, a strategy and either a backtesting-results file or a database, containing trades corresponding to the strategy.
+
+The resulting plot will have the following elements:
+
+* Green triangles: Buy signals from the strategy. (Note: not every buy signal generates a trade, compare to cyan circles.)
+* Red triangles: Sell signals from the strategy. (Also, not every sell signal terminates a trade, compare to red and green squares.)
+* Cyan circles: Trade entry points.
+* Red squares: Trade exit points for trades with loss or 0% profit.
+* Green squares: Trade exit points for profitable trades.
+* Indicators with values corresponding to the candle scale (e.g. SMA/EMA), as specified with `--indicators1`.
+* Volume (bar chart at the bottom of the main chart).
+* Indicators with values in different scales (e.g. MACD, RSI) below the volume bars, as specified with `--indicators2`.
+
+!!! Note "Bollinger Bands"
+    Bollinger bands are automatically added to the plot if the columns `bb_lowerband` and `bb_upperband` exist, and are painted as a light blue area spanning from the lower band to the upper band.
+
+#### Advanced plot configuration
+
+An advanced plot configuration can be specified in the strategy in the `plot_config` parameter.
+
+Additional features when using plot_config include:
+
+* Specify colors per indicator
+* Specify additional subplots
+
+The sample plot configuration below specifies fixed colors for the indicators. Otherwise consecutive plots may produce different colorschemes each time, making comparisons difficult.
+It also allows multiple subplots to display both MACD and RSI at the same time.
+
+Sample configuration with inline comments explaining the process:
+
+``` python
+    plot_config = {
+        'main_plot': {
+            # Configuration for main plot indicators.
+            # Specifies `ema10` to be red, and `ema50` to be a shade of gray
+            'ema10': {'color': 'red'},
+            'ema50': {'color': '#CCCCCC'},
+            # By omitting color, a random color is selected.
+            'sar': {},
+        },
+        'subplots': {
+            # Create subplot MACD
+            "MACD": {
+                'macd': {'color': 'blue'},
+                'macdsignal': {'color': 'orange'},
+            },
+            # Additional subplot RSI
+            "RSI": {
+                'rsi': {'color': 'red'},
+            }
+        }
+    }
+```
+
+!!! Note
+    The above configuration assumes that `ema10`, `ema50`, `macd`, `macdsignal` and `rsi` are columns in the DataFrame created by the strategy.
+
 ## Plot profit
 
 ![plot-profit](assets/plot-profit.png)
 
-The `freqtrade plot-profit` subcommand shows an interactive graph with three plots:
+The `plot-profit` subcommand shows an interactive graph with three plots:
 
-1) Average closing price for all pairs
-2) The summarized profit made by backtesting.
-   Note that this is not the real-world profit, but more of an estimate.
-3) Profit for each individual pair
+* Average closing price for all pairs.
+* The summarized profit made by backtesting.
+Note that this is not the real-world profit, but more of an estimate.
+* Profit for each individual pair.
 
 The first graph is good to get a grip of how the overall market progresses.
 

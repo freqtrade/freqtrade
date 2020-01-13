@@ -363,15 +363,13 @@ AVAILABLE_CLI_OPTIONS = {
     "indicators1": Arg(
         '--indicators1',
         help='Set indicators from your strategy you want in the first row of the graph. '
-        'Space-separated list. Example: `ema3 ema5`. Default: `%(default)s`.',
-        default=['sma', 'ema3', 'ema5'],
+        "Space-separated list. Example: `ema3 ema5`. Default: `['sma', 'ema3', 'ema5']`.",
         nargs='+',
     ),
     "indicators2": Arg(
         '--indicators2',
         help='Set indicators from your strategy you want in the third row of the graph. '
-        'Space-separated list. Example: `fastd fastk`. Default: `%(default)s`.',
-        default=['macd', 'macdsignal'],
+        "Space-separated list. Example: `fastd fastk`. Default: `['macd', 'macdsignal']`.",
         nargs='+',
     ),
     "plot_limit": Arg(
