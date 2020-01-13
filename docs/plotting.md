@@ -124,7 +124,7 @@ freqtrade plot-dataframe --strategy AwesomeStrategy --export-filename user_data/
 
 ![plot-dataframe2](assets/plot-dataframe2.png)
 
-The plot-dataframe subcommand requires backtesting data, a strategy and either a backtesting-results file or a database, containing trades corresponding to the strategy.
+The `plot-dataframe` subcommand requires backtesting data, a strategy and either a backtesting-results file or a database, containing trades corresponding to the strategy.
 
 The resulting plot will have the following elements:
 
@@ -185,12 +185,12 @@ Sample configuration with inline comments explaining the process:
 
 ![plot-profit](assets/plot-profit.png)
 
-The `freqtrade plot-profit` subcommand shows an interactive graph with three plots:
+The `plot-profit` subcommand shows an interactive graph with three plots:
 
-1) Average closing price for all pairs
-2) The summarized profit made by backtesting.
-   Note that this is not the real-world profit, but more of an estimate.
-3) Profit for each individual pair
+* Average closing price for all pairs.
+* The summarized profit made by backtesting.
+Note that this is not the real-world profit, but more of an estimate.
+* Profit for each individual pair.
 
 The first graph is good to get a grip of how the overall market progresses.
 
