@@ -173,14 +173,22 @@ def test_validate_order_time_in_force(default_conf, mocker, caplog):
     ex.validate_order_time_in_force(tif2)
 
 
-@pytest.mark.parametrize("amount,precision,expected", [
-    (2.34559, 4, 2.3455),
-    (2.34559, 5, 2.34559),
-    (2.34559, 3, 2.345),
-    (2.9999, 3, 2.999),
-    (2.9909, 3, 2.990),
+@pytest.mark.parametrize("amount,precision_mode,precision,expected", [
+    (2.34559, 2, 4, 2.3455),
+    (2.34559, 2, 5, 2.34559),
+    (2.34559, 2, 3, 2.345),
+    (2.9999, 2, 3, 2.999),
+    (2.9909, 2, 3, 2.990),
+    # Tests for Tick-size
+    (2.34559, 4, 0.0001, 2.3455),
+    (2.34559, 4, 0.00001, 2.34559),
+    (2.34559, 4, 0.001, 2.345),
+    (2.9999, 4, 0.001, 2.999),
+    (2.9909, 4, 0.001, 2.990),
+    (2.9909, 4, 0.005, 2.990),
+    (2.9999, 4, 0.005, 2.995),
 ])
-def test_amount_to_precision_decimal_places(default_conf, mocker, amount, precision, expected):
+def test_amount_to_precision(default_conf, mocker, amount, precision_mode, precision, expected):
     '''
     Test rounds down
     '''
@@ -192,7 +200,8 @@ def test_amount_to_precision_decimal_places(default_conf, mocker, amount, precis
     # DECIMAL_PLACES = 2
     # SIGNIFICANT_DIGITS = 3
     # TICK_SIZE = 4
-    mocker.patch('freqtrade.exchange.Exchange.precisionMode', PropertyMock(return_value=2))
+    mocker.patch('freqtrade.exchange.Exchange.precisionMode',
+                 PropertyMock(return_value=precision_mode))
     mocker.patch('freqtrade.exchange.Exchange.markets', markets)
 
     pair = 'ETH/BTC'
