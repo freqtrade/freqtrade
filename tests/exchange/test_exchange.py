@@ -220,9 +220,13 @@ def test_amount_to_precision(default_conf, mocker, amount, precision_mode, preci
     (2.34559, 4, 0.001, 2.346),
     (2.9999, 4, 0.001, 3.000),
     (2.9909, 4, 0.001, 2.991),
-    (2.9909, 4, 0.005, 2.99),
-    (2.9973, 4, 0.005, 2.995),
+    (2.9909, 4, 0.005, 2.995),
+    (2.9973, 4, 0.005, 3.0),
     (2.9977, 4, 0.005, 3.0),
+    (234.43, 4, 0.5, 234.5),
+    (234.53, 4, 0.5, 235.0),
+    (0.891534, 4, 0.0001, 0.8916),
+
 ])
 def test_price_to_precision(default_conf, mocker, price, precision_mode, precision, expected):
     '''
@@ -240,7 +244,7 @@ def test_price_to_precision(default_conf, mocker, price, precision_mode, precisi
                  PropertyMock(return_value=precision_mode))
 
     pair = 'ETH/BTC'
-    assert exchange.price_to_precision(pair, price) == expected
+    assert pytest.approx(exchange.price_to_precision(pair, price)) == expected
 
 
 def test_set_sandbox(default_conf, mocker):
