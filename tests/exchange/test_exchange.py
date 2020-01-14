@@ -208,55 +208,39 @@ def test_amount_to_precision(default_conf, mocker, amount, precision_mode, preci
     assert exchange.amount_to_precision(pair, amount) == expected
 
 
-@pytest.mark.parametrize("amount,precision,expected", [
-    (2.34559, 0.0001, 2.3455),
-    (2.34559, 0.00001, 2.34559),
-    (2.34559, 0.001, 2.345),
-    (2.9999, 0.001, 2.999),
-    (2.9909, 0.001, 2.990),
-    (2.9909, 0.005, 2.990),
-    (2.9999, 0.005, 2.995),
+@pytest.mark.parametrize("price,precision_mode,precision,expected", [
+    (2.34559, 2, 4, 2.3456),
+    (2.34559, 2, 5, 2.34559),
+    (2.34559, 2, 3, 2.346),
+    (2.9999, 2, 3, 3.000),
+    (2.9909, 2, 3, 2.991),
+    # Tests for Tick_size
+    (2.34559, 4, 0.0001, 2.3456),
+    (2.34559, 4, 0.00001, 2.34559),
+    (2.34559, 4, 0.001, 2.346),
+    (2.9999, 4, 0.001, 3.000),
+    (2.9909, 4, 0.001, 2.991),
+    (2.9909, 4, 0.005, 2.99),
+    (2.9973, 4, 0.005, 2.995),
+    (2.9977, 4, 0.005, 3.0),
 ])
-def test_amount_to_precision_tick_size(default_conf, mocker, amount, precision, expected):
+def test_price_to_precision(default_conf, mocker, price, precision_mode, precision, expected):
     '''
-    Test rounds down
+    Test price to precision
     '''
-
-    markets = PropertyMock(return_value={'ETH/BTC': {'precision': {'amount': precision}}})
+    markets = PropertyMock(return_value={'ETH/BTC': {'precision': {'price': precision}}})
 
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
+    mocker.patch('freqtrade.exchange.Exchange.markets', markets)
     # digits counting mode
     # DECIMAL_PLACES = 2
     # SIGNIFICANT_DIGITS = 3
     # TICK_SIZE = 4
-    mocker.patch('freqtrade.exchange.Exchange.precisionMode', PropertyMock(return_value=4))
-    mocker.patch('freqtrade.exchange.Exchange.markets', markets)
+    mocker.patch('freqtrade.exchange.Exchange.precisionMode',
+                 PropertyMock(return_value=precision_mode))
 
     pair = 'ETH/BTC'
-    assert exchange.amount_to_precision(pair, amount) == expected
-
-
-def test_sprice_to_precision(default_conf, mocker):
-    '''
-    Test rounds up to 4 decimal places
-    '''
-    markets = PropertyMock(return_value={'ETH/BTC': {'precision': {'price': 4}}})
-
-    exchange = get_patched_exchange(mocker, default_conf, id="binance")
-    mocker.patch('freqtrade.exchange.Exchange.markets', markets)
-    mocker.patch('freqtrade.exchange.Exchange.precisionMode', PropertyMock(return_value=2))
-
-    price = 2.34559
-    pair = 'ETH/BTC'
-    price = exchange.price_to_precision(pair, price)
-    assert price == 2.3456
-
-    markets = PropertyMock(return_value={'ETH/BTC': {'precision': {'price': 0.0001}}})
-    mocker.patch('freqtrade.exchange.Exchange.precisionMode', PropertyMock(return_value=4))
-    mocker.patch('freqtrade.exchange.Exchange.markets', markets)
-
-    price = exchange.price_to_precision(pair, price)
-    assert price == 2.3456
+    assert exchange.price_to_precision(pair, price) == expected
 
 
 def test_set_sandbox(default_conf, mocker):
