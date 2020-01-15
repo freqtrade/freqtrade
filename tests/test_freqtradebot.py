@@ -2750,6 +2750,7 @@ def test__safe_sell_amount(default_conf, fee, caplog, mocker):
     amount = 95.33
     amount_wallet = 95.29
     mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(return_value=amount_wallet))
+    wallet_update = mocker.patch('freqtrade.wallets.Wallets.update')
     trade = Trade(
         pair='LTC/ETH',
         amount=amount,
@@ -2762,11 +2763,15 @@ def test__safe_sell_amount(default_conf, fee, caplog, mocker):
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
 
+    wallet_update.reset_mock()
     assert freqtrade._safe_sell_amount(trade.pair, trade.amount) == amount_wallet
     assert log_has_re(r'.*Falling back to wallet-amount.', caplog)
+    assert wallet_update.call_count == 1
     caplog.clear()
+    wallet_update.reset_mock()
     assert freqtrade._safe_sell_amount(trade.pair, amount_wallet) == amount_wallet
     assert not log_has_re(r'.*Falling back to wallet-amount.', caplog)
+    assert wallet_update.call_count == 1
 
 
 def test__safe_sell_amount_error(default_conf, fee, caplog, mocker):
