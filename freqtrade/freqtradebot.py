@@ -902,15 +902,19 @@ class FreqtradeBot:
         :return: amount to sell
         :raise: DependencyException: if available balance is not within 2% of the available amount.
         """
+        # Update wallets to ensure amounts tied up in a stoploss is now free!
+        self.wallets.update()
+
         wallet_amount = self.wallets.get_free(pair.split('/')[0])
-        logger.info(f"Selling {pair} - Wallet: {wallet_amount} - Trade-amount: {amount}")
+        logger.debug(f"{pair} - Wallet: {wallet_amount} - Trade-amount: {amount}")
         if wallet_amount >= amount:
             return amount
         elif wallet_amount > amount * 0.98:
             logger.info(f"{pair} - Falling back to wallet-amount.")
             return wallet_amount
         else:
-            raise DependencyException("Not enough amount to sell.")
+            raise DependencyException(
+                f"Not enough amount to sell. Trade-amount: {amount}, Wallet: {wallet_amount}")
 
     def execute_sell(self, trade: Trade, limit: float, sell_reason: SellType) -> None:
         """
