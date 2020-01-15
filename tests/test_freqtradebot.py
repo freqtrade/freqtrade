@@ -2764,6 +2764,9 @@ def test__safe_sell_amount(default_conf, fee, caplog, mocker):
 
     assert freqtrade._safe_sell_amount(trade.pair, trade.amount) == amount_wallet
     assert log_has_re(r'.*Falling back to wallet-amount.', caplog)
+    caplog.clear()
+    assert freqtrade._safe_sell_amount(trade.pair, amount_wallet) == amount_wallet
+    assert not log_has_re(r'.*Falling back to wallet-amount.', caplog)
 
 
 def test__safe_sell_amount_error(default_conf, fee, caplog, mocker):
