@@ -904,7 +904,7 @@ class FreqtradeBot:
         """
         wallet_amount = self.wallets.get_free(pair.split('/')[0])
         logger.debug(f"{pair} - Wallet: {wallet_amount} - Trade-amount: {amount}")
-        if wallet_amount > amount:
+        if wallet_amount >= amount:
             return amount
         elif wallet_amount > amount * 0.98:
             logger.info(f"{pair} - Falling back to wallet-amount.")
