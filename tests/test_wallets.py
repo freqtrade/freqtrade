@@ -32,7 +32,7 @@ def test_sync_wallet_at_boot(mocker, default_conf):
     assert freqtrade.wallets._wallets['GAS'].used == 0.0
     assert freqtrade.wallets._wallets['GAS'].total == 0.260739
     assert freqtrade.wallets.get_free('BNT') == 1.0
-
+    assert freqtrade.wallets._last_wallet_refresh > 0
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value={
@@ -61,6 +61,11 @@ def test_sync_wallet_at_boot(mocker, default_conf):
     assert freqtrade.wallets.get_free('GAS') == 0.270739
     assert freqtrade.wallets.get_used('GAS') == 0.1
     assert freqtrade.wallets.get_total('GAS') == 0.260439
+    update_mock = mocker.patch('freqtrade.wallets.Wallets._update_live')
+    freqtrade.wallets.update(False)
+    assert update_mock.call_count == 0
+    freqtrade.wallets.update()
+    assert update_mock.call_count == 1
 
 
 def test_sync_wallet_missing_data(mocker, default_conf):
