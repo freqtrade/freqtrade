@@ -903,7 +903,7 @@ class FreqtradeBot:
         :raise: DependencyException: if available balance is not within 2% of the available amount.
         """
         wallet_amount = self.wallets.get_free(pair.split('/')[0])
-        logger.debug(f"{pair} - Wallet: {wallet_amount} - Trade-amount: {amount}")
+        logger.info(f"Selling {pair} - Wallet: {wallet_amount} - Trade-amount: {amount}")
         if wallet_amount >= amount:
             return amount
         elif wallet_amount > amount * 0.98:
