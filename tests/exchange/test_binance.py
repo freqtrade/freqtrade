@@ -22,8 +22,8 @@ def test_stoploss_limit_order(default_conf, mocker):
     })
 
     default_conf['dry_run'] = False
-    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
-    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
 
@@ -71,8 +71,8 @@ def test_stoploss_limit_order_dry_run(default_conf, mocker):
     api_mock = MagicMock()
     order_type = 'stop_loss_limit'
     default_conf['dry_run'] = True
-    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
-    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
 

@@ -63,6 +63,7 @@ def patch_exchange(mocker, api_mock=None, id='bittrex', mock_markets=True) -> No
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.id', PropertyMock(return_value=id))
     mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value=id.title()))
+    mocker.patch('freqtrade.exchange.Exchange.precisionMode', PropertyMock(return_value=2))
     if mock_markets:
         mocker.patch('freqtrade.exchange.Exchange.markets',
                      PropertyMock(return_value=get_markets()))

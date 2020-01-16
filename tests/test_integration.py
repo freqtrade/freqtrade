@@ -58,8 +58,8 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         get_fee=fee,
-        symbol_amount_prec=lambda s, x, y: y,
-        symbol_price_prec=lambda s, x, y: y,
+        amount_to_precision=lambda s, x, y: y,
+        price_to_precision=lambda s, x, y: y,
         get_order=stoploss_order_mock,
         cancel_order=cancel_order_mock,
     )
@@ -137,8 +137,8 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         get_fee=fee,
-        symbol_amount_prec=lambda s, x, y: y,
-        symbol_price_prec=lambda s, x, y: y,
+        amount_to_precision=lambda s, x, y: y,
+        price_to_precision=lambda s, x, y: y,
     )
 
     mocker.patch.multiple(

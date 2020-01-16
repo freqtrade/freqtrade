@@ -7,14 +7,15 @@ import inspect
 import logging
 from copy import deepcopy
 from datetime import datetime, timezone
-from math import ceil, floor
+from math import ceil
 from random import randint
 from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
 import ccxt
 import ccxt.async_support as ccxt_async
-from ccxt.base.decimal_to_precision import ROUND_DOWN, ROUND_UP
+from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE,
+                                            TRUNCATE, decimal_to_precision)
 from pandas import DataFrame
 
 from freqtrade.data.converter import parse_ticker_dataframe
@@ -188,6 +189,11 @@ class Exchange:
             logger.warning("Markets were not loaded. Loading them now..")
             self._load_markets()
         return self._api.markets
+
+    @property
+    def precisionMode(self) -> str:
+        """exchange ccxt precisionMode"""
+        return self._api.precisionMode
 
     def get_markets(self, base_currencies: List[str] = None, quote_currencies: List[str] = None,
                     pairs_only: bool = False, active_only: bool = False) -> Dict:
@@ -386,32 +392,49 @@ class Exchange:
         """
         return endpoint in self._api.has and self._api.has[endpoint]
 
-    def symbol_amount_prec(self, pair, amount: float):
+    def amount_to_precision(self, pair, amount: float) -> float:
         '''
         Returns the amount to buy or sell to a precision the Exchange accepts
-        Rounded down
+        Reimplementation of ccxt internal methods - ensuring we can test the result is correct
+        based on our definitions.
         '''
         if self.markets[pair]['precision']['amount']:
-            symbol_prec = self.markets[pair]['precision']['amount']
-            big_amount = amount * pow(10, symbol_prec)
-            amount = floor(big_amount) / pow(10, symbol_prec)
+            amount = float(decimal_to_precision(amount, rounding_mode=TRUNCATE,
+                                                precision=self.markets[pair]['precision']['amount'],
+                                                counting_mode=self.precisionMode,
+                                                ))
+
         return amount
 
-    def symbol_price_prec(self, pair, price: float):
+    def price_to_precision(self, pair, price: float) -> float:
         '''
-        Returns the price buying or selling with to the precision the Exchange accepts
+        Returns the price rounded up to the precision the Exchange accepts.
+        Partial Reimplementation of ccxt internal method decimal_to_precision(),
+        which does not support rounding up
+        TODO: If ccxt supports ROUND_UP for decimal_to_precision(), we could remove this and
+        align with amount_to_precision().
         Rounds up
         '''
         if self.markets[pair]['precision']['price']:
-            symbol_prec = self.markets[pair]['precision']['price']
-            big_price = price * pow(10, symbol_prec)
-            price = ceil(big_price) / pow(10, symbol_prec)
+            # price = float(decimal_to_precision(price, rounding_mode=ROUND,
+            #                                    precision=self.markets[pair]['precision']['price'],
+            #                                    counting_mode=self.precisionMode,
+            #                                    ))
+            if self.precisionMode == TICK_SIZE:
+                precision = self.markets[pair]['precision']['price']
+                missing = price % precision
+                if missing != 0:
+                    price = price - missing + precision
+            else:
+                symbol_prec = self.markets[pair]['precision']['price']
+                big_price = price * pow(10, symbol_prec)
+                price = ceil(big_price) / pow(10, symbol_prec)
         return price
 
     def dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                       rate: float, params: Dict = {}) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{randint(0, 10**6)}'
-        _amount = self.symbol_amount_prec(pair, amount)
+        _amount = self.amount_to_precision(pair, amount)
         dry_order = {
             "id": order_id,
             'pair': pair,
@@ -446,13 +469,13 @@ class Exchange:
                      rate: float, params: Dict = {}) -> Dict:
         try:
             # Set the precision for amount and price(rate) as accepted by the exchange
-            amount = self.symbol_amount_prec(pair, amount)
+            amount = self.amount_to_precision(pair, amount)
             needs_price = (ordertype != 'market'
                            or self._api.options.get("createMarketBuyOrderRequiresPrice", False))
-            rate = self.symbol_price_prec(pair, rate) if needs_price else None
+            rate_for_order = self.price_to_precision(pair, rate) if needs_price else None
 
             return self._api.create_order(pair, ordertype, side,
-                                          amount, rate, params)
+                                          amount, rate_for_order, params)
 
         except ccxt.InsufficientFunds as e:
             raise DependencyException(

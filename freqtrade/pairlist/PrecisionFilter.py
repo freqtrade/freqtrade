@@ -35,8 +35,8 @@ class PrecisionFilter(IPairList):
         """
         stop_price = ticker['ask'] * stoploss
         # Adjust stop-prices to precision
-        sp = self._exchange.symbol_price_prec(ticker["symbol"], stop_price)
-        stop_gap_price = self._exchange.symbol_price_prec(ticker["symbol"], stop_price * 0.99)
+        sp = self._exchange.price_to_precision(ticker["symbol"], stop_price)
+        stop_gap_price = self._exchange.price_to_precision(ticker["symbol"], stop_price * 0.99)
         logger.debug(f"{ticker['symbol']} - {sp} : {stop_gap_price}")
         if sp <= stop_gap_price:
             logger.info(f"Removed {ticker['symbol']} from whitelist, "
