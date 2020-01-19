@@ -519,10 +519,10 @@ class Exchange:
 
         return self.create_order(pair, ordertype, 'sell', amount, rate, params)
 
-    def stoploss_limit(self, pair: str, amount: float, stop_price: float,
-                       order_types: Dict) -> Dict:
+    def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
         """
-        creates a stoploss limit order.
+        creates a stoploss order.
+        The precise ordertype is determined by the order_types dict or exchange default.
         Since ccxt does not unify stoploss-limit orders yet, this needs to be implemented in each
         exchange's subclass.
         The exception below should never raise, since we disallow

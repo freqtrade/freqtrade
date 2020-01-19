@@ -637,9 +637,9 @@ class FreqtradeBot:
         :return: True if the order succeeded, and False in case of problems.
         """
         try:
-            stoploss_order = self.exchange.stoploss_limit(pair=trade.pair, amount=trade.amount,
-                                                          stop_price=stop_price,
-                                                          order_types=self.strategy.order_types)
+            stoploss_order = self.exchange.stoploss(pair=trade.pair, amount=trade.amount,
+                                                    stop_price=stop_price,
+                                                    order_types=self.strategy.order_types)
             trade.stoploss_order_id = str(stoploss_order['id'])
             return True
         except InvalidOrderException as e:
