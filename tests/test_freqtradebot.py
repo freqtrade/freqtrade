@@ -1315,7 +1315,7 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
     cancel_order_mock.assert_called_once_with(100, 'ETH/BTC')
     stoploss_order_mock.assert_called_once_with(amount=85.25149190110828,
                                                 pair='ETH/BTC',
-                                                rate=0.00002344 * 0.95 * 0.99,
+                                                order_types=freqtrade.strategy.order_types,
                                                 stop_price=0.00002344 * 0.95)
 
 
@@ -1492,7 +1492,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
     cancel_order_mock.assert_called_once_with(100, 'NEO/BTC')
     stoploss_order_mock.assert_called_once_with(amount=2131074.168797954,
                                                 pair='NEO/BTC',
-                                                rate=0.00002344 * 0.99 * 0.99,
+                                                order_types=freqtrade.strategy.order_types,
                                                 stop_price=0.00002344 * 0.99)
 
 
