@@ -5,7 +5,7 @@ This page combines common gotchas and informations which are exchange-specific a
 ## Binance
 
 !!! Tip "Stoploss on Exchange"
-    Binance is currently the only exchange supporting `stoploss_on_exchange`. It provides great advantages, so we recommend to benefit from it.
+    Binance supports `stoploss_on_exchange` and uses stop-loss-limit orders. It provides great advantages, so we recommend to benefit from it.
 
 ### Blacklists
 
@@ -21,6 +21,9 @@ Binance has been split into 3, and users must use the correct ccxt exchange ID f
 * [binance.je](https://www.binance.je/) - Binance Jersey, trading fiat currencies. Use exchange id: `binanceje`.
 
 ## Kraken
+
+!!! Tip "Stoploss on Exchange"
+    Kraken supports `stoploss_on_exchange` and uses stop-loss-market orders. It provides great advantages, so we recommend to benefit from it, however since the resulting order is a stoploss-market order, sell-rates are not guaranteed, which makes this feature less secure than on other exchanges. This limitation is based on kraken's policy [source](https://blog.kraken.com/post/1494/kraken-enables-advanced-orders-and-adds-10-currency-pairs/) and [source2](https://blog.kraken.com/post/1494/kraken-enables-advanced-orders-and-adds-10-currency-pairs/) - which has stoploss-limit orders disabled.
 
 ### Historic Kraken data
 

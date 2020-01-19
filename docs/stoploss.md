@@ -27,7 +27,7 @@ So this parameter will tell the bot how often it should update the stoploss orde
 This same logic will reapply a stoploss order on the exchange should you cancel it accidentally.
 
 !!! Note
-    Stoploss on exchange is only supported for Binance as of now.
+    Stoploss on exchange is only supported for Binance (stop-loss-limit) and Kraken (stop-loss-market) as of now.
 
 ## Static Stop Loss
 
