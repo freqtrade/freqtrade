@@ -32,6 +32,13 @@ class Binance(Exchange):
 
         return super().get_order_book(pair, limit)
 
+    def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
+        """
+        Verify stop_loss against stoploss-order value (limit or price)
+        Returns True if adjustment is necessary.
+        """
+        return order['type'] == 'stop_loss_limit' and stop_loss > float(order['info']['stopPrice'])
+
     def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
         """
         creates a stoploss limit order.

@@ -1763,6 +1763,9 @@ def test_stoploss_order_unsupported_exchange(default_conf, mocker):
     with pytest.raises(OperationalException, match=r"stoploss is not implemented .*"):
         exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={})
 
+    with pytest.raises(OperationalException, match=r"stoploss is not implemented .*"):
+        exchange.stoploss_adjust(1, {})
+
 
 def test_merge_ft_has_dict(default_conf, mocker):
     mocker.patch.multiple('freqtrade.exchange.Exchange',

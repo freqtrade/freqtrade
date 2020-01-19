@@ -236,3 +236,16 @@ def test_stoploss_order_dry_run_kraken(default_conf, mocker):
     assert order['type'] == order_type
     assert order['price'] == 220
     assert order['amount'] == 1
+
+
+def test_stoploss_adjust_kraken(mocker, default_conf):
+    exchange = get_patched_exchange(mocker, default_conf, id='kraken')
+    order = {
+        'type': 'stop-loss',
+        'price': 1500,
+    }
+    assert exchange.stoploss_adjust(1501, order)
+    assert not exchange.stoploss_adjust(1499, order)
+    # Test with invalid order case ...
+    order['type'] = 'stop_loss_limit'
+    assert not exchange.stoploss_adjust(1501, order)

@@ -51,6 +51,13 @@ class Kraken(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
+        """
+        Verify stop_loss against stoploss-order value (limit or price)
+        Returns True if adjustment is necessary.
+        """
+        return order['type'] == 'stop-loss' and stop_loss > float(order['price'])
+
     def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
         """
         Creates a stoploss market order.

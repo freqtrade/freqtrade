@@ -92,3 +92,17 @@ def test_stoploss_order_dry_run_binance(default_conf, mocker):
     assert order['type'] == order_type
     assert order['price'] == 220
     assert order['amount'] == 1
+
+
+def test_stoploss_adjust_binance(mocker, default_conf):
+    exchange = get_patched_exchange(mocker, default_conf, id='binance')
+    order = {
+        'type': 'stop_loss_limit',
+        'price': 1500,
+        'info': {'stopPrice': 1500},
+    }
+    assert exchange.stoploss_adjust(1501, order)
+    assert not exchange.stoploss_adjust(1499, order)
+    # Test with invalid order case
+    order['type'] = 'stop_loss'
+    assert not exchange.stoploss_adjust(1501, order)

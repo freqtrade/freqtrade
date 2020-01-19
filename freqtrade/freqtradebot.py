@@ -718,8 +718,7 @@ class FreqtradeBot:
         :param order: Current on exchange stoploss order
         :return: None
         """
-
-        if trade.stop_loss > float(order['info']['stopPrice']):
+        if self.exchange.stoploss_adjust(trade.stop_loss, order):
             # we check if the update is neccesary
             update_beat = self.strategy.order_types.get('stoploss_on_exchange_interval', 60)
             if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() >= update_beat:
