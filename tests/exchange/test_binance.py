@@ -9,7 +9,7 @@ from freqtrade.exceptions import (DependencyException, InvalidOrderException,
 from tests.conftest import get_patched_exchange
 
 
-def test_stoploss_limit_order(default_conf, mocker):
+def test_stoploss_order_binance(default_conf, mocker):
     api_mock = MagicMock()
     order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
     order_type = 'stop_loss_limit'
@@ -38,11 +38,12 @@ def test_stoploss_limit_order(default_conf, mocker):
     assert 'id' in order
     assert 'info' in order
     assert order['id'] == order_id
-    assert api_mock.create_order.call_args[0][0] == 'ETH/BTC'
-    assert api_mock.create_order.call_args[0][1] == order_type
-    assert api_mock.create_order.call_args[0][2] == 'sell'
-    assert api_mock.create_order.call_args[0][3] == 1
-    assert api_mock.create_order.call_args[0][5] == {'stopPrice': 220}
+    assert api_mock.create_order.call_args_list[0][1]['symbol'] == 'ETH/BTC'
+    assert api_mock.create_order.call_args_list[0][1]['type'] == order_type
+    assert api_mock.create_order.call_args_list[0][1]['side'] == 'sell'
+    assert api_mock.create_order.call_args_list[0][1]['amount'] == 1
+    assert api_mock.create_order.call_args_list[0][1]['price'] == 220
+    assert api_mock.create_order.call_args_list[0][1]['params'] == {'stopPrice': 220}
 
     # test exception handling
     with pytest.raises(DependencyException):
@@ -67,7 +68,7 @@ def test_stoploss_limit_order(default_conf, mocker):
         exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={})
 
 
-def test_stoploss_limit_order_dry_run(default_conf, mocker):
+def test_stoploss_order_dry_run_binance(default_conf, mocker):
     api_mock = MagicMock()
     order_type = 'stop_loss_limit'
     default_conf['dry_run'] = True
