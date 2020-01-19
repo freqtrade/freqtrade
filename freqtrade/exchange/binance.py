@@ -32,13 +32,17 @@ class Binance(Exchange):
 
         return super().get_order_book(pair, limit)
 
-    def stoploss_limit(self, pair: str, amount: float, stop_price: float, rate: float) -> Dict:
+    def stoploss_limit(self, pair: str, amount: float, stop_price: float,
+                       order_types: Dict) -> Dict:
         """
         creates a stoploss limit order.
         this stoploss-limit is binance-specific.
         It may work with a limited number of other exchanges, but this has not been tested yet.
-
         """
+        # Limit price threshold: As limit price should always be below stop-price
+        LIMIT_PRICE_PCT = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
+        rate = stop_price * LIMIT_PRICE_PCT
+
         ordertype = "stop_loss_limit"
 
         stop_price = self.price_to_precision(pair, stop_price)

@@ -636,13 +636,10 @@ class FreqtradeBot:
         Force-sells the pair (using EmergencySell reason) in case of Problems creating the order.
         :return: True if the order succeeded, and False in case of problems.
         """
-        # Limit price threshold: As limit price should always be below stop-price
-        LIMIT_PRICE_PCT = self.strategy.order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
-
         try:
             stoploss_order = self.exchange.stoploss_limit(pair=trade.pair, amount=trade.amount,
                                                           stop_price=stop_price,
-                                                          rate=rate * LIMIT_PRICE_PCT)
+                                                          order_types=self.strategy.order_types)
             trade.stoploss_order_id = str(stoploss_order['id'])
             return True
         except InvalidOrderException as e:
