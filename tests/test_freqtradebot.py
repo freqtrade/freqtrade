@@ -1241,7 +1241,8 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         sell=MagicMock(return_value={'id': limit_sell_order['id']}),
         get_fee=fee,
-        stoploss=stoploss
+        stoploss=stoploss,
+        stoploss_adjust=MagicMock(return_value=True),
     )
 
     # enabling TSL
@@ -1335,7 +1336,8 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         sell=MagicMock(return_value={'id': limit_sell_order['id']}),
         get_fee=fee,
-        stoploss=stoploss
+        stoploss=stoploss,
+        stoploss_adjust=MagicMock(return_value=True),
     )
 
     # enabling TSL
@@ -1396,6 +1398,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
     patch_edge(mocker)
     edge_conf['max_open_trades'] = float('inf')
     edge_conf['dry_run_wallet'] = 999.9
+    edge_conf['exchange']['name'] = 'binance'
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=MagicMock(return_value={
@@ -1406,7 +1409,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         sell=MagicMock(return_value={'id': limit_sell_order['id']}),
         get_fee=fee,
-        stoploss=stoploss
+        stoploss=stoploss,
     )
 
     # enabling TSL
@@ -1459,7 +1462,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
     cancel_order_mock = MagicMock()
     stoploss_order_mock = MagicMock()
     mocker.patch('freqtrade.exchange.Exchange.cancel_order', cancel_order_mock)
-    mocker.patch('freqtrade.exchange.Exchange.stoploss', stoploss_order_mock)
+    mocker.patch('freqtrade.exchange.Binance.stoploss', stoploss_order_mock)
 
     # price goes down 5%
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', MagicMock(return_value={
