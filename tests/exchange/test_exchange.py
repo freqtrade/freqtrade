@@ -1758,9 +1758,9 @@ def test_get_fee(default_conf, mocker, exchange_name):
                            'get_fee', 'calculate_fee', symbol="ETH/BTC")
 
 
-def test_stoploss_limit_order_unsupported_exchange(default_conf, mocker):
+def test_stoploss_order_unsupported_exchange(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, 'bittrex')
-    with pytest.raises(OperationalException, match=r"stoploss_limit is not implemented .*"):
+    with pytest.raises(OperationalException, match=r"stoploss is not implemented .*"):
         exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={})
 
 
