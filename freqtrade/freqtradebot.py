@@ -63,8 +63,7 @@ class FreqtradeBot:
 
         self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
 
-        persistence.init(self.config.get('db_url', None),
-                         clean_open_orders=self.config.get('dry_run', False))
+        persistence.init(self.config.get('db_url', None), clean_open_orders=self.config['dry_run'])
 
         self.wallets = Wallets(self.config, self.exchange)
 
@@ -930,7 +929,7 @@ class FreqtradeBot:
 
         # if stoploss is on exchange and we are on dry_run mode,
         # we consider the sell price stop price
-        if self.config.get('dry_run', False) and sell_type == 'stoploss' \
+        if self.config['dry_run'] and sell_type == 'stoploss' \
            and self.strategy.order_types['stoploss_on_exchange']:
             limit = trade.stop_loss
 

@@ -323,7 +323,7 @@ def test_load_dry_run(default_conf, mocker, config_value, expected, arglist) -> 
     configuration = Configuration(Arguments(arglist).get_parsed_arg())
     validated_conf = configuration.load_config()
 
-    assert validated_conf.get('dry_run') is expected
+    assert validated_conf['dry_run'] is expected
 
 
 def test_load_custom_strategy(default_conf, mocker) -> None:
