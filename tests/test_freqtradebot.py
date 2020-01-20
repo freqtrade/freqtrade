@@ -1318,6 +1318,14 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
                                                 rate=0.00002344 * 0.95 * 0.99,
                                                 stop_price=0.00002344 * 0.95)
 
+    # price fell below stoploss, so dry-run sells trade.
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', MagicMock(return_value={
+        'bid': 0.00002144,
+        'ask': 0.00002146,
+        'last': 0.00002144
+    }))
+    assert freqtrade.handle_trade(trade) is True
+
 
 def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, caplog,
                                                     limit_buy_order, limit_sell_order) -> None:
