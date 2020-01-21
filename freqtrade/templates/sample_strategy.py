@@ -80,6 +80,22 @@ class SampleStrategy(IStrategy):
         'sell': 'gtc'
     }
 
+    plot_config = {
+        'main_plot': {
+            'tema': {},
+            'sar': {'color': 'white'},
+        },
+        'subplots': {
+            "MACD": {
+                'macd': {'color': 'blue'},
+                'macdsignal': {'color': 'orange'},
+            },
+            "RSI": {
+                'rsi': {'color': 'red'},
+            }
+        }
+    }
+
     def informative_pairs(self):
         """
         Define additional, informative pair/interval combinations to be cached from the exchange.

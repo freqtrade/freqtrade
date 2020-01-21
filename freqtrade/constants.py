@@ -35,12 +35,6 @@ USER_DATA_FILES = {
     'strategy_analysis_example.ipynb': 'notebooks',
 }
 
-TIMEFRAMES = [
-    '1m', '3m', '5m', '15m', '30m',
-    '1h', '2h', '4h', '6h', '8h', '12h',
-    '1d', '3d', '1w',
-]
-
 SUPPORTED_FIAT = [
     "AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK", "DKK",
     "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY",
@@ -68,13 +62,23 @@ CONF_SCHEMA = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': ['integer', 'number'], 'minimum': -1},
-        'ticker_interval': {'type': 'string', 'enum': TIMEFRAMES},
-        'stake_currency': {'type': 'string', 'enum': ['BTC', 'XBT', 'ETH', 'USDT', 'EUR', 'USD']},
+        'ticker_interval': {'type': 'string'},
+        'stake_currency': {'type': 'string'},
         'stake_amount': {
             'type': ['number', 'string'],
             'minimum': 0.0001,
             'pattern': UNLIMITED_STAKE_AMOUNT
         },
+        'tradable_balance_ratio': {
+            'type': 'number',
+            'minimum': 0.1,
+            'maximum': 1,
+            'default': 0.99
+        },
+        'amend_last_stake_amount': {'type': 'boolean', 'default': False},
+        'last_stake_amount_min_ratio': {
+            'type': 'number', 'minimum': 0.0, 'maximum': 1.0, 'default': 0.5
+            },
         'fiat_display_currency': {'type': 'string', 'enum': SUPPORTED_FIAT},
         'dry_run': {'type': 'boolean'},
         'dry_run_wallet': {'type': 'number', 'default': DRY_RUN_WALLET},
@@ -279,7 +283,7 @@ CONF_SCHEMA = {
                 'max_trade_duration_minute': {'type': 'integer'},
                 'remove_pumps': {'type': 'boolean'}
             },
-            'required': ['process_throttle_secs', 'allowed_risk', 'capital_available_percentage']
+            'required': ['process_throttle_secs', 'allowed_risk']
         }
     },
 }
@@ -289,6 +293,8 @@ SCHEMA_TRADE_REQUIRED = [
     'max_open_trades',
     'stake_currency',
     'stake_amount',
+    'tradable_balance_ratio',
+    'last_stake_amount_min_ratio',
     'dry_run',
     'dry_run_wallet',
     'bid_strategy',

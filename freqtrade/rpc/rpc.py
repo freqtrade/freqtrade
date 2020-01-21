@@ -88,7 +88,7 @@ class RPC:
         """
         config = self._freqtrade.config
         val = {
-            'dry_run': config.get('dry_run', False),
+            'dry_run': config['dry_run'],
             'stake_currency': config['stake_currency'],
             'stake_amount': config['stake_amount'],
             'minimal_roi': config['minimal_roi'].copy(),
@@ -306,6 +306,8 @@ class RPC:
         except (TemporaryError, DependencyException):
             raise RPCException('Error getting current tickers.')
 
+        self._freqtrade.wallets.update(require_update=False)
+
         for coin, balance in self._freqtrade.wallets.get_all_balances().items():
             if not balance.total:
                 continue
@@ -335,7 +337,7 @@ class RPC:
                 'stake': stake_currency,
             })
         if total == 0.0:
-            if self._freqtrade.config.get('dry_run', False):
+            if self._freqtrade.config['dry_run']:
                 raise RPCException('Running in Dry Run, balances are not available.')
             else:
                 raise RPCException('All balances are zero.')
@@ -349,7 +351,7 @@ class RPC:
             'symbol': symbol,
             'value': value,
             'stake': stake_currency,
-            'note': 'Simulated balances' if self._freqtrade.config.get('dry_run', False) else ''
+            'note': 'Simulated balances' if self._freqtrade.config['dry_run'] else ''
         }
 
     def _rpc_start(self) -> Dict[str, str]:

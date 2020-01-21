@@ -513,6 +513,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
         ),
         get_fee=fee,
     )
+    mocker.patch('freqtrade.wallets.Wallets.get_free', return_value=1000)
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     patch_get_signal(freqtradebot, (True, False))

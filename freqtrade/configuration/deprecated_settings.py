@@ -80,3 +80,13 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
             f"Using precision_filter setting is deprecated and has been replaced by"
             "PrecisionFilter. Please refer to the docs on configuration details")
         config['pairlists'].append({'method': 'PrecisionFilter'})
+
+    if (config.get('edge', {}).get('enabled', False)
+       and 'capital_available_percentage' in config.get('edge', {})):
+        logger.warning(
+            "DEPRECATED: "
+            "Using 'edge.capital_available_percentage' has been deprecated in favor of "
+            "'tradable_balance_ratio'. Please migrate your configuration to "
+            "'tradable_balance_ratio' and remove 'capital_available_percentage' "
+            "from the edge configuration."
+        )

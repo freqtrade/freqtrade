@@ -78,8 +78,10 @@ Please also read about the [strategy startup period](strategy-customization.md#s
 #### Supplying custom fee value
 
 Sometimes your account has certain fee rebates (fee reductions starting with a certain account size or monthly volume), which are not visible to ccxt.
-To account for this in backtesting, you can use `--fee 0.001` to supply this value to backtesting.
+To account for this in backtesting, you can use the `--fee` command line option to supply this value to backtesting.
 This fee must be a ratio, and will be applied twice (once for trade entry, and once for trade exit).
+
+For example, if the buying and selling commission fee is 0.1% (i.e., 0.001 written as ratio), then you would run backtesting as the following:
 
 ```bash
 freqtrade backtesting --fee 0.001

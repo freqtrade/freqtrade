@@ -58,21 +58,27 @@ def init_plotscript(config):
             }
 
 
-def add_indicators(fig, row, indicators: List[str], data: pd.DataFrame) -> make_subplots:
+def add_indicators(fig, row, indicators: Dict[str, Dict], data: pd.DataFrame) -> make_subplots:
     """
-    Generator all the indicator selected by the user for a specific row
+    Generate all the indicators selected by the user for a specific row, based on the configuration
     :param fig: Plot figure to append to
     :param row: row number for this plot
-    :param indicators: List of indicators present in the dataframe
+    :param indicators: Dict of Indicators with configuration options.
+                       Dict key must correspond to dataframe column.
     :param data: candlestick DataFrame
     """
-    for indicator in indicators:
+    for indicator, conf in indicators.items():
+        logger.debug(f"indicator {indicator} with config {conf}")
         if indicator in data:
+            kwargs = {'x': data['date'],
+                      'y': data[indicator].values,
+                      'mode': 'lines',
+                      'name': indicator
+                      }
+            if 'color' in conf:
+                kwargs.update({'line': {'color': conf['color']}})
             scatter = go.Scatter(
-                x=data['date'],
-                y=data[indicator].values,
-                mode='lines',
-                name=indicator
+                **kwargs
             )
             fig.add_trace(scatter, row, 1)
         else:
@@ -111,11 +117,31 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
     """
     # Trades can be empty
     if trades is not None and len(trades) > 0:
+        # Create description for sell summarizing the trade
+        trades['desc'] = trades.apply(lambda row: f"{round(row['profitperc'] * 100, 1)}%, "
+                                                  f"{row['sell_reason']}, {row['duration']} min",
+                                                  axis=1)
         trade_buys = go.Scatter(
             x=trades["open_time"],
             y=trades["open_rate"],
             mode='markers',
-            name='trade_buy',
+            name='Trade buy',
+            text=trades["desc"],
+            marker=dict(
+                symbol='circle-open',
+                size=11,
+                line=dict(width=2),
+                color='cyan'
+
+            )
+        )
+
+        trade_sells = go.Scatter(
+            x=trades.loc[trades['profitperc'] > 0, "close_time"],
+            y=trades.loc[trades['profitperc'] > 0, "close_rate"],
+            text=trades.loc[trades['profitperc'] > 0, "desc"],
+            mode='markers',
+            name='Sell - Profit',
             marker=dict(
                 symbol='square-open',
                 size=11,
@@ -123,16 +149,12 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
                 color='green'
             )
         )
-        # Create description for sell summarizing the trade
-        desc = trades.apply(lambda row: f"{round(row['profitperc'] * 100, 1)}%, "
-                                        f"{row['sell_reason']}, {row['duration']} min",
-                            axis=1)
-        trade_sells = go.Scatter(
-            x=trades["close_time"],
-            y=trades["close_rate"],
-            text=desc,
+        trade_sells_loss = go.Scatter(
+            x=trades.loc[trades['profitperc'] <= 0, "close_time"],
+            y=trades.loc[trades['profitperc'] <= 0, "close_rate"],
+            text=trades.loc[trades['profitperc'] <= 0, "desc"],
             mode='markers',
-            name='trade_sell',
+            name='Sell - Loss',
             marker=dict(
                 symbol='square-open',
                 size=11,
@@ -142,14 +164,53 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
         )
         fig.add_trace(trade_buys, 1, 1)
         fig.add_trace(trade_sells, 1, 1)
+        fig.add_trace(trade_sells_loss, 1, 1)
     else:
         logger.warning("No trades found.")
     return fig
 
 
-def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFrame = None,
+def create_plotconfig(indicators1: List[str], indicators2: List[str],
+                      plot_config: Dict[str, Dict]) -> Dict[str, Dict]:
+    """
+    Combines indicators 1 and indicators 2 into plot_config if necessary
+    :param indicators1: List containing Main plot indicators
+    :param indicators2: List containing Sub plot indicators
+    :param plot_config: Dict of Dicts containing advanced plot configuration
+    :return: plot_config - eventually with indicators 1 and 2
+    """
+
+    if plot_config:
+        if indicators1:
+            plot_config['main_plot'] = {ind: {} for ind in indicators1}
+        if indicators2:
+            plot_config['subplots'] = {'Other': {ind: {} for ind in indicators2}}
+
+    if not plot_config:
+        # If no indicators and no plot-config given, use defaults.
+        if not indicators1:
+            indicators1 = ['sma', 'ema3', 'ema5']
+        if not indicators2:
+            indicators2 = ['macd', 'macdsignal']
+
+        # Create subplot configuration if plot_config is not available.
+        plot_config = {
+            'main_plot': {ind: {} for ind in indicators1},
+            'subplots': {'Other': {ind: {} for ind in indicators2}},
+        }
+    if 'main_plot' not in plot_config:
+        plot_config['main_plot'] = {}
+
+    if 'subplots' not in plot_config:
+        plot_config['subplots'] = {}
+    return plot_config
+
+
+def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFrame = None, *,
                                indicators1: List[str] = [],
-                               indicators2: List[str] = [],) -> go.Figure:
+                               indicators2: List[str] = [],
+                               plot_config: Dict[str, Dict] = {},
+                               ) -> go.Figure:
     """
     Generate the graph from the data generated by Backtesting or from DB
     Volume will always be ploted in row2, so Row 1 and 3 are to our disposal for custom indicators
@@ -158,21 +219,26 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     :param trades: All trades created
     :param indicators1: List containing Main plot indicators
     :param indicators2: List containing Sub plot indicators
-    :return: None
+    :param plot_config: Dict of Dicts containing advanced plot configuration
+    :return: Plotly figure
     """
+    plot_config = create_plotconfig(indicators1, indicators2, plot_config)
 
+    rows = 2 + len(plot_config['subplots'])
+    row_widths = [1 for _ in plot_config['subplots']]
     # Define the graph
     fig = make_subplots(
-        rows=3,
+        rows=rows,
         cols=1,
         shared_xaxes=True,
-        row_width=[1, 1, 4],
+        row_width=row_widths + [1, 4],
         vertical_spacing=0.0001,
     )
     fig['layout'].update(title=pair)
     fig['layout']['yaxis1'].update(title='Price')
     fig['layout']['yaxis2'].update(title='Volume')
-    fig['layout']['yaxis3'].update(title='Other')
+    for i, name in enumerate(plot_config['subplots']):
+        fig['layout'][f'yaxis{3 + i}'].update(title=name)
     fig['layout']['xaxis']['rangeslider'].update(visible=False)
 
     # Common information
@@ -242,12 +308,13 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
         )
         fig.add_trace(bb_lower, 1, 1)
         fig.add_trace(bb_upper, 1, 1)
-        if 'bb_upperband' in indicators1 and 'bb_lowerband' in indicators1:
-            indicators1.remove('bb_upperband')
-            indicators1.remove('bb_lowerband')
+        if ('bb_upperband' in plot_config['main_plot']
+           and 'bb_lowerband' in plot_config['main_plot']):
+            del plot_config['main_plot']['bb_upperband']
+            del plot_config['main_plot']['bb_lowerband']
 
     # Add indicators to main plot
-    fig = add_indicators(fig=fig, row=1, indicators=indicators1, data=data)
+    fig = add_indicators(fig=fig, row=1, indicators=plot_config['main_plot'], data=data)
 
     fig = plot_trades(fig, trades)
 
@@ -258,11 +325,14 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
         name='Volume',
         marker_color='DarkSlateGrey',
         marker_line_color='DarkSlateGrey'
-        )
+    )
     fig.add_trace(volume, 2, 1)
 
     # Add indicators to separate row
-    fig = add_indicators(fig=fig, row=3, indicators=indicators2, data=data)
+    for i, name in enumerate(plot_config['subplots']):
+        fig = add_indicators(fig=fig, row=3 + i,
+                             indicators=plot_config['subplots'][name],
+                             data=data)
 
     return fig
 
@@ -363,8 +433,9 @@ def load_and_plot_trades(config: Dict[str, Any]):
             pair=pair,
             data=dataframe,
             trades=trades_pair,
-            indicators1=config["indicators1"],
-            indicators2=config["indicators2"],
+            indicators1=config.get("indicators1", []),
+            indicators2=config.get("indicators2", []),
+            plot_config=strategy.plot_config if hasattr(strategy, 'plot_config') else {}
         )
 
         store_plot_file(fig, filename=generate_plot_filename(pair, config['ticker_interval']),

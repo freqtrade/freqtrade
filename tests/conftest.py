@@ -60,8 +60,10 @@ def patch_exchange(mocker, api_mock=None, id='bittrex', mock_markets=True) -> No
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_ordertypes', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.id', PropertyMock(return_value=id))
     mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value=id.title()))
+    mocker.patch('freqtrade.exchange.Exchange.precisionMode', PropertyMock(return_value=2))
     if mock_markets:
         mocker.patch('freqtrade.exchange.Exchange.markets',
                      PropertyMock(return_value=get_markets()))
@@ -1317,12 +1319,12 @@ def buy_order_fee():
 def edge_conf(default_conf):
     conf = deepcopy(default_conf)
     conf['max_open_trades'] = -1
+    conf['tradable_balance_ratio'] = 0.5
     conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
     conf['edge'] = {
         "enabled": True,
         "process_throttle_secs": 1800,
         "calculate_since_number_of_days": 14,
-        "capital_available_percentage": 0.5,
         "allowed_risk": 0.01,
         "stoploss_range_min": -0.01,
         "stoploss_range_max": -0.1,

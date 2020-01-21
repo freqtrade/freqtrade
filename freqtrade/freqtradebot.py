@@ -63,8 +63,7 @@ class FreqtradeBot:
 
         self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
 
-        persistence.init(self.config.get('db_url', None),
-                         clean_open_orders=self.config.get('dry_run', False))
+        persistence.init(self.config.get('db_url', None), clean_open_orders=self.config['dry_run'])
 
         self.wallets = Wallets(self.config, self.exchange)
 
@@ -250,12 +249,16 @@ class FreqtradeBot:
 
         return used_rate
 
-    def get_trade_stake_amount(self, pair) -> Optional[float]:
+    def get_trade_stake_amount(self, pair) -> float:
         """
         Calculate stake amount for the trade
         :return: float: Stake amount
+        :raise: DependencyException if the available stake amount is too low
         """
-        stake_amount: Optional[float]
+        stake_amount: float
+        # Ensure wallets are uptodate.
+        self.wallets.update()
+
         if self.edge:
             stake_amount = self.edge.stake_amount(
                 pair,
@@ -270,26 +273,52 @@ class FreqtradeBot:
 
         return self._check_available_stake_amount(stake_amount)
 
-    def _calculate_unlimited_stake_amount(self) -> Optional[float]:
+    def _get_available_stake_amount(self) -> float:
+        """
+        Return the total currently available balance in stake currency,
+        respecting tradable_balance_ratio.
+        Calculated as
+        <open_trade stakes> + free amount ) * tradable_balance_ratio - <open_trade stakes>
+        """
+        val_tied_up = Trade.total_open_trades_stakes()
+
+        # Ensure <tradable_balance_ratio>% is used from the overall balance
+        # Otherwise we'd risk lowering stakes with each open trade.
+        # (tied up + current free) * ratio) - tied up
+        available_amount = ((val_tied_up + self.wallets.get_free(self.config['stake_currency'])) *
+                            self.config['tradable_balance_ratio']) - val_tied_up
+        return available_amount
+
+    def _calculate_unlimited_stake_amount(self) -> float:
         """
         Calculate stake amount for "unlimited" stake amount
-        :return: None if max number of trades reached
+        :return: 0 if max number of trades reached, else stake_amount to use.
         """
         free_open_trades = self.get_free_open_trades()
         if not free_open_trades:
-            return None
-        available_amount = self.wallets.get_free(self.config['stake_currency'])
+            return 0
+
+        available_amount = self._get_available_stake_amount()
+
         return available_amount / free_open_trades
 
-    def _check_available_stake_amount(self, stake_amount: Optional[float]) -> Optional[float]:
+    def _check_available_stake_amount(self, stake_amount: float) -> float:
         """
         Check if stake amount can be fulfilled with the available balance
         for the stake currency
         :return: float: Stake amount
         """
-        available_amount = self.wallets.get_free(self.config['stake_currency'])
+        available_amount = self._get_available_stake_amount()
 
-        if stake_amount is not None and available_amount < stake_amount:
+        if self.config['amend_last_stake_amount']:
+            # Remaining amount needs to be at least stake_amount * last_stake_amount_min_ratio
+            # Otherwise the remaining amount is too low to trade.
+            if available_amount > (stake_amount * self.config['last_stake_amount_min_ratio']):
+                stake_amount = min(stake_amount, available_amount)
+            else:
+                stake_amount = 0
+
+        if available_amount < stake_amount:
             raise DependencyException(
                 f"Available balance ({available_amount} {self.config['stake_currency']}) is "
                 f"lower than stake amount ({stake_amount} {self.config['stake_currency']})"
@@ -872,15 +901,19 @@ class FreqtradeBot:
         :return: amount to sell
         :raise: DependencyException: if available balance is not within 2% of the available amount.
         """
+        # Update wallets to ensure amounts tied up in a stoploss is now free!
+        self.wallets.update()
+
         wallet_amount = self.wallets.get_free(pair.split('/')[0])
         logger.debug(f"{pair} - Wallet: {wallet_amount} - Trade-amount: {amount}")
-        if wallet_amount > amount:
+        if wallet_amount >= amount:
             return amount
         elif wallet_amount > amount * 0.98:
             logger.info(f"{pair} - Falling back to wallet-amount.")
             return wallet_amount
         else:
-            raise DependencyException("Not enough amount to sell.")
+            raise DependencyException(
+                f"Not enough amount to sell. Trade-amount: {amount}, Wallet: {wallet_amount}")
 
     def execute_sell(self, trade: Trade, limit: float, sell_reason: SellType) -> None:
         """
@@ -896,7 +929,7 @@ class FreqtradeBot:
 
         # if stoploss is on exchange and we are on dry_run mode,
         # we consider the sell price stop price
-        if self.config.get('dry_run', False) and sell_type == 'stoploss' \
+        if self.config['dry_run'] and sell_type == 'stoploss' \
            and self.strategy.order_types['stoploss_on_exchange']:
             limit = trade.stop_loss
 

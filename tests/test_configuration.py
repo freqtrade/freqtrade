@@ -323,7 +323,7 @@ def test_load_dry_run(default_conf, mocker, config_value, expected, arglist) -> 
     configuration = Configuration(Arguments(arglist).get_parsed_arg())
     validated_conf = configuration.load_config()
 
-    assert validated_conf.get('dry_run') is expected
+    assert validated_conf['dry_run'] is expected
 
 
 def test_load_custom_strategy(default_conf, mocker) -> None:
@@ -723,6 +723,14 @@ def test_validate_default_conf(default_conf) -> None:
     validate_config_schema(default_conf)
 
 
+def test_validate_max_open_trades(default_conf):
+    default_conf['max_open_trades'] = float('inf')
+    default_conf['stake_amount'] = 'unlimited'
+    with pytest.raises(OperationalException, match='`max_open_trades` and `stake_amount` '
+                                                   'cannot both be unlimited.'):
+        validate_config_consistency(default_conf)
+
+
 def test_validate_tsl(default_conf):
     default_conf['stoploss'] = 0.0
     with pytest.raises(OperationalException, match='The config stoploss needs to be different '
@@ -1027,6 +1035,17 @@ def test_process_deprecated_setting_pairlists(mocker, default_conf, caplog):
     process_temporary_deprecated_settings(default_conf)
     assert log_has_re(r'DEPRECATED.*precision_filter.*', caplog)
     assert log_has_re(r'DEPRECATED.*in pairlist is deprecated and must be moved*', caplog)
+
+
+def test_process_deprecated_setting_edge(mocker, edge_conf, caplog):
+    patched_configuration_load_config_file(mocker, edge_conf)
+    edge_conf.update({'edge': {
+        'enabled': True,
+        'capital_available_percentage': 0.5,
+    }})
+
+    process_temporary_deprecated_settings(edge_conf)
+    assert log_has_re(r"DEPRECATED.*Using 'edge.capital_available_percentage'*", caplog)
 
 
 def test_check_conflicting_settings(mocker, default_conf, caplog):
