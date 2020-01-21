@@ -27,7 +27,7 @@ class SampleHyperOptLoss(IHyperOptLoss):
     Defines the default loss function for hyperopt
     This is intended to give you some inspiration for your own loss function.
 
-    The Function needs to return a number (float) - which becomes for better backtest results.
+    The Function needs to return a number (float) - which becomes smaller for better backtest results.
     """
 
     @staticmethod
