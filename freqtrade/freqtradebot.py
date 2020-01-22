@@ -7,6 +7,7 @@ import traceback
 from datetime import datetime
 from math import isclose
 from os import getpid
+from threading import Lock
 from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
@@ -26,7 +27,6 @@ from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
 from freqtrade.strategy.interface import IStrategy, SellType
 from freqtrade.wallets import Wallets
-
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +92,8 @@ class FreqtradeBot:
         # the initial state of the bot.
         # Keep this at the end of this initialization method.
         self.rpc: RPCManager = RPCManager(self)
+        # Protect sell-logic from forcesell and viceversa
+        self._sell_lock = Lock()
 
     def cleanup(self) -> None:
         """
@@ -132,8 +134,12 @@ class FreqtradeBot:
         self.dataprovider.refresh(self._create_pair_whitelist(self.active_pair_whitelist),
                                   self.strategy.informative_pairs())
 
-        # First process current opened trades (positions)
-        self.exit_positions(trades)
+        # Protect from collisions with forcesell.
+        # Without this, freqtrade my try to recreate stoploss_on_exchange orders
+        # while selling is in process, since telegram messages arrive in an different thread.
+        with self._sell_lock:
+            # First process current opened trades (positions)
+            self.exit_positions(trades)
 
         # Then looking for buy opportunities
         if self.get_free_open_trades():
@@ -748,8 +754,8 @@ class FreqtradeBot:
         Check and execute sell
         """
         should_sell = self.strategy.should_sell(
-                trade, sell_rate, datetime.utcnow(), buy, sell,
-                force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
+            trade, sell_rate, datetime.utcnow(), buy, sell,
+            force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
         )
 
         if should_sell.sell_flag:

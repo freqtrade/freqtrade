@@ -420,26 +420,27 @@ class RPC:
         if self._freqtrade.state != State.RUNNING:
             raise RPCException('trader is not running')
 
-        if trade_id == 'all':
-            # Execute sell for all open orders
-            for trade in Trade.get_open_trades():
-                _exec_forcesell(trade)
+        with self._freqtrade._sell_lock:
+            if trade_id == 'all':
+                # Execute sell for all open orders
+                for trade in Trade.get_open_trades():
+                    _exec_forcesell(trade)
+                Trade.session.flush()
+                self._freqtrade.wallets.update()
+                return {'result': 'Created sell orders for all open trades.'}
+
+            # Query for trade
+            trade = Trade.get_trades(
+                trade_filter=[Trade.id == trade_id, Trade.is_open.is_(True), ]
+            ).first()
+            if not trade:
+                logger.warning('forcesell: Invalid argument received')
+                raise RPCException('invalid argument')
+
+            _exec_forcesell(trade)
             Trade.session.flush()
             self._freqtrade.wallets.update()
-            return {'result': 'Created sell orders for all open trades.'}
-
-        # Query for trade
-        trade = Trade.get_trades(
-            trade_filter=[Trade.id == trade_id, Trade.is_open.is_(True), ]
-        ).first()
-        if not trade:
-            logger.warning('forcesell: Invalid argument received')
-            raise RPCException('invalid argument')
-
-        _exec_forcesell(trade)
-        Trade.session.flush()
-        self._freqtrade.wallets.update()
-        return {'result': f'Created sell order for trade {trade_id}.'}
+            return {'result': f'Created sell order for trade {trade_id}.'}
 
     def _rpc_forcebuy(self, pair: str, price: Optional[float]) -> Optional[Trade]:
         """
