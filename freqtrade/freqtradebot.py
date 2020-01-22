@@ -218,7 +218,7 @@ class FreqtradeBot:
 
         return trades_created
 
-    def get_target_bid(self, pair: str, tick: Dict = None) -> float:
+    def get_buy_rate(self, pair: str, tick: Dict = None) -> float:
         """
         Calculates bid target between current ask price and last price
         :return: float: Price
@@ -435,7 +435,7 @@ class FreqtradeBot:
             buy_limit_requested = price
         else:
             # Calculate price
-            buy_limit_requested = self.get_target_bid(pair)
+            buy_limit_requested = self.get_buy_rate(pair)
 
         min_stake_amount = self._get_min_pair_stake_amount(pair, buy_limit_requested)
         if min_stake_amount is not None and min_stake_amount > stake_amount:
