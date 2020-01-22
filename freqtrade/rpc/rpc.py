@@ -425,6 +425,7 @@ class RPC:
             for trade in Trade.get_open_trades():
                 _exec_forcesell(trade)
             Trade.session.flush()
+            self._freqtrade.wallets.update()
             return {'result': 'Created sell orders for all open trades.'}
 
         # Query for trade
@@ -437,6 +438,7 @@ class RPC:
 
         _exec_forcesell(trade)
         Trade.session.flush()
+        self._freqtrade.wallets.update()
         return {'result': f'Created sell order for trade {trade_id}.'}
 
     def _rpc_forcebuy(self, pair: str, price: Optional[float]) -> Optional[Trade]:
