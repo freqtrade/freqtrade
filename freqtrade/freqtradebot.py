@@ -63,8 +63,7 @@ class FreqtradeBot:
 
         self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
 
-        persistence.init(self.config.get('db_url', None),
-                         clean_open_orders=self.config.get('dry_run', False))
+        persistence.init(self.config.get('db_url', None), clean_open_orders=self.config['dry_run'])
 
         self.wallets = Wallets(self.config, self.exchange)
 
@@ -219,7 +218,7 @@ class FreqtradeBot:
 
         return trades_created
 
-    def get_target_bid(self, pair: str, tick: Dict = None) -> float:
+    def get_buy_rate(self, pair: str, tick: Dict = None) -> float:
         """
         Calculates bid target between current ask price and last price
         :return: float: Price
@@ -436,7 +435,7 @@ class FreqtradeBot:
             buy_limit_requested = price
         else:
             # Calculate price
-            buy_limit_requested = self.get_target_bid(pair)
+            buy_limit_requested = self.get_buy_rate(pair)
 
         min_stake_amount = self._get_min_pair_stake_amount(pair, buy_limit_requested)
         if min_stake_amount is not None and min_stake_amount > stake_amount:
@@ -926,7 +925,7 @@ class FreqtradeBot:
 
         # if stoploss is on exchange and we are on dry_run mode,
         # we consider the sell price stop price
-        if self.config.get('dry_run', False) and sell_type == 'stoploss' \
+        if self.config['dry_run'] and sell_type == 'stoploss' \
            and self.strategy.order_types['stoploss_on_exchange']:
             limit = trade.stop_loss
 
