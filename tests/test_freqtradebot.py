@@ -906,30 +906,22 @@ def test_process_informative_pairs_added(default_conf, ticker, mocker) -> None:
     assert ("ETH/BTC", default_conf["ticker_interval"]) in refresh_mock.call_args[0][0]
 
 
-def test_balance_fully_ask_side(mocker, default_conf) -> None:
-    default_conf['bid_strategy']['ask_last_balance'] = 0.0
+@pytest.mark.parametrize("ask,last,last_ab,expected", [
+    (20, 10, 0.0, 20),  # Full ask side
+    (20, 10, 1.0, 10),  # Full last side
+    (20, 10, 0.5, 15),  # Between ask and last
+    (20, 10, 0.7, 13),  # Between ask and last
+    (20, 10, 0.3, 17),  # Between ask and last
+    (5, 10, 1.0, 5),  # last bigger than ask
+    (5, 10, 0.5, 5),  # last bigger than ask
+])
+def test_get_buy_rate(mocker, default_conf, ask, last, last_ab, expected) -> None:
+    default_conf['bid_strategy']['ask_last_balance'] = last_ab
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
-                 MagicMock(return_value={'ask': 20, 'last': 10}))
+                 MagicMock(return_value={'ask': ask, 'last': last}))
 
-    assert freqtrade.get_buy_rate('ETH/BTC') == 20
-
-
-def test_balance_fully_last_side(mocker, default_conf) -> None:
-    default_conf['bid_strategy']['ask_last_balance'] = 1.0
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
-                 MagicMock(return_value={'ask': 20, 'last': 10}))
-
-    assert freqtrade.get_buy_rate('ETH/BTC') == 10
-
-
-def test_balance_bigger_last_ask(mocker, default_conf) -> None:
-    default_conf['bid_strategy']['ask_last_balance'] = 1.0
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
-                 MagicMock(return_value={'ask': 5, 'last': 10}))
-    assert freqtrade.get_buy_rate('ETH/BTC') == 5
+    assert freqtrade.get_buy_rate('ETH/BTC') == expected
 
 
 def test_execute_buy(mocker, default_conf, fee, limit_buy_order) -> None:
