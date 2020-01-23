@@ -1141,6 +1141,16 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     freqtrade.handle_stoploss_on_exchange(trade)
     assert stoploss_limit.call_count == 1
 
+    # Sixth case: Closed Trade
+    # Should not create new order
+    trade.stoploss_order_id = None
+    trade.is_open = False
+    stoploss_limit.reset_mock()
+    mocker.patch('freqtrade.exchange.Exchange.get_order')
+    mocker.patch('freqtrade.exchange.Exchange.stoploss_limit', stoploss_limit)
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert stoploss_limit.call_count == 0
+
 
 def test_handle_sle_cancel_cant_recreate(mocker, default_conf, fee, caplog,
                                          limit_buy_order, limit_sell_order) -> None:
