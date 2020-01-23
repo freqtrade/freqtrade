@@ -689,9 +689,10 @@ class FreqtradeBot:
             self._notify_sell(trade, "stoploss")
             return True
 
-        if trade.open_order_id:
+        if trade.open_order_id or not trade.is_open:
             # Trade has an open Buy or Sell order, Stoploss-handling can't happen in this case
             # as the Amount on the exchange is tied up in another trade.
+            # The trade can be closed already (sell-order fill confirmation came in this iteration)
             return False
 
         # If buy order is fulfilled but there is no stoploss, we add a stoploss on exchange

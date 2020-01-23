@@ -1127,6 +1127,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
         'freqtrade.exchange.Exchange.stoploss_limit',
         side_effect=DependencyException()
     )
+    trade.is_open = True
     freqtrade.handle_stoploss_on_exchange(trade)
     assert log_has('Unable to place a stoploss order on exchange.', caplog)
     assert trade.stoploss_order_id is None
