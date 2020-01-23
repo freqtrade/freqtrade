@@ -1165,7 +1165,7 @@ def test_handle_sle_cancel_cant_recreate(mocker, default_conf, fee, caplog,
     freqtrade.enter_positions()
     trade = Trade.query.first()
     trade.is_open = True
-    trade.open_order_id = '12345'
+    trade.open_order_id = None
     trade.stoploss_order_id = 100
     assert trade
 
