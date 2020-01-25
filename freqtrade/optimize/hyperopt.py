@@ -372,14 +372,12 @@ class Hyperopt:
         min_date, max_date = get_timerange(processed)
 
         backtesting_results = self.backtesting.backtest(
-            {
-                'stake_amount': self.config['stake_amount'],
-                'processed': processed,
-                'max_open_trades': self.max_open_trades,
-                'position_stacking': self.position_stacking,
-                'start_date': min_date,
-                'end_date': max_date,
-            }
+                processed=processed,
+                stake_amount=self.config['stake_amount'],
+                start_date=min_date,
+                end_date=max_date,
+                max_open_trades=self.max_open_trades,
+                position_stacking=self.position_stacking,
         )
         return self._get_results_dict(backtesting_results, min_date, max_date,
                                       params_dict, params_details)
