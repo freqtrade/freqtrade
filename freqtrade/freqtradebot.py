@@ -429,7 +429,7 @@ class FreqtradeBot:
             logger.info('bids to ask delta DOES satisfy condition.')
             return True
         else:
-            logger.info('bids to ask delta DOES NOT satisfy condition.')
+            logger.info(f"bids to ask delta for {pair} does not satisfy condition.")
             return False
 
     def execute_buy(self, pair: str, stake_amount: float, price: Optional[float] = None) -> bool:
