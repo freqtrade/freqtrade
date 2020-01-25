@@ -149,8 +149,8 @@ class Backtesting:
 
             # To avoid using data from future, we use buy/sell signals shifted
             # from the previous candle
-            df_analyzed.loc[:, 'buy'] = df_analyzed['buy'].shift(1)
-            df_analyzed.loc[:, 'sell'] = df_analyzed['sell'].shift(1)
+            df_analyzed.loc[:, 'buy'] = df_analyzed.loc[:, 'buy'].shift(1)
+            df_analyzed.loc[:, 'sell'] = df_analyzed.loc[:, 'sell'].shift(1)
 
             df_analyzed.drop(df_analyzed.head(1).index, inplace=True)
 
