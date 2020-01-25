@@ -279,7 +279,7 @@ class Backtesting:
             return bt_res
         return None
 
-    def backtest(self, processed: Dict, stake_amount: int,
+    def backtest(self, processed: Dict, stake_amount: float,
                  start_date, end_date,
                  max_open_trades: int = 0, position_stacking: bool = False) -> DataFrame:
         """
@@ -300,7 +300,7 @@ class Backtesting:
         logger.debug(f"Run backtest, stake_amount: {stake_amount}, "
                      f"start_date: {start_date}, end_date: {end_date}, "
                      f"max_open_trades: {max_open_trades}, position_stacking: {position_stacking}"
-        )
+                     )
         trades = []
         trade_count_lock: Dict = {}
 
@@ -405,7 +405,7 @@ class Backtesting:
             # Execute backtest and print results
             all_results[self.strategy.get_strategy_name()] = self.backtest(
                     processed=preprocessed,
-                    stake_amount=self.config.get('stake_amount'),
+                    stake_amount=self.config['stake_amount'],
                     start_date=min_date,
                     end_date=max_date,
                     max_open_trades=max_open_trades,
