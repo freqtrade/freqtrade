@@ -665,11 +665,11 @@ def test_start_list_strategies(mocker, caplog, capsys):
     assert "DefaultStrategy" in captured.out
 
 
-def test_start_test_pairlist(mocker, caplog, markets, tickers, default_conf, capsys):
+def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
+    patch_exchange(mocker, mock_markets=True)
     mocker.patch.multiple('freqtrade.exchange.Exchange',
-                          markets=PropertyMock(return_value=markets),
                           exchange_has=MagicMock(return_value=True),
-                          get_tickers=tickers
+                          get_tickers=tickers,
                           )
 
     default_conf['pairlists'] = [
