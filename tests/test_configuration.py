@@ -10,7 +10,8 @@ from unittest.mock import MagicMock
 import pytest
 from jsonschema import ValidationError
 
-from freqtrade.configuration import (Arguments, Configuration, check_exchange,
+from freqtrade.commands import Arguments
+from freqtrade.configuration import (Configuration, check_exchange,
                                      remove_credentials,
                                      validate_config_consistency)
 from freqtrade.configuration.config_validation import validate_config_schema

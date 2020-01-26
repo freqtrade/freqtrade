@@ -14,7 +14,7 @@ import pytest
 from telegram import Chat, Message, Update
 
 from freqtrade import constants, persistence
-from freqtrade.configuration import Arguments
+from freqtrade.commands import Arguments
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.exchange import Exchange
