@@ -2,14 +2,14 @@ import logging
 from typing import Any, Dict
 
 from freqtrade import constants
+from freqtrade.commands.utils import setup_utils_configuration
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.state import RunMode
-from freqtrade.commands import setup_utils_configuration
 
 logger = logging.getLogger(__name__)
 
 
-def setup_configuration(args: Dict[str, Any], method: RunMode) -> Dict[str, Any]:
+def setup_optimize_configuration(args: Dict[str, Any], method: RunMode) -> Dict[str, Any]:
     """
     Prepare the configuration for the Hyperopt module
     :param args: Cli args from Arguments()
@@ -35,7 +35,7 @@ def start_backtesting(args: Dict[str, Any]) -> None:
     from freqtrade.optimize.backtesting import Backtesting
 
     # Initialize configuration
-    config = setup_configuration(args, RunMode.BACKTEST)
+    config = setup_optimize_configuration(args, RunMode.BACKTEST)
 
     logger.info('Starting freqtrade in Backtesting mode')
 
@@ -58,7 +58,7 @@ def start_hyperopt(args: Dict[str, Any]) -> None:
         raise OperationalException(
             f"{e}. Please ensure that the hyperopt dependencies are installed.") from e
     # Initialize configuration
-    config = setup_configuration(args, RunMode.HYPEROPT)
+    config = setup_optimize_configuration(args, RunMode.HYPEROPT)
 
     logger.info('Starting freqtrade in Hyperopt mode')
 
@@ -94,7 +94,7 @@ def start_edge(args: Dict[str, Any]) -> None:
     """
     from freqtrade.optimize.edge_cli import EdgeCli
     # Initialize configuration
-    config = setup_configuration(args, RunMode.EDGE)
+    config = setup_optimize_configuration(args, RunMode.EDGE)
     logger.info('Starting freqtrade in Edge mode')
 
     # Initialize Edge object
