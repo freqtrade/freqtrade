@@ -538,7 +538,7 @@ def test_start_new_hyperopt_no_arg(mocker, caplog):
 
 
 def test_download_data_keyboardInterrupt(mocker, caplog, markets):
-    dl_mock = mocker.patch('freqtrade.commands.utils.refresh_backtest_ohlcv_data',
+    dl_mock = mocker.patch('freqtrade.commands.data_commands.refresh_backtest_ohlcv_data',
                            MagicMock(side_effect=KeyboardInterrupt))
     patch_exchange(mocker)
     mocker.patch(
@@ -556,7 +556,7 @@ def test_download_data_keyboardInterrupt(mocker, caplog, markets):
 
 
 def test_download_data_no_markets(mocker, caplog):
-    dl_mock = mocker.patch('freqtrade.commands.utils.refresh_backtest_ohlcv_data',
+    dl_mock = mocker.patch('freqtrade.commands.data_commands.refresh_backtest_ohlcv_data',
                            MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
     patch_exchange(mocker, id='binance')
     mocker.patch(
@@ -574,7 +574,7 @@ def test_download_data_no_markets(mocker, caplog):
 
 
 def test_download_data_no_exchange(mocker, caplog):
-    mocker.patch('freqtrade.commands.utils.refresh_backtest_ohlcv_data',
+    mocker.patch('freqtrade.commands.data_commands.refresh_backtest_ohlcv_data',
                  MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
     patch_exchange(mocker)
     mocker.patch(
@@ -594,7 +594,7 @@ def test_download_data_no_pairs(mocker, caplog):
 
     mocker.patch.object(Path, "exists", MagicMock(return_value=False))
 
-    mocker.patch('freqtrade.commands.utils.refresh_backtest_ohlcv_data',
+    mocker.patch('freqtrade.commands.data_commands.refresh_backtest_ohlcv_data',
                  MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
     patch_exchange(mocker)
     mocker.patch(
@@ -613,9 +613,9 @@ def test_download_data_no_pairs(mocker, caplog):
 
 
 def test_download_data_trades(mocker, caplog):
-    dl_mock = mocker.patch('freqtrade.commands.utils.refresh_backtest_trades_data',
+    dl_mock = mocker.patch('freqtrade.commands.data_commands.refresh_backtest_trades_data',
                            MagicMock(return_value=[]))
-    convert_mock = mocker.patch('freqtrade.commands.utils.convert_trades_to_ohlcv',
+    convert_mock = mocker.patch('freqtrade.commands.data_commands.convert_trades_to_ohlcv',
                                 MagicMock(return_value=[]))
     patch_exchange(mocker)
     mocker.patch(
