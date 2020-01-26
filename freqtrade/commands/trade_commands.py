@@ -10,8 +10,10 @@ def start_trading(args: Dict[str, Any]) -> int:
     """
     Main entry point for trading mode
     """
+    # Import here to avoid loading worker module when it's not used
     from freqtrade.worker import Worker
-    # Load and run worker
+
+    # Create and run worker
     worker = None
     try:
         worker = Worker(args)
