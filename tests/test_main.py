@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
-from freqtrade.configuration import Arguments
+from freqtrade.commands import Arguments
 from freqtrade.exceptions import OperationalException, FreqtradeException
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.main import main

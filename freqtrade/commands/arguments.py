@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from freqtrade import constants
-from freqtrade.configuration.cli_options import AVAILABLE_CLI_OPTIONS
+from freqtrade.commands.cli_options import AVAILABLE_CLI_OPTIONS
 
 ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_data_dir"]
 
