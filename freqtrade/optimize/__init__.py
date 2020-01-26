@@ -4,7 +4,7 @@ from typing import Any, Dict
 from freqtrade import constants
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.state import RunMode
-from freqtrade.utils import setup_utils_configuration
+from freqtrade.commands import setup_utils_configuration
 
 logger = logging.getLogger(__name__)
 
