@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
-from freqtrade.configuration import Arguments
+from freqtrade.commands import Arguments
 from freqtrade.exceptions import OperationalException, FreqtradeException
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.main import main
@@ -26,7 +26,7 @@ def test_parse_args_backtesting(mocker) -> None:
     Test that main() can start backtesting and also ensure we can pass some specific arguments
     further argument parsing is done in test_arguments.py
     """
-    backtesting_mock = mocker.patch('freqtrade.optimize.start_backtesting', MagicMock())
+    backtesting_mock = mocker.patch('freqtrade.commands.start_backtesting')
     backtesting_mock.__name__ = PropertyMock("start_backtesting")
     # it's sys.exit(0) at the end of backtesting
     with pytest.raises(SystemExit):
@@ -42,7 +42,7 @@ def test_parse_args_backtesting(mocker) -> None:
 
 
 def test_main_start_hyperopt(mocker) -> None:
-    hyperopt_mock = mocker.patch('freqtrade.optimize.start_hyperopt', MagicMock())
+    hyperopt_mock = mocker.patch('freqtrade.commands.start_hyperopt', MagicMock())
     hyperopt_mock.__name__ = PropertyMock("start_hyperopt")
     # it's sys.exit(0) at the end of hyperopt
     with pytest.raises(SystemExit):

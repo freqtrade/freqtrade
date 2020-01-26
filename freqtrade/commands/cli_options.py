@@ -1,7 +1,7 @@
 """
 Definition of cli arguments used in arguments.py
 """
-import argparse
+from argparse import ArgumentTypeError
 
 from freqtrade import __version__, constants
 
@@ -12,7 +12,7 @@ def check_int_positive(value: str) -> int:
         if uint <= 0:
             raise ValueError
     except ValueError:
-        raise argparse.ArgumentTypeError(
+        raise ArgumentTypeError(
             f"{value} is invalid for this parameter, should be a positive integer value"
         )
     return uint
@@ -24,7 +24,7 @@ def check_int_nonzero(value: str) -> int:
         if uint == 0:
             raise ValueError
     except ValueError:
-        raise argparse.ArgumentTypeError(
+        raise ArgumentTypeError(
             f"{value} is invalid for this parameter, should be a non-zero integer value"
         )
     return uint
