@@ -14,7 +14,7 @@ if sys.version_info < (3, 6):
 import logging
 from typing import Any, List
 
-from freqtrade.configuration import Arguments
+from freqtrade.commands import Arguments
 
 
 logger = logging.getLogger('freqtrade')
