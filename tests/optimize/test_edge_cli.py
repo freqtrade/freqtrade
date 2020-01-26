@@ -3,14 +3,14 @@
 
 from unittest.mock import MagicMock
 
-from freqtrade.optimize import setup_configuration, start_edge
+from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_edge
 from freqtrade.optimize.edge_cli import EdgeCli
 from freqtrade.state import RunMode
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 
 
-def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> None:
+def test_setup_optimize_configuration_without_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
 
     args = [
@@ -19,7 +19,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
         '--strategy', 'DefaultStrategy',
     ]
 
-    config = setup_configuration(get_args(args), RunMode.EDGE)
+    config = setup_optimize_configuration(get_args(args), RunMode.EDGE)
     assert config['runmode'] == RunMode.EDGE
 
     assert 'max_open_trades' in config
@@ -53,7 +53,7 @@ def test_setup_edge_configuration_with_arguments(mocker, edge_conf, caplog) -> N
         '--stoplosses=-0.01,-0.10,-0.001'
     ]
 
-    config = setup_configuration(get_args(args), RunMode.EDGE)
+    config = setup_optimize_configuration(get_args(args), RunMode.EDGE)
     assert 'max_open_trades' in config
     assert 'stake_currency' in config
     assert 'stake_amount' in config

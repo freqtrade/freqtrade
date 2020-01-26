@@ -12,13 +12,13 @@ from arrow import Arrow
 
 from freqtrade import constants
 from freqtrade.configuration import TimeRange
+from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_backtesting
 from freqtrade.data import history
 from freqtrade.data.btanalysis import evaluate_result_multi
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.optimize import setup_configuration, start_backtesting
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.state import RunMode
 from freqtrade.strategy.default_strategy import DefaultStrategy
@@ -177,7 +177,7 @@ def _trend_alternate(dataframe=None, metadata=None):
 
 
 # Unit tests
-def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> None:
+def test_setup_optimize_configuration_without_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
 
     args = [
@@ -186,7 +186,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
         '--strategy', 'DefaultStrategy',
     ]
 
-    config = setup_configuration(get_args(args), RunMode.BACKTEST)
+    config = setup_optimize_configuration(get_args(args), RunMode.BACKTEST)
     assert 'max_open_trades' in config
     assert 'stake_currency' in config
     assert 'stake_amount' in config
@@ -227,7 +227,7 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
         '--fee', '0',
     ]
 
-    config = setup_configuration(get_args(args), RunMode.BACKTEST)
+    config = setup_optimize_configuration(get_args(args), RunMode.BACKTEST)
     assert 'max_open_trades' in config
     assert 'stake_currency' in config
     assert 'stake_amount' in config
@@ -260,7 +260,7 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
     assert log_has('Parameter --fee detected, setting fee to: {} ...'.format(config['fee']), caplog)
 
 
-def test_setup_configuration_unlimited_stake_amount(mocker, default_conf, caplog) -> None:
+def test_setup_optimize_configuration_unlimited_stake_amount(mocker, default_conf, caplog) -> None:
     default_conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
 
     patched_configuration_load_config_file(mocker, default_conf)
@@ -272,7 +272,7 @@ def test_setup_configuration_unlimited_stake_amount(mocker, default_conf, caplog
     ]
 
     with pytest.raises(DependencyException, match=r'.*stake amount.*'):
-        setup_configuration(get_args(args), RunMode.BACKTEST)
+        setup_optimize_configuration(get_args(args), RunMode.BACKTEST)
 
 
 def test_start(mocker, fee, default_conf, caplog) -> None:

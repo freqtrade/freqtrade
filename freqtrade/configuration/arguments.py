@@ -130,13 +130,13 @@ class Arguments:
         self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot')
         self._build_args(optionlist=['version'], parser=self.parser)
 
-        from freqtrade.optimize import start_backtesting, start_hyperopt, start_edge
         from freqtrade.commands import (start_create_userdir, start_download_data,
                                         start_hyperopt_list, start_hyperopt_show,
                                         start_list_exchanges, start_list_markets,
                                         start_list_strategies, start_new_hyperopt,
                                         start_new_strategy, start_list_timeframes,
                                         start_plot_dataframe, start_plot_profit,
+                                        start_backtesting, start_hyperopt, start_edge,
                                         start_test_pairlist, start_trading)
 
         subparsers = self.parser.add_subparsers(dest='command',

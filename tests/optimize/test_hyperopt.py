@@ -9,10 +9,10 @@ import pytest
 from arrow import Arrow
 from filelock import Timeout
 
-from freqtrade.exceptions import OperationalException
+from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_hyperopt
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.history import load_tickerdata_file
-from freqtrade.optimize import setup_configuration, start_hyperopt
+from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.default_hyperopt import DefaultHyperOpt
 from freqtrade.optimize.default_hyperopt_loss import DefaultHyperOptLoss
 from freqtrade.optimize.hyperopt import Hyperopt
@@ -77,7 +77,7 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
         '--hyperopt', 'DefaultHyperOpt',
     ]
 
-    config = setup_configuration(get_args(args), RunMode.HYPEROPT)
+    config = setup_optimize_configuration(get_args(args), RunMode.HYPEROPT)
     assert 'max_open_trades' in config
     assert 'stake_currency' in config
     assert 'stake_amount' in config
@@ -117,7 +117,7 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
         '--print-all'
     ]
 
-    config = setup_configuration(get_args(args), RunMode.HYPEROPT)
+    config = setup_optimize_configuration(get_args(args), RunMode.HYPEROPT)
     assert 'max_open_trades' in config
     assert 'stake_currency' in config
     assert 'stake_amount' in config
