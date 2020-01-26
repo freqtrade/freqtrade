@@ -1,5 +1,11 @@
 # flake8: noqa: F401
+"""
+Commands module.
+Contains all start-commands, subcommands and CLI Interface creation.
 
+Note: Be careful with file-scoped imports in these subfiles.
+    as they are parsed on startup, nothing containing optional modules should be loaded.
+"""
 from freqtrade.commands.arguments import Arguments
 from freqtrade.commands.data_commands import start_download_data
 from freqtrade.commands.deploy_commands import (start_create_userdir,
