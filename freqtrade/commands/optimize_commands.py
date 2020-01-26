@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict
 
 from freqtrade import constants
-from freqtrade.commands.utils import setup_utils_configuration
+from freqtrade.configuration import setup_utils_configuration
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.state import RunMode
 

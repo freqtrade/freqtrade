@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 
 from colorama import init as colorama_init
 
-from .utils import setup_utils_configuration
+from freqtrade.configuration import setup_utils_configuration
 from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
 

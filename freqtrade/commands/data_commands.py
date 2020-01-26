@@ -4,14 +4,13 @@ from typing import Any, Dict, List
 
 import arrow
 
-from freqtrade.configuration import TimeRange
+from freqtrade.configuration import TimeRange, setup_utils_configuration
 from freqtrade.data.history import (convert_trades_to_ohlcv,
                                     refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
 from freqtrade.exceptions import OperationalException
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
-from .utils import setup_utils_configuration
 
 logger = logging.getLogger(__name__)
 

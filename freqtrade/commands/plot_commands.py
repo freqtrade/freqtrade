@@ -1,8 +1,8 @@
 from typing import Any, Dict
 
+from freqtrade.configuration import setup_utils_configuration
 from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
-from freqtrade.commands.utils import setup_utils_configuration
 
 
 def validate_plot_args(args: Dict[str, Any]):

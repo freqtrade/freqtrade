@@ -3,10 +3,9 @@ from typing import Any, Dict
 
 import rapidjson
 
+from freqtrade.configuration import setup_utils_configuration
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
-
-from .utils import setup_utils_configuration
 
 logger = logging.getLogger(__name__)
 

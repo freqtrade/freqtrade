@@ -8,6 +8,7 @@ from typing import Any, Dict
 import rapidjson
 from tabulate import tabulate
 
+from freqtrade.configuration import setup_utils_configuration
 from freqtrade.constants import USERPATH_STRATEGY
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import (available_exchanges, ccxt_exchanges,
@@ -15,8 +16,6 @@ from freqtrade.exchange import (available_exchanges, ccxt_exchanges,
 from freqtrade.misc import plural
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
-
-from .utils import setup_utils_configuration
 
 logger = logging.getLogger(__name__)
 

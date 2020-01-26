@@ -4,13 +4,13 @@ from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
-from freqtrade.commands import (setup_utils_configuration,
-                                start_create_userdir, start_download_data,
+from freqtrade.commands import (start_create_userdir, start_download_data,
                                 start_hyperopt_list, start_hyperopt_show,
                                 start_list_exchanges, start_list_markets,
                                 start_list_strategies, start_list_timeframes,
                                 start_new_hyperopt, start_new_strategy,
                                 start_test_pairlist, start_trading)
+from freqtrade.configuration import setup_utils_configuration
 from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
@@ -639,7 +639,7 @@ def test_start_list_strategies(mocker, caplog, capsys):
     args = [
         "list-strategies",
         "--strategy-path",
-        str(Path(__file__).parent / "strategy"),
+        str(Path(__file__).parent.parent / "strategy"),
         "-1"
     ]
     pargs = get_args(args)
@@ -654,7 +654,7 @@ def test_start_list_strategies(mocker, caplog, capsys):
     args = [
         "list-strategies",
         "--strategy-path",
-        str(Path(__file__).parent / "strategy"),
+        str(Path(__file__).parent.parent / "strategy"),
     ]
     pargs = get_args(args)
     # pargs['config'] = None

@@ -23,4 +23,3 @@ from freqtrade.commands.pairlist_commands import start_test_pairlist
 from freqtrade.commands.plot_commands import (start_plot_dataframe,
                                               start_plot_profit)
 from freqtrade.commands.trade_commands import start_trading
-from freqtrade.commands.utils import setup_utils_configuration

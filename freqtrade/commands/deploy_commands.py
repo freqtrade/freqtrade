@@ -3,14 +3,13 @@ import sys
 from pathlib import Path
 from typing import Any, Dict
 
+from freqtrade.configuration import setup_utils_configuration
 from freqtrade.configuration.directory_operations import (copy_sample_files,
                                                           create_userdata_dir)
 from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGY
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import render_template
 from freqtrade.state import RunMode
-
-from .utils import setup_utils_configuration
 
 logger = logging.getLogger(__name__)
 
