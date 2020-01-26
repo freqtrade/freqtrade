@@ -6,5 +6,6 @@ from freqtrade.commands.hyperopt_commands import (start_hyperopt_list,  # noqa: 
 from freqtrade.commands.list_commands import (start_list_exchanges,  # noqa: F401
                             start_list_markets, start_list_strategies,
                             start_list_timeframes)
+from freqtrade.commands.plot_commands import start_plot_dataframe, start_plot_profit  # noqa: F401
 from freqtrade.commands.trade_commands import start_trading  # noqa: F401
 from freqtrade.commands.utils import setup_utils_configuration, start_test_pairlist  # noqa: F401

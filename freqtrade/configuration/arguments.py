@@ -136,8 +136,8 @@ class Arguments:
                                         start_list_exchanges, start_list_markets,
                                         start_list_strategies, start_new_hyperopt,
                                         start_new_strategy, start_list_timeframes,
+                                        start_plot_dataframe, start_plot_profit,
                                         start_test_pairlist, start_trading)
-        from freqtrade.plot.plot_utils import start_plot_dataframe, start_plot_profit
 
         subparsers = self.parser.add_subparsers(dest='command',
                                                 # Use custom message when no subhandler is added
