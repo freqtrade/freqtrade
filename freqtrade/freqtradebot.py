@@ -95,6 +95,16 @@ class FreqtradeBot:
         # Protect sell-logic from forcesell and viceversa
         self._sell_lock = Lock()
 
+    def notify_status(self, msg: str) -> None:
+        """
+        Public method for users of this class (worker, etc.) to send notifications
+        via RPC about changes in the bot status.
+        """
+        self.rpc.send_msg({
+            'type': RPCMessageType.STATUS_NOTIFICATION,
+            'status': msg
+        })
+
     def cleanup(self) -> None:
         """
         Cleanup pending resources on an already stopped bot
