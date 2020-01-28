@@ -43,6 +43,8 @@ ARGS_TEST_PAIRLIST = ["config", "quote_currencies", "print_one_column", "list_pa
 
 ARGS_CREATE_USERDIR = ["user_data_dir", "reset"]
 
+ARGS_BUILD_CONFIG = ["config"]
+
 ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy", "template"]
 
 ARGS_BUILD_HYPEROPT = ["user_data_dir", "hyperopt", "template"]
@@ -133,8 +135,9 @@ class Arguments:
         from freqtrade.commands import (start_create_userdir, start_download_data,
                                         start_hyperopt_list, start_hyperopt_show,
                                         start_list_exchanges, start_list_markets,
-                                        start_list_strategies, start_new_hyperopt,
-                                        start_new_strategy, start_list_timeframes,
+                                        start_list_strategies, start_list_timeframes,
+                                        start_new_config,
+                                        start_new_hyperopt, start_new_strategy,
                                         start_plot_dataframe, start_plot_profit,
                                         start_backtesting, start_hyperopt, start_edge,
                                         start_test_pairlist, start_trading)
@@ -176,6 +179,12 @@ class Arguments:
                                                    )
         create_userdir_cmd.set_defaults(func=start_create_userdir)
         self._build_args(optionlist=ARGS_CREATE_USERDIR, parser=create_userdir_cmd)
+
+        # add new-config subcommand
+        build_config_cmd = subparsers.add_parser('new-config',
+                                                   help="Create new config")
+        build_config_cmd.set_defaults(func=start_new_config)
+        self._build_args(optionlist=ARGS_BUILD_CONFIG, parser=build_config_cmd)
 
         # add new-strategy subcommand
         build_strategy_cmd = subparsers.add_parser('new-strategy',

@@ -9,6 +9,7 @@ Note: Be careful with file-scoped imports in these subfiles.
 from freqtrade.commands.arguments import Arguments
 from freqtrade.commands.data_commands import start_download_data
 from freqtrade.commands.deploy_commands import (start_create_userdir,
+                                                start_new_config,
                                                 start_new_hyperopt,
                                                 start_new_strategy)
 from freqtrade.commands.hyperopt_commands import (start_hyperopt_list,

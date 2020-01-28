@@ -110,3 +110,11 @@ def start_new_hyperopt(args: Dict[str, Any]) -> None:
         deploy_new_hyperopt(args['hyperopt'], new_path, args['template'])
     else:
         raise OperationalException("`new-hyperopt` requires --hyperopt to be set.")
+
+
+def start_new_config(args: Dict[str, Any]) -> None:
+    """
+    Create a new strategy from a template
+    Asking the user questions to fill out the templateaccordingly.
+    """
+    pass
