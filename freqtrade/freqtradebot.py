@@ -423,8 +423,12 @@ class FreqtradeBot:
         order_book_bids = order_book_data_frame['b_size'].sum()
         order_book_asks = order_book_data_frame['a_size'].sum()
         bids_ask_delta = order_book_bids / order_book_asks
-        logger.info('bids: %s, asks: %s, delta: %s, askprice: %s, bidprice: %s, immediate askquantity: %s, immediate bidquantity: %s',
-                    order_book_bids, order_book_asks, bids_ask_delta, order_book['asks'][0][0], order_book['bids'][0][0], order_book['asks'][0][1], order_book['bids'][0][1])
+        logger.info(
+            f"bids: {order_book_bids}, asks: {order_book_asks}, delta: {bids_ask_delta}, "
+            f"askprice: {order_book['asks'][0][0]}, bidprice: {order_book['bids'][0][0]}, "
+            f"immediate ask quantity: {order_book['asks'][0][1]}, "
+            f"immediate bid quantity: {order_book['bids'][0][1]}",
+        )
         if bids_ask_delta >= conf_bids_to_ask_delta:
             logger.info('bids to ask delta DOES satisfy condition.')
             return True
