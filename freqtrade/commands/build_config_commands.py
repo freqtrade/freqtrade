@@ -6,13 +6,14 @@ from questionary import Separator, prompt
 
 from freqtrade.exchange import available_exchanges
 from freqtrade.misc import render_template
-
+from freqtrade.exceptions import OperationalException
 logger = logging.getLogger(__name__)
 
 
 def ask_user_config() -> Dict[str, Any]:
     """
     Ask user a few questions to build the configuration.
+    Interactive questions built using https://github.com/tmbo/questionary
     :returns: Dict with keys to put into template
     """
     questions = [
@@ -106,23 +107,11 @@ def ask_user_config() -> Dict[str, Any]:
     ]
     answers = prompt(questions)
 
-    print(answers)
+    if not answers:
+        # Interrupted questionary sessions return an empty dict.
+        raise OperationalException("User interrupted interactive questions.")
 
-    sample_selections = {
-        'max_open_trades': 3,
-        'stake_currency': 'USDT',
-        'stake_amount': 100,
-        'fiat_display_currency': 'EUR',
-        'ticker_interval': '15m',
-        'dry_run': True,
-        'exchange_name': 'binance',
-        'exchange_key': 'sampleKey',
-        'exchange_secret': 'Samplesecret',
-        'telegram': False,
-        'telegram_token': 'asdf1244',
-        'telegram_chat_id': '1144444',
-    }
-    return sample_selections
+    return answers
 
 
 def deploy_new_config(config_path: Path, selections: Dict[str, Any]) -> None:
@@ -156,5 +145,6 @@ def start_new_config(args: Dict[str, Any]) -> None:
     Asking the user questions to fill out the templateaccordingly.
     """
     selections = ask_user_config()
+
     config_path = Path(args['config'][0])
     deploy_new_config(config_path, selections)
