@@ -56,14 +56,6 @@ class Worker:
         self._sd_notify = sdnotify.SystemdNotifier() if \
             self._config.get('internals', {}).get('sd_notify', False) else None
 
-    @property
-    def state(self) -> State:
-        return self.freqtrade.state
-
-    @state.setter
-    def state(self, value: State) -> None:
-        self.freqtrade.state = value
-
     def run(self) -> None:
         state = None
         while True:
