@@ -1,4 +1,3 @@
-import json
 import re
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
@@ -9,9 +8,8 @@ from freqtrade.commands import (start_create_userdir, start_download_data,
                                 start_hyperopt_list, start_hyperopt_show,
                                 start_list_exchanges, start_list_markets,
                                 start_list_strategies, start_list_timeframes,
-                                start_new_config, start_new_hyperopt,
-                                start_new_strategy, start_test_pairlist,
-                                start_trading)
+                                start_new_hyperopt, start_new_strategy,
+                                start_test_pairlist, start_trading)
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
@@ -537,40 +535,6 @@ def test_start_new_hyperopt_no_arg(mocker, caplog):
     with pytest.raises(OperationalException,
                        match="`new-hyperopt` requires --hyperopt to be set."):
         start_new_hyperopt(get_args(args))
-
-
-@pytest.mark.parametrize('exchange', ['bittrex', 'binance', 'kraken', 'ftx'])
-def test_start_new_config(mocker, caplog, exchange):
-    wt_mock = mocker.patch.object(Path, "write_text", MagicMock())
-    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
-    sample_selections = {
-        'max_open_trades': 3,
-        'stake_currency': 'USDT',
-        'stake_amount': 100,
-        'fiat_display_currency': 'EUR',
-        'ticker_interval': '15m',
-        'dry_run': True,
-        'exchange_name': exchange,
-        'exchange_key': 'sampleKey',
-        'exchange_secret': 'Samplesecret',
-        'telegram': False,
-        'telegram_token': 'asdf1244',
-        'telegram_chat_id': '1144444',
-    }
-    mocker.patch('freqtrade.commands.build_config_commands.ask_user_config',
-                 return_value=sample_selections)
-    args = [
-        "new-config",
-        "--config",
-        "coolconfig.json"
-    ]
-    start_new_config(get_args(args))
-
-    assert log_has_re("Writing config to .*", caplog)
-    assert wt_mock.call_count == 1
-    result = json.loads(wt_mock.call_args_list[0][0][0])
-    assert result['exchange']['name'] == exchange
-    assert result['ticker_interval'] == '15m'
 
 
 def test_download_data_keyboardInterrupt(mocker, caplog, markets):
