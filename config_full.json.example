@@ -4,7 +4,7 @@
     "stake_amount": 0.05,
     "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "USD",
-    "amount_reserve_percent" : 0.05,
+    "amount_reserve_percent": 0.05,
     "amend_last_stake_amount": false,
     "last_stake_amount_min_ratio": 0.5,
     "dry_run": false,
