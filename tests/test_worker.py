@@ -11,11 +11,11 @@ from tests.conftest import get_patched_worker, log_has
 def test_worker_state(mocker, default_conf, markets) -> None:
     mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
     worker = get_patched_worker(mocker, default_conf)
-    assert worker.state is State.RUNNING
+    assert worker.freqtrade.state is State.RUNNING
 
     default_conf.pop('initial_state')
     worker = Worker(args=None, config=default_conf)
-    assert worker.state is State.STOPPED
+    assert worker.freqtrade.state is State.STOPPED
 
 
 def test_worker_running(mocker, default_conf, caplog) -> None:
@@ -41,7 +41,7 @@ def test_worker_stopped(mocker, default_conf, caplog) -> None:
     mock_sleep = mocker.patch('time.sleep', return_value=None)
 
     worker = get_patched_worker(mocker, default_conf)
-    worker.state = State.STOPPED
+    worker.freqtrade.state = State.STOPPED
     state = worker._worker(old_state=State.RUNNING)
     assert state is State.STOPPED
     assert log_has('Changing state to: STOPPED', caplog)

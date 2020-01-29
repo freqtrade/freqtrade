@@ -797,10 +797,10 @@ def test_process_operational_exception(default_conf, ticker, mocker) -> None:
     worker = Worker(args=None, config=default_conf)
     patch_get_signal(worker.freqtrade)
 
-    assert worker.state == State.RUNNING
+    assert worker.freqtrade.state == State.RUNNING
 
     worker._process()
-    assert worker.state == State.STOPPED
+    assert worker.freqtrade.state == State.STOPPED
     assert 'OperationalException' in msg_mock.call_args_list[-1][0][0]['status']
 
 
@@ -3631,7 +3631,7 @@ def test_startup_state(default_conf, mocker):
                                 }
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     worker = get_patched_worker(mocker, default_conf)
-    assert worker.state is State.RUNNING
+    assert worker.freqtrade.state is State.RUNNING
 
 
 def test_startup_trade_reinit(default_conf, edge_conf, mocker):
