@@ -118,9 +118,22 @@ def deploy_new_config(config_path: Path, selections: Dict[str, Any]) -> None:
     :param config_path: Path object for new config file. Should not exist yet
     :param selecions: Dict containing selections taken by the user.
     """
+    from jinja2.exceptions import TemplateNotFound
+    try:
+        selections['exchange'] = render_template(
+            templatefile=f"subtemplates/exchange_{selections['exchange_name']}.j2",
+            arguments=selections
+            )
+    except TemplateNotFound:
+        selections['exchange'] = render_template(
+            templatefile=f"subtemplates/exchange_generic.j2",
+            arguments=selections
+        )
+
     config_text = render_template(templatefile='base_config.json.j2',
                                   arguments=selections)
 
+    logger.info(f"Writing config to `{config_path}`.")
     config_path.write_text(config_text)
 
 
@@ -135,12 +148,14 @@ def start_new_config(args: Dict[str, Any]) -> None:
         'fiat_display_currency': 'EUR',
         'ticker_interval': '15m',
         'dry_run': True,
-        'exchange': 'binance',
+        'exchange_name': 'binance',
         'exchange_key': 'sampleKey',
         'exchange_secret': 'Samplesecret',
-        'telegram': True,
+        'telegram': False,
         'telegram_token': 'asdf1244',
         'telegram_chat_id': '1144444',
     }
     config_path = Path(args['config'][0])
     deploy_new_config(config_path, sample_selections)
+
+

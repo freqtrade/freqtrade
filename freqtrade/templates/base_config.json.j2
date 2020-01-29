@@ -28,29 +28,7 @@
         "ignore_roi_if_buy_signal": false
     },
     "exchange": {
-        "name": "bittrex",
-        "key": "your_exchange_key",
-        "secret": "your_exchange_secret",
-        "ccxt_config": {"enableRateLimit": true},
-        "ccxt_async_config": {
-            "enableRateLimit": true,
-            "rateLimit": 500
-        },
-        "pair_whitelist": [
-            "ETH/BTC",
-            "LTC/BTC",
-            "ETC/BTC",
-            "DASH/BTC",
-            "ZEC/BTC",
-            "XLM/BTC",
-            "NXT/BTC",
-            "TRX/BTC",
-            "ADA/BTC",
-            "XMR/BTC"
-        ],
-        "pair_blacklist": [
-            "DOGE/BTC"
-        ]
+        {{ exchange | indent(8) }}
     },
     "pairlists": [
         {"method": "StaticPairList"}
