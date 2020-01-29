@@ -4,10 +4,27 @@ from typing import Any, Dict
 
 from questionary import Separator, prompt
 
+from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
 from freqtrade.exchange import available_exchanges
 from freqtrade.misc import render_template
 from freqtrade.exceptions import OperationalException
 logger = logging.getLogger(__name__)
+
+
+def validate_is_int(val):
+    try:
+        _ = int(val)
+        return True
+    except Exception:
+        return False
+
+
+def validate_is_float(val):
+    try:
+        _ = float(val)
+        return True
+    except Exception:
+        return False
 
 
 def ask_user_config() -> Dict[str, Any]:
@@ -34,12 +51,14 @@ def ask_user_config() -> Dict[str, Any]:
             "name": "stake_amount",
             "message": "Please insert your stake amount:",
             "default": "0.01",
+            "validate": lambda val: val == UNLIMITED_STAKE_AMOUNT or validate_is_float(val),
         },
         {
             "type": "text",
             "name": "max_open_trades",
-            "message": "Please insert max_open_trades:",
+            "message": f"Please insert max_open_trades (Integer or '{UNLIMITED_STAKE_AMOUNT}'):",
             "default": "3",
+            "validate": lambda val: val == UNLIMITED_STAKE_AMOUNT or validate_is_int(val)
         },
         {
             "type": "text",
