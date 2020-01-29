@@ -8,8 +8,9 @@ from freqtrade.commands import (start_create_userdir, start_download_data,
                                 start_hyperopt_list, start_hyperopt_show,
                                 start_list_exchanges, start_list_markets,
                                 start_list_strategies, start_list_timeframes,
-                                start_new_hyperopt, start_new_strategy,
-                                start_test_pairlist, start_trading)
+                                start_new_config, start_new_hyperopt,
+                                start_new_strategy, start_test_pairlist,
+                                start_trading)
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
@@ -535,6 +536,22 @@ def test_start_new_hyperopt_no_arg(mocker, caplog):
     with pytest.raises(OperationalException,
                        match="`new-hyperopt` requires --hyperopt to be set."):
         start_new_hyperopt(get_args(args))
+
+
+def test_start_new_config(mocker, caplog):
+    wt_mock = mocker.patch.object(Path, "write_text", MagicMock())
+    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
+
+    args = [
+        "new-config",
+        "--config",
+        "coolconfig.json"
+    ]
+    start_new_config(get_args(args))
+
+    assert wt_mock.call_count == 1
+    assert "binance" in wt_mock.call_args_list[0][0][0]
+    assert log_has_re("Writing config to .*", caplog)
 
 
 def test_download_data_keyboardInterrupt(mocker, caplog, markets):

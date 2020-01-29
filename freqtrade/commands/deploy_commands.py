@@ -112,6 +112,28 @@ def start_new_hyperopt(args: Dict[str, Any]) -> None:
         raise OperationalException("`new-hyperopt` requires --hyperopt to be set.")
 
 
+def ask_user_config() -> Dict[str, Any]:
+    """
+    Ask user a few questions to build the configuration.
+    :returns: Dict with keys to put into template
+    """
+    sample_selections = {
+        'max_open_trades': 3,
+        'stake_currency': 'USDT',
+        'stake_amount': 100,
+        'fiat_display_currency': 'EUR',
+        'ticker_interval': '15m',
+        'dry_run': True,
+        'exchange_name': 'binance',
+        'exchange_key': 'sampleKey',
+        'exchange_secret': 'Samplesecret',
+        'telegram': False,
+        'telegram_token': 'asdf1244',
+        'telegram_chat_id': '1144444',
+    }
+    return sample_selections
+
+
 def deploy_new_config(config_path: Path, selections: Dict[str, Any]) -> None:
     """
     Applies selections to the template and writes the result to config_path
@@ -142,20 +164,8 @@ def start_new_config(args: Dict[str, Any]) -> None:
     Create a new strategy from a template
     Asking the user questions to fill out the templateaccordingly.
     """
-    sample_selections = {
-        'stake_currency': 'USDT',
-        'stake_amount': 100,
-        'fiat_display_currency': 'EUR',
-        'ticker_interval': '15m',
-        'dry_run': True,
-        'exchange_name': 'binance',
-        'exchange_key': 'sampleKey',
-        'exchange_secret': 'Samplesecret',
-        'telegram': False,
-        'telegram_token': 'asdf1244',
-        'telegram_chat_id': '1144444',
-    }
+    selections = ask_user_config()
     config_path = Path(args['config'][0])
-    deploy_new_config(config_path, sample_selections)
+    deploy_new_config(config_path, selections)
 
 
