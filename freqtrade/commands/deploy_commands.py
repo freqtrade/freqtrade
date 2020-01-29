@@ -112,9 +112,35 @@ def start_new_hyperopt(args: Dict[str, Any]) -> None:
         raise OperationalException("`new-hyperopt` requires --hyperopt to be set.")
 
 
+def deploy_new_config(config_path: Path, selections: Dict[str, Any]) -> None:
+    """
+    Applies selections to the template and writes the result to config_path
+    :param config_path: Path object for new config file. Should not exist yet
+    :param selecions: Dict containing selections taken by the user.
+    """
+    config_text = render_template(templatefile='base_config.json.j2',
+                                  arguments=selections)
+
+    config_path.write_text(config_text)
+
+
 def start_new_config(args: Dict[str, Any]) -> None:
     """
     Create a new strategy from a template
     Asking the user questions to fill out the templateaccordingly.
     """
-    pass
+    sample_selections = {
+        'stake_currency': 'USDT',
+        'stake_amount': 100,
+        'fiat_display_currency': 'EUR',
+        'ticker_interval': '15m',
+        'dry_run': True,
+        'exchange': 'binance',
+        'exchange_key': 'sampleKey',
+        'exchange_secret': 'Samplesecret',
+        'telegram': True,
+        'telegram_token': 'asdf1244',
+        'telegram_chat_id': '1144444',
+    }
+    config_path = Path(args['config'][0])
+    deploy_new_config(config_path, sample_selections)
