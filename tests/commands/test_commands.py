@@ -557,7 +557,7 @@ def test_start_new_config(mocker, caplog, exchange):
         'telegram_token': 'asdf1244',
         'telegram_chat_id': '1144444',
     }
-    mocker.patch('freqtrade.commands.deploy_commands.ask_user_config',
+    mocker.patch('freqtrade.commands.build_config_commands.ask_user_config',
                  return_value=sample_selections)
     args = [
         "new-config",
