@@ -256,7 +256,7 @@ AVAILABLE_CLI_OPTIONS = {
         help='Specify the class name of the hyperopt loss function class (IHyperOptLoss). '
         'Different functions can generate completely different results, '
         'since the target for optimization is different. Built-in Hyperopt-loss-functions are: '
-        'DefaultHyperOptLoss, OnlyProfitHyperOptLoss, SharpeHyperOptLoss.'
+        'DefaultHyperOptLoss, OnlyProfitHyperOptLoss, SharpeHyperOptLoss, SharpeHyperOptLossDaily.'
         '(default: `%(default)s`).',
         metavar='NAME',
         default=constants.DEFAULT_HYPEROPT_LOSS,
