@@ -40,7 +40,7 @@ class SharpeHyperOptLossDaily(IHyperOptLoss):
 
         sum_daily = (
             results.resample("D", on="close_time").agg(
-                {"profit_percent": sum, "profit_abs": sum}
+                {"profit_percent": sum}
             )
             * 100.0
         )
