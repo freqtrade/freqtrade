@@ -92,8 +92,8 @@ def generate_text_table_sell_reason(
         loss = len(result[result['profit_abs'] < 0])
         profit_mean = round(result['profit_percent'].mean() * 100.0, 2)
         profit_sum = round(result["profit_percent"].sum() * 100.0, 2)
-        profit_tot = result["profit_abs"].sum()
-        profit_percent_tot = round(result["profit_percent"].sum() * 100.0 / max_open_trades, 2)
+        profit_tot = result['profit_abs'].sum()
+        profit_percent_tot = round(result['profit_percent'].sum() * 100.0 / max_open_trades, 2)
         tabular_data.append(
             [
                 reason.value,
