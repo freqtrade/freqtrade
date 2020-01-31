@@ -3,7 +3,7 @@
 This page explains the different parameters of the bot and how to run it.
 
 !!! Note
-    If you've used `setup.sh`, don't forget to activate your virtual environment (`source .env/bin/activate`) before running freqtrade commands.
+If you've used `setup.sh`, don't forget to activate your virtual environment (`source .env/bin/activate`) before running freqtrade commands.
 
 ## Bot commands
 
@@ -337,8 +337,8 @@ optional arguments:
                         generate completely different results, since the
                         target for optimization is different. Built-in
                         Hyperopt-loss-functions are: DefaultHyperOptLoss,
-                        OnlyProfitHyperOptLoss, SharpeHyperOptLoss (default:
-                        `DefaultHyperOptLoss`).
+                        OnlyProfitHyperOptLoss, SharpeHyperOptLoss,
+                        SharpeHyperOptLossDaily (default: `DefaultHyperOptLoss`).
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
