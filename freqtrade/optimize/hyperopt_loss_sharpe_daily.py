@@ -33,10 +33,8 @@ class SharpeHyperOptLossDaily(IHyperOptLoss):
 
         Uses Sharpe Ratio calculation.
         """
-        total_profit = results.profit_percent
-
-        # adding slippage of 0.1% per trade
-        total_profit = total_profit - 0.0005
+        # get profit_percent and apply slippage of 0.1% per trade
+        results.loc[:, 'profit_percent'] = results['profit_percent'] - 0.0005
 
         sum_daily = (
             results.resample("D", on="close_time").agg(
