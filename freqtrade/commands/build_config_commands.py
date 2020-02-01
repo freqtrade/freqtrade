@@ -5,7 +5,7 @@ from typing import Any, Dict
 from questionary import Separator, prompt
 
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
-from freqtrade.exchange import available_exchanges
+from freqtrade.exchange import available_exchanges, MAP_EXCHANGE_CHILDCLASS
 from freqtrade.misc import render_template
 from freqtrade.exceptions import OperationalException
 logger = logging.getLogger(__name__)
@@ -141,8 +141,11 @@ def deploy_new_config(config_path: Path, selections: Dict[str, Any]) -> None:
     """
     from jinja2.exceptions import TemplateNotFound
     try:
+        exchange_template = MAP_EXCHANGE_CHILDCLASS.get(
+            selections['exchange_name'], selections['exchange_name'])
+
         selections['exchange'] = render_template(
-            templatefile=f"subtemplates/exchange_{selections['exchange_name']}.j2",
+            templatefile=f"subtemplates/exchange_{exchange_template}.j2",
             arguments=selections
             )
     except TemplateNotFound:
