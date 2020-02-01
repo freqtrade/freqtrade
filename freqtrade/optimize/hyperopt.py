@@ -6,7 +6,9 @@ This module contains the hyperopt logic
 
 import locale
 import logging
+import random
 import sys
+import warnings
 from collections import OrderedDict
 from operator import itemgetter
 from pathlib import Path
@@ -19,18 +21,23 @@ from colorama import init as colorama_init
 from joblib import (Parallel, cpu_count, delayed, dump, load,
                     wrap_non_picklable_objects)
 from pandas import DataFrame
-from skopt import Optimizer
-from skopt.space import Dimension
 
-from freqtrade import OperationalException
-from freqtrade.data.history import get_timeframe, trim_dataframe
+from freqtrade.data.history import get_timerange, trim_dataframe
+from freqtrade.exceptions import OperationalException
 from freqtrade.misc import plural, round_dict
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
-from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F4
-from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F4
+from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F401
+from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F401
 from freqtrade.resolvers.hyperopt_resolver import (HyperOptLossResolver,
                                                    HyperOptResolver)
+
+# Suppress scikit-learn FutureWarnings from skopt
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    from skopt import Optimizer
+    from skopt.space import Dimension
+
 
 logger = logging.getLogger(__name__)
 
@@ -57,9 +64,9 @@ class Hyperopt:
 
         self.backtesting = Backtesting(self.config)
 
-        self.custom_hyperopt = HyperOptResolver(self.config).hyperopt
+        self.custom_hyperopt = HyperOptResolver.load_hyperopt(self.config)
 
-        self.custom_hyperoptloss = HyperOptLossResolver(self.config).hyperoptloss
+        self.custom_hyperoptloss = HyperOptLossResolver.load_hyperoptloss(self.config)
         self.calculate_loss = self.custom_hyperoptloss.hyperopt_loss_function
 
         self.trials_file = (self.config['user_data_dir'] /
@@ -177,8 +184,7 @@ class Hyperopt:
             result['stoploss'] = {p.name: params.get(p.name)
                                   for p in self.hyperopt_space('stoploss')}
         if self.has_space('trailing'):
-            result['trailing'] = {p.name: params.get(p.name)
-                                  for p in self.hyperopt_space('trailing')}
+            result['trailing'] = self.custom_hyperopt.generate_trailing_params(params)
 
         return result
 
@@ -353,27 +359,25 @@ class Hyperopt:
             self.backtesting.strategy.stoploss = params_dict['stoploss']
 
         if self.has_space('trailing'):
-            self.backtesting.strategy.trailing_stop = params_dict['trailing_stop']
-            self.backtesting.strategy.trailing_stop_positive = \
-                params_dict['trailing_stop_positive']
+            d = self.custom_hyperopt.generate_trailing_params(params_dict)
+            self.backtesting.strategy.trailing_stop = d['trailing_stop']
+            self.backtesting.strategy.trailing_stop_positive = d['trailing_stop_positive']
             self.backtesting.strategy.trailing_stop_positive_offset = \
-                params_dict['trailing_stop_positive_offset']
+                d['trailing_stop_positive_offset']
             self.backtesting.strategy.trailing_only_offset_is_reached = \
-                params_dict['trailing_only_offset_is_reached']
+                d['trailing_only_offset_is_reached']
 
         processed = load(self.tickerdata_pickle)
 
-        min_date, max_date = get_timeframe(processed)
+        min_date, max_date = get_timerange(processed)
 
         backtesting_results = self.backtesting.backtest(
-            {
-                'stake_amount': self.config['stake_amount'],
-                'processed': processed,
-                'max_open_trades': self.max_open_trades,
-                'position_stacking': self.position_stacking,
-                'start_date': min_date,
-                'end_date': max_date,
-            }
+                processed=processed,
+                stake_amount=self.config['stake_amount'],
+                start_date=min_date,
+                end_date=max_date,
+                max_open_trades=self.max_open_trades,
+                position_stacking=self.position_stacking,
         )
         return self._get_results_dict(backtesting_results, min_date, max_date,
                                       params_dict, params_details)
@@ -421,7 +425,7 @@ class Hyperopt:
                 f"Avg profit {results_metrics['avg_profit']: 6.2f}%. "
                 f"Total profit {results_metrics['total_profit']: 11.8f} {stake_cur} "
                 f"({results_metrics['profit']: 7.2f}\N{GREEK CAPITAL LETTER SIGMA}%). "
-                f"Avg duration {results_metrics['duration']:5.1f} mins."
+                f"Avg duration {results_metrics['duration']:5.1f} min."
                 ).encode(locale.getpreferredencoding(), 'replace').decode('utf-8')
 
     def get_optimizer(self, dimensions: List[Dimension], cpu_count) -> Optimizer:
@@ -431,7 +435,7 @@ class Hyperopt:
             acq_optimizer="auto",
             n_initial_points=INITIAL_POINTS,
             acq_optimizer_kwargs={'n_jobs': cpu_count},
-            random_state=self.config.get('hyperopt_random_state', None),
+            random_state=self.random_state,
         )
 
     def fix_optimizer_models_list(self):
@@ -470,7 +474,13 @@ class Hyperopt:
             logger.info(f"Loaded {len(trials)} previous evaluations from disk.")
         return trials
 
+    def _set_random_state(self, random_state: Optional[int]) -> int:
+        return random_state or random.randint(1, 2**16 - 1)
+
     def start(self) -> None:
+        self.random_state = self._set_random_state(self.config.get('hyperopt_random_state', None))
+        logger.info(f"Using optimizer random state: {self.random_state}")
+
         data, timerange = self.backtesting.load_bt_data()
 
         preprocessed = self.backtesting.strategy.tickerdata_to_dataframe(data)
@@ -478,7 +488,7 @@ class Hyperopt:
         # Trim startup period from analyzed dataframe
         for pair, df in preprocessed.items():
             preprocessed[pair] = trim_dataframe(df, timerange)
-        min_date, max_date = get_timeframe(data)
+        min_date, max_date = get_timerange(data)
 
         logger.info(
             'Hyperopting with data from %s up to %s (%s days)..',

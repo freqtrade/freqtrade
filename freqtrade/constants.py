@@ -10,7 +10,7 @@ HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
 DEFAULT_HYPEROPT_LOSS = 'DefaultHyperOptLoss'
 DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
-DEFAULT_DB_DRYRUN_URL = 'sqlite://'
+DEFAULT_DB_DRYRUN_URL = 'sqlite:///tradesv3.dryrun.sqlite'
 UNLIMITED_STAKE_AMOUNT = 'unlimited'
 DEFAULT_AMOUNT_RESERVE_PERCENT = 0.05
 REQUIRED_ORDERTIF = ['buy', 'sell']
@@ -18,7 +18,7 @@ REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList', 'PrecisionFilter', 'PriceFilter']
-DRY_RUN_WALLET = 999.9
+DRY_RUN_WALLET = 1000
 MATH_CLOSE_PREC = 1e-14  # Precision used for float comparisons
 
 USERPATH_HYPEROPTS = 'hyperopts'
@@ -32,12 +32,6 @@ USER_DATA_FILES = {
     'sample_hyperopt.py': USERPATH_HYPEROPTS,
     'strategy_analysis_example.ipynb': 'notebooks',
 }
-
-TIMEFRAMES = [
-    '1m', '3m', '5m', '15m', '30m',
-    '1h', '2h', '4h', '6h', '8h', '12h',
-    '1d', '3d', '1w',
-]
 
 SUPPORTED_FIAT = [
     "AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK", "DKK",
@@ -66,16 +60,26 @@ CONF_SCHEMA = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': ['integer', 'number'], 'minimum': -1},
-        'ticker_interval': {'type': 'string', 'enum': TIMEFRAMES},
-        'stake_currency': {'type': 'string', 'enum': ['BTC', 'XBT', 'ETH', 'USDT', 'EUR', 'USD']},
+        'ticker_interval': {'type': 'string'},
+        'stake_currency': {'type': 'string'},
         'stake_amount': {
             'type': ['number', 'string'],
             'minimum': 0.0001,
             'pattern': UNLIMITED_STAKE_AMOUNT
         },
+        'tradable_balance_ratio': {
+            'type': 'number',
+            'minimum': 0.1,
+            'maximum': 1,
+            'default': 0.99
+        },
+        'amend_last_stake_amount': {'type': 'boolean', 'default': False},
+        'last_stake_amount_min_ratio': {
+            'type': 'number', 'minimum': 0.0, 'maximum': 1.0, 'default': 0.5
+            },
         'fiat_display_currency': {'type': 'string', 'enum': SUPPORTED_FIAT},
         'dry_run': {'type': 'boolean'},
-        'dry_run_wallet': {'type': 'number'},
+        'dry_run_wallet': {'type': 'number', 'default': DRY_RUN_WALLET},
         'process_only_new_candles': {'type': 'boolean'},
         'minimal_roi': {
             'type': 'object',
@@ -266,18 +270,27 @@ CONF_SCHEMA = {
                 'max_trade_duration_minute': {'type': 'integer'},
                 'remove_pumps': {'type': 'boolean'}
             },
-            'required': ['process_throttle_secs', 'allowed_risk', 'capital_available_percentage']
+            'required': ['process_throttle_secs', 'allowed_risk']
         }
     },
-    'required': [
-        'exchange',
-        'max_open_trades',
-        'stake_currency',
-        'stake_amount',
-        'dry_run',
-        'bid_strategy',
-        'unfilledtimeout',
-        'stoploss',
-        'minimal_roi',
-    ]
 }
+
+SCHEMA_TRADE_REQUIRED = [
+    'exchange',
+    'max_open_trades',
+    'stake_currency',
+    'stake_amount',
+    'tradable_balance_ratio',
+    'last_stake_amount_min_ratio',
+    'dry_run',
+    'dry_run_wallet',
+    'bid_strategy',
+    'unfilledtimeout',
+    'stoploss',
+    'minimal_roi',
+]
+
+SCHEMA_MINIMAL_REQUIRED = [
+    'exchange',
+    'dry_run',
+]

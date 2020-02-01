@@ -8,10 +8,10 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from jsonschema import Draft4Validator, ValidationError, validate
+from jsonschema import ValidationError
 
-from freqtrade import OperationalException, constants
-from freqtrade.configuration import (Arguments, Configuration, check_exchange,
+from freqtrade.commands import Arguments
+from freqtrade.configuration import (Configuration, check_exchange,
                                      remove_credentials,
                                      validate_config_consistency)
 from freqtrade.configuration.config_validation import validate_config_schema
@@ -20,6 +20,7 @@ from freqtrade.configuration.deprecated_settings import (
     process_temporary_deprecated_settings)
 from freqtrade.configuration.load_config import load_config_file
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
+from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import _set_loggers, setup_logging
 from freqtrade.state import RunMode
 from tests.conftest import (log_has, log_has_re,
@@ -49,6 +50,7 @@ def test_load_config_missing_attributes(default_conf) -> None:
 
     conf = deepcopy(default_conf)
     conf.pop('stake_currency')
+    conf['runmode'] = RunMode.DRY_RUN
     with pytest.raises(ValidationError, match=r".*'stake_currency' is a required property.*"):
         validate_config_schema(conf)
 
@@ -322,7 +324,7 @@ def test_load_dry_run(default_conf, mocker, config_value, expected, arglist) -> 
     configuration = Configuration(Arguments(arglist).get_parsed_arg())
     validated_conf = configuration.load_config()
 
-    assert validated_conf.get('dry_run') is expected
+    assert validated_conf['dry_run'] is expected
 
 
 def test_load_custom_strategy(default_conf, mocker) -> None:
@@ -718,7 +720,16 @@ def test_load_config_warn_forcebuy(default_conf, mocker, caplog) -> None:
 
 
 def test_validate_default_conf(default_conf) -> None:
-    validate(default_conf, constants.CONF_SCHEMA, Draft4Validator)
+    # Validate via our validator - we allow setting defaults!
+    validate_config_schema(default_conf)
+
+
+def test_validate_max_open_trades(default_conf):
+    default_conf['max_open_trades'] = float('inf')
+    default_conf['stake_amount'] = 'unlimited'
+    with pytest.raises(OperationalException, match='`max_open_trades` and `stake_amount` '
+                                                   'cannot both be unlimited.'):
+        validate_config_consistency(default_conf)
 
 
 def test_validate_tsl(default_conf):
@@ -976,7 +987,7 @@ def test_pairlist_resolving_fallback(mocker):
 
     assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
     assert config['exchange']['name'] == 'binance'
-    assert config['datadir'] == str(Path.cwd() / "user_data/data/binance")
+    assert config['datadir'] == Path.cwd() / "user_data/data/binance"
 
 
 @pytest.mark.parametrize("setting", [
@@ -1025,6 +1036,17 @@ def test_process_deprecated_setting_pairlists(mocker, default_conf, caplog):
     process_temporary_deprecated_settings(default_conf)
     assert log_has_re(r'DEPRECATED.*precision_filter.*', caplog)
     assert log_has_re(r'DEPRECATED.*in pairlist is deprecated and must be moved*', caplog)
+
+
+def test_process_deprecated_setting_edge(mocker, edge_conf, caplog):
+    patched_configuration_load_config_file(mocker, edge_conf)
+    edge_conf.update({'edge': {
+        'enabled': True,
+        'capital_available_percentage': 0.5,
+    }})
+
+    process_temporary_deprecated_settings(edge_conf)
+    assert log_has_re(r"DEPRECATED.*Using 'edge.capital_available_percentage'*", caplog)
 
 
 def test_check_conflicting_settings(mocker, default_conf, caplog):

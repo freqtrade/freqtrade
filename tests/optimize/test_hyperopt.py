@@ -9,10 +9,10 @@ import pytest
 from arrow import Arrow
 from filelock import Timeout
 
-from freqtrade import OperationalException
+from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_hyperopt
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.history import load_tickerdata_file
-from freqtrade.optimize import setup_configuration, start_hyperopt
+from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.default_hyperopt import DefaultHyperOpt
 from freqtrade.optimize.default_hyperopt_loss import DefaultHyperOptLoss
 from freqtrade.optimize.hyperopt import Hyperopt
@@ -77,7 +77,7 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
         '--hyperopt', 'DefaultHyperOpt',
     ]
 
-    config = setup_configuration(get_args(args), RunMode.HYPEROPT)
+    config = setup_optimize_configuration(get_args(args), RunMode.HYPEROPT)
     assert 'max_open_trades' in config
     assert 'stake_currency' in config
     assert 'stake_amount' in config
@@ -117,7 +117,7 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
         '--print-all'
     ]
 
-    config = setup_configuration(get_args(args), RunMode.HYPEROPT)
+    config = setup_optimize_configuration(get_args(args), RunMode.HYPEROPT)
     assert 'max_open_trades' in config
     assert 'stake_currency' in config
     assert 'stake_amount' in config
@@ -159,11 +159,11 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
     delattr(hyperopt, 'populate_buy_trend')
     delattr(hyperopt, 'populate_sell_trend')
     mocker.patch(
-        'freqtrade.resolvers.hyperopt_resolver.HyperOptResolver._load_hyperopt',
+        'freqtrade.resolvers.hyperopt_resolver.HyperOptResolver.load_object',
         MagicMock(return_value=hyperopt(default_conf))
     )
     default_conf.update({'hyperopt': 'DefaultHyperOpt'})
-    x = HyperOptResolver(default_conf).hyperopt
+    x = HyperOptResolver.load_hyperopt(default_conf)
     assert not hasattr(x, 'populate_indicators')
     assert not hasattr(x, 'populate_buy_trend')
     assert not hasattr(x, 'populate_sell_trend')
@@ -180,7 +180,7 @@ def test_hyperoptresolver_wrongname(mocker, default_conf, caplog) -> None:
     default_conf.update({'hyperopt': "NonExistingHyperoptClass"})
 
     with pytest.raises(OperationalException, match=r'Impossible to load Hyperopt.*'):
-        HyperOptResolver(default_conf).hyperopt
+        HyperOptResolver.load_hyperopt(default_conf)
 
 
 def test_hyperoptresolver_noname(default_conf):
@@ -188,17 +188,17 @@ def test_hyperoptresolver_noname(default_conf):
     with pytest.raises(OperationalException,
                        match="No Hyperopt set. Please use `--hyperopt` to specify "
                              "the Hyperopt class to use."):
-        HyperOptResolver(default_conf)
+        HyperOptResolver.load_hyperopt(default_conf)
 
 
 def test_hyperoptlossresolver(mocker, default_conf, caplog) -> None:
 
     hl = DefaultHyperOptLoss
     mocker.patch(
-        'freqtrade.resolvers.hyperopt_resolver.HyperOptLossResolver._load_hyperoptloss',
+        'freqtrade.resolvers.hyperopt_resolver.HyperOptLossResolver.load_object',
         MagicMock(return_value=hl)
     )
-    x = HyperOptLossResolver(default_conf).hyperoptloss
+    x = HyperOptLossResolver.load_hyperoptloss(default_conf)
     assert hasattr(x, "hyperopt_loss_function")
 
 
@@ -206,7 +206,7 @@ def test_hyperoptlossresolver_wrongname(mocker, default_conf, caplog) -> None:
     default_conf.update({'hyperopt_loss': "NonExistingLossClass"})
 
     with pytest.raises(OperationalException, match=r'Impossible to load HyperoptLoss.*'):
-        HyperOptLossResolver(default_conf).hyperopt
+        HyperOptLossResolver.load_hyperoptloss(default_conf)
 
 
 def test_start_not_installed(mocker, default_conf, caplog, import_fails) -> None:
@@ -251,7 +251,7 @@ def test_start_no_data(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.data.history.load_pair_history', MagicMock(return_value=pd.DataFrame))
     mocker.patch(
-        'freqtrade.optimize.hyperopt.get_timeframe',
+        'freqtrade.optimize.hyperopt.get_timerange',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
     )
 
@@ -286,7 +286,7 @@ def test_start_filelock(mocker, default_conf, caplog) -> None:
 
 
 def test_loss_calculation_prefer_correct_trade_count(default_conf, hyperopt_results) -> None:
-    hl = HyperOptLossResolver(default_conf).hyperoptloss
+    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
     correct = hl.hyperopt_loss_function(hyperopt_results, 600)
     over = hl.hyperopt_loss_function(hyperopt_results, 600 + 100)
     under = hl.hyperopt_loss_function(hyperopt_results, 600 - 100)
@@ -298,7 +298,7 @@ def test_loss_calculation_prefer_shorter_trades(default_conf, hyperopt_results) 
     resultsb = hyperopt_results.copy()
     resultsb.loc[1, 'trade_duration'] = 20
 
-    hl = HyperOptLossResolver(default_conf).hyperoptloss
+    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
     longer = hl.hyperopt_loss_function(hyperopt_results, 100)
     shorter = hl.hyperopt_loss_function(resultsb, 100)
     assert shorter < longer
@@ -310,7 +310,7 @@ def test_loss_calculation_has_limited_profit(default_conf, hyperopt_results) -> 
     results_under = hyperopt_results.copy()
     results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
 
-    hl = HyperOptLossResolver(default_conf).hyperoptloss
+    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
     correct = hl.hyperopt_loss_function(hyperopt_results, 600)
     over = hl.hyperopt_loss_function(results_over, 600)
     under = hl.hyperopt_loss_function(results_under, 600)
@@ -325,7 +325,7 @@ def test_sharpe_loss_prefers_higher_profits(default_conf, hyperopt_results) -> N
     results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
 
     default_conf.update({'hyperopt_loss': 'SharpeHyperOptLoss'})
-    hl = HyperOptLossResolver(default_conf).hyperoptloss
+    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
     correct = hl.hyperopt_loss_function(hyperopt_results, len(hyperopt_results),
                                         datetime(2019, 1, 1), datetime(2019, 5, 1))
     over = hl.hyperopt_loss_function(results_over, len(hyperopt_results),
@@ -343,7 +343,7 @@ def test_onlyprofit_loss_prefers_higher_profits(default_conf, hyperopt_results) 
     results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
 
     default_conf.update({'hyperopt_loss': 'OnlyProfitHyperOptLoss'})
-    hl = HyperOptLossResolver(default_conf).hyperoptloss
+    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
     correct = hl.hyperopt_loss_function(hyperopt_results, len(hyperopt_results),
                                         datetime(2019, 1, 1), datetime(2019, 5, 1))
     over = hl.hyperopt_loss_function(results_over, len(hyperopt_results),
@@ -427,7 +427,7 @@ def test_start_calls_optimizer(mocker, default_conf, caplog, capsys) -> None:
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
-        'freqtrade.optimize.hyperopt.get_timeframe',
+        'freqtrade.optimize.hyperopt.get_timerange',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
     )
 
@@ -602,7 +602,7 @@ def test_generate_optimizer(mocker, default_conf) -> None:
         MagicMock(return_value=backtest_result)
     )
     mocker.patch(
-        'freqtrade.optimize.hyperopt.get_timeframe',
+        'freqtrade.optimize.hyperopt.get_timerange',
         MagicMock(return_value=(Arrow(2017, 12, 10), Arrow(2017, 12, 13)))
     )
     patch_exchange(mocker)
@@ -636,13 +636,13 @@ def test_generate_optimizer(mocker, default_conf) -> None:
         'stoploss': -0.4,
         'trailing_stop': True,
         'trailing_stop_positive': 0.02,
-        'trailing_stop_positive_offset': 0.1,
+        'trailing_stop_positive_offset_p1': 0.05,
         'trailing_only_offset_is_reached': False,
     }
     response_expected = {
         'loss': 1.9840569076926293,
         'results_explanation': ('     1 trades. Avg profit   2.31%. Total profit  0.00023300 BTC '
-                                '(   2.31\N{GREEK CAPITAL LETTER SIGMA}%). Avg duration 100.0 mins.'
+                                '(   2.31\N{GREEK CAPITAL LETTER SIGMA}%). Avg duration 100.0 min.'
                                 ).encode(locale.getpreferredencoding(), 'replace').decode('utf-8'),
         'params_details': {'buy': {'adx-enabled': False,
                                    'adx-value': 0,
@@ -670,7 +670,7 @@ def test_generate_optimizer(mocker, default_conf) -> None:
                            'trailing': {'trailing_only_offset_is_reached': False,
                                         'trailing_stop': True,
                                         'trailing_stop_positive': 0.02,
-                                        'trailing_stop_positive_offset': 0.1}},
+                                        'trailing_stop_positive_offset': 0.07}},
         'params_dict': optimizer_param,
         'results_metrics': {'avg_profit': 2.3117,
                             'duration': 100.0,
@@ -726,7 +726,7 @@ def test_print_json_spaces_all(mocker, default_conf, caplog, capsys) -> None:
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
-        'freqtrade.optimize.hyperopt.get_timeframe',
+        'freqtrade.optimize.hyperopt.get_timerange',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
     )
 
@@ -769,7 +769,7 @@ def test_print_json_spaces_default(mocker, default_conf, caplog, capsys) -> None
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
-        'freqtrade.optimize.hyperopt.get_timeframe',
+        'freqtrade.optimize.hyperopt.get_timerange',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
     )
 
@@ -811,7 +811,7 @@ def test_print_json_spaces_roi_stoploss(mocker, default_conf, caplog, capsys) ->
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
-        'freqtrade.optimize.hyperopt.get_timeframe',
+        'freqtrade.optimize.hyperopt.get_timerange',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
     )
 
@@ -851,7 +851,7 @@ def test_simplified_interface_roi_stoploss(mocker, default_conf, caplog, capsys)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
-        'freqtrade.optimize.hyperopt.get_timeframe',
+        'freqtrade.optimize.hyperopt.get_timerange',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
     )
 
@@ -899,7 +899,7 @@ def test_simplified_interface_all_failed(mocker, default_conf, caplog, capsys) -
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
-        'freqtrade.optimize.hyperopt.get_timeframe',
+        'freqtrade.optimize.hyperopt.get_timerange',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
     )
 
@@ -930,7 +930,7 @@ def test_simplified_interface_buy(mocker, default_conf, caplog, capsys) -> None:
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
-        'freqtrade.optimize.hyperopt.get_timeframe',
+        'freqtrade.optimize.hyperopt.get_timerange',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
     )
 
@@ -977,7 +977,7 @@ def test_simplified_interface_sell(mocker, default_conf, caplog, capsys) -> None
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
-        'freqtrade.optimize.hyperopt.get_timeframe',
+        'freqtrade.optimize.hyperopt.get_timerange',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
     )
 
@@ -1030,7 +1030,7 @@ def test_simplified_interface_failed(mocker, default_conf, caplog, capsys, metho
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
-        'freqtrade.optimize.hyperopt.get_timeframe',
+        'freqtrade.optimize.hyperopt.get_timerange',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
     )
 

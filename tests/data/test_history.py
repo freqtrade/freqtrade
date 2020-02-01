@@ -7,21 +7,21 @@ from shutil import copyfile
 from unittest.mock import MagicMock, PropertyMock
 
 import arrow
-import pytest
 from pandas import DataFrame
 
-from freqtrade import OperationalException
 from freqtrade.configuration import TimeRange
-from freqtrade.data import history
-from freqtrade.data.history import (_load_cached_data_for_updating,
-                                    convert_trades_to_ohlcv,
-                                    download_pair_history,
-                                    download_trades_history,
+from freqtrade.data.history import (_download_pair_history,
+                                    _download_trades_history,
+                                    _load_cached_data_for_updating,
+                                    convert_trades_to_ohlcv, get_timerange,
+                                    load_data, load_pair_history,
                                     load_tickerdata_file, pair_data_filename,
                                     pair_trades_filename,
                                     refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data,
-                                    trim_tickerlist)
+                                    refresh_data,
+                                    trim_dataframe, trim_tickerlist,
+                                    validate_backtest_data)
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.strategy.default_strategy import DefaultStrategy
@@ -64,7 +64,7 @@ def _clean_test_file(file: Path) -> None:
 
 
 def test_load_data_30min_ticker(mocker, caplog, default_conf, testdatadir) -> None:
-    ld = history.load_pair_history(pair='UNITTEST/BTC', timeframe='30m', datadir=testdatadir)
+    ld = load_pair_history(pair='UNITTEST/BTC', timeframe='30m', datadir=testdatadir)
     assert isinstance(ld, DataFrame)
     assert not log_has(
         'Download history data for pair: "UNITTEST/BTC", timeframe: 30m '
@@ -73,7 +73,7 @@ def test_load_data_30min_ticker(mocker, caplog, default_conf, testdatadir) -> No
 
 
 def test_load_data_7min_ticker(mocker, caplog, default_conf, testdatadir) -> None:
-    ld = history.load_pair_history(pair='UNITTEST/BTC', timeframe='7m', datadir=testdatadir)
+    ld = load_pair_history(pair='UNITTEST/BTC', timeframe='7m', datadir=testdatadir)
     assert isinstance(ld, DataFrame)
     assert ld.empty
     assert log_has(
@@ -86,7 +86,7 @@ def test_load_data_1min_ticker(ticker_history, mocker, caplog, testdatadir) -> N
     mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ticker_history)
     file = testdatadir / 'UNITTEST_BTC-1m.json'
     _backup_file(file, copy_file=True)
-    history.load_data(datadir=testdatadir, timeframe='1m', pairs=['UNITTEST/BTC'])
+    load_data(datadir=testdatadir, timeframe='1m', pairs=['UNITTEST/BTC'])
     assert file.is_file()
     assert not log_has(
         'Download history data for pair: "UNITTEST/BTC", interval: 1m '
@@ -99,10 +99,9 @@ def test_load_data_startup_candles(mocker, caplog, default_conf, testdatadir) ->
     ltfmock = mocker.patch('freqtrade.data.history.load_tickerdata_file',
                            MagicMock(return_value=None))
     timerange = TimeRange('date', None, 1510639620, 0)
-    history.load_pair_history(pair='UNITTEST/BTC', timeframe='1m',
-                              datadir=testdatadir, timerange=timerange,
-                              startup_candles=20,
-                              )
+    load_pair_history(pair='UNITTEST/BTC', timeframe='1m',
+                      datadir=testdatadir, timerange=timerange,
+                      startup_candles=20,)
 
     assert ltfmock.call_count == 1
     assert ltfmock.call_args_list[0][1]['timerange'] != timerange
@@ -121,9 +120,7 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog,
 
     _backup_file(file)
     # do not download a new pair if refresh_pairs isn't set
-    history.load_pair_history(datadir=testdatadir,
-                              timeframe='1m',
-                              pair='MEME/BTC')
+    load_pair_history(datadir=testdatadir, timeframe='1m', pair='MEME/BTC')
     assert not file.is_file()
     assert log_has(
         'No history data for pair: "MEME/BTC", timeframe: 1m. '
@@ -131,22 +128,14 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog,
     )
 
     # download a new pair if refresh_pairs is set
-    history.load_pair_history(datadir=testdatadir,
-                              timeframe='1m',
-                              refresh_pairs=True,
-                              exchange=exchange,
-                              pair='MEME/BTC')
+    refresh_data(datadir=testdatadir, timeframe='1m', pairs=['MEME/BTC'],
+                 exchange=exchange)
+    load_pair_history(datadir=testdatadir, timeframe='1m', pair='MEME/BTC')
     assert file.is_file()
     assert log_has_re(
         'Download history data for pair: "MEME/BTC", timeframe: 1m '
         'and store in .*', caplog
     )
-    with pytest.raises(OperationalException, match=r'Exchange needs to be initialized when.*'):
-        history.load_pair_history(datadir=testdatadir,
-                                  timeframe='1m',
-                                  refresh_pairs=True,
-                                  exchange=None,
-                                  pair='MEME/BTC')
     _clean_test_file(file)
 
 
@@ -267,12 +256,12 @@ def test_download_pair_history(ticker_history_list, mocker, default_conf, testda
     assert not file1_1.is_file()
     assert not file2_1.is_file()
 
-    assert download_pair_history(datadir=testdatadir, exchange=exchange,
-                                 pair='MEME/BTC',
-                                 timeframe='1m')
-    assert download_pair_history(datadir=testdatadir, exchange=exchange,
-                                 pair='CFI/BTC',
-                                 timeframe='1m')
+    assert _download_pair_history(datadir=testdatadir, exchange=exchange,
+                                  pair='MEME/BTC',
+                                  timeframe='1m')
+    assert _download_pair_history(datadir=testdatadir, exchange=exchange,
+                                  pair='CFI/BTC',
+                                  timeframe='1m')
     assert not exchange._pairs_last_refresh_time
     assert file1_1.is_file()
     assert file2_1.is_file()
@@ -284,12 +273,12 @@ def test_download_pair_history(ticker_history_list, mocker, default_conf, testda
     assert not file1_5.is_file()
     assert not file2_5.is_file()
 
-    assert download_pair_history(datadir=testdatadir, exchange=exchange,
-                                 pair='MEME/BTC',
-                                 timeframe='5m')
-    assert download_pair_history(datadir=testdatadir, exchange=exchange,
-                                 pair='CFI/BTC',
-                                 timeframe='5m')
+    assert _download_pair_history(datadir=testdatadir, exchange=exchange,
+                                  pair='MEME/BTC',
+                                  timeframe='5m')
+    assert _download_pair_history(datadir=testdatadir, exchange=exchange,
+                                  pair='CFI/BTC',
+                                  timeframe='5m')
     assert not exchange._pairs_last_refresh_time
     assert file1_5.is_file()
     assert file2_5.is_file()
@@ -307,8 +296,8 @@ def test_download_pair_history2(mocker, default_conf, testdatadir) -> None:
     json_dump_mock = mocker.patch('freqtrade.misc.file_dump_json', return_value=None)
     mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=tick)
     exchange = get_patched_exchange(mocker, default_conf)
-    download_pair_history(testdatadir, exchange, pair="UNITTEST/BTC", timeframe='1m')
-    download_pair_history(testdatadir, exchange, pair="UNITTEST/BTC", timeframe='3m')
+    _download_pair_history(testdatadir, exchange, pair="UNITTEST/BTC", timeframe='1m')
+    _download_pair_history(testdatadir, exchange, pair="UNITTEST/BTC", timeframe='3m')
     assert json_dump_mock.call_count == 2
 
 
@@ -324,9 +313,9 @@ def test_download_backtesting_data_exception(ticker_history, mocker, caplog,
     _backup_file(file1_1)
     _backup_file(file1_5)
 
-    assert not download_pair_history(datadir=testdatadir, exchange=exchange,
-                                     pair='MEME/BTC',
-                                     timeframe='1m')
+    assert not _download_pair_history(datadir=testdatadir, exchange=exchange,
+                                      pair='MEME/BTC',
+                                      timeframe='1m')
     # clean files freshly downloaded
     _clean_test_file(file1_1)
     _clean_test_file(file1_5)
@@ -351,10 +340,8 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
     # Make sure we start fresh - test missing data at start
     start = arrow.get('2018-01-01T00:00:00')
     end = arrow.get('2018-01-11T00:00:00')
-    tickerdata = history.load_data(testdatadir, '5m', ['UNITTEST/BTC'],
-                                   startup_candles=20,
-                                   timerange=TimeRange('date', 'date',
-                                                       start.timestamp, end.timestamp))
+    tickerdata = load_data(testdatadir, '5m', ['UNITTEST/BTC'], startup_candles=20,
+                           timerange=TimeRange('date', 'date', start.timestamp, end.timestamp))
     assert log_has(
         'Using indicator startup period: 20 ...', caplog
     )
@@ -369,10 +356,8 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
     caplog.clear()
     start = arrow.get('2018-01-10T00:00:00')
     end = arrow.get('2018-02-20T00:00:00')
-    tickerdata = history.load_data(datadir=testdatadir, timeframe='5m',
-                                   pairs=['UNITTEST/BTC'],
-                                   timerange=TimeRange('date', 'date',
-                                                       start.timestamp, end.timestamp))
+    tickerdata = load_data(datadir=testdatadir, timeframe='5m', pairs=['UNITTEST/BTC'],
+                           timerange=TimeRange('date', 'date', start.timestamp, end.timestamp))
     # timedifference in 5 minutes
     td = ((end - start).total_seconds() // 60 // 5) + 1
     assert td != len(tickerdata['UNITTEST/BTC'])
@@ -384,12 +369,24 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
 
 
 def test_init(default_conf, mocker) -> None:
-    exchange = get_patched_exchange(mocker, default_conf)
-    assert {} == history.load_data(
+    assert {} == load_data(
         datadir='',
-        exchange=exchange,
         pairs=[],
-        refresh_pairs=True,
+        timeframe=default_conf['ticker_interval']
+    )
+
+
+def test_init_with_refresh(default_conf, mocker) -> None:
+    exchange = get_patched_exchange(mocker, default_conf)
+    refresh_data(
+        datadir='',
+        pairs=[],
+        timeframe=default_conf['ticker_interval'],
+        exchange=exchange
+    )
+    assert {} == load_data(
+        datadir='',
+        pairs=[],
         timeframe=default_conf['ticker_interval']
     )
 
@@ -447,7 +444,7 @@ def test_trim_tickerlist(testdatadir) -> None:
 
 
 def test_trim_dataframe(testdatadir) -> None:
-    data = history.load_data(
+    data = load_data(
         datadir=testdatadir,
         timeframe='1m',
         pairs=['UNITTEST/BTC']
@@ -458,7 +455,7 @@ def test_trim_dataframe(testdatadir) -> None:
 
     # Remove first 30 minutes (1800 s)
     tr = TimeRange('date', None, min_date + 1800, 0)
-    data_modify = history.trim_dataframe(data_modify, tr)
+    data_modify = trim_dataframe(data_modify, tr)
     assert not data_modify.equals(data)
     assert len(data_modify) < len(data)
     assert len(data_modify) == len(data) - 30
@@ -468,7 +465,7 @@ def test_trim_dataframe(testdatadir) -> None:
     data_modify = data.copy()
     # Remove last 30 minutes (1800 s)
     tr = TimeRange(None, 'date', 0, max_date - 1800)
-    data_modify = history.trim_dataframe(data_modify, tr)
+    data_modify = trim_dataframe(data_modify, tr)
     assert not data_modify.equals(data)
     assert len(data_modify) < len(data)
     assert len(data_modify) == len(data) - 30
@@ -478,7 +475,7 @@ def test_trim_dataframe(testdatadir) -> None:
     data_modify = data.copy()
     # Remove first 25 and last 30 minutes (1800 s)
     tr = TimeRange('date', 'date', min_date + 1500, max_date - 1800)
-    data_modify = history.trim_dataframe(data_modify, tr)
+    data_modify = trim_dataframe(data_modify, tr)
     assert not data_modify.equals(data)
     assert len(data_modify) < len(data)
     assert len(data_modify) == len(data) - 55
@@ -510,18 +507,18 @@ def test_file_dump_json_tofile(testdatadir) -> None:
     _clean_test_file(file)
 
 
-def test_get_timeframe(default_conf, mocker, testdatadir) -> None:
+def test_get_timerange(default_conf, mocker, testdatadir) -> None:
     patch_exchange(mocker)
     strategy = DefaultStrategy(default_conf)
 
     data = strategy.tickerdata_to_dataframe(
-        history.load_data(
+        load_data(
             datadir=testdatadir,
             timeframe='1m',
             pairs=['UNITTEST/BTC']
         )
     )
-    min_date, max_date = history.get_timeframe(data)
+    min_date, max_date = get_timerange(data)
     assert min_date.isoformat() == '2017-11-04T23:02:00+00:00'
     assert max_date.isoformat() == '2017-11-14T22:58:00+00:00'
 
@@ -531,17 +528,17 @@ def test_validate_backtest_data_warn(default_conf, mocker, caplog, testdatadir) 
     strategy = DefaultStrategy(default_conf)
 
     data = strategy.tickerdata_to_dataframe(
-        history.load_data(
+        load_data(
             datadir=testdatadir,
             timeframe='1m',
             pairs=['UNITTEST/BTC'],
             fill_up_missing=False
         )
     )
-    min_date, max_date = history.get_timeframe(data)
+    min_date, max_date = get_timerange(data)
     caplog.clear()
-    assert history.validate_backtest_data(data['UNITTEST/BTC'], 'UNITTEST/BTC',
-                                          min_date, max_date, timeframe_to_minutes('1m'))
+    assert validate_backtest_data(data['UNITTEST/BTC'], 'UNITTEST/BTC',
+                                  min_date, max_date, timeframe_to_minutes('1m'))
     assert len(caplog.record_tuples) == 1
     assert log_has(
         "UNITTEST/BTC has missing frames: expected 14396, got 13680, that's 716 missing values",
@@ -554,7 +551,7 @@ def test_validate_backtest_data(default_conf, mocker, caplog, testdatadir) -> No
 
     timerange = TimeRange('index', 'index', 200, 250)
     data = strategy.tickerdata_to_dataframe(
-        history.load_data(
+        load_data(
             datadir=testdatadir,
             timeframe='5m',
             pairs=['UNITTEST/BTC'],
@@ -562,15 +559,15 @@ def test_validate_backtest_data(default_conf, mocker, caplog, testdatadir) -> No
         )
     )
 
-    min_date, max_date = history.get_timeframe(data)
+    min_date, max_date = get_timerange(data)
     caplog.clear()
-    assert not history.validate_backtest_data(data['UNITTEST/BTC'], 'UNITTEST/BTC',
-                                              min_date, max_date, timeframe_to_minutes('5m'))
+    assert not validate_backtest_data(data['UNITTEST/BTC'], 'UNITTEST/BTC',
+                                      min_date, max_date, timeframe_to_minutes('5m'))
     assert len(caplog.record_tuples) == 0
 
 
 def test_refresh_backtest_ohlcv_data(mocker, default_conf, markets, caplog, testdatadir):
-    dl_mock = mocker.patch('freqtrade.data.history.download_pair_history', MagicMock())
+    dl_mock = mocker.patch('freqtrade.data.history._download_pair_history', MagicMock())
     mocker.patch(
         'freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets)
     )
@@ -580,7 +577,7 @@ def test_refresh_backtest_ohlcv_data(mocker, default_conf, markets, caplog, test
     ex = get_patched_exchange(mocker, default_conf)
     timerange = TimeRange.parse_timerange("20190101-20190102")
     refresh_backtest_ohlcv_data(exchange=ex, pairs=["ETH/BTC", "XRP/BTC"],
-                                timeframes=["1m", "5m"], dl_path=testdatadir,
+                                timeframes=["1m", "5m"], datadir=testdatadir,
                                 timerange=timerange, erase=True
                                 )
 
@@ -591,7 +588,7 @@ def test_refresh_backtest_ohlcv_data(mocker, default_conf, markets, caplog, test
 
 
 def test_download_data_no_markets(mocker, default_conf, caplog, testdatadir):
-    dl_mock = mocker.patch('freqtrade.data.history.download_pair_history', MagicMock())
+    dl_mock = mocker.patch('freqtrade.data.history._download_pair_history', MagicMock())
 
     ex = get_patched_exchange(mocker, default_conf)
     mocker.patch(
@@ -600,7 +597,7 @@ def test_download_data_no_markets(mocker, default_conf, caplog, testdatadir):
     timerange = TimeRange.parse_timerange("20190101-20190102")
     unav_pairs = refresh_backtest_ohlcv_data(exchange=ex, pairs=["BTT/BTC", "LTC/USDT"],
                                              timeframes=["1m", "5m"],
-                                             dl_path=testdatadir,
+                                             datadir=testdatadir,
                                              timerange=timerange, erase=False
                                              )
 
@@ -611,7 +608,7 @@ def test_download_data_no_markets(mocker, default_conf, caplog, testdatadir):
 
 
 def test_refresh_backtest_trades_data(mocker, default_conf, markets, caplog, testdatadir):
-    dl_mock = mocker.patch('freqtrade.data.history.download_trades_history', MagicMock())
+    dl_mock = mocker.patch('freqtrade.data.history._download_trades_history', MagicMock())
     mocker.patch(
         'freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets)
     )
@@ -646,8 +643,8 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
 
     assert not file1.is_file()
 
-    assert download_trades_history(datadir=testdatadir, exchange=exchange,
-                                   pair='ETH/BTC')
+    assert _download_trades_history(datadir=testdatadir, exchange=exchange,
+                                    pair='ETH/BTC')
     assert log_has("New Amount of trades: 5", caplog)
     assert file1.is_file()
 
@@ -657,8 +654,8 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
     mocker.patch('freqtrade.exchange.Exchange.get_historic_trades',
                  MagicMock(side_effect=ValueError))
 
-    assert not download_trades_history(datadir=testdatadir, exchange=exchange,
-                                       pair='ETH/BTC')
+    assert not _download_trades_history(datadir=testdatadir, exchange=exchange,
+                                        pair='ETH/BTC')
     assert log_has_re('Failed to download historic trades for pair: "ETH/BTC".*', caplog)
 
 
@@ -668,12 +665,8 @@ def test_convert_trades_to_ohlcv(mocker, default_conf, testdatadir, caplog):
     file1 = testdatadir / 'XRP_ETH-1m.json'
     file5 = testdatadir / 'XRP_ETH-5m.json'
     # Compare downloaded dataset with converted dataset
-    dfbak_1m = history.load_pair_history(datadir=testdatadir,
-                                         timeframe="1m",
-                                         pair=pair)
-    dfbak_5m = history.load_pair_history(datadir=testdatadir,
-                                         timeframe="5m",
-                                         pair=pair)
+    dfbak_1m = load_pair_history(datadir=testdatadir, timeframe="1m", pair=pair)
+    dfbak_5m = load_pair_history(datadir=testdatadir, timeframe="5m", pair=pair)
 
     _backup_file(file1, copy_file=True)
     _backup_file(file5)
@@ -685,12 +678,8 @@ def test_convert_trades_to_ohlcv(mocker, default_conf, testdatadir, caplog):
 
     assert log_has("Deleting existing data for pair XRP/ETH, interval 1m.", caplog)
     # Load new data
-    df_1m = history.load_pair_history(datadir=testdatadir,
-                                      timeframe="1m",
-                                      pair=pair)
-    df_5m = history.load_pair_history(datadir=testdatadir,
-                                      timeframe="5m",
-                                      pair=pair)
+    df_1m = load_pair_history(datadir=testdatadir, timeframe="1m", pair=pair)
+    df_5m = load_pair_history(datadir=testdatadir, timeframe="5m", pair=pair)
 
     assert df_1m.equals(dfbak_1m)
     assert df_5m.equals(dfbak_5m)

@@ -1,10 +1,11 @@
-
 from unittest.mock import MagicMock
 
+import pytest
+
 from freqtrade.persistence import Trade
+from freqtrade.rpc.rpc import RPC
 from freqtrade.strategy.interface import SellCheckTuple, SellType
 from tests.conftest import get_patched_freqtradebot, patch_get_signal
-from freqtrade.rpc.rpc import RPC
 
 
 def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
@@ -55,10 +56,10 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
     mocker.patch('freqtrade.exchange.Binance.stoploss_limit', stoploss_limit)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
-        symbol_amount_prec=lambda s, x, y: y,
-        symbol_price_prec=lambda s, x, y: y,
+        amount_to_precision=lambda s, x, y: y,
+        price_to_precision=lambda s, x, y: y,
         get_order=stoploss_order_mock,
         cancel_order=cancel_order_mock,
     )
@@ -71,6 +72,7 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
     )
     mocker.patch("freqtrade.strategy.interface.IStrategy.should_sell", should_sell_mock)
     wallets_mock = mocker.patch("freqtrade.wallets.Wallets.update", MagicMock())
+    mocker.patch("freqtrade.wallets.Wallets.get_free", MagicMock(return_value=1000))
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     freqtrade.strategy.order_types['stoploss_on_exchange'] = True
@@ -79,7 +81,7 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
     patch_get_signal(freqtrade)
 
     # Create some test data
-    freqtrade.create_trades()
+    freqtrade.enter_positions()
     wallets_mock.reset_mock()
     Trade.session = MagicMock()
 
@@ -89,13 +91,14 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
         trade.stoploss_order_id = 3
         trade.open_order_id = None
 
-    freqtrade.process_maybe_execute_sells(trades)
+    n = freqtrade.exit_positions(trades)
+    assert n == 2
     assert should_sell_mock.call_count == 2
 
     # Only order for 3rd trade needs to be cancelled
     assert cancel_order_mock.call_count == 1
-    # Wallets should only be called once per sell cycle
-    assert wallets_mock.call_count == 1
+    # Wallets must be updated between stoploss cancellation and selling.
+    assert wallets_mock.call_count == 2
 
     trade = trades[0]
     assert trade.sell_reason == SellType.STOPLOSS_ON_EXCHANGE.value
@@ -110,25 +113,32 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
     assert not trade.is_open
 
 
-def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, mocker) -> None:
+@pytest.mark.parametrize("balance_ratio,result1", [
+                        (1, 200),
+                        (0.99, 198),
+])
+def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, mocker, balance_ratio,
+                                 result1) -> None:
     """
-    Tests workflow
+    Tests workflow unlimited stake-amount
+    Buy 4 trades, forcebuy a 5th trade
+    Sell one trade, calculated stake amount should now be lower than before since
+    one trade was sold at a loss.
     """
     default_conf['max_open_trades'] = 5
     default_conf['forcebuy_enable'] = True
     default_conf['stake_amount'] = 'unlimited'
+    default_conf['tradable_balance_ratio'] = balance_ratio
+    default_conf['dry_run_wallet'] = 1000
     default_conf['exchange']['name'] = 'binance'
     default_conf['telegram']['enabled'] = True
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
-    mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(
-        side_effect=[1000, 800, 600, 400, 200]
-    ))
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
-        symbol_amount_prec=lambda s, x, y: y,
-        symbol_price_prec=lambda s, x, y: y,
+        amount_to_precision=lambda s, x, y: y,
+        price_to_precision=lambda s, x, y: y,
     )
 
     mocker.patch.multiple(
@@ -137,6 +147,14 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
         update_trade_state=MagicMock(),
         _notify_sell=MagicMock(),
     )
+    should_sell_mock = MagicMock(side_effect=[
+        SellCheckTuple(sell_flag=False, sell_type=SellType.NONE),
+        SellCheckTuple(sell_flag=True, sell_type=SellType.SELL_SIGNAL),
+        SellCheckTuple(sell_flag=False, sell_type=SellType.NONE),
+        SellCheckTuple(sell_flag=False, sell_type=SellType.NONE),
+        SellCheckTuple(sell_flag=None, sell_type=SellType.NONE)]
+    )
+    mocker.patch("freqtrade.strategy.interface.IStrategy.should_sell", should_sell_mock)
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     rpc = RPC(freqtrade)
@@ -146,14 +164,37 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
     patch_get_signal(freqtrade)
 
     # Create 4 trades
-    freqtrade.create_trades()
+    n = freqtrade.enter_positions()
+    assert n == 4
 
     trades = Trade.query.all()
     assert len(trades) == 4
+    assert freqtrade.get_trade_stake_amount('XRP/BTC') == result1
+
     rpc._rpc_forcebuy('TKN/BTC', None)
 
     trades = Trade.query.all()
     assert len(trades) == 5
 
     for trade in trades:
-        assert trade.stake_amount == 200
+        assert trade.stake_amount == result1
+        # Reset trade open order id's
+        trade.open_order_id = None
+    trades = Trade.get_open_trades()
+    assert len(trades) == 5
+    bals = freqtrade.wallets.get_all_balances()
+
+    n = freqtrade.exit_positions(trades)
+    assert n == 1
+    trades = Trade.get_open_trades()
+    # One trade sold
+    assert len(trades) == 4
+    # stake-amount should now be reduced, since one trade was sold at a loss.
+    assert freqtrade.get_trade_stake_amount('XRP/BTC') < result1
+    # Validate that balance of sold trade is not in dry-run balances anymore.
+    bals2 = freqtrade.wallets.get_all_balances()
+    assert bals != bals2
+    assert len(bals) == 6
+    assert len(bals2) == 5
+    assert 'LTC' in bals
+    assert 'LTC' not in bals2

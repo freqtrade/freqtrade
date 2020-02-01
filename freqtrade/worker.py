@@ -8,11 +8,10 @@ from typing import Any, Callable, Dict, Optional
 
 import sdnotify
 
-from freqtrade import (OperationalException, TemporaryError, __version__,
-                       constants)
+from freqtrade import __version__, constants
 from freqtrade.configuration import Configuration
+from freqtrade.exceptions import OperationalException, TemporaryError
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.rpc import RPCMessageType
 from freqtrade.state import State
 
 logger = logging.getLogger(__name__)
@@ -84,10 +83,8 @@ class Worker:
 
         # Log state transition
         if state != old_state:
-            self.freqtrade.rpc.send_msg({
-                'type': RPCMessageType.STATUS_NOTIFICATION,
-                'status': f'{state.name.lower()}'
-            })
+            self.freqtrade.notify_status(f'{state.name.lower()}')
+
             logger.info('Changing state to: %s', state.name)
             if state == State.RUNNING:
                 self.freqtrade.startup()
@@ -136,10 +133,9 @@ class Worker:
         except OperationalException:
             tb = traceback.format_exc()
             hint = 'Issue `/start` if you think it is safe to restart.'
-            self.freqtrade.rpc.send_msg({
-                'type': RPCMessageType.STATUS_NOTIFICATION,
-                'status': f'OperationalException:\n```\n{tb}```{hint}'
-            })
+
+            self.freqtrade.notify_status(f'OperationalException:\n```\n{tb}```{hint}')
+
             logger.exception('OperationalException. Stopping trader ...')
             self.freqtrade.state = State.STOPPED
 
@@ -159,10 +155,7 @@ class Worker:
         # Load and validate config and create new instance of the bot
         self._init(True)
 
-        self.freqtrade.rpc.send_msg({
-            'type': RPCMessageType.STATUS_NOTIFICATION,
-            'status': 'config reloaded'
-        })
+        self.freqtrade.notify_status('config reloaded')
 
         # Tell systemd that we completed reconfiguration
         if self._sd_notify:
@@ -176,8 +169,5 @@ class Worker:
             self._sd_notify.notify("STOPPING=1")
 
         if self.freqtrade:
-            self.freqtrade.rpc.send_msg({
-                'type': RPCMessageType.STATUS_NOTIFICATION,
-                'status': 'process died'
-            })
+            self.freqtrade.notify_status('process died')
             self.freqtrade.cleanup()

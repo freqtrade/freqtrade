@@ -4,14 +4,15 @@ from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
-from freqtrade import OperationalException
+from freqtrade.commands import (start_create_userdir, start_download_data,
+                                start_hyperopt_list, start_hyperopt_show,
+                                start_list_exchanges, start_list_markets,
+                                start_list_strategies, start_list_timeframes,
+                                start_new_hyperopt, start_new_strategy,
+                                start_test_pairlist, start_trading)
+from freqtrade.configuration import setup_utils_configuration
+from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
-from freqtrade.utils import (setup_utils_configuration, start_create_userdir,
-                             start_download_data, start_list_exchanges,
-                             start_list_markets, start_list_timeframes,
-                             start_new_hyperopt, start_new_strategy,
-                             start_test_pairlist, start_trading,
-                             start_hyperopt_list, start_hyperopt_show)
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 
@@ -444,8 +445,14 @@ def test_create_datadir_failed(caplog):
 
 
 def test_create_datadir(caplog, mocker):
-    cud = mocker.patch("freqtrade.utils.create_userdata_dir", MagicMock())
-    csf = mocker.patch("freqtrade.utils.copy_sample_files", MagicMock())
+    # Ensure that caplog is empty before starting ...
+    # Should prevent random failures.
+    caplog.clear()
+    # Added assert here to analyze random test-failures ...
+    assert len(caplog.record_tuples) == 0
+
+    cud = mocker.patch("freqtrade.commands.deploy_commands.create_userdata_dir", MagicMock())
+    csf = mocker.patch("freqtrade.commands.deploy_commands.copy_sample_files", MagicMock())
     args = [
         "create-userdir",
         "--userdir",
@@ -531,7 +538,7 @@ def test_start_new_hyperopt_no_arg(mocker, caplog):
 
 
 def test_download_data_keyboardInterrupt(mocker, caplog, markets):
-    dl_mock = mocker.patch('freqtrade.utils.refresh_backtest_ohlcv_data',
+    dl_mock = mocker.patch('freqtrade.commands.data_commands.refresh_backtest_ohlcv_data',
                            MagicMock(side_effect=KeyboardInterrupt))
     patch_exchange(mocker)
     mocker.patch(
@@ -549,7 +556,7 @@ def test_download_data_keyboardInterrupt(mocker, caplog, markets):
 
 
 def test_download_data_no_markets(mocker, caplog):
-    dl_mock = mocker.patch('freqtrade.utils.refresh_backtest_ohlcv_data',
+    dl_mock = mocker.patch('freqtrade.commands.data_commands.refresh_backtest_ohlcv_data',
                            MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
     patch_exchange(mocker, id='binance')
     mocker.patch(
@@ -567,7 +574,7 @@ def test_download_data_no_markets(mocker, caplog):
 
 
 def test_download_data_no_exchange(mocker, caplog):
-    mocker.patch('freqtrade.utils.refresh_backtest_ohlcv_data',
+    mocker.patch('freqtrade.commands.data_commands.refresh_backtest_ohlcv_data',
                  MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
     patch_exchange(mocker)
     mocker.patch(
@@ -587,7 +594,7 @@ def test_download_data_no_pairs(mocker, caplog):
 
     mocker.patch.object(Path, "exists", MagicMock(return_value=False))
 
-    mocker.patch('freqtrade.utils.refresh_backtest_ohlcv_data',
+    mocker.patch('freqtrade.commands.data_commands.refresh_backtest_ohlcv_data',
                  MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
     patch_exchange(mocker)
     mocker.patch(
@@ -606,9 +613,9 @@ def test_download_data_no_pairs(mocker, caplog):
 
 
 def test_download_data_trades(mocker, caplog):
-    dl_mock = mocker.patch('freqtrade.utils.refresh_backtest_trades_data',
+    dl_mock = mocker.patch('freqtrade.commands.data_commands.refresh_backtest_trades_data',
                            MagicMock(return_value=[]))
-    convert_mock = mocker.patch('freqtrade.utils.convert_trades_to_ohlcv',
+    convert_mock = mocker.patch('freqtrade.commands.data_commands.convert_trades_to_ohlcv',
                                 MagicMock(return_value=[]))
     patch_exchange(mocker)
     mocker.patch(
@@ -627,11 +634,42 @@ def test_download_data_trades(mocker, caplog):
     assert convert_mock.call_count == 1
 
 
-def test_start_test_pairlist(mocker, caplog, markets, tickers, default_conf, capsys):
+def test_start_list_strategies(mocker, caplog, capsys):
+
+    args = [
+        "list-strategies",
+        "--strategy-path",
+        str(Path(__file__).parent.parent / "strategy"),
+        "-1"
+    ]
+    pargs = get_args(args)
+    # pargs['config'] = None
+    start_list_strategies(pargs)
+    captured = capsys.readouterr()
+    assert "TestStrategyLegacy" in captured.out
+    assert "legacy_strategy.py" not in captured.out
+    assert "DefaultStrategy" in captured.out
+
+    # Test regular output
+    args = [
+        "list-strategies",
+        "--strategy-path",
+        str(Path(__file__).parent.parent / "strategy"),
+    ]
+    pargs = get_args(args)
+    # pargs['config'] = None
+    start_list_strategies(pargs)
+    captured = capsys.readouterr()
+    assert "TestStrategyLegacy" in captured.out
+    assert "legacy_strategy.py" in captured.out
+    assert "DefaultStrategy" in captured.out
+
+
+def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
+    patch_exchange(mocker, mock_markets=True)
     mocker.patch.multiple('freqtrade.exchange.Exchange',
-                          markets=PropertyMock(return_value=markets),
                           exchange_has=MagicMock(return_value=True),
-                          get_tickers=tickers
+                          get_tickers=tickers,
                           )
 
     default_conf['pairlists'] = [

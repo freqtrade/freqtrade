@@ -63,6 +63,8 @@ Possible parameters are:
 * `fiat_currency`
 * `sell_reason`
 * `order_type`
+* `open_date`
+* `close_date`
 
 ### Webhookstatus
 

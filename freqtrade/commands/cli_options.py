@@ -1,7 +1,7 @@
 """
 Definition of cli arguments used in arguments.py
 """
-import argparse
+from argparse import ArgumentTypeError
 
 from freqtrade import __version__, constants
 
@@ -12,7 +12,7 @@ def check_int_positive(value: str) -> int:
         if uint <= 0:
             raise ValueError
     except ValueError:
-        raise argparse.ArgumentTypeError(
+        raise ArgumentTypeError(
             f"{value} is invalid for this parameter, should be a positive integer value"
         )
     return uint
@@ -24,7 +24,7 @@ def check_int_nonzero(value: str) -> int:
         if uint == 0:
             raise ValueError
     except ValueError:
-        raise argparse.ArgumentTypeError(
+        raise ArgumentTypeError(
             f"{value} is invalid for this parameter, should be a non-zero integer value"
         )
     return uint
@@ -118,14 +118,14 @@ AVAILABLE_CLI_OPTIONS = {
         help='Specify what timerange of data to use.',
     ),
     "max_open_trades": Arg(
-        '--max_open_trades',
-        help='Specify max_open_trades to use.',
+        '--max-open-trades',
+        help='Override the value of the `max_open_trades` configuration setting.',
         type=int,
         metavar='INT',
     ),
     "stake_amount": Arg(
-        '--stake_amount',
-        help='Specify stake_amount.',
+        '--stake-amount',
+        help='Override the value of the `stake_amount` configuration setting.',
         type=float,
     ),
     # Backtesting
@@ -363,15 +363,13 @@ AVAILABLE_CLI_OPTIONS = {
     "indicators1": Arg(
         '--indicators1',
         help='Set indicators from your strategy you want in the first row of the graph. '
-        'Space-separated list. Example: `ema3 ema5`. Default: `%(default)s`.',
-        default=['sma', 'ema3', 'ema5'],
+        "Space-separated list. Example: `ema3 ema5`. Default: `['sma', 'ema3', 'ema5']`.",
         nargs='+',
     ),
     "indicators2": Arg(
         '--indicators2',
         help='Set indicators from your strategy you want in the third row of the graph. '
-        'Space-separated list. Example: `fastd fastk`. Default: `%(default)s`.',
-        default=['macd', 'macdsignal'],
+        "Space-separated list. Example: `fastd fastk`. Default: `['macd', 'macdsignal']`.",
         nargs='+',
     ),
     "plot_limit": Arg(

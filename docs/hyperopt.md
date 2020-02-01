@@ -6,8 +6,12 @@ algorithms included in the `scikit-optimize` package to accomplish this. The
 search will burn all your CPU cores, make your laptop sound like a fighter jet
 and still take a long time.
 
+In general, the search for best parameters starts with a few random combinations and then uses Bayesian search with a
+ML regressor algorithm (currently ExtraTreesRegressor) to quickly find a combination of parameters in the search hyperspace
+that minimizes the value of the [loss function](#loss-functions).
+
 Hyperopt requires historic data to be available, just as backtesting does.
-To learn how to get data for the pairs and exchange you're interrested in, head over to the [Data Downloading](data-download.md) section of the documentation.
+To learn how to get data for the pairs and exchange you're interested in, head over to the [Data Downloading](data-download.md) section of the documentation.
 
 !!! Bug
     Hyperopt can crash when used with only 1 CPU Core as found out in [Issue #1133](https://github.com/freqtrade/freqtrade/issues/1133)
@@ -170,10 +174,6 @@ with different value combinations. It will then use the given historical data an
 buys based on the buy signals generated with the above function and based on the results
 it will end with telling you which paramter combination produced the best profits.
 
-The search for best parameters starts with a few random combinations and then uses a
-regressor algorithm (currently ExtraTreesRegressor) to quickly find a parameter combination
-that minimizes the value of the [loss function](#loss-functions).
-
 The above setup expects to find ADX, RSI and Bollinger Bands in the populated indicators.
 When you want to test an indicator that isn't used by the bot currently, remember to
 add it to the `populate_indicators()` method in your custom hyperopt file.
@@ -283,6 +283,16 @@ number).
 
 You can also enable position stacking in the configuration file by explicitly setting 
 `"position_stacking"=true`.
+
+### Reproducible results
+
+The search for optimal parameters starts with a few (currently 30) random combinations in the hyperspace of parameters, random Hyperopt epochs. These random epochs are marked with a leading asterisk sign at the Hyperopt output.
+
+The initial state for generation of these random values (random state) is controlled by the value of the `--random-state` command line option. You can set it to some arbitrary value of your choice to obtain reproducible results.
+
+If you have not set this value explicitly in the command line options, Hyperopt seeds the random state with some random value for you. The random state value for each Hyperopt run is shown in the log, so you can copy and paste it into the `--random-state` command line option to repeat the set of the initial random epochs used.
+
+If you have not changed anything in the command line options, configuration, timerange, Strategy and Hyperopt classes, historical data and the Loss Function -- you should obtain same hyperoptimization results with same random state value used.
 
 ## Understand the Hyperopt Result
 

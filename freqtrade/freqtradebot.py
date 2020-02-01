@@ -7,22 +7,23 @@ import traceback
 from datetime import datetime
 from math import isclose
 from os import getpid
+from threading import Lock
 from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
 from requests.exceptions import RequestException
 
-from freqtrade import (DependencyException, InvalidOrderException, __version__,
-                       constants, persistence)
+from freqtrade import __version__, constants, persistence
 from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
+from freqtrade.exceptions import DependencyException, InvalidOrderException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
+from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager, RPCMessageType
-from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.state import State
 from freqtrade.strategy.interface import IStrategy, SellType
 from freqtrade.wallets import Wallets
@@ -55,14 +56,17 @@ class FreqtradeBot:
 
         self.heartbeat_interval = self.config.get('internals', {}).get('heartbeat_interval', 60)
 
-        self.strategy: IStrategy = StrategyResolver(self.config).strategy
+        self.strategy: IStrategy = StrategyResolver.load_strategy(self.config)
 
         # Check config consistency here since strategies can set certain options
         validate_config_consistency(config)
 
-        self.exchange = ExchangeResolver(self.config['exchange']['name'], self.config).exchange
+        self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
+
+        persistence.init(self.config.get('db_url', None), clean_open_orders=self.config['dry_run'])
 
         self.wallets = Wallets(self.config, self.exchange)
+
         self.dataprovider = DataProvider(self.config, self.exchange)
 
         # Attach Dataprovider to Strategy baseclass
@@ -78,9 +82,6 @@ class FreqtradeBot:
 
         self.active_pair_whitelist = self._refresh_whitelist()
 
-        persistence.init(self.config.get('db_url', None),
-                         clean_open_orders=self.config.get('dry_run', False))
-
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')
         self.state = State[initial_state.upper()] if initial_state else State.STOPPED
@@ -91,6 +92,18 @@ class FreqtradeBot:
         # the initial state of the bot.
         # Keep this at the end of this initialization method.
         self.rpc: RPCManager = RPCManager(self)
+        # Protect sell-logic from forcesell and viceversa
+        self._sell_lock = Lock()
+
+    def notify_status(self, msg: str) -> None:
+        """
+        Public method for users of this class (worker, etc.) to send notifications
+        via RPC about changes in the bot status.
+        """
+        self.rpc.send_msg({
+            'type': RPCMessageType.STATUS_NOTIFICATION,
+            'status': msg
+        })
 
     def cleanup(self) -> None:
         """
@@ -131,12 +144,16 @@ class FreqtradeBot:
         self.dataprovider.refresh(self._create_pair_whitelist(self.active_pair_whitelist),
                                   self.strategy.informative_pairs())
 
-        # First process current opened trades
-        self.process_maybe_execute_sells(trades)
+        # Protect from collisions with forcesell.
+        # Without this, freqtrade my try to recreate stoploss_on_exchange orders
+        # while selling is in process, since telegram messages arrive in an different thread.
+        with self._sell_lock:
+            # First process current opened trades (positions)
+            self.exit_positions(trades)
 
         # Then looking for buy opportunities
-        if len(trades) < self.config['max_open_trades']:
-            self.process_maybe_execute_buys()
+        if self.get_free_open_trades():
+            self.enter_positions()
 
         # Check and handle any timed out open orders
         self.check_handle_timedout()
@@ -172,7 +189,52 @@ class FreqtradeBot:
         """
         return [(pair, self.config['ticker_interval']) for pair in pairs]
 
-    def get_target_bid(self, pair: str, tick: Dict = None) -> float:
+    def get_free_open_trades(self):
+        """
+        Return the number of free open trades slots or 0 if
+        max number of open trades reached
+        """
+        open_trades = len(Trade.get_open_trades())
+        return max(0, self.config['max_open_trades'] - open_trades)
+
+#
+# BUY / enter positions / open trades logic and methods
+#
+
+    def enter_positions(self) -> int:
+        """
+        Tries to execute buy orders for new trades (positions)
+        """
+        trades_created = 0
+
+        whitelist = copy.deepcopy(self.active_pair_whitelist)
+        if not whitelist:
+            logger.info("Active pair whitelist is empty.")
+        else:
+            # Remove pairs for currently opened trades from the whitelist
+            for trade in Trade.get_open_trades():
+                if trade.pair in whitelist:
+                    whitelist.remove(trade.pair)
+                    logger.debug('Ignoring %s in pair whitelist', trade.pair)
+
+            if not whitelist:
+                logger.info("No currency pair in active pair whitelist, "
+                            "but checking to sell open trades.")
+            else:
+                # Create entity and execute trade for each pair from whitelist
+                for pair in whitelist:
+                    try:
+                        trades_created += self.create_trade(pair)
+                    except DependencyException as exception:
+                        logger.warning('Unable to create trade for %s: %s', pair, exception)
+
+                if not trades_created:
+                    logger.debug("Found no buy signals for whitelisted currencies. "
+                                 "Trying again...")
+
+        return trades_created
+
+    def get_buy_rate(self, pair: str, tick: Dict = None) -> float:
         """
         Calculates bid target between current ask price and last price
         :return: float: Price
@@ -191,7 +253,7 @@ class FreqtradeBot:
         else:
             if not tick:
                 logger.info('Using Last Ask / Last Price')
-                ticker = self.exchange.get_ticker(pair)
+                ticker = self.exchange.fetch_ticker(pair)
             else:
                 ticker = tick
             if ticker['ask'] < ticker['last']:
@@ -203,14 +265,18 @@ class FreqtradeBot:
 
         return used_rate
 
-    def _get_trade_stake_amount(self, pair) -> Optional[float]:
+    def get_trade_stake_amount(self, pair) -> float:
         """
-        Check if stake amount can be fulfilled with the available balance
-        for the stake currency
-        :return: float: Stake Amount
+        Calculate stake amount for the trade
+        :return: float: Stake amount
+        :raise: DependencyException if the available stake amount is too low
         """
+        stake_amount: float
+        # Ensure wallets are uptodate.
+        self.wallets.update()
+
         if self.edge:
-            return self.edge.stake_amount(
+            stake_amount = self.edge.stake_amount(
                 pair,
                 self.wallets.get_free(self.config['stake_currency']),
                 self.wallets.get_total(self.config['stake_currency']),
@@ -218,21 +284,60 @@ class FreqtradeBot:
             )
         else:
             stake_amount = self.config['stake_amount']
+            if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
+                stake_amount = self._calculate_unlimited_stake_amount()
 
-        available_amount = self.wallets.get_free(self.config['stake_currency'])
+        return self._check_available_stake_amount(stake_amount)
 
-        if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
-            open_trades = len(Trade.get_open_trades())
-            if open_trades >= self.config['max_open_trades']:
-                logger.warning("Can't open a new trade: max number of trades is reached")
-                return None
-            return available_amount / (self.config['max_open_trades'] - open_trades)
+    def _get_available_stake_amount(self) -> float:
+        """
+        Return the total currently available balance in stake currency,
+        respecting tradable_balance_ratio.
+        Calculated as
+        <open_trade stakes> + free amount ) * tradable_balance_ratio - <open_trade stakes>
+        """
+        val_tied_up = Trade.total_open_trades_stakes()
 
-        # Check if stake_amount is fulfilled
+        # Ensure <tradable_balance_ratio>% is used from the overall balance
+        # Otherwise we'd risk lowering stakes with each open trade.
+        # (tied up + current free) * ratio) - tied up
+        available_amount = ((val_tied_up + self.wallets.get_free(self.config['stake_currency'])) *
+                            self.config['tradable_balance_ratio']) - val_tied_up
+        return available_amount
+
+    def _calculate_unlimited_stake_amount(self) -> float:
+        """
+        Calculate stake amount for "unlimited" stake amount
+        :return: 0 if max number of trades reached, else stake_amount to use.
+        """
+        free_open_trades = self.get_free_open_trades()
+        if not free_open_trades:
+            return 0
+
+        available_amount = self._get_available_stake_amount()
+
+        return available_amount / free_open_trades
+
+    def _check_available_stake_amount(self, stake_amount: float) -> float:
+        """
+        Check if stake amount can be fulfilled with the available balance
+        for the stake currency
+        :return: float: Stake amount
+        """
+        available_amount = self._get_available_stake_amount()
+
+        if self.config['amend_last_stake_amount']:
+            # Remaining amount needs to be at least stake_amount * last_stake_amount_min_ratio
+            # Otherwise the remaining amount is too low to trade.
+            if available_amount > (stake_amount * self.config['last_stake_amount_min_ratio']):
+                stake_amount = min(stake_amount, available_amount)
+            else:
+                stake_amount = 0
+
         if available_amount < stake_amount:
             raise DependencyException(
-                f"Available balance({available_amount} {self.config['stake_currency']}) is "
-                f"lower than stake amount({stake_amount} {self.config['stake_currency']})"
+                f"Available balance ({available_amount} {self.config['stake_currency']}) is "
+                f"lower than stake amount ({stake_amount} {self.config['stake_currency']})"
             )
 
         return stake_amount
@@ -272,60 +377,50 @@ class FreqtradeBot:
         # See also #2575 at github.
         return max(min_stake_amounts) / amount_reserve_percent
 
-    def create_trades(self) -> bool:
+    def create_trade(self, pair: str) -> bool:
         """
-        Checks the implemented trading strategy for buy-signals, using the active pair whitelist.
-        If a pair triggers the buy_signal a new trade record gets created.
-        Checks pairs as long as the open trade count is below `max_open_trades`.
-        :return: True if at least one trade has been created.
-        """
-        whitelist = copy.deepcopy(self.active_pair_whitelist)
+        Check the implemented trading strategy for buy signals.
 
-        if not whitelist:
-            logger.info("Active pair whitelist is empty.")
+        If the pair triggers the buy signal a new trade record gets created
+        and the buy-order opening the trade gets issued towards the exchange.
+
+        :return: True if a trade has been created.
+        """
+        logger.debug(f"create_trade for pair {pair}")
+
+        if self.strategy.is_pair_locked(pair):
+            logger.info(f"Pair {pair} is currently locked.")
             return False
 
-        # Remove currently opened and latest pairs from whitelist
-        for trade in Trade.get_open_trades():
-            if trade.pair in whitelist:
-                whitelist.remove(trade.pair)
-                logger.debug('Ignoring %s in pair whitelist', trade.pair)
-
-        if not whitelist:
-            logger.info("No currency pair in active pair whitelist, "
-                        "but checking to sell open trades.")
-            return False
-
-        buycount = 0
         # running get_signal on historical data fetched
-        for _pair in whitelist:
-            if self.strategy.is_pair_locked(_pair):
-                logger.info(f"Pair {_pair} is currently locked.")
-                continue
+        (buy, sell) = self.strategy.get_signal(
+            pair, self.strategy.ticker_interval,
+            self.dataprovider.ohlcv(pair, self.strategy.ticker_interval))
 
-            (buy, sell) = self.strategy.get_signal(
-                _pair, self.strategy.ticker_interval,
-                self.dataprovider.ohlcv(_pair, self.strategy.ticker_interval))
+        if buy and not sell:
+            if not self.get_free_open_trades():
+                logger.debug("Can't open a new trade: max number of trades is reached.")
+                return False
 
-            if buy and not sell and len(Trade.get_open_trades()) < self.config['max_open_trades']:
-                stake_amount = self._get_trade_stake_amount(_pair)
-                if not stake_amount:
-                    continue
+            stake_amount = self.get_trade_stake_amount(pair)
+            if not stake_amount:
+                logger.debug("Stake amount is 0, ignoring possible trade for {pair}.")
+                return False
 
-                logger.info(f"Buy signal found: about create a new trade with stake_amount: "
-                            f"{stake_amount} ...")
+            logger.info(f"Buy signal found: about create a new trade with stake_amount: "
+                        f"{stake_amount} ...")
 
-                bidstrat_check_depth_of_market = self.config.get('bid_strategy', {}).\
-                    get('check_depth_of_market', {})
-                if (bidstrat_check_depth_of_market.get('enabled', False)) and\
-                        (bidstrat_check_depth_of_market.get('bids_to_ask_delta', 0) > 0):
-                    if self._check_depth_of_market_buy(_pair, bidstrat_check_depth_of_market):
-                        buycount += self.execute_buy(_pair, stake_amount)
-                    continue
+            bid_check_dom = self.config.get('bid_strategy', {}).get('check_depth_of_market', {})
+            if ((bid_check_dom.get('enabled', False)) and
+                    (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
+                if self._check_depth_of_market_buy(pair, bid_check_dom):
+                    return self.execute_buy(pair, stake_amount)
+                else:
+                    return False
 
-                buycount += self.execute_buy(_pair, stake_amount)
-
-        return buycount > 0
+            return self.execute_buy(pair, stake_amount)
+        else:
+            return False
 
     def _check_depth_of_market_buy(self, pair: str, conf: Dict) -> bool:
         """
@@ -350,21 +445,18 @@ class FreqtradeBot:
         :param pair: pair for which we want to create a LIMIT_BUY
         :return: None
         """
-        pair_s = pair.replace('_', '/')
-        stake_currency = self.config['stake_currency']
-        fiat_currency = self.config.get('fiat_display_currency', None)
         time_in_force = self.strategy.order_time_in_force['buy']
 
         if price:
             buy_limit_requested = price
         else:
-            # Calculate amount
-            buy_limit_requested = self.get_target_bid(pair)
+            # Calculate price
+            buy_limit_requested = self.get_buy_rate(pair)
 
-        min_stake_amount = self._get_min_pair_stake_amount(pair_s, buy_limit_requested)
+        min_stake_amount = self._get_min_pair_stake_amount(pair, buy_limit_requested)
         if min_stake_amount is not None and min_stake_amount > stake_amount:
             logger.warning(
-                f"Can't open a new trade for {pair_s}: stake amount "
+                f"Can't open a new trade for {pair}: stake amount "
                 f"is too small ({stake_amount} < {min_stake_amount})"
             )
             return False
@@ -387,7 +479,7 @@ class FreqtradeBot:
             if float(order['filled']) == 0:
                 logger.warning('Buy %s order with time in force %s for %s is %s by %s.'
                                ' zero amount is fulfilled.',
-                               order_tif, order_type, pair_s, order_status, self.exchange.name)
+                               order_tif, order_type, pair, order_status, self.exchange.name)
                 return False
             else:
                 # the order is partially fulfilled
@@ -395,7 +487,7 @@ class FreqtradeBot:
                 # if the order is fulfilled fully or partially
                 logger.warning('Buy %s order with time in force %s for %s is %s by %s.'
                                ' %s amount fulfilled out of %s (%s remaining which is canceled).',
-                               order_tif, order_type, pair_s, order_status, self.exchange.name,
+                               order_tif, order_type, pair, order_status, self.exchange.name,
                                order['filled'], order['amount'], order['remaining']
                                )
                 stake_amount = order['cost']
@@ -408,17 +500,6 @@ class FreqtradeBot:
             stake_amount = order['cost']
             amount = order['amount']
             buy_limit_filled_price = order['price']
-
-        self.rpc.send_msg({
-            'type': RPCMessageType.BUY_NOTIFICATION,
-            'exchange': self.exchange.name.capitalize(),
-            'pair': pair_s,
-            'limit': buy_limit_filled_price,
-            'order_type': order_type,
-            'stake_amount': stake_amount,
-            'stake_currency': stake_currency,
-            'fiat_currency': fiat_currency
-        })
 
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
@@ -437,6 +518,8 @@ class FreqtradeBot:
             ticker_interval=timeframe_to_minutes(self.config['ticker_interval'])
         )
 
+        self._notify_buy(trade, order_type)
+
         # Update fees if order is closed
         if order_status == 'closed':
             self.update_trade_state(trade, order)
@@ -449,126 +532,59 @@ class FreqtradeBot:
 
         return True
 
-    def process_maybe_execute_buys(self) -> None:
+    def _notify_buy(self, trade: Trade, order_type: str):
         """
-        Tries to execute buy orders for trades in a safe way
+        Sends rpc notification when a buy occured.
         """
-        try:
-            # Create entity and execute trade
-            if not self.create_trades():
-                logger.debug('Found no buy signals for whitelisted currencies. Trying again...')
-        except DependencyException as exception:
-            logger.warning('Unable to create trade: %s', exception)
+        msg = {
+            'type': RPCMessageType.BUY_NOTIFICATION,
+            'exchange': self.exchange.name.capitalize(),
+            'pair': trade.pair,
+            'limit': trade.open_rate,
+            'order_type': order_type,
+            'stake_amount': trade.stake_amount,
+            'stake_currency': self.config['stake_currency'],
+            'fiat_currency': self.config.get('fiat_display_currency', None),
+        }
 
-    def process_maybe_execute_sells(self, trades: List[Any]) -> None:
+        # Send the message
+        self.rpc.send_msg(msg)
+
+#
+# SELL / exit positions / close trades logic and methods
+#
+
+    def exit_positions(self, trades: List[Any]) -> int:
         """
-        Tries to execute sell orders for trades in a safe way
+        Tries to execute sell orders for open trades (positions)
         """
-        result = False
+        trades_closed = 0
         for trade in trades:
             try:
                 self.update_trade_state(trade)
 
                 if (self.strategy.order_types.get('stoploss_on_exchange') and
                         self.handle_stoploss_on_exchange(trade)):
-                    result = True
+                    trades_closed += 1
                     continue
                 # Check if we can sell our current pair
                 if trade.open_order_id is None and self.handle_trade(trade):
-                    result = True
+                    trades_closed += 1
 
             except DependencyException as exception:
                 logger.warning('Unable to sell trade: %s', exception)
 
         # Updating wallets if any trade occured
-        if result:
+        if trades_closed:
             self.wallets.update()
 
-    def get_real_amount(self, trade: Trade, order: Dict, order_amount: float = None) -> float:
-        """
-        Get real amount for the trade
-        Necessary for exchanges which charge fees in base currency (e.g. binance)
-        """
-        if order_amount is None:
-            order_amount = order['amount']
-        # Only run for closed orders
-        if trade.fee_open == 0 or order['status'] == 'open':
-            return order_amount
-
-        # use fee from order-dict if possible
-        if ('fee' in order and order['fee'] is not None and
-                (order['fee'].keys() >= {'currency', 'cost'})):
-            if (order['fee']['currency'] is not None and
-                    order['fee']['cost'] is not None and
-                    trade.pair.startswith(order['fee']['currency'])):
-                new_amount = order_amount - order['fee']['cost']
-                logger.info("Applying fee on amount for %s (from %s to %s) from Order",
-                            trade, order['amount'], new_amount)
-                return new_amount
-
-        # Fallback to Trades
-        trades = self.exchange.get_trades_for_order(trade.open_order_id, trade.pair,
-                                                    trade.open_date)
-
-        if len(trades) == 0:
-            logger.info("Applying fee on amount for %s failed: myTrade-Dict empty found", trade)
-            return order_amount
-        amount = 0
-        fee_abs = 0
-        for exectrade in trades:
-            amount += exectrade['amount']
-            if ("fee" in exectrade and exectrade['fee'] is not None and
-                    (exectrade['fee'].keys() >= {'currency', 'cost'})):
-                # only applies if fee is in quote currency!
-                if (exectrade['fee']['currency'] is not None and
-                        exectrade['fee']['cost'] is not None and
-                        trade.pair.startswith(exectrade['fee']['currency'])):
-                    fee_abs += exectrade['fee']['cost']
-
-        if not isclose(amount, order_amount, abs_tol=constants.MATH_CLOSE_PREC):
-            logger.warning(f"Amount {amount} does not match amount {trade.amount}")
-            raise DependencyException("Half bought? Amounts don't match")
-        real_amount = amount - fee_abs
-        if fee_abs != 0:
-            logger.info(f"Applying fee on amount for {trade} "
-                        f"(from {order_amount} to {real_amount}) from Trades")
-        return real_amount
-
-    def update_trade_state(self, trade, action_order: dict = None):
-        """
-        Checks trades with open orders and updates the amount if necessary
-        """
-        # Get order details for actual price per unit
-        if trade.open_order_id:
-            # Update trade with order values
-            logger.info('Found open order for %s', trade)
-            try:
-                order = action_order or self.exchange.get_order(trade.open_order_id, trade.pair)
-            except InvalidOrderException as exception:
-                logger.warning('Unable to fetch order %s: %s', trade.open_order_id, exception)
-                return
-            # Try update amount (binance-fix)
-            try:
-                new_amount = self.get_real_amount(trade, order)
-                if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
-                    order['amount'] = new_amount
-                    # Fee was applied, so set to 0
-                    trade.fee_open = 0
-
-            except DependencyException as exception:
-                logger.warning("Could not update trade amount: %s", exception)
-
-            trade.update(order)
-
-            # Updating wallets when order is closed
-            if not trade.is_open:
-                self.wallets.update()
+        return trades_closed
 
     def get_sell_rate(self, pair: str, refresh: bool) -> float:
         """
         Get sell rate - either using get-ticker bid or first bid based on orderbook
         The orderbook portion is only used for rpc messaging, which would otherwise fail
-        for BitMex (has no bid/ask in get_ticker)
+        for BitMex (has no bid/ask in fetch_ticker)
         or remain static in any other case since it's not updating.
         :return: Bid rate
         """
@@ -580,7 +596,7 @@ class FreqtradeBot:
             rate = order_book['bids'][0][0]
 
         else:
-            rate = self.exchange.get_ticker(pair, refresh)['bid']
+            rate = self.exchange.fetch_ticker(pair, refresh)['bid']
         return rate
 
     def handle_trade(self, trade: Trade) -> bool:
@@ -748,8 +764,8 @@ class FreqtradeBot:
         Check and execute sell
         """
         should_sell = self.strategy.should_sell(
-                trade, sell_rate, datetime.utcnow(), buy, sell,
-                force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
+            trade, sell_rate, datetime.utcnow(), buy, sell,
+            force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
         )
 
         if should_sell.sell_flag:
@@ -849,6 +865,7 @@ class FreqtradeBot:
                 trade.amount = new_amount
                 # Fee was applied, so set to 0
                 trade.fee_open = 0
+                trade.recalc_open_trade_price()
         except DependencyException as e:
             logger.warning("Could not update trade amount: %s", e)
 
@@ -889,6 +906,31 @@ class FreqtradeBot:
         # TODO: figure out how to handle partially complete sell orders
         return False
 
+    def _safe_sell_amount(self, pair: str, amount: float) -> float:
+        """
+        Get sellable amount.
+        Should be trade.amount - but will fall back to the available amount if necessary.
+        This should cover cases where get_real_amount() was not able to update the amount
+        for whatever reason.
+        :param pair: Pair we're trying to sell
+        :param amount: amount we expect to be available
+        :return: amount to sell
+        :raise: DependencyException: if available balance is not within 2% of the available amount.
+        """
+        # Update wallets to ensure amounts tied up in a stoploss is now free!
+        self.wallets.update()
+
+        wallet_amount = self.wallets.get_free(pair.split('/')[0])
+        logger.debug(f"{pair} - Wallet: {wallet_amount} - Trade-amount: {amount}")
+        if wallet_amount >= amount:
+            return amount
+        elif wallet_amount > amount * 0.98:
+            logger.info(f"{pair} - Falling back to wallet-amount.")
+            return wallet_amount
+        else:
+            raise DependencyException(
+                f"Not enough amount to sell. Trade-amount: {amount}, Wallet: {wallet_amount}")
+
     def execute_sell(self, trade: Trade, limit: float, sell_reason: SellType) -> None:
         """
         Executes a limit sell for the given trade and limit
@@ -903,7 +945,7 @@ class FreqtradeBot:
 
         # if stoploss is on exchange and we are on dry_run mode,
         # we consider the sell price stop price
-        if self.config.get('dry_run', False) and sell_type == 'stoploss' \
+        if self.config['dry_run'] and sell_type == 'stoploss' \
            and self.strategy.order_types['stoploss_on_exchange']:
             limit = trade.stop_loss
 
@@ -914,15 +956,17 @@ class FreqtradeBot:
             except InvalidOrderException:
                 logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
 
-        ordertype = self.strategy.order_types[sell_type]
+        order_type = self.strategy.order_types[sell_type]
         if sell_reason == SellType.EMERGENCY_SELL:
             # Emergencysells (default to market!)
-            ordertype = self.strategy.order_types.get("emergencysell", "market")
+            order_type = self.strategy.order_types.get("emergencysell", "market")
+
+        amount = self._safe_sell_amount(trade.pair, trade.amount)
 
         # Execute sell and update trade record
         order = self.exchange.sell(pair=str(trade.pair),
-                                   ordertype=ordertype,
-                                   amount=trade.amount, rate=limit,
+                                   ordertype=order_type,
+                                   amount=amount, rate=limit,
                                    time_in_force=self.strategy.order_time_in_force['sell']
                                    )
 
@@ -937,7 +981,7 @@ class FreqtradeBot:
         # Lock pair for one candle to prevent immediate rebuys
         self.strategy.lock_pair(trade.pair, timeframe_to_next_date(self.config['ticker_interval']))
 
-        self._notify_sell(trade, ordertype)
+        self._notify_sell(trade, order_type)
 
     def _notify_sell(self, trade: Trade, order_type: str):
         """
@@ -947,7 +991,7 @@ class FreqtradeBot:
         profit_trade = trade.calc_profit(rate=profit_rate)
         # Use cached ticker here - it was updated seconds ago.
         current_rate = self.get_sell_rate(trade.pair, False)
-        profit_percent = trade.calc_profit_percent(profit_rate)
+        profit_percent = trade.calc_profit_ratio(profit_rate)
         gain = "profit" if profit_percent > 0 else "loss"
 
         msg = {
@@ -962,17 +1006,101 @@ class FreqtradeBot:
             'current_rate': current_rate,
             'profit_amount': profit_trade,
             'profit_percent': profit_percent,
-            'sell_reason': trade.sell_reason
+            'sell_reason': trade.sell_reason,
+            'open_date': trade.open_date,
+            'close_date': trade.close_date or datetime.utcnow(),
+            'stake_currency': self.config['stake_currency'],
         }
 
-        # For regular case, when the configuration exists
-        if 'stake_currency' in self.config and 'fiat_display_currency' in self.config:
-            stake_currency = self.config['stake_currency']
-            fiat_currency = self.config['fiat_display_currency']
+        if 'fiat_display_currency' in self.config:
             msg.update({
-                'stake_currency': stake_currency,
-                'fiat_currency': fiat_currency,
+                'fiat_currency': self.config['fiat_display_currency'],
             })
 
         # Send the message
         self.rpc.send_msg(msg)
+
+#
+# Common update trade state methods
+#
+
+    def update_trade_state(self, trade, action_order: dict = None):
+        """
+        Checks trades with open orders and updates the amount if necessary
+        """
+        # Get order details for actual price per unit
+        if trade.open_order_id:
+            # Update trade with order values
+            logger.info('Found open order for %s', trade)
+            try:
+                order = action_order or self.exchange.get_order(trade.open_order_id, trade.pair)
+            except InvalidOrderException as exception:
+                logger.warning('Unable to fetch order %s: %s', trade.open_order_id, exception)
+                return
+            # Try update amount (binance-fix)
+            try:
+                new_amount = self.get_real_amount(trade, order)
+                if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
+                    order['amount'] = new_amount
+                    # Fee was applied, so set to 0
+                    trade.fee_open = 0
+                    trade.recalc_open_trade_price()
+
+            except DependencyException as exception:
+                logger.warning("Could not update trade amount: %s", exception)
+
+            trade.update(order)
+
+            # Updating wallets when order is closed
+            if not trade.is_open:
+                self.wallets.update()
+
+    def get_real_amount(self, trade: Trade, order: Dict, order_amount: float = None) -> float:
+        """
+        Get real amount for the trade
+        Necessary for exchanges which charge fees in base currency (e.g. binance)
+        """
+        if order_amount is None:
+            order_amount = order['amount']
+        # Only run for closed orders
+        if trade.fee_open == 0 or order['status'] == 'open':
+            return order_amount
+
+        # use fee from order-dict if possible
+        if ('fee' in order and order['fee'] is not None and
+                (order['fee'].keys() >= {'currency', 'cost'})):
+            if (order['fee']['currency'] is not None and
+                    order['fee']['cost'] is not None and
+                    trade.pair.startswith(order['fee']['currency'])):
+                new_amount = order_amount - order['fee']['cost']
+                logger.info("Applying fee on amount for %s (from %s to %s) from Order",
+                            trade, order['amount'], new_amount)
+                return new_amount
+
+        # Fallback to Trades
+        trades = self.exchange.get_trades_for_order(trade.open_order_id, trade.pair,
+                                                    trade.open_date)
+
+        if len(trades) == 0:
+            logger.info("Applying fee on amount for %s failed: myTrade-Dict empty found", trade)
+            return order_amount
+        amount = 0
+        fee_abs = 0
+        for exectrade in trades:
+            amount += exectrade['amount']
+            if ("fee" in exectrade and exectrade['fee'] is not None and
+                    (exectrade['fee'].keys() >= {'currency', 'cost'})):
+                # only applies if fee is in quote currency!
+                if (exectrade['fee']['currency'] is not None and
+                        exectrade['fee']['cost'] is not None and
+                        trade.pair.startswith(exectrade['fee']['currency'])):
+                    fee_abs += exectrade['fee']['cost']
+
+        if not isclose(amount, order_amount, abs_tol=constants.MATH_CLOSE_PREC):
+            logger.warning(f"Amount {amount} does not match amount {trade.amount}")
+            raise DependencyException("Half bought? Amounts don't match")
+        real_amount = amount - fee_abs
+        if fee_abs != 0:
+            logger.info(f"Applying fee on amount for {trade} "
+                        f"(from {order_amount} to {real_amount}) from Trades")
+        return real_amount

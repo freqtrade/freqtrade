@@ -47,6 +47,7 @@ class {{ strategy }}(IStrategy):
 
     # Trailing stoploss
     trailing_stop = False
+    # trailing_only_offset_is_reached = False
     # trailing_stop_positive = 0.01
     # trailing_stop_positive_offset = 0.0  # Disabled / not configured
 
@@ -77,7 +78,7 @@ class {{ strategy }}(IStrategy):
         'buy': 'gtc',
         'sell': 'gtc'
     }
-
+    {{ plot_config | indent(4) }}
     def informative_pairs(self):
         """
         Define additional, informative pair/interval combinations to be cached from the exchange.

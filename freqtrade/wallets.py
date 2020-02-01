@@ -2,9 +2,12 @@
 """ Wallet """
 
 import logging
-from typing import Dict, NamedTuple, Any
+from typing import Any, Dict, NamedTuple
+
+import arrow
+
 from freqtrade.exchange import Exchange
-from freqtrade import constants
+from freqtrade.persistence import Trade
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +26,11 @@ class Wallets:
         self._config = config
         self._exchange = exchange
         self._wallets: Dict[str, Wallet] = {}
-
+        self.start_cap = config['dry_run_wallet']
+        self._last_wallet_refresh = 0
         self.update()
 
     def get_free(self, currency) -> float:
-
-        if self._config['dry_run']:
-            return self._config.get('dry_run_wallet', constants.DRY_RUN_WALLET)
 
         balance = self._wallets.get(currency)
         if balance and balance.free:
@@ -39,9 +40,6 @@ class Wallets:
 
     def get_used(self, currency) -> float:
 
-        if self._config['dry_run']:
-            return self._config.get('dry_run_wallet', constants.DRY_RUN_WALLET)
-
         balance = self._wallets.get(currency)
         if balance and balance.used:
             return balance.used
@@ -50,16 +48,45 @@ class Wallets:
 
     def get_total(self, currency) -> float:
 
-        if self._config['dry_run']:
-            return self._config.get('dry_run_wallet', constants.DRY_RUN_WALLET)
-
         balance = self._wallets.get(currency)
         if balance and balance.total:
             return balance.total
         else:
             return 0
 
-    def update(self) -> None:
+    def _update_dry(self) -> None:
+        """
+        Update from database in dry-run mode
+        - Apply apply profits of closed trades on top of stake amount
+        - Subtract currently tied up stake_amount in open trades
+        - update balances for currencies currently in trades
+        """
+        # Recreate _wallets to reset closed trade balances
+        _wallets = {}
+        closed_trades = Trade.get_trades(Trade.is_open.is_(False)).all()
+        open_trades = Trade.get_trades(Trade.is_open.is_(True)).all()
+        tot_profit = sum([trade.calc_profit() for trade in closed_trades])
+        tot_in_trades = sum([trade.stake_amount for trade in open_trades])
+
+        current_stake = self.start_cap + tot_profit - tot_in_trades
+        _wallets[self._config['stake_currency']] = Wallet(
+            self._config['stake_currency'],
+            current_stake,
+            0,
+            current_stake
+        )
+
+        for trade in open_trades:
+            curr = trade.pair.split('/')[0]
+            _wallets[curr] = Wallet(
+                curr,
+                trade.amount,
+                0,
+                trade.amount
+            )
+        self._wallets = _wallets
+
+    def _update_live(self) -> None:
 
         balances = self._exchange.get_balances()
 
@@ -71,7 +98,21 @@ class Wallets:
                 balances[currency].get('total', None)
             )
 
-        logger.info('Wallets synced.')
+    def update(self, require_update: bool = True) -> None:
+        """
+        Updates wallets from the configured version.
+        By default, updates from the exchange.
+        Update-skipping should only be used for user-invoked /balance calls, since
+        for trading operations, the latest balance is needed.
+        :param require_update: Allow skipping an update if balances were recently refreshed
+        """
+        if (require_update or (self._last_wallet_refresh + 3600 < arrow.utcnow().timestamp)):
+            if self._config['dry_run']:
+                self._update_dry()
+            else:
+                self._update_live()
+            logger.info('Wallets synced.')
+            self._last_wallet_refresh = arrow.utcnow().timestamp
 
     def get_all_balances(self) -> Dict[str, Any]:
         return self._wallets

@@ -183,17 +183,19 @@ raw = ct.fetch_ohlcv(pair, timeframe=timeframe)
 # convert to dataframe
 df1 = parse_ticker_dataframe(raw, timeframe, pair=pair, drop_incomplete=False)
 
-print(df1["date"].tail(1))
+print(df1.tail(1))
 print(datetime.utcnow())
 ```
 
 ``` output
-19   2019-06-08 00:00:00+00:00
+                         date      open      high       low     close  volume  
+499 2019-06-08 00:00:00+00:00  0.000007  0.000007  0.000007  0.000007   26264344.0  
 2019-06-09 12:30:27.873327
 ```
 
 The output will show the last entry from the Exchange as well as the current UTC date.
 If the day shows the same day, then the last candle can be assumed as incomplete and should be dropped (leave the setting `"ohlcv_partial_candle"` from the exchange-class untouched / True). Otherwise, set `"ohlcv_partial_candle"` to `False` to not drop Candles (shown in the example above).
+Another way is to run this command multiple times in a row and observe if the volume is changing (while the date remains the same).
 
 ## Updating example notebooks
 
@@ -246,6 +248,17 @@ Determine if crucial bugfixes have been made between this commit and the current
 git log --oneline --no-decorate --no-merges master..new_release
 ```
 
+To keep the release-log short, best wrap the full git changelog into a collapsible details secction.
+
+```markdown
+<details>
+<summary>Expand full changelog</summary>
+
+... Full git changelog
+
+</details>
+```
+
 ### Create github release / tag
 
 Once the PR against master is merged (best right after merging):
@@ -253,4 +266,29 @@ Once the PR against master is merged (best right after merging):
 * Use the button "Draft a new release" in the Github UI (subsection releases).
 * Use the version-number specified as tag.
 * Use "master" as reference (this step comes after the above PR is merged).
-* Use the above changelog as release comment (as codeblock).
+* Use the above changelog as release comment (as codeblock)
+
+### After-release
+
+* Update version in develop by postfixing that with `-dev` (`2019.6 -> 2019.6-dev`).
+* Create a PR against develop to update that branch.
+
+## Releases
+
+### pypi
+
+To create a pypi release, please run the following commands:
+
+Additional requirement: `wheel`, `twine` (for uploading), account on pypi with proper permissions.
+
+``` bash
+python setup.py sdist bdist_wheel
+
+# For pypi test (to check if some change to the installation did work)
+twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+
+# For production:
+twine upload dist/*
+```
+
+Please don't push non-releases to the productive / real pypi instance.

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from freqtrade import constants
-from freqtrade.configuration.cli_options import AVAILABLE_CLI_OPTIONS
+from freqtrade.commands.cli_options import AVAILABLE_CLI_OPTIONS
 
 ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_data_dir"]
 
@@ -29,6 +29,8 @@ ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
                                         "hyperopt_continue", "hyperopt_loss"]
 
 ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
+
+ARGS_LIST_STRATEGIES = ["strategy_path", "print_one_column"]
 
 ARGS_LIST_EXCHANGES = ["print_one_column", "list_exchanges_all"]
 
@@ -62,7 +64,8 @@ ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperop
                       "print_json", "hyperopt_show_no_header"]
 
 NO_CONF_REQURIED = ["download-data", "list-timeframes", "list-markets", "list-pairs",
-                    "hyperopt-list", "hyperopt-show", "plot-dataframe", "plot-profit"]
+                    "list-strategies", "hyperopt-list", "hyperopt-show", "plot-dataframe",
+                    "plot-profit"]
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-hyperopt", "new-strategy"]
 
@@ -127,13 +130,14 @@ class Arguments:
         self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot')
         self._build_args(optionlist=['version'], parser=self.parser)
 
-        from freqtrade.optimize import start_backtesting, start_hyperopt, start_edge
-        from freqtrade.utils import (start_create_userdir, start_download_data,
-                                     start_hyperopt_list, start_hyperopt_show,
-                                     start_list_exchanges, start_list_markets,
-                                     start_new_hyperopt, start_new_strategy,
-                                     start_list_timeframes, start_test_pairlist, start_trading)
-        from freqtrade.plot.plot_utils import start_plot_dataframe, start_plot_profit
+        from freqtrade.commands import (start_create_userdir, start_download_data,
+                                        start_hyperopt_list, start_hyperopt_show,
+                                        start_list_exchanges, start_list_markets,
+                                        start_list_strategies, start_new_hyperopt,
+                                        start_new_strategy, start_list_timeframes,
+                                        start_plot_dataframe, start_plot_profit,
+                                        start_backtesting, start_hyperopt, start_edge,
+                                        start_test_pairlist, start_trading)
 
         subparsers = self.parser.add_subparsers(dest='command',
                                                 # Use custom message when no subhandler is added
@@ -184,6 +188,15 @@ class Arguments:
                                                    help="Create new hyperopt")
         build_hyperopt_cmd.set_defaults(func=start_new_hyperopt)
         self._build_args(optionlist=ARGS_BUILD_HYPEROPT, parser=build_hyperopt_cmd)
+
+        # Add list-strategies subcommand
+        list_strategies_cmd = subparsers.add_parser(
+            'list-strategies',
+            help='Print available strategies.',
+            parents=[_common_parser],
+        )
+        list_strategies_cmd.set_defaults(func=start_list_strategies)
+        self._build_args(optionlist=ARGS_LIST_STRATEGIES, parser=list_strategies_cmd)
 
         # Add list-exchanges subcommand
         list_exchanges_cmd = subparsers.add_parser(

@@ -4,16 +4,14 @@ This module defines the interface to apply for hyperopt
 """
 import logging
 import math
-
 from abc import ABC
-from typing import Dict, Any, Callable, List
+from typing import Any, Callable, Dict, List
 
 from skopt.space import Categorical, Dimension, Integer, Real
 
-from freqtrade import OperationalException
+from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import round_dict
-
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +104,7 @@ class IHyperOpt(ABC):
         roi_t_alpha = 1.0
         roi_p_alpha = 1.0
 
-        timeframe_mins = timeframe_to_minutes(IHyperOpt.ticker_interval)
+        timeframe_min = timeframe_to_minutes(IHyperOpt.ticker_interval)
 
         # We define here limits for the ROI space parameters automagically adapted to the
         # timeframe used by the bot:
@@ -117,8 +115,8 @@ class IHyperOpt(ABC):
         #
         # The scaling is designed so that it maps exactly to the legacy Freqtrade roi_space()
         # method for the 5m ticker interval.
-        roi_t_scale = timeframe_mins / 5
-        roi_p_scale = math.log1p(timeframe_mins) / math.log1p(5)
+        roi_t_scale = timeframe_min / 5
+        roi_p_scale = math.log1p(timeframe_min) / math.log1p(5)
         roi_limits = {
             'roi_t1_min': int(10 * roi_t_scale * roi_t_alpha),
             'roi_t1_max': int(120 * roi_t_scale * roi_t_alpha),
@@ -175,6 +173,19 @@ class IHyperOpt(ABC):
         ]
 
     @staticmethod
+    def generate_trailing_params(params: Dict) -> Dict:
+        """
+        Create dict with trailing stop parameters.
+        """
+        return {
+            'trailing_stop': params['trailing_stop'],
+            'trailing_stop_positive': params['trailing_stop_positive'],
+            'trailing_stop_positive_offset': (params['trailing_stop_positive'] +
+                                              params['trailing_stop_positive_offset_p1']),
+            'trailing_only_offset_is_reached': params['trailing_only_offset_is_reached'],
+        }
+
+    @staticmethod
     def trailing_space() -> List[Dimension]:
         """
         Create a trailing stoploss space.
@@ -190,8 +201,15 @@ class IHyperOpt(ABC):
             # other 'trailing' hyperspace parameters.
             Categorical([True], name='trailing_stop'),
 
-            Real(0.02, 0.35, name='trailing_stop_positive'),
-            Real(0.01, 0.1, name='trailing_stop_positive_offset'),
+            Real(0.01, 0.35, name='trailing_stop_positive'),
+
+            # 'trailing_stop_positive_offset' should be greater than 'trailing_stop_positive',
+            # so this intermediate parameter is used as the value of the difference between
+            # them. The value of the 'trailing_stop_positive_offset' is constructed in the
+            # generate_trailing_params() method.
+            # # This is similar to the hyperspace dimensions used for constructing the ROI tables.
+            Real(0.001, 0.1, name='trailing_stop_positive_offset_p1'),
+
             Categorical([True, False], name='trailing_only_offset_is_reached'),
         ]
 

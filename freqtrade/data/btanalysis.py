@@ -47,7 +47,7 @@ def load_backtest_data(filename) -> pd.DataFrame:
                                       utc=True,
                                       infer_datetime_format=True
                                       )
-    df['profitabs'] = df['close_rate'] - df['open_rate']
+    df['profit'] = df['close_rate'] - df['open_rate']
     df = df.sort_values("open_time").reset_index(drop=True)
     return df
 
@@ -108,7 +108,7 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
     trades = pd.DataFrame([(t.pair,
                             t.open_date.replace(tzinfo=timezone.utc),
                             t.close_date.replace(tzinfo=timezone.utc) if t.close_date else None,
-                            t.calc_profit(), t.calc_profit_percent(),
+                            t.calc_profit(), t.calc_profit_ratio(),
                             t.open_rate, t.close_rate, t.amount,
                             (round((t.close_date.timestamp() - t.open_date.timestamp()) / 60, 2)
                                 if t.close_date else None),

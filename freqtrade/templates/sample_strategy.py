@@ -48,6 +48,7 @@ class SampleStrategy(IStrategy):
 
     # Trailing stoploss
     trailing_stop = False
+    # trailing_only_offset_is_reached = False
     # trailing_stop_positive = 0.01
     # trailing_stop_positive_offset = 0.0  # Disabled / not configured
 
@@ -77,6 +78,22 @@ class SampleStrategy(IStrategy):
     order_time_in_force = {
         'buy': 'gtc',
         'sell': 'gtc'
+    }
+
+    plot_config = {
+        'main_plot': {
+            'tema': {},
+            'sar': {'color': 'white'},
+        },
+        'subplots': {
+            "MACD": {
+                'macd': {'color': 'blue'},
+                'macdsignal': {'color': 'orange'},
+            },
+            "RSI": {
+                'rsi': {'color': 'red'},
+            }
+        }
     }
 
     def informative_pairs(self):
