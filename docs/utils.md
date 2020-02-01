@@ -54,6 +54,21 @@ optional arguments:
 !!! Warning
     Only vital questions are asked. Freqtrade offers a lot more configuration possibilities, which are listed in the [Configuration documentation](configuration.md#configuration-parameters)
 
+### Create config examples
+
+```
+$ freqtrade new-config --config config_binance.json
+
+? Do you want to enable Dry-run (simulated trades)?  Yes
+? Please insert your stake currency: BTC
+? Please insert your stake amount: 0.05
+? Please insert max_open_trades (Integer or 'unlimited'): 5
+? Please insert your ticker interval: 15m
+? Please insert your display Currency (for reporting): USD
+? Select exchange  binance
+? Do you want to enable Telegram?  No
+```
+
 ## Create new strategy
 
 Creates a new strategy from a template similar to SampleStrategy.
