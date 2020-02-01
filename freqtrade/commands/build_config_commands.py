@@ -27,6 +27,19 @@ def validate_is_float(val):
         return False
 
 
+def ask_user_overwrite(config_path: Path) -> bool:
+    questions = [
+        {
+            "type": "confirm",
+            "name": "overwrite",
+            "message": f"File {config_path} already exists. Overwrite?",
+            "default": False,
+        },
+    ]
+    answers = prompt(questions)
+    return answers['overwrite']
+
+
 def ask_user_config() -> Dict[str, Any]:
     """
     Ask user a few questions to build the configuration.
@@ -169,8 +182,12 @@ def start_new_config(args: Dict[str, Any]) -> None:
 
     config_path = Path(args['config'][0])
     if config_path.exists():
-        raise OperationalException(
-            f"Configuration `{config_path}` already exists. "
-            "Please use another configuration name or delete the existing configuration.")
+        overwrite = ask_user_overwrite(config_path)
+        if overwrite:
+            config_path.unlink()
+        else:
+            raise OperationalException(
+                f"Configuration `{config_path}` already exists. "
+                "Please use another configuration name or delete the existing configuration.")
     selections = ask_user_config()
     deploy_new_config(config_path, selections)
