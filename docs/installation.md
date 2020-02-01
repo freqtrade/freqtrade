@@ -130,6 +130,17 @@ bash setup.sh -i
 
 #### 1. Install TA-Lib
 
+Use the provided ta-lib installation script
+
+```bash
+sudo ./build_helpers/install_ta-lib.sh
+```
+
+!!! Note
+    This will use the ta-lib tar.gz included in this repository.
+
+##### TA-Lib manual installation
+
 Official webpage: https://mrjbq7.github.io/ta-lib/install.html
 
 ```bash
@@ -185,7 +196,8 @@ python3 -m pip install -e .
 # Initialize the user_directory
 freqtrade create-userdir --userdir user_data/
 
-cp config.json.example config.json
+# Create a new configuration file
+freqtrade new-config --config config.json
 ```
 
 > *To edit the config please refer to [Bot Configuration](configuration.md).*
