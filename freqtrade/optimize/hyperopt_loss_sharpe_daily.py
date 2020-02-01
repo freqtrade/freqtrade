@@ -43,7 +43,7 @@ class SharpeHyperOptLossDaily(IHyperOptLoss):
             * 100.0
         )
 
-        if (np.std(sum_daily.profit_percent) != 0.):
+        if (np.std(dataframe['profit_percent']) != 0.):
             sharp_ratio = (
                 sum_daily["profit_percent"].mean()
                 / np.std(sum_daily["profit_percent"])
