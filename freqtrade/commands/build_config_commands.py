@@ -166,7 +166,11 @@ def start_new_config(args: Dict[str, Any]) -> None:
     Create a new strategy from a template
     Asking the user questions to fill out the templateaccordingly.
     """
-    selections = ask_user_config()
 
     config_path = Path(args['config'][0])
+    if config_path.exists():
+        raise OperationalException(
+            f"Configuration `{config_path}` already exists. "
+            "Please use another configuration name or delete the existing configuration.")
+    selections = ask_user_config()
     deploy_new_config(config_path, selections)

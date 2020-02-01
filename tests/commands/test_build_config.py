@@ -6,6 +6,7 @@ import pytest
 
 from freqtrade.commands.build_config_commands import (ask_user_config,
                                                       start_new_config)
+from freqtrade.exceptions import OperationalException
 from tests.conftest import get_args, log_has_re
 
 
@@ -41,6 +42,17 @@ def test_start_new_config(mocker, caplog, exchange):
     result = json.loads(wt_mock.call_args_list[0][0][0])
     assert result['exchange']['name'] == exchange
     assert result['ticker_interval'] == '15m'
+
+
+def test_start_new_config_exists(mocker, caplog):
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    args = [
+        "new-config",
+        "--config",
+        "coolconfig.json"
+    ]
+    with pytest.raises(OperationalException, match=r"Configuration .* already exists\."):
+        start_new_config(get_args(args))
 
 
 def test_ask_user_config():
