@@ -59,6 +59,7 @@ class Hyperopt:
     hyperopt = Hyperopt(config)
     hyperopt.start()
     """
+
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
 
@@ -90,13 +91,13 @@ class Hyperopt:
         # Populate functions here (hasattr is slow so should not be run during "regular" operations)
         if hasattr(self.custom_hyperopt, 'populate_indicators'):
             self.backtesting.strategy.advise_indicators = \
-                    self.custom_hyperopt.populate_indicators  # type: ignore
+                self.custom_hyperopt.populate_indicators  # type: ignore
         if hasattr(self.custom_hyperopt, 'populate_buy_trend'):
             self.backtesting.strategy.advise_buy = \
-                    self.custom_hyperopt.populate_buy_trend  # type: ignore
+                self.custom_hyperopt.populate_buy_trend  # type: ignore
         if hasattr(self.custom_hyperopt, 'populate_sell_trend'):
             self.backtesting.strategy.advise_sell = \
-                    self.custom_hyperopt.populate_sell_trend  # type: ignore
+                self.custom_hyperopt.populate_sell_trend  # type: ignore
 
         # Use max_open_trades for hyperopt as well, except --disable-max-market-positions is set
         if self.config.get('use_max_market_positions', True):
@@ -345,15 +346,15 @@ class Hyperopt:
 
         if self.has_space('roi'):
             self.backtesting.strategy.minimal_roi = \
-                    self.custom_hyperopt.generate_roi_table(params_dict)
+                self.custom_hyperopt.generate_roi_table(params_dict)
 
         if self.has_space('buy'):
             self.backtesting.strategy.advise_buy = \
-                    self.custom_hyperopt.buy_strategy_generator(params_dict)
+                self.custom_hyperopt.buy_strategy_generator(params_dict)
 
         if self.has_space('sell'):
             self.backtesting.strategy.advise_sell = \
-                    self.custom_hyperopt.sell_strategy_generator(params_dict)
+                self.custom_hyperopt.sell_strategy_generator(params_dict)
 
         if self.has_space('stoploss'):
             self.backtesting.strategy.stoploss = params_dict['stoploss']
@@ -372,12 +373,12 @@ class Hyperopt:
         min_date, max_date = get_timerange(processed)
 
         backtesting_results = self.backtesting.backtest(
-                processed=processed,
-                stake_amount=self.config['stake_amount'],
-                start_date=min_date,
-                end_date=max_date,
-                max_open_trades=self.max_open_trades,
-                position_stacking=self.position_stacking,
+            processed=processed,
+            stake_amount=self.config['stake_amount'],
+            start_date=min_date,
+            end_date=max_date,
+            max_open_trades=self.max_open_trades,
+            position_stacking=self.position_stacking,
         )
         return self._get_results_dict(backtesting_results, min_date, max_date,
                                       params_dict, params_details)
@@ -469,8 +470,8 @@ class Hyperopt:
             trials = Hyperopt._read_trials(trials_file)
             if trials[0].get('is_best') is None:
                 raise OperationalException(
-                        "The file with Hyperopt results is incompatible with this version "
-                        "of Freqtrade and cannot be loaded.")
+                    "The file with Hyperopt results is incompatible with this version "
+                    "of Freqtrade and cannot be loaded.")
             logger.info(f"Loaded {len(trials)} previous evaluations from disk.")
         return trials
 
