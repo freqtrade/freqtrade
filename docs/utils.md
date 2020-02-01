@@ -36,6 +36,24 @@ optional arguments:
     └── sample_strategy.py
 ```
 
+## Create new config
+
+Creates a new configuration file, asking some questions which are important selections for a configuration.
+
+
+```
+usage: freqtrade new-config [-h] [-c PATH]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`). Multiple --config options may be used. Can be set to `-`
+                        to read config from stdin.
+```
+
+!!! Warning
+    Only vital questions are asked. Freqtrade offers a lot more configuration possibilities, which are listed in the [Configuration documentation](configuration.md#configuration-parameters)
+
 ## Create new strategy
 
 Creates a new strategy from a template similar to SampleStrategy.
