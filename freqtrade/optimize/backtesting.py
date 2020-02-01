@@ -404,12 +404,12 @@ class Backtesting:
             )
             # Execute backtest and print results
             all_results[self.strategy.get_strategy_name()] = self.backtest(
-                    processed=preprocessed,
-                    stake_amount=self.config['stake_amount'],
-                    start_date=min_date,
-                    end_date=max_date,
-                    max_open_trades=max_open_trades,
-                    position_stacking=position_stacking,
+                processed=preprocessed,
+                stake_amount=self.config['stake_amount'],
+                start_date=min_date,
+                end_date=max_date,
+                max_open_trades=max_open_trades,
+                position_stacking=position_stacking,
             )
 
         for strategy, results in all_results.items():
@@ -426,7 +426,10 @@ class Backtesting:
                                       results=results))
 
             print(' SELL REASON STATS '.center(133, '='))
-            print(generate_text_table_sell_reason(data, results))
+            print(generate_text_table_sell_reason(data,
+                                                  stake_currency=self.config['stake_currency'],
+                                                  max_open_trades=self.config['max_open_trades'],
+                                                  results=results))
 
             print(' LEFT OPEN TRADES REPORT '.center(133, '='))
             print(generate_text_table(data,
