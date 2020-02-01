@@ -182,7 +182,7 @@ class Arguments:
 
         # add new-config subcommand
         build_config_cmd = subparsers.add_parser('new-config',
-                                                   help="Create new config")
+                                                 help="Create new config")
         build_config_cmd.set_defaults(func=start_new_config)
         self._build_args(optionlist=ARGS_BUILD_CONFIG, parser=build_config_cmd)
 
