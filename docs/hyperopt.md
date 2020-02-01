@@ -30,34 +30,34 @@ This will create a new hyperopt file from a template, which will be located unde
 
 Depending on the space you want to optimize, only some of the below are required:
 
-- fill `buy_strategy_generator` - for buy signal optimization
-- fill `indicator_space` - for buy signal optimzation
-- fill `sell_strategy_generator` - for sell signal optimization
-- fill `sell_indicator_space` - for sell signal optimzation
+* fill `buy_strategy_generator` - for buy signal optimization
+* fill `indicator_space` - for buy signal optimzation
+* fill `sell_strategy_generator` - for sell signal optimization
+* fill `sell_indicator_space` - for sell signal optimzation
 
 !!! Note
-`populate_indicators` needs to create all indicators any of thee spaces may use, otherwise hyperopt will not work.
+    `populate_indicators` needs to create all indicators any of thee spaces may use, otherwise hyperopt will not work.
 
 Optional - can also be loaded from a strategy:
 
-- copy `populate_indicators` from your strategy - otherwise default-strategy will be used
-- copy `populate_buy_trend` from your strategy - otherwise default-strategy will be used
-- copy `populate_sell_trend` from your strategy - otherwise default-strategy will be used
+* copy `populate_indicators` from your strategy - otherwise default-strategy will be used
+* copy `populate_buy_trend` from your strategy - otherwise default-strategy will be used
+* copy `populate_sell_trend` from your strategy - otherwise default-strategy will be used
 
 !!! Note
-Assuming the optional methods are not in your hyperopt file, please use `--strategy AweSomeStrategy` which contains these methods so hyperopt can use these methods instead.
+    Assuming the optional methods are not in your hyperopt file, please use `--strategy AweSomeStrategy` which contains these methods so hyperopt can use these methods instead.
 
 Rarely you may also need to override:
 
-- `roi_space` - for custom ROI optimization (if you need the ranges for the ROI parameters in the optimization hyperspace that differ from default)
-- `generate_roi_table` - for custom ROI optimization (if you need the ranges for the values in the ROI table that differ from default or the number of entries (steps) in the ROI table which differs from the default 4 steps)
-- `stoploss_space` - for custom stoploss optimization (if you need the range for the stoploss parameter in the optimization hyperspace that differs from default)
-- `trailing_space` - for custom trailing stop optimization (if you need the ranges for the trailing stop parameters in the optimization hyperspace that differ from default)
+* `roi_space` - for custom ROI optimization (if you need the ranges for the ROI parameters in the optimization hyperspace that differ from default)
+* `generate_roi_table` - for custom ROI optimization (if you need the ranges for the values in the ROI table that differ from default or the number of entries (steps) in the ROI table which differs from the default 4 steps)
+* `stoploss_space` - for custom stoploss optimization (if you need the range for the stoploss parameter in the optimization hyperspace that differs from default)
+* `trailing_space` - for custom trailing stop optimization (if you need the ranges for the trailing stop parameters in the optimization hyperspace that differ from default)
 
 !!! Tip "Quickly optimize ROI, stoploss and trailing stoploss"
-You can quickly optimize the spaces `roi`, `stoploss` and `trailing` without changing anything (i.e. without creation of a "complete" Hyperopt class with dimensions, parameters, triggers and guards, as described in this document) from the default hyperopt template by relying on your strategy to do most of the calculations.
+    You can quickly optimize the spaces `roi`, `stoploss` and `trailing` without changing anything (i.e. without creation of a "complete" Hyperopt class with dimensions, parameters, triggers and guards, as described in this document) from the default hyperopt template by relying on your strategy to do most of the calculations.
 
-    ``` python
+    ```python
     # Have a working strategy at hand.
     freqtrade new-hyperopt --hyperopt EmptyHyperopt
 
@@ -75,8 +75,8 @@ Copy the file `user_data/hyperopts/sample_hyperopt.py` into `user_data/hyperopts
 
 There are two places you need to change in your hyperopt file to add a new buy hyperopt for testing:
 
-- Inside `indicator_space()` - the parameters hyperopt shall be optimizing.
-- Inside `populate_buy_trend()` - applying the parameters.
+* Inside `indicator_space()` - the parameters hyperopt shall be optimizing.
+* Inside `populate_buy_trend()` - applying the parameters.
 
 There you have two different types of indicators: 1. `guards` and 2. `triggers`.
 
@@ -85,8 +85,8 @@ There you have two different types of indicators: 1. `guards` and 2. `triggers`.
 
 Hyperoptimization will, for each eval round, pick one trigger and possibly
 multiple guards. The constructed strategy will be something like
-"_buy exactly when close price touches lower bollinger band, BUT only if
-ADX > 10_".
+"*buy exactly when close price touches lower bollinger band, BUT only if
+ADX > 10*".
 
 If you have updated the buy strategy, i.e. changed the contents of
 `populate_buy_trend()` method, you have to update the `guards` and
@@ -97,8 +97,8 @@ If you have updated the buy strategy, i.e. changed the contents of
 Similar to the buy-signal above, sell-signals can also be optimized.
 Place the corresponding settings into the following methods
 
-- Inside `sell_indicator_space()` - the parameters hyperopt shall be optimizing.
-- Inside `populate_sell_trend()` - applying the parameters.
+* Inside `sell_indicator_space()` - the parameters hyperopt shall be optimizing.
+* Inside `populate_sell_trend()` - applying the parameters.
 
 The configuration and rules are the same than for buy signals.
 To avoid naming collisions in the search-space, please prefix all sell-spaces with `sell-`.
@@ -189,10 +189,10 @@ This class should be in its own file within the `user_data/hyperopts/` directory
 
 Currently, the following loss functions are builtin:
 
-- `DefaultHyperOptLoss` (default legacy Freqtrade hyperoptimization loss function)
-- `OnlyProfitHyperOptLoss` (which takes only amount of profit into consideration)
-- `SharpeHyperOptLoss` (optimizes Sharpe Ratio calculated on the trade returns)
-- `SharpeHyperOptLossDaily` (optimizes Sharpe Ratio calculated on daily trade returns)
+* `DefaultHyperOptLoss` (default legacy Freqtrade hyperoptimization loss function)
+* `OnlyProfitHyperOptLoss` (which takes only amount of profit into consideration)
+* `SharpeHyperOptLoss` (optimizes Sharpe Ratio calculated on the trade returns)
+* `SharpeHyperOptLossDaily` (optimizes Sharpe Ratio calculated on daily trade returns)
 
 Creation of a custom loss function is covered in the [Advanced Hyperopt](advanced-hyperopt.md) part of the documentation.
 
@@ -215,10 +215,10 @@ running at least several thousand evaluations.
 The `--spaces all` option determines that all possible parameters should be optimized. Possibilities are listed below.
 
 !!! Note
-By default, hyperopt will erase previous results and start from scratch. Continuation can be archived by using `--continue`.
+    By default, hyperopt will erase previous results and start from scratch. Continuation can be archived by using `--continue`.
 
 !!! Warning
-When switching parameters or changing configuration options, make sure to not use the argument `--continue` so temporary results can be removed.
+    When switching parameters or changing configuration options, make sure to not use the argument `--continue` so temporary results can be removed.
 
 ### Execute Hyperopt with Different Ticker-Data Source
 
@@ -253,14 +253,14 @@ new buy strategy you have.
 
 Legal values are:
 
-- `all`: optimize everything
-- `buy`: just search for a new buy strategy
-- `sell`: just search for a new sell strategy
-- `roi`: just optimize the minimal profit table for your strategy
-- `stoploss`: search for the best stoploss value
-- `trailing`: search for the best trailing stop values
-- `default`: `all` except `trailing`
-- space-separated list of any of the above values for example `--spaces roi stoploss`
+* `all`: optimize everything
+* `buy`: just search for a new buy strategy
+* `sell`: just search for a new sell strategy
+* `roi`: just optimize the minimal profit table for your strategy
+* `stoploss`: search for the best stoploss value
+* `trailing`: search for the best trailing stop values
+* `default`: `all` except `trailing`
+* space-separated list of any of the above values for example `--spaces roi stoploss`
 
 The default Hyperopt Search Space, used when no `--space` command line option is specified, does not include the `trailing` hyperspace. We recommend you to run optimization for the `trailing` hyperspace separately, when the best parameters for other hyperspaces were found, validated and pasted into your custom strategy.
 
@@ -280,7 +280,7 @@ during Hyperopt/Backtesting (which is equal to setting `max_open_trades` to a ve
 number).
 
 !!! Note
-Dry/live runs will **NOT** use position stacking - therefore it does make sense to also validate the strategy without this as it's closer to reality.
+    Dry/live runs will **NOT** use position stacking - therefore it does make sense to also validate the strategy without this as it's closer to reality.
 
 You can also enable position stacking in the configuration file by explicitly setting
 `"position_stacking"=true`.
