@@ -627,7 +627,7 @@ class FreqtradeBot:
                 self.dataprovider.ohlcv(trade.pair, self.strategy.ticker_interval))
 
         if config_ask_strategy.get('use_order_book', False):
-            logger.info('Using order book for selling...')
+            logger.debug(f'Using order book for selling {trade.pair}...')
             # logger.debug('Order book %s',orderBook)
             order_book_min = config_ask_strategy.get('order_book_min', 1)
             order_book_max = config_ask_strategy.get('order_book_max', 1)
@@ -636,7 +636,7 @@ class FreqtradeBot:
 
             for i in range(order_book_min, order_book_max + 1):
                 order_book_rate = order_book['asks'][i - 1][0]
-                logger.info('  order book asks top %s: %0.8f', i, order_book_rate)
+                logger.debug('  order book asks top %s: %0.8f', i, order_book_rate)
                 sell_rate = order_book_rate
 
                 if self._check_and_execute_sell(trade, sell_rate, buy, sell):
