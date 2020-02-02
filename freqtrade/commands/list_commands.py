@@ -38,7 +38,7 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
 
 def start_list_strategies(args: Dict[str, Any]) -> None:
     """
-    Print Strategies available in a directory
+    Print files with Strategy custom classes available in the directory
     """
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
@@ -52,6 +52,26 @@ def start_list_strategies(args: Dict[str, Any]) -> None:
         print('\n'.join([s['name'] for s in strategies]))
     else:
         print(tabulate(strats_to_print, headers='keys', tablefmt='pipe'))
+
+
+def start_list_hyperopts(args: Dict[str, Any]) -> None:
+    """
+    Print files with HyperOpt custom classes available in the directory
+    """
+    from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
+
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+
+    directory = Path(config.get('hyperopt_path', config['user_data_dir'] / USERPATH_HYPEROPTS))
+    hyperopts = HyperOptResolver.search_all_objects(directory)
+    # Sort alphabetically
+    hyperopts = sorted(hyperopts, key=lambda x: x['name'])
+    hyperopts_to_print = [{'name': s['name'], 'location': s['location'].name} for s in hyperopts]
+
+    if args['print_one_column']:
+        print('\n'.join([s['name'] for s in hyperopts]))
+    else:
+        print(tabulate(hyperopts_to_print, headers='keys', tablefmt='pipe'))
 
 
 def start_list_timeframes(args: Dict[str, Any]) -> None:
