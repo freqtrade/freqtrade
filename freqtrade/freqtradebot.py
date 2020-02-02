@@ -693,8 +693,24 @@ class FreqtradeBot:
         except InvalidOrderException as exception:
             logger.warning('Unable to fetch stoploss order: %s', exception)
 
+        # We check if stoploss order is fulfilled
+        if stoploss_order and stoploss_order['status'] == 'closed':
+            trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
+            trade.update(stoploss_order)
+            # Lock pair for one candle to prevent immediate rebuys
+            self.strategy.lock_pair(trade.pair,
+                                    timeframe_to_next_date(self.config['ticker_interval']))
+            self._notify_sell(trade, "stoploss")
+            return True
+
+        if trade.open_order_id or not trade.is_open:
+            # Trade has an open Buy or Sell order, Stoploss-handling can't happen in this case
+            # as the Amount on the exchange is tied up in another trade.
+            # The trade can be closed already (sell-order fill confirmation came in this iteration)
+            return False
+
         # If buy order is fulfilled but there is no stoploss, we add a stoploss on exchange
-        if (not trade.open_order_id and not stoploss_order):
+        if (not stoploss_order):
 
             stoploss = self.edge.stoploss(pair=trade.pair) if self.edge else self.strategy.stoploss
 
@@ -712,16 +728,6 @@ class FreqtradeBot:
             else:
                 trade.stoploss_order_id = None
                 logger.warning('Stoploss order was cancelled, but unable to recreate one.')
-
-        # We check if stoploss order is fulfilled
-        if stoploss_order and stoploss_order['status'] == 'closed':
-            trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
-            trade.update(stoploss_order)
-            # Lock pair for one candle to prevent immediate rebuys
-            self.strategy.lock_pair(trade.pair,
-                                    timeframe_to_next_date(self.config['ticker_interval']))
-            self._notify_sell(trade, "stoploss")
-            return True
 
         # Finally we check if stoploss on exchange should be moved up because of trailing.
         if stoploss_order and self.config.get('trailing_stop', False):

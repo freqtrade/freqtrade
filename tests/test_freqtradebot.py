@@ -1127,6 +1127,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
         'freqtrade.exchange.Exchange.stoploss',
         side_effect=DependencyException()
     )
+    trade.is_open = True
     freqtrade.handle_stoploss_on_exchange(trade)
     assert log_has('Unable to place a stoploss order on exchange.', caplog)
     assert trade.stoploss_order_id is None
@@ -1139,6 +1140,16 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     mocker.patch('freqtrade.exchange.Exchange.stoploss', stoploss)
     freqtrade.handle_stoploss_on_exchange(trade)
     assert stoploss.call_count == 1
+
+    # Sixth case: Closed Trade
+    # Should not create new order
+    trade.stoploss_order_id = None
+    trade.is_open = False
+    stoploss_limit.reset_mock()
+    mocker.patch('freqtrade.exchange.Exchange.get_order')
+    mocker.patch('freqtrade.exchange.Exchange.stoploss_limit', stoploss_limit)
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert stoploss_limit.call_count == 0
 
 
 def test_handle_sle_cancel_cant_recreate(mocker, default_conf, fee, caplog,
@@ -1165,7 +1176,7 @@ def test_handle_sle_cancel_cant_recreate(mocker, default_conf, fee, caplog,
     freqtrade.enter_positions()
     trade = Trade.query.first()
     trade.is_open = True
-    trade.open_order_id = '12345'
+    trade.open_order_id = None
     trade.stoploss_order_id = 100
     assert trade
 
