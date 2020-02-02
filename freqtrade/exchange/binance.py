@@ -46,8 +46,8 @@ class Binance(Exchange):
         It may work with a limited number of other exchanges, but this has not been tested yet.
         """
         # Limit price threshold: As limit price should always be below stop-price
-        LIMIT_PRICE_PCT = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
-        rate = stop_price * LIMIT_PRICE_PCT
+        limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
+        rate = stop_price * limit_price_pct
 
         ordertype = "stop_loss_limit"
 
