@@ -6,7 +6,7 @@ from typing import Any, Dict
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.configuration.directory_operations import (copy_sample_files,
                                                           create_userdata_dir)
-from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGY
+from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGIES
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import render_template
 from freqtrade.state import RunMode
@@ -57,7 +57,7 @@ def start_new_strategy(args: Dict[str, Any]) -> None:
         if args["strategy"] == "DefaultStrategy":
             raise OperationalException("DefaultStrategy is not allowed as name.")
 
-        new_path = config['user_data_dir'] / USERPATH_STRATEGY / (args["strategy"] + ".py")
+        new_path = config['user_data_dir'] / USERPATH_STRATEGIES / (args["strategy"] + ".py")
 
         if new_path.exists():
             raise OperationalException(f"`{new_path}` already exists. "

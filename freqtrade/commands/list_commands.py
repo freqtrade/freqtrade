@@ -9,7 +9,7 @@ import rapidjson
 from tabulate import tabulate
 
 from freqtrade.configuration import setup_utils_configuration
-from freqtrade.constants import USERPATH_STRATEGY
+from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGIES
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import (available_exchanges, ccxt_exchanges,
                                 market_is_active, symbol_is_pair)
@@ -42,7 +42,7 @@ def start_list_strategies(args: Dict[str, Any]) -> None:
     """
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
-    directory = Path(config.get('strategy_path', config['user_data_dir'] / USERPATH_STRATEGY))
+    directory = Path(config.get('strategy_path', config['user_data_dir'] / USERPATH_STRATEGIES))
     strategies = StrategyResolver.search_all_objects(directory)
     # Sort alphabetically
     strategies = sorted(strategies, key=lambda x: x['name'])
