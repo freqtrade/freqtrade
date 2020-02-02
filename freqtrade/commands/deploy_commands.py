@@ -28,7 +28,7 @@ def start_create_userdir(args: Dict[str, Any]) -> None:
         sys.exit(1)
 
 
-def deploy_new_strategy(strategy_name, strategy_path: Path, subtemplate: str):
+def deploy_new_strategy(strategy_name: str, strategy_path: Path, subtemplate: str) -> None:
     """
     Deploy new strategy from template to strategy_path
     """
@@ -69,7 +69,7 @@ def start_new_strategy(args: Dict[str, Any]) -> None:
         raise OperationalException("`new-strategy` requires --strategy to be set.")
 
 
-def deploy_new_hyperopt(hyperopt_name, hyperopt_path: Path, subtemplate: str):
+def deploy_new_hyperopt(hyperopt_name: str, hyperopt_path: Path, subtemplate: str) -> None:
     """
     Deploys a new hyperopt template to hyperopt_path
     """

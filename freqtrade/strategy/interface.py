@@ -180,7 +180,7 @@ class IStrategy(ABC):
         if pair not in self._pair_locked_until or self._pair_locked_until[pair] < until:
             self._pair_locked_until[pair] = until
 
-    def unlock_pair(self, pair) -> None:
+    def unlock_pair(self, pair: str) -> None:
         """
         Unlocks a pair previously locked using lock_pair.
         Not used by freqtrade itself, but intended to be used if users lock pairs

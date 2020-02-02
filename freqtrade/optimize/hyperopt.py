@@ -117,11 +117,11 @@ class Hyperopt:
         self.print_json = self.config.get('print_json', False)
 
     @staticmethod
-    def get_lock_filename(config) -> str:
+    def get_lock_filename(config: Dict[str, Any]) -> str:
 
         return str(config['user_data_dir'] / 'hyperopt.lock')
 
-    def clean_hyperopt(self):
+    def clean_hyperopt(self) -> None:
         """
         Remove hyperopt pickle files to restart hyperopt.
         """
@@ -158,7 +158,7 @@ class Hyperopt:
                         f"saved to '{self.trials_file}'.")
 
     @staticmethod
-    def _read_trials(trials_file) -> List:
+    def _read_trials(trials_file: Path) -> List:
         """
         Read hyperopt trials file
         """
@@ -189,7 +189,7 @@ class Hyperopt:
         return result
 
     @staticmethod
-    def print_epoch_details(results, total_epochs, print_json: bool,
+    def print_epoch_details(results, total_epochs: int, print_json: bool,
                             no_header: bool = False, header_str: str = None) -> None:
         """
         Display details of the hyperopt result
@@ -218,7 +218,7 @@ class Hyperopt:
             Hyperopt._params_pretty_print(params, 'trailing', "Trailing stop:")
 
     @staticmethod
-    def _params_update_for_json(result_dict, params, space: str):
+    def _params_update_for_json(result_dict, params, space: str) -> None:
         if space in params:
             space_params = Hyperopt._space_params(params, space)
             if space in ['buy', 'sell']:
@@ -235,7 +235,7 @@ class Hyperopt:
                 result_dict.update(space_params)
 
     @staticmethod
-    def _params_pretty_print(params, space: str, header: str):
+    def _params_pretty_print(params, space: str, header: str) -> None:
         if space in params:
             space_params = Hyperopt._space_params(params, space, 5)
             if space == 'stoploss':
@@ -251,7 +251,7 @@ class Hyperopt:
         return round_dict(d, r) if r else d
 
     @staticmethod
-    def is_best_loss(results, current_best_loss) -> bool:
+    def is_best_loss(results, current_best_loss: float) -> bool:
         return results['loss'] < current_best_loss
 
     def print_results(self, results) -> None:
@@ -438,7 +438,7 @@ class Hyperopt:
             random_state=self.random_state,
         )
 
-    def fix_optimizer_models_list(self):
+    def fix_optimizer_models_list(self) -> None:
         """
         WORKAROUND: Since skopt is not actively supported, this resolves problems with skopt
         memory usage, see also: https://github.com/scikit-optimize/scikit-optimize/pull/746
@@ -460,7 +460,7 @@ class Hyperopt:
                         wrap_non_picklable_objects(self.generate_optimizer))(v, i) for v in asked)
 
     @staticmethod
-    def load_previous_results(trials_file) -> List:
+    def load_previous_results(trials_file: Path) -> List:
         """
         Load data for epochs from the file if we have one
         """

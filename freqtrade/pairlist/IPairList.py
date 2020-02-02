@@ -7,7 +7,7 @@ Provides lists as configured in config.json
 import logging
 from abc import ABC, abstractmethod, abstractproperty
 from copy import deepcopy
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from freqtrade.exchange import market_is_active
 
@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 
 class IPairList(ABC):
 
-    def __init__(self, exchange, pairlistmanager, config, pairlistconfig: dict,
+    def __init__(self, exchange, pairlistmanager,
+                 config: Dict[str, Any], pairlistconfig: Dict[str, Any],
                  pairlist_pos: int) -> None:
         """
         :param exchange: Exchange instance

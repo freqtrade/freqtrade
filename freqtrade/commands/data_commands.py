@@ -1,6 +1,6 @@
 import logging
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 import arrow
 
@@ -43,16 +43,18 @@ def start_download_data(args: Dict[str, Any]) -> None:
         if config.get('download_trades'):
             pairs_not_available = refresh_backtest_trades_data(
                 exchange, pairs=config["pairs"], datadir=config['datadir'],
-                timerange=timerange, erase=config.get("erase"))
+                timerange=timerange, erase=cast(bool, config.get("erase")))
 
             # Convert downloaded trade data to different timeframes
             convert_trades_to_ohlcv(
                 pairs=config["pairs"], timeframes=config["timeframes"],
-                datadir=config['datadir'], timerange=timerange, erase=config.get("erase"))
+                datadir=config['datadir'], timerange=timerange,
+                erase=cast(bool, config.get("erase")))
         else:
             pairs_not_available = refresh_backtest_ohlcv_data(
                 exchange, pairs=config["pairs"], timeframes=config["timeframes"],
-                datadir=config['datadir'], timerange=timerange, erase=config.get("erase"))
+                datadir=config['datadir'], timerange=timerange,
+                erase=cast(bool, config.get("erase")))
 
     except KeyboardInterrupt:
         sys.exit("SIGINT received, aborting ...")
