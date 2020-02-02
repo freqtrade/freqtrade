@@ -282,8 +282,8 @@ class Exchange:
         quote_currencies = self.get_quote_currencies()
         if stake_currency not in quote_currencies:
             raise OperationalException(
-                    f"{stake_currency} is not available as stake on {self.name}. "
-                    f"Available currencies are: {', '.join(quote_currencies)}")
+                f"{stake_currency} is not available as stake on {self.name}. "
+                f"Available currencies are: {', '.join(quote_currencies)}")
 
     def validate_pairs(self, pairs: List[str]) -> None:
         """
@@ -460,7 +460,7 @@ class Exchange:
                 "status": "closed",
                 "filled": closed_order["amount"],
                 "remaining": 0
-                })
+            })
         if closed_order["type"] in ["stop_loss_limit"]:
             closed_order["info"].update({"stopPrice": closed_order["price"]})
         self._dry_run_open_orders[closed_order["id"]] = closed_order
@@ -519,9 +519,17 @@ class Exchange:
 
         return self.create_order(pair, ordertype, 'sell', amount, rate, params)
 
-    def stoploss_limit(self, pair: str, amount: float, stop_price: float, rate: float) -> Dict:
+    def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
         """
-        creates a stoploss limit order.
+        Verify stop_loss against stoploss-order value (limit or price)
+        Returns True if adjustment is necessary.
+        """
+        raise OperationalException(f"stoploss is not implemented for {self.name}.")
+
+    def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
+        """
+        creates a stoploss order.
+        The precise ordertype is determined by the order_types dict or exchange default.
         Since ccxt does not unify stoploss-limit orders yet, this needs to be implemented in each
         exchange's subclass.
         The exception below should never raise, since we disallow
@@ -529,7 +537,7 @@ class Exchange:
         Note: Changes to this interface need to be applied to all sub-classes too.
         """
 
-        raise OperationalException(f"stoploss_limit is not implemented for {self.name}.")
+        raise OperationalException(f"stoploss is not implemented for {self.name}.")
 
     @retrier
     def get_balance(self, currency: str) -> float:

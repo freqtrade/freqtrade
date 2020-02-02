@@ -20,7 +20,7 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
     default_conf['max_open_trades'] = 3
     default_conf['exchange']['name'] = 'binance'
 
-    stoploss_limit = {
+    stoploss = {
         'id': 123,
         'info': {}
     }
@@ -53,7 +53,7 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
         SellCheckTuple(sell_flag=True, sell_type=SellType.SELL_SIGNAL)]
     )
     cancel_order_mock = MagicMock()
-    mocker.patch('freqtrade.exchange.Binance.stoploss_limit', stoploss_limit)
+    mocker.patch('freqtrade.exchange.Binance.stoploss', stoploss)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
