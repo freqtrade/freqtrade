@@ -28,6 +28,7 @@ class VolumePairList(IPairList):
                 'for "pairlist.config.number_assets"')
         self._number_pairs = self._pairlistconfig['number_assets']
         self._sort_key = self._pairlistconfig.get('sort_key', 'quoteVolume')
+        self._min_value = self._pairlistconfig.get('min_value', 0)
         self.refresh_period = self._pairlistconfig.get('refresh_period', 1800)
 
         if not self._exchange.exchange_has('fetchTickers'):
@@ -73,11 +74,13 @@ class VolumePairList(IPairList):
                                             tickers,
                                             self._config['stake_currency'],
                                             self._sort_key,
+                                            self._min_value
                                             )
         else:
             return pairlist
 
-    def _gen_pair_whitelist(self, pairlist, tickers, base_currency: str, key: str) -> List[str]:
+    def _gen_pair_whitelist(self, pairlist, tickers, base_currency: str,
+                            key: str, min_val: int) -> List[str]:
         """
         Updates the whitelist with with a dynamically generated list
         :param base_currency: base currency as str
@@ -95,6 +98,9 @@ class VolumePairList(IPairList):
         else:
             # If other pairlist is in front, use the incomming pairlist.
             filtered_tickers = [v for k, v in tickers.items() if k in pairlist]
+
+        if min_val > 0:
+            filtered_tickers = list(filter(lambda t: t[key] > min_val, filtered_tickers))
 
         sorted_tickers = sorted(filtered_tickers, reverse=True, key=lambda t: t[key])
 
