@@ -736,10 +736,11 @@ class Exchange:
                 f'Exchange {self._api.name} does not support fetching historical candlestick data.'
                 f'Message: {e}') from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(f'Could not load ticker history due to {e.__class__.__name__}. '
-                                 f'Message: {e}') from e
+            raise TemporaryError(f'Could not load ticker history for pair {pair} due to '
+                                 f'{e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
-            raise OperationalException(f'Could not fetch ticker data. Msg: {e}') from e
+            raise OperationalException(f'Could not fetch ticker data for pair {pair}. '
+                                       f'Msg: {e}') from e
 
     @retrier_async
     async def _async_fetch_trades(self, pair: str,
