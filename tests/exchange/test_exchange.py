@@ -76,9 +76,11 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
     caplog.set_level(logging.INFO)
     conf = copy.deepcopy(default_conf)
-    conf['exchange']['ccxt_async_config'] = {'aiohttp_trust_env': True}
+    conf['exchange']['ccxt_async_config'] = {'aiohttp_trust_env': True, 'asyncio_loop': True}
     ex = Exchange(conf)
-    assert log_has("Applying additional ccxt config: {'aiohttp_trust_env': True}", caplog)
+    assert log_has(
+        "Applying additional ccxt config: {'aiohttp_trust_env': True, 'asyncio_loop': True}",
+        caplog)
     assert ex._api_async.aiohttp_trust_env
     assert not ex._api.aiohttp_trust_env
 
@@ -86,6 +88,8 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     caplog.clear()
     conf = copy.deepcopy(default_conf)
     conf['exchange']['ccxt_config'] = {'TestKWARG': 11}
+    conf['exchange']['ccxt_async_config'] = {'asyncio_loop': True}
+
     ex = Exchange(conf)
     assert not log_has("Applying additional ccxt config: {'aiohttp_trust_env': True}", caplog)
     assert not ex._api_async.aiohttp_trust_env
