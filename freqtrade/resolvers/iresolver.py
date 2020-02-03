@@ -61,7 +61,8 @@ class IResolver:
 
         valid_objects_gen = (
             obj for name, obj in inspect.getmembers(module, inspect.isclass)
-            if (object_name is None or object_name == name) and cls.object_type in obj.__bases__
+            if ((object_name is None or object_name == name) and
+                issubclass(obj, cls.object_type) and obj is not cls.object_type)
         )
         return valid_objects_gen
 
