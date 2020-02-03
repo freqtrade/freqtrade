@@ -265,7 +265,7 @@ class FreqtradeBot:
 
         return used_rate
 
-    def get_trade_stake_amount(self, pair) -> float:
+    def get_trade_stake_amount(self, pair: str) -> float:
         """
         Calculate stake amount for the trade
         :return: float: Stake amount
@@ -539,7 +539,7 @@ class FreqtradeBot:
 
         return True
 
-    def _notify_buy(self, trade: Trade, order_type: str):
+    def _notify_buy(self, trade: Trade, order_type: str) -> None:
         """
         Sends rpc notification when a buy occured.
         """
@@ -738,7 +738,7 @@ class FreqtradeBot:
 
         return False
 
-    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order):
+    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order: dict) -> None:
         """
         Check to see if stoploss on exchange should be updated
         in case of trailing stoploss on exchange
@@ -760,10 +760,8 @@ class FreqtradeBot:
                                      f"for pair {trade.pair}")
 
                 # Create new stoploss order
-                if self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss,
-                                              rate=trade.stop_loss):
-                    return False
-                else:
+                if not self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss,
+                                                  rate=trade.stop_loss):
                     logger.warning(f"Could not create trailing stoploss order "
                                    f"for pair {trade.pair}.")
 
@@ -992,7 +990,7 @@ class FreqtradeBot:
 
         self._notify_sell(trade, order_type)
 
-    def _notify_sell(self, trade: Trade, order_type: str):
+    def _notify_sell(self, trade: Trade, order_type: str) -> None:
         """
         Sends rpc notification when a sell occured.
         """
@@ -1033,7 +1031,7 @@ class FreqtradeBot:
 # Common update trade state methods
 #
 
-    def update_trade_state(self, trade, action_order: dict = None):
+    def update_trade_state(self, trade: Trade, action_order: dict = None) -> None:
         """
         Checks trades with open orders and updates the amount if necessary
         """

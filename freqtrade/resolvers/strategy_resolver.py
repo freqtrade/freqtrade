@@ -9,7 +9,7 @@ from base64 import urlsafe_b64decode
 from collections import OrderedDict
 from inspect import getfullargspec
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from freqtrade.constants import (REQUIRED_ORDERTIF, REQUIRED_ORDERTYPES,
                                  USERPATH_STRATEGY)
@@ -30,7 +30,7 @@ class StrategyResolver(IResolver):
     initial_search_path = Path(__file__).parent.parent.joinpath('strategy').resolve()
 
     @staticmethod
-    def load_strategy(config: Optional[Dict] = None) -> IStrategy:
+    def load_strategy(config: Dict[str, Any] = None) -> IStrategy:
         """
         Load the custom class from config parameter
         :param config: configuration dictionary or None
@@ -96,7 +96,8 @@ class StrategyResolver(IResolver):
         return strategy
 
     @staticmethod
-    def _override_attribute_helper(strategy, config, attribute: str, default):
+    def _override_attribute_helper(strategy, config: Dict[str, Any],
+                                   attribute: str, default: Any):
         """
         Override attributes in the strategy.
         Prevalence:

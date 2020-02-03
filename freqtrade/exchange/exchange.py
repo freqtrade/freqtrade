@@ -24,6 +24,10 @@ from freqtrade.exceptions import (DependencyException, InvalidOrderException,
 from freqtrade.exchange.common import BAD_EXCHANGES, retrier, retrier_async
 from freqtrade.misc import deep_merge_dicts
 
+
+CcxtModuleType = Any
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -51,7 +55,7 @@ class Exchange:
     }
     _ft_has: Dict = {}
 
-    def __init__(self, config: dict, validate: bool = True) -> None:
+    def __init__(self, config: Dict[str, Any], validate: bool = True) -> None:
         """
         Initializes this module with the given config,
         it does basic validation whether the specified exchange and pairs are valid.
@@ -135,7 +139,7 @@ class Exchange:
         if self._api_async and inspect.iscoroutinefunction(self._api_async.close):
             asyncio.get_event_loop().run_until_complete(self._api_async.close())
 
-    def _init_ccxt(self, exchange_config: dict, ccxt_module=ccxt,
+    def _init_ccxt(self, exchange_config: Dict[str, Any], ccxt_module: CcxtModuleType = ccxt,
                    ccxt_kwargs: dict = None) -> ccxt.Exchange:
         """
         Initialize ccxt with given config and return valid
@@ -224,13 +228,13 @@ class Exchange:
         markets = self.markets
         return sorted(set([x['quote'] for _, x in markets.items()]))
 
-    def klines(self, pair_interval: Tuple[str, str], copy=True) -> DataFrame:
+    def klines(self, pair_interval: Tuple[str, str], copy: bool = True) -> DataFrame:
         if pair_interval in self._klines:
             return self._klines[pair_interval].copy() if copy else self._klines[pair_interval]
         else:
             return DataFrame()
 
-    def set_sandbox(self, api, exchange_config: dict, name: str):
+    def set_sandbox(self, api: ccxt.Exchange, exchange_config: dict, name: str) -> None:
         if exchange_config.get('sandbox'):
             if api.urls.get('test'):
                 api.urls['api'] = api.urls['test']
@@ -240,7 +244,7 @@ class Exchange:
                                      "Please check your config.json")
                 raise OperationalException(f'Exchange {name} does not provide a sandbox api')
 
-    def _load_async_markets(self, reload=False) -> None:
+    def _load_async_markets(self, reload: bool = False) -> None:
         try:
             if self._api_async:
                 asyncio.get_event_loop().run_until_complete(
@@ -273,7 +277,7 @@ class Exchange:
         except ccxt.BaseError:
             logger.exception("Could not reload markets.")
 
-    def validate_stakecurrency(self, stake_currency) -> None:
+    def validate_stakecurrency(self, stake_currency: str) -> None:
         """
         Checks stake-currency against available currencies on the exchange.
         :param stake_currency: Stake-currency to validate
@@ -319,7 +323,7 @@ class Exchange:
                                f"Please check if you are impacted by this restriction "
                                f"on the exchange and eventually remove {pair} from your whitelist.")
 
-    def get_valid_pair_combination(self, curr_1, curr_2) -> str:
+    def get_valid_pair_combination(self, curr_1: str, curr_2: str) -> str:
         """
         Get valid pair combination of curr_1 and curr_2 by trying both combinations.
         """
@@ -373,7 +377,7 @@ class Exchange:
             raise OperationalException(
                 f'Time in force policies are not supported for {self.name} yet.')
 
-    def validate_required_startup_candles(self, startup_candles) -> None:
+    def validate_required_startup_candles(self, startup_candles: int) -> None:
         """
         Checks if required startup_candles is more than ohlcv_candle_limit.
         Requires a grace-period of 5 candles - so a startup-period up to 494 is allowed by default.
@@ -392,7 +396,7 @@ class Exchange:
         """
         return endpoint in self._api.has and self._api.has[endpoint]
 
-    def amount_to_precision(self, pair, amount: float) -> float:
+    def amount_to_precision(self, pair: str, amount: float) -> float:
         '''
         Returns the amount to buy or sell to a precision the Exchange accepts
         Reimplementation of ccxt internal methods - ensuring we can test the result is correct
@@ -406,7 +410,7 @@ class Exchange:
 
         return amount
 
-    def price_to_precision(self, pair, price: float) -> float:
+    def price_to_precision(self, pair: str, price: float) -> float:
         '''
         Returns the price rounded up to the precision the Exchange accepts.
         Partial Reimplementation of ccxt internal method decimal_to_precision(),
@@ -494,7 +498,7 @@ class Exchange:
             raise OperationalException(e) from e
 
     def buy(self, pair: str, ordertype: str, amount: float,
-            rate: float, time_in_force) -> Dict:
+            rate: float, time_in_force: str) -> Dict:
 
         if self._config['dry_run']:
             dry_order = self.dry_run_order(pair, ordertype, "buy", amount, rate)
@@ -507,7 +511,7 @@ class Exchange:
         return self.create_order(pair, ordertype, 'buy', amount, rate, params)
 
     def sell(self, pair: str, ordertype: str, amount: float,
-             rate: float, time_in_force='gtc') -> Dict:
+             rate: float, time_in_force: str = 'gtc') -> Dict:
 
         if self._config['dry_run']:
             dry_order = self.dry_run_order(pair, ordertype, "sell", amount, rate)
@@ -985,8 +989,8 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def get_fee(self, symbol, type='', side='', amount=1,
-                price=1, taker_or_maker='maker') -> float:
+    def get_fee(self, symbol: str, type: str = '', side: str = '', amount: float = 1,
+                price: float = 1, taker_or_maker: str = 'maker') -> float:
         try:
             # validate that markets are loaded before trying to get fee
             if self._api.markets is None or len(self._api.markets) == 0:
@@ -1009,7 +1013,7 @@ def get_exchange_bad_reason(exchange_name: str) -> str:
     return BAD_EXCHANGES.get(exchange_name, "")
 
 
-def is_exchange_known_ccxt(exchange_name: str, ccxt_module=None) -> bool:
+def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
     return exchange_name in ccxt_exchanges(ccxt_module)
 
 
@@ -1017,14 +1021,14 @@ def is_exchange_officially_supported(exchange_name: str) -> bool:
     return exchange_name in ['bittrex', 'binance']
 
 
-def ccxt_exchanges(ccxt_module=None) -> List[str]:
+def ccxt_exchanges(ccxt_module: CcxtModuleType = None) -> List[str]:
     """
     Return the list of all exchanges known to ccxt
     """
     return ccxt_module.exchanges if ccxt_module is not None else ccxt.exchanges
 
 
-def available_exchanges(ccxt_module=None) -> List[str]:
+def available_exchanges(ccxt_module: CcxtModuleType = None) -> List[str]:
     """
     Return exchanges available to the bot, i.e. non-bad exchanges in the ccxt list
     """
@@ -1084,7 +1088,8 @@ def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
     return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
 
 
-def symbol_is_pair(market_symbol: str, base_currency: str = None, quote_currency: str = None):
+def symbol_is_pair(market_symbol: str, base_currency: str = None,
+                   quote_currency: str = None) -> bool:
     """
     Check if the market symbol is a pair, i.e. that its symbol consists of the base currency and the
     quote currency separated by '/' character. If base_currency and/or quote_currency is passed,
@@ -1097,7 +1102,7 @@ def symbol_is_pair(market_symbol: str, base_currency: str = None, quote_currency
             (symbol_parts[1] == quote_currency if quote_currency else len(symbol_parts[1]) > 0))
 
 
-def market_is_active(market):
+def market_is_active(market: Dict) -> bool:
     """
     Return True if the market is active.
     """

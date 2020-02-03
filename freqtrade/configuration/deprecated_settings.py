@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 def check_conflicting_settings(config: Dict[str, Any],
                                section1: str, name1: str,
-                               section2: str, name2: str):
+                               section2: str, name2: str) -> None:
     section1_config = config.get(section1, {})
     section2_config = config.get(section2, {})
     if name1 in section1_config and name2 in section2_config:
@@ -28,7 +28,7 @@ def check_conflicting_settings(config: Dict[str, Any],
 
 def process_deprecated_setting(config: Dict[str, Any],
                                section1: str, name1: str,
-                               section2: str, name2: str):
+                               section2: str, name2: str) -> None:
     section2_config = config.get(section2, {})
 
     if name2 in section2_config:
