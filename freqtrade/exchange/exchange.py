@@ -25,8 +25,6 @@ from freqtrade.exchange.common import BAD_EXCHANGES, retrier, retrier_async
 from freqtrade.misc import deep_merge_dicts
 
 
-# Should probably use typing.Literal when we switch to python 3.8+
-# CcxtModuleType = Literal[ccxt, ccxt_async]
 CcxtModuleType = Any
 
 
