@@ -68,7 +68,7 @@ jobs:
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc
 
     - name: Coveralls
-      if: startsWith(matrix.os, 'ubuntu')
+      if: (startsWith(matrix.os, 'ubuntu') && matrix.python-version == '3.8')
       env:
         # Coveralls token. Not used as secret due to github not providing secrets to forked repositories
         COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
