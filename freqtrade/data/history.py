@@ -455,8 +455,8 @@ def get_timerange(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]
         (arrow.get(frame['date'].min()), arrow.get(frame['date'].max()))
         for frame in data.values()
     ]
-    return (min(timeranges, key=operator.itemgetter(0))[0],
-            max(timeranges, key=operator.itemgetter(1))[1])
+    return (max(timeranges, key=operator.itemgetter(0))[0],
+            min(timeranges, key=operator.itemgetter(1))[1])
 
 
 def validate_backtest_data(data: DataFrame, pair: str, min_date: datetime,
