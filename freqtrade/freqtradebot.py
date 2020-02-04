@@ -897,6 +897,8 @@ class FreqtradeBot:
                 'status': f"Remaining buy order for {trade.pair} cancelled due to timeout"
             })
             return False
+        else:
+            return False
 
     def handle_timedout_limit_sell(self, trade: Trade, order: Dict) -> bool:
         """
