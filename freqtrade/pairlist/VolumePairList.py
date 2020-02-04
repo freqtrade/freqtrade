@@ -6,7 +6,7 @@ Provides lists as configured in config.json
  """
 import logging
 from datetime import datetime
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.pairlist.IPairList import IPairList
@@ -18,7 +18,7 @@ SORT_VALUES = ['askVolume', 'bidVolume', 'quoteVolume']
 
 class VolumePairList(IPairList):
 
-    def __init__(self, exchange, pairlistmanager, config, pairlistconfig: dict,
+    def __init__(self, exchange, pairlistmanager, config: Dict[str, Any], pairlistconfig: dict,
                  pairlist_pos: int) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
@@ -79,8 +79,8 @@ class VolumePairList(IPairList):
         else:
             return pairlist
 
-    def _gen_pair_whitelist(self, pairlist, tickers, base_currency: str,
-                            key: str, min_val: int) -> List[str]:
+    def _gen_pair_whitelist(self, pairlist: List[str], tickers: Dict,
+                            base_currency: str, key: str) -> List[str]:
         """
         Updates the whitelist with with a dynamically generated list
         :param base_currency: base currency as str

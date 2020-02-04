@@ -139,7 +139,8 @@ class RPC:
                 results.append(trade_dict)
             return results
 
-    def _rpc_status_table(self, stake_currency, fiat_display_currency: str) -> Tuple[List, List]:
+    def _rpc_status_table(self, stake_currency: str,
+                          fiat_display_currency: str) -> Tuple[List, List]:
         trades = Trade.get_open_trades()
         if not trades:
             raise RPCException('no active trade')
@@ -385,7 +386,7 @@ class RPC:
 
         return {'status': 'No more buy will occur from now. Run /reload_conf to reset.'}
 
-    def _rpc_forcesell(self, trade_id) -> Dict[str, str]:
+    def _rpc_forcesell(self, trade_id: str) -> Dict[str, str]:
         """
         Handler for forcesell <id>.
         Sells the given trade at current price

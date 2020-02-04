@@ -64,11 +64,11 @@ def init(db_url: str, clean_open_orders: bool = False) -> None:
         clean_dry_run_db()
 
 
-def has_column(columns, searchname: str) -> bool:
+def has_column(columns: List, searchname: str) -> bool:
     return len(list(filter(lambda x: x["name"] == searchname, columns))) == 1
 
 
-def get_column_def(columns, column: str, default: str) -> str:
+def get_column_def(columns: List, column: str, default: str) -> str:
     return default if not has_column(columns, column) else column
 
 
@@ -246,14 +246,15 @@ class Trade(_DECL_BASE):
                                       if self.initial_stop_loss_pct else None),
         }
 
-    def adjust_min_max_rates(self, current_price: float):
+    def adjust_min_max_rates(self, current_price: float) -> None:
         """
         Adjust the max_rate and min_rate.
         """
         self.max_rate = max(current_price, self.max_rate or self.open_rate)
         self.min_rate = min(current_price, self.min_rate or self.open_rate)
 
-    def adjust_stop_loss(self, current_price: float, stoploss: float, initial: bool = False):
+    def adjust_stop_loss(self, current_price: float, stoploss: float,
+                         initial: bool = False) -> None:
         """
         This adjusts the stop loss to it's most recently observed setting
         :param current_price: Current rate the asset is traded

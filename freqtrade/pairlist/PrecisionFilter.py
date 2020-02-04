@@ -48,10 +48,10 @@ class PrecisionFilter(IPairList):
         """
         Filters and sorts pairlists and assigns and returns them again.
         """
-        stoploss = None
-        if self._config.get('stoploss') is not None:
+        stoploss = self._config.get('stoploss')
+        if stoploss is not None:
             # Precalculate sanitized stoploss value to avoid recalculation for every pair
-            stoploss = 1 - abs(self._config.get('stoploss'))
+            stoploss = 1 - abs(stoploss)
         # Copy list since we're modifying this list
         for p in deepcopy(pairlist):
             ticker = tickers.get(p)

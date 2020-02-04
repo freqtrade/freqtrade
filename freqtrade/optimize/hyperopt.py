@@ -59,6 +59,7 @@ class Hyperopt:
     hyperopt = Hyperopt(config)
     hyperopt.start()
     """
+
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
 
@@ -90,13 +91,13 @@ class Hyperopt:
         # Populate functions here (hasattr is slow so should not be run during "regular" operations)
         if hasattr(self.custom_hyperopt, 'populate_indicators'):
             self.backtesting.strategy.advise_indicators = \
-                    self.custom_hyperopt.populate_indicators  # type: ignore
+                self.custom_hyperopt.populate_indicators  # type: ignore
         if hasattr(self.custom_hyperopt, 'populate_buy_trend'):
             self.backtesting.strategy.advise_buy = \
-                    self.custom_hyperopt.populate_buy_trend  # type: ignore
+                self.custom_hyperopt.populate_buy_trend  # type: ignore
         if hasattr(self.custom_hyperopt, 'populate_sell_trend'):
             self.backtesting.strategy.advise_sell = \
-                    self.custom_hyperopt.populate_sell_trend  # type: ignore
+                self.custom_hyperopt.populate_sell_trend  # type: ignore
 
         # Use max_open_trades for hyperopt as well, except --disable-max-market-positions is set
         if self.config.get('use_max_market_positions', True):
@@ -117,11 +118,11 @@ class Hyperopt:
         self.print_json = self.config.get('print_json', False)
 
     @staticmethod
-    def get_lock_filename(config) -> str:
+    def get_lock_filename(config: Dict[str, Any]) -> str:
 
         return str(config['user_data_dir'] / 'hyperopt.lock')
 
-    def clean_hyperopt(self):
+    def clean_hyperopt(self) -> None:
         """
         Remove hyperopt pickle files to restart hyperopt.
         """
@@ -158,7 +159,7 @@ class Hyperopt:
                         f"saved to '{self.trials_file}'.")
 
     @staticmethod
-    def _read_trials(trials_file) -> List:
+    def _read_trials(trials_file: Path) -> List:
         """
         Read hyperopt trials file
         """
@@ -189,7 +190,7 @@ class Hyperopt:
         return result
 
     @staticmethod
-    def print_epoch_details(results, total_epochs, print_json: bool,
+    def print_epoch_details(results, total_epochs: int, print_json: bool,
                             no_header: bool = False, header_str: str = None) -> None:
         """
         Display details of the hyperopt result
@@ -218,7 +219,7 @@ class Hyperopt:
             Hyperopt._params_pretty_print(params, 'trailing', "Trailing stop:")
 
     @staticmethod
-    def _params_update_for_json(result_dict, params, space: str):
+    def _params_update_for_json(result_dict, params, space: str) -> None:
         if space in params:
             space_params = Hyperopt._space_params(params, space)
             if space in ['buy', 'sell']:
@@ -235,7 +236,7 @@ class Hyperopt:
                 result_dict.update(space_params)
 
     @staticmethod
-    def _params_pretty_print(params, space: str, header: str):
+    def _params_pretty_print(params, space: str, header: str) -> None:
         if space in params:
             space_params = Hyperopt._space_params(params, space, 5)
             if space == 'stoploss':
@@ -251,7 +252,7 @@ class Hyperopt:
         return round_dict(d, r) if r else d
 
     @staticmethod
-    def is_best_loss(results, current_best_loss) -> bool:
+    def is_best_loss(results, current_best_loss: float) -> bool:
         return results['loss'] < current_best_loss
 
     def print_results(self, results) -> None:
@@ -345,15 +346,15 @@ class Hyperopt:
 
         if self.has_space('roi'):
             self.backtesting.strategy.minimal_roi = \
-                    self.custom_hyperopt.generate_roi_table(params_dict)
+                self.custom_hyperopt.generate_roi_table(params_dict)
 
         if self.has_space('buy'):
             self.backtesting.strategy.advise_buy = \
-                    self.custom_hyperopt.buy_strategy_generator(params_dict)
+                self.custom_hyperopt.buy_strategy_generator(params_dict)
 
         if self.has_space('sell'):
             self.backtesting.strategy.advise_sell = \
-                    self.custom_hyperopt.sell_strategy_generator(params_dict)
+                self.custom_hyperopt.sell_strategy_generator(params_dict)
 
         if self.has_space('stoploss'):
             self.backtesting.strategy.stoploss = params_dict['stoploss']
@@ -372,12 +373,12 @@ class Hyperopt:
         min_date, max_date = get_timerange(processed)
 
         backtesting_results = self.backtesting.backtest(
-                processed=processed,
-                stake_amount=self.config['stake_amount'],
-                start_date=min_date,
-                end_date=max_date,
-                max_open_trades=self.max_open_trades,
-                position_stacking=self.position_stacking,
+            processed=processed,
+            stake_amount=self.config['stake_amount'],
+            start_date=min_date,
+            end_date=max_date,
+            max_open_trades=self.max_open_trades,
+            position_stacking=self.position_stacking,
         )
         return self._get_results_dict(backtesting_results, min_date, max_date,
                                       params_dict, params_details)
@@ -438,7 +439,7 @@ class Hyperopt:
             random_state=self.random_state,
         )
 
-    def fix_optimizer_models_list(self):
+    def fix_optimizer_models_list(self) -> None:
         """
         WORKAROUND: Since skopt is not actively supported, this resolves problems with skopt
         memory usage, see also: https://github.com/scikit-optimize/scikit-optimize/pull/746
@@ -460,7 +461,7 @@ class Hyperopt:
                         wrap_non_picklable_objects(self.generate_optimizer))(v, i) for v in asked)
 
     @staticmethod
-    def load_previous_results(trials_file) -> List:
+    def load_previous_results(trials_file: Path) -> List:
         """
         Load data for epochs from the file if we have one
         """
@@ -469,8 +470,8 @@ class Hyperopt:
             trials = Hyperopt._read_trials(trials_file)
             if trials[0].get('is_best') is None:
                 raise OperationalException(
-                        "The file with Hyperopt results is incompatible with this version "
-                        "of Freqtrade and cannot be loaded.")
+                    "The file with Hyperopt results is incompatible with this version "
+                    "of Freqtrade and cannot be loaded.")
             logger.info(f"Loaded {len(trials)} previous evaluations from disk.")
         return trials
 

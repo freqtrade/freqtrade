@@ -1,6 +1,6 @@
 # requirements without requirements installable via conda
 # mainly used for Raspberry pi installs
-ccxt==1.21.91
+ccxt==1.22.30
 SQLAlchemy==1.3.13
 python-telegram-bot==12.3.0
 arrow==0.15.5
@@ -12,7 +12,7 @@ jsonschema==3.2.0
 TA-Lib==0.4.17
 tabulate==0.8.6
 coinmarketcap==5.0.3
-jinja2==2.10.3
+jinja2==2.11.1
 
 # find first, C search in arrays
 py_find_1st==1.1.4

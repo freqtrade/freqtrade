@@ -23,7 +23,7 @@ def create_datadir(config: Dict[str, Any], datadir: Optional[str] = None) -> Pat
     return folder
 
 
-def create_userdata_dir(directory: str, create_dir=False) -> Path:
+def create_userdata_dir(directory: str, create_dir: bool = False) -> Path:
     """
     Create userdata directory structure.
     if create_dir is True, then the parent-directory will be created if it does not exist.
