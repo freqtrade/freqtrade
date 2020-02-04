@@ -94,11 +94,22 @@ CONF_SCHEMA = {
         'trailing_stop_positive': {'type': 'number', 'minimum': 0, 'maximum': 1},
         'trailing_stop_positive_offset': {'type': 'number', 'minimum': 0, 'maximum': 1},
         'trailing_only_offset_is_reached': {'type': 'boolean'},
-        'unfilledtimeout': {
+        'unfilled_timeout': {
             'type': 'object',
             'properties': {
-                'buy': {'type': 'number', 'minimum': 1},
-                'sell': {'type': 'number', 'minimum': 1}
+                'buy': {
+                    'type': 'object',
+                    'properties': {
+                        'after': {'type': 'number', 'minimum': 1},
+                        'if_buy_signal_still_valid': {'type': 'boolean'},
+                    },
+                },
+                'sell': {
+                    'type': 'object',
+                    'properties': {
+                        'after': {'type': 'number', 'minimum': 1},
+                    }
+                }
             }
         },
         'bid_strategy': {
@@ -110,7 +121,6 @@ CONF_SCHEMA = {
                     'maximum': 1,
                     'exclusiveMaximum': False,
                 },
-                'timeout_even_if_buy_signal_valid': {'type': 'boolean'},
                 'use_order_book': {'type': 'boolean'},
                 'order_book_top': {'type': 'integer', 'maximum': 20, 'minimum': 1},
                 'check_depth_of_market': {
@@ -286,7 +296,7 @@ SCHEMA_TRADE_REQUIRED = [
     'dry_run',
     'dry_run_wallet',
     'bid_strategy',
-    'unfilledtimeout',
+    'unfilled_timeout',
     'stoploss',
     'minimal_roi',
 ]

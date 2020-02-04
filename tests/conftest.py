@@ -210,13 +210,17 @@ def default_conf(testdatadir):
             "0": 0.04
         },
         "stoploss": -0.10,
-        "unfilledtimeout": {
-            "buy": 10,
-            "sell": 30
+        "unfilled_timeout": {
+            "buy": {
+                "after": 10,
+                "if_buy_signal_still_valid": False
+            },
+            "sell": {
+                "after": 30
+            }
         },
         "bid_strategy": {
             "ask_last_balance": 0.0,
-            "timeout_even_if_buy_signal_valid": True,
             "use_order_book": False,
             "order_book_top": 1,
             "check_depth_of_market": {

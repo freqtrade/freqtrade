@@ -58,10 +58,10 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `trailing_stop_positive` | Changes stoploss once profit has been reached. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br> ***Datatype:*** *Float*
 | `trailing_stop_positive_offset` | Offset on when to apply `trailing_stop_positive`. Percentage value which should be positive. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `0.0` (no offset).* <br> ***Datatype:*** *Float*
 | `trailing_only_offset_is_reached` | Only apply trailing stoploss when the offset is reached. [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*  <br> ***Datatype:*** *Boolean*
-| `unfilledtimeout.buy` | **Required.** How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled. [Strategy Override](#parameters-in-the-strategy).<br> ***Datatype:*** *Integer*
-| `unfilledtimeout.sell` | **Required.** How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled. [Strategy Override](#parameters-in-the-strategy).<br> ***Datatype:*** *Integer*
+| `unfilled_timeout.buy.after` | **Required.** How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled. [Strategy Override](#parameters-in-the-strategy).<br> ***Datatype:*** *Integer*
+| `unfilled_timeout.buy.if_buy_signal_still_valid` | **Required.** Choose whether you would prefer unfilled buy orders to [timeout if buy signal was still valid](#timeout-even-if-buy-signal-valid). If false, your unfilled buy orders won't get timed out, so use this option wisely. <br>*Defaults to `true`.* <br> ***Datatype:*** *Boolean*
+| `unfilled_timeout.sell.after` | **Required.** How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled. [Strategy Override](#parameters-in-the-strategy).<br> ***Datatype:*** *Integer*
 | `bid_strategy.ask_last_balance` | **Required.** Set the bidding price. More information [below](#buy-price-without-orderbook). 
-| `bid_strategy.timeout_even_if_buy_signal_valid` | **Required.** Choose whether you would prefer buy orders to [timeout even if buy signal was still valid](#timeout-even-if-buy-signal-valid). If false, your buy orders will not timeout and will ignore your unfilledtimeout for buy orders, so use this option wisely. <br>*Defaults to `true`.* <br> ***Datatype:*** *Boolean*
 | `bid_strategy.use_order_book` | Enable buying using the rates in [Order Book Bids](#buy-price-with-orderbook-enabled). <br> ***Datatype:*** *Boolean*
 | `bid_strategy.order_book_top` | Bot will use the top N rate in Order Book Bids to buy. I.e. a value of 2 will allow the bot to pick the 2nd bid rate in [Order Book Bids](#buy-price-with-orderbook-enabled). <br>*Defaults to `1`.*  <br> ***Datatype:*** *Positive Integer*
 | `bid_strategy. check_depth_of_market.enabled` | Do not buy if the difference of buy orders and sell orders is met in Order Book. [Check market depth](#check-depth-of-market). <br>*Defaults to `false`.* <br> ***Datatype:*** *Boolean*
@@ -128,7 +128,7 @@ Values set in the configuration file always overwrite values set in the strategy
 * `order_time_in_force`
 * `stake_currency`
 * `stake_amount`
-* `unfilledtimeout`
+* `unfilled_timeout`
 * `use_sell_signal` (ask_strategy)
 * `sell_profit_only` (ask_strategy)
 * `ignore_roi_if_buy_signal` (ask_strategy)

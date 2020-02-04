@@ -785,7 +785,7 @@ class FreqtradeBot:
         """
         Check if timeout is active, and if the order is still open and timed out
         """
-        timeout = self.config.get('unfilledtimeout', {}).get(side)
+        timeout = self.config.get('unfilled_timeout', {}).get(side).get('after')
         ordertime = arrow.get(order['datetime']).datetime
         if timeout is not None:
             timeout_threshold = arrow.utcnow().shift(minutes=-timeout).datetime
@@ -821,8 +821,20 @@ class FreqtradeBot:
             if ((order['side'] == 'buy' and order['status'] == 'canceled')
                     or (self._check_timed_out('buy', order))):
 
-                self.handle_timedout_limit_buy(trade, order)
-                self.wallets.update()
+                # running get_signal on historical data fetched
+                (buy, sell) = self.strategy.get_signal(
+                    trade.pair, self.strategy.ticker_interval,
+                    self.dataprovider.ohlcv(trade.pair, self.strategy.ticker_interval))
+
+                # proceed to cancel buy order by timeout if configuration
+                # unfilled_timeout.if_buy_signal_still_valid is true (original behaviour) -OR-
+                # cancel buy order only if buying condition is no longer valid OR if there's
+                # a sell signal present
+                config_buy_signal_still_valid = self.config.get('unfilled_timeout', {}) \
+                    .get('buy').get('if_buy_signal_still_valid')
+                if (config_buy_signal_still_valid) or (not buy or sell):
+                    self.handle_timedout_limit_buy(trade, order)
+                    self.wallets.update()
 
             elif ((order['side'] == 'sell' and order['status'] == 'canceled')
                   or (self._check_timed_out('sell', order))):
@@ -846,59 +858,44 @@ class FreqtradeBot:
         """
         reason = "cancelled due to timeout"
 
-        # running get_signal on historical data fetched
-        (buy, sell) = self.strategy.get_signal(
-            trade.pair, self.strategy.ticker_interval,
-            self.dataprovider.ohlcv(trade.pair, self.strategy.ticker_interval))
-
-        # get config for bid strategy
-        config_bid_strategy = self.config.get('bid_strategy', {})
-
-        # proceed to cancel buy order by timeout if timeout_even_if_buy_signal_valid
-        # is true (original behaviour) -OR-
-        # cancel buy order only if buying condition is no longer valid OR if there's
-        # a sell signal present
-        if config_bid_strategy.get('timeout_even_if_buy_signal_valid', True) or (not buy or sell):
-            if order['status'] != 'canceled':
-                corder = self.exchange.cancel_order(trade.open_order_id, trade.pair)
-            else:
-                # Order was cancelled already, so we can reuse the existing dict
-                corder = order
-                reason = "canceled on exchange"
-
-            if corder.get('remaining', order['remaining']) == order['amount']:
-                # if trade is not partially completed, just delete the trade
-                self.handle_buy_order_full_cancel(trade, reason)
-                return True
-
-            # if trade is partially complete, edit the stake details for the trade
-            # and close the order
-            # cancel_order may not contain the full order dict, so we need to fallback
-            # to the order dict aquired before cancelling.
-            # we need to fall back to the values from order if corder does not contain these keys.
-            trade.amount = order['amount'] - corder.get('remaining', order['remaining'])
-            trade.stake_amount = trade.amount * trade.open_rate
-            # verify if fees were taken from amount to avoid problems during selling
-            try:
-                new_amount = self.get_real_amount(trade, corder if 'fee' in corder else order,
-                                                  trade.amount)
-                if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
-                    trade.amount = new_amount
-                    # Fee was applied, so set to 0
-                    trade.fee_open = 0
-                    trade.recalc_open_trade_price()
-            except DependencyException as e:
-                logger.warning("Could not update trade amount: %s", e)
-
-            trade.open_order_id = None
-            logger.info(f"Partial buy order timeout for {trade.pair}")
-            self.rpc.send_msg({
-                'type': RPCMessageType.STATUS_NOTIFICATION,
-                'status': f"Remaining buy order for {trade.pair} cancelled due to timeout"
-            })
-            return False
+        if order['status'] != 'canceled':
+            corder = self.exchange.cancel_order(trade.open_order_id, trade.pair)
         else:
-            return False
+            # Order was cancelled already, so we can reuse the existing dict
+            corder = order
+            reason = "canceled on exchange"
+
+        if corder.get('remaining', order['remaining']) == order['amount']:
+            # if trade is not partially completed, just delete the trade
+            self.handle_buy_order_full_cancel(trade, reason)
+            return True
+
+        # if trade is partially complete, edit the stake details for the trade
+        # and close the order
+        # cancel_order may not contain the full order dict, so we need to fallback
+        # to the order dict aquired before cancelling.
+        # we need to fall back to the values from order if corder does not contain these keys.
+        trade.amount = order['amount'] - corder.get('remaining', order['remaining'])
+        trade.stake_amount = trade.amount * trade.open_rate
+        # verify if fees were taken from amount to avoid problems during selling
+        try:
+            new_amount = self.get_real_amount(trade, corder if 'fee' in corder else order,
+                                              trade.amount)
+            if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
+                trade.amount = new_amount
+                # Fee was applied, so set to 0
+                trade.fee_open = 0
+                trade.recalc_open_trade_price()
+        except DependencyException as e:
+            logger.warning("Could not update trade amount: %s", e)
+
+        trade.open_order_id = None
+        logger.info(f"Partial buy order timeout for {trade.pair}")
+        self.rpc.send_msg({
+            'type': RPCMessageType.STATUS_NOTIFICATION,
+            'status': f"Remaining buy order for {trade.pair} cancelled due to timeout"
+        })
+        return False
 
     def handle_timedout_limit_sell(self, trade: Trade, order: Dict) -> bool:
         """
