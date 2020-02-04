@@ -23,7 +23,7 @@
     "unfilled_timeout": {
         "buy": {
             "after": 10,
-            "if_buy_signal_still_valid": false
+            "even_if_buy_signal_valid": false
         },
         "sell": {
             "after": 30

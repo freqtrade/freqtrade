@@ -827,12 +827,12 @@ class FreqtradeBot:
                     self.dataprovider.ohlcv(trade.pair, self.strategy.ticker_interval))
 
                 # proceed to cancel buy order by timeout if configuration
-                # unfilled_timeout.if_buy_signal_still_valid is true (original behaviour) -OR-
+                # unfilled_timeout.even_if_buy_signal_valid is true (original behaviour) -OR-
                 # cancel buy order only if buying condition is no longer valid OR if there's
                 # a sell signal present
-                config_buy_signal_still_valid = self.config.get('unfilled_timeout', {}) \
-                    .get('buy').get('if_buy_signal_still_valid')
-                if (config_buy_signal_still_valid) or (not buy or sell):
+                config_timeout_eifbsv = self.config.get('unfilled_timeout', {}) \
+                    .get('buy').get('even_if_buy_signal_valid')
+                if (config_timeout_eifbsv) or (not buy or sell):
                     self.handle_timedout_limit_buy(trade, order)
                     self.wallets.update()
 

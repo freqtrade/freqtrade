@@ -213,7 +213,7 @@ def default_conf(testdatadir):
         "unfilled_timeout": {
             "buy": {
                 "after": 10,
-                "if_buy_signal_still_valid": False
+                "even_if_buy_signal_valid": False
             },
             "sell": {
                 "after": 30
