@@ -17,7 +17,8 @@ REQUIRED_ORDERTIF = ['buy', 'sell']
 REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
-AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList', 'PrecisionFilter', 'PriceFilter']
+AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
+                       'PrecisionFilter', 'PriceFilter', 'SpreadFilter']
 DRY_RUN_WALLET = 1000
 MATH_CLOSE_PREC = 1e-14  # Precision used for float comparisons
 

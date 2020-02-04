@@ -141,7 +141,7 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "bidVolume"}],
         "BTC",  ['HOT/BTC', 'FUEL/BTC', 'XRP/BTC', 'LTC/BTC', 'TKN/BTC']),
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"}],
-        "USDT", ['ETH/USDT']),
+        "USDT", ['ETH/USDT', 'NANO/USDT']),
     # No pair for ETH ...
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"}],
      "ETH", []),
@@ -160,6 +160,10 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
       {"method": "PrecisionFilter"},
       {"method": "PriceFilter", "low_price_ratio": 0.02}
       ], "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC']),
+    # HOT and XRP are removed because below 1250 quoteVolume
+    ([{"method": "VolumePairList", "number_assets": 5,
+       "sort_key": "quoteVolume", "min_value": 1250}],
+        "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC']),
     # StaticPairlist Only
     ([{"method": "StaticPairList"},
       ], "BTC", ['ETH/BTC', 'TKN/BTC']),
@@ -167,6 +171,10 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "StaticPairList"},
       {"method": "VolumePairList", "number_assets": 5, "sort_key": "bidVolume"},
       ], "BTC", ['TKN/BTC', 'ETH/BTC']),
+    # SpreadFilter
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
+      {"method": "SpreadFilter", "max_spread": 0.005}
+      ], "USDT", ['ETH/USDT']),
 ])
 def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, tickers,
                                       pairlists, base_currency, whitelist_result,

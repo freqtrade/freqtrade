@@ -640,6 +640,31 @@ def shitcoinmarkets(markets):
             },
             'info': {},
         },
+        'NANO/USDT': {
+            "percentage": True,
+            "tierBased": False,
+            "taker": 0.001,
+            "maker": 0.001,
+            "precision": {
+                "base": 8,
+                "quote": 8,
+                "amount": 2,
+                "price": 4
+            },
+            "limits": {
+            },
+            "id": "NANOUSDT",
+            "symbol": "NANO/USDT",
+            "base": "NANO",
+            "quote": "USDT",
+            "baseId": "NANO",
+            "quoteId": "USDT",
+            "info": {},
+            "type": "spot",
+            "spot": True,
+            "future": False,
+            "active": True
+        },
         })
     return shitmarkets
 
@@ -1113,6 +1138,28 @@ def tickers():
             'baseVolume': 37334921.0,
             'quoteVolume': 1154.19266394,
             'info': {}
+        },
+        "NANO/USDT": {
+            "symbol": "NANO/USDT",
+            "timestamp": 1580469388244,
+            "datetime": "2020-01-31T11:16:28.244Z",
+            "high": 0.7519,
+            "low": 0.7154,
+            "bid": 0.7305,
+            "bidVolume": 300.3,
+            "ask": 0.7342,
+            "askVolume": 15.14,
+            "vwap": 0.73645591,
+            "open": 0.7154,
+            "close": 0.7342,
+            "last": 0.7342,
+            "previousClose": 0.7189,
+            "change": 0.0188,
+            "percentage": 2.628,
+            "average": None,
+            "baseVolume": 439472.44,
+            "quoteVolume": 323652.075405,
+            "info": {}
         },
     })
 

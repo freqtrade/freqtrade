@@ -503,6 +503,7 @@ Inactive markets and blacklisted pairs are always removed from the resulting `pa
 * [`VolumePairList`](#volume-pair-list)
 * [`PrecisionFilter`](#precision-filter)
 * [`PriceFilter`](#price-pair-filter)
+* [`SpreadFilter`](#spread-filter)
 
 !!! Tip "Testing pairlists"
     Pairlist configurations can be quite tricky to get right. Best use the [`test-pairlist`](utils.md#test-pairlist) subcommand to test your configuration quickly.
@@ -550,6 +551,11 @@ Calculation example:
 Min price precision is 8 decimals. If price is 0.00000011 - one step would be 0.00000012 - which is almost 10% higher than the previous value. 
 
 These pairs are dangerous since it may be impossible to place the desired stoploss - and often result in high losses.
+
+#### Spread Filter
+Removes pairs that have a difference between asks and bids above the specified ratio (default `0.005`).
+Example:
+If `DOGE/BTC` maximum bid is 0.00000026 and minimum ask is 0.00000027 the ratio is calculated as: `1 - bid/ask ~= 0.037` which is `> 0.005` 
 
 ### Full Pairlist example
 
