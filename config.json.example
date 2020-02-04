@@ -13,6 +13,7 @@
     },
     "bid_strategy": {
         "ask_last_balance": 0.0,
+        "timeout_even_if_buy_signal_valid": true,
         "use_order_book": false,
         "order_book_top": 1,
         "check_depth_of_market": {

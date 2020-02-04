@@ -216,6 +216,7 @@ def default_conf(testdatadir):
         },
         "bid_strategy": {
             "ask_last_balance": 0.0,
+            "timeout_even_if_buy_signal_valid": True,
             "use_order_book": False,
             "order_book_top": 1,
             "check_depth_of_market": {
