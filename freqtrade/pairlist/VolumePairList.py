@@ -80,7 +80,7 @@ class VolumePairList(IPairList):
             return pairlist
 
     def _gen_pair_whitelist(self, pairlist: List[str], tickers: Dict,
-                            base_currency: str, key: str) -> List[str]:
+                            base_currency: str, key: str, min_val: int) -> List[str]:
         """
         Updates the whitelist with with a dynamically generated list
         :param base_currency: base currency as str
