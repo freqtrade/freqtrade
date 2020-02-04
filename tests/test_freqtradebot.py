@@ -1964,7 +1964,7 @@ def test_check_handle_cancelled_buy(default_conf, ticker, limit_buy_order_old, o
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     nb_trades = len(trades)
     assert nb_trades == 0
-    assert log_has_re("Buy order canceled on Exchange for Trade.*", caplog)
+    assert log_has_re("Buy order canceled on exchange for Trade.*", caplog)
 
 
 def test_check_handle_timedout_buy_exception(default_conf, ticker, limit_buy_order_old, open_trade,
