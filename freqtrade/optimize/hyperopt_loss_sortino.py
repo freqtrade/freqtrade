@@ -16,7 +16,7 @@ class SortinoHyperOptLoss(IHyperOptLoss):
     """
     Defines the loss function for hyperopt.
 
-    This implementation uses the Sortino Ratio calculation.
+    This implementation uses the Sharpe Ratio calculation.
     """
 
     @staticmethod
@@ -26,7 +26,7 @@ class SortinoHyperOptLoss(IHyperOptLoss):
         """
         Objective function, returns smaller number for more optimal results.
 
-        Uses Sortino Ratio calculation.
+        Uses Sharpe Ratio calculation.
         """
         total_profit = results["profit_percent"]
         days_period = (max_date - min_date).days
@@ -42,7 +42,7 @@ class SortinoHyperOptLoss(IHyperOptLoss):
         if np.std(total_profit) != 0.0:
             sortino_ratio = expected_returns_mean / down_stdev * np.sqrt(365)
         else:
-            # Define high (negative) sortino ratio to be clear that this is NOT optimal.
+            # Define high (negative) sharpe ratio to be clear that this is NOT optimal.
             sortino_ratio = -20.
 
         # print(expected_returns_mean, down_stdev, sortino_ratio)
