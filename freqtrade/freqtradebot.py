@@ -832,7 +832,7 @@ class FreqtradeBot:
                 # a sell signal present
                 config_timeout_eifbsv = self.config.get('unfilled_timeout', {}) \
                     .get('buy').get('even_if_buy_signal_valid')
-                if (config_timeout_eifbsv) or (not buy or sell):
+                if (config_timeout_eifbsv) or (not buy and sell):
                     self.handle_timedout_limit_buy(trade, order)
                     self.wallets.update()
 
