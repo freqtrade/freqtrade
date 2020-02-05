@@ -6,7 +6,7 @@ Hyperoptimization.
 """
 from datetime import datetime
 
-from pandas import DataFrame
+from pandas import DataFrame, date_range
 import numpy as np
 
 from freqtrade.optimize.hyperopt import IHyperOptLoss
@@ -28,25 +28,33 @@ class SharpeHyperOptLossDaily(IHyperOptLoss):
 
         Uses Sharpe Ratio calculation.
         """
-        # get profit_percent and apply slippage of 0.1% per trade
-        results.loc[:, 'profit_percent_after_slippage'] = results['profit_percent'] - 0.0005
+        resample_freq = '1D'
+        slippage_per_trade_ratio = 0.0005
+        days_in_year = 365
+        annual_risk_free_rate = 0.03
+        risk_free_rate = annual_risk_free_rate / days_in_year
+
+        # apply slippage per trade to profit_percent
+        results.loc[:, 'profit_percent_after_slippage'] = results['profit_percent'] - slippage_per_trade_ratio
+
+        # create the index within the min_date and end max_date
+        t_index = date_range(start=min_date, end=max_date, freq=resample_freq)
 
         sum_daily = (
-            results.resample("D", on="close_time").agg(
-                {"profit_percent_after_slippage": sum}
-            )
-            * 100.0
+            results.resample(resample_freq, on='close_time').agg(
+                {"profit_percent_after_slippage": sum}).reindex(t_index).fillna(0)
         )
 
-        total_profit = sum_daily["profit_percent_after_slippage"]
+        total_profit = sum_daily["profit_percent_after_slippage"] - risk_free_rate
         expected_returns_mean = total_profit.mean()
-        up_stdev = np.std(total_profit)
+        up_stdev = total_profit.std()
 
-        if (np.std(total_profit) != 0.):
-            sharp_ratio = expected_returns_mean / up_stdev * np.sqrt(365)
+        if (up_stdev != 0.):
+            sharp_ratio = expected_returns_mean / up_stdev * np.sqrt(days_in_year)
         else:
             # Define high (negative) sharpe ratio to be clear that this is NOT optimal.
             sharp_ratio = -20.
 
-        # print(expected_returns_mean, up_stdev, sharp_ratio)
+        #print(t_index, sum_daily, total_profit)
+        #print(risk_free_rate, expected_returns_mean, up_stdev, sharp_ratio)
         return -sharp_ratio
