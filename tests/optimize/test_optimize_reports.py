@@ -91,14 +91,14 @@ def test_generate_text_table_strategy(default_conf, mocker):
     )
 
     result_str = (
-        '| Strategy   |   buy count |   avg profit % |   cum profit % '
-        '|   tot profit BTC |   tot profit % | avg duration   |   profit |   loss |\n'
-        '|:-----------|------------:|---------------:|---------------:'
-        '|-----------------:|---------------:|:---------------|---------:|-------:|\n'
+        '| Strategy   |   Buy Count |   Avg Profit % |   Cum Profit % |   Tot Profit BTC '
+        '|   Tot Profit % | Avg Duration   |   Wins |   Losses |\n'
+        '|:-----------|------------:|---------------:|---------------:|-----------------:'
+        '|---------------:|:---------------|-------:|---------:|\n'
         '| ETH/BTC    |           3 |          20.00 |          60.00 '
-        '|       1.10000000 |          30.00 | 0:17:00        |        3 |      0 |\n'
+        '|       1.10000000 |          30.00 | 0:17:00        |      3 |        0 |\n'
         '| LTC/BTC    |           3 |          30.00 |          90.00 '
-        '|       1.30000000 |          45.00 | 0:20:00        |        3 |      0 |'
+        '|       1.30000000 |          45.00 | 0:20:00        |      3 |        0 |'
     )
     assert generate_text_table_strategy('BTC', 2, all_results=results) == result_str
 

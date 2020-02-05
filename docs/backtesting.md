@@ -237,8 +237,8 @@ There will be an additional table comparing win/losses of the different strategi
 Detailed output for all strategies one after the other will be available, so make sure to scroll up to see the details per strategy.
 
 ```
-=========================================================== Strategy Summary ===========================================================
-| Strategy    |   buy count |   avg profit % |   cum profit % |   tot profit BTC |   tot profit % | avg duration   |   profit |   loss |
+=========================================================== STRATEGY SUMMARY ===========================================================
+| Strategy    |   Buy Count |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   Tot Profit % | Avg Duration   |     Wins | Losses |
 |:------------|------------:|---------------:|---------------:|-----------------:|---------------:|:---------------|---------:|-------:|
 | Strategy1   |         429 |           0.36 |         152.41 |       0.00762792 |          76.20 | 4:12:00        |      186 |    243 |
 | Strategy2   |        1487 |          -0.13 |        -197.58 |      -0.00988917 |         -98.79 | 4:43:00        |      662 |    825 |
