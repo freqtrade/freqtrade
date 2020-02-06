@@ -26,6 +26,7 @@ from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
 from freqtrade.strategy.interface import IStrategy, SellType
+from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
 logger = logging.getLogger(__name__)
@@ -819,7 +820,11 @@ class FreqtradeBot:
                 continue
 
             if ((order['side'] == 'buy' and order['status'] == 'canceled')
-                    or (self._check_timed_out('buy', order))):
+                    or self._check_timed_out('buy', order)
+                    or strategy_safe_wrapper(self.strategy.check_buy_timeout,
+                                             default_retval=False)(pair=trade.pair,
+                                                                   trade=trade,
+                                                                   order=order)):
 
                 self.handle_timedout_limit_buy(trade, order)
                 self.wallets.update()

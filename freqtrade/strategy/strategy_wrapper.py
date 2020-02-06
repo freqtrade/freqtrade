@@ -5,7 +5,7 @@ from freqtrade.exceptions import StrategyError
 logger = logging.getLogger(__name__)
 
 
-def strategy_safe_wrapper(f, message: str, default_retval=None):
+def strategy_safe_wrapper(f, message: str = "", default_retval=None):
     def wrapper(*args, **kwargs):
         try:
             return f(*args, **kwargs)
