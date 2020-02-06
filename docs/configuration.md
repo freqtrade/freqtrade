@@ -608,6 +608,14 @@ Once you will be happy with your bot performance running in the Dry-run mode, yo
 !!! Note
     A simulated wallet is available during dry-run mode, and will assume a starting capital of `dry_run_wallet` (defaults to 1000).
 
+### Considerations for dry-run
+
+* API-Keys may or may not be provided. Only Read-Only operations on the exchange are performed in dry-run mode.
+* Wallets (`/balance`) will be simulated.
+* Orders will be simulated, and will not be posted to the exchange
+* In combination with `stoploss_on_exchange`, the stop_loss price is assumed to be filled.
+* Open orders (not Trades!) are reset on bot restart.
+
 ## Switch to production mode
 
 In production mode, the bot will engage your money. Be careful, since a wrong
