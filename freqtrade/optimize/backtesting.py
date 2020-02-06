@@ -441,7 +441,7 @@ class Backtesting:
             print()
         if len(all_results) > 1:
             # Print Strategy summary table
-            print(' Strategy Summary '.center(133, '='))
+            print(' STRATEGY SUMMARY '.center(133, '='))
             print(generate_text_table_strategy(self.config['stake_currency'],
                                                self.config['max_open_trades'],
                                                all_results=all_results))

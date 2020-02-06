@@ -121,9 +121,9 @@ def generate_text_table_strategy(stake_currency: str, max_open_trades: str,
 
     floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.2f', 'd', '.1f', '.1f')
     tabular_data = []
-    headers = ['Strategy', 'buy count', 'avg profit %', 'cum profit %',
-               f'tot profit {stake_currency}', 'tot profit %', 'avg duration',
-               'profit', 'loss']
+    headers = ['Strategy', 'Buy Count', 'Avg Profit %', 'Cum Profit %',
+               f'Tot Profit {stake_currency}', 'Tot Profit %', 'Avg Duration',
+               'Wins', 'Losses']
     for strategy, results in all_results.items():
         tabular_data.append([
             strategy,
