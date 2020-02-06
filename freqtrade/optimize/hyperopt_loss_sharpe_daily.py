@@ -31,7 +31,7 @@ class SharpeHyperOptLossDaily(IHyperOptLoss):
         resample_freq = '1D'
         slippage_per_trade_ratio = 0.0005
         days_in_year = 365
-        annual_risk_free_rate = 0.03
+        annual_risk_free_rate = 0.0
         risk_free_rate = annual_risk_free_rate / days_in_year
 
         # apply slippage per trade to profit_percent
