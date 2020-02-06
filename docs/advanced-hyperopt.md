@@ -4,6 +4,34 @@ This page explains some advanced Hyperopt topics that may require higher
 coding skills and Python knowledge than creation of an ordinal hyperoptimization
 class.
 
+## Derived hyperopt classes
+
+Custom hyperop classes can be derived in the same way [it can be done for strategies](strategy-customization.md#derived-strategies).
+
+Applying to hyperoptimization, as an example, you may override how dimensions are defined in your optimization hyperspace:
+
+```
+class MyAwesomeHyperOpt(IHyperOpt):
+    ...
+    # Uses default stoploss dimension
+
+class MyAwesomeHyperOpt2(MyAwesomeHyperOpt):
+    @staticmethod
+    def stoploss_space() -> List[Dimension]:
+        # Override boundaries for stoploss
+        return [
+            Real(-0.33, -0.01, name='stoploss'),
+        ]
+```
+
+and then quickly switch between hyperopt classes, running optimization process with hyperopt class you need in each particular case:
+
+```
+$ freqtrade hyperopt --hyperopt MyAwesomeHyperOpt ...
+or
+$ freqtrade hyperopt --hyperopt MyAwesomeHyperOpt2 ...
+```
+
 ## Creating and using a custom loss function
 
 To use a custom loss function class, make sure that the function `hyperopt_loss_function` is defined in your custom hyperopt loss class.
