@@ -23,15 +23,16 @@ DRY_RUN_WALLET = 1000
 MATH_CLOSE_PREC = 1e-14  # Precision used for float comparisons
 
 USERPATH_HYPEROPTS = 'hyperopts'
-USERPATH_STRATEGY = 'strategies'
+USERPATH_STRATEGIES = 'strategies'
+USERPATH_NOTEBOOKS = 'notebooks'
 
 # Soure files with destination directories within user-directory
 USER_DATA_FILES = {
-    'sample_strategy.py': USERPATH_STRATEGY,
+    'sample_strategy.py': USERPATH_STRATEGIES,
     'sample_hyperopt_advanced.py': USERPATH_HYPEROPTS,
     'sample_hyperopt_loss.py': USERPATH_HYPEROPTS,
     'sample_hyperopt.py': USERPATH_HYPEROPTS,
-    'strategy_analysis_example.ipynb': 'notebooks',
+    'strategy_analysis_example.ipynb': USERPATH_NOTEBOOKS,
 }
 
 SUPPORTED_FIAT = [

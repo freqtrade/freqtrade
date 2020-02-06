@@ -7,7 +7,8 @@ import pytest
 from freqtrade.commands import (start_create_userdir, start_download_data,
                                 start_hyperopt_list, start_hyperopt_show,
                                 start_list_exchanges, start_list_markets,
-                                start_list_strategies, start_list_timeframes,
+                                start_list_hyperopts, start_list_strategies,
+                                start_list_timeframes,
                                 start_new_hyperopt, start_new_strategy,
                                 start_test_pairlist, start_trading)
 from freqtrade.configuration import setup_utils_configuration
@@ -663,6 +664,39 @@ def test_start_list_strategies(mocker, caplog, capsys):
     assert "TestStrategyLegacy" in captured.out
     assert "legacy_strategy.py" in captured.out
     assert "DefaultStrategy" in captured.out
+
+
+def test_start_list_hyperopts(mocker, caplog, capsys):
+
+    args = [
+        "list-hyperopts",
+        "--hyperopt-path",
+        str(Path(__file__).parent.parent / "optimize"),
+        "-1"
+    ]
+    pargs = get_args(args)
+    # pargs['config'] = None
+    start_list_hyperopts(pargs)
+    captured = capsys.readouterr()
+    assert "TestHyperoptLegacy" not in captured.out
+    assert "legacy_hyperopt.py" not in captured.out
+    assert "DefaultHyperOpt" in captured.out
+    assert "test_hyperopt.py" not in captured.out
+
+    # Test regular output
+    args = [
+        "list-hyperopts",
+        "--hyperopt-path",
+        str(Path(__file__).parent.parent / "optimize"),
+    ]
+    pargs = get_args(args)
+    # pargs['config'] = None
+    start_list_hyperopts(pargs)
+    captured = capsys.readouterr()
+    assert "TestHyperoptLegacy" not in captured.out
+    assert "legacy_hyperopt.py" not in captured.out
+    assert "DefaultHyperOpt" in captured.out
+    assert "test_hyperopt.py" in captured.out
 
 
 def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
