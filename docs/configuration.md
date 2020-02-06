@@ -610,11 +610,11 @@ Once you will be happy with your bot performance running in the Dry-run mode, yo
 
 ### Considerations for dry-run
 
-* API-Keys may or may not be provided. Only Read-Only operations on the exchange are performed in dry-run mode.
-* Wallets (`/balance`) will be simulated.
-* Orders will be simulated, and will not be posted to the exchange
+* API-keys may or may not be provided. Only Read-Only operations (i.e. operations that do not alter account state) on the exchange are performed in the dry-run mode.
+* Wallets (`/balance`) are simulated.
+* Orders are simulated, and will not be posted to the exchange.
 * In combination with `stoploss_on_exchange`, the stop_loss price is assumed to be filled.
-* Open orders (not Trades!) are reset on bot restart.
+* Open orders (not trades, which are stored in the database) are reset on bot restart.
 
 ## Switch to production mode
 
