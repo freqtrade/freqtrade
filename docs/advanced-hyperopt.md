@@ -10,7 +10,7 @@ Custom hyperop classes can be derived in the same way [it can be done for strate
 
 Applying to hyperoptimization, as an example, you may override how dimensions are defined in your optimization hyperspace:
 
-```
+```python
 class MyAwesomeHyperOpt(IHyperOpt):
     ...
     # Uses default stoploss dimension
