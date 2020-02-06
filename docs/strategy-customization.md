@@ -551,7 +551,7 @@ class MyAwesomeStrategy2(MyAwesomeStrategy):
     trailing_stop = True
 ```
 
-Both attributes and methods may be overriden, altering behavior of the original strategy in a way you need. The strategy classes may be located in the same module (python file with the source code of your strategy) or in different modules (different python files). In the latter case you need to properly import the strategy class you derive the new one from.
+Both attributes and methods may be overriden, altering behavior of the original strategy in a way you need.
 
 ### Common mistakes when developing strategies
 
