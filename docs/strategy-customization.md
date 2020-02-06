@@ -536,7 +536,7 @@ freqtrade trade --strategy AwesomeStrategy --strategy-path /some/directory
 
 The strategies can be derived from other strategies. This avoids duplication of your custom strategy code. You can use this technique to override small parts of your main strategy, leaving the rest untouched:
 
-```
+``` python
 class MyAwesomeStrategy(IStrategy):
     ...
     stoploss = 0.13
