@@ -10,8 +10,8 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.history import load_tickerdata_file
 from freqtrade.persistence import Trade
-from tests.conftest import get_patched_exchange, log_has
 from freqtrade.strategy.default_strategy import DefaultStrategy
+from tests.conftest import get_patched_exchange, log_has, log_has_re
 
 # Avoid to reinit the same object again and again
 _STRATEGY = DefaultStrategy(config={})
@@ -65,7 +65,7 @@ def test_get_signal_exception_valueerror(default_conf, mocker, caplog, ticker_hi
     )
     assert (False, False) == _STRATEGY.get_signal('foo', default_conf['ticker_interval'],
                                                   ticker_history)
-    assert log_has('Unable to analyze ticker for pair foo: xyz', caplog)
+    assert log_has_re(r'Strategy caused the following exception: xyz.*', caplog)
 
 
 def test_get_signal_empty_dataframe(default_conf, mocker, caplog, ticker_history):

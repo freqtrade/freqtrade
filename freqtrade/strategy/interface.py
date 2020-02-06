@@ -3,20 +3,21 @@ IStrategy interface
 This module defines the interface to apply for strategies
 """
 import logging
+import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Dict, List, NamedTuple, Optional, Tuple
-import warnings
 
 import arrow
 from pandas import DataFrame
 
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.exceptions import StrategyError
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.persistence import Trade
+from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
-
 
 logger = logging.getLogger(__name__)
 
@@ -255,20 +256,12 @@ class IStrategy(ABC):
             return False, False
 
         try:
-            dataframe = self._analyze_ticker_internal(dataframe, {'pair': pair})
-        except ValueError as error:
-            logger.warning(
-                'Unable to analyze ticker for pair %s: %s',
-                pair,
-                str(error)
-            )
-            return False, False
-        except Exception as error:
-            logger.exception(
-                'Unexpected error when analyzing ticker for pair %s: %s',
-                pair,
-                str(error)
-            )
+            dataframe = strategy_safe_wrapper(
+                self._analyze_ticker_internal, message=""
+                )(dataframe, {'pair': pair})
+        except StrategyError as error:
+            logger.warning(f"Unable to analyze ticker for pair {pair}: {error}")
+
             return False, False
 
         if dataframe.empty:
