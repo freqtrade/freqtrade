@@ -360,6 +360,42 @@ def test_sharpe_loss_daily_prefers_higher_profits(default_conf, hyperopt_results
     assert under > correct
 
 
+def test_sortino_loss_prefers_higher_profits(default_conf, hyperopt_results) -> None:
+    results_over = hyperopt_results.copy()
+    results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
+    results_under = hyperopt_results.copy()
+    results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
+
+    default_conf.update({'hyperopt_loss': 'SortinoHyperOptLoss'})
+    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
+    correct = hl.hyperopt_loss_function(hyperopt_results, len(hyperopt_results),
+                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
+    over = hl.hyperopt_loss_function(results_over, len(hyperopt_results),
+                                     datetime(2019, 1, 1), datetime(2019, 5, 1))
+    under = hl.hyperopt_loss_function(results_under, len(hyperopt_results),
+                                      datetime(2019, 1, 1), datetime(2019, 5, 1))
+    assert over < correct
+    assert under > correct
+
+
+def test_sortino_loss_daily_prefers_higher_profits(default_conf, hyperopt_results) -> None:
+    results_over = hyperopt_results.copy()
+    results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
+    results_under = hyperopt_results.copy()
+    results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
+
+    default_conf.update({'hyperopt_loss': 'SortinoHyperOptLossDaily'})
+    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
+    correct = hl.hyperopt_loss_function(hyperopt_results, len(hyperopt_results),
+                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
+    over = hl.hyperopt_loss_function(results_over, len(hyperopt_results),
+                                     datetime(2019, 1, 1), datetime(2019, 5, 1))
+    under = hl.hyperopt_loss_function(results_under, len(hyperopt_results),
+                                      datetime(2019, 1, 1), datetime(2019, 5, 1))
+    assert over < correct
+    assert under > correct
+
+
 def test_onlyprofit_loss_prefers_higher_profits(default_conf, hyperopt_results) -> None:
     results_over = hyperopt_results.copy()
     results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
