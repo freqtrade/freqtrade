@@ -86,7 +86,7 @@ def load_tickerdata_file(datadir: Path, pair: str, timeframe: str,
 
 
 def store_tickerdata_file(datadir: Path, pair: str,
-                          timeframe: str, data: list, is_zip: bool = False):
+                          timeframe: str, data: list, is_zip: bool = False) -> None:
     """
     Stores tickerdata to file
     """
@@ -109,7 +109,7 @@ def load_trades_file(datadir: Path, pair: str,
 
 
 def store_trades_file(datadir: Path, pair: str,
-                      data: list, is_zip: bool = True):
+                      data: list, is_zip: bool = True) -> None:
     """
     Stores tickerdata to file
     """
@@ -117,7 +117,7 @@ def store_trades_file(datadir: Path, pair: str,
     misc.file_dump_json(filename, data, is_zip=is_zip)
 
 
-def _validate_pairdata(pair, pairdata, timerange: TimeRange):
+def _validate_pairdata(pair: str, pairdata: List[Dict], timerange: TimeRange) -> None:
     if timerange.starttype == 'date' and pairdata[0][0] > timerange.startts * 1000:
         logger.warning('Missing data at start for pair %s, data starts at %s',
                        pair, arrow.get(pairdata[0][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
@@ -331,7 +331,7 @@ def _download_pair_history(datadir: Path,
 
 def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes: List[str],
                                 datadir: Path, timerange: Optional[TimeRange] = None,
-                                erase=False) -> List[str]:
+                                erase: bool = False) -> List[str]:
     """
     Refresh stored ohlcv data for backtesting and hyperopt operations.
     Used by freqtrade download-data subcommand.
@@ -401,7 +401,7 @@ def _download_trades_history(datadir: Path,
 
 
 def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: Path,
-                                 timerange: TimeRange, erase=False) -> List[str]:
+                                 timerange: TimeRange, erase: bool = False) -> List[str]:
     """
     Refresh stored trades data for backtesting and hyperopt operations.
     Used by freqtrade download-data subcommand.
@@ -428,7 +428,7 @@ def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: 
 
 
 def convert_trades_to_ohlcv(pairs: List[str], timeframes: List[str],
-                            datadir: Path, timerange: TimeRange, erase=False) -> None:
+                            datadir: Path, timerange: TimeRange, erase: bool = False) -> None:
     """
     Convert stored trades data to ohlcv data
     """

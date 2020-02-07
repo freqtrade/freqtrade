@@ -22,7 +22,7 @@ class Worker:
     Freqtradebot worker class
     """
 
-    def __init__(self, args: Dict[str, Any], config=None) -> None:
+    def __init__(self, args: Dict[str, Any], config: Dict[str, Any] = None) -> None:
         """
         Init all variables and objects the bot needs to work
         """
@@ -55,14 +55,6 @@ class Worker:
 
         self._sd_notify = sdnotify.SystemdNotifier() if \
             self._config.get('internals', {}).get('sd_notify', False) else None
-
-    @property
-    def state(self) -> State:
-        return self.freqtrade.state
-
-    @state.setter
-    def state(self, value: State) -> None:
-        self.freqtrade.state = value
 
     def run(self) -> None:
         state = None

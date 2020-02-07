@@ -265,7 +265,7 @@ class FreqtradeBot:
 
         return used_rate
 
-    def get_trade_stake_amount(self, pair) -> float:
+    def get_trade_stake_amount(self, pair: str) -> float:
         """
         Calculate stake amount for the trade
         :return: float: Stake amount
@@ -427,17 +427,24 @@ class FreqtradeBot:
         Checks depth of market before executing a buy
         """
         conf_bids_to_ask_delta = conf.get('bids_to_ask_delta', 0)
-        logger.info('checking depth of market for %s', pair)
+        logger.info(f"Checking depth of market for {pair} ...")
         order_book = self.exchange.get_order_book(pair, 1000)
         order_book_data_frame = order_book_to_dataframe(order_book['bids'], order_book['asks'])
         order_book_bids = order_book_data_frame['b_size'].sum()
         order_book_asks = order_book_data_frame['a_size'].sum()
         bids_ask_delta = order_book_bids / order_book_asks
-        logger.info('bids: %s, asks: %s, delta: %s', order_book_bids,
-                    order_book_asks, bids_ask_delta)
+        logger.info(
+            f"Bids: {order_book_bids}, Asks: {order_book_asks}, Delta: {bids_ask_delta}, "
+            f"Bid Price: {order_book['bids'][0][0]}, Ask Price: {order_book['asks'][0][0]}, "
+            f"Immediate Bid Quantity: {order_book['bids'][0][1]}, "
+            f"Immediate Ask Quantity: {order_book['asks'][0][1]}."
+        )
         if bids_ask_delta >= conf_bids_to_ask_delta:
+            logger.info(f"Bids to asks delta for {pair} DOES satisfy condition.")
             return True
-        return False
+        else:
+            logger.info(f"Bids to asks delta for {pair} does not satisfy condition.")
+            return False
 
     def execute_buy(self, pair: str, stake_amount: float, price: Optional[float] = None) -> bool:
         """
@@ -532,7 +539,7 @@ class FreqtradeBot:
 
         return True
 
-    def _notify_buy(self, trade: Trade, order_type: str):
+    def _notify_buy(self, trade: Trade, order_type: str) -> None:
         """
         Sends rpc notification when a buy occured.
         """
@@ -620,7 +627,7 @@ class FreqtradeBot:
                 self.dataprovider.ohlcv(trade.pair, self.strategy.ticker_interval))
 
         if config_ask_strategy.get('use_order_book', False):
-            logger.info('Using order book for selling...')
+            logger.debug(f'Using order book for selling {trade.pair}...')
             # logger.debug('Order book %s',orderBook)
             order_book_min = config_ask_strategy.get('order_book_min', 1)
             order_book_max = config_ask_strategy.get('order_book_max', 1)
@@ -629,7 +636,7 @@ class FreqtradeBot:
 
             for i in range(order_book_min, order_book_max + 1):
                 order_book_rate = order_book['asks'][i - 1][0]
-                logger.info('  order book asks top %s: %0.8f', i, order_book_rate)
+                logger.debug('  order book asks top %s: %0.8f', i, order_book_rate)
                 sell_rate = order_book_rate
 
                 if self._check_and_execute_sell(trade, sell_rate, buy, sell):
@@ -651,13 +658,10 @@ class FreqtradeBot:
         Force-sells the pair (using EmergencySell reason) in case of Problems creating the order.
         :return: True if the order succeeded, and False in case of problems.
         """
-        # Limit price threshold: As limit price should always be below stop-price
-        LIMIT_PRICE_PCT = self.strategy.order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
-
         try:
-            stoploss_order = self.exchange.stoploss_limit(pair=trade.pair, amount=trade.amount,
-                                                          stop_price=stop_price,
-                                                          rate=rate * LIMIT_PRICE_PCT)
+            stoploss_order = self.exchange.stoploss(pair=trade.pair, amount=trade.amount,
+                                                    stop_price=stop_price,
+                                                    order_types=self.strategy.order_types)
             trade.stoploss_order_id = str(stoploss_order['id'])
             return True
         except InvalidOrderException as e:
@@ -689,8 +693,24 @@ class FreqtradeBot:
         except InvalidOrderException as exception:
             logger.warning('Unable to fetch stoploss order: %s', exception)
 
+        # We check if stoploss order is fulfilled
+        if stoploss_order and stoploss_order['status'] == 'closed':
+            trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
+            trade.update(stoploss_order)
+            # Lock pair for one candle to prevent immediate rebuys
+            self.strategy.lock_pair(trade.pair,
+                                    timeframe_to_next_date(self.config['ticker_interval']))
+            self._notify_sell(trade, "stoploss")
+            return True
+
+        if trade.open_order_id or not trade.is_open:
+            # Trade has an open Buy or Sell order, Stoploss-handling can't happen in this case
+            # as the Amount on the exchange is tied up in another trade.
+            # The trade can be closed already (sell-order fill confirmation came in this iteration)
+            return False
+
         # If buy order is fulfilled but there is no stoploss, we add a stoploss on exchange
-        if (not trade.open_order_id and not stoploss_order):
+        if (not stoploss_order):
 
             stoploss = self.edge.stoploss(pair=trade.pair) if self.edge else self.strategy.stoploss
 
@@ -709,16 +729,6 @@ class FreqtradeBot:
                 trade.stoploss_order_id = None
                 logger.warning('Stoploss order was cancelled, but unable to recreate one.')
 
-        # We check if stoploss order is fulfilled
-        if stoploss_order and stoploss_order['status'] == 'closed':
-            trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
-            trade.update(stoploss_order)
-            # Lock pair for one candle to prevent immediate rebuys
-            self.strategy.lock_pair(trade.pair,
-                                    timeframe_to_next_date(self.config['ticker_interval']))
-            self._notify_sell(trade, "stoploss")
-            return True
-
         # Finally we check if stoploss on exchange should be moved up because of trailing.
         if stoploss_order and self.config.get('trailing_stop', False):
             # if trailing stoploss is enabled we check if stoploss value has changed
@@ -728,7 +738,7 @@ class FreqtradeBot:
 
         return False
 
-    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order):
+    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order: dict) -> None:
         """
         Check to see if stoploss on exchange should be updated
         in case of trailing stoploss on exchange
@@ -736,8 +746,7 @@ class FreqtradeBot:
         :param order: Current on exchange stoploss order
         :return: None
         """
-
-        if trade.stop_loss > float(order['info']['stopPrice']):
+        if self.exchange.stoploss_adjust(trade.stop_loss, order):
             # we check if the update is neccesary
             update_beat = self.strategy.order_types.get('stoploss_on_exchange_interval', 60)
             if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() >= update_beat:
@@ -751,10 +760,8 @@ class FreqtradeBot:
                                      f"for pair {trade.pair}")
 
                 # Create new stoploss order
-                if self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss,
-                                              rate=trade.stop_loss):
-                    return False
-                else:
+                if not self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss,
+                                                  rate=trade.stop_loss):
                     logger.warning(f"Could not create trailing stoploss order "
                                    f"for pair {trade.pair}.")
 
@@ -983,7 +990,7 @@ class FreqtradeBot:
 
         self._notify_sell(trade, order_type)
 
-    def _notify_sell(self, trade: Trade, order_type: str):
+    def _notify_sell(self, trade: Trade, order_type: str) -> None:
         """
         Sends rpc notification when a sell occured.
         """
@@ -1024,7 +1031,7 @@ class FreqtradeBot:
 # Common update trade state methods
 #
 
-    def update_trade_state(self, trade, action_order: dict = None):
+    def update_trade_state(self, trade: Trade, action_order: dict = None) -> None:
         """
         Checks trades with open orders and updates the amount if necessary
         """

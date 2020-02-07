@@ -25,7 +25,7 @@ class IResolver:
     initial_search_path: Path
 
     @classmethod
-    def build_search_paths(cls, config, user_subdir: Optional[str] = None,
+    def build_search_paths(cls, config: Dict[str, Any], user_subdir: Optional[str] = None,
                            extra_dir: Optional[str] = None) -> List[Path]:
 
         abs_paths: List[Path] = [cls.initial_search_path]

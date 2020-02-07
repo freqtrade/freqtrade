@@ -6,6 +6,7 @@ import logging
 import re
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 from typing.io import IO
 
 import numpy as np
@@ -40,7 +41,7 @@ def datesarray_to_datetimearray(dates: np.ndarray) -> np.ndarray:
     return dates.dt.to_pydatetime()
 
 
-def file_dump_json(filename: Path, data, is_zip=False) -> None:
+def file_dump_json(filename: Path, data: Any, is_zip: bool = False) -> None:
     """
     Dump JSON data into a file
     :param filename: file to create
@@ -61,7 +62,7 @@ def file_dump_json(filename: Path, data, is_zip=False) -> None:
     logger.debug(f'done json to "{filename}"')
 
 
-def json_load(datafile: IO):
+def json_load(datafile: IO) -> Any:
     """
     load data with rapidjson
     Use this to have a consistent experience,
@@ -125,11 +126,11 @@ def round_dict(d, n):
     return {k: (round(v, n) if isinstance(v, float) else v) for k, v in d.items()}
 
 
-def plural(num, singular: str, plural: str = None) -> str:
+def plural(num: float, singular: str, plural: str = None) -> str:
     return singular if (num == 1 or num == -1) else plural or singular + 's'
 
 
-def render_template(templatefile: str, arguments: dict = {}):
+def render_template(templatefile: str, arguments: dict = {}) -> str:
 
     from jinja2 import Environment, PackageLoader, select_autoescape
 
