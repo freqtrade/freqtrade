@@ -50,7 +50,7 @@ class SortinoHyperOptLossDaily(IHyperOptLoss):
         expected_returns_mean = total_profit.mean()
 
         results['downside_returns'] = 0
-        results.loc[total_profit < 0, 'downside_returns'] = results['profit_percent']
+        results.loc[total_profit < 0, 'downside_returns'] = results['profit_percent_after_slippage']
         down_stdev = results['downside_returns'].std()
 
         if (down_stdev != 0.):
