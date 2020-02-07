@@ -380,9 +380,9 @@ def test_sortino_loss_prefers_higher_profits(default_conf, hyperopt_results) -> 
 
 def test_sortino_loss_daily_prefers_higher_profits(default_conf, hyperopt_results) -> None:
     results_over = hyperopt_results.copy()
-    results_over['profit_percent_after_slippage'] = hyperopt_results['profit_percent_after_slippage'] * 2
+    results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
     results_under = hyperopt_results.copy()
-    results_under['profit_percent_after_slippage'] = hyperopt_results['profit_percent_after_slippage'] / 2
+    results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
 
     default_conf.update({'hyperopt_loss': 'SortinoHyperOptLossDaily'})
     hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
