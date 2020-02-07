@@ -47,11 +47,13 @@ class SortinoHyperOptLossDaily(IHyperOptLoss):
         )
 
         total_profit = sum_daily["profit_percent_after_slippage"] - risk_free_rate
+        total_downside = sum_daily['downside_returns'] - risk_free_rate
         expected_returns_mean = total_profit.mean()
 
-        results['downside_returns'] = 0
-        results.loc[total_profit < 0, 'downside_returns'] = results['profit_percent_after_slippage']
-        down_stdev = results['downside_returns'].std()
+        sum_daily['downside_returns'] = 0
+        sum_daily.loc[total_profit < 0,
+                      'downside_returns'] = sum_daily['profit_percent_after_slippage']
+        down_stdev = total_downside.std()
 
         if (down_stdev != 0.):
             sortino_ratio = expected_returns_mean / down_stdev * math.sqrt(days_in_year)
