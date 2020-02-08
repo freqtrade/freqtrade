@@ -51,11 +51,11 @@ Possible parameters are:
 * `pair`
 * `limit`
 * `amount`
+* `open_date`
 * `stake_amount`
 * `stake_currency`
 * `fiat_currency`
 * `order_type`
-* `open_rate`
 * `current_rate`
 
 ### Webhookbuycancel
@@ -67,11 +67,11 @@ Possible parameters are:
 * `pair`
 * `limit`
 * `amount`
+* `open_date`
 * `stake_amount`
 * `stake_currency`
 * `fiat_currency`
 * `order_type`
-* `open_rate`
 * `current_rate`
 
 ### Webhooksell
@@ -86,7 +86,6 @@ Possible parameters are:
 * `amount`
 * `open_rate`
 * `current_rate`
-* `close_rate`
 * `profit_amount`
 * `profit_percent`
 * `stake_currency`
@@ -108,7 +107,6 @@ Possible parameters are:
 * `amount`
 * `open_rate`
 * `current_rate`
-* `close_rate`
 * `profit_amount`
 * `profit_percent`
 * `stake_currency`
@@ -116,6 +114,7 @@ Possible parameters are:
 * `sell_reason`
 * `order_type`
 * `open_date`
+* `close_date`
 
 ### Webhookstatus
 
