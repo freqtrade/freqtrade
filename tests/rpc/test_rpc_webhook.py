@@ -54,6 +54,9 @@ def test_send_msg(default_conf, mocker):
     msg_mock = MagicMock()
     mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
     webhook = Webhook(get_patched_freqtradebot(mocker, default_conf))
+    # Test buy
+    msg_mock = MagicMock()
+    mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
     msg = {
         'type': RPCMessageType.BUY_NOTIFICATION,
         'exchange': 'Bittrex',
@@ -64,8 +67,6 @@ def test_send_msg(default_conf, mocker):
         'stake_currency': 'BTC',
         'fiat_currency': 'EUR'
     }
-    msg_mock = MagicMock()
-    mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
     webhook.send_msg(msg=msg)
     assert msg_mock.call_count == 1
     assert (msg_mock.call_args[0][0]["value1"] ==
@@ -74,6 +75,27 @@ def test_send_msg(default_conf, mocker):
             default_conf["webhook"]["webhookbuy"]["value2"].format(**msg))
     assert (msg_mock.call_args[0][0]["value3"] ==
             default_conf["webhook"]["webhookbuy"]["value3"].format(**msg))
+    # Test buy cancel
+    msg_mock = MagicMock()
+    mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
+    msg = {
+        'type': RPCMessageType.BUY_CANCEL_NOTIFICATION,
+        'exchange': 'Bittrex',
+        'pair': 'ETH/BTC',
+        'limit': 0.005,
+        'stake_amount': 0.8,
+        'stake_amount_fiat': 500,
+        'stake_currency': 'BTC',
+        'fiat_currency': 'EUR'
+    }
+    webhook.send_msg(msg=msg)
+    assert msg_mock.call_count == 1
+    assert (msg_mock.call_args[0][0]["value1"] ==
+            default_conf["webhook"]["webhookbuycancel"]["value1"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value2"] ==
+            default_conf["webhook"]["webhookbuycancel"]["value2"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value3"] ==
+            default_conf["webhook"]["webhookbuycancel"]["value3"].format(**msg))
     # Test sell
     msg_mock = MagicMock()
     mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
@@ -100,7 +122,32 @@ def test_send_msg(default_conf, mocker):
             default_conf["webhook"]["webhooksell"]["value2"].format(**msg))
     assert (msg_mock.call_args[0][0]["value3"] ==
             default_conf["webhook"]["webhooksell"]["value3"].format(**msg))
-
+    # Test sell cancel
+    msg_mock = MagicMock()
+    mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
+    msg = {
+        'type': RPCMessageType.SELL_CANCEL_NOTIFICATION,
+        'exchange': 'Bittrex',
+        'pair': 'ETH/BTC',
+        'gain': "profit",
+        'limit': 0.005,
+        'amount': 0.8,
+        'order_type': 'limit',
+        'open_rate': 0.004,
+        'current_rate': 0.005,
+        'profit_amount': 0.001,
+        'profit_percent': 0.20,
+        'stake_currency': 'BTC',
+        'sell_reason': SellType.STOP_LOSS.value
+    }
+    webhook.send_msg(msg=msg)
+    assert msg_mock.call_count == 1
+    assert (msg_mock.call_args[0][0]["value1"] ==
+            default_conf["webhook"]["webhooksellcancel"]["value1"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value2"] ==
+            default_conf["webhook"]["webhooksellcancel"]["value2"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value3"] ==
+            default_conf["webhook"]["webhooksellcancel"]["value3"].format(**msg))
     for msgtype in [RPCMessageType.STATUS_NOTIFICATION,
                     RPCMessageType.WARNING_NOTIFICATION,
                     RPCMessageType.CUSTOM_NOTIFICATION]:
