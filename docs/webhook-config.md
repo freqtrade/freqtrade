@@ -15,8 +15,18 @@ Sample configuration (tested using IFTTT).
             "value2": "limit {limit:8f}",
             "value3": "{stake_amount:8f} {stake_currency}"
         },
+        "webhookbuycancel": {
+            "value1": "Cancelling Buy {pair}",
+            "value2": "limit {limit:8f}",
+            "value3": "{stake_amount:8f} {stake_currency}"
+        },
         "webhooksell": {
             "value1": "Selling {pair}",
+            "value2": "limit {limit:8f}",
+            "value3": "profit: {profit_amount:8f} {stake_currency}"
+        },
+        "webhooksellcancel": {
+            "value1": "Cancelling Sell {pair}",
             "value2": "limit {limit:8f}",
             "value3": "profit: {profit_amount:8f} {stake_currency}"
         },
@@ -40,10 +50,29 @@ Possible parameters are:
 * `exchange`
 * `pair`
 * `limit`
+* `amount`
 * `stake_amount`
 * `stake_currency`
 * `fiat_currency`
 * `order_type`
+* `open_rate`
+* `current_rate`
+
+### Webhookbuycancel
+
+The fields in `webhook.webhookbuycancel` are filled when the bot cancels a buy order. Parameters are filled using string.format.
+Possible parameters are:
+
+* `exchange`
+* `pair`
+* `limit`
+* `amount`
+* `stake_amount`
+* `stake_currency`
+* `fiat_currency`
+* `order_type`
+* `open_rate`
+* `current_rate`
 
 ### Webhooksell
 
@@ -57,6 +86,7 @@ Possible parameters are:
 * `amount`
 * `open_rate`
 * `current_rate`
+* `close_rate`
 * `profit_amount`
 * `profit_percent`
 * `stake_currency`
@@ -65,6 +95,27 @@ Possible parameters are:
 * `order_type`
 * `open_date`
 * `close_date`
+
+### Webhooksellcancel
+
+The fields in `webhook.webhooksellcancel` are filled when the bot cancels a sell order. Parameters are filled using string.format.
+Possible parameters are:
+
+* `exchange`
+* `pair`
+* `gain`
+* `limit`
+* `amount`
+* `open_rate`
+* `current_rate`
+* `close_rate`
+* `profit_amount`
+* `profit_percent`
+* `stake_currency`
+* `fiat_currency`
+* `sell_reason`
+* `order_type`
+* `open_date`
 
 ### Webhookstatus
 

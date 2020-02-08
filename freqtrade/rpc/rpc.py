@@ -26,7 +26,9 @@ class RPCMessageType(Enum):
     WARNING_NOTIFICATION = 'warning'
     CUSTOM_NOTIFICATION = 'custom'
     BUY_NOTIFICATION = 'buy'
+    BUY_CANCEL_NOTIFICATION = 'buy_cancel'
     SELL_NOTIFICATION = 'sell'
+    SELL_CANCEL_NOTIFICATION = 'sell_cancel'
 
     def __repr__(self):
         return self.value
@@ -39,6 +41,7 @@ class RPCException(Exception):
 
     raise RPCException('*Status:* `no active trade`')
     """
+
     def __init__(self, message: str) -> None:
         super().__init__(self)
         self.message = message
@@ -157,15 +160,16 @@ class RPC:
                 profit_str = f'{trade_perc:.2f}%'
                 if self._fiat_converter:
                     fiat_profit = self._fiat_converter.convert_amount(
-                            trade_profit,
-                            stake_currency,
-                            fiat_display_currency
-                        )
+                        trade_profit,
+                        stake_currency,
+                        fiat_display_currency
+                    )
                     if fiat_profit and not isnan(fiat_profit):
                         profit_str += f" ({fiat_profit:.2f})"
                 trades_list.append([
                     trade.id,
-                    trade.pair,
+                    trade.pair + ['', '*'][trade.open_order_id is not None
+                                           and trade.close_rate_requested is None],
                     shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
                     profit_str
                 ])

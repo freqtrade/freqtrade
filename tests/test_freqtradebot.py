@@ -300,7 +300,7 @@ def test_edge_overrides_stoploss(limit_buy_order, fee, caplog, mocker, edge_conf
 
     # stoploss shoud be hit
     assert freqtrade.handle_trade(trade) is True
-    assert log_has('executed sell, reason: SellType.STOP_LOSS', caplog)
+    assert log_has('Executed Sell for NEO/BTC. Reason: SellType.STOP_LOSS', caplog)
     assert trade.sell_reason == SellType.STOP_LOSS.value
 
 
@@ -1964,7 +1964,7 @@ def test_check_handle_cancelled_buy(default_conf, ticker, limit_buy_order_old, o
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     nb_trades = len(trades)
     assert nb_trades == 0
-    assert log_has_re("Buy order canceled on Exchange for Trade.*", caplog)
+    assert log_has_re("Buy order cancelled on exchange for Trade.*", caplog)
 
 
 def test_check_handle_timedout_buy_exception(default_conf, ticker, limit_buy_order_old, open_trade,
@@ -2045,7 +2045,7 @@ def test_check_handle_cancelled_sell(default_conf, ticker, limit_sell_order_old,
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 1
     assert open_trade.is_open is True
-    assert log_has_re("Sell order canceled on exchange for Trade.*", caplog)
+    assert log_has_re("Sell order cancelled on exchange for Trade.*", caplog)
 
 
 def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old_partial,

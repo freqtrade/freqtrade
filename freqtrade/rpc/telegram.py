@@ -134,12 +134,17 @@ class Telegram(RPC):
                 msg['stake_amount_fiat'] = 0
 
             message = ("*{exchange}:* Buying {pair}\n"
-                       "at rate `{limit:.8f}\n"
-                       "({stake_amount:.6f} {stake_currency}").format(**msg)
+                       "*Amount:* `{amount:.8f}`\n"
+                       "*Open Rate:* `{limit:.8f}`\n"
+                       "*Current Rate:* `{current_rate:.8f}`\n"
+                       "*Total:* `({stake_amount:.6f} {stake_currency}").format(**msg)
 
             if msg.get('fiat_currency', None):
-                message += ",{stake_amount_fiat:.3f} {fiat_currency}".format(**msg)
+                message += ", {stake_amount_fiat:.3f} {fiat_currency}".format(**msg)
             message += ")`"
+
+        elif msg['type'] == RPCMessageType.BUY_CANCEL_NOTIFICATION:
+            message = "*{exchange}:* Cancelling Buy {pair}".format(**msg)
 
         elif msg['type'] == RPCMessageType.SELL_NOTIFICATION:
             msg['amount'] = round(msg['amount'], 8)
@@ -149,10 +154,10 @@ class Telegram(RPC):
             msg['duration_min'] = msg['duration'].total_seconds() / 60
 
             message = ("*{exchange}:* Selling {pair}\n"
-                       "*Rate:* `{limit:.8f}`\n"
                        "*Amount:* `{amount:.8f}`\n"
                        "*Open Rate:* `{open_rate:.8f}`\n"
                        "*Current Rate:* `{current_rate:.8f}`\n"
+                       "*Close Rate:* `{limit:.8f}`\n"
                        "*Sell Reason:* `{sell_reason}`\n"
                        "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
                        "*Profit:* `{profit_percent:.2f}%`").format(**msg)
@@ -163,8 +168,11 @@ class Telegram(RPC):
                and self._fiat_converter):
                 msg['profit_fiat'] = self._fiat_converter.convert_amount(
                     msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
-                message += ('` ({gain}: {profit_amount:.8f} {stake_currency}`'
-                            '` / {profit_fiat:.3f} {fiat_currency})`').format(**msg)
+                message += (' `({gain}: {profit_amount:.8f} {stake_currency}'
+                            ' / {profit_fiat:.3f} {fiat_currency})`').format(**msg)
+
+        elif msg['type'] == RPCMessageType.SELL_CANCEL_NOTIFICATION:
+            message = "*{exchange}:* Cancelling Sell {pair}".format(**msg)
 
         elif msg['type'] == RPCMessageType.STATUS_NOTIFICATION:
             message = '*Status:* `{status}`'.format(**msg)

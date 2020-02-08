@@ -13,24 +13,34 @@ from tests.conftest import get_patched_freqtradebot, log_has
 
 def get_webhook_dict() -> dict:
     return {
-          "enabled": True,
-          "url": "https://maker.ifttt.com/trigger/freqtrade_test/with/key/c764udvJ5jfSlswVRukZZ2/",
-          "webhookbuy": {
-              "value1": "Buying {pair}",
-              "value2": "limit {limit:8f}",
-              "value3": "{stake_amount:8f} {stake_currency}"
-          },
-          "webhooksell": {
-              "value1": "Selling {pair}",
-              "value2": "limit {limit:8f}",
-              "value3": "profit: {profit_amount:8f} {stake_currency}"
-          },
-          "webhookstatus": {
-              "value1": "Status: {status}",
-              "value2": "",
-              "value3": ""
-          }
-      }
+        "enabled": True,
+        "url": "https://maker.ifttt.com/trigger/freqtrade_test/with/key/c764udvJ5jfSlswVRukZZ2/",
+        "webhookbuy": {
+            "value1": "Buying {pair}",
+            "value2": "limit {limit:8f}",
+            "value3": "{stake_amount:8f} {stake_currency}"
+        },
+        "webhookbuycancel": {
+            "value1": "Cancelling Buy {pair}",
+            "value2": "limit {limit:8f}",
+            "value3": "{stake_amount:8f} {stake_currency}"
+        },
+        "webhooksell": {
+            "value1": "Selling {pair}",
+            "value2": "limit {limit:8f}",
+            "value3": "profit: {profit_amount:8f} {stake_currency}"
+        },
+        "webhooksellcancel": {
+            "value1": "Cancelling Sell {pair}",
+            "value2": "limit {limit:8f}",
+            "value3": "profit: {profit_amount:8f} {stake_currency}"
+        },
+        "webhookstatus": {
+            "value1": "Status: {status}",
+            "value2": "",
+            "value3": ""
+        }
+    }
 
 
 def test__init__(mocker, default_conf):
