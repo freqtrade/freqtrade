@@ -1,4 +1,4 @@
-# Using FreqTrade with Docker
+# Using Freqtrade with Docker
 
 ## Install Docker
 
@@ -8,13 +8,134 @@ Start by downloading and installing Docker CE for your platform:
 * [Windows](https://docs.docker.com/docker-for-windows/install/)
 * [Linux](https://docs.docker.com/install/)
 
+Optionally, [docker-compose](https://docs.docker.com/compose/install/) should be installed and available to follow the docker quick start guide.
+
 Once you have Docker installed, simply prepare the config file (e.g. `config.json`) and run the image for `freqtrade` as explained below.
 
-## Download the official FreqTrade docker image
+## Freqtrade with docker-compose
+
+Freqtrade provides an official Docker image on [Dockerhub](https://hub.docker.com/r/freqtradeorg/freqtrade/), as well as a [docker-compose file](https://github.com/freqtrade/freqtrade/blob/develop/docker-compose.yml) ready for usage.
+
+!!! Note
+    The following section assumes that docker and docker-compose is installed and available to the logged in user.
+
+!!! Note
+    All below comands use relative directories and will have to be executed from the directory containing the `docker-compose.yml` file.
+
+### Docker quick start
+
+Create a new directory and place the [docker-compose file](https://github.com/freqtrade/freqtrade/blob/develop/docker-compose.yml) in this directory.
+
+``` bash
+mkdir freqtrade
+cd freqtrade/
+# Download the docker-compose file from the repository
+curl https://raw.githubusercontent.com/freqtrade/freqtrade/develop/docker-compose.yml -o docker-compose.yml
+
+# Pull the freqtrade image
+docker-compose pull
+
+# Create user directory structure
+docker-compose run --rm freqtrade create-userdir --userdir user_data
+
+# Create configuration - Requires answering interactive questions
+docker-compose run --rm freqtrade new-config --config user_data/config.json
+```
+
+The above snippet will create a directory called "freqtrade" - download the latest compose file and pull the freqtrade image.
+The last 2 steps will create the user-directory, as well as a default configuration based on your selections.
+
+#### Adding your strategy
+
+The configuration is now available as `user_data/config.json`.
+You should now copy your strategy to `user_data/strategies/` - and add the Strategy class name to the `docker-compose.yml` file, replacing `SampleStrategy`.
+
+Once this is done, you're ready to launch the bot in trading mode.
+
+``` bash
+docker-compose up -d
+```
+
+#### Docker-compose logs
+
+Logs will be written to `user_data/freqtrade.log`. 
+Alternatively, you can check the latest logs using `docker-compose logs -f`.
+
+#### Database
+
+The database will be in the user_data directory as well, and will be called `user_data/tradesv3.sqlite`.
+
+#### Updating freqtrade with docker-compose
+
+To update freqtrade when using docker-compose is as simple as running the following 2 commands:
+
+``` bash
+# Download the latest image
+docker-compose pull
+# Restart the image
+docker-compose up -d
+```
+
+This will first pull the latest image, and will then restart the container with the just pulled version.
+
+!!! Note
+    You should always check the changelog for breaking changes / manual interventions required and make sure the bot starts correctly after the update.
+
+#### Going from here
+
+Advanced users may edit the docker-compose file further to include all possible options or arguments.
+
+All possible freqtrade arguments will be available by running `docker-compose run --rm freqtrade <command> <optional arguments>`.
+
+!!! Note "`docker-compose run --rm`"
+    Inluding `--rm` will clean up the container after completion, and is highly recommended for all modes except trading mode (`freqtrade trade`).
+
+##### Example: Download data with docker-compose
+
+Downloading backtest data for one pair from binance. The data will be stored in the host directory `user_data/data/`.
+
+``` bash
+docker-compose run --rm freqtrade download-data --pairs ETH/BTC --exchange binance --days 5 -t 1h
+```
+
+Head over to the [Data Downloading Documentation](data-download.md) for more details on downloading data.
+
+##### Example: Backtest with docker-compose
+
+Backtesting in docker-containers:
+
+``` bash
+docker-compose run --rm freqtrade backtesting --config user_data/config.json --strategy SampleStrategy --timerange 20190801-20191001 -i 5m
+```
+
+Head over to the [Backtesting Documentation](backtesting.md) to learn more.
+
+#### Additional dependencies with docker-compose
+
+If your strategy requires dependencies not included in the default image (like [technical](https://github.com/freqtrade/technical)) - it will be necessary to build the image on your host.
+For this, please create a Dockerfile containing installation steps for the additional dependencies (have a look at [Dockerfile.technical](https://github.com/freqtrade/freqtrade/blob/develop/Dockerfile.technical) for an example).
+
+You'll then also need to modify the `docker-compose.yml` file and uncomment the build step, as well as rename the image to avoid naming collisions.
+
+``` yaml
+    image: freqtrade_custom
+    build:
+      context: .
+      dockerfile: "./Dockerfile.<yourextension>"
+```
+
+You can then run `docker-compose build` to build the docker image, and run it using the commands described above.
+
+## Docker - without docker compose
+
+!!! Warning
+    The below documentation is provided for completeness and assumes that you are somewhat familiar with running docker containers. If you're just starting out with docker, we recommend to follow the [Freqtrade with docker-compose](#freqtrade-with-docker-compose) instructions.
+
+### Download the official Freqtrade docker image
 
 Pull the image from docker hub.
 
-Branches / tags available can be checked out on [Dockerhub](https://hub.docker.com/r/freqtradeorg/freqtrade/tags/).
+Branches / tags available can be checked out on [Dockerhub tags page](https://hub.docker.com/r/freqtradeorg/freqtrade/tags/).
 
 ```bash
 docker pull freqtradeorg/freqtrade:develop
