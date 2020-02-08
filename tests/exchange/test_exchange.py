@@ -365,7 +365,7 @@ def test__reload_markets_exception(default_conf, mocker, caplog):
     assert log_has_re(r"Could not reload markets.*", caplog)
 
 
-@pytest.mark.parametrize("stake_currency", ['ETH', 'BTC', 'USDT'])
+@pytest.mark.parametrize("stake_currency", ['ETH', 'BTC', 'USDT', ''])
 def test_validate_stake_currency(default_conf, stake_currency, mocker, caplog):
     default_conf['stake_currency'] = stake_currency
     api_mock = MagicMock()
