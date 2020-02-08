@@ -563,6 +563,7 @@ def test_download_data_no_markets(mocker, caplog):
     mocker.patch(
         'freqtrade.exchange.Exchange.markets', PropertyMock(return_value={})
     )
+    validate_mock = mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
     args = [
         "download-data",
         "--exchange", "binance",
@@ -572,6 +573,7 @@ def test_download_data_no_markets(mocker, caplog):
     start_download_data(get_args(args))
     assert dl_mock.call_args[1]['timerange'].starttype == "date"
     assert log_has("Pairs [ETH/BTC,XRP/BTC] not available on exchange Binance.", caplog)
+    assert validate_mock.call_args_list[0][0][0] == ['ETH/BTC', 'XRP/BTC']
 
 
 def test_download_data_no_exchange(mocker, caplog):

@@ -31,6 +31,10 @@ def start_download_data(args: Dict[str, Any]) -> None:
             "Downloading data requires a list of pairs. "
             "Please check the documentation on how to configure this.")
 
+    # Syncronize Pair whitelist and pairs - since 'pair_whitelist' is checked
+    # against the exchange - but not 'pairs'
+    config['exchange']['pair_whitelist'] = config['pairs']
+
     logger.info(f'About to download pairs: {config["pairs"]}, '
                 f'intervals: {config["timeframes"]} to {config["datadir"]}')
 
