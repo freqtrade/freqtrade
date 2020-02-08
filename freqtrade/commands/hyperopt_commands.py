@@ -32,7 +32,7 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
         'filter_min_avg_profit': config.get('hyperopt_list_min_avg_profit', 0.0),
         'filter_min_total_profit': config.get('hyperopt_list_min_total_profit', 0.0)
     }
-    
+
     trials_file = (config['user_data_dir'] /
                    'hyperopt_results' / 'hyperopt_results.pickle')
 
@@ -51,7 +51,8 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
     try:
         # Human-friendly indexes used here (starting from 1)
         for val in trials[epoch_start:epoch_stop]:
-            Hyperopt.print_results_explanation(val, total_epochs, not filteroptions['only_best'], print_colorized)
+            Hyperopt.print_results_explanation(val, total_epochs,
+                                               not filteroptions['only_best'], print_colorized)
 
     except KeyboardInterrupt:
         print('User interrupted..')
@@ -121,14 +122,27 @@ def _hyperopt_filter_trials(trials: List, filteroptions: dict) -> List:
 
     if not filteroptions['only_best']:
         if filteroptions['filter_min_avg_time'] > 0:
-            trials = [x for x in trials if x['results_metrics']['duration'] > filteroptions['filter_min_avg_time']]
+            trials = [
+                        x for x in trials
+                        if x['results_metrics']['duration'] > filteroptions['filter_min_avg_time']
+                     ]
         if filteroptions['filter_max_avg_time'] > 0:
-            trials = [x for x in trials if x['results_metrics']['duration'] < filteroptions['filter_max_avg_time']]
+            trials = [
+                        x for x in trials
+                        if x['results_metrics']['duration'] < filteroptions['filter_max_avg_time']
+                     ]
         if filteroptions['filter_min_avg_profit'] > 0:
-            trials = [x for x in trials if x['results_metrics']['avg_profit'] > filteroptions['filter_min_avg_profit']]
+            trials = [
+                        x for x in trials
+                        if x['results_metrics']['avg_profit']
+                        > filteroptions['filter_min_avg_profit']
+                     ]
         if filteroptions['filter_min_total_profit'] > 0:
-            trials = [x for x in trials if x['results_metrics']['profit'] > filteroptions['filter_min_total_profit']]
-    
+            trials = [
+                        x for x in trials
+                        if x['results_metrics']['profit'] > filteroptions['filter_min_total_profit']
+                     ]
+
     logger.info(f"{len(trials)} " +
                 ("best " if filteroptions['only_best'] else "") +
                 ("profitable " if filteroptions['only_profitable'] else "") +
