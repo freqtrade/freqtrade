@@ -452,7 +452,7 @@ class FreqtradeBot:
         """
         Executes a limit buy for the given pair
         :param pair: pair for which we want to create a LIMIT_BUY
-        :return: bool
+        :return: True if a buy order is created, false if it fails.
         """
         time_in_force = self.strategy.order_time_in_force['buy']
 
@@ -966,7 +966,7 @@ class FreqtradeBot:
         :param trade: Trade instance
         :param limit: limit rate for the sell order
         :param sellreason: Reason the sell was triggered
-        :return: bool
+        :return: True if it succeeds (supported) False (not supported)
         """
         sell_type = 'sell'
         if sell_reason in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
