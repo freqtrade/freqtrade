@@ -40,7 +40,6 @@ optional arguments:
 
 Creates a new configuration file, asking some questions which are important selections for a configuration.
 
-
 ```
 usage: freqtrade new-config [-h] [-c PATH]
 
