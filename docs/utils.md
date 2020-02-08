@@ -135,15 +135,27 @@ Common arguments:
 ```
 ```
 freqtrade list-hyperopts --help
-usage: freqtrade list-hyperopts [-h] [-v] [--logfile FILE] [-V] [-c PATH]
-                                [-d PATH] [--userdir PATH]
-                                [--hyperopt-path PATH] [-1]
+usage: freqtrade hyperopt-list [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                               [-d PATH] [--userdir PATH] [--best]
+                               [--profitable] [--min-avg-time INT]
+                               [--max-avg-time INT] [--min-avg-profit FLOAT]
+                               [--min-total-profit FLOAT] [--no-color]
+                               [--print-json] [--no-details]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --hyperopt-path PATH  Specify additional lookup path for Hyperopt and
-                        Hyperopt Loss functions.
-  -1, --one-column      Print output in one column.
+  --best                Select only best epochs.
+  --profitable          Select only profitable epochs.
+  --min-avg-time INT    Select epochs on above average time.
+  --max-avg-time INT    Select epochs on under average time.
+  --min-avg-profit FLOAT
+                        Select epochs on above average profit.
+  --min-total-profit FLOAT
+                        Select epochs on above total profit.
+  --no-color            Disable colorization of hyperopt results. May be
+                        useful if you are redirecting output to a file.
+  --print-json          Print best result detailization in JSON format.
+  --no-details          Do not print best epoch details.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
