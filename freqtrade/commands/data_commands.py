@@ -37,7 +37,7 @@ def start_download_data(args: Dict[str, Any]) -> None:
     pairs_not_available: List[str] = []
 
     # Init exchange
-    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config)
+    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
     try:
 
         if config.get('download_trades'):
