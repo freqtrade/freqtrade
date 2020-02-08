@@ -90,10 +90,10 @@ def ask_user_config() -> Dict[str, Any]:
             "name": "exchange_name",
             "message": "Select exchange",
             "choices": [
-                "bittrex",
                 "binance",
                 "binanceje",
                 "binanceus",
+                "bittrex",
                 "kraken",
                 Separator(),
                 "other",

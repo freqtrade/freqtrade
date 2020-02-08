@@ -27,9 +27,7 @@
         "sell_profit_only": false,
         "ignore_roi_if_buy_signal": false
     },
-    "exchange": {
-        {{ exchange | indent(8) }}
-    },
+    {{ exchange | indent(4) }},
     "pairlists": [
         {"method": "StaticPairList"}
     ],
