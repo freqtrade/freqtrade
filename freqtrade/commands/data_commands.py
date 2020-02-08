@@ -38,6 +38,11 @@ def start_download_data(args: Dict[str, Any]) -> None:
 
     # Init exchange
     exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
+    # Manual validations of relevant settings
+    exchange.validate_pairs(config['pairs'])
+    for timeframe in config['timeframes']:
+        exchange.validate_timeframes(timeframe)
+
     try:
 
         if config.get('download_trades'):
