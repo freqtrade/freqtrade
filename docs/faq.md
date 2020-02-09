@@ -55,13 +55,17 @@ Read [the Bittrex section about restricted markets](exchanges.md#restricted-mark
 
 As the message says, Bittrex does not support market orders and you have one of the [order types](configuration.md/#understand-order_types) set to "market". Probably your strategy was written for another exchanges in mind and sets "market" orders for "stoploss" orders, which is correct and preferable for most of other exchanges.
 
-To fix it for Bittrex, redefine order types in the configuration file (do this for all order types that are defined as "market" in your strategy):
+To fix it for Bittrex, redefine order types in the strategy to use "limit" instead of "market":
 
 ```
-"order_types": {
-    "stoploss": "limit",
-}
+    order_types = {
+        ...
+        'stoploss': 'limit',
+        ...
+    }
 ```
+
+Same fix should be done in the configuration file, if order types are defined in your custom config rather than in the strategy.
 
 ### How do I search the bot logs for something?
 
