@@ -36,6 +36,38 @@ optional arguments:
     └── sample_strategy.py
 ```
 
+## Create new config
+
+Creates a new configuration file, asking some questions which are important selections for a configuration.
+
+```
+usage: freqtrade new-config [-h] [-c PATH]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`). Multiple --config options may be used. Can be set to `-`
+                        to read config from stdin.
+```
+
+!!! Warning
+    Only vital questions are asked. Freqtrade offers a lot more configuration possibilities, which are listed in the [Configuration documentation](configuration.md#configuration-parameters)
+
+### Create config examples
+
+```
+$ freqtrade new-config --config config_binance.json
+
+? Do you want to enable Dry-run (simulated trades)?  Yes
+? Please insert your stake currency: BTC
+? Please insert your stake amount: 0.05
+? Please insert max_open_trades (Integer or 'unlimited'): 5
+? Please insert your ticker interval: 15m
+? Please insert your display Currency (for reporting): USD
+? Select exchange  binance
+? Do you want to enable Telegram?  No
+```
+
 ## Create new strategy
 
 Creates a new strategy from a template similar to SampleStrategy.
@@ -220,20 +252,31 @@ All exchanges supported by the ccxt library: _1btcxe, acx, adara, allcoin, anxpr
 Use the `list-timeframes` subcommand to see the list of ticker intervals (timeframes) available for the exchange.
 
 ```
-usage: freqtrade list-timeframes [-h] [--exchange EXCHANGE] [-1]
+usage: freqtrade list-timeframes [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH] [--userdir PATH] [--exchange EXCHANGE] [-1]
 
 optional arguments:
-  -h, --help           show this help message and exit
-  --exchange EXCHANGE  Exchange name (default: `bittrex`). Only valid if no
-                       config is provided.
-  -1, --one-column     Print output in one column.
+  -h, --help            show this help message and exit
+  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no config is provided.
+  -1, --one-column      Print output in one column.
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are: 'syslog', 'journald'. See the documentation for more details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`). Multiple --config options may be used. Can be set to `-`
+                        to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
 
 ```
 
 * Example: see the timeframes for the 'binance' exchange, set in the configuration file:
 
 ```
-$ freqtrade -c config_binance.json list-timeframes
+$ freqtrade list-timeframes -c config_binance.json
 ...
 Timeframes available for the exchange `binance`: 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M
 ```
@@ -257,14 +300,16 @@ You can print info about any pair/market with these subcommands - and you can fi
 These subcommands have same usage and same set of available options:
 
 ```
-usage: freqtrade list-markets [-h] [--exchange EXCHANGE] [--print-list]
-                              [--print-json] [-1] [--print-csv]
+usage: freqtrade list-markets [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                              [-d PATH] [--userdir PATH] [--exchange EXCHANGE]
+                              [--print-list] [--print-json] [-1] [--print-csv]
                               [--base BASE_CURRENCY [BASE_CURRENCY ...]]
                               [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]]
                               [-a]
 
-usage: freqtrade list-pairs [-h] [--exchange EXCHANGE] [--print-list]
-                            [--print-json] [-1] [--print-csv]
+usage: freqtrade list-pairs [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                            [-d PATH] [--userdir PATH] [--exchange EXCHANGE]
+                            [--print-list] [--print-json] [-1] [--print-csv]
                             [--base BASE_CURRENCY [BASE_CURRENCY ...]]
                             [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]] [-a]
 
@@ -283,6 +328,22 @@ optional arguments:
                         Specify quote currency(-ies). Space-separated list.
   -a, --all             Print all pairs or market symbols. By default only
                         active ones are shown.
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`).
+                        Multiple --config options may be used. Can be set to
+                        `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+
 ```
 
 By default, only active pairs/markets are shown. Active pairs/markets are those that can currently be traded
@@ -304,7 +365,7 @@ $ freqtrade list-pairs --quote USD --print-json
 human-readable list with summary:
 
 ```
-$ freqtrade -c config_binance.json list-pairs --all --base BTC ETH --quote USDT USD --print-list
+$ freqtrade list-pairs -c config_binance.json --all --base BTC ETH --quote USDT USD --print-list
 ```
 
 * Print all markets on exchange "Kraken", in the tabular format:
