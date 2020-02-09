@@ -837,6 +837,7 @@ def test_hyperopt_list(mocker, capsys, hyperopt_results):
                for x in [" 1/12", " 3/12", " 4/12", " 5/12", " 7/12", " 8/12"
                          " 9/12", " 10/12", " 11/12", " 12/12"])
 
+
 def test_hyperopt_show(mocker, capsys, hyperopt_results):
     mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.load_previous_results',
