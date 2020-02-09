@@ -223,7 +223,7 @@ function config_generator() {
 function config() {
 
     echo "-------------------------"
-    echo "Please use freqtrade new-config -c config.json to generate a new configuration file."
+    echo "Please use 'freqtrade new-config -c config.json' to generate a new configuration file."
     echo "-------------------------"
 }
 

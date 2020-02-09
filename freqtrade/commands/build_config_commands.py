@@ -187,7 +187,7 @@ def start_new_config(args: Dict[str, Any]) -> None:
             config_path.unlink()
         else:
             raise OperationalException(
-                f"Configuration `{config_path}` already exists. "
-                "Please use another configuration name or delete the existing configuration.")
+                f"Configuration file `{config_path}` already exists. "
+                "Please delete it or use a different configuration file name.")
     selections = ask_user_config()
     deploy_new_config(config_path, selections)
