@@ -108,9 +108,9 @@ With custom user directory
 freqtrade new-hyperopt --userdir ~/.freqtrade/ --hyperopt AwesomeHyperopt
 ```
 
-## List Strategies
+## List Strategies and List Hyperopts
 
-Use the `list-strategies` subcommand to see all strategies in one particular directory.
+Use the `list-strategies` subcommand to see all strategies in one particular directory and the `list-hyperopts` subcommand to list custom Hyperopts.
 
 ```
 freqtrade list-strategies --help
@@ -133,20 +133,61 @@ Common arguments:
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
 ```
+```
+freqtrade list-hyperopts --help
+usage: freqtrade list-hyperopts [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                                [-d PATH] [--userdir PATH]
+                                [--hyperopt-path PATH] [-1]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --hyperopt-path PATH  Specify additional lookup path for Hyperopt and
+                        Hyperopt Loss functions.
+  -1, --one-column      Print output in one column.
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`).
+                        Multiple --config options may be used. Can be set to
+                        `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+```
 
 !!! Warning
-    Using this command will try to load all python files from a directory. This can be a security risk if untrusted files reside in this directory, since all module-level code is executed.
+    Using these commands will try to load all python files from a directory. This can be a security risk if untrusted files reside in this directory, since all module-level code is executed.
 
-Example: search default strategy directory within userdir
+Example: Search default strategies and hyperopts directories (within the default userdir).
+
+``` bash
+freqtrade list-strategies
+freqtrade list-hyperopts
+```
+
+Example: Search strategies and hyperopts directory within the userdir.
 
 ``` bash
 freqtrade list-strategies --userdir ~/.freqtrade/
+freqtrade list-hyperopts --userdir ~/.freqtrade/
 ```
 
-Example: search dedicated strategy path
+Example: Search dedicated strategy path.
 
 ``` bash
 freqtrade list-strategies --strategy-path ~/.freqtrade/strategies/
+```
+
+Example: Search dedicated hyperopt path.
+
+``` bash
+freqtrade list-hyperopt --hyperopt-path ~/.freqtrade/hyperopts/
 ```
 
 ## List Exchanges

@@ -32,6 +32,8 @@ ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
 
 ARGS_LIST_STRATEGIES = ["strategy_path", "print_one_column"]
 
+ARGS_LIST_HYPEROPTS = ["hyperopt_path", "print_one_column"]
+
 ARGS_LIST_EXCHANGES = ["print_one_column", "list_exchanges_all"]
 
 ARGS_LIST_TIMEFRAMES = ["exchange", "print_one_column"]
@@ -66,9 +68,9 @@ ARGS_HYPEROPT_LIST = ["hyperopt_list_best", "hyperopt_list_profitable", "print_c
 ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperopt_show_index",
                       "print_json", "hyperopt_show_no_header"]
 
-NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data",
-                    "list-timeframes", "list-markets", "list-pairs",
-                    "list-strategies", "hyperopt-list", "hyperopt-show",
+NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list-timeframes",
+                    "list-markets", "list-pairs", "list-strategies",
+                    "list-hyperopts", "hyperopt-list", "hyperopt-show",
                     "plot-dataframe", "plot-profit"]
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-hyperopt", "new-strategy"]
@@ -137,9 +139,10 @@ class Arguments:
         from freqtrade.commands import (start_create_userdir, start_convert_data,
                                         start_download_data,
                                         start_hyperopt_list, start_hyperopt_show,
-                                        start_list_exchanges, start_list_markets,
-                                        start_list_strategies, start_new_hyperopt,
-                                        start_new_strategy, start_list_timeframes,
+                                        start_list_exchanges, start_list_hyperopts,
+                                        start_list_markets, start_list_strategies,
+                                        start_list_timeframes,
+                                        start_new_hyperopt, start_new_strategy,
                                         start_plot_dataframe, start_plot_profit,
                                         start_backtesting, start_hyperopt, start_edge,
                                         start_test_pairlist, start_trading)
@@ -202,6 +205,15 @@ class Arguments:
         )
         list_strategies_cmd.set_defaults(func=start_list_strategies)
         self._build_args(optionlist=ARGS_LIST_STRATEGIES, parser=list_strategies_cmd)
+
+        # Add list-hyperopts subcommand
+        list_hyperopts_cmd = subparsers.add_parser(
+            'list-hyperopts',
+            help='Print available hyperopt classes.',
+            parents=[_common_parser],
+        )
+        list_hyperopts_cmd.set_defaults(func=start_list_hyperopts)
+        self._build_args(optionlist=ARGS_LIST_HYPEROPTS, parser=list_hyperopts_cmd)
 
         # Add list-exchanges subcommand
         list_exchanges_cmd = subparsers.add_parser(

@@ -337,8 +337,8 @@ optional arguments:
                         generate completely different results, since the
                         target for optimization is different. Built-in
                         Hyperopt-loss-functions are: DefaultHyperOptLoss,
-                        OnlyProfitHyperOptLoss, SharpeHyperOptLoss (default:
-                        `DefaultHyperOptLoss`).
+                        OnlyProfitHyperOptLoss, SharpeHyperOptLoss,
+                        SharpeHyperOptLossDaily (default: `DefaultHyperOptLoss`).
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

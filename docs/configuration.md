@@ -280,7 +280,7 @@ If this is configured, the following 4 values (`buy`, `sell`, `stoploss` and
 The below is the default which is used if this is not configured in either strategy or configuration file.
 
 Since `stoploss_on_exchange` uses limit orders, the exchange needs 2 prices, the stoploss_price and the Limit price.
-`stoploss` defines the stop-price - and limit should be slightly below this. This defaults to 0.99 / 1%.
+`stoploss` defines the stop-price - and limit should be slightly below this. This defaults to 0.99 / 1% (configurable via `stoploss_on_exchange_limit_ratio`).
 Calculation example: we bought the asset at 100$.
 Stop-price is 95$, then limit would be `95 * 0.99 = 94.05$` - so the stoploss will happen between 95$ and 94.05$.
 
@@ -505,6 +505,7 @@ Inactive markets and blacklisted pairs are always removed from the resulting `pa
 * [`VolumePairList`](#volume-pair-list)
 * [`PrecisionFilter`](#precision-filter)
 * [`PriceFilter`](#price-pair-filter)
+* [`SpreadFilter`](#spread-filter)
 
 !!! Tip "Testing pairlists"
     Pairlist configurations can be quite tricky to get right. Best use the [`test-pairlist`](utils.md#test-pairlist) subcommand to test your configuration quickly.
@@ -552,6 +553,11 @@ Calculation example:
 Min price precision is 8 decimals. If price is 0.00000011 - one step would be 0.00000012 - which is almost 10% higher than the previous value. 
 
 These pairs are dangerous since it may be impossible to place the desired stoploss - and often result in high losses.
+
+#### Spread Filter
+Removes pairs that have a difference between asks and bids above the specified ratio (default `0.005`).
+Example:
+If `DOGE/BTC` maximum bid is 0.00000026 and minimum ask is 0.00000027 the ratio is calculated as: `1 - bid/ask ~= 0.037` which is `> 0.005` 
 
 ### Full Pairlist example
 
@@ -603,6 +609,14 @@ Once you will be happy with your bot performance running in the Dry-run mode, yo
 
 !!! Note
     A simulated wallet is available during dry-run mode, and will assume a starting capital of `dry_run_wallet` (defaults to 1000).
+
+### Considerations for dry-run
+
+* API-keys may or may not be provided. Only Read-Only operations (i.e. operations that do not alter account state) on the exchange are performed in the dry-run mode.
+* Wallets (`/balance`) are simulated.
+* Orders are simulated, and will not be posted to the exchange.
+* In combination with `stoploss_on_exchange`, the stop_loss price is assumed to be filled.
+* Open orders (not trades, which are stored in the database) are reset on bot restart.
 
 ## Switch to production mode
 

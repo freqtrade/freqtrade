@@ -30,24 +30,21 @@ class Wallets:
         self._last_wallet_refresh = 0
         self.update()
 
-    def get_free(self, currency) -> float:
-
+    def get_free(self, currency: str) -> float:
         balance = self._wallets.get(currency)
         if balance and balance.free:
             return balance.free
         else:
             return 0
 
-    def get_used(self, currency) -> float:
-
+    def get_used(self, currency: str) -> float:
         balance = self._wallets.get(currency)
         if balance and balance.used:
             return balance.used
         else:
             return 0
 
-    def get_total(self, currency) -> float:
-
+    def get_total(self, currency: str) -> float:
         balance = self._wallets.get(currency)
         if balance and balance.total:
             return balance.total
@@ -87,7 +84,6 @@ class Wallets:
         self._wallets = _wallets
 
     def _update_live(self) -> None:
-
         balances = self._exchange.get_balances()
 
         for currency in balances:

@@ -42,7 +42,7 @@ The easiest way to install and run Freqtrade is to clone the bot GitHub reposito
 This can be achieved with the following commands:
 
 ```bash
-git clone git@github.com:freqtrade/freqtrade.git
+git clone https://github.com/freqtrade/freqtrade.git
 cd freqtrade
 git checkout master  # Optional, see (1)
 ./setup.sh --install

@@ -374,7 +374,7 @@ def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame],
     return fig
 
 
-def generate_plot_filename(pair, timeframe) -> str:
+def generate_plot_filename(pair: str, timeframe: str) -> str:
     """
     Generate filenames per pair/timeframe to be used for storing plots
     """

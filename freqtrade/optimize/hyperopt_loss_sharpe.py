@@ -28,18 +28,19 @@ class SharpeHyperOptLoss(IHyperOptLoss):
 
         Uses Sharpe Ratio calculation.
         """
-        total_profit = results.profit_percent
+        total_profit = results["profit_percent"]
         days_period = (max_date - min_date).days
 
         # adding slippage of 0.1% per trade
         total_profit = total_profit - 0.0005
-        expected_yearly_return = total_profit.sum() / days_period
+        expected_returns_mean = total_profit.sum() / days_period
+        up_stdev = np.std(total_profit)
 
         if (np.std(total_profit) != 0.):
-            sharp_ratio = expected_yearly_return / np.std(total_profit) * np.sqrt(365)
+            sharp_ratio = expected_returns_mean / up_stdev * np.sqrt(365)
         else:
             # Define high (negative) sharpe ratio to be clear that this is NOT optimal.
             sharp_ratio = -20.
 
-        # print(expected_yearly_return, np.std(total_profit), sharp_ratio)
+        # print(expected_returns_mean, up_stdev, sharp_ratio)
         return -sharp_ratio
