@@ -120,8 +120,6 @@ def _hyperopt_filter_trials(trials: List, filteroptions: dict) -> List:
     if filteroptions['only_profitable']:
         trials = [x for x in trials if x['results_metrics']['profit'] > 0]
 
-    print(trials[0])
-
     if not filteroptions['only_best']:
         if filteroptions['filter_min_avg_time'] > 0:
             trials = [x for x in trials if x['results_metrics']['trade_count'] > 0]
