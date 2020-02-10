@@ -2,6 +2,7 @@
 import locale
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, List
 from unittest.mock import MagicMock, PropertyMock
 
 import pandas as pd
@@ -9,7 +10,8 @@ import pytest
 from arrow import Arrow
 from filelock import Timeout
 
-from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_hyperopt
+from freqtrade.commands.optimize_commands import (setup_optimize_configuration,
+                                                  start_hyperopt)
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.history import load_tickerdata_file
 from freqtrade.exceptions import OperationalException
@@ -54,7 +56,7 @@ def hyperopt_results():
 
 
 # Functions for recurrent object patching
-def create_trials(mocker, hyperopt, testdatadir) -> None:
+def create_trials(mocker, hyperopt, testdatadir) -> List[Dict]:
     """
     When creating trials, mock the hyperopt Trials so that *by default*
       - we don't create any pickle'd files in the filesystem
@@ -228,10 +230,10 @@ def test_start_not_installed(mocker, default_conf, caplog, import_fails) -> None
         '--hyperopt', 'DefaultHyperOpt',
         '--epochs', '5'
     ]
-    args = get_args(args)
+    pargs = get_args(args)
 
     with pytest.raises(OperationalException, match=r"Please ensure that the hyperopt dependencies"):
-        start_hyperopt(args)
+        start_hyperopt(pargs)
 
 
 def test_start(mocker, default_conf, caplog) -> None:
@@ -246,8 +248,8 @@ def test_start(mocker, default_conf, caplog) -> None:
         '--hyperopt', 'DefaultHyperOpt',
         '--epochs', '5'
     ]
-    args = get_args(args)
-    start_hyperopt(args)
+    pargs = get_args(args)
+    start_hyperopt(pargs)
 
     assert log_has('Starting freqtrade in Hyperopt mode', caplog)
     assert start_mock.call_count == 1
@@ -269,9 +271,9 @@ def test_start_no_data(mocker, default_conf, caplog) -> None:
         '--hyperopt', 'DefaultHyperOpt',
         '--epochs', '5'
     ]
-    args = get_args(args)
+    pargs = get_args(args)
     with pytest.raises(OperationalException, match='No data found. Terminating.'):
-        start_hyperopt(args)
+        start_hyperopt(pargs)
 
 
 def test_start_filelock(mocker, default_conf, caplog) -> None:
@@ -286,8 +288,8 @@ def test_start_filelock(mocker, default_conf, caplog) -> None:
         '--hyperopt', 'DefaultHyperOpt',
         '--epochs', '5'
     ]
-    args = get_args(args)
-    start_hyperopt(args)
+    pargs = get_args(args)
+    start_hyperopt(pargs)
     assert log_has("Another running instance of freqtrade Hyperopt detected.", caplog)
 
 
