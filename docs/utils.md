@@ -413,17 +413,40 @@ You can list the hyperoptimization epochs the Hyperopt module evaluated previous
 ```
 usage: freqtrade hyperopt-list [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [-d PATH] [--userdir PATH] [--best]
-                               [--profitable] [--no-color] [--print-json]
-                               [--no-details]
+                               [--profitable] [--min-avg-time FLOAT]
+                               [--max-avg-time FLOAT] [--min-avg-profit FLOAT]
+                               [--min-total-profit FLOAT] [--no-color]
+                               [--print-json] [--no-details]
 
 optional arguments:
   -h, --help            show this help message and exit
   --best                Select only best epochs.
   --profitable          Select only profitable epochs.
+  --min-avg-time FLOAT  Select epochs on above average time.
+  --max-avg-time FLOAT  Select epochs on under average time.
+  --min-avg-profit FLOAT
+                        Select epochs on above average profit.
+  --min-total-profit FLOAT
+                        Select epochs on above total profit.
   --no-color            Disable colorization of hyperopt results. May be
                         useful if you are redirecting output to a file.
   --print-json          Print best result detailization in JSON format.
   --no-details          Do not print best epoch details.
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`).
+                        Multiple --config options may be used. Can be set to
+                        `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
 ```
  
 ### Examples
