@@ -27,8 +27,8 @@ Freqtrade provides an official Docker image on [Dockerhub](https://hub.docker.co
 Create a new directory and place the [docker-compose file](https://github.com/freqtrade/freqtrade/blob/develop/docker-compose.yml) in this directory.
 
 ``` bash
-mkdir freqtrade
-cd freqtrade/
+mkdir ft_userdata
+cd ft_userdata/
 # Download the docker-compose file from the repository
 curl https://raw.githubusercontent.com/freqtrade/freqtrade/develop/docker-compose.yml -o docker-compose.yml
 
@@ -42,15 +42,22 @@ docker-compose run --rm freqtrade create-userdir --userdir user_data
 docker-compose run --rm freqtrade new-config --config user_data/config.json
 ```
 
-The above snippet will create a directory called "freqtrade" - download the latest compose file and pull the freqtrade image.
-The last 2 steps will create the user-directory, as well as a default configuration based on your selections.
+The above snippet creates a new directory called "ft_userdata", downloads the latest compose file and pulls the freqtrade image.
+The last 2 steps in the snippet create the directory with user-data, as well as (interactively) the default configuration based on your selections.
+
+!!! Note
+    You can edit the configuration at any time, which is available as `user_data/config.json` (within the directory `ft_userdata`) when using the above configuration.
 
 #### Adding your strategy
 
 The configuration is now available as `user_data/config.json`.
-You should now copy your strategy to `user_data/strategies/` - and add the Strategy class name to the `docker-compose.yml` file, replacing `SampleStrategy`.
+You should now copy your strategy to `user_data/strategies/` - and add the Strategy class name to the `docker-compose.yml` file, replacing `SampleStrategy`. If you wish to run the bot with the SampleStrategy, just leave it as it is.
 
-Once this is done, you're ready to launch the bot in trading mode.
+!!! Warning
+    The `SampleStrategy` is there for your reference and give you ideas for your own strategy.
+    Please always backtest the strategy and use dry-run for some time before risking real money!
+
+Once this is done, you're ready to launch the bot in trading mode (Dry-run or Live-trading, depending on your answer to the corresponding question you made above).
 
 ``` bash
 docker-compose up -d
@@ -88,11 +95,11 @@ Advanced users may edit the docker-compose file further to include all possible 
 All possible freqtrade arguments will be available by running `docker-compose run --rm freqtrade <command> <optional arguments>`.
 
 !!! Note "`docker-compose run --rm`"
-    Inluding `--rm` will clean up the container after completion, and is highly recommended for all modes except trading mode (`freqtrade trade`).
+    Including `--rm` will clean up the container after completion, and is highly recommended for all modes except trading mode (running with `freqtrade trade` command).
 
 ##### Example: Download data with docker-compose
 
-Downloading backtest data for one pair from binance. The data will be stored in the host directory `user_data/data/`.
+Download backtesting data for 5 days for the pair ETH/BTC and 1h timeframe from Binance. The data will be stored in the directory `user_data/data/` on the host.
 
 ``` bash
 docker-compose run --rm freqtrade download-data --pairs ETH/BTC --exchange binance --days 5 -t 1h
@@ -102,7 +109,7 @@ Head over to the [Data Downloading Documentation](data-download.md) for more det
 
 ##### Example: Backtest with docker-compose
 
-Backtesting in docker-containers:
+Run backtesting in docker-containers for SampleStrategy and specified timerange of historical data, on 5m timeframe:
 
 ``` bash
 docker-compose run --rm freqtrade backtesting --config user_data/config.json --strategy SampleStrategy --timerange 20190801-20191001 -i 5m
@@ -126,7 +133,7 @@ You'll then also need to modify the `docker-compose.yml` file and uncomment the 
 
 You can then run `docker-compose build` to build the docker image, and run it using the commands described above.
 
-## Docker - without docker compose
+## Freqtrade with docker without docker-compose
 
 !!! Warning
     The below documentation is provided for completeness and assumes that you are somewhat familiar with running docker containers. If you're just starting out with docker, we recommend to follow the [Freqtrade with docker-compose](#freqtrade-with-docker-compose) instructions.
