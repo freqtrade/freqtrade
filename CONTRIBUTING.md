@@ -48,7 +48,7 @@ pytest tests/test_<file_name>.py::test_<method_name>
 #### Run Flake8
 
 ```bash
-flake8 freqtrade
+flake8 freqtrade tests
 ```
 
 We receive a lot of code that fails the `flake8` checks.
@@ -61,7 +61,7 @@ Guide for installing them is [here](http://flake8.pycqa.org/en/latest/user/using
 #### Run mypy
 
 ``` bash
-mypy freqtrade
+mypy freqtrade tests
 ```
 
 ## (Core)-Committer Guide
