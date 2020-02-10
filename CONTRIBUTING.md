@@ -61,7 +61,7 @@ Guide for installing them is [here](http://flake8.pycqa.org/en/latest/user/using
 #### Run mypy
 
 ``` bash
-mypy freqtrade tests
+mypy freqtrade
 ```
 
 ## (Core)-Committer Guide
