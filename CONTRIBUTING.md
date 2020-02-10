@@ -48,7 +48,7 @@ pytest tests/test_<file_name>.py::test_<method_name>
 #### Run Flake8
 
 ```bash
-flake8 freqtrade
+flake8 freqtrade tests scripts
 ```
 
 We receive a lot of code that fails the `flake8` checks.
