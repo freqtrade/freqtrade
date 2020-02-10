@@ -287,8 +287,8 @@ def test_start(mocker, fee, default_conf, caplog) -> None:
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
     ]
-    args = get_args(args)
-    start_backtesting(args)
+    pargs = get_args(args)
+    start_backtesting(pargs)
     assert log_has('Starting freqtrade in Backtesting mode', caplog)
     assert start_mock.call_count == 1
 

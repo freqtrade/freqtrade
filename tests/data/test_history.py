@@ -370,7 +370,7 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
 
 def test_init(default_conf, mocker) -> None:
     assert {} == load_data(
-        datadir='',
+        datadir=Path(''),
         pairs=[],
         timeframe=default_conf['ticker_interval']
     )
@@ -379,13 +379,13 @@ def test_init(default_conf, mocker) -> None:
 def test_init_with_refresh(default_conf, mocker) -> None:
     exchange = get_patched_exchange(mocker, default_conf)
     refresh_data(
-        datadir='',
+        datadir=Path(''),
         pairs=[],
         timeframe=default_conf['ticker_interval'],
         exchange=exchange
     )
     assert {} == load_data(
-        datadir='',
+        datadir=Path(''),
         pairs=[],
         timeframe=default_conf['ticker_interval']
     )

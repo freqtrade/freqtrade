@@ -23,7 +23,7 @@ class BTContainer(NamedTuple):
     """
     Minimal BacktestContainer defining Backtest inputs and results.
     """
-    data: List[float]
+    data: List[List[float]]
     stop_loss: float
     roi: Dict[str, float]
     trades: List[BTrade]
