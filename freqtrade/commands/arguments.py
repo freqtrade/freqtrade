@@ -62,8 +62,10 @@ ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "ticker_interval"]
 
 ARGS_HYPEROPT_LIST = ["hyperopt_list_best", "hyperopt_list_profitable",
+                      "hyperopt_list_min_trades", "hyperopt_list_max_trades",
                       "hyperopt_list_min_avg_time", "hyperopt_list_max_avg_time",
-                      "hyperopt_list_min_avg_profit", "hyperopt_list_min_total_profit",
+                      "hyperopt_list_min_avg_profit", "hyperopt_list_max_avg_profit",
+                      "hyperopt_list_min_total_profit", "hyperopt_list_max_total_profit",
                       "print_colorized", "print_json", "hyperopt_list_no_details"]
 
 ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperopt_show_index",

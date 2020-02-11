@@ -398,6 +398,18 @@ AVAILABLE_CLI_OPTIONS = {
         help='Select only best epochs.',
         action='store_true',
     ),
+    "hyperopt_list_min_trades": Arg(
+        '--min-trades',
+        help='Select epochs with more than INT trades.',
+        type=check_int_positive,
+        metavar='INT',
+    ),
+    "hyperopt_list_max_trades": Arg(
+        '--max-trades',
+        help='Select epochs with less than INT trades.',
+        type=check_int_positive,
+        metavar='INT',
+    ),
     "hyperopt_list_min_avg_time": Arg(
         '--min-avg-time',
         help='Select epochs on above average time.',
@@ -416,9 +428,21 @@ AVAILABLE_CLI_OPTIONS = {
         type=float,
         metavar='FLOAT',
     ),
+    "hyperopt_list_max_avg_profit": Arg(
+        '--max-avg-profit',
+        help='Select epochs on below average profit.',
+        type=float,
+        metavar='FLOAT',
+    ),
     "hyperopt_list_min_total_profit": Arg(
         '--min-total-profit',
         help='Select epochs on above total profit.',
+        type=float,
+        metavar='FLOAT',
+    ),
+    "hyperopt_list_max_total_profit": Arg(
+        '--max-total-profit',
+        help='Select epochs on below total profit.',
         type=float,
         metavar='FLOAT',
     ),
