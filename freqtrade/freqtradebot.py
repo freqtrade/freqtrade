@@ -419,7 +419,7 @@ class FreqtradeBot:
                 else:
                     return False
 
-            logger.info(f'Executed Buy for {pair}')
+            logger.info(f'Executing Buy for {pair}')
             return self.execute_buy(pair, stake_amount)
         else:
             return False

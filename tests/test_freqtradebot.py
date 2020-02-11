@@ -300,7 +300,7 @@ def test_edge_overrides_stoploss(limit_buy_order, fee, caplog, mocker, edge_conf
 
     # stoploss shoud be hit
     assert freqtrade.handle_trade(trade) is True
-    assert log_has('Executed Sell for NEO/BTC. Reason: SellType.STOP_LOSS', caplog)
+    assert log_has('Executing Sell for NEO/BTC. Reason: SellType.STOP_LOSS', caplog)
     assert trade.sell_reason == SellType.STOP_LOSS.value
 
 
