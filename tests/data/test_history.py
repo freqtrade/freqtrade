@@ -420,7 +420,7 @@ def test_trim_tickerlist(testdatadir) -> None:
 
     # Test the pattern ^(\d{8})-$
     # This pattern extracts elements from the date to now
-    timerange = TimeRange('date', None, ticker_list[10][0] / 1000 - 1, None)
+    timerange = TimeRange('date', None, ticker_list[10][0] / 1000 - 1, 0)
     ticker = trim_tickerlist(ticker_list, timerange)
     ticker_len = len(ticker)
 
@@ -430,14 +430,14 @@ def test_trim_tickerlist(testdatadir) -> None:
 
     # Test a wrong pattern
     # This pattern must return the list unchanged
-    timerange = TimeRange(None, None, None, 5)
+    timerange = TimeRange(None, None, 0, 5)
     ticker = trim_tickerlist(ticker_list, timerange)
     ticker_len = len(ticker)
 
     assert ticker_list_len == ticker_len
 
     # passing empty list
-    timerange = TimeRange(None, None, None, 5)
+    timerange = TimeRange(None, None, 0, 5)
     ticker = trim_tickerlist([], timerange)
     assert 0 == len(ticker)
     assert not ticker
