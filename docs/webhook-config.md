@@ -16,7 +16,7 @@ Sample configuration (tested using IFTTT).
             "value3": "{stake_amount:8f} {stake_currency}"
         },
         "webhookbuycancel": {
-            "value1": "Cancelling Buy {pair}",
+            "value1": "Cancelling Open Buy Order for {pair}",
             "value2": "limit {limit:8f}",
             "value3": "{stake_amount:8f} {stake_currency}"
         },
@@ -26,7 +26,7 @@ Sample configuration (tested using IFTTT).
             "value3": "profit: {profit_amount:8f} {stake_currency}"
         },
         "webhooksellcancel": {
-            "value1": "Cancelling Sell {pair}",
+            "value1": "Cancelling Open Sell Order for {pair}",
             "value2": "limit {limit:8f}",
             "value3": "profit: {profit_amount:8f} {stake_currency}"
         },

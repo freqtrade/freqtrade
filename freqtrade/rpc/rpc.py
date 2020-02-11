@@ -168,8 +168,8 @@ class RPC:
                         profit_str += f" ({fiat_profit:.2f})"
                 trades_list.append([
                     trade.id,
-                    trade.pair + ['', '*'][trade.open_order_id is not None
-                                           and trade.close_rate_requested is None],
+                    trade.pair + '*' if (trade.open_order_id is not None
+                                         and trade.close_rate_requested is None) else '',
                     shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
                     profit_str
                 ])

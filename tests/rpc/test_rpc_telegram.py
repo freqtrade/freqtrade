@@ -1228,7 +1228,7 @@ def test_send_msg_buy_cancel_notification(default_conf, mocker) -> None:
         'pair': 'ETH/BTC',
     })
     assert msg_mock.call_args[0][0] \
-        == ('*Bittrex:* Cancelling Buy ETH/BTC')
+        == ('*Bittrex:* Cancelling Open Buy Order for ETH/BTC')
 
 
 def test_send_msg_sell_notification(default_conf, mocker) -> None:
@@ -1318,7 +1318,7 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
         'pair': 'KEY/ETH',
     })
     assert msg_mock.call_args[0][0] \
-        == ('*Binance:* Cancelling Sell KEY/ETH')
+        == ('*Binance:* Cancelling Open Sell Order for KEY/ETH')
 
     msg_mock.reset_mock()
     telegram.send_msg({
@@ -1327,7 +1327,7 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
         'pair': 'KEY/ETH',
     })
     assert msg_mock.call_args[0][0] \
-        == ('*Binance:* Cancelling Sell KEY/ETH')
+        == ('*Binance:* Cancelling Open Sell Order for KEY/ETH')
     # Reset singleton function to avoid random breaks
     telegram._fiat_converter.convert_amount = old_convamount
 
