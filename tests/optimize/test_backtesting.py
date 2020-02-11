@@ -20,8 +20,8 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.optimize.backtesting import Backtesting
+from freqtrade.resolvers import StrategyResolver
 from freqtrade.state import RunMode
-from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import SellType
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
@@ -350,7 +350,9 @@ def test_tickerdata_to_dataframe_bt(default_conf, mocker, testdatadir) -> None:
     assert len(data['UNITTEST/BTC']) == 102
 
     # Load strategy to compare the result between Backtesting function and strategy are the same
-    strategy = DefaultStrategy(default_conf)
+    default_conf.update({'strategy': 'DefaultStrategy'})
+    strategy = StrategyResolver.load_strategy(default_conf)
+
     data2 = strategy.tickerdata_to_dataframe(tickerlist)
     assert data['UNITTEST/BTC'].equals(data2['UNITTEST/BTC'])
 
