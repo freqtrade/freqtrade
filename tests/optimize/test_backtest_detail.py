@@ -364,7 +364,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     default_conf["trailing_stop"] = data.trailing_stop
     default_conf["trailing_only_offset_is_reached"] = data.trailing_only_offset_is_reached
     # Only add this to configuration If it's necessary
-    if data.trailing_stop_positive:
+    if data.trailing_stop_positive is not None:
         default_conf["trailing_stop_positive"] = data.trailing_stop_positive
     default_conf["trailing_stop_positive_offset"] = data.trailing_stop_positive_offset
     default_conf["ask_strategy"] = {"use_sell_signal": data.use_sell_signal}
