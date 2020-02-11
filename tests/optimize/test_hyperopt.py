@@ -295,9 +295,12 @@ def test_start_filelock(mocker, default_conf, caplog) -> None:
 
 def test_loss_calculation_prefer_correct_trade_count(default_conf, hyperopt_results) -> None:
     hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
-    correct = hl.hyperopt_loss_function(hyperopt_results, 600)
-    over = hl.hyperopt_loss_function(hyperopt_results, 600 + 100)
-    under = hl.hyperopt_loss_function(hyperopt_results, 600 - 100)
+    correct = hl.hyperopt_loss_function(hyperopt_results, 600,
+                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
+    over = hl.hyperopt_loss_function(hyperopt_results, 600 + 100,
+                                     datetime(2019, 1, 1), datetime(2019, 5, 1))
+    under = hl.hyperopt_loss_function(hyperopt_results, 600 - 100,
+                                      datetime(2019, 1, 1), datetime(2019, 5, 1))
     assert over > correct
     assert under > correct
 
@@ -307,8 +310,10 @@ def test_loss_calculation_prefer_shorter_trades(default_conf, hyperopt_results) 
     resultsb.loc[1, 'trade_duration'] = 20
 
     hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
-    longer = hl.hyperopt_loss_function(hyperopt_results, 100)
-    shorter = hl.hyperopt_loss_function(resultsb, 100)
+    longer = hl.hyperopt_loss_function(hyperopt_results, 100,
+                                       datetime(2019, 1, 1), datetime(2019, 5, 1))
+    shorter = hl.hyperopt_loss_function(resultsb, 100,
+                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
     assert shorter < longer
 
 
@@ -319,9 +324,12 @@ def test_loss_calculation_has_limited_profit(default_conf, hyperopt_results) -> 
     results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
 
     hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
-    correct = hl.hyperopt_loss_function(hyperopt_results, 600)
-    over = hl.hyperopt_loss_function(results_over, 600)
-    under = hl.hyperopt_loss_function(results_under, 600)
+    correct = hl.hyperopt_loss_function(hyperopt_results, 600,
+                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
+    over = hl.hyperopt_loss_function(results_over, 600,
+                                     datetime(2019, 1, 1), datetime(2019, 5, 1))
+    under = hl.hyperopt_loss_function(results_under, 600,
+                                      datetime(2019, 1, 1), datetime(2019, 5, 1))
     assert over < correct
     assert under > correct
 
