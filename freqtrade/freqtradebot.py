@@ -234,7 +234,7 @@ class FreqtradeBot:
 
         return trades_created
 
-    def get_buy_rate(self, pair: str, refresh: bool = False, tick: Dict = None) -> float:
+    def get_buy_rate(self, pair: str, refresh: bool = True, tick: Dict = None) -> float:
         """
         Calculates bid target between current ask price and last price
         :return: float: Price
@@ -615,7 +615,7 @@ class FreqtradeBot:
 
         return trades_closed
 
-    def get_sell_rate(self, pair: str, refresh: bool = False) -> float:
+    def get_sell_rate(self, pair: str, refresh: bool = True) -> float:
         """
         Get sell rate - either using get-ticker bid or first bid based on orderbook
         The orderbook portion is only used for rpc messaging, which would otherwise fail
