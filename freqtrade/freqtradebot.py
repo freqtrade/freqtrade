@@ -414,7 +414,7 @@ class FreqtradeBot:
             if ((bid_check_dom.get('enabled', False)) and
                     (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
                 if self._check_depth_of_market_buy(pair, bid_check_dom):
-                    logger.info(f'Executed Buy for {pair}.')
+                    logger.info(f'Executing Buy for {pair}.')
                     return self.execute_buy(pair, stake_amount)
                 else:
                     return False
@@ -804,8 +804,8 @@ class FreqtradeBot:
         )
 
         if should_sell.sell_flag:
+            logger.info(f'Executing Sell for {trade.pair}. Reason: {should_sell.sell_type}')
             self.execute_sell(trade, sell_rate, should_sell.sell_type)
-            logger.info(f'Executed Sell for {trade.pair}. Reason: {should_sell.sell_type}')
             return True
         return False
 
