@@ -401,13 +401,13 @@ AVAILABLE_CLI_OPTIONS = {
     "hyperopt_list_min_trades": Arg(
         '--min-trades',
         help='Select epochs with more than INT trades.',
-        type=check_int_nonzero,
+        type=check_int_positive,
         metavar='INT',
     ),
     "hyperopt_list_max_trades": Arg(
         '--max-trades',
         help='Select epochs with less than INT trades.',
-        type=check_int_nonzero,
+        type=check_int_positive,
         metavar='INT',
     ),
     "hyperopt_list_min_avg_time": Arg(
