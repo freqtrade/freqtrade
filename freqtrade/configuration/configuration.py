@@ -310,6 +310,12 @@ class Configuration:
         self._args_to_config(config, argname='hyperopt_list_profitable',
                              logstring='Parameter --profitable detected: {}')
 
+        self._args_to_config(config, argname='hyperopt_list_min_trades',
+                             logstring='Parameter --min-trades detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_max_trades',
+                             logstring='Parameter --max-trades detected: {}')
+
         self._args_to_config(config, argname='hyperopt_list_min_avg_time',
                              logstring='Parameter --min-avg-time detected: {}')
 

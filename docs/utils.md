@@ -413,7 +413,8 @@ You can list the hyperoptimization epochs the Hyperopt module evaluated previous
 ```
 usage: freqtrade hyperopt-list [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [-d PATH] [--userdir PATH] [--best]
-                               [--profitable] [--min-avg-time FLOAT]
+                               [--profitable] [--min-trades INT]
+                               [--max-trades INT] [--min-avg-time FLOAT]
                                [--max-avg-time FLOAT] [--min-avg-profit FLOAT]
                                [--min-total-profit FLOAT] [--no-color]
                                [--print-json] [--no-details]
@@ -422,6 +423,8 @@ optional arguments:
   -h, --help            show this help message and exit
   --best                Select only best epochs.
   --profitable          Select only profitable epochs.
+  --min-trades INT      Select epochs with more than INT trades.
+  --max-trades INT      Select epochs with less than INT trades.
   --min-avg-time FLOAT  Select epochs on above average time.
   --max-avg-time FLOAT  Select epochs on under average time.
   --min-avg-profit FLOAT

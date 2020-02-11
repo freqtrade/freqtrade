@@ -398,6 +398,18 @@ AVAILABLE_CLI_OPTIONS = {
         help='Select only best epochs.',
         action='store_true',
     ),
+    "hyperopt_list_min_trades": Arg(
+        '--min-trades',
+        help='Select epochs with more than INT trades.',
+        type=check_int_nonzero,
+        metavar='INT',
+    ),
+    "hyperopt_list_max_trades": Arg(
+        '--max-trades',
+        help='Select epochs with less than INT trades.',
+        type=check_int_nonzero,
+        metavar='INT',
+    ),
     "hyperopt_list_min_avg_time": Arg(
         '--min-avg-time',
         help='Select epochs on above average time.',
