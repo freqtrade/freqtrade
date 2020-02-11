@@ -906,6 +906,10 @@ class FreqtradeBot:
 
         trade.open_order_id = None
         logger.info('Partial buy order timeout for %s.', trade)
+        self.rpc.send_msg({
+            'type': RPCMessageType.STATUS_NOTIFICATION,
+            'status': f'Remaining buy order for {trade.pair} cancelled due to timeout'
+        })
         return False
 
     def handle_timedout_limit_sell(self, trade: Trade, order: Dict) -> bool:
