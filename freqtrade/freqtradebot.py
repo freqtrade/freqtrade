@@ -549,7 +549,7 @@ class FreqtradeBot:
             'type': RPCMessageType.BUY_NOTIFICATION,
             'exchange': self.exchange.name.capitalize(),
             'pair': trade.pair,
-            'limit': trade.open_rate_requested,
+            'limit': trade.open_rate,
             'order_type': order_type,
             'stake_amount': trade.stake_amount,
             'stake_currency': self.config['stake_currency'],
