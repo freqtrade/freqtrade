@@ -428,9 +428,21 @@ AVAILABLE_CLI_OPTIONS = {
         type=float,
         metavar='FLOAT',
     ),
+    "hyperopt_list_max_avg_profit": Arg(
+        '--max-avg-profit',
+        help='Select epochs on below average profit.',
+        type=float,
+        metavar='FLOAT',
+    ),
     "hyperopt_list_min_total_profit": Arg(
         '--min-total-profit',
         help='Select epochs on above total profit.',
+        type=float,
+        metavar='FLOAT',
+    ),
+    "hyperopt_list_max_total_profit": Arg(
+        '--max-total-profit',
+        help='Select epochs on below total profit.',
         type=float,
         metavar='FLOAT',
     ),

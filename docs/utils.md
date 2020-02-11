@@ -416,7 +416,9 @@ usage: freqtrade hyperopt-list [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [--profitable] [--min-trades INT]
                                [--max-trades INT] [--min-avg-time FLOAT]
                                [--max-avg-time FLOAT] [--min-avg-profit FLOAT]
-                               [--min-total-profit FLOAT] [--no-color]
+                               [--max-avg-profit FLOAT]
+                               [--min-total-profit FLOAT]
+                               [--max-total-profit FLOAT] [--no-color]
                                [--print-json] [--no-details]
 
 optional arguments:
@@ -429,8 +431,12 @@ optional arguments:
   --max-avg-time FLOAT  Select epochs on under average time.
   --min-avg-profit FLOAT
                         Select epochs on above average profit.
+  --max-avg-profit FLOAT
+                        Select epochs on below average profit.
   --min-total-profit FLOAT
                         Select epochs on above total profit.
+  --max-total-profit FLOAT
+                        Select epochs on below total profit.
   --no-color            Disable colorization of hyperopt results. May be
                         useful if you are redirecting output to a file.
   --print-json          Print best result detailization in JSON format.
