@@ -566,7 +566,7 @@ class FreqtradeBot:
         """
         Sends rpc notification when a buy cancel occured.
         """
-        current_rate = self.get_buy_rate(trade.pair, False)
+        current_rate = self.get_buy_rate(trade.pair, True)
 
         msg = {
             'type': RPCMessageType.BUY_CANCEL_NOTIFICATION,
@@ -1062,8 +1062,7 @@ class FreqtradeBot:
         """
         profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
         profit_trade = trade.calc_profit(rate=profit_rate)
-        # Use cached ticker here - it was updated seconds ago.
-        current_rate = self.get_sell_rate(trade.pair, False)
+        current_rate = self.get_sell_rate(trade.pair, True)
         profit_percent = trade.calc_profit_ratio(profit_rate)
         gain = "profit" if profit_percent > 0 else "loss"
 
