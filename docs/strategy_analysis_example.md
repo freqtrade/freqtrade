@@ -20,6 +20,8 @@ config = Configuration.from_files([])
 config["ticker_interval"] = "5m"
 # Name of the strategy class
 config["strategy"] = "SampleStrategy"
+# Location of the data
+data_location = Path(config['user_data_dir'], 'data', 'binance')
 # Pair to analyze - Only use one pair here
 pair = "BTC_USDT"
 ```
@@ -29,12 +31,12 @@ pair = "BTC_USDT"
 # Load data using values set above
 from freqtrade.data.history import load_pair_history
 
-candles = load_pair_history(datadir=config["datadir"],
+candles = load_pair_history(datadir=data_location,
                             timeframe=config["ticker_interval"],
                             pair=pair)
 
 # Confirm success
-print("Loaded " + str(len(candles)) + f" rows of data for {pair} from {config['datadir']}")
+print("Loaded " + str(len(candles)) + f" rows of data for {pair} from {data_location}")
 candles.head()
 ```
 
