@@ -921,7 +921,7 @@ def test_get_buy_rate(mocker, default_conf, ask, last, last_ab, expected) -> Non
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  MagicMock(return_value={'ask': ask, 'last': last}))
 
-    assert freqtrade.get_buy_rate('ETH/BTC') == expected
+    assert freqtrade.get_buy_rate('ETH/BTC', True) == expected
 
 
 def test_execute_buy(mocker, default_conf, fee, limit_buy_order) -> None:
@@ -3524,7 +3524,7 @@ def test_order_book_bid_strategy1(mocker, default_conf, order_book_l2) -> None:
     default_conf['telegram']['enabled'] = False
 
     freqtrade = FreqtradeBot(default_conf)
-    assert freqtrade.get_buy_rate('ETH/BTC') == 0.043935
+    assert freqtrade.get_buy_rate('ETH/BTC', True) == 0.043935
     assert ticker_mock.call_count == 0
 
 
@@ -3549,7 +3549,7 @@ def test_order_book_bid_strategy2(mocker, default_conf, order_book_l2) -> None:
 
     freqtrade = FreqtradeBot(default_conf)
     # orderbook shall be used even if tickers would be lower.
-    assert freqtrade.get_buy_rate('ETH/BTC') != 0.042
+    assert freqtrade.get_buy_rate('ETH/BTC', True) != 0.042
     assert ticker_mock.call_count == 0
 
 
