@@ -55,7 +55,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/reload_conf` | | Reloads the configuration file
 | `/show_config` | | Shows part of the current configuration with relevant settings to operation
 | `/status` | | Lists all open trades
-| `/status table` | | List all open trades in a table format. Pending buy orders are marked with an asterisk (*)
+| `/status table` | | List all open trades in a table format. Pending buy orders are marked with an asterisk (*) Pending sell orders are marked with a double asterisk (**)
 | `/count` | | Displays number of trades used and available
 | `/profit` | | Display a summary of your profit/loss from close trades and some stats about your performance
 | `/forcesell <trade_id>` | | Instantly sells the given trade  (Ignoring `minimum_roi`).
