@@ -34,7 +34,7 @@ candles = load_pair_history(datadir=config["datadir"],
                             pair=pair)
 
 # Confirm success
-print("Loaded " + str(len(candles)) + f" rows of data for {pair} from {data_location}")
+print("Loaded " + str(len(candles)) + f" rows of data for {pair} from {config['datadir']}")
 candles.head()
 ```
 
