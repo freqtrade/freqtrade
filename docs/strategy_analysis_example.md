@@ -13,7 +13,7 @@ from freqtrade.configuration import Configuration
 
 # Initialize empty configuration object
 config = Configuration.from_files([])
-# Optionally, Use existing configuration file
+# Optionally, use existing configuration file
 # config = Configuration.from_files(["config.json"])
 
 # Define some constants
@@ -29,7 +29,7 @@ pair = "BTC_USDT"
 # Load data using values set above
 from freqtrade.data.history import load_pair_history
 
-candles = load_pair_history(datadir=config["data_dir"],
+candles = load_pair_history(datadir=config["datadir"],
                             timeframe=config["ticker_interval"],
                             pair=pair)
 
