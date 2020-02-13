@@ -561,8 +561,8 @@ class Telegram(RPC):
                   "*/stop:* `Stops the trader`\n" \
                   "*/status [table]:* `Lists all open trades`\n" \
                   "         *table :* `will display trades in a table`\n" \
-                  "                  `pending buy orders are marked with an asterisk (*)`\n" \
-                  "                  `pending sell orders are marked with a double asterisk (**)`\n" \
+                  "                `pending buy orders are marked with an asterisk (*)`\n" \
+                  "                `pending sell orders are marked with a double asterisk (**)`\n" \
                   "*/profit:* `Lists cumulative profit from all finished trades`\n" \
                   "*/forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, " \
                   "regardless of profit`\n" \
