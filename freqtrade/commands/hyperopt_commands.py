@@ -19,12 +19,23 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
-    only_best = config.get('hyperopt_list_best', False)
-    only_profitable = config.get('hyperopt_list_profitable', False)
     print_colorized = config.get('print_colorized', False)
     print_json = config.get('print_json', False)
     no_details = config.get('hyperopt_list_no_details', False)
     no_header = False
+
+    filteroptions = {
+        'only_best': config.get('hyperopt_list_best', False),
+        'only_profitable': config.get('hyperopt_list_profitable', False),
+        'filter_min_trades': config.get('hyperopt_list_min_trades', 0),
+        'filter_max_trades': config.get('hyperopt_list_max_trades', 0),
+        'filter_min_avg_time': config.get('hyperopt_list_min_avg_time', None),
+        'filter_max_avg_time': config.get('hyperopt_list_max_avg_time', None),
+        'filter_min_avg_profit': config.get('hyperopt_list_min_avg_profit', None),
+        'filter_max_avg_profit': config.get('hyperopt_list_max_avg_profit', None),
+        'filter_min_total_profit': config.get('hyperopt_list_min_total_profit', None),
+        'filter_max_total_profit': config.get('hyperopt_list_max_total_profit', None)
+    }
 
     trials_file = (config['user_data_dir'] /
                    'hyperopt_results' / 'hyperopt_results.pickle')
@@ -33,7 +44,7 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
     trials = Hyperopt.load_previous_results(trials_file)
     total_epochs = len(trials)
 
-    trials = _hyperopt_filter_trials(trials, only_best, only_profitable)
+    trials = _hyperopt_filter_trials(trials, filteroptions)
 
     # TODO: fetch the interval for epochs to print from the cli option
     epoch_start, epoch_stop = 0, None
@@ -44,7 +55,8 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
     try:
         # Human-friendly indexes used here (starting from 1)
         for val in trials[epoch_start:epoch_stop]:
-            Hyperopt.print_results_explanation(val, total_epochs, not only_best, print_colorized)
+            Hyperopt.print_results_explanation(val, total_epochs,
+                                               not filteroptions['only_best'], print_colorized)
 
     except KeyboardInterrupt:
         print('User interrupted..')
@@ -63,8 +75,18 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
-    only_best = config.get('hyperopt_list_best', False)
-    only_profitable = config.get('hyperopt_list_profitable', False)
+    filteroptions = {
+        'only_best': config.get('hyperopt_list_best', False),
+        'only_profitable': config.get('hyperopt_list_profitable', False),
+        'filter_min_trades': config.get('hyperopt_list_min_trades', 0),
+        'filter_max_trades': config.get('hyperopt_list_max_trades', 0),
+        'filter_min_avg_time': config.get('hyperopt_list_min_avg_time', None),
+        'filter_max_avg_time': config.get('hyperopt_list_max_avg_time', None),
+        'filter_min_avg_profit': config.get('hyperopt_list_min_avg_profit', None),
+        'filter_max_avg_profit': config.get('hyperopt_list_max_avg_profit', None),
+        'filter_min_total_profit': config.get('hyperopt_list_min_total_profit', None),
+        'filter_max_total_profit': config.get('hyperopt_list_max_total_profit', None)
+    }
     no_header = config.get('hyperopt_show_no_header', False)
 
     trials_file = (config['user_data_dir'] /
@@ -74,7 +96,7 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
     trials = Hyperopt.load_previous_results(trials_file)
     total_epochs = len(trials)
 
-    trials = _hyperopt_filter_trials(trials, only_best, only_profitable)
+    trials = _hyperopt_filter_trials(trials, filteroptions)
     trials_epochs = len(trials)
 
     n = config.get('hyperopt_show_index', -1)
@@ -97,18 +119,66 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
                                      header_str="Epoch details")
 
 
-def _hyperopt_filter_trials(trials: List, only_best: bool, only_profitable: bool) -> List:
+def _hyperopt_filter_trials(trials: List, filteroptions: dict) -> List:
     """
     Filter our items from the list of hyperopt results
     """
-    if only_best:
+    if filteroptions['only_best']:
         trials = [x for x in trials if x['is_best']]
-    if only_profitable:
+    if filteroptions['only_profitable']:
         trials = [x for x in trials if x['results_metrics']['profit'] > 0]
+    if filteroptions['filter_min_trades'] > 0:
+        trials = [
+                    x for x in trials
+                    if x['results_metrics']['trade_count'] > filteroptions['filter_min_trades']
+                 ]
+    if filteroptions['filter_max_trades'] > 0:
+        trials = [
+                    x for x in trials
+                    if x['results_metrics']['trade_count'] < filteroptions['filter_max_trades']
+                 ]
+    if filteroptions['filter_min_avg_time'] is not None:
+        trials = [x for x in trials if x['results_metrics']['trade_count'] > 0]
+        trials = [
+                    x for x in trials
+                    if x['results_metrics']['duration'] > filteroptions['filter_min_avg_time']
+                 ]
+    if filteroptions['filter_max_avg_time'] is not None:
+        trials = [x for x in trials if x['results_metrics']['trade_count'] > 0]
+        trials = [
+                    x for x in trials
+                    if x['results_metrics']['duration'] < filteroptions['filter_max_avg_time']
+                 ]
+    if filteroptions['filter_min_avg_profit'] is not None:
+        trials = [x for x in trials if x['results_metrics']['trade_count'] > 0]
+        trials = [
+                    x for x in trials
+                    if x['results_metrics']['avg_profit']
+                    > filteroptions['filter_min_avg_profit']
+                 ]
+    if filteroptions['filter_max_avg_profit'] is not None:
+        trials = [x for x in trials if x['results_metrics']['trade_count'] > 0]
+        trials = [
+                    x for x in trials
+                    if x['results_metrics']['avg_profit']
+                    < filteroptions['filter_max_avg_profit']
+                 ]
+    if filteroptions['filter_min_total_profit'] is not None:
+        trials = [x for x in trials if x['results_metrics']['trade_count'] > 0]
+        trials = [
+                    x for x in trials
+                    if x['results_metrics']['profit'] > filteroptions['filter_min_total_profit']
+                 ]
+    if filteroptions['filter_max_total_profit'] is not None:
+        trials = [x for x in trials if x['results_metrics']['trade_count'] > 0]
+        trials = [
+                    x for x in trials
+                    if x['results_metrics']['profit'] < filteroptions['filter_max_total_profit']
+                 ]
 
     logger.info(f"{len(trials)} " +
-                ("best " if only_best else "") +
-                ("profitable " if only_profitable else "") +
+                ("best " if filteroptions['only_best'] else "") +
+                ("profitable " if filteroptions['only_profitable'] else "") +
                 "epochs found.")
 
     return trials

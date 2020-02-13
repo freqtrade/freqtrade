@@ -19,7 +19,7 @@ from freqtrade.plot.plotting import (add_indicators, add_profit,
                                      generate_profit_graph, init_plotscript,
                                      load_and_plot_trades, plot_profit,
                                      plot_trades, store_plot_file)
-from freqtrade.strategy.default_strategy import DefaultStrategy
+from freqtrade.resolvers import StrategyResolver
 from tests.conftest import get_args, log_has, log_has_re
 
 
@@ -70,9 +70,11 @@ def test_add_indicators(default_conf, testdatadir, caplog):
     indicators1 = {"ema10": {}}
     indicators2 = {"macd": {"color": "red"}}
 
+    default_conf.update({'strategy': 'DefaultStrategy'})
+    strategy = StrategyResolver.load_strategy(default_conf)
+
     # Generate buy/sell signals and indicators
-    strat = DefaultStrategy(default_conf)
-    data = strat.analyze_ticker(data, {'pair': pair})
+    data = strategy.analyze_ticker(data, {'pair': pair})
     fig = generate_empty_figure()
 
     # Row 1
@@ -181,9 +183,11 @@ def test_generate_candlestick_graph_no_trades(default_conf, mocker, testdatadir)
     data = history.load_pair_history(pair=pair, timeframe='1m',
                                      datadir=testdatadir, timerange=timerange)
 
+    default_conf.update({'strategy': 'DefaultStrategy'})
+    strategy = StrategyResolver.load_strategy(default_conf)
+
     # Generate buy/sell signals and indicators
-    strat = DefaultStrategy(default_conf)
-    data = strat.analyze_ticker(data, {'pair': pair})
+    data = strategy.analyze_ticker(data, {'pair': pair})
 
     indicators1 = []
     indicators2 = []

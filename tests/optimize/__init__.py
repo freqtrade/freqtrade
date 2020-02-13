@@ -1,4 +1,4 @@
-from typing import Dict, List, NamedTuple
+from typing import Dict, List, NamedTuple, Optional
 
 import arrow
 from pandas import DataFrame
@@ -23,14 +23,14 @@ class BTContainer(NamedTuple):
     """
     Minimal BacktestContainer defining Backtest inputs and results.
     """
-    data: List[float]
+    data: List[List[float]]
     stop_loss: float
     roi: Dict[str, float]
     trades: List[BTrade]
     profit_perc: float
     trailing_stop: bool = False
     trailing_only_offset_is_reached: bool = False
-    trailing_stop_positive: float = None
+    trailing_stop_positive: Optional[float] = None
     trailing_stop_positive_offset: float = 0.0
     use_sell_signal: bool = False
 

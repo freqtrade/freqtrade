@@ -45,6 +45,8 @@ ARGS_TEST_PAIRLIST = ["config", "quote_currencies", "print_one_column", "list_pa
 
 ARGS_CREATE_USERDIR = ["user_data_dir", "reset"]
 
+ARGS_BUILD_CONFIG = ["config"]
+
 ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy", "template"]
 
 ARGS_BUILD_HYPEROPT = ["user_data_dir", "hyperopt", "template"]
@@ -59,8 +61,12 @@ ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "ticker_interval"]
 
-ARGS_HYPEROPT_LIST = ["hyperopt_list_best", "hyperopt_list_profitable", "print_colorized",
-                      "print_json", "hyperopt_list_no_details"]
+ARGS_HYPEROPT_LIST = ["hyperopt_list_best", "hyperopt_list_profitable",
+                      "hyperopt_list_min_trades", "hyperopt_list_max_trades",
+                      "hyperopt_list_min_avg_time", "hyperopt_list_max_avg_time",
+                      "hyperopt_list_min_avg_profit", "hyperopt_list_max_avg_profit",
+                      "hyperopt_list_min_total_profit", "hyperopt_list_max_total_profit",
+                      "print_colorized", "print_json", "hyperopt_list_no_details"]
 
 ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperopt_show_index",
                       "print_json", "hyperopt_show_no_header"]
@@ -136,7 +142,7 @@ class Arguments:
                                         start_hyperopt_list, start_hyperopt_show,
                                         start_list_exchanges, start_list_hyperopts,
                                         start_list_markets, start_list_strategies,
-                                        start_list_timeframes,
+                                        start_list_timeframes, start_new_config,
                                         start_new_hyperopt, start_new_strategy,
                                         start_plot_dataframe, start_plot_profit,
                                         start_backtesting, start_hyperopt, start_edge,
@@ -179,6 +185,12 @@ class Arguments:
                                                    )
         create_userdir_cmd.set_defaults(func=start_create_userdir)
         self._build_args(optionlist=ARGS_CREATE_USERDIR, parser=create_userdir_cmd)
+
+        # add new-config subcommand
+        build_config_cmd = subparsers.add_parser('new-config',
+                                                 help="Create new config")
+        build_config_cmd.set_defaults(func=start_new_config)
+        self._build_args(optionlist=ARGS_BUILD_CONFIG, parser=build_config_cmd)
 
         # add new-strategy subcommand
         build_strategy_cmd = subparsers.add_parser('new-strategy',

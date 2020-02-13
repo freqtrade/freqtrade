@@ -79,6 +79,8 @@ setup(name='freqtrade',
           'sdnotify',
           'colorama',
           'jinja2',
+          'questionary',
+          'prompt-toolkit',
           # from requirements.txt
           'numpy',
           'pandas',
