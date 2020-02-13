@@ -1,6 +1,6 @@
 # Strategy analysis example
 
-Debugging a strategy can be time-consuming. FreqTrade offers helper functions to visualize raw data.
+Debugging a strategy can be time-consuming. Freqtrade offers helper functions to visualize raw data.
 
 ## Setup
 
