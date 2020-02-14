@@ -111,10 +111,14 @@ class Arguments:
             conf_required = ('command' in parsed_arg and parsed_arg.command in NO_CONF_REQURIED)
 
             if 'user_data_dir' in parsed_arg and parsed_arg.user_data_dir is not None:
+                user_dir = parsed_arg.user_data_dir
+            else:
+                # Default case
+                user_dir = 'user_data'
                 # Try loading from "user_data/config.json"
-                cfgfile = Path(parsed_arg.user_data_dir) / DEFAULT_CONFIG
-                if cfgfile.is_file() or not conf_required:
-                    parsed_arg.config = [str(cfgfile)]
+            cfgfile = Path(user_dir) / DEFAULT_CONFIG
+            if cfgfile.is_file():
+                parsed_arg.config = [str(cfgfile)]
             else:
                 # Else use "config.json".
                 cfgfile = Path.cwd() / DEFAULT_CONFIG

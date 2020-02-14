@@ -18,13 +18,33 @@ def test_parse_args_none() -> None:
     assert isinstance(arguments.parser, argparse.ArgumentParser)
 
 
-def test_parse_args_defaults() -> None:
+def test_parse_args_defaults(mocker) -> None:
+    mocker.patch.object(Path, "is_file", MagicMock(side_effect=[False, True]))
     args = Arguments(['trade']).get_parsed_arg()
     assert args["config"] == ['config.json']
     assert args["strategy_path"] is None
     assert args["datadir"] is None
     assert args["verbosity"] == 0
 
+
+def test_parse_args_default_userdatadir(mocker) -> None:
+    mocker.patch.object(Path, "is_file", MagicMock(return_value=True))
+    args = Arguments(['trade']).get_parsed_arg()
+    # configuration defaults to user_data if that is available.
+    assert args["config"] == ['user_data/config.json']
+    assert args["strategy_path"] is None
+    assert args["datadir"] is None
+    assert args["verbosity"] == 0
+
+
+def test_parse_args_userdatadir(mocker) -> None:
+    mocker.patch.object(Path, "is_file", MagicMock(return_value=True))
+    args = Arguments(['trade', '--user-data-dir', 'user_data']).get_parsed_arg()
+    # configuration defaults to user_data if that is available.
+    assert args["config"] == ['user_data/config.json']
+    assert args["strategy_path"] is None
+    assert args["datadir"] is None
+    assert args["verbosity"] == 0
 
 def test_parse_args_config() -> None:
     args = Arguments(['trade', '-c', '/dev/null']).get_parsed_arg()
@@ -208,7 +228,7 @@ def test_config_notrequired(mocker) -> None:
     assert pargs["config"] is None
 
     # When file exists:
-    mocker.patch.object(Path, "is_file", MagicMock(return_value=True))
+    mocker.patch.object(Path, "is_file", MagicMock(side_effect=[False, True]))
     args = [
         'download-data',
     ]
