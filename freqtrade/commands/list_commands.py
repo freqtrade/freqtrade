@@ -5,6 +5,8 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List
 
+from colorama import init as colorama_init
+from colorama import Fore, Style
 import rapidjson
 from tabulate import tabulate
 
@@ -36,14 +38,23 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
             print(f"Exchanges available for Freqtrade: {', '.join(exchanges)}")
 
 
-def _print_objs_tabular(objs: List) -> None:
+def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
+    if print_colorized:
+        colorama_init(autoreset=True)
+
     names = [s['name'] for s in objs]
     objss_to_print = [{
         'name': s['name'] if s['name'] else "--",
         'location': s['location'].name,
-        'status': ("LOAD FAILED" if s['class'] is None
-                   else "OK" if names.count(s['name']) == 1
-                   else "DUPLICATED NAME")
+        'status': (((Fore.RED if print_colorized else '') +
+                    "LOAD FAILED" + (Style.RESET_ALL if print_colorized else ''))
+                   if s['class'] is None
+                   else ((Fore.GREEN if print_colorized else '') +
+                         "OK" + (Style.RESET_ALL if print_colorized else ''))
+                   if names.count(s['name']) == 1
+                   else ((Fore.YELLOW if print_colorized else '') +
+                         "DUPLICATED NAME" +
+                         (Style.RESET_ALL if print_colorized else '')))
     } for s in objs]
 
     print(tabulate(objss_to_print, headers='keys', tablefmt='pipe'))
@@ -63,7 +74,7 @@ def start_list_strategies(args: Dict[str, Any]) -> None:
     if args['print_one_column']:
         print('\n'.join([s['name'] for s in strategy_objs]))
     else:
-        _print_objs_tabular(strategy_objs)
+        _print_objs_tabular(strategy_objs, config.get('print_colorized', False))
 
 
 def start_list_hyperopts(args: Dict[str, Any]) -> None:
@@ -82,7 +93,7 @@ def start_list_hyperopts(args: Dict[str, Any]) -> None:
     if args['print_one_column']:
         print('\n'.join([s['name'] for s in hyperopt_objs]))
     else:
-        _print_objs_tabular(hyperopt_objs)
+        _print_objs_tabular(hyperopt_objs, config.get('print_colorized', False))
 
 
 def start_list_timeframes(args: Dict[str, Any]) -> None:
