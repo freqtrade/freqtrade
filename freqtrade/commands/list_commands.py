@@ -38,7 +38,7 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
 
 def _print_objs_tabular(objs: List) -> None:
     names = [s['name'] for s in objs]
-    strats_to_print = [{
+    objss_to_print = [{
         'name': s['name'] if s['name'] else "--",
         'location': s['location'].name,
         'status': ("LOAD FAILED" if s['class'] is None
@@ -46,7 +46,7 @@ def _print_objs_tabular(objs: List) -> None:
                    else "DUPLICATED NAME")
     } for s in objs]
 
-    print(tabulate(strats_to_print, headers='keys', tablefmt='pipe'))
+    print(tabulate(objss_to_print, headers='keys', tablefmt='pipe'))
 
 
 def start_list_strategies(args: Dict[str, Any]) -> None:
@@ -56,14 +56,14 @@ def start_list_strategies(args: Dict[str, Any]) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     directory = Path(config.get('strategy_path', config['user_data_dir'] / USERPATH_STRATEGIES))
-    strategies = StrategyResolver.search_all_objects(directory, not args['print_one_column'])
+    strategy_objs = StrategyResolver.search_all_objects(directory, not args['print_one_column'])
     # Sort alphabetically
-    strategies = sorted(strategies, key=lambda x: x['name'])
+    strategy_objs = sorted(strategy_objs, key=lambda x: x['name'])
 
     if args['print_one_column']:
-        print('\n'.join([s['name'] for s in strategies]))
+        print('\n'.join([s['name'] for s in strategy_objs]))
     else:
-        _print_objs_tabular(strategies)
+        _print_objs_tabular(strategy_objs)
 
 
 def start_list_hyperopts(args: Dict[str, Any]) -> None:
@@ -75,15 +75,14 @@ def start_list_hyperopts(args: Dict[str, Any]) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     directory = Path(config.get('hyperopt_path', config['user_data_dir'] / USERPATH_HYPEROPTS))
-    hyperopts = HyperOptResolver.search_all_objects(directory)
+    hyperopt_objs = HyperOptResolver.search_all_objects(directory, not args['print_one_column'])
     # Sort alphabetically
-    hyperopts = sorted(hyperopts, key=lambda x: x['name'])
-    hyperopts_to_print = [{'name': s['name'], 'location': s['location'].name} for s in hyperopts]
+    hyperopt_objs = sorted(hyperopt_objs, key=lambda x: x['name'])
 
     if args['print_one_column']:
-        print('\n'.join([s['name'] for s in hyperopts]))
+        print('\n'.join([s['name'] for s in hyperopt_objs]))
     else:
-        print(tabulate(hyperopts_to_print, headers='keys', tablefmt='pipe'))
+        _print_objs_tabular(hyperopt_objs)
 
 
 def start_list_timeframes(args: Dict[str, Any]) -> None:
