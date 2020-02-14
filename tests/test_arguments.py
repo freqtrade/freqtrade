@@ -31,7 +31,7 @@ def test_parse_args_default_userdatadir(mocker) -> None:
     mocker.patch.object(Path, "is_file", MagicMock(return_value=True))
     args = Arguments(['trade']).get_parsed_arg()
     # configuration defaults to user_data if that is available.
-    assert args["config"] == ['user_data/config.json']
+    assert args["config"] == [str(Path('user_data/config.json'))]
     assert args["strategy_path"] is None
     assert args["datadir"] is None
     assert args["verbosity"] == 0
@@ -41,7 +41,7 @@ def test_parse_args_userdatadir(mocker) -> None:
     mocker.patch.object(Path, "is_file", MagicMock(return_value=True))
     args = Arguments(['trade', '--user-data-dir', 'user_data']).get_parsed_arg()
     # configuration defaults to user_data if that is available.
-    assert args["config"] == ['user_data/config.json']
+    assert args["config"] == [str(Path('user_data/config.json'))]
     assert args["strategy_path"] is None
     assert args["datadir"] is None
     assert args["verbosity"] == 0
