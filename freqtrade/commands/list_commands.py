@@ -3,7 +3,7 @@ import logging
 import sys
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import rapidjson
 from tabulate import tabulate
@@ -36,6 +36,19 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
             print(f"Exchanges available for Freqtrade: {', '.join(exchanges)}")
 
 
+def _print_objs_tabular(objs: List) -> None:
+    names = [s['name'] for s in objs]
+    strats_to_print = [{
+        'name': s['name'] if s['name'] else "--",
+        'location': s['location'].name,
+        'status': ("LOAD FAILED" if s['class'] is None
+                   else "OK" if names.count(s['name']) == 1
+                   else "DUPLICATED NAME")
+    } for s in objs]
+
+    print(tabulate(strats_to_print, headers='keys', tablefmt='pipe'))
+
+
 def start_list_strategies(args: Dict[str, Any]) -> None:
     """
     Print files with Strategy custom classes available in the directory
@@ -46,19 +59,11 @@ def start_list_strategies(args: Dict[str, Any]) -> None:
     strategies = StrategyResolver.search_all_objects(directory, not args['print_one_column'])
     # Sort alphabetically
     strategies = sorted(strategies, key=lambda x: x['name'])
-    names = [s['name'] for s in strategies]
-    strats_to_print = [{
-        'name': s['name'] if s['name'] else "--",
-        'location': s['location'].name,
-        'status': ("LOAD FAILED" if s['class'] is None
-                   else "OK" if names.count(s['name']) == 1
-                   else "DUPLICATED NAME")
-    } for s in strategies]
 
     if args['print_one_column']:
         print('\n'.join([s['name'] for s in strategies]))
     else:
-        print(tabulate(strats_to_print, headers='keys', tablefmt='pipe'))
+        _print_objs_tabular(strategies)
 
 
 def start_list_hyperopts(args: Dict[str, Any]) -> None:
