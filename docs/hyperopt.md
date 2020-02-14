@@ -182,7 +182,7 @@ add it to the `populate_indicators()` method in your custom hyperopt file.
 
 Each hyperparameter tuning requires a target. This is usually defined as a loss function (sometimes also called objective function), which should decrease for more desirable results, and increase for bad results.
 
-By default, FreqTrade uses a loss function, which has been with freqtrade since the beginning and optimizes mostly for short trade duration and avoiding losses.
+By default, Freqtrade uses a loss function, which has been with freqtrade since the beginning and optimizes mostly for short trade duration and avoiding losses.
 
 A different loss function can be specified by using the `--hyperopt-loss <Class-name>` argument.
 This class should be in its own file within the `user_data/hyperopts/` directory.
