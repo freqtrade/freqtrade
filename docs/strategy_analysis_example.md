@@ -1,6 +1,7 @@
 # Strategy analysis example
 
 Debugging a strategy can be time-consuming. Freqtrade offers helper functions to visualize raw data.
+The following assumes you work with SampleStrategy, data for 5m timeframe from Binance and have downloaded them into the data directory in the default location.
 
 ## Setup
 
