@@ -122,7 +122,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert "Since" in headers
     assert "Pair" in headers
     assert 'instantly' == result[0][2]
-    assert 'ETH/BTC' == result[0][1]
+    assert 'ETH/BTC' in result[0][1]
     assert '-0.59%' == result[0][3]
     # Test with fiatconvert
 
@@ -131,7 +131,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert "Since" in headers
     assert "Pair" in headers
     assert 'instantly' == result[0][2]
-    assert 'ETH/BTC' == result[0][1]
+    assert 'ETH/BTC' in result[0][1]
     assert '-0.59% (-0.09)' == result[0][3]
 
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
@@ -140,7 +140,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     rpc._freqtrade.exchange._cached_ticker = {}
     result, headers = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
     assert 'instantly' == result[0][2]
-    assert 'ETH/BTC' == result[0][1]
+    assert 'ETH/BTC' in result[0][1]
     assert 'nan%' == result[0][3]
 
 

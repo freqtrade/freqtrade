@@ -300,7 +300,7 @@ def test_edge_overrides_stoploss(limit_buy_order, fee, caplog, mocker, edge_conf
 
     # stoploss shoud be hit
     assert freqtrade.handle_trade(trade) is True
-    assert log_has('executed sell, reason: SellType.STOP_LOSS', caplog)
+    assert log_has('Executing Sell for NEO/BTC. Reason: SellType.STOP_LOSS', caplog)
     assert trade.sell_reason == SellType.STOP_LOSS.value
 
 
@@ -921,7 +921,7 @@ def test_get_buy_rate(mocker, default_conf, ask, last, last_ab, expected) -> Non
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  MagicMock(return_value={'ask': ask, 'last': last}))
 
-    assert freqtrade.get_buy_rate('ETH/BTC') == expected
+    assert freqtrade.get_buy_rate('ETH/BTC', True) == expected
 
 
 def test_execute_buy(mocker, default_conf, fee, limit_buy_order) -> None:
@@ -1964,7 +1964,7 @@ def test_check_handle_cancelled_buy(default_conf, ticker, limit_buy_order_old, o
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     nb_trades = len(trades)
     assert nb_trades == 0
-    assert log_has_re("Buy order canceled on Exchange for Trade.*", caplog)
+    assert log_has_re("Buy order cancelled on exchange for Trade.*", caplog)
 
 
 def test_check_handle_timedout_buy_exception(default_conf, ticker, limit_buy_order_old, open_trade,
@@ -2045,7 +2045,7 @@ def test_check_handle_cancelled_sell(default_conf, ticker, limit_sell_order_old,
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 1
     assert open_trade.is_open is True
-    assert log_has_re("Sell order canceled on exchange for Trade.*", caplog)
+    assert log_has_re("Sell order cancelled on exchange for Trade.*", caplog)
 
 
 def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old_partial,
@@ -2067,7 +2067,7 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
     # note this is for a partially-complete buy order
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
-    assert rpc_mock.call_count == 1
+    assert rpc_mock.call_count == 2
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     assert len(trades) == 1
     assert trades[0].amount == 23.0
@@ -2101,7 +2101,7 @@ def test_check_handle_timedout_partial_fee(default_conf, ticker, open_trade, cap
     assert log_has_re(r"Applying fee on amount for Trade.* Order", caplog)
 
     assert cancel_order_mock.call_count == 1
-    assert rpc_mock.call_count == 1
+    assert rpc_mock.call_count == 2
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     assert len(trades) == 1
     # Verify that tradehas been updated
@@ -2140,7 +2140,7 @@ def test_check_handle_timedout_partial_except(default_conf, ticker, open_trade, 
     assert log_has_re(r"Could not update trade amount: .*", caplog)
 
     assert cancel_order_mock.call_count == 1
-    assert rpc_mock.call_count == 1
+    assert rpc_mock.call_count == 2
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     assert len(trades) == 1
     # Verify that tradehas been updated
@@ -3524,7 +3524,7 @@ def test_order_book_bid_strategy1(mocker, default_conf, order_book_l2) -> None:
     default_conf['telegram']['enabled'] = False
 
     freqtrade = FreqtradeBot(default_conf)
-    assert freqtrade.get_buy_rate('ETH/BTC') == 0.043935
+    assert freqtrade.get_buy_rate('ETH/BTC', True) == 0.043935
     assert ticker_mock.call_count == 0
 
 
@@ -3549,7 +3549,7 @@ def test_order_book_bid_strategy2(mocker, default_conf, order_book_l2) -> None:
 
     freqtrade = FreqtradeBot(default_conf)
     # orderbook shall be used even if tickers would be lower.
-    assert freqtrade.get_buy_rate('ETH/BTC') != 0.042
+    assert freqtrade.get_buy_rate('ETH/BTC', True) != 0.042
     assert ticker_mock.call_count == 0
 
 
