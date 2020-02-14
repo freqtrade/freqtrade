@@ -527,8 +527,6 @@ class FreqtradeBot:
             ticker_interval=timeframe_to_minutes(self.config['ticker_interval'])
         )
 
-        self._notify_buy(trade, order_type)
-
         # Update fees if order is closed
         if order_status == 'closed':
             self.update_trade_state(trade, order)
@@ -538,6 +536,8 @@ class FreqtradeBot:
 
         # Updating wallets
         self.wallets.update()
+
+        self._notify_buy(trade, order_type)
 
         return True
 
