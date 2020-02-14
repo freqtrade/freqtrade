@@ -49,9 +49,7 @@ def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
         'status': (((Fore.RED if print_colorized else '') +
                     "LOAD FAILED" + (Style.RESET_ALL if print_colorized else ''))
                    if s['class'] is None
-                   else ((Fore.GREEN if print_colorized else '') +
-                         "OK" + (Style.RESET_ALL if print_colorized else ''))
-                   if names.count(s['name']) == 1
+                   else "OK" if names.count(s['name']) == 1
                    else ((Fore.YELLOW if print_colorized else '') +
                          "DUPLICATED NAME" +
                          (Style.RESET_ALL if print_colorized else '')))
