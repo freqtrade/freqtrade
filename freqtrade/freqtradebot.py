@@ -860,11 +860,6 @@ class FreqtradeBot:
                 order_type = self.strategy.order_types['sell']
                 self._notify_sell_cancel(trade, order_type)
 
-    def delete_trade(self, trade: Trade) -> None:
-        """Delete trade in database"""
-        Trade.session.delete(trade)
-        Trade.session.flush()
-
     def handle_timedout_limit_buy(self, trade: Trade, order: Dict) -> bool:
         """
         Buy timeout - cancel order
@@ -882,7 +877,8 @@ class FreqtradeBot:
 
         if corder.get('remaining', order['remaining']) == order['amount']:
             # if trade is not partially completed, just delete the trade
-            self.delete_trade(trade)
+            Trade.session.delete(trade)
+            Trade.session.flush()
             return True
 
         # if trade is partially complete, edit the stake details for the trade
