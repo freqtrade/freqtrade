@@ -43,10 +43,17 @@ def start_list_strategies(args: Dict[str, Any]) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     directory = Path(config.get('strategy_path', config['user_data_dir'] / USERPATH_STRATEGIES))
-    strategies = StrategyResolver.search_all_objects(directory)
+    strategies = StrategyResolver.search_all_objects(directory, not args['print_one_column'])
     # Sort alphabetically
     strategies = sorted(strategies, key=lambda x: x['name'])
-    strats_to_print = [{'name': s['name'], 'location': s['location'].name} for s in strategies]
+    names = [s['name'] for s in strategies]
+    strats_to_print = [{
+        'name': s['name'] if s['name'] else "--",
+        'location': s['location'].name,
+        'status': ("LOAD FAILED" if s['class'] is None
+                   else "OK" if names.count(s['name']) == 1
+                   else "DUPLICATED NAME")
+    } for s in strategies]
 
     if args['print_one_column']:
         print('\n'.join([s['name'] for s in strategies]))

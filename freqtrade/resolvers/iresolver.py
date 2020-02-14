@@ -41,11 +41,15 @@ class IResolver:
 
     @classmethod
     def _get_valid_object(cls, module_path: Path,
-                          object_name: Optional[str]) -> Generator[Any, None, None]:
+                          object_name: Optional[str],
+                          enum_failed: bool = False) -> Union[Generator[Any, None, None],
+                                                              Tuple[None]]:
         """
         Generator returning objects with matching object_type and object_name in the path given.
         :param module_path: absolute path to the module
         :param object_name: Class name of the object
+        :param enum_failed: If True, will return None for modules which fail.
+            Otherwise, failing modules are skipped.
         :return: generator containing matching objects
         """
 
@@ -58,6 +62,8 @@ class IResolver:
         except (ModuleNotFoundError, SyntaxError) as err:
             # Catch errors in case a specific module is not installed
             logger.warning(f"Could not import {module_path} due to '{err}'")
+            if enum_failed:
+                return (None, )
 
         valid_objects_gen = (
             obj for name, obj in inspect.getmembers(module, inspect.isclass)
@@ -136,10 +142,13 @@ class IResolver:
         )
 
     @classmethod
-    def search_all_objects(cls, directory: Path) -> List[Dict[str, Any]]:
+    def search_all_objects(cls, directory: Path,
+                           enum_failed: bool) -> List[Dict[str, Any]]:
         """
         Searches a directory for valid objects
         :param directory: Path to search
+        :param enum_failed: If True, will return None for modules which fail.
+            Otherwise, failing modules are skipped.
         :return: List of dicts containing 'name', 'class' and 'location' entires
         """
         logger.debug(f"Searching for {cls.object_type.__name__} '{directory}'")
@@ -151,10 +160,11 @@ class IResolver:
                 continue
             module_path = entry.resolve()
             logger.debug(f"Path {module_path}")
-            for obj in cls._get_valid_object(module_path, object_name=None):
+            for obj in cls._get_valid_object(module_path, object_name=None,
+                                             enum_failed=enum_failed):
                 objects.append(
-                    {'name': obj.__name__,
-                     'class': obj,
+                    {'name': obj.__name__ if obj is not None else '',
+                     'class': obj if obj is not None else None,
                      'location': entry,
                      })
         return objects
