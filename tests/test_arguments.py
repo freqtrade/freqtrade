@@ -46,6 +46,7 @@ def test_parse_args_userdatadir(mocker) -> None:
     assert args["datadir"] is None
     assert args["verbosity"] == 0
 
+
 def test_parse_args_config() -> None:
     args = Arguments(['trade', '-c', '/dev/null']).get_parsed_arg()
     assert args["config"] == ['/dev/null']
