@@ -164,7 +164,7 @@ class IResolver:
                                              enum_failed=enum_failed):
                 objects.append(
                     {'name': obj.__name__ if obj is not None else '',
-                     'class': obj if obj is not None else None,
+                     'class': obj,
                      'location': entry,
                      })
         return objects
