@@ -7,7 +7,7 @@ import importlib.util
 import inspect
 import logging
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, Union
 
 from freqtrade.exceptions import OperationalException
 
@@ -40,10 +40,8 @@ class IResolver:
         return abs_paths
 
     @classmethod
-    def _get_valid_object(cls, module_path: Path,
-                          object_name: Optional[str],
-                          enum_failed: bool = False) -> Union[Generator[Any, None, None],
-                                                              Tuple[None]]:
+    def _get_valid_object(cls, module_path: Path, object_name: Optional[str],
+                          enum_failed: bool = False) -> Iterator[Any]:
         """
         Generator returning objects with matching object_type and object_name in the path given.
         :param module_path: absolute path to the module
@@ -63,7 +61,7 @@ class IResolver:
             # Catch errors in case a specific module is not installed
             logger.warning(f"Could not import {module_path} due to '{err}'")
             if enum_failed:
-                return (None, )
+                return iter([None])
 
         valid_objects_gen = (
             obj for name, obj in inspect.getmembers(module, inspect.isclass)
