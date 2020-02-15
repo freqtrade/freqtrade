@@ -30,12 +30,21 @@ def test_search_strategy():
     assert s is None
 
 
-def test_search_all_strategies():
+def test_search_all_strategies_no_failed():
     directory = Path(__file__).parent
     strategies = StrategyResolver.search_all_objects(directory, enum_failed=False)
     assert isinstance(strategies, list)
     assert len(strategies) == 3
     assert isinstance(strategies[0], dict)
+
+
+def test_search_all_strategies_with_failed():
+    directory = Path(__file__).parent
+    strategies = StrategyResolver.search_all_objects(directory, enum_failed=True)
+    assert isinstance(strategies, list)
+    assert len(strategies) == 4
+    assert isinstance(strategies[0], dict)
+    assert strategies[0]['class'] is None
 
 
 def test_load_strategy(default_conf, result):
