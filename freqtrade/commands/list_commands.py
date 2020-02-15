@@ -51,7 +51,7 @@ def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
                    if s['class'] is None
                    else "OK" if names.count(s['name']) == 1
                    else ((Fore.YELLOW if print_colorized else '') +
-                         "DUPLICATED NAME" +
+                         "DUPLICATE NAME" +
                          (Style.RESET_ALL if print_colorized else '')))
     } for s in objs]
 
