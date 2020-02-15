@@ -144,38 +144,47 @@ freqtrade new-hyperopt --userdir ~/.freqtrade/ --hyperopt AwesomeHyperopt
 
 Use the `list-strategies` subcommand to see all strategies in one particular directory and the `list-hyperopts` subcommand to list custom Hyperopts.
 
+These subcommands are useful for finding problems in your environment with loading strategies or hyperopt classes: modules with strategies or hyperopt classes that contain errors and failed to load are printed in red (LOAD FAILED), while strategies or hyperopt classes with duplicate names are printed in yellow (DUPLICATE NAME).
+
 ```
-freqtrade list-strategies --help
-usage: freqtrade list-strategies [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH] [--userdir PATH] [--strategy-path PATH] [-1]
+usage: freqtrade list-strategies [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                                 [-d PATH] [--userdir PATH]
+                                 [--strategy-path PATH] [-1] [--no-color]
 
 optional arguments:
   -h, --help            show this help message and exit
   --strategy-path PATH  Specify additional strategy lookup path.
   -1, --one-column      Print output in one column.
+  --no-color            Disable colorization of hyperopt results. May be
+                        useful if you are redirecting output to a file.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified. Special values are: 'syslog', 'journald'. See the documentation for more details.
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
   -V, --version         show program's version number and exit
   -c PATH, --config PATH
-                        Specify configuration file (default: `config.json`). Multiple --config options may be used. Can be set to `-`
-                        to read config from stdin.
+                        Specify configuration file (default: `config.json`).
+                        Multiple --config options may be used. Can be set to
+                        `-` to read config from stdin.
   -d PATH, --datadir PATH
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
 ```
 ```
-freqtrade list-hyperopts --help
 usage: freqtrade list-hyperopts [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                 [-d PATH] [--userdir PATH]
-                                [--hyperopt-path PATH] [-1]
+                                [--hyperopt-path PATH] [-1] [--no-color]
 
 optional arguments:
   -h, --help            show this help message and exit
   --hyperopt-path PATH  Specify additional lookup path for Hyperopt and
                         Hyperopt Loss functions.
   -1, --one-column      Print output in one column.
+  --no-color            Disable colorization of hyperopt results. May be
+                        useful if you are redirecting output to a file.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
