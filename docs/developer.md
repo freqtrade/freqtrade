@@ -1,6 +1,6 @@
 # Development Help
 
-This page is intended for developers of FreqTrade, people who want to contribute to the FreqTrade codebase or documentation, or people who want to understand the source code of the application they're running.
+This page is intended for developers of Freqtrade, people who want to contribute to the Freqtrade codebase or documentation, or people who want to understand the source code of the application they're running.
 
 All contributions, bug reports, bug fixes, documentation improvements, enhancements and ideas are welcome. We [track issues](https://github.com/freqtrade/freqtrade/issues) on [GitHub](https://github.com) and also have a dev channel in [slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE) where you can ask questions.
 
@@ -153,7 +153,7 @@ In VolumePairList, this implements different methods of sorting, does early vali
 ## Implement a new Exchange (WIP)
 
 !!! Note
-    This section is a Work in Progress and is not a complete guide on how to test a new exchange with FreqTrade.
+    This section is a Work in Progress and is not a complete guide on how to test a new exchange with Freqtrade.
 
 Most exchanges supported by CCXT should work out of the box.
 

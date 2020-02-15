@@ -672,7 +672,7 @@ freqtrade
 
 ## Embedding Strategies
 
-FreqTrade provides you with with an easy way to embed the strategy into your configuration file.
+Freqtrade provides you with with an easy way to embed the strategy into your configuration file.
 This is done by utilizing BASE64 encoding and providing this string at the strategy configuration field,
 in your chosen config file.
 
