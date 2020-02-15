@@ -32,7 +32,7 @@ def test_search_strategy():
 
 def test_search_all_strategies():
     directory = Path(__file__).parent
-    strategies = StrategyResolver.search_all_objects(directory)
+    strategies = StrategyResolver.search_all_objects(directory, enum_failed=False)
     assert isinstance(strategies, list)
     assert len(strategies) == 3
     assert isinstance(strategies[0], dict)
