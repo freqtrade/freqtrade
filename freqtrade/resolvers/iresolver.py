@@ -87,7 +87,7 @@ class IResolver:
                 continue
             module_path = entry.resolve()
 
-            obj = next(cls._get_valid_object(module_path, object_name), None)  # noqa
+            obj = next(cls._get_valid_object(module_path, object_name), None)
 
             if obj:
                 return (obj, module_path)

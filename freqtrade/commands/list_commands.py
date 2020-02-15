@@ -41,18 +41,21 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
 def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
     if print_colorized:
         colorama_init(autoreset=True)
+        red = Fore.RED
+        yellow = Fore.YELLOW
+        reset = Style.RESET_ALL
+    else:
+        red = ''
+        yellow = ''
+        reset = ''
 
     names = [s['name'] for s in objs]
     objss_to_print = [{
         'name': s['name'] if s['name'] else "--",
         'location': s['location'].name,
-        'status': (((Fore.RED if print_colorized else '') +
-                    "LOAD FAILED" + (Style.RESET_ALL if print_colorized else ''))
-                   if s['class'] is None
+        'status': (red + "LOAD FAILED" + reset if s['class'] is None
                    else "OK" if names.count(s['name']) == 1
-                   else ((Fore.YELLOW if print_colorized else '') +
-                         "DUPLICATE NAME" +
-                         (Style.RESET_ALL if print_colorized else '')))
+                   else yellow + "DUPLICATE NAME" + reset)
     } for s in objs]
 
     print(tabulate(objss_to_print, headers='keys', tablefmt='pipe'))
