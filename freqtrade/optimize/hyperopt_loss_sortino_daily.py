@@ -28,6 +28,9 @@ class SortinoHyperOptLossDaily(IHyperOptLoss):
         Objective function, returns smaller number for more optimal results.
 
         Uses Sortino Ratio calculation.
+
+        Sortino Ratio calculated as described in
+        http://www.redrockcapital.com/Sortino__A__Sharper__Ratio_Red_Rock_Capital.pdf
         """
         resample_freq = '1D'
         slippage_per_trade_ratio = 0.0005
