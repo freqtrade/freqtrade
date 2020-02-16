@@ -65,5 +65,5 @@ class SortinoHyperOptLossDaily(IHyperOptLoss):
             sortino_ratio = -20.
 
         # print(t_index, sum_daily, total_profit)
-        # print(risk_free_rate, expected_returns_mean, down_stdev, sortino_ratio)
+        # print(minimum_acceptable_return, expected_returns_mean, down_stdev, sortino_ratio)
         return -sortino_ratio
