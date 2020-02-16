@@ -5,6 +5,7 @@ This module defines the alternative HyperOptLoss class which can be used for
 Hyperoptimization.
 """
 import math
+import statistics
 from datetime import datetime
 
 from pandas import DataFrame, date_range
@@ -52,7 +53,7 @@ class SortinoHyperOptLossDaily(IHyperOptLoss):
         sum_daily['downside_returns'] = 0
         sum_daily.loc[total_profit < 0, 'downside_returns'] = total_profit
         total_downside = sum_daily['downside_returns']
-        down_stdev = total_downside.std()
+        down_stdev = statistics.pstdev(total_downside, 0)
 
         if (down_stdev != 0.):
             sortino_ratio = expected_returns_mean / down_stdev * math.sqrt(days_in_year)
