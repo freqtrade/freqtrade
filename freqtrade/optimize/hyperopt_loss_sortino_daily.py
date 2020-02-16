@@ -31,8 +31,7 @@ class SortinoHyperOptLossDaily(IHyperOptLoss):
         resample_freq = '1D'
         slippage_per_trade_ratio = 0.0005
         days_in_year = 365
-        annual_risk_free_rate = 0.0
-        risk_free_rate = annual_risk_free_rate / days_in_year
+        minimum_acceptable_return = 0.0
 
         # apply slippage per trade to profit_percent
         results.loc[:, 'profit_percent_after_slippage'] = \
@@ -47,7 +46,7 @@ class SortinoHyperOptLossDaily(IHyperOptLoss):
                 {"profit_percent_after_slippage": sum}).reindex(t_index).fillna(0)
         )
 
-        total_profit = sum_daily["profit_percent_after_slippage"] - risk_free_rate
+        total_profit = sum_daily["profit_percent_after_slippage"] - minimum_acceptable_return
         expected_returns_mean = total_profit.mean()
 
         sum_daily['downside_returns'] = 0
