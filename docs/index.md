@@ -51,12 +51,15 @@ To run this bot we recommend you a cloud instance with a minimum of:
 
 ### Software requirements
 
+- Docker (Recommended)
+
+Alternatively
+
 - Python 3.6.x
 - pip (pip3)
 - git
 - TA-Lib
 - virtualenv (Recommended)
-- Docker (Recommended)
 
 ## Support
 
@@ -67,4 +70,4 @@ Click [here](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODc
 
 ## Ready to try?
 
-Begin by reading our installation guide [here](installation).
+Begin by reading our installation guide [for docker](docker.md), or for [installation without docker](installation.md).

@@ -38,8 +38,8 @@ def main(sysargv: List[str] = None) -> None:
             # No subcommand was issued.
             raise OperationalException(
                 "Usage of Freqtrade requires a subcommand to be specified.\n"
-                "To have the previous behavior (bot executing trades in live/dry-run modes, "
-                "depending on the value of the `dry_run` setting in the config), run freqtrade "
+                "To have the bot executing trades in live/dry-run modes, "
+                "depending on the value of the `dry_run` setting in the config, run Freqtrade "
                 "as `freqtrade trade [options...]`.\n"
                 "To see the full list of options available, please use "
                 "`freqtrade --help` or `freqtrade <command> --help`."

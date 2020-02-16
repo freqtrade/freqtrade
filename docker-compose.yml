@@ -3,6 +3,18 @@ version: '3'
 services:
   freqtrade:
     image: freqtradeorg/freqtrade:master
+    # Build step - only needed when additional dependencies are needed
+    # build:
+    #   context: .
+    #   dockerfile: "./Dockerfile.technical"
+    restart: unless-stopped
+    container_name: freqtrade
     volumes:
       - "./user_data:/freqtrade/user_data"
-      - "./config.json:/freqtrade/config.json"
+    # Default command used when running `docker compose up`
+    command: >
+      trade
+      --logfile /freqtrade/user_data/freqtrade.log
+      --db-url sqlite:////freqtrade/user_data/tradesv3.sqlite
+      --config /freqtrade/user_data/config.json
+      --strategy SampleStrategy

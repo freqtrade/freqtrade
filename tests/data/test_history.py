@@ -24,7 +24,7 @@ from freqtrade.data.history.jsondatahandler import (JsonDataHandler,
                                                     JsonGzDataHandler)
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
-from freqtrade.strategy.default_strategy import DefaultStrategy
+from freqtrade.resolvers import StrategyResolver
 from tests.conftest import (get_patched_exchange, log_has, log_has_re,
                             patch_exchange)
 
@@ -352,7 +352,7 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
 
 def test_init(default_conf, mocker) -> None:
     assert {} == load_data(
-        datadir='',
+        datadir=Path(''),
         pairs=[],
         timeframe=default_conf['ticker_interval']
     )
@@ -361,13 +361,13 @@ def test_init(default_conf, mocker) -> None:
 def test_init_with_refresh(default_conf, mocker) -> None:
     exchange = get_patched_exchange(mocker, default_conf)
     refresh_data(
-        datadir='',
+        datadir=Path(''),
         pairs=[],
         timeframe=default_conf['ticker_interval'],
         exchange=exchange
     )
     assert {} == load_data(
-        datadir='',
+        datadir=Path(''),
         pairs=[],
         timeframe=default_conf['ticker_interval']
     )
@@ -399,7 +399,9 @@ def test_file_dump_json_tofile(testdatadir) -> None:
 
 def test_get_timerange(default_conf, mocker, testdatadir) -> None:
     patch_exchange(mocker)
-    strategy = DefaultStrategy(default_conf)
+
+    default_conf.update({'strategy': 'DefaultStrategy'})
+    strategy = StrategyResolver.load_strategy(default_conf)
 
     data = strategy.tickerdata_to_dataframe(
         load_data(
@@ -415,7 +417,9 @@ def test_get_timerange(default_conf, mocker, testdatadir) -> None:
 
 def test_validate_backtest_data_warn(default_conf, mocker, caplog, testdatadir) -> None:
     patch_exchange(mocker)
-    strategy = DefaultStrategy(default_conf)
+
+    default_conf.update({'strategy': 'DefaultStrategy'})
+    strategy = StrategyResolver.load_strategy(default_conf)
 
     data = strategy.tickerdata_to_dataframe(
         load_data(
@@ -437,7 +441,9 @@ def test_validate_backtest_data_warn(default_conf, mocker, caplog, testdatadir) 
 
 def test_validate_backtest_data(default_conf, mocker, caplog, testdatadir) -> None:
     patch_exchange(mocker)
-    strategy = DefaultStrategy(default_conf)
+
+    default_conf.update({'strategy': 'DefaultStrategy'})
+    strategy = StrategyResolver.load_strategy(default_conf)
 
     timerange = TimeRange('index', 'index', 200, 250)
     data = strategy.tickerdata_to_dataframe(

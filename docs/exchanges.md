@@ -32,6 +32,10 @@ To download data for the Kraken exchange, using `--dl-trades` is mandatory, othe
 
 ## Bittrex
 
+### Order types
+
+Bittrex does not support market orders. If you have a message at the bot startup about this, you should change order type values set in your configuration and/or in the strategy from `"market"` to `"limit"`. See some more details on this [here in the FAQ](faq.md#im-getting-the-exchange-bittrex-does-not-support-market-orders-message-and-cannot-run-my-strategy).
+
 ### Restricted markets
 
 Bittrex split its exchange into US and International versions.

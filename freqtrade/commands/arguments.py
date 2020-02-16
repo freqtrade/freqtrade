@@ -6,8 +6,8 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from freqtrade import constants
 from freqtrade.commands.cli_options import AVAILABLE_CLI_OPTIONS
+from freqtrade.constants import DEFAULT_CONFIG
 
 ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_data_dir"]
 
@@ -30,9 +30,9 @@ ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
 
 ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
 
-ARGS_LIST_STRATEGIES = ["strategy_path", "print_one_column"]
+ARGS_LIST_STRATEGIES = ["strategy_path", "print_one_column", "print_colorized"]
 
-ARGS_LIST_HYPEROPTS = ["hyperopt_path", "print_one_column"]
+ARGS_LIST_HYPEROPTS = ["hyperopt_path", "print_one_column", "print_colorized"]
 
 ARGS_LIST_EXCHANGES = ["print_one_column", "list_exchanges_all"]
 
@@ -44,6 +44,8 @@ ARGS_LIST_PAIRS = ["exchange", "print_list", "list_pairs_print_json", "print_one
 ARGS_TEST_PAIRLIST = ["config", "quote_currencies", "print_one_column", "list_pairs_print_json"]
 
 ARGS_CREATE_USERDIR = ["user_data_dir", "reset"]
+
+ARGS_BUILD_CONFIG = ["config"]
 
 ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy", "template"]
 
@@ -62,8 +64,12 @@ ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "ticker_interval"]
 
-ARGS_HYPEROPT_LIST = ["hyperopt_list_best", "hyperopt_list_profitable", "print_colorized",
-                      "print_json", "hyperopt_list_no_details"]
+ARGS_HYPEROPT_LIST = ["hyperopt_list_best", "hyperopt_list_profitable",
+                      "hyperopt_list_min_trades", "hyperopt_list_max_trades",
+                      "hyperopt_list_min_avg_time", "hyperopt_list_max_avg_time",
+                      "hyperopt_list_min_avg_profit", "hyperopt_list_max_avg_profit",
+                      "hyperopt_list_min_total_profit", "hyperopt_list_max_total_profit",
+                      "print_colorized", "print_json", "hyperopt_list_no_details"]
 
 ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperopt_show_index",
                       "print_json", "hyperopt_show_no_header"]
@@ -105,10 +111,23 @@ class Arguments:
         # Workaround issue in argparse with action='append' and default value
         # (see https://bugs.python.org/issue16399)
         # Allow no-config for certain commands (like downloading / plotting)
-        if ('config' in parsed_arg and parsed_arg.config is None and
-            ((Path.cwd() / constants.DEFAULT_CONFIG).is_file() or
-             not ('command' in parsed_arg and parsed_arg.command in NO_CONF_REQURIED))):
-            parsed_arg.config = [constants.DEFAULT_CONFIG]
+        if ('config' in parsed_arg and parsed_arg.config is None):
+            conf_required = ('command' in parsed_arg and parsed_arg.command in NO_CONF_REQURIED)
+
+            if 'user_data_dir' in parsed_arg and parsed_arg.user_data_dir is not None:
+                user_dir = parsed_arg.user_data_dir
+            else:
+                # Default case
+                user_dir = 'user_data'
+                # Try loading from "user_data/config.json"
+            cfgfile = Path(user_dir) / DEFAULT_CONFIG
+            if cfgfile.is_file():
+                parsed_arg.config = [str(cfgfile)]
+            else:
+                # Else use "config.json".
+                cfgfile = Path.cwd() / DEFAULT_CONFIG
+                if cfgfile.is_file() or not conf_required:
+                    parsed_arg.config = [DEFAULT_CONFIG]
 
         return parsed_arg
 
@@ -141,7 +160,7 @@ class Arguments:
                                         start_hyperopt_list, start_hyperopt_show,
                                         start_list_exchanges, start_list_hyperopts,
                                         start_list_markets, start_list_strategies,
-                                        start_list_timeframes,
+                                        start_list_timeframes, start_new_config,
                                         start_new_hyperopt, start_new_strategy,
                                         start_plot_dataframe, start_plot_profit,
                                         start_backtesting, start_hyperopt, start_edge,
@@ -184,6 +203,12 @@ class Arguments:
                                                    )
         create_userdir_cmd.set_defaults(func=start_create_userdir)
         self._build_args(optionlist=ARGS_CREATE_USERDIR, parser=create_userdir_cmd)
+
+        # add new-config subcommand
+        build_config_cmd = subparsers.add_parser('new-config',
+                                                 help="Create new config")
+        build_config_cmd.set_defaults(func=start_new_config)
+        self._build_args(optionlist=ARGS_BUILD_CONFIG, parser=build_config_cmd)
 
         # add new-strategy subcommand
         build_strategy_cmd = subparsers.add_parser('new-strategy',
