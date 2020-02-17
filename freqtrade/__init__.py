@@ -1,4 +1,4 @@
-""" FreqTrade bot """
+""" Freqtrade bot """
 __version__ = 'develop'
 
 if __version__ == 'develop':
