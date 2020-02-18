@@ -440,6 +440,7 @@ optional arguments:
   --no-color            Disable colorization of hyperopt results. May be
                         useful if you are redirecting output to a file.
   --print-json          Print best result detailization in JSON format.
+  --print-table         Print results in table format.
   --no-details          Do not print best epoch details.
 
 Common arguments:

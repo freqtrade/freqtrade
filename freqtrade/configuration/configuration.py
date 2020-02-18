@@ -286,6 +286,9 @@ class Configuration:
         self._args_to_config(config, argname='print_json',
                              logstring='Parameter --print-json detected ...')
 
+        self._args_to_config(config, argname='print_table',
+                             logstring='Parameter --print-table detected: {}')
+
         self._args_to_config(config, argname='hyperopt_jobs',
                              logstring='Parameter -j/--job-workers detected: {}')
 

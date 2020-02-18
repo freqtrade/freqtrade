@@ -20,7 +20,8 @@ from colorama import Fore, Style
 from colorama import init as colorama_init
 from joblib import (Parallel, cpu_count, delayed, dump, load,
                     wrap_non_picklable_objects)
-from pandas import DataFrame
+from pandas import DataFrame, json_normalize, isna
+from tabulate import tabulate
 
 from freqtrade.data.history import get_timerange, trim_dataframe
 from freqtrade.exceptions import OperationalException
@@ -294,6 +295,50 @@ class Hyperopt:
                 f"{results['current_epoch']:5d}/{total_epochs}: " +
                 f"{results['results_explanation']} " +
                 f"Objective: {results['loss']:.5f}")
+
+    @staticmethod
+    def print_result_table(config: dict, results: list, total_epochs: int, highlight_best: bool,
+                           print_colorized: bool) -> None:
+        """
+        Log result table
+        """
+        if not results:
+            return
+
+        trials = json_normalize(results, max_level=1)
+        trials = trials[['is_best', 'current_epoch',
+                         'results_metrics.trade_count', 'results_metrics.avg_profit',
+                         'results_metrics.total_profit', 'results_metrics.profit',
+                         'results_metrics.duration', 'loss']]
+        trials.columns = ['Best', 'Epoch', 'Trades', 'Avg profit', 'Total profit',
+                          'Profit', 'Avg duration', 'Objective']
+
+        trials['Best'] = trials['Best'].apply(lambda x: '*' if x else '')
+        trials['Objective'] = trials['Objective'].astype(str)
+
+        if print_colorized:
+            for i in range(len(trials)):
+                if trials.loc[i]['Total profit'] > 0:
+                    trials.at[i, 'Best'] = Fore.GREEN + trials.loc[i]['Best']
+                    trials.at[i, 'Objective'] = "{}{}".format(trials.loc[i]['Objective'],
+                                                              Fore.RESET)
+                    if '*' in trials.loc[i]['Best'] and highlight_best:
+                        trials.at[i, 'Best'] = Style.BRIGHT + trials.loc[i]['Best']
+                        trials.at[i, 'Objective'] = "{}{}".format(trials.loc[i]['Objective'],
+                                                                  Style.RESET_ALL)
+
+        trials['Epoch'] = trials['Epoch'].apply(
+            lambda x: "{}/{}".format(x, total_epochs))
+        trials['Avg profit'] = trials['Avg profit'].apply(
+            lambda x: '{:,.2f}%'.format(x) if not isna(x) else x)
+        trials['Profit'] = trials['Profit'].apply(
+            lambda x: '{:,.2f}%'.format(x) if not isna(x) else x)
+        trials['Total profit'] = trials['Total profit'].apply(
+            lambda x: '{: 11.8f} '.format(x) + config['stake_currency'] if not isna(x) else x)
+        trials['Avg duration'] = trials['Avg duration'].apply(
+            lambda x: '{:,.1f}m'.format(x) if not isna(x) else x)
+
+        print(tabulate(trials.to_dict(orient='list'), headers='keys', tablefmt='psql'))
 
     def has_space(self, space: str) -> bool:
         """
