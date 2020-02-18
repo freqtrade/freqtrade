@@ -28,7 +28,9 @@ class IResolver:
     def build_search_paths(cls, config: Dict[str, Any], user_subdir: Optional[str] = None,
                            extra_dir: Optional[str] = None) -> List[Path]:
 
-        abs_paths: List[Path] = [cls.initial_search_path]
+        abs_paths: List[Path] = []
+        if cls.initial_search_path:
+            abs_paths.append(cls.initial_search_path)
 
         if user_subdir:
             abs_paths.insert(0, config['user_data_dir'].joinpath(user_subdir))

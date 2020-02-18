@@ -27,7 +27,7 @@ class StrategyResolver(IResolver):
     object_type = IStrategy
     object_type_str = "Strategy"
     user_subdir = USERPATH_STRATEGIES
-    initial_search_path = Path(__file__).parent.parent.joinpath('strategy').resolve()
+    initial_search_path = None
 
     @staticmethod
     def load_strategy(config: Dict[str, Any] = None) -> IStrategy:

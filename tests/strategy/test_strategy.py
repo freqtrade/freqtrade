@@ -2,7 +2,6 @@
 import logging
 import warnings
 from base64 import urlsafe_b64encode
-from os import path
 from pathlib import Path
 
 import pytest
@@ -15,7 +14,7 @@ from tests.conftest import log_has, log_has_re
 
 
 def test_search_strategy():
-    default_location = Path(__file__).parent.parent.joinpath('strategy').resolve()
+    default_location = Path(__file__).parent / 'strats'
 
     s, _ = StrategyResolver._search_object(
         directory=default_location,
@@ -72,12 +71,11 @@ def test_load_strategy_base64(result, caplog, default_conf):
 def test_load_strategy_invalid_directory(result, caplog, default_conf):
     default_conf['strategy'] = 'DefaultStrategy'
     extra_dir = Path.cwd() / 'some/path'
-    strategy = StrategyResolver._load_strategy('DefaultStrategy', config=default_conf,
-                                               extra_dir=extra_dir)
+    with pytest.raises(OperationalException):
+        StrategyResolver._load_strategy('DefaultStrategy', config=default_conf,
+                                        extra_dir=extra_dir)
 
     assert log_has_re(r'Path .*' + r'some.*path.*' + r'.* does not exist', caplog)
-
-    assert 'rsi' in strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 
 
 def test_load_not_found_strategy(default_conf):
