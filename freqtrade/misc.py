@@ -139,5 +139,4 @@ def render_template(templatefile: str, arguments: dict = {}) -> str:
         autoescape=select_autoescape(['html', 'xml'])
     )
     template = env.get_template(templatefile)
-
     return template.render(**arguments)

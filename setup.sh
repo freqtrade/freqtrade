@@ -17,6 +17,14 @@ function check_installed_python() {
         exit 2
     fi
 
+    which python3.8
+    if [ $? -eq 0 ]; then
+        echo "using Python 3.8"
+        PYTHON=python3.8
+        check_installed_pip
+        return
+    fi
+
     which python3.7
     if [ $? -eq 0 ]; then
         echo "using Python 3.7"
@@ -215,27 +223,8 @@ function config_generator() {
 function config() {
 
     echo "-------------------------"
-    echo "Generating config file"
+    echo "Please use 'freqtrade new-config -c config.json' to generate a new configuration file."
     echo "-------------------------"
-    if [ -f config.json ]
-    then
-    read -p "A config file already exist, do you want to override it [y/N]? "
-    if [[ $REPLY =~ ^[Yy]$ ]]
-    then
-        config_generator
-    else
-        echo "Configuration of config.json ignored."
-    fi
-    else
-        config_generator
-    fi
-
-    echo
-    echo "-------------------------"
-    echo "Config file generated"
-    echo "-------------------------"
-    echo "Edit ./config.json to modify Pair and other configurations."
-    echo
 }
 
 function install() {

@@ -31,7 +31,7 @@ Freqtrade provides the Linux/MacOS Easy Installation script to install all depen
 !!! Note
     Windows installation is explained [here](#windows).
 
-The easiest way to install and run Freqtrade is to clone the bot GitHub repository and then run the Easy Installation script, if it's available for your platform.
+The easiest way to install and run Freqtrade is to clone the bot Github repository and then run the Easy Installation script, if it's available for your platform.
 
 !!! Note "Version considerations"
     When cloning the repository the default working branch has the name `develop`. This branch contains all last features (can be considered as relatively stable, thanks to automated tests). The `master` branch contains the code of the last release (done usually once per month on an approximately one week old snapshot of the `develop` branch to prevent packaging bugs, so potentially it's more stable).
@@ -47,6 +47,7 @@ cd freqtrade
 git checkout master  # Optional, see (1)
 ./setup.sh --install
 ```
+
 (1) This command switches the cloned repository to the use of the `master` branch. It's not needed if you wish to stay on the `develop` branch. You may later switch between branches at any time with the `git checkout master`/`git checkout develop` commands.
 
 ## Easy Installation Script (Linux/MacOS)
@@ -129,6 +130,17 @@ bash setup.sh -i
 
 #### 1. Install TA-Lib
 
+Use the provided ta-lib installation script
+
+```bash
+sudo ./build_helpers/install_ta-lib.sh
+```
+
+!!! Note
+    This will use the ta-lib tar.gz included in this repository.
+
+##### TA-Lib manual installation
+
 Official webpage: https://mrjbq7.github.io/ta-lib/install.html
 
 ```bash
@@ -184,7 +196,8 @@ python3 -m pip install -e .
 # Initialize the user_directory
 freqtrade create-userdir --userdir user_data/
 
-cp config.json.example config.json
+# Create a new configuration file
+freqtrade new-config --config config.json
 ```
 
 > *To edit the config please refer to [Bot Configuration](configuration.md).*

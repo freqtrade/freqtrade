@@ -346,7 +346,7 @@ if self.dp:
 
 ``` python
 if self.dp:
-    if self.dp.runmode in ('live', 'dry_run'):
+    if self.dp.runmode.value in ('live', 'dry_run'):
         ob = self.dp.orderbook(metadata['pair'], 1)
         dataframe['best_bid'] = ob['bids'][0][0]
         dataframe['best_ask'] = ob['asks'][0][0]
@@ -422,7 +422,7 @@ from freqtrade.persistence import Trade
 The following example queries for the current pair and trades from today, however other filters can easily be added.
 
 ``` python
-if self.config['runmode'] in ('live', 'dry_run'):
+if self.config['runmode'].value in ('live', 'dry_run'):
     trades = Trade.get_trades([Trade.pair == metadata['pair'],
                                Trade.open_date > datetime.utcnow() - timedelta(days=1),
                                Trade.is_open == False,
@@ -434,7 +434,7 @@ if self.config['runmode'] in ('live', 'dry_run'):
 Get amount of stake_currency currently invested in Trades:
 
 ``` python
-if self.config['runmode'] in ('live', 'dry_run'):
+if self.config['runmode'].value in ('live', 'dry_run'):
     total_stakes = Trade.total_open_trades_stakes()
 ```
 
@@ -442,7 +442,7 @@ Retrieve performance per pair.
 Returns a List of dicts per pair.
 
 ``` python
-if self.config['runmode'] in ('live', 'dry_run'):
+if self.config['runmode'].value in ('live', 'dry_run'):
     performance = Trade.get_overall_performance()
 ```
 
@@ -487,7 +487,7 @@ from datetime import timedelta, datetime, timezone
 # --------
 
 # Within populate indicators (or populate_buy):
-if self.config['runmode'] in ('live', 'dry_run'):
+if self.config['runmode'].value in ('live', 'dry_run'):
    # fetch closed trades for the last 2 days
     trades = Trade.get_trades([Trade.pair == metadata['pair'],
                                Trade.open_date > datetime.utcnow() - timedelta(days=2),
@@ -531,6 +531,27 @@ If you want to use a strategy from a different directory you can pass `--strateg
 ```bash
 freqtrade trade --strategy AwesomeStrategy --strategy-path /some/directory
 ```
+
+### Derived strategies
+
+The strategies can be derived from other strategies. This avoids duplication of your custom strategy code. You can use this technique to override small parts of your main strategy, leaving the rest untouched:
+
+``` python
+class MyAwesomeStrategy(IStrategy):
+    ...
+    stoploss = 0.13
+    trailing_stop = False
+    # All other attributes and methods are here as they
+    # should be in any custom strategy...
+    ...
+
+class MyAwesomeStrategy2(MyAwesomeStrategy):
+    # Override something
+    stoploss = 0.08
+    trailing_stop = True
+```
+
+Both attributes and methods may be overriden, altering behavior of the original strategy in a way you need.
 
 ### Common mistakes when developing strategies
 

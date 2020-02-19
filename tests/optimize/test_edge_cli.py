@@ -82,8 +82,8 @@ def test_start(mocker, fee, edge_conf, caplog) -> None:
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
     ]
-    args = get_args(args)
-    start_edge(args)
+    pargs = get_args(args)
+    start_edge(pargs)
     assert log_has('Starting freqtrade in Edge mode', caplog)
     assert start_mock.call_count == 1
 

@@ -10,8 +10,9 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.history import load_tickerdata_file
 from freqtrade.persistence import Trade
-from tests.conftest import get_patched_exchange, log_has
+from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy.default_strategy import DefaultStrategy
+from tests.conftest import get_patched_exchange, log_has
 
 # Avoid to reinit the same object again and again
 _STRATEGY = DefaultStrategy(config={})
@@ -104,7 +105,8 @@ def test_get_signal_handles_exceptions(mocker, default_conf):
 
 
 def test_tickerdata_to_dataframe(default_conf, testdatadir) -> None:
-    strategy = DefaultStrategy(default_conf)
+    default_conf.update({'strategy': 'DefaultStrategy'})
+    strategy = StrategyResolver.load_strategy(default_conf)
 
     timerange = TimeRange.parse_timerange('1510694220-1510700340')
     tick = load_tickerdata_file(testdatadir, 'UNITTEST/BTC', '1m', timerange=timerange)
@@ -120,7 +122,8 @@ def test_min_roi_reached(default_conf, fee) -> None:
     min_roi_list = [{20: 0.05, 55: 0.01, 0: 0.1},
                     {0: 0.1, 20: 0.05, 55: 0.01}]
     for roi in min_roi_list:
-        strategy = DefaultStrategy(default_conf)
+        default_conf.update({'strategy': 'DefaultStrategy'})
+        strategy = StrategyResolver.load_strategy(default_conf)
         strategy.minimal_roi = roi
         trade = Trade(
             pair='ETH/BTC',
@@ -158,7 +161,8 @@ def test_min_roi_reached2(default_conf, fee) -> None:
                      },
                     ]
     for roi in min_roi_list:
-        strategy = DefaultStrategy(default_conf)
+        default_conf.update({'strategy': 'DefaultStrategy'})
+        strategy = StrategyResolver.load_strategy(default_conf)
         strategy.minimal_roi = roi
         trade = Trade(
             pair='ETH/BTC',
@@ -192,7 +196,8 @@ def test_min_roi_reached3(default_conf, fee) -> None:
                30: 0.05,
                55: 0.30,
                }
-    strategy = DefaultStrategy(default_conf)
+    default_conf.update({'strategy': 'DefaultStrategy'})
+    strategy = StrategyResolver.load_strategy(default_conf)
     strategy.minimal_roi = min_roi
     trade = Trade(
             pair='ETH/BTC',
@@ -292,7 +297,8 @@ def test__analyze_ticker_internal_skip_analyze(ticker_history, mocker, caplog) -
 
 
 def test_is_pair_locked(default_conf):
-    strategy = DefaultStrategy(default_conf)
+    default_conf.update({'strategy': 'DefaultStrategy'})
+    strategy = StrategyResolver.load_strategy(default_conf)
     # dict should be empty
     assert not strategy._pair_locked_until
 

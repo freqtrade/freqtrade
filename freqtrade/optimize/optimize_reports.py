@@ -21,13 +21,14 @@ def generate_text_table(data: Dict[str, Dict], stake_currency: str, max_open_tra
     tabular_data = []
     headers = [
         'Pair',
-        'Buy Count',
+        'Buys',
         'Avg Profit %',
         'Cum Profit %',
         f'Tot Profit {stake_currency}',
         'Tot Profit %',
         'Avg Duration',
         'Wins',
+        'Draws',
         'Losses'
     ]
     for pair in data:
@@ -45,6 +46,7 @@ def generate_text_table(data: Dict[str, Dict], stake_currency: str, max_open_tra
             str(timedelta(
                 minutes=round(result.trade_duration.mean()))) if not result.empty else '0:00',
             len(result[result.profit_abs > 0]),
+            len(result[result.profit_abs == 0]),
             len(result[result.profit_abs < 0])
         ])
 
@@ -59,6 +61,7 @@ def generate_text_table(data: Dict[str, Dict], stake_currency: str, max_open_tra
         str(timedelta(
             minutes=round(results.trade_duration.mean()))) if not results.empty else '0:00',
         len(results[results.profit_abs > 0]),
+        len(results[results.profit_abs == 0]),
         len(results[results.profit_abs < 0])
     ])
     # Ignore type as floatfmt does allow tuples but mypy does not know that
@@ -78,8 +81,9 @@ def generate_text_table_sell_reason(
     tabular_data = []
     headers = [
         "Sell Reason",
-        "Sell Count",
+        "Sells",
         "Wins",
+        "Draws",
         "Losses",
         "Avg Profit %",
         "Cum Profit %",
@@ -88,7 +92,8 @@ def generate_text_table_sell_reason(
     ]
     for reason, count in results['sell_reason'].value_counts().iteritems():
         result = results.loc[results['sell_reason'] == reason]
-        profit = len(result[result['profit_abs'] >= 0])
+        wins = len(result[result['profit_abs'] > 0])
+        draws = len(result[result['profit_abs'] == 0])
         loss = len(result[result['profit_abs'] < 0])
         profit_mean = round(result['profit_percent'].mean() * 100.0, 2)
         profit_sum = round(result["profit_percent"].sum() * 100.0, 2)
@@ -98,7 +103,8 @@ def generate_text_table_sell_reason(
             [
                 reason.value,
                 count,
-                profit,
+                wins,
+                draws,
                 loss,
                 profit_mean,
                 profit_sum,
@@ -121,9 +127,9 @@ def generate_text_table_strategy(stake_currency: str, max_open_trades: str,
 
     floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.2f', 'd', '.1f', '.1f')
     tabular_data = []
-    headers = ['Strategy', 'Buy Count', 'Avg Profit %', 'Cum Profit %',
+    headers = ['Strategy', 'Buys', 'Avg Profit %', 'Cum Profit %',
                f'Tot Profit {stake_currency}', 'Tot Profit %', 'Avg Duration',
-               'Wins', 'Losses']
+               'Wins', 'Draws', 'Losses']
     for strategy, results in all_results.items():
         tabular_data.append([
             strategy,
@@ -135,6 +141,7 @@ def generate_text_table_strategy(stake_currency: str, max_open_trades: str,
             str(timedelta(
                 minutes=round(results.trade_duration.mean()))) if not results.empty else '0:00',
             len(results[results.profit_abs > 0]),
+            len(results[results.profit_abs == 0]),
             len(results[results.profit_abs < 0])
         ])
     # Ignore type as floatfmt does allow tuples but mypy does not know that
@@ -146,9 +153,9 @@ def generate_edge_table(results: dict) -> str:
 
     floatfmt = ('s', '.10g', '.2f', '.2f', '.2f', '.2f', 'd', '.d')
     tabular_data = []
-    headers = ['pair', 'stoploss', 'win rate', 'risk reward ratio',
-               'required risk reward', 'expectancy', 'total number of trades',
-               'average duration (min)']
+    headers = ['Pair', 'Stoploss', 'Win Rate', 'Risk Reward Ratio',
+               'Required Risk Reward', 'Expectancy', 'Total Number of Trades',
+               'Average Duration (min)']
 
     for result in results.items():
         if result[1].nb_trades > 0:

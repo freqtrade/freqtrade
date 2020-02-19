@@ -1,24 +1,28 @@
 # Strategy analysis example
 
-Debugging a strategy can be time-consuming. FreqTrade offers helper functions to visualize raw data.
+Debugging a strategy can be time-consuming. Freqtrade offers helper functions to visualize raw data.
+The following assumes you work with SampleStrategy, data for 5m timeframe from Binance and have downloaded them into the data directory in the default location.
 
 ## Setup
 
 
 ```python
 from pathlib import Path
+from freqtrade.configuration import Configuration
+
 # Customize these according to your needs.
 
+# Initialize empty configuration object
+config = Configuration.from_files([])
+# Optionally, use existing configuration file
+# config = Configuration.from_files(["config.json"])
+
 # Define some constants
-timeframe = "5m"
+config["ticker_interval"] = "5m"
 # Name of the strategy class
-strategy_name = 'SampleStrategy'
-# Path to user data
-user_data_dir = Path('user_data')
-# Location of the strategy
-strategy_location = user_data_dir / 'strategies'
+config["strategy"] = "SampleStrategy"
 # Location of the data
-data_location = Path(user_data_dir, 'data', 'binance')
+data_location = Path(config['user_data_dir'], 'data', 'binance')
 # Pair to analyze - Only use one pair here
 pair = "BTC_USDT"
 ```
@@ -29,7 +33,7 @@ pair = "BTC_USDT"
 from freqtrade.data.history import load_pair_history
 
 candles = load_pair_history(datadir=data_location,
-                            timeframe=timeframe,
+                            timeframe=config["ticker_interval"],
                             pair=pair)
 
 # Confirm success
@@ -44,9 +48,7 @@ candles.head()
 ```python
 # Load strategy using values set above
 from freqtrade.resolvers import StrategyResolver
-strategy = StrategyResolver.load_strategy({'strategy': strategy_name,
-                                          'user_data_dir': user_data_dir,
-                                          'strategy_path': strategy_location})
+strategy = StrategyResolver.load_strategy(config)
 
 # Generate buy/sell signals using strategy
 df = strategy.analyze_ticker(candles, {'pair': pair})
@@ -86,7 +88,7 @@ Analyze a trades dataframe (also used below for plotting)
 from freqtrade.data.btanalysis import load_backtest_data
 
 # Load backtest results
-trades = load_backtest_data(user_data_dir / "backtest_results/backtest-result.json")
+trades = load_backtest_data(config["user_data_dir"] / "backtest_results/backtest-result.json")
 
 # Show value-counts per pair
 trades.groupby("pair")["sell_reason"].value_counts()
