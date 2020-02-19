@@ -31,9 +31,9 @@ This will create a new hyperopt file from a template, which will be located unde
 Depending on the space you want to optimize, only some of the below are required:
 
 * fill `buy_strategy_generator` - for buy signal optimization
-* fill `indicator_space` - for buy signal optimzation
+* fill `indicator_space` - for buy signal optimization
 * fill `sell_strategy_generator` - for sell signal optimization
-* fill `sell_indicator_space` - for sell signal optimzation
+* fill `sell_indicator_space` - for sell signal optimization
 
 !!! Note
     `populate_indicators` needs to create all indicators any of thee spaces may use, otherwise hyperopt will not work.
