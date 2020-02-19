@@ -52,8 +52,8 @@ Common arguments:
 
 ### Data format
 
-Freqtrade currently supports 2 dataformats, `json` and `jsongz`, a zipped version of json files.
-By default, OHLCV data is stored as json data, while trades data is stored as `jsongz` data.
+Freqtrade currently supports 2 dataformats, `json` (plain "text" json files) and `jsongz` (a gzipped version of json files).
+By default, OHLCV data is stored as `json` data, while trades data is stored as `jsongz` data.
 
 This can be changed via the `--data-format` and `--data-format-trades` parameters respectivly.
 
@@ -105,8 +105,8 @@ Common arguments:
 
 ##### Example converting data
 
-The following command will convert all Candle data available in `~/.freqtrade/data/binance` from json to jsongz, saving diskspace in the process.
-It'll also remove source files (`--erase` parameter).
+The following command will convert all ohlcv (candle) data available in `~/.freqtrade/data/binance` from json to jsongz, saving diskspace in the process.
+It'll also remove original json data files (`--erase` parameter).
 
 ``` bash
 freqtrade convert-data --format-from json --format-to jsongz --data-dir ~/.freqtrade/data/binance -t 5m 15m --erase
@@ -151,8 +151,8 @@ Common arguments:
 
 ##### Example converting trades
 
-The following command will convert all available trade-data in `~/.freqtrade/data/kraken` from json to jsongz, saving diskspace in the process.
-It'll also remove source files (`--erase` parameter).
+The following command will convert all available trade-data in `~/.freqtrade/data/kraken` from jsongz to json.
+It'll also remove original jsongz data files (`--erase` parameter).
 
 ``` bash
 freqtrade convert-trade-data --format-from jsongz --format-to json --data-dir ~/.freqtrade/data/kraken --erase
