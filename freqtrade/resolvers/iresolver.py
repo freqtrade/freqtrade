@@ -22,7 +22,7 @@ class IResolver:
     object_type: Type[Any]
     object_type_str: str
     user_subdir: Optional[str] = None
-    initial_search_path: Path
+    initial_search_path: Optional[Path]
 
     @classmethod
     def build_search_paths(cls, config: Dict[str, Any], user_subdir: Optional[str] = None,
