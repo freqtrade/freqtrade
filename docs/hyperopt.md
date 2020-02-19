@@ -191,8 +191,8 @@ Currently, the following loss functions are builtin:
 
 * `DefaultHyperOptLoss` (default legacy Freqtrade hyperoptimization loss function)
 * `OnlyProfitHyperOptLoss` (which takes only amount of profit into consideration)
-* `SharpeHyperOptLoss` (optimizes Sharpe Ratio calculated on trade returns relative to **upside** standard deviation)
-* `SharpeHyperOptLossDaily` (optimizes Sharpe Ratio calculated on **daily** trade returns relative to **upside** standard deviation)
+* `SharpeHyperOptLoss` (optimizes Sharpe Ratio calculated on trade returns relative to standard deviation)
+* `SharpeHyperOptLossDaily` (optimizes Sharpe Ratio calculated on **daily** trade returns relative to standard deviation)
 * `SortinoHyperOptLoss` (optimizes Sortino Ratio calculated on trade returns relative to **downside** standard deviation)
 * `SortinoHyperOptLossDaily` (optimizes Sortino Ratio calculated on **daily** trade returns relative to **downside** standard deviation)
 
