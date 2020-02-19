@@ -22,7 +22,8 @@ from joblib import (Parallel, cpu_count, delayed, dump, load,
                     wrap_non_picklable_objects)
 from pandas import DataFrame
 
-from freqtrade.data.history import get_timerange, trim_dataframe
+from freqtrade.data.converter import trim_dataframe
+from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import plural, round_dict
 from freqtrade.optimize.backtesting import Backtesting

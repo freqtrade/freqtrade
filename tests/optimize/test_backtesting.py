@@ -1,6 +1,5 @@
 # pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, unused-argument
 
-import math
 import random
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -15,7 +14,7 @@ from freqtrade.configuration import TimeRange
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_backtesting
 from freqtrade.data import history
 from freqtrade.data.btanalysis import evaluate_result_multi
-from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.data.converter import clean_ohlcv_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import DependencyException, OperationalException
@@ -50,47 +49,33 @@ def trim_dictlist(dict_list, num):
 
 def load_data_test(what, testdatadir):
     timerange = TimeRange.parse_timerange('1510694220-1510700340')
-    pair = history.load_tickerdata_file(testdatadir, timeframe='1m',
-                                        pair='UNITTEST/BTC', timerange=timerange)
-    datalen = len(pair)
+    data = history.load_pair_history(pair='UNITTEST/BTC', datadir=testdatadir,
+                                     timeframe='1m', timerange=timerange,
+                                     drop_incomplete=False,
+                                     fill_up_missing=False)
 
     base = 0.001
     if what == 'raise':
-        data = [
-            [
-                pair[x][0],  # Keep old dates
-                x * base,  # But replace O,H,L,C
-                x * base + 0.0001,
-                x * base - 0.0001,
-                x * base,
-                pair[x][5],  # Keep old volume
-            ] for x in range(0, datalen)
-        ]
+        data.loc[:, 'open'] = data.index * base
+        data.loc[:, 'high'] = data.index * base + 0.0001
+        data.loc[:, 'low'] = data.index * base - 0.0001
+        data.loc[:, 'close'] = data.index * base
+
     if what == 'lower':
-        data = [
-            [
-                pair[x][0],  # Keep old dates
-                1 - x * base,  # But replace O,H,L,C
-                1 - x * base + 0.0001,
-                1 - x * base - 0.0001,
-                1 - x * base,
-                pair[x][5]  # Keep old volume
-            ] for x in range(0, datalen)
-        ]
+        data.loc[:, 'open'] = 1 - data.index * base
+        data.loc[:, 'high'] = 1 - data.index * base + 0.0001
+        data.loc[:, 'low'] = 1 - data.index * base - 0.0001
+        data.loc[:, 'close'] = 1 - data.index * base
+
     if what == 'sine':
         hz = 0.1  # frequency
-        data = [
-            [
-                pair[x][0],  # Keep old dates
-                math.sin(x * hz) / 1000 + base,  # But replace O,H,L,C
-                math.sin(x * hz) / 1000 + base + 0.0001,
-                math.sin(x * hz) / 1000 + base - 0.0001,
-                math.sin(x * hz) / 1000 + base,
-                pair[x][5]  # Keep old volume
-            ] for x in range(0, datalen)
-        ]
-    return {'UNITTEST/BTC': parse_ticker_dataframe(data, '1m', pair="UNITTEST/BTC",
-                                                   fill_missing=True)}
+        data.loc[:, 'open'] = np.sin(data.index * hz) / 1000 + base
+        data.loc[:, 'high'] = np.sin(data.index * hz) / 1000 + base + 0.0001
+        data.loc[:, 'low'] = np.sin(data.index * hz) / 1000 + base - 0.0001
+        data.loc[:, 'close'] = np.sin(data.index * hz) / 1000 + base
+
+    return {'UNITTEST/BTC': clean_ohlcv_dataframe(data, timeframe='1m', pair='UNITTEST/BTC',
+                                                  fill_missing=True)}
 
 
 def simple_backtest(config, contour, num_results, mocker, testdatadir) -> None:
@@ -112,21 +97,6 @@ def simple_backtest(config, contour, num_results, mocker, testdatadir) -> None:
     )
     # results :: <class 'pandas.core.frame.DataFrame'>
     assert len(results) == num_results
-
-
-def mocked_load_data(datadir, pairs=[], timeframe='0m',
-                     timerange=None, *args, **kwargs):
-    tickerdata = history.load_tickerdata_file(datadir, 'UNITTEST/BTC', '1m', timerange=timerange)
-    pairdata = {'UNITTEST/BTC': parse_ticker_dataframe(tickerdata, '1m', pair="UNITTEST/BTC",
-                                                       fill_missing=True)}
-    return pairdata
-
-
-# use for mock ccxt.fetch_ohlvc'
-def _load_pair_as_ticks(pair, tickfreq):
-    ticks = history.load_tickerdata_file(None, timeframe=tickfreq, pair=pair)
-    ticks = ticks[-201:]
-    return ticks
 
 
 # FIX: fixturize this?
@@ -339,12 +309,9 @@ def test_tickerdata_with_fee(default_conf, mocker, testdatadir) -> None:
 
 def test_tickerdata_to_dataframe_bt(default_conf, mocker, testdatadir) -> None:
     patch_exchange(mocker)
-    # timerange = TimeRange(None, 'line', 0, -100)
     timerange = TimeRange.parse_timerange('1510694220-1510700340')
-    tick = history.load_tickerdata_file(testdatadir, 'UNITTEST/BTC', '1m', timerange=timerange)
-    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
-                                                         fill_missing=True)}
-
+    tickerlist = history.load_data(testdatadir, '1m', ['UNITTEST/BTC'], timerange=timerange,
+                                   fill_up_missing=True)
     backtesting = Backtesting(default_conf)
     data = backtesting.strategy.tickerdata_to_dataframe(tickerlist)
     assert len(data['UNITTEST/BTC']) == 102
@@ -361,7 +328,6 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     def get_timerange(input1):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
-    mocker.patch('freqtrade.data.history.load_data', mocked_load_data)
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', MagicMock())
     patch_exchange(mocker)
@@ -391,7 +357,8 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) ->
     def get_timerange(input1):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
-    mocker.patch('freqtrade.data.history.load_pair_history', MagicMock(return_value=pd.DataFrame()))
+    mocker.patch('freqtrade.data.history.history_utils.load_pair_history',
+                 MagicMock(return_value=pd.DataFrame()))
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', MagicMock())
     patch_exchange(mocker)
@@ -695,13 +662,7 @@ def test_backtest_record(default_conf, fee, mocker):
 def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
 
-    async def load_pairs(pair, timeframe, since):
-        return _load_pair_as_ticks(pair, timeframe)
-
-    api_mock = MagicMock()
-    api_mock.fetch_ohlcv = load_pairs
-
-    patch_exchange(mocker, api_mock)
+    patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', MagicMock())
     mocker.patch('freqtrade.optimize.backtesting.generate_text_table', MagicMock())
 
@@ -741,12 +702,7 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
 def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
 
-    async def load_pairs(pair, timeframe, since):
-        return _load_pair_as_ticks(pair, timeframe)
-    api_mock = MagicMock()
-    api_mock.fetch_ohlcv = load_pairs
-
-    patch_exchange(mocker, api_mock)
+    patch_exchange(mocker)
     backtestmock = MagicMock()
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
     gen_table_mock = MagicMock()

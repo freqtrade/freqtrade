@@ -51,8 +51,11 @@ ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy", "template"]
 
 ARGS_BUILD_HYPEROPT = ["user_data_dir", "hyperopt", "template"]
 
+ARGS_CONVERT_DATA = ["pairs", "format_from", "format_to", "erase"]
+ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes"]
+
 ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "download_trades", "exchange",
-                      "timeframes", "erase"]
+                      "timeframes", "erase", "dataformat_ohlcv", "dataformat_trades"]
 
 ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
                        "db_url", "trade_source", "export", "exportfilename",
@@ -71,8 +74,9 @@ ARGS_HYPEROPT_LIST = ["hyperopt_list_best", "hyperopt_list_profitable",
 ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperopt_show_index",
                       "print_json", "hyperopt_show_no_header"]
 
-NO_CONF_REQURIED = ["download-data", "list-timeframes", "list-markets", "list-pairs",
-                    "list-strategies", "list-hyperopts", "hyperopt-list", "hyperopt-show",
+NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list-timeframes",
+                    "list-markets", "list-pairs", "list-strategies",
+                    "list-hyperopts", "hyperopt-list", "hyperopt-show",
                     "plot-dataframe", "plot-profit"]
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-hyperopt", "new-strategy"]
@@ -151,7 +155,8 @@ class Arguments:
         self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot')
         self._build_args(optionlist=['version'], parser=self.parser)
 
-        from freqtrade.commands import (start_create_userdir, start_download_data,
+        from freqtrade.commands import (start_create_userdir, start_convert_data,
+                                        start_download_data,
                                         start_hyperopt_list, start_hyperopt_show,
                                         start_list_exchanges, start_list_hyperopts,
                                         start_list_markets, start_list_strategies,
@@ -287,6 +292,24 @@ class Arguments:
         )
         download_data_cmd.set_defaults(func=start_download_data)
         self._build_args(optionlist=ARGS_DOWNLOAD_DATA, parser=download_data_cmd)
+
+        # Add convert-data subcommand
+        convert_data_cmd = subparsers.add_parser(
+            'convert-data',
+            help='Convert OHLCV data from one format to another.',
+            parents=[_common_parser],
+        )
+        convert_data_cmd.set_defaults(func=partial(start_convert_data, ohlcv=True))
+        self._build_args(optionlist=ARGS_CONVERT_DATA_OHLCV, parser=convert_data_cmd)
+
+        # Add convert-trade-data subcommand
+        convert_trade_data_cmd = subparsers.add_parser(
+            'convert-trade-data',
+            help='Convert trade-data from one format to another.',
+            parents=[_common_parser],
+        )
+        convert_trade_data_cmd.set_defaults(func=partial(start_convert_data, ohlcv=False))
+        self._build_args(optionlist=ARGS_CONVERT_DATA, parser=convert_trade_data_cmd)
 
         # Add Plotting subcommand
         plot_dataframe_cmd = subparsers.add_parser(

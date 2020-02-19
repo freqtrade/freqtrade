@@ -364,8 +364,15 @@ class Configuration:
 
         self._args_to_config(config, argname='days',
                              logstring='Detected --days: {}')
+
         self._args_to_config(config, argname='download_trades',
                              logstring='Detected --dl-trades: {}')
+
+        self._args_to_config(config, argname='dataformat_ohlcv',
+                             logstring='Using "{}" to store OHLCV data.')
+
+        self._args_to_config(config, argname='dataformat_trades',
+                             logstring='Using "{}" to store trades data.')
 
     def _process_runmode(self, config: Dict[str, Any]) -> None:
 

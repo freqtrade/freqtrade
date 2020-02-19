@@ -333,6 +333,30 @@ AVAILABLE_CLI_OPTIONS = {
              'desired timeframe as specified as --timeframes/-t.',
         action='store_true',
     ),
+    "format_from": Arg(
+        '--format-from',
+        help='Source format for data conversion.',
+        choices=constants.AVAILABLE_DATAHANDLERS,
+        required=True,
+    ),
+    "format_to": Arg(
+        '--format-to',
+        help='Destination format for data conversion.',
+        choices=constants.AVAILABLE_DATAHANDLERS,
+        required=True,
+    ),
+    "dataformat_ohlcv": Arg(
+        '--data-format-ohlcv',
+        help='Storage format for downloaded ohlcv data. (default: `%(default)s`).',
+        choices=constants.AVAILABLE_DATAHANDLERS,
+        default='json'
+    ),
+    "dataformat_trades": Arg(
+        '--data-format-trades',
+        help='Storage format for downloaded trades data. (default: `%(default)s`).',
+        choices=constants.AVAILABLE_DATAHANDLERS,
+        default='jsongz'
+    ),
     "exchange": Arg(
         '--exchange',
         help=f'Exchange name (default: `{constants.DEFAULT_EXCHANGE}`). '
