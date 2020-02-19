@@ -18,7 +18,7 @@ Otherwise `--exchange` becomes mandatory.
 usage: freqtrade download-data [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH] [--userdir PATH] [-p PAIRS [PAIRS ...]]
                                [--pairs-file FILE] [--days INT] [--dl-trades] [--exchange EXCHANGE]
                                [-t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} ...]]
-                               [--erase] [--data-format {json,jsongz}] [--data-format-trades {json,jsongz}]
+                               [--erase] [--data-format-ohlcv {json,jsongz}] [--data-format-trades {json,jsongz}]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -32,7 +32,7 @@ optional arguments:
   -t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} ...], --timeframes {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} ...]
                         Specify which tickers to download. Space-separated list. Default: `1m 5m`.
   --erase               Clean all existing data for the selected exchange/pairs/timeframes.
-  --data-format {json,jsongz}
+  --data-format-ohlcv {json,jsongz}
                         Storage format for downloaded ohlcv data. (default: `json`).
   --data-format-trades {json,jsongz}
                         Storage format for downloaded trades data. (default: `jsongz`).
@@ -55,7 +55,7 @@ Common arguments:
 Freqtrade currently supports 2 dataformats, `json` (plain "text" json files) and `jsongz` (a gzipped version of json files).
 By default, OHLCV data is stored as `json` data, while trades data is stored as `jsongz` data.
 
-This can be changed via the `--data-format` and `--data-format-trades` parameters respectivly.
+This can be changed via the `--data-format-ohlcv` and `--data-format-trades` parameters respectivly.
 
 If the default dataformat has been changed during download, then the keys `dataformat_ohlcv` and `dataformat_trades` in the configuration file need to be adjusted to the selected dataformat as well.
 

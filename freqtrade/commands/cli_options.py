@@ -346,7 +346,7 @@ AVAILABLE_CLI_OPTIONS = {
         required=True,
     ),
     "dataformat_ohlcv": Arg(
-        '--data-format',
+        '--data-format-ohlcv',
         help='Storage format for downloaded ohlcv data. (default: `%(default)s`).',
         choices=constants.AVAILABLE_DATAHANDLERS,
         default='json'
