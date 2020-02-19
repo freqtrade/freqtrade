@@ -766,7 +766,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         '--disable-max-market-positions',
         '--strategy-list',
         'DefaultStrategy',
-        'SampleStrategy',
+        'TestStrategyLegacy',
     ]
     args = get_args(args)
     start_backtesting(args)
@@ -789,7 +789,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         'up to 2017-11-14T22:58:00+00:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...',
         'Running backtesting for Strategy DefaultStrategy',
-        'Running backtesting for Strategy SampleStrategy',
+        'Running backtesting for Strategy TestStrategyLegacy',
     ]
 
     for line in exists:
