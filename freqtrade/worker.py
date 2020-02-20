@@ -109,14 +109,14 @@ class Worker:
         """
         start = time.time()
         result = func(*args, **kwargs)
+        logger.debug("========================================")
         end = time.time()
         duration = max(min_secs - (end - start), 0.0)
-        logger.debug('Throttling %s for %.2f seconds', func.__name__, duration)
+        logger.debug(f"Throttling {func.__name__} for {duration:.2f} seconds")
         time.sleep(duration)
         return result
 
     def _process(self) -> None:
-        logger.debug("========================================")
         try:
             self.freqtrade.process()
         except TemporaryError as error:
