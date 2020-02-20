@@ -87,7 +87,7 @@ class Worker:
                 logger.debug("sd_notify: WATCHDOG=1\\nSTATUS=State: STOPPED.")
                 self._sd_notify.notify("WATCHDOG=1\nSTATUS=State: STOPPED.")
 
-            time.sleep(throttle_secs)
+            self._throttle(func=self._process_stopped, min_secs=throttle_secs)
 
         elif state == State.RUNNING:
             # Ping systemd watchdog before throttling
@@ -95,7 +95,7 @@ class Worker:
                 logger.debug("sd_notify: WATCHDOG=1\\nSTATUS=State: RUNNING.")
                 self._sd_notify.notify("WATCHDOG=1\nSTATUS=State: RUNNING.")
 
-            self._throttle(func=self._process, min_secs=throttle_secs)
+            self._throttle(func=self._process_running, min_secs=throttle_secs)
 
         return state
 
@@ -116,7 +116,11 @@ class Worker:
         time.sleep(duration)
         return result
 
-    def _process(self) -> None:
+    def _process_stopped(self) -> None:
+        # Maybe do here something in the future...
+        pass
+
+    def _process_running(self) -> None:
         try:
             self.freqtrade.process()
         except TemporaryError as error:
