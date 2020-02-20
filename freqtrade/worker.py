@@ -26,7 +26,7 @@ class Worker:
         """
         Init all variables and objects the bot needs to work
         """
-        logger.info('Starting worker %s', __version__)
+        logger.info(f"Starting worker {__version__}")
 
         self._args = args
         self._config = config
@@ -77,7 +77,7 @@ class Worker:
         if state != old_state:
             self.freqtrade.notify_status(f'{state.name.lower()}')
 
-            logger.info('Changing state to: %s', state.name)
+            logger.info(f"Changing state to: {state.name}")
             if state == State.RUNNING:
                 self.freqtrade.startup()
 
