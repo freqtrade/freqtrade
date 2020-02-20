@@ -42,7 +42,7 @@ def test_search_all_strategies_with_failed():
     strategies = StrategyResolver.search_all_objects(directory, enum_failed=True)
     assert isinstance(strategies, list)
     assert len(strategies) == 3
-    # with enum_failed=True search_all_objects() shall find 3 good strategies
+    # with enum_failed=True search_all_objects() shall find 2 good strategies
     # and 1 which fails to load
     assert len([x for x in strategies if x['class'] is not None]) == 2
     assert len([x for x in strategies if x['class'] is None]) == 1
