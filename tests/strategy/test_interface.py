@@ -10,7 +10,7 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data.history import load_data
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import StrategyResolver
-from freqtrade.strategy.default_strategy import DefaultStrategy
+from .strats.default_strategy import DefaultStrategy
 from tests.conftest import get_patched_exchange, log_has
 
 # Avoid to reinit the same object again and again

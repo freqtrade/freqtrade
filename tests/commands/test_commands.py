@@ -640,7 +640,7 @@ def test_start_list_strategies(mocker, caplog, capsys):
     args = [
         "list-strategies",
         "--strategy-path",
-        str(Path(__file__).parent.parent / "strategy"),
+        str(Path(__file__).parent.parent / "strategy" / "strats"),
         "-1"
     ]
     pargs = get_args(args)
@@ -655,7 +655,7 @@ def test_start_list_strategies(mocker, caplog, capsys):
     args = [
         "list-strategies",
         "--strategy-path",
-        str(Path(__file__).parent.parent / "strategy"),
+        str(Path(__file__).parent.parent / "strategy" / "strats"),
     ]
     pargs = get_args(args)
     # pargs['config'] = None

@@ -715,14 +715,14 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         'backtesting',
         '--config', 'config.json',
         '--datadir', str(testdatadir),
-        '--strategy-path', str(Path(__file__).parents[2] / 'freqtrade/templates'),
+        '--strategy-path', str(Path(__file__).parents[1] / 'strategy/strats'),
         '--ticker-interval', '1m',
         '--timerange', '1510694220-1510700340',
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--strategy-list',
         'DefaultStrategy',
-        'SampleStrategy',
+        'TestStrategyLegacy',
     ]
     args = get_args(args)
     start_backtesting(args)
@@ -745,7 +745,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         'up to 2017-11-14T22:58:00+00:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...',
         'Running backtesting for Strategy DefaultStrategy',
-        'Running backtesting for Strategy SampleStrategy',
+        'Running backtesting for Strategy TestStrategyLegacy',
     ]
 
     for line in exists:
