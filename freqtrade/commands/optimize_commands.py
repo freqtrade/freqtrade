@@ -54,6 +54,7 @@ def start_hyperopt(args: Dict[str, Any]) -> None:
     try:
         from filelock import FileLock, Timeout
         from freqtrade.optimize.hyperopt import Hyperopt
+        from freqtrade.optimize import hyperopt_backend as backend
     except ImportError as e:
         raise OperationalException(
             f"{e}. Please ensure that the hyperopt dependencies are installed.") from e
@@ -72,8 +73,8 @@ def start_hyperopt(args: Dict[str, Any]) -> None:
             logging.getLogger('filelock').setLevel(logging.WARNING)
 
             # Initialize backtesting object
-            hyperopt = Hyperopt(config)
-            hyperopt.start()
+            backend.hyperopt = Hyperopt(config)
+            backend.hyperopt.start()
 
     except Timeout:
         logger.info("Another running instance of freqtrade Hyperopt detected.")
