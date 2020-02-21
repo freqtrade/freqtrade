@@ -310,6 +310,30 @@ class Configuration:
         self._args_to_config(config, argname='hyperopt_list_profitable',
                              logstring='Parameter --profitable detected: {}')
 
+        self._args_to_config(config, argname='hyperopt_list_min_trades',
+                             logstring='Parameter --min-trades detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_max_trades',
+                             logstring='Parameter --max-trades detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_min_avg_time',
+                             logstring='Parameter --min-avg-time detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_max_avg_time',
+                             logstring='Parameter --max-avg-time detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_min_avg_profit',
+                             logstring='Parameter --min-avg-profit detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_max_avg_profit',
+                             logstring='Parameter --max-avg-profit detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_min_total_profit',
+                             logstring='Parameter --min-total-profit detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_max_total_profit',
+                             logstring='Parameter --max-total-profit detected: {}')
+
         self._args_to_config(config, argname='hyperopt_list_no_details',
                              logstring='Parameter --no-details detected: {}')
 
@@ -340,8 +364,15 @@ class Configuration:
 
         self._args_to_config(config, argname='days',
                              logstring='Detected --days: {}')
+
         self._args_to_config(config, argname='download_trades',
                              logstring='Detected --dl-trades: {}')
+
+        self._args_to_config(config, argname='dataformat_ohlcv',
+                             logstring='Using "{}" to store OHLCV data.')
+
+        self._args_to_config(config, argname='dataformat_trades',
+                             logstring='Using "{}" to store trades data.')
 
     def _process_runmode(self, config: Dict[str, Any]) -> None:
 

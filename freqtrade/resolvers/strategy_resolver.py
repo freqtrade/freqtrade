@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from freqtrade.constants import (REQUIRED_ORDERTIF, REQUIRED_ORDERTYPES,
-                                 USERPATH_STRATEGY)
+                                 USERPATH_STRATEGIES)
 from freqtrade.exceptions import OperationalException
 from freqtrade.resolvers import IResolver
 from freqtrade.strategy.interface import IStrategy
@@ -26,8 +26,8 @@ class StrategyResolver(IResolver):
     """
     object_type = IStrategy
     object_type_str = "Strategy"
-    user_subdir = USERPATH_STRATEGY
-    initial_search_path = Path(__file__).parent.parent.joinpath('strategy').resolve()
+    user_subdir = USERPATH_STRATEGIES
+    initial_search_path = None
 
     @staticmethod
     def load_strategy(config: Dict[str, Any] = None) -> IStrategy:
@@ -141,7 +141,7 @@ class StrategyResolver(IResolver):
         """
 
         abs_paths = StrategyResolver.build_search_paths(config,
-                                                        user_subdir=USERPATH_STRATEGY,
+                                                        user_subdir=USERPATH_STRATEGIES,
                                                         extra_dir=extra_dir)
 
         if ":" in strategy_name:

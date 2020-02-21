@@ -15,6 +15,7 @@ from pandas import DataFrame
 from freqtrade.configuration import (TimeRange, remove_credentials,
                                      validate_config_consistency)
 from freqtrade.data import history
+from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
@@ -118,6 +119,7 @@ class Backtesting:
             timerange=timerange,
             startup_candles=self.required_startup,
             fail_without_data=True,
+            data_format=self.config.get('dataformat_ohlcv', 'json'),
         )
 
         min_date, max_date = history.get_timerange(data)
@@ -397,7 +399,7 @@ class Backtesting:
 
             # Trim startup period from analyzed dataframe
             for pair, df in preprocessed.items():
-                preprocessed[pair] = history.trim_dataframe(df, timerange)
+                preprocessed[pair] = trim_dataframe(df, timerange)
             min_date, max_date = history.get_timerange(preprocessed)
 
             logger.info(
@@ -441,7 +443,7 @@ class Backtesting:
             print()
         if len(all_results) > 1:
             # Print Strategy summary table
-            print(' Strategy Summary '.center(133, '='))
+            print(' STRATEGY SUMMARY '.center(133, '='))
             print(generate_text_table_strategy(self.config['stake_currency'],
                                                self.config['max_open_trades'],
                                                all_results=all_results))

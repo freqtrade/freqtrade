@@ -48,14 +48,16 @@ def file_dump_json(filename: Path, data: Any, is_zip: bool = False) -> None:
     :param data: JSON Data to save
     :return:
     """
-    logger.info(f'dumping json to "{filename}"')
 
     if is_zip:
         if filename.suffix != '.gz':
             filename = filename.with_suffix('.gz')
+        logger.info(f'dumping json to "{filename}"')
+
         with gzip.open(filename, 'w') as fp:
             rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
     else:
+        logger.info(f'dumping json to "{filename}"')
         with open(filename, 'w') as fp:
             rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
 
@@ -89,6 +91,12 @@ def file_load_json(file):
     else:
         return None
     return pairdata
+
+
+def pair_to_filename(pair: str) -> str:
+    for ch in ['/', '-', ' ', '.', '@', '$', '+', ':']:
+        pair = pair.replace(ch, '_')
+    return pair
 
 
 def format_ms_time(date: int) -> str:
@@ -139,5 +147,4 @@ def render_template(templatefile: str, arguments: dict = {}) -> str:
         autoescape=select_autoescape(['html', 'xml'])
     )
     template = env.get_template(templatefile)
-
     return template.render(**arguments)

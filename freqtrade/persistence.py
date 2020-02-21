@@ -318,10 +318,10 @@ class Trade(_DECL_BASE):
         elif order_type in ('market', 'limit') and order['side'] == 'sell':
             self.close(order['price'])
             logger.info('%s_SELL has been fulfilled for %s.', order_type.upper(), self)
-        elif order_type == 'stop_loss_limit':
+        elif order_type in ('stop_loss_limit', 'stop-loss'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
-            logger.info('STOP_LOSS_LIMIT is hit for %s.', self)
+            logger.info('%s is hit for %s.', order_type.upper(), self)
             self.close(order['average'])
         else:
             raise ValueError(f'Unknown order type: {order_type}')

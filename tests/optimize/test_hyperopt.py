@@ -2,6 +2,7 @@
 import locale
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, List
 from unittest.mock import MagicMock, PropertyMock
 
 import pandas as pd
@@ -9,9 +10,9 @@ import pytest
 from arrow import Arrow
 from filelock import Timeout
 
-from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_hyperopt
-from freqtrade.data.converter import parse_ticker_dataframe
-from freqtrade.data.history import load_tickerdata_file
+from freqtrade.commands.optimize_commands import (setup_optimize_configuration,
+                                                  start_hyperopt)
+from freqtrade.data.history import load_data
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.default_hyperopt import DefaultHyperOpt
 from freqtrade.optimize.default_hyperopt_loss import DefaultHyperOptLoss
@@ -42,13 +43,19 @@ def hyperopt_results():
             'profit_percent': [-0.1, 0.2, 0.3],
             'profit_abs': [-0.2, 0.4, 0.6],
             'trade_duration': [10, 30, 10],
-            'sell_reason': [SellType.STOP_LOSS, SellType.ROI, SellType.ROI]
+            'sell_reason': [SellType.STOP_LOSS, SellType.ROI, SellType.ROI],
+            'close_time':
+            [
+                datetime(2019, 1, 1, 9, 26, 3, 478039),
+                datetime(2019, 2, 1, 9, 26, 3, 478039),
+                datetime(2019, 3, 1, 9, 26, 3, 478039)
+            ]
         }
     )
 
 
 # Functions for recurrent object patching
-def create_trials(mocker, hyperopt, testdatadir) -> None:
+def create_trials(mocker, hyperopt, testdatadir) -> List[Dict]:
     """
     When creating trials, mock the hyperopt Trials so that *by default*
       - we don't create any pickle'd files in the filesystem
@@ -222,10 +229,10 @@ def test_start_not_installed(mocker, default_conf, caplog, import_fails) -> None
         '--hyperopt', 'DefaultHyperOpt',
         '--epochs', '5'
     ]
-    args = get_args(args)
+    pargs = get_args(args)
 
     with pytest.raises(OperationalException, match=r"Please ensure that the hyperopt dependencies"):
-        start_hyperopt(args)
+        start_hyperopt(pargs)
 
 
 def test_start(mocker, default_conf, caplog) -> None:
@@ -240,8 +247,8 @@ def test_start(mocker, default_conf, caplog) -> None:
         '--hyperopt', 'DefaultHyperOpt',
         '--epochs', '5'
     ]
-    args = get_args(args)
-    start_hyperopt(args)
+    pargs = get_args(args)
+    start_hyperopt(pargs)
 
     assert log_has('Starting freqtrade in Hyperopt mode', caplog)
     assert start_mock.call_count == 1
@@ -263,9 +270,9 @@ def test_start_no_data(mocker, default_conf, caplog) -> None:
         '--hyperopt', 'DefaultHyperOpt',
         '--epochs', '5'
     ]
-    args = get_args(args)
+    pargs = get_args(args)
     with pytest.raises(OperationalException, match='No data found. Terminating.'):
-        start_hyperopt(args)
+        start_hyperopt(pargs)
 
 
 def test_start_filelock(mocker, default_conf, caplog) -> None:
@@ -280,16 +287,19 @@ def test_start_filelock(mocker, default_conf, caplog) -> None:
         '--hyperopt', 'DefaultHyperOpt',
         '--epochs', '5'
     ]
-    args = get_args(args)
-    start_hyperopt(args)
+    pargs = get_args(args)
+    start_hyperopt(pargs)
     assert log_has("Another running instance of freqtrade Hyperopt detected.", caplog)
 
 
 def test_loss_calculation_prefer_correct_trade_count(default_conf, hyperopt_results) -> None:
     hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
-    correct = hl.hyperopt_loss_function(hyperopt_results, 600)
-    over = hl.hyperopt_loss_function(hyperopt_results, 600 + 100)
-    under = hl.hyperopt_loss_function(hyperopt_results, 600 - 100)
+    correct = hl.hyperopt_loss_function(hyperopt_results, 600,
+                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
+    over = hl.hyperopt_loss_function(hyperopt_results, 600 + 100,
+                                     datetime(2019, 1, 1), datetime(2019, 5, 1))
+    under = hl.hyperopt_loss_function(hyperopt_results, 600 - 100,
+                                      datetime(2019, 1, 1), datetime(2019, 5, 1))
     assert over > correct
     assert under > correct
 
@@ -299,8 +309,10 @@ def test_loss_calculation_prefer_shorter_trades(default_conf, hyperopt_results) 
     resultsb.loc[1, 'trade_duration'] = 20
 
     hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
-    longer = hl.hyperopt_loss_function(hyperopt_results, 100)
-    shorter = hl.hyperopt_loss_function(resultsb, 100)
+    longer = hl.hyperopt_loss_function(hyperopt_results, 100,
+                                       datetime(2019, 1, 1), datetime(2019, 5, 1))
+    shorter = hl.hyperopt_loss_function(resultsb, 100,
+                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
     assert shorter < longer
 
 
@@ -311,9 +323,12 @@ def test_loss_calculation_has_limited_profit(default_conf, hyperopt_results) -> 
     results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
 
     hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
-    correct = hl.hyperopt_loss_function(hyperopt_results, 600)
-    over = hl.hyperopt_loss_function(results_over, 600)
-    under = hl.hyperopt_loss_function(results_under, 600)
+    correct = hl.hyperopt_loss_function(hyperopt_results, 600,
+                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
+    over = hl.hyperopt_loss_function(results_over, 600,
+                                     datetime(2019, 1, 1), datetime(2019, 5, 1))
+    under = hl.hyperopt_loss_function(results_under, 600,
+                                      datetime(2019, 1, 1), datetime(2019, 5, 1))
     assert over < correct
     assert under > correct
 
@@ -325,6 +340,24 @@ def test_sharpe_loss_prefers_higher_profits(default_conf, hyperopt_results) -> N
     results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
 
     default_conf.update({'hyperopt_loss': 'SharpeHyperOptLoss'})
+    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
+    correct = hl.hyperopt_loss_function(hyperopt_results, len(hyperopt_results),
+                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
+    over = hl.hyperopt_loss_function(results_over, len(hyperopt_results),
+                                     datetime(2019, 1, 1), datetime(2019, 5, 1))
+    under = hl.hyperopt_loss_function(results_under, len(hyperopt_results),
+                                      datetime(2019, 1, 1), datetime(2019, 5, 1))
+    assert over < correct
+    assert under > correct
+
+
+def test_sharpe_loss_daily_prefers_higher_profits(default_conf, hyperopt_results) -> None:
+    results_over = hyperopt_results.copy()
+    results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
+    results_under = hyperopt_results.copy()
+    results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
+
+    default_conf.update({'hyperopt_loss': 'SharpeHyperOptLossDaily'})
     hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
     correct = hl.hyperopt_loss_function(hyperopt_results, len(hyperopt_results),
                                         datetime(2019, 1, 1), datetime(2019, 5, 1))
@@ -543,9 +576,7 @@ def test_has_space(hyperopt, spaces, expected_results):
 
 
 def test_populate_indicators(hyperopt, testdatadir) -> None:
-    tick = load_tickerdata_file(testdatadir, 'UNITTEST/BTC', '1m')
-    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
-                                                         fill_missing=True)}
+    tickerlist = load_data(testdatadir, '1m', ['UNITTEST/BTC'], fill_up_missing=True)
     dataframes = hyperopt.backtesting.strategy.tickerdata_to_dataframe(tickerlist)
     dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
                                                              {'pair': 'UNITTEST/BTC'})
@@ -557,9 +588,7 @@ def test_populate_indicators(hyperopt, testdatadir) -> None:
 
 
 def test_buy_strategy_generator(hyperopt, testdatadir) -> None:
-    tick = load_tickerdata_file(testdatadir, 'UNITTEST/BTC', '1m')
-    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
-                                                         fill_missing=True)}
+    tickerlist = load_data(testdatadir, '1m', ['UNITTEST/BTC'], fill_up_missing=True)
     dataframes = hyperopt.backtesting.strategy.tickerdata_to_dataframe(tickerlist)
     dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
                                                              {'pair': 'UNITTEST/BTC'})

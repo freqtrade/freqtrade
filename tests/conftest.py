@@ -257,6 +257,7 @@ def default_conf(testdatadir):
         "db_url": "sqlite://",
         "user_data_dir": Path("user_data"),
         "verbosity": 3,
+        "strategy_path": str(Path(__file__).parent / "strategy" / "strats"),
         "strategy": "DefaultStrategy"
     }
     return configuration

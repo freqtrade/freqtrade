@@ -36,6 +36,38 @@ optional arguments:
     └── sample_strategy.py
 ```
 
+## Create new config
+
+Creates a new configuration file, asking some questions which are important selections for a configuration.
+
+```
+usage: freqtrade new-config [-h] [-c PATH]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`). Multiple --config options may be used. Can be set to `-`
+                        to read config from stdin.
+```
+
+!!! Warning
+    Only vital questions are asked. Freqtrade offers a lot more configuration possibilities, which are listed in the [Configuration documentation](configuration.md#configuration-parameters)
+
+### Create config examples
+
+```
+$ freqtrade new-config --config config_binance.json
+
+? Do you want to enable Dry-run (simulated trades)?  Yes
+? Please insert your stake currency: BTC
+? Please insert your stake amount: 0.05
+? Please insert max_open_trades (Integer or 'unlimited'): 5
+? Please insert your ticker interval: 15m
+? Please insert your display Currency (for reporting): USD
+? Select exchange  binance
+? Do you want to enable Telegram?  No
+```
+
 ## Create new strategy
 
 Creates a new strategy from a template similar to SampleStrategy.
@@ -108,26 +140,62 @@ With custom user directory
 freqtrade new-hyperopt --userdir ~/.freqtrade/ --hyperopt AwesomeHyperopt
 ```
 
-## List Strategies
+## List Strategies and List Hyperopts
 
-Use the `list-strategies` subcommand to see all strategies in one particular directory.
+Use the `list-strategies` subcommand to see all strategies in one particular directory and the `list-hyperopts` subcommand to list custom Hyperopts.
+
+These subcommands are useful for finding problems in your environment with loading strategies or hyperopt classes: modules with strategies or hyperopt classes that contain errors and failed to load are printed in red (LOAD FAILED), while strategies or hyperopt classes with duplicate names are printed in yellow (DUPLICATE NAME).
 
 ```
-freqtrade list-strategies --help
-usage: freqtrade list-strategies [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH] [--userdir PATH] [--strategy-path PATH] [-1]
+usage: freqtrade list-strategies [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                                 [-d PATH] [--userdir PATH]
+                                 [--strategy-path PATH] [-1] [--no-color]
 
 optional arguments:
   -h, --help            show this help message and exit
   --strategy-path PATH  Specify additional strategy lookup path.
   -1, --one-column      Print output in one column.
+  --no-color            Disable colorization of hyperopt results. May be
+                        useful if you are redirecting output to a file.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified. Special values are: 'syslog', 'journald'. See the documentation for more details.
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
   -V, --version         show program's version number and exit
   -c PATH, --config PATH
-                        Specify configuration file (default: `config.json`). Multiple --config options may be used. Can be set to `-`
-                        to read config from stdin.
+                        Specify configuration file (default: `config.json`).
+                        Multiple --config options may be used. Can be set to
+                        `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+```
+```
+usage: freqtrade list-hyperopts [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                                [-d PATH] [--userdir PATH]
+                                [--hyperopt-path PATH] [-1] [--no-color]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --hyperopt-path PATH  Specify additional lookup path for Hyperopt and
+                        Hyperopt Loss functions.
+  -1, --one-column      Print output in one column.
+  --no-color            Disable colorization of hyperopt results. May be
+                        useful if you are redirecting output to a file.
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`).
+                        Multiple --config options may be used. Can be set to
+                        `-` to read config from stdin.
   -d PATH, --datadir PATH
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
@@ -135,18 +203,32 @@ Common arguments:
 ```
 
 !!! Warning
-    Using this command will try to load all python files from a directory. This can be a security risk if untrusted files reside in this directory, since all module-level code is executed.
+    Using these commands will try to load all python files from a directory. This can be a security risk if untrusted files reside in this directory, since all module-level code is executed.
 
-Example: search default strategy directory within userdir
+Example: Search default strategies and hyperopts directories (within the default userdir).
+
+``` bash
+freqtrade list-strategies
+freqtrade list-hyperopts
+```
+
+Example: Search strategies and hyperopts directory within the userdir.
 
 ``` bash
 freqtrade list-strategies --userdir ~/.freqtrade/
+freqtrade list-hyperopts --userdir ~/.freqtrade/
 ```
 
-Example: search dedicated strategy path
+Example: Search dedicated strategy path.
 
 ``` bash
 freqtrade list-strategies --strategy-path ~/.freqtrade/strategies/
+```
+
+Example: Search dedicated hyperopt path.
+
+``` bash
+freqtrade list-hyperopt --hyperopt-path ~/.freqtrade/hyperopts/
 ```
 
 ## List Exchanges
@@ -179,20 +261,31 @@ All exchanges supported by the ccxt library: _1btcxe, acx, adara, allcoin, anxpr
 Use the `list-timeframes` subcommand to see the list of ticker intervals (timeframes) available for the exchange.
 
 ```
-usage: freqtrade list-timeframes [-h] [--exchange EXCHANGE] [-1]
+usage: freqtrade list-timeframes [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH] [--userdir PATH] [--exchange EXCHANGE] [-1]
 
 optional arguments:
-  -h, --help           show this help message and exit
-  --exchange EXCHANGE  Exchange name (default: `bittrex`). Only valid if no
-                       config is provided.
-  -1, --one-column     Print output in one column.
+  -h, --help            show this help message and exit
+  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no config is provided.
+  -1, --one-column      Print output in one column.
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are: 'syslog', 'journald'. See the documentation for more details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`). Multiple --config options may be used. Can be set to `-`
+                        to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
 
 ```
 
 * Example: see the timeframes for the 'binance' exchange, set in the configuration file:
 
 ```
-$ freqtrade -c config_binance.json list-timeframes
+$ freqtrade list-timeframes -c config_binance.json
 ...
 Timeframes available for the exchange `binance`: 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M
 ```
@@ -216,14 +309,16 @@ You can print info about any pair/market with these subcommands - and you can fi
 These subcommands have same usage and same set of available options:
 
 ```
-usage: freqtrade list-markets [-h] [--exchange EXCHANGE] [--print-list]
-                              [--print-json] [-1] [--print-csv]
+usage: freqtrade list-markets [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                              [-d PATH] [--userdir PATH] [--exchange EXCHANGE]
+                              [--print-list] [--print-json] [-1] [--print-csv]
                               [--base BASE_CURRENCY [BASE_CURRENCY ...]]
                               [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]]
                               [-a]
 
-usage: freqtrade list-pairs [-h] [--exchange EXCHANGE] [--print-list]
-                            [--print-json] [-1] [--print-csv]
+usage: freqtrade list-pairs [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                            [-d PATH] [--userdir PATH] [--exchange EXCHANGE]
+                            [--print-list] [--print-json] [-1] [--print-csv]
                             [--base BASE_CURRENCY [BASE_CURRENCY ...]]
                             [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]] [-a]
 
@@ -242,6 +337,22 @@ optional arguments:
                         Specify quote currency(-ies). Space-separated list.
   -a, --all             Print all pairs or market symbols. By default only
                         active ones are shown.
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`).
+                        Multiple --config options may be used. Can be set to
+                        `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+
 ```
 
 By default, only active pairs/markets are shown. Active pairs/markets are those that can currently be traded
@@ -263,7 +374,7 @@ $ freqtrade list-pairs --quote USD --print-json
 human-readable list with summary:
 
 ```
-$ freqtrade -c config_binance.json list-pairs --all --base BTC ETH --quote USDT USD --print-list
+$ freqtrade list-pairs -c config_binance.json --all --base BTC ETH --quote USDT USD --print-list
 ```
 
 * Print all markets on exchange "Kraken", in the tabular format:
@@ -311,17 +422,49 @@ You can list the hyperoptimization epochs the Hyperopt module evaluated previous
 ```
 usage: freqtrade hyperopt-list [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [-d PATH] [--userdir PATH] [--best]
-                               [--profitable] [--no-color] [--print-json]
-                               [--no-details]
+                               [--profitable] [--min-trades INT]
+                               [--max-trades INT] [--min-avg-time FLOAT]
+                               [--max-avg-time FLOAT] [--min-avg-profit FLOAT]
+                               [--max-avg-profit FLOAT]
+                               [--min-total-profit FLOAT]
+                               [--max-total-profit FLOAT] [--no-color]
+                               [--print-json] [--no-details]
 
 optional arguments:
   -h, --help            show this help message and exit
   --best                Select only best epochs.
   --profitable          Select only profitable epochs.
+  --min-trades INT      Select epochs with more than INT trades.
+  --max-trades INT      Select epochs with less than INT trades.
+  --min-avg-time FLOAT  Select epochs on above average time.
+  --max-avg-time FLOAT  Select epochs on under average time.
+  --min-avg-profit FLOAT
+                        Select epochs on above average profit.
+  --max-avg-profit FLOAT
+                        Select epochs on below average profit.
+  --min-total-profit FLOAT
+                        Select epochs on above total profit.
+  --max-total-profit FLOAT
+                        Select epochs on below total profit.
   --no-color            Disable colorization of hyperopt results. May be
                         useful if you are redirecting output to a file.
   --print-json          Print best result detailization in JSON format.
   --no-details          Do not print best epoch details.
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: `config.json`).
+                        Multiple --config options may be used. Can be set to
+                        `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
 ```
  
 ### Examples

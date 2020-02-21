@@ -45,11 +45,27 @@ the tutorial [here|Testing-new-strategies-with-Hyperopt](bot-usage.md#hyperopt-c
 
 You can use the `/forcesell all` command from Telegram.
 
-### I get the message "RESTRICTED_MARKET"
+### I'm getting the "RESTRICTED_MARKET" message in the log
 
 Currently known to happen for US Bittrex users.  
 
 Read [the Bittrex section about restricted markets](exchanges.md#restricted-markets) for more information.
+
+### I'm getting the "Exchange Bittrex does not support market orders." message and cannot run my strategy
+
+As the message says, Bittrex does not support market orders and you have one of the [order types](configuration.md/#understand-order_types) set to "market". Probably your strategy was written with other exchanges in mind and sets "market" orders for "stoploss" orders, which is correct and preferable for most of the exchanges supporting market orders (but not for Bittrex).
+
+To fix it for Bittrex, redefine order types in the strategy to use "limit" instead of "market":
+
+```
+    order_types = {
+        ...
+        'stoploss': 'limit',
+        ...
+    }
+```
+
+Same fix should be done in the configuration file, if order types are defined in your custom config rather than in the strategy.
 
 ### How do I search the bot logs for something?
 

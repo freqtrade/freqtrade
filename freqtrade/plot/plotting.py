@@ -3,11 +3,14 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import pandas as pd
+
 from freqtrade.configuration import TimeRange
-from freqtrade.data import history
 from freqtrade.data.btanalysis import (combine_tickers_with_mean,
                                        create_cum_profit,
                                        extract_trades_of_period, load_trades)
+from freqtrade.data.converter import trim_dataframe
+from freqtrade.data.history import load_data
+from freqtrade.misc import pair_to_filename
 from freqtrade.resolvers import StrategyResolver
 
 logger = logging.getLogger(__name__)
@@ -36,18 +39,19 @@ def init_plotscript(config):
     # Set timerange to use
     timerange = TimeRange.parse_timerange(config.get("timerange"))
 
-    tickers = history.load_data(
+    tickers = load_data(
         datadir=config.get("datadir"),
         pairs=pairs,
         timeframe=config.get('ticker_interval', '5m'),
         timerange=timerange,
+        data_format=config.get('dataformat_ohlcv', 'json'),
     )
 
     trades = load_trades(config['trade_source'],
                          db_url=config.get('db_url'),
                          exportfilename=config.get('exportfilename'),
                          )
-    trades = history.trim_dataframe(trades, timerange, 'open_time')
+    trades = trim_dataframe(trades, timerange, 'open_time')
     return {"tickers": tickers,
             "trades": trades,
             "pairs": pairs,
@@ -374,8 +378,8 @@ def generate_plot_filename(pair: str, timeframe: str) -> str:
     """
     Generate filenames per pair/timeframe to be used for storing plots
     """
-    pair_name = pair.replace("/", "_")
-    file_name = 'freqtrade-plot-' + pair_name + '-' + timeframe + '.html'
+    pair_s = pair_to_filename(pair)
+    file_name = 'freqtrade-plot-' + pair_s + '-' + timeframe + '.html'
 
     logger.info('Generate plot file for %s', pair)
 
