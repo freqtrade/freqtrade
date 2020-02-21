@@ -7,7 +7,6 @@ import traceback
 from os import getpid
 from typing import Any, Callable, Dict, Optional
 
-import arrow
 import sdnotify
 
 from freqtrade import __version__, constants
@@ -34,8 +33,8 @@ class Worker:
         self._config = config
         self._init(False)
 
-        self.last_throttle_start_time: Optional[float] = None
-        self._heartbeat_msg = 0
+        self.last_throttle_start_time: float = 0
+        self._heartbeat_msg: float = 0
 
         # Tell systemd that we completed initialization phase
         if self._sd_notify:
@@ -100,10 +99,11 @@ class Worker:
 
             self._throttle(func=self._process_running, throttle_secs=self._throttle_secs)
 
-        if (self._heartbeat_interval
-                and (arrow.utcnow().timestamp - self._heartbeat_msg > self._heartbeat_interval)):
-            logger.info(f"Bot heartbeat. PID={getpid()}")
-            self._heartbeat_msg = arrow.utcnow().timestamp
+        if self._heartbeat_interval:
+            now = time.time()
+            if (now - self._heartbeat_msg) > self._heartbeat_interval:
+                logger.info(f"Bot heartbeat. PID={getpid()}")
+                self._heartbeat_msg = now
 
         return state
 
