@@ -102,7 +102,8 @@ class Worker:
         if self._heartbeat_interval:
             now = time.time()
             if (now - self._heartbeat_msg) > self._heartbeat_interval:
-                logger.info(f"Bot heartbeat. PID={getpid()}")
+                logger.info(f"Bot heartbeat. PID={getpid()}, "
+                            f"version='{__version__}', state='{state.name}'")
                 self._heartbeat_msg = now
 
         return state
