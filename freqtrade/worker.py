@@ -32,6 +32,8 @@ class Worker:
         self._config = config
         self._init(False)
 
+        self.last_throttle_start_time: float = None
+
         # Tell systemd that we completed initialization phase
         if self._sd_notify:
             logger.debug("sd_notify: READY=1")
@@ -107,10 +109,10 @@ class Worker:
         :param min_secs: minimum execution time in seconds
         :return: Any
         """
-        start = time.time()
+        self.last_throttle_start_time = time.time()
         logger.debug("========================================")
         result = func(*args, **kwargs)
-        time_passed = time.time() - start
+        time_passed = time.time() - self.last_throttle_start_time
         sleep_duration = max(min_secs - time_passed, 0.0)
         logger.debug(f"Throttling with '{func.__name__}()': sleep for {sleep_duration:.2f} s, "
                      f"last iteration took {time_passed:.2f} s.")
