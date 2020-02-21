@@ -830,7 +830,11 @@ class FreqtradeBot:
                 self.wallets.update()
 
             elif ((order['side'] == 'sell' and order['status'] == 'canceled')
-                  or (self._check_timed_out('sell', order))):
+                  or (self._check_timed_out('sell', order))
+                  or strategy_safe_wrapper(self.strategy.check_sell_timeout,
+                                           default_retval=False)(pair=trade.pair,
+                                                                 trade=trade,
+                                                                 order=order)):
                 self.handle_timedout_limit_sell(trade, order)
                 self.wallets.update()
 

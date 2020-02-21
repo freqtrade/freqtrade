@@ -167,6 +167,24 @@ class IStrategy(ABC):
         """
         return False
 
+    def check_sell_timeout(self, pair: str, trade: Trade, order: Dict, **kwargs) -> bool:
+        """
+        Check sell timeout function callback.
+        This method can be used to override the sell-timeout.
+        It is called whenever a limit sell order has been created,
+        and is not yet fully filled.
+        Configuration options in `unfilledtimeout` will be verified before this,
+        so ensure to set these timeouts high enough.
+
+        When not implemented by a strategy, this simply returns False.
+        :param pair: Pair the trade is for
+        :param trade: trade object.
+        :param order: Order dictionary as returned from CCXT.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return bool: When True is returned, then the sell-order is cancelled.
+        """
+        return False
+
     def informative_pairs(self) -> List[Tuple[str, str]]:
         """
         Define additional, informative pair/interval combinations to be cached from the exchange.
