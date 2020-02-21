@@ -32,7 +32,7 @@ class Worker:
         self._config = config
         self._init(False)
 
-        self.last_throttle_start_time: float = None
+        self.last_throttle_start_time: Optional[float] = None
 
         # Tell systemd that we completed initialization phase
         if self._sd_notify:
@@ -65,15 +65,13 @@ class Worker:
             if state == State.RELOAD_CONF:
                 self._reconfigure()
 
-    def _worker(self, old_state: Optional[State], throttle_secs: Optional[float] = None) -> State:
+    def _worker(self, old_state: Optional[State]) -> State:
         """
         Trading routine that must be run at each loop
         :param old_state: the previous service state from the previous call
         :return: current service state
         """
         state = self.freqtrade.state
-        if throttle_secs is None:
-            throttle_secs = self._throttle_secs
 
         # Log state transition
         if state != old_state:
@@ -89,7 +87,7 @@ class Worker:
                 logger.debug("sd_notify: WATCHDOG=1\\nSTATUS=State: STOPPED.")
                 self._sd_notify.notify("WATCHDOG=1\nSTATUS=State: STOPPED.")
 
-            self._throttle(func=self._process_stopped, min_secs=throttle_secs)
+            self._throttle(func=self._process_stopped, throttle_secs=self._throttle_secs)
 
         elif state == State.RUNNING:
             # Ping systemd watchdog before throttling
@@ -97,23 +95,23 @@ class Worker:
                 logger.debug("sd_notify: WATCHDOG=1\\nSTATUS=State: RUNNING.")
                 self._sd_notify.notify("WATCHDOG=1\nSTATUS=State: RUNNING.")
 
-            self._throttle(func=self._process_running, min_secs=throttle_secs)
+            self._throttle(func=self._process_running, throttle_secs=self._throttle_secs)
 
         return state
 
-    def _throttle(self, func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
+    def _throttle(self, func: Callable[..., Any], throttle_secs: float, *args, **kwargs) -> Any:
         """
         Throttles the given callable that it
         takes at least `min_secs` to finish execution.
         :param func: Any callable
-        :param min_secs: minimum execution time in seconds
-        :return: Any
+        :param throttle_secs: throttling interation execution time limit in seconds
+        :return: Any (result of execution of func)
         """
         self.last_throttle_start_time = time.time()
         logger.debug("========================================")
         result = func(*args, **kwargs)
         time_passed = time.time() - self.last_throttle_start_time
-        sleep_duration = max(min_secs - time_passed, 0.0)
+        sleep_duration = max(throttle_secs - time_passed, 0.0)
         logger.debug(f"Throttling with '{func.__name__}()': sleep for {sleep_duration:.2f} s, "
                      f"last iteration took {time_passed:.2f} s.")
         time.sleep(sleep_duration)
