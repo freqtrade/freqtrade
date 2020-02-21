@@ -188,3 +188,20 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     # FFill to get continuous
     df[col_name] = df[col_name].ffill()
     return df
+
+
+def dataframe_difference(df1: pd.DataFrame, df2: pd.DataFrame, which=None):
+    """
+    Find rows which are different between two DataFrames.
+    Taken with small adaptation from:
+    https://hackersandslackers.com/compare-rows-pandas-dataframes/
+    :param which: Allows to print 'left_only', 'right_only' or 'both' rows.
+    """
+    comparison_df = df1.merge(df2,
+                              indicator=True,
+                              how='outer')
+    if which is None:
+        diff_df = comparison_df[comparison_df['_merge'] != 'both']
+    else:
+        diff_df = comparison_df[comparison_df['_merge'] == which]
+    return diff_df
