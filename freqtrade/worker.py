@@ -4,8 +4,10 @@ Main Freqtrade worker class.
 import logging
 import time
 import traceback
+from os import getpid
 from typing import Any, Callable, Dict, Optional
 
+import arrow
 import sdnotify
 
 from freqtrade import __version__, constants
@@ -33,6 +35,7 @@ class Worker:
         self._init(False)
 
         self.last_throttle_start_time: Optional[float] = None
+        self._heartbeat_msg = 0
 
         # Tell systemd that we completed initialization phase
         if self._sd_notify:
@@ -50,10 +53,10 @@ class Worker:
         # Init the instance of the bot
         self.freqtrade = FreqtradeBot(self._config)
 
-        self._throttle_secs = self._config.get('internals', {}).get(
-            'process_throttle_secs',
-            constants.PROCESS_THROTTLE_SECS
-        )
+        internals_config = self._config.get('internals', {})
+        self._throttle_secs = internals_config.get('process_throttle_secs',
+                                                   constants.PROCESS_THROTTLE_SECS)
+        self._heartbeat_interval = internals_config.get('heartbeat_interval', 60)
 
         self._sd_notify = sdnotify.SystemdNotifier() if \
             self._config.get('internals', {}).get('sd_notify', False) else None
@@ -96,6 +99,11 @@ class Worker:
                 self._sd_notify.notify("WATCHDOG=1\nSTATUS=State: RUNNING.")
 
             self._throttle(func=self._process_running, throttle_secs=self._throttle_secs)
+
+        if (self._heartbeat_interval
+                and (arrow.utcnow().timestamp - self._heartbeat_msg > self._heartbeat_interval)):
+            logger.info(f"Bot heartbeat. PID={getpid()}")
+            self._heartbeat_msg = arrow.utcnow().timestamp
 
         return state
 
