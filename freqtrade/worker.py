@@ -108,12 +108,13 @@ class Worker:
         :return: Any
         """
         start = time.time()
-        result = func(*args, **kwargs)
         logger.debug("========================================")
-        end = time.time()
-        duration = max(min_secs - (end - start), 0.0)
-        logger.debug(f"Throttling {func.__name__} for {duration:.2f} seconds")
-        time.sleep(duration)
+        result = func(*args, **kwargs)
+        time_passed = time.time() - start
+        sleep_duration = max(min_secs - time_passed, 0.0)
+        logger.debug(f"Throttling with '{func.__name__}()': sleep for {sleep_duration:.2f} s, "
+                     f"last iteration took {time_passed:.2f} s.")
+        time.sleep(sleep_duration)
         return result
 
     def _process_stopped(self) -> None:
