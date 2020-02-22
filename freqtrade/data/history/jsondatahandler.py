@@ -69,10 +69,11 @@ class JsonDataHandler(IDataHandler):
         filename = self._pair_data_filename(self._datadir, pair, timeframe)
         if not filename.exists():
             return DataFrame(columns=self._columns)
-        pairdata = read_json(filename, orient='values',
-                             dtype={'open': 'float', 'high': 'float',
-                                    'low': 'float', 'close': 'float', 'volume': 'float'})
+        pairdata = read_json(filename, orient='values')
         pairdata.columns = self._columns
+        pairdata = pairdata.astype(copy=False,
+                                   dtype={'open': 'float', 'high': 'float',
+                                          'low': 'float', 'close': 'float', 'volume': 'float'})
         pairdata['date'] = to_datetime(pairdata['date'],
                                        unit='ms',
                                        utc=True,
