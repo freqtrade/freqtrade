@@ -11,6 +11,7 @@ from threading import Lock
 from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
+import random
 from requests.exceptions import RequestException
 
 from freqtrade import __version__, constants, persistence
@@ -221,6 +222,7 @@ class FreqtradeBot:
                 logger.info("No currency pair in active pair whitelist, "
                             "but checking to sell open trades.")
             else:
+                random.shuffle(whitelist)
                 # Create entity and execute trade for each pair from whitelist
                 for pair in whitelist:
                     try:
