@@ -83,6 +83,10 @@ class Worker:
             if state == State.RUNNING:
                 self.freqtrade.startup()
 
+            # Reset heartbeat timestamp to log the heartbeat message at
+            # first throttling iteration when the state changes
+            self._heartbeat_msg = 0
+
         if state == State.STOPPED:
             # Ping systemd watchdog before sleeping in the stopped state
             if self._sd_notify:
