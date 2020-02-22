@@ -782,7 +782,7 @@ def test_process_exchange_failures(default_conf, ticker, mocker) -> None:
     worker = Worker(args=None, config=default_conf)
     patch_get_signal(worker.freqtrade)
 
-    worker._process()
+    worker._process_running()
     assert sleep_mock.has_calls()
 
 
@@ -799,7 +799,7 @@ def test_process_operational_exception(default_conf, ticker, mocker) -> None:
 
     assert worker.freqtrade.state == State.RUNNING
 
-    worker._process()
+    worker._process_running()
     assert worker.freqtrade.state == State.STOPPED
     assert 'OperationalException' in msg_mock.call_args_list[-1][0][0]['status']
 
@@ -3663,30 +3663,6 @@ def test_startup_trade_reinit(default_conf, edge_conf, mocker):
     ftbot = get_patched_freqtradebot(mocker, edge_conf)
     ftbot.startup()
     assert reinit_mock.call_count == 0
-
-
-def test_process_i_am_alive(default_conf, mocker, caplog):
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
-
-    ftbot = get_patched_freqtradebot(mocker, default_conf)
-    message = r"Bot heartbeat\. PID=.*"
-    ftbot.process()
-    assert log_has_re(message, caplog)
-    assert ftbot._heartbeat_msg != 0
-
-    caplog.clear()
-    # Message is not shown before interval is up
-    ftbot.process()
-    assert not log_has_re(message, caplog)
-
-    caplog.clear()
-    # Set clock - 70 seconds
-    ftbot._heartbeat_msg -= 70
-
-    ftbot.process()
-    assert log_has_re(message, caplog)
 
 
 @pytest.mark.usefixtures("init_persistence")
