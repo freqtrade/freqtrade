@@ -67,8 +67,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
 
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  MagicMock(side_effect=DependencyException(f"Pair 'ETH/BTC' not available")))
-    # invalidate ticker cache
-    rpc._freqtrade.exchange._cached_ticker = {}
     results = rpc._rpc_trade_status()
     assert isnan(results[0]['current_profit'])
     assert isnan(results[0]['current_rate'])
@@ -136,8 +134,6 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
 
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  MagicMock(side_effect=DependencyException(f"Pair 'ETH/BTC' not available")))
-    # invalidate ticker cache
-    rpc._freqtrade.exchange._cached_ticker = {}
     result, headers = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
     assert 'instantly' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
@@ -262,8 +258,6 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
     # Test non-available pair
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  MagicMock(side_effect=DependencyException(f"Pair 'ETH/BTC' not available")))
-    # invalidate ticker cache
-    rpc._freqtrade.exchange._cached_ticker = {}
     stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
     assert stats['trade_count'] == 2
     assert stats['first_trade_date'] == 'just now'

@@ -1121,25 +1121,16 @@ def test_fetch_ticker(default_conf, mocker, exchange_name):
     assert ticker['bid'] == 0.5
     assert ticker['ask'] == 1
 
-    assert 'ETH/BTC' in exchange._cached_ticker
-    assert exchange._cached_ticker['ETH/BTC']['bid'] == 0.5
-    assert exchange._cached_ticker['ETH/BTC']['ask'] == 1
-
-    # Test caching
-    api_mock.fetch_ticker = MagicMock()
-    exchange.fetch_ticker(pair='ETH/BTC', refresh=False)
-    assert api_mock.fetch_ticker.call_count == 0
-
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            "fetch_ticker", "fetch_ticker",
-                           pair='ETH/BTC', refresh=True)
+                           pair='ETH/BTC')
 
     api_mock.fetch_ticker = MagicMock(return_value={})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-    exchange.fetch_ticker(pair='ETH/BTC', refresh=True)
+    exchange.fetch_ticker(pair='ETH/BTC')
 
     with pytest.raises(DependencyException, match=r'Pair XRP/ETH not available'):
-        exchange.fetch_ticker(pair='XRP/ETH', refresh=True)
+        exchange.fetch_ticker(pair='XRP/ETH')
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)

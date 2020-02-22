@@ -253,7 +253,7 @@ class FreqtradeBot:
         else:
             if not tick:
                 logger.info('Using Last Ask / Last Price')
-                ticker = self.exchange.fetch_ticker(pair, refresh)
+                ticker = self.exchange.fetch_ticker(pair)
             else:
                 ticker = tick
             if ticker['ask'] < ticker['last']:
@@ -631,7 +631,7 @@ class FreqtradeBot:
             rate = order_book['bids'][0][0]
 
         else:
-            rate = self.exchange.fetch_ticker(pair, refresh)['bid']
+            rate = self.exchange.fetch_ticker(pair)['bid']
         return rate
 
     def handle_trade(self, trade: Trade) -> bool:
