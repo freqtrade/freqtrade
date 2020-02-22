@@ -22,7 +22,23 @@ dataframe['adx'] = ta.ADX(dataframe)
 # # Awesome Oscillator
 # dataframe['ao'] = qtpylib.awesome_oscillator(dataframe)
 
-# # Commodity Channel Index: values Oversold:-100, Overbought:100
+# # Keltner Channel
+# keltner = qtpylib.keltner_channel(dataframe)
+# dataframe["kc_upperband"] = keltner["upper"]
+# dataframe["kc_lowerband"] = keltner["lower"]
+# dataframe["kc_middleband"] = keltner["mid"]
+# dataframe["kc_percent"] = (
+#     (dataframe["close"] - dataframe["kc_lowerband"]) /
+#     (dataframe["kc_upperband"] - dataframe["kc_lowerband"])
+# )
+# dataframe["kc_width"] = (
+#     (dataframe["kc_upperband"] - dataframe["kc_lowerband"]) / dataframe["kc_middleband"]
+# )
+
+# # Ultimate Oscillator
+# dataframe['ao'] = ta.ULTOSC(dataframe)
+
+# # Commodity Channel Index: values [Oversold:-100, Overbought:100]
 # dataframe['cci'] = ta.CCI(dataframe)
 
 # RSI
