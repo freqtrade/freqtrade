@@ -65,7 +65,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'open_order': '(limit buy rem=0.00000000)'
     } == results[0]
 
-    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
                  MagicMock(side_effect=DependencyException(f"Pair 'ETH/BTC' not available")))
     results = rpc._rpc_trade_status()
     assert isnan(results[0]['current_profit'])
@@ -132,7 +132,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert 'ETH/BTC' in result[0][1]
     assert '-0.59% (-0.09)' == result[0][3]
 
-    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
                  MagicMock(side_effect=DependencyException(f"Pair 'ETH/BTC' not available")))
     result, headers = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
     assert 'instantly' == result[0][2]
@@ -256,7 +256,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
     assert prec_satoshi(stats['best_rate'], 6.2)
 
     # Test non-available pair
-    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
                  MagicMock(side_effect=DependencyException(f"Pair 'ETH/BTC' not available")))
     stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
     assert stats['trade_count'] == 2

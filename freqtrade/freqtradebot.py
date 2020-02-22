@@ -11,6 +11,7 @@ from threading import Lock
 from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
+from cachetools import TTLCache
 from requests.exceptions import RequestException
 
 from freqtrade import __version__, constants, persistence
@@ -53,6 +54,9 @@ class FreqtradeBot:
         self.config = config
 
         self._heartbeat_msg = 0
+
+        self._sell_rate_cache = TTLCache(maxsize=100, ttl=5)
+        self._buy_rate_cache = TTLCache(maxsize=100, ttl=5)
 
         self.heartbeat_interval = self.config.get('internals', {}).get('heartbeat_interval', 60)
 
@@ -234,11 +238,19 @@ class FreqtradeBot:
 
         return trades_created
 
-    def get_buy_rate(self, pair: str, refresh: bool, tick: Dict = None) -> float:
+    def get_buy_rate(self, pair: str, refresh: bool) -> float:
         """
         Calculates bid target between current ask price and last price
+        :param pair: Pair to get rate for
+        :param refresh: allow cached data
         :return: float: Price
         """
+        if not refresh:
+            rate = self._sell_rate_cache.get(pair)
+            # Check if cache has been invalidated
+            if rate:
+                return rate
+
         config_bid_strategy = self.config.get('bid_strategy', {})
         if 'use_order_book' in config_bid_strategy and\
                 config_bid_strategy.get('use_order_book', False):
@@ -251,17 +263,16 @@ class FreqtradeBot:
             logger.info('...top %s order book buy rate %0.8f', order_book_top, order_book_rate)
             used_rate = order_book_rate
         else:
-            if not tick:
-                logger.info('Using Last Ask / Last Price')
-                ticker = self.exchange.fetch_ticker(pair)
-            else:
-                ticker = tick
+            logger.info('Using Last Ask / Last Price')
+            ticker = self.exchange.fetch_ticker(pair)
             if ticker['ask'] < ticker['last']:
                 ticker_rate = ticker['ask']
             else:
                 balance = self.config['bid_strategy']['ask_last_balance']
                 ticker_rate = ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
             used_rate = ticker_rate
+
+        self._buy_rate_cache[pair] = used_rate
 
         return used_rate
 
@@ -621,8 +632,16 @@ class FreqtradeBot:
         The orderbook portion is only used for rpc messaging, which would otherwise fail
         for BitMex (has no bid/ask in fetch_ticker)
         or remain static in any other case since it's not updating.
+        :param pair: Pair to get rate for
+        :param refresh: allow cached data
         :return: Bid rate
         """
+        if not refresh:
+            rate = self._sell_rate_cache.get(pair)
+            # Check if cache has been invalidated
+            if rate:
+                return rate
+
         config_ask_strategy = self.config.get('ask_strategy', {})
         if config_ask_strategy.get('use_order_book', False):
             logger.debug('Using order book to get sell rate')
@@ -632,6 +651,7 @@ class FreqtradeBot:
 
         else:
             rate = self.exchange.fetch_ticker(pair)['bid']
+        self._sell_rate_cache[pair] = rate
         return rate
 
     def handle_trade(self, trade: Trade) -> bool:
