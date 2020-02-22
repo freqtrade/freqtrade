@@ -246,9 +246,10 @@ class FreqtradeBot:
         :return: float: Price
         """
         if not refresh:
-            rate = self._sell_rate_cache.get(pair)
+            rate = self._buy_rate_cache.get(pair)
             # Check if cache has been invalidated
             if rate:
+                logger.info(f"Using cached buy rate for {pair}.")
                 return rate
 
         config_bid_strategy = self.config.get('bid_strategy', {})
@@ -577,7 +578,7 @@ class FreqtradeBot:
         """
         Sends rpc notification when a buy cancel occured.
         """
-        current_rate = self.get_buy_rate(trade.pair, True)
+        current_rate = self.get_buy_rate(trade.pair, False)
 
         msg = {
             'type': RPCMessageType.BUY_CANCEL_NOTIFICATION,
@@ -640,6 +641,7 @@ class FreqtradeBot:
             rate = self._sell_rate_cache.get(pair)
             # Check if cache has been invalidated
             if rate:
+                logger.info(f"Using cached sell rate for {pair}.")
                 return rate
 
         config_ask_strategy = self.config.get('ask_strategy', {})
@@ -1078,7 +1080,7 @@ class FreqtradeBot:
         """
         profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
         profit_trade = trade.calc_profit(rate=profit_rate)
-        current_rate = self.get_sell_rate(trade.pair, True)
+        current_rate = self.get_sell_rate(trade.pair, False)
         profit_percent = trade.calc_profit_ratio(profit_rate)
         gain = "profit" if profit_percent > 0 else "loss"
 
