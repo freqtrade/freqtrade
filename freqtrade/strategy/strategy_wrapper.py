@@ -6,6 +6,11 @@ logger = logging.getLogger(__name__)
 
 
 def strategy_safe_wrapper(f, message: str = "", default_retval=None):
+    """
+    Wrapper around user-provided methods and functions.
+    Caches all exceptions and returns either the default_retval (if it's not None) or raises
+    a StrategyError exception, which then needs to be handled by the calling method.
+    """
     def wrapper(*args, **kwargs):
         try:
             return f(*args, **kwargs)
@@ -15,14 +20,14 @@ def strategy_safe_wrapper(f, message: str = "", default_retval=None):
                 f"Strategy caused the following exception: {error}"
                 f"{f}"
             )
-            if not default_retval:
+            if default_retval is None:
                 raise StrategyError(str(error)) from error
             return default_retval
         except Exception as error:
             logger.exception(
                 f"Unexpected error {error} calling {f}"
             )
-            if not default_retval:
+            if default_retval is None:
                 raise StrategyError(str(error)) from error
             return default_retval
 
