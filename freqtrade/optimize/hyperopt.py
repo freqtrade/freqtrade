@@ -533,7 +533,7 @@ class Hyperopt:
             'total_profit': total_profit,
         }
 
-    def _calculate_results_metrics(self, backtesting_results: DataFrame) -> Dict:
+        def _calculate_results_metrics(self, backtesting_results: DataFrame) -> Dict:
         return {
             'trade_count': len(backtesting_results.index),
             'wins': len(backtesting_results[backtesting_results.profit_percent > 0]),
