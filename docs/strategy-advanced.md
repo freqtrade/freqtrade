@@ -9,7 +9,7 @@ Simple, timebased order-timeouts can be configured either via strategy or in the
 
 However, freqtrade also offers a custom callback for both ordertypes, which allows you to decide based on custom criteria if a order did time out or not.
 
-!!! Note:
+!!! Note
     Unfilled order timeouts are not relevant during backtesting or hyperopt, and are only relevant during real (live) trading. Therefore these methods are only called in these circumstances.
 
 ### Custom order timeout example
@@ -53,7 +53,5 @@ class Awesomestrategy(IStrategy):
         return True
 ```
 
-!!! Note:
+!!! Note
     For the above example, `unfilledtimeout` must be set to something bigger than 24h, otherwise that type of timeout will apply first.
-
-    
