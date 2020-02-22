@@ -25,6 +25,7 @@ def strategy_safe_wrapper(f, message: str = "", default_retval=None):
             return default_retval
         except Exception as error:
             logger.exception(
+                f"{message}"
                 f"Unexpected error {error} calling {f}"
             )
             if default_retval is None:

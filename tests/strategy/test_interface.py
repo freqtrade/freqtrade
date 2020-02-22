@@ -4,12 +4,15 @@ import logging
 from unittest.mock import MagicMock
 
 import arrow
+import pytest
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.history import load_data
+from freqtrade.exceptions import StrategyError
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import StrategyResolver
+from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import get_patched_exchange, log_has, log_has_re
 
 from .strats.default_strategy import DefaultStrategy
@@ -323,3 +326,38 @@ def test_is_pair_locked(default_conf):
     pair = 'ETH/BTC'
     strategy.unlock_pair(pair)
     assert not strategy.is_pair_locked(pair)
+
+
+@pytest.mark.parametrize('error', [
+    ValueError, KeyError, Exception,
+])
+def test_strategy_safe_wrapper_error(caplog, error):
+    def failing_method():
+        raise error('This is an error.')
+
+    def working_method(argumentpassedin):
+        return argumentpassedin
+
+    with pytest.raises(StrategyError, match=r'This is an error.'):
+        strategy_safe_wrapper(failing_method, message='DeadBeef')()
+
+    assert log_has_re(r'DeadBeef.*', caplog)
+    ret = strategy_safe_wrapper(failing_method, message='DeadBeef', default_retval=True)()
+
+    assert isinstance(ret, bool)
+    assert ret
+
+
+@pytest.mark.parametrize('value', [
+    1, 22, 55, True, False, {'a': 1, 'b': '112'},
+    [1, 2, 3, 4], (4, 2, 3, 6)
+])
+def test_strategy_safe_wrapper(value):
+
+    def working_method(argumentpassedin):
+        return argumentpassedin
+
+    ret = strategy_safe_wrapper(working_method, message='DeadBeef')(value)
+
+    assert type(ret) == type(value)
+    assert ret == value
