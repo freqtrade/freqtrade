@@ -533,10 +533,14 @@ class Hyperopt:
             'total_profit': total_profit,
         }
 
-    def _calculate_results_metrics(self, backtesting_results: DataFrame) -> Dict:
+        def _calculate_results_metrics(self, backtesting_results: DataFrame) -> Dict:
         return {
             'trade_count': len(backtesting_results.index),
+            'wins': len(backtesting_results[backtesting_results.profit_percent > 0]),
+            'draws': len(backtesting_results[backtesting_results.profit_percent == 0]),
+            'losses': len(backtesting_results[backtesting_results.profit_percent < 0]),
             'avg_profit': backtesting_results.profit_percent.mean() * 100.0,
+            'median_profit': backtesting_results.profit_percent.median() * 100.0,
             'total_profit': backtesting_results.profit_abs.sum(),
             'profit': backtesting_results.profit_percent.sum() * 100.0,
             'duration': backtesting_results.trade_duration.mean(),
@@ -548,7 +552,11 @@ class Hyperopt:
         """
         stake_cur = self.config['stake_currency']
         return (f"{results_metrics['trade_count']:6d} trades. "
+                f"{results_metrics['wins']:6d} wins. "
+                f"{results_metrics['draws']:6d} draws. "
+                f"{results_metrics['losses']:6d} losses. "
                 f"Avg profit {results_metrics['avg_profit']: 6.2f}%. "
+                f"Median profit {results_metrics['median_profit']: 6.2f}%. "
                 f"Total profit {results_metrics['total_profit']: 11.8f} {stake_cur} "
                 f"({results_metrics['profit']: 7.2f}\N{GREEK CAPITAL LETTER SIGMA}%). "
                 f"Avg duration {results_metrics['duration']:5.1f} min."
