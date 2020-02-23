@@ -115,6 +115,7 @@ CONF_SCHEMA = {
                     'maximum': 1,
                     'exclusiveMaximum': False,
                 },
+                'price_side': {'type': 'string', 'enum': ORDERBOOK_SIDES, 'default': 'bid'},
                 'use_order_book': {'type': 'boolean'},
                 'order_book_top': {'type': 'integer', 'maximum': 20, 'minimum': 1},
                 'check_depth_of_market': {
@@ -130,6 +131,7 @@ CONF_SCHEMA = {
         'ask_strategy': {
             'type': 'object',
             'properties': {
+                'price_side': {'type': 'string', 'enum': ORDERBOOK_SIDES, 'default': 'ask'},
                 'use_order_book': {'type': 'boolean'},
                 'order_book_min': {'type': 'integer', 'minimum': 1},
                 'order_book_max': {'type': 'integer', 'minimum': 1, 'maximum': 50},
@@ -300,6 +302,7 @@ SCHEMA_TRADE_REQUIRED = [
     'last_stake_amount_min_ratio',
     'dry_run',
     'dry_run_wallet',
+    'ask_strategy',
     'bid_strategy',
     'unfilledtimeout',
     'stoploss',

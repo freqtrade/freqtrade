@@ -639,10 +639,10 @@ class FreqtradeBot:
             logger.debug('Using order book to get sell rate')
 
             order_book = self.exchange.get_order_book(pair, 1)
-            rate = order_book['bids'][0][0]
+            rate = order_book[f"{config_ask_strategy['price_side']}s"][0][0]
 
         else:
-            rate = self.exchange.fetch_ticker(pair)['bid']
+            rate = self.exchange.fetch_ticker(pair)[config_ask_strategy['price_side']]
         self._sell_rate_cache[pair] = rate
         return rate
 
