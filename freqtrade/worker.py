@@ -69,7 +69,7 @@ class Worker:
 
     def _worker(self, old_state: Optional[State]) -> State:
         """
-        Trading routine that must be run at each loop
+        The main routine that runs each throttling iteration and handles the states.
         :param old_state: the previous service state from the previous call
         :return: current service state
         """
