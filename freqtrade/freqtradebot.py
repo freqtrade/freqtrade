@@ -242,11 +242,10 @@ class FreqtradeBot:
                 logger.info(f"Using cached buy rate for {pair}.")
                 return rate
 
-        config_bid_strategy = self.config.get('bid_strategy', {})
-        if 'use_order_book' in config_bid_strategy and\
-                config_bid_strategy.get('use_order_book', False):
+        bid_strategy = self.config.get('bid_strategy', {})
+        if 'use_order_book' in bid_strategy and bid_strategy.get('use_order_book', False):
             logger.info('Getting price from order book')
-            order_book_top = config_bid_strategy.get('order_book_top', 1)
+            order_book_top = bid_strategy.get('order_book_top', 1)
             order_book = self.exchange.get_order_book(pair, order_book_top)
             logger.debug('order_book %s', order_book)
             # top 1 = index 0
@@ -256,11 +255,12 @@ class FreqtradeBot:
         else:
             logger.info('Using Last Ask / Last Price')
             ticker = self.exchange.fetch_ticker(pair)
-            if ticker['ask'] < ticker['last']:
-                ticker_rate = ticker['ask']
+            rate = ticker['ask']
+            if rate < ticker['last']:
+                ticker_rate = rate
             else:
                 balance = self.config['bid_strategy']['ask_last_balance']
-                ticker_rate = ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
+                ticker_rate = rate + balance * (ticker['last'] - rate)
             used_rate = ticker_rate
 
         self._buy_rate_cache[pair] = used_rate
