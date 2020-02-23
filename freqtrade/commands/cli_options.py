@@ -220,12 +220,6 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_true',
         default=False,
     ),
-    "print_table": Arg(
-        '--print-table',
-        help='Print results in table format.',
-        action='store_true',
-        default=False,
-    ),
     "hyperopt_jobs": Arg(
         '-j', '--job-workers',
         help='The number of concurrently running jobs for hyperoptimization '

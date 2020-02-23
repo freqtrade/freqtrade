@@ -21,7 +21,6 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
 
     print_colorized = config.get('print_colorized', False)
     print_json = config.get('print_json', False)
-    print_table = config.get('print_table', False)
     no_details = config.get('hyperopt_list_no_details', False)
     no_header = False
 
@@ -47,26 +46,14 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
 
     trials = _hyperopt_filter_trials(trials, filteroptions)
 
-    # TODO: fetch the interval for epochs to print from the cli option
-    epoch_start, epoch_stop = 0, None
-
     if print_colorized:
         colorama_init(autoreset=True)
 
-    if print_table:
-        try:
-            Hyperopt.print_result_table(config, trials, total_epochs,
-                                        not filteroptions['only_best'], print_colorized)
-        except KeyboardInterrupt:
-            print('User interrupted..')
-    else:
-        try:
-            # Human-friendly indexes used here (starting from 1)
-            for val in trials[epoch_start:epoch_stop]:
-                Hyperopt.print_results_explanation(val, total_epochs,
-                                                   not filteroptions['only_best'], print_colorized)
-        except KeyboardInterrupt:
-            print('User interrupted..')
+    try:
+        Hyperopt.print_result_table(config, trials, total_epochs,
+                                    not filteroptions['only_best'], print_colorized)
+    except KeyboardInterrupt:
+        print('User interrupted..')
 
     if trials and not no_details:
         sorted_trials = sorted(trials, key=itemgetter('loss'))

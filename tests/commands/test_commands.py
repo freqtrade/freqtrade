@@ -907,22 +907,6 @@ def test_hyperopt_list(mocker, capsys, hyperopt_results):
     assert all(x not in captured.out
                for x in [" 1/12", " 3/12", " 4/12", " 5/12", " 7/12", " 8/12"
                          " 9/12", " 10/12", " 11/12", " 12/12"])
-    args = [
-        "hyperopt-list",
-        "--no-details",
-        "--print-table",
-        "--min-trades", "100",
-        "--print-json"
-    ]
-    pargs = get_args(args)
-    pargs['config'] = None
-    start_hyperopt_list(pargs)
-    captured = capsys.readouterr()
-    assert all(x in captured.out
-               for x in [" 3/12", " 7/12", " 9/12", " 11/12"])
-    assert all(x not in captured.out
-               for x in [" 1/12", " 2/12", " 4/12", " 5/12", " 6/12", " 8/12", " 10/12"
-                         " 12/12"])
 
 
 def test_hyperopt_show(mocker, capsys, hyperopt_results):
