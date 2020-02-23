@@ -2040,6 +2040,51 @@ def test_check_handle_timedout_buy_exception(default_conf, ticker, limit_buy_ord
     assert nb_trades == 1
 
 
+def test_check_handle_timedout_sell_usercustom(default_conf, ticker, limit_sell_order_old, mocker,
+                                               open_trade) -> None:
+    default_conf["unfilledtimeout"] = {"buy": 1440, "sell": 1440}
+    rpc_mock = patch_RPCManager(mocker)
+    cancel_order_mock = MagicMock()
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker,
+        get_order=MagicMock(return_value=limit_sell_order_old),
+        cancel_order=cancel_order_mock
+    )
+    freqtrade = FreqtradeBot(default_conf)
+
+    open_trade.open_date = arrow.utcnow().shift(hours=-5).datetime
+    open_trade.close_date = arrow.utcnow().shift(minutes=-601).datetime
+    open_trade.is_open = False
+
+    Trade.session.add(open_trade)
+
+    freqtrade.strategy.check_sell_timeout = MagicMock(return_value=False)
+    # Return false - No impact
+    freqtrade.check_handle_timedout()
+    assert cancel_order_mock.call_count == 0
+    assert rpc_mock.call_count == 0
+    assert open_trade.is_open is False
+    assert freqtrade.strategy.check_sell_timeout.call_count == 1
+
+    freqtrade.strategy.check_sell_timeout = MagicMock(side_effect=KeyError)
+    # Return Error - No impact
+    freqtrade.check_handle_timedout()
+    assert cancel_order_mock.call_count == 0
+    assert rpc_mock.call_count == 0
+    assert open_trade.is_open is False
+    assert freqtrade.strategy.check_sell_timeout.call_count == 1
+
+    # Return True - sells!
+    freqtrade.strategy.check_sell_timeout = MagicMock(return_value=True)
+    freqtrade.check_handle_timedout()
+    assert cancel_order_mock.call_count == 1
+    assert rpc_mock.call_count == 1
+    assert open_trade.is_open is True
+    assert freqtrade.strategy.check_sell_timeout.call_count == 1
+
+
 def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, mocker,
                                     open_trade) -> None:
     rpc_mock = patch_RPCManager(mocker)
