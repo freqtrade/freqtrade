@@ -15,6 +15,7 @@ UNLIMITED_STAKE_AMOUNT = 'unlimited'
 DEFAULT_AMOUNT_RESERVE_PERCENT = 0.05
 REQUIRED_ORDERTIF = ['buy', 'sell']
 REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
+ORDERBOOK_SIDES = ['ask', 'bid']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
@@ -113,15 +114,15 @@ CONF_SCHEMA = {
                     'minimum': 0,
                     'maximum': 1,
                     'exclusiveMaximum': False,
-                    'use_order_book': {'type': 'boolean'},
-                    'order_book_top': {'type': 'integer', 'maximum': 20, 'minimum': 1},
-                    'check_depth_of_market': {
-                        'type': 'object',
-                        'properties': {
-                            'enabled': {'type': 'boolean'},
-                            'bids_to_ask_delta': {'type': 'number', 'minimum': 0},
-                        }
-                    },
+                },
+                'use_order_book': {'type': 'boolean'},
+                'order_book_top': {'type': 'integer', 'maximum': 20, 'minimum': 1},
+                'check_depth_of_market': {
+                    'type': 'object',
+                    'properties': {
+                        'enabled': {'type': 'boolean'},
+                        'bids_to_ask_delta': {'type': 'number', 'minimum': 0},
+                    }
                 },
             },
             'required': ['ask_last_balance']
