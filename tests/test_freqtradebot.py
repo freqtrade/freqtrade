@@ -1977,6 +1977,7 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, op
 
     Trade.session.add(open_trade)
 
+    freqtrade.strategy.check_buy_timeout = MagicMock(return_value=False)
     # check it does cancel buy orders over the time limit
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
@@ -1984,6 +1985,8 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, op
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     nb_trades = len(trades)
     assert nb_trades == 0
+    # Custom user buy-timeout is never called
+    assert freqtrade.strategy.check_buy_timeout.call_count == 0
 
 
 def test_check_handle_cancelled_buy(default_conf, ticker, limit_buy_order_old, open_trade,
@@ -2104,11 +2107,14 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
 
     Trade.session.add(open_trade)
 
+    freqtrade.strategy.check_sell_timeout = MagicMock(return_value=False)
     # check it does cancel sell orders over the time limit
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
     assert open_trade.is_open is True
+    # Custom user sell-timeout is never called
+    assert freqtrade.strategy.check_sell_timeout.call_count == 0
 
 
 def test_check_handle_cancelled_sell(default_conf, ticker, limit_sell_order_old, open_trade,
