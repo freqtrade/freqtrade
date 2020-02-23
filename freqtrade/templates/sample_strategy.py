@@ -125,7 +125,7 @@ class SampleStrategy(IStrategy):
         # ------------------------------------
 
         # ADX
-        # dataframe['adx'] = ta.ADX(dataframe)
+        dataframe['adx'] = ta.ADX(dataframe)
 
         # # Plus Directional Indicator / Movement
         # dataframe['plus_dm'] = ta.PLUS_DM(dataframe)
@@ -249,17 +249,17 @@ class SampleStrategy(IStrategy):
         # dataframe['sma100'] = ta.SMA(dataframe, timeperiod=100)
 
         # Parabolic SAR
-        # dataframe['sar'] = ta.SAR(dataframe)
+        dataframe['sar'] = ta.SAR(dataframe)
 
         # TEMA - Triple Exponential Moving Average
-        # dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
+        dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
 
         # Cycle Indicator
         # ------------------------------------
         # Hilbert Transform Indicator - SineWave
-        # hilbert = ta.HT_SINE(dataframe)
-        # dataframe['htsine'] = hilbert['sine']
-        # dataframe['htleadsine'] = hilbert['leadsine']
+        hilbert = ta.HT_SINE(dataframe)
+        dataframe['htsine'] = hilbert['sine']
+        dataframe['htleadsine'] = hilbert['leadsine']
 
         # Pattern Recognition - Bullish candlestick patterns
         # ------------------------------------
