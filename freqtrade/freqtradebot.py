@@ -244,18 +244,20 @@ class FreqtradeBot:
 
         bid_strategy = self.config.get('bid_strategy', {})
         if 'use_order_book' in bid_strategy and bid_strategy.get('use_order_book', False):
-            logger.info('Getting price from order book')
+            logger.info(
+                f"Getting price from order book {bid_strategy['price_side'].capitalize()} side."
+                )
             order_book_top = bid_strategy.get('order_book_top', 1)
             order_book = self.exchange.get_order_book(pair, order_book_top)
             logger.debug('order_book %s', order_book)
             # top 1 = index 0
-            order_book_rate = order_book['bids'][order_book_top - 1][0]
-            logger.info('...top %s order book buy rate %0.8f', order_book_top, order_book_rate)
+            order_book_rate = order_book[f"{bid_strategy['price_side']}s"][order_book_top - 1][0]
+            logger.info(f'...top {order_book_top} order book buy rate {order_book_rate:.8f}')
             used_rate = order_book_rate
         else:
-            logger.info('Using Last Ask / Last Price')
+            logger.info(f"Using Last {bid_strategy['price_side'].capitalize()} / Last Price")
             ticker = self.exchange.fetch_ticker(pair)
-            rate = ticker['ask']
+            rate = ticker[bid_strategy['price_side']]
             if rate < ticker['last']:
                 ticker_rate = rate
             else:
