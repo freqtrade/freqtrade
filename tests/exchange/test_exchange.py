@@ -406,7 +406,10 @@ def test_get_quote_currencies(default_conf, mocker):
 def test_validate_pairs(default_conf, mocker):  # test exchange.validate_pairs directly
     api_mock = MagicMock()
     type(api_mock).markets = PropertyMock(return_value={
-        'ETH/BTC': {}, 'LTC/BTC': {}, 'XRP/BTC': {}, 'NEO/BTC': {}
+        'ETH/BTC': {'quote': 'BTC'},
+        'LTC/BTC': {'quote': 'BTC'},
+        'XRP/BTC': {'quote': 'BTC'},
+        'NEO/BTC': {'quote': 'BTC'},
     })
     id_mock = PropertyMock(return_value='test_exchange')
     type(api_mock).id = id_mock
@@ -454,9 +457,9 @@ def test_validate_pairs_exception(default_conf, mocker, caplog):
 def test_validate_pairs_restricted(default_conf, mocker, caplog):
     api_mock = MagicMock()
     type(api_mock).markets = PropertyMock(return_value={
-        'ETH/BTC': {}, 'LTC/BTC': {},
-        'XRP/BTC': {'info': {'IsRestricted': True}},
-        'NEO/BTC': {'info': 'TestString'},  # info can also be a string ...
+        'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
+        'XRP/BTC': {'quote': 'BTC', 'info': {'IsRestricted': True}},
+        'NEO/BTC': {'quote': 'BTC', 'info': 'TestString'},  # info can also be a string ...
     })
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
@@ -468,6 +471,37 @@ def test_validate_pairs_restricted(default_conf, mocker, caplog):
                    f"Please check if you are impacted by this restriction "
                    f"on the exchange and eventually remove XRP/BTC from your whitelist.", caplog)
 
+
+def test_validate_pairs_stakecompatibility(default_conf, mocker, caplog):
+    api_mock = MagicMock()
+    type(api_mock).markets = PropertyMock(return_value={
+        'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
+        'XRP/BTC': {'quote': 'BTC'}, 'NEO/BTC': {'quote': 'BTC'},
+        'HELLO-WORLD': {'quote': 'BTC'},
+    })
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
+    mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
+    mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+
+    Exchange(default_conf)
+
+
+def test_validate_pairs_stakecompatibility_fail(default_conf, mocker, caplog):
+    default_conf['exchange']['pair_whitelist'].append('HELLO-WORLD')
+    api_mock = MagicMock()
+    type(api_mock).markets = PropertyMock(return_value={
+        'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
+        'XRP/BTC': {'quote': 'BTC'}, 'NEO/BTC': {'quote': 'BTC'},
+        'HELLO-WORLD': {'quote': 'USDT'},
+    })
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
+    mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
+    mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+
+    with pytest.raises(OperationalException, match=r"Stake-currency 'BTC' not compatible with.*"):
+        Exchange(default_conf)
 
 @pytest.mark.parametrize("timeframe", [
     ('5m'), ("1m"), ("15m"), ("1h")
