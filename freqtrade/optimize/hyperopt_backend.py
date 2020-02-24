@@ -1,6 +1,7 @@
 from joblib._parallel_backends import LokyBackend
+from typing import Any
 
-hyperopt = None
+hyperopt: Any = None
 
 
 class MultiCallback:

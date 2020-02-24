@@ -2,7 +2,6 @@
 """
 This module contains the hyperopt logic
 """
-
 import os
 import functools
 import locale
@@ -10,12 +9,12 @@ import logging
 import random
 import sys
 import warnings
-from collections import OrderedDict
+from collections import OrderedDict, deque
 from math import factorial, log
 from operator import itemgetter
 from pathlib import Path
 from pprint import pprint
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Callable
 
 import rapidjson
 from colorama import Fore, Style
@@ -32,7 +31,6 @@ from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F401
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F401
 from freqtrade.resolvers.hyperopt_resolver import (HyperOptLossResolver, HyperOptResolver)
 from joblib import (Parallel, cpu_count, delayed, dump, load, wrap_non_picklable_objects)
-from joblib._parallel_backends import LokyBackend
 from joblib import register_parallel_backend, parallel_backend
 from pandas import DataFrame
 
@@ -62,6 +60,7 @@ class Hyperopt:
     hyperopt.start()
     """
     def __init__(self, config: Dict[str, Any]) -> None:
+
         self.config = config
 
         self.backtesting = Backtesting(self.config)
@@ -75,16 +74,16 @@ class Hyperopt:
                             'hyperopt_results.pickle')
         self.tickerdata_pickle = (self.config['user_data_dir'] / 'hyperopt_results' /
                                   'hyperopt_tickerdata.pkl')
-        self.effort = config.get('epochs', 0) or 1
-        self.total_epochs = 9999
-        self.max_epoch = 9999
+        self.total_epochs = config['epochs'] if 'epochs' in config else 0
+        self.effort = config['effort'] if 'effort' in config else -1
+        self.max_epoch = 0
         self.search_space_size = 0
         self.max_epoch_reached = False
 
         self.min_epochs = INITIAL_POINTS
         self.current_best_loss = 100
         self.current_best_epoch = 0
-        self.epochs_since_last_best = []
+        self.epochs_since_last_best: List = []
         self.avg_best_occurrence = 0
 
         if not self.config.get('hyperopt_continue'):
@@ -100,6 +99,10 @@ class Hyperopt:
         self.opt: Optimizer
         self.opt = None
         self.f_val: List = []
+        self.to_ask: deque
+        self.to_ask = deque()
+        self.tell: Callable
+        self.tell = None
 
         # Populate functions here (hasattr is slow so should not be run during "regular" operations)
         if hasattr(self.custom_hyperopt, 'populate_indicators'):
@@ -163,6 +166,7 @@ class Hyperopt:
         Save hyperopt trials to file
         """
         num_trials = len(self.trials)
+        print()
         if num_trials > self.num_trials_saved:
             logger.info(f"Saving {num_trials} {plural(num_trials, 'epoch')}.")
             dump(self.trials, self.trials_file)
@@ -276,8 +280,8 @@ class Hyperopt:
         """
         is_best = results['is_best']
         if self.print_all or is_best:
-            self.print_results_explanation(results, self.total_epochs, self.print_all,
-                                           self.print_colorized)
+            self.print_results_explanation(results, self.total_epochs or self.max_epoch,
+                                           self.print_all, self.print_colorized)
 
     @staticmethod
     def print_results_explanation(results, total_epochs, highlight_best: bool,
@@ -386,10 +390,10 @@ class Hyperopt:
             position_stacking=self.position_stacking,
         )
         return self._get_results_dict(backtesting_results, min_date, max_date, params_dict,
-                                      params_details)
+                                      params_details, raw_params)
 
     def _get_results_dict(self, backtesting_results, min_date, max_date, params_dict,
-                          params_details):
+                          params_details, raw_params):
         results_metrics = self._calculate_results_metrics(backtesting_results)
         results_explanation = self._format_results_explanation_string(results_metrics)
 
@@ -413,6 +417,7 @@ class Hyperopt:
             'results_metrics': results_metrics,
             'results_explanation': results_explanation,
             'total_profit': total_profit,
+            'asked': raw_params,
         }
 
     def _calculate_results_metrics(self, backtesting_results: DataFrame) -> Dict:
@@ -448,38 +453,51 @@ class Hyperopt:
             random_state=self.random_state,
         )
 
-    def run_optimizer_parallel(self, parallel, tries: int, first_try: int) -> List:
+    def run_optimizer_parallel(self, parallel: Parallel, tries: int, first_try: int,
+                               jobs: int) -> List:
         result = parallel(
             delayed(wrap_non_picklable_objects(self.parallel_objective))(asked, i)
-            for asked, i in zip(self.opt_generator(), range(first_try, first_try + tries)))
+            for asked, i in zip(self.opt_generator(jobs, tries), range(
+                first_try, first_try + tries)))
         return result
 
-    def opt_generator(self):
+    def opt_generator(self, jobs: int, tries: int):
         while True:
             if self.f_val:
-                # print("opt.tell(): ",
-                #       [v['params_dict'] for v in self.f_val], [v['loss'] for v in self.f_val])
-                functools.partial(self.opt.tell,
-                                  ([v['params_dict']
-                                    for v in self.f_val], [v['loss'] for v in self.f_val]))
+                # print("opt.tell(): ", [v['asked'] for v in self.f_val],
+                # [v['loss'] for v in self.f_val])
+                self.tell = functools.partial(self.opt.tell, [v['asked'] for v in self.f_val],
+                                              [v['loss'] for v in self.f_val])
                 self.f_val = []
-            yield self.opt.ask()
+
+            if not self.to_ask:
+                self.opt.update_next()
+                self.to_ask.extend(self.opt.ask(n_points=tries))
+                self.fit = True
+            yield self.to_ask.popleft()
+            # yield self.opt.ask()
 
     def parallel_objective(self, asked, n):
         self.log_results_immediate(n)
         return self.generate_optimizer(asked)
 
     def parallel_callback(self, f_val):
+        if self.tell:
+            self.tell(fit=self.fit)
+            self.tell = None
+            self.fit = False
         self.f_val.extend(f_val)
 
     def log_results_immediate(self, n) -> None:
         print('.', end='')
         sys.stdout.flush()
 
-    def log_results(self, f_val, frame_start, max_epoch) -> None:
+    def log_results(self, f_val, frame_start, total_epochs: int) -> None:
         """
         Log results if it is better than any previous evaluation
         """
+        print()
+        current = frame_start + 1
         for i, v in enumerate(f_val):
             is_best = self.is_best_loss(v, self.current_best_loss)
             current = frame_start + i + 1
@@ -493,15 +511,10 @@ class Hyperopt:
             self.print_results(v)
             self.trials.append(v)
         # Save results after every batch
-        print('\n')
         self.save_trials()
         # give up if no best since max epochs
-        if current > self.max_epoch:
+        if current + 1 > (total_epochs or self.max_epoch):
             self.max_epoch_reached = True
-        # testing trapdoor
-        if os.getenv('FQT_HYPEROPT_TRAP'):
-            logger.debug('bypassing hyperopt loop')
-            self.max_epoch = 1
 
     @staticmethod
     def load_previous_results(trials_file: Path) -> List:
@@ -522,7 +535,7 @@ class Hyperopt:
         return random_state or random.randint(1, 2**16 - 1)
 
     @staticmethod
-    def calc_epochs(dimensions: List[Dimension], config_jobs: int, effort: int):
+    def calc_epochs(dimensions: List[Dimension], config_jobs: int, effort: int, total_epochs: int):
         """ Compute a reasonable number of initial points and
         a minimum number of epochs to evaluate """
         n_dimensions = len(dimensions)
@@ -543,16 +556,18 @@ class Hyperopt:
         if search_space_size < config_jobs:
             # don't waste if the space is small
             n_initial_points = config_jobs
+        elif total_epochs > 0:
+            n_initial_points = total_epochs // 3 if total_epochs > config_jobs * 3 else config_jobs
+            min_epochs = n_initial_points
         else:
             # extract coefficients from the search space and the jobs count
             log_sss = int(log(search_space_size, 10))
-            log_jobs = int(log(config_jobs, 2))
-            log_jobs = 2 if log_jobs < 0 else log_jobs
+            log_jobs = int(log(config_jobs, 2)) if config_jobs > 4 else 2
             jobs_ip = log_jobs * log_sss
             # never waste
             n_initial_points = log_sss if jobs_ip > search_space_size else jobs_ip
-        # it shall run for this much, I say
-        min_epochs = max(2 * n_initial_points, 3 * config_jobs) * effort
+            # it shall run for this much, I say
+            min_epochs = int(max(2 * n_initial_points, 3 * config_jobs) * (1 + effort / 10))
         return n_initial_points, min_epochs, search_space_size
 
     def update_max_epoch(self, val: Dict, current: int):
@@ -563,11 +578,12 @@ class Hyperopt:
             self.avg_best_occurrence = (sum(self.epochs_since_last_best) //
                                         len(self.epochs_since_last_best))
             self.current_best_epoch = current
-            self.max_epoch = (self.current_best_epoch + self.avg_best_occurrence +
-                              self.min_epochs) * self.effort
+            self.max_epoch = int(
+                (self.current_best_epoch + self.avg_best_occurrence + self.min_epochs) *
+                (1 + self.effort / 10))
             if self.max_epoch > self.search_space_size:
                 self.max_epoch = self.search_space_size
-        print('\n')
+        print()
         logger.info(f'Max epochs set to: {self.max_epoch}')
 
     def start(self) -> None:
@@ -599,47 +615,53 @@ class Hyperopt:
 
         self.dimensions: List[Dimension] = self.hyperopt_space()
         self.n_initial_points, self.min_epochs, self.search_space_size = self.calc_epochs(
-            self.dimensions, config_jobs, self.effort)
+            self.dimensions, config_jobs, self.effort, self.total_epochs)
         logger.info(f"Min epochs set to: {self.min_epochs}")
-        self.max_epoch = self.min_epochs
-        self.avg_best_occurrence = self.max_epoch
+        if self.total_epochs < 1:
+            self.max_epoch = int(self.min_epochs + len(self.trials))
+        else:
+            self.max_epoch = self.n_initial_points
+        self.avg_best_occurrence = self.min_epochs
 
         logger.info(f'Initial points: {self.n_initial_points}')
         self.opt = self.get_optimizer(self.dimensions, config_jobs, self.n_initial_points)
 
-        # last_frame_len = (self.total_epochs - 1) % self.avg_best_occurrence
-
         if self.print_colorized:
             colorama_init(autoreset=True)
 
-            try:
-                register_parallel_backend('custom', CustomImmediateResultBackend)
-                with parallel_backend('custom'):
-                    with Parallel(n_jobs=config_jobs, verbose=0) as parallel:
-                        for frame in range(self.total_epochs):
-                            epochs_so_far = len(self.trials)
-                            # pad the frame length to the number of jobs to avoid desaturation
-                            frame_len = (self.avg_best_occurrence + config_jobs -
-                                         self.avg_best_occurrence % config_jobs)
-                            print(
-                                f"{epochs_so_far+1}-{epochs_so_far+self.avg_best_occurrence}"
-                                f"/{self.total_epochs}: ",
-                                end='')
-                            f_val = self.run_optimizer_parallel(parallel, frame_len, epochs_so_far)
-                            self.log_results(f_val, epochs_so_far, self.total_epochs)
-                            if self.max_epoch_reached:
-                                logger.info("Max epoch reached, terminating.")
-                                break
+        try:
+            register_parallel_backend('custom', CustomImmediateResultBackend)
+            with parallel_backend('custom'):
+                with Parallel(n_jobs=config_jobs, verbose=0) as parallel:
+                    while True:
+                        # update epochs count
+                        epochs_so_far = len(self.trials)
+                        # pad the frame length to the number of jobs to avoid desaturation
+                        frame_len = (self.avg_best_occurrence + config_jobs -
+                                     self.avg_best_occurrence % config_jobs)
+                        # don't go over the limit
+                        if epochs_so_far + frame_len > (self.total_epochs or self.max_epoch):
+                            frame_len = (self.total_epochs or self.max_epoch) - epochs_so_far
+                        print(
+                            f"{epochs_so_far+1}-{epochs_so_far+frame_len}"
+                            f"/{self.total_epochs}: ",
+                            end='')
+                        f_val = self.run_optimizer_parallel(parallel, frame_len, epochs_so_far,
+                                                            config_jobs)
+                        self.log_results(f_val, epochs_so_far, self.total_epochs or self.max_epoch)
+                        if self.max_epoch_reached:
+                            logger.info("Max epoch reached, terminating.")
+                            break
 
-            except KeyboardInterrupt:
-                print("User interrupted..")
+        except KeyboardInterrupt:
+            print("User interrupted..")
 
         self.save_trials(final=True)
 
         if self.trials:
             sorted_trials = sorted(self.trials, key=itemgetter('loss'))
             results = sorted_trials[0]
-            self.print_epoch_details(results, self.total_epochs, self.print_json)
+            self.print_epoch_details(results, self.max_epoch, self.print_json)
         else:
             # This is printed when Ctrl+C is pressed quickly, before first epochs have
             # a chance to be evaluated.
