@@ -306,15 +306,18 @@ class Hyperopt:
             return
 
         trials = json_normalize(results, max_level=1)
-        trials = trials[['is_best', 'current_epoch',
-                         'results_metrics.trade_count', 'results_metrics.avg_profit',
-                         'results_metrics.total_profit', 'results_metrics.profit',
-                         'results_metrics.duration', 'loss']]
+        trials['Best'] = ''
+        trials = trials[['Best', 'current_epoch', 'results_metrics.trade_count',
+                         'results_metrics.avg_profit', 'results_metrics.total_profit',
+                         'results_metrics.profit', 'results_metrics.duration',
+                         'loss', 'is_initial_point', 'is_best']]
         trials.columns = ['Best', 'Epoch', 'Trades', 'Avg profit', 'Total profit',
-                          'Profit', 'Avg duration', 'Objective']
+                          'Profit', 'Avg duration', 'Objective', 'is_initial_point', 'is_best']
 
-        trials['Best'] = trials['Best'].apply(lambda x: '*' if x else '')
+        trials.loc[trials['is_initial_point'], 'Best'] = '*'
+        trials.loc[trials['is_best'], 'Best'] = 'Best'
         trials['Objective'] = trials['Objective'].astype(str)
+        trials = trials.drop(columns=['is_initial_point', 'is_best'])
 
         if print_colorized:
             for i in range(len(trials)):
@@ -322,10 +325,10 @@ class Hyperopt:
                     trials.at[i, 'Best'] = Fore.GREEN + trials.loc[i]['Best']
                     trials.at[i, 'Objective'] = "{}{}".format(trials.loc[i]['Objective'],
                                                               Fore.RESET)
-                    if '*' in trials.loc[i]['Best'] and highlight_best:
-                        trials.at[i, 'Best'] = Style.BRIGHT + trials.loc[i]['Best']
-                        trials.at[i, 'Objective'] = "{}{}".format(trials.loc[i]['Objective'],
-                                                                  Style.RESET_ALL)
+                if 'Best' in trials.loc[i]['Best'] and highlight_best:
+                    trials.at[i, 'Best'] = Style.BRIGHT + trials.loc[i]['Best']
+                    trials.at[i, 'Objective'] = "{}{}".format(trials.loc[i]['Objective'],
+                                                              Style.RESET_ALL)
 
         trials['Epoch'] = trials['Epoch'].apply(
             lambda x: "{}/{}".format(x, total_epochs))
@@ -338,7 +341,8 @@ class Hyperopt:
         trials['Avg duration'] = trials['Avg duration'].apply(
             lambda x: '{:,.1f}m'.format(x) if not isna(x) else x)
 
-        print(tabulate(trials.to_dict(orient='list'), headers='keys', tablefmt='psql'))
+        print(tabulate(trials.to_dict(orient='list'), headers='keys', tablefmt='psql',
+              stralign="right"))
 
     def has_space(self, space: str) -> bool:
         """
