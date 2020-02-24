@@ -65,11 +65,11 @@ usage:
 
 ** --install **
 
-With this option, the script will install everything you need to run the bot:
+With this option, the script will install the bot and most dependencies:
+You will need to have git and python3.6+ installed beforehand for this to work.
 
 * Mandatory software as: `ta-lib`
-* Setup your virtualenv
-* Configure your `config.json` file
+* Setup your virtualenv under `.env/`
 
 This option is a combination of installation tasks, `--reset` and `--config`.
 
@@ -83,7 +83,7 @@ This option will hard reset your branch (only if you are on either `master` or `
 
 ** --config **
 
-Use this option to configure the `config.json` configuration file. The script will interactively ask you questions to setup your bot and create your `config.json`.
+DEPRECATED - use `freqtrade new-config -c config.json` instead.
 
 ------
 
