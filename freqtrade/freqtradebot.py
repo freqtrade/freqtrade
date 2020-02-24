@@ -1125,12 +1125,13 @@ class FreqtradeBot:
         if trade.fee_open == 0 or order['status'] == 'open':
             return order_amount
 
+        trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)
         # use fee from order-dict if possible
         if ('fee' in order and order['fee'] is not None and
                 (order['fee'].keys() >= {'currency', 'cost'})):
             if (order['fee']['currency'] is not None and
                     order['fee']['cost'] is not None and
-                    trade.pair.startswith(order['fee']['currency'])):
+                    trade_base_currency == order['fee']['currency']):
                 new_amount = order_amount - order['fee']['cost']
                 logger.info("Applying fee on amount for %s (from %s to %s) from Order",
                             trade, order['amount'], new_amount)
@@ -1145,6 +1146,7 @@ class FreqtradeBot:
             return order_amount
         amount = 0
         fee_abs = 0
+        trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)
         for exectrade in trades:
             amount += exectrade['amount']
             if ("fee" in exectrade and exectrade['fee'] is not None and
@@ -1152,7 +1154,7 @@ class FreqtradeBot:
                 # only applies if fee is in quote currency!
                 if (exectrade['fee']['currency'] is not None and
                         exectrade['fee']['cost'] is not None and
-                        trade.pair.startswith(exectrade['fee']['currency'])):
+                        trade_base_currency == exectrade['fee']['currency']):
                     fee_abs += exectrade['fee']['cost']
 
         if not isclose(amount, order_amount, abs_tol=constants.MATH_CLOSE_PREC):

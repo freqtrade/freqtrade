@@ -400,7 +400,7 @@ def test_validate_stake_currency_error(default_conf, mocker, caplog):
 def test_get_quote_currencies(default_conf, mocker):
     ex = get_patched_exchange(mocker, default_conf)
 
-    assert set(ex.get_quote_currencies()) == set(['USD', 'BTC', 'USDT'])
+    assert set(ex.get_quote_currencies()) == set(['USD', 'ETH', 'BTC', 'USDT'])
 
 
 def test_validate_pairs(default_conf, mocker):  # test exchange.validate_pairs directly
@@ -1862,6 +1862,7 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
         # 'ETH/BTC':  'active': True
         # 'ETH/USDT': 'active': True
         # 'LTC/BTC':  'active': False
+        # 'LTC/ETH':  'active': True
         # 'LTC/USD':  'active': True
         # 'LTC/USDT': 'active': True
         # 'NEO/BTC':  'active': False
@@ -1870,26 +1871,26 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
         # 'XRP/BTC':  'active': False
         # all markets
         ([], [], False, False,
-         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD',
+         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD',
           'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
         # active markets
         ([], [], False, True,
-         ['BLK/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD', 'NEO/BTC',
+         ['BLK/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD', 'NEO/BTC',
           'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
         # all pairs
         ([], [], True, False,
-         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD',
+         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD',
           'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XRP/BTC']),
         # active pairs
         ([], [], True, True,
-         ['BLK/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD', 'NEO/BTC',
+         ['BLK/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD', 'NEO/BTC',
           'TKN/BTC', 'XRP/BTC']),
         # all markets, base=ETH, LTC
         (['ETH', 'LTC'], [], False, False,
-         ['ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
+         ['ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
         # all markets, base=LTC
         (['LTC'], [], False, False,
-         ['LTC/BTC', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
+         ['LTC/BTC', 'LTC/ETH', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
         # all markets, quote=USDT
         ([], ['USDT'], False, False,
          ['ETH/USDT', 'LTC/USDT', 'XLTCUSDT']),

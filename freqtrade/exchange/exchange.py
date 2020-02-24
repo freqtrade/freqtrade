@@ -228,6 +228,18 @@ class Exchange:
         markets = self.markets
         return sorted(set([x['quote'] for _, x in markets.items()]))
 
+    def get_pair_quote_currency(self, pair: str) -> str:
+        """
+        Return a pair's quote currency
+        """
+        return self.markets[pair].get('quote')
+
+    def get_pair_base_currency(self, pair: str) -> str:
+        """
+        Return a pair's quote currency
+        """
+        return self.markets[pair].get('base')
+
     def klines(self, pair_interval: Tuple[str, str], copy: bool = True) -> DataFrame:
         if pair_interval in self._klines:
             return self._klines[pair_interval].copy() if copy else self._klines[pair_interval]

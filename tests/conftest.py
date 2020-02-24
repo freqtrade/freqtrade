@@ -575,7 +575,34 @@ def get_markets():
                 }
             },
             'info': {},
-        }
+        },
+        'LTC/ETH': {
+            'id': 'LTCETH',
+            'symbol': 'LTC/ETH',
+            'base': 'LTC',
+            'quote': 'ETH',
+            'active': True,
+            'precision': {
+                'base': 8,
+                'quote': 8,
+                'amount': 3,
+                'price': 5
+            },
+            'limits': {
+                'amount': {
+                    'min': 0.001,
+                    'max': 10000000.0
+                },
+                'price': {
+                    'min': 1e-05,
+                    'max': 1000.0
+                },
+                'cost': {
+                    'min': 0.01,
+                    'max': None
+                }
+            },
+        },
     }
 
 
