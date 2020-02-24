@@ -313,22 +313,12 @@ class Hyperopt:
                          'loss', 'is_initial_point', 'is_best']]
         trials.columns = ['Best', 'Epoch', 'Trades', 'Avg profit', 'Total profit',
                           'Profit', 'Avg duration', 'Objective', 'is_initial_point', 'is_best']
-
+        trials['is_profit'] = False
         trials.loc[trials['is_initial_point'], 'Best'] = '*'
         trials.loc[trials['is_best'], 'Best'] = 'Best'
         trials['Objective'] = trials['Objective'].astype(str)
-        trials = trials.drop(columns=['is_initial_point', 'is_best'])
-
-        if print_colorized:
-            for i in range(len(trials)):
-                if trials.loc[i]['Total profit'] > 0:
-                    trials.at[i, 'Best'] = Fore.GREEN + trials.loc[i]['Best']
-                    trials.at[i, 'Objective'] = "{}{}".format(trials.loc[i]['Objective'],
-                                                              Fore.RESET)
-                if 'Best' in trials.loc[i]['Best'] and highlight_best:
-                    trials.at[i, 'Best'] = Style.BRIGHT + trials.loc[i]['Best']
-                    trials.at[i, 'Objective'] = "{}{}".format(trials.loc[i]['Objective'],
-                                                              Style.RESET_ALL)
+        trials.loc[trials['Total profit'] > 0, 'is_profit'] = True
+        trials['Trades'] = trials['Trades'].astype(str)
 
         trials['Epoch'] = trials['Epoch'].apply(
             lambda x: "{}/{}".format(x, total_epochs))
@@ -340,9 +330,21 @@ class Hyperopt:
             lambda x: '{: 11.8f} '.format(x) + config['stake_currency'] if not isna(x) else x)
         trials['Avg duration'] = trials['Avg duration'].apply(
             lambda x: '{:,.1f}m'.format(x) if not isna(x) else x)
+        if print_colorized:
+            for i in range(len(trials)):
+                if trials.loc[i]['is_profit']:
+                    for z in range(len(trials.loc[i])-3):
+                        trials.iat[i, z] = "{}{}{}".format(Fore.GREEN,
+                                                           str(trials.loc[i][z]), Fore.RESET)
+                if trials.loc[i]['is_best'] and highlight_best:
+                    for z in range(len(trials.loc[i])-3):
+                        trials.iat[i, z] = "{}{}{}".format(Style.BRIGHT,
+                                                           str(trials.loc[i][z]), Style.RESET_ALL)
+
+        trials = trials.drop(columns=['is_initial_point', 'is_best', 'is_profit'])
 
         print(tabulate(trials.to_dict(orient='list'), headers='keys', tablefmt='psql',
-              stralign="right"))
+                       stralign="right"))
 
     def has_space(self, space: str) -> bool:
         """
