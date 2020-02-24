@@ -4,6 +4,7 @@ Main Freqtrade worker class.
 import logging
 import time
 import traceback
+from os import getpid
 from typing import Any, Callable, Dict, Optional
 
 import sdnotify
@@ -26,11 +27,14 @@ class Worker:
         """
         Init all variables and objects the bot needs to work
         """
-        logger.info('Starting worker %s', __version__)
+        logger.info(f"Starting worker {__version__}")
 
         self._args = args
         self._config = config
         self._init(False)
+
+        self.last_throttle_start_time: float = 0
+        self._heartbeat_msg: float = 0
 
         # Tell systemd that we completed initialization phase
         if self._sd_notify:
@@ -48,10 +52,10 @@ class Worker:
         # Init the instance of the bot
         self.freqtrade = FreqtradeBot(self._config)
 
-        self._throttle_secs = self._config.get('internals', {}).get(
-            'process_throttle_secs',
-            constants.PROCESS_THROTTLE_SECS
-        )
+        internals_config = self._config.get('internals', {})
+        self._throttle_secs = internals_config.get('process_throttle_secs',
+                                                   constants.PROCESS_THROTTLE_SECS)
+        self._heartbeat_interval = internals_config.get('heartbeat_interval', 60)
 
         self._sd_notify = sdnotify.SystemdNotifier() if \
             self._config.get('internals', {}).get('sd_notify', False) else None
@@ -63,23 +67,25 @@ class Worker:
             if state == State.RELOAD_CONF:
                 self._reconfigure()
 
-    def _worker(self, old_state: Optional[State], throttle_secs: Optional[float] = None) -> State:
+    def _worker(self, old_state: Optional[State]) -> State:
         """
-        Trading routine that must be run at each loop
+        The main routine that runs each throttling iteration and handles the states.
         :param old_state: the previous service state from the previous call
         :return: current service state
         """
         state = self.freqtrade.state
-        if throttle_secs is None:
-            throttle_secs = self._throttle_secs
 
         # Log state transition
         if state != old_state:
             self.freqtrade.notify_status(f'{state.name.lower()}')
 
-            logger.info('Changing state to: %s', state.name)
+            logger.info(f"Changing state to: {state.name}")
             if state == State.RUNNING:
                 self.freqtrade.startup()
+
+            # Reset heartbeat timestamp to log the heartbeat message at
+            # first throttling iteration when the state changes
+            self._heartbeat_msg = 0
 
         if state == State.STOPPED:
             # Ping systemd watchdog before sleeping in the stopped state
@@ -87,7 +93,7 @@ class Worker:
                 logger.debug("sd_notify: WATCHDOG=1\\nSTATUS=State: STOPPED.")
                 self._sd_notify.notify("WATCHDOG=1\nSTATUS=State: STOPPED.")
 
-            time.sleep(throttle_secs)
+            self._throttle(func=self._process_stopped, throttle_secs=self._throttle_secs)
 
         elif state == State.RUNNING:
             # Ping systemd watchdog before throttling
@@ -95,28 +101,40 @@ class Worker:
                 logger.debug("sd_notify: WATCHDOG=1\\nSTATUS=State: RUNNING.")
                 self._sd_notify.notify("WATCHDOG=1\nSTATUS=State: RUNNING.")
 
-            self._throttle(func=self._process, min_secs=throttle_secs)
+            self._throttle(func=self._process_running, throttle_secs=self._throttle_secs)
+
+        if self._heartbeat_interval:
+            now = time.time()
+            if (now - self._heartbeat_msg) > self._heartbeat_interval:
+                logger.info(f"Bot heartbeat. PID={getpid()}, "
+                            f"version='{__version__}', state='{state.name}'")
+                self._heartbeat_msg = now
 
         return state
 
-    def _throttle(self, func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
+    def _throttle(self, func: Callable[..., Any], throttle_secs: float, *args, **kwargs) -> Any:
         """
         Throttles the given callable that it
         takes at least `min_secs` to finish execution.
         :param func: Any callable
-        :param min_secs: minimum execution time in seconds
-        :return: Any
+        :param throttle_secs: throttling interation execution time limit in seconds
+        :return: Any (result of execution of func)
         """
-        start = time.time()
+        self.last_throttle_start_time = time.time()
+        logger.debug("========================================")
         result = func(*args, **kwargs)
-        end = time.time()
-        duration = max(min_secs - (end - start), 0.0)
-        logger.debug('Throttling %s for %.2f seconds', func.__name__, duration)
-        time.sleep(duration)
+        time_passed = time.time() - self.last_throttle_start_time
+        sleep_duration = max(throttle_secs - time_passed, 0.0)
+        logger.debug(f"Throttling with '{func.__name__}()': sleep for {sleep_duration:.2f} s, "
+                     f"last iteration took {time_passed:.2f} s.")
+        time.sleep(sleep_duration)
         return result
 
-    def _process(self) -> None:
-        logger.debug("========================================")
+    def _process_stopped(self) -> None:
+        # Maybe do here something in the future...
+        pass
+
+    def _process_running(self) -> None:
         try:
             self.freqtrade.process()
         except TemporaryError as error:
