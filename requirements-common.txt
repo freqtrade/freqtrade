@@ -5,7 +5,7 @@ SQLAlchemy==1.3.13
 python-telegram-bot==12.4.2
 arrow==0.15.5
 cachetools==4.0.0
-requests==2.22.0
+requests==2.23.0
 urllib3==1.25.8
 wrapt==1.12.0
 jsonschema==3.2.0
