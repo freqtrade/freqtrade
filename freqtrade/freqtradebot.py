@@ -847,7 +847,8 @@ class FreqtradeBot:
                 self.wallets.update()
                 continue
 
-            if (order['side'] == 'buy' and (order['status'] == 'canceled'
+            if (order['side'] == 'buy' and (
+                    order['status'] == 'canceled'
                     or self._check_timed_out('buy', order)
                     or strategy_safe_wrapper(self.strategy.check_buy_timeout,
                                              default_retval=False)(pair=trade.pair,
@@ -859,7 +860,8 @@ class FreqtradeBot:
                 order_type = self.strategy.order_types['buy']
                 self._notify_buy_cancel(trade, order_type)
 
-            elif (order['side'] == 'sell' and (order['status'] == 'canceled'
+            elif (order['side'] == 'sell' and (
+                    order['status'] == 'canceled'
                   or self._check_timed_out('sell', order)
                   or strategy_safe_wrapper(self.strategy.check_sell_timeout,
                                            default_retval=False)(pair=trade.pair,
