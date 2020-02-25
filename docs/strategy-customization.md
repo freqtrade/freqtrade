@@ -249,6 +249,22 @@ minimal_roi = {
 
 While technically not completely disabled, this would sell once the trade reaches 10000% Profit.
 
+To use times based on candles, the following snippet can be handy.
+This will allow you to change the ticket_interval, and ROI will be set as candles (e.g. after 3 candles ...)
+
+``` python
+from freqtrade.exchange import timeframe_to_minutes
+
+class AwesomeStrategy(IStrategy):
+
+    ticker_interval = '1d'
+    ticker_interval_mins = timeframe_to_minutes(ticker_interval)
+    minimal_roi = {
+        (ticker_interval_mins * 3): 0.02,  # After 3 candles
+        (ticker_interval_mins * 6): 0.01,  # After 6 candles
+    }
+```
+
 ### Stoploss
 
 Setting a stoploss is highly recommended to protect your capital from strong moves against you.
