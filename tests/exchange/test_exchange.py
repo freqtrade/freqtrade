@@ -525,6 +525,7 @@ def test_validate_pairs_stakecompatibility_fail(default_conf, mocker, caplog):
     with pytest.raises(OperationalException, match=r"Stake-currency 'BTC' not compatible with.*"):
         Exchange(default_conf)
 
+
 @pytest.mark.parametrize("timeframe", [
     ('5m'), ("1m"), ("15m"), ("1h")
 ])
