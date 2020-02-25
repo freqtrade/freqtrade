@@ -340,7 +340,7 @@ This is most of the time the default time in force. It means the order will rema
 on exchange till it is canceled by user. It can be fully or partially fulfilled.
 If partially fulfilled, the remaining will stay on the exchange till cancelled.
 
-**FOK (Full Or Kill):**
+**FOK (Fill Or Kill):**
 
 It means if the order is not executed immediately AND fully then it is canceled by the exchange.
 
