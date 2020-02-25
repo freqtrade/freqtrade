@@ -532,7 +532,11 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 
 `refresh_period` allows setting the period (in seconds), at which the pairlist will be refreshed. Defaults to 1800s (30 minutes).
 
-`VolumePairList` is based on the volume of the last 24 hours.
+`VolumePairList` is based on the ticker data, as reported by the ccxt library:
+
+* The `bidVolume` is the volume (amount) of current best bid in the orderbook.
+* The `askVolume` is the volume (amount) of current best ask in the orderbook.
+* The `quoteVolume` is the amount of quote (stake) currency traded (bought or sold) in last 24 hours.
 
 ```json
 "pairlists": [{
