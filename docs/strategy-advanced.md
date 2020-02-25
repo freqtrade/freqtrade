@@ -77,7 +77,7 @@ class Awesomestrategy(IStrategy):
         ob = self.dp.orderbook(pair, 1)
         current_price = ob['bids'][0][0]
         # Cancel buy order if price is more than 2% above the order.
-        if order['price'] * 0.98 < best_bid:
+        if order['price'] > current_price * 1.02:
             return True
         return False
 
@@ -86,7 +86,7 @@ class Awesomestrategy(IStrategy):
         ob = self.dp.orderbook(pair, 1)
         current_price = ob['asks'][0][0]
         # Cancel sell order if price is more than 2% below the order.
-        if order['price'] * 1.02 > current_price:
+        if order['price'] < current_price * 0.98:
             return True
         return False
 ```
