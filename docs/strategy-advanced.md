@@ -40,7 +40,7 @@ class Awesomestrategy(IStrategy):
             return True
         elif trade.open_rate < 1 and trade.open_date < datetime.utcnow() - timedelta(hours=24):
            return True
-        return True
+        return False
 
 
     def check_sell_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
@@ -50,8 +50,43 @@ class Awesomestrategy(IStrategy):
             return True
         elif trade.open_rate < 1 and trade.open_date < datetime.utcnow() - timedelta(hours=24):
            return True
-        return True
+        return False
 ```
 
 !!! Note
     For the above example, `unfilledtimeout` must be set to something bigger than 24h, otherwise that type of timeout will apply first.
+
+
+### Custom order timeout example (using additional data)
+
+``` python
+from datetime import datetime, timestamp
+from freqtrade.persistence import Trade
+
+class Awesomestrategy(IStrategy):
+
+    # ... populate_* methods
+
+    # Set unfilledtimeout to 25 hours, since our maximum timeout from below is 24 hours.
+    unfilledtimeout = {
+        'buy': 60 * 25,
+        'sell': 60 * 25
+    }
+
+    def check_buy_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
+        ob = self.dp.orderbook(pair, 1)
+        current_price = ob['bids'][0][0]
+        # Cancel buy order if price is more than 2% above the order.
+        if order['price'] * 0.98 < best_bid:
+            return True
+        return False
+
+
+    def check_sell_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
+        ob = self.dp.orderbook(pair, 1)
+        current_price = ob['asks'][0][0]
+        # Cancel sell order if price is more than 2% below the order.
+        if order['price'] * 1.02 > current_price:
+            return True
+        return False
+```
