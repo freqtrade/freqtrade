@@ -532,6 +532,8 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 
 `refresh_period` allows setting the period (in seconds), at which the pairlist will be refreshed. Defaults to 1800s (30 minutes).
 
+`VolumePairList` is based on the volume of the last 24 hours.
+
 ```json
 "pairlists": [{
         "method": "VolumePairList",
