@@ -403,6 +403,28 @@ def test_get_quote_currencies(default_conf, mocker):
     assert set(ex.get_quote_currencies()) == set(['USD', 'ETH', 'BTC', 'USDT'])
 
 
+@pytest.mark.parametrize('pair,expected', [
+    ('XRP/BTC', 'BTC'),
+    ('LTC/USD', 'USD'),
+    ('ETH/USDT', 'USDT'),
+    ('XLTCUSDT', 'USDT'),
+])
+def test_get_pair_quote_currency(default_conf, mocker, pair, expected):
+    ex = get_patched_exchange(mocker, default_conf)
+    assert ex.get_pair_quote_currency(pair) == expected
+
+
+@pytest.mark.parametrize('pair,expected', [
+    ('XRP/BTC', 'XRP'),
+    ('LTC/USD', 'LTC'),
+    ('ETH/USDT', 'ETH'),
+    ('XLTCUSDT', 'LTC'),
+])
+def test_get_pair_base_currency(default_conf, mocker, pair, expected):
+    ex = get_patched_exchange(mocker, default_conf)
+    assert ex.get_pair_base_currency(pair) == expected
+
+
 def test_validate_pairs(default_conf, mocker):  # test exchange.validate_pairs directly
     api_mock = MagicMock()
     type(api_mock).markets = PropertyMock(return_value={
