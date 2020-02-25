@@ -91,9 +91,9 @@ class VolumePairList(IPairList):
 
         if self._pairlist_pos == 0:
             # If VolumePairList is the first in the list, use fresh pairlist
-            # check length so that we make sure that '/' is actually in the string
+            # check base currency equals to stake currency.
             filtered_tickers = [v for k, v in tickers.items()
-                                if (len(k.split('/')) == 2 and k.split('/')[1] == base_currency
+                                if (self._exchange.get_pair_quote_currency(k) == base_currency
                                     and v[key] is not None)]
         else:
             # If other pairlist is in front, use the incomming pairlist.

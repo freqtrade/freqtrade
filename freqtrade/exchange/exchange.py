@@ -232,13 +232,13 @@ class Exchange:
         """
         Return a pair's quote currency
         """
-        return self.markets[pair].get('quote')
+        return self.markets.get(pair, {}).get('quote')
 
     def get_pair_base_currency(self, pair: str) -> str:
         """
         Return a pair's quote currency
         """
-        return self.markets[pair].get('base')
+        return self.markets.get(pair, {}).get('base')
 
     def klines(self, pair_interval: Tuple[str, str], copy: bool = True) -> DataFrame:
         if pair_interval in self._klines:

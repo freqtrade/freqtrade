@@ -687,7 +687,7 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order) -> None
 
     # Test buy pair not with stakes
     with pytest.raises(RPCException, match=r'Wrong pair selected. Please pairs with stake.*'):
-        rpc._rpc_forcebuy('XRP/ETH', 0.0001)
+        rpc._rpc_forcebuy('LTC/ETH', 0.0001)
     pair = 'XRP/BTC'
 
     # Test not buying
