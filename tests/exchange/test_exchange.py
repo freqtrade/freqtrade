@@ -408,6 +408,7 @@ def test_get_quote_currencies(default_conf, mocker):
     ('LTC/USD', 'USD'),
     ('ETH/USDT', 'USDT'),
     ('XLTCUSDT', 'USDT'),
+    ('XRP/NOCURRENCY', ''),
 ])
 def test_get_pair_quote_currency(default_conf, mocker, pair, expected):
     ex = get_patched_exchange(mocker, default_conf)
@@ -419,6 +420,7 @@ def test_get_pair_quote_currency(default_conf, mocker, pair, expected):
     ('LTC/USD', 'LTC'),
     ('ETH/USDT', 'ETH'),
     ('XLTCUSDT', 'LTC'),
+    ('XRP/NOCURRENCY', ''),
 ])
 def test_get_pair_base_currency(default_conf, mocker, pair, expected):
     ex = get_patched_exchange(mocker, default_conf)
