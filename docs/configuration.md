@@ -626,6 +626,11 @@ In production mode, the bot will engage your money. Be careful, since a wrong
 strategy can lose all your money. Be aware of what you are doing when
 you run it in production mode.
 
+### Setup your exchange account
+
+You will need to create API Keys (usually you get `key` and `secret`, some exchanges require an additional `password`) from the Exchange website and you'll need to insert this into the appropriate fields in the configuration or when asked by the `freqtrade new-config` command.
+API Keys are usually only required for live trading (trading for real money, bot running in "production mode", executing real orders on the exchange) and are not required for the bot running in dry-run (trade simulation) mode. When you setup the bot in dry-run mode, you may fill these fields with empty values.
+
 ### To switch your bot in production mode
 
 **Edit your `config.json`  file.**
@@ -646,9 +651,6 @@ you run it in production mode.
         ...
 }
 ```
-
-!!! Note
-    If you have an exchange API key yet, [see our tutorial](installation.md#setup-your-exchange-account).
 
 You should also make sure to read the [Exchanges](exchanges.md) section of the documentation to be aware of potential configuration details specific to your exchange.
 

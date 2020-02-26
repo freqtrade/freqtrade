@@ -2,6 +2,8 @@
 
 This page explains how to prepare your environment for running the bot.
 
+Please consider using the prebuilt [docker images](docker.md) to get started quickly while trying out freqtrade evaluating how it operates.
+
 ## Prerequisite
 
 ### Requirements
@@ -14,15 +16,7 @@ Click each one for install guide:
 * [virtualenv](https://virtualenv.pypa.io/en/stable/installation/) (Recommended)
 * [TA-Lib](https://mrjbq7.github.io/ta-lib/install.html) (install instructions below)
 
-### API keys
-
-Before running your bot in production you will need to setup few
-external API. In production mode, the bot will require valid Exchange API
-credentials. We also recommend a [Telegram bot](telegram-usage.md#setup-your-telegram-bot) (optional but recommended).
-
-### Setup your exchange account
-
-You will need to create API Keys (Usually you get `key` and `secret`) from the Exchange website and insert this into the appropriate fields in the configuration or when asked by the installation script.
+ We also recommend a [Telegram bot](telegram-usage.md#setup-your-telegram-bot), which is optional but recommended.
 
 ## Quick start
 
@@ -65,11 +59,11 @@ usage:
 
 ** --install **
 
-With this option, the script will install everything you need to run the bot:
+With this option, the script will install the bot and most dependencies:
+You will need to have git and python3.6+ installed beforehand for this to work.
 
 * Mandatory software as: `ta-lib`
-* Setup your virtualenv
-* Configure your `config.json` file
+* Setup your virtualenv under `.env/`
 
 This option is a combination of installation tasks, `--reset` and `--config`.
 
@@ -83,7 +77,7 @@ This option will hard reset your branch (only if you are on either `master` or `
 
 ** --config **
 
-Use this option to configure the `config.json` configuration file. The script will interactively ask you questions to setup your bot and create your `config.json`.
+DEPRECATED - use `freqtrade new-config -c config.json` instead.
 
 ------
 
