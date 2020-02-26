@@ -340,7 +340,7 @@ This is most of the time the default time in force. It means the order will rema
 on exchange till it is canceled by user. It can be fully or partially fulfilled.
 If partially fulfilled, the remaining will stay on the exchange till cancelled.
 
-**FOK (Full Or Kill):**
+**FOK (Fill Or Kill):**
 
 It means if the order is not executed immediately AND fully then it is canceled by the exchange.
 
@@ -531,6 +531,12 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 `VolumePairList` considers outputs of previous pairlists unless  it's the first configured pairlist, it does not consider `pair_whitelist`, but selects the top assets from all available markets (with matching stake-currency) on the exchange.
 
 `refresh_period` allows setting the period (in seconds), at which the pairlist will be refreshed. Defaults to 1800s (30 minutes).
+
+`VolumePairList` is based on the ticker data, as reported by the ccxt library:
+
+* The `bidVolume` is the volume (amount) of current best bid in the orderbook.
+* The `askVolume` is the volume (amount) of current best ask in the orderbook.
+* The `quoteVolume` is the amount of quote (stake) currency traded (bought or sold) in last 24 hours.
 
 ```json
 "pairlists": [{

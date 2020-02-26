@@ -23,7 +23,7 @@ jobs:
         python-version: [3.7, 3.8]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Set up Python
       uses: actions/setup-python@v1
@@ -118,7 +118,7 @@ jobs:
         python-version: [3.7]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Set up Python
       uses: actions/setup-python@v1
@@ -175,7 +175,7 @@ jobs:
   docs_check:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Documentation syntax
       run: |
@@ -195,7 +195,7 @@ jobs:
     runs-on: ubuntu-18.04
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Set up Python
       uses: actions/setup-python@v1
