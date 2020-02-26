@@ -91,7 +91,7 @@ class VolumePairList(IPairList):
 
         if self._pairlist_pos == 0:
             # If VolumePairList is the first in the list, use fresh pairlist
-            # check base currency equals to stake currency.
+            # Check if pair quote currency equals to the stake currency.
             filtered_tickers = [v for k, v in tickers.items()
                                 if (self._exchange.get_pair_quote_currency(k) == base_currency
                                     and v[key] is not None)]
