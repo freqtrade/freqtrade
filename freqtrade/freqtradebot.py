@@ -938,7 +938,8 @@ class FreqtradeBot:
         """
         # Update wallets to ensure amounts tied up in a stoploss is now free!
         self.wallets.update()
-        wallet_amount = self.wallets.get_free(self.exchange.get_pair_base_currency(pair))
+        trade_base_currency = self.exchange.get_pair_base_currency(pair)
+        wallet_amount = self.wallets.get_free(trade_base_currency)
         logger.debug(f"{pair} - Wallet: {wallet_amount} - Trade-amount: {amount}")
         if wallet_amount >= amount:
             return amount
@@ -1145,7 +1146,6 @@ class FreqtradeBot:
             return order_amount
         amount = 0
         fee_abs = 0
-        trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)
         for exectrade in trades:
             amount += exectrade['amount']
             if ("fee" in exectrade and exectrade['fee'] is not None and
