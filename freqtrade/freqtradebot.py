@@ -6,7 +6,6 @@ import logging
 import traceback
 from datetime import datetime
 from math import isclose
-from os import getpid
 from threading import Lock
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -53,12 +52,8 @@ class FreqtradeBot:
         # Init objects
         self.config = config
 
-        self._heartbeat_msg = 0
-
         self._sell_rate_cache = TTLCache(maxsize=100, ttl=5)
         self._buy_rate_cache = TTLCache(maxsize=100, ttl=5)
-
-        self.heartbeat_interval = self.config.get('internals', {}).get('heartbeat_interval', 60)
 
         self.strategy: IStrategy = StrategyResolver.load_strategy(self.config)
 
@@ -162,11 +157,6 @@ class FreqtradeBot:
         # Check and handle any timed out open orders
         self.check_handle_timedout()
         Trade.session.flush()
-
-        if (self.heartbeat_interval
-                and (arrow.utcnow().timestamp - self._heartbeat_msg > self.heartbeat_interval)):
-            logger.info(f"Bot heartbeat. PID={getpid()}")
-            self._heartbeat_msg = arrow.utcnow().timestamp
 
     def _refresh_whitelist(self, trades: List[Trade] = []) -> List[str]:
         """
