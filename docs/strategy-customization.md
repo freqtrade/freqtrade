@@ -260,8 +260,8 @@ class AwesomeStrategy(IStrategy):
     ticker_interval = '1d'
     ticker_interval_mins = timeframe_to_minutes(ticker_interval)
     minimal_roi = {
-        (ticker_interval_mins * 3): 0.02,  # After 3 candles
-        (ticker_interval_mins * 6): 0.01,  # After 6 candles
+        str(ticker_interval_mins * 3)): 0.02,  # After 3 candles
+        str(ticker_interval_mins * 6)): 0.01,  # After 6 candles
     }
 ```
 
