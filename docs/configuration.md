@@ -656,8 +656,8 @@ You should also make sure to read the [Exchanges](exchanges.md) section of the d
 
 ### Setup your exchange account
 
-You will need to create API Keys (usually you get `key` and `secret`) from the Exchange website and you'll need to insert this into the appropriate fields in the configuration or when asked by the installation script.
-API Keys are usually only required for real / production trading, but are not required for paper-trading / dry-run.
+You will need to create API Keys (usually you get `key` and `secret`, some exchanges supply it with `password`) from the Exchange website and you'll need to insert this into the appropriate fields in the configuration or when asked by the installation script.
+API Keys are usually only required for live trade (trading for real money, bot running in the "production mode", executing real orders on the exchange) and are not required for the bot running in the dry-run (trade simulation) mode. When you setup the bot in the dry-run mode, you may fill these fields with empty values.
 
 
 ### Using proxy with Freqtrade

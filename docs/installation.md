@@ -2,7 +2,7 @@
 
 This page explains how to prepare your environment for running the bot.
 
-Please consider using the prebuilt [docker images](docker.md) to get started quickly while trying out freqtrade.
+Please consider using the prebuilt [docker images](docker.md) to get started quickly while trying out freqtrade evaluating how it operates.
 
 ## Prerequisite
 
