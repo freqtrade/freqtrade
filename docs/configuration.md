@@ -526,7 +526,7 @@ In line with that, if `ask_strategy.price_side` is set to `"bid"`, then the bot 
 
 When selling with the orderbook enabled (`ask_strategy.use_order_book=True`), Freqtrade fetches the `ask_strategy.order_book_max` entries in the orderbook. Then each of the orderbook steps between `ask_strategy.order_book_min` and `ask_strategy.order_book_max` on the configured orderbook side are validated for a profitable sell-possibility based on the strategy configuration and the sell order is placed at the first profitable spot.
 
-!!! Note:
+!!! Note
     Using `order_book_max` higher than `order_book_min` only makes sense when ask_strategy.price_side is set to `"ask"`.
 
 The idea here is to place the sell order early, to be ahead in the queue.

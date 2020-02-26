@@ -922,7 +922,8 @@ def test_process_informative_pairs_added(default_conf, ticker, mocker) -> None:
     ('bid', 4, 5, 10, 1.0, 5),  # last bigger than bid
     ('bid', 4, 5, 10, 0.5, 5),  # last bigger than bid
 ])
-def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid, last, last_ab, expected) -> None:
+def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
+                      last, last_ab, expected) -> None:
     default_conf['bid_strategy']['ask_last_balance'] = last_ab
     default_conf['bid_strategy']['price_side'] = side
     freqtrade = get_patched_freqtradebot(mocker, default_conf)

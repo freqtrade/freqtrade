@@ -647,11 +647,9 @@ class FreqtradeBot:
 
         config_ask_strategy = self.config.get('ask_strategy', {})
         if config_ask_strategy.get('use_order_book', False):
+            # This code is only used for notifications, selling uses the generator directly
             logger.debug('Using order book to get sell rate')
             rate = next(self._order_book_gen(pair, f"{config_ask_strategy['price_side']}s"))
-
-            # order_book = self.exchange.get_order_book(pair, 1)
-            # rate = order_book[f"{config_ask_strategy['price_side']}s"][0][0]
 
         else:
             rate = self.exchange.fetch_ticker(pair)[config_ask_strategy['price_side']]
