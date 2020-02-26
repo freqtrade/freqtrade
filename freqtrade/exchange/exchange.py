@@ -66,8 +66,6 @@ class Exchange:
 
         self._config.update(config)
 
-        self._cached_ticker: Dict[str, Any] = {}
-
         # Holds last candle refreshed time of each pair
         self._pairs_last_refresh_time: Dict[Tuple[str, str], int] = {}
         # Timestamp of last markets refresh
@@ -591,28 +589,17 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def fetch_ticker(self, pair: str, refresh: Optional[bool] = True) -> dict:
-        if refresh or pair not in self._cached_ticker.keys():
-            try:
-                if pair not in self._api.markets or not self._api.markets[pair].get('active'):
-                    raise DependencyException(f"Pair {pair} not available")
-                data = self._api.fetch_ticker(pair)
-                try:
-                    self._cached_ticker[pair] = {
-                        'bid': float(data['bid']),
-                        'ask': float(data['ask']),
-                    }
-                except KeyError:
-                    logger.debug("Could not cache ticker data for %s", pair)
-                return data
-            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-                raise TemporaryError(
-                    f'Could not load ticker due to {e.__class__.__name__}. Message: {e}') from e
-            except ccxt.BaseError as e:
-                raise OperationalException(e) from e
-        else:
-            logger.info("returning cached ticker-data for %s", pair)
-            return self._cached_ticker[pair]
+    def fetch_ticker(self, pair: str) -> dict:
+        try:
+            if pair not in self._api.markets or not self._api.markets[pair].get('active'):
+                raise DependencyException(f"Pair {pair} not available")
+            data = self._api.fetch_ticker(pair)
+            return data
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not load ticker due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
 
     def get_historic_ohlcv(self, pair: str, timeframe: str,
                            since_ms: int) -> List:

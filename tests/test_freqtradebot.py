@@ -915,13 +915,21 @@ def test_process_informative_pairs_added(default_conf, ticker, mocker) -> None:
     (5, 10, 1.0, 5),  # last bigger than ask
     (5, 10, 0.5, 5),  # last bigger than ask
 ])
-def test_get_buy_rate(mocker, default_conf, ask, last, last_ab, expected) -> None:
+def test_get_buy_rate(mocker, default_conf, caplog, ask, last, last_ab, expected) -> None:
     default_conf['bid_strategy']['ask_last_balance'] = last_ab
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  MagicMock(return_value={'ask': ask, 'last': last}))
 
     assert freqtrade.get_buy_rate('ETH/BTC', True) == expected
+    assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
+
+    assert freqtrade.get_buy_rate('ETH/BTC', False) == expected
+    assert log_has("Using cached buy rate for ETH/BTC.", caplog)
+    # Running a 2nd time with Refresh on!
+    caplog.clear()
+    assert freqtrade.get_buy_rate('ETH/BTC', True) == expected
+    assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
 
 
 def test_execute_buy(mocker, default_conf, fee, limit_buy_order) -> None:
@@ -3614,7 +3622,7 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order, limit_sell_order
     assert freqtrade.handle_trade(trade) is True
 
 
-def test_get_sell_rate(default_conf, mocker, ticker, order_book_l2) -> None:
+def test_get_sell_rate(default_conf, mocker, caplog, ticker, order_book_l2) -> None:
 
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -3626,8 +3634,15 @@ def test_get_sell_rate(default_conf, mocker, ticker, order_book_l2) -> None:
     # Test regular mode
     ft = get_patched_freqtradebot(mocker, default_conf)
     rate = ft.get_sell_rate(pair, True)
+    assert not log_has("Using cached sell rate for ETH/BTC.", caplog)
     assert isinstance(rate, float)
     assert rate == 0.00001098
+    # Use caching
+    rate = ft.get_sell_rate(pair, False)
+    assert rate == 0.00001098
+    assert log_has("Using cached sell rate for ETH/BTC.", caplog)
+
+    caplog.clear()
 
     # Test orderbook mode
     default_conf['ask_strategy']['use_order_book'] = True
@@ -3635,8 +3650,12 @@ def test_get_sell_rate(default_conf, mocker, ticker, order_book_l2) -> None:
     default_conf['ask_strategy']['order_book_max'] = 2
     ft = get_patched_freqtradebot(mocker, default_conf)
     rate = ft.get_sell_rate(pair, True)
+    assert not log_has("Using cached sell rate for ETH/BTC.", caplog)
     assert isinstance(rate, float)
     assert rate == 0.043936
+    rate = ft.get_sell_rate(pair, False)
+    assert rate == 0.043936
+    assert log_has("Using cached sell rate for ETH/BTC.", caplog)
 
 
 def test_startup_state(default_conf, mocker):
