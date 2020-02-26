@@ -226,6 +226,18 @@ class Exchange:
         markets = self.markets
         return sorted(set([x['quote'] for _, x in markets.items()]))
 
+    def get_pair_quote_currency(self, pair: str) -> str:
+        """
+        Return a pair's quote currency
+        """
+        return self.markets.get(pair, {}).get('quote', '')
+
+    def get_pair_base_currency(self, pair: str) -> str:
+        """
+        Return a pair's quote currency
+        """
+        return self.markets.get(pair, {}).get('base', '')
+
     def klines(self, pair_interval: Tuple[str, str], copy: bool = True) -> DataFrame:
         if pair_interval in self._klines:
             return self._klines[pair_interval].copy() if copy else self._klines[pair_interval]
@@ -298,7 +310,7 @@ class Exchange:
         if not self.markets:
             logger.warning('Unable to validate pairs (assuming they are correct).')
             return
-
+        invalid_pairs = []
         for pair in pairs:
             # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
             # TODO: add a support for having coins in BTC/USDT format
@@ -320,6 +332,12 @@ class Exchange:
                 logger.warning(f"Pair {pair} is restricted for some users on this exchange."
                                f"Please check if you are impacted by this restriction "
                                f"on the exchange and eventually remove {pair} from your whitelist.")
+            if not self.get_pair_quote_currency(pair) == self._config['stake_currency']:
+                invalid_pairs.append(pair)
+        if invalid_pairs:
+            raise OperationalException(
+                f"Stake-currency '{self._config['stake_currency']}' not compatible with "
+                f"pair-whitelist. Please remove the following pairs: {invalid_pairs}")
 
     def get_valid_pair_combination(self, curr_1: str, curr_2: str) -> str:
         """
