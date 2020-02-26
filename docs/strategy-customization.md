@@ -249,8 +249,8 @@ minimal_roi = {
 
 While technically not completely disabled, this would sell once the trade reaches 10000% Profit.
 
-To use times based on candles, the following snippet can be handy.
-This will allow you to change the ticket_interval, and ROI will be set as candles (e.g. after 3 candles ...)
+To use times based on candle duration (ticker_interval or timeframe), the following snippet can be handy.
+This will allow you to change the ticket_interval for the strategy, and ROI times will still be set as candles (e.g. after 3 candles ...)
 
 ``` python
 from freqtrade.exchange import timeframe_to_minutes
