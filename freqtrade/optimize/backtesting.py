@@ -423,28 +423,37 @@ class Backtesting:
                                             strategy if len(self.strategylist) > 1 else None)
 
             print(f"Result for strategy {strategy}")
-            print(' BACKTESTING REPORT '.center(133, '='))
-            print(generate_text_table(data,
-                                      stake_currency=self.config['stake_currency'],
-                                      max_open_trades=self.config['max_open_trades'],
-                                      results=results))
+            table = generate_text_table(data, stake_currency=self.config['stake_currency'],
+                                        max_open_trades=self.config['max_open_trades'],
+                                        results=results)
+            if isinstance(table, str):
+                print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
+            print(table)
 
-            print(' SELL REASON STATS '.center(133, '='))
-            print(generate_text_table_sell_reason(data,
-                                                  stake_currency=self.config['stake_currency'],
-                                                  max_open_trades=self.config['max_open_trades'],
-                                                  results=results))
+            table = generate_text_table_sell_reason(data,
+                                                    stake_currency=self.config['stake_currency'],
+                                                    max_open_trades=self.config['max_open_trades'],
+                                                    results=results)
+            if isinstance(table, str):
+                print(' SELL REASON STATS '.center(len(table.splitlines()[0]), '='))
+            print(table)
 
-            print(' LEFT OPEN TRADES REPORT '.center(133, '='))
-            print(generate_text_table(data,
-                                      stake_currency=self.config['stake_currency'],
-                                      max_open_trades=self.config['max_open_trades'],
-                                      results=results.loc[results.open_at_end], skip_nan=True))
+            table = generate_text_table(data,
+                                        stake_currency=self.config['stake_currency'],
+                                        max_open_trades=self.config['max_open_trades'],
+                                        results=results.loc[results.open_at_end], skip_nan=True)
+            if isinstance(table, str):
+                print(' LEFT OPEN TRADES REPORT '.center(len(table.splitlines()[0]), '='))
+            print(table)
+            if isinstance(table, str):
+                print('=' * len(table.splitlines()[0]))
             print()
         if len(all_results) > 1:
             # Print Strategy summary table
-            print(' STRATEGY SUMMARY '.center(133, '='))
-            print(generate_text_table_strategy(self.config['stake_currency'],
-                                               self.config['max_open_trades'],
-                                               all_results=all_results))
+            table = generate_text_table_strategy(self.config['stake_currency'],
+                                                 self.config['max_open_trades'],
+                                                 all_results=all_results)
+            print(' STRATEGY SUMMARY '.center(len(table.splitlines()[0]), '='))
+            print(table)
+            print('=' * len(table.splitlines()[0]))
             print('\nFor more details, please look at the detail tables above')
