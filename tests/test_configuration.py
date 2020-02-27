@@ -319,6 +319,7 @@ def test_load_dry_run(default_conf, mocker, config_value, expected, arglist) -> 
     validated_conf = configuration.load_config()
 
     assert validated_conf['dry_run'] is expected
+    assert validated_conf['runmode'] == (RunMode.DRY_RUN if expected else RunMode.LIVE)
 
 
 def test_load_custom_strategy(default_conf, mocker) -> None:
