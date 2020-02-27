@@ -257,11 +257,12 @@ from freqtrade.exchange import timeframe_to_minutes
 
 class AwesomeStrategy(IStrategy):
 
-    ticker_interval = '1d'
+    ticker_interval = "1d"
     ticker_interval_mins = timeframe_to_minutes(ticker_interval)
     minimal_roi = {
-        str(ticker_interval_mins * 3)): 0.02,  # After 3 candles
-        str(ticker_interval_mins * 6)): 0.01,  # After 6 candles
+        "0": 0.05,                             # 5% for the first 3 candles
+        str(ticker_interval_mins * 3)): 0.02,  # 2% after 3 candles
+        str(ticker_interval_mins * 6)): 0.01,  # 1% After 6 candles
     }
 ```
 
