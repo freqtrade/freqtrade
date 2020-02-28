@@ -116,6 +116,7 @@ class Hyperopt:
             self.config['ask_strategy']['use_sell_signal'] = True
 
         self.print_all = self.config.get('print_all', False)
+        self.hyperopt_table_header = 0
         self.print_colorized = self.config.get('print_colorized', False)
         self.print_json = self.config.get('print_json', False)
 
@@ -272,8 +273,13 @@ class Hyperopt:
             if not self.print_all:
                 # Separate the results explanation string from dots
                 print("\n")
-            self.print_results_explanation(results, self.total_epochs, self.print_all,
-                                           self.print_colorized)
+            self.print_result_table(self.config, results, self.total_epochs,
+                                    self.print_all, self.print_colorized,
+                                    self.hyperopt_table_header)
+            if is_best:
+                self.hyperopt_table_header = 2
+            else:
+                self.hyperopt_table_header = 3
 
     @staticmethod
     def print_results_explanation(results, total_epochs, highlight_best: bool,
@@ -299,7 +305,7 @@ class Hyperopt:
 
     @staticmethod
     def print_result_table(config: dict, results: list, total_epochs: int, highlight_best: bool,
-                           print_colorized: bool) -> None:
+                           print_colorized: bool, remove_header: int) -> None:
         """
         Log result table
         """
@@ -328,7 +334,7 @@ class Hyperopt:
         trials['Profit'] = trials['Profit'].apply(
             lambda x: '{:,.2f}%'.format(x) if not isna(x) else x)
         trials['Total profit'] = trials['Total profit'].apply(
-            lambda x: '{: 11.8f} '.format(x) + config['stake_currency'] if not isna(x) else x)
+            lambda x: '{:,.8f} '.format(x) + config['stake_currency'] if not isna(x) else x)
         trials['Avg duration'] = trials['Avg duration'].apply(
             lambda x: '{:,.1f}m'.format(x) if not isna(x) else x)
         if print_colorized:
@@ -343,9 +349,11 @@ class Hyperopt:
                                                            str(trials.loc[i][z]), Style.RESET_ALL)
 
         trials = trials.drop(columns=['is_initial_point', 'is_best', 'is_profit'])
-
-        print(tabulate(trials.to_dict(orient='list'), headers='keys', tablefmt='psql',
-                       stralign="right"))
+        table = tabulate(trials.to_dict(orient='list'), tablefmt='psql',
+                         headers='keys', stralign="right")
+        if remove_header > 0:
+            table = table.split("\n", remove_header)[remove_header]
+        print(table)
 
     def has_space(self, space: str) -> bool:
         """

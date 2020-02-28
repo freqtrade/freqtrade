@@ -51,7 +51,7 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
 
     try:
         Hyperopt.print_result_table(config, trials, total_epochs,
-                                    not filteroptions['only_best'], print_colorized)
+                                    not filteroptions['only_best'], print_colorized, 0)
     except KeyboardInterrupt:
         print('User interrupted..')
 
