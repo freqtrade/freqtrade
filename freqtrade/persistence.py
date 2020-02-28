@@ -405,8 +405,8 @@ class Trade(_DECL_BASE):
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
-        profit_percent = (close_trade_price / self.open_trade_price) - 1
-        return float(f"{profit_percent:.8f}")
+        profit_ratio = (close_trade_price / self.open_trade_price) - 1
+        return float(f"{profit_ratio:.8f}")
 
     @staticmethod
     def get_trades(trade_filter=None) -> Query:

@@ -158,7 +158,7 @@ def test_edge_results(edge_conf, mocker, caplog, data) -> None:
     assert len(trades) == len(data.trades)
 
     if not results.empty:
-        assert round(results["profit_percent"].sum(), 3) == round(data.profit_perc, 3)
+        assert round(results["profit_ratio"].sum(), 3) == round(data.profit_perc, 3)
 
     for c, trade in enumerate(data.trades):
         res = results.iloc[c]

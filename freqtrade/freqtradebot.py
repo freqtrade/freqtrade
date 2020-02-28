@@ -1034,8 +1034,8 @@ class FreqtradeBot:
         profit_trade = trade.calc_profit(rate=profit_rate)
         # Use cached ticker here - it was updated seconds ago.
         current_rate = self.get_sell_rate(trade.pair, False)
-        profit_percent = trade.calc_profit_ratio(profit_rate)
-        gain = "profit" if profit_percent > 0 else "loss"
+        profit_ratio = trade.calc_profit_ratio(profit_rate)
+        gain = "profit" if profit_ratio > 0 else "loss"
 
         msg = {
             'type': RPCMessageType.SELL_NOTIFICATION,
@@ -1048,7 +1048,7 @@ class FreqtradeBot:
             'open_rate': trade.open_rate,
             'current_rate': current_rate,
             'profit_amount': profit_trade,
-            'profit_percent': profit_percent,
+            'profit_ratio': profit_ratio,
             'sell_reason': trade.sell_reason,
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.utcnow(),
@@ -1071,8 +1071,8 @@ class FreqtradeBot:
         profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
         profit_trade = trade.calc_profit(rate=profit_rate)
         current_rate = self.get_sell_rate(trade.pair, False)
-        profit_percent = trade.calc_profit_ratio(profit_rate)
-        gain = "profit" if profit_percent > 0 else "loss"
+        profit_ratio = trade.calc_profit_ratio(profit_rate)
+        gain = "profit" if profit_ratio > 0 else "loss"
 
         msg = {
             'type': RPCMessageType.SELL_CANCEL_NOTIFICATION,
@@ -1085,7 +1085,7 @@ class FreqtradeBot:
             'open_rate': trade.open_rate,
             'current_rate': current_rate,
             'profit_amount': profit_trade,
-            'profit_percent': profit_percent,
+            'profit_ratio': profit_ratio,
             'sell_reason': trade.sell_reason,
             'open_date': trade.open_date,
             'close_date': trade.close_date,

@@ -364,7 +364,7 @@ class IStrategy(ABC):
         """
         Based on current profit of the trade and configured (trailing) stoploss,
         decides to sell or not
-        :param current_profit: current profit in percent
+        :param current_profit: current profit as ratio
         """
         stop_loss_value = force_stoploss if force_stoploss else self.stoploss
 
@@ -427,8 +427,9 @@ class IStrategy(ABC):
 
     def min_roi_reached(self, trade: Trade, current_profit: float, current_time: datetime) -> bool:
         """
-        Based on trade duration, current price and ROI configuration, decides whether bot should
-        sell. Requires current_profit to be in percent!!
+        Based on trade duration, current profit of the trade and ROI configuration,
+        decides whether bot should sell.
+        :param current_profit: current profit as ratio
         :return: True if bot should sell at current rate
         """
         # Check if time matches and current rate is above threshold
