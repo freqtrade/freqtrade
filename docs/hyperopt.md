@@ -31,9 +31,9 @@ This will create a new hyperopt file from a template, which will be located unde
 Depending on the space you want to optimize, only some of the below are required:
 
 * fill `buy_strategy_generator` - for buy signal optimization
-* fill `indicator_space` - for buy signal optimzation
+* fill `indicator_space` - for buy signal optimization
 * fill `sell_strategy_generator` - for sell signal optimization
-* fill `sell_indicator_space` - for sell signal optimzation
+* fill `sell_indicator_space` - for sell signal optimization
 
 !!! Note
     `populate_indicators` needs to create all indicators any of thee spaces may use, otherwise hyperopt will not work.
@@ -81,11 +81,11 @@ There are two places you need to change in your hyperopt file to add a new buy h
 There you have two different types of indicators: 1. `guards` and 2. `triggers`.
 
 1. Guards are conditions like "never buy if ADX < 10", or never buy if current price is over EMA10.
-2. Triggers are ones that actually trigger buy in specific moment, like "buy when EMA5 crosses over EMA10" or "buy when close price touches lower bollinger band".
+2. Triggers are ones that actually trigger buy in specific moment, like "buy when EMA5 crosses over EMA10" or "buy when close price touches lower Bollinger band".
 
 Hyperoptimization will, for each eval round, pick one trigger and possibly
 multiple guards. The constructed strategy will be something like
-"*buy exactly when close price touches lower bollinger band, BUT only if
+"*buy exactly when close price touches lower Bollinger band, BUT only if
 ADX > 10*".
 
 If you have updated the buy strategy, i.e. changed the contents of
@@ -172,7 +172,7 @@ So let's write the buy strategy using these values:
 Hyperopting will now call this `populate_buy_trend` as many times you ask it (`epochs`)
 with different value combinations. It will then use the given historical data and make
 buys based on the buy signals generated with the above function and based on the results
-it will end with telling you which paramter combination produced the best profits.
+it will end with telling you which parameter combination produced the best profits.
 
 The above setup expects to find ADX, RSI and Bollinger Bands in the populated indicators.
 When you want to test an indicator that isn't used by the bot currently, remember to
@@ -191,8 +191,10 @@ Currently, the following loss functions are builtin:
 
 * `DefaultHyperOptLoss` (default legacy Freqtrade hyperoptimization loss function)
 * `OnlyProfitHyperOptLoss` (which takes only amount of profit into consideration)
-* `SharpeHyperOptLoss` (optimizes Sharpe Ratio calculated on the trade returns)
-* `SharpeHyperOptLossDaily` (optimizes Sharpe Ratio calculated on daily trade returns)
+* `SharpeHyperOptLoss` (optimizes Sharpe Ratio calculated on trade returns relative to standard deviation)
+* `SharpeHyperOptLossDaily` (optimizes Sharpe Ratio calculated on **daily** trade returns relative to standard deviation)
+* `SortinoHyperOptLoss` (optimizes Sortino Ratio calculated on trade returns relative to **downside** standard deviation)
+* `SortinoHyperOptLossDaily` (optimizes Sortino Ratio calculated on **daily** trade returns relative to **downside** standard deviation)
 
 Creation of a custom loss function is covered in the [Advanced Hyperopt](advanced-hyperopt.md) part of the documentation.
 
@@ -272,7 +274,7 @@ In some situations, you may need to run Hyperopt (and Backtesting) with the
 By default, hyperopt emulates the behavior of the Freqtrade Live Run/Dry Run, where only one
 open trade is allowed for every traded pair. The total number of trades open for all pairs
 is also limited by the `max_open_trades` setting. During Hyperopt/Backtesting this may lead to
-some potential trades to be hidden (or masked) by previosly open trades.
+some potential trades to be hidden (or masked) by previously open trades.
 
 The `--eps`/`--enable-position-stacking` argument allows emulation of buying the same pair multiple times,
 while `--dmmp`/`--disable-max-market-positions` disables applying `max_open_trades`
