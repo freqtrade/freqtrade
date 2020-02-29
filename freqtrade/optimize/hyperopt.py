@@ -276,10 +276,7 @@ class Hyperopt:
             self.print_result_table(self.config, results, self.total_epochs,
                                     self.print_all, self.print_colorized,
                                     self.hyperopt_table_header)
-            if is_best:
-                self.hyperopt_table_header = 2
-            else:
-                self.hyperopt_table_header = 3
+            self.hyperopt_table_header = 2
 
     @staticmethod
     def print_results_explanation(results, total_epochs, highlight_best: bool,
@@ -349,10 +346,17 @@ class Hyperopt:
                                                            str(trials.loc[i][z]), Style.RESET_ALL)
 
         trials = trials.drop(columns=['is_initial_point', 'is_best', 'is_profit'])
-        table = tabulate(trials.to_dict(orient='list'), tablefmt='psql',
-                         headers='keys', stralign="right")
         if remove_header > 0:
+            table = tabulate(trials.to_dict(orient='list'), tablefmt='orgtbl',
+                             headers='keys', stralign="right")
             table = table.split("\n", remove_header)[remove_header]
+        elif remove_header < 0:
+            table = tabulate(trials.to_dict(orient='list'), tablefmt='psql',
+                             headers='keys', stralign="right")
+            table = "\n".join(table.split("\n")[0:remove_header])
+        else:
+            table = tabulate(trials.to_dict(orient='list'), tablefmt='psql',
+                             headers='keys', stralign="right")
         print(table)
 
     def has_space(self, space: str) -> bool:
@@ -541,7 +545,7 @@ class Hyperopt:
     def start(self) -> None:
         self.random_state = self._set_random_state(self.config.get('hyperopt_random_state', None))
         logger.info(f"Using optimizer random state: {self.random_state}")
-
+        self.hyperopt_table_header = -1
         data, timerange = self.backtesting.load_bt_data()
 
         preprocessed = self.backtesting.strategy.tickerdata_to_dataframe(data)
