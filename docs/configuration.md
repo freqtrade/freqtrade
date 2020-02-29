@@ -370,15 +370,17 @@ The possible values are: `gtc` (default), `fok` or `ioc`.
 
 Freqtrade is based on [CCXT library](https://github.com/ccxt/ccxt) that supports over 100 cryptocurrency
 exchange markets and trading APIs. The complete up-to-date list can be found in the
-[CCXT repo homepage](https://github.com/ccxt/ccxt/tree/master/python). However, the bot was tested
-with only Bittrex and Binance.
-
-The bot was tested with the following exchanges:
+[CCXT repo homepage](https://github.com/ccxt/ccxt/tree/master/python).
+ However, the bot was tested by the development team with only Bittrex, Binance and Kraken,
+ so the these are the only officially supported exhanges:
 
 - [Bittrex](https://bittrex.com/): "bittrex"
 - [Binance](https://www.binance.com/): "binance"
+- [Kraken](https://kraken.com/): "kraken"
 
 Feel free to test other exchanges and submit your PR to improve the bot.
+
+Some exchanges require special configuration, which can be found on the [Exchange-specific Notes](exchanges.md) documentation page.
 
 #### Sample exchange configuration
 
