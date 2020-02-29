@@ -557,6 +557,8 @@ class Hyperopt:
         cpus = cpu_count()
         logger.info(f"Found {cpus} CPU cores. Let's make them scream!")
         config_jobs = self.config.get('hyperopt_jobs', -1)
+        if self.total_epochs < cpus:
+            config_jobs = self.total_epochs
         logger.info(f'Number of parallel jobs set as: {config_jobs}')
 
         self.dimensions: List[Dimension] = self.hyperopt_space()
