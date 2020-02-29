@@ -234,7 +234,7 @@ git checkout -b new_release <commitid>
 
 Determine if crucial bugfixes have been made between this commit and the current state, and eventually cherry-pick these.
 
-* Edit `freqtrade/__init__.py` and add the version matching the current date (for example `2019.7` for July 2019). Minor versions can be `2019.7-1` should we need to do a second release that month.
+* Edit `freqtrade/__init__.py` and add the version matching the current date (for example `2019.7` for July 2019). Minor versions can be `2019.7.1` should we need to do a second release that month. Version numbers must follow allowed versions from PEP0440 to avoid failures pushing to pypi.
 * Commit this part
 * push that branch to the remote and create a PR against the master branch
 
@@ -267,11 +267,6 @@ Once the PR against master is merged (best right after merging):
 * Use the version-number specified as tag.
 * Use "master" as reference (this step comes after the above PR is merged).
 * Use the above changelog as release comment (as codeblock)
-
-### After-release
-
-* Update version in develop by postfixing that with `-dev` (`2019.6 -> 2019.6-dev`).
-* Create a PR against develop to update that branch.
 
 ## Releases
 
