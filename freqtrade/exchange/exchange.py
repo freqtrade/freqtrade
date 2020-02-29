@@ -333,7 +333,7 @@ class Exchange:
                                f"Please check if you are impacted by this restriction "
                                f"on the exchange and eventually remove {pair} from your whitelist.")
             if (self._config['stake_currency'] and
-                    not self.get_pair_quote_currency(pair) == self._config['stake_currency']):
+                    self.get_pair_quote_currency(pair) != self._config['stake_currency']):
                 invalid_pairs.append(pair)
         if invalid_pairs:
             raise OperationalException(
