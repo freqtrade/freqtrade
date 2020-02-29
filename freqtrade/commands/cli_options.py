@@ -59,7 +59,8 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "config": Arg(
         '-c', '--config',
-        help=f'Specify configuration file (default: `{constants.DEFAULT_CONFIG}`). '
+        help=f'Specify configuration file (default: `userdir/{constants.DEFAULT_CONFIG}` '
+        f'or `config.json` whichever exists). '
         f'Multiple --config options may be used. '
         f'Can be set to `-` to read config from stdin.',
         action='append',
@@ -256,7 +257,7 @@ AVAILABLE_CLI_OPTIONS = {
         help='Specify the class name of the hyperopt loss function class (IHyperOptLoss). '
         'Different functions can generate completely different results, '
         'since the target for optimization is different. Built-in Hyperopt-loss-functions are: '
-        'DefaultHyperOptLoss, OnlyProfitHyperOptLoss, SharpeHyperOptLoss.'
+        'DefaultHyperOptLoss, OnlyProfitHyperOptLoss, SharpeHyperOptLoss, SharpeHyperOptLossDaily.'
         '(default: `%(default)s`).',
         metavar='NAME',
         default=constants.DEFAULT_HYPEROPT_LOSS,
@@ -332,6 +333,30 @@ AVAILABLE_CLI_OPTIONS = {
              'desired timeframe as specified as --timeframes/-t.',
         action='store_true',
     ),
+    "format_from": Arg(
+        '--format-from',
+        help='Source format for data conversion.',
+        choices=constants.AVAILABLE_DATAHANDLERS,
+        required=True,
+    ),
+    "format_to": Arg(
+        '--format-to',
+        help='Destination format for data conversion.',
+        choices=constants.AVAILABLE_DATAHANDLERS,
+        required=True,
+    ),
+    "dataformat_ohlcv": Arg(
+        '--data-format-ohlcv',
+        help='Storage format for downloaded ohlcv data. (default: `%(default)s`).',
+        choices=constants.AVAILABLE_DATAHANDLERS,
+        default='json'
+    ),
+    "dataformat_trades": Arg(
+        '--data-format-trades',
+        help='Storage format for downloaded trades data. (default: `%(default)s`).',
+        choices=constants.AVAILABLE_DATAHANDLERS,
+        default='jsongz'
+    ),
     "exchange": Arg(
         '--exchange',
         help=f'Exchange name (default: `{constants.DEFAULT_EXCHANGE}`). '
@@ -397,6 +422,54 @@ AVAILABLE_CLI_OPTIONS = {
         '--best',
         help='Select only best epochs.',
         action='store_true',
+    ),
+    "hyperopt_list_min_trades": Arg(
+        '--min-trades',
+        help='Select epochs with more than INT trades.',
+        type=check_int_positive,
+        metavar='INT',
+    ),
+    "hyperopt_list_max_trades": Arg(
+        '--max-trades',
+        help='Select epochs with less than INT trades.',
+        type=check_int_positive,
+        metavar='INT',
+    ),
+    "hyperopt_list_min_avg_time": Arg(
+        '--min-avg-time',
+        help='Select epochs on above average time.',
+        type=float,
+        metavar='FLOAT',
+    ),
+    "hyperopt_list_max_avg_time": Arg(
+        '--max-avg-time',
+        help='Select epochs on under average time.',
+        type=float,
+        metavar='FLOAT',
+    ),
+    "hyperopt_list_min_avg_profit": Arg(
+        '--min-avg-profit',
+        help='Select epochs on above average profit.',
+        type=float,
+        metavar='FLOAT',
+    ),
+    "hyperopt_list_max_avg_profit": Arg(
+        '--max-avg-profit',
+        help='Select epochs on below average profit.',
+        type=float,
+        metavar='FLOAT',
+    ),
+    "hyperopt_list_min_total_profit": Arg(
+        '--min-total-profit',
+        help='Select epochs on above total profit.',
+        type=float,
+        metavar='FLOAT',
+    ),
+    "hyperopt_list_max_total_profit": Arg(
+        '--max-total-profit',
+        help='Select epochs on below total profit.',
+        type=float,
+        metavar='FLOAT',
     ),
     "hyperopt_list_no_details": Arg(
         '--no-details',

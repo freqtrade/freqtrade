@@ -180,7 +180,7 @@ class IStrategy(ABC):
         if pair not in self._pair_locked_until or self._pair_locked_until[pair] < until:
             self._pair_locked_until[pair] = until
 
-    def unlock_pair(self, pair) -> None:
+    def unlock_pair(self, pair: str) -> None:
         """
         Unlocks a pair previously locked using lock_pair.
         Not used by freqtrade itself, but intended to be used if users lock pairs
@@ -439,7 +439,7 @@ class IStrategy(ABC):
         else:
             return current_profit > roi
 
-    def tickerdata_to_dataframe(self, tickerdata: Dict[str, List]) -> Dict[str, DataFrame]:
+    def tickerdata_to_dataframe(self, tickerdata: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
         Creates a dataframe and populates indicators for given ticker data
         Used by optimize operations only, not during dry / live runs.

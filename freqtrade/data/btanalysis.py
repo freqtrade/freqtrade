@@ -3,7 +3,7 @@ Helpers when analyzing backtest data
 """
 import logging
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Union
 
 import numpy as np
 import pandas as pd
@@ -20,7 +20,7 @@ BT_DATA_COLUMNS = ["pair", "profitperc", "open_time", "close_time", "index", "du
                    "open_rate", "close_rate", "open_at_end", "sell_reason"]
 
 
-def load_backtest_data(filename) -> pd.DataFrame:
+def load_backtest_data(filename: Union[Path, str]) -> pd.DataFrame:
     """
     Load backtest data file.
     :param filename: pathlib.Path object, or string pointing to the file.
@@ -151,7 +151,8 @@ def extract_trades_of_period(dataframe: pd.DataFrame, trades: pd.DataFrame) -> p
     return trades
 
 
-def combine_tickers_with_mean(tickers: Dict[str, pd.DataFrame], column: str = "close"):
+def combine_tickers_with_mean(tickers: Dict[str, pd.DataFrame],
+                              column: str = "close") -> pd.DataFrame:
     """
     Combine multiple dataframes "column"
     :param tickers: Dict of Dataframes, dict key should be pair.

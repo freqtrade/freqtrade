@@ -3,13 +3,15 @@ import logging
 import sys
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
+from colorama import init as colorama_init
+from colorama import Fore, Style
 import rapidjson
 from tabulate import tabulate
 
 from freqtrade.configuration import setup_utils_configuration
-from freqtrade.constants import USERPATH_STRATEGY
+from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGIES
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import (available_exchanges, ccxt_exchanges,
                                 market_is_active, symbol_is_pair)
@@ -36,22 +38,63 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
             print(f"Exchanges available for Freqtrade: {', '.join(exchanges)}")
 
 
+def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
+    if print_colorized:
+        colorama_init(autoreset=True)
+        red = Fore.RED
+        yellow = Fore.YELLOW
+        reset = Style.RESET_ALL
+    else:
+        red = ''
+        yellow = ''
+        reset = ''
+
+    names = [s['name'] for s in objs]
+    objss_to_print = [{
+        'name': s['name'] if s['name'] else "--",
+        'location': s['location'].name,
+        'status': (red + "LOAD FAILED" + reset if s['class'] is None
+                   else "OK" if names.count(s['name']) == 1
+                   else yellow + "DUPLICATE NAME" + reset)
+    } for s in objs]
+
+    print(tabulate(objss_to_print, headers='keys', tablefmt='pipe'))
+
+
 def start_list_strategies(args: Dict[str, Any]) -> None:
     """
-    Print Strategies available in a directory
+    Print files with Strategy custom classes available in the directory
     """
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
-    directory = Path(config.get('strategy_path', config['user_data_dir'] / USERPATH_STRATEGY))
-    strategies = StrategyResolver.search_all_objects(directory)
+    directory = Path(config.get('strategy_path', config['user_data_dir'] / USERPATH_STRATEGIES))
+    strategy_objs = StrategyResolver.search_all_objects(directory, not args['print_one_column'])
     # Sort alphabetically
-    strategies = sorted(strategies, key=lambda x: x['name'])
-    strats_to_print = [{'name': s['name'], 'location': s['location'].name} for s in strategies]
+    strategy_objs = sorted(strategy_objs, key=lambda x: x['name'])
 
     if args['print_one_column']:
-        print('\n'.join([s['name'] for s in strategies]))
+        print('\n'.join([s['name'] for s in strategy_objs]))
     else:
-        print(tabulate(strats_to_print, headers='keys', tablefmt='pipe'))
+        _print_objs_tabular(strategy_objs, config.get('print_colorized', False))
+
+
+def start_list_hyperopts(args: Dict[str, Any]) -> None:
+    """
+    Print files with HyperOpt custom classes available in the directory
+    """
+    from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
+
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+
+    directory = Path(config.get('hyperopt_path', config['user_data_dir'] / USERPATH_HYPEROPTS))
+    hyperopt_objs = HyperOptResolver.search_all_objects(directory, not args['print_one_column'])
+    # Sort alphabetically
+    hyperopt_objs = sorted(hyperopt_objs, key=lambda x: x['name'])
+
+    if args['print_one_column']:
+        print('\n'.join([s['name'] for s in hyperopt_objs]))
+    else:
+        _print_objs_tabular(hyperopt_objs, config.get('print_colorized', False))
 
 
 def start_list_timeframes(args: Dict[str, Any]) -> None:

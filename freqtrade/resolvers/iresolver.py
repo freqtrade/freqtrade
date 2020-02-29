@@ -7,7 +7,7 @@ import importlib.util
 import inspect
 import logging
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, Union
 
 from freqtrade.exceptions import OperationalException
 
@@ -22,13 +22,15 @@ class IResolver:
     object_type: Type[Any]
     object_type_str: str
     user_subdir: Optional[str] = None
-    initial_search_path: Path
+    initial_search_path: Optional[Path]
 
     @classmethod
-    def build_search_paths(cls, config, user_subdir: Optional[str] = None,
+    def build_search_paths(cls, config: Dict[str, Any], user_subdir: Optional[str] = None,
                            extra_dir: Optional[str] = None) -> List[Path]:
 
-        abs_paths: List[Path] = [cls.initial_search_path]
+        abs_paths: List[Path] = []
+        if cls.initial_search_path:
+            abs_paths.append(cls.initial_search_path)
 
         if user_subdir:
             abs_paths.insert(0, config['user_data_dir'].joinpath(user_subdir))
@@ -40,12 +42,14 @@ class IResolver:
         return abs_paths
 
     @classmethod
-    def _get_valid_object(cls, module_path: Path,
-                          object_name: Optional[str]) -> Generator[Any, None, None]:
+    def _get_valid_object(cls, module_path: Path, object_name: Optional[str],
+                          enum_failed: bool = False) -> Iterator[Any]:
         """
         Generator returning objects with matching object_type and object_name in the path given.
         :param module_path: absolute path to the module
         :param object_name: Class name of the object
+        :param enum_failed: If True, will return None for modules which fail.
+            Otherwise, failing modules are skipped.
         :return: generator containing matching objects
         """
 
@@ -58,10 +62,13 @@ class IResolver:
         except (ModuleNotFoundError, SyntaxError) as err:
             # Catch errors in case a specific module is not installed
             logger.warning(f"Could not import {module_path} due to '{err}'")
+            if enum_failed:
+                return iter([None])
 
         valid_objects_gen = (
             obj for name, obj in inspect.getmembers(module, inspect.isclass)
-            if (object_name is None or object_name == name) and cls.object_type in obj.__bases__
+            if ((object_name is None or object_name == name) and
+                issubclass(obj, cls.object_type) and obj is not cls.object_type)
         )
         return valid_objects_gen
 
@@ -135,10 +142,13 @@ class IResolver:
         )
 
     @classmethod
-    def search_all_objects(cls, directory: Path) -> List[Dict[str, Any]]:
+    def search_all_objects(cls, directory: Path,
+                           enum_failed: bool) -> List[Dict[str, Any]]:
         """
         Searches a directory for valid objects
         :param directory: Path to search
+        :param enum_failed: If True, will return None for modules which fail.
+            Otherwise, failing modules are skipped.
         :return: List of dicts containing 'name', 'class' and 'location' entires
         """
         logger.debug(f"Searching for {cls.object_type.__name__} '{directory}'")
@@ -150,9 +160,10 @@ class IResolver:
                 continue
             module_path = entry.resolve()
             logger.debug(f"Path {module_path}")
-            for obj in cls._get_valid_object(module_path, object_name=None):
+            for obj in cls._get_valid_object(module_path, object_name=None,
+                                             enum_failed=enum_failed):
                 objects.append(
-                    {'name': obj.__name__,
+                    {'name': obj.__name__ if obj is not None else '',
                      'class': obj,
                      'location': entry,
                      })

@@ -76,9 +76,11 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
     caplog.set_level(logging.INFO)
     conf = copy.deepcopy(default_conf)
-    conf['exchange']['ccxt_async_config'] = {'aiohttp_trust_env': True}
+    conf['exchange']['ccxt_async_config'] = {'aiohttp_trust_env': True, 'asyncio_loop': True}
     ex = Exchange(conf)
-    assert log_has("Applying additional ccxt config: {'aiohttp_trust_env': True}", caplog)
+    assert log_has(
+        "Applying additional ccxt config: {'aiohttp_trust_env': True, 'asyncio_loop': True}",
+        caplog)
     assert ex._api_async.aiohttp_trust_env
     assert not ex._api.aiohttp_trust_env
 
@@ -86,6 +88,8 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     caplog.clear()
     conf = copy.deepcopy(default_conf)
     conf['exchange']['ccxt_config'] = {'TestKWARG': 11}
+    conf['exchange']['ccxt_async_config'] = {'asyncio_loop': True}
+
     ex = Exchange(conf)
     assert not log_has("Applying additional ccxt config: {'aiohttp_trust_env': True}", caplog)
     assert not ex._api_async.aiohttp_trust_env
@@ -1117,25 +1121,16 @@ def test_fetch_ticker(default_conf, mocker, exchange_name):
     assert ticker['bid'] == 0.5
     assert ticker['ask'] == 1
 
-    assert 'ETH/BTC' in exchange._cached_ticker
-    assert exchange._cached_ticker['ETH/BTC']['bid'] == 0.5
-    assert exchange._cached_ticker['ETH/BTC']['ask'] == 1
-
-    # Test caching
-    api_mock.fetch_ticker = MagicMock()
-    exchange.fetch_ticker(pair='ETH/BTC', refresh=False)
-    assert api_mock.fetch_ticker.call_count == 0
-
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            "fetch_ticker", "fetch_ticker",
-                           pair='ETH/BTC', refresh=True)
+                           pair='ETH/BTC')
 
     api_mock.fetch_ticker = MagicMock(return_value={})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-    exchange.fetch_ticker(pair='ETH/BTC', refresh=True)
+    exchange.fetch_ticker(pair='ETH/BTC')
 
     with pytest.raises(DependencyException, match=r'Pair XRP/ETH not available'):
-        exchange.fetch_ticker(pair='XRP/ETH', refresh=True)
+        exchange.fetch_ticker(pair='XRP/ETH')
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
@@ -1758,10 +1753,13 @@ def test_get_fee(default_conf, mocker, exchange_name):
                            'get_fee', 'calculate_fee', symbol="ETH/BTC")
 
 
-def test_stoploss_limit_order_unsupported_exchange(default_conf, mocker):
+def test_stoploss_order_unsupported_exchange(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, 'bittrex')
-    with pytest.raises(OperationalException, match=r"stoploss_limit is not implemented .*"):
-        exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
+    with pytest.raises(OperationalException, match=r"stoploss is not implemented .*"):
+        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={})
+
+    with pytest.raises(OperationalException, match=r"stoploss is not implemented .*"):
+        exchange.stoploss_adjust(1, {})
 
 
 def test_merge_ft_has_dict(default_conf, mocker):

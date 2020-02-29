@@ -1,6 +1,6 @@
 import logging
 from copy import deepcopy
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from freqtrade.pairlist.IPairList import IPairList
 
@@ -9,7 +9,8 @@ logger = logging.getLogger(__name__)
 
 class PriceFilter(IPairList):
 
-    def __init__(self, exchange, pairlistmanager, config, pairlistconfig: dict,
+    def __init__(self, exchange, pairlistmanager,
+                 config: Dict[str, Any], pairlistconfig: Dict[str, Any],
                  pairlist_pos: int) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 

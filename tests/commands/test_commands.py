@@ -4,9 +4,10 @@ from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
-from freqtrade.commands import (start_create_userdir, start_download_data,
-                                start_hyperopt_list, start_hyperopt_show,
-                                start_list_exchanges, start_list_markets,
+from freqtrade.commands import (start_convert_data, start_create_userdir,
+                                start_download_data, start_hyperopt_list,
+                                start_hyperopt_show, start_list_exchanges,
+                                start_list_hyperopts, start_list_markets,
                                 start_list_strategies, start_list_timeframes,
                                 start_new_hyperopt, start_new_strategy,
                                 start_test_pairlist, start_trading)
@@ -639,7 +640,7 @@ def test_start_list_strategies(mocker, caplog, capsys):
     args = [
         "list-strategies",
         "--strategy-path",
-        str(Path(__file__).parent.parent / "strategy"),
+        str(Path(__file__).parent.parent / "strategy" / "strats"),
         "-1"
     ]
     pargs = get_args(args)
@@ -654,7 +655,7 @@ def test_start_list_strategies(mocker, caplog, capsys):
     args = [
         "list-strategies",
         "--strategy-path",
-        str(Path(__file__).parent.parent / "strategy"),
+        str(Path(__file__).parent.parent / "strategy" / "strats"),
     ]
     pargs = get_args(args)
     # pargs['config'] = None
@@ -663,6 +664,39 @@ def test_start_list_strategies(mocker, caplog, capsys):
     assert "TestStrategyLegacy" in captured.out
     assert "legacy_strategy.py" in captured.out
     assert "DefaultStrategy" in captured.out
+
+
+def test_start_list_hyperopts(mocker, caplog, capsys):
+
+    args = [
+        "list-hyperopts",
+        "--hyperopt-path",
+        str(Path(__file__).parent.parent / "optimize"),
+        "-1"
+    ]
+    pargs = get_args(args)
+    # pargs['config'] = None
+    start_list_hyperopts(pargs)
+    captured = capsys.readouterr()
+    assert "TestHyperoptLegacy" not in captured.out
+    assert "legacy_hyperopt.py" not in captured.out
+    assert "DefaultHyperOpt" in captured.out
+    assert "test_hyperopt.py" not in captured.out
+
+    # Test regular output
+    args = [
+        "list-hyperopts",
+        "--hyperopt-path",
+        str(Path(__file__).parent.parent / "optimize"),
+    ]
+    pargs = get_args(args)
+    # pargs['config'] = None
+    start_list_hyperopts(pargs)
+    captured = capsys.readouterr()
+    assert "TestHyperoptLegacy" not in captured.out
+    assert "legacy_hyperopt.py" not in captured.out
+    assert "DefaultHyperOpt" in captured.out
+    assert "test_hyperopt.py" in captured.out
 
 
 def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
@@ -744,6 +778,121 @@ def test_hyperopt_list(mocker, capsys, hyperopt_results):
     assert all(x not in captured.out
                for x in [" 1/12", " 3/12", " 4/12", " 5/12", " 6/12", " 7/12", " 8/12", " 9/12",
                          " 11/12", " 12/12"])
+    args = [
+        "hyperopt-list",
+        "--no-details",
+        "--no-color",
+        "--min-trades", "20"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_list(pargs)
+    captured = capsys.readouterr()
+    assert all(x in captured.out
+               for x in [" 3/12", " 6/12", " 7/12", " 9/12", " 11/12"])
+    assert all(x not in captured.out
+               for x in [" 1/12", " 2/12", " 4/12", " 5/12", " 8/12", " 10/12", " 12/12"])
+    args = [
+        "hyperopt-list",
+        "--profitable",
+        "--no-details",
+        "--max-trades", "20"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_list(pargs)
+    captured = capsys.readouterr()
+    assert all(x in captured.out
+               for x in [" 2/12", " 10/12"])
+    assert all(x not in captured.out
+               for x in [" 1/12", " 3/12", " 4/12", " 5/12", " 6/12", " 7/12", " 8/12", " 9/12",
+                         " 11/12", " 12/12"])
+    args = [
+        "hyperopt-list",
+        "--profitable",
+        "--no-details",
+        "--min-avg-profit", "0.11"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_list(pargs)
+    captured = capsys.readouterr()
+    assert all(x in captured.out
+               for x in [" 2/12"])
+    assert all(x not in captured.out
+               for x in [" 1/12", " 3/12", " 4/12", " 5/12", " 6/12", " 7/12", " 8/12", " 9/12",
+                         " 10/12", " 11/12", " 12/12"])
+    args = [
+        "hyperopt-list",
+        "--no-details",
+        "--max-avg-profit", "0.10"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_list(pargs)
+    captured = capsys.readouterr()
+    assert all(x in captured.out
+               for x in [" 1/12", " 3/12", " 5/12", " 6/12", " 7/12", " 8/12", " 9/12",
+                         " 11/12"])
+    assert all(x not in captured.out
+               for x in [" 2/12", " 4/12", " 10/12", " 12/12"])
+    args = [
+        "hyperopt-list",
+        "--no-details",
+        "--min-total-profit", "0.4"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_list(pargs)
+    captured = capsys.readouterr()
+    assert all(x in captured.out
+               for x in [" 10/12"])
+    assert all(x not in captured.out
+               for x in [" 1/12", " 2/12", " 3/12", " 4/12", " 5/12", " 6/12", " 7/12", " 8/12",
+                         " 9/12", " 11/12", " 12/12"])
+    args = [
+        "hyperopt-list",
+        "--no-details",
+        "--max-total-profit", "0.4"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_list(pargs)
+    captured = capsys.readouterr()
+    assert all(x in captured.out
+               for x in [" 1/12", " 2/12", " 3/12", " 5/12", " 6/12", " 7/12", " 8/12",
+                         " 9/12", " 11/12"])
+    assert all(x not in captured.out
+               for x in [" 4/12", " 10/12", " 12/12"])
+    args = [
+        "hyperopt-list",
+        "--profitable",
+        "--no-details",
+        "--min-avg-time", "2000"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_list(pargs)
+    captured = capsys.readouterr()
+    assert all(x in captured.out
+               for x in [" 10/12"])
+    assert all(x not in captured.out
+               for x in [" 1/12", " 2/12", " 3/12", " 4/12", " 5/12", " 6/12", " 7/12",
+                         " 8/12", " 9/12", " 11/12", " 12/12"])
+    args = [
+        "hyperopt-list",
+        "--no-details",
+        "--max-avg-time", "1500"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_list(pargs)
+    captured = capsys.readouterr()
+    assert all(x in captured.out
+               for x in [" 2/12", " 6/12"])
+    assert all(x not in captured.out
+               for x in [" 1/12", " 3/12", " 4/12", " 5/12", " 7/12", " 8/12"
+                         " 9/12", " 10/12", " 11/12", " 12/12"])
 
 
 def test_hyperopt_show(mocker, capsys, hyperopt_results):
@@ -824,3 +973,47 @@ def test_hyperopt_show(mocker, capsys, hyperopt_results):
     with pytest.raises(OperationalException,
                        match="The index of the epoch to show should be less than 4."):
         start_hyperopt_show(pargs)
+
+
+def test_convert_data(mocker, testdatadir):
+    ohlcv_mock = mocker.patch("freqtrade.commands.data_commands.convert_ohlcv_format")
+    trades_mock = mocker.patch("freqtrade.commands.data_commands.convert_trades_format")
+    args = [
+        "convert-data",
+        "--format-from",
+        "json",
+        "--format-to",
+        "jsongz",
+        "--datadir",
+        str(testdatadir),
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_convert_data(pargs, True)
+    assert trades_mock.call_count == 0
+    assert ohlcv_mock.call_count == 1
+    assert ohlcv_mock.call_args[1]['convert_from'] == 'json'
+    assert ohlcv_mock.call_args[1]['convert_to'] == 'jsongz'
+    assert ohlcv_mock.call_args[1]['erase'] is False
+
+
+def test_convert_data_trades(mocker, testdatadir):
+    ohlcv_mock = mocker.patch("freqtrade.commands.data_commands.convert_ohlcv_format")
+    trades_mock = mocker.patch("freqtrade.commands.data_commands.convert_trades_format")
+    args = [
+        "convert-trade-data",
+        "--format-from",
+        "jsongz",
+        "--format-to",
+        "json",
+        "--datadir",
+        str(testdatadir),
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_convert_data(pargs, False)
+    assert ohlcv_mock.call_count == 0
+    assert trades_mock.call_count == 1
+    assert trades_mock.call_args[1]['convert_from'] == 'jsongz'
+    assert trades_mock.call_args[1]['convert_to'] == 'json'
+    assert trades_mock.call_args[1]['erase'] is False

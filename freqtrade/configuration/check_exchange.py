@@ -10,7 +10,7 @@ from freqtrade.state import RunMode
 logger = logging.getLogger(__name__)
 
 
-def remove_credentials(config: Dict[str, Any]):
+def remove_credentials(config: Dict[str, Any]) -> None:
     """
     Removes exchange keys from the configuration and specifies dry-run
     Used for backtesting / hyperopt / edge and utils.

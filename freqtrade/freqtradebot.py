@@ -6,11 +6,11 @@ import logging
 import traceback
 from datetime import datetime
 from math import isclose
-from os import getpid
 from threading import Lock
 from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
+from cachetools import TTLCache
 from requests.exceptions import RequestException
 
 from freqtrade import __version__, constants, persistence
@@ -52,9 +52,8 @@ class FreqtradeBot:
         # Init objects
         self.config = config
 
-        self._heartbeat_msg = 0
-
-        self.heartbeat_interval = self.config.get('internals', {}).get('heartbeat_interval', 60)
+        self._sell_rate_cache = TTLCache(maxsize=100, ttl=5)
+        self._buy_rate_cache = TTLCache(maxsize=100, ttl=5)
 
         self.strategy: IStrategy = StrategyResolver.load_strategy(self.config)
 
@@ -159,11 +158,6 @@ class FreqtradeBot:
         self.check_handle_timedout()
         Trade.session.flush()
 
-        if (self.heartbeat_interval
-                and (arrow.utcnow().timestamp - self._heartbeat_msg > self.heartbeat_interval)):
-            logger.info(f"Bot heartbeat. PID={getpid()}")
-            self._heartbeat_msg = arrow.utcnow().timestamp
-
     def _refresh_whitelist(self, trades: List[Trade] = []) -> List[str]:
         """
         Refresh whitelist from pairlist or edge and extend it with trades.
@@ -234,11 +228,20 @@ class FreqtradeBot:
 
         return trades_created
 
-    def get_buy_rate(self, pair: str, tick: Dict = None) -> float:
+    def get_buy_rate(self, pair: str, refresh: bool) -> float:
         """
         Calculates bid target between current ask price and last price
+        :param pair: Pair to get rate for
+        :param refresh: allow cached data
         :return: float: Price
         """
+        if not refresh:
+            rate = self._buy_rate_cache.get(pair)
+            # Check if cache has been invalidated
+            if rate:
+                logger.info(f"Using cached buy rate for {pair}.")
+                return rate
+
         config_bid_strategy = self.config.get('bid_strategy', {})
         if 'use_order_book' in config_bid_strategy and\
                 config_bid_strategy.get('use_order_book', False):
@@ -251,11 +254,8 @@ class FreqtradeBot:
             logger.info('...top %s order book buy rate %0.8f', order_book_top, order_book_rate)
             used_rate = order_book_rate
         else:
-            if not tick:
-                logger.info('Using Last Ask / Last Price')
-                ticker = self.exchange.fetch_ticker(pair)
-            else:
-                ticker = tick
+            logger.info('Using Last Ask / Last Price')
+            ticker = self.exchange.fetch_ticker(pair)
             if ticker['ask'] < ticker['last']:
                 ticker_rate = ticker['ask']
             else:
@@ -263,9 +263,11 @@ class FreqtradeBot:
                 ticker_rate = ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
             used_rate = ticker_rate
 
+        self._buy_rate_cache[pair] = used_rate
+
         return used_rate
 
-    def get_trade_stake_amount(self, pair) -> float:
+    def get_trade_stake_amount(self, pair: str) -> float:
         """
         Calculate stake amount for the trade
         :return: float: Stake amount
@@ -404,7 +406,7 @@ class FreqtradeBot:
 
             stake_amount = self.get_trade_stake_amount(pair)
             if not stake_amount:
-                logger.debug("Stake amount is 0, ignoring possible trade for {pair}.")
+                logger.debug(f"Stake amount is 0, ignoring possible trade for {pair}.")
                 return False
 
             logger.info(f"Buy signal found: about create a new trade with stake_amount: "
@@ -414,10 +416,12 @@ class FreqtradeBot:
             if ((bid_check_dom.get('enabled', False)) and
                     (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
                 if self._check_depth_of_market_buy(pair, bid_check_dom):
+                    logger.info(f'Executing Buy for {pair}.')
                     return self.execute_buy(pair, stake_amount)
                 else:
                     return False
 
+            logger.info(f'Executing Buy for {pair}')
             return self.execute_buy(pair, stake_amount)
         else:
             return False
@@ -427,23 +431,30 @@ class FreqtradeBot:
         Checks depth of market before executing a buy
         """
         conf_bids_to_ask_delta = conf.get('bids_to_ask_delta', 0)
-        logger.info('checking depth of market for %s', pair)
+        logger.info(f"Checking depth of market for {pair} ...")
         order_book = self.exchange.get_order_book(pair, 1000)
         order_book_data_frame = order_book_to_dataframe(order_book['bids'], order_book['asks'])
         order_book_bids = order_book_data_frame['b_size'].sum()
         order_book_asks = order_book_data_frame['a_size'].sum()
         bids_ask_delta = order_book_bids / order_book_asks
-        logger.info('bids: %s, asks: %s, delta: %s', order_book_bids,
-                    order_book_asks, bids_ask_delta)
+        logger.info(
+            f"Bids: {order_book_bids}, Asks: {order_book_asks}, Delta: {bids_ask_delta}, "
+            f"Bid Price: {order_book['bids'][0][0]}, Ask Price: {order_book['asks'][0][0]}, "
+            f"Immediate Bid Quantity: {order_book['bids'][0][1]}, "
+            f"Immediate Ask Quantity: {order_book['asks'][0][1]}."
+        )
         if bids_ask_delta >= conf_bids_to_ask_delta:
+            logger.info(f"Bids to asks delta for {pair} DOES satisfy condition.")
             return True
-        return False
+        else:
+            logger.info(f"Bids to asks delta for {pair} does not satisfy condition.")
+            return False
 
     def execute_buy(self, pair: str, stake_amount: float, price: Optional[float] = None) -> bool:
         """
         Executes a limit buy for the given pair
         :param pair: pair for which we want to create a LIMIT_BUY
-        :return: None
+        :return: True if a buy order is created, false if it fails.
         """
         time_in_force = self.strategy.order_time_in_force['buy']
 
@@ -451,7 +462,7 @@ class FreqtradeBot:
             buy_limit_requested = price
         else:
             # Calculate price
-            buy_limit_requested = self.get_buy_rate(pair)
+            buy_limit_requested = self.get_buy_rate(pair, True)
 
         min_stake_amount = self._get_min_pair_stake_amount(pair, buy_limit_requested)
         if min_stake_amount is not None and min_stake_amount > stake_amount:
@@ -518,8 +529,6 @@ class FreqtradeBot:
             ticker_interval=timeframe_to_minutes(self.config['ticker_interval'])
         )
 
-        self._notify_buy(trade, order_type)
-
         # Update fees if order is closed
         if order_status == 'closed':
             self.update_trade_state(trade, order)
@@ -530,9 +539,11 @@ class FreqtradeBot:
         # Updating wallets
         self.wallets.update()
 
+        self._notify_buy(trade, order_type)
+
         return True
 
-    def _notify_buy(self, trade: Trade, order_type: str):
+    def _notify_buy(self, trade: Trade, order_type: str) -> None:
         """
         Sends rpc notification when a buy occured.
         """
@@ -545,6 +556,32 @@ class FreqtradeBot:
             'stake_amount': trade.stake_amount,
             'stake_currency': self.config['stake_currency'],
             'fiat_currency': self.config.get('fiat_display_currency', None),
+            'amount': trade.amount,
+            'open_date': trade.open_date or datetime.utcnow(),
+            'current_rate': trade.open_rate_requested,
+        }
+
+        # Send the message
+        self.rpc.send_msg(msg)
+
+    def _notify_buy_cancel(self, trade: Trade, order_type: str) -> None:
+        """
+        Sends rpc notification when a buy cancel occured.
+        """
+        current_rate = self.get_buy_rate(trade.pair, False)
+
+        msg = {
+            'type': RPCMessageType.BUY_CANCEL_NOTIFICATION,
+            'exchange': self.exchange.name.capitalize(),
+            'pair': trade.pair,
+            'limit': trade.open_rate,
+            'order_type': order_type,
+            'stake_amount': trade.stake_amount,
+            'stake_currency': self.config['stake_currency'],
+            'fiat_currency': self.config.get('fiat_display_currency', None),
+            'amount': trade.amount,
+            'open_date': trade.open_date,
+            'current_rate': current_rate,
         }
 
         # Send the message
@@ -586,8 +623,17 @@ class FreqtradeBot:
         The orderbook portion is only used for rpc messaging, which would otherwise fail
         for BitMex (has no bid/ask in fetch_ticker)
         or remain static in any other case since it's not updating.
+        :param pair: Pair to get rate for
+        :param refresh: allow cached data
         :return: Bid rate
         """
+        if not refresh:
+            rate = self._sell_rate_cache.get(pair)
+            # Check if cache has been invalidated
+            if rate:
+                logger.info(f"Using cached sell rate for {pair}.")
+                return rate
+
         config_ask_strategy = self.config.get('ask_strategy', {})
         if config_ask_strategy.get('use_order_book', False):
             logger.debug('Using order book to get sell rate')
@@ -596,7 +642,8 @@ class FreqtradeBot:
             rate = order_book['bids'][0][0]
 
         else:
-            rate = self.exchange.fetch_ticker(pair, refresh)['bid']
+            rate = self.exchange.fetch_ticker(pair)['bid']
+        self._sell_rate_cache[pair] = rate
         return rate
 
     def handle_trade(self, trade: Trade) -> bool:
@@ -620,7 +667,7 @@ class FreqtradeBot:
                 self.dataprovider.ohlcv(trade.pair, self.strategy.ticker_interval))
 
         if config_ask_strategy.get('use_order_book', False):
-            logger.info('Using order book for selling...')
+            logger.debug(f'Using order book for selling {trade.pair}...')
             # logger.debug('Order book %s',orderBook)
             order_book_min = config_ask_strategy.get('order_book_min', 1)
             order_book_max = config_ask_strategy.get('order_book_max', 1)
@@ -629,7 +676,7 @@ class FreqtradeBot:
 
             for i in range(order_book_min, order_book_max + 1):
                 order_book_rate = order_book['asks'][i - 1][0]
-                logger.info('  order book asks top %s: %0.8f', i, order_book_rate)
+                logger.debug('  order book asks top %s: %0.8f', i, order_book_rate)
                 sell_rate = order_book_rate
 
                 if self._check_and_execute_sell(trade, sell_rate, buy, sell):
@@ -651,13 +698,10 @@ class FreqtradeBot:
         Force-sells the pair (using EmergencySell reason) in case of Problems creating the order.
         :return: True if the order succeeded, and False in case of problems.
         """
-        # Limit price threshold: As limit price should always be below stop-price
-        LIMIT_PRICE_PCT = self.strategy.order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
-
         try:
-            stoploss_order = self.exchange.stoploss_limit(pair=trade.pair, amount=trade.amount,
-                                                          stop_price=stop_price,
-                                                          rate=rate * LIMIT_PRICE_PCT)
+            stoploss_order = self.exchange.stoploss(pair=trade.pair, amount=trade.amount,
+                                                    stop_price=stop_price,
+                                                    order_types=self.strategy.order_types)
             trade.stoploss_order_id = str(stoploss_order['id'])
             return True
         except InvalidOrderException as e:
@@ -689,8 +733,24 @@ class FreqtradeBot:
         except InvalidOrderException as exception:
             logger.warning('Unable to fetch stoploss order: %s', exception)
 
+        # We check if stoploss order is fulfilled
+        if stoploss_order and stoploss_order['status'] == 'closed':
+            trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
+            trade.update(stoploss_order)
+            # Lock pair for one candle to prevent immediate rebuys
+            self.strategy.lock_pair(trade.pair,
+                                    timeframe_to_next_date(self.config['ticker_interval']))
+            self._notify_sell(trade, "stoploss")
+            return True
+
+        if trade.open_order_id or not trade.is_open:
+            # Trade has an open Buy or Sell order, Stoploss-handling can't happen in this case
+            # as the Amount on the exchange is tied up in another trade.
+            # The trade can be closed already (sell-order fill confirmation came in this iteration)
+            return False
+
         # If buy order is fulfilled but there is no stoploss, we add a stoploss on exchange
-        if (not trade.open_order_id and not stoploss_order):
+        if (not stoploss_order):
 
             stoploss = self.edge.stoploss(pair=trade.pair) if self.edge else self.strategy.stoploss
 
@@ -709,16 +769,6 @@ class FreqtradeBot:
                 trade.stoploss_order_id = None
                 logger.warning('Stoploss order was cancelled, but unable to recreate one.')
 
-        # We check if stoploss order is fulfilled
-        if stoploss_order and stoploss_order['status'] == 'closed':
-            trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
-            trade.update(stoploss_order)
-            # Lock pair for one candle to prevent immediate rebuys
-            self.strategy.lock_pair(trade.pair,
-                                    timeframe_to_next_date(self.config['ticker_interval']))
-            self._notify_sell(trade, "stoploss")
-            return True
-
         # Finally we check if stoploss on exchange should be moved up because of trailing.
         if stoploss_order and self.config.get('trailing_stop', False):
             # if trailing stoploss is enabled we check if stoploss value has changed
@@ -728,7 +778,7 @@ class FreqtradeBot:
 
         return False
 
-    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order):
+    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order: dict) -> None:
         """
         Check to see if stoploss on exchange should be updated
         in case of trailing stoploss on exchange
@@ -736,13 +786,12 @@ class FreqtradeBot:
         :param order: Current on exchange stoploss order
         :return: None
         """
-
-        if trade.stop_loss > float(order['info']['stopPrice']):
+        if self.exchange.stoploss_adjust(trade.stop_loss, order):
             # we check if the update is neccesary
             update_beat = self.strategy.order_types.get('stoploss_on_exchange_interval', 60)
             if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() >= update_beat:
                 # cancelling the current stoploss on exchange first
-                logger.info('Trailing stoploss: cancelling current stoploss on exchange (id:{%s})'
+                logger.info('Trailing stoploss: cancelling current stoploss on exchange (id:{%s}) '
                             'in order to add another one ...', order['id'])
                 try:
                     self.exchange.cancel_order(order['id'], trade.pair)
@@ -751,10 +800,8 @@ class FreqtradeBot:
                                      f"for pair {trade.pair}")
 
                 # Create new stoploss order
-                if self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss,
-                                              rate=trade.stop_loss):
-                    return False
-                else:
+                if not self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss,
+                                                  rate=trade.stop_loss):
                     logger.warning(f"Could not create trailing stoploss order "
                                    f"for pair {trade.pair}.")
 
@@ -769,8 +816,8 @@ class FreqtradeBot:
         )
 
         if should_sell.sell_flag:
+            logger.info(f'Executing Sell for {trade.pair}. Reason: {should_sell.sell_type}')
             self.execute_sell(trade, sell_rate, should_sell.sell_type)
-            logger.info('executed sell, reason: %s', should_sell.sell_type)
             return True
         return False
 
@@ -813,41 +860,37 @@ class FreqtradeBot:
 
             if ((order['side'] == 'buy' and order['status'] == 'canceled')
                     or (self._check_timed_out('buy', order))):
-
                 self.handle_timedout_limit_buy(trade, order)
                 self.wallets.update()
+                order_type = self.strategy.order_types['buy']
+                self._notify_buy_cancel(trade, order_type)
 
             elif ((order['side'] == 'sell' and order['status'] == 'canceled')
                   or (self._check_timed_out('sell', order))):
                 self.handle_timedout_limit_sell(trade, order)
                 self.wallets.update()
-
-    def handle_buy_order_full_cancel(self, trade: Trade, reason: str) -> None:
-        """Close trade in database and send message"""
-        Trade.session.delete(trade)
-        Trade.session.flush()
-        logger.info('Buy order %s for %s.', reason, trade)
-        self.rpc.send_msg({
-            'type': RPCMessageType.STATUS_NOTIFICATION,
-            'status': f'Unfilled buy order for {trade.pair} {reason}'
-        })
+                order_type = self.strategy.order_types['sell']
+                self._notify_sell_cancel(trade, order_type)
 
     def handle_timedout_limit_buy(self, trade: Trade, order: Dict) -> bool:
         """
         Buy timeout - cancel order
         :return: True if order was fully cancelled
         """
-        reason = "cancelled due to timeout"
         if order['status'] != 'canceled':
+            reason = "cancelled due to timeout"
             corder = self.exchange.cancel_order(trade.open_order_id, trade.pair)
+            logger.info('Buy order %s for %s.', reason, trade)
         else:
             # Order was cancelled already, so we can reuse the existing dict
             corder = order
-            reason = "canceled on Exchange"
+            reason = "cancelled on exchange"
+            logger.info('Buy order %s for %s.', reason, trade)
 
         if corder.get('remaining', order['remaining']) == order['amount']:
             # if trade is not partially completed, just delete the trade
-            self.handle_buy_order_full_cancel(trade, reason)
+            Trade.session.delete(trade)
+            Trade.session.flush()
             return True
 
         # if trade is partially complete, edit the stake details for the trade
@@ -882,24 +925,22 @@ class FreqtradeBot:
         Sell timeout - cancel order and update trade
         :return: True if order was fully cancelled
         """
+        # if trade is not partially completed, just cancel the trade
         if order['remaining'] == order['amount']:
-            # if trade is not partially completed, just cancel the trade
             if order["status"] != "canceled":
-                reason = "due to timeout"
+                reason = "cancelled due to timeout"
+                # if trade is not partially completed, just delete the trade
                 self.exchange.cancel_order(trade.open_order_id, trade.pair)
-                logger.info('Sell order timeout for %s.', trade)
+                logger.info('Sell order %s for %s.', reason, trade)
             else:
-                reason = "on exchange"
-                logger.info('Sell order canceled on exchange for %s.', trade)
+                reason = "cancelled on exchange"
+                logger.info('Sell order %s for %s.', reason, trade)
+
             trade.close_rate = None
             trade.close_profit = None
             trade.close_date = None
             trade.is_open = True
             trade.open_order_id = None
-            self.rpc.send_msg({
-                'type': RPCMessageType.STATUS_NOTIFICATION,
-                'status': f'Unfilled sell order for {trade.pair} cancelled {reason}'
-            })
 
             return True
 
@@ -931,13 +972,13 @@ class FreqtradeBot:
             raise DependencyException(
                 f"Not enough amount to sell. Trade-amount: {amount}, Wallet: {wallet_amount}")
 
-    def execute_sell(self, trade: Trade, limit: float, sell_reason: SellType) -> None:
+    def execute_sell(self, trade: Trade, limit: float, sell_reason: SellType) -> bool:
         """
         Executes a limit sell for the given trade and limit
         :param trade: Trade instance
         :param limit: limit rate for the sell order
         :param sellreason: Reason the sell was triggered
-        :return: None
+        :return: True if it succeeds (supported) False (not supported)
         """
         sell_type = 'sell'
         if sell_reason in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
@@ -958,7 +999,7 @@ class FreqtradeBot:
 
         order_type = self.strategy.order_types[sell_type]
         if sell_reason == SellType.EMERGENCY_SELL:
-            # Emergencysells (default to market!)
+            # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergencysell", "market")
 
         amount = self._safe_sell_amount(trade.pair, trade.amount)
@@ -983,7 +1024,9 @@ class FreqtradeBot:
 
         self._notify_sell(trade, order_type)
 
-    def _notify_sell(self, trade: Trade, order_type: str):
+        return True
+
+    def _notify_sell(self, trade: Trade, order_type: str) -> None:
         """
         Sends rpc notification when a sell occured.
         """
@@ -999,7 +1042,7 @@ class FreqtradeBot:
             'exchange': trade.exchange.capitalize(),
             'pair': trade.pair,
             'gain': gain,
-            'limit': trade.close_rate_requested,
+            'limit': profit_rate,
             'order_type': order_type,
             'amount': trade.amount,
             'open_rate': trade.open_rate,
@@ -1010,6 +1053,44 @@ class FreqtradeBot:
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.utcnow(),
             'stake_currency': self.config['stake_currency'],
+            'fiat_currency': self.config.get('fiat_display_currency', None),
+        }
+
+        if 'fiat_display_currency' in self.config:
+            msg.update({
+                'fiat_currency': self.config['fiat_display_currency'],
+            })
+
+        # Send the message
+        self.rpc.send_msg(msg)
+
+    def _notify_sell_cancel(self, trade: Trade, order_type: str) -> None:
+        """
+        Sends rpc notification when a sell cancel occured.
+        """
+        profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
+        profit_trade = trade.calc_profit(rate=profit_rate)
+        current_rate = self.get_sell_rate(trade.pair, False)
+        profit_percent = trade.calc_profit_ratio(profit_rate)
+        gain = "profit" if profit_percent > 0 else "loss"
+
+        msg = {
+            'type': RPCMessageType.SELL_CANCEL_NOTIFICATION,
+            'exchange': trade.exchange.capitalize(),
+            'pair': trade.pair,
+            'gain': gain,
+            'limit': profit_rate,
+            'order_type': order_type,
+            'amount': trade.amount,
+            'open_rate': trade.open_rate,
+            'current_rate': current_rate,
+            'profit_amount': profit_trade,
+            'profit_percent': profit_percent,
+            'sell_reason': trade.sell_reason,
+            'open_date': trade.open_date,
+            'close_date': trade.close_date,
+            'stake_currency': self.config['stake_currency'],
+            'fiat_currency': self.config.get('fiat_display_currency', None),
         }
 
         if 'fiat_display_currency' in self.config:
@@ -1024,7 +1105,7 @@ class FreqtradeBot:
 # Common update trade state methods
 #
 
-    def update_trade_state(self, trade, action_order: dict = None):
+    def update_trade_state(self, trade: Trade, action_order: dict = None) -> None:
         """
         Checks trades with open orders and updates the amount if necessary
         """

@@ -1,4 +1,4 @@
-FROM python:3.7.6-slim-stretch
+FROM python:3.8.1-slim-buster
 
 RUN apt-get update \
     && apt-get -y install curl build-essential libssl-dev \

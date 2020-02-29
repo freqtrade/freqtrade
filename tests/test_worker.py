@@ -5,17 +5,17 @@ from unittest.mock import MagicMock, PropertyMock
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.state import State
 from freqtrade.worker import Worker
-from tests.conftest import get_patched_worker, log_has
+from tests.conftest import get_patched_worker, log_has, log_has_re
 
 
 def test_worker_state(mocker, default_conf, markets) -> None:
     mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
     worker = get_patched_worker(mocker, default_conf)
-    assert worker.state is State.RUNNING
+    assert worker.freqtrade.state is State.RUNNING
 
     default_conf.pop('initial_state')
     worker = Worker(args=None, config=default_conf)
-    assert worker.state is State.STOPPED
+    assert worker.freqtrade.state is State.STOPPED
 
 
 def test_worker_running(mocker, default_conf, caplog) -> None:
@@ -38,15 +38,13 @@ def test_worker_running(mocker, default_conf, caplog) -> None:
 def test_worker_stopped(mocker, default_conf, caplog) -> None:
     mock_throttle = MagicMock()
     mocker.patch('freqtrade.worker.Worker._throttle', mock_throttle)
-    mock_sleep = mocker.patch('time.sleep', return_value=None)
 
     worker = get_patched_worker(mocker, default_conf)
-    worker.state = State.STOPPED
+    worker.freqtrade.state = State.STOPPED
     state = worker._worker(old_state=State.RUNNING)
     assert state is State.STOPPED
     assert log_has('Changing state to: STOPPED', caplog)
-    assert mock_throttle.call_count == 0
-    assert mock_sleep.call_count == 1
+    assert mock_throttle.call_count == 1
 
 
 def test_throttle(mocker, default_conf, caplog) -> None:
@@ -57,14 +55,14 @@ def test_throttle(mocker, default_conf, caplog) -> None:
     worker = get_patched_worker(mocker, default_conf)
 
     start = time.time()
-    result = worker._throttle(throttled_func, min_secs=0.1)
+    result = worker._throttle(throttled_func, throttle_secs=0.1)
     end = time.time()
 
     assert result == 42
     assert end - start > 0.1
-    assert log_has('Throttling throttled_func for 0.10 seconds', caplog)
+    assert log_has_re(r"Throttling with 'throttled_func\(\)': sleep for 0\.10 s.*", caplog)
 
-    result = worker._throttle(throttled_func, min_secs=-1)
+    result = worker._throttle(throttled_func, throttle_secs=-1)
     assert result == 42
 
 
@@ -74,8 +72,54 @@ def test_throttle_with_assets(mocker, default_conf) -> None:
 
     worker = get_patched_worker(mocker, default_conf)
 
-    result = worker._throttle(throttled_func, min_secs=0.1, nb_assets=666)
+    result = worker._throttle(throttled_func, throttle_secs=0.1, nb_assets=666)
     assert result == 666
 
-    result = worker._throttle(throttled_func, min_secs=0.1)
+    result = worker._throttle(throttled_func, throttle_secs=0.1)
     assert result == -1
+
+
+def test_worker_heartbeat_running(default_conf, mocker, caplog):
+    message = r"Bot heartbeat\. PID=.*state='RUNNING'"
+
+    mock_throttle = MagicMock()
+    mocker.patch('freqtrade.worker.Worker._throttle', mock_throttle)
+    worker = get_patched_worker(mocker, default_conf)
+
+    worker.freqtrade.state = State.RUNNING
+    worker._worker(old_state=State.STOPPED)
+    assert log_has_re(message, caplog)
+
+    caplog.clear()
+    # Message is not shown before interval is up
+    worker._worker(old_state=State.RUNNING)
+    assert not log_has_re(message, caplog)
+
+    caplog.clear()
+    # Set clock - 70 seconds
+    worker._heartbeat_msg -= 70
+    worker._worker(old_state=State.RUNNING)
+    assert log_has_re(message, caplog)
+
+
+def test_worker_heartbeat_stopped(default_conf, mocker, caplog):
+    message = r"Bot heartbeat\. PID=.*state='STOPPED'"
+
+    mock_throttle = MagicMock()
+    mocker.patch('freqtrade.worker.Worker._throttle', mock_throttle)
+    worker = get_patched_worker(mocker, default_conf)
+
+    worker.freqtrade.state = State.STOPPED
+    worker._worker(old_state=State.RUNNING)
+    assert log_has_re(message, caplog)
+
+    caplog.clear()
+    # Message is not shown before interval is up
+    worker._worker(old_state=State.STOPPED)
+    assert not log_has_re(message, caplog)
+
+    caplog.clear()
+    # Set clock - 70 seconds
+    worker._heartbeat_msg -= 70
+    worker._worker(old_state=State.STOPPED)
+    assert log_has_re(message, caplog)

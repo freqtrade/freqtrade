@@ -74,7 +74,7 @@ docker run -d \
 ## Consuming the API
 
 You can consume the API by using the script `scripts/rest_client.py`.
-The client script only requires the `requests` module, so FreqTrade does not need to be installed on the system.
+The client script only requires the `requests` module, so Freqtrade does not need to be installed on the system.
 
 ``` bash
 python3 scripts/rest_client.py <command> [optional parameters]

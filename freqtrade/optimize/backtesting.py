@@ -9,11 +9,13 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional
 
+import arrow
 from pandas import DataFrame
 
 from freqtrade.configuration import (TimeRange, remove_credentials,
                                      validate_config_consistency)
 from freqtrade.data import history
+from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
@@ -24,7 +26,7 @@ from freqtrade.optimize.optimize_reports import (
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
-from freqtrade.strategy.interface import IStrategy, SellType
+from freqtrade.strategy.interface import IStrategy, SellCheckTuple, SellType
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +119,7 @@ class Backtesting:
             timerange=timerange,
             startup_candles=self.required_startup,
             fail_without_data=True,
+            data_format=self.config.get('dataformat_ohlcv', 'json'),
         )
 
         min_date, max_date = history.get_timerange(data)
@@ -148,7 +151,7 @@ class Backtesting:
             logger.info(f'Dumping backtest results to {recordfilename}')
             file_dump_json(recordfilename, records)
 
-    def _get_ticker_list(self, processed) -> Dict[str, DataFrame]:
+    def _get_ticker_list(self, processed: Dict) -> Dict[str, DataFrame]:
         """
         Helper function to convert a processed tickerlist into a list for performance reasons.
 
@@ -175,7 +178,8 @@ class Backtesting:
             ticker[pair] = [x for x in ticker_data.itertuples()]
         return ticker
 
-    def _get_close_rate(self, sell_row, trade: Trade, sell, trade_dur) -> float:
+    def _get_close_rate(self, sell_row, trade: Trade, sell: SellCheckTuple,
+                        trade_dur: int) -> float:
         """
         Get close rate for backtesting result
         """
@@ -280,7 +284,7 @@ class Backtesting:
         return None
 
     def backtest(self, processed: Dict, stake_amount: float,
-                 start_date, end_date,
+                 start_date: arrow.Arrow, end_date: arrow.Arrow,
                  max_open_trades: int = 0, position_stacking: bool = False) -> DataFrame:
         """
         Implement backtesting functionality
@@ -395,7 +399,7 @@ class Backtesting:
 
             # Trim startup period from analyzed dataframe
             for pair, df in preprocessed.items():
-                preprocessed[pair] = history.trim_dataframe(df, timerange)
+                preprocessed[pair] = trim_dataframe(df, timerange)
             min_date, max_date = history.get_timerange(preprocessed)
 
             logger.info(
@@ -404,12 +408,12 @@ class Backtesting:
             )
             # Execute backtest and print results
             all_results[self.strategy.get_strategy_name()] = self.backtest(
-                    processed=preprocessed,
-                    stake_amount=self.config['stake_amount'],
-                    start_date=min_date,
-                    end_date=max_date,
-                    max_open_trades=max_open_trades,
-                    position_stacking=position_stacking,
+                processed=preprocessed,
+                stake_amount=self.config['stake_amount'],
+                start_date=min_date,
+                end_date=max_date,
+                max_open_trades=max_open_trades,
+                position_stacking=position_stacking,
             )
 
         for strategy, results in all_results.items():
@@ -426,7 +430,10 @@ class Backtesting:
                                       results=results))
 
             print(' SELL REASON STATS '.center(133, '='))
-            print(generate_text_table_sell_reason(data, results))
+            print(generate_text_table_sell_reason(data,
+                                                  stake_currency=self.config['stake_currency'],
+                                                  max_open_trades=self.config['max_open_trades'],
+                                                  results=results))
 
             print(' LEFT OPEN TRADES REPORT '.center(133, '='))
             print(generate_text_table(data,
@@ -436,7 +443,7 @@ class Backtesting:
             print()
         if len(all_results) > 1:
             # Print Strategy summary table
-            print(' Strategy Summary '.center(133, '='))
+            print(' STRATEGY SUMMARY '.center(133, '='))
             print(generate_text_table_strategy(self.config['stake_currency'],
                                                self.config['max_open_trades'],
                                                all_results=all_results))

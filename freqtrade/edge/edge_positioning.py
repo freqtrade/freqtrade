@@ -1,7 +1,7 @@
 # pragma pylint: disable=W0603
 """ Edge positioning package """
 import logging
-from typing import Any, Dict, NamedTuple
+from typing import Any, Dict, List, NamedTuple
 
 import arrow
 import numpy as np
@@ -110,6 +110,7 @@ class Edge:
             timeframe=self.strategy.ticker_interval,
             timerange=self._timerange,
             startup_candles=self.strategy.startup_candle_count,
+            data_format=self.config.get('dataformat_ohlcv', 'json'),
         )
 
         if not data:
@@ -181,7 +182,7 @@ class Edge:
                            'strategy stoploss is returned instead.')
             return self.strategy.stoploss
 
-    def adjust(self, pairs) -> list:
+    def adjust(self, pairs: List[str]) -> list:
         """
         Filters out and sorts "pairs" according to Edge calculated pairs
         """
