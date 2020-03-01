@@ -9,6 +9,7 @@ import logging
 import random
 import sys
 import warnings
+from math import ceil, floor
 from collections import OrderedDict
 from operator import itemgetter
 from pathlib import Path
@@ -571,7 +572,7 @@ class Hyperopt:
             with Parallel(n_jobs=config_jobs) as parallel:
                 jobs = parallel._effective_n_jobs()
                 logger.info(f'Effective number of parallel workers used: {jobs}')
-                EVALS = max(self.total_epochs // jobs, 1)
+                EVALS = ceil(self.total_epochs / jobs)
                 for i in range(EVALS):
                     asked = self.opt.ask(n_points=jobs)
                     f_val = self.run_optimizer_parallel(parallel, asked, i)
@@ -580,6 +581,8 @@ class Hyperopt:
                     for j in range(jobs):
                         # Use human-friendly indexes here (starting from 1)
                         current = i * jobs + j + 1
+                        if current > self.total_epochs:
+                            continue
                         val = f_val[j]
                         val['current_epoch'] = current
                         val['is_initial_point'] = current <= INITIAL_POINTS
