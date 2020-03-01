@@ -121,7 +121,6 @@ from freqtrade.data.btanalysis import analyze_trade_parallelism
 # Analyze the above
 parallel_trades = analyze_trade_parallelism(trades, '5m')
 
-
 parallel_trades.plot()
 ```
 
@@ -134,11 +133,14 @@ Freqtrade offers interactive plotting capabilities based on plotly.
 from freqtrade.plot.plotting import  generate_candlestick_graph
 # Limit graph period to keep plotly quick and reactive
 
+# Filter trades to one pair
+trades_red = trades.loc[trades['pair'] == pair]
+
 data_red = data['2019-06-01':'2019-06-10']
 # Generate candlestick graph
 graph = generate_candlestick_graph(pair=pair,
                                    data=data_red,
-                                   trades=trades,
+                                   trades=trades_red,
                                    indicators1=['sma20', 'ema50', 'ema55'],
                                    indicators2=['rsi', 'macd', 'macdsignal', 'macdhist']
                                   )
