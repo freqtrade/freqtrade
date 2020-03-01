@@ -9,7 +9,8 @@ import pytest
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.misc import (datesarray_to_datetimearray, file_dump_json,
                             file_load_json, format_ms_time, pair_to_filename,
-                            plural, shorten_date)
+                            plural, render_template,
+                            render_template_with_fallback, shorten_date)
 
 
 def test_shorten_date() -> None:
@@ -123,3 +124,17 @@ def test_plural() -> None:
     assert plural(1.5, "ox", "oxen") == "oxen"
     assert plural(-0.5, "ox", "oxen") == "oxen"
     assert plural(-1.5, "ox", "oxen") == "oxen"
+
+
+def test_render_template_fallback(mocker):
+    from jinja2.exceptions import TemplateNotFound
+    with pytest.raises(TemplateNotFound):
+        val = render_template(
+            templatefile='subtemplates/indicators_does-not-exist.j2',)
+
+    val = render_template_with_fallback(
+        templatefile='subtemplates/indicators_does-not-exist.j2',
+        templatefallbackfile='subtemplates/indicators_minimal.j2',
+    )
+    assert isinstance(val, str)
+    assert 'if self.dp' in val
