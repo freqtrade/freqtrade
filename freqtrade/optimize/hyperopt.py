@@ -9,7 +9,7 @@ import logging
 import random
 import sys
 import warnings
-from math import ceil, floor
+from math import ceil
 from collections import OrderedDict
 from operator import itemgetter
 from pathlib import Path
@@ -578,11 +578,13 @@ class Hyperopt:
                     f_val = self.run_optimizer_parallel(parallel, asked, i)
                     self.opt.tell(asked, [v['loss'] for v in f_val])
                     self.fix_optimizer_models_list()
-                    for j in range(jobs):
+                    if (i * jobs + jobs) > self.total_epochs:
+                        current_jobs = jobs - ((i * jobs + jobs) - self.total_epochs)
+                    else:
+                        current_jobs = jobs
+                    for j in range(current_jobs):
                         # Use human-friendly indexes here (starting from 1)
                         current = i * jobs + j + 1
-                        if current > self.total_epochs:
-                            continue
                         val = f_val[j]
                         val['current_epoch'] = current
                         val['is_initial_point'] = current <= INITIAL_POINTS
