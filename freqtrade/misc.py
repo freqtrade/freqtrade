@@ -148,3 +148,15 @@ def render_template(templatefile: str, arguments: dict = {}) -> str:
     )
     template = env.get_template(templatefile)
     return template.render(**arguments)
+
+
+def render_template_with_fallback(templatefile: str, templatefallbackfile: str,
+                                  arguments: dict = {}) -> str:
+    """
+    Use templatefile if possible, otherwise fall back to templatefallbackfile
+    """
+    from jinja2.exceptions import TemplateNotFound
+    try:
+        return render_template(templatefile, arguments)
+    except TemplateNotFound:
+        return render_template(templatefallbackfile, arguments)
