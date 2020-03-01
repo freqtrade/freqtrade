@@ -479,17 +479,18 @@ def test_start_calls_optimizer(mocker, default_conf, caplog, capsys) -> None:
 
     parallel = mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
-        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result',
-                                 'params': {'buy': {}, 'sell': {}, 'roi': {}, 'stoploss': 0.0},
-                                 'results_metrics':
-                                     {
-                                         'trade_count': 1,
-                                         'avg_profit': 0.1,
-                                         'total_profit': 0.001,
-                                         'profit': 1.0,
-                                         'duration': 20.0
-                                     },
-                                 }])
+        MagicMock(return_value=[{
+            'loss': 1, 'results_explanation': 'foo result',
+            'params': {'buy': {}, 'sell': {}, 'roi': {}, 'stoploss': 0.0},
+            'results_metrics':
+            {
+                'trade_count': 1,
+                'avg_profit': 0.1,
+                'total_profit': 0.001,
+                'profit': 1.0,
+                'duration': 20.0
+            },
+        }])
     )
     patch_exchange(mocker)
     # Co-test loading ticker-interval from strategy
