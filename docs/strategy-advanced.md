@@ -33,7 +33,7 @@ class Awesomestrategy(IStrategy):
         'sell': 60 * 25
     }
 
-    def check_buy_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
+    def check_buy_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -> bool:
         if trade.open_rate > 100 and trade.open_date < datetime.utcnow() - timedelta(minutes=5):
             return True
         elif trade.open_rate > 10 and trade.open_date < datetime.utcnow() - timedelta(minutes=3):
@@ -43,7 +43,7 @@ class Awesomestrategy(IStrategy):
         return False
 
 
-    def check_sell_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
+    def check_sell_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -> bool:
         if trade.open_rate > 100 and trade.open_date < datetime.utcnow() - timedelta(minutes=5):
             return True
         elif trade.open_rate > 10 and trade.open_date < datetime.utcnow() - timedelta(minutes=3):

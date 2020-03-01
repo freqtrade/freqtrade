@@ -149,7 +149,7 @@ class IStrategy(ABC):
         :return: DataFrame with sell column
         """
 
-    def check_buy_timeout(self, pair: str, trade: Trade, order: Dict, **kwargs) -> bool:
+    def check_buy_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
         """
         Check buy timeout function callback.
         This method can be used to override the buy-timeout.
@@ -167,7 +167,7 @@ class IStrategy(ABC):
         """
         return False
 
-    def check_sell_timeout(self, pair: str, trade: Trade, order: Dict, **kwargs) -> bool:
+    def check_sell_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
         """
         Check sell timeout function callback.
         This method can be used to override the sell-timeout.
