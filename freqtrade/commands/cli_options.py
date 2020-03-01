@@ -379,9 +379,9 @@ AVAILABLE_CLI_OPTIONS = {
     # Templating options
     "template": Arg(
         '--template',
-        help='Use a template which is either `minimal` or '
-        '`full` (containing multiple sample indicators). Default: `%(default)s`.',
-        choices=['full', 'minimal'],
+        help='Use a template which is either `minimal`, '
+        '`full` (containing multiple sample indicators) or `advanced`. Default: `%(default)s`.',
+        choices=['full', 'minimal', 'advanced'],
         default='full',
     ),
     # Plot dataframe
