@@ -77,7 +77,7 @@ Results will be located in `user_data/strategies/<strategyclassname>.py`.
 
 ``` output
 usage: freqtrade new-strategy [-h] [--userdir PATH] [-s NAME]
-                              [--template {full,minimal}]
+                              [--template {full,minimal,advanced}]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -86,10 +86,10 @@ optional arguments:
   -s NAME, --strategy NAME
                         Specify strategy class name which will be used by the
                         bot.
-  --template {full,minimal}
-                        Use a template which is either `minimal` or `full`
-                        (containing multiple sample indicators). Default:
-                        `full`.
+  --template {full,minimal,advanced}
+                        Use a template which is either `minimal`, `full`
+                        (containing multiple sample indicators) or `advanced`.
+                        Default: `full`.
 
 ```
 
@@ -105,6 +105,12 @@ With custom user directory
 freqtrade new-strategy --userdir ~/.freqtrade/ --strategy AwesomeStrategy
 ```
 
+Using the advanced template (populates all optional functions and methods)
+
+```bash
+freqtrade new-strategy --strategy AwesomeStrategy --template advanced
+```
+
 ## Create new hyperopt
 
 Creates a new hyperopt from a template similar to SampleHyperopt.
@@ -114,7 +120,7 @@ Results will be located in `user_data/hyperopts/<classname>.py`.
 
 ``` output
 usage: freqtrade new-hyperopt [-h] [--userdir PATH] [--hyperopt NAME]
-                              [--template {full,minimal}]
+                              [--template {full,minimal,advanced}]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -122,10 +128,10 @@ optional arguments:
                         Path to userdata directory.
   --hyperopt NAME       Specify hyperopt class name which will be used by the
                         bot.
-  --template {full,minimal}
-                        Use a template which is either `minimal` or `full`
-                        (containing multiple sample indicators). Default:
-                        `full`.
+  --template {full,minimal,advanced}
+                        Use a template which is either `minimal`, `full`
+                        (containing multiple sample indicators) or `advanced`.
+                        Default: `full`.
 ```
 
 ### Sample usage of new-hyperopt
