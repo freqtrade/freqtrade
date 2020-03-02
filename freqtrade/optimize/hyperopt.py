@@ -558,7 +558,8 @@ class Hyperopt:
         cpus = cpu_count()
         logger.info(f"Found {cpus} CPU cores. Let's make them scream!")
         config_jobs = self.config.get('hyperopt_jobs', -1)
-        if self.total_epochs < cpus and (config_jobs > self.total_epochs or config_jobs < 0):
+        if (config_jobs < 0 and (cpus + config_jobs + 1) > self.total_epochs) \
+           or (config_jobs > 0 and config_jobs > self.total_epochs):
             config_jobs = self.total_epochs
         logger.info(f'Number of parallel jobs set as: {config_jobs}')
 
