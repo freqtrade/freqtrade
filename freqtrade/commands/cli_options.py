@@ -234,10 +234,24 @@ AVAILABLE_CLI_OPTIONS = {
         '--effort',
         help=('The higher the number, the longer will be the search if'
               'no epochs are defined (default: %(default)d).'),
-        type=check_int_positive,
-        metavar='INT',
+        type=float,
+        metavar='FLOAT',
         default=constants.HYPEROPT_EFFORT,
     ),
+    "multi_opt":
+    Arg('--multi',
+        help=('Switches hyperopt to use one optimizer per job, use it',
+              'when backtesting iterations are cheap (default: %(default)d).'),
+        action='store_true',
+        default=False),
+    "points_per_opt":
+    Arg('--points-per-opt',
+        help=('Controls how many points to ask at each job dispatch to each',
+              'optimizer in multi opt mode, increase if cpu usage of each core',
+              'appears low (default: %(default)d).'),
+        type=int,
+        metavar='INT',
+        default=constants.HYPEROPT_POINTS_PER_OPT),
     "spaces":
     Arg(
         '--spaces',

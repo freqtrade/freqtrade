@@ -4,10 +4,11 @@ bot constants
 """
 DEFAULT_CONFIG = 'config.json'
 DEFAULT_EXCHANGE = 'bittrex'
-PROCESS_THROTTLE_SECS = 5  # sec
-HYPEROPT_EPOCH = 0  # epochs
-HYPEROPT_EFFORT = 0  # /10
-RETRY_TIMEOUT = 30  # sec
+PROCESS_THROTTLE_SECS = 5    # sec
+HYPEROPT_EPOCH = 0    # epochs
+HYPEROPT_EFFORT = 0.    # tune max epoch count
+HYPEROPT_POINTS_PER_OPT = 2    # tune iterations between estimations
+RETRY_TIMEOUT = 30    # sec
 DEFAULT_HYPEROPT_LOSS = 'DefaultHyperOptLoss'
 DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
 DEFAULT_DB_DRYRUN_URL = 'sqlite:///tradesv3.dryrun.sqlite'
@@ -22,7 +23,7 @@ AVAILABLE_PAIRLISTS = [
 ]
 AVAILABLE_DATAHANDLERS = ['json', 'jsongz']
 DRY_RUN_WALLET = 1000
-MATH_CLOSE_PREC = 1e-14  # Precision used for float comparisons
+MATH_CLOSE_PREC = 1e-14    # Precision used for float comparisons
 DEFAULT_DATAFRAME_COLUMNS = ['date', 'open', 'high', 'low', 'close', 'volume']
 
 USERPATH_HYPEROPTS = 'hyperopts'

@@ -10,8 +10,7 @@ from typing import Any, Callable, Dict, List, Optional
 from freqtrade import constants
 from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.deprecated_settings import process_temporary_deprecated_settings
-from freqtrade.configuration.directory_operations import (create_datadir,
-                                                          create_userdata_dir)
+from freqtrade.configuration.directory_operations import (create_datadir, create_userdata_dir)
 from freqtrade.configuration.load_config import load_config_file
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import setup_logging
@@ -26,7 +25,6 @@ class Configuration:
     Class to read and init the bot configuration
     Reuse this class for the bot, backtesting, hyperopt and every script that required configuration
     """
-
     def __init__(self, args: Dict[str, Any], runmode: RunMode = None) -> None:
         self.args = args
         self.config: Optional[Dict[str, Any]] = None
@@ -152,11 +150,12 @@ class Configuration:
         if self.args.get("strategy") or not config.get('strategy'):
             config.update({'strategy': self.args.get("strategy")})
 
-        self._args_to_config(config, argname='strategy_path',
+        self._args_to_config(config,
+                             argname='strategy_path',
                              logstring='Using additional Strategy lookup path: {}')
 
-        if ('db_url' in self.args and self.args["db_url"] and
-                self.args["db_url"] != constants.DEFAULT_DB_PROD_URL):
+        if ('db_url' in self.args and self.args["db_url"]
+                and self.args["db_url"] != constants.DEFAULT_DB_PROD_URL):
             config.update({'db_url': self.args["db_url"]})
             logger.info('Parameter --db-url detected ...')
 
@@ -167,7 +166,8 @@ class Configuration:
         if 'sd_notify' in self.args and self.args["sd_notify"]:
             config['internals'].update({'sd_notify': True})
 
-        self._args_to_config(config, argname='dry_run',
+        self._args_to_config(config,
+                             argname='dry_run',
                              logstring='Parameter --dry-run detected, '
                              'overriding dry_run to: {} ...')
 
@@ -198,20 +198,23 @@ class Configuration:
         logger.info('Using data directory: %s ...', config.get('datadir'))
 
         if self.args.get('exportfilename'):
-            self._args_to_config(config, argname='exportfilename',
+            self._args_to_config(config,
+                                 argname='exportfilename',
                                  logstring='Storing backtest results to {} ...')
         else:
-            config['exportfilename'] = (config['user_data_dir']
-                                        / 'backtest_results/backtest-result.json')
+            config['exportfilename'] = (config['user_data_dir'] /
+                                        'backtest_results/backtest-result.json')
 
     def _process_optimize_options(self, config: Dict[str, Any]) -> None:
 
         # This will override the strategy configuration
-        self._args_to_config(config, argname='ticker_interval',
+        self._args_to_config(config,
+                             argname='ticker_interval',
                              logstring='Parameter -i/--ticker-interval detected ... '
                              'Using ticker_interval: {} ...')
 
-        self._args_to_config(config, argname='position_stacking',
+        self._args_to_config(config,
+                             argname='position_stacking',
                              logstring='Parameter --enable-position-stacking detected ...')
 
         # Setting max_open_trades to infinite if -1
@@ -224,31 +227,39 @@ class Configuration:
             logger.info('max_open_trades set to unlimited ...')
         elif 'max_open_trades' in self.args and self.args["max_open_trades"]:
             config.update({'max_open_trades': self.args["max_open_trades"]})
-            logger.info('Parameter --max-open-trades detected, '
-                        'overriding max_open_trades to: %s ...', config.get('max_open_trades'))
+            logger.info(
+                'Parameter --max-open-trades detected, '
+                'overriding max_open_trades to: %s ...', config.get('max_open_trades'))
         elif config['runmode'] in NON_UTIL_MODES:
             logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
 
-        self._args_to_config(config, argname='stake_amount',
+        self._args_to_config(config,
+                             argname='stake_amount',
                              logstring='Parameter --stake-amount detected, '
                              'overriding stake_amount to: {} ...')
 
-        self._args_to_config(config, argname='fee',
+        self._args_to_config(config,
+                             argname='fee',
                              logstring='Parameter --fee detected, '
                              'setting fee to: {} ...')
 
-        self._args_to_config(config, argname='timerange',
+        self._args_to_config(config,
+                             argname='timerange',
                              logstring='Parameter --timerange detected: {} ...')
 
         self._process_datadir_options(config)
 
-        self._args_to_config(config, argname='strategy_list',
-                             logstring='Using strategy list of {} strategies', logfun=len)
+        self._args_to_config(config,
+                             argname='strategy_list',
+                             logstring='Using strategy list of {} strategies',
+                             logfun=len)
 
-        self._args_to_config(config, argname='ticker_interval',
+        self._args_to_config(config,
+                             argname='ticker_interval',
                              logstring='Overriding ticker interval with Command line argument')
 
-        self._args_to_config(config, argname='export',
+        self._args_to_config(config,
+                             argname='export',
                              logstring='Parameter --export detected: {} ...')
 
         # Edge section:
@@ -260,21 +271,32 @@ class Configuration:
             logger.info('Parameter --stoplosses detected: %s ...', self.args["stoploss_range"])
 
         # Hyperopt section
-        self._args_to_config(config, argname='hyperopt',
-                             logstring='Using Hyperopt class name: {}')
+        self._args_to_config(config, argname='hyperopt', logstring='Using Hyperopt class name: {}')
 
-        self._args_to_config(config, argname='hyperopt_path',
+        self._args_to_config(config,
+                             argname='hyperopt_path',
                              logstring='Using additional Hyperopt lookup path: {}')
 
-        self._args_to_config(config, argname='epochs',
+        self._args_to_config(config,
+                             argname='epochs',
                              logstring='Parameter --epochs detected ... '
-                             'Will run Hyperopt with for {} epochs ...'
-                             )
-
-        self._args_to_config(config, argname='spaces',
+                             'Will run Hyperopt with for {} epochs ...')
+        self._args_to_config(config,
+                             argname='effort',
+                             logstring='Parameter --effort detected ... '
+                             'Parameter --effort detected: {}')
+        self._args_to_config(config,
+                             argname='multi_opt',
+                             logstring='Hyperopt will use multiple optimizers ...')
+        self._args_to_config(config,
+                             argname='points_per_opt',
+                             logstring='Optimizers will be asked for {} points...')
+        self._args_to_config(config,
+                             argname='spaces',
                              logstring='Parameter -s/--spaces detected: {}')
 
-        self._args_to_config(config, argname='print_all',
+        self._args_to_config(config,
+                             argname='print_all',
                              logstring='Parameter --print-all detected ...')
 
         if 'print_colorized' in self.args and not self.args["print_colorized"]:
@@ -283,95 +305,109 @@ class Configuration:
         else:
             config.update({'print_colorized': True})
 
-        self._args_to_config(config, argname='print_json',
+        self._args_to_config(config,
+                             argname='print_json',
                              logstring='Parameter --print-json detected ...')
 
-        self._args_to_config(config, argname='hyperopt_jobs',
+        self._args_to_config(config,
+                             argname='hyperopt_jobs',
                              logstring='Parameter -j/--job-workers detected: {}')
 
-        self._args_to_config(config, argname='hyperopt_random_state',
+        self._args_to_config(config,
+                             argname='hyperopt_random_state',
                              logstring='Parameter --random-state detected: {}')
 
-        self._args_to_config(config, argname='hyperopt_min_trades',
+        self._args_to_config(config,
+                             argname='hyperopt_min_trades',
                              logstring='Parameter --min-trades detected: {}')
 
-        self._args_to_config(config, argname='hyperopt_continue',
-                             logstring='Hyperopt continue: {}')
+        self._args_to_config(config, argname='hyperopt_continue', logstring='Hyperopt continue: {}')
 
-        self._args_to_config(config, argname='hyperopt_loss',
+        self._args_to_config(config,
+                             argname='hyperopt_loss',
                              logstring='Using Hyperopt loss class name: {}')
 
-        self._args_to_config(config, argname='hyperopt_show_index',
+        self._args_to_config(config,
+                             argname='hyperopt_show_index',
                              logstring='Parameter -n/--index detected: {}')
 
-        self._args_to_config(config, argname='hyperopt_list_best',
+        self._args_to_config(config,
+                             argname='hyperopt_list_best',
                              logstring='Parameter --best detected: {}')
 
-        self._args_to_config(config, argname='hyperopt_list_profitable',
+        self._args_to_config(config,
+                             argname='hyperopt_list_profitable',
                              logstring='Parameter --profitable detected: {}')
 
-        self._args_to_config(config, argname='hyperopt_list_min_trades',
+        self._args_to_config(config,
+                             argname='hyperopt_list_min_trades',
                              logstring='Parameter --min-trades detected: {}')
 
-        self._args_to_config(config, argname='hyperopt_list_max_trades',
+        self._args_to_config(config,
+                             argname='hyperopt_list_max_trades',
                              logstring='Parameter --max-trades detected: {}')
 
-        self._args_to_config(config, argname='hyperopt_list_min_avg_time',
+        self._args_to_config(config,
+                             argname='hyperopt_list_min_avg_time',
                              logstring='Parameter --min-avg-time detected: {}')
 
-        self._args_to_config(config, argname='hyperopt_list_max_avg_time',
+        self._args_to_config(config,
+                             argname='hyperopt_list_max_avg_time',
                              logstring='Parameter --max-avg-time detected: {}')
 
-        self._args_to_config(config, argname='hyperopt_list_min_avg_profit',
+        self._args_to_config(config,
+                             argname='hyperopt_list_min_avg_profit',
                              logstring='Parameter --min-avg-profit detected: {}')
 
-        self._args_to_config(config, argname='hyperopt_list_max_avg_profit',
+        self._args_to_config(config,
+                             argname='hyperopt_list_max_avg_profit',
                              logstring='Parameter --max-avg-profit detected: {}')
 
-        self._args_to_config(config, argname='hyperopt_list_min_total_profit',
+        self._args_to_config(config,
+                             argname='hyperopt_list_min_total_profit',
                              logstring='Parameter --min-total-profit detected: {}')
 
-        self._args_to_config(config, argname='hyperopt_list_max_total_profit',
+        self._args_to_config(config,
+                             argname='hyperopt_list_max_total_profit',
                              logstring='Parameter --max-total-profit detected: {}')
 
-        self._args_to_config(config, argname='hyperopt_list_no_details',
+        self._args_to_config(config,
+                             argname='hyperopt_list_no_details',
                              logstring='Parameter --no-details detected: {}')
 
-        self._args_to_config(config, argname='hyperopt_show_no_header',
+        self._args_to_config(config,
+                             argname='hyperopt_show_no_header',
                              logstring='Parameter --no-header detected: {}')
 
     def _process_plot_options(self, config: Dict[str, Any]) -> None:
 
-        self._args_to_config(config, argname='pairs',
-                             logstring='Using pairs {}')
+        self._args_to_config(config, argname='pairs', logstring='Using pairs {}')
 
-        self._args_to_config(config, argname='indicators1',
-                             logstring='Using indicators1: {}')
+        self._args_to_config(config, argname='indicators1', logstring='Using indicators1: {}')
 
-        self._args_to_config(config, argname='indicators2',
-                             logstring='Using indicators2: {}')
+        self._args_to_config(config, argname='indicators2', logstring='Using indicators2: {}')
 
-        self._args_to_config(config, argname='plot_limit',
-                             logstring='Limiting plot to: {}')
-        self._args_to_config(config, argname='trade_source',
-                             logstring='Using trades from: {}')
+        self._args_to_config(config, argname='plot_limit', logstring='Limiting plot to: {}')
+        self._args_to_config(config, argname='trade_source', logstring='Using trades from: {}')
 
-        self._args_to_config(config, argname='erase',
+        self._args_to_config(config,
+                             argname='erase',
                              logstring='Erase detected. Deleting existing data.')
 
-        self._args_to_config(config, argname='timeframes',
-                             logstring='timeframes --timeframes: {}')
+        self._args_to_config(config, argname='timeframes', logstring='timeframes --timeframes: {}')
 
-        self._args_to_config(config, argname='days',
-                             logstring='Detected --days: {}')
+        self._args_to_config(config, argname='days', logstring='Detected --days: {}')
 
-        self._args_to_config(config, argname='download_trades',
+        self._args_to_config(config,
+                             argname='download_trades',
                              logstring='Detected --dl-trades: {}')
 
-        self._args_to_config(config, argname='dataformat_ohlcv',
+        self._args_to_config(config,
+                             argname='dataformat_ohlcv',
                              logstring='Using "{}" to store OHLCV data.')
 
-        self._args_to_config(config, argname='dataformat_trades',
+        self._args_to_config(config,
+                             argname='dataformat_trades',
                              logstring='Using "{}" to store trades data.')
 
     def _process_runmode(self, config: Dict[str, Any]) -> None:
@@ -383,8 +419,11 @@ class Configuration:
 
         config.update({'runmode': self.runmode})
 
-    def _args_to_config(self, config: Dict[str, Any], argname: str,
-                        logstring: str, logfun: Optional[Callable] = None,
+    def _args_to_config(self,
+                        config: Dict[str, Any],
+                        argname: str,
+                        logstring: str,
+                        logfun: Optional[Callable] = None,
                         deprecated_msg: Optional[str] = None) -> None:
         """
         :param config: Configuration dictionary
@@ -396,7 +435,7 @@ class Configuration:
                         configuration instead of the content)
         """
         if (argname in self.args and self.args[argname] is not None
-           and self.args[argname] is not False):
+                and self.args[argname] is not False):
 
             config.update({argname: self.args[argname]})
             if logfun:
