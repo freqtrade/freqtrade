@@ -9,6 +9,7 @@ import logging
 import random
 import sys
 import warnings
+from math import ceil
 from collections import OrderedDict
 from operator import itemgetter
 from pathlib import Path
@@ -569,16 +570,21 @@ class Hyperopt:
             with Parallel(n_jobs=config_jobs) as parallel:
                 jobs = parallel._effective_n_jobs()
                 logger.info(f'Effective number of parallel workers used: {jobs}')
-                EVALS = max(self.total_epochs // jobs, 1)
+                EVALS = ceil(self.total_epochs / jobs)
                 for i in range(EVALS):
-                    asked = self.opt.ask(n_points=jobs)
+                    # Correct the number of epochs to be processed for the last
+                    # iteration (should not exceed self.total_epochs in total)
+                    n_rest = (i + 1) * jobs - self.total_epochs
+                    current_jobs = jobs - n_rest if n_rest > 0 else jobs
+
+                    asked = self.opt.ask(n_points=current_jobs)
                     f_val = self.run_optimizer_parallel(parallel, asked, i)
                     self.opt.tell(asked, [v['loss'] for v in f_val])
                     self.fix_optimizer_models_list()
-                    for j in range(jobs):
+
+                    for j, val in enumerate(f_val):
                         # Use human-friendly indexes here (starting from 1)
                         current = i * jobs + j + 1
-                        val = f_val[j]
                         val['current_epoch'] = current
                         val['is_initial_point'] = current <= INITIAL_POINTS
                         logger.debug(f"Optimizer epoch evaluated: {val}")
