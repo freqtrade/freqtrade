@@ -582,10 +582,9 @@ class Hyperopt:
                     self.opt.tell(asked, [v['loss'] for v in f_val])
                     self.fix_optimizer_models_list()
 
-                    for j in range(current_jobs):
+                    for j, val in enumerate(f_val):
                         # Use human-friendly indexes here (starting from 1)
                         current = i * jobs + j + 1
-                        val = f_val[j]
                         val['current_epoch'] = current
                         val['is_initial_point'] = current <= INITIAL_POINTS
                         logger.debug(f"Optimizer epoch evaluated: {val}")
