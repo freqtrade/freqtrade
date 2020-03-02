@@ -257,12 +257,10 @@ class FreqtradeBot:
         else:
             logger.info(f"Using Last {bid_strategy['price_side'].capitalize()} / Last Price")
             ticker = self.exchange.fetch_ticker(pair)
-            rate = ticker[bid_strategy['price_side']]
-            if rate < ticker['last']:
-                ticker_rate = rate
-            else:
+            ticker_rate = ticker[bid_strategy['price_side']]
+            if ticker['last'] and ticker_rate > ticker['last']:
                 balance = self.config['bid_strategy']['ask_last_balance']
-                ticker_rate = rate + balance * (ticker['last'] - rate)
+                ticker_rate = ticker_rate + balance * (ticker['last'] - ticker_rate)
             used_rate = ticker_rate
 
         self._buy_rate_cache[pair] = used_rate

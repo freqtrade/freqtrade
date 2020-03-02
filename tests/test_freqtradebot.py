@@ -914,6 +914,10 @@ def test_process_informative_pairs_added(default_conf, ticker, mocker) -> None:
     ('ask', 20, 19, 10, 0.3, 17),  # Between ask and last
     ('ask', 5, 6, 10, 1.0, 5),  # last bigger than ask
     ('ask', 5, 6, 10, 0.5, 5),  # last bigger than ask
+    ('ask', 10, 20, None, 0.5, 10),  # last not available - uses ask
+    ('ask', 4, 5, None, 0.5, 4),  # last not available - uses ask
+    ('ask', 4, 5, None, 1, 4),  # last not available - uses ask
+    ('ask', 4, 5, None, 0, 4),  # last not available - uses ask
     ('bid', 10, 20, 10, 0.0, 20),  # Full bid side
     ('bid', 10, 20, 10, 1.0, 10),  # Full last side
     ('bid', 10, 20, 10, 0.5, 15),  # Between bid and last
@@ -921,6 +925,10 @@ def test_process_informative_pairs_added(default_conf, ticker, mocker) -> None:
     ('bid', 10, 20, 10, 0.3, 17),  # Between bid and last
     ('bid', 4, 5, 10, 1.0, 5),  # last bigger than bid
     ('bid', 4, 5, 10, 0.5, 5),  # last bigger than bid
+    ('bid', 10, 20, None, 0.5, 20),  # last not available - uses bid
+    ('bid', 4, 5, None, 0.5, 5),  # last not available - uses bid
+    ('bid', 4, 5, None, 1, 5),  # last not available - uses bid
+    ('bid', 4, 5, None, 0, 5),  # last not available - uses bid
 ])
 def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
                       last, last_ab, expected) -> None:
