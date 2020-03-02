@@ -51,17 +51,11 @@ with warnings.catch_warnings():
 
 logger = logging.getLogger(__name__)
 
-INITIAL_POINTS = 30
-
-# Keep no more than 2*SKOPT_MODELS_MAX_NUM models
-# in the skopt models list
-SKOPT_MODELS_MAX_NUM = 10
-
 # supported strategies when asking for multiple points to the optimizer
 NEXT_POINT_METHODS = ["cl_min", "cl_mean", "cl_max"]
 NEXT_POINT_METHODS_LENGTH = 3
 
-MAX_LOSS = 100000  # just a big enough number to be bad result in loss optimization
+MAX_LOSS = 10000  # just a big enough number to be bad result in loss optimization
 
 
 class Hyperopt:
@@ -90,6 +84,8 @@ class Hyperopt:
         self.tickerdata_pickle = (self.config['user_data_dir'] / 'hyperopt_results' /
                                   'hyperopt_tickerdata.pkl')
         self.n_jobs = self.config.get('hyperopt_jobs', -1)
+        if self.n_jobs < 0:
+            self.n_jobs = cpu_count() // 2 or 1
         self.effort = self.config['effort'] if 'effort' in self.config else 0
         self.total_epochs = self.config['epochs'] if 'epochs' in self.config else 0
         self.max_epoch = 0
@@ -143,6 +139,7 @@ class Hyperopt:
             self.n_points = 1
             self.opt_base_estimator = 'DUMMY'
             self.opt_acq_optimizer = 'sampling'
+        self.n_models = max(16, self.n_jobs)
 
         # Populate functions here (hasattr is slow so should not be run during "regular" operations)
         if hasattr(self.custom_hyperopt, 'populate_indicators'):
@@ -560,10 +557,8 @@ class Hyperopt:
         to increase the diversion of the searches of each optimizer """
         return NEXT_POINT_METHODS[random.randrange(0, NEXT_POINT_METHODS_LENGTH)]
 
-    def get_optimizer(self,
-                      dimensions: List[Dimension],
-                      n_jobs: int,
-                      n_initial_points=INITIAL_POINTS) -> Optimizer:
+    def get_optimizer(self, dimensions: List[Dimension], n_jobs: int,
+                      n_initial_points: int) -> Optimizer:
         " Construct an optimizer object "
         # https://github.com/scikit-learn/scikit-learn/issues/14265
         # lbfgs uses joblib threading backend so n_jobs has to be reduced
@@ -580,7 +575,7 @@ class Hyperopt:
                 'xi': 0.00001,
                 'kappa': 0.00001
             },
-            model_queue_size=SKOPT_MODELS_MAX_NUM,
+            model_queue_size=self.n_models,
             random_state=self.random_state,
         )
 
@@ -686,12 +681,13 @@ class Hyperopt:
         print('.', end='')
         sys.stdout.flush()
 
-    def log_results(self, f_val, frame_start, total_epochs: int) -> None:
+    def log_results(self, f_val, frame_start, total_epochs: int) -> int:
         """
         Log results if it is better than any previous evaluation
         """
         print()
         current = frame_start + 1
+        i = 0
         for i, v in enumerate(f_val):
             is_best = self.is_best_loss(v, self.current_best_loss)
             current = frame_start + i + 1
@@ -709,6 +705,7 @@ class Hyperopt:
         # give up if no best since max epochs
         if current + 1 > self.epochs_limit():
             self.max_epoch_reached = True
+        return i
 
     @staticmethod
     def load_previous_results(trials_file: Path) -> List:
@@ -871,9 +868,11 @@ class Hyperopt:
                 jobs_scheduler = self.run_backtest_parallel
             with parallel_backend('loky', inner_max_num_threads=2):
                 with Parallel(n_jobs=self.n_jobs, verbose=0, backend='loky') as parallel:
-                    while True:
-                        # update epochs count
-                        epochs_so_far = len(self.trials)
+                    # update epochs count
+                    prev_batch = -1
+                    epochs_so_far = len(self.trials)
+                    while prev_batch < epochs_so_far:
+                        prev_batch = epochs_so_far
                         # pad the batch length to the number of jobs to avoid desaturation
                         batch_len = (self.avg_best_occurrence + self.n_jobs -
                                      self.avg_best_occurrence % self.n_jobs)
@@ -888,7 +887,12 @@ class Hyperopt:
                             f"/{self.epochs_limit()}: ",
                             end='')
                         f_val = jobs_scheduler(parallel, batch_len, epochs_so_far, self.n_jobs)
-                        self.log_results(f_val, epochs_so_far, self.epochs_limit())
+                        saved = self.log_results(f_val, epochs_so_far, self.epochs_limit())
+                        # stop if no epochs have been evaluated
+                        if not saved or batch_len < 1:
+                            break
+                        # log_results add
+                        epochs_so_far += saved
                         if self.max_epoch_reached:
                             logger.info("Max epoch reached, terminating.")
                             break
