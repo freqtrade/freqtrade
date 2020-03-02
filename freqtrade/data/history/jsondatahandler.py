@@ -71,6 +71,8 @@ class JsonDataHandler(IDataHandler):
             return DataFrame(columns=self._columns)
         pairdata = read_json(filename, orient='values')
         pairdata.columns = self._columns
+        pairdata = pairdata.astype(dtype={'open': 'float', 'high': 'float',
+                                          'low': 'float', 'close': 'float', 'volume': 'float'})
         pairdata['date'] = to_datetime(pairdata['date'],
                                        unit='ms',
                                        utc=True,

@@ -58,7 +58,7 @@ def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
                    else yellow + "DUPLICATE NAME" + reset)
     } for s in objs]
 
-    print(tabulate(objss_to_print, headers='keys', tablefmt='pipe'))
+    print(tabulate(objss_to_print, headers='keys', tablefmt='psql', stralign='right'))
 
 
 def start_list_strategies(args: Dict[str, Any]) -> None:
@@ -192,7 +192,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
             else:
                 # print data as a table, with the human-readable summary
                 print(f"{summary_str}:")
-                print(tabulate(tabular_data, headers='keys', tablefmt='pipe'))
+                print(tabulate(tabular_data, headers='keys', tablefmt='psql', stralign='right'))
         elif not (args.get('print_one_column', False) or
                   args.get('list_pairs_print_json', False) or
                   args.get('print_csv', False)):

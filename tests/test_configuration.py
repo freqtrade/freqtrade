@@ -34,13 +34,6 @@ def all_conf():
     return conf
 
 
-def test_load_config_invalid_pair(default_conf) -> None:
-    default_conf['exchange']['pair_whitelist'].append('ETH-BTC')
-
-    with pytest.raises(ValidationError, match=r'.*does not match.*'):
-        validate_config_schema(default_conf)
-
-
 def test_load_config_missing_attributes(default_conf) -> None:
     conf = deepcopy(default_conf)
     conf.pop('exchange')
@@ -326,6 +319,7 @@ def test_load_dry_run(default_conf, mocker, config_value, expected, arglist) -> 
     validated_conf = configuration.load_config()
 
     assert validated_conf['dry_run'] is expected
+    assert validated_conf['runmode'] == (RunMode.DRY_RUN if expected else RunMode.LIVE)
 
 
 def test_load_custom_strategy(default_conf, mocker) -> None:
@@ -809,12 +803,6 @@ def test_validate_whitelist(default_conf):
     del conf['exchange']['pair_whitelist']
 
     validate_config_consistency(conf)
-
-    conf = deepcopy(default_conf)
-    conf['stake_currency'] = 'USDT'
-    with pytest.raises(OperationalException,
-                       match=r"Stake-currency 'USDT' not compatible with pair-whitelist.*"):
-        validate_config_consistency(conf)
 
 
 def test_load_config_test_comments() -> None:

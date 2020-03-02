@@ -400,13 +400,40 @@ def test_validate_stake_currency_error(default_conf, mocker, caplog):
 def test_get_quote_currencies(default_conf, mocker):
     ex = get_patched_exchange(mocker, default_conf)
 
-    assert set(ex.get_quote_currencies()) == set(['USD', 'BTC', 'USDT'])
+    assert set(ex.get_quote_currencies()) == set(['USD', 'ETH', 'BTC', 'USDT'])
+
+
+@pytest.mark.parametrize('pair,expected', [
+    ('XRP/BTC', 'BTC'),
+    ('LTC/USD', 'USD'),
+    ('ETH/USDT', 'USDT'),
+    ('XLTCUSDT', 'USDT'),
+    ('XRP/NOCURRENCY', ''),
+])
+def test_get_pair_quote_currency(default_conf, mocker, pair, expected):
+    ex = get_patched_exchange(mocker, default_conf)
+    assert ex.get_pair_quote_currency(pair) == expected
+
+
+@pytest.mark.parametrize('pair,expected', [
+    ('XRP/BTC', 'XRP'),
+    ('LTC/USD', 'LTC'),
+    ('ETH/USDT', 'ETH'),
+    ('XLTCUSDT', 'LTC'),
+    ('XRP/NOCURRENCY', ''),
+])
+def test_get_pair_base_currency(default_conf, mocker, pair, expected):
+    ex = get_patched_exchange(mocker, default_conf)
+    assert ex.get_pair_base_currency(pair) == expected
 
 
 def test_validate_pairs(default_conf, mocker):  # test exchange.validate_pairs directly
     api_mock = MagicMock()
     type(api_mock).markets = PropertyMock(return_value={
-        'ETH/BTC': {}, 'LTC/BTC': {}, 'XRP/BTC': {}, 'NEO/BTC': {}
+        'ETH/BTC': {'quote': 'BTC'},
+        'LTC/BTC': {'quote': 'BTC'},
+        'XRP/BTC': {'quote': 'BTC'},
+        'NEO/BTC': {'quote': 'BTC'},
     })
     id_mock = PropertyMock(return_value='test_exchange')
     type(api_mock).id = id_mock
@@ -454,9 +481,9 @@ def test_validate_pairs_exception(default_conf, mocker, caplog):
 def test_validate_pairs_restricted(default_conf, mocker, caplog):
     api_mock = MagicMock()
     type(api_mock).markets = PropertyMock(return_value={
-        'ETH/BTC': {}, 'LTC/BTC': {},
-        'XRP/BTC': {'info': {'IsRestricted': True}},
-        'NEO/BTC': {'info': 'TestString'},  # info can also be a string ...
+        'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
+        'XRP/BTC': {'quote': 'BTC', 'info': {'IsRestricted': True}},
+        'NEO/BTC': {'quote': 'BTC', 'info': 'TestString'},  # info can also be a string ...
     })
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
@@ -467,6 +494,54 @@ def test_validate_pairs_restricted(default_conf, mocker, caplog):
     assert log_has(f"Pair XRP/BTC is restricted for some users on this exchange."
                    f"Please check if you are impacted by this restriction "
                    f"on the exchange and eventually remove XRP/BTC from your whitelist.", caplog)
+
+
+def test_validate_pairs_stakecompatibility(default_conf, mocker, caplog):
+    api_mock = MagicMock()
+    type(api_mock).markets = PropertyMock(return_value={
+        'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
+        'XRP/BTC': {'quote': 'BTC'}, 'NEO/BTC': {'quote': 'BTC'},
+        'HELLO-WORLD': {'quote': 'BTC'},
+    })
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
+    mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
+    mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+
+    Exchange(default_conf)
+
+
+def test_validate_pairs_stakecompatibility_downloaddata(default_conf, mocker, caplog):
+    api_mock = MagicMock()
+    default_conf['stake_currency'] = ''
+    type(api_mock).markets = PropertyMock(return_value={
+        'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
+        'XRP/BTC': {'quote': 'BTC'}, 'NEO/BTC': {'quote': 'BTC'},
+        'HELLO-WORLD': {'quote': 'BTC'},
+    })
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
+    mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
+    mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+
+    Exchange(default_conf)
+
+
+def test_validate_pairs_stakecompatibility_fail(default_conf, mocker, caplog):
+    default_conf['exchange']['pair_whitelist'].append('HELLO-WORLD')
+    api_mock = MagicMock()
+    type(api_mock).markets = PropertyMock(return_value={
+        'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
+        'XRP/BTC': {'quote': 'BTC'}, 'NEO/BTC': {'quote': 'BTC'},
+        'HELLO-WORLD': {'quote': 'USDT'},
+    })
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
+    mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
+    mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+
+    with pytest.raises(OperationalException, match=r"Stake-currency 'BTC' not compatible with.*"):
+        Exchange(default_conf)
 
 
 @pytest.mark.parametrize("timeframe", [
@@ -1121,25 +1196,16 @@ def test_fetch_ticker(default_conf, mocker, exchange_name):
     assert ticker['bid'] == 0.5
     assert ticker['ask'] == 1
 
-    assert 'ETH/BTC' in exchange._cached_ticker
-    assert exchange._cached_ticker['ETH/BTC']['bid'] == 0.5
-    assert exchange._cached_ticker['ETH/BTC']['ask'] == 1
-
-    # Test caching
-    api_mock.fetch_ticker = MagicMock()
-    exchange.fetch_ticker(pair='ETH/BTC', refresh=False)
-    assert api_mock.fetch_ticker.call_count == 0
-
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            "fetch_ticker", "fetch_ticker",
-                           pair='ETH/BTC', refresh=True)
+                           pair='ETH/BTC')
 
     api_mock.fetch_ticker = MagicMock(return_value={})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-    exchange.fetch_ticker(pair='ETH/BTC', refresh=True)
+    exchange.fetch_ticker(pair='ETH/BTC')
 
     with pytest.raises(DependencyException, match=r'Pair XRP/ETH not available'):
-        exchange.fetch_ticker(pair='XRP/ETH', refresh=True)
+        exchange.fetch_ticker(pair='XRP/ETH')
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
@@ -1828,6 +1894,7 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
         # 'ETH/BTC':  'active': True
         # 'ETH/USDT': 'active': True
         # 'LTC/BTC':  'active': False
+        # 'LTC/ETH':  'active': True
         # 'LTC/USD':  'active': True
         # 'LTC/USDT': 'active': True
         # 'NEO/BTC':  'active': False
@@ -1836,26 +1903,26 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
         # 'XRP/BTC':  'active': False
         # all markets
         ([], [], False, False,
-         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD',
+         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD',
           'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
         # active markets
         ([], [], False, True,
-         ['BLK/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD', 'NEO/BTC',
+         ['BLK/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD', 'NEO/BTC',
           'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
         # all pairs
         ([], [], True, False,
-         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD',
+         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD',
           'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XRP/BTC']),
         # active pairs
         ([], [], True, True,
-         ['BLK/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD', 'NEO/BTC',
+         ['BLK/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD', 'NEO/BTC',
           'TKN/BTC', 'XRP/BTC']),
         # all markets, base=ETH, LTC
         (['ETH', 'LTC'], [], False, False,
-         ['ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
+         ['ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
         # all markets, base=LTC
         (['LTC'], [], False, False,
-         ['LTC/BTC', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
+         ['LTC/BTC', 'LTC/ETH', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
         # all markets, quote=USDT
         ([], ['USDT'], False, False,
          ['ETH/USDT', 'LTC/USDT', 'XLTCUSDT']),

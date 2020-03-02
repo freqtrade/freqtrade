@@ -46,18 +46,12 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
 
     trials = _hyperopt_filter_trials(trials, filteroptions)
 
-    # TODO: fetch the interval for epochs to print from the cli option
-    epoch_start, epoch_stop = 0, None
-
     if print_colorized:
         colorama_init(autoreset=True)
 
     try:
-        # Human-friendly indexes used here (starting from 1)
-        for val in trials[epoch_start:epoch_stop]:
-            Hyperopt.print_results_explanation(val, total_epochs,
-                                               not filteroptions['only_best'], print_colorized)
-
+        Hyperopt.print_result_table(config, trials, total_epochs,
+                                    not filteroptions['only_best'], print_colorized)
     except KeyboardInterrupt:
         print('User interrupted..')
 
@@ -75,6 +69,12 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
+    print_json = config.get('print_json', False)
+    no_header = config.get('hyperopt_show_no_header', False)
+    trials_file = (config['user_data_dir'] /
+                   'hyperopt_results' / 'hyperopt_results.pickle')
+    n = config.get('hyperopt_show_index', -1)
+
     filteroptions = {
         'only_best': config.get('hyperopt_list_best', False),
         'only_profitable': config.get('hyperopt_list_profitable', False),
@@ -87,10 +87,6 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
         'filter_min_total_profit': config.get('hyperopt_list_min_total_profit', None),
         'filter_max_total_profit': config.get('hyperopt_list_max_total_profit', None)
     }
-    no_header = config.get('hyperopt_show_no_header', False)
-
-    trials_file = (config['user_data_dir'] /
-                   'hyperopt_results' / 'hyperopt_results.pickle')
 
     # Previous evaluations
     trials = Hyperopt.load_previous_results(trials_file)
@@ -99,19 +95,16 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
     trials = _hyperopt_filter_trials(trials, filteroptions)
     trials_epochs = len(trials)
 
-    n = config.get('hyperopt_show_index', -1)
     if n > trials_epochs:
         raise OperationalException(
-                f"The index of the epoch to show should be less than {trials_epochs + 1}.")
+            f"The index of the epoch to show should be less than {trials_epochs + 1}.")
     if n < -trials_epochs:
         raise OperationalException(
-                f"The index of the epoch to show should be greater than {-trials_epochs - 1}.")
+            f"The index of the epoch to show should be greater than {-trials_epochs - 1}.")
 
     # Translate epoch index from human-readable format to pythonic
     if n > 0:
         n -= 1
-
-    print_json = config.get('print_json', False)
 
     if trials:
         val = trials[n]
@@ -129,52 +122,52 @@ def _hyperopt_filter_trials(trials: List, filteroptions: dict) -> List:
         trials = [x for x in trials if x['results_metrics']['profit'] > 0]
     if filteroptions['filter_min_trades'] > 0:
         trials = [
-                    x for x in trials
-                    if x['results_metrics']['trade_count'] > filteroptions['filter_min_trades']
-                 ]
+            x for x in trials
+            if x['results_metrics']['trade_count'] > filteroptions['filter_min_trades']
+        ]
     if filteroptions['filter_max_trades'] > 0:
         trials = [
-                    x for x in trials
-                    if x['results_metrics']['trade_count'] < filteroptions['filter_max_trades']
-                 ]
+            x for x in trials
+            if x['results_metrics']['trade_count'] < filteroptions['filter_max_trades']
+        ]
     if filteroptions['filter_min_avg_time'] is not None:
         trials = [x for x in trials if x['results_metrics']['trade_count'] > 0]
         trials = [
-                    x for x in trials
-                    if x['results_metrics']['duration'] > filteroptions['filter_min_avg_time']
-                 ]
+            x for x in trials
+            if x['results_metrics']['duration'] > filteroptions['filter_min_avg_time']
+        ]
     if filteroptions['filter_max_avg_time'] is not None:
         trials = [x for x in trials if x['results_metrics']['trade_count'] > 0]
         trials = [
-                    x for x in trials
-                    if x['results_metrics']['duration'] < filteroptions['filter_max_avg_time']
-                 ]
+            x for x in trials
+            if x['results_metrics']['duration'] < filteroptions['filter_max_avg_time']
+        ]
     if filteroptions['filter_min_avg_profit'] is not None:
         trials = [x for x in trials if x['results_metrics']['trade_count'] > 0]
         trials = [
-                    x for x in trials
-                    if x['results_metrics']['avg_profit']
-                    > filteroptions['filter_min_avg_profit']
-                 ]
+            x for x in trials
+            if x['results_metrics']['avg_profit']
+            > filteroptions['filter_min_avg_profit']
+        ]
     if filteroptions['filter_max_avg_profit'] is not None:
         trials = [x for x in trials if x['results_metrics']['trade_count'] > 0]
         trials = [
-                    x for x in trials
-                    if x['results_metrics']['avg_profit']
-                    < filteroptions['filter_max_avg_profit']
-                 ]
+            x for x in trials
+            if x['results_metrics']['avg_profit']
+            < filteroptions['filter_max_avg_profit']
+        ]
     if filteroptions['filter_min_total_profit'] is not None:
         trials = [x for x in trials if x['results_metrics']['trade_count'] > 0]
         trials = [
-                    x for x in trials
-                    if x['results_metrics']['profit'] > filteroptions['filter_min_total_profit']
-                 ]
+            x for x in trials
+            if x['results_metrics']['profit'] > filteroptions['filter_min_total_profit']
+        ]
     if filteroptions['filter_max_total_profit'] is not None:
         trials = [x for x in trials if x['results_metrics']['trade_count'] > 0]
         trials = [
-                    x for x in trials
-                    if x['results_metrics']['profit'] < filteroptions['filter_max_total_profit']
-                 ]
+            x for x in trials
+            if x['results_metrics']['profit'] < filteroptions['filter_max_total_profit']
+        ]
 
     logger.info(f"{len(trials)} " +
                 ("best " if filteroptions['only_best'] else "") +

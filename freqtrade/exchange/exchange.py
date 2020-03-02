@@ -66,8 +66,6 @@ class Exchange:
 
         self._config.update(config)
 
-        self._cached_ticker: Dict[str, Any] = {}
-
         # Holds last candle refreshed time of each pair
         self._pairs_last_refresh_time: Dict[Tuple[str, str], int] = {}
         # Timestamp of last markets refresh
@@ -228,6 +226,18 @@ class Exchange:
         markets = self.markets
         return sorted(set([x['quote'] for _, x in markets.items()]))
 
+    def get_pair_quote_currency(self, pair: str) -> str:
+        """
+        Return a pair's quote currency
+        """
+        return self.markets.get(pair, {}).get('quote', '')
+
+    def get_pair_base_currency(self, pair: str) -> str:
+        """
+        Return a pair's quote currency
+        """
+        return self.markets.get(pair, {}).get('base', '')
+
     def klines(self, pair_interval: Tuple[str, str], copy: bool = True) -> DataFrame:
         if pair_interval in self._klines:
             return self._klines[pair_interval].copy() if copy else self._klines[pair_interval]
@@ -300,7 +310,7 @@ class Exchange:
         if not self.markets:
             logger.warning('Unable to validate pairs (assuming they are correct).')
             return
-
+        invalid_pairs = []
         for pair in pairs:
             # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
             # TODO: add a support for having coins in BTC/USDT format
@@ -322,6 +332,13 @@ class Exchange:
                 logger.warning(f"Pair {pair} is restricted for some users on this exchange."
                                f"Please check if you are impacted by this restriction "
                                f"on the exchange and eventually remove {pair} from your whitelist.")
+            if (self._config['stake_currency'] and
+                    self.get_pair_quote_currency(pair) != self._config['stake_currency']):
+                invalid_pairs.append(pair)
+        if invalid_pairs:
+            raise OperationalException(
+                f"Stake-currency '{self._config['stake_currency']}' not compatible with "
+                f"pair-whitelist. Please remove the following pairs: {invalid_pairs}")
 
     def get_valid_pair_combination(self, curr_1: str, curr_2: str) -> str:
         """
@@ -591,28 +608,17 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def fetch_ticker(self, pair: str, refresh: Optional[bool] = True) -> dict:
-        if refresh or pair not in self._cached_ticker.keys():
-            try:
-                if pair not in self._api.markets or not self._api.markets[pair].get('active'):
-                    raise DependencyException(f"Pair {pair} not available")
-                data = self._api.fetch_ticker(pair)
-                try:
-                    self._cached_ticker[pair] = {
-                        'bid': float(data['bid']),
-                        'ask': float(data['ask']),
-                    }
-                except KeyError:
-                    logger.debug("Could not cache ticker data for %s", pair)
-                return data
-            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-                raise TemporaryError(
-                    f'Could not load ticker due to {e.__class__.__name__}. Message: {e}') from e
-            except ccxt.BaseError as e:
-                raise OperationalException(e) from e
-        else:
-            logger.info("returning cached ticker-data for %s", pair)
-            return self._cached_ticker[pair]
+    def fetch_ticker(self, pair: str) -> dict:
+        try:
+            if pair not in self._api.markets or not self._api.markets[pair].get('active'):
+                raise DependencyException(f"Pair {pair} not available")
+            data = self._api.fetch_ticker(pair)
+            return data
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not load ticker due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
 
     def get_historic_ohlcv(self, pair: str, timeframe: str,
                            since_ms: int) -> List:
@@ -1018,7 +1024,7 @@ def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = Non
 
 
 def is_exchange_officially_supported(exchange_name: str) -> bool:
-    return exchange_name in ['bittrex', 'binance']
+    return exchange_name in ['bittrex', 'binance', 'kraken']
 
 
 def ccxt_exchanges(ccxt_module: CcxtModuleType = None) -> List[str]:

@@ -422,7 +422,6 @@ CONF_SCHEMA = {
                     'type': 'array',
                     'items': {
                         'type': 'string',
-                        'pattern': '^[0-9A-Z]+/[0-9A-Z]+$'
                     },
                     'uniqueItems': True
                 },
@@ -430,7 +429,6 @@ CONF_SCHEMA = {
                     'type': 'array',
                     'items': {
                         'type': 'string',
-                        'pattern': '^[0-9A-Z]+/[0-9A-Z]+$'
                     },
                     'uniqueItems': True
                 },

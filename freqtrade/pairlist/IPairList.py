@@ -99,7 +99,8 @@ class IPairList(ABC):
                 logger.warning(f"Pair {pair} is not compatible with exchange "
                                f"{self._exchange.name}. Removing it from whitelist..")
                 continue
-            if not pair.endswith(self._config['stake_currency']):
+
+            if self._exchange.get_pair_quote_currency(pair) != self._config['stake_currency']:
                 logger.warning(f"Pair {pair} is not compatible with your stake currency "
                                f"{self._config['stake_currency']}. Removing it from whitelist..")
                 continue

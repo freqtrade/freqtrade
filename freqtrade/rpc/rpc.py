@@ -460,9 +460,9 @@ class RPC:
         if self._freqtrade.state != State.RUNNING:
             raise RPCException('trader is not running')
 
-        # Check pair is in stake currency
+        # Check if pair quote currency equals to the stake currency.
         stake_currency = self._freqtrade.config.get('stake_currency')
-        if not pair.endswith(stake_currency):
+        if not self._freqtrade.exchange.get_pair_quote_currency(pair) == stake_currency:
             raise RPCException(
                 f'Wrong pair selected. Please pairs with stake {stake_currency} pairs only')
         # check if valid pair
@@ -517,7 +517,7 @@ class RPC:
         if add:
             stake_currency = self._freqtrade.config.get('stake_currency')
             for pair in add:
-                if (pair.endswith(stake_currency)
+                if (self._freqtrade.exchange.get_pair_quote_currency(pair) == stake_currency
                         and pair not in self._freqtrade.pairlists.blacklist):
                     self._freqtrade.pairlists.blacklist.append(pair)
 

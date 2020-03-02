@@ -782,7 +782,7 @@ def test_process_exchange_failures(default_conf, ticker, mocker) -> None:
     worker = Worker(args=None, config=default_conf)
     patch_get_signal(worker.freqtrade)
 
-    worker._process()
+    worker._process_running()
     assert sleep_mock.has_calls()
 
 
@@ -799,7 +799,7 @@ def test_process_operational_exception(default_conf, ticker, mocker) -> None:
 
     assert worker.freqtrade.state == State.RUNNING
 
-    worker._process()
+    worker._process_running()
     assert worker.freqtrade.state == State.STOPPED
     assert 'OperationalException' in msg_mock.call_args_list[-1][0][0]['status']
 
@@ -915,13 +915,21 @@ def test_process_informative_pairs_added(default_conf, ticker, mocker) -> None:
     (5, 10, 1.0, 5),  # last bigger than ask
     (5, 10, 0.5, 5),  # last bigger than ask
 ])
-def test_get_buy_rate(mocker, default_conf, ask, last, last_ab, expected) -> None:
+def test_get_buy_rate(mocker, default_conf, caplog, ask, last, last_ab, expected) -> None:
     default_conf['bid_strategy']['ask_last_balance'] = last_ab
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  MagicMock(return_value={'ask': ask, 'last': last}))
 
     assert freqtrade.get_buy_rate('ETH/BTC', True) == expected
+    assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
+
+    assert freqtrade.get_buy_rate('ETH/BTC', False) == expected
+    assert log_has("Using cached buy rate for ETH/BTC.", caplog)
+    # Running a 2nd time with Refresh on!
+    caplog.clear()
+    assert freqtrade.get_buy_rate('ETH/BTC', True) == expected
+    assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
 
 
 def test_execute_buy(mocker, default_conf, fee, limit_buy_order) -> None:
@@ -2192,6 +2200,7 @@ def test_handle_timedout_limit_buy(mocker, default_conf, limit_buy_order) -> Non
 
     Trade.session = MagicMock()
     trade = MagicMock()
+    trade.pair = 'LTC/ETH'
     limit_buy_order['remaining'] = limit_buy_order['amount']
     assert freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
     assert cancel_order_mock.call_count == 1
@@ -2215,6 +2224,7 @@ def test_handle_timedout_limit_buy_corder_empty(mocker, default_conf, limit_buy_
 
     Trade.session = MagicMock()
     trade = MagicMock()
+    trade.pair = 'LTC/ETH'
     limit_buy_order['remaining'] = limit_buy_order['amount']
     assert freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
     assert cancel_order_mock.call_count == 1
@@ -3614,7 +3624,7 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order, limit_sell_order
     assert freqtrade.handle_trade(trade) is True
 
 
-def test_get_sell_rate(default_conf, mocker, ticker, order_book_l2) -> None:
+def test_get_sell_rate(default_conf, mocker, caplog, ticker, order_book_l2) -> None:
 
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -3626,8 +3636,15 @@ def test_get_sell_rate(default_conf, mocker, ticker, order_book_l2) -> None:
     # Test regular mode
     ft = get_patched_freqtradebot(mocker, default_conf)
     rate = ft.get_sell_rate(pair, True)
+    assert not log_has("Using cached sell rate for ETH/BTC.", caplog)
     assert isinstance(rate, float)
     assert rate == 0.00001098
+    # Use caching
+    rate = ft.get_sell_rate(pair, False)
+    assert rate == 0.00001098
+    assert log_has("Using cached sell rate for ETH/BTC.", caplog)
+
+    caplog.clear()
 
     # Test orderbook mode
     default_conf['ask_strategy']['use_order_book'] = True
@@ -3635,8 +3652,12 @@ def test_get_sell_rate(default_conf, mocker, ticker, order_book_l2) -> None:
     default_conf['ask_strategy']['order_book_max'] = 2
     ft = get_patched_freqtradebot(mocker, default_conf)
     rate = ft.get_sell_rate(pair, True)
+    assert not log_has("Using cached sell rate for ETH/BTC.", caplog)
     assert isinstance(rate, float)
     assert rate == 0.043936
+    rate = ft.get_sell_rate(pair, False)
+    assert rate == 0.043936
+    assert log_has("Using cached sell rate for ETH/BTC.", caplog)
 
 
 def test_startup_state(default_conf, mocker):
@@ -3663,30 +3684,6 @@ def test_startup_trade_reinit(default_conf, edge_conf, mocker):
     ftbot = get_patched_freqtradebot(mocker, edge_conf)
     ftbot.startup()
     assert reinit_mock.call_count == 0
-
-
-def test_process_i_am_alive(default_conf, mocker, caplog):
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
-
-    ftbot = get_patched_freqtradebot(mocker, default_conf)
-    message = r"Bot heartbeat\. PID=.*"
-    ftbot.process()
-    assert log_has_re(message, caplog)
-    assert ftbot._heartbeat_msg != 0
-
-    caplog.clear()
-    # Message is not shown before interval is up
-    ftbot.process()
-    assert not log_has_re(message, caplog)
-
-    caplog.clear()
-    # Set clock - 70 seconds
-    ftbot._heartbeat_msg -= 70
-
-    ftbot.process()
-    assert log_has_re(message, caplog)
 
 
 @pytest.mark.usefixtures("init_persistence")
