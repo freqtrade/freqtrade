@@ -740,8 +740,10 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     }
     response_expected = {
         'loss': 1.9840569076926293,
-        'results_explanation': ('     1 trades. Avg profit   2.31%. Total profit  0.00023300 BTC '
-                                '(   2.31\N{GREEK CAPITAL LETTER SIGMA}%). Avg duration 100.0 min.'
+        'results_explanation': ('     1 trades.      1 wins.      0 draws.      0 losses. '
+                                'Avg profit   2.31%. Median profit   2.31%. Total profit  '
+                                '0.00023300 BTC (   2.31\N{GREEK CAPITAL LETTER SIGMA}%). '
+                                'Avg duration 100.0 min.'
                                 ).encode(locale.getpreferredencoding(), 'replace').decode('utf-8'),
         'params_details': {'buy': {'adx-enabled': False,
                                    'adx-value': 0,
@@ -772,10 +774,14 @@ def test_generate_optimizer(mocker, default_conf) -> None:
                                         'trailing_stop_positive_offset': 0.07}},
         'params_dict': optimizer_param,
         'results_metrics': {'avg_profit': 2.3117,
+                            'draws': 0,
                             'duration': 100.0,
+                            'losses': 0,
+                            'median_profit': 2.3117,
                             'profit': 2.3117,
                             'total_profit': 0.000233,
-                            'trade_count': 1},
+                            'trade_count': 1,
+                            'wins': 1},
         'total_profit': 0.00023300
     }
 
