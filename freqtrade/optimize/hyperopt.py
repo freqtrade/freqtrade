@@ -572,15 +572,15 @@ class Hyperopt:
                 logger.info(f'Effective number of parallel workers used: {jobs}')
                 EVALS = ceil(self.total_epochs / jobs)
                 for i in range(EVALS):
-                    asked = self.opt.ask(n_points=jobs)
+                    # Correct the number of epochs to be processed for the last
+                    # iteration (should not exceed self.total_epochs in total)
+                    n_rest = (i + 1) * jobs - self.total_epochs
+                    current_jobs = jobs - n_rest if n_rest > 0 else jobs
+
+                    asked = self.opt.ask(n_points=current_jobs)
                     f_val = self.run_optimizer_parallel(parallel, asked, i)
                     self.opt.tell(asked, [v['loss'] for v in f_val])
                     self.fix_optimizer_models_list()
-
-                    # Correct the number of epochs to handled for the last
-                    # iteration (should not exceed self.total_epochs)
-                    n_rest = (i + 1) * jobs - self.total_epochs
-                    current_jobs = jobs - n_rest if n_rest > 0 else jobs
 
                     for j in range(current_jobs):
                         # Use human-friendly indexes here (starting from 1)
