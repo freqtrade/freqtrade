@@ -115,7 +115,7 @@ jobs:
     strategy:
       matrix:
         os: [ windows-latest ]
-        python-version: [3.7]
+        python-version: [3.7, 3.8]
 
     steps:
     - uses: actions/checkout@v2
@@ -130,8 +130,7 @@ jobs:
       if: startsWith(runner.os, 'Windows')
       with:
         path: ~\AppData\Local\pip\Cache
-        key: ${{ runner.os }}-pip
-        restore-keys: ${{ runner.os }}-pip
+        key: ${{ matrix.os }}-${{ matrix.python-version }}-pip
 
     - name: Installation
       run: |
