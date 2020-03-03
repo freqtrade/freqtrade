@@ -198,7 +198,7 @@ def calculate_max_drawdown(trades: pd.DataFrame) -> Tuple[float, pd.Timestamp, p
     :raise: ValueError if trade-dataframe was found empty.
     """
     if len(trades) == 0:
-        raise ValueError("Trade dataframe empty")
+        raise ValueError("Trade dataframe empty.")
     profit_results = trades.sort_values('close_time')
     max_drawdown_df = pd.DataFrame()
     max_drawdown_df['cumulative'] = profit_results['profitperc'].cumsum()
