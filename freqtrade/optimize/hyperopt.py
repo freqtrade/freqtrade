@@ -325,15 +325,20 @@ class Hyperopt:
         trials['Trades'] = trials['Trades'].astype(str)
 
         trials['Epoch'] = trials['Epoch'].apply(
-            lambda x: "{}/{}".format(x, total_epochs))
+            lambda x: '{}/{}'.format(str(x).rjust(len(str(total_epochs)), ' '), total_epochs))
         trials['Avg profit'] = trials['Avg profit'].apply(
-            lambda x: '{:,.2f}%'.format(x) if not isna(x) else x)
+            lambda x: ('{:,.2f}%'.format(x)).rjust(7, ' ') if not isna(x) else "--".rjust(7, ' '))
         trials['Profit'] = trials['Profit'].apply(
-            lambda x: '{:,.2f}%'.format(x) if not isna(x) else x)
+            lambda x: ('{:,.2f}%'.format(x)) if not isna(x) else "--")
         trials['Total profit'] = trials['Total profit'].apply(
-            lambda x: '{:,.8f} '.format(x) + config['stake_currency'] if not isna(x) else x)
+            lambda x: ('{:,.8f} '.format(x)) + config['stake_currency'] if not isna(x) else "--")
         trials['Avg duration'] = trials['Avg duration'].apply(
-            lambda x: '{:,.1f}m'.format(x) if not isna(x) else x)
+            lambda x: ('{:,.1f}m'.format(x)).rjust(7, ' ') if not isna(x) else "--".rjust(7, ' '))
+        trials['Objective'] = trials['Objective'].apply(
+            lambda x: str(x).rjust(10, ' ') if str(x) != str(100000) else "N/A".rjust(10, ' '))
+        trials['Profit'] = trials['Total profit'] + " (" + trials['Profit'] + ")"
+        trials = trials.drop(columns=['Total profit'])
+
         if print_colorized:
             for i in range(len(trials)):
                 if trials.loc[i]['is_profit']:

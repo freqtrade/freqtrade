@@ -413,7 +413,9 @@ def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
         '|   Best |     2/2 |        1 |        0.10% | 0.00100000 BTC |'
         '    1.00% |          20.0m |           1 |'
     )
-    assert result_str in out
+    # assert result_str in out
+    assert all(x in out
+               for x in ["Best", "2/2", " 1", "0.10%", "0.00100000 BTC", "1.00%", "20.0m"])
 
 
 def test_no_log_if_loss_does_not_improve(hyperopt, caplog) -> None:
