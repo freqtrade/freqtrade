@@ -685,7 +685,8 @@ class FreqtradeBot:
                                               order_book_max=order_book_max)
             for i in range(order_book_min, order_book_max + 1):
                 sell_rate = next(order_book)
-                logger.debug('  order book asks top %s: %0.8f', i, sell_rate)
+                logger.debug(f"  order book {config_ask_strategy['price_side']} top {i}: "
+                             f"{sell_rate:0.8f}")
 
                 if self._check_and_execute_sell(trade, sell_rate, buy, sell):
                     return True
