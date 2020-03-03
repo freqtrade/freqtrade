@@ -248,27 +248,24 @@ class Hyperopt:
         result: Dict = {}
 
         if self.has_space('buy'):
-            result['buy'] = {p.name: params.get(p.name) for p in self.hyperopt_space('buy')}
+            result['buy'] = {p.name: params.get(p.name)
+                             for p in self.hyperopt_space('buy')}
         if self.has_space('sell'):
-            result['sell'] = {p.name: params.get(p.name) for p in self.hyperopt_space('sell')}
+            result['sell'] = {p.name: params.get(p.name)
+                              for p in self.hyperopt_space('sell')}
         if self.has_space('roi'):
             result['roi'] = self.custom_hyperopt.generate_roi_table(params)
         if self.has_space('stoploss'):
-            result['stoploss'] = {
-                p.name: params.get(p.name)
-                for p in self.hyperopt_space('stoploss')
-            }
+            result['stoploss'] = {p.name: params.get(p.name)
+                                  for p in self.hyperopt_space('stoploss')}
         if self.has_space('trailing'):
             result['trailing'] = self.custom_hyperopt.generate_trailing_params(params)
 
         return result
 
     @staticmethod
-    def print_epoch_details(results,
-                            total_epochs: int,
-                            print_json: bool,
-                            no_header: bool = False,
-                            header_str: str = None) -> None:
+    def print_epoch_details(results, total_epochs: int, print_json: bool,
+                            no_header: bool = False, header_str: str = None) -> None:
         """
         Display details of the hyperopt result
         """
@@ -307,7 +304,8 @@ class Hyperopt:
                 # OrderedDict is used to keep the numeric order of the items
                 # in the dict.
                 result_dict['minimal_roi'] = OrderedDict(
-                    (str(k), v) for k, v in space_params.items())
+                    (str(k), v) for k, v in space_params.items()
+                )
             else:  # 'stoploss', 'trailing'
                 result_dict.update(space_params)
 
@@ -359,7 +357,8 @@ class Hyperopt:
     def _format_explanation_string(results, total_epochs) -> str:
         return (("*" if 'is_initial_point' in results and results['is_initial_point'] else " ") +
                 f"{results['current_epoch']:5d}/{total_epochs}: " +
-                f"{results['results_explanation']} " + f"Objective: {results['loss']:.5f}")
+                f"{results['results_explanation']} " +
+                f"Objective: {results['loss']:.5f}")
 
     @staticmethod
     def print_result_table(config: dict, results: list, total_epochs: int, highlight_best: bool,
@@ -372,15 +371,12 @@ class Hyperopt:
 
         trials = json_normalize(results, max_level=1)
         trials['Best'] = ''
-        trials = trials[[
-            'Best', 'current_epoch', 'results_metrics.trade_count', 'results_metrics.avg_profit',
-            'results_metrics.total_profit', 'results_metrics.profit', 'results_metrics.duration',
-            'loss', 'is_initial_point', 'is_best'
-        ]]
-        trials.columns = [
-            'Best', 'Epoch', 'Trades', 'Avg profit', 'Total profit', 'Profit', 'Avg duration',
-            'Objective', 'is_initial_point', 'is_best'
-        ]
+        trials = trials[['Best', 'current_epoch', 'results_metrics.trade_count',
+                         'results_metrics.avg_profit', 'results_metrics.total_profit',
+                         'results_metrics.profit', 'results_metrics.duration',
+                         'loss', 'is_initial_point', 'is_best']]
+        trials.columns = ['Best', 'Epoch', 'Trades', 'Avg profit', 'Total profit',
+                          'Profit', 'Avg duration', 'Objective', 'is_initial_point', 'is_best']
         trials['is_profit'] = False
         trials.loc[trials['is_initial_point'], 'Best'] = '*'
         trials.loc[trials['is_best'], 'Best'] = 'Best'
@@ -388,33 +384,31 @@ class Hyperopt:
         trials.loc[trials['Total profit'] > 0, 'is_profit'] = True
         trials['Trades'] = trials['Trades'].astype(str)
 
-        trials['Epoch'] = trials['Epoch'].apply(lambda x: "{}/{}".format(x, total_epochs))
-        trials['Avg profit'] = trials['Avg profit'].apply(lambda x: '{:,.2f}%'.format(x)
-                                                          if not isna(x) else x)
-        trials['Profit'] = trials['Profit'].apply(lambda x: '{:,.2f}%'.format(x)
-                                                  if not isna(x) else x)
+        trials['Epoch'] = trials['Epoch'].apply(
+            lambda x: "{}/{}".format(x, total_epochs))
+        trials['Avg profit'] = trials['Avg profit'].apply(
+            lambda x: '{:,.2f}%'.format(x) if not isna(x) else x)
+        trials['Profit'] = trials['Profit'].apply(
+            lambda x: '{:,.2f}%'.format(x) if not isna(x) else x)
         trials['Total profit'] = trials['Total profit'].apply(
             lambda x: '{: 11.8f} '.format(x) + config['stake_currency'] if not isna(x) else x)
-        trials['Avg duration'] = trials['Avg duration'].apply(lambda x: '{:,.1f}m'.format(x)
-                                                              if not isna(x) else x)
+        trials['Avg duration'] = trials['Avg duration'].apply(
+            lambda x: '{:,.1f}m'.format(x) if not isna(x) else x)
         if print_colorized:
             for i in range(len(trials)):
                 if trials.loc[i]['is_profit']:
-                    for z in range(len(trials.loc[i]) - 3):
-                        trials.iat[i, z] = "{}{}{}".format(Fore.GREEN, str(trials.loc[i][z]),
-                                                           Fore.RESET)
+                    for z in range(len(trials.loc[i])-3):
+                        trials.iat[i, z] = "{}{}{}".format(Fore.GREEN,
+                                                           str(trials.loc[i][z]), Fore.RESET)
                 if trials.loc[i]['is_best'] and highlight_best:
-                    for z in range(len(trials.loc[i]) - 3):
-                        trials.iat[i, z] = "{}{}{}".format(Style.BRIGHT, str(trials.loc[i][z]),
-                                                           Style.RESET_ALL)
+                    for z in range(len(trials.loc[i])-3):
+                        trials.iat[i, z] = "{}{}{}".format(Style.BRIGHT,
+                                                           str(trials.loc[i][z]), Style.RESET_ALL)
 
         trials = trials.drop(columns=['is_initial_point', 'is_best', 'is_profit'])
 
-        print(
-            tabulate(trials.to_dict(orient='list'),
-                     headers='keys',
-                     tablefmt='psql',
-                     stralign="right"))
+        print(tabulate(trials.to_dict(orient='list'), headers='keys', tablefmt='psql',
+                       stralign="right"))
 
     def has_space(self, space: str) -> bool:
         """
@@ -518,10 +512,8 @@ class Hyperopt:
         # path. We do not want to optimize 'hodl' strategies.
         loss: float = MAX_LOSS
         if trade_count >= self.config['hyperopt_min_trades']:
-            loss = self.calculate_loss(results=backtesting_results,
-                                       trade_count=trade_count,
-                                       min_date=min_date.datetime,
-                                       max_date=max_date.datetime)
+            loss = self.calculate_loss(results=backtesting_results, trade_count=trade_count,
+                                       min_date=min_date.datetime, max_date=max_date.datetime)
         return {
             'loss': loss,
             'params_dict': params_dict,
@@ -549,8 +541,8 @@ class Hyperopt:
                 f"Avg profit {results_metrics['avg_profit']: 6.2f}%. "
                 f"Total profit {results_metrics['total_profit']: 11.8f} {stake_cur} "
                 f"({results_metrics['profit']: 7.2f}\N{GREEK CAPITAL LETTER SIGMA}%). "
-                f"Avg duration {results_metrics['duration']:5.1f} min.").encode(
-                    locale.getpreferredencoding(), 'replace').decode('utf-8')
+                f"Avg duration {results_metrics['duration']:5.1f} min."
+                ).encode(locale.getpreferredencoding(), 'replace').decode('utf-8')
 
     def get_next_point_strategy(self):
         """ Choose a strategy randomly among the supported ones, used in multi opt mode
@@ -571,10 +563,6 @@ class Hyperopt:
             acq_optimizer=self.opt_acq_optimizer,
             n_initial_points=n_initial_points,
             acq_optimizer_kwargs={'n_jobs': n_jobs},
-            acq_func_kwargs={
-                'xi': 0.00001,
-                'kappa': 0.00001
-            },
             model_queue_size=self.n_models,
             random_state=self.random_state,
         )
@@ -755,8 +743,9 @@ class Hyperopt:
                 n_parameters += len(d.bounds)
         # guess the size of the search space as the count of the
         # unordered combination of the dimensions entries
-        search_space_size = (factorial(n_parameters) /
-                             (factorial(n_parameters - n_dimensions) * factorial(n_dimensions)))
+        search_space_size = int(
+            (factorial(n_parameters) /
+             (factorial(n_parameters - n_dimensions) * factorial(n_dimensions))))
         # logger.info(f'Search space size: {search_space_size}')
         if search_space_size < n_jobs:
             # don't waste if the space is small
@@ -789,7 +778,7 @@ class Hyperopt:
             if self.max_epoch > self.search_space_size:
                 self.max_epoch = self.search_space_size
         print()
-        logger.info(f'Max epochs set to: {self.epochs_limit()}')
+        logger.info(f'Max epoch set to: {self.epochs_limit()}')
 
     def setup_optimizers(self):
         """ Setup the optimizers objects, try to load from disk, or create new ones """
@@ -834,8 +823,10 @@ class Hyperopt:
             self.n_samples += len(preprocessed[pair])
         min_date, max_date = get_timerange(data)
 
-        logger.info('Hyperopting with data from %s up to %s (%s days)..', min_date.isoformat(),
-                    max_date.isoformat(), (max_date - min_date).days)
+        logger.info(
+            'Hyperopting with data from %s up to %s (%s days)..',
+            min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
+        )
         dump(preprocessed, self.tickerdata_pickle)
 
         # We don't need exchange instance anymore while running hyperopt
@@ -898,7 +889,7 @@ class Hyperopt:
                             break
 
         except KeyboardInterrupt:
-            print("User interrupted..")
+            print('User interrupted..')
 
         self.save_trials(final=True)
 

@@ -15,7 +15,8 @@ ARGS_STRATEGY = ["strategy", "strategy_path"]
 
 ARGS_TRADE = ["db_url", "sd_notify", "dry_run"]
 
-ARGS_COMMON_OPTIMIZE = ["ticker_interval", "timerange", "max_open_trades", "stake_amount", "fee"]
+ARGS_COMMON_OPTIMIZE = ["ticker_interval", "timerange",
+                        "max_open_trades", "stake_amount", "fee"]
 
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + [
     "position_stacking", "use_max_market_positions", "strategy_list", "export", "exportfilename"
@@ -38,10 +39,8 @@ ARGS_LIST_EXCHANGES = ["print_one_column", "list_exchanges_all"]
 
 ARGS_LIST_TIMEFRAMES = ["exchange", "print_one_column"]
 
-ARGS_LIST_PAIRS = [
-    "exchange", "print_list", "list_pairs_print_json", "print_one_column", "print_csv",
-    "base_currencies", "quote_currencies", "list_pairs_all"
-]
+ARGS_LIST_PAIRS = ["exchange", "print_list", "list_pairs_print_json", "print_one_column",
+                   "print_csv", "base_currencies", "quote_currencies", "list_pairs_all"]
 
 ARGS_TEST_PAIRLIST = ["config", "quote_currencies", "print_one_column", "list_pairs_print_json"]
 
@@ -56,38 +55,30 @@ ARGS_BUILD_HYPEROPT = ["user_data_dir", "hyperopt", "template"]
 ARGS_CONVERT_DATA = ["pairs", "format_from", "format_to", "erase"]
 ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes"]
 
-ARGS_DOWNLOAD_DATA = [
-    "pairs", "pairs_file", "days", "download_trades", "exchange", "timeframes", "erase",
-    "dataformat_ohlcv", "dataformat_trades"
-]
+ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "download_trades", "exchange",
+                      "timeframes", "erase", "dataformat_ohlcv", "dataformat_trades"]
 
-ARGS_PLOT_DATAFRAME = [
-    "pairs", "indicators1", "indicators2", "plot_limit", "db_url", "trade_source", "export",
-    "exportfilename", "timerange", "ticker_interval"
-]
+ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
+                       "db_url", "trade_source", "export", "exportfilename",
+                       "timerange", "ticker_interval"]
 
-ARGS_PLOT_PROFIT = [
-    "pairs", "timerange", "export", "exportfilename", "db_url", "trade_source", "ticker_interval"
-]
+ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
+                    "trade_source", "ticker_interval"]
 
-ARGS_HYPEROPT_LIST = [
-    "hyperopt_list_best", "hyperopt_list_profitable", "hyperopt_list_min_trades",
-    "hyperopt_list_max_trades", "hyperopt_list_min_avg_time", "hyperopt_list_max_avg_time",
-    "hyperopt_list_min_avg_profit", "hyperopt_list_max_avg_profit",
-    "hyperopt_list_min_total_profit", "hyperopt_list_max_total_profit", "print_colorized",
-    "print_json", "hyperopt_list_no_details"
-]
+ARGS_HYPEROPT_LIST = ["hyperopt_list_best", "hyperopt_list_profitable",
+                      "hyperopt_list_min_trades", "hyperopt_list_max_trades",
+                      "hyperopt_list_min_avg_time", "hyperopt_list_max_avg_time",
+                      "hyperopt_list_min_avg_profit", "hyperopt_list_max_avg_profit",
+                      "hyperopt_list_min_total_profit", "hyperopt_list_max_total_profit",
+                      "print_colorized", "print_json", "hyperopt_list_no_details"]
 
-ARGS_HYPEROPT_SHOW = [
-    "hyperopt_list_best", "hyperopt_list_profitable", "hyperopt_show_index", "print_json",
-    "hyperopt_show_no_header"
-]
+ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperopt_show_index",
+                      "print_json", "hyperopt_show_no_header"]
 
-NO_CONF_REQURIED = [
-    "convert-data", "convert-trade-data", "download-data", "list-timeframes", "list-markets",
-    "list-pairs", "list-strategies", "list-hyperopts", "hyperopt-list", "hyperopt-show",
-    "plot-dataframe", "plot-profit"
-]
+NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list-timeframes",
+                    "list-markets", "list-pairs", "list-strategies",
+                    "list-hyperopts", "hyperopt-list", "hyperopt-show",
+                    "plot-dataframe", "plot-profit"]
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-hyperopt", "new-strategy"]
 
@@ -96,6 +87,7 @@ class Arguments:
     """
     Arguments Class. Manage the arguments received by the cli
     """
+
     def __init__(self, args: Optional[List[str]]) -> None:
         self.args = args
         self._parsed_arg: Optional[argparse.Namespace] = None
@@ -164,70 +156,70 @@ class Arguments:
         self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot')
         self._build_args(optionlist=['version'], parser=self.parser)
 
-        from freqtrade.commands import (
-            start_create_userdir, start_convert_data, start_download_data, start_hyperopt_list,
-            start_hyperopt_show, start_list_exchanges, start_list_hyperopts, start_list_markets,
-            start_list_strategies, start_list_timeframes, start_new_config, start_new_hyperopt,
-            start_new_strategy, start_plot_dataframe, start_plot_profit, start_backtesting,
-            start_hyperopt, start_edge, start_test_pairlist, start_trading)
+        from freqtrade.commands import (start_create_userdir, start_convert_data,
+                                        start_download_data,
+                                        start_hyperopt_list, start_hyperopt_show,
+                                        start_list_exchanges, start_list_hyperopts,
+                                        start_list_markets, start_list_strategies,
+                                        start_list_timeframes, start_new_config,
+                                        start_new_hyperopt, start_new_strategy,
+                                        start_plot_dataframe, start_plot_profit,
+                                        start_backtesting, start_hyperopt, start_edge,
+                                        start_test_pairlist, start_trading)
 
-        subparsers = self.parser.add_subparsers(
-            dest='command',
-            # Use custom message when no subhandler is added
-            # shown from `main.py`
-            # required=True
-        )
+        subparsers = self.parser.add_subparsers(dest='command',
+                                                # Use custom message when no subhandler is added
+                                                # shown from `main.py`
+                                                # required=True
+                                                )
 
         # Add trade subcommand
-        trade_cmd = subparsers.add_parser('trade',
-                                          help='Trade module.',
+        trade_cmd = subparsers.add_parser('trade', help='Trade module.',
                                           parents=[_common_parser, _strategy_parser])
         trade_cmd.set_defaults(func=start_trading)
         self._build_args(optionlist=ARGS_TRADE, parser=trade_cmd)
 
         # Add backtesting subcommand
-        backtesting_cmd = subparsers.add_parser('backtesting',
-                                                help='Backtesting module.',
+        backtesting_cmd = subparsers.add_parser('backtesting', help='Backtesting module.',
                                                 parents=[_common_parser, _strategy_parser])
         backtesting_cmd.set_defaults(func=start_backtesting)
         self._build_args(optionlist=ARGS_BACKTEST, parser=backtesting_cmd)
 
         # Add edge subcommand
-        edge_cmd = subparsers.add_parser('edge',
-                                         help='Edge module.',
+        edge_cmd = subparsers.add_parser('edge', help='Edge module.',
                                          parents=[_common_parser, _strategy_parser])
         edge_cmd.set_defaults(func=start_edge)
         self._build_args(optionlist=ARGS_EDGE, parser=edge_cmd)
 
         # Add hyperopt subcommand
-        hyperopt_cmd = subparsers.add_parser(
-            'hyperopt',
-            help='Hyperopt module.',
-            parents=[_common_parser, _strategy_parser],
-        )
+        hyperopt_cmd = subparsers.add_parser('hyperopt', help='Hyperopt module.',
+                                             parents=[_common_parser, _strategy_parser],
+                                             )
         hyperopt_cmd.set_defaults(func=start_hyperopt)
         self._build_args(optionlist=ARGS_HYPEROPT, parser=hyperopt_cmd)
 
         # add create-userdir subcommand
-        create_userdir_cmd = subparsers.add_parser(
-            'create-userdir',
-            help="Create user-data directory.",
-        )
+        create_userdir_cmd = subparsers.add_parser('create-userdir',
+                                                   help="Create user-data directory.",
+                                                   )
         create_userdir_cmd.set_defaults(func=start_create_userdir)
         self._build_args(optionlist=ARGS_CREATE_USERDIR, parser=create_userdir_cmd)
 
         # add new-config subcommand
-        build_config_cmd = subparsers.add_parser('new-config', help="Create new config")
+        build_config_cmd = subparsers.add_parser('new-config',
+                                                 help="Create new config")
         build_config_cmd.set_defaults(func=start_new_config)
         self._build_args(optionlist=ARGS_BUILD_CONFIG, parser=build_config_cmd)
 
         # add new-strategy subcommand
-        build_strategy_cmd = subparsers.add_parser('new-strategy', help="Create new strategy")
+        build_strategy_cmd = subparsers.add_parser('new-strategy',
+                                                   help="Create new strategy")
         build_strategy_cmd.set_defaults(func=start_new_strategy)
         self._build_args(optionlist=ARGS_BUILD_STRATEGY, parser=build_strategy_cmd)
 
         # add new-hyperopt subcommand
-        build_hyperopt_cmd = subparsers.add_parser('new-hyperopt', help="Create new hyperopt")
+        build_hyperopt_cmd = subparsers.add_parser('new-hyperopt',
+                                                   help="Create new hyperopt")
         build_hyperopt_cmd.set_defaults(func=start_new_hyperopt)
         self._build_args(optionlist=ARGS_BUILD_HYPEROPT, parser=build_hyperopt_cmd)
 
