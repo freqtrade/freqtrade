@@ -448,9 +448,6 @@ def test_create_datadir_failed(caplog):
 
 def test_create_datadir(caplog, mocker):
 
-    # Capture caplog length here trying to avoid random test failure
-    len_caplog_before = len(caplog.record_tuples)
-
     cud = mocker.patch("freqtrade.commands.deploy_commands.create_userdata_dir", MagicMock())
     csf = mocker.patch("freqtrade.commands.deploy_commands.copy_sample_files", MagicMock())
     args = [
@@ -462,7 +459,6 @@ def test_create_datadir(caplog, mocker):
 
     assert cud.call_count == 1
     assert csf.call_count == 1
-    assert len(caplog.record_tuples) == len_caplog_before
 
 
 def test_start_new_strategy(mocker, caplog):
