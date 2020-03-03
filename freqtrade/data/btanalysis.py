@@ -190,7 +190,7 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     return df
 
 
-def calculate_max_drawdown(trades: pd.DataFrame, date_col: str = 'close_time',
+def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_time',
                            value_col: str = 'profitperc'
                            ) -> Tuple[float, pd.Timestamp, pd.Timestamp]:
     """

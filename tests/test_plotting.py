@@ -3,15 +3,16 @@ from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pandas as pd
 import plotly.graph_objects as go
 import pytest
 from plotly.subplots import make_subplots
 
+from freqtrade.commands import start_plot_dataframe, start_plot_profit
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import create_cum_profit, load_backtest_data
 from freqtrade.exceptions import OperationalException
-from freqtrade.commands import start_plot_dataframe, start_plot_profit
 from freqtrade.plot.plotting import (add_indicators, add_profit,
                                      create_plotconfig,
                                      generate_candlestick_graph,
@@ -266,6 +267,7 @@ def test_generate_profit_graph(testdatadir):
     trades = load_backtest_data(filename)
     timerange = TimeRange.parse_timerange("20180110-20180112")
     pairs = ["TRX/BTC", "ADA/BTC"]
+    trades = trades[trades['close_time'] < pd.Timestamp('2018-01-12', tz='UTC')]
 
     tickers = history.load_data(datadir=testdatadir,
                                 pairs=pairs,
@@ -283,12 +285,14 @@ def test_generate_profit_graph(testdatadir):
     assert fig.layout.yaxis3.title.text == "Profit"
 
     figure = fig.layout.figure
-    assert len(figure.data) == 4
+    assert len(figure.data) == 5
 
     avgclose = find_trace_in_fig_data(figure.data, "Avg close price")
     assert isinstance(avgclose, go.Scatter)
 
     profit = find_trace_in_fig_data(figure.data, "Profit")
+    assert isinstance(profit, go.Scatter)
+    profit = find_trace_in_fig_data(figure.data, "Max drawdown 0.00%")
     assert isinstance(profit, go.Scatter)
 
     for pair in pairs:
