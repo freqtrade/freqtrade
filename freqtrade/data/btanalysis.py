@@ -3,7 +3,7 @@ Helpers when analyzing backtest data
 """
 import logging
 from pathlib import Path
-from typing import Dict, Union
+from typing import Dict, Union, Tuple
 
 import numpy as np
 import pandas as pd
@@ -188,3 +188,23 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     # FFill to get continuous
     df[col_name] = df[col_name].ffill()
     return df
+
+
+def calculate_max_drawdown(trades: pd.DataFrame) -> Tuple[float, pd.Timestamp, pd.Timestamp]:
+    """
+    Calculate max drawdown and the corresponding close dates
+    :param trades: DataFrame containing trades (requires columns close_time and profitperc)
+    :return: Tuple (float, highdate, lowdate) with absolute max drawdown, high and low time
+    :raise: ValueError if trade-dataframe was found empty.
+    """
+    if len(trades) == 0:
+        raise ValueError("Trade dataframe empty")
+    profit_results = trades.sort_values('close_time')
+    max_drawdown_df = pd.DataFrame()
+    max_drawdown_df['cumulative'] = profit_results['profitperc'].cumsum()
+    max_drawdown_df['high_value'] = max_drawdown_df['cumulative'].cummax()
+    max_drawdown_df['drawdown'] = max_drawdown_df['cumulative'] - max_drawdown_df['high_value']
+    high_date = profit_results.loc[max_drawdown_df['high_value'].idxmax(), 'close_time']
+    low_date = profit_results.loc[max_drawdown_df['drawdown'].idxmin(), 'close_time']
+
+    return abs(min(max_drawdown_df['drawdown'])), high_date, low_date
