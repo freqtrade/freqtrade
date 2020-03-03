@@ -21,7 +21,7 @@ from colorama import init as colorama_init
 from joblib import (Parallel, cpu_count, delayed, dump, load,
                     wrap_non_picklable_objects)
 from pandas import DataFrame, json_normalize, isna
-from tabulate import tabulate
+import tabulate
 
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.history import get_timerange
@@ -309,6 +309,8 @@ class Hyperopt:
         if not results:
             return
 
+        tabulate.PRESERVE_WHITESPACE = True
+
         trials = json_normalize(results, max_level=1)
         trials['Best'] = ''
         trials = trials[['Best', 'current_epoch', 'results_metrics.trade_count',
@@ -325,43 +327,51 @@ class Hyperopt:
         trials['Trades'] = trials['Trades'].astype(str)
 
         trials['Epoch'] = trials['Epoch'].apply(
-            lambda x: '{}/{}'.format(str(x).rjust(len(str(total_epochs)), ' '), total_epochs))
+            lambda x: '{}/{}'.format(str(x).rjust(len(str(total_epochs)), ' '), total_epochs)
+        )
         trials['Avg profit'] = trials['Avg profit'].apply(
-            lambda x: ('{:,.2f}%'.format(x)).rjust(7, ' ') if not isna(x) else "--".rjust(7, ' '))
-        trials['Profit'] = trials['Profit'].apply(
-            lambda x: ('{:,.2f}%'.format(x)) if not isna(x) else "--")
-        trials['Total profit'] = trials['Total profit'].apply(
-            lambda x: ('{:,.8f} '.format(x)) + config['stake_currency'] if not isna(x) else "--")
+            lambda x: ('{:,.2f}%'.format(x)).rjust(7, ' ') if not isna(x) else "--".rjust(7, ' ')
+        )
         trials['Avg duration'] = trials['Avg duration'].apply(
-            lambda x: ('{:,.1f}m'.format(x)).rjust(7, ' ') if not isna(x) else "--".rjust(7, ' '))
+            lambda x: ('{:,.1f} m'.format(x)).rjust(7, ' ') if not isna(x) else "--".rjust(7, ' ')
+        )
         trials['Objective'] = trials['Objective'].apply(
-            lambda x: str(x).rjust(10, ' ') if str(x) != str(100000) else "N/A".rjust(10, ' '))
-        trials['Profit'] = trials['Total profit'] + " (" + trials['Profit'] + ")"
+            lambda x: str(x).rjust(10, ' ') if str(x) != str(100000) else "N/A".rjust(10, ' ')
+        )
+
+        trials['Profit'] = trials.apply(
+            lambda x: '{:,.8f} {} ({:,.2f}%)'.format(
+                x['Total profit'], config['stake_currency'],
+                x['Profit']).rjust(24+len(config['stake_currency']))
+            if x['Total profit'] != 0.0 else '--'.rjust(24+len(config['stake_currency'])),
+            axis=1
+        )
         trials = trials.drop(columns=['Total profit'])
 
         if print_colorized:
             for i in range(len(trials)):
                 if trials.loc[i]['is_profit']:
                     for z in range(len(trials.loc[i])-3):
-                        trials.iat[i, z] = "{}{}{}".format(Fore.GREEN,
-                                                           str(trials.loc[i][z]), Fore.RESET)
+                        trials.iat[i, z] = "{}{}{}".format(
+                            Fore.GREEN, str(trials.loc[i][z]), Fore.RESET)
                 if trials.loc[i]['is_best'] and highlight_best:
                     for z in range(len(trials.loc[i])-3):
-                        trials.iat[i, z] = "{}{}{}".format(Style.BRIGHT,
-                                                           str(trials.loc[i][z]), Style.RESET_ALL)
+                        trials.iat[i, z] = "{}{}{}".format(
+                            Style.BRIGHT, str(trials.loc[i][z]), Style.RESET_ALL)
 
         trials = trials.drop(columns=['is_initial_point', 'is_best', 'is_profit'])
         if remove_header > 0:
-            table = tabulate(trials.to_dict(orient='list'), tablefmt='orgtbl',
-                             headers='keys', stralign="right")
+            table = tabulate.tabulate(
+                trials.to_dict(orient='list'), tablefmt='orgtbl', headers='keys', stralign="right")
+            # print(table)
             table = table.split("\n", remove_header)[remove_header]
         elif remove_header < 0:
-            table = tabulate(trials.to_dict(orient='list'), tablefmt='psql',
-                             headers='keys', stralign="right")
+            table = tabulate.tabulate(
+                trials.to_dict(orient='list'), tablefmt='psql', headers='keys', stralign="right")
             table = "\n".join(table.split("\n")[0:remove_header])
         else:
-            table = tabulate(trials.to_dict(orient='list'), tablefmt='psql',
-                             headers='keys', stralign="right")
+            table = tabulate.tabulate(
+                trials.to_dict(orient='list'), tablefmt='psql', headers='keys', stralign="right")
         print(table)
 
     def has_space(self, space: str) -> bool:

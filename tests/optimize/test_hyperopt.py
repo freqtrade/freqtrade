@@ -410,7 +410,7 @@ def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
     )
     out, err = capsys.readouterr()
     assert all(x in out
-               for x in ["Best", "2/2", " 1", "0.10%", "0.00100000 BTC", "1.00%", "20.0m"])
+               for x in ["Best", "2/2", " 1", "0.10%", "0.00100000 BTC (1.00%)", "20.0 m"])
 
 
 def test_no_log_if_loss_does_not_improve(hyperopt, caplog) -> None:
