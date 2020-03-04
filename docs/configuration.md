@@ -485,7 +485,8 @@ If `bid_strategy.price_side` is set to `"bid"`, then the bot will use 99 as buyi
 In line with that, if `bid_strategy.price_side` is set to `"ask"`, then the bot will use 101 as buying price.
 
 Using `ask` price often guarantees quicker filled orders, but the bot can also end up paying more than what would have been necessary.
-
+Taker fees instead of maker fees will most likely apply even when using limit buy orders.
+Also, prices at the "ask" side of the spread are higher than prices at the "bid" side in the orderbook, so the order behaves similar to a market order (however with a maximum price).
 
 #### Buy price with Orderbook enabled
 
