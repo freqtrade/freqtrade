@@ -410,7 +410,7 @@ def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
     )
     out, err = capsys.readouterr()
     assert all(x in out
-               for x in ["Best", "2/2", " 1", "0.10%", "0.00100000 BTC (1.00%)", "20.0 m"])
+               for x in ["Best", "2/2", " 1", "0.10%", "0.00100000 BTC    (1.00%)", "20.0 m"])
 
 
 def test_no_log_if_loss_does_not_improve(hyperopt, caplog) -> None:
@@ -432,13 +432,11 @@ def test_save_trials_saves_trials(mocker, hyperopt, testdatadir, caplog) -> None
 
     hyperopt.trials = trials
     hyperopt.save_trials(final=True)
-    assert log_has("Saving 1 epoch.", caplog)
     assert log_has(f"1 epoch saved to '{trials_file}'.", caplog)
     mock_dump.assert_called_once()
 
     hyperopt.trials = trials + trials
     hyperopt.save_trials(final=True)
-    assert log_has("Saving 2 epochs.", caplog)
     assert log_has(f"2 epochs saved to '{trials_file}'.", caplog)
 
 

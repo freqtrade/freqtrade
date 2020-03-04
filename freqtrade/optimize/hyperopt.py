@@ -154,7 +154,7 @@ class Hyperopt:
         """
         num_trials = len(self.trials)
         if num_trials > self.num_trials_saved:
-            logger.info(f"Saving {num_trials} {plural(num_trials, 'epoch')}.")
+            logger.debug(f"Saving {num_trials} {plural(num_trials, 'epoch')}.")
             dump(self.trials, self.trials_file)
             self.num_trials_saved = num_trials
         if final:
@@ -322,7 +322,6 @@ class Hyperopt:
         trials['is_profit'] = False
         trials.loc[trials['is_initial_point'], 'Best'] = '*'
         trials.loc[trials['is_best'], 'Best'] = 'Best'
-        trials['Objective'] = trials['Objective'].astype(str)
         trials.loc[trials['Total profit'] > 0, 'is_profit'] = True
         trials['Trades'] = trials['Trades'].astype(str)
 
@@ -336,14 +335,15 @@ class Hyperopt:
             lambda x: ('{:,.1f} m'.format(x)).rjust(7, ' ') if not isna(x) else "--".rjust(7, ' ')
         )
         trials['Objective'] = trials['Objective'].apply(
-            lambda x: str(x).rjust(10, ' ') if str(x) != str(100000) else "N/A".rjust(10, ' ')
+            lambda x: '{:,.5f}'.format(x).rjust(8, ' ') if x != 100000 else "N/A".rjust(8, ' ')
         )
 
         trials['Profit'] = trials.apply(
-            lambda x: '{:,.8f} {} ({:,.2f}%)'.format(
+            lambda x: '{:,.8f} {} {}'.format(
                 x['Total profit'], config['stake_currency'],
-                x['Profit']).rjust(24+len(config['stake_currency']))
-            if x['Total profit'] != 0.0 else '--'.rjust(24+len(config['stake_currency'])),
+                '({:,.2f}%)'.format(x['Profit']).rjust(10, ' ')
+            ).rjust(25+len(config['stake_currency']))
+            if x['Total profit'] != 0.0 else '--'.rjust(25+len(config['stake_currency'])),
             axis=1
         )
         trials = trials.drop(columns=['Total profit'])
@@ -351,27 +351,33 @@ class Hyperopt:
         if print_colorized:
             for i in range(len(trials)):
                 if trials.loc[i]['is_profit']:
-                    for z in range(len(trials.loc[i])-3):
-                        trials.iat[i, z] = "{}{}{}".format(
-                            Fore.GREEN, str(trials.loc[i][z]), Fore.RESET)
+                    for j in range(len(trials.loc[i])-3):
+                        trials.iat[i, j] = "{}{}{}".format(Fore.GREEN,
+                                                           str(trials.loc[i][j]), Fore.RESET)
                 if trials.loc[i]['is_best'] and highlight_best:
-                    for z in range(len(trials.loc[i])-3):
-                        trials.iat[i, z] = "{}{}{}".format(
-                            Style.BRIGHT, str(trials.loc[i][z]), Style.RESET_ALL)
+                    for j in range(len(trials.loc[i])-3):
+                        trials.iat[i, j] = "{}{}{}".format(Style.BRIGHT,
+                                                           str(trials.loc[i][j]), Style.RESET_ALL)
 
         trials = trials.drop(columns=['is_initial_point', 'is_best', 'is_profit'])
         if remove_header > 0:
             table = tabulate.tabulate(
-                trials.to_dict(orient='list'), tablefmt='orgtbl', headers='keys', stralign="right")
-            # print(table)
+                trials.to_dict(orient='list'), tablefmt='orgtbl',
+                headers='keys', stralign="right"
+            )
+
             table = table.split("\n", remove_header)[remove_header]
         elif remove_header < 0:
             table = tabulate.tabulate(
-                trials.to_dict(orient='list'), tablefmt='psql', headers='keys', stralign="right")
+                trials.to_dict(orient='list'), tablefmt='psql',
+                headers='keys', stralign="right"
+            )
             table = "\n".join(table.split("\n")[0:remove_header])
         else:
             table = tabulate.tabulate(
-                trials.to_dict(orient='list'), tablefmt='psql', headers='keys', stralign="right")
+                trials.to_dict(orient='list'), tablefmt='psql',
+                headers='keys', stralign="right"
+            )
         print(table)
 
     def has_space(self, space: str) -> bool:
