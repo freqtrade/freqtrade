@@ -465,7 +465,7 @@ Orderbook `bid` (buy) side depth is then divided by the orderbook `ask` (sell) s
 
 #### Buy price side
 
-The configuration option `bid_strategy.price_side` defines the side of the spread the bot looks for when buying.
+The configuration setting `bid_strategy.price_side` defines the side of the spread the bot looks for when buying.
 
 The following displays an orderbook.
 
@@ -503,7 +503,7 @@ The `bid_strategy.ask_last_balance` configuration parameter controls this. A val
 
 #### Sell price side
 
-The configuration option `ask_strategy.price_side` defines the side of the spread the bot looks for when selling.
+The configuration setting `ask_strategy.price_side` defines the side of the spread the bot looks for when selling.
 
 The following displays an orderbook:
 
@@ -524,7 +524,7 @@ In line with that, if `ask_strategy.price_side` is set to `"bid"`, then the bot 
 
 #### Sell price with Orderbook enabled
 
-When selling with the orderbook enabled (`ask_strategy.use_order_book=True`), Freqtrade fetches the `ask_strategy.order_book_max` entries in the orderbook. Then each of the orderbook steps between `ask_strategy.order_book_min` and `ask_strategy.order_book_max` on the configured orderbook side are validated for a profitable sell-possibility based on the strategy configuration and the sell order is placed at the first profitable spot.
+When selling with the orderbook enabled (`ask_strategy.use_order_book=True`), Freqtrade fetches the `ask_strategy.order_book_max` entries in the orderbook. Then each of the orderbook steps between `ask_strategy.order_book_min` and `ask_strategy.order_book_max` on the configured orderbook side are validated for a profitable sell-possibility based on the strategy configuration (`minimal_roi` conditions) and the sell order is placed at the first profitable spot.
 
 !!! Note
     Using `order_book_max` higher than `order_book_min` only makes sense when ask_strategy.price_side is set to `"ask"`.
