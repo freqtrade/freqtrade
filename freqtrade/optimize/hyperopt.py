@@ -22,7 +22,7 @@ from colorama import init as colorama_init
 from joblib import (Parallel, cpu_count, delayed, dump, load,
                     wrap_non_picklable_objects)
 from pandas import DataFrame, json_normalize, isna
-from tabulate import tabulate
+import tabulate
 
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.history import get_timerange
@@ -117,6 +117,7 @@ class Hyperopt:
             self.config['ask_strategy']['use_sell_signal'] = True
 
         self.print_all = self.config.get('print_all', False)
+        self.hyperopt_table_header = 0
         self.print_colorized = self.config.get('print_colorized', False)
         self.print_json = self.config.get('print_json', False)
 
@@ -154,7 +155,7 @@ class Hyperopt:
         """
         num_trials = len(self.trials)
         if num_trials > self.num_trials_saved:
-            logger.info(f"Saving {num_trials} {plural(num_trials, 'epoch')}.")
+            logger.debug(f"Saving {num_trials} {plural(num_trials, 'epoch')}.")
             dump(self.trials, self.trials_file)
             self.num_trials_saved = num_trials
         if final:
@@ -273,8 +274,10 @@ class Hyperopt:
             if not self.print_all:
                 # Separate the results explanation string from dots
                 print("\n")
-            self.print_results_explanation(results, self.total_epochs, self.print_all,
-                                           self.print_colorized)
+            self.print_result_table(self.config, results, self.total_epochs,
+                                    self.print_all, self.print_colorized,
+                                    self.hyperopt_table_header)
+            self.hyperopt_table_header = 2
 
     @staticmethod
     def print_results_explanation(results, total_epochs, highlight_best: bool,
@@ -300,12 +303,14 @@ class Hyperopt:
 
     @staticmethod
     def print_result_table(config: dict, results: list, total_epochs: int, highlight_best: bool,
-                           print_colorized: bool) -> None:
+                           print_colorized: bool, remove_header: int) -> None:
         """
         Log result table
         """
         if not results:
             return
+
+        tabulate.PRESERVE_WHITESPACE = True
 
         trials = json_normalize(results, max_level=1)
         trials['Best'] = ''
@@ -318,35 +323,63 @@ class Hyperopt:
         trials['is_profit'] = False
         trials.loc[trials['is_initial_point'], 'Best'] = '*'
         trials.loc[trials['is_best'], 'Best'] = 'Best'
-        trials['Objective'] = trials['Objective'].astype(str)
         trials.loc[trials['Total profit'] > 0, 'is_profit'] = True
         trials['Trades'] = trials['Trades'].astype(str)
 
         trials['Epoch'] = trials['Epoch'].apply(
-            lambda x: "{}/{}".format(x, total_epochs))
+            lambda x: '{}/{}'.format(str(x).rjust(len(str(total_epochs)), ' '), total_epochs)
+        )
         trials['Avg profit'] = trials['Avg profit'].apply(
-            lambda x: '{:,.2f}%'.format(x) if not isna(x) else x)
-        trials['Profit'] = trials['Profit'].apply(
-            lambda x: '{:,.2f}%'.format(x) if not isna(x) else x)
-        trials['Total profit'] = trials['Total profit'].apply(
-            lambda x: '{: 11.8f} '.format(x) + config['stake_currency'] if not isna(x) else x)
+            lambda x: ('{:,.2f}%'.format(x)).rjust(7, ' ') if not isna(x) else "--".rjust(7, ' ')
+        )
         trials['Avg duration'] = trials['Avg duration'].apply(
-            lambda x: '{:,.1f}m'.format(x) if not isna(x) else x)
+            lambda x: ('{:,.1f} m'.format(x)).rjust(7, ' ') if not isna(x) else "--".rjust(7, ' ')
+        )
+        trials['Objective'] = trials['Objective'].apply(
+            lambda x: '{:,.5f}'.format(x).rjust(8, ' ') if x != 100000 else "N/A".rjust(8, ' ')
+        )
+
+        trials['Profit'] = trials.apply(
+            lambda x: '{:,.8f} {} {}'.format(
+                x['Total profit'], config['stake_currency'],
+                '({:,.2f}%)'.format(x['Profit']).rjust(10, ' ')
+            ).rjust(25+len(config['stake_currency']))
+            if x['Total profit'] != 0.0 else '--'.rjust(25+len(config['stake_currency'])),
+            axis=1
+        )
+        trials = trials.drop(columns=['Total profit'])
+
         if print_colorized:
             for i in range(len(trials)):
                 if trials.loc[i]['is_profit']:
-                    for z in range(len(trials.loc[i])-3):
-                        trials.iat[i, z] = "{}{}{}".format(Fore.GREEN,
-                                                           str(trials.loc[i][z]), Fore.RESET)
+                    for j in range(len(trials.loc[i])-3):
+                        trials.iat[i, j] = "{}{}{}".format(Fore.GREEN,
+                                                           str(trials.loc[i][j]), Fore.RESET)
                 if trials.loc[i]['is_best'] and highlight_best:
-                    for z in range(len(trials.loc[i])-3):
-                        trials.iat[i, z] = "{}{}{}".format(Style.BRIGHT,
-                                                           str(trials.loc[i][z]), Style.RESET_ALL)
+                    for j in range(len(trials.loc[i])-3):
+                        trials.iat[i, j] = "{}{}{}".format(Style.BRIGHT,
+                                                           str(trials.loc[i][j]), Style.RESET_ALL)
 
         trials = trials.drop(columns=['is_initial_point', 'is_best', 'is_profit'])
+        if remove_header > 0:
+            table = tabulate.tabulate(
+                trials.to_dict(orient='list'), tablefmt='orgtbl',
+                headers='keys', stralign="right"
+            )
 
-        print(tabulate(trials.to_dict(orient='list'), headers='keys', tablefmt='psql',
-                       stralign="right"))
+            table = table.split("\n", remove_header)[remove_header]
+        elif remove_header < 0:
+            table = tabulate.tabulate(
+                trials.to_dict(orient='list'), tablefmt='psql',
+                headers='keys', stralign="right"
+            )
+            table = "\n".join(table.split("\n")[0:remove_header])
+        else:
+            table = tabulate.tabulate(
+                trials.to_dict(orient='list'), tablefmt='psql',
+                headers='keys', stralign="right"
+            )
+        print(table)
 
     def has_space(self, space: str) -> bool:
         """
@@ -534,7 +567,7 @@ class Hyperopt:
     def start(self) -> None:
         self.random_state = self._set_random_state(self.config.get('hyperopt_random_state', None))
         logger.info(f"Using optimizer random state: {self.random_state}")
-
+        self.hyperopt_table_header = -1
         data, timerange = self.backtesting.load_bt_data()
 
         preprocessed = self.backtesting.strategy.tickerdata_to_dataframe(data)

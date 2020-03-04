@@ -426,17 +426,27 @@ def test_onlyprofit_loss_prefers_higher_profits(default_conf, hyperopt_results) 
 def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
     hyperopt.current_best_loss = 2
     hyperopt.total_epochs = 2
+
     hyperopt.print_results(
         {
-            'is_best': True,
             'loss': 1,
+            'results_metrics':
+                {
+                    'trade_count': 1,
+                    'avg_profit': 0.1,
+                    'total_profit': 0.001,
+                    'profit': 1.0,
+                    'duration': 20.0
+                },
+            'total_profit': 0,
             'current_epoch': 2,  # This starts from 1 (in a human-friendly manner)
-            'results_explanation': 'foo.',
-            'is_initial_point': False
+            'is_initial_point': False,
+            'is_best': True
         }
     )
     out, err = capsys.readouterr()
-    assert '    2/2: foo. Objective: 1.00000' in out
+    assert all(x in out
+               for x in ["Best", "2/2", " 1", "0.10%", "0.00100000 BTC    (1.00%)", "20.0 m"])
 
 
 def test_no_log_if_loss_does_not_improve(hyperopt, caplog) -> None:
@@ -458,13 +468,11 @@ def test_save_trials_saves_trials(mocker, hyperopt, testdatadir, caplog) -> None
 
     hyperopt.trials = trials
     hyperopt.save_trials(final=True)
-    assert log_has("Saving 1 epoch.", caplog)
     assert log_has(f"1 epoch saved to '{trials_file}'.", caplog)
     mock_dump.assert_called_once()
 
     hyperopt.trials = trials + trials
     hyperopt.save_trials(final=True)
-    assert log_has("Saving 2 epochs.", caplog)
     assert log_has(f"2 epochs saved to '{trials_file}'.", caplog)
 
 
@@ -502,8 +510,18 @@ def test_start_calls_optimizer(mocker, default_conf, caplog, capsys) -> None:
 
     parallel = mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
-        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result',
-                                 'params': {'buy': {}, 'sell': {}, 'roi': {}, 'stoploss': 0.0}}])
+        MagicMock(return_value=[{
+            'loss': 1, 'results_explanation': 'foo result',
+            'params': {'buy': {}, 'sell': {}, 'roi': {}, 'stoploss': 0.0},
+            'results_metrics':
+            {
+                'trade_count': 1,
+                'avg_profit': 0.1,
+                'total_profit': 0.001,
+                'profit': 1.0,
+                'duration': 20.0
+            },
+        }])
     )
     patch_exchange(mocker)
     # Co-test loading ticker-interval from strategy
@@ -797,11 +815,23 @@ def test_print_json_spaces_all(mocker, default_conf, caplog, capsys) -> None:
 
     parallel = mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
-        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {},
-                                 'params_details': {'buy': {'mfi-value': None},
-                                                    'sell': {'sell-mfi-value': None},
-                                                    'roi': {}, 'stoploss': {'stoploss': None},
-                                                    'trailing': {'trailing_stop': None}}}])
+        MagicMock(return_value=[{
+            'loss': 1, 'results_explanation': 'foo result', 'params': {},
+            'params_details': {
+                'buy': {'mfi-value': None},
+                'sell': {'sell-mfi-value': None},
+                'roi': {}, 'stoploss': {'stoploss': None},
+                'trailing': {'trailing_stop': None}
+            },
+            'results_metrics':
+            {
+                'trade_count': 1,
+                'avg_profit': 0.1,
+                'total_profit': 0.001,
+                'profit': 1.0,
+                'duration': 20.0
+            }
+        }])
     )
     patch_exchange(mocker)
 
@@ -823,7 +853,11 @@ def test_print_json_spaces_all(mocker, default_conf, caplog, capsys) -> None:
     parallel.assert_called_once()
 
     out, err = capsys.readouterr()
-    assert '{"params":{"mfi-value":null,"sell-mfi-value":null},"minimal_roi":{},"stoploss":null,"trailing_stop":null}' in out  # noqa: E501
+    result_str = (
+        '{"params":{"mfi-value":null,"sell-mfi-value":null},"minimal_roi"'
+        ':{},"stoploss":null,"trailing_stop":null}'
+    )
+    assert result_str in out  # noqa: E501
     assert dumper.called
     # Should be called twice, once for tickerdata, once to save evaluations
     assert dumper.call_count == 2
@@ -840,10 +874,22 @@ def test_print_json_spaces_default(mocker, default_conf, caplog, capsys) -> None
 
     parallel = mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
-        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {},
-                                 'params_details': {'buy': {'mfi-value': None},
-                                                    'sell': {'sell-mfi-value': None},
-                                                    'roi': {}, 'stoploss': {'stoploss': None}}}])
+        MagicMock(return_value=[{
+            'loss': 1, 'results_explanation': 'foo result', 'params': {},
+            'params_details': {
+                'buy': {'mfi-value': None},
+                'sell': {'sell-mfi-value': None},
+                'roi': {}, 'stoploss': {'stoploss': None}
+            },
+            'results_metrics':
+            {
+                'trade_count': 1,
+                'avg_profit': 0.1,
+                'total_profit': 0.001,
+                'profit': 1.0,
+                'duration': 20.0
+            }
+        }])
     )
     patch_exchange(mocker)
 
@@ -882,8 +928,18 @@ def test_print_json_spaces_roi_stoploss(mocker, default_conf, caplog, capsys) ->
 
     parallel = mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
-        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {},
-                                 'params_details': {'roi': {}, 'stoploss': {'stoploss': None}}}])
+        MagicMock(return_value=[{
+            'loss': 1, 'results_explanation': 'foo result', 'params': {},
+            'params_details': {'roi': {}, 'stoploss': {'stoploss': None}},
+            'results_metrics':
+            {
+                'trade_count': 1,
+                'avg_profit': 0.1,
+                'total_profit': 0.001,
+                'profit': 1.0,
+                'duration': 20.0
+            }
+        }])
     )
     patch_exchange(mocker)
 
@@ -923,7 +979,16 @@ def test_simplified_interface_roi_stoploss(mocker, default_conf, caplog, capsys)
     parallel = mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
         MagicMock(return_value=[{
-            'loss': 1, 'results_explanation': 'foo result', 'params': {'stoploss': 0.0}}])
+            'loss': 1, 'results_explanation': 'foo result', 'params': {'stoploss': 0.0},
+            'results_metrics':
+            {
+                'trade_count': 1,
+                'avg_profit': 0.1,
+                'total_profit': 0.001,
+                'profit': 1.0,
+                'duration': 20.0
+            }
+        }])
     )
     patch_exchange(mocker)
 
@@ -1001,7 +1066,17 @@ def test_simplified_interface_buy(mocker, default_conf, caplog, capsys) -> None:
 
     parallel = mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
-        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {}}])
+        MagicMock(return_value=[{
+            'loss': 1, 'results_explanation': 'foo result', 'params': {},
+            'results_metrics':
+            {
+                'trade_count': 1,
+                'avg_profit': 0.1,
+                'total_profit': 0.001,
+                'profit': 1.0,
+                'duration': 20.0
+            }
+        }])
     )
     patch_exchange(mocker)
 
@@ -1048,7 +1123,17 @@ def test_simplified_interface_sell(mocker, default_conf, caplog, capsys) -> None
 
     parallel = mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
-        MagicMock(return_value=[{'loss': 1, 'results_explanation': 'foo result', 'params': {}}])
+        MagicMock(return_value=[{
+            'loss': 1, 'results_explanation': 'foo result', 'params': {},
+            'results_metrics':
+            {
+                'trade_count': 1,
+                'avg_profit': 0.1,
+                'total_profit': 0.001,
+                'profit': 1.0,
+                'duration': 20.0
+            }
+        }])
     )
     patch_exchange(mocker)
 
