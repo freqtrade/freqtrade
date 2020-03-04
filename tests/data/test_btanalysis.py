@@ -2,15 +2,17 @@ from unittest.mock import MagicMock
 
 import pytest
 from arrow import Arrow
-from pandas import DataFrame, DateOffset, to_datetime
+from pandas import DataFrame, DateOffset, to_datetime, Timestamp
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
+                                       analyze_trade_parallelism,
+                                       calculate_max_drawdown,
                                        combine_tickers_with_mean,
                                        create_cum_profit,
                                        extract_trades_of_period,
                                        load_backtest_data, load_trades,
-                                       load_trades_from_db, analyze_trade_parallelism)
+                                       load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
 from tests.test_persistence import create_mock_trades
 
@@ -163,3 +165,17 @@ def test_create_cum_profit1(testdatadir):
     assert "cum_profits" in cum_profits.columns
     assert cum_profits.iloc[0]['cum_profits'] == 0
     assert cum_profits.iloc[-1]['cum_profits'] == 0.0798005
+
+
+def test_calculate_max_drawdown(testdatadir):
+    filename = testdatadir / "backtest-result_test.json"
+    bt_data = load_backtest_data(filename)
+    drawdown, h, low = calculate_max_drawdown(bt_data)
+    assert isinstance(drawdown, float)
+    assert pytest.approx(drawdown) == 0.21142322
+    assert isinstance(h, Timestamp)
+    assert isinstance(low, Timestamp)
+    assert h == Timestamp('2018-01-24 14:25:00', tz='UTC')
+    assert low == Timestamp('2018-01-30 04:45:00', tz='UTC')
+    with pytest.raises(ValueError, match='Trade dataframe empty.'):
+        drawdown, h, low = calculate_max_drawdown(DataFrame())
