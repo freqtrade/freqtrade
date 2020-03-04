@@ -60,11 +60,13 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `trailing_only_offset_is_reached` | Only apply trailing stoploss when the offset is reached. [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*  <br> **Datatype:** Boolean
 | `unfilledtimeout.buy` | **Required.** How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled. [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Integer
 | `unfilledtimeout.sell` | **Required.** How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled. [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Integer
-| `bid_strategy.ask_last_balance` | **Required.** Set the bidding price. More information [below](#buy-price-without-orderbook). 
+| `bid_strategy.price_side` | Select the side of the spread the bot should look at to get the buy rate. [More information below](#buy-price-side).<br> *Defaults to `bid`.* <br> **Datatype:** String (either `ask` or `bid`).
+| `bid_strategy.ask_last_balance` | **Required.** Set the bidding price. More information [below](#buy-price-without-orderbook-enabled).
 | `bid_strategy.use_order_book` | Enable buying using the rates in [Order Book Bids](#buy-price-with-orderbook-enabled). <br> **Datatype:** Boolean
 | `bid_strategy.order_book_top` | Bot will use the top N rate in Order Book Bids to buy. I.e. a value of 2 will allow the bot to pick the 2nd bid rate in [Order Book Bids](#buy-price-with-orderbook-enabled). <br>*Defaults to `1`.*  <br> **Datatype:** Positive Integer
 | `bid_strategy. check_depth_of_market.enabled` | Do not buy if the difference of buy orders and sell orders is met in Order Book. [Check market depth](#check-depth-of-market). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `bid_strategy. check_depth_of_market.bids_to_ask_delta` | The difference ratio of buy orders and sell orders found in Order Book. A value below 1 means sell order size is greater, while value greater than 1 means buy order size is higher. [Check market depth](#check-depth-of-market) <br> *Defaults to `0`.*  <br> **Datatype:** Float (as ratio)
+| `ask_strategy.price_side` | Select the side of the spread the bot should look at to get the sell rate. [More information below](#sell-price-side).<br> *Defaults to `ask`.* <br> **Datatype:** String (either `ask` or `bid`).
 | `ask_strategy.use_order_book` | Enable selling of open trades using [Order Book Asks](#sell-price-with-orderbook-enabled). <br> **Datatype:** Boolean
 | `ask_strategy.order_book_min` | Bot will scan from the top min to max Order Book Asks searching for a profitable rate. <br>*Defaults to `1`.* <br> **Datatype:** Positive Integer
 | `ask_strategy.order_book_max` | Bot will scan from the top min to max Order Book Asks searching for a profitable rate. <br>*Defaults to `1`.* <br> **Datatype:** Positive Integer
@@ -463,23 +465,72 @@ Orderbook `bid` (buy) side depth is then divided by the orderbook `ask` (sell) s
 !!! Note
     A delta value below 1 means that `ask` (sell) orderbook side depth is greater than the depth of the `bid` (buy) orderbook side, while a value greater than 1 means opposite (depth of the buy side is higher than the depth of the sell side).
 
+#### Buy price side
+
+The configuration setting `bid_strategy.price_side` defines the side of the spread the bot looks for when buying.
+
+The following displays an orderbook.
+
+``` explanation
+...
+103
+102
+101  # ask
+-------------Current spread
+99   # bid
+98
+97
+...
+```
+
+If `bid_strategy.price_side` is set to `"bid"`, then the bot will use 99 as buying price.  
+In line with that, if `bid_strategy.price_side` is set to `"ask"`, then the bot will use 101 as buying price.
+
+Using `ask` price often guarantees quicker filled orders, but the bot can also end up paying more than what would have been necessary.
+Taker fees instead of maker fees will most likely apply even when using limit buy orders.
+Also, prices at the "ask" side of the spread are higher than prices at the "bid" side in the orderbook, so the order behaves similar to a market order (however with a maximum price).
+
 #### Buy price with Orderbook enabled
 
-When buying with the orderbook enabled (`bid_strategy.use_order_book=True`), Freqtrade fetches the `bid_strategy.order_book_top` entries from the orderbook and then uses the entry specified as `bid_strategy.order_book_top` on the `bid` (buy) side of the orderbook. 1 specifies the topmost entry in the orderbook, while 2 would use the 2nd entry in the orderbook, and so on.
+When buying with the orderbook enabled (`bid_strategy.use_order_book=True`), Freqtrade fetches the `bid_strategy.order_book_top` entries from the orderbook and then uses the entry specified as `bid_strategy.order_book_top` on the configured side (`bid_strategy.price_side`) of the orderbook. 1 specifies the topmost entry in the orderbook, while 2 would use the 2nd entry in the orderbook, and so on.
 
 #### Buy price without Orderbook enabled
 
-When not using orderbook (`bid_strategy.use_order_book=False`), Freqtrade uses the best `ask` (sell) price from the ticker if it's below the `last` traded price from the ticker. Otherwise (when the `ask` price is not below the `last` price), it calculates a rate between `ask` and `last` price.
+The following section uses `side` as the configured `bid_strategy.price_side`.
 
-The `bid_strategy.ask_last_balance` configuration parameter controls this. A value of `0.0` will use `ask` price, while `1.0` will use the `last` price and values between those interpolate between ask and last price.
+When not using orderbook (`bid_strategy.use_order_book=False`), Freqtrade uses the best `side` price from the ticker if it's below the `last` traded price from the ticker. Otherwise (when the `side` price is above the `last` price), it calculates a rate between `side` and `last` price.
 
-Using `ask` price often guarantees quicker success in the bid, but the bot can also end up paying more than what would have been necessary.
+The `bid_strategy.ask_last_balance` configuration parameter controls this. A value of `0.0` will use `side` price, while `1.0` will use the `last` price and values between those interpolate between ask and last price.
 
 ### Sell price
 
+#### Sell price side
+
+The configuration setting `ask_strategy.price_side` defines the side of the spread the bot looks for when selling.
+
+The following displays an orderbook:
+
+``` explanation
+...
+103
+102
+101  # ask
+-------------Current spread
+99   # bid
+98
+97
+...
+```
+
+If `ask_strategy.price_side` is set to `"ask"`, then the bot will use 101 as selling price.  
+In line with that, if `ask_strategy.price_side` is set to `"bid"`, then the bot will use 99 as selling price.
+
 #### Sell price with Orderbook enabled
 
-When selling with the orderbook enabled (`ask_strategy.use_order_book=True`), Freqtrade fetches the `ask_strategy.order_book_max` entries in the orderbook. Then each of the orderbook steps between `ask_strategy.order_book_min` and `ask_strategy.order_book_max` on the `ask` orderbook side are validated for a profitable sell-possibility based on the strategy configuration and the sell order is placed at the first profitable spot.
+When selling with the orderbook enabled (`ask_strategy.use_order_book=True`), Freqtrade fetches the `ask_strategy.order_book_max` entries in the orderbook. Then each of the orderbook steps between `ask_strategy.order_book_min` and `ask_strategy.order_book_max` on the configured orderbook side are validated for a profitable sell-possibility based on the strategy configuration (`minimal_roi` conditions) and the sell order is placed at the first profitable spot.
+
+!!! Note
+    Using `order_book_max` higher than `order_book_min` only makes sense when ask_strategy.price_side is set to `"ask"`.
 
 The idea here is to place the sell order early, to be ahead in the queue.
 
@@ -490,7 +541,7 @@ A fixed slot (mirroring `bid_strategy.order_book_top`) can be defined by setting
 
 #### Sell price without Orderbook enabled
 
-When not using orderbook (`ask_strategy.use_order_book=False`), the `bid` price from the ticker will be used as the sell price.
+When not using orderbook (`ask_strategy.use_order_book=False`), the price at the `ask_strategy.price_side` side (defaults to `"ask"`) from the ticker will be used as the sell price.
 
 ## Pairlists
 

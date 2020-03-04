@@ -51,13 +51,13 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'open_date_hum': ANY,
         'close_date': None,
         'close_date_hum': None,
-        'open_rate': 1.099e-05,
+        'open_rate': 1.098e-05,
         'close_rate': None,
-        'current_rate': 1.098e-05,
-        'amount': 90.99181074,
+        'current_rate': 1.099e-05,
+        'amount': 91.07468124,
         'stake_amount': 0.001,
         'close_profit': None,
-        'current_profit': -0.59,
+        'current_profit': -0.41,
         'stop_loss': 0.0,
         'initial_stop_loss': 0.0,
         'initial_stop_loss_pct': None,
@@ -78,10 +78,10 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'open_date_hum': ANY,
         'close_date': None,
         'close_date_hum': None,
-        'open_rate': 1.099e-05,
+        'open_rate': 1.098e-05,
         'close_rate': None,
         'current_rate': ANY,
-        'amount': 90.99181074,
+        'amount': 91.07468124,
         'stake_amount': 0.001,
         'close_profit': None,
         'current_profit': ANY,
@@ -121,7 +121,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert "Pair" in headers
     assert 'instantly' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
-    assert '-0.59%' == result[0][3]
+    assert '-0.41%' == result[0][3]
     # Test with fiatconvert
 
     rpc._fiat_converter = CryptoToFiatConverter()
@@ -130,7 +130,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert "Pair" in headers
     assert 'instantly' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
-    assert '-0.59% (-0.09)' == result[0][3]
+    assert '-0.41% (-0.06)' == result[0][3]
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
                  MagicMock(side_effect=DependencyException(f"Pair 'ETH/BTC' not available")))
@@ -245,9 +245,9 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
     assert prec_satoshi(stats['profit_closed_coin'], 6.217e-05)
     assert prec_satoshi(stats['profit_closed_percent'], 6.2)
     assert prec_satoshi(stats['profit_closed_fiat'], 0.93255)
-    assert prec_satoshi(stats['profit_all_coin'], 5.632e-05)
-    assert prec_satoshi(stats['profit_all_percent'], 2.81)
-    assert prec_satoshi(stats['profit_all_fiat'], 0.8448)
+    assert prec_satoshi(stats['profit_all_coin'], 5.802e-05)
+    assert prec_satoshi(stats['profit_all_percent'], 2.89)
+    assert prec_satoshi(stats['profit_all_fiat'], 0.8703)
     assert stats['trade_count'] == 2
     assert stats['first_trade_date'] == 'just now'
     assert stats['latest_trade_date'] == 'just now'
@@ -668,7 +668,7 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order) -> None
     trade = rpc._rpc_forcebuy(pair, None)
     assert isinstance(trade, Trade)
     assert trade.pair == pair
-    assert trade.open_rate == ticker()['ask']
+    assert trade.open_rate == ticker()['bid']
 
     # Test buy duplicate
     with pytest.raises(RPCException, match=r'position for ETH/BTC already open - id: 1'):
