@@ -246,7 +246,7 @@ class FreqtradeBot:
         if 'use_order_book' in bid_strategy and bid_strategy.get('use_order_book', False):
             logger.info(
                 f"Getting price from order book {bid_strategy['price_side'].capitalize()} side."
-                )
+            )
             order_book_top = bid_strategy.get('order_book_top', 1)
             order_book = self.exchange.get_order_book(pair, order_book_top)
             logger.debug('order_book %s', order_book)
@@ -643,14 +643,16 @@ class FreqtradeBot:
                 logger.info(f"Using cached sell rate for {pair}.")
                 return rate
 
-        config_ask_strategy = self.config.get('ask_strategy', {})
-        if config_ask_strategy.get('use_order_book', False):
+        ask_strategy = self.config.get('ask_strategy', {})
+        if ask_strategy.get('use_order_book', False):
             # This code is only used for notifications, selling uses the generator directly
-            logger.debug('Using order book to get sell rate')
-            rate = next(self._order_book_gen(pair, f"{config_ask_strategy['price_side']}s"))
+            logger.info(
+                f"Getting price from order book {ask_strategy['price_side'].capitalize()} side."
+            )
+            rate = next(self._order_book_gen(pair, f"{ask_strategy['price_side']}s"))
 
         else:
-            rate = self.exchange.fetch_ticker(pair)[config_ask_strategy['price_side']]
+            rate = self.exchange.fetch_ticker(pair)[ask_strategy['price_side']]
         self._sell_rate_cache[pair] = rate
         return rate
 
