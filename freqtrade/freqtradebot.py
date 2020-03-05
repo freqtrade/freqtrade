@@ -246,7 +246,7 @@ class FreqtradeBot:
         if 'use_order_book' in bid_strategy and bid_strategy.get('use_order_book', False):
             logger.info(
                 f"Getting price from order book {bid_strategy['price_side'].capitalize()} side."
-                )
+            )
             order_book_top = bid_strategy.get('order_book_top', 1)
             order_book = self.exchange.get_order_book(pair, order_book_top)
             logger.debug('order_book %s', order_book)
@@ -669,7 +669,7 @@ class FreqtradeBot:
         config_ask_strategy = self.config.get('ask_strategy', {})
 
         if (config_ask_strategy.get('use_sell_signal', True) or
-                config_ask_strategy.get('ignore_roi_if_buy_signal')):
+                config_ask_strategy.get('ignore_roi_if_buy_signal', False)):
             (buy, sell) = self.strategy.get_signal(
                 trade.pair, self.strategy.ticker_interval,
                 self.dataprovider.ohlcv(trade.pair, self.strategy.ticker_interval))
