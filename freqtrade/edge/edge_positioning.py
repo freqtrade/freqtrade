@@ -246,7 +246,8 @@ class Edge:
 
         # we set stake amount to an arbitrary amount.
         # as it doesn't change the calculation.
-        # all returned values are relative. they are percentages.
+        # all returned values are relative.
+        # they are defined as ratios.
         stake = 0.015
         fee = self.fee
         open_fee = fee / 2
@@ -269,8 +270,8 @@ class Edge:
         result['sell_fee'] = result['sell_sum'] * close_fee
         result['sell_take'] = result['sell_sum'] - result['sell_fee']
 
-        # profit_percent
-        result['profit_percent'] = (result['sell_take'] - result['buy_spend']) / result['buy_spend']
+        # profit_ratio
+        result['profit_ratio'] = (result['sell_take'] - result['buy_spend']) / result['buy_spend']
 
         # Absolute profit
         result['profit_abs'] = result['sell_take'] - result['buy_spend']
@@ -399,9 +400,8 @@ class Edge:
                 # trade opens in reality on the next candle
                 open_trade_index += 1
 
-            stop_price_percentage = stoploss + 1
             open_price = ohlc_columns[open_trade_index, 0]
-            stop_price = (open_price * stop_price_percentage)
+            stop_price = (open_price * (stoploss + 1))
 
             # Searching for the index where stoploss is hit
             stop_index = utf1st.find_1st(
@@ -441,7 +441,7 @@ class Edge:
 
             trade = {'pair': pair,
                      'stoploss': stoploss,
-                     'profit_percent': '',
+                     'profit_ratio': '',
                      'profit_abs': '',
                      'open_time': date_column[open_trade_index],
                      'close_time': date_column[exit_index],

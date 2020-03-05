@@ -23,12 +23,12 @@ Sample configuration (tested using IFTTT).
         "webhooksell": {
             "value1": "Selling {pair}",
             "value2": "limit {limit:8f}",
-            "value3": "profit: {profit_amount:8f} {stake_currency}"
+            "value3": "profit: {profit_amount:8f} {stake_currency} ({profit_ratio})"
         },
         "webhooksellcancel": {
             "value1": "Cancelling Open Sell Order for {pair}",
             "value2": "limit {limit:8f}",
-            "value3": "profit: {profit_amount:8f} {stake_currency}"
+            "value3": "profit: {profit_amount:8f} {stake_currency} ({profit_ratio})"
         },
         "webhookstatus": {
             "value1": "Status: {status}",
@@ -87,7 +87,7 @@ Possible parameters are:
 * `open_rate`
 * `current_rate`
 * `profit_amount`
-* `profit_percent`
+* `profit_ratio`
 * `stake_currency`
 * `fiat_currency`
 * `sell_reason`
@@ -108,7 +108,7 @@ Possible parameters are:
 * `open_rate`
 * `current_rate`
 * `profit_amount`
-* `profit_percent`
+* `profit_ratio`
 * `stake_currency`
 * `fiat_currency`
 * `sell_reason`
