@@ -50,17 +50,18 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
     if print_colorized:
         colorama_init(autoreset=True)
 
-    try:
-        Hyperopt.print_result_table(config, trials, total_epochs,
-                                    not filteroptions['only_best'], print_colorized, 0)
-    except KeyboardInterrupt:
-        print('User interrupted..')
+    if not export_csv:
+        try:
+            Hyperopt.print_result_table(config, trials, total_epochs,
+                                        not filteroptions['only_best'], print_colorized, 0)
+        except KeyboardInterrupt:
+            print('User interrupted..')
 
     if trials and not no_details:
         sorted_trials = sorted(trials, key=itemgetter('loss'))
         results = sorted_trials[0]
         Hyperopt.print_epoch_details(results, total_epochs, print_json, no_header)
-    print(export_csv)
+
     if trials and export_csv:
         overwrite_csv = False
         if export_csv[0] == '+':

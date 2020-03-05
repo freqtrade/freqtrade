@@ -224,7 +224,8 @@ AVAILABLE_CLI_OPTIONS = {
     "export_csv": Arg(
         '--export-csv',
         help='Export to CSV-File. Put + in front of filename to overwrite.'
-        'Example: --export-csv +hyperopt.csv',
+        ' This will disable table print.'
+        ' Example: --export-csv +hyperopt.csv',
         metavar='FILE',
     ),
     "hyperopt_jobs": Arg(

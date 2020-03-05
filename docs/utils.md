@@ -450,6 +450,9 @@ optional arguments:
                         useful if you are redirecting output to a file.
   --print-json          Print best result detailization in JSON format.
   --no-details          Do not print best epoch details.
+  --export-csv FILE     Export to CSV-File. Put + in front of filename to
+                        overwrite. This will disable table print. Example:
+                        --export-csv +hyperopt.csv
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
