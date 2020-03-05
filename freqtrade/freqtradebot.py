@@ -246,7 +246,7 @@ class FreqtradeBot:
         if 'use_order_book' in bid_strategy and bid_strategy.get('use_order_book', False):
             logger.info(
                 f"Getting price from order book {bid_strategy['price_side'].capitalize()} side."
-                )
+            )
             order_book_top = bid_strategy.get('order_book_top', 1)
             order_book = self.exchange.get_order_book(pair, order_book_top)
             logger.debug('order_book %s', order_book)
@@ -394,21 +394,21 @@ class FreqtradeBot:
             logger.info(f"Pair {pair} is currently locked.")
             return False
 
+        if not self.get_free_open_trades():
+            logger.debug(f"Can't open a new trade for {pair}: max number of trades is reached.")
+            return False
+
+        stake_amount = self.get_trade_stake_amount(pair)
+        if not stake_amount:
+            logger.debug(f"Stake amount is 0, ignoring possible trade for {pair}.")
+            return False
+
         # running get_signal on historical data fetched
         (buy, sell) = self.strategy.get_signal(
             pair, self.strategy.ticker_interval,
             self.dataprovider.ohlcv(pair, self.strategy.ticker_interval))
 
         if buy and not sell:
-            if not self.get_free_open_trades():
-                logger.debug("Can't open a new trade: max number of trades is reached.")
-                return False
-
-            stake_amount = self.get_trade_stake_amount(pair)
-            if not stake_amount:
-                logger.debug(f"Stake amount is 0, ignoring possible trade for {pair}.")
-                return False
-
             logger.info(f"Buy signal found: about create a new trade with stake_amount: "
                         f"{stake_amount} ...")
 
