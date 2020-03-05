@@ -511,6 +511,22 @@ def test_validate_pairs_stakecompatibility(default_conf, mocker, caplog):
     Exchange(default_conf)
 
 
+def test_validate_pairs_stakecompatibility_downloaddata(default_conf, mocker, caplog):
+    api_mock = MagicMock()
+    default_conf['stake_currency'] = ''
+    type(api_mock).markets = PropertyMock(return_value={
+        'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
+        'XRP/BTC': {'quote': 'BTC'}, 'NEO/BTC': {'quote': 'BTC'},
+        'HELLO-WORLD': {'quote': 'BTC'},
+    })
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
+    mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
+    mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+
+    Exchange(default_conf)
+
+
 def test_validate_pairs_stakecompatibility_fail(default_conf, mocker, caplog):
     default_conf['exchange']['pair_whitelist'].append('HELLO-WORLD')
     api_mock = MagicMock()

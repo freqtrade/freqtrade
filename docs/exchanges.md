@@ -62,6 +62,11 @@ res = [ f"{x['MarketCurrency']}/{x['BaseCurrency']}" for x in ct.publicGetMarket
 print(res)
 ```
 
+## All exchanges
+
+Should you experience constant errors with Nonce (like `InvalidNonce`), it is best to regenerate the API keys. Resetting Nonce is difficult and it's usually easier to regenerate the API keys.
+
+
 ## Random notes for other exchanges
 
 * The Ocean (exchange id: `theocean`) exchange uses Web3 functionality and requires `web3` python package to be installed:

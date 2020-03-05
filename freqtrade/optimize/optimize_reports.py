@@ -66,7 +66,7 @@ def generate_text_table(data: Dict[str, Dict], stake_currency: str, max_open_tra
     ])
     # Ignore type as floatfmt does allow tuples but mypy does not know that
     return tabulate(tabular_data, headers=headers,
-                    floatfmt=floatfmt, tablefmt="pipe")  # type: ignore
+                    floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore
 
 
 def generate_text_table_sell_reason(
@@ -112,7 +112,7 @@ def generate_text_table_sell_reason(
                 profit_percent_tot,
             ]
         )
-    return tabulate(tabular_data, headers=headers, tablefmt="pipe")
+    return tabulate(tabular_data, headers=headers, tablefmt="orgtbl", stralign="right")
 
 
 def generate_text_table_strategy(stake_currency: str, max_open_trades: str,
@@ -146,7 +146,7 @@ def generate_text_table_strategy(stake_currency: str, max_open_trades: str,
         ])
     # Ignore type as floatfmt does allow tuples but mypy does not know that
     return tabulate(tabular_data, headers=headers,
-                    floatfmt=floatfmt, tablefmt="pipe")  # type: ignore
+                    floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore
 
 
 def generate_edge_table(results: dict) -> str:
@@ -172,4 +172,4 @@ def generate_edge_table(results: dict) -> str:
 
     # Ignore type as floatfmt does allow tuples but mypy does not know that
     return tabulate(tabular_data, headers=headers,
-                    floatfmt=floatfmt, tablefmt="pipe")  # type: ignore
+                    floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore

@@ -196,6 +196,7 @@ The first graph is good to get a grip of how the overall market progresses.
 
 The second graph will show if your algorithm works or doesn't.
 Perhaps you want an algorithm that steadily makes small profits, or one that acts less often, but makes big swings.
+This graph will also highlight the start (and end) of the Max drawdown period.
 
 The third graph can be useful to spot outliers, events in pairs that cause profit spikes.
 

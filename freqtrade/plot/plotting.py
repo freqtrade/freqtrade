@@ -5,7 +5,8 @@ from typing import Any, Dict, List
 import pandas as pd
 
 from freqtrade.configuration import TimeRange
-from freqtrade.data.btanalysis import (combine_tickers_with_mean,
+from freqtrade.data.btanalysis import (calculate_max_drawdown,
+                                       combine_tickers_with_mean,
                                        create_cum_profit,
                                        extract_trades_of_period, load_trades)
 from freqtrade.data.converter import trim_dataframe
@@ -108,6 +109,36 @@ def add_profit(fig, row, data: pd.DataFrame, column: str, name: str) -> make_sub
     )
     fig.add_trace(profit, row, 1)
 
+    return fig
+
+
+def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame) -> make_subplots:
+    """
+    Add scatter points indicating max drawdown
+    """
+    try:
+        max_drawdown, highdate, lowdate = calculate_max_drawdown(trades)
+
+        drawdown = go.Scatter(
+            x=[highdate, lowdate],
+            y=[
+                df_comb.loc[highdate, 'cum_profit'],
+                df_comb.loc[lowdate, 'cum_profit'],
+            ],
+            mode='markers',
+            name=f"Max drawdown {max_drawdown:.2f}%",
+            text=f"Max drawdown {max_drawdown:.2f}%",
+            marker=dict(
+                symbol='square-open',
+                size=9,
+                line=dict(width=2),
+                color='green'
+
+            )
+        )
+        fig.add_trace(drawdown, row, 1)
+    except ValueError:
+        logger.warning("No trades found - not plotting max drawdown.")
     return fig
 
 
@@ -364,6 +395,7 @@ def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame],
 
     fig.add_trace(avgclose, 1, 1)
     fig = add_profit(fig, 2, df_comb, 'cum_profit', 'Profit')
+    fig = add_max_drawdown(fig, 2, trades, df_comb)
 
     for pair in pairs:
         profit_col = f'cum_profit_{pair}'
