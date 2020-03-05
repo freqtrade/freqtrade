@@ -918,6 +918,7 @@ def test_hyperopt_list(mocker, capsys, hyperopt_results):
     assert f.is_file()
     f.unlink()
 
+
 def test_hyperopt_show(mocker, capsys, hyperopt_results):
     mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.load_previous_results',
