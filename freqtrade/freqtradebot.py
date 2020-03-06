@@ -671,7 +671,7 @@ class FreqtradeBot:
         config_ask_strategy = self.config.get('ask_strategy', {})
 
         if (config_ask_strategy.get('use_sell_signal', True) or
-                config_ask_strategy.get('ignore_roi_if_buy_signal')):
+                config_ask_strategy.get('ignore_roi_if_buy_signal', False)):
             (buy, sell) = self.strategy.get_signal(
                 trade.pair, self.strategy.ticker_interval,
                 self.dataprovider.ohlcv(trade.pair, self.strategy.ticker_interval))
