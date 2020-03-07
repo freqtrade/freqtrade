@@ -117,9 +117,9 @@ class Hyperopt:
         self.opts: List[Optimizer] = []
         self.opt: Optimizer = None
 
+        backend.manager = Manager()
         if 'multi_opt' in self.config and self.config['multi_opt']:
             self.multi = True
-            backend.manager = Manager()
             backend.optimizers = backend.manager.Queue()
             backend.results_board = backend.manager.Queue(maxsize=1)
             backend.results_board.put([])
@@ -127,9 +127,8 @@ class Hyperopt:
             self.opt_acq_optimizer = 'sampling'
             default_n_points = 2
         else:
-            backend.manager = Manager()
-            backend.results = backend.manager.Queue()
             self.multi = False
+            backend.results = backend.manager.Queue()
             self.opt_base_estimator = 'GP'
             self.opt_acq_optimizer = 'lbfgs'
             default_n_points = 1
@@ -604,12 +603,16 @@ class Hyperopt:
             while not backend.results.empty():
                 vals.append(backend.results.get())
             if vals:
-                self.opt.tell([list(v['params_dict'].values()) for v in vals],
-                              [v['loss'] for v in vals],
-                              fit=fit)
-                if fit:
-                    fit = False
-                vals = []
+                # values with improbable loss scores should not be told to the optimizer
+                # to reduce noise
+                vals = list(filter(lambda v: v['loss'] != MAX_LOSS, vals))
+                if vals: # again if all are filtered
+                    self.opt.tell([list(v['params_dict'].values()) for v in vals],
+                                [v['loss'] for v in vals],
+                                fit=fit)
+                    if fit:
+                        fit = False
+                    vals = []
 
             if not to_ask:
                 self.opt.update_next()
