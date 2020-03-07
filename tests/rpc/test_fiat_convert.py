@@ -8,7 +8,7 @@ import pytest
 from requests.exceptions import RequestException
 
 from freqtrade.rpc.fiat_convert import CryptoFiat, CryptoToFiatConverter
-from tests.conftest import log_has
+from tests.conftest import log_has, log_has_re
 
 
 def test_pair_convertion_object():
@@ -22,8 +22,8 @@ def test_pair_convertion_object():
     assert pair_convertion.CACHE_DURATION == 6 * 60 * 60
 
     # Check a regular usage
-    assert pair_convertion.crypto_symbol == 'BTC'
-    assert pair_convertion.fiat_symbol == 'USD'
+    assert pair_convertion.crypto_symbol == 'btc'
+    assert pair_convertion.fiat_symbol == 'usd'
     assert pair_convertion.price == 12345.0
     assert pair_convertion.is_expired() is False
 
@@ -57,15 +57,15 @@ def test_fiat_convert_add_pair(mocker):
     fiat_convert._add_pair(crypto_symbol='btc', fiat_symbol='usd', price=12345.0)
     pair_len = len(fiat_convert._pairs)
     assert pair_len == 1
-    assert fiat_convert._pairs[0].crypto_symbol == 'BTC'
-    assert fiat_convert._pairs[0].fiat_symbol == 'USD'
+    assert fiat_convert._pairs[0].crypto_symbol == 'btc'
+    assert fiat_convert._pairs[0].fiat_symbol == 'usd'
     assert fiat_convert._pairs[0].price == 12345.0
 
     fiat_convert._add_pair(crypto_symbol='btc', fiat_symbol='Eur', price=13000.2)
     pair_len = len(fiat_convert._pairs)
     assert pair_len == 2
-    assert fiat_convert._pairs[1].crypto_symbol == 'BTC'
-    assert fiat_convert._pairs[1].fiat_symbol == 'EUR'
+    assert fiat_convert._pairs[1].crypto_symbol == 'btc'
+    assert fiat_convert._pairs[1].fiat_symbol == 'eur'
     assert fiat_convert._pairs[1].price == 13000.2
 
 
@@ -100,15 +100,15 @@ def test_fiat_convert_get_price(mocker):
 
     fiat_convert = CryptoToFiatConverter()
 
-    with pytest.raises(ValueError, match=r'The fiat US DOLLAR is not supported.'):
-        fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='US Dollar')
+    with pytest.raises(ValueError, match=r'The fiat us dollar is not supported.'):
+        fiat_convert.get_price(crypto_symbol='btc', fiat_symbol='US Dollar')
 
     # Check the value return by the method
     pair_len = len(fiat_convert._pairs)
     assert pair_len == 0
-    assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='USD') == 28000.0
-    assert fiat_convert._pairs[0].crypto_symbol == 'BTC'
-    assert fiat_convert._pairs[0].fiat_symbol == 'USD'
+    assert fiat_convert.get_price(crypto_symbol='btc', fiat_symbol='usd') == 28000.0
+    assert fiat_convert._pairs[0].crypto_symbol == 'btc'
+    assert fiat_convert._pairs[0].fiat_symbol == 'usd'
     assert fiat_convert._pairs[0].price == 28000.0
     assert fiat_convert._pairs[0]._expiration != 0
     assert len(fiat_convert._pairs) == 1
@@ -116,13 +116,13 @@ def test_fiat_convert_get_price(mocker):
     # Verify the cached is used
     fiat_convert._pairs[0].price = 9867.543
     expiration = fiat_convert._pairs[0]._expiration
-    assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='USD') == 9867.543
+    assert fiat_convert.get_price(crypto_symbol='btc', fiat_symbol='usd') == 9867.543
     assert fiat_convert._pairs[0]._expiration == expiration
 
     # Verify the cache expiration
     expiration = time.time() - 2 * 60 * 60
     fiat_convert._pairs[0]._expiration = expiration
-    assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='USD') == 28000.0
+    assert fiat_convert.get_price(crypto_symbol='btc', fiat_symbol='usd') == 28000.0
     assert fiat_convert._pairs[0]._expiration is not expiration
 
 
@@ -143,15 +143,15 @@ def test_loadcryptomap(mocker):
     fiat_convert = CryptoToFiatConverter()
     assert len(fiat_convert._cryptomap) == 2
 
-    assert fiat_convert._cryptomap["BTC"] == "1"
+    assert fiat_convert._cryptomap["btc"] == "bitcoin"
 
 
 def test_fiat_init_network_exception(mocker):
     # Because CryptoToFiatConverter is a Singleton we reset the listings
     listmock = MagicMock(side_effect=RequestException)
     mocker.patch.multiple(
-        'freqtrade.rpc.fiat_convert.Market',
-        listings=listmock,
+        'freqtrade.rpc.fiat_convert.CoinGeckoAPI',
+        get_coins_list=listmock,
     )
     # with pytest.raises(RequestEsxception):
     fiat_convert = CryptoToFiatConverter()
@@ -163,24 +163,24 @@ def test_fiat_init_network_exception(mocker):
 
 
 def test_fiat_convert_without_network(mocker):
-    # Because CryptoToFiatConverter is a Singleton we reset the value of _coinmarketcap
+    # Because CryptoToFiatConverter is a Singleton we reset the value of _coingekko
 
     fiat_convert = CryptoToFiatConverter()
 
-    cmc_temp = CryptoToFiatConverter._coinmarketcap
-    CryptoToFiatConverter._coinmarketcap = None
+    cmc_temp = CryptoToFiatConverter._coingekko
+    CryptoToFiatConverter._coingekko = None
 
-    assert fiat_convert._coinmarketcap is None
-    assert fiat_convert._find_price(crypto_symbol='BTC', fiat_symbol='USD') == 0.0
-    CryptoToFiatConverter._coinmarketcap = cmc_temp
+    assert fiat_convert._coingekko is None
+    assert fiat_convert._find_price(crypto_symbol='btc', fiat_symbol='usd') == 0.0
+    CryptoToFiatConverter._coingekko = cmc_temp
 
 
 def test_fiat_invalid_response(mocker, caplog):
     # Because CryptoToFiatConverter is a Singleton we reset the listings
     listmock = MagicMock(return_value="{'novalidjson':DEADBEEFf}")
     mocker.patch.multiple(
-        'freqtrade.rpc.fiat_convert.Market',
-        listings=listmock,
+        'freqtrade.rpc.fiat_convert.CoinGeckoAPI',
+        get_coins_list=listmock,
     )
     # with pytest.raises(RequestEsxception):
     fiat_convert = CryptoToFiatConverter()
@@ -189,8 +189,8 @@ def test_fiat_invalid_response(mocker, caplog):
 
     length_cryptomap = len(fiat_convert._cryptomap)
     assert length_cryptomap == 0
-    assert log_has('Could not load FIAT Cryptocurrency map for the following problem: TypeError',
-                   caplog)
+    assert log_has_re('Could not load FIAT Cryptocurrency map for the following problem: .*',
+                      caplog)
 
 
 def test_convert_amount(mocker):
