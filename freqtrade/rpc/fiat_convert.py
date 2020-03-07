@@ -73,7 +73,7 @@ class CryptoToFiatConverter:
 
     def __new__(cls):
         """
-        This class is a singleton - should not be instanciated twice.
+        This class is a singleton - cannot be instantiated twice.
         """
         if CryptoToFiatConverter.__instance is None:
             CryptoToFiatConverter.__instance = object.__new__(cls)
