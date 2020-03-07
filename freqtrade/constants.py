@@ -43,7 +43,7 @@ SUPPORTED_FIAT = [
     "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY",
     "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",
     "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD",
-    "BTC", "XBT", "ETH", "XRP", "LTC", "BCH", "USDT"
+    "BTC", "ETH", "XRP", "LTC", "BCH"
 ]
 
 MINIMAL_CONFIG = {

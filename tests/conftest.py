@@ -167,23 +167,23 @@ def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
 
 
 @pytest.fixture(autouse=True)
-def patch_coinmarketcap(mocker) -> None:
+def patch_coingekko(mocker) -> None:
     """
-    Mocker to coinmarketcap to speed up tests
-    :param mocker: mocker to patch coinmarketcap class
+    Mocker to coingekko to speed up tests
+    :param mocker: mocker to patch coingekko class
     :return: None
     """
 
-    tickermock = MagicMock(return_value={'price_usd': 12345.0})
-    listmock = MagicMock(return_value={'data': [{'id': 1, 'name': 'Bitcoin', 'symbol': 'BTC',
-                                                 'website_slug': 'bitcoin'},
-                                                {'id': 1027, 'name': 'Ethereum', 'symbol': 'ETH',
-                                                 'website_slug': 'ethereum'}
-                                                ]})
+    tickermock = MagicMock(return_value={'bitcoin': {'usd': 12345.0}, 'ethereum': {'usd': 12345.0}})
+    listmock = MagicMock(return_value=[{'id': 'bitcoin', 'name': 'Bitcoin', 'symbol': 'btc',
+                                        'website_slug': 'bitcoin'},
+                                       {'id': 'ethereum', 'name': 'Ethereum', 'symbol': 'eth',
+                                        'website_slug': 'ethereum'}
+                                       ])
     mocker.patch.multiple(
-        'freqtrade.rpc.fiat_convert.Market',
-        ticker=tickermock,
-        listings=listmock,
+        'freqtrade.rpc.fiat_convert.CoinGeckoAPI',
+        get_price=tickermock,
+        get_coins_list=listmock,
 
     )
 
