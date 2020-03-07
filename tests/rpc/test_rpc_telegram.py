@@ -1210,7 +1210,7 @@ def test_send_msg_buy_notification(default_conf, mocker) -> None:
            '*Amount:* `1333.33333333`\n' \
            '*Open Rate:* `0.00001099`\n' \
            '*Current Rate:* `0.00001099`\n' \
-           '*Total:* `(0.001000 BTC, 0.000 USD)`'
+           '*Total:* `(0.001000 BTC, 12.345 USD)`'
 
 
 def test_send_msg_buy_cancel_notification(default_conf, mocker) -> None:

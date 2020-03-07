@@ -95,8 +95,8 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
 
 def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     mocker.patch.multiple(
-        'freqtrade.rpc.fiat_convert.Market',
-        ticker=MagicMock(return_value={'price_usd': 15000.0}),
+        'freqtrade.rpc.fiat_convert.CoinGeckoAPI',
+        get_price=MagicMock(return_value={'bitcoin': {'usd': 15000.0}}),
     )
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
@@ -178,7 +178,7 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
                 day[1] == '0.00006217 BTC')
 
         assert (day[2] == '0.000 USD' or
-                day[2] == '0.933 USD')
+                day[2] == '0.767 USD')
     # ensure first day is current date
     assert str(days[0][0]) == str(datetime.utcnow().date())
 
@@ -190,8 +190,8 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
 def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
                               limit_buy_order, limit_sell_order, mocker) -> None:
     mocker.patch.multiple(
-        'freqtrade.rpc.fiat_convert.Market',
-        ticker=MagicMock(return_value={'price_usd': 15000.0}),
+        'freqtrade.rpc.fiat_convert.CoinGeckoAPI',
+        get_price=MagicMock(return_value={'bitcoin': {'usd': 15000.0}}),
     )
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
@@ -273,8 +273,8 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
 def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, fee,
                                      ticker_sell_up, limit_buy_order, limit_sell_order):
     mocker.patch.multiple(
-        'freqtrade.rpc.fiat_convert.Market',
-        ticker=MagicMock(return_value={'price_usd': 15000.0}),
+        'freqtrade.rpc.fiat_convert.CoinGeckoAPI',
+        get_price=MagicMock(return_value={'bitcoin': {'usd': 15000.0}}),
     )
     mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._find_price',
                  return_value=15000.0)
@@ -341,8 +341,8 @@ def test_rpc_balance_handle_error(default_conf, mocker):
     # ETH will be skipped due to mocked Error below
 
     mocker.patch.multiple(
-        'freqtrade.rpc.fiat_convert.Market',
-        ticker=MagicMock(return_value={'price_usd': 15000.0}),
+        'freqtrade.rpc.fiat_convert.CoinGeckoAPI',
+        get_price=MagicMock(return_value={'bitcoin': {'usd': 15000.0}}),
     )
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
@@ -380,8 +380,8 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
     }
 
     mocker.patch.multiple(
-        'freqtrade.rpc.fiat_convert.Market',
-        ticker=MagicMock(return_value={'price_usd': 15000.0}),
+        'freqtrade.rpc.fiat_convert.CoinGeckoAPI',
+        get_price=MagicMock(return_value={'bitcoin': {'usd': 15000.0}}),
     )
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
