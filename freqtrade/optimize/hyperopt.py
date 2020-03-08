@@ -420,19 +420,19 @@ class Hyperopt:
         trials['Trades'] = trials['Trades'].astype(str)
 
         trials['Total profit'] = trials['Total profit'].apply(
-            lambda x: '{:,.8f}'.format(x) if x != 0.0 else "--"
+            lambda x: '{:,.8f}'.format(x) if x != 0.0 else ""
         )
         trials['Profit'] = trials['Profit'].apply(
-            lambda x: '{:,.2f}'.format(x) if not isna(x) else "--"
+            lambda x: '{:,.2f}'.format(x) if not isna(x) else ""
         )
         trials['Avg profit'] = trials['Avg profit'].apply(
-            lambda x: ('{:,.2f}%'.format(x)) if not isna(x) else "--"
+            lambda x: ('{:,.2f}%'.format(x)) if not isna(x) else ""
         )
         trials['Avg duration'] = trials['Avg duration'].apply(
-            lambda x: ('{:,.1f} m'.format(x)) if not isna(x) else "--"
+            lambda x: ('{:,.1f} m'.format(x)) if not isna(x) else ""
         )
         trials['Objective'] = trials['Objective'].apply(
-            lambda x: '{:,.5f}'.format(x) if x != 100000 else "N/A"
+            lambda x: '{:,.5f}'.format(x) if x != 100000 else ""
         )
 
         trials = trials.drop(columns=['is_initial_point', 'is_best', 'is_profit'])
