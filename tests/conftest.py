@@ -15,7 +15,7 @@ from telegram import Chat, Message, Update
 
 from freqtrade import constants, persistence
 from freqtrade.commands import Arguments
-from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
@@ -849,15 +849,15 @@ def order_book_l2():
 
 
 @pytest.fixture
-def ticker_history_list():
+def ohlcv_history_list():
     return [
         [
             1511686200000,  # unix timestamp ms
-            8.794e-05,  # open
-            8.948e-05,  # high
-            8.794e-05,  # low
-            8.88e-05,  # close
-            0.0877869,  # volume (in quote currency)
+            8.794e-05,      # open
+            8.948e-05,      # high
+            8.794e-05,      # low
+            8.88e-05,       # close
+            0.0877869,      # volume (in quote currency)
         ],
         [
             1511686500000,
@@ -879,8 +879,9 @@ def ticker_history_list():
 
 
 @pytest.fixture
-def ticker_history(ticker_history_list):
-    return parse_ticker_dataframe(ticker_history_list, "5m", pair="UNITTEST/BTC", fill_missing=True)
+def ohlcv_history(ohlcv_history_list):
+    return ohlcv_to_dataframe(ohlcv_history_list, "5m", pair="UNITTEST/BTC",
+                              fill_missing=True)
 
 
 @pytest.fixture
@@ -1195,8 +1196,8 @@ def tickers():
 @pytest.fixture
 def result(testdatadir):
     with (testdatadir / 'UNITTEST_BTC-1m.json').open('r') as data_file:
-        return parse_ticker_dataframe(json.load(data_file), '1m', pair="UNITTEST/BTC",
-                                      fill_missing=True)
+        return ohlcv_to_dataframe(json.load(data_file), '1m', pair="UNITTEST/BTC",
+                                  fill_missing=True)
 
 
 @pytest.fixture(scope="function")

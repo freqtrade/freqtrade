@@ -33,7 +33,7 @@ optional arguments:
                         Specify which tickers to download. Space-separated list. Default: `1m 5m`.
   --erase               Clean all existing data for the selected exchange/pairs/timeframes.
   --data-format-ohlcv {json,jsongz}
-                        Storage format for downloaded ohlcv data. (default: `json`).
+                        Storage format for downloaded candle (OHLCV) data. (default: `json`).
   --data-format-trades {json,jsongz}
                         Storage format for downloaded trades data. (default: `jsongz`).
 
@@ -105,7 +105,7 @@ Common arguments:
 
 ##### Example converting data
 
-The following command will convert all ohlcv (candle) data available in `~/.freqtrade/data/binance` from json to jsongz, saving diskspace in the process.
+The following command will convert all candle (OHLCV) data available in `~/.freqtrade/data/binance` from json to jsongz, saving diskspace in the process.
 It'll also remove original json data files (`--erase` parameter).
 
 ``` bash
@@ -192,15 +192,15 @@ Then run:
 freqtrade download-data --exchange binance
 ```
 
-This will download ticker data for all the currency pairs you defined in `pairs.json`.
+This will download historical candle (OHLCV) data for all the currency pairs you defined in `pairs.json`.
 
 ### Other Notes
 
 - To use a different directory than the exchange specific default, use `--datadir user_data/data/some_directory`.
-- To change the exchange used to download the tickers, please use a different configuration file (you'll probably need to adjust ratelimits etc.)
+- To change the exchange used to download the historical data from, please use a different configuration file (you'll probably need to adjust ratelimits etc.)
 - To use `pairs.json` from some other directory, use `--pairs-file some_other_dir/pairs.json`.
-- To download ticker data for only 10 days, use `--days 10` (defaults to 30 days).
-- Use `--timeframes` to specify which tickers to download. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute tickers.
+- To download historical candle (OHLCV) data for only 10 days, use `--days 10` (defaults to 30 days).
+- Use `--timeframes` to specify what timeframe download the historical candle (OHLCV) data for. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute data.
 - To use exchange, timeframe and list of pairs as defined in your configuration file, use the `-c/--config` option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine `-c/--config` with most other options.
 
 ### Trades (tick) data

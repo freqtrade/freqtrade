@@ -88,8 +88,8 @@ class Backtesting:
             validate_config_consistency(self.config)
 
         if "ticker_interval" not in self.config:
-            raise OperationalException("Ticker-interval needs to be set in either configuration "
-                                       "or as cli argument `--ticker-interval 5m`")
+            raise OperationalException("Timeframe (ticker interval) needs to be set in either "
+                                       "configuration or as cli argument `--ticker-interval 5m`")
         self.timeframe = str(self.config.get('ticker_interval'))
         self.timeframe_min = timeframe_to_minutes(self.timeframe)
 
@@ -151,32 +151,33 @@ class Backtesting:
             logger.info(f'Dumping backtest results to {recordfilename}')
             file_dump_json(recordfilename, records)
 
-    def _get_ticker_list(self, processed: Dict) -> Dict[str, DataFrame]:
+    def _get_ohlcv_as_lists(self, processed: Dict) -> Dict[str, DataFrame]:
         """
-        Helper function to convert a processed tickerlist into a list for performance reasons.
+        Helper function to convert a processed dataframes into lists for performance reasons.
 
         Used by backtest() - so keep this optimized for performance.
         """
         headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
-        ticker: Dict = {}
-        # Create ticker dict
+        data: Dict = {}
+        # Create dict with data
         for pair, pair_data in processed.items():
             pair_data.loc[:, 'buy'] = 0  # cleanup from previous run
             pair_data.loc[:, 'sell'] = 0  # cleanup from previous run
 
-            ticker_data = self.strategy.advise_sell(
+            dataframe = self.strategy.advise_sell(
                 self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
 
-            # to avoid using data from future, we buy/sell with signal from previous candle
-            ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)
-            ticker_data.loc[:, 'sell'] = ticker_data['sell'].shift(1)
+            # To avoid using data from future, we use buy/sell signals shifted
+            # from the previous candle
+            dataframe.loc[:, 'buy'] = dataframe['buy'].shift(1)
+            dataframe.loc[:, 'sell'] = dataframe['sell'].shift(1)
 
-            ticker_data.drop(ticker_data.head(1).index, inplace=True)
+            dataframe.drop(dataframe.head(1).index, inplace=True)
 
             # Convert from Pandas to list for performance reasons
             # (Looping Pandas is slow.)
-            ticker[pair] = [x for x in ticker_data.itertuples()]
-        return ticker
+            data[pair] = [x for x in dataframe.itertuples()]
+        return data
 
     def _get_close_rate(self, sell_row, trade: Trade, sell: SellCheckTuple,
                         trade_dur: int) -> float:
@@ -220,7 +221,7 @@ class Backtesting:
 
     def _get_sell_trade_entry(
             self, pair: str, buy_row: DataFrame,
-            partial_ticker: List, trade_count_lock: Dict,
+            partial_ohlcv: List, trade_count_lock: Dict,
             stake_amount: float, max_open_trades: int) -> Optional[BacktestResult]:
 
         trade = Trade(
@@ -235,7 +236,7 @@ class Backtesting:
         )
         logger.debug(f"{pair} - Backtesting emulates creation of new trade: {trade}.")
         # calculate win/lose forwards from buy point
-        for sell_row in partial_ticker:
+        for sell_row in partial_ohlcv:
             if max_open_trades > 0:
                 # Increase trade_count_lock for every iteration
                 trade_count_lock[sell_row.date] = trade_count_lock.get(sell_row.date, 0) + 1
@@ -259,9 +260,9 @@ class Backtesting:
                                       close_rate=closerate,
                                       sell_reason=sell.sell_type
                                       )
-        if partial_ticker:
+        if partial_ohlcv:
             # no sell condition found - trade stil open at end of backtest period
-            sell_row = partial_ticker[-1]
+            sell_row = partial_ohlcv[-1]
             bt_res = BacktestResult(pair=pair,
                                     profit_percent=trade.calc_profit_ratio(rate=sell_row.open),
                                     profit_abs=trade.calc_profit(rate=sell_row.open),
@@ -308,8 +309,9 @@ class Backtesting:
         trades = []
         trade_count_lock: Dict = {}
 
-        # Dict of ticker-lists for performance (looping lists is a lot faster than dataframes)
-        ticker: Dict = self._get_ticker_list(processed)
+        # Use dict of lists with data for performance
+        # (looping lists is a lot faster than pandas DataFrames)
+        data: Dict = self._get_ohlcv_as_lists(processed)
 
         lock_pair_until: Dict = {}
         # Indexes per pair, so some pairs are allowed to have a missing start.
@@ -319,12 +321,12 @@ class Backtesting:
         # Loop timerange and get candle for each pair at that point in time
         while tmp < end_date:
 
-            for i, pair in enumerate(ticker):
+            for i, pair in enumerate(data):
                 if pair not in indexes:
                     indexes[pair] = 0
 
                 try:
-                    row = ticker[pair][indexes[pair]]
+                    row = data[pair][indexes[pair]]
                 except IndexError:
                     # missing Data for one pair at the end.
                     # Warnings for this are shown during data loading
@@ -352,7 +354,7 @@ class Backtesting:
 
                 # since indexes has been incremented before, we need to go one step back to
                 # also check the buying candle for sell conditions.
-                trade_entry = self._get_sell_trade_entry(pair, row, ticker[pair][indexes[pair]-1:],
+                trade_entry = self._get_sell_trade_entry(pair, row, data[pair][indexes[pair]-1:],
                                                          trade_count_lock, stake_amount,
                                                          max_open_trades)
 
@@ -395,7 +397,7 @@ class Backtesting:
             self._set_strategy(strat)
 
             # need to reprocess data every time to populate signals
-            preprocessed = self.strategy.tickerdata_to_dataframe(data)
+            preprocessed = self.strategy.ohlcvdata_to_dataframe(data)
 
             # Trim startup period from analyzed dataframe
             for pair, df in preprocessed.items():

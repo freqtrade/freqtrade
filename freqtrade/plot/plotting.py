@@ -6,7 +6,7 @@ import pandas as pd
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.btanalysis import (calculate_max_drawdown,
-                                       combine_tickers_with_mean,
+                                       combine_dataframes_with_mean,
                                        create_cum_profit,
                                        extract_trades_of_period, load_trades)
 from freqtrade.data.converter import trim_dataframe
@@ -29,7 +29,7 @@ except ImportError:
 def init_plotscript(config):
     """
     Initialize objects needed for plotting
-    :return: Dict with tickers, trades and pairs
+    :return: Dict with candle (OHLCV) data, trades and pairs
     """
 
     if "pairs" in config:
@@ -40,7 +40,7 @@ def init_plotscript(config):
     # Set timerange to use
     timerange = TimeRange.parse_timerange(config.get("timerange"))
 
-    tickers = load_data(
+    data = load_data(
         datadir=config.get("datadir"),
         pairs=pairs,
         timeframe=config.get('ticker_interval', '5m'),
@@ -53,7 +53,7 @@ def init_plotscript(config):
                          exportfilename=config.get('exportfilename'),
                          )
     trades = trim_dataframe(trades, timerange, 'open_time')
-    return {"tickers": tickers,
+    return {"ohlcv": data,
             "trades": trades,
             "pairs": pairs,
             }
@@ -368,10 +368,10 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     return fig
 
 
-def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame],
+def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
                           trades: pd.DataFrame, timeframe: str) -> go.Figure:
     # Combine close-values for all pairs, rename columns to "pair"
-    df_comb = combine_tickers_with_mean(tickers, "close")
+    df_comb = combine_dataframes_with_mean(data, "close")
 
     # Add combined cumulative profit
     df_comb = create_cum_profit(df_comb, trades, 'cum_profit', timeframe)
@@ -439,7 +439,7 @@ def load_and_plot_trades(config: Dict[str, Any]):
     """
     From configuration provided
     - Initializes plot-script
-    - Get tickers data
+    - Get candle (OHLCV) data
     - Generate Dafaframes populated with indicators and signals based on configured strategy
     - Load trades excecuted during the selected period
     - Generate Plotly plot objects
@@ -451,13 +451,13 @@ def load_and_plot_trades(config: Dict[str, Any]):
     plot_elements = init_plotscript(config)
     trades = plot_elements['trades']
     pair_counter = 0
-    for pair, data in plot_elements["tickers"].items():
+    for pair, data in plot_elements["ohlcv"].items():
         pair_counter += 1
         logger.info("analyse pair %s", pair)
-        tickers = {}
-        tickers[pair] = data
+        ohlcv = {}
+        ohlcv[pair] = data
 
-        dataframe = strategy.analyze_ticker(tickers[pair], {'pair': pair})
+        dataframe = strategy.analyze_ticker(ohlcv[pair], {'pair': pair})
         trades_pair = trades.loc[trades['pair'] == pair]
         trades_pair = extract_trades_of_period(dataframe, trades_pair)
 
@@ -494,7 +494,7 @@ def plot_profit(config: Dict[str, Any]) -> None:
 
     # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
-    fig = generate_profit_graph(plot_elements["pairs"], plot_elements["tickers"],
+    fig = generate_profit_graph(plot_elements["pairs"], plot_elements["ohlcv"],
                                 trades, config.get('ticker_interval', '5m'))
     store_plot_file(fig, filename='freqtrade-profit-plot.html',
                     directory=config['user_data_dir'] / "plot", auto_open=True)

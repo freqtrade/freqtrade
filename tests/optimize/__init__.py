@@ -6,7 +6,7 @@ from pandas import DataFrame
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.strategy.interface import SellType
 
-ticker_start_time = arrow.get(2018, 10, 3)
+tests_start_time = arrow.get(2018, 10, 3)
 tests_timeframe = '1h'
 
 
@@ -36,14 +36,14 @@ class BTContainer(NamedTuple):
 
 
 def _get_frame_time_from_offset(offset):
-    return ticker_start_time.shift(minutes=(offset * timeframe_to_minutes(tests_timeframe))
-                                   ).datetime
+    minutes = offset * timeframe_to_minutes(tests_timeframe)
+    return tests_start_time.shift(minutes=minutes).datetime
 
 
-def _build_backtest_dataframe(ticker_with_signals):
+def _build_backtest_dataframe(data):
     columns = ['date', 'open', 'high', 'low', 'close', 'volume', 'buy', 'sell']
 
-    frame = DataFrame.from_records(ticker_with_signals, columns=columns)
+    frame = DataFrame.from_records(data, columns=columns)
     frame['date'] = frame['date'].apply(_get_frame_time_from_offset)
     # Ensure floats are in place
     for column in ['open', 'high', 'low', 'close', 'volume']:

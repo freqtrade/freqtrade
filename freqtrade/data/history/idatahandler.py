@@ -55,7 +55,7 @@ class IDataHandler(ABC):
         Implements the loading and conversion to a Pandas dataframe.
         Timerange trimming and dataframe validation happens outside of this method.
         :param pair: Pair to load data
-        :param timeframe: Ticker timeframe (e.g. "5m")
+        :param timeframe: Timeframe (e.g. "5m")
         :param timerange: Limit data to be loaded to this timerange.
                         Optionally implemented by subclasses to avoid loading
                         all data where possible.
@@ -67,7 +67,7 @@ class IDataHandler(ABC):
         """
         Remove data for this pair
         :param pair: Delete data for this pair.
-        :param timeframe: Ticker timeframe (e.g. "5m")
+        :param timeframe: Timeframe (e.g. "5m")
         :return: True when deleted, false if file did not exist.
         """
 
@@ -129,10 +129,10 @@ class IDataHandler(ABC):
                    warn_no_data: bool = True
                    ) -> DataFrame:
         """
-        Load cached ticker history for the given pair.
+        Load cached candle (OHLCV) data for the given pair.
 
         :param pair: Pair to load data for
-        :param timeframe: Ticker timeframe (e.g. "5m")
+        :param timeframe: Timeframe (e.g. "5m")
         :param timerange: Limit data to be loaded to this timerange
         :param fill_missing: Fill missing values with "No action"-candles
         :param drop_incomplete: Drop last candle assuming it may be incomplete.
@@ -145,28 +145,27 @@ class IDataHandler(ABC):
         if startup_candles > 0 and timerange_startup:
             timerange_startup.subtract_start(timeframe_to_seconds(timeframe) * startup_candles)
 
-        pairdf = self._ohlcv_load(pair, timeframe,
-                                  timerange=timerange_startup)
-        if pairdf.empty:
+        df = self._ohlcv_load(pair, timeframe, timerange=timerange_startup)
+        if df.empty:
             if warn_no_data:
                 logger.warning(
                     f'No history data for pair: "{pair}", timeframe: {timeframe}. '
                     'Use `freqtrade download-data` to download the data'
                 )
-            return pairdf
+            return df
         else:
-            enddate = pairdf.iloc[-1]['date']
+            enddate = df.iloc[-1]['date']
 
             if timerange_startup:
-                self._validate_pairdata(pair, pairdf, timerange_startup)
-                pairdf = trim_dataframe(pairdf, timerange_startup)
+                self._validate_pairdata(pair, df, timerange_startup)
+                df = trim_dataframe(df, timerange_startup)
 
             # incomplete candles should only be dropped if we didn't trim the end beforehand.
-            return clean_ohlcv_dataframe(pairdf, timeframe,
+            return clean_ohlcv_dataframe(df, timeframe,
                                          pair=pair,
                                          fill_missing=fill_missing,
                                          drop_incomplete=(drop_incomplete and
-                                                          enddate == pairdf.iloc[-1]['date']))
+                                                          enddate == df.iloc[-1]['date']))
 
     def _validate_pairdata(self, pair, pairdata: DataFrame, timerange: TimeRange):
         """

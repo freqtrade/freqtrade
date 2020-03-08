@@ -119,7 +119,7 @@ class Edge:
             logger.critical("No data found. Edge is stopped ...")
             return False
 
-        preprocessed = self.strategy.tickerdata_to_dataframe(data)
+        preprocessed = self.strategy.ohlcvdata_to_dataframe(data)
 
         # Print timeframe
         min_date, max_date = history.get_timerange(preprocessed)
@@ -137,10 +137,10 @@ class Edge:
             pair_data = pair_data.sort_values(by=['date'])
             pair_data = pair_data.reset_index(drop=True)
 
-            ticker_data = self.strategy.advise_sell(
+            dataframe = self.strategy.advise_sell(
                 self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
 
-            trades += self._find_trades_for_stoploss_range(ticker_data, pair, self._stoploss_range)
+            trades += self._find_trades_for_stoploss_range(dataframe, pair, self._stoploss_range)
 
         # If no trade found then exit
         if len(trades) == 0:
@@ -359,11 +359,11 @@ class Edge:
         # Returning a list of pairs in order of "expectancy"
         return final
 
-    def _find_trades_for_stoploss_range(self, ticker_data, pair, stoploss_range):
-        buy_column = ticker_data['buy'].values
-        sell_column = ticker_data['sell'].values
-        date_column = ticker_data['date'].values
-        ohlc_columns = ticker_data[['open', 'high', 'low', 'close']].values
+    def _find_trades_for_stoploss_range(self, dataframe, pair, stoploss_range):
+        buy_column = dataframe['buy'].values
+        sell_column = dataframe['sell'].values
+        date_column = dataframe['date'].values
+        ohlc_columns = dataframe[['open', 'high', 'low', 'close']].values
 
         result: list = []
         for stoploss in stoploss_range:

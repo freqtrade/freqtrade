@@ -8,7 +8,7 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
                                        analyze_trade_parallelism,
                                        calculate_max_drawdown,
-                                       combine_tickers_with_mean,
+                                       combine_dataframes_with_mean,
                                        create_cum_profit,
                                        extract_trades_of_period,
                                        load_backtest_data, load_trades,
@@ -120,13 +120,10 @@ def test_load_trades(default_conf, mocker):
     assert bt_mock.call_count == 1
 
 
-def test_combine_tickers_with_mean(testdatadir):
+def test_combine_dataframes_with_mean(testdatadir):
     pairs = ["ETH/BTC", "ADA/BTC"]
-    tickers = load_data(datadir=testdatadir,
-                        pairs=pairs,
-                        timeframe='5m'
-                        )
-    df = combine_tickers_with_mean(tickers)
+    data = load_data(datadir=testdatadir, pairs=pairs, timeframe='5m')
+    df = combine_dataframes_with_mean(data)
     assert isinstance(df, DataFrame)
     assert "ETH/BTC" in df.columns
     assert "ADA/BTC" in df.columns

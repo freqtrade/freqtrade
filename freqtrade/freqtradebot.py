@@ -172,8 +172,8 @@ class FreqtradeBot:
             _whitelist = self.edge.adjust(_whitelist)
 
         if trades:
-            # Extend active-pair whitelist with pairs from open trades
-            # It ensures that tickers are downloaded for open trades
+            # Extend active-pair whitelist with pairs of open trades
+            # It ensures that candle (OHLCV) data are downloaded for open trades as well
             _whitelist.extend([trade.pair for trade in trades if trade.pair not in _whitelist])
         return _whitelist
 
@@ -628,7 +628,7 @@ class FreqtradeBot:
 
     def get_sell_rate(self, pair: str, refresh: bool) -> float:
         """
-        Get sell rate - either using get-ticker bid or first bid based on orderbook
+        Get sell rate - either using ticker bid or first bid based on orderbook
         The orderbook portion is only used for rpc messaging, which would otherwise fail
         for BitMex (has no bid/ask in fetch_ticker)
         or remain static in any other case since it's not updating.
@@ -1043,7 +1043,7 @@ class FreqtradeBot:
         """
         profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
         profit_trade = trade.calc_profit(rate=profit_rate)
-        # Use cached ticker here - it was updated seconds ago.
+        # Use cached rates here - it was updated seconds ago.
         current_rate = self.get_sell_rate(trade.pair, False)
         profit_ratio = trade.calc_profit_ratio(profit_rate)
         gain = "profit" if profit_ratio > 0 else "loss"

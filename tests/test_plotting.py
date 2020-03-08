@@ -51,15 +51,15 @@ def test_init_plotscript(default_conf, mocker, testdatadir):
     default_conf["datadir"] = testdatadir
     default_conf['exportfilename'] = str(testdatadir / "backtest-result_test.json")
     ret = init_plotscript(default_conf)
-    assert "tickers" in ret
+    assert "ohlcv" in ret
     assert "trades" in ret
     assert "pairs" in ret
 
     default_conf['pairs'] = ["TRX/BTC", "ADA/BTC"]
     ret = init_plotscript(default_conf)
-    assert "tickers" in ret
-    assert "TRX/BTC" in ret["tickers"]
-    assert "ADA/BTC" in ret["tickers"]
+    assert "ohlcv" in ret
+    assert "TRX/BTC" in ret["ohlcv"]
+    assert "ADA/BTC" in ret["ohlcv"]
 
 
 def test_add_indicators(default_conf, testdatadir, caplog):
@@ -269,14 +269,14 @@ def test_generate_profit_graph(testdatadir):
     pairs = ["TRX/BTC", "ADA/BTC"]
     trades = trades[trades['close_time'] < pd.Timestamp('2018-01-12', tz='UTC')]
 
-    tickers = history.load_data(datadir=testdatadir,
-                                pairs=pairs,
-                                timeframe='5m',
-                                timerange=timerange
-                                )
+    data = history.load_data(datadir=testdatadir,
+                             pairs=pairs,
+                             timeframe='5m',
+                             timerange=timerange)
+
     trades = trades[trades['pair'].isin(pairs)]
 
-    fig = generate_profit_graph(pairs, tickers, trades, timeframe="5m")
+    fig = generate_profit_graph(pairs, data, trades, timeframe="5m")
     assert isinstance(fig, go.Figure)
 
     assert fig.layout.title.text == "Freqtrade Profit plot"
