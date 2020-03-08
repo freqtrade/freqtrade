@@ -392,7 +392,7 @@ class Hyperopt:
         if not results:
             return
 
-        # Verification for owerwrite
+        # Verification for overwrite
         if not overwrite and path.isfile(csv_file):
             logging.error("CSV-File already exists and no overwrite specified!")
             return
