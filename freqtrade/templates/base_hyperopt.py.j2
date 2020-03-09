@@ -21,7 +21,7 @@ class {{ hyperopt }}(IHyperOpt):
     """
     This is a Hyperopt template to get you started.
 
-    More information in https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md
+    More information in the documentation: https://www.freqtrade.io/en/latest/hyperopt/
 
     You should:
     - Add any lib you need to build your hyperopt.
@@ -29,11 +29,14 @@ class {{ hyperopt }}(IHyperOpt):
     You must keep:
     - The prototypes for the methods: populate_indicators, indicator_space, buy_strategy_generator.
 
-    The roi_space, generate_roi_table, stoploss_space methods are no longer required to be
-    copied in every custom hyperopt. However, you may override them if you need the
-    'roi' and the 'stoploss' spaces that differ from the defaults offered by Freqtrade.
-    Sample implementation of these methods can be found in
-    https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/sample_hyperopt_advanced.py
+    The methods roi_space, generate_roi_table and stoploss_space are not required
+    and are provided by default.
+    However, you may override them if you need 'roi' and 'stoploss' spaces that
+    differ from the defaults offered by Freqtrade.
+    Sample implementation of these methods will be copied to `user_data/hyperopts` when
+    creating the user-data directory using `freqtrade create-userdir --userdir user_data`,
+    or is available online under the following URL:
+    https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt_advanced.py.
     """
 
     @staticmethod
