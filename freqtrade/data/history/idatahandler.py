@@ -160,6 +160,13 @@ class IDataHandler(ABC):
             if timerange_startup:
                 self._validate_pairdata(pair, pairdf, timerange_startup)
                 pairdf = trim_dataframe(pairdf, timerange_startup)
+                if pairdf.empty:
+                    if warn_no_data:
+                        logger.warning(
+                            f'No history data for pair: "{pair}", timeframe: {timeframe}. '
+                            'Use `freqtrade download-data` to download the data'
+                        )
+                    return pairdf
 
             # incomplete candles should only be dropped if we didn't trim the end beforehand.
             return clean_ohlcv_dataframe(pairdf, timeframe,
