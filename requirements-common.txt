@@ -30,4 +30,4 @@ flask==1.1.1
 colorama==0.4.3
 # Building config files interactively
 questionary==1.5.1
-prompt-toolkit==3.0.3
+prompt-toolkit==3.0.4
