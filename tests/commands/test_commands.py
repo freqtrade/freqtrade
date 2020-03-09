@@ -905,7 +905,7 @@ def test_hyperopt_list(mocker, capsys, hyperopt_results):
     args = [
         "hyperopt-list",
         "--no-details",
-        "--export-csv", "+test_file.csv"
+        "--export-csv", "test_file.csv"
     ]
     pargs = get_args(args)
     pargs['config'] = None

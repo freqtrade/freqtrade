@@ -385,7 +385,7 @@ class Hyperopt:
 
     @staticmethod
     def export_csv_file(config: dict, results: list, total_epochs: int, highlight_best: bool,
-                        csv_file: str, overwrite: bool) -> None:
+                        csv_file: str) -> None:
         """
         Log result to csv-file
         """
@@ -393,8 +393,8 @@ class Hyperopt:
             return
 
         # Verification for overwrite
-        if not overwrite and path.isfile(csv_file):
-            logging.error("CSV-File already exists and no overwrite specified!")
+        if path.isfile(csv_file):
+            logging.error("CSV-File already exists!")
             return
 
         try:

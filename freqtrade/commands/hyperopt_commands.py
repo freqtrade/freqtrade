@@ -63,14 +63,8 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
         Hyperopt.print_epoch_details(results, total_epochs, print_json, no_header)
 
     if trials and export_csv:
-        overwrite_csv = False
-        if export_csv[0] == '+':
-            overwrite_csv = True
-            export_csv = export_csv[1:]
-
         Hyperopt.export_csv_file(
-            config, trials, total_epochs,
-            not filteroptions['only_best'], export_csv, overwrite_csv
+            config, trials, total_epochs, not filteroptions['only_best'], export_csv
         )
 
 
