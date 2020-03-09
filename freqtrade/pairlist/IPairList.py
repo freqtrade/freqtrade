@@ -129,6 +129,5 @@ class IPairList(ABC):
             if pair not in sanitized_whitelist:
                 sanitized_whitelist.append(pair)
 
-        sanitized_whitelist = self._verify_blacklist(sanitized_whitelist)
         # We need to remove pairs that are unknown
         return sanitized_whitelist
