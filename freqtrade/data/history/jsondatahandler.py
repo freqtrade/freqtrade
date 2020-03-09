@@ -77,6 +77,11 @@ class JsonDataHandler(IDataHandler):
                                        unit='ms',
                                        utc=True,
                                        infer_datetime_format=True)
+        if timerange:
+            start = to_datetime(timerange.startts, utc=True, unit='s')
+            stop = to_datetime(timerange.stopts, utc=True, unit='s')
+            pairdata = pairdata.loc[(pairdata['date'] >= start)
+                                    & (pairdata['date'] <= stop)]
         return pairdata
 
     def ohlcv_purge(self, pair: str, timeframe: str) -> bool:
