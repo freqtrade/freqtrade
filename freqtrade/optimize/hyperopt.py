@@ -394,13 +394,13 @@ class Hyperopt:
 
         # Verification for overwrite
         if path.isfile(csv_file):
-            logging.error("CSV-File already exists!")
+            logger.error("CSV-File already exists!")
             return
 
         try:
             io.open(csv_file, 'w+').close()
         except IOError:
-            logging.error("Filed to create/overwrite CSV-File!")
+            logger.error("Filed to create CSV-File!")
             return
 
         trials = json_normalize(results, max_level=1)
