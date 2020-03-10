@@ -241,7 +241,7 @@ def test_setup_optimize_configuration_unlimited_stake_amount(mocker, default_con
         '--strategy', 'DefaultStrategy',
     ]
 
-    with pytest.raises(DependencyException, match=r'.*stake amount.*'):
+    with pytest.raises(DependencyException, match=r'.`stake_amount`.*'):
         setup_optimize_configuration(get_args(args), RunMode.BACKTEST)
 
 
