@@ -221,6 +221,13 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_true',
         default=False,
     ),
+    "export_csv": Arg(
+        '--export-csv',
+        help='Export to CSV-File.'
+        ' This will disable table print.'
+        ' Example: --export-csv hyperopt.csv',
+        metavar='FILE',
+    ),
     "hyperopt_jobs": Arg(
         '-j', '--job-workers',
         help='The number of concurrently running jobs for hyperoptimization '

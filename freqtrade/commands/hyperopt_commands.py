@@ -21,6 +21,7 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
 
     print_colorized = config.get('print_colorized', False)
     print_json = config.get('print_json', False)
+    export_csv = config.get('export_csv', None)
     no_details = config.get('hyperopt_list_no_details', False)
     no_header = False
 
@@ -49,16 +50,22 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
     if print_colorized:
         colorama_init(autoreset=True)
 
-    try:
-        Hyperopt.print_result_table(config, trials, total_epochs,
-                                    not filteroptions['only_best'], print_colorized, 0)
-    except KeyboardInterrupt:
-        print('User interrupted..')
+    if not export_csv:
+        try:
+            Hyperopt.print_result_table(config, trials, total_epochs,
+                                        not filteroptions['only_best'], print_colorized, 0)
+        except KeyboardInterrupt:
+            print('User interrupted..')
 
     if trials and not no_details:
         sorted_trials = sorted(trials, key=itemgetter('loss'))
         results = sorted_trials[0]
         Hyperopt.print_epoch_details(results, total_epochs, print_json, no_header)
+
+    if trials and export_csv:
+        Hyperopt.export_csv_file(
+            config, trials, total_epochs, not filteroptions['only_best'], export_csv
+        )
 
 
 def start_hyperopt_show(args: Dict[str, Any]) -> None:

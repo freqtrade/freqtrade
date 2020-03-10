@@ -902,6 +902,21 @@ def test_hyperopt_list(mocker, capsys, hyperopt_results):
     assert all(x not in captured.out
                for x in [" 1/12", " 3/12", " 4/12", " 5/12", " 7/12", " 8/12"
                          " 9/12", " 10/12", " 11/12", " 12/12"])
+    args = [
+        "hyperopt-list",
+        "--no-details",
+        "--export-csv", "test_file.csv"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_list(pargs)
+    captured = capsys.readouterr()
+    assert all(x in captured.out
+               for x in ["CSV-File created!"])
+    f = Path("test_file.csv")
+    assert 'Best,1,2,-1.25%,-0.00125625,,-2.51,"3,930.0 m",0.43662' in f.read_text()
+    assert f.is_file()
+    f.unlink()
 
 
 def test_hyperopt_show(mocker, capsys, hyperopt_results):
