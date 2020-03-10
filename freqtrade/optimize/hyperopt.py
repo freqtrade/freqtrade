@@ -7,7 +7,6 @@ This module contains the hyperopt logic
 import locale
 import logging
 import random
-import sys
 import warnings
 from math import ceil
 from collections import OrderedDict
@@ -22,8 +21,9 @@ from colorama import init as colorama_init
 from joblib import (Parallel, cpu_count, delayed, dump, load,
                     wrap_non_picklable_objects)
 from pandas import DataFrame, json_normalize, isna
+import progressbar
 import tabulate
-from os import path
+from os import path, popen
 import io
 
 from freqtrade.data.converter import trim_dataframe
@@ -270,7 +270,6 @@ class Hyperopt:
             # Print '\n' after each 100th epoch to separate dots from the log messages.
             # Otherwise output is messy on a terminal.
             print('.', end='' if results['current_epoch'] % 100 != 0 else None)  # type: ignore
-            sys.stdout.flush()
 
         if self.print_all or is_best:
             if not self.print_all:
@@ -622,6 +621,10 @@ class Hyperopt:
     def _set_random_state(self, random_state: Optional[int]) -> int:
         return random_state or random.randint(1, 2**16 - 1)
 
+    def _get_height(self) -> int:
+        rows = int((popen('stty size', 'r').read().split())[0])
+        return rows
+
     def start(self) -> None:
         self.random_state = self._set_random_state(self.config.get('hyperopt_random_state', None))
         logger.info(f"Using optimizer random state: {self.random_state}")
@@ -629,7 +632,6 @@ class Hyperopt:
         data, timerange = self.backtesting.load_bt_data()
 
         preprocessed = self.backtesting.strategy.tickerdata_to_dataframe(data)
-
         # Trim startup period from analyzed dataframe
         for pair, df in preprocessed.items():
             preprocessed[pair] = trim_dataframe(df, timerange)
@@ -659,6 +661,14 @@ class Hyperopt:
 
         try:
             with Parallel(n_jobs=config_jobs) as parallel:
+                self.progress_bar = progressbar.ProgressBar(
+                    min_value=0,
+                    max_value=self.total_epochs,
+                    initial_value=0,
+                    line_breaks=True,
+                    enable_colors=self.print_colorized
+                )
+                self.progress_bar.start()
                 jobs = parallel._effective_n_jobs()
                 logger.info(f'Effective number of parallel workers used: {jobs}')
                 EVALS = ceil(self.total_epochs / jobs)
@@ -672,6 +682,9 @@ class Hyperopt:
                     f_val = self.run_optimizer_parallel(parallel, asked, i)
                     self.opt.tell(asked, [v['loss'] for v in f_val])
                     self.fix_optimizer_models_list()
+
+                    # Calculate progressbar outputs
+                    pbar_line = ceil(self._get_height() / 2)
 
                     for j, val in enumerate(f_val):
                         # Use human-friendly indexes here (starting from 1)
@@ -689,12 +702,19 @@ class Hyperopt:
 
                         self.print_results(val)
 
+                        if pbar_line <= current:
+                            self.progress_bar.update(current)
+                            pbar_line = current + ceil(self._get_height() / 2)
+
                         if is_best:
                             self.current_best_loss = val['loss']
                         self.trials.append(val)
                         # Save results after each best epoch and every 100 epochs
                         if is_best or current % 100 == 0:
                             self.save_trials()
+                self.progress_bar.finish()
+
+                # self.progress_bar.update(current)
         except KeyboardInterrupt:
             print('User interrupted..')
 
@@ -708,3 +728,9 @@ class Hyperopt:
             # This is printed when Ctrl+C is pressed quickly, before first epochs have
             # a chance to be evaluated.
             print("No epochs evaluated yet, no best result.")
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state['trials']
+        del state['progress_bar']
+        return state

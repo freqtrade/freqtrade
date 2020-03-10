@@ -7,3 +7,4 @@ scikit-learn==0.22.2.post1
 scikit-optimize==0.7.4
 filelock==3.0.12
 joblib==0.14.1
+progressbar2==3.50.0

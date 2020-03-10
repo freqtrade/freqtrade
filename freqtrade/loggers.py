@@ -4,6 +4,7 @@ import sys
 from logging import Formatter
 from logging.handlers import RotatingFileHandler, SysLogHandler
 from typing import Any, Dict, List
+import progressbar
 
 from freqtrade.exceptions import OperationalException
 
@@ -18,13 +19,13 @@ def _set_loggers(verbosity: int = 0) -> None:
     """
 
     logging.getLogger('requests').setLevel(
-            logging.INFO if verbosity <= 1 else logging.DEBUG
+        logging.INFO if verbosity <= 1 else logging.DEBUG
     )
     logging.getLogger("urllib3").setLevel(
-            logging.INFO if verbosity <= 1 else logging.DEBUG
+        logging.INFO if verbosity <= 1 else logging.DEBUG
     )
     logging.getLogger('ccxt.base.exchange').setLevel(
-            logging.INFO if verbosity <= 2 else logging.DEBUG
+        logging.INFO if verbosity <= 2 else logging.DEBUG
     )
     logging.getLogger('telegram').setLevel(logging.INFO)
 
@@ -35,6 +36,8 @@ def setup_logging(config: Dict[str, Any]) -> None:
     """
     # Log level
     verbosity = config['verbosity']
+
+    progressbar.streams.wrap_stderr()
 
     # Log to stderr
     log_handlers: List[logging.Handler] = [logging.StreamHandler(sys.stderr)]
