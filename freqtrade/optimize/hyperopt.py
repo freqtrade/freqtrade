@@ -55,7 +55,7 @@ logger = logging.getLogger(__name__)
 NEXT_POINT_METHODS = ["cl_min", "cl_mean", "cl_max"]
 NEXT_POINT_METHODS_LENGTH = 3
 
-MAX_LOSS = iinfo(int32).max # just a big enough number to be bad result in loss optimization
+VOID_LOSS = iinfo(int32).max # just a big enough number to be bad result in loss optimization
 
 
 class Hyperopt:
@@ -99,7 +99,7 @@ class Hyperopt:
         # total number of candles being backtested
         self.n_samples = 0
 
-        self.current_best_loss = MAX_LOSS
+        self.current_best_loss = VOID_LOSS
         self.current_best_epoch = 0
         self.epochs_since_last_best: List = []
         self.avg_best_occurrence = 0
@@ -514,7 +514,7 @@ class Hyperopt:
         # interesting -- consider it as 'bad' (assigned max. loss value)
         # in order to cast this hyperspace point away from optimization
         # path. We do not want to optimize 'hodl' strategies.
-        loss: float = MAX_LOSS
+        loss: float = VOID_LOSS
         if trade_count >= self.config['hyperopt_min_trades']:
             loss = self.calculate_loss(results=backtesting_results, trade_count=trade_count,
                                        min_date=min_date.datetime, max_date=max_date.datetime)
@@ -547,6 +547,23 @@ class Hyperopt:
                 f"({results_metrics['profit']: 7.2f}\N{GREEK CAPITAL LETTER SIGMA}%). "
                 f"Avg duration {results_metrics['duration']:5.1f} min."
                 ).encode(locale.getpreferredencoding(), 'replace').decode('utf-8')
+
+    @staticmethod
+    def filter_void_losses(vals: List, opt: Optimizer) -> List:
+        """ remove out of bound losses from the results """
+        if opt.void_loss == VOID_LOSS and len(opt.yi) < 1:
+            # only exclude results at the beginning when void loss is yet to be set
+            void_filtered = list(filter(lambda v: v["loss"] != VOID_LOSS, vals))
+        else:
+            if opt.void_loss == VOID_LOSS: # set void loss once
+                opt.void_loss = max(opt.yi)
+            void_filtered = []
+            # default bad losses to set void_loss
+            for k, v in enumerate(vals):
+                if v["loss"] == VOID_LOSS:
+                    vals[k]["loss"] = opt.void_loss
+            void_filtered = vals
+        return void_filtered
 
     def get_next_point_strategy(self):
         """ Choose a strategy randomly among the supported ones, used in multi opt mode
@@ -606,16 +623,15 @@ class Hyperopt:
             while not backend.results.empty():
                 vals.append(backend.results.get())
             if vals:
-                # values with improbable loss scores should not be told to the optimizer
-                # to reduce noise
-                vals = list(filter(lambda v: v['loss'] != MAX_LOSS, vals))
+                # filter losses
+                void_filtered = self.filter_void_losses(vals, opt)
                 if vals: # again if all are filtered
-                    opt.tell([list(v['params_dict'].values()) for v in vals],
+                    opt.tell([list(v['params_dict'].values()) for v in void_filtered],
                                 [v['loss'] for v in vals],
                                 fit=fit)
                     if fit:
                         fit = False
-                    vals = []
+                    del vals[:], void_filtered[:]
 
             if not to_ask:
                 opt.update_next()
@@ -666,18 +682,20 @@ class Hyperopt:
         asked = opt.ask(n_points=self.n_points, strategy=self.get_next_point_strategy())
         # run the backtest for each point
         f_val = [self.backtest_params(e) for e in asked]
+        # filter losses
+        void_filtered = self.filter_void_losses(f_val, opt)
         # tell the optimizer the results
-        Xi = [list(v['params_dict'].values()) for v in f_val]
-        yi = [v['loss'] for v in f_val]
-        opt.tell(Xi, yi, fit=False)
-        # update the board with the new results
-        results = results_board.get()
-        no_max_loss_results = list(filter(lambda v: v["loss"] != MAX_LOSS, f_val))
-        results.append([no_max_loss_results, jobs - 1])
-        results_board.put(results)
+        if opt.void_loss != VOID_LOSS or len(void_filtered) > 0:
+            Xi = [list(v['params_dict'].values()) for v in void_filtered]
+            yi = [v['loss'] for v in void_filtered]
+            opt.tell(Xi, yi, fit=False)
+            # update the board with the new results
+            results = results_board.get()
+            results.append([void_filtered, jobs - 1])
+            results_board.put(results)
         # send back the updated optimizer
         optimizers.put(opt)
-        return f_val
+        return void_filtered
 
     def parallel_objective(self, asked, results: Queue, n=0):
         """ objective run in single opt mode, run the backtest, store the results into a queue """
@@ -822,10 +840,11 @@ class Hyperopt:
                 opt = self.get_optimizer(self.dimensions, self.n_jobs, self.opt_n_initial_points)
                 for _ in range(remaining):  # generate optimizers
                     # random state is preserved
-                    backend.optimizers.put(
-                        opt.copy(random_state=opt.rng.randint(0,
-                                                                iinfo(int32).max)))
-                del opt
+                    opt_copy = opt.copy(random_state=opt.rng.randint(0,
+                                                                iinfo(int32).max))
+                    opt_copy.void_loss = VOID_LOSS
+                    backend.optimizers.put(opt_copy)
+                del opt, opt_copy
         else:
             # if we have more than 1 optimizer but are using single opt,
             # pick one discard the rest...
@@ -835,6 +854,7 @@ class Hyperopt:
                 self.opt = self.get_optimizer(
                     self.dimensions, self.n_jobs, self.opt_n_initial_points
                 )
+                self.opt.void_loss = VOID_LOSS
         del opts[:]
 
     def start(self) -> None:
