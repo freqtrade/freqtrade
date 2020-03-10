@@ -332,10 +332,10 @@ class Hyperopt:
             lambda x: '{}/{}'.format(str(x).rjust(len(str(total_epochs)), ' '), total_epochs)
         )
         trials['Avg profit'] = trials['Avg profit'].apply(
-            lambda x: ('{:,.2f}%'.format(x)).rjust(7, ' ') if not isna(x) else "--".rjust(7, ' ')
+            lambda x: '{:,.2f}%'.format(x).rjust(7, ' ') if not isna(x) else "--".rjust(7, ' ')
         )
         trials['Avg duration'] = trials['Avg duration'].apply(
-            lambda x: ('{:,.1f} m'.format(x)).rjust(7, ' ') if not isna(x) else "--".rjust(7, ' ')
+            lambda x: '{:,.1f} m'.format(x).rjust(7, ' ') if not isna(x) else "--".rjust(7, ' ')
         )
         trials['Objective'] = trials['Objective'].apply(
             lambda x: '{:,.5f}'.format(x).rjust(8, ' ') if x != 100000 else "N/A".rjust(8, ' ')
@@ -426,10 +426,10 @@ class Hyperopt:
             lambda x: '{:,.2f}'.format(x) if not isna(x) else ""
         )
         trials['Avg profit'] = trials['Avg profit'].apply(
-            lambda x: ('{:,.2f}%'.format(x)) if not isna(x) else ""
+            lambda x: '{:,.2f}%'.format(x) if not isna(x) else ""
         )
         trials['Avg duration'] = trials['Avg duration'].apply(
-            lambda x: ('{:,.1f} m'.format(x)) if not isna(x) else ""
+            lambda x: '{:,.1f} m'.format(x) if not isna(x) else ""
         )
         trials['Objective'] = trials['Objective'].apply(
             lambda x: '{:,.5f}'.format(x) if x != 100000 else ""
