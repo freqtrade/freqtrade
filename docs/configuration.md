@@ -536,8 +536,14 @@ The idea here is to place the sell order early, to be ahead in the queue.
 
 A fixed slot (mirroring `bid_strategy.order_book_top`) can be defined by setting `ask_strategy.order_book_min` and `ask_strategy.order_book_max` to the same number.
 
-!!! Warning "Orderbook and stoploss_on_exchange"
-    Using `ask_strategy.order_book_max` higher than 1 may increase the risk, since an eventual [stoploss on exchange](#understand-order_types) will be needed to be cancelled as soon as the order is placed.
+!!! Warning "Order_book_max > 1 - increased risks for stoplosses!"
+    Using `ask_strategy.order_book_max` higher than 1 will increase the risk the stoploss on exchange is cancelled too early, since an eventual [stoploss on exchange](#understand-order_types) will be cancelled as soon as the order is placed.
+    Also, the sell order will remain on the exchange for `unfilledtimeout.sell` (or until it's filled) - which can lead to missed stoplosses (with or without using stoploss on exchange).
+
+!!! Warning "Order_book_max > 1 in dry-run"
+    Using `ask_strategy.order_book_max` higher than 1 will result in improper dry-run results (significantly better than real orders executed on exchange), since dry-run assumes orders to be filled almost instantly.
+    It is therefore advised to not use this setting for dry-runs.
+
 
 #### Sell price without Orderbook enabled
 
