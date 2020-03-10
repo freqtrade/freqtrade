@@ -51,7 +51,7 @@ class SharpeHyperOptLossDaily(IHyperOptLoss):
         expected_returns_mean = total_profit.mean()
         up_stdev = total_profit.std()
 
-        if (up_stdev != 0.):
+        if up_stdev != 0:
             sharp_ratio = expected_returns_mean / up_stdev * math.sqrt(days_in_year)
         else:
             # Define high (negative) sharpe ratio to be clear that this is NOT optimal.
