@@ -277,6 +277,7 @@ class IStrategy(ABC):
 
         latest = dataframe.iloc[-1]
         signal_date = arrow.get(latest['date'])
+        interval_minutes = timeframe_to_minutes(interval)
 
         # Check if dataframe is out of date
         offset = self.config.get('exchange', {}).get('outdated_offset', 5)
@@ -289,7 +290,6 @@ class IStrategy(ABC):
             return False, False
 
         # Check if dataframe has new candle
-        interval_minutes = timeframe_to_minutes(interval)
         if (arrow.utcnow() - signal_date).total_seconds() // 60 >= interval_minutes:
             logger.warning('Old candle for pair %s. Last candle is %s minutes old',
                            pair, int((arrow.utcnow() - signal_date).total_seconds() // 60))
