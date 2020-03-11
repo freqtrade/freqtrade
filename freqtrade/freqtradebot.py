@@ -390,14 +390,17 @@ class FreqtradeBot:
         """
         logger.debug(f"create_trade for pair {pair}")
 
+        dataframe = self.dataprovider.ohlcv(pair, self.strategy.ticker_interval)
+        latest = dataframe.iloc[-1]
+        # Check if dataframe is out of date
+        signal_date = arrow.get(latest['date'])
+
         if self.strategy.is_pair_locked(pair):
             logger.info(f"Pair {pair} is currently locked.")
             return False
 
         # running get_signal on historical data fetched
-        (buy, sell) = self.strategy.get_signal(
-            pair, self.strategy.ticker_interval,
-            self.dataprovider.ohlcv(pair, self.strategy.ticker_interval))
+        (buy, sell) = self.strategy.get_signal(pair, self.strategy.ticker_interval, dataframe)
 
         if buy and not sell:
             if not self.get_free_open_trades():
