@@ -281,7 +281,7 @@ class IStrategy(ABC):
         signal_date = arrow.get(latest['date'])
         interval_minutes = timeframe_to_minutes(interval)
         if (arrow.utcnow() - signal_date).total_seconds() // 60 >= interval_minutes:
-            logger.warning('Old candle for pair %s. Last tick is %s minutes old',
+            logger.warning('Old candle for pair %s. Last candle is %s minutes old',
                            pair, int((arrow.utcnow() - signal_date).total_seconds() // 60))
             return False, False
 
