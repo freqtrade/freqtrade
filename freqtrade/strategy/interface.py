@@ -282,7 +282,7 @@ class IStrategy(ABC):
         interval_minutes = timeframe_to_minutes(interval)
         if (arrow.utcnow() - signal_date).total_seconds() // 60 >= interval_minutes:
             logger.warning('Old candle for pair %s. Last tick is %s minutes old',
-                           pair, int(arrow.utcnow() - signal_date).total_seconds() // 60)
+                           pair, int((arrow.utcnow() - signal_date).total_seconds() // 60))
             return False, False
 
         # Check if dataframe is out of date
