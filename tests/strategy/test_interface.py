@@ -79,6 +79,21 @@ def test_get_signal_empty_dataframe(default_conf, mocker, caplog, ticker_history
     assert log_has('Empty dataframe for pair xyz', caplog)
 
 
+def test_get_signal_old_candle(default_conf, mocker, caplog, ticker_history):
+    caplog.set_level(logging.INFO)
+    # default_conf defines a 5m interval. we check interval of previous candle
+    # this is necessary as the last candle is removed (partial candles) by default
+    oldtime = arrow.utcnow().shift(minutes=-10)
+    ticks = DataFrame([{'buy': 1, 'date': oldtime}])
+    mocker.patch.object(
+        _STRATEGY, '_analyze_ticker_internal',
+        return_value=DataFrame(ticks)
+    )
+    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
+                                                  ticker_history)
+    assert log_has('Old candle for pair xyz. Last candle is 10 minutes old', caplog)
+
+
 def test_get_signal_old_dataframe(default_conf, mocker, caplog, ticker_history):
     caplog.set_level(logging.INFO)
     # default_conf defines a 5m interval. we check interval * 2 + 5m
@@ -198,14 +213,14 @@ def test_min_roi_reached3(default_conf, fee) -> None:
     strategy = StrategyResolver.load_strategy(default_conf)
     strategy.minimal_roi = min_roi
     trade = Trade(
-            pair='ETH/BTC',
-            stake_amount=0.001,
-            amount=5,
-            open_date=arrow.utcnow().shift(hours=-1).datetime,
-            fee_open=fee.return_value,
-            fee_close=fee.return_value,
-            exchange='bittrex',
-            open_rate=1,
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        amount=5,
+        open_date=arrow.utcnow().shift(hours=-1).datetime,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='bittrex',
+        open_rate=1,
     )
 
     assert not strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-56).datetime)
