@@ -275,8 +275,6 @@ class IStrategy(ABC):
             logger.warning('Empty dataframe for pair %s', pair)
             return False, False
 
-        latest = dataframe.iloc[-1]
-
         # Check if dataframe is out of date
         offset = self.config.get('exchange', {}).get('outdated_offset', 5)
         if signal_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + offset))):
@@ -288,6 +286,7 @@ class IStrategy(ABC):
             return False, False
 
         # Check if dataframe has new candle
+        latest = dataframe.iloc[-1]
         signal_date = arrow.get(latest['date'])
         interval_minutes = timeframe_to_minutes(interval)
         if (arrow.utcnow() - signal_date).total_seconds() // 60 >= interval_minutes:
