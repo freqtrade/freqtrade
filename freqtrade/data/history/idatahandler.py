@@ -147,12 +147,7 @@ class IDataHandler(ABC):
 
         pairdf = self._ohlcv_load(pair, timeframe,
                                   timerange=timerange_startup)
-        if pairdf.empty:
-            if warn_no_data:
-                logger.warning(
-                    f'No history data for pair: "{pair}", timeframe: {timeframe}. '
-                    'Use `freqtrade download-data` to download the data'
-                )
+        if self._check_empty_df(pairdf, pair, timeframe, warn_no_data):
             return pairdf
         else:
             enddate = pairdf.iloc[-1]['date']
@@ -160,12 +155,7 @@ class IDataHandler(ABC):
             if timerange_startup:
                 self._validate_pairdata(pair, pairdf, timerange_startup)
                 pairdf = trim_dataframe(pairdf, timerange_startup)
-                if pairdf.empty:
-                    if warn_no_data:
-                        logger.warning(
-                            f'No history data for pair: "{pair}", timeframe: {timeframe}. '
-                            'Use `freqtrade download-data` to download the data'
-                        )
+                if self._check_empty_df(pairdf, pair, timeframe, warn_no_data):
                     return pairdf
 
             # incomplete candles should only be dropped if we didn't trim the end beforehand.
@@ -174,6 +164,19 @@ class IDataHandler(ABC):
                                          fill_missing=fill_missing,
                                          drop_incomplete=(drop_incomplete and
                                                           enddate == pairdf.iloc[-1]['date']))
+
+    def _check_empty_df(self, pairdf: DataFrame, pair: str, timeframe: str, warn_no_data: bool):
+        """
+        Warn on empty dataframe
+        """
+        if pairdf.empty:
+            if warn_no_data:
+                logger.warning(
+                    f'No history data for pair: "{pair}", timeframe: {timeframe}. '
+                    'Use `freqtrade download-data` to download the data'
+                )
+            return True
+        return False
 
     def _validate_pairdata(self, pair, pairdata: DataFrame, timerange: TimeRange):
         """
