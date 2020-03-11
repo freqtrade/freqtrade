@@ -277,14 +277,6 @@ class IStrategy(ABC):
 
         latest = dataframe.iloc[-1]
 
-        # Check if dataframe has new candle
-        signal_date = arrow.get(latest['date'])
-        interval_minutes = timeframe_to_minutes(interval)
-        if (arrow.utcnow() - signal_date).total_seconds() // 60 >= interval_minutes:
-            logger.warning('Old candle for pair %s. Last tick is %s minutes old',
-                           pair, int((arrow.utcnow() - signal_date).total_seconds() // 60))
-            return False, False
-
         # Check if dataframe is out of date
         offset = self.config.get('exchange', {}).get('outdated_offset', 5)
         if signal_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + offset))):
@@ -293,6 +285,14 @@ class IStrategy(ABC):
                 pair,
                 int((arrow.utcnow() - signal_date).total_seconds() // 60)
             )
+            return False, False
+
+        # Check if dataframe has new candle
+        signal_date = arrow.get(latest['date'])
+        interval_minutes = timeframe_to_minutes(interval)
+        if (arrow.utcnow() - signal_date).total_seconds() // 60 >= interval_minutes:
+            logger.warning('Old candle for pair %s. Last candle is %s minutes old',
+                           pair, int((arrow.utcnow() - signal_date).total_seconds() // 60))
             return False, False
 
         (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
