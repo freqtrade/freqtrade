@@ -282,11 +282,11 @@ class IStrategy(ABC):
         interval_minutes = timeframe_to_minutes(interval)
         if (arrow.utcnow() - signal_date).total_seconds() // 60 >= interval_minutes:
             logger.warning('Old candle for pair %s. Last tick is %s minutes old',
-                           pair, int(arrow.utcnow() - signal_date).total_seconds() // 60)
+                           pair, int((arrow.utcnow() - signal_date).total_seconds() // 60)
             return False, False
 
         # Check if dataframe is out of date
-        offset = self.config.get('exchange', {}).get('outdated_offset', 5)
+        offset=self.config.get('exchange', {}).get('outdated_offset', 5)
         if signal_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + offset))):
             logger.warning(
                 'Outdated history for pair %s. Last tick is %s minutes old',
@@ -295,7 +295,7 @@ class IStrategy(ABC):
             )
             return False, False
 
-        (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
+        (buy, sell)=latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
         logger.debug(
             'trigger: %s (pair=%s) buy=%s sell=%s',
             latest['date'],
@@ -306,8 +306,8 @@ class IStrategy(ABC):
         return buy, sell
 
     def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
-                    sell: bool, low: float = None, high: float = None,
-                    force_stoploss: float = 0) -> SellCheckTuple:
+                    sell: bool, low: float=None, high: float=None,
+                    force_stoploss: float=0) -> SellCheckTuple:
         """
         This function evaluates if one of the conditions required to trigger a sell
         has been reached, which can either be a stop-loss, ROI or sell-signal.
@@ -317,12 +317,12 @@ class IStrategy(ABC):
         :return: True if trade should be sold, False otherwise
         """
         # Set current rate to low for backtesting sell
-        current_rate = low or rate
-        current_profit = trade.calc_profit_ratio(current_rate)
+        current_rate=low or rate
+        current_profit=trade.calc_profit_ratio(current_rate)
 
         trade.adjust_min_max_rates(high or current_rate)
 
-        stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
+        stoplossflag=self.stop_loss_reached(current_rate=current_rate, trade=trade,
                                               current_time=date, current_profit=current_profit,
                                               force_stoploss=force_stoploss, high=high)
 
@@ -332,9 +332,9 @@ class IStrategy(ABC):
             return stoplossflag
 
         # Set current rate to high for backtesting sell
-        current_rate = high or rate
-        current_profit = trade.calc_profit_ratio(current_rate)
-        config_ask_strategy = self.config.get('ask_strategy', {})
+        current_rate=high or rate
+        current_profit=trade.calc_profit_ratio(current_rate)
+        config_ask_strategy=self.config.get('ask_strategy', {})
 
         if buy and config_ask_strategy.get('ignore_roi_if_buy_signal', False):
             # This one is noisy, commented out
@@ -366,29 +366,29 @@ class IStrategy(ABC):
 
     def stop_loss_reached(self, current_rate: float, trade: Trade,
                           current_time: datetime, current_profit: float,
-                          force_stoploss: float, high: float = None) -> SellCheckTuple:
+                          force_stoploss: float, high: float=None) -> SellCheckTuple:
         """
         Based on current profit of the trade and configured (trailing) stoploss,
         decides to sell or not
         :param current_profit: current profit as ratio
         """
-        stop_loss_value = force_stoploss if force_stoploss else self.stoploss
+        stop_loss_value=force_stoploss if force_stoploss else self.stoploss
 
         # Initiate stoploss with open_rate. Does nothing if stoploss is already set.
         trade.adjust_stop_loss(trade.open_rate, stop_loss_value, initial=True)
 
         if self.trailing_stop:
             # trailing stoploss handling
-            sl_offset = self.trailing_stop_positive_offset
+            sl_offset=self.trailing_stop_positive_offset
 
             # Make sure current_profit is calculated using high for backtesting.
-            high_profit = current_profit if not high else trade.calc_profit_ratio(high)
+            high_profit=current_profit if not high else trade.calc_profit_ratio(high)
 
             # Don't update stoploss if trailing_only_offset_is_reached is true.
             if not (self.trailing_only_offset_is_reached and high_profit < sl_offset):
                 # Specific handling for trailing_stop_positive
                 if self.trailing_stop_positive is not None and high_profit > sl_offset:
-                    stop_loss_value = self.trailing_stop_positive
+                    stop_loss_value=self.trailing_stop_positive
                     logger.debug(f"{trade.pair} - Using positive stoploss: {stop_loss_value} "
                                  f"offset: {sl_offset:.4g} profit: {current_profit:.4f}%")
 
@@ -401,11 +401,11 @@ class IStrategy(ABC):
             (trade.stop_loss >= current_rate) and
                 (not self.order_types.get('stoploss_on_exchange') or self.config['dry_run'])):
 
-            sell_type = SellType.STOP_LOSS
+            sell_type=SellType.STOP_LOSS
 
             # If initial stoploss is not the same as current one then it is trailing.
             if trade.initial_stop_loss != trade.stop_loss:
-                sell_type = SellType.TRAILING_STOP_LOSS
+                sell_type=SellType.TRAILING_STOP_LOSS
                 logger.debug(
                     f"{trade.pair} - HIT STOP: current price at {current_rate:.6f}, "
                     f"stoploss is {trade.stop_loss:.6f}, "
@@ -425,10 +425,10 @@ class IStrategy(ABC):
         :return: minimal ROI entry value or None if none proper ROI entry was found.
         """
         # Get highest entry in ROI dict where key <= trade-duration
-        roi_list = list(filter(lambda x: x <= trade_dur, self.minimal_roi.keys()))
+        roi_list=list(filter(lambda x: x <= trade_dur, self.minimal_roi.keys()))
         if not roi_list:
             return None, None
-        roi_entry = max(roi_list)
+        roi_entry=max(roi_list)
         return roi_entry, self.minimal_roi[roi_entry]
 
     def min_roi_reached(self, trade: Trade, current_profit: float, current_time: datetime) -> bool:
@@ -439,8 +439,8 @@ class IStrategy(ABC):
         :return: True if bot should sell at current rate
         """
         # Check if time matches and current rate is above threshold
-        trade_dur = int((current_time.timestamp() - trade.open_date.timestamp()) // 60)
-        _, roi = self.min_roi_reached_entry(trade_dur)
+        trade_dur=int((current_time.timestamp() - trade.open_date.timestamp()) // 60)
+        _, roi=self.min_roi_reached_entry(trade_dur)
         if roi is None:
             return False
         else:
