@@ -393,7 +393,6 @@ class FreqtradeBot:
         dataframe = self.dataprovider.ohlcv(pair, self.strategy.ticker_interval)
         latest = dataframe.iloc[-1]
         # Check if dataframe is out of date
-        signal_date = arrow.get(latest['date'])
 
         if self.strategy.is_pair_locked(pair):
             logger.info(f"Pair {pair} is currently locked.")
