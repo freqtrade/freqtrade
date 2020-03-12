@@ -7,6 +7,7 @@ This module contains the hyperopt logic
 import locale
 import logging
 import random
+import sys
 import warnings
 from math import ceil
 from collections import OrderedDict
@@ -270,6 +271,7 @@ class Hyperopt:
             # Print '\n' after each 100th epoch to separate dots from the log messages.
             # Otherwise output is messy on a terminal.
             print('.', end='' if results['current_epoch'] % 100 != 0 else None)  # type: ignore
+            sys.stdout.flush()
 
         if self.print_all or is_best:
             if not self.print_all:
