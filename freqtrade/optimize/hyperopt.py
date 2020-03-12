@@ -289,15 +289,8 @@ class Hyperopt:
         """
         output = ''
         is_best = results['is_best']
-        # if not self.print_all:
-        #    Print '\n' after each 100th epoch to separate dots from the log messages.
-        #    Otherwise output is messy on a terminal.
-        #    return '.', end='' if results['current_epoch'] % 100 != 0 else None  # type: ignore
 
         if self.print_all or is_best:
-            # if not self.print_all:
-            #    Separate the results explanation string from dots
-            #    print("\n")
             output = self.get_result_table(
                 self.config, results, self.total_epochs,
                 self.print_all, self.print_colorized,
@@ -735,9 +728,10 @@ class Hyperopt:
                         val['is_best'] = is_best
                         # print(current)
                         output = self.get_results(val)
-                        self.progress_bar.write(output)
+                        if output:
+                            self.progress_bar.write(output)
                         # self.progress_bar.write(str(len(output.split('\n')[0])))
-                        self.progress_bar.ncols = len(output.split('\n')[0])
+                        self.progress_bar.ncols = 108
                         self.progress_bar.update(1)
                         """
                         if pbar_line <= current:
