@@ -23,7 +23,7 @@ from joblib import (Parallel, cpu_count, delayed, dump, load,
 from pandas import DataFrame, json_normalize, isna
 from tqdm import tqdm
 import tabulate
-from os import path, popen
+from os import path
 import io
 
 from freqtrade.data.converter import trim_dataframe
@@ -640,10 +640,6 @@ class Hyperopt:
     def _set_random_state(self, random_state: Optional[int]) -> int:
         return random_state or random.randint(1, 2**16 - 1)
 
-    def _get_height(self) -> int:
-        rows = int((popen('stty size', 'r').read().split())[0])
-        return rows
-
     def start(self) -> None:
         self.random_state = self._set_random_state(self.config.get('hyperopt_random_state', None))
         logger.info(f"Using optimizer random state: {self.random_state}")
@@ -680,15 +676,6 @@ class Hyperopt:
 
         try:
             with Parallel(n_jobs=config_jobs) as parallel:
-                """
-                self.progress_bar = progressbar.ProgressBar(
-                    min_value=0,
-                    max_value=self.total_epochs,
-                    initial_value=0,
-                    line_breaks=True,
-                    enable_colors=self.print_colorized
-                )
-                """
                 jobs = parallel._effective_n_jobs()
                 logger.info(f'Effective number of parallel workers used: {jobs}')
 
@@ -712,7 +699,6 @@ class Hyperopt:
                     self.fix_optimizer_models_list()
 
                     # Calculate progressbar outputs
-                    # pbar_line = ceil(self._get_height() / 2)
                     for j, val in enumerate(f_val):
                         # Use human-friendly indexes here (starting from 1)
                         current = i * jobs + j + 1
@@ -726,18 +712,12 @@ class Hyperopt:
                         # evaluations can take different time. Here they are aligned in the
                         # order they will be shown to the user.
                         val['is_best'] = is_best
-                        # print(current)
                         output = self.get_results(val)
                         if output:
                             self.progress_bar.write(output)
-                        # self.progress_bar.write(str(len(output.split('\n')[0])))
                         self.progress_bar.ncols = 108
                         self.progress_bar.update(1)
-                        """
-                        if pbar_line <= current:
-                            self.progress_bar.update(current)
-                            pbar_line = current + ceil(self._get_height() / 2)
-                        """
+
                         if is_best:
                             self.current_best_loss = val['loss']
                         self.trials.append(val)
@@ -747,8 +727,8 @@ class Hyperopt:
                 self.progress_bar.ncols = 108
                 self.progress_bar.close()
 
-                # self.progress_bar.update(current)
         except KeyboardInterrupt:
+            self.progress_bar.close()
             print('User interrupted..')
 
         self.save_trials(final=True)
@@ -761,9 +741,3 @@ class Hyperopt:
             # This is printed when Ctrl+C is pressed quickly, before first epochs have
             # a chance to be evaluated.
             print("No epochs evaluated yet, no best result.")
-
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        del state['trials']
-        del state['progress_bar']
-        return state
