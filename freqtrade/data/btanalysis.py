@@ -7,7 +7,8 @@ from typing import Dict, Union, Tuple
 
 import numpy as np
 import pandas as pd
-from datetime import timezone
+from datetime import timezone, datetime
+from scipy.ndimage.interpolation import shift
 
 from freqtrade import persistence
 from freqtrade.misc import json_load
@@ -62,15 +63,22 @@ def analyze_trade_parallelism(results: pd.DataFrame, timeframe: str) -> pd.DataF
     """
     from freqtrade.exchange import timeframe_to_minutes
     timeframe_min = timeframe_to_minutes(timeframe)
+    # compute how long each trade was left outstanding as date indexes
     dates = [pd.Series(pd.date_range(row[1].open_time, row[1].close_time,
                                      freq=f"{timeframe_min}min"))
              for row in results[['open_time', 'close_time']].iterrows()]
+    # track the lifetime of each trade in number of candles
     deltas = [len(x) for x in dates]
+    # concat expands and flattens the list of lists of dates
     dates = pd.Series(pd.concat(dates).values, name='date')
+    # trades are repeated (column wise) according to their lifetime
     df2 = pd.DataFrame(np.repeat(results.values, deltas, axis=0), columns=results.columns)
 
+    # the expanded dates list is added as a new column to the repeated trades (df2)
     df2 = pd.concat([dates, df2], axis=1)
     df2 = df2.set_index('date')
+    # duplicate dates entries represent trades on the same candle
+    # which resampling resolves through the applied function (count)
     df_final = df2.resample(f"{timeframe_min}min")[['pair']].count()
     df_final = df_final.rename({'pair': 'open_trades'}, axis=1)
     return df_final
@@ -213,3 +221,93 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_time'
     low_date = profit_results.loc[max_drawdown_df['drawdown'].idxmin(), date_col]
 
     return abs(min(max_drawdown_df['drawdown'])), high_date, low_date
+
+
+def calculate_outstanding_balance(
+    results: pd.DataFrame,
+    timeframe: str,
+    min_date: datetime,
+    max_date: datetime,
+    hloc: Dict[str, pd.DataFrame],
+    slippage=0,
+) -> pd.DataFrame:
+    """
+    Sums the value of each trade (both open and closed) on each candle
+    :param results: Results Dataframe
+    :param timeframe: Frequency used for the backtest
+    :param min_date: date of the first trade opened (results.open_time.min())
+    :param max_date: date of the last trade closed (results.close_time.max())
+    :param hloc: historical DataFrame of each pair tested
+    :slippage: optional profit value to subtract per trade
+    :return: DataFrame of outstanding balance at each timeframe
+    """
+    timedelta = pd.Timedelta(timeframe)
+
+    date_index: pd.DatetimeIndex = pd.date_range(
+        start=min_date, end=max_date, freq=timeframe, normalize=True
+    )
+    balance_total = []
+    for pair in hloc:
+        pair_candles = hloc[pair].set_index("date").reindex(date_index)
+        # index becomes open_time
+        pair_trades = (
+            results.loc[results["pair"].values == pair]
+            .set_index("open_time")
+            .resample(timeframe)
+            .asfreq()
+            .reindex(date_index)
+        )
+        open_rate = pair_trades["open_rate"].fillna(0).values
+        open_time = pair_trades.index.values
+        close_time = pair_trades["close_time"].values
+        close = pair_candles["close"].values
+        profits = pair_trades["profit_percent"].values - slippage
+        # at the open_time candle, the balance is matched to the close of the candle
+        pair_balance = np.where(
+            # only the rows with actual trades
+            (open_rate > 0)
+            # only if the trade is not also closed on the same candle
+            & (open_time != close_time),
+            1 - open_rate / close - slippage,
+            0,
+        )
+        # at the close_time candle, the balance just uses the profits col
+        pair_balance = pair_balance + np.where(
+            # only rows with actual trades
+            (open_rate > 0)
+            # the rows where a close happens
+            & (open_time == close_time),
+            profits,
+            pair_balance,
+        )
+
+        # how much time each trade was open, close - open time
+        periods = close_time - open_time
+        # how many candles each trade was open, set as a counter at each trade open_time index
+        hops = np.nan_to_num(periods / timedelta).astype(int)
+
+        # each loop update one timeframe forward, the balance on each timeframe
+        # where there is at least one hop left to do (>0)
+        for _ in range(1, hops.max() + 1):
+            # move hops and open_rate by one
+            hops = shift(hops, 1, cval=0)
+            open_rate = shift(open_rate, 1, cval=0)
+            pair_balance = np.where(
+                hops > 0, pair_balance + (1 - open_rate / close) - slippage, pair_balance
+            )
+            hops -= 1
+
+        # same as above but one loop per pair
+        # trades_indexes = np.nonzero(hops)[0]
+        # for i in trades_indexes:
+        #     # start from 1 because counters are set at the open_time balance
+        #     # which was already added previously
+        #     for c in range(1, hops[i]):
+        #         offset = i + c
+        #         # the open rate is always for the current date, not the offset
+        #         pair_balance[offset] += 1 - open_rate[i] / close[offset] - slippage
+
+        # add the pair balance to the total
+        balance_total.append(pair_balance)
+    balance_total = np.array(balance_total).sum(axis=0)
+    return pd.DataFrame({"balance": balance_total, "date": date_index})
