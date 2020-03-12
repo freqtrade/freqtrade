@@ -159,11 +159,13 @@ class IDataHandler(ABC):
                     return pairdf
 
             # incomplete candles should only be dropped if we didn't trim the end beforehand.
-            return clean_ohlcv_dataframe(pairdf, timeframe,
-                                         pair=pair,
-                                         fill_missing=fill_missing,
-                                         drop_incomplete=(drop_incomplete and
-                                                          enddate == pairdf.iloc[-1]['date']))
+            pairdf = clean_ohlcv_dataframe(pairdf, timeframe,
+                                           pair=pair,
+                                           fill_missing=fill_missing,
+                                           drop_incomplete=(drop_incomplete and
+                                                            enddate == pairdf.iloc[-1]['date']))
+            self._check_empty_df(pairdf, pair, timeframe, warn_no_data)
+            return pairdf
 
     def _check_empty_df(self, pairdf: DataFrame, pair: str, timeframe: str, warn_no_data: bool):
         """
