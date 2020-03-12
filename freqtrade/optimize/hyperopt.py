@@ -741,3 +741,9 @@ class Hyperopt:
             # This is printed when Ctrl+C is pressed quickly, before first epochs have
             # a chance to be evaluated.
             print("No epochs evaluated yet, no best result.")
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state['trials']
+        del state['progress_bar']
+        return state
