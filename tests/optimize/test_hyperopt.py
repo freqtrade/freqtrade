@@ -10,10 +10,11 @@ import pytest
 from arrow import Arrow
 from filelock import Timeout
 
+from freqtrade import constants
 from freqtrade.commands.optimize_commands import (setup_optimize_configuration,
                                                   start_hyperopt)
 from freqtrade.data.history import load_data
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.optimize.default_hyperopt import DefaultHyperOpt
 from freqtrade.optimize.default_hyperopt_loss import DefaultHyperOptLoss
 from freqtrade.optimize.hyperopt import Hyperopt
@@ -156,6 +157,21 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
     assert log_has('Parameter -s/--spaces detected: {}'.format(config['spaces']), caplog)
     assert 'print_all' in config
     assert log_has('Parameter --print-all detected ...', caplog)
+
+
+def test_setup_hyperopt_configuration_unlimited_stake_amount(mocker, default_conf, caplog) -> None:
+    default_conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
+
+    patched_configuration_load_config_file(mocker, default_conf)
+
+    args = [
+        'hyperopt',
+        '--config', 'config.json',
+        '--hyperopt', 'DefaultHyperOpt',
+    ]
+
+    with pytest.raises(DependencyException, match=r'.`stake_amount`.*'):
+        setup_optimize_configuration(get_args(args), RunMode.HYPEROPT)
 
 
 def test_hyperoptresolver(mocker, default_conf, caplog) -> None:

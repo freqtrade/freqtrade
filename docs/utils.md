@@ -429,6 +429,7 @@ usage: freqtrade hyperopt-list [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [--min-total-profit FLOAT]
                                [--max-total-profit FLOAT] [--no-color]
                                [--print-json] [--no-details]
+                               [--export-csv FILE]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -450,6 +451,8 @@ optional arguments:
                         useful if you are redirecting output to a file.
   --print-json          Print best result detailization in JSON format.
   --no-details          Do not print best epoch details.
+  --export-csv FILE     Export to CSV-File. This will disable table print.
+                        Example: --export-csv hyperopt.csv
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -458,9 +461,10 @@ Common arguments:
                         details.
   -V, --version         show program's version number and exit
   -c PATH, --config PATH
-                        Specify configuration file (default: `config.json`).
-                        Multiple --config options may be used. Can be set to
-                        `-` to read config from stdin.
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
   -d PATH, --datadir PATH
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH

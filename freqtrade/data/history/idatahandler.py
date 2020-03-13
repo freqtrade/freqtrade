@@ -145,27 +145,40 @@ class IDataHandler(ABC):
         if startup_candles > 0 and timerange_startup:
             timerange_startup.subtract_start(timeframe_to_seconds(timeframe) * startup_candles)
 
-        df = self._ohlcv_load(pair, timeframe, timerange=timerange_startup)
-        if df.empty:
+        pairdf = self._ohlcv_load(pair, timeframe,
+                                  timerange=timerange_startup)
+        if self._check_empty_df(pairdf, pair, timeframe, warn_no_data):
+            return pairdf
+        else:
+            enddate = df.iloc[-1]['date']
+
+            if timerange_startup:
+                self._validate_pairdata(pair, pairdf, timerange_startup)
+                pairdf = trim_dataframe(pairdf, timerange_startup)
+                if self._check_empty_df(pairdf, pair, timeframe, warn_no_data):
+                    return pairdf
+
+            # incomplete candles should only be dropped if we didn't trim the end beforehand.
+            pairdf = clean_ohlcv_dataframe(pairdf, timeframe,
+                                           pair=pair,
+                                           fill_missing=fill_missing,
+                                           drop_incomplete=(drop_incomplete and
+                                                            enddate == pairdf.iloc[-1]['date']))
+            self._check_empty_df(pairdf, pair, timeframe, warn_no_data)
+            return pairdf
+
+    def _check_empty_df(self, pairdf: DataFrame, pair: str, timeframe: str, warn_no_data: bool):
+        """
+        Warn on empty dataframe
+        """
+        if pairdf.empty:
             if warn_no_data:
                 logger.warning(
                     f'No history data for pair: "{pair}", timeframe: {timeframe}. '
                     'Use `freqtrade download-data` to download the data'
                 )
-            return df
-        else:
-            enddate = df.iloc[-1]['date']
-
-            if timerange_startup:
-                self._validate_pairdata(pair, df, timerange_startup)
-                df = trim_dataframe(df, timerange_startup)
-
-            # incomplete candles should only be dropped if we didn't trim the end beforehand.
-            return clean_ohlcv_dataframe(df, timeframe,
-                                         pair=pair,
-                                         fill_missing=fill_missing,
-                                         drop_incomplete=(drop_incomplete and
-                                                          enddate == df.iloc[-1]['date']))
+            return True
+        return False
 
     def _validate_pairdata(self, pair, pairdata: DataFrame, timerange: TimeRange):
         """
