@@ -455,13 +455,13 @@ def load_and_plot_trades(config: Dict[str, Any]):
         pair_counter += 1
         logger.info("analyse pair %s", pair)
 
-        dataframe = strategy.analyze_ticker(data, {'pair': pair})
+        df_analyzed = strategy.analyze_ticker(data, {'pair': pair})
         trades_pair = trades.loc[trades['pair'] == pair]
-        trades_pair = extract_trades_of_period(dataframe, trades_pair)
+        trades_pair = extract_trades_of_period(df_analyzed, trades_pair)
 
         fig = generate_candlestick_graph(
             pair=pair,
-            data=dataframe,
+            data=df_analyzed,
             trades=trades_pair,
             indicators1=config.get("indicators1", []),
             indicators2=config.get("indicators2", []),
