@@ -454,10 +454,8 @@ def load_and_plot_trades(config: Dict[str, Any]):
     for pair, data in plot_elements["ohlcv"].items():
         pair_counter += 1
         logger.info("analyse pair %s", pair)
-        ohlcv = {}
-        ohlcv[pair] = data
 
-        dataframe = strategy.analyze_ticker(ohlcv[pair], {'pair': pair})
+        dataframe = strategy.analyze_ticker(data, {'pair': pair})
         trades_pair = trades.loc[trades['pair'] == pair]
         trades_pair = extract_trades_of_period(dataframe, trades_pair)
 
