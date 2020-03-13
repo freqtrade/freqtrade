@@ -150,7 +150,7 @@ class IDataHandler(ABC):
         if self._check_empty_df(pairdf, pair, timeframe, warn_no_data):
             return pairdf
         else:
-            enddate = df.iloc[-1]['date']
+            enddate = pairdf.iloc[-1]['date']
 
             if timerange_startup:
                 self._validate_pairdata(pair, pairdf, timerange_startup)
