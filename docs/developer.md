@@ -165,7 +165,7 @@ Since CCXT does not provide unification for Stoploss On Exchange yet, we'll need
 
 ### Incomplete candles
 
-While fetching OHLCV data, we're may end up getting incomplete candles (Depending on the exchange).
+While fetching candle (OHLCV) data, we may end up getting incomplete candles (depending on the exchange).
 To demonstrate this, we'll use daily candles (`"1d"`) to keep things simple.
 We query the api (`ct.fetch_ohlcv()`) for the timeframe and look at the date of the last entry. If this entry changes or shows the date of a "incomplete" candle, then we should drop this since having incomplete candles is problematic because indicators assume that only complete candles are passed to them, and will generate a lot of false buy signals. By default, we're therefore removing the last candle assuming it's incomplete.
 
@@ -174,14 +174,14 @@ To check how the new exchange behaves, you can use the following snippet:
 ``` python
 import ccxt
 from datetime import datetime
-from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.data.converter import ohlcv_to_dataframe
 ct = ccxt.binance()
 timeframe = "1d"
 pair = "XLM/BTC"  # Make sure to use a pair that exists on that exchange!
 raw = ct.fetch_ohlcv(pair, timeframe=timeframe)
 
 # convert to dataframe
-df1 = parse_ticker_dataframe(raw, timeframe, pair=pair, drop_incomplete=False)
+df1 = ohlcv_to_dataframe(raw, timeframe, pair=pair, drop_incomplete=False)
 
 print(df1.tail(1))
 print(datetime.utcnow())

@@ -55,7 +55,7 @@ class IDataHandler(ABC):
         Implements the loading and conversion to a Pandas dataframe.
         Timerange trimming and dataframe validation happens outside of this method.
         :param pair: Pair to load data
-        :param timeframe: Ticker timeframe (e.g. "5m")
+        :param timeframe: Timeframe (e.g. "5m")
         :param timerange: Limit data to be loaded to this timerange.
                         Optionally implemented by subclasses to avoid loading
                         all data where possible.
@@ -67,7 +67,7 @@ class IDataHandler(ABC):
         """
         Remove data for this pair
         :param pair: Delete data for this pair.
-        :param timeframe: Ticker timeframe (e.g. "5m")
+        :param timeframe: Timeframe (e.g. "5m")
         :return: True when deleted, false if file did not exist.
         """
 
@@ -129,10 +129,10 @@ class IDataHandler(ABC):
                    warn_no_data: bool = True
                    ) -> DataFrame:
         """
-        Load cached ticker history for the given pair.
+        Load cached candle (OHLCV) data for the given pair.
 
         :param pair: Pair to load data for
-        :param timeframe: Ticker timeframe (e.g. "5m")
+        :param timeframe: Timeframe (e.g. "5m")
         :param timerange: Limit data to be loaded to this timerange
         :param fill_missing: Fill missing values with "No action"-candles
         :param drop_incomplete: Drop last candle assuming it may be incomplete.
