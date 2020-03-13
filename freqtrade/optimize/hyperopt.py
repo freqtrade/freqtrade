@@ -76,7 +76,7 @@ class Hyperopt:
         self.trials_file = (self.config['user_data_dir'] /
                             'hyperopt_results' / 'hyperopt_results.pickle')
         self.data_pickle_file = (self.config['user_data_dir'] /
-                                 'hyperopt_results' / 'hyperopt_data.pkl')
+                                 'hyperopt_results' / 'hyperopt_tickerdata.pkl')
         self.total_epochs = config.get('epochs', 0)
 
         self.current_best_loss = 100
