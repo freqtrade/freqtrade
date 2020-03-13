@@ -164,19 +164,19 @@ class Backtesting:
             pair_data.loc[:, 'buy'] = 0  # cleanup from previous run
             pair_data.loc[:, 'sell'] = 0  # cleanup from previous run
 
-            dataframe = self.strategy.advise_sell(
+            df_analyzed = self.strategy.advise_sell(
                 self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
 
             # To avoid using data from future, we use buy/sell signals shifted
             # from the previous candle
-            dataframe.loc[:, 'buy'] = dataframe['buy'].shift(1)
-            dataframe.loc[:, 'sell'] = dataframe['sell'].shift(1)
+            df_analyzed.loc[:, 'buy'] = df_analyzed['buy'].shift(1)
+            df_analyzed.loc[:, 'sell'] = df_analyzed['sell'].shift(1)
 
-            dataframe.drop(dataframe.head(1).index, inplace=True)
+            df_analyzed.drop(df_analyzed.head(1).index, inplace=True)
 
             # Convert from Pandas to list for performance reasons
             # (Looping Pandas is slow.)
-            data[pair] = [x for x in dataframe.itertuples()]
+            data[pair] = [x for x in df_analyzed.itertuples()]
         return data
 
     def _get_close_rate(self, sell_row, trade: Trade, sell: SellCheckTuple,

@@ -137,10 +137,10 @@ class Edge:
             pair_data = pair_data.sort_values(by=['date'])
             pair_data = pair_data.reset_index(drop=True)
 
-            dataframe = self.strategy.advise_sell(
+            df_analyzed = self.strategy.advise_sell(
                 self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
 
-            trades += self._find_trades_for_stoploss_range(dataframe, pair, self._stoploss_range)
+            trades += self._find_trades_for_stoploss_range(df_analyzed, pair, self._stoploss_range)
 
         # If no trade found then exit
         if len(trades) == 0:
@@ -359,11 +359,11 @@ class Edge:
         # Returning a list of pairs in order of "expectancy"
         return final
 
-    def _find_trades_for_stoploss_range(self, dataframe, pair, stoploss_range):
-        buy_column = dataframe['buy'].values
-        sell_column = dataframe['sell'].values
-        date_column = dataframe['date'].values
-        ohlc_columns = dataframe[['open', 'high', 'low', 'close']].values
+    def _find_trades_for_stoploss_range(self, df, pair, stoploss_range):
+        buy_column = df['buy'].values
+        sell_column = df['sell'].values
+        date_column = df['date'].values
+        ohlc_columns = df[['open', 'high', 'low', 'close']].values
 
         result: list = []
         for stoploss in stoploss_range:
