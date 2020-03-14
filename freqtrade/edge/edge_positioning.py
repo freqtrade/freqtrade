@@ -317,7 +317,7 @@ class Edge:
         }
 
         # Group by (pair and stoploss) by applying above aggregator
-        df = results.groupby(['pair', 'stoploss'])['profit_abs', 'trade_duration'].agg(
+        df = results.groupby(['pair', 'stoploss'])[['profit_abs', 'trade_duration']].agg(
             groupby_aggregator).reset_index(col_level=1)
 
         # Dropping level 0 as we don't need it
