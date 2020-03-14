@@ -270,10 +270,13 @@ class Configuration:
                              logstring='Parameter --effort detected ... '
                              'Parameter --effort detected: {}')
         self._args_to_config(config,
-                             argname='multi_opt',
-                             logstring='Hyperopt will use multiple optimizers ...')
+                             argname='mode',
+                             logstring='Hyperopt will run in {} mode ...')
         self._args_to_config(config,
-                             argname='points_per_opt',
+                             argname='explore',
+                             logstring='Acquisition strategy set to random {}...')
+        self._args_to_config(config,
+                             argname='n_points',
                              logstring='Optimizers will be asked for {} points...')
         self._args_to_config(config,
                              argname='spaces',

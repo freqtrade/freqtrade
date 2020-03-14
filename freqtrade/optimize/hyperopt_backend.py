@@ -7,7 +7,7 @@ manager: SyncManager
 # stores the optimizers in multi opt mode
 optimizers: Queue
 # stores a list of the results to share between optimizers
-# each result is a tuple of the params_dict and a decreasing counter
+# in the form of dict[tuple(Xi)] = yi
 results_board: Queue
 # store the results in single opt mode
 results: Queue

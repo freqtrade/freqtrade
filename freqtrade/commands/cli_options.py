@@ -204,20 +204,26 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='FLOAT',
         default=constants.HYPEROPT_EFFORT,
     ),
-    "multi_opt":
-    Arg('--multi',
+    "mode":
+    Arg('--mode',
         help=('Switches hyperopt to use one optimizer per job, use it',
               'when backtesting iterations are cheap (default: %(default)d).'),
-        action='store_true',
-        default=False),
-    "points_per_opt":
-    Arg('--points-per-opt',
-        help=('Controls how many points to ask at each job dispatch to each',
-              'optimizer in multi opt mode, increase if cpu usage of each core',
+        metavar='NAME',
+        default=constants.HYPEROPT_MODE),
+    "n_points":
+    Arg('--n-points',
+        help=('Controls how many points to ask to the optimizer',
+              'increase if cpu usage of each core',
               'appears low (default: %(default)d).'),
         type=int,
         metavar='INT',
-        default=constants.HYPEROPT_POINTS_PER_OPT),
+        default=constants.HYPEROPT_N_POINTS),
+    "lie_strat":
+    Arg('--lie-strat',
+        help=('Sets the strategy that the optimizer uses to lie',
+              'when asking for more than one point, ',
+              'no effect if n_point is one (default: %(default)d).'),
+        default=constants.HYPEROPT_LIE_STRAT),
     "spaces":
     Arg(
         '--spaces',
