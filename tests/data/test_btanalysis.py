@@ -104,6 +104,7 @@ def test_load_trades(default_conf, mocker):
     load_trades("DB",
                 db_url=default_conf.get('db_url'),
                 exportfilename=default_conf.get('exportfilename'),
+                skip_trades=False
                 )
 
     assert db_mock.call_count == 1
@@ -114,7 +115,9 @@ def test_load_trades(default_conf, mocker):
     default_conf['exportfilename'] = "testfile.json"
     load_trades("file",
                 db_url=default_conf.get('db_url'),
-                exportfilename=default_conf.get('exportfilename'),)
+                exportfilename=default_conf.get('exportfilename'),
+                skip_trades=False
+                )
 
     assert db_mock.call_count == 0
     assert bt_mock.call_count == 1

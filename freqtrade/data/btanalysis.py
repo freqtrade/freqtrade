@@ -111,7 +111,7 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
                             t.calc_profit(), t.calc_profit_ratio(),
                             t.open_rate, t.close_rate, t.amount,
                             (round((t.close_date.timestamp() - t.open_date.timestamp()) / 60, 2)
-                                if t.close_date else None),
+                             if t.close_date else None),
                             t.sell_reason,
                             t.fee_open, t.fee_close,
                             t.open_rate_requested,
@@ -129,12 +129,16 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
     return trades
 
 
-def load_trades(source: str, db_url: str, exportfilename: str) -> pd.DataFrame:
+def load_trades(source: str, db_url: str, exportfilename: str, skip_trades: bool) -> pd.DataFrame:
     """
     Based on configuration option "trade_source":
     * loads data from DB (using `db_url`)
     * loads data from backtestfile (using `exportfilename`)
     """
+    if skip_trades:
+        df = pd.DataFrame(columns=BT_DATA_COLUMNS)
+        return df
+
     if source == "DB":
         return load_trades_from_db(db_url)
     elif source == "file":
