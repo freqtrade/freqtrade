@@ -51,7 +51,7 @@ def init_plotscript(config):
 
     skip_trades = False
     if not isfile(config.get('exportfilename')) and config['trade_source'] == 'file':
-        logger.info("Backtest file is missing skipping trades.")
+        logger.warning("Backtest file is missing skipping trades.")
         skip_trades = True
     elif config.get('skip_trades', False):
         skip_trades = True
