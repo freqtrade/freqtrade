@@ -23,7 +23,7 @@ jobs:
         python-version: [3.7, 3.8]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Set up Python
       uses: actions/setup-python@v1
@@ -115,10 +115,10 @@ jobs:
     strategy:
       matrix:
         os: [ windows-latest ]
-        python-version: [3.7]
+        python-version: [3.7, 3.8]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Set up Python
       uses: actions/setup-python@v1
@@ -130,8 +130,7 @@ jobs:
       if: startsWith(runner.os, 'Windows')
       with:
         path: ~\AppData\Local\pip\Cache
-        key: ${{ runner.os }}-pip
-        restore-keys: ${{ runner.os }}-pip
+        key: ${{ matrix.os }}-${{ matrix.python-version }}-pip
 
     - name: Installation
       run: |
@@ -175,7 +174,7 @@ jobs:
   docs_check:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Documentation syntax
       run: |
@@ -195,7 +194,7 @@ jobs:
     runs-on: ubuntu-18.04
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Set up Python
       uses: actions/setup-python@v1

@@ -31,9 +31,9 @@ This will create a new hyperopt file from a template, which will be located unde
 Depending on the space you want to optimize, only some of the below are required:
 
 * fill `buy_strategy_generator` - for buy signal optimization
-* fill `indicator_space` - for buy signal optimzation
+* fill `indicator_space` - for buy signal optimization
 * fill `sell_strategy_generator` - for sell signal optimization
-* fill `sell_indicator_space` - for sell signal optimzation
+* fill `sell_indicator_space` - for sell signal optimization
 
 !!! Note
     `populate_indicators` needs to create all indicators any of thee spaces may use, otherwise hyperopt will not work.
@@ -81,11 +81,11 @@ There are two places you need to change in your hyperopt file to add a new buy h
 There you have two different types of indicators: 1. `guards` and 2. `triggers`.
 
 1. Guards are conditions like "never buy if ADX < 10", or never buy if current price is over EMA10.
-2. Triggers are ones that actually trigger buy in specific moment, like "buy when EMA5 crosses over EMA10" or "buy when close price touches lower bollinger band".
+2. Triggers are ones that actually trigger buy in specific moment, like "buy when EMA5 crosses over EMA10" or "buy when close price touches lower Bollinger band".
 
 Hyperoptimization will, for each eval round, pick one trigger and possibly
 multiple guards. The constructed strategy will be something like
-"*buy exactly when close price touches lower bollinger band, BUT only if
+"*buy exactly when close price touches lower Bollinger band, BUT only if
 ADX > 10*".
 
 If you have updated the buy strategy, i.e. changed the contents of
@@ -103,9 +103,10 @@ Place the corresponding settings into the following methods
 The configuration and rules are the same than for buy signals.
 To avoid naming collisions in the search-space, please prefix all sell-spaces with `sell-`.
 
-#### Using ticker-interval as part of the Strategy
+#### Using timeframe as a part of the Strategy
 
-The Strategy exposes the ticker-interval as `self.ticker_interval`. The same value is available as class-attribute `HyperoptName.ticker_interval`.
+The Strategy class exposes the timeframe (ticker interval) value as the `self.ticker_interval` attribute.
+The same value is available as class-attribute `HyperoptName.ticker_interval`.
 In the case of the linked sample-value this would be `SampleHyperOpt.ticker_interval`.
 
 ## Solving a Mystery
@@ -159,6 +160,9 @@ So let's write the buy strategy using these values:
                         dataframe['macd'], dataframe['macdsignal']
                     ))
 
+            # Check that volume is not 0
+            conditions.append(dataframe['volume'] > 0)
+
             if conditions:
                 dataframe.loc[
                     reduce(lambda x, y: x & y, conditions),
@@ -172,7 +176,7 @@ So let's write the buy strategy using these values:
 Hyperopting will now call this `populate_buy_trend` as many times you ask it (`epochs`)
 with different value combinations. It will then use the given historical data and make
 buys based on the buy signals generated with the above function and based on the results
-it will end with telling you which paramter combination produced the best profits.
+it will end with telling you which parameter combination produced the best profits.
 
 The above setup expects to find ADX, RSI and Bollinger Bands in the populated indicators.
 When you want to test an indicator that isn't used by the bot currently, remember to
@@ -191,8 +195,10 @@ Currently, the following loss functions are builtin:
 
 * `DefaultHyperOptLoss` (default legacy Freqtrade hyperoptimization loss function)
 * `OnlyProfitHyperOptLoss` (which takes only amount of profit into consideration)
-* `SharpeHyperOptLoss` (optimizes Sharpe Ratio calculated on the trade returns)
-* `SharpeHyperOptLossDaily` (optimizes Sharpe Ratio calculated on daily trade returns)
+* `SharpeHyperOptLoss` (optimizes Sharpe Ratio calculated on trade returns relative to standard deviation)
+* `SharpeHyperOptLossDaily` (optimizes Sharpe Ratio calculated on **daily** trade returns relative to standard deviation)
+* `SortinoHyperOptLoss` (optimizes Sortino Ratio calculated on trade returns relative to **downside** standard deviation)
+* `SortinoHyperOptLossDaily` (optimizes Sortino Ratio calculated on **daily** trade returns relative to **downside** standard deviation)
 
 Creation of a custom loss function is covered in the [Advanced Hyperopt](advanced-hyperopt.md) part of the documentation.
 
@@ -220,11 +226,11 @@ The `--spaces all` option determines that all possible parameters should be opti
 !!! Warning
     When switching parameters or changing configuration options, make sure to not use the argument `--continue` so temporary results can be removed.
 
-### Execute Hyperopt with Different Ticker-Data Source
+### Execute Hyperopt with different historical data source
 
-If you would like to hyperopt parameters using an alternate ticker data that
-you have on-disk, use the `--datadir PATH` option. Default hyperopt will
-use data from directory `user_data/data`.
+If you would like to hyperopt parameters using an alternate historical data set that
+you have on-disk, use the `--datadir PATH` option. By default, hyperopt
+uses data from directory `user_data/data`.
 
 ### Running Hyperopt with Smaller Testset
 
@@ -272,7 +278,7 @@ In some situations, you may need to run Hyperopt (and Backtesting) with the
 By default, hyperopt emulates the behavior of the Freqtrade Live Run/Dry Run, where only one
 open trade is allowed for every traded pair. The total number of trades open for all pairs
 is also limited by the `max_open_trades` setting. During Hyperopt/Backtesting this may lead to
-some potential trades to be hidden (or masked) by previosly open trades.
+some potential trades to be hidden (or masked) by previously open trades.
 
 The `--eps`/`--enable-position-stacking` argument allows emulation of buying the same pair multiple times,
 while `--dmmp`/`--disable-max-market-positions` disables applying `max_open_trades`
@@ -378,7 +384,7 @@ As stated in the comment, you can also use it as the value of the `minimal_roi` 
 
 #### Default ROI Search Space
 
-If you are optimizing ROI, Freqtrade creates the 'roi' optimization hyperspace for you -- it's the hyperspace of components for the ROI tables. By default, each ROI table generated by the Freqtrade consists of 4 rows (steps). Hyperopt implements adaptive ranges for ROI tables with ranges for values in the ROI steps that depend on the ticker_interval used. By default the values vary in the following ranges (for some of the most used ticker intervals, values are rounded to 5 digits after the decimal point):
+If you are optimizing ROI, Freqtrade creates the 'roi' optimization hyperspace for you -- it's the hyperspace of components for the ROI tables. By default, each ROI table generated by the Freqtrade consists of 4 rows (steps). Hyperopt implements adaptive ranges for ROI tables with ranges for values in the ROI steps that depend on the ticker_interval used. By default the values vary in the following ranges (for some of the most used timeframes, values are rounded to 5 digits after the decimal point):
 
 | # step | 1m     |                   | 5m       |             | 1h         |                   | 1d           |                   |
 | ------ | ------ | ----------------- | -------- | ----------- | ---------- | ----------------- | ------------ | ----------------- |
@@ -387,7 +393,7 @@ If you are optimizing ROI, Freqtrade creates the 'roi' optimization hyperspace f
 | 3      | 4...20 | 0.00387...0.01547 | 20...100 | 0.01...0.04 | 240...1200 | 0.02294...0.09177 | 5760...28800 | 0.04059...0.16237 |
 | 4      | 6...44 | 0.0               | 30...220 | 0.0         | 360...2640 | 0.0               | 8640...63360 | 0.0               |
 
-These ranges should be sufficient in most cases. The minutes in the steps (ROI dict keys) are scaled linearly depending on the ticker interval used. The ROI values in the steps (ROI dict values) are scaled logarithmically depending on the ticker interval used.
+These ranges should be sufficient in most cases. The minutes in the steps (ROI dict keys) are scaled linearly depending on the timeframe (ticker interval) used. The ROI values in the steps (ROI dict values) are scaled logarithmically depending on the timeframe used.
 
 If you have the `generate_roi_table()` and `roi_space()` methods in your custom hyperopt file, remove them in order to utilize these adaptive ROI tables and the ROI hyperoptimization space generated by Freqtrade by default.
 

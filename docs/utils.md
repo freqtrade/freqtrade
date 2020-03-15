@@ -61,8 +61,8 @@ $ freqtrade new-config --config config_binance.json
 ? Do you want to enable Dry-run (simulated trades)?  Yes
 ? Please insert your stake currency: BTC
 ? Please insert your stake amount: 0.05
-? Please insert max_open_trades (Integer or 'unlimited'): 5
-? Please insert your ticker interval: 15m
+? Please insert max_open_trades (Integer or 'unlimited'): 3
+? Please insert your timeframe (ticker interval): 5m
 ? Please insert your display Currency (for reporting): USD
 ? Select exchange  binance
 ? Do you want to enable Telegram?  No
@@ -264,7 +264,7 @@ All exchanges supported by the ccxt library: _1btcxe, acx, adara, allcoin, anxpr
 
 ## List Timeframes
 
-Use the `list-timeframes` subcommand to see the list of ticker intervals (timeframes) available for the exchange.
+Use the `list-timeframes` subcommand to see the list of timeframes (ticker intervals) available for the exchange.
 
 ```
 usage: freqtrade list-timeframes [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH] [--userdir PATH] [--exchange EXCHANGE] [-1]
@@ -435,6 +435,7 @@ usage: freqtrade hyperopt-list [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [--min-total-profit FLOAT]
                                [--max-total-profit FLOAT] [--no-color]
                                [--print-json] [--no-details]
+                               [--export-csv FILE]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -456,6 +457,8 @@ optional arguments:
                         useful if you are redirecting output to a file.
   --print-json          Print best result detailization in JSON format.
   --no-details          Do not print best epoch details.
+  --export-csv FILE     Export to CSV-File. This will disable table print.
+                        Example: --export-csv hyperopt.csv
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -464,9 +467,10 @@ Common arguments:
                         details.
   -V, --version         show program's version number and exit
   -c PATH, --config PATH
-                        Specify configuration file (default: `config.json`).
-                        Multiple --config options may be used. Can be set to
-                        `-` to read config from stdin.
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
   -d PATH, --datadir PATH
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH

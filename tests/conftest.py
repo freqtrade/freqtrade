@@ -15,7 +15,7 @@ from telegram import Chat, Message, Update
 
 from freqtrade import constants, persistence
 from freqtrade.commands import Arguments
-from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
@@ -167,23 +167,23 @@ def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
 
 
 @pytest.fixture(autouse=True)
-def patch_coinmarketcap(mocker) -> None:
+def patch_coingekko(mocker) -> None:
     """
-    Mocker to coinmarketcap to speed up tests
-    :param mocker: mocker to patch coinmarketcap class
+    Mocker to coingekko to speed up tests
+    :param mocker: mocker to patch coingekko class
     :return: None
     """
 
-    tickermock = MagicMock(return_value={'price_usd': 12345.0})
-    listmock = MagicMock(return_value={'data': [{'id': 1, 'name': 'Bitcoin', 'symbol': 'BTC',
-                                                 'website_slug': 'bitcoin'},
-                                                {'id': 1027, 'name': 'Ethereum', 'symbol': 'ETH',
-                                                 'website_slug': 'ethereum'}
-                                                ]})
+    tickermock = MagicMock(return_value={'bitcoin': {'usd': 12345.0}, 'ethereum': {'usd': 12345.0}})
+    listmock = MagicMock(return_value=[{'id': 'bitcoin', 'name': 'Bitcoin', 'symbol': 'btc',
+                                        'website_slug': 'bitcoin'},
+                                       {'id': 'ethereum', 'name': 'Ethereum', 'symbol': 'eth',
+                                        'website_slug': 'ethereum'}
+                                       ])
     mocker.patch.multiple(
-        'freqtrade.rpc.fiat_convert.Market',
-        ticker=tickermock,
-        listings=listmock,
+        'freqtrade.rpc.fiat_convert.CoinGeckoAPI',
+        get_price=tickermock,
+        get_coins_list=listmock,
 
     )
 
@@ -575,7 +575,34 @@ def get_markets():
                 }
             },
             'info': {},
-        }
+        },
+        'LTC/ETH': {
+            'id': 'LTCETH',
+            'symbol': 'LTC/ETH',
+            'base': 'LTC',
+            'quote': 'ETH',
+            'active': True,
+            'precision': {
+                'base': 8,
+                'quote': 8,
+                'amount': 3,
+                'price': 5
+            },
+            'limits': {
+                'amount': {
+                    'min': 0.001,
+                    'max': 10000000.0
+                },
+                'price': {
+                    'min': 1e-05,
+                    'max': 1000.0
+                },
+                'cost': {
+                    'min': 0.01,
+                    'max': None
+                }
+            },
+        },
     }
 
 
@@ -822,15 +849,15 @@ def order_book_l2():
 
 
 @pytest.fixture
-def ticker_history_list():
+def ohlcv_history_list():
     return [
         [
             1511686200000,  # unix timestamp ms
-            8.794e-05,  # open
-            8.948e-05,  # high
-            8.794e-05,  # low
-            8.88e-05,  # close
-            0.0877869,  # volume (in quote currency)
+            8.794e-05,      # open
+            8.948e-05,      # high
+            8.794e-05,      # low
+            8.88e-05,       # close
+            0.0877869,      # volume (in quote currency)
         ],
         [
             1511686500000,
@@ -852,8 +879,9 @@ def ticker_history_list():
 
 
 @pytest.fixture
-def ticker_history(ticker_history_list):
-    return parse_ticker_dataframe(ticker_history_list, "5m", pair="UNITTEST/BTC", fill_missing=True)
+def ohlcv_history(ohlcv_history_list):
+    return ohlcv_to_dataframe(ohlcv_history_list, "5m", pair="UNITTEST/BTC",
+                              fill_missing=True)
 
 
 @pytest.fixture
@@ -1168,8 +1196,8 @@ def tickers():
 @pytest.fixture
 def result(testdatadir):
     with (testdatadir / 'UNITTEST_BTC-1m.json').open('r') as data_file:
-        return parse_ticker_dataframe(json.load(data_file), '1m', pair="UNITTEST/BTC",
-                                      fill_missing=True)
+        return ohlcv_to_dataframe(json.load(data_file), '1m', pair="UNITTEST/BTC",
+                                  fill_missing=True)
 
 
 @pytest.fixture(scope="function")

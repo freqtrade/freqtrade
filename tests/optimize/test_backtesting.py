@@ -84,7 +84,7 @@ def simple_backtest(config, contour, num_results, mocker, testdatadir) -> None:
     backtesting = Backtesting(config)
 
     data = load_data_test(contour, testdatadir)
-    processed = backtesting.strategy.tickerdata_to_dataframe(data)
+    processed = backtesting.strategy.ohlcvdata_to_dataframe(data)
     min_date, max_date = get_timerange(processed)
     assert isinstance(processed, dict)
     results = backtesting.backtest(
@@ -105,7 +105,7 @@ def _make_backtest_conf(mocker, datadir, conf=None, pair='UNITTEST/BTC'):
     data = trim_dictlist(data, -201)
     patch_exchange(mocker)
     backtesting = Backtesting(conf)
-    processed = backtesting.strategy.tickerdata_to_dataframe(data)
+    processed = backtesting.strategy.ohlcvdata_to_dataframe(data)
     min_date, max_date = get_timerange(processed)
     return {
         'processed': processed,
@@ -224,6 +224,7 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
     assert 'export' in config
     assert log_has('Parameter --export detected: {} ...'.format(config['export']), caplog)
     assert 'exportfilename' in config
+    assert isinstance(config['exportfilename'], Path)
     assert log_has('Storing backtest results to {} ...'.format(config['exportfilename']), caplog)
 
     assert 'fee' in config
@@ -241,7 +242,7 @@ def test_setup_optimize_configuration_unlimited_stake_amount(mocker, default_con
         '--strategy', 'DefaultStrategy',
     ]
 
-    with pytest.raises(DependencyException, match=r'.*stake amount.*'):
+    with pytest.raises(DependencyException, match=r'.`stake_amount`.*'):
         setup_optimize_configuration(get_args(args), RunMode.BACKTEST)
 
 
@@ -275,7 +276,7 @@ def test_backtesting_init(mocker, default_conf, order_types) -> None:
     backtesting = Backtesting(default_conf)
     assert backtesting.config == default_conf
     assert backtesting.timeframe == '5m'
-    assert callable(backtesting.strategy.tickerdata_to_dataframe)
+    assert callable(backtesting.strategy.ohlcvdata_to_dataframe)
     assert callable(backtesting.strategy.advise_buy)
     assert callable(backtesting.strategy.advise_sell)
     assert isinstance(backtesting.strategy.dp, DataProvider)
@@ -297,7 +298,7 @@ def test_backtesting_init_no_ticker_interval(mocker, default_conf, caplog) -> No
             "or as cli argument `--ticker-interval 5m`", caplog)
 
 
-def test_tickerdata_with_fee(default_conf, mocker, testdatadir) -> None:
+def test_data_with_fee(default_conf, mocker, testdatadir) -> None:
     patch_exchange(mocker)
     default_conf['fee'] = 0.1234
 
@@ -307,21 +308,21 @@ def test_tickerdata_with_fee(default_conf, mocker, testdatadir) -> None:
     assert fee_mock.call_count == 0
 
 
-def test_tickerdata_to_dataframe_bt(default_conf, mocker, testdatadir) -> None:
+def test_data_to_dataframe_bt(default_conf, mocker, testdatadir) -> None:
     patch_exchange(mocker)
     timerange = TimeRange.parse_timerange('1510694220-1510700340')
-    tickerlist = history.load_data(testdatadir, '1m', ['UNITTEST/BTC'], timerange=timerange,
-                                   fill_up_missing=True)
+    data = history.load_data(testdatadir, '1m', ['UNITTEST/BTC'], timerange=timerange,
+                             fill_up_missing=True)
     backtesting = Backtesting(default_conf)
-    data = backtesting.strategy.tickerdata_to_dataframe(tickerlist)
-    assert len(data['UNITTEST/BTC']) == 102
+    processed = backtesting.strategy.ohlcvdata_to_dataframe(data)
+    assert len(processed['UNITTEST/BTC']) == 102
 
     # Load strategy to compare the result between Backtesting function and strategy are the same
     default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    data2 = strategy.tickerdata_to_dataframe(tickerlist)
-    assert data['UNITTEST/BTC'].equals(data2['UNITTEST/BTC'])
+    processed2 = strategy.ohlcvdata_to_dataframe(data)
+    assert processed['UNITTEST/BTC'].equals(processed2['UNITTEST/BTC'])
 
 
 def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
@@ -329,7 +330,6 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
-    mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', MagicMock())
     patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', MagicMock())
     mocker.patch('freqtrade.optimize.backtesting.generate_text_table', MagicMock(return_value=1))
@@ -360,7 +360,6 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) ->
     mocker.patch('freqtrade.data.history.history_utils.load_pair_history',
                  MagicMock(return_value=pd.DataFrame()))
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
-    mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', MagicMock())
     patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', MagicMock())
     mocker.patch('freqtrade.optimize.backtesting.generate_text_table', MagicMock(return_value=1))
@@ -385,10 +384,10 @@ def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
     timerange = TimeRange('date', None, 1517227800, 0)
     data = history.load_data(datadir=testdatadir, timeframe='5m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
-    data_processed = backtesting.strategy.tickerdata_to_dataframe(data)
-    min_date, max_date = get_timerange(data_processed)
+    processed = backtesting.strategy.ohlcvdata_to_dataframe(data)
+    min_date, max_date = get_timerange(processed)
     results = backtesting.backtest(
-        processed=data_processed,
+        processed=processed,
         stake_amount=default_conf['stake_amount'],
         start_date=min_date,
         end_date=max_date,
@@ -416,7 +415,7 @@ def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
          'sell_reason': [SellType.ROI, SellType.ROI]
          })
     pd.testing.assert_frame_equal(results, expected)
-    data_pair = data_processed[pair]
+    data_pair = processed[pair]
     for _, t in results.iterrows():
         ln = data_pair.loc[data_pair["date"] == t["open_time"]]
         # Check open trade rate alignes to open rate
@@ -439,7 +438,7 @@ def test_backtest_1min_ticker_interval(default_conf, fee, mocker, testdatadir) -
     timerange = TimeRange.parse_timerange('1510688220-1510700340')
     data = history.load_data(datadir=testdatadir, timeframe='1m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
-    processed = backtesting.strategy.tickerdata_to_dataframe(data)
+    processed = backtesting.strategy.ohlcvdata_to_dataframe(data)
     min_date, max_date = get_timerange(processed)
     results = backtesting.backtest(
         processed=processed,
@@ -458,7 +457,7 @@ def test_processed(default_conf, mocker, testdatadir) -> None:
     backtesting = Backtesting(default_conf)
 
     dict_of_tickerrows = load_data_test('raise', testdatadir)
-    dataframes = backtesting.strategy.tickerdata_to_dataframe(dict_of_tickerrows)
+    dataframes = backtesting.strategy.ohlcvdata_to_dataframe(dict_of_tickerrows)
     dataframe = dataframes['UNITTEST/BTC']
     cols = dataframe.columns
     # assert the dataframe got some of the indicator columns
@@ -557,10 +556,10 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     backtesting.strategy.advise_buy = _trend_alternate_hold  # Override
     backtesting.strategy.advise_sell = _trend_alternate_hold  # Override
 
-    data_processed = backtesting.strategy.tickerdata_to_dataframe(data)
-    min_date, max_date = get_timerange(data_processed)
+    processed = backtesting.strategy.ohlcvdata_to_dataframe(data)
+    min_date, max_date = get_timerange(processed)
     backtest_conf = {
-        'processed': data_processed,
+        'processed': processed,
         'stake_amount': default_conf['stake_amount'],
         'start_date': min_date,
         'end_date': max_date,
@@ -576,7 +575,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     assert len(evaluate_result_multi(results, '5m', 3)) == 0
 
     backtest_conf = {
-        'processed': data_processed,
+        'processed': processed,
         'stake_amount': default_conf['stake_amount'],
         'start_date': min_date,
         'end_date': max_date,

@@ -217,8 +217,9 @@ def test_list_markets(mocker, markets, capsys):
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 9 active markets: "
-            "BLK/BTC, ETH/BTC, ETH/USDT, LTC/BTC, LTC/USD, NEO/BTC, TKN/BTC, XLTCUSDT, XRP/BTC.\n"
+    assert ("Exchange Bittrex has 10 active markets: "
+            "BLK/BTC, ETH/BTC, ETH/USDT, LTC/BTC, LTC/ETH, LTC/USD, NEO/BTC, "
+            "TKN/BTC, XLTCUSDT, XRP/BTC.\n"
             in captured.out)
 
     patch_exchange(mocker, api_mock=api_mock, id="binance")
@@ -231,7 +232,7 @@ def test_list_markets(mocker, markets, capsys):
     pargs['config'] = None
     start_list_markets(pargs, False)
     captured = capsys.readouterr()
-    assert re.match("\nExchange Binance has 9 active markets:\n",
+    assert re.match("\nExchange Binance has 10 active markets:\n",
                     captured.out)
 
     patch_exchange(mocker, api_mock=api_mock, id="bittrex")
@@ -243,8 +244,8 @@ def test_list_markets(mocker, markets, capsys):
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 11 markets: "
-            "BLK/BTC, BTT/BTC, ETH/BTC, ETH/USDT, LTC/BTC, LTC/USD, LTC/USDT, NEO/BTC, "
+    assert ("Exchange Bittrex has 12 markets: "
+            "BLK/BTC, BTT/BTC, ETH/BTC, ETH/USDT, LTC/BTC, LTC/ETH, LTC/USD, LTC/USDT, NEO/BTC, "
             "TKN/BTC, XLTCUSDT, XRP/BTC.\n"
             in captured.out)
 
@@ -256,8 +257,8 @@ def test_list_markets(mocker, markets, capsys):
     ]
     start_list_markets(get_args(args), True)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 8 active pairs: "
-            "BLK/BTC, ETH/BTC, ETH/USDT, LTC/BTC, LTC/USD, NEO/BTC, TKN/BTC, XRP/BTC.\n"
+    assert ("Exchange Bittrex has 9 active pairs: "
+            "BLK/BTC, ETH/BTC, ETH/USDT, LTC/BTC, LTC/ETH, LTC/USD, NEO/BTC, TKN/BTC, XRP/BTC.\n"
             in captured.out)
 
     # Test list-pairs subcommand with --all: all pairs
@@ -268,8 +269,8 @@ def test_list_markets(mocker, markets, capsys):
     ]
     start_list_markets(get_args(args), True)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 10 pairs: "
-            "BLK/BTC, BTT/BTC, ETH/BTC, ETH/USDT, LTC/BTC, LTC/USD, LTC/USDT, NEO/BTC, "
+    assert ("Exchange Bittrex has 11 pairs: "
+            "BLK/BTC, BTT/BTC, ETH/BTC, ETH/USDT, LTC/BTC, LTC/ETH, LTC/USD, LTC/USDT, NEO/BTC, "
             "TKN/BTC, XRP/BTC.\n"
             in captured.out)
 
@@ -282,8 +283,8 @@ def test_list_markets(mocker, markets, capsys):
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 5 active markets with ETH, LTC as base currencies: "
-            "ETH/BTC, ETH/USDT, LTC/BTC, LTC/USD, XLTCUSDT.\n"
+    assert ("Exchange Bittrex has 6 active markets with ETH, LTC as base currencies: "
+            "ETH/BTC, ETH/USDT, LTC/BTC, LTC/ETH, LTC/USD, XLTCUSDT.\n"
             in captured.out)
 
     # active markets, base=LTC
@@ -295,8 +296,8 @@ def test_list_markets(mocker, markets, capsys):
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 3 active markets with LTC as base currency: "
-            "LTC/BTC, LTC/USD, XLTCUSDT.\n"
+    assert ("Exchange Bittrex has 4 active markets with LTC as base currency: "
+            "LTC/BTC, LTC/ETH, LTC/USD, XLTCUSDT.\n"
             in captured.out)
 
     # active markets, quote=USDT, USD
@@ -384,7 +385,7 @@ def test_list_markets(mocker, markets, capsys):
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 9 active markets:\n"
+    assert ("Exchange Bittrex has 10 active markets:\n"
             in captured.out)
 
     # Test tabular output, no markets found
@@ -407,7 +408,7 @@ def test_list_markets(mocker, markets, capsys):
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert ('["BLK/BTC","ETH/BTC","ETH/USDT","LTC/BTC","LTC/USD","NEO/BTC",'
+    assert ('["BLK/BTC","ETH/BTC","ETH/USDT","LTC/BTC","LTC/ETH","LTC/USD","NEO/BTC",'
             '"TKN/BTC","XLTCUSDT","XRP/BTC"]'
             in captured.out)
 
@@ -446,11 +447,6 @@ def test_create_datadir_failed(caplog):
 
 
 def test_create_datadir(caplog, mocker):
-    # Ensure that caplog is empty before starting ...
-    # Should prevent random failures.
-    caplog.clear()
-    # Added assert here to analyze random test-failures ...
-    assert len(caplog.record_tuples) == 0
 
     cud = mocker.patch("freqtrade.commands.deploy_commands.create_userdata_dir", MagicMock())
     csf = mocker.patch("freqtrade.commands.deploy_commands.copy_sample_files", MagicMock())
@@ -463,7 +459,6 @@ def test_create_datadir(caplog, mocker):
 
     assert cud.call_count == 1
     assert csf.call_count == 1
-    assert len(caplog.record_tuples) == 0
 
 
 def test_start_new_strategy(mocker, caplog):
@@ -780,6 +775,20 @@ def test_hyperopt_list(mocker, capsys, hyperopt_results):
                          " 11/12", " 12/12"])
     args = [
         "hyperopt-list",
+        "--profitable"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_list(pargs)
+    captured = capsys.readouterr()
+    assert all(x in captured.out
+               for x in [" 2/12", " 10/12", "Best result:", "Buy hyperspace params",
+                         "Sell hyperspace params", "ROI table", "Stoploss"])
+    assert all(x not in captured.out
+               for x in [" 1/12", " 3/12", " 4/12", " 5/12", " 6/12", " 7/12", " 8/12", " 9/12",
+                         " 11/12", " 12/12"])
+    args = [
+        "hyperopt-list",
         "--no-details",
         "--no-color",
         "--min-trades", "20"
@@ -893,6 +902,21 @@ def test_hyperopt_list(mocker, capsys, hyperopt_results):
     assert all(x not in captured.out
                for x in [" 1/12", " 3/12", " 4/12", " 5/12", " 7/12", " 8/12"
                          " 9/12", " 10/12", " 11/12", " 12/12"])
+    args = [
+        "hyperopt-list",
+        "--no-details",
+        "--export-csv", "test_file.csv"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_hyperopt_list(pargs)
+    captured = capsys.readouterr()
+    assert all(x in captured.out
+               for x in ["CSV-File created!"])
+    f = Path("test_file.csv")
+    assert 'Best,1,2,-1.25%,-0.00125625,,-2.51,"3,930.0 m",0.43662' in f.read_text()
+    assert f.is_file()
+    f.unlink()
 
 
 def test_hyperopt_show(mocker, capsys, hyperopt_results):

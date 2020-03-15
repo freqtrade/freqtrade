@@ -81,13 +81,13 @@ def file_load_json(file):
         gzipfile = file
     # Try gzip file first, otherwise regular json file.
     if gzipfile.is_file():
-        logger.debug('Loading ticker data from file %s', gzipfile)
-        with gzip.open(gzipfile) as tickerdata:
-            pairdata = json_load(tickerdata)
+        logger.debug(f"Loading historical data from file {gzipfile}")
+        with gzip.open(gzipfile) as datafile:
+            pairdata = json_load(datafile)
     elif file.is_file():
-        logger.debug('Loading ticker data from file %s', file)
-        with open(file) as tickerdata:
-            pairdata = json_load(tickerdata)
+        logger.debug(f"Loading historical data from file {file}")
+        with open(file) as datafile:
+            pairdata = json_load(datafile)
     else:
         return None
     return pairdata

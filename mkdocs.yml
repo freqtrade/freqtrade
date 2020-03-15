@@ -1,8 +1,8 @@
 site_name: Freqtrade
 nav:
-    - About: index.md
-    - Installation: installation.md
+    - Home: index.md
     - Installation Docker: docker.md
+    - Installation: installation.md
     - Configuration: configuration.md
     - Strategy Customization: strategy-customization.md
     - Stoploss: stoploss.md

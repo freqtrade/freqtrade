@@ -47,7 +47,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `amend_last_stake_amount` | Use reduced last stake amount if necessary. [More information below](#configuring-amount-per-trade). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `last_stake_amount_min_ratio` | Defines minimum stake amount that has to be left and executed. Applies only to the last stake amount when it's amended to a reduced value (i.e. if `amend_last_stake_amount` is set to `true`). [More information below](#configuring-amount-per-trade). <br>*Defaults to `0.5`.* <br> **Datatype:** Float (as ratio)
 | `amount_reserve_percent` | Reserve some amount in min pair stake amount. The bot will reserve `amount_reserve_percent` + stoploss value when calculating min pair stake amount in order to avoid possible trade refusals. <br>*Defaults to `0.05` (5%).* <br> **Datatype:** Positive Float as ratio.
-| `ticker_interval` | The ticker interval to use (e.g `1m`, `5m`, `15m`, `30m`, `1h` ...). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** String
+| `ticker_interval` | The timeframe (ticker interval) to use (e.g `1m`, `5m`, `15m`, `30m`, `1h` ...). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** String
 | `fiat_display_currency` | Fiat currency used to show your profits. [More information below](#what-values-can-be-used-for-fiat_display_currency). <br> **Datatype:** String
 | `dry_run` | **Required.** Define if the bot must be in Dry Run or production mode. <br>*Defaults to `true`.* <br> **Datatype:** Boolean
 | `dry_run_wallet` | Define the starting amount in stake currency for the simulated wallet used by the bot running in the Dry Run mode.<br>*Defaults to `1000`.* <br> **Datatype:** Float
@@ -60,11 +60,13 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `trailing_only_offset_is_reached` | Only apply trailing stoploss when the offset is reached. [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*  <br> **Datatype:** Boolean
 | `unfilledtimeout.buy` | **Required.** How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled. [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Integer
 | `unfilledtimeout.sell` | **Required.** How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled. [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Integer
-| `bid_strategy.ask_last_balance` | **Required.** Set the bidding price. More information [below](#buy-price-without-orderbook). 
+| `bid_strategy.price_side` | Select the side of the spread the bot should look at to get the buy rate. [More information below](#buy-price-side).<br> *Defaults to `bid`.* <br> **Datatype:** String (either `ask` or `bid`).
+| `bid_strategy.ask_last_balance` | **Required.** Set the bidding price. More information [below](#buy-price-without-orderbook-enabled).
 | `bid_strategy.use_order_book` | Enable buying using the rates in [Order Book Bids](#buy-price-with-orderbook-enabled). <br> **Datatype:** Boolean
 | `bid_strategy.order_book_top` | Bot will use the top N rate in Order Book Bids to buy. I.e. a value of 2 will allow the bot to pick the 2nd bid rate in [Order Book Bids](#buy-price-with-orderbook-enabled). <br>*Defaults to `1`.*  <br> **Datatype:** Positive Integer
 | `bid_strategy. check_depth_of_market.enabled` | Do not buy if the difference of buy orders and sell orders is met in Order Book. [Check market depth](#check-depth-of-market). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `bid_strategy. check_depth_of_market.bids_to_ask_delta` | The difference ratio of buy orders and sell orders found in Order Book. A value below 1 means sell order size is greater, while value greater than 1 means buy order size is higher. [Check market depth](#check-depth-of-market) <br> *Defaults to `0`.*  <br> **Datatype:** Float (as ratio)
+| `ask_strategy.price_side` | Select the side of the spread the bot should look at to get the sell rate. [More information below](#sell-price-side).<br> *Defaults to `ask`.* <br> **Datatype:** String (either `ask` or `bid`).
 | `ask_strategy.use_order_book` | Enable selling of open trades using [Order Book Asks](#sell-price-with-orderbook-enabled). <br> **Datatype:** Boolean
 | `ask_strategy.order_book_min` | Bot will scan from the top min to max Order Book Asks searching for a profitable rate. <br>*Defaults to `1`.* <br> **Datatype:** Positive Integer
 | `ask_strategy.order_book_max` | Bot will scan from the top min to max Order Book Asks searching for a profitable rate. <br>*Defaults to `1`.* <br> **Datatype:** Positive Integer
@@ -111,8 +113,8 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `internals.sd_notify` | Enables use of the sd_notify protocol to tell systemd service manager about changes in the bot state and issue keep-alive pings. See [here](installation.md#7-optional-configure-freqtrade-as-a-systemd-service) for more details. <br> **Datatype:** Boolean
 | `logfile` | Specifies logfile name. Uses a rolling strategy for log file rotation for 10 files with the 1MB limit per file. <br> **Datatype:** String
 | `user_data_dir` | Directory containing user data. <br> *Defaults to `./user_data/`*. <br> **Datatype:** String
-| `dataformat_ohlcv` | Data format to use to store OHLCV historic data. <br> *Defaults to `json`*. <br> **Datatype:** String
-| `dataformat_trades` | Data format to use to store trades historic data. <br> *Defaults to `jsongz`*. <br> **Datatype:** String
+| `dataformat_ohlcv` | Data format to use to store historical candle (OHLCV) data. <br> *Defaults to `json`*. <br> **Datatype:** String
+| `dataformat_trades` | Data format to use to store historical trades data. <br> *Defaults to `jsongz`*. <br> **Datatype:** String
 
 ### Parameters in the strategy
 
@@ -340,7 +342,7 @@ This is most of the time the default time in force. It means the order will rema
 on exchange till it is canceled by user. It can be fully or partially fulfilled.
 If partially fulfilled, the remaining will stay on the exchange till cancelled.
 
-**FOK (Full Or Kill):**
+**FOK (Fill Or Kill):**
 
 It means if the order is not executed immediately AND fully then it is canceled by the exchange.
 
@@ -370,15 +372,17 @@ The possible values are: `gtc` (default), `fok` or `ioc`.
 
 Freqtrade is based on [CCXT library](https://github.com/ccxt/ccxt) that supports over 100 cryptocurrency
 exchange markets and trading APIs. The complete up-to-date list can be found in the
-[CCXT repo homepage](https://github.com/ccxt/ccxt/tree/master/python). However, the bot was tested
-with only Bittrex and Binance.
-
-The bot was tested with the following exchanges:
+[CCXT repo homepage](https://github.com/ccxt/ccxt/tree/master/python).
+ However, the bot was tested by the development team with only Bittrex, Binance and Kraken,
+ so the these are the only officially supported exhanges:
 
 - [Bittrex](https://bittrex.com/): "bittrex"
 - [Binance](https://www.binance.com/): "binance"
+- [Kraken](https://kraken.com/): "kraken"
 
 Feel free to test other exchanges and submit your PR to improve the bot.
+
+Some exchanges require special configuration, which can be found on the [Exchange-specific Notes](exchanges.md) documentation page.
 
 #### Sample exchange configuration
 
@@ -409,7 +413,7 @@ Advanced options can be configured using the `_ft_has_params` setting, which wil
 
 Available options are listed in the exchange-class as `_ft_has_default`.
 
-For example, to test the order type `FOK` with Kraken, and modify candle_limit to 200 (so you only get 200 candles per call):
+For example, to test the order type `FOK` with Kraken, and modify candle limit to 200 (so you only get 200 candles per API call):
 
 ```json
 "exchange": {
@@ -461,34 +465,89 @@ Orderbook `bid` (buy) side depth is then divided by the orderbook `ask` (sell) s
 !!! Note
     A delta value below 1 means that `ask` (sell) orderbook side depth is greater than the depth of the `bid` (buy) orderbook side, while a value greater than 1 means opposite (depth of the buy side is higher than the depth of the sell side).
 
+#### Buy price side
+
+The configuration setting `bid_strategy.price_side` defines the side of the spread the bot looks for when buying.
+
+The following displays an orderbook.
+
+``` explanation
+...
+103
+102
+101  # ask
+-------------Current spread
+99   # bid
+98
+97
+...
+```
+
+If `bid_strategy.price_side` is set to `"bid"`, then the bot will use 99 as buying price.  
+In line with that, if `bid_strategy.price_side` is set to `"ask"`, then the bot will use 101 as buying price.
+
+Using `ask` price often guarantees quicker filled orders, but the bot can also end up paying more than what would have been necessary.
+Taker fees instead of maker fees will most likely apply even when using limit buy orders.
+Also, prices at the "ask" side of the spread are higher than prices at the "bid" side in the orderbook, so the order behaves similar to a market order (however with a maximum price).
+
 #### Buy price with Orderbook enabled
 
-When buying with the orderbook enabled (`bid_strategy.use_order_book=True`), Freqtrade fetches the `bid_strategy.order_book_top` entries from the orderbook and then uses the entry specified as `bid_strategy.order_book_top` on the `bid` (buy) side of the orderbook. 1 specifies the topmost entry in the orderbook, while 2 would use the 2nd entry in the orderbook, and so on.
+When buying with the orderbook enabled (`bid_strategy.use_order_book=True`), Freqtrade fetches the `bid_strategy.order_book_top` entries from the orderbook and then uses the entry specified as `bid_strategy.order_book_top` on the configured side (`bid_strategy.price_side`) of the orderbook. 1 specifies the topmost entry in the orderbook, while 2 would use the 2nd entry in the orderbook, and so on.
 
 #### Buy price without Orderbook enabled
 
-When not using orderbook (`bid_strategy.use_order_book=False`), Freqtrade uses the best `ask` (sell) price from the ticker if it's below the `last` traded price from the ticker. Otherwise (when the `ask` price is not below the `last` price), it calculates a rate between `ask` and `last` price.
+The following section uses `side` as the configured `bid_strategy.price_side`.
 
-The `bid_strategy.ask_last_balance` configuration parameter controls this. A value of `0.0` will use `ask` price, while `1.0` will use the `last` price and values between those interpolate between ask and last price.
+When not using orderbook (`bid_strategy.use_order_book=False`), Freqtrade uses the best `side` price from the ticker if it's below the `last` traded price from the ticker. Otherwise (when the `side` price is above the `last` price), it calculates a rate between `side` and `last` price.
 
-Using `ask` price often guarantees quicker success in the bid, but the bot can also end up paying more than what would have been necessary.
+The `bid_strategy.ask_last_balance` configuration parameter controls this. A value of `0.0` will use `side` price, while `1.0` will use the `last` price and values between those interpolate between ask and last price.
 
 ### Sell price
 
+#### Sell price side
+
+The configuration setting `ask_strategy.price_side` defines the side of the spread the bot looks for when selling.
+
+The following displays an orderbook:
+
+``` explanation
+...
+103
+102
+101  # ask
+-------------Current spread
+99   # bid
+98
+97
+...
+```
+
+If `ask_strategy.price_side` is set to `"ask"`, then the bot will use 101 as selling price.  
+In line with that, if `ask_strategy.price_side` is set to `"bid"`, then the bot will use 99 as selling price.
+
 #### Sell price with Orderbook enabled
 
-When selling with the orderbook enabled (`ask_strategy.use_order_book=True`), Freqtrade fetches the `ask_strategy.order_book_max` entries in the orderbook. Then each of the orderbook steps between `ask_strategy.order_book_min` and `ask_strategy.order_book_max` on the `ask` orderbook side are validated for a profitable sell-possibility based on the strategy configuration and the sell order is placed at the first profitable spot.
+When selling with the orderbook enabled (`ask_strategy.use_order_book=True`), Freqtrade fetches the `ask_strategy.order_book_max` entries in the orderbook. Then each of the orderbook steps between `ask_strategy.order_book_min` and `ask_strategy.order_book_max` on the configured orderbook side are validated for a profitable sell-possibility based on the strategy configuration (`minimal_roi` conditions) and the sell order is placed at the first profitable spot.
+
+!!! Note
+    Using `order_book_max` higher than `order_book_min` only makes sense when ask_strategy.price_side is set to `"ask"`.
 
 The idea here is to place the sell order early, to be ahead in the queue.
 
 A fixed slot (mirroring `bid_strategy.order_book_top`) can be defined by setting `ask_strategy.order_book_min` and `ask_strategy.order_book_max` to the same number.
 
-!!! Warning "Orderbook and stoploss_on_exchange"
-    Using `ask_strategy.order_book_max` higher than 1 may increase the risk, since an eventual [stoploss on exchange](#understand-order_types) will be needed to be cancelled as soon as the order is placed.
+!!! Warning "Order_book_max > 1 - increased risks for stoplosses!"
+    Using `ask_strategy.order_book_max` higher than 1 will increase the risk the stoploss on exchange is cancelled too early, since an eventual [stoploss on exchange](#understand-order_types) will be cancelled as soon as the order is placed.
+    Also, the sell order will remain on the exchange for `unfilledtimeout.sell` (or until it's filled) - which can lead to missed stoplosses (with or without using stoploss on exchange).
+
+!!! Warning "Order_book_max > 1 in dry-run"
+    Using `ask_strategy.order_book_max` higher than 1 will result in improper dry-run results (significantly better than real orders executed on exchange), since dry-run assumes orders to be filled almost instantly.
+    It is therefore advised to not use this setting for dry-runs.
+
 
 #### Sell price without Orderbook enabled
 
-When not using orderbook (`ask_strategy.use_order_book=False`), the `bid` price from the ticker will be used as the sell price.
+When not using orderbook (`ask_strategy.use_order_book=False`), the price at the `ask_strategy.price_side` side (defaults to `"ask"`) from the ticker will be used as the sell price.
 
 ## Pairlists
 
@@ -531,6 +590,12 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 `VolumePairList` considers outputs of previous pairlists unless  it's the first configured pairlist, it does not consider `pair_whitelist`, but selects the top assets from all available markets (with matching stake-currency) on the exchange.
 
 `refresh_period` allows setting the period (in seconds), at which the pairlist will be refreshed. Defaults to 1800s (30 minutes).
+
+`VolumePairList` is based on the ticker data, as reported by the ccxt library:
+
+* The `bidVolume` is the volume (amount) of current best bid in the orderbook.
+* The `askVolume` is the volume (amount) of current best ask in the orderbook.
+* The `quoteVolume` is the amount of quote (stake) currency traded (bought or sold) in last 24 hours.
 
 ```json
 "pairlists": [{
@@ -626,6 +691,11 @@ In production mode, the bot will engage your money. Be careful, since a wrong
 strategy can lose all your money. Be aware of what you are doing when
 you run it in production mode.
 
+### Setup your exchange account
+
+You will need to create API Keys (usually you get `key` and `secret`, some exchanges require an additional `password`) from the Exchange website and you'll need to insert this into the appropriate fields in the configuration or when asked by the `freqtrade new-config` command.
+API Keys are usually only required for live trading (trading for real money, bot running in "production mode", executing real orders on the exchange) and are not required for the bot running in dry-run (trade simulation) mode. When you setup the bot in dry-run mode, you may fill these fields with empty values.
+
 ### To switch your bot in production mode
 
 **Edit your `config.json`  file.**
@@ -646,9 +716,6 @@ you run it in production mode.
         ...
 }
 ```
-
-!!! Note
-    If you have an exchange API key yet, [see our tutorial](installation.md#setup-your-exchange-account).
 
 You should also make sure to read the [Exchanges](exchanges.md) section of the documentation to be aware of potential configuration details specific to your exchange.
 

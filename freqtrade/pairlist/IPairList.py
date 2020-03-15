@@ -67,21 +67,37 @@ class IPairList(ABC):
         """
 
     @staticmethod
-    def verify_blacklist(pairlist: List[str], blacklist: List[str]) -> List[str]:
+    def verify_blacklist(pairlist: List[str], blacklist: List[str],
+                         aswarning: bool) -> List[str]:
         """
         Verify and remove items from pairlist - returning a filtered pairlist.
+        Logs a warning or info depending on `aswarning`.
+        Pairlists explicitly using this method shall use `aswarning=False`!
+        :param pairlist: Pairlist to validate
+        :param blacklist: Blacklist to validate pairlist against
+        :param aswarning: Log message as Warning or info
+        :return: pairlist - blacklisted pairs
         """
         for pair in deepcopy(pairlist):
             if pair in blacklist:
-                logger.warning(f"Pair {pair} in your blacklist. Removing it from whitelist...")
+                if aswarning:
+                    logger.warning(f"Pair {pair} in your blacklist. Removing it from whitelist...")
+                else:
+                    logger.info(f"Pair {pair} in your blacklist. Removing it from whitelist...")
                 pairlist.remove(pair)
         return pairlist
 
-    def _verify_blacklist(self, pairlist: List[str]) -> List[str]:
+    def _verify_blacklist(self, pairlist: List[str], aswarning: bool = True) -> List[str]:
         """
         Proxy method to verify_blacklist for easy access for child classes.
+        Logs a warning or info depending on `aswarning`.
+        Pairlists explicitly using this method shall use aswarning=False!
+        :param pairlist: Pairlist to validate
+        :param aswarning: Log message as Warning or info.
+        :return: pairlist - blacklisted pairs
         """
-        return IPairList.verify_blacklist(pairlist, self._pairlistmanager.blacklist)
+        return IPairList.verify_blacklist(pairlist, self._pairlistmanager.blacklist,
+                                          aswarning=aswarning)
 
     def _whitelist_for_active_markets(self, pairlist: List[str]) -> List[str]:
         """
@@ -99,7 +115,8 @@ class IPairList(ABC):
                 logger.warning(f"Pair {pair} is not compatible with exchange "
                                f"{self._exchange.name}. Removing it from whitelist..")
                 continue
-            if not pair.endswith(self._config['stake_currency']):
+
+            if self._exchange.get_pair_quote_currency(pair) != self._config['stake_currency']:
                 logger.warning(f"Pair {pair} is not compatible with your stake currency "
                                f"{self._config['stake_currency']}. Removing it from whitelist..")
                 continue
@@ -112,6 +129,5 @@ class IPairList(ABC):
             if pair not in sanitized_whitelist:
                 sanitized_whitelist.append(pair)
 
-        sanitized_whitelist = self._verify_blacklist(sanitized_whitelist)
         # We need to remove pairs that are unknown
         return sanitized_whitelist

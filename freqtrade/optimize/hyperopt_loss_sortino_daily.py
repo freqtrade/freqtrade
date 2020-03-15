@@ -1,5 +1,5 @@
 """
-SharpeHyperOptLossDaily
+SortinoHyperOptLossDaily
 
 This module defines the alternative HyperOptLoss class which can be used for
 Hyperoptimization.
@@ -12,11 +12,11 @@ from pandas import DataFrame, date_range
 from freqtrade.optimize.hyperopt import IHyperOptLoss
 
 
-class SharpeHyperOptLossDaily(IHyperOptLoss):
+class SortinoHyperOptLossDaily(IHyperOptLoss):
     """
     Defines the loss function for hyperopt.
 
-    This implementation uses the Sharpe Ratio calculation.
+    This implementation uses the Sortino Ratio calculation.
     """
 
     @staticmethod
@@ -26,13 +26,15 @@ class SharpeHyperOptLossDaily(IHyperOptLoss):
         """
         Objective function, returns smaller number for more optimal results.
 
-        Uses Sharpe Ratio calculation.
+        Uses Sortino Ratio calculation.
+
+        Sortino Ratio calculated as described in
+        http://www.redrockcapital.com/Sortino__A__Sharper__Ratio_Red_Rock_Capital.pdf
         """
         resample_freq = '1D'
         slippage_per_trade_ratio = 0.0005
         days_in_year = 365
-        annual_risk_free_rate = 0.0
-        risk_free_rate = annual_risk_free_rate / days_in_year
+        minimum_acceptable_return = 0.0
 
         # apply slippage per trade to profit_percent
         results.loc[:, 'profit_percent_after_slippage'] = \
@@ -47,16 +49,22 @@ class SharpeHyperOptLossDaily(IHyperOptLoss):
                 {"profit_percent_after_slippage": sum}).reindex(t_index).fillna(0)
         )
 
-        total_profit = sum_daily["profit_percent_after_slippage"] - risk_free_rate
+        total_profit = sum_daily["profit_percent_after_slippage"] - minimum_acceptable_return
         expected_returns_mean = total_profit.mean()
-        up_stdev = total_profit.std()
 
-        if up_stdev != 0:
-            sharp_ratio = expected_returns_mean / up_stdev * math.sqrt(days_in_year)
+        sum_daily['downside_returns'] = 0
+        sum_daily.loc[total_profit < 0, 'downside_returns'] = total_profit
+        total_downside = sum_daily['downside_returns']
+        # Here total_downside contains min(0, P - MAR) values,
+        # where P = sum_daily["profit_percent_after_slippage"]
+        down_stdev = math.sqrt((total_downside**2).sum() / len(total_downside))
+
+        if down_stdev != 0:
+            sortino_ratio = expected_returns_mean / down_stdev * math.sqrt(days_in_year)
         else:
-            # Define high (negative) sharpe ratio to be clear that this is NOT optimal.
-            sharp_ratio = -20.
+            # Define high (negative) sortino ratio to be clear that this is NOT optimal.
+            sortino_ratio = -20.
 
         # print(t_index, sum_daily, total_profit)
-        # print(risk_free_rate, expected_returns_mean, up_stdev, sharp_ratio)
-        return -sharp_ratio
+        # print(minimum_acceptable_return, expected_returns_mean, down_stdev, sortino_ratio)
+        return -sortino_ratio

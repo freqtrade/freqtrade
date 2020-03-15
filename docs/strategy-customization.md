@@ -83,7 +83,7 @@ def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame
     Performance Note: For the best performance be frugal on the number of indicators
     you are using. Let uncomment only the indicator you are using in your strategies
     or your hyperopt configuration, otherwise you will waste your memory and CPU usage.
-    :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
+    :param dataframe: Dataframe with data from the exchange
     :param metadata: Additional information, like the currently traded pair
     :return: a Dataframe with all mandatory indicators for the strategies
     """
@@ -248,6 +248,23 @@ minimal_roi = {
 
 While technically not completely disabled, this would sell once the trade reaches 10000% Profit.
 
+To use times based on candle duration (ticker_interval or timeframe), the following snippet can be handy.
+This will allow you to change the ticket_interval for the strategy, and ROI times will still be set as candles (e.g. after 3 candles ...)
+
+``` python
+from freqtrade.exchange import timeframe_to_minutes
+
+class AwesomeStrategy(IStrategy):
+
+    ticker_interval = "1d"
+    ticker_interval_mins = timeframe_to_minutes(ticker_interval)
+    minimal_roi = {
+        "0": 0.05,                             # 5% for the first 3 candles
+        str(ticker_interval_mins * 3)): 0.02,  # 2% after 3 candles
+        str(ticker_interval_mins * 6)): 0.01,  # 1% After 6 candles
+    }
+```
+
 ### Stoploss
 
 Setting a stoploss is highly recommended to protect your capital from strong moves against you.
@@ -266,13 +283,14 @@ If your exchange supports it, it's recommended to also set `"stoploss_on_exchang
 
 For more information on order_types please look [here](configuration.md#understand-order_types).
 
-### Ticker interval
+### Timeframe (ticker interval)
 
 This is the set of candles the bot should download and use for the analysis.
 Common values are `"1m"`, `"5m"`, `"15m"`, `"1h"`, however all values supported by your exchange should work.
 
-Please note that the same buy/sell signals may work with one interval, but not the other.
-This setting is accessible within the strategy by using `self.ticker_interval`.
+Please note that the same buy/sell signals may work well with one timeframe, but not with the others.
+
+This setting is accessible within the strategy methods as the `self.ticker_interval` attribute.
 
 ### Metadata dict
 
@@ -317,14 +335,14 @@ Please always check the mode of operation to select the correct method to get da
 #### Possible options for DataProvider
 
 - `available_pairs` - Property with tuples listing cached pairs with their intervals (pair, interval).
-- `ohlcv(pair, timeframe)` - Currently cached ticker data for the pair, returns DataFrame or empty DataFrame.
+- `ohlcv(pair, timeframe)` - Currently cached candle (OHLCV) data for the pair, returns DataFrame or empty DataFrame.
 - `historic_ohlcv(pair, timeframe)` - Returns historical data stored on disk.
 - `get_pair_dataframe(pair, timeframe)` - This is a universal method, which returns either historical data (for backtesting) or cached live data (for the Dry-Run and Live-Run modes).
 - `orderbook(pair, maximum)` - Returns latest orderbook data for the pair, a dict with bids/asks with a total of `maximum` entries.
 - `market(pair)` - Returns market data for the pair: fees, limits, precisions, activity flag, etc. See [ccxt documentation](https://github.com/ccxt/ccxt/wiki/Manual#markets) for more details on Market data structure.
 - `runmode` - Property containing the current runmode.
 
-#### Example: fetch live ohlcv / historic data for the first informative pair
+#### Example: fetch live / historical candle (OHLCV) data for the first informative pair
 
 ``` python
 if self.dp:
@@ -359,8 +377,8 @@ if self.dp:
 
 ``` python
 if self.dp:
-    for pair, ticker in self.dp.available_pairs:
-        print(f"available {pair}, {ticker}")
+    for pair, timeframe in self.dp.available_pairs:
+        print(f"available {pair}, {timeframe}")
 ```
 
 #### Get data for non-tradeable pairs

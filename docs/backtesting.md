@@ -11,8 +11,8 @@ Now you have good Buy and Sell strategies and some historic data, you want to te
 real data. This is what we call
 [backtesting](https://en.wikipedia.org/wiki/Backtesting).
 
-Backtesting will use the crypto-currencies (pairs) from your config file and load ticker data from `user_data/data/<exchange>` by default.
-If no data is available for the exchange / pair / ticker interval combination, backtesting will ask you to download them first using `freqtrade download-data`.
+Backtesting will use the crypto-currencies (pairs) from your config file and load historical candle (OHCLV) data from `user_data/data/<exchange>` by default.
+If no data is available for the exchange / pair / timeframe (ticker interval) combination, backtesting will ask you to download them first using `freqtrade download-data`.
 For details on downloading, please refer to the [Data Downloading](data-download.md) section in the documentation.
 
 The result of backtesting will confirm if your bot has better odds of making a profit than a loss.
@@ -22,19 +22,19 @@ The result of backtesting will confirm if your bot has better odds of making a p
 
 ### Run a backtesting against the currencies listed in your config file
 
-#### With 5 min tickers (Per default)
+#### With 5 min candle (OHLCV) data (per default)
 
 ```bash
 freqtrade backtesting
 ```
 
-#### With 1 min tickers
+#### With 1 min candle (OHLCV) data
 
 ```bash
 freqtrade backtesting --ticker-interval 1m
 ```
 
-#### Using a different on-disk ticker-data source
+#### Using a different on-disk historical candle (OHLCV) data source
 
 Assume you downloaded the history data from the Bittrex exchange and kept it in the `user_data/data/bittrex-20180101` directory. 
 You can then use this data for backtesting as follows:
@@ -223,7 +223,7 @@ You can then load the trades to perform further analysis as shown in our [data a
 
 To compare multiple strategies, a list of Strategies can be provided to backtesting.
 
-This is limited to 1 ticker-interval per run, however, data is only loaded once from disk so if you have multiple
+This is limited to 1 timeframe (ticker interval) value per run. However, data is only loaded once from disk so if you have multiple
 strategies you'd like to compare, this will give a nice runtime boost.
 
 All listed Strategies need to be in the same directory.

@@ -15,6 +15,7 @@ UNLIMITED_STAKE_AMOUNT = 'unlimited'
 DEFAULT_AMOUNT_RESERVE_PERCENT = 0.05
 REQUIRED_ORDERTIF = ['buy', 'sell']
 REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
+ORDERBOOK_SIDES = ['ask', 'bid']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
@@ -42,7 +43,7 @@ SUPPORTED_FIAT = [
     "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY",
     "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",
     "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD",
-    "BTC", "XBT", "ETH", "XRP", "LTC", "BCH", "USDT"
+    "BTC", "ETH", "XRP", "LTC", "BCH"
 ]
 
 MINIMAL_CONFIG = {
@@ -113,15 +114,16 @@ CONF_SCHEMA = {
                     'minimum': 0,
                     'maximum': 1,
                     'exclusiveMaximum': False,
-                    'use_order_book': {'type': 'boolean'},
-                    'order_book_top': {'type': 'integer', 'maximum': 20, 'minimum': 1},
-                    'check_depth_of_market': {
-                        'type': 'object',
-                        'properties': {
-                            'enabled': {'type': 'boolean'},
-                            'bids_to_ask_delta': {'type': 'number', 'minimum': 0},
-                        }
-                    },
+                },
+                'price_side': {'type': 'string', 'enum': ORDERBOOK_SIDES, 'default': 'bid'},
+                'use_order_book': {'type': 'boolean'},
+                'order_book_top': {'type': 'integer', 'maximum': 20, 'minimum': 1},
+                'check_depth_of_market': {
+                    'type': 'object',
+                    'properties': {
+                        'enabled': {'type': 'boolean'},
+                        'bids_to_ask_delta': {'type': 'number', 'minimum': 0},
+                    }
                 },
             },
             'required': ['ask_last_balance']
@@ -129,6 +131,7 @@ CONF_SCHEMA = {
         'ask_strategy': {
             'type': 'object',
             'properties': {
+                'price_side': {'type': 'string', 'enum': ORDERBOOK_SIDES, 'default': 'ask'},
                 'use_order_book': {'type': 'boolean'},
                 'order_book_min': {'type': 'integer', 'minimum': 1},
                 'order_book_max': {'type': 'integer', 'minimum': 1, 'maximum': 50},
@@ -251,7 +254,6 @@ CONF_SCHEMA = {
                     'type': 'array',
                     'items': {
                         'type': 'string',
-                        'pattern': '^[0-9A-Z]+/[0-9A-Z]+$'
                     },
                     'uniqueItems': True
                 },
@@ -259,7 +261,6 @@ CONF_SCHEMA = {
                     'type': 'array',
                     'items': {
                         'type': 'string',
-                        'pattern': '^[0-9A-Z]+/[0-9A-Z]+$'
                     },
                     'uniqueItems': True
                 },
@@ -301,6 +302,7 @@ SCHEMA_TRADE_REQUIRED = [
     'last_stake_amount_min_ratio',
     'dry_run',
     'dry_run_wallet',
+    'ask_strategy',
     'bid_strategy',
     'unfilledtimeout',
     'stoploss',

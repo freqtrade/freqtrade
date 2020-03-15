@@ -11,7 +11,7 @@ import pytest
 from pandas import DataFrame, to_datetime
 
 from freqtrade.exceptions import OperationalException
-from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.strategy.interface import SellType
 from tests.conftest import get_patched_freqtradebot, log_has
@@ -26,7 +26,7 @@ from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
 # 5) Stoploss and sell are hit. should sell on stoploss
 ####################################################################
 
-ticker_start_time = arrow.get(2018, 10, 3)
+tests_start_time = arrow.get(2018, 10, 3)
 ticker_interval_in_minute = 60
 _ohlc = {'date': 0, 'buy': 1, 'open': 2, 'high': 3, 'low': 4, 'close': 5, 'sell': 6, 'volume': 7}
 
@@ -43,10 +43,10 @@ def _validate_ohlc(buy_ohlc_sell_matrice):
 
 def _build_dataframe(buy_ohlc_sell_matrice):
     _validate_ohlc(buy_ohlc_sell_matrice)
-    tickers = []
+    data = []
     for ohlc in buy_ohlc_sell_matrice:
-        ticker = {
-            'date': ticker_start_time.shift(
+        d = {
+            'date': tests_start_time.shift(
                 minutes=(
                     ohlc[0] *
                     ticker_interval_in_minute)).timestamp *
@@ -57,9 +57,9 @@ def _build_dataframe(buy_ohlc_sell_matrice):
             'low': ohlc[4],
             'close': ohlc[5],
             'sell': ohlc[6]}
-        tickers.append(ticker)
+        data.append(d)
 
-    frame = DataFrame(tickers)
+    frame = DataFrame(data)
     frame['date'] = to_datetime(frame['date'],
                                 unit='ms',
                                 utc=True,
@@ -69,7 +69,7 @@ def _build_dataframe(buy_ohlc_sell_matrice):
 
 
 def _time_on_candle(number):
-    return np.datetime64(ticker_start_time.shift(
+    return np.datetime64(tests_start_time.shift(
         minutes=(number * ticker_interval_in_minute)).timestamp * 1000, 'ms')
 
 
@@ -158,13 +158,13 @@ def test_edge_results(edge_conf, mocker, caplog, data) -> None:
     assert len(trades) == len(data.trades)
 
     if not results.empty:
-        assert round(results["profit_percent"].sum(), 3) == round(data.profit_perc, 3)
+        assert round(results["profit_ratio"].sum(), 3) == round(data.profit_perc, 3)
 
     for c, trade in enumerate(data.trades):
         res = results.iloc[c]
         assert res.exit_type == trade.sell_reason
-        assert res.open_time == np.datetime64(_get_frame_time_from_offset(trade.open_tick))
-        assert res.close_time == np.datetime64(_get_frame_time_from_offset(trade.close_tick))
+        assert res.open_time == _get_frame_time_from_offset(trade.open_tick).replace(tzinfo=None)
+        assert res.close_time == _get_frame_time_from_offset(trade.close_tick).replace(tzinfo=None)
 
 
 def test_adjust(mocker, edge_conf):
@@ -262,7 +262,7 @@ def mocked_load_data(datadir, pairs=[], timeframe='0m',
 
     NEOBTC = [
         [
-            ticker_start_time.shift(minutes=(x * ticker_interval_in_minute)).timestamp * 1000,
+            tests_start_time.shift(minutes=(x * ticker_interval_in_minute)).timestamp * 1000,
             math.sin(x * hz) / 1000 + base,
             math.sin(x * hz) / 1000 + base + 0.0001,
             math.sin(x * hz) / 1000 + base - 0.0001,
@@ -274,7 +274,7 @@ def mocked_load_data(datadir, pairs=[], timeframe='0m',
     base = 0.002
     LTCBTC = [
         [
-            ticker_start_time.shift(minutes=(x * ticker_interval_in_minute)).timestamp * 1000,
+            tests_start_time.shift(minutes=(x * ticker_interval_in_minute)).timestamp * 1000,
             math.sin(x * hz) / 1000 + base,
             math.sin(x * hz) / 1000 + base + 0.0001,
             math.sin(x * hz) / 1000 + base - 0.0001,
@@ -282,8 +282,10 @@ def mocked_load_data(datadir, pairs=[], timeframe='0m',
             123.45
         ] for x in range(0, 500)]
 
-    pairdata = {'NEO/BTC': parse_ticker_dataframe(NEOBTC, '1h', pair="NEO/BTC", fill_missing=True),
-                'LTC/BTC': parse_ticker_dataframe(LTCBTC, '1h', pair="LTC/BTC", fill_missing=True)}
+    pairdata = {'NEO/BTC': ohlcv_to_dataframe(NEOBTC, '1h', pair="NEO/BTC",
+                                              fill_missing=True),
+                'LTC/BTC': ohlcv_to_dataframe(LTCBTC, '1h', pair="LTC/BTC",
+                                              fill_missing=True)}
     return pairdata
 
 

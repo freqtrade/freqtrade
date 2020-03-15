@@ -6,11 +6,11 @@ import logging
 import traceback
 from datetime import datetime
 from math import isclose
-from os import getpid
 from threading import Lock
 from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
+from cachetools import TTLCache
 from requests.exceptions import RequestException
 
 from freqtrade import __version__, constants, persistence
@@ -53,9 +53,8 @@ class FreqtradeBot:
         # Init objects
         self.config = config
 
-        self._heartbeat_msg = 0
-
-        self.heartbeat_interval = self.config.get('internals', {}).get('heartbeat_interval', 60)
+        self._sell_rate_cache = TTLCache(maxsize=100, ttl=5)
+        self._buy_rate_cache = TTLCache(maxsize=100, ttl=5)
 
         self.strategy: IStrategy = StrategyResolver.load_strategy(self.config)
 
@@ -160,11 +159,6 @@ class FreqtradeBot:
         self.check_handle_timedout()
         Trade.session.flush()
 
-        if (self.heartbeat_interval
-                and (arrow.utcnow().timestamp - self._heartbeat_msg > self.heartbeat_interval)):
-            logger.info(f"Bot heartbeat. PID={getpid()}")
-            self._heartbeat_msg = arrow.utcnow().timestamp
-
     def _refresh_whitelist(self, trades: List[Trade] = []) -> List[str]:
         """
         Refresh whitelist from pairlist or edge and extend it with trades.
@@ -179,8 +173,8 @@ class FreqtradeBot:
             _whitelist = self.edge.adjust(_whitelist)
 
         if trades:
-            # Extend active-pair whitelist with pairs from open trades
-            # It ensures that tickers are downloaded for open trades
+            # Extend active-pair whitelist with pairs of open trades
+            # It ensures that candle (OHLCV) data are downloaded for open trades as well
             _whitelist.extend([trade.pair for trade in trades if trade.pair not in _whitelist])
         return _whitelist
 
@@ -235,34 +229,42 @@ class FreqtradeBot:
 
         return trades_created
 
-    def get_buy_rate(self, pair: str, refresh: bool, tick: Dict = None) -> float:
+    def get_buy_rate(self, pair: str, refresh: bool) -> float:
         """
         Calculates bid target between current ask price and last price
+        :param pair: Pair to get rate for
+        :param refresh: allow cached data
         :return: float: Price
         """
-        config_bid_strategy = self.config.get('bid_strategy', {})
-        if 'use_order_book' in config_bid_strategy and\
-                config_bid_strategy.get('use_order_book', False):
-            logger.info('Getting price from order book')
-            order_book_top = config_bid_strategy.get('order_book_top', 1)
+        if not refresh:
+            rate = self._buy_rate_cache.get(pair)
+            # Check if cache has been invalidated
+            if rate:
+                logger.info(f"Using cached buy rate for {pair}.")
+                return rate
+
+        bid_strategy = self.config.get('bid_strategy', {})
+        if 'use_order_book' in bid_strategy and bid_strategy.get('use_order_book', False):
+            logger.info(
+                f"Getting price from order book {bid_strategy['price_side'].capitalize()} side."
+            )
+            order_book_top = bid_strategy.get('order_book_top', 1)
             order_book = self.exchange.get_order_book(pair, order_book_top)
             logger.debug('order_book %s', order_book)
             # top 1 = index 0
-            order_book_rate = order_book['bids'][order_book_top - 1][0]
-            logger.info('...top %s order book buy rate %0.8f', order_book_top, order_book_rate)
+            order_book_rate = order_book[f"{bid_strategy['price_side']}s"][order_book_top - 1][0]
+            logger.info(f'...top {order_book_top} order book buy rate {order_book_rate:.8f}')
             used_rate = order_book_rate
         else:
-            if not tick:
-                logger.info('Using Last Ask / Last Price')
-                ticker = self.exchange.fetch_ticker(pair, refresh)
-            else:
-                ticker = tick
-            if ticker['ask'] < ticker['last']:
-                ticker_rate = ticker['ask']
-            else:
+            logger.info(f"Using Last {bid_strategy['price_side'].capitalize()} / Last Price")
+            ticker = self.exchange.fetch_ticker(pair)
+            ticker_rate = ticker[bid_strategy['price_side']]
+            if ticker['last'] and ticker_rate > ticker['last']:
                 balance = self.config['bid_strategy']['ask_last_balance']
-                ticker_rate = ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
+                ticker_rate = ticker_rate + balance * (ticker['last'] - ticker_rate)
             used_rate = ticker_rate
+
+        self._buy_rate_cache[pair] = used_rate
 
         return used_rate
 
@@ -567,7 +569,7 @@ class FreqtradeBot:
         """
         Sends rpc notification when a buy cancel occured.
         """
-        current_rate = self.get_buy_rate(trade.pair, True)
+        current_rate = self.get_buy_rate(trade.pair, False)
 
         msg = {
             'type': RPCMessageType.BUY_CANCEL_NOTIFICATION,
@@ -616,23 +618,43 @@ class FreqtradeBot:
 
         return trades_closed
 
+    def _order_book_gen(self, pair: str, side: str, order_book_max: int = 1,
+                        order_book_min: int = 1):
+        """
+        Helper generator to query orderbook in loop (used for early sell-order placing)
+        """
+        order_book = self.exchange.get_order_book(pair, order_book_max)
+        for i in range(order_book_min, order_book_max + 1):
+            yield order_book[side][i - 1][0]
+
     def get_sell_rate(self, pair: str, refresh: bool) -> float:
         """
-        Get sell rate - either using get-ticker bid or first bid based on orderbook
+        Get sell rate - either using ticker bid or first bid based on orderbook
         The orderbook portion is only used for rpc messaging, which would otherwise fail
         for BitMex (has no bid/ask in fetch_ticker)
         or remain static in any other case since it's not updating.
+        :param pair: Pair to get rate for
+        :param refresh: allow cached data
         :return: Bid rate
         """
-        config_ask_strategy = self.config.get('ask_strategy', {})
-        if config_ask_strategy.get('use_order_book', False):
-            logger.debug('Using order book to get sell rate')
+        if not refresh:
+            rate = self._sell_rate_cache.get(pair)
+            # Check if cache has been invalidated
+            if rate:
+                logger.info(f"Using cached sell rate for {pair}.")
+                return rate
 
-            order_book = self.exchange.get_order_book(pair, 1)
-            rate = order_book['bids'][0][0]
+        ask_strategy = self.config.get('ask_strategy', {})
+        if ask_strategy.get('use_order_book', False):
+            # This code is only used for notifications, selling uses the generator directly
+            logger.info(
+                f"Getting price from order book {ask_strategy['price_side'].capitalize()} side."
+            )
+            rate = next(self._order_book_gen(pair, f"{ask_strategy['price_side']}s"))
 
         else:
-            rate = self.exchange.fetch_ticker(pair, refresh)['bid']
+            rate = self.exchange.fetch_ticker(pair)[ask_strategy['price_side']]
+        self._sell_rate_cache[pair] = rate
         return rate
 
     def handle_trade(self, trade: Trade) -> bool:
@@ -650,7 +672,7 @@ class FreqtradeBot:
         config_ask_strategy = self.config.get('ask_strategy', {})
 
         if (config_ask_strategy.get('use_sell_signal', True) or
-                config_ask_strategy.get('ignore_roi_if_buy_signal')):
+                config_ask_strategy.get('ignore_roi_if_buy_signal', False)):
             (buy, sell) = self.strategy.get_signal(
                 trade.pair, self.strategy.ticker_interval,
                 self.dataprovider.ohlcv(trade.pair, self.strategy.ticker_interval))
@@ -661,12 +683,13 @@ class FreqtradeBot:
             order_book_min = config_ask_strategy.get('order_book_min', 1)
             order_book_max = config_ask_strategy.get('order_book_max', 1)
 
-            order_book = self.exchange.get_order_book(trade.pair, order_book_max)
-
+            order_book = self._order_book_gen(trade.pair, f"{config_ask_strategy['price_side']}s",
+                                              order_book_min=order_book_min,
+                                              order_book_max=order_book_max)
             for i in range(order_book_min, order_book_max + 1):
-                order_book_rate = order_book['asks'][i - 1][0]
-                logger.debug('  order book asks top %s: %0.8f', i, order_book_rate)
-                sell_rate = order_book_rate
+                sell_rate = next(order_book)
+                logger.debug(f"  order book {config_ask_strategy['price_side']} top {i}: "
+                             f"{sell_rate:0.8f}")
 
                 if self._check_and_execute_sell(trade, sell_rate, buy, sell):
                     return True
@@ -960,8 +983,8 @@ class FreqtradeBot:
         """
         # Update wallets to ensure amounts tied up in a stoploss is now free!
         self.wallets.update()
-
-        wallet_amount = self.wallets.get_free(pair.split('/')[0])
+        trade_base_currency = self.exchange.get_pair_base_currency(pair)
+        wallet_amount = self.wallets.get_free(trade_base_currency)
         logger.debug(f"{pair} - Wallet: {wallet_amount} - Trade-amount: {amount}")
         if wallet_amount >= amount:
             return amount
@@ -1032,10 +1055,10 @@ class FreqtradeBot:
         """
         profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
         profit_trade = trade.calc_profit(rate=profit_rate)
-        # Use cached ticker here - it was updated seconds ago.
+        # Use cached rates here - it was updated seconds ago.
         current_rate = self.get_sell_rate(trade.pair, False)
-        profit_percent = trade.calc_profit_ratio(profit_rate)
-        gain = "profit" if profit_percent > 0 else "loss"
+        profit_ratio = trade.calc_profit_ratio(profit_rate)
+        gain = "profit" if profit_ratio > 0 else "loss"
 
         msg = {
             'type': RPCMessageType.SELL_NOTIFICATION,
@@ -1048,7 +1071,7 @@ class FreqtradeBot:
             'open_rate': trade.open_rate,
             'current_rate': current_rate,
             'profit_amount': profit_trade,
-            'profit_percent': profit_percent,
+            'profit_ratio': profit_ratio,
             'sell_reason': trade.sell_reason,
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.utcnow(),
@@ -1070,9 +1093,9 @@ class FreqtradeBot:
         """
         profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
         profit_trade = trade.calc_profit(rate=profit_rate)
-        current_rate = self.get_sell_rate(trade.pair, True)
-        profit_percent = trade.calc_profit_ratio(profit_rate)
-        gain = "profit" if profit_percent > 0 else "loss"
+        current_rate = self.get_sell_rate(trade.pair, False)
+        profit_ratio = trade.calc_profit_ratio(profit_rate)
+        gain = "profit" if profit_ratio > 0 else "loss"
 
         msg = {
             'type': RPCMessageType.SELL_CANCEL_NOTIFICATION,
@@ -1085,7 +1108,7 @@ class FreqtradeBot:
             'open_rate': trade.open_rate,
             'current_rate': current_rate,
             'profit_amount': profit_trade,
-            'profit_percent': profit_percent,
+            'profit_ratio': profit_ratio,
             'sell_reason': trade.sell_reason,
             'open_date': trade.open_date,
             'close_date': trade.close_date,
@@ -1147,12 +1170,13 @@ class FreqtradeBot:
         if trade.fee_open == 0 or order['status'] == 'open':
             return order_amount
 
+        trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)
         # use fee from order-dict if possible
         if ('fee' in order and order['fee'] is not None and
                 (order['fee'].keys() >= {'currency', 'cost'})):
             if (order['fee']['currency'] is not None and
                     order['fee']['cost'] is not None and
-                    trade.pair.startswith(order['fee']['currency'])):
+                    trade_base_currency == order['fee']['currency']):
                 new_amount = order_amount - order['fee']['cost']
                 logger.info("Applying fee on amount for %s (from %s to %s) from Order",
                             trade, order['amount'], new_amount)
@@ -1174,7 +1198,7 @@ class FreqtradeBot:
                 # only applies if fee is in quote currency!
                 if (exectrade['fee']['currency'] is not None and
                         exectrade['fee']['cost'] is not None and
-                        trade.pair.startswith(exectrade['fee']['currency'])):
+                        trade_base_currency == exectrade['fee']['currency']):
                     fee_abs += exectrade['fee']['cost']
 
         if not isclose(amount, order_amount, abs_tol=constants.MATH_CLOSE_PREC):

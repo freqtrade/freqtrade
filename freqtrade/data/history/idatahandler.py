@@ -55,7 +55,7 @@ class IDataHandler(ABC):
         Implements the loading and conversion to a Pandas dataframe.
         Timerange trimming and dataframe validation happens outside of this method.
         :param pair: Pair to load data
-        :param timeframe: Ticker timeframe (e.g. "5m")
+        :param timeframe: Timeframe (e.g. "5m")
         :param timerange: Limit data to be loaded to this timerange.
                         Optionally implemented by subclasses to avoid loading
                         all data where possible.
@@ -67,7 +67,7 @@ class IDataHandler(ABC):
         """
         Remove data for this pair
         :param pair: Delete data for this pair.
-        :param timeframe: Ticker timeframe (e.g. "5m")
+        :param timeframe: Timeframe (e.g. "5m")
         :return: True when deleted, false if file did not exist.
         """
 
@@ -129,10 +129,10 @@ class IDataHandler(ABC):
                    warn_no_data: bool = True
                    ) -> DataFrame:
         """
-        Load cached ticker history for the given pair.
+        Load cached candle (OHLCV) data for the given pair.
 
         :param pair: Pair to load data for
-        :param timeframe: Ticker timeframe (e.g. "5m")
+        :param timeframe: Timeframe (e.g. "5m")
         :param timerange: Limit data to be loaded to this timerange
         :param fill_missing: Fill missing values with "No action"-candles
         :param drop_incomplete: Drop last candle assuming it may be incomplete.
@@ -147,12 +147,7 @@ class IDataHandler(ABC):
 
         pairdf = self._ohlcv_load(pair, timeframe,
                                   timerange=timerange_startup)
-        if pairdf.empty:
-            if warn_no_data:
-                logger.warning(
-                    f'No history data for pair: "{pair}", timeframe: {timeframe}. '
-                    'Use `freqtrade download-data` to download the data'
-                )
+        if self._check_empty_df(pairdf, pair, timeframe, warn_no_data):
             return pairdf
         else:
             enddate = pairdf.iloc[-1]['date']
@@ -160,13 +155,30 @@ class IDataHandler(ABC):
             if timerange_startup:
                 self._validate_pairdata(pair, pairdf, timerange_startup)
                 pairdf = trim_dataframe(pairdf, timerange_startup)
+                if self._check_empty_df(pairdf, pair, timeframe, warn_no_data):
+                    return pairdf
 
             # incomplete candles should only be dropped if we didn't trim the end beforehand.
-            return clean_ohlcv_dataframe(pairdf, timeframe,
-                                         pair=pair,
-                                         fill_missing=fill_missing,
-                                         drop_incomplete=(drop_incomplete and
-                                                          enddate == pairdf.iloc[-1]['date']))
+            pairdf = clean_ohlcv_dataframe(pairdf, timeframe,
+                                           pair=pair,
+                                           fill_missing=fill_missing,
+                                           drop_incomplete=(drop_incomplete and
+                                                            enddate == pairdf.iloc[-1]['date']))
+            self._check_empty_df(pairdf, pair, timeframe, warn_no_data)
+            return pairdf
+
+    def _check_empty_df(self, pairdf: DataFrame, pair: str, timeframe: str, warn_no_data: bool):
+        """
+        Warn on empty dataframe
+        """
+        if pairdf.empty:
+            if warn_no_data:
+                logger.warning(
+                    f'No history data for pair: "{pair}", timeframe: {timeframe}. '
+                    'Use `freqtrade download-data` to download the data'
+                )
+            return True
+        return False
 
     def _validate_pairdata(self, pair, pairdata: DataFrame, timerange: TimeRange):
         """

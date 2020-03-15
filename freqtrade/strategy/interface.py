@@ -60,7 +60,7 @@ class IStrategy(ABC):
     Attributes you can use:
         minimal_roi -> Dict: Minimal ROI designed for the strategy
         stoploss -> float: optimal stoploss designed for the strategy
-        ticker_interval -> str: value of the ticker interval to use for the strategy
+        ticker_interval -> str: value of the timeframe (ticker interval) to use with the strategy
     """
     # Strategy interface version
     # Default to version 2
@@ -126,7 +126,7 @@ class IStrategy(ABC):
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Populate indicators that will be used in the Buy and Sell strategy
-        :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
+        :param dataframe: DataFrame with data from the exchange
         :param metadata: Additional information, like the currently traded pair
         :return: a Dataframe with all mandatory indicators for the strategies
         """
@@ -237,11 +237,11 @@ class IStrategy(ABC):
 
     def analyze_ticker(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
-        Parses the given ticker history and returns a populated DataFrame
+        Parses the given candle (OHLCV) data and returns a populated DataFrame
         add several TA indicators and buy signal to it
-        :param dataframe: Dataframe containing ticker data
+        :param dataframe: Dataframe containing data from exchange
         :param metadata: Metadata dictionary with additional data (e.g. 'pair')
-        :return: DataFrame with ticker data and indicator data
+        :return: DataFrame of candle (OHLCV) data with indicator data and signals added
         """
         logger.debug("TA Analysis Launched")
         dataframe = self.advise_indicators(dataframe, metadata)
@@ -251,12 +251,12 @@ class IStrategy(ABC):
 
     def _analyze_ticker_internal(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
-        Parses the given ticker history and returns a populated DataFrame
+        Parses the given candle (OHLCV) data and returns a populated DataFrame
         add several TA indicators and buy signal to it
         WARNING: Used internally only, may skip analysis if `process_only_new_candles` is set.
-        :param dataframe: Dataframe containing ticker data
+        :param dataframe: Dataframe containing data from exchange
         :param metadata: Metadata dictionary with additional data (e.g. 'pair')
-        :return: DataFrame with ticker data and indicator data
+        :return: DataFrame of candle (OHLCV) data with indicator data and signals added
         """
         pair = str(metadata.get('pair'))
 
@@ -288,7 +288,7 @@ class IStrategy(ABC):
         :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
         """
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
-            logger.warning('Empty ticker history for pair %s', pair)
+            logger.warning('Empty candle (OHLCV) data for pair %s', pair)
             return False, False
 
         try:
@@ -296,7 +296,7 @@ class IStrategy(ABC):
                 self._analyze_ticker_internal, message=""
                 )(dataframe, {'pair': pair})
         except StrategyError as error:
-            logger.warning(f"Unable to analyze ticker for pair {pair}: {error}")
+            logger.warning(f"Unable to analyze candle (OHLCV) data for pair {pair}: {error}")
 
             return False, False
 
@@ -393,7 +393,7 @@ class IStrategy(ABC):
         """
         Based on current profit of the trade and configured (trailing) stoploss,
         decides to sell or not
-        :param current_profit: current profit in percent
+        :param current_profit: current profit as ratio
         """
         stop_loss_value = force_stoploss if force_stoploss else self.stoploss
 
@@ -456,8 +456,9 @@ class IStrategy(ABC):
 
     def min_roi_reached(self, trade: Trade, current_profit: float, current_time: datetime) -> bool:
         """
-        Based on trade duration, current price and ROI configuration, decides whether bot should
-        sell. Requires current_profit to be in percent!!
+        Based on trade duration, current profit of the trade and ROI configuration,
+        decides whether bot should sell.
+        :param current_profit: current profit as ratio
         :return: True if bot should sell at current rate
         """
         # Check if time matches and current rate is above threshold
@@ -468,19 +469,19 @@ class IStrategy(ABC):
         else:
             return current_profit > roi
 
-    def tickerdata_to_dataframe(self, tickerdata: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
+    def ohlcvdata_to_dataframe(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
-        Creates a dataframe and populates indicators for given ticker data
+        Creates a dataframe and populates indicators for given candle (OHLCV) data
         Used by optimize operations only, not during dry / live runs.
         """
         return {pair: self.advise_indicators(pair_data, {'pair': pair})
-                for pair, pair_data in tickerdata.items()}
+                for pair, pair_data in data.items()}
 
     def advise_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Populate indicators that will be used in the Buy and Sell strategy
         This method should not be overridden.
-        :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
+        :param dataframe: Dataframe with data from the exchange
         :param metadata: Additional information, like the currently traded pair
         :return: a Dataframe with all mandatory indicators for the strategies
         """

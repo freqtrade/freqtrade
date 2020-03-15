@@ -1,16 +1,19 @@
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 from arrow import Arrow
-from pandas import DataFrame, DateOffset, to_datetime
+from pandas import DataFrame, DateOffset, Timestamp, to_datetime
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
-                                       combine_tickers_with_mean,
+                                       analyze_trade_parallelism,
+                                       calculate_max_drawdown,
+                                       combine_dataframes_with_mean,
                                        create_cum_profit,
                                        extract_trades_of_period,
                                        load_backtest_data, load_trades,
-                                       load_trades_from_db, analyze_trade_parallelism)
+                                       load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
 from tests.test_persistence import create_mock_trades
 
@@ -109,7 +112,7 @@ def test_load_trades(default_conf, mocker):
 
     db_mock.reset_mock()
     bt_mock.reset_mock()
-    default_conf['exportfilename'] = "testfile.json"
+    default_conf['exportfilename'] = Path("testfile.json")
     load_trades("file",
                 db_url=default_conf.get('db_url'),
                 exportfilename=default_conf.get('exportfilename'),)
@@ -118,13 +121,10 @@ def test_load_trades(default_conf, mocker):
     assert bt_mock.call_count == 1
 
 
-def test_combine_tickers_with_mean(testdatadir):
+def test_combine_dataframes_with_mean(testdatadir):
     pairs = ["ETH/BTC", "ADA/BTC"]
-    tickers = load_data(datadir=testdatadir,
-                        pairs=pairs,
-                        timeframe='5m'
-                        )
-    df = combine_tickers_with_mean(tickers)
+    data = load_data(datadir=testdatadir, pairs=pairs, timeframe='5m')
+    df = combine_dataframes_with_mean(data)
     assert isinstance(df, DataFrame)
     assert "ETH/BTC" in df.columns
     assert "ADA/BTC" in df.columns
@@ -163,3 +163,17 @@ def test_create_cum_profit1(testdatadir):
     assert "cum_profits" in cum_profits.columns
     assert cum_profits.iloc[0]['cum_profits'] == 0
     assert cum_profits.iloc[-1]['cum_profits'] == 0.0798005
+
+
+def test_calculate_max_drawdown(testdatadir):
+    filename = testdatadir / "backtest-result_test.json"
+    bt_data = load_backtest_data(filename)
+    drawdown, h, low = calculate_max_drawdown(bt_data)
+    assert isinstance(drawdown, float)
+    assert pytest.approx(drawdown) == 0.21142322
+    assert isinstance(h, Timestamp)
+    assert isinstance(low, Timestamp)
+    assert h == Timestamp('2018-01-24 14:25:00', tz='UTC')
+    assert low == Timestamp('2018-01-30 04:45:00', tz='UTC')
+    with pytest.raises(ValueError, match='Trade dataframe empty.'):
+        drawdown, h, low = calculate_max_drawdown(DataFrame())

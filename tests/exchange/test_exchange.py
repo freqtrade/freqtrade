@@ -400,13 +400,40 @@ def test_validate_stake_currency_error(default_conf, mocker, caplog):
 def test_get_quote_currencies(default_conf, mocker):
     ex = get_patched_exchange(mocker, default_conf)
 
-    assert set(ex.get_quote_currencies()) == set(['USD', 'BTC', 'USDT'])
+    assert set(ex.get_quote_currencies()) == set(['USD', 'ETH', 'BTC', 'USDT'])
+
+
+@pytest.mark.parametrize('pair,expected', [
+    ('XRP/BTC', 'BTC'),
+    ('LTC/USD', 'USD'),
+    ('ETH/USDT', 'USDT'),
+    ('XLTCUSDT', 'USDT'),
+    ('XRP/NOCURRENCY', ''),
+])
+def test_get_pair_quote_currency(default_conf, mocker, pair, expected):
+    ex = get_patched_exchange(mocker, default_conf)
+    assert ex.get_pair_quote_currency(pair) == expected
+
+
+@pytest.mark.parametrize('pair,expected', [
+    ('XRP/BTC', 'XRP'),
+    ('LTC/USD', 'LTC'),
+    ('ETH/USDT', 'ETH'),
+    ('XLTCUSDT', 'LTC'),
+    ('XRP/NOCURRENCY', ''),
+])
+def test_get_pair_base_currency(default_conf, mocker, pair, expected):
+    ex = get_patched_exchange(mocker, default_conf)
+    assert ex.get_pair_base_currency(pair) == expected
 
 
 def test_validate_pairs(default_conf, mocker):  # test exchange.validate_pairs directly
     api_mock = MagicMock()
     type(api_mock).markets = PropertyMock(return_value={
-        'ETH/BTC': {}, 'LTC/BTC': {}, 'XRP/BTC': {}, 'NEO/BTC': {}
+        'ETH/BTC': {'quote': 'BTC'},
+        'LTC/BTC': {'quote': 'BTC'},
+        'XRP/BTC': {'quote': 'BTC'},
+        'NEO/BTC': {'quote': 'BTC'},
     })
     id_mock = PropertyMock(return_value='test_exchange')
     type(api_mock).id = id_mock
@@ -454,9 +481,9 @@ def test_validate_pairs_exception(default_conf, mocker, caplog):
 def test_validate_pairs_restricted(default_conf, mocker, caplog):
     api_mock = MagicMock()
     type(api_mock).markets = PropertyMock(return_value={
-        'ETH/BTC': {}, 'LTC/BTC': {},
-        'XRP/BTC': {'info': {'IsRestricted': True}},
-        'NEO/BTC': {'info': 'TestString'},  # info can also be a string ...
+        'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
+        'XRP/BTC': {'quote': 'BTC', 'info': {'IsRestricted': True}},
+        'NEO/BTC': {'quote': 'BTC', 'info': 'TestString'},  # info can also be a string ...
     })
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
@@ -467,6 +494,54 @@ def test_validate_pairs_restricted(default_conf, mocker, caplog):
     assert log_has(f"Pair XRP/BTC is restricted for some users on this exchange."
                    f"Please check if you are impacted by this restriction "
                    f"on the exchange and eventually remove XRP/BTC from your whitelist.", caplog)
+
+
+def test_validate_pairs_stakecompatibility(default_conf, mocker, caplog):
+    api_mock = MagicMock()
+    type(api_mock).markets = PropertyMock(return_value={
+        'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
+        'XRP/BTC': {'quote': 'BTC'}, 'NEO/BTC': {'quote': 'BTC'},
+        'HELLO-WORLD': {'quote': 'BTC'},
+    })
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
+    mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
+    mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+
+    Exchange(default_conf)
+
+
+def test_validate_pairs_stakecompatibility_downloaddata(default_conf, mocker, caplog):
+    api_mock = MagicMock()
+    default_conf['stake_currency'] = ''
+    type(api_mock).markets = PropertyMock(return_value={
+        'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
+        'XRP/BTC': {'quote': 'BTC'}, 'NEO/BTC': {'quote': 'BTC'},
+        'HELLO-WORLD': {'quote': 'BTC'},
+    })
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
+    mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
+    mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+
+    Exchange(default_conf)
+
+
+def test_validate_pairs_stakecompatibility_fail(default_conf, mocker, caplog):
+    default_conf['exchange']['pair_whitelist'].append('HELLO-WORLD')
+    api_mock = MagicMock()
+    type(api_mock).markets = PropertyMock(return_value={
+        'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
+        'XRP/BTC': {'quote': 'BTC'}, 'NEO/BTC': {'quote': 'BTC'},
+        'HELLO-WORLD': {'quote': 'USDT'},
+    })
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
+    mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
+    mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+
+    with pytest.raises(OperationalException, match=r"Stake-currency 'BTC' not compatible with.*"):
+        Exchange(default_conf)
 
 
 @pytest.mark.parametrize("timeframe", [
@@ -506,7 +581,7 @@ def test_validate_timeframes_failed(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     with pytest.raises(OperationalException,
-                       match=r"Invalid ticker interval '3m'. This exchange supports.*"):
+                       match=r"Invalid timeframe '3m'. This exchange supports.*"):
         Exchange(default_conf)
     default_conf["ticker_interval"] = "15s"
 
@@ -1121,31 +1196,22 @@ def test_fetch_ticker(default_conf, mocker, exchange_name):
     assert ticker['bid'] == 0.5
     assert ticker['ask'] == 1
 
-    assert 'ETH/BTC' in exchange._cached_ticker
-    assert exchange._cached_ticker['ETH/BTC']['bid'] == 0.5
-    assert exchange._cached_ticker['ETH/BTC']['ask'] == 1
-
-    # Test caching
-    api_mock.fetch_ticker = MagicMock()
-    exchange.fetch_ticker(pair='ETH/BTC', refresh=False)
-    assert api_mock.fetch_ticker.call_count == 0
-
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            "fetch_ticker", "fetch_ticker",
-                           pair='ETH/BTC', refresh=True)
+                           pair='ETH/BTC')
 
     api_mock.fetch_ticker = MagicMock(return_value={})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-    exchange.fetch_ticker(pair='ETH/BTC', refresh=True)
+    exchange.fetch_ticker(pair='ETH/BTC')
 
     with pytest.raises(DependencyException, match=r'Pair XRP/ETH not available'):
-        exchange.fetch_ticker(pair='XRP/ETH', refresh=True)
+        exchange.fetch_ticker(pair='XRP/ETH')
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    tick = [
+    ohlcv = [
         [
             arrow.utcnow().timestamp * 1000,  # unix timestamp ms
             1,  # open
@@ -1158,7 +1224,7 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
     pair = 'ETH/BTC'
 
     async def mock_candle_hist(pair, timeframe, since_ms):
-        return pair, timeframe, tick
+        return pair, timeframe, ohlcv
 
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
@@ -1166,12 +1232,12 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
     ret = exchange.get_historic_ohlcv(pair, "5m", int((arrow.utcnow().timestamp - since) * 1000))
 
     assert exchange._async_get_candle_history.call_count == 2
-    # Returns twice the above tick
+    # Returns twice the above OHLCV data
     assert len(ret) == 2
 
 
 def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
-    tick = [
+    ohlcv = [
         [
             (arrow.utcnow().timestamp - 1) * 1000,  # unix timestamp ms
             1,  # open
@@ -1192,14 +1258,14 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
 
     caplog.set_level(logging.DEBUG)
     exchange = get_patched_exchange(mocker, default_conf)
-    exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
+    exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
 
     pairs = [('IOTA/ETH', '5m'), ('XRP/ETH', '5m')]
     # empty dicts
     assert not exchange._klines
     exchange.refresh_latest_ohlcv(pairs)
 
-    assert log_has(f'Refreshing ohlcv data for {len(pairs)} pairs', caplog)
+    assert log_has(f'Refreshing candle (OHLCV) data for {len(pairs)} pairs', caplog)
     assert exchange._klines
     assert exchange._api_async.fetch_ohlcv.call_count == 2
     for pair in pairs:
@@ -1217,14 +1283,15 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m'), ('XRP/ETH', '5m')])
 
     assert exchange._api_async.fetch_ohlcv.call_count == 2
-    assert log_has(f"Using cached ohlcv data for pair {pairs[0][0]}, timeframe {pairs[0][1]} ...",
+    assert log_has(f"Using cached candle (OHLCV) data for pair {pairs[0][0]}, "
+                   f"timeframe {pairs[0][1]} ...",
                    caplog)
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_name):
-    tick = [
+    ohlcv = [
         [
             arrow.utcnow().timestamp * 1000,  # unix timestamp ms
             1,  # open
@@ -1238,7 +1305,7 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
     caplog.set_level(logging.DEBUG)
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     # Monkey-patch async function
-    exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
+    exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
 
     pair = 'ETH/BTC'
     res = await exchange._async_get_candle_history(pair, "5m")
@@ -1246,9 +1313,9 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
     assert len(res) == 3
     assert res[0] == pair
     assert res[1] == "5m"
-    assert res[2] == tick
+    assert res[2] == ohlcv
     assert exchange._api_async.fetch_ohlcv.call_count == 1
-    assert not log_has(f"Using cached ohlcv data for {pair} ...", caplog)
+    assert not log_has(f"Using cached candle (OHLCV) data for {pair} ...", caplog)
 
     # exchange = Exchange(default_conf)
     await async_ccxt_exception(mocker, default_conf, MagicMock(),
@@ -1256,14 +1323,15 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
                                pair='ABCD/BTC', timeframe=default_conf['ticker_interval'])
 
     api_mock = MagicMock()
-    with pytest.raises(OperationalException, match=r'Could not fetch ticker data*'):
+    with pytest.raises(OperationalException,
+                       match=r'Could not fetch historical candle \(OHLCV\) data.*'):
         api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.BaseError("Unknown error"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         await exchange._async_get_candle_history(pair, "5m",
                                                  (arrow.utcnow().timestamp - 2000) * 1000)
 
     with pytest.raises(OperationalException, match=r'Exchange.* does not support fetching '
-                                                   r'historical candlestick data\..*'):
+                                                   r'historical candle \(OHLCV\) data\..*'):
         api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.NotSupported("Not supported"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         await exchange._async_get_candle_history(pair, "5m",
@@ -1273,7 +1341,7 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
 @pytest.mark.asyncio
 async def test__async_get_candle_history_empty(default_conf, mocker, caplog):
     """ Test empty exchange result """
-    tick = []
+    ohlcv = []
 
     caplog.set_level(logging.DEBUG)
     exchange = get_patched_exchange(mocker, default_conf)
@@ -1287,7 +1355,7 @@ async def test__async_get_candle_history_empty(default_conf, mocker, caplog):
     assert len(res) == 3
     assert res[0] == pair
     assert res[1] == "5m"
-    assert res[2] == tick
+    assert res[2] == ohlcv
     assert exchange._api_async.fetch_ohlcv.call_count == 1
 
 
@@ -1365,8 +1433,8 @@ async def test___async_get_candle_history_sort(default_conf, mocker, exchange_na
         return sorted(data, key=key)
 
     # GDAX use-case (real data from GDAX)
-    # This ticker history is ordered DESC (newest first, oldest last)
-    tick = [
+    # This OHLCV data is ordered DESC (newest first, oldest last)
+    ohlcv = [
         [1527833100000, 0.07666, 0.07671, 0.07666, 0.07668, 16.65244264],
         [1527832800000, 0.07662, 0.07666, 0.07662, 0.07666, 1.30051526],
         [1527832500000, 0.07656, 0.07661, 0.07656, 0.07661, 12.034778840000001],
@@ -1379,31 +1447,31 @@ async def test___async_get_candle_history_sort(default_conf, mocker, exchange_na
         [1527830400000, 0.07649, 0.07651, 0.07649, 0.07651, 2.5734867]
     ]
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
+    exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
     sort_mock = mocker.patch('freqtrade.exchange.exchange.sorted', MagicMock(side_effect=sort_data))
-    # Test the ticker history sort
+    # Test the OHLCV data sort
     res = await exchange._async_get_candle_history('ETH/BTC', default_conf['ticker_interval'])
     assert res[0] == 'ETH/BTC'
-    ticks = res[2]
+    res_ohlcv = res[2]
 
     assert sort_mock.call_count == 1
-    assert ticks[0][0] == 1527830400000
-    assert ticks[0][1] == 0.07649
-    assert ticks[0][2] == 0.07651
-    assert ticks[0][3] == 0.07649
-    assert ticks[0][4] == 0.07651
-    assert ticks[0][5] == 2.5734867
+    assert res_ohlcv[0][0] == 1527830400000
+    assert res_ohlcv[0][1] == 0.07649
+    assert res_ohlcv[0][2] == 0.07651
+    assert res_ohlcv[0][3] == 0.07649
+    assert res_ohlcv[0][4] == 0.07651
+    assert res_ohlcv[0][5] == 2.5734867
 
-    assert ticks[9][0] == 1527833100000
-    assert ticks[9][1] == 0.07666
-    assert ticks[9][2] == 0.07671
-    assert ticks[9][3] == 0.07666
-    assert ticks[9][4] == 0.07668
-    assert ticks[9][5] == 16.65244264
+    assert res_ohlcv[9][0] == 1527833100000
+    assert res_ohlcv[9][1] == 0.07666
+    assert res_ohlcv[9][2] == 0.07671
+    assert res_ohlcv[9][3] == 0.07666
+    assert res_ohlcv[9][4] == 0.07668
+    assert res_ohlcv[9][5] == 16.65244264
 
     # Bittrex use-case (real data from Bittrex)
-    # This ticker history is ordered ASC (oldest first, newest last)
-    tick = [
+    # This OHLCV data is ordered ASC (oldest first, newest last)
+    ohlcv = [
         [1527827700000, 0.07659999, 0.0766, 0.07627, 0.07657998, 1.85216924],
         [1527828000000, 0.07657995, 0.07657995, 0.0763, 0.0763, 26.04051037],
         [1527828300000, 0.0763, 0.07659998, 0.0763, 0.0764, 10.36434124],
@@ -1415,29 +1483,29 @@ async def test___async_get_candle_history_sort(default_conf, mocker, exchange_na
         [1527830100000, 0.076695, 0.07671, 0.07624171, 0.07671, 1.80689244],
         [1527830400000, 0.07671, 0.07674399, 0.07629216, 0.07655213, 2.31452783]
     ]
-    exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
+    exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
     # Reset sort mock
     sort_mock = mocker.patch('freqtrade.exchange.sorted', MagicMock(side_effect=sort_data))
-    # Test the ticker history sort
+    # Test the OHLCV data sort
     res = await exchange._async_get_candle_history('ETH/BTC', default_conf['ticker_interval'])
     assert res[0] == 'ETH/BTC'
     assert res[1] == default_conf['ticker_interval']
-    ticks = res[2]
+    res_ohlcv = res[2]
     # Sorted not called again - data is already in order
     assert sort_mock.call_count == 0
-    assert ticks[0][0] == 1527827700000
-    assert ticks[0][1] == 0.07659999
-    assert ticks[0][2] == 0.0766
-    assert ticks[0][3] == 0.07627
-    assert ticks[0][4] == 0.07657998
-    assert ticks[0][5] == 1.85216924
+    assert res_ohlcv[0][0] == 1527827700000
+    assert res_ohlcv[0][1] == 0.07659999
+    assert res_ohlcv[0][2] == 0.0766
+    assert res_ohlcv[0][3] == 0.07627
+    assert res_ohlcv[0][4] == 0.07657998
+    assert res_ohlcv[0][5] == 1.85216924
 
-    assert ticks[9][0] == 1527830400000
-    assert ticks[9][1] == 0.07671
-    assert ticks[9][2] == 0.07674399
-    assert ticks[9][3] == 0.07629216
-    assert ticks[9][4] == 0.07655213
-    assert ticks[9][5] == 2.31452783
+    assert res_ohlcv[9][0] == 1527830400000
+    assert res_ohlcv[9][1] == 0.07671
+    assert res_ohlcv[9][2] == 0.07674399
+    assert res_ohlcv[9][3] == 0.07629216
+    assert res_ohlcv[9][4] == 0.07655213
+    assert res_ohlcv[9][5] == 2.31452783
 
 
 @pytest.mark.asyncio
@@ -1828,6 +1896,7 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
         # 'ETH/BTC':  'active': True
         # 'ETH/USDT': 'active': True
         # 'LTC/BTC':  'active': False
+        # 'LTC/ETH':  'active': True
         # 'LTC/USD':  'active': True
         # 'LTC/USDT': 'active': True
         # 'NEO/BTC':  'active': False
@@ -1836,26 +1905,26 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
         # 'XRP/BTC':  'active': False
         # all markets
         ([], [], False, False,
-         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD',
+         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD',
           'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
         # active markets
         ([], [], False, True,
-         ['BLK/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD', 'NEO/BTC',
+         ['BLK/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD', 'NEO/BTC',
           'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
         # all pairs
         ([], [], True, False,
-         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD',
+         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD',
           'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XRP/BTC']),
         # active pairs
         ([], [], True, True,
-         ['BLK/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD', 'NEO/BTC',
+         ['BLK/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD', 'NEO/BTC',
           'TKN/BTC', 'XRP/BTC']),
         # all markets, base=ETH, LTC
         (['ETH', 'LTC'], [], False, False,
-         ['ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
+         ['ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
         # all markets, base=LTC
         (['LTC'], [], False, False,
-         ['LTC/BTC', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
+         ['LTC/BTC', 'LTC/ETH', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
         # all markets, quote=USDT
         ([], ['USDT'], False, False,
          ['ETH/USDT', 'LTC/USDT', 'XLTCUSDT']),
