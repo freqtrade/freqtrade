@@ -224,6 +224,7 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
     assert 'export' in config
     assert log_has('Parameter --export detected: {} ...'.format(config['export']), caplog)
     assert 'exportfilename' in config
+    assert isinstance(config['exportfilename'], Path)
     assert log_has('Storing backtest results to {} ...'.format(config['exportfilename']), caplog)
 
     assert 'fee' in config

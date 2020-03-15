@@ -421,7 +421,7 @@ class Backtesting:
         for strategy, results in all_results.items():
 
             if self.config.get('export', False):
-                self._store_backtest_result(Path(self.config['exportfilename']), results,
+                self._store_backtest_result(self.config['exportfilename'], results,
                                             strategy if len(self.strategylist) > 1 else None)
 
             print(f"Result for strategy {strategy}")

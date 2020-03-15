@@ -196,6 +196,7 @@ class Configuration:
         if self.args.get('exportfilename'):
             self._args_to_config(config, argname='exportfilename',
                                  logstring='Storing backtest results to {} ...')
+            config['exportfilename'] = Path(config['exportfilename'])
         else:
             config['exportfilename'] = (config['user_data_dir']
                                         / 'backtest_results/backtest-result.json')
