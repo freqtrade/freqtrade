@@ -1,8 +1,9 @@
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 from arrow import Arrow
-from pandas import DataFrame, DateOffset, to_datetime, Timestamp
+from pandas import DataFrame, DateOffset, Timestamp, to_datetime
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
@@ -111,7 +112,7 @@ def test_load_trades(default_conf, mocker):
 
     db_mock.reset_mock()
     bt_mock.reset_mock()
-    default_conf['exportfilename'] = "testfile.json"
+    default_conf['exportfilename'] = Path("testfile.json")
     load_trades("file",
                 db_url=default_conf.get('db_url'),
                 exportfilename=default_conf.get('exportfilename'),)
