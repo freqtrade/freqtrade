@@ -18,10 +18,7 @@ from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
-from freqtrade.misc import file_dump_json
-from freqtrade.optimize.optimize_reports import (
-    generate_text_table, generate_text_table_sell_reason,
-    generate_text_table_strategy)
+from freqtrade.optimize.optimize_reports import show_backtest_results
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
@@ -399,44 +396,5 @@ class Backtesting:
                 max_open_trades=max_open_trades,
                 position_stacking=position_stacking,
             )
-
-        for strategy, results in all_results.items():
-
-            if self.config.get('export', False):
-                self._store_backtest_result(self.config['exportfilename'], results,
-                                            strategy if len(self.strategylist) > 1 else None)
-
-            print(f"Result for strategy {strategy}")
-            table = generate_text_table(data, stake_currency=self.config['stake_currency'],
-                                        max_open_trades=self.config['max_open_trades'],
-                                        results=results)
-            if isinstance(table, str):
-                print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
-            print(table)
-
-            table = generate_text_table_sell_reason(stake_currency=self.config['stake_currency'],
-                                                    max_open_trades=self.config['max_open_trades'],
-                                                    results=results)
-            if isinstance(table, str):
-                print(' SELL REASON STATS '.center(len(table.splitlines()[0]), '='))
-            print(table)
-
-            table = generate_text_table(data,
-                                        stake_currency=self.config['stake_currency'],
-                                        max_open_trades=self.config['max_open_trades'],
-                                        results=results.loc[results.open_at_end], skip_nan=True)
-            if isinstance(table, str):
-                print(' LEFT OPEN TRADES REPORT '.center(len(table.splitlines()[0]), '='))
-            print(table)
-            if isinstance(table, str):
-                print('=' * len(table.splitlines()[0]))
-            print()
-        if len(all_results) > 1:
-            # Print Strategy summary table
-            table = generate_text_table_strategy(self.config['stake_currency'],
-                                                 self.config['max_open_trades'],
-                                                 all_results=all_results)
-            print(' STRATEGY SUMMARY '.center(len(table.splitlines()[0]), '='))
-            print(table)
-            print('=' * len(table.splitlines()[0]))
-            print('\nFor more details, please look at the detail tables above')
+        # Show backtest results
+        show_backtest_results(self.config, data, all_results)

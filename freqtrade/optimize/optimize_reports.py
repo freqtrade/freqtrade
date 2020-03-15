@@ -197,3 +197,47 @@ def generate_edge_table(results: dict) -> str:
     # Ignore type as floatfmt does allow tuples but mypy does not know that
     return tabulate(tabular_data, headers=headers,
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore
+
+
+def show_backtest_results(config: Dict, btdata: Dict[str, DataFrame],
+                          all_results: Dict[str, DataFrame]):
+    for strategy, results in all_results.items():
+
+        if config.get('export', False):
+            store_backtest_result(config['exportfilename'], results,
+                                  strategy if len(all_results) > 1 else None)
+
+        print(f"Result for strategy {strategy}")
+        table = generate_text_table(btdata, stake_currency=config['stake_currency'],
+                                    max_open_trades=config['max_open_trades'],
+                                    results=results)
+        if isinstance(table, str):
+            print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
+        print(table)
+
+        table = generate_text_table_sell_reason(stake_currency=config['stake_currency'],
+                                                max_open_trades=config['max_open_trades'],
+                                                results=results)
+        if isinstance(table, str):
+            print(' SELL REASON STATS '.center(len(table.splitlines()[0]), '='))
+        print(table)
+
+        table = generate_text_table(btdata,
+                                    stake_currency=config['stake_currency'],
+                                    max_open_trades=config['max_open_trades'],
+                                    results=results.loc[results.open_at_end], skip_nan=True)
+        if isinstance(table, str):
+            print(' LEFT OPEN TRADES REPORT '.center(len(table.splitlines()[0]), '='))
+        print(table)
+        if isinstance(table, str):
+            print('=' * len(table.splitlines()[0]))
+        print()
+    if len(all_results) > 1:
+        # Print Strategy summary table
+        table = generate_text_table_strategy(config['stake_currency'],
+                                                config['max_open_trades'],
+                                                all_results=all_results)
+        print(' STRATEGY SUMMARY '.center(len(table.splitlines()[0]), '='))
+        print(table)
+        print('=' * len(table.splitlines()[0]))
+        print('\nFor more details, please look at the detail tables above')
