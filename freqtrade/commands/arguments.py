@@ -59,7 +59,7 @@ ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "download_trades", "exchang
 
 ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
                        "db_url", "trade_source", "export", "exportfilename",
-                       "timerange", "ticker_interval", "skip_trades"]
+                       "timerange", "ticker_interval", "no_trades"]
 
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "ticker_interval"]

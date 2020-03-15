@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import pandas as pd
-from os.path import isfile
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.btanalysis import (calculate_max_drawdown,
@@ -49,18 +48,18 @@ def init_plotscript(config):
         data_format=config.get('dataformat_ohlcv', 'json'),
     )
 
-    skip_trades = False
-    if not isfile(config.get('exportfilename')) and config['trade_source'] == 'file':
+    no_trades = False
+    if config.get('no_trades', False):
+        no_trades = True
+    elif not config['exportfilename'].is_file() and config['trade_source'] == 'file':
         logger.warning("Backtest file is missing skipping trades.")
-        skip_trades = True
-    elif config.get('skip_trades', False):
-        skip_trades = True
+        no_trades = True
 
     trades = load_trades(
         config['trade_source'],
         db_url=config.get('db_url'),
         exportfilename=config.get('exportfilename'),
-        skip_trades=skip_trades
+        no_trades=no_trades
     )
     trades = trim_dataframe(trades, timerange, 'open_time')
 

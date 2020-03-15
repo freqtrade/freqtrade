@@ -68,7 +68,7 @@ optional arguments:
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
                         Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
                         `1d`).
-  --skip-trades         Skip using trades file from backtesting and DB.
+  --no-trades           Skip using trades from backtesting file and DB.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

@@ -413,9 +413,9 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='INT',
         default=750,
     ),
-    "skip_trades": Arg(
-        '--skip-trades',
-        help='Skip using trades file from backtesting and DB.',
+    "no_trades": Arg(
+        '--no-trades',
+        help='Skip using trades from backtesting file and DB.',
         action='store_true',
     ),
     "trade_source": Arg(
