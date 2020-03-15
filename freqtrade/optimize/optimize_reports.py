@@ -11,22 +11,22 @@ from freqtrade.misc import file_dump_json
 logger = logging.getLogger(__name__)
 
 
-def store_backtest_result(recordfilename: Path, results: DataFrame,
-                          strategyname: Optional[str] = None) -> None:
+def store_backtest_result(recordfilename: Path, all_results: Dict[str, DataFrame]) -> None:
 
-    records = [(t.pair, t.profit_percent, t.open_time.timestamp(),
-                t.close_time.timestamp(), t.open_index - 1, t.trade_duration,
-                t.open_rate, t.close_rate, t.open_at_end, t.sell_reason.value)
-               for index, t in results.iterrows()]
+    for strategy, results in all_results.items():
+        records = [(t.pair, t.profit_percent, t.open_time.timestamp(),
+                    t.close_time.timestamp(), t.open_index - 1, t.trade_duration,
+                    t.open_rate, t.close_rate, t.open_at_end, t.sell_reason.value)
+                   for index, t in results.iterrows()]
 
-    if records:
-        if strategyname:
-            # Inject strategyname to filename
-            recordfilename = Path.joinpath(
-                recordfilename.parent,
-                f'{recordfilename.stem}-{strategyname}').with_suffix(recordfilename.suffix)
-        logger.info(f'Dumping backtest results to {recordfilename}')
-        file_dump_json(recordfilename, records)
+        if records:
+            if len(all_results) > 1:
+                # Inject strategy to filename
+                recordfilename = Path.joinpath(
+                    recordfilename.parent,
+                    f'{recordfilename.stem}-{strategy}').with_suffix(recordfilename.suffix)
+            logger.info(f'Dumping backtest results to {recordfilename}')
+            file_dump_json(recordfilename, records)
 
 
 def generate_text_table(data: Dict[str, Dict], stake_currency: str, max_open_trades: int,
@@ -203,10 +203,6 @@ def show_backtest_results(config: Dict, btdata: Dict[str, DataFrame],
                           all_results: Dict[str, DataFrame]):
     for strategy, results in all_results.items():
 
-        if config.get('export', False):
-            store_backtest_result(config['exportfilename'], results,
-                                  strategy if len(all_results) > 1 else None)
-
         print(f"Result for strategy {strategy}")
         table = generate_text_table(btdata, stake_currency=config['stake_currency'],
                                     max_open_trades=config['max_open_trades'],
@@ -235,8 +231,8 @@ def show_backtest_results(config: Dict, btdata: Dict[str, DataFrame],
     if len(all_results) > 1:
         # Print Strategy summary table
         table = generate_text_table_strategy(config['stake_currency'],
-                                                config['max_open_trades'],
-                                                all_results=all_results)
+                                             config['max_open_trades'],
+                                             all_results=all_results)
         print(' STRATEGY SUMMARY '.center(len(table.splitlines()[0]), '='))
         print(table)
         print('=' * len(table.splitlines()[0]))

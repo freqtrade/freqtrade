@@ -18,7 +18,8 @@ from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
-from freqtrade.optimize.optimize_reports import show_backtest_results
+from freqtrade.optimize.optimize_reports import (show_backtest_results,
+                                                 store_backtest_result)
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
@@ -396,5 +397,8 @@ class Backtesting:
                 max_open_trades=max_open_trades,
                 position_stacking=position_stacking,
             )
+
+        if self.config.get('export', False):
+            store_backtest_result(self.config['exportfilename'], all_results)
         # Show backtest results
         show_backtest_results(self.config, data, all_results)
