@@ -359,6 +359,9 @@ class Configuration:
         self._args_to_config(config, argname='erase',
                              logstring='Erase detected. Deleting existing data.')
 
+        self._args_to_config(config, argname='no_trades',
+                             logstring='Parameter --no-trades detected.')
+
         self._args_to_config(config, argname='timeframes',
                              logstring='timeframes --timeframes: {}')
 
