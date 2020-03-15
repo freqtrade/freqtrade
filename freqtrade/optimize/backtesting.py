@@ -7,7 +7,7 @@ import logging
 from copy import deepcopy
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 import arrow
 from pandas import DataFrame
@@ -108,7 +108,7 @@ class Backtesting:
         # And the regular "stoploss" function would not apply to that case
         self.strategy.order_types['stoploss_on_exchange'] = False
 
-    def load_bt_data(self):
+    def load_bt_data(self) -> Tuple[Dict[str, DataFrame], TimeRange]:
         timerange = TimeRange.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
 
@@ -432,8 +432,7 @@ class Backtesting:
                 print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
             print(table)
 
-            table = generate_text_table_sell_reason(data,
-                                                    stake_currency=self.config['stake_currency'],
+            table = generate_text_table_sell_reason(stake_currency=self.config['stake_currency'],
                                                     max_open_trades=self.config['max_open_trades'],
                                                     results=results)
             if isinstance(table, str):

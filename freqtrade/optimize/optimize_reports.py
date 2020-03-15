@@ -69,12 +69,12 @@ def generate_text_table(data: Dict[str, Dict], stake_currency: str, max_open_tra
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore
 
 
-def generate_text_table_sell_reason(
-    data: Dict[str, Dict], stake_currency: str, max_open_trades: int, results: DataFrame
-) -> str:
+def generate_text_table_sell_reason(stake_currency: str, max_open_trades: int,
+                                    results: DataFrame) -> str:
     """
     Generate small table outlining Backtest results
-    :param data: Dict of <pair: dataframe> containing data that was used during backtesting.
+    :param stake_currency: Stakecurrency used
+    :param max_open_trades: Max_open_trades parameter
     :param results: Dataframe containing the backtest results
     :return: pretty printed table with tabulate as string
     """

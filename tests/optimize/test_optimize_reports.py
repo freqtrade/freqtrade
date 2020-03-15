@@ -61,10 +61,8 @@ def test_generate_text_table_sell_reason(default_conf, mocker):
         '|     stop_loss |       1 |      0 |       0 |        1 |'
         '            -10 |            -10 |             -0.2 |             -5 |'
     )
-    assert generate_text_table_sell_reason(
-        data={'ETH/BTC': {}},
-        stake_currency='BTC', max_open_trades=2,
-        results=results) == result_str
+    assert generate_text_table_sell_reason(stake_currency='BTC', max_open_trades=2,
+                                           results=results) == result_str
 
 
 def test_generate_text_table_strategy(default_conf, mocker):
