@@ -6,7 +6,6 @@ This module contains the backtesting logic
 import logging
 from copy import deepcopy
 from datetime import datetime, timedelta
-from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 import arrow
@@ -133,23 +132,6 @@ class Backtesting:
                                             self.required_startup, min_date)
 
         return data, timerange
-
-    def _store_backtest_result(self, recordfilename: Path, results: DataFrame,
-                               strategyname: Optional[str] = None) -> None:
-
-        records = [(t.pair, t.profit_percent, t.open_time.timestamp(),
-                    t.close_time.timestamp(), t.open_index - 1, t.trade_duration,
-                    t.open_rate, t.close_rate, t.open_at_end, t.sell_reason.value)
-                   for index, t in results.iterrows()]
-
-        if records:
-            if strategyname:
-                # Inject strategyname to filename
-                recordfilename = Path.joinpath(
-                    recordfilename.parent,
-                    f'{recordfilename.stem}-{strategyname}').with_suffix(recordfilename.suffix)
-            logger.info(f'Dumping backtest results to {recordfilename}')
-            file_dump_json(recordfilename, records)
 
     def _get_ohlcv_as_lists(self, processed: Dict) -> Dict[str, DataFrame]:
         """

@@ -1,8 +1,32 @@
+import logging
 from datetime import timedelta
-from typing import Dict
+from pathlib import Path
+from typing import Dict, Optional
 
 from pandas import DataFrame
 from tabulate import tabulate
+
+from freqtrade.misc import file_dump_json
+
+logger = logging.getLogger(__name__)
+
+
+def store_backtest_result(recordfilename: Path, results: DataFrame,
+                          strategyname: Optional[str] = None) -> None:
+
+    records = [(t.pair, t.profit_percent, t.open_time.timestamp(),
+                t.close_time.timestamp(), t.open_index - 1, t.trade_duration,
+                t.open_rate, t.close_rate, t.open_at_end, t.sell_reason.value)
+               for index, t in results.iterrows()]
+
+    if records:
+        if strategyname:
+            # Inject strategyname to filename
+            recordfilename = Path.joinpath(
+                recordfilename.parent,
+                f'{recordfilename.stem}-{strategyname}').with_suffix(recordfilename.suffix)
+        logger.info(f'Dumping backtest results to {recordfilename}')
+        file_dump_json(recordfilename, records)
 
 
 def generate_text_table(data: Dict[str, Dict], stake_currency: str, max_open_trades: int,
