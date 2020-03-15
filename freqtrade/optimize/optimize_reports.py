@@ -12,7 +12,11 @@ logger = logging.getLogger(__name__)
 
 
 def store_backtest_result(recordfilename: Path, all_results: Dict[str, DataFrame]) -> None:
-
+    """
+    Stores backtest results to file (one file per strategy)
+    :param recordfilename: Destination filename
+    :param all_results: Dict of Dataframes, one results dataframe per strategy
+    """
     for strategy, results in all_results.items():
         records = [(t.pair, t.profit_percent, t.open_time.timestamp(),
                     t.close_time.timestamp(), t.open_index - 1, t.trade_duration,
