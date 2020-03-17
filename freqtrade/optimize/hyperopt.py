@@ -154,6 +154,8 @@ class Hyperopt:
         backend.manager = Manager()
         self.mode = self.config.get('mode', 'single')
         self.shared = False
+        # models are only needed for posterior eval
+        self.n_models = 1
         if self.mode in ('multi', 'shared'):
             self.multi = True
             if self.mode == 'shared':
@@ -161,19 +163,19 @@ class Hyperopt:
             backend.optimizers = backend.manager.Queue()
             backend.results_board = backend.manager.Queue(maxsize=1)
             backend.results_board.put({})
+            default_n_points = 2
             self.opt_base_estimator = 'GBRT'
             self.opt_acq_optimizer = 'sampling'
-            # in multi opt one model is enough
-            self.n_models = 1
-            default_n_points = 2
         else:
             self.multi = False
             backend.results = backend.manager.Queue()
-            self.opt_base_estimator = 'GP'
-            self.opt_acq_optimizer = 'lbfgs'
-            # models are only needed for posterior eval
-            self.n_models = min(16, self.n_jobs)
+            self.opt_base_estimator = 'ET'
+            self.opt_acq_optimizer = 'sampling'
             default_n_points = 1
+            # The GaussianProcessRegressor is heavy, which makes it not a good default
+            # however longer backtests might make it a better tradeoff
+            # self.opt_base_estimator = 'GP'
+            # self.opt_acq_optimizer = 'lbfgs'
 
         # in single opt assume runs are expensive so default to 1 point per ask
         self.n_points = self.config.get('n_points', default_n_points)
@@ -235,17 +237,21 @@ class Hyperopt:
         num_trials = len(self.trials)
         print()
         if num_trials > self.num_trials_saved:
-            logger.info(f"Saving {num_trials} {plural(num_trials, 'epoch')}.")
+            logger.debug(f"Saving {num_trials} {plural(num_trials, 'epoch')}.")
             dump(self.trials, self.trials_file)
             self.num_trials_saved = num_trials
             self.save_opts()
         if final:
-            logger.info(f"{num_trials} {plural(num_trials, 'epoch')} "
+            logger.debug(f"{num_trials} {plural(num_trials, 'epoch')} "
                         f"saved to '{self.trials_file}'.")
 
     def save_opts(self) -> None:
-        """ Save optimizers state to disk. The minimum required state could also be constructed
-        from the attributes [ models, space, rng ] with Xi, yi loaded from trials """
+        """
+        Save optimizers state to disk. The minimum required state could also be constructed
+        from the attributes [ models, space, rng ] with Xi, yi loaded from trials.
+        All we really care about are [rng, Xi, yi] since models are never passed over queues
+        and space is dependent on dimensions matching with hyperopt config
+        """
         # synchronize with saved trials
         opts = []
         n_opts = 0
@@ -259,7 +265,7 @@ class Hyperopt:
             if self.opt:
                 n_opts = 1
                 opts = [self.opt]
-        logger.info(f"Saving {n_opts} {plural(n_opts, 'optimizer')}.")
+        logger.debug(f"Saving {n_opts} {plural(n_opts, 'optimizer')}.")
         dump(opts, self.opts_file)
 
     @staticmethod
@@ -874,7 +880,7 @@ class Hyperopt:
             if self.max_epoch > self.search_space_size:
                 self.max_epoch = self.search_space_size
         print()
-        logger.info(f'Max epoch set to: {self.epochs_limit()}')
+        logger.debug(f'Max epoch set to: {self.epochs_limit()}')
 
     def setup_optimizers(self):
         """ Setup the optimizers objects, try to load from disk, or create new ones """
