@@ -170,7 +170,6 @@ class Hyperopt:
             backend.optimizers = backend.manager.Queue()
             backend.results_board = backend.manager.Queue(maxsize=1)
             backend.results_board.put({})
-            default_n_points = 2
         else:
             self.multi = False
             backend.results = backend.manager.Queue()
@@ -179,15 +178,15 @@ class Hyperopt:
             default_n_points = 1
             # The GaussianProcessRegressor is heavy, which makes it not a good default
             # however longer backtests might make it a better tradeoff
-            # self.opt_base_estimator = 'GP'
+            # self.opt_base_estimator = lambda: 'GP'
             # self.opt_acq_optimizer = 'lbfgs'
 
         # in single opt assume runs are expensive so default to 1 point per ask
-        self.n_points = self.config.get('n_points', default_n_points)
+        self.n_points = self.config.get('n_points', 1)
         # if 0 n_points are given, don't use any base estimator (akin to random search)
         if self.n_points < 1:
             self.n_points = 1
-            self.opt_base_estimator = "DUMMY"
+            self.opt_base_estimator = lambda: "DUMMY"
             self.opt_acq_optimizer = "sampling"
         if self.n_points < 2:
             # ask_points is what is used in the ask call
@@ -659,7 +658,16 @@ class Hyperopt:
         to_ask: deque = deque()
         evald: Set[Tuple] = set()
         opt = self.opt
-        ask = lambda: to_ask.extend(opt.ask(n_points=self.n_points, strategy=self.lie_strat()))
+        def point():
+            if self.ask_points:
+                if to_ask:
+                    return tuple(to_ask.popleft())
+                else:
+                    to_ask.extend(opt.ask(n_points=self.ask_points, strategy=self.lie_strat()))
+                    return tuple(to_ask.popleft())
+            else:
+                return tuple(opt.ask(strategy=self.lie_strat()))
+
         for r in range(tries):
             fit = (len(to_ask) < 1)
             while not backend.results.empty():
@@ -673,17 +681,12 @@ class Hyperopt:
                              fit=fit)  # only fit when out of points
                     del vals[:], void_filtered[:]
 
-            if fit:
-                ask()
-            a = tuple(to_ask.popleft())
+            a = point()
             while a in evald:
                 logger.debug("this point was evaluated before...")
-                if len(to_ask) > 0:
-                    a = tuple(to_ask.popleft())
-                else:
+                if not fit:
                     opt.update_next()
-                    ask()
-                    a = tuple(to_ask.popleft())
+                a = point()
             evald.add(a)
             yield a
 
@@ -705,19 +708,30 @@ class Hyperopt:
         is_shared = self.shared
         # get an optimizer instance
         opt = optimizers.get()
+        # this is the counter used by the optimizer internally to track the initial
+        # points evaluated so far..
+        initial_points = opt._n_initial_points
 
         if is_shared:
             # get a random number before putting it back to avoid
-            # replication with other workers
+            # replication with other workers and keep reproducibility
             rand = opt.rng.randint(0, VOID_LOSS)
             optimizers.put(opt)
             # switch the seed to get a different point
             opt.rng.seed(rand)
+            opt, opt.void_loss = opt.copy(random_state=opt.rng), opt.void_loss
+        # we have to get a new point if the last batch was all void
+        elif opt.void:
+            opt.update_next()
+        # a model is only fit after initial points
+        elif initial_points < 1:
+            opt.tell(opt.Xi, opt.yi)
 
-        # always update the next point because we never fit on tell
-        opt.update_next()
         # ask for points according to config
         asked = opt.ask(n_points=self.ask_points, strategy=self.lie_strat())
+        # wrap in a list when asked for 1 point
+        if not self.ask_points:
+            asked = [asked]
         # check if some points have been evaluated by other optimizers
         p_asked = self.opt_get_past_points({tuple(a): None for a in asked}, results_board)
         Xi_d = []  # done
@@ -742,17 +756,27 @@ class Hyperopt:
             opt.tell(Xi, yi, fit=False)
         else:
             void = True
+            opt.void = void
         # send back the updated optimizer only in non shared mode
         # because in shared mode if all results are void we don't
         # fetch it at all
         if not void or not is_shared:
+            # don't pickle models
             del opt.models[:]
             optimizers.put(opt)
         # update the board used to skip already computed points
-        results = results_board.get()
-        for v in void_filtered:
-            results[tuple(v['params_dict'].values())] =  v['loss']
-        results_board.put(results)
+        # NOTE: some results at the beginning won't be published
+        # because they are removed by the filter_void_losses
+        if not void:
+            results = results_board.get()
+            for v in void_filtered:
+                a = tuple(v['params_dict'].values())
+                if a not in results:
+                    results[a] = v['loss']
+            results_board.put(results)
+            # set initial point flag
+            for n, v in enumerate(void_filtered):
+                v['is_initial_point'] = initial_points - n > 0
         return void_filtered
 
     def parallel_objective(self, asked, results: Queue = None, n=0):
@@ -761,8 +785,7 @@ class Hyperopt:
         v = self.backtest_params(asked)
         if results:
             results.put(v)
-        # the results logged won't be filtered
-        # the loss score will be == VOID_LOSS
+        v['is_initial_point'] = n < self.opt_n_initial_points
         return v
 
     def log_results_immediate(self, n) -> None:
@@ -781,7 +804,6 @@ class Hyperopt:
             current = frame_start + i
             v['is_best'] = is_best
             v['current_epoch'] = current
-            v['is_initial_point'] = current <= self.n_initial_points
             logger.debug(f"Optimizer epoch evaluated: {v}")
             if is_best:
                 self.current_best_loss = v['loss']
@@ -922,6 +944,7 @@ class Hyperopt:
                     opt_copy = opt.copy(random_state=opt.rng.randint(0,
                                                                      iinfo(int32).max))
                     opt_copy.void_loss = VOID_LOSS
+                    opt_copy.void = False
                     backend.optimizers.put(opt_copy)
                 del opt, opt_copy
         else:
@@ -934,6 +957,7 @@ class Hyperopt:
                     self.dimensions, self.n_jobs, self.opt_n_initial_points
                 )
                 self.opt.void_loss = VOID_LOSS
+                self.opt.void = False
         del opts[:]
 
     def setup_points(self):
