@@ -117,7 +117,6 @@ def test_load_trades(default_conf, mocker):
     load_trades("file",
                 db_url=default_conf.get('db_url'),
                 exportfilename=default_conf.get('exportfilename'),
-                no_trades=False
                 )
 
     assert db_mock.call_count == 0

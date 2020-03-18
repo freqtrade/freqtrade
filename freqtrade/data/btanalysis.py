@@ -129,7 +129,8 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
     return trades
 
 
-def load_trades(source: str, db_url: str, exportfilename: Path, no_trades: bool = False) -> pd.DataFrame:
+def load_trades(source: str, db_url: str, exportfilename: Path,
+                no_trades: bool = False) -> pd.DataFrame:
     """
     Based on configuration option "trade_source":
     * loads data from DB (using `db_url`)
