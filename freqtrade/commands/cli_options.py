@@ -413,6 +413,11 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='INT',
         default=750,
     ),
+    "no_trades": Arg(
+        '--no-trades',
+        help='Skip using trades from backtesting file and DB.',
+        action='store_true',
+    ),
     "trade_source": Arg(
         '--trade-source',
         help='Specify the source for trades (Can be DB or file (backtest file)) '

@@ -105,6 +105,7 @@ def test_load_trades(default_conf, mocker):
     load_trades("DB",
                 db_url=default_conf.get('db_url'),
                 exportfilename=default_conf.get('exportfilename'),
+                no_trades=False
                 )
 
     assert db_mock.call_count == 1
@@ -115,10 +116,23 @@ def test_load_trades(default_conf, mocker):
     default_conf['exportfilename'] = Path("testfile.json")
     load_trades("file",
                 db_url=default_conf.get('db_url'),
-                exportfilename=default_conf.get('exportfilename'),)
+                exportfilename=default_conf.get('exportfilename'),
+                )
 
     assert db_mock.call_count == 0
     assert bt_mock.call_count == 1
+
+    db_mock.reset_mock()
+    bt_mock.reset_mock()
+    default_conf['exportfilename'] = "testfile.json"
+    load_trades("file",
+                db_url=default_conf.get('db_url'),
+                exportfilename=default_conf.get('exportfilename'),
+                no_trades=True
+                )
+
+    assert db_mock.call_count == 0
+    assert bt_mock.call_count == 0
 
 
 def test_combine_dataframes_with_mean(testdatadir):
