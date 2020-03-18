@@ -32,7 +32,7 @@ usage: freqtrade plot-dataframe [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                 [--trade-source {DB,file}] [--export EXPORT]
                                 [--export-filename PATH]
                                 [--timerange TIMERANGE] [-i TICKER_INTERVAL]
-                                [--skip-trades]
+                                [--no-trades]
 
 optional arguments:
   -h, --help            show this help message and exit
