@@ -891,6 +891,9 @@ class FreqtradeBot:
         if order['status'] != 'canceled':
             reason = "cancelled due to timeout"
             corder = self.exchange.cancel_order(trade.open_order_id, trade.pair)
+            # Some exchanges don't return a dict here.
+            if not isinstance(corder, dict):
+                corder = {}
             logger.info('Buy order %s for %s.', reason, trade)
         else:
             # Order was cancelled already, so we can reuse the existing dict
