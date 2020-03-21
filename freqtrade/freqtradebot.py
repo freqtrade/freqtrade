@@ -394,16 +394,18 @@ class FreqtradeBot:
             logger.info(f"Pair {pair} is currently locked.")
             return False
 
+        # get_free_open_trades is checked before create_trade is called
+        # but it is still used here to prevent opening too many trades within one iteration
+        if not self.get_free_open_trades():
+            logger.debug(f"Can't open a new trade for {pair}: max number of trades is reached.")
+            return False
+
         # running get_signal on historical data fetched
         (buy, sell) = self.strategy.get_signal(
             pair, self.strategy.ticker_interval,
             self.dataprovider.ohlcv(pair, self.strategy.ticker_interval))
 
         if buy and not sell:
-            if not self.get_free_open_trades():
-                logger.debug("Can't open a new trade: max number of trades is reached.")
-                return False
-
             stake_amount = self.get_trade_stake_amount(pair)
             if not stake_amount:
                 logger.debug(f"Stake amount is 0, ignoring possible trade for {pair}.")
