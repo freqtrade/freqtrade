@@ -197,7 +197,7 @@ class RPC:
                 Trade.close_date >= profitday,
                 Trade.close_date < (profitday + timedelta(days=1))
             ]).order_by(Trade.close_date).all()
-            curdayprofit = sum(trade.calc_profit() for trade in trades)
+            curdayprofit = sum(trade.close_profit_abs for trade in trades)
             profit_days[profitday] = {
                 'amount': f'{curdayprofit:.8f}',
                 'trades': len(trades)
@@ -246,8 +246,8 @@ class RPC:
                 durations.append((trade.close_date - trade.open_date).total_seconds())
 
             if not trade.is_open:
-                profit_ratio = trade.calc_profit_ratio()
-                profit_closed_coin.append(trade.calc_profit())
+                profit_ratio = trade.close_profit
+                profit_closed_coin.append(trade.close_profit_abs)
                 profit_closed_ratio.append(profit_ratio)
             else:
                 # Get current rate
