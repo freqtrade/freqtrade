@@ -10,7 +10,7 @@ from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
 
-
+# flake8: noqa C901
 def start_hyperopt_list(args: Dict[str, Any]) -> None:
     """
     List hyperopt epochs previously evaluated
