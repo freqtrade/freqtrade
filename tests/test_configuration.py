@@ -66,6 +66,17 @@ def test_load_config_file(default_conf, mocker, caplog) -> None:
     assert validated_conf.items() >= default_conf.items()
 
 
+def test_load_config_file_error(default_conf, mocker, caplog) -> None:
+    del default_conf['user_data_dir']
+    filedata = json.dumps(default_conf).replace(
+        '"stake_amount": 0.001,', '"stake_amount": .001,')
+    mocker.patch('freqtrade.configuration.load_config.open', mocker.mock_open(read_data=filedata))
+    mocker.patch.object(Path, "read_text", MagicMock(return_value=filedata))
+
+    with pytest.raises(OperationalException, match=f".*Please verify the following segment.*"):
+        load_config_file('somefile')
+
+
 def test__args_to_config(caplog):
 
     arg_list = ['trade', '--strategy-path', 'TestTest']
