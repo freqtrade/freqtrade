@@ -86,7 +86,7 @@ def check_migrate(engine) -> None:
         logger.debug(f'trying {table_back_name}')
 
     # Check for latest column
-    if not has_column(cols, 'open_trade_price'):
+    if not has_column(cols, 'close_profit_abs'):
         logger.info(f'Running database migration - backup available as {table_back_name}')
 
         fee_open = get_column_def(cols, 'fee_open', 'fee')
@@ -106,6 +106,9 @@ def check_migrate(engine) -> None:
         ticker_interval = get_column_def(cols, 'ticker_interval', 'null')
         open_trade_price = get_column_def(cols, 'open_trade_price',
                                           f'amount * open_rate * (1 + {fee_open})')
+        close_profit_abs = get_column_def(
+            cols, 'close_profit_abs',
+            f"(amount * close_rate * (1 - {fee_close})) - {open_trade_price}")
 
         # Schema migration necessary
         engine.execute(f"alter table trades rename to {table_back_name}")
@@ -123,7 +126,7 @@ def check_migrate(engine) -> None:
                 stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
                 stoploss_order_id, stoploss_last_update,
                 max_rate, min_rate, sell_reason, strategy,
-                ticker_interval, open_trade_price
+                ticker_interval, open_trade_price, close_profit_abs
                 )
             select id, lower(exchange),
                 case
@@ -143,7 +146,7 @@ def check_migrate(engine) -> None:
                 {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
                 {max_rate} max_rate, {min_rate} min_rate, {sell_reason} sell_reason,
                 {strategy} strategy, {ticker_interval} ticker_interval,
-                {open_trade_price} open_trade_price
+                {open_trade_price} open_trade_price, {close_profit_abs} close_profit_abs
                 from {table_back_name}
              """)
 
@@ -190,6 +193,7 @@ class Trade(_DECL_BASE):
     close_rate = Column(Float)
     close_rate_requested = Column(Float)
     close_profit = Column(Float)
+    close_profit_abs = Column(Float)
     stake_amount = Column(Float, nullable=False)
     amount = Column(Float)
     open_date = Column(DateTime, nullable=False, default=datetime.utcnow)
@@ -334,6 +338,7 @@ class Trade(_DECL_BASE):
         """
         self.close_rate = Decimal(rate)
         self.close_profit = self.calc_profit_ratio()
+        self.close_profit_abs = self.calc_profit()
         self.close_date = datetime.utcnow()
         self.is_open = False
         self.open_order_id = None
