@@ -35,8 +35,15 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
         'filter_min_avg_profit': config.get('hyperopt_list_min_avg_profit', None),
         'filter_max_avg_profit': config.get('hyperopt_list_max_avg_profit', None),
         'filter_min_total_profit': config.get('hyperopt_list_min_total_profit', None),
-        'filter_max_total_profit': config.get('hyperopt_list_max_total_profit', None)
+        'filter_max_total_profit': config.get('hyperopt_list_max_total_profit', None),
+        'filter_min_objective': config.get('hyperopt_list_min_objective', None),
+        'filter_max_objective': config.get('hyperopt_list_max_objective', None)
     }
+
+    if filteroptions['filter_min_objective'] is not None:
+        filteroptions['filter_min_objective'] = -filteroptions['filter_min_objective']
+    if filteroptions['filter_max_objective'] is not None:
+        filteroptions['filter_max_objective'] = -filteroptions['filter_max_objective']
 
     trials_file = (config['user_data_dir'] /
                    'hyperopt_results' / 'hyperopt_results.pickle')
@@ -92,8 +99,15 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
         'filter_min_avg_profit': config.get('hyperopt_list_min_avg_profit', None),
         'filter_max_avg_profit': config.get('hyperopt_list_max_avg_profit', None),
         'filter_min_total_profit': config.get('hyperopt_list_min_total_profit', None),
-        'filter_max_total_profit': config.get('hyperopt_list_max_total_profit', None)
+        'filter_max_total_profit': config.get('hyperopt_list_max_total_profit', None),
+        'filter_min_objective': config.get('hyperopt_list_min_objective', None),
+        'filter_max_objective': config.get('hyperopt_list_max_objective', None)
     }
+
+    if filteroptions['filter_min_objective'] is not None:
+        filteroptions['filter_min_objective'] = -filteroptions['filter_min_objective']
+    if filteroptions['filter_max_objective'] is not None:
+        filteroptions['filter_max_objective'] = -filteroptions['filter_max_objective']
 
     # Previous evaluations
     trials = Hyperopt.load_previous_results(trials_file)
@@ -174,6 +188,20 @@ def _hyperopt_filter_trials(trials: List, filteroptions: dict) -> List:
         trials = [
             x for x in trials
             if x['results_metrics']['profit'] < filteroptions['filter_max_total_profit']
+        ]
+    if filteroptions['filter_min_objective'] is not None:
+        trials = [x for x in trials if x['results_metrics']['trade_count'] > 0]
+        # trials = [x for x in trials if x['loss'] != 20]
+        trials = [
+            x for x in trials
+            if x['loss'] < filteroptions['filter_min_objective']
+        ]
+    if filteroptions['filter_max_objective'] is not None:
+        trials = [x for x in trials if x['results_metrics']['trade_count'] > 0]
+        # trials = [x for x in trials if x['loss'] != 20]
+        trials = [
+            x for x in trials
+            if x['loss'] > filteroptions['filter_max_objective']
         ]
 
     logger.info(f"{len(trials)} " +

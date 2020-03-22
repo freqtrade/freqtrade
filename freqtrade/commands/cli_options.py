@@ -484,6 +484,18 @@ AVAILABLE_CLI_OPTIONS = {
         type=float,
         metavar='FLOAT',
     ),
+    "hyperopt_list_min_objective": Arg(
+        '--min-objective',
+        help='Select epochs on above objective.',
+        type=float,
+        metavar='FLOAT',
+    ),
+    "hyperopt_list_max_objective": Arg(
+        '--max-objective',
+        help='Select epochs on below objective.',
+        type=float,
+        metavar='FLOAT',
+    ),
     "hyperopt_list_no_details": Arg(
         '--no-details',
         help='Do not print best epoch details.',

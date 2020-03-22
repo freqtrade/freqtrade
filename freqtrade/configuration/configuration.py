@@ -334,6 +334,12 @@ class Configuration:
         self._args_to_config(config, argname='hyperopt_list_max_total_profit',
                              logstring='Parameter --max-total-profit detected: {}')
 
+        self._args_to_config(config, argname='hyperopt_list_min_objective',
+                             logstring='Parameter --min-objective detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_max_objective',
+                             logstring='Parameter --max-objective detected: {}')
+
         self._args_to_config(config, argname='hyperopt_list_no_details',
                              logstring='Parameter --no-details detected: {}')
 
