@@ -34,6 +34,7 @@ def log_config_error_range(path: str, errmsg: str) -> str:
                 return '\n'.join(segments[1:-1])
             else:
                 return subtext
+    return ''
 
 
 def load_config_file(path: str) -> Dict[str, Any]:
@@ -55,6 +56,7 @@ def load_config_file(path: str) -> Dict[str, Any]:
         raise OperationalException(
             f'{e}\n'
             f'Please verify the following segment of your configuration:\n{err_range}'
+            if err_range else 'Please verify your configuration file for syntax errors.'
         )
 
     return config
