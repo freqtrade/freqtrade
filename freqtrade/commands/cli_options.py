@@ -456,7 +456,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "hyperopt_list_max_avg_time": Arg(
         '--max-avg-time',
-        help='Select epochs under average time.',
+        help='Select epochs below average time.',
         type=float,
         metavar='FLOAT',
     ),
