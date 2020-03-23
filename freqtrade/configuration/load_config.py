@@ -29,8 +29,11 @@ def log_config_error_range(path: str, errmsg: str) -> str:
             # Fetch an offset of 80 characters around the error line
             subtext = text[offset-min(80, offset):offset+80]
             segments = subtext.split('\n')
-            # Remove first and last lines, to avoid odd truncations
-            return '\n'.join(segments[1:-1])
+            if len(segments) > 3:
+                # Remove first and last lines, to avoid odd truncations
+                return '\n'.join(segments[1:-1])
+            else:
+                return subtext
 
 
 def load_config_file(path: str) -> Dict[str, Any]:
