@@ -241,8 +241,18 @@ class IStrategy(ABC):
 
         return dataframe
 
-    def get_signal(self, pair: str, interval: str,
-                   dataframe: DataFrame) -> Tuple[bool, bool]:
+    @staticmethod
+    def preserve_df(d: DataFrame) -> Tuple[int, float, datetime]:
+        """ keep some data for dataframes """
+        return len(d), d["close"].iloc[-1], d["date"].iloc[-1]
+
+    @staticmethod
+    def assert_df(d: DataFrame, df_len: int, df_close: float, df_date: datetime):
+        """ make sure data is unmodified """
+        if df_len != len(d) or df_close != d["close"].iloc[-1] or df_date != d["date"].iloc[-1]:
+            raise Exception("Dataframe returned from strategy does not match original")
+
+    def get_signal(self, pair: str, interval: str, dataframe: DataFrame) -> Tuple[bool, bool]:
         """
         Calculates current signal based several technical analysis indicators
         :param pair: pair in format ANT/BTC
@@ -254,8 +264,11 @@ class IStrategy(ABC):
             logger.warning('Empty candle (OHLCV) data for pair %s', pair)
             return False, False
 
+        latest_date = dataframe['date'].max()
         try:
+            df_len, df_close, df_date = self.preserve_df(dataframe)
             dataframe = self._analyze_ticker_internal(dataframe, {'pair': pair})
+            self.assert_df(dataframe, df_len, df_close, df_date)
         except ValueError as error:
             logger.warning(
                 'Unable to analyze candle (OHLCV) data for pair %s: %s',
@@ -275,7 +288,7 @@ class IStrategy(ABC):
             logger.warning('Empty dataframe for pair %s', pair)
             return False, False
 
-        latest = dataframe.iloc[-1]
+        latest = dataframe.loc[dataframe['date'] == latest_date].iloc[-1]
 
         # Check if dataframe is out of date
         signal_date = arrow.get(latest['date'])
