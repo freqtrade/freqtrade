@@ -1705,6 +1705,18 @@ def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     assert exchange.cancel_order(order_id='123', pair='TKN/BTC') is None
 
 
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+@pytest.mark.parametrize("order,result", [
+    ({'status': 'closed', 'filled': 10}, False),
+    ({'status': 'closed', 'filled': 0.0}, True),
+    ({'status': 'canceled', 'filled': 0.0}, True),
+    ({'status': 'canceled', 'filled': 10.0}, False),
+    ])
+def test_check_order_canceled_empty(mocker, default_conf, exchange_name, order, result):
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    assert exchange.check_order_canceled_empty(order) == result
+
+
 # Ensure that if not dry_run, we should call API
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_cancel_order(default_conf, mocker, exchange_name):
