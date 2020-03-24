@@ -11,6 +11,8 @@ from freqtrade.exceptions import (DependencyException, InvalidOrderException,
 from tests.conftest import get_patched_exchange
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
+STOPLOSS_ORDERTYPE = 'stop-loss'
+
 
 def test_buy_kraken_trading_agreement(default_conf, mocker):
     api_mock = MagicMock()
@@ -159,7 +161,6 @@ def test_get_balances_prod(default_conf, mocker):
 def test_stoploss_order_kraken(default_conf, mocker):
     api_mock = MagicMock()
     order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
-    order_type = 'stop-loss'
 
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
@@ -187,7 +188,7 @@ def test_stoploss_order_kraken(default_conf, mocker):
     assert 'info' in order
     assert order['id'] == order_id
     assert api_mock.create_order.call_args_list[0][1]['symbol'] == 'ETH/BTC'
-    assert api_mock.create_order.call_args_list[0][1]['type'] == order_type
+    assert api_mock.create_order.call_args_list[0][1]['type'] == STOPLOSS_ORDERTYPE
     assert api_mock.create_order.call_args_list[0][1]['side'] == 'sell'
     assert api_mock.create_order.call_args_list[0][1]['amount'] == 1
     assert api_mock.create_order.call_args_list[0][1]['price'] == 220
@@ -218,7 +219,6 @@ def test_stoploss_order_kraken(default_conf, mocker):
 
 def test_stoploss_order_dry_run_kraken(default_conf, mocker):
     api_mock = MagicMock()
-    order_type = 'stop-loss'
     default_conf['dry_run'] = True
     mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
     mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
@@ -233,7 +233,7 @@ def test_stoploss_order_dry_run_kraken(default_conf, mocker):
     assert 'info' in order
     assert 'type' in order
 
-    assert order['type'] == order_type
+    assert order['type'] == STOPLOSS_ORDERTYPE
     assert order['price'] == 220
     assert order['amount'] == 1
 
@@ -241,7 +241,7 @@ def test_stoploss_order_dry_run_kraken(default_conf, mocker):
 def test_stoploss_adjust_kraken(mocker, default_conf):
     exchange = get_patched_exchange(mocker, default_conf, id='kraken')
     order = {
-        'type': 'stop-loss',
+        'type': STOPLOSS_ORDERTYPE,
         'price': 1500,
     }
     assert exchange.stoploss_adjust(1501, order)
