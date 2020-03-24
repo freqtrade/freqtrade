@@ -2129,7 +2129,7 @@ def test_check_handle_timedout_partial_fee(default_conf, ticker, open_trade, cap
     assert rpc_mock.call_count == 2
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     assert len(trades) == 1
-    # Verify that tradehas been updated
+    # Verify that trade has been updated
     assert trades[0].amount == (limit_buy_order_old_partial['amount'] -
                                 limit_buy_order_old_partial['remaining']) - 0.0001
     assert trades[0].open_order_id is None
@@ -2168,7 +2168,7 @@ def test_check_handle_timedout_partial_except(default_conf, ticker, open_trade, 
     assert rpc_mock.call_count == 2
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     assert len(trades) == 1
-    # Verify that tradehas been updated
+    # Verify that trade has been updated
 
     assert trades[0].amount == (limit_buy_order_old_partial['amount'] -
                                 limit_buy_order_old_partial['remaining'])
