@@ -27,6 +27,7 @@ from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
 from freqtrade.strategy.interface import IStrategy, SellType
 from freqtrade.wallets import Wallets
+from freqtrade.strategy.helper import get_all_signals
 
 logger = logging.getLogger(__name__)
 
@@ -216,9 +217,15 @@ class FreqtradeBot:
                             "but checking to sell open trades.")
             else:
                 # Create entity and execute trade for each pair from whitelist
+                all_signals = get_all_signals(
+                    self.strategy.get_signal, {
+                        pair: (pair, self.strategy.ticker_interval,
+                               self.dataprovider.ohlcv(pair, self.strategy.ticker_interval))
+                        for pair in whitelist
+                    })
                 for pair in whitelist:
                     try:
-                        trades_created += self.create_trade(pair)
+                        trades_created += self.create_trade(pair, all_signals[pair])
                     except DependencyException as exception:
                         logger.warning('Unable to create trade for %s: %s', pair, exception)
 
@@ -379,7 +386,7 @@ class FreqtradeBot:
         # See also #2575 at github.
         return max(min_stake_amounts) / amount_reserve_percent
 
-    def create_trade(self, pair: str) -> bool:
+    def create_trade(self, pair: str, signals: Tuple[bool, bool] = None) -> bool:
         """
         Check the implemented trading strategy for buy signals.
 
@@ -401,9 +408,13 @@ class FreqtradeBot:
             return False
 
         # running get_signal on historical data fetched
-        (buy, sell) = self.strategy.get_signal(
-            pair, self.strategy.ticker_interval,
-            self.dataprovider.ohlcv(pair, self.strategy.ticker_interval))
+        if signals:
+            buy = signals[0]
+            sell = signals[1]
+        else:
+            (buy, sell) = self.strategy.get_signal(
+                pair, self.strategy.ticker_interval,
+                self.dataprovider.ohlcv(pair, self.strategy.ticker_interval))
 
         if buy and not sell:
             stake_amount = self.get_trade_stake_amount(pair)
@@ -598,6 +609,13 @@ class FreqtradeBot:
         Tries to execute sell orders for open trades (positions)
         """
         trades_closed = 0
+        trades_pairlist = [t.pair for t in trades]
+        trades_signals = get_all_signals(
+            self.strategy.get_signal, {
+                pair: (pair, self.strategy.ticker_interval,
+                       self.dataprovider.ohlcv(pair, self.strategy.ticker_interval))
+                for pair in trades_pairlist
+            })
         for trade in trades:
             try:
                 self.update_trade_state(trade)
@@ -607,7 +625,8 @@ class FreqtradeBot:
                     trades_closed += 1
                     continue
                 # Check if we can sell our current pair
-                if trade.open_order_id is None and self.handle_trade(trade):
+                if trade.open_order_id is None and self.handle_trade(trade,
+                                                                     trades_signals[trade.pair]):
                     trades_closed += 1
 
             except DependencyException as exception:
@@ -658,7 +677,7 @@ class FreqtradeBot:
         self._sell_rate_cache[pair] = rate
         return rate
 
-    def handle_trade(self, trade: Trade) -> bool:
+    def handle_trade(self, trade: Trade, signals: Tuple[bool, bool] = None) -> bool:
         """
         Sells the current pair if the threshold is reached and updates the trade record.
         :return: True if trade has been sold, False otherwise
@@ -674,9 +693,12 @@ class FreqtradeBot:
 
         if (config_ask_strategy.get('use_sell_signal', True) or
                 config_ask_strategy.get('ignore_roi_if_buy_signal', False)):
-            (buy, sell) = self.strategy.get_signal(
-                trade.pair, self.strategy.ticker_interval,
-                self.dataprovider.ohlcv(trade.pair, self.strategy.ticker_interval))
+            if signals:
+                (buy, sell) = signals[0], signals[1]
+            else:
+                (buy, sell) = self.strategy.get_signal(
+                    trade.pair, self.strategy.ticker_interval,
+                    self.dataprovider.ohlcv(trade.pair, self.strategy.ticker_interval))
 
         if config_ask_strategy.get('use_order_book', False):
             logger.debug(f'Using order book for selling {trade.pair}...')
