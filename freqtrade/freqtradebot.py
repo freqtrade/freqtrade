@@ -143,6 +143,10 @@ class FreqtradeBot:
         self.dataprovider.refresh(self._create_pair_whitelist(self.active_pair_whitelist),
                                   self.strategy.informative_pairs())
 
+        with self._sell_lock:
+            # Check and handle any timed out open orders
+            self.check_handle_timedout()
+
         # Protect from collisions with forcesell.
         # Without this, freqtrade my try to recreate stoploss_on_exchange orders
         # while selling is in process, since telegram messages arrive in an different thread.
@@ -154,8 +158,6 @@ class FreqtradeBot:
         if self.get_free_open_trades():
             self.enter_positions()
 
-        # Check and handle any timed out open orders
-        self.check_handle_timedout()
         Trade.session.flush()
 
     def _refresh_whitelist(self, trades: List[Trade] = []) -> List[str]:
