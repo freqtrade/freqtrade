@@ -935,7 +935,7 @@ class FreqtradeBot:
         :return: Reason for cancel
         """
         # if trade is not partially completed, just cancel the trade
-        if order['remaining'] == order['amount'] or order['filled'] == 0.0:
+        if order['remaining'] == order['amount'] or order.get('filled') == 0.0:
             if not self.exchange.check_order_canceled_empty(order):
                 reason = "cancelled due to timeout"
                 # if trade is not partially completed, just delete the trade
