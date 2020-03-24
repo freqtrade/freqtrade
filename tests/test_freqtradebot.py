@@ -2499,6 +2499,7 @@ def test_execute_sell_with_stoploss_on_exchange(default_conf, ticker, fee, ticke
     assert trade
     trades = [trade]
 
+    freqtrade.check_handle_timedout()
     freqtrade.exit_positions(trades)
 
     # Increase the price and sell it
