@@ -172,7 +172,8 @@ class Telegram(RPC):
                             ' / {profit_fiat:.3f} {fiat_currency})`').format(**msg)
 
         elif msg['type'] == RPCMessageType.SELL_CANCEL_NOTIFICATION:
-            message = "*{exchange}:* Cancelling Open Sell Order for {pair}".format(**msg)
+            message = ("*{exchange}:* Cancelling Open Sell Order "
+                       "for {pair}. Reason: {reason}").format(**msg)
 
         elif msg['type'] == RPCMessageType.STATUS_NOTIFICATION:
             message = '*Status:* `{status}`'.format(**msg)

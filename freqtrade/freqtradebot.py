@@ -926,10 +926,10 @@ class FreqtradeBot:
         })
         return False
 
-    def handle_timedout_limit_sell(self, trade: Trade, order: Dict) -> bool:
+    def handle_timedout_limit_sell(self, trade: Trade, order: Dict) -> str:
         """
         Sell timeout - cancel order and update trade
-        :return: True if order was fully cancelled
+        :return: Reason for cancel
         """
         # if trade is not partially completed, just cancel the trade
         if order['remaining'] == order['amount']:
@@ -943,16 +943,17 @@ class FreqtradeBot:
                 logger.info('Sell order %s for %s.', reason, trade)
 
             trade.close_rate = None
+            trade.close_rate_requested = None
             trade.close_profit = None
             trade.close_profit_abs = None
             trade.close_date = None
             trade.is_open = True
             trade.open_order_id = None
 
-            return True
+            return reason
 
         # TODO: figure out how to handle partially complete sell orders
-        return False
+        return 'partially filled - keeping order open'
 
     def _safe_sell_amount(self, pair: str, amount: float) -> float:
         """
@@ -1071,7 +1072,7 @@ class FreqtradeBot:
         # Send the message
         self.rpc.send_msg(msg)
 
-    def _notify_sell_cancel(self, trade: Trade, order_type: str) -> None:
+    def _notify_sell_cancel(self, trade: Trade, order_type: str, reason: str) -> None:
         """
         Sends rpc notification when a sell cancel occured.
         """
@@ -1098,6 +1099,7 @@ class FreqtradeBot:
             'close_date': trade.close_date,
             'stake_currency': self.config['stake_currency'],
             'fiat_currency': self.config.get('fiat_display_currency', None),
+            'reason': reason,
         }
 
         if 'fiat_display_currency' in self.config:
