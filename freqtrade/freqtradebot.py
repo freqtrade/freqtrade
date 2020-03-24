@@ -602,7 +602,6 @@ class FreqtradeBot:
         trades_closed = 0
         for trade in trades:
             try:
-                self.update_trade_state(trade)
 
                 if (self.strategy.order_types.get('stoploss_on_exchange') and
                         self.handle_stoploss_on_exchange(trade)):
@@ -862,30 +861,32 @@ class FreqtradeBot:
                     continue
                 order = self.exchange.get_order(trade.open_order_id, trade.pair)
             except (RequestException, DependencyException, InvalidOrderException):
-                logger.info(
-                    'Cannot query order for %s due to %s',
-                    trade,
-                    traceback.format_exc())
+                logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
                 continue
+
+            trade_state_update = self.update_trade_state(trade, order)
 
             # Check if trade is still actually open
-            if float(order.get('remaining', 0.0)) == 0.0:
-                self.wallets.update()
-                continue
+            # TODO: this seems questionable at best
+            # if float(order.get('remaining', 0.0)) == 0.0:
+            #     self.wallets.update()
+            #     continue
 
-            if ((order['side'] == 'buy' and order['status'] == 'canceled')
-                    or (self._check_timed_out('buy', order))):
+            if (order['side'] == 'buy' and (
+                    trade_state_update
+                    or self._check_timed_out('buy', order))):
                 self.handle_timedout_limit_buy(trade, order)
                 self.wallets.update()
                 order_type = self.strategy.order_types['buy']
                 self._notify_buy_cancel(trade, order_type)
 
-            elif ((order['side'] == 'sell' and order['status'] == 'canceled')
-                  or (self._check_timed_out('sell', order))):
-                self.handle_timedout_limit_sell(trade, order)
+            elif (order['side'] == 'sell' and (
+                    trade_state_update
+                    or self._check_timed_out('sell', order))):
+                reason = self.handle_timedout_limit_sell(trade, order)
                 self.wallets.update()
                 order_type = self.strategy.order_types['sell']
-                self._notify_sell_cancel(trade, order_type)
+                self._notify_sell_cancel(trade, order_type, reason)
 
     def handle_timedout_limit_buy(self, trade: Trade, order: Dict) -> bool:
         """
@@ -934,8 +935,8 @@ class FreqtradeBot:
         :return: Reason for cancel
         """
         # if trade is not partially completed, just cancel the trade
-        if order['remaining'] == order['amount']:
-            if order["status"] != "canceled":
+        if order['remaining'] == order['amount'] or order['filled'] == 0.0:
+            if not self.exchange.check_order_canceled_empty(order):
                 reason = "cancelled due to timeout"
                 # if trade is not partially completed, just delete the trade
                 self.exchange.cancel_order(trade.open_order_id, trade.pair)
@@ -1117,7 +1118,7 @@ class FreqtradeBot:
 #
 
     def update_trade_state(self, trade: Trade, action_order: dict = None,
-                           order_amount: float = None) -> None:
+                           order_amount: float = None) -> bool:
         """
         Checks trades with open orders and updates the amount if necessary
         Handles closing both buy and sell orders.
@@ -1139,15 +1140,20 @@ class FreqtradeBot:
                     # Fee was applied, so set to 0
                     trade.fee_open = 0
                     trade.recalc_open_trade_price()
-
             except DependencyException as exception:
                 logger.warning("Could not update trade amount: %s", exception)
 
+            if self.exchange.check_order_canceled_empty(order):
+                # Trade has been cancelled on exchange
+                # Handling of this will happen in check_handle_timeout.
+                return True
             trade.update(order)
 
             # Updating wallets when order is closed
             if not trade.is_open:
                 self.wallets.update()
+
+        return False
 
     def get_real_amount(self, trade: Trade, order: Dict, order_amount: float = None) -> float:
         """
