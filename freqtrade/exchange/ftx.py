@@ -28,7 +28,8 @@ class Ftx(Exchange):
     def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
         """
         Creates a stoploss market order.
-        Stoploss market orders is the only stoploss type supported by kraken.
+        Stoploss market orders is the only stoploss type supported by ftx.
+        TODO: This doesnot work yet as the order cannot be aquired via fetch_orders - so Freqtrade assumes the order as always missing.
         """
 
         ordertype = "stop"
