@@ -916,17 +916,7 @@ class FreqtradeBot:
         # we need to fall back to the values from order if corder does not contain these keys.
         trade.amount = order['amount'] - corder.get('remaining', order['remaining'])
         trade.stake_amount = trade.amount * trade.open_rate
-        # verify if fees were taken from amount to avoid problems during selling
-        try:
-            new_amount = self.get_real_amount(trade, corder if 'fee' in corder else order,
-                                              trade.amount)
-            if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
-                trade.amount = new_amount
-                # Fee was applied, so set to 0
-                trade.fee_open = 0
-                trade.recalc_open_trade_price()
-        except DependencyException as e:
-            logger.warning("Could not update trade amount: %s", e)
+        self.update_trade_state(trade, corder if 'fee' in corder else order, trade.amount)
 
         trade.open_order_id = None
         logger.info('Partial buy order timeout for %s.', trade)
@@ -1122,9 +1112,11 @@ class FreqtradeBot:
 # Common update trade state methods
 #
 
-    def update_trade_state(self, trade: Trade, action_order: dict = None) -> None:
+    def update_trade_state(self, trade: Trade, action_order: dict = None,
+                           order_amount: float = None) -> None:
         """
         Checks trades with open orders and updates the amount if necessary
+        Handles closing both buy and sell orders.
         """
         # Get order details for actual price per unit
         if trade.open_order_id:
@@ -1137,7 +1129,7 @@ class FreqtradeBot:
                 return
             # Try update amount (binance-fix)
             try:
-                new_amount = self.get_real_amount(trade, order)
+                new_amount = self.get_real_amount(trade, order, order_amount)
                 if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
                     order['amount'] = new_amount
                     # Fee was applied, so set to 0
