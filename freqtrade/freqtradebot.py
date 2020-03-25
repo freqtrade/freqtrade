@@ -954,6 +954,7 @@ class FreqtradeBot:
 
             trade.close_rate = None
             trade.close_profit = None
+            trade.close_profit_abs = None
             trade.close_date = None
             trade.is_open = True
             trade.open_order_id = None
