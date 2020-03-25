@@ -7,6 +7,7 @@ import ccxt
 from freqtrade.exceptions import (DependencyException, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
+from freqtrade.exchange.common import retrier
 
 logger = logging.getLogger(__name__)
 
@@ -64,5 +65,48 @@ class Ftx(Exchange):
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not place sell order due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    @retrier
+    def get_stoploss_order(self, order_id: str, pair: str) -> Dict:
+        if self._config['dry_run']:
+            try:
+                order = self._dry_run_open_orders[order_id]
+                return order
+            except KeyError as e:
+                # Gracefully handle errors with dry-run orders.
+                raise InvalidOrderException(
+                    f'Tried to get an invalid dry-run-order (id: {order_id}). Message: {e}') from e
+        try:
+            orders = self._api.fetch_orders('BNB/USD', None, params={'type': 'stop'})
+
+            order = [order for order in orders if order['id'] == order_id]
+            if len(order) == 1:
+                return order[0]
+            else:
+                raise InvalidOrderException(f"Could not get Stoploss Order for id {order_id}")
+
+        except ccxt.InvalidOrder as e:
+            raise InvalidOrderException(
+                f'Tried to get an invalid order (id: {order_id}). Message: {e}') from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not get order due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    @retrier
+    def cancel_stoploss_order(self, order_id: str, pair: str) -> None:
+        if self._config['dry_run']:
+            return
+        try:
+            return self._api.cancel_order(order_id, pair, params={'type': 'stop'})
+        except ccxt.InvalidOrder as e:
+            raise InvalidOrderException(
+                f'Could not cancel order. Message: {e}') from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not cancel order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
