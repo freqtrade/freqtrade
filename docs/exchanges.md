@@ -83,4 +83,4 @@ Whether your exchange returns incomplete candles or not can be checked using [th
 
 Due to the danger of repainting, Freqtrade does not allow you to use this incomplete candle.
 
-However, usually, this requirement is based on the need for the latest price - which can be aquired using the [data provider](strategy-customization.md#possible-options-for-dataprovider) from within the strategy.
+However, if it is based on the need for the latest price for your strategy - then this requirement can be acquired using the [data provider](strategy-customization.md#possible-options-for-dataprovider) from within the strategy.
