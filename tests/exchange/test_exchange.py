@@ -25,7 +25,7 @@ from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import get_patched_exchange, log_has, log_has_re
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
-EXCHANGES = ['bittrex', 'binance', 'kraken', ]
+EXCHANGES = ['bittrex', 'binance', 'kraken', 'ftx']
 
 
 # Source: https://stackoverflow.com/questions/29881236/how-to-mock-asyncio-coroutines
@@ -1258,7 +1258,8 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
 
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
-    since = 5 * 60 * 500 * 1.8
+
+    since = 5 * 60 * exchange._ft_has['ohlcv_candle_limit'] * 1.8
     ret = exchange.get_historic_ohlcv(pair, "5m", int((arrow.utcnow().timestamp - since) * 1000))
 
     assert exchange._async_get_candle_history.call_count == 2
