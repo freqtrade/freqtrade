@@ -97,6 +97,7 @@ def test__args_to_config(caplog):
     configuration = Configuration(args)
     config = {}
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
         # No warnings ...
         configuration._args_to_config(config, argname="strategy_path", logstring="DeadBeef")
         assert len(w) == 0
@@ -106,6 +107,7 @@ def test__args_to_config(caplog):
     configuration = Configuration(args)
     config = {}
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
         # Deprecation warnings!
         configuration._args_to_config(config, argname="strategy_path", logstring="DeadBeef",
                                       deprecated_msg="Going away soon!")
