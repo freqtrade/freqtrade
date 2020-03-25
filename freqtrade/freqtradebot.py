@@ -866,12 +866,6 @@ class FreqtradeBot:
 
             trade_state_update = self.update_trade_state(trade, order)
 
-            # Check if trade is still actually open
-            # TODO: this seems questionable at best
-            # if float(order.get('remaining', 0.0)) == 0.0:
-            #     self.wallets.update()
-            #     continue
-
             if (order['side'] == 'buy' and (
                     trade_state_update
                     or self._check_timed_out('buy', order))):

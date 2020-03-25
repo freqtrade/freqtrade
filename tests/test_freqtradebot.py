@@ -2276,7 +2276,8 @@ def test_handle_timedout_limit_sell(mocker, default_conf) -> None:
     assert freqtrade.handle_timedout_limit_sell(trade, order)
     assert cancel_order_mock.call_count == 1
     order['amount'] = 2
-    assert freqtrade.handle_timedout_limit_sell(trade, order) == 'partially filled - keeping order open'
+    assert (freqtrade.handle_timedout_limit_sell(trade, order)
+            == 'partially filled - keeping order open')
     # Assert cancel_order was not called (callcount remains unchanged)
     assert cancel_order_mock.call_count == 1
 
