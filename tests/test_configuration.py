@@ -18,7 +18,7 @@ from freqtrade.configuration.config_validation import validate_config_schema
 from freqtrade.configuration.deprecated_settings import (
     check_conflicting_settings, process_deprecated_setting,
     process_temporary_deprecated_settings)
-from freqtrade.configuration.load_config import load_config_file
+from freqtrade.configuration.load_config import load_config_file, log_config_error_range
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import _set_loggers, setup_logging
@@ -64,6 +64,30 @@ def test_load_config_file(default_conf, mocker, caplog) -> None:
     validated_conf = load_config_file('somefile')
     assert file_mock.call_count == 1
     assert validated_conf.items() >= default_conf.items()
+
+
+def test_load_config_file_error(default_conf, mocker, caplog) -> None:
+    del default_conf['user_data_dir']
+    filedata = json.dumps(default_conf).replace(
+        '"stake_amount": 0.001,', '"stake_amount": .001,')
+    mocker.patch('freqtrade.configuration.load_config.open', mocker.mock_open(read_data=filedata))
+    mocker.patch.object(Path, "read_text", MagicMock(return_value=filedata))
+
+    with pytest.raises(OperationalException, match=f".*Please verify the following segment.*"):
+        load_config_file('somefile')
+
+
+def test_load_config_file_error_range(default_conf, mocker, caplog) -> None:
+    del default_conf['user_data_dir']
+    filedata = json.dumps(default_conf).replace(
+        '"stake_amount": 0.001,', '"stake_amount": .001,')
+    mocker.patch.object(Path, "read_text", MagicMock(return_value=filedata))
+
+    x = log_config_error_range('somefile', 'Parse error at offset 64: Invalid value.')
+    assert isinstance(x, str)
+    assert (x == '{"max_open_trades": 1, "stake_currency": "BTC", '
+            '"stake_amount": .001, "fiat_display_currency": "USD", '
+            '"ticker_interval": "5m", "dry_run": true, ')
 
 
 def test__args_to_config(caplog):
