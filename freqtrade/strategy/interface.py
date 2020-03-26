@@ -16,6 +16,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.persistence import Trade
 from freqtrade.wallets import Wallets
+from freqtrade.exceptions import DependencyException
 
 
 logger = logging.getLogger(__name__)
@@ -242,15 +243,23 @@ class IStrategy(ABC):
         return dataframe
 
     @staticmethod
-    def preserve_df(d: DataFrame) -> Tuple[int, float, datetime]:
+    def preserve_df(dataframe: DataFrame) -> Tuple[int, float, datetime]:
         """ keep some data for dataframes """
-        return len(d), d["close"].iloc[-1], d["date"].iloc[-1]
+        return len(dataframe), dataframe["close"].iloc[-1], dataframe["date"].iloc[-1]
 
     @staticmethod
-    def assert_df(d: DataFrame, df_len: int, df_close: float, df_date: datetime):
+    def assert_df(dataframe: DataFrame, df_len: int, df_close: float, df_date: datetime):
         """ make sure data is unmodified """
-        if df_len != len(d) or df_close != d["close"].iloc[-1] or df_date != d["date"].iloc[-1]:
-            raise Exception("Dataframe returned from strategy does not match original")
+        message = ""
+        if df_len != len(dataframe):
+            message = "length"
+        elif df_close != dataframe["close"].iloc[-1]:
+            message = "last close price"
+        elif df_date != dataframe["date"].iloc[-1]:
+            message = "last date"
+        if message:
+            raise DependencyException("Dataframe returned from strategy has mismatching "
+                                      f"{message}.")
 
     def get_signal(self, pair: str, interval: str, dataframe: DataFrame) -> Tuple[bool, bool]:
         """
