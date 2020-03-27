@@ -37,7 +37,7 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
         'filter_min_total_profit': config.get('hyperopt_list_min_total_profit', None),
         'filter_max_total_profit': config.get('hyperopt_list_max_total_profit', None),
         'filter_min_objective': config.get('hyperopt_list_min_objective', None),
-        'filter_max_objective': config.get('hyperopt_list_max_objective', None)
+        'filter_max_objective': config.get('hyperopt_list_max_objective', None),
     }
 
     if filteroptions['filter_min_objective'] is not None:
