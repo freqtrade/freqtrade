@@ -28,12 +28,12 @@ def get_webhook_dict() -> dict:
         "webhooksell": {
             "value1": "Selling {pair}",
             "value2": "limit {limit:8f}",
-            "value3": "profit: {profit_amount:8f} {stake_currency}"
+            "value3": "profit: {profit_amount:8f} {stake_currency} ({profit_ratio})"
         },
         "webhooksellcancel": {
             "value1": "Cancelling Open Sell Order for {pair}",
             "value2": "limit {limit:8f}",
-            "value3": "profit: {profit_amount:8f} {stake_currency}"
+            "value3": "profit: {profit_amount:8f} {stake_currency} ({profit_ratio})"
         },
         "webhookstatus": {
             "value1": "Status: {status}",
@@ -110,7 +110,7 @@ def test_send_msg(default_conf, mocker):
         'open_rate': 0.004,
         'current_rate': 0.005,
         'profit_amount': 0.001,
-        'profit_percent': 0.20,
+        'profit_ratio': 0.20,
         'stake_currency': 'BTC',
         'sell_reason': SellType.STOP_LOSS.value
     }
@@ -136,7 +136,7 @@ def test_send_msg(default_conf, mocker):
         'open_rate': 0.004,
         'current_rate': 0.005,
         'profit_amount': 0.001,
-        'profit_percent': 0.20,
+        'profit_ratio': 0.20,
         'stake_currency': 'BTC',
         'sell_reason': SellType.STOP_LOSS.value
     }

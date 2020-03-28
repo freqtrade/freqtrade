@@ -155,9 +155,9 @@ class RPC:
                     current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
                 except DependencyException:
                     current_rate = NAN
-                trade_perc = (100 * trade.calc_profit_ratio(current_rate))
+                trade_percent = (100 * trade.calc_profit_ratio(current_rate))
                 trade_profit = trade.calc_profit(current_rate)
-                profit_str = f'{trade_perc:.2f}%'
+                profit_str = f'{trade_percent:.2f}%'
                 if self._fiat_converter:
                     fiat_profit = self._fiat_converter.convert_amount(
                         trade_profit,
@@ -197,7 +197,7 @@ class RPC:
                 Trade.close_date >= profitday,
                 Trade.close_date < (profitday + timedelta(days=1))
             ]).order_by(Trade.close_date).all()
-            curdayprofit = sum(trade.calc_profit() for trade in trades)
+            curdayprofit = sum(trade.close_profit_abs for trade in trades)
             profit_days[profitday] = {
                 'amount': f'{curdayprofit:.8f}',
                 'trades': len(trades)
@@ -232,9 +232,9 @@ class RPC:
         trades = Trade.get_trades().order_by(Trade.id).all()
 
         profit_all_coin = []
-        profit_all_perc = []
+        profit_all_ratio = []
         profit_closed_coin = []
-        profit_closed_perc = []
+        profit_closed_ratio = []
         durations = []
 
         for trade in trades:
@@ -246,21 +246,21 @@ class RPC:
                 durations.append((trade.close_date - trade.open_date).total_seconds())
 
             if not trade.is_open:
-                profit_percent = trade.calc_profit_ratio()
-                profit_closed_coin.append(trade.calc_profit())
-                profit_closed_perc.append(profit_percent)
+                profit_ratio = trade.close_profit
+                profit_closed_coin.append(trade.close_profit_abs)
+                profit_closed_ratio.append(profit_ratio)
             else:
                 # Get current rate
                 try:
                     current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
                 except DependencyException:
                     current_rate = NAN
-                profit_percent = trade.calc_profit_ratio(rate=current_rate)
+                profit_ratio = trade.calc_profit_ratio(rate=current_rate)
 
             profit_all_coin.append(
                 trade.calc_profit(rate=trade.close_rate or current_rate)
             )
-            profit_all_perc.append(profit_percent)
+            profit_all_ratio.append(profit_ratio)
 
         best_pair = Trade.get_best_pair()
 
@@ -271,7 +271,7 @@ class RPC:
 
         # Prepare data to display
         profit_closed_coin_sum = round(sum(profit_closed_coin), 8)
-        profit_closed_percent = (round(mean(profit_closed_perc) * 100, 2) if profit_closed_perc
+        profit_closed_percent = (round(mean(profit_closed_ratio) * 100, 2) if profit_closed_ratio
                                  else 0.0)
         profit_closed_fiat = self._fiat_converter.convert_amount(
             profit_closed_coin_sum,
@@ -280,7 +280,7 @@ class RPC:
         ) if self._fiat_converter else 0
 
         profit_all_coin_sum = round(sum(profit_all_coin), 8)
-        profit_all_percent = round(mean(profit_all_perc) * 100, 2) if profit_all_perc else 0.0
+        profit_all_percent = round(mean(profit_all_ratio) * 100, 2) if profit_all_ratio else 0.0
         profit_all_fiat = self._fiat_converter.convert_amount(
             profit_all_coin_sum,
             stake_currency,
@@ -460,9 +460,9 @@ class RPC:
         if self._freqtrade.state != State.RUNNING:
             raise RPCException('trader is not running')
 
-        # Check pair is in stake currency
+        # Check if pair quote currency equals to the stake currency.
         stake_currency = self._freqtrade.config.get('stake_currency')
-        if not pair.endswith(stake_currency):
+        if not self._freqtrade.exchange.get_pair_quote_currency(pair) == stake_currency:
             raise RPCException(
                 f'Wrong pair selected. Please pairs with stake {stake_currency} pairs only')
         # check if valid pair
@@ -517,7 +517,7 @@ class RPC:
         if add:
             stake_currency = self._freqtrade.config.get('stake_currency')
             for pair in add:
-                if (pair.endswith(stake_currency)
+                if (self._freqtrade.exchange.get_pair_quote_currency(pair) == stake_currency
                         and pair not in self._freqtrade.pairlists.blacklist):
                     self._freqtrade.pairlists.blacklist.append(pair)
 

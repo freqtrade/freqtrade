@@ -18,7 +18,7 @@ from freqtrade.configuration.config_validation import validate_config_schema
 from freqtrade.configuration.deprecated_settings import (
     check_conflicting_settings, process_deprecated_setting,
     process_temporary_deprecated_settings)
-from freqtrade.configuration.load_config import load_config_file
+from freqtrade.configuration.load_config import load_config_file, log_config_error_range
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import _set_loggers, setup_logging
@@ -32,13 +32,6 @@ def all_conf():
     config_file = Path(__file__).parents[1] / "config_full.json.example"
     conf = load_config_file(str(config_file))
     return conf
-
-
-def test_load_config_invalid_pair(default_conf) -> None:
-    default_conf['exchange']['pair_whitelist'].append('ETH-BTC')
-
-    with pytest.raises(ValidationError, match=r'.*does not match.*'):
-        validate_config_schema(default_conf)
 
 
 def test_load_config_missing_attributes(default_conf) -> None:
@@ -73,6 +66,30 @@ def test_load_config_file(default_conf, mocker, caplog) -> None:
     assert validated_conf.items() >= default_conf.items()
 
 
+def test_load_config_file_error(default_conf, mocker, caplog) -> None:
+    del default_conf['user_data_dir']
+    filedata = json.dumps(default_conf).replace(
+        '"stake_amount": 0.001,', '"stake_amount": .001,')
+    mocker.patch('freqtrade.configuration.load_config.open', mocker.mock_open(read_data=filedata))
+    mocker.patch.object(Path, "read_text", MagicMock(return_value=filedata))
+
+    with pytest.raises(OperationalException, match=f".*Please verify the following segment.*"):
+        load_config_file('somefile')
+
+
+def test_load_config_file_error_range(default_conf, mocker, caplog) -> None:
+    del default_conf['user_data_dir']
+    filedata = json.dumps(default_conf).replace(
+        '"stake_amount": 0.001,', '"stake_amount": .001,')
+    mocker.patch.object(Path, "read_text", MagicMock(return_value=filedata))
+
+    x = log_config_error_range('somefile', 'Parse error at offset 64: Invalid value.')
+    assert isinstance(x, str)
+    assert (x == '{"max_open_trades": 1, "stake_currency": "BTC", '
+            '"stake_amount": .001, "fiat_display_currency": "USD", '
+            '"ticker_interval": "5m", "dry_run": true, ')
+
+
 def test__args_to_config(caplog):
 
     arg_list = ['trade', '--strategy-path', 'TestTest']
@@ -80,6 +97,7 @@ def test__args_to_config(caplog):
     configuration = Configuration(args)
     config = {}
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
         # No warnings ...
         configuration._args_to_config(config, argname="strategy_path", logstring="DeadBeef")
         assert len(w) == 0
@@ -89,6 +107,7 @@ def test__args_to_config(caplog):
     configuration = Configuration(args)
     config = {}
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
         # Deprecation warnings!
         configuration._args_to_config(config, argname="strategy_path", logstring="DeadBeef",
                                       deprecated_msg="Going away soon!")
@@ -326,6 +345,7 @@ def test_load_dry_run(default_conf, mocker, config_value, expected, arglist) -> 
     validated_conf = configuration.load_config()
 
     assert validated_conf['dry_run'] is expected
+    assert validated_conf['runmode'] == (RunMode.DRY_RUN if expected else RunMode.LIVE)
 
 
 def test_load_custom_strategy(default_conf, mocker) -> None:
@@ -809,12 +829,6 @@ def test_validate_whitelist(default_conf):
     del conf['exchange']['pair_whitelist']
 
     validate_config_consistency(conf)
-
-    conf = deepcopy(default_conf)
-    conf['stake_currency'] = 'USDT'
-    with pytest.raises(OperationalException,
-                       match=r"Stake-currency 'USDT' not compatible with pair-whitelist.*"):
-        validate_config_consistency(conf)
 
 
 def test_load_config_test_comments() -> None:

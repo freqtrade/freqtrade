@@ -1,5 +1,5 @@
 """
-SharpeHyperOptLoss
+SortinoHyperOptLoss
 
 This module defines the alternative HyperOptLoss class which can be used for
 Hyperoptimization.
@@ -12,11 +12,11 @@ import numpy as np
 from freqtrade.optimize.hyperopt import IHyperOptLoss
 
 
-class SharpeHyperOptLoss(IHyperOptLoss):
+class SortinoHyperOptLoss(IHyperOptLoss):
     """
     Defines the loss function for hyperopt.
 
-    This implementation uses the Sharpe Ratio calculation.
+    This implementation uses the Sortino Ratio calculation.
     """
 
     @staticmethod
@@ -26,7 +26,7 @@ class SharpeHyperOptLoss(IHyperOptLoss):
         """
         Objective function, returns smaller number for more optimal results.
 
-        Uses Sharpe Ratio calculation.
+        Uses Sortino Ratio calculation.
         """
         total_profit = results["profit_percent"]
         days_period = (max_date - min_date).days
@@ -34,13 +34,16 @@ class SharpeHyperOptLoss(IHyperOptLoss):
         # adding slippage of 0.1% per trade
         total_profit = total_profit - 0.0005
         expected_returns_mean = total_profit.sum() / days_period
-        up_stdev = np.std(total_profit)
 
-        if up_stdev != 0:
-            sharp_ratio = expected_returns_mean / up_stdev * np.sqrt(365)
+        results['downside_returns'] = 0
+        results.loc[total_profit < 0, 'downside_returns'] = results['profit_percent']
+        down_stdev = np.std(results['downside_returns'])
+
+        if down_stdev != 0:
+            sortino_ratio = expected_returns_mean / down_stdev * np.sqrt(365)
         else:
-            # Define high (negative) sharpe ratio to be clear that this is NOT optimal.
-            sharp_ratio = -20.
+            # Define high (negative) sortino ratio to be clear that this is NOT optimal.
+            sortino_ratio = -20.
 
-        # print(expected_returns_mean, up_stdev, sharp_ratio)
-        return -sharp_ratio
+        # print(expected_returns_mean, down_stdev, sortino_ratio)
+        return -sortino_ratio

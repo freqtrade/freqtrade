@@ -17,10 +17,15 @@ def setup_optimize_configuration(args: Dict[str, Any], method: RunMode) -> Dict[
     """
     config = setup_utils_configuration(args, method)
 
-    if method == RunMode.BACKTEST:
-        if config['stake_amount'] == constants.UNLIMITED_STAKE_AMOUNT:
-            raise DependencyException('stake amount could not be "%s" for backtesting' %
-                                      constants.UNLIMITED_STAKE_AMOUNT)
+    no_unlimited_runmodes = {
+        RunMode.BACKTEST: 'backtesting',
+        RunMode.HYPEROPT: 'hyperoptimization',
+    }
+    if (method in no_unlimited_runmodes.keys() and
+            config['stake_amount'] == constants.UNLIMITED_STAKE_AMOUNT):
+        raise DependencyException(
+            f'The value of `stake_amount` cannot be set as "{constants.UNLIMITED_STAKE_AMOUNT}" '
+            f'for {no_unlimited_runmodes[method]}')
 
     return config
 

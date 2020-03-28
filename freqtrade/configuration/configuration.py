@@ -96,6 +96,8 @@ class Configuration:
         # Keep a copy of the original configuration file
         config['original_config'] = deepcopy(config)
 
+        self._process_logging_options(config)
+
         self._process_runmode(config)
 
         self._process_common_options(config)
@@ -146,8 +148,6 @@ class Configuration:
 
     def _process_common_options(self, config: Dict[str, Any]) -> None:
 
-        self._process_logging_options(config)
-
         # Set strategy if not specified in config and or if it's non default
         if self.args.get("strategy") or not config.get('strategy'):
             config.update({'strategy': self.args.get("strategy")})
@@ -166,10 +166,6 @@ class Configuration:
         # Support for sd_notify
         if 'sd_notify' in self.args and self.args["sd_notify"]:
             config['internals'].update({'sd_notify': True})
-
-        self._args_to_config(config, argname='dry_run',
-                             logstring='Parameter --dry-run detected, '
-                             'overriding dry_run to: {} ...')
 
     def _process_datadir_options(self, config: Dict[str, Any]) -> None:
         """
@@ -200,6 +196,7 @@ class Configuration:
         if self.args.get('exportfilename'):
             self._args_to_config(config, argname='exportfilename',
                                  logstring='Storing backtest results to {} ...')
+            config['exportfilename'] = Path(config['exportfilename'])
         else:
             config['exportfilename'] = (config['user_data_dir']
                                         / 'backtest_results/backtest-result.json')
@@ -286,6 +283,9 @@ class Configuration:
         self._args_to_config(config, argname='print_json',
                              logstring='Parameter --print-json detected ...')
 
+        self._args_to_config(config, argname='export_csv',
+                             logstring='Parameter --export-csv detected: {}')
+
         self._args_to_config(config, argname='hyperopt_jobs',
                              logstring='Parameter -j/--job-workers detected: {}')
 
@@ -359,6 +359,9 @@ class Configuration:
         self._args_to_config(config, argname='erase',
                              logstring='Erase detected. Deleting existing data.')
 
+        self._args_to_config(config, argname='no_trades',
+                             logstring='Parameter --no-trades detected.')
+
         self._args_to_config(config, argname='timeframes',
                              logstring='timeframes --timeframes: {}')
 
@@ -376,10 +379,14 @@ class Configuration:
 
     def _process_runmode(self, config: Dict[str, Any]) -> None:
 
+        self._args_to_config(config, argname='dry_run',
+                             logstring='Parameter --dry-run detected, '
+                             'overriding dry_run to: {} ...')
+
         if not self.runmode:
             # Handle real mode, infer dry/live from config
             self.runmode = RunMode.DRY_RUN if config.get('dry_run', True) else RunMode.LIVE
-            logger.info(f"Runmode set to {self.runmode}.")
+            logger.info(f"Runmode set to {self.runmode.value}.")
 
         config.update({'runmode': self.runmode})
 

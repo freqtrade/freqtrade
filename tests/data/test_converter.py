@@ -5,9 +5,12 @@ from freqtrade.configuration.timerange import TimeRange
 from freqtrade.data.converter import (convert_ohlcv_format,
                                       convert_trades_format,
                                       ohlcv_fill_up_missing_data,
-                                      parse_ticker_dataframe, trim_dataframe)
-from freqtrade.data.history import (get_timerange, load_data,
-                                    load_pair_history, validate_backtest_data)
+                                      ohlcv_to_dataframe,
+                                      trim_dataframe)
+from freqtrade.data.history import (get_timerange,
+                                    load_data,
+                                    load_pair_history,
+                                    validate_backtest_data)
 from tests.conftest import log_has
 from tests.data.test_history import _backup_file, _clean_test_file
 
@@ -16,15 +19,15 @@ def test_dataframe_correct_columns(result):
     assert result.columns.tolist() == ['date', 'open', 'high', 'low', 'close', 'volume']
 
 
-def test_parse_ticker_dataframe(ticker_history_list, caplog):
+def test_ohlcv_to_dataframe(ohlcv_history_list, caplog):
     columns = ['date', 'open', 'high', 'low', 'close', 'volume']
 
     caplog.set_level(logging.DEBUG)
     # Test file with BV data
-    dataframe = parse_ticker_dataframe(ticker_history_list, '5m',
-                                       pair="UNITTEST/BTC", fill_missing=True)
+    dataframe = ohlcv_to_dataframe(ohlcv_history_list, '5m', pair="UNITTEST/BTC",
+                                   fill_missing=True)
     assert dataframe.columns.tolist() == columns
-    assert log_has('Parsing tickerlist to dataframe', caplog)
+    assert log_has('Converting candle (OHLCV) data to dataframe for pair UNITTEST/BTC.', caplog)
 
 
 def test_ohlcv_fill_up_missing_data(testdatadir, caplog):
@@ -84,7 +87,8 @@ def test_ohlcv_fill_up_missing_data2(caplog):
     ]
 
     # Generate test-data without filling missing
-    data = parse_ticker_dataframe(ticks, timeframe, pair="UNITTEST/BTC", fill_missing=False)
+    data = ohlcv_to_dataframe(ticks, timeframe, pair="UNITTEST/BTC",
+                              fill_missing=False)
     assert len(data) == 3
     caplog.set_level(logging.DEBUG)
     data2 = ohlcv_fill_up_missing_data(data, timeframe, "UNITTEST/BTC")
@@ -140,14 +144,14 @@ def test_ohlcv_drop_incomplete(caplog):
      ]
     ]
     caplog.set_level(logging.DEBUG)
-    data = parse_ticker_dataframe(ticks, timeframe, pair="UNITTEST/BTC",
-                                  fill_missing=False, drop_incomplete=False)
+    data = ohlcv_to_dataframe(ticks, timeframe, pair="UNITTEST/BTC",
+                              fill_missing=False, drop_incomplete=False)
     assert len(data) == 4
     assert not log_has("Dropping last candle", caplog)
 
     # Drop last candle
-    data = parse_ticker_dataframe(ticks, timeframe, pair="UNITTEST/BTC",
-                                  fill_missing=False, drop_incomplete=True)
+    data = ohlcv_to_dataframe(ticks, timeframe, pair="UNITTEST/BTC",
+                              fill_missing=False, drop_incomplete=True)
     assert len(data) == 3
 
     assert log_has("Dropping last candle", caplog)

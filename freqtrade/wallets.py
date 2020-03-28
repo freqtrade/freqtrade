@@ -74,7 +74,7 @@ class Wallets:
         )
 
         for trade in open_trades:
-            curr = trade.pair.split('/')[0]
+            curr = self._exchange.get_pair_base_currency(trade.pair)
             _wallets[curr] = Wallet(
                 curr,
                 trade.amount,

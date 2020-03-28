@@ -5,7 +5,8 @@ from typing import Any, Dict, List
 import pandas as pd
 
 from freqtrade.configuration import TimeRange
-from freqtrade.data.btanalysis import (combine_tickers_with_mean,
+from freqtrade.data.btanalysis import (calculate_max_drawdown,
+                                       combine_dataframes_with_mean,
                                        create_cum_profit,
                                        extract_trades_of_period, load_trades)
 from freqtrade.data.converter import trim_dataframe
@@ -28,7 +29,7 @@ except ImportError:
 def init_plotscript(config):
     """
     Initialize objects needed for plotting
-    :return: Dict with tickers, trades and pairs
+    :return: Dict with candle (OHLCV) data, trades and pairs
     """
 
     if "pairs" in config:
@@ -39,7 +40,7 @@ def init_plotscript(config):
     # Set timerange to use
     timerange = TimeRange.parse_timerange(config.get("timerange"))
 
-    tickers = load_data(
+    data = load_data(
         datadir=config.get("datadir"),
         pairs=pairs,
         timeframe=config.get('ticker_interval', '5m'),
@@ -47,12 +48,22 @@ def init_plotscript(config):
         data_format=config.get('dataformat_ohlcv', 'json'),
     )
 
-    trades = load_trades(config['trade_source'],
-                         db_url=config.get('db_url'),
-                         exportfilename=config.get('exportfilename'),
-                         )
+    no_trades = False
+    if config.get('no_trades', False):
+        no_trades = True
+    elif not config['exportfilename'].is_file() and config['trade_source'] == 'file':
+        logger.warning("Backtest file is missing skipping trades.")
+        no_trades = True
+
+    trades = load_trades(
+        config['trade_source'],
+        db_url=config.get('db_url'),
+        exportfilename=config.get('exportfilename'),
+        no_trades=no_trades
+    )
     trades = trim_dataframe(trades, timerange, 'open_time')
-    return {"tickers": tickers,
+
+    return {"ohlcv": data,
             "trades": trades,
             "pairs": pairs,
             }
@@ -108,6 +119,36 @@ def add_profit(fig, row, data: pd.DataFrame, column: str, name: str) -> make_sub
     )
     fig.add_trace(profit, row, 1)
 
+    return fig
+
+
+def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame) -> make_subplots:
+    """
+    Add scatter points indicating max drawdown
+    """
+    try:
+        max_drawdown, highdate, lowdate = calculate_max_drawdown(trades)
+
+        drawdown = go.Scatter(
+            x=[highdate, lowdate],
+            y=[
+                df_comb.loc[highdate, 'cum_profit'],
+                df_comb.loc[lowdate, 'cum_profit'],
+            ],
+            mode='markers',
+            name=f"Max drawdown {max_drawdown:.2f}%",
+            text=f"Max drawdown {max_drawdown:.2f}%",
+            marker=dict(
+                symbol='square-open',
+                size=9,
+                line=dict(width=2),
+                color='green'
+
+            )
+        )
+        fig.add_trace(drawdown, row, 1)
+    except ValueError:
+        logger.warning("No trades found - not plotting max drawdown.")
     return fig
 
 
@@ -337,10 +378,10 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     return fig
 
 
-def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame],
+def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
                           trades: pd.DataFrame, timeframe: str) -> go.Figure:
     # Combine close-values for all pairs, rename columns to "pair"
-    df_comb = combine_tickers_with_mean(tickers, "close")
+    df_comb = combine_dataframes_with_mean(data, "close")
 
     # Add combined cumulative profit
     df_comb = create_cum_profit(df_comb, trades, 'cum_profit', timeframe)
@@ -364,6 +405,7 @@ def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame],
 
     fig.add_trace(avgclose, 1, 1)
     fig = add_profit(fig, 2, df_comb, 'cum_profit', 'Profit')
+    fig = add_max_drawdown(fig, 2, trades, df_comb)
 
     for pair in pairs:
         profit_col = f'cum_profit_{pair}'
@@ -407,7 +449,7 @@ def load_and_plot_trades(config: Dict[str, Any]):
     """
     From configuration provided
     - Initializes plot-script
-    - Get tickers data
+    - Get candle (OHLCV) data
     - Generate Dafaframes populated with indicators and signals based on configured strategy
     - Load trades excecuted during the selected period
     - Generate Plotly plot objects
@@ -419,19 +461,17 @@ def load_and_plot_trades(config: Dict[str, Any]):
     plot_elements = init_plotscript(config)
     trades = plot_elements['trades']
     pair_counter = 0
-    for pair, data in plot_elements["tickers"].items():
+    for pair, data in plot_elements["ohlcv"].items():
         pair_counter += 1
         logger.info("analyse pair %s", pair)
-        tickers = {}
-        tickers[pair] = data
 
-        dataframe = strategy.analyze_ticker(tickers[pair], {'pair': pair})
+        df_analyzed = strategy.analyze_ticker(data, {'pair': pair})
         trades_pair = trades.loc[trades['pair'] == pair]
-        trades_pair = extract_trades_of_period(dataframe, trades_pair)
+        trades_pair = extract_trades_of_period(df_analyzed, trades_pair)
 
         fig = generate_candlestick_graph(
             pair=pair,
-            data=dataframe,
+            data=df_analyzed,
             trades=trades_pair,
             indicators1=config.get("indicators1", []),
             indicators2=config.get("indicators2", []),
@@ -462,7 +502,7 @@ def plot_profit(config: Dict[str, Any]) -> None:
 
     # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
-    fig = generate_profit_graph(plot_elements["pairs"], plot_elements["tickers"],
+    fig = generate_profit_graph(plot_elements["pairs"], plot_elements["ohlcv"],
                                 trades, config.get('ticker_interval', '5m'))
     store_plot_file(fig, filename='freqtrade-profit-plot.html',
                     directory=config['user_data_dir'] / "plot", auto_open=True)

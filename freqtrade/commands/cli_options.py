@@ -221,6 +221,13 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_true',
         default=False,
     ),
+    "export_csv": Arg(
+        '--export-csv',
+        help='Export to CSV-File.'
+        ' This will disable table print.'
+        ' Example: --export-csv hyperopt.csv',
+        metavar='FILE',
+    ),
     "hyperopt_jobs": Arg(
         '-j', '--job-workers',
         help='The number of concurrently running jobs for hyperoptimization '
@@ -257,7 +264,8 @@ AVAILABLE_CLI_OPTIONS = {
         help='Specify the class name of the hyperopt loss function class (IHyperOptLoss). '
         'Different functions can generate completely different results, '
         'since the target for optimization is different. Built-in Hyperopt-loss-functions are: '
-        'DefaultHyperOptLoss, OnlyProfitHyperOptLoss, SharpeHyperOptLoss, SharpeHyperOptLossDaily.'
+        'DefaultHyperOptLoss, OnlyProfitHyperOptLoss, SharpeHyperOptLoss, SharpeHyperOptLossDaily, '
+        'SortinoHyperOptLoss, SortinoHyperOptLossDaily.'
         '(default: `%(default)s`).',
         metavar='NAME',
         default=constants.DEFAULT_HYPEROPT_LOSS,
@@ -347,7 +355,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "dataformat_ohlcv": Arg(
         '--data-format-ohlcv',
-        help='Storage format for downloaded ohlcv data. (default: `%(default)s`).',
+        help='Storage format for downloaded candle (OHLCV) data. (default: `%(default)s`).',
         choices=constants.AVAILABLE_DATAHANDLERS,
         default='json'
     ),
@@ -404,6 +412,11 @@ AVAILABLE_CLI_OPTIONS = {
         type=check_int_positive,
         metavar='INT',
         default=750,
+    ),
+    "no_trades": Arg(
+        '--no-trades',
+        help='Skip using trades from backtesting file and DB.',
+        action='store_true',
     ),
     "trade_source": Arg(
         '--trade-source',

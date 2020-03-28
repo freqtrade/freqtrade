@@ -240,8 +240,6 @@ def test_pairlist_class(mocker, whitelist_conf, markets, pairlist):
     (['ETH/BTC', 'TKN/BTC', 'ETH/USDT'], "is not compatible with your stake currency"),
     # BCH/BTC not available
     (['ETH/BTC', 'TKN/BTC', 'BCH/BTC'], "is not compatible with exchange"),
-    # BLK/BTC in blacklist
-    (['ETH/BTC', 'TKN/BTC', 'BLK/BTC'], "in your blacklist. Removing "),
     # BTT/BTC is inactive
     (['ETH/BTC', 'TKN/BTC', 'BTT/BTC'], "Market is not active")
 ])

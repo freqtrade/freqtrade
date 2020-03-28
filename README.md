@@ -25,7 +25,8 @@ hesitate to read the source code and understand the mechanism of this bot.
 ## Exchange marketplaces supported
 
 - [X] [Bittrex](https://bittrex.com/)
-- [X] [Binance](https://www.binance.com/) ([*Note for binance users](#a-note-on-binance))
+- [X] [Binance](https://www.binance.com/) ([*Note for binance users](docs/exchanges.md#blacklists))
+- [X] [Kraken](https://kraken.com/)
 - [ ] [113 others to tests](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
 ## Documentation

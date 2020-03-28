@@ -148,7 +148,7 @@ class Telegram(RPC):
 
         elif msg['type'] == RPCMessageType.SELL_NOTIFICATION:
             msg['amount'] = round(msg['amount'], 8)
-            msg['profit_percent'] = round(msg['profit_percent'] * 100, 2)
+            msg['profit_percent'] = round(msg['profit_ratio'] * 100, 2)
             msg['duration'] = msg['close_date'].replace(
                 microsecond=0) - msg['open_date'].replace(microsecond=0)
             msg['duration_min'] = msg['duration'].total_seconds() / 60

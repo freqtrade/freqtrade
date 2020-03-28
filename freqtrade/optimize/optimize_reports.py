@@ -1,8 +1,36 @@
+import logging
 from datetime import timedelta
+from pathlib import Path
 from typing import Dict
 
 from pandas import DataFrame
 from tabulate import tabulate
+
+from freqtrade.misc import file_dump_json
+
+logger = logging.getLogger(__name__)
+
+
+def store_backtest_result(recordfilename: Path, all_results: Dict[str, DataFrame]) -> None:
+    """
+    Stores backtest results to file (one file per strategy)
+    :param recordfilename: Destination filename
+    :param all_results: Dict of Dataframes, one results dataframe per strategy
+    """
+    for strategy, results in all_results.items():
+        records = [(t.pair, t.profit_percent, t.open_time.timestamp(),
+                    t.close_time.timestamp(), t.open_index - 1, t.trade_duration,
+                    t.open_rate, t.close_rate, t.open_at_end, t.sell_reason.value)
+                   for index, t in results.iterrows()]
+
+        if records:
+            if len(all_results) > 1:
+                # Inject strategy to filename
+                recordfilename = Path.joinpath(
+                    recordfilename.parent,
+                    f'{recordfilename.stem}-{strategy}').with_suffix(recordfilename.suffix)
+            logger.info(f'Dumping backtest results to {recordfilename}')
+            file_dump_json(recordfilename, records)
 
 
 def generate_text_table(data: Dict[str, Dict], stake_currency: str, max_open_trades: int,
@@ -66,15 +94,15 @@ def generate_text_table(data: Dict[str, Dict], stake_currency: str, max_open_tra
     ])
     # Ignore type as floatfmt does allow tuples but mypy does not know that
     return tabulate(tabular_data, headers=headers,
-                    floatfmt=floatfmt, tablefmt="pipe")  # type: ignore
+                    floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore
 
 
-def generate_text_table_sell_reason(
-    data: Dict[str, Dict], stake_currency: str, max_open_trades: int, results: DataFrame
-) -> str:
+def generate_text_table_sell_reason(stake_currency: str, max_open_trades: int,
+                                    results: DataFrame) -> str:
     """
     Generate small table outlining Backtest results
-    :param data: Dict of <pair: dataframe> containing data that was used during backtesting.
+    :param stake_currency: Stakecurrency used
+    :param max_open_trades: Max_open_trades parameter
     :param results: Dataframe containing the backtest results
     :return: pretty printed table with tabulate as string
     """
@@ -112,7 +140,7 @@ def generate_text_table_sell_reason(
                 profit_percent_tot,
             ]
         )
-    return tabulate(tabular_data, headers=headers, tablefmt="pipe")
+    return tabulate(tabular_data, headers=headers, tablefmt="orgtbl", stralign="right")
 
 
 def generate_text_table_strategy(stake_currency: str, max_open_trades: str,
@@ -146,7 +174,7 @@ def generate_text_table_strategy(stake_currency: str, max_open_trades: str,
         ])
     # Ignore type as floatfmt does allow tuples but mypy does not know that
     return tabulate(tabular_data, headers=headers,
-                    floatfmt=floatfmt, tablefmt="pipe")  # type: ignore
+                    floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore
 
 
 def generate_edge_table(results: dict) -> str:
@@ -172,4 +200,44 @@ def generate_edge_table(results: dict) -> str:
 
     # Ignore type as floatfmt does allow tuples but mypy does not know that
     return tabulate(tabular_data, headers=headers,
-                    floatfmt=floatfmt, tablefmt="pipe")  # type: ignore
+                    floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore
+
+
+def show_backtest_results(config: Dict, btdata: Dict[str, DataFrame],
+                          all_results: Dict[str, DataFrame]):
+    for strategy, results in all_results.items():
+
+        print(f"Result for strategy {strategy}")
+        table = generate_text_table(btdata, stake_currency=config['stake_currency'],
+                                    max_open_trades=config['max_open_trades'],
+                                    results=results)
+        if isinstance(table, str):
+            print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
+        print(table)
+
+        table = generate_text_table_sell_reason(stake_currency=config['stake_currency'],
+                                                max_open_trades=config['max_open_trades'],
+                                                results=results)
+        if isinstance(table, str):
+            print(' SELL REASON STATS '.center(len(table.splitlines()[0]), '='))
+        print(table)
+
+        table = generate_text_table(btdata,
+                                    stake_currency=config['stake_currency'],
+                                    max_open_trades=config['max_open_trades'],
+                                    results=results.loc[results.open_at_end], skip_nan=True)
+        if isinstance(table, str):
+            print(' LEFT OPEN TRADES REPORT '.center(len(table.splitlines()[0]), '='))
+        print(table)
+        if isinstance(table, str):
+            print('=' * len(table.splitlines()[0]))
+        print()
+    if len(all_results) > 1:
+        # Print Strategy summary table
+        table = generate_text_table_strategy(config['stake_currency'],
+                                             config['max_open_trades'],
+                                             all_results=all_results)
+        print(' STRATEGY SUMMARY '.center(len(table.splitlines()[0]), '='))
+        print(table)
+        print('=' * len(table.splitlines()[0]))
+        print('\nFor more details, please look at the detail tables above')
