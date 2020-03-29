@@ -4,15 +4,17 @@ import logging
 from unittest.mock import MagicMock
 
 import arrow
+import pytest
 from pandas import DataFrame
 
-from freqtrade.exceptions import DependencyException
 from freqtrade.configuration import TimeRange
 from freqtrade.data.history import load_data
+from freqtrade.exceptions import DependencyException
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import StrategyResolver
-from .strats.default_strategy import DefaultStrategy
 from tests.conftest import get_patched_exchange, log_has
+
+from .strats.default_strategy import DefaultStrategy
 
 # Avoid to reinit the same object again and again
 _STRATEGY = DefaultStrategy(config={})
@@ -123,7 +125,27 @@ def test_assert_df_raise(default_conf, mocker, caplog, ohlcv_history):
     )
     assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
                                                   ohlcv_history)
-    assert log_has('Unable to analyze candle (OHLCV) data for pair xyz: Dataframe returned...', caplog)
+    assert log_has('Unable to analyze candle (OHLCV) data for pair xyz: Dataframe returned...',
+                   caplog)
+
+
+def test_assert_df(default_conf, mocker, ohlcv_history):
+    # Ensure it's running when passed correctly
+    _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
+                        ohlcv_history.loc[1, 'close'], ohlcv_history.loc[1, 'date'])
+
+    with pytest.raises(DependencyException, match=r"Dataframe returned from strategy.*length\."):
+        _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history) + 1,
+                            ohlcv_history.loc[1, 'close'], ohlcv_history.loc[1, 'date'])
+
+    with pytest.raises(DependencyException,
+                       match=r"Dataframe returned from strategy.*last close price\."):
+        _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
+                            ohlcv_history.loc[1, 'close'] + 0.01, ohlcv_history.loc[1, 'date'])
+    with pytest.raises(DependencyException,
+                       match=r"Dataframe returned from strategy.*last date\."):
+        _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
+                            ohlcv_history.loc[1, 'close'], ohlcv_history.loc[0, 'date'])
 
 
 def test_get_signal_handles_exceptions(mocker, default_conf):
