@@ -279,11 +279,12 @@ class IStrategy(ABC):
             dataframe = self._analyze_ticker_internal(dataframe, {'pair': pair})
             self.assert_df(dataframe, df_len, df_close, df_date)
         except ValueError as error:
-            logger.warning(
-                'Unable to analyze candle (OHLCV) data for pair %s: %s',
-                pair,
-                str(error)
-            )
+            logger.warning('Unable to analyze candle (OHLCV) data for pair %s: %s',
+                           pair, str(error))
+            return False, False
+        except DependencyException as error:
+            logger.warning("Unable to analyze candle (OHLCV) data for pair %s: %s",
+                           pair, str(error))
             return False, False
         except Exception as error:
             logger.exception(
