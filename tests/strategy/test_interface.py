@@ -85,14 +85,19 @@ def test_get_signal_empty_dataframe(default_conf, mocker, caplog, ohlcv_history)
 
 
 def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
-    caplog.set_level(logging.INFO)
     # default_conf defines a 5m interval. we check interval * 2 + 5m
     # this is necessary as the last candle is removed (partial candles) by default
-    oldtime = arrow.utcnow().shift(minutes=-16)
-    ticks = DataFrame([{'buy': 1, 'date': oldtime}])
+    ohlcv_history.loc[1, 'date'] = arrow.utcnow().shift(minutes=-16)
+    # Take a copy to correctly modify the call
+    mocked_history = ohlcv_history.copy()
+    mocked_history['sell'] = 0
+    mocked_history['buy'] = 0
+    mocked_history.loc[1, 'buy'] = 1
+
+    caplog.set_level(logging.INFO)
     mocker.patch.object(
         _STRATEGY, '_analyze_ticker_internal',
-        return_value=DataFrame(ticks)
+        return_value=mocked_history
     )
     mocker.patch.object(_STRATEGY, 'assert_df')
     assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
