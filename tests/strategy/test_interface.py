@@ -17,33 +17,36 @@ from tests.conftest import get_patched_exchange, log_has
 _STRATEGY = DefaultStrategy(config={})
 
 
-def test_returns_latest_buy_signal(mocker, default_conf, ohlcv_history):
-    mocker.patch.object(
-        _STRATEGY, '_analyze_ticker_internal',
-        return_value=DataFrame([{'buy': 1, 'sell': 0, 'date': arrow.utcnow()}])
-    )
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', ohlcv_history) == (True, False)
+def test_returns_latest_signal(mocker, default_conf, ohlcv_history):
+    ohlcv_history.loc[1, 'date'] = arrow.utcnow()
+    # Take a copy to correctly modify the call
+    mocked_history = ohlcv_history.copy()
+    mocked_history['sell'] = 0
+    mocked_history['buy'] = 0
+    mocked_history.loc[1, 'sell'] = 1
 
     mocker.patch.object(
         _STRATEGY, '_analyze_ticker_internal',
-        return_value=DataFrame([{'buy': 0, 'sell': 1, 'date': arrow.utcnow()}])
-    )
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', ohlcv_history) == (False, True)
-
-
-def test_returns_latest_sell_signal(mocker, default_conf, ohlcv_history):
-    mocker.patch.object(
-        _STRATEGY, '_analyze_ticker_internal',
-        return_value=DataFrame([{'sell': 1, 'buy': 0, 'date': arrow.utcnow()}])
+        return_value=mocked_history
     )
 
     assert _STRATEGY.get_signal('ETH/BTC', '5m', ohlcv_history) == (False, True)
+    mocked_history.loc[1, 'sell'] = 0
+    mocked_history.loc[1, 'buy'] = 1
 
     mocker.patch.object(
         _STRATEGY, '_analyze_ticker_internal',
-        return_value=DataFrame([{'sell': 0, 'buy': 1, 'date': arrow.utcnow()}])
+        return_value=mocked_history
     )
     assert _STRATEGY.get_signal('ETH/BTC', '5m', ohlcv_history) == (True, False)
+    mocked_history.loc[1, 'sell'] = 0
+    mocked_history.loc[1, 'buy'] = 0
+
+    mocker.patch.object(
+        _STRATEGY, '_analyze_ticker_internal',
+        return_value=mocked_history
+    )
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', ohlcv_history) == (False, False)
 
 
 def test_get_signal_empty(default_conf, mocker, caplog):
@@ -74,6 +77,8 @@ def test_get_signal_empty_dataframe(default_conf, mocker, caplog, ohlcv_history)
         _STRATEGY, '_analyze_ticker_internal',
         return_value=DataFrame([])
     )
+    mocker.patch.object(_STRATEGY, 'assert_df')
+
     assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
                                                   ohlcv_history)
     assert log_has('Empty dataframe for pair xyz', caplog)
@@ -89,6 +94,7 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
         _STRATEGY, '_analyze_ticker_internal',
         return_value=DataFrame(ticks)
     )
+    mocker.patch.object(_STRATEGY, 'assert_df')
     assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
                                                   ohlcv_history)
     assert log_has('Outdated history for pair xyz. Last tick is 16 minutes old', caplog)
