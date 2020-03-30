@@ -145,9 +145,9 @@ It is recommended to use version control to keep track of changes to your strate
 
 This parameter will allow you to load your custom strategy class.
 Per default without `--strategy` or `-s` the bot will load the
-`DefaultStrategy` included with the bot (`freqtrade/strategy/default_strategy.py`).
+`SampleStrategy` installed by the `create-userdir` subcommand (usually `user_data/strategy/sample_strategy.py`).
 
-The bot will search your strategy file within `user_data/strategies` and `freqtrade/strategy`.
+The bot will search your strategy file within `user_data/strategies`.
 
 To load a strategy, simply pass the class name (e.g.: `CustomStrategy`) in this parameter.
 
