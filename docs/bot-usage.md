@@ -144,10 +144,10 @@ It is recommended to use version control to keep track of changes to your strate
 ### How to use **--strategy**?
 
 This parameter will allow you to load your custom strategy class.
-Per default without `--strategy` or `-s` the bot will load the
-`SampleStrategy` installed by the `create-userdir` subcommand (usually `user_data/strategy/sample_strategy.py`).
+To test the bot installation, you can use the `SampleStrategy` installed by the `create-userdir` subcommand (usually `user_data/strategy/sample_strategy.py`).
 
 The bot will search your strategy file within `user_data/strategies`.
+To use other directories, please read the next section about `--strategy-path`.
 
 To load a strategy, simply pass the class name (e.g.: `CustomStrategy`) in this parameter.
 
