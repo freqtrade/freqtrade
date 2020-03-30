@@ -136,8 +136,8 @@ def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame) -> m
                 df_comb.loc[lowdate, 'cum_profit'],
             ],
             mode='markers',
-            name=f"Max drawdown {max_drawdown:.2f}%",
-            text=f"Max drawdown {max_drawdown:.2f}%",
+            name=f"Max drawdown {max_drawdown * 100:.2f}%",
+            text=f"Max drawdown {max_drawdown * 100:.2f}%",
             marker=dict(
                 symbol='square-open',
                 size=9,
