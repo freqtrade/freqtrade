@@ -132,8 +132,8 @@ def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame) -> m
         drawdown = go.Scatter(
             x=[highdate, lowdate],
             y=[
-                df_comb.loc[highdate, 'cum_profit'],
-                df_comb.loc[lowdate, 'cum_profit'],
+                df_comb.loc[df_comb.index == highdate, 'cum_profit'],
+                df_comb.loc[df_comb.index == lowdate, 'cum_profit'],
             ],
             mode='markers',
             name=f"Max drawdown {max_drawdown:.2f}%",
