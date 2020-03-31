@@ -16,6 +16,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.persistence import Trade
 from freqtrade.wallets import Wallets
+from freqtrade.exceptions import DependencyException
 
 
 logger = logging.getLogger(__name__)
@@ -241,8 +242,26 @@ class IStrategy(ABC):
 
         return dataframe
 
-    def get_signal(self, pair: str, interval: str,
-                   dataframe: DataFrame) -> Tuple[bool, bool]:
+    @staticmethod
+    def preserve_df(dataframe: DataFrame) -> Tuple[int, float, datetime]:
+        """ keep some data for dataframes """
+        return len(dataframe), dataframe["close"].iloc[-1], dataframe["date"].iloc[-1]
+
+    @staticmethod
+    def assert_df(dataframe: DataFrame, df_len: int, df_close: float, df_date: datetime):
+        """ make sure data is unmodified """
+        message = ""
+        if df_len != len(dataframe):
+            message = "length"
+        elif df_close != dataframe["close"].iloc[-1]:
+            message = "last close price"
+        elif df_date != dataframe["date"].iloc[-1]:
+            message = "last date"
+        if message:
+            raise DependencyException("Dataframe returned from strategy has mismatching "
+                                      f"{message}.")
+
+    def get_signal(self, pair: str, interval: str, dataframe: DataFrame) -> Tuple[bool, bool]:
         """
         Calculates current signal based several technical analysis indicators
         :param pair: pair in format ANT/BTC
@@ -254,14 +273,18 @@ class IStrategy(ABC):
             logger.warning('Empty candle (OHLCV) data for pair %s', pair)
             return False, False
 
+        latest_date = dataframe['date'].max()
         try:
+            df_len, df_close, df_date = self.preserve_df(dataframe)
             dataframe = self._analyze_ticker_internal(dataframe, {'pair': pair})
+            self.assert_df(dataframe, df_len, df_close, df_date)
         except ValueError as error:
-            logger.warning(
-                'Unable to analyze candle (OHLCV) data for pair %s: %s',
-                pair,
-                str(error)
-            )
+            logger.warning('Unable to analyze candle (OHLCV) data for pair %s: %s',
+                           pair, str(error))
+            return False, False
+        except DependencyException as error:
+            logger.warning("Unable to analyze candle (OHLCV) data for pair %s: %s",
+                           pair, str(error))
             return False, False
         except Exception as error:
             logger.exception(
@@ -275,7 +298,7 @@ class IStrategy(ABC):
             logger.warning('Empty dataframe for pair %s', pair)
             return False, False
 
-        latest = dataframe.iloc[-1]
+        latest = dataframe.loc[dataframe['date'] == latest_date].iloc[-1]
 
         # Check if dataframe is out of date
         signal_date = arrow.get(latest['date'])

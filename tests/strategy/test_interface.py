@@ -4,46 +4,52 @@ import logging
 from unittest.mock import MagicMock
 
 import arrow
+import pytest
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.history import load_data
+from freqtrade.exceptions import DependencyException
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import StrategyResolver
-from .strats.default_strategy import DefaultStrategy
 from tests.conftest import get_patched_exchange, log_has
+
+from .strats.default_strategy import DefaultStrategy
 
 # Avoid to reinit the same object again and again
 _STRATEGY = DefaultStrategy(config={})
 
 
-def test_returns_latest_buy_signal(mocker, default_conf, ohlcv_history):
-    mocker.patch.object(
-        _STRATEGY, '_analyze_ticker_internal',
-        return_value=DataFrame([{'buy': 1, 'sell': 0, 'date': arrow.utcnow()}])
-    )
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', ohlcv_history) == (True, False)
+def test_returns_latest_signal(mocker, default_conf, ohlcv_history):
+    ohlcv_history.loc[1, 'date'] = arrow.utcnow()
+    # Take a copy to correctly modify the call
+    mocked_history = ohlcv_history.copy()
+    mocked_history['sell'] = 0
+    mocked_history['buy'] = 0
+    mocked_history.loc[1, 'sell'] = 1
 
     mocker.patch.object(
         _STRATEGY, '_analyze_ticker_internal',
-        return_value=DataFrame([{'buy': 0, 'sell': 1, 'date': arrow.utcnow()}])
-    )
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', ohlcv_history) == (False, True)
-
-
-def test_returns_latest_sell_signal(mocker, default_conf, ohlcv_history):
-    mocker.patch.object(
-        _STRATEGY, '_analyze_ticker_internal',
-        return_value=DataFrame([{'sell': 1, 'buy': 0, 'date': arrow.utcnow()}])
+        return_value=mocked_history
     )
 
     assert _STRATEGY.get_signal('ETH/BTC', '5m', ohlcv_history) == (False, True)
+    mocked_history.loc[1, 'sell'] = 0
+    mocked_history.loc[1, 'buy'] = 1
 
     mocker.patch.object(
         _STRATEGY, '_analyze_ticker_internal',
-        return_value=DataFrame([{'sell': 0, 'buy': 1, 'date': arrow.utcnow()}])
+        return_value=mocked_history
     )
     assert _STRATEGY.get_signal('ETH/BTC', '5m', ohlcv_history) == (True, False)
+    mocked_history.loc[1, 'sell'] = 0
+    mocked_history.loc[1, 'buy'] = 0
+
+    mocker.patch.object(
+        _STRATEGY, '_analyze_ticker_internal',
+        return_value=mocked_history
+    )
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', ohlcv_history) == (False, False)
 
 
 def test_get_signal_empty(default_conf, mocker, caplog):
@@ -74,24 +80,72 @@ def test_get_signal_empty_dataframe(default_conf, mocker, caplog, ohlcv_history)
         _STRATEGY, '_analyze_ticker_internal',
         return_value=DataFrame([])
     )
+    mocker.patch.object(_STRATEGY, 'assert_df')
+
     assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
                                                   ohlcv_history)
     assert log_has('Empty dataframe for pair xyz', caplog)
 
 
 def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
-    caplog.set_level(logging.INFO)
     # default_conf defines a 5m interval. we check interval * 2 + 5m
     # this is necessary as the last candle is removed (partial candles) by default
-    oldtime = arrow.utcnow().shift(minutes=-16)
-    ticks = DataFrame([{'buy': 1, 'date': oldtime}])
+    ohlcv_history.loc[1, 'date'] = arrow.utcnow().shift(minutes=-16)
+    # Take a copy to correctly modify the call
+    mocked_history = ohlcv_history.copy()
+    mocked_history['sell'] = 0
+    mocked_history['buy'] = 0
+    mocked_history.loc[1, 'buy'] = 1
+
+    caplog.set_level(logging.INFO)
     mocker.patch.object(
         _STRATEGY, '_analyze_ticker_internal',
-        return_value=DataFrame(ticks)
+        return_value=mocked_history
     )
+    mocker.patch.object(_STRATEGY, 'assert_df')
     assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
                                                   ohlcv_history)
     assert log_has('Outdated history for pair xyz. Last tick is 16 minutes old', caplog)
+
+
+def test_assert_df_raise(default_conf, mocker, caplog, ohlcv_history):
+    # default_conf defines a 5m interval. we check interval * 2 + 5m
+    # this is necessary as the last candle is removed (partial candles) by default
+    ohlcv_history.loc[1, 'date'] = arrow.utcnow().shift(minutes=-16)
+    # Take a copy to correctly modify the call
+    mocked_history = ohlcv_history.copy()
+    mocked_history['sell'] = 0
+    mocked_history['buy'] = 0
+    mocked_history.loc[1, 'buy'] = 1
+
+    caplog.set_level(logging.INFO)
+    mocker.patch.object(
+        _STRATEGY, 'assert_df',
+        side_effect=DependencyException('Dataframe returned...')
+    )
+    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
+                                                  ohlcv_history)
+    assert log_has('Unable to analyze candle (OHLCV) data for pair xyz: Dataframe returned...',
+                   caplog)
+
+
+def test_assert_df(default_conf, mocker, ohlcv_history):
+    # Ensure it's running when passed correctly
+    _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
+                        ohlcv_history.loc[1, 'close'], ohlcv_history.loc[1, 'date'])
+
+    with pytest.raises(DependencyException, match=r"Dataframe returned from strategy.*length\."):
+        _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history) + 1,
+                            ohlcv_history.loc[1, 'close'], ohlcv_history.loc[1, 'date'])
+
+    with pytest.raises(DependencyException,
+                       match=r"Dataframe returned from strategy.*last close price\."):
+        _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
+                            ohlcv_history.loc[1, 'close'] + 0.01, ohlcv_history.loc[1, 'date'])
+    with pytest.raises(DependencyException,
+                       match=r"Dataframe returned from strategy.*last date\."):
+        _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
+                            ohlcv_history.loc[1, 'close'], ohlcv_history.loc[0, 'date'])
 
 
 def test_get_signal_handles_exceptions(mocker, default_conf):
