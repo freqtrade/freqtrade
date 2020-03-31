@@ -264,7 +264,11 @@ def _download_trades_history(exchange: Exchange,
         # TradesList columns are defined in constants.DEFAULT_TRADES_COLUMNS
         # DEFAULT_TRADES_COLUMNS: 0 -> timestamp
         # DEFAULT_TRADES_COLUMNS: 1 -> id
+
         from_id = trades[-1][1] if trades else None
+        if trades and since < trades[-1][0]:
+            # Reset since to the last available point
+            since = trades[-1][0]
 
         logger.debug("Current Start: %s", trades[0][0] if trades else 'None')
         logger.debug("Current End: %s", trades[-1][0] if trades else 'None')

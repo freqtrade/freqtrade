@@ -174,9 +174,10 @@ def trades_to_ohlcv(trades: List, timeframe: str) -> DataFrame:
     """
     from freqtrade.exchange import timeframe_to_minutes
     timeframe_minutes = timeframe_to_minutes(timeframe)
-    df = pd.DataFrame(trades)
-    df['datetime'] = pd.to_datetime(df['datetime'])
-    df = df.set_index('datetime')
+    df = pd.DataFrame(trades, columns=DEFAULT_TRADES_COLUMNS)
+    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms',
+                                     utc=True,)
+    df = df.set_index('timestamp')
 
     df_new = df['price'].resample(f'{timeframe_minutes}min').ohlc()
     df_new['volume'] = df['amount'].resample(f'{timeframe_minutes}min').sum()

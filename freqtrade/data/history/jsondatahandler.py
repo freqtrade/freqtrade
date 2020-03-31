@@ -9,7 +9,7 @@ from pandas import DataFrame, read_json, to_datetime
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
-from freqtrade.converter import trades_dict_to_list
+from freqtrade.data.converter import trades_dict_to_list
 
 from .idatahandler import IDataHandler, TradeList
 
