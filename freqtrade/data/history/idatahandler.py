@@ -8,7 +8,7 @@ from abc import ABC, abstractclassmethod, abstractmethod
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Type
+from typing import List, Optional, Type
 
 from pandas import DataFrame
 
@@ -17,6 +17,9 @@ from freqtrade.data.converter import clean_ohlcv_dataframe, trim_dataframe
 from freqtrade.exchange import timeframe_to_seconds
 
 logger = logging.getLogger(__name__)
+
+# Type for trades list
+TradeList = List[List]
 
 
 class IDataHandler(ABC):
@@ -89,23 +92,25 @@ class IDataHandler(ABC):
         """
 
     @abstractmethod
-    def trades_store(self, pair: str, data: List[Dict]) -> None:
+    def trades_store(self, pair: str, data: TradeList) -> None:
         """
         Store trades data (list of Dicts) to file
         :param pair: Pair - used for filename
-        :param data: List of Dicts containing trade data
+        :param data: List of Lists containing trade data,
+                     column sequence as in DEFAULT_TRADES_COLUMNS
         """
 
     @abstractmethod
-    def trades_append(self, pair: str, data: List[Dict]):
+    def trades_append(self, pair: str, data: TradeList):
         """
         Append data to existing files
         :param pair: Pair - used for filename
-        :param data: List of Dicts containing trade data
+        :param data: List of Lists containing trade data,
+                     column sequence as in DEFAULT_TRADES_COLUMNS
         """
 
     @abstractmethod
-    def trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> List[Dict]:
+    def trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
         """
         Load a pair from file, either .json.gz or .json
         :param pair: Load trades for this pair

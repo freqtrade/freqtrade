@@ -261,10 +261,14 @@ def _download_trades_history(exchange: Exchange,
 
         trades = data_handler.trades_load(pair)
 
-        from_id = trades[-1]['id'] if trades else None
+        # TradesList columns are defined in constants.DEFAULT_TRADES_COLUMNS
+        # DEFAULT_TRADES_COLUMNS: 0 -> timestamp
+        # DEFAULT_TRADES_COLUMNS: 1 -> id
+        from_id = trades[-1][1] if trades else None
 
-        logger.debug("Current Start: %s", trades[0]['datetime'] if trades else 'None')
-        logger.debug("Current End: %s", trades[-1]['datetime'] if trades else 'None')
+        logger.debug("Current Start: %s", trades[0][0] if trades else 'None')
+        logger.debug("Current End: %s", trades[-1][0] if trades else 'None')
+        logger.info(f"Current Amount of trades: {len(trades)}")
 
         # Default since_ms to 30 days if nothing is given
         new_trades = exchange.get_historic_trades(pair=pair,
@@ -276,8 +280,8 @@ def _download_trades_history(exchange: Exchange,
         trades.extend(new_trades[1])
         data_handler.trades_store(pair, data=trades)
 
-        logger.debug("New Start: %s", trades[0]['datetime'])
-        logger.debug("New End: %s", trades[-1]['datetime'])
+        logger.debug("New Start: %s", trades[0][0])
+        logger.debug("New End: %s", trades[-1][0])
         logger.info(f"New Amount of trades: {len(trades)}")
         return True
 
