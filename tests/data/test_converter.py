@@ -5,12 +5,10 @@ from freqtrade.configuration.timerange import TimeRange
 from freqtrade.data.converter import (convert_ohlcv_format,
                                       convert_trades_format,
                                       ohlcv_fill_up_missing_data,
-                                      ohlcv_to_dataframe,
+                                      ohlcv_to_dataframe, trades_dict_to_list,
                                       trim_dataframe)
-from freqtrade.data.history import (get_timerange,
-                                    load_data,
-                                    load_pair_history,
-                                    validate_backtest_data)
+from freqtrade.data.history import (get_timerange, load_data,
+                                    load_pair_history, validate_backtest_data)
 from tests.conftest import log_has
 from tests.data.test_history import _backup_file, _clean_test_file
 
@@ -195,6 +193,21 @@ def test_trim_dataframe(testdatadir) -> None:
     assert len(data_modify) == len(data) - 55
     # first row matches 25th original row
     assert all(data_modify.iloc[0] == data.iloc[25])
+
+
+def test_trades_dict_to_list(mocker, fetch_trades_result):
+    res = trades_dict_to_list(fetch_trades_result)
+    assert isinstance(res, list)
+    assert isinstance(res[0], list)
+    for i, t in enumerate(res):
+        assert t[0] == fetch_trades_result[i]['timestamp']
+        assert t[1] == fetch_trades_result[i]['id']
+        assert t[2] == fetch_trades_result[i]['type']
+        assert t[3] == fetch_trades_result[i]['side']
+        assert t[4] == fetch_trades_result[i]['price']
+        assert t[5] == fetch_trades_result[i]['amount']
+        assert t[6] == fetch_trades_result[i]['cost']
+
 
 
 def test_convert_trades_format(mocker, default_conf, testdatadir):

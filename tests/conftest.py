@@ -1391,6 +1391,50 @@ def buy_order_fee():
     }
 
 
+@pytest.fixture
+def fetch_trades_result():
+    return [{'info': {'a': 153942751,
+                      'p': '0.02059000',
+                      'q': '6.95500000',
+                      'f': 170811204,
+                      'l': 170811204,
+                      'T': 1585670882666,
+                      'm': True,
+                      'M': True},
+             'timestamp': 1585670882666,
+             'datetime': '2020-03-31T16:08:02.666Z',
+             'symbol': 'ETH/BTC',
+             'id': '153942751',
+             'order': None,
+             'type': None,
+             'takerOrMaker': None,
+             'side': 'sell',
+             'price': 0.02059,
+             'amount': 6.955,
+             'cost': 0.14320345,
+             'fee': None},
+            {'info': {'a': 153942752,
+                      'p': '0.02059100',
+                      'q': '0.04900000',
+                      'f': 170811205,
+                      'l': 170811205,
+                      'T': 1585670889154,
+                      'm': False,
+                      'M': True},
+             'timestamp': 1585670889154,
+             'datetime': '2020-03-31T16:08:09.154Z',
+             'symbol': 'ETH/BTC',
+             'id': '153942752',
+             'order': None,
+             'type': None,
+             'takerOrMaker': None,
+             'side': 'buy',
+             'price': 0.020591,
+             'amount': 0.049,
+             'cost': 0.001008959,
+             'fee': None}]
+
+
 @pytest.fixture(scope="function")
 def edge_conf(default_conf):
     conf = deepcopy(default_conf)
