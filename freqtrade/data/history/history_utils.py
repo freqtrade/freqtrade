@@ -270,7 +270,8 @@ def _download_trades_history(exchange: Exchange,
         from_id = trades[-1][1] if trades else None
         if trades and since < trades[-1][0]:
             # Reset since to the last available point
-            since = trades[-1][0]
+            # - 5 seconds (to ensure we're getting all trades)
+            since = trades[-1][0] - (5 * 1000)
 
         logger.debug("Current Start: %s", trades[0][0] if trades else 'None')
         logger.debug("Current End: %s", trades[-1][0] if trades else 'None')
