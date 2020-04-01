@@ -136,7 +136,7 @@ class JsonDataHandler(IDataHandler):
         """
         raise NotImplementedError()
 
-    def trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
+    def _trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
         """
         Load a pair from file, either .json.gz or .json
         # TODO: respect timerange ...

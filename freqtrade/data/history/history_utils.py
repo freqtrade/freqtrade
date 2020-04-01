@@ -9,7 +9,9 @@ from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
-from freqtrade.data.converter import ohlcv_to_dataframe, trades_to_ohlcv
+from freqtrade.data.converter import (ohlcv_to_dataframe,
+                                      trades_remove_duplicates,
+                                      trades_to_ohlcv)
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
@@ -282,6 +284,8 @@ def _download_trades_history(exchange: Exchange,
                                                   from_id=from_id,
                                                   )
         trades.extend(new_trades[1])
+        # Remove duplicates to make sure we're not storing data we don't need
+        trades = trades_remove_duplicates(trades)
         data_handler.trades_store(pair, data=trades)
 
         logger.debug("New Start: %s", trades[0][0])

@@ -13,7 +13,8 @@ from typing import List, Optional, Type
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
-from freqtrade.data.converter import clean_ohlcv_dataframe, trim_dataframe
+from freqtrade.data.converter import (clean_ohlcv_dataframe,
+                                      trades_remove_duplicates, trim_dataframe)
 from freqtrade.exchange import timeframe_to_seconds
 
 logger = logging.getLogger(__name__)
@@ -110,7 +111,7 @@ class IDataHandler(ABC):
         """
 
     @abstractmethod
-    def trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
+    def _trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
         """
         Load a pair from file, either .json.gz or .json
         :param pair: Load trades for this pair
@@ -125,6 +126,16 @@ class IDataHandler(ABC):
         :param pair: Delete data for this pair.
         :return: True when deleted, false if file did not exist.
         """
+
+    def trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
+        """
+        Load a pair from file, either .json.gz or .json
+        Removes duplicates in the process.
+        :param pair: Load trades for this pair
+        :param timerange: Timerange to load trades for - currently not implemented
+        :return: List of trades
+        """
+        return trades_remove_duplicates(self._trades_load(pair, timerange=timerange))
 
     def ohlcv_load(self, pair, timeframe: str,
                    timerange: Optional[TimeRange] = None,
