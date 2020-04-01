@@ -6,7 +6,7 @@ from freqtrade.data.converter import (convert_ohlcv_format,
                                       convert_trades_format,
                                       ohlcv_fill_up_missing_data,
                                       ohlcv_to_dataframe, trades_dict_to_list,
-                                      trim_dataframe)
+                                      trades_remove_duplicates, trim_dataframe)
 from freqtrade.data.history import (get_timerange, load_data,
                                     load_pair_history, validate_backtest_data)
 from tests.conftest import log_has
@@ -195,7 +195,16 @@ def test_trim_dataframe(testdatadir) -> None:
     assert all(data_modify.iloc[0] == data.iloc[25])
 
 
-def test_trades_dict_to_list(mocker, fetch_trades_result):
+def test_trades_remove_duplicates(trades_history):
+    trades_history1 = trades_history * 3
+    assert len(trades_history1) == len(trades_history) * 3
+    res = trades_remove_duplicates(trades_history1)
+    assert len(res) == len(trades_history)
+    for i, t in enumerate(res):
+        assert t == trades_history[i]
+
+
+def test_trades_dict_to_list(fetch_trades_result):
     res = trades_dict_to_list(fetch_trades_result)
     assert isinstance(res, list)
     assert isinstance(res[0], list)

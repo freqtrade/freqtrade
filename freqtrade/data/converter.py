@@ -1,15 +1,17 @@
 """
 Functions to convert data from one format to another
 """
+import itertools
 import logging
 from datetime import datetime, timezone
+from operator import itemgetter
 from typing import Any, Dict, List
 
 import pandas as pd
 from pandas import DataFrame, to_datetime
 
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS
-
+from freqtrade.constants import (DEFAULT_DATAFRAME_COLUMNS,
+                                 DEFAULT_TRADES_COLUMNS)
 
 logger = logging.getLogger(__name__)
 
@@ -153,6 +155,17 @@ def order_book_to_dataframe(bids: list, asks: list) -> DataFrame:
                       keys=['b_sum', 'b_size', 'bids', 'asks', 'a_size', 'a_sum'])
     # logger.info('order book %s', frame )
     return frame
+
+
+def trades_remove_duplicates(trades: List[List]) -> List[List]:
+    """
+    Removes duplicates from the trades list.
+    Uses itertools.groupby to avoid converting to pandas.
+    Tests show it as being pretty efficient on lists of 4M Lists.
+    :param trades: List of Lists with constants.DEFAULT_TRADES_COLUMNS as columns
+    :return: same format as above, but with duplicates removed
+    """
+    return [i for i, _ in itertools.groupby(sorted(trades, key=itemgetter(0)))]
 
 
 def trades_dict_to_list(trades: List[Dict]) -> List[List]:
