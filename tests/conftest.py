@@ -1227,6 +1227,14 @@ def trades_for_order():
 
 @pytest.fixture(scope="function")
 def trades_history():
+    return [[1565798399463, '126181329', None, 'buy', 0.019627, 0.04, 0.00078508],
+            [1565798399629, '126181330', None, 'buy', 0.019627, 0.244, 0.004788987999999999],
+            [1565798399752, '126181331', None, 'sell', 0.019626, 0.011, 0.00021588599999999999],
+            [1565798399862, '126181332', None, 'sell', 0.019626, 0.011, 0.00021588599999999999],
+            [1565798399872, '126181333', None, 'sell', 0.019626, 0.011, 0.00021588599999999999]]
+
+@pytest.fixture(scope="function")
+def fetch_trades_result():
     return [{'info': {'a': 126181329,
                       'p': '0.01962700',
                       'q': '0.04000000',
@@ -1389,50 +1397,6 @@ def buy_order_fee():
         'status': 'closed',
         'fee': None
     }
-
-
-@pytest.fixture
-def fetch_trades_result():
-    return [{'info': {'a': 153942751,
-                      'p': '0.02059000',
-                      'q': '6.95500000',
-                      'f': 170811204,
-                      'l': 170811204,
-                      'T': 1585670882666,
-                      'm': True,
-                      'M': True},
-             'timestamp': 1585670882666,
-             'datetime': '2020-03-31T16:08:02.666Z',
-             'symbol': 'ETH/BTC',
-             'id': '153942751',
-             'order': None,
-             'type': None,
-             'takerOrMaker': None,
-             'side': 'sell',
-             'price': 0.02059,
-             'amount': 6.955,
-             'cost': 0.14320345,
-             'fee': None},
-            {'info': {'a': 153942752,
-                      'p': '0.02059100',
-                      'q': '0.04900000',
-                      'f': 170811205,
-                      'l': 170811205,
-                      'T': 1585670889154,
-                      'm': False,
-                      'M': True},
-             'timestamp': 1585670889154,
-             'datetime': '2020-03-31T16:08:09.154Z',
-             'symbol': 'ETH/BTC',
-             'id': '153942752',
-             'order': None,
-             'type': None,
-             'takerOrMaker': None,
-             'side': 'buy',
-             'price': 0.020591,
-             'amount': 0.049,
-             'cost': 0.001008959,
-             'fee': None}]
 
 
 @pytest.fixture(scope="function")
