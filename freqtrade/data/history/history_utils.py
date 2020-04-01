@@ -272,9 +272,9 @@ def _download_trades_history(exchange: Exchange,
         if trades and since < trades[-1][0]:
             # Reset since to the last available point
             # - 5 seconds (to ensure we're getting all trades)
+            since = trades[-1][0] - (5 * 1000)
             logger.info(f"Using last trade date -5s - Downloading trades for {pair} "
                         f"since: {format_ms_time(since)}.")
-            since = trades[-1][0] - (5 * 1000)
 
         logger.debug(f"Current Start: {format_ms_time(trades[0][0]) if trades else 'None'}")
         logger.debug(f"Current End: {format_ms_time(trades[-1][0]) if trades else 'None'}")
