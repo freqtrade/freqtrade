@@ -3,24 +3,23 @@
 
 from unittest.mock import MagicMock
 
-from freqtrade.edge import PairInfo
-from freqtrade.optimize import setup_configuration, start_edge
+from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_edge
 from freqtrade.optimize.edge_cli import EdgeCli
 from freqtrade.state import RunMode
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 
 
-def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> None:
+def test_setup_optimize_configuration_without_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
 
     args = [
+        'edge',
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
-        'edge'
     ]
 
-    config = setup_configuration(get_args(args), RunMode.EDGE)
+    config = setup_optimize_configuration(get_args(args), RunMode.EDGE)
     assert config['runmode'] == RunMode.EDGE
 
     assert 'max_open_trades' in config
@@ -45,16 +44,16 @@ def test_setup_edge_configuration_with_arguments(mocker, edge_conf, caplog) -> N
     )
 
     args = [
+        'edge',
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
         '--datadir', '/foo/bar',
-        'edge',
         '--ticker-interval', '1m',
         '--timerange', ':100',
         '--stoplosses=-0.01,-0.10,-0.001'
     ]
 
-    config = setup_configuration(get_args(args), RunMode.EDGE)
+    config = setup_optimize_configuration(get_args(args), RunMode.EDGE)
     assert 'max_open_trades' in config
     assert 'stake_currency' in config
     assert 'stake_amount' in config
@@ -79,12 +78,12 @@ def test_start(mocker, fee, edge_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, edge_conf)
 
     args = [
+        'edge',
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
-        'edge'
     ]
-    args = get_args(args)
-    start_edge(args)
+    pargs = get_args(args)
+    start_edge(pargs)
     assert log_has('Starting freqtrade in Edge mode', caplog)
     assert start_mock.call_count == 1
 
@@ -98,14 +97,11 @@ def test_edge_init(mocker, edge_conf) -> None:
     assert callable(edge_cli.edge.calculate)
 
 
-def test_generate_edge_table(edge_conf, mocker):
+def test_edge_init_fee(mocker, edge_conf) -> None:
     patch_exchange(mocker)
+    edge_conf['fee'] = 0.1234
+    edge_conf['stake_amount'] = 20
+    fee_mock = mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
     edge_cli = EdgeCli(edge_conf)
-
-    results = {}
-    results['ETH/BTC'] = PairInfo(-0.01, 0.60, 2, 1, 3, 10, 60)
-
-    assert edge_cli._generate_edge_table(results).count(':|') == 7
-    assert edge_cli._generate_edge_table(results).count('| ETH/BTC |') == 1
-    assert edge_cli._generate_edge_table(results).count(
-        '|   risk reward ratio |   required risk reward |   expectancy |') == 1
+    assert edge_cli.edge.fee == 0.1234
+    assert fee_mock.call_count == 0

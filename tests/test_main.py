@@ -5,14 +5,21 @@ from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
-from freqtrade import OperationalException
-from freqtrade.configuration import Arguments
+from pathlib import Path
+from freqtrade.commands import Arguments
+from freqtrade.exceptions import FreqtradeException, OperationalException
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.main import main
 from freqtrade.state import State
 from freqtrade.worker import Worker
-from tests.conftest import (log_has, patch_exchange,
+from tests.conftest import (log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
+
+
+def test_parse_args_None(caplog) -> None:
+    with pytest.raises(SystemExit):
+        main([])
+    assert log_has_re(r"Usage of Freqtrade requires a subcommand.*", caplog)
 
 
 def test_parse_args_backtesting(mocker) -> None:
@@ -20,7 +27,8 @@ def test_parse_args_backtesting(mocker) -> None:
     Test that main() can start backtesting and also ensure we can pass some specific arguments
     further argument parsing is done in test_arguments.py
     """
-    backtesting_mock = mocker.patch('freqtrade.optimize.start_backtesting', MagicMock())
+    mocker.patch.object(Path, "is_file", MagicMock(side_effect=[False, True]))
+    backtesting_mock = mocker.patch('freqtrade.commands.start_backtesting')
     backtesting_mock.__name__ = PropertyMock("start_backtesting")
     # it's sys.exit(0) at the end of backtesting
     with pytest.raises(SystemExit):
@@ -29,14 +37,15 @@ def test_parse_args_backtesting(mocker) -> None:
     call_args = backtesting_mock.call_args[0][0]
     assert call_args["config"] == ['config.json']
     assert call_args["verbosity"] == 0
-    assert call_args["subparser"] == 'backtesting'
+    assert call_args["command"] == 'backtesting'
     assert call_args["func"] is not None
     assert callable(call_args["func"])
     assert call_args["ticker_interval"] is None
 
 
 def test_main_start_hyperopt(mocker) -> None:
-    hyperopt_mock = mocker.patch('freqtrade.optimize.start_hyperopt', MagicMock())
+    mocker.patch.object(Path, "is_file", MagicMock(side_effect=[False, True]))
+    hyperopt_mock = mocker.patch('freqtrade.commands.start_hyperopt', MagicMock())
     hyperopt_mock.__name__ = PropertyMock("start_hyperopt")
     # it's sys.exit(0) at the end of hyperopt
     with pytest.raises(SystemExit):
@@ -45,7 +54,7 @@ def test_main_start_hyperopt(mocker) -> None:
     call_args = hyperopt_mock.call_args[0][0]
     assert call_args["config"] == ['config.json']
     assert call_args["verbosity"] == 0
-    assert call_args["subparser"] == 'hyperopt'
+    assert call_args["command"] == 'hyperopt'
     assert call_args["func"] is not None
     assert callable(call_args["func"])
 
@@ -58,7 +67,7 @@ def test_main_fatal_exception(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
 
-    args = ['-c', 'config.json.example']
+    args = ['trade', '-c', 'config.json.example']
 
     # Test Main + the KeyboardInterrupt exception
     with pytest.raises(SystemExit):
@@ -73,9 +82,10 @@ def test_main_keyboard_interrupt(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.worker.Worker._worker', MagicMock(side_effect=KeyboardInterrupt))
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
+    mocker.patch('freqtrade.wallets.Wallets.update', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
 
-    args = ['-c', 'config.json.example']
+    args = ['trade', '-c', 'config.json.example']
 
     # Test Main + the KeyboardInterrupt exception
     with pytest.raises(SystemExit):
@@ -89,13 +99,14 @@ def test_main_operational_exception(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.cleanup', MagicMock())
     mocker.patch(
         'freqtrade.worker.Worker._worker',
-        MagicMock(side_effect=OperationalException('Oh snap!'))
+        MagicMock(side_effect=FreqtradeException('Oh snap!'))
     )
     patched_configuration_load_config_file(mocker, default_conf)
+    mocker.patch('freqtrade.wallets.Wallets.update', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
 
-    args = ['-c', 'config.json.example']
+    args = ['trade', '-c', 'config.json.example']
 
     # Test Main + the KeyboardInterrupt exception
     with pytest.raises(SystemExit):
@@ -114,15 +125,16 @@ def test_main_reload_conf(mocker, default_conf, caplog) -> None:
                                          OperationalException("Oh snap!")])
     mocker.patch('freqtrade.worker.Worker._worker', worker_mock)
     patched_configuration_load_config_file(mocker, default_conf)
-    reconfigure_mock = mocker.patch('freqtrade.main.Worker._reconfigure', MagicMock())
+    mocker.patch('freqtrade.wallets.Wallets.update', MagicMock())
+    reconfigure_mock = mocker.patch('freqtrade.worker.Worker._reconfigure', MagicMock())
 
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
 
-    args = Arguments(['-c', 'config.json.example']).get_parsed_arg()
+    args = Arguments(['trade', '-c', 'config.json.example']).get_parsed_arg()
     worker = Worker(args=args, config=default_conf)
     with pytest.raises(SystemExit):
-        main(['-c', 'config.json.example'])
+        main(['trade', '-c', 'config.json.example'])
 
     assert log_has('Using config: config.json.example ...', caplog)
     assert worker_mock.call_count == 4
@@ -137,11 +149,12 @@ def test_reconfigure(mocker, default_conf) -> None:
         'freqtrade.worker.Worker._worker',
         MagicMock(side_effect=OperationalException('Oh snap!'))
     )
+    mocker.patch('freqtrade.wallets.Wallets.update', MagicMock())
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
 
-    args = Arguments(['-c', 'config.json.example']).get_parsed_arg()
+    args = Arguments(['trade', '-c', 'config.json.example']).get_parsed_arg()
     worker = Worker(args=args, config=default_conf)
     freqtrade = worker.freqtrade
 

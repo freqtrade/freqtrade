@@ -11,7 +11,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.optimize.hyperopt_interface import IHyperOpt
 
 
-class DefaultHyperOpts(IHyperOpt):
+class DefaultHyperOpt(IHyperOpt):
     """
     Default hyperopt provided by the Freqtrade bot.
     You can override it with your own Hyperopt

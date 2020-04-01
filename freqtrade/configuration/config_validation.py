@@ -1,11 +1,13 @@
 import logging
+from copy import deepcopy
 from typing import Any, Dict
 
 from jsonschema import Draft4Validator, validators
 from jsonschema.exceptions import ValidationError, best_match
 
-from freqtrade import constants, OperationalException
-
+from freqtrade import constants
+from freqtrade.exceptions import OperationalException
+from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
 
@@ -41,15 +43,20 @@ def validate_config_schema(conf: Dict[str, Any]) -> Dict[str, Any]:
     :param conf: Config in JSON format
     :return: Returns the config if valid, otherwise throw an exception
     """
+    conf_schema = deepcopy(constants.CONF_SCHEMA)
+    if conf.get('runmode', RunMode.OTHER) in (RunMode.DRY_RUN, RunMode.LIVE):
+        conf_schema['required'] = constants.SCHEMA_TRADE_REQUIRED
+    else:
+        conf_schema['required'] = constants.SCHEMA_MINIMAL_REQUIRED
     try:
-        FreqtradeValidator(constants.CONF_SCHEMA).validate(conf)
+        FreqtradeValidator(conf_schema).validate(conf)
         return conf
     except ValidationError as e:
         logger.critical(
             f"Invalid configuration. See config.json.example. Reason: {e}"
         )
         raise ValidationError(
-            best_match(Draft4Validator(constants.CONF_SCHEMA).iter_errors(conf)).message
+            best_match(Draft4Validator(conf_schema).iter_errors(conf)).message
         )
 
 
@@ -61,9 +68,27 @@ def validate_config_consistency(conf: Dict[str, Any]) -> None:
     :param conf: Config in JSON format
     :return: Returns None if everything is ok, otherwise throw an OperationalException
     """
+
     # validating trailing stoploss
     _validate_trailing_stoploss(conf)
     _validate_edge(conf)
+    _validate_whitelist(conf)
+    _validate_unlimited_amount(conf)
+
+    # validate configuration before returning
+    logger.info('Validating configuration ...')
+    validate_config_schema(conf)
+
+
+def _validate_unlimited_amount(conf: Dict[str, Any]) -> None:
+    """
+    If edge is disabled, either max_open_trades or stake_amount need to be set.
+    :raise: OperationalException if config validation failed
+    """
+    if (not conf.get('edge', {}).get('enabled')
+       and conf.get('max_open_trades') == float('inf')
+       and conf.get('stake_amount') == constants.UNLIMITED_STAKE_AMOUNT):
+        raise OperationalException("`max_open_trades` and `stake_amount` cannot both be unlimited.")
 
 
 def _validate_trailing_stoploss(conf: Dict[str, Any]) -> None:
@@ -111,3 +136,17 @@ def _validate_edge(conf: Dict[str, Any]) -> None:
             "Edge and VolumePairList are incompatible, "
             "Edge will override whatever pairs VolumePairlist selects."
         )
+
+
+def _validate_whitelist(conf: Dict[str, Any]) -> None:
+    """
+    Dynamic whitelist does not require pair_whitelist to be set - however StaticWhitelist does.
+    """
+    if conf.get('runmode', RunMode.OTHER) in [RunMode.OTHER, RunMode.PLOT,
+                                              RunMode.UTIL_NO_EXCHANGE, RunMode.UTIL_EXCHANGE]:
+        return
+
+    for pl in conf.get('pairlists', [{'method': 'StaticPairList'}]):
+        if (pl.get('method') == 'StaticPairList'
+                and not conf.get('exchange', {}).get('pair_whitelist')):
+            raise OperationalException("StaticPairList requires pair_whitelist to be set.")

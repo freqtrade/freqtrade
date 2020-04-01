@@ -23,7 +23,7 @@ _TEST_PASS = "SuperSecurePassword1!"
 def botclient(default_conf, mocker):
     default_conf.update({"api_server": {"enabled": True,
                                         "listen_ip_address": "127.0.0.1",
-                                        "listen_port": "8080",
+                                        "listen_port": 8080,
                                         "username": _TEST_USER,
                                         "password": _TEST_PASS,
                                         }})
@@ -64,6 +64,10 @@ def test_api_not_found(botclient):
 
 def test_api_unauthorized(botclient):
     ftbot, client = botclient
+    rc = client.get(f"{BASE_URI}/ping")
+    assert_response(rc)
+    assert rc.json == {'status': 'pong'}
+
     # Don't send user/pass information
     rc = client.get(f"{BASE_URI}/version")
     assert_response(rc, 401)
@@ -129,7 +133,10 @@ def test_api__init__(default_conf, mocker):
 def test_api_run(default_conf, mocker, caplog):
     default_conf.update({"api_server": {"enabled": True,
                                         "listen_ip_address": "127.0.0.1",
-                                        "listen_port": "8080"}})
+                                        "listen_port": 8080,
+                                        "username": "TestUser",
+                                        "password": "testPass",
+                                        }})
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
     mocker.patch('freqtrade.rpc.api_server.threading.Thread', MagicMock())
 
@@ -142,7 +149,7 @@ def test_api_run(default_conf, mocker, caplog):
     apiserver.run()
     assert server_mock.call_count == 1
     assert server_mock.call_args_list[0][0][0] == "127.0.0.1"
-    assert server_mock.call_args_list[0][0][1] == "8080"
+    assert server_mock.call_args_list[0][0][1] == 8080
     assert isinstance(server_mock.call_args_list[0][0][2], Flask)
     assert hasattr(apiserver, "srv")
 
@@ -154,14 +161,14 @@ def test_api_run(default_conf, mocker, caplog):
     server_mock.reset_mock()
     apiserver._config.update({"api_server": {"enabled": True,
                                              "listen_ip_address": "0.0.0.0",
-                                             "listen_port": "8089",
+                                             "listen_port": 8089,
                                              "password": "",
                                              }})
     apiserver.run()
 
     assert server_mock.call_count == 1
     assert server_mock.call_args_list[0][0][0] == "0.0.0.0"
-    assert server_mock.call_args_list[0][0][1] == "8089"
+    assert server_mock.call_args_list[0][0][1] == 8089
     assert isinstance(server_mock.call_args_list[0][0][2], Flask)
     assert log_has("Starting HTTP Server at 0.0.0.0:8089", caplog)
     assert log_has("Starting Local Rest Server.", caplog)
@@ -182,7 +189,10 @@ def test_api_run(default_conf, mocker, caplog):
 def test_api_cleanup(default_conf, mocker, caplog):
     default_conf.update({"api_server": {"enabled": True,
                                         "listen_ip_address": "127.0.0.1",
-                                        "listen_port": "8080"}})
+                                        "listen_port": 8080,
+                                        "username": "TestUser",
+                                        "password": "testPass",
+                                        }})
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
     mocker.patch('freqtrade.rpc.api_server.threading.Thread', MagicMock())
     mocker.patch('freqtrade.rpc.api_server.make_server', MagicMock())
@@ -220,28 +230,11 @@ def test_api_stopbuy(botclient):
 def test_api_balance(botclient, mocker, rpc_balance):
     ftbot, client = botclient
 
-    def mock_ticker(symbol, refresh):
-        if symbol == 'BTC/USDT':
-            return {
-                'bid': 10000.00,
-                'ask': 10000.00,
-                'last': 10000.00,
-            }
-        elif symbol == 'XRP/BTC':
-            return {
-                'bid': 0.00001,
-                'ask': 0.00001,
-                'last': 0.00001,
-            }
-        return {
-            'bid': 0.1,
-            'ask': 0.1,
-            'last': 0.1,
-        }
+    ftbot.config['dry_run'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_balances', return_value=rpc_balance)
-    mocker.patch('freqtrade.exchange.Exchange.get_ticker', side_effect=mock_ticker)
     mocker.patch('freqtrade.exchange.Exchange.get_valid_pair_combination',
                  side_effect=lambda a, b: f"{a}/{b}")
+    ftbot.wallets.update()
 
     rc = client_get(client, f"{BASE_URI}/balance")
     assert_response(rc)
@@ -252,7 +245,8 @@ def test_api_balance(botclient, mocker, rpc_balance):
         'free': 12.0,
         'balance': 12.0,
         'used': 0.0,
-        'est_btc': 12.0,
+        'est_stake': 12.0,
+        'stake': 'BTC',
     }
 
 
@@ -262,7 +256,7 @@ def test_api_count(botclient, mocker, ticker, fee, markets):
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
@@ -273,11 +267,23 @@ def test_api_count(botclient, mocker, ticker, fee, markets):
     assert rc.json["max"] == 1.0
 
     # Create some test data
-    ftbot.create_trades()
+    ftbot.enter_positions()
     rc = client_get(client, f"{BASE_URI}/count")
     assert_response(rc)
     assert rc.json["current"] == 1.0
     assert rc.json["max"] == 1.0
+
+
+def test_api_show_config(botclient, mocker):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, (True, False))
+
+    rc = client_get(client, f"{BASE_URI}/show_config")
+    assert_response(rc)
+    assert 'dry_run' in rc.json
+    assert rc.json['exchange'] == 'bittrex'
+    assert rc.json['ticker_interval'] == '5m'
+    assert not rc.json['trailing_stop']
 
 
 def test_api_daily(botclient, mocker, ticker, fee, markets):
@@ -286,7 +292,7 @@ def test_api_daily(botclient, mocker, ticker, fee, markets):
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
@@ -302,7 +308,7 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
@@ -317,7 +323,7 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
@@ -327,7 +333,7 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
     assert len(rc.json) == 1
     assert rc.json == {"error": "Error querying _profit: no closed trade"}
 
-    ftbot.create_trades()
+    ftbot.enter_positions()
     trade = Trade.query.first()
 
     # Simulate fulfilled LIMIT_BUY order for trade
@@ -375,7 +381,7 @@ def test_api_performance(botclient, mocker, ticker, fee):
         close_rate=0.265441,
 
     )
-    trade.close_profit = trade.calc_profit_percent()
+    trade.close_profit = trade.calc_profit_ratio()
     Trade.session.add(trade)
 
     trade = Trade(
@@ -390,7 +396,7 @@ def test_api_performance(botclient, mocker, ticker, fee):
         fee_open=fee.return_value,
         close_rate=0.391
     )
-    trade.close_profit = trade.calc_profit_percent()
+    trade.close_profit = trade.calc_profit_ratio()
     Trade.session.add(trade)
     Trade.session.flush()
 
@@ -407,33 +413,33 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
 
     rc = client_get(client, f"{BASE_URI}/status")
-    assert_response(rc, 502)
-    assert rc.json == {'error': 'Error querying _status: no active trade'}
+    assert_response(rc, 200)
+    assert rc.json == []
 
-    ftbot.create_trades()
+    ftbot.enter_positions()
     rc = client_get(client, f"{BASE_URI}/status")
     assert_response(rc)
     assert len(rc.json) == 1
-    assert rc.json == [{'amount': 90.99181074,
+    assert rc.json == [{'amount': 91.07468124,
                         'base_currency': 'BTC',
                         'close_date': None,
                         'close_date_hum': None,
                         'close_profit': None,
                         'close_rate': None,
-                        'current_profit': -0.59,
-                        'current_rate': 1.098e-05,
+                        'current_profit': -0.41,
+                        'current_rate': 1.099e-05,
                         'initial_stop_loss': 0.0,
                         'initial_stop_loss_pct': None,
                         'open_date': ANY,
                         'open_date_hum': 'just now',
                         'open_order': '(limit buy rem=0.00000000)',
-                        'open_rate': 1.099e-05,
+                        'open_rate': 1.098e-05,
                         'pair': 'ETH/BTC',
                         'stake_amount': 0.001,
                         'stop_loss': 0.0,
@@ -456,7 +462,7 @@ def test_api_blacklist(botclient, mocker):
     assert_response(rc)
     assert rc.json == {"blacklist": ["DOGE/BTC", "HOT/BTC"],
                        "length": 2,
-                       "method": "StaticPairList"}
+                       "method": ["StaticPairList"]}
 
     # Add ETH/BTC to blacklist
     rc = client_post(client, f"{BASE_URI}/blacklist",
@@ -464,7 +470,7 @@ def test_api_blacklist(botclient, mocker):
     assert_response(rc)
     assert rc.json == {"blacklist": ["DOGE/BTC", "HOT/BTC", "ETH/BTC"],
                        "length": 3,
-                       "method": "StaticPairList"}
+                       "method": ["StaticPairList"]}
 
 
 def test_api_whitelist(botclient):
@@ -474,7 +480,7 @@ def test_api_whitelist(botclient):
     assert_response(rc)
     assert rc.json == {"whitelist": ['ETH/BTC', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC'],
                        "length": 4,
-                       "method": "StaticPairList"}
+                       "method": ["StaticPairList"]}
 
 
 def test_api_forcebuy(botclient, mocker, fee):
@@ -535,7 +541,7 @@ def test_api_forcesell(botclient, mocker, ticker, fee, markets):
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
-        get_ticker=ticker,
+        fetch_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
@@ -546,7 +552,7 @@ def test_api_forcesell(botclient, mocker, ticker, fee, markets):
     assert_response(rc, 502)
     assert rc.json == {"error": "Error querying _forcesell: invalid argument"}
 
-    ftbot.create_trades()
+    ftbot.enter_positions()
 
     rc = client_post(client, f"{BASE_URI}/forcesell",
                      data='{"tradeid": "1"}')

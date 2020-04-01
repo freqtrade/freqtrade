@@ -1,4 +1,4 @@
-FROM python:3.7.4-slim-stretch
+FROM python:3.8.2-slim-buster
 
 RUN apt-get update \
     && apt-get -y install curl build-essential libssl-dev \
@@ -16,11 +16,13 @@ RUN cd /tmp && /tmp/install_ta-lib.sh && rm -r /tmp/*ta-lib*
 ENV LD_LIBRARY_PATH /usr/local/lib
 
 # Install dependencies
-COPY requirements.txt requirements-common.txt /freqtrade/
+COPY requirements.txt requirements-common.txt requirements-hyperopt.txt /freqtrade/
 RUN pip install numpy --no-cache-dir \
-  && pip install -r requirements.txt --no-cache-dir
+  && pip install -r requirements-hyperopt.txt --no-cache-dir
 
 # Install and execute
 COPY . /freqtrade/
 RUN pip install -e . --no-cache-dir
 ENTRYPOINT ["freqtrade"]
+# Default to trade mode
+CMD [ "trade" ]

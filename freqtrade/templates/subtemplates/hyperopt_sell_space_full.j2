@@ -1,0 +1,11 @@
+Integer(75, 100, name='sell-mfi-value'),
+Integer(50, 100, name='sell-fastd-value'),
+Integer(50, 100, name='sell-adx-value'),
+Integer(60, 100, name='sell-rsi-value'),
+Categorical([True, False], name='sell-mfi-enabled'),
+Categorical([True, False], name='sell-fastd-enabled'),
+Categorical([True, False], name='sell-adx-enabled'),
+Categorical([True, False], name='sell-rsi-enabled'),
+Categorical(['sell-bb_upper',
+             'sell-macd_cross_signal',
+             'sell-sar_reversal'], name='sell-trigger')

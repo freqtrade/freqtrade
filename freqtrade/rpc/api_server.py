@@ -2,7 +2,7 @@ import logging
 import threading
 from datetime import date, datetime
 from ipaddress import IPv4Address
-from typing import Dict
+from typing import Dict, Callable, Any
 
 from arrow import Arrow
 from flask import Flask, jsonify, request
@@ -34,40 +34,44 @@ class ArrowJSONEncoder(JSONEncoder):
         return JSONEncoder.default(self, obj)
 
 
+# Type should really be Callable[[ApiServer, Any], Any], but that will create a circular dependency
+def require_login(func: Callable[[Any, Any], Any]):
+
+    def func_wrapper(obj, *args, **kwargs):
+
+        auth = request.authorization
+        if auth and obj.check_auth(auth.username, auth.password):
+            return func(obj, *args, **kwargs)
+        else:
+            return jsonify({"error": "Unauthorized"}), 401
+
+    return func_wrapper
+
+
+# Type should really be Callable[[ApiServer], Any], but that will create a circular dependency
+def rpc_catch_errors(func: Callable[[Any], Any]):
+
+    def func_wrapper(obj, *args, **kwargs):
+
+        try:
+            return func(obj, *args, **kwargs)
+        except RPCException as e:
+            logger.exception("API Error calling %s: %s", func.__name__, e)
+            return obj.rest_error(f"Error querying {func.__name__}: {e}")
+
+    return func_wrapper
+
+
 class ApiServer(RPC):
     """
     This class runs api server and provides rpc.rpc functionality to it
 
-    This class starts a none blocking thread the api server runs within
+    This class starts a non-blocking thread the api server runs within
     """
-
-    def rpc_catch_errors(func):
-
-        def func_wrapper(self, *args, **kwargs):
-
-            try:
-                return func(self, *args, **kwargs)
-            except RPCException as e:
-                logger.exception("API Error calling %s: %s", func.__name__, e)
-                return self.rest_error(f"Error querying {func.__name__}: {e}")
-
-        return func_wrapper
 
     def check_auth(self, username, password):
         return (username == self._config['api_server'].get('username') and
                 password == self._config['api_server'].get('password'))
-
-    def require_login(func):
-
-        def func_wrapper(self, *args, **kwargs):
-
-            auth = request.authorization
-            if auth and self.check_auth(auth.username, auth.password):
-                return func(self, *args, **kwargs)
-            else:
-                return jsonify({"error": "Unauthorized"}), 401
-
-        return func_wrapper
 
     def __init__(self, freqtrade) -> None:
         """
@@ -165,6 +169,10 @@ class ApiServer(RPC):
                               view_func=self._status, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/version', 'version',
                               view_func=self._version, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/show_config', 'show_config',
+                              view_func=self._show_config, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/ping', 'ping',
+                              view_func=self._ping, methods=['GET'])
 
         # Combined actions and infos
         self.app.add_url_rule(f'{BASE_URI}/blacklist', 'blacklist', view_func=self._blacklist,
@@ -220,6 +228,13 @@ class ApiServer(RPC):
         msg = self._rpc_stopbuy()
         return self.rest_dump(msg)
 
+    @rpc_catch_errors
+    def _ping(self):
+        """
+        simple poing version
+        """
+        return self.rest_dump({"status": "pong"})
+
     @require_login
     @rpc_catch_errors
     def _version(self):
@@ -227,6 +242,14 @@ class ApiServer(RPC):
         Prints the bot's version
         """
         return self.rest_dump({"version": __version__})
+
+    @require_login
+    @rpc_catch_errors
+    def _show_config(self):
+        """
+        Prints the bot's version
+        """
+        return self.rest_dump(self._rpc_show_config())
 
     @require_login
     @rpc_catch_errors
@@ -261,7 +284,7 @@ class ApiServer(RPC):
 
         stats = self._rpc_daily_profit(timescale,
                                        self._config['stake_currency'],
-                                       self._config['fiat_display_currency']
+                                       self._config.get('fiat_display_currency', '')
                                        )
 
         return self.rest_dump(stats)
@@ -289,7 +312,7 @@ class ApiServer(RPC):
         logger.info("LocalRPC - Profit Command Called")
 
         stats = self._rpc_trade_statistics(self._config['stake_currency'],
-                                           self._config['fiat_display_currency']
+                                           self._config.get('fiat_display_currency')
                                            )
 
         return self.rest_dump(stats)
@@ -317,8 +340,11 @@ class ApiServer(RPC):
 
         Returns the current status of the trades in json format
         """
-        results = self._rpc_trade_status()
-        return self.rest_dump(results)
+        try:
+            results = self._rpc_trade_status()
+            return self.rest_dump(results)
+        except RPCException:
+            return self.rest_dump([])
 
     @require_login
     @rpc_catch_errors
@@ -328,7 +354,8 @@ class ApiServer(RPC):
 
         Returns the current status of the trades in json format
         """
-        results = self._rpc_balance(self._config.get('fiat_display_currency', ''))
+        results = self._rpc_balance(self._config['stake_currency'],
+                                    self._config.get('fiat_display_currency', ''))
         return self.rest_dump(results)
 
     @require_login

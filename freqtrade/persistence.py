@@ -8,16 +8,15 @@ from typing import Any, Dict, List, Optional
 
 import arrow
 from sqlalchemy import (Boolean, Column, DateTime, Float, Integer, String,
-                        create_engine, inspect)
+                        create_engine, desc, func, inspect)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Query
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
-from sqlalchemy import func
 from sqlalchemy.pool import StaticPool
 
-from freqtrade import OperationalException
-
+from freqtrade.exceptions import OperationalException
 
 logger = logging.getLogger(__name__)
 
@@ -52,9 +51,11 @@ def init(db_url: str, clean_open_orders: bool = False) -> None:
         raise OperationalException(f"Given value for db_url: '{db_url}' "
                                    f"is no valid database URL! (See {_SQL_DOCS_URL})")
 
-    session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
-    Trade.session = session()
-    Trade.query = session.query_property()
+    # https://docs.sqlalchemy.org/en/13/orm/contextual.html#thread-local-scope
+    # Scoped sessions proxy requests to the appropriate thread-local session.
+    # We should use the scoped_session object - not a seperately initialized version
+    Trade.session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
+    Trade.query = Trade.session.query_property()
     _DECL_BASE.metadata.create_all(engine)
     check_migrate(engine)
 
@@ -63,11 +64,11 @@ def init(db_url: str, clean_open_orders: bool = False) -> None:
         clean_dry_run_db()
 
 
-def has_column(columns, searchname: str) -> bool:
+def has_column(columns: List, searchname: str) -> bool:
     return len(list(filter(lambda x: x["name"] == searchname, columns))) == 1
 
 
-def get_column_def(columns, column: str, default: str) -> str:
+def get_column_def(columns: List, column: str, default: str) -> str:
     return default if not has_column(columns, column) else column
 
 
@@ -85,7 +86,7 @@ def check_migrate(engine) -> None:
         logger.debug(f'trying {table_back_name}')
 
     # Check for latest column
-    if not has_column(cols, 'stop_loss_pct'):
+    if not has_column(cols, 'close_profit_abs'):
         logger.info(f'Running database migration - backup available as {table_back_name}')
 
         fee_open = get_column_def(cols, 'fee_open', 'fee')
@@ -103,6 +104,11 @@ def check_migrate(engine) -> None:
         sell_reason = get_column_def(cols, 'sell_reason', 'null')
         strategy = get_column_def(cols, 'strategy', 'null')
         ticker_interval = get_column_def(cols, 'ticker_interval', 'null')
+        open_trade_price = get_column_def(cols, 'open_trade_price',
+                                          f'amount * open_rate * (1 + {fee_open})')
+        close_profit_abs = get_column_def(
+            cols, 'close_profit_abs',
+            f"(amount * close_rate * (1 - {fee_close})) - {open_trade_price}")
 
         # Schema migration necessary
         engine.execute(f"alter table trades rename to {table_back_name}")
@@ -120,7 +126,7 @@ def check_migrate(engine) -> None:
                 stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
                 stoploss_order_id, stoploss_last_update,
                 max_rate, min_rate, sell_reason, strategy,
-                ticker_interval
+                ticker_interval, open_trade_price, close_profit_abs
                 )
             select id, lower(exchange),
                 case
@@ -139,7 +145,8 @@ def check_migrate(engine) -> None:
                 {initial_stop_loss_pct} initial_stop_loss_pct,
                 {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
                 {max_rate} max_rate, {min_rate} min_rate, {sell_reason} sell_reason,
-                {strategy} strategy, {ticker_interval} ticker_interval
+                {strategy} strategy, {ticker_interval} ticker_interval,
+                {open_trade_price} open_trade_price, {close_profit_abs} close_profit_abs
                 from {table_back_name}
              """)
 
@@ -181,9 +188,12 @@ class Trade(_DECL_BASE):
     fee_close = Column(Float, nullable=False, default=0.0)
     open_rate = Column(Float)
     open_rate_requested = Column(Float)
+    # open_trade_price - calcuated via _calc_open_trade_price
+    open_trade_price = Column(Float)
     close_rate = Column(Float)
     close_rate_requested = Column(Float)
     close_profit = Column(Float)
+    close_profit_abs = Column(Float)
     stake_amount = Column(Float, nullable=False)
     amount = Column(Float)
     open_date = Column(DateTime, nullable=False, default=datetime.utcnow)
@@ -208,6 +218,10 @@ class Trade(_DECL_BASE):
     sell_reason = Column(String, nullable=True)
     strategy = Column(String, nullable=True)
     ticker_interval = Column(Integer, nullable=True)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.recalc_open_trade_price()
 
     def __repr__(self):
         open_since = self.open_date.strftime('%Y-%m-%d %H:%M:%S') if self.is_open else 'closed'
@@ -236,14 +250,15 @@ class Trade(_DECL_BASE):
                                       if self.initial_stop_loss_pct else None),
         }
 
-    def adjust_min_max_rates(self, current_price: float):
+    def adjust_min_max_rates(self, current_price: float) -> None:
         """
         Adjust the max_rate and min_rate.
         """
         self.max_rate = max(current_price, self.max_rate or self.open_rate)
         self.min_rate = min(current_price, self.min_rate or self.open_rate)
 
-    def adjust_stop_loss(self, current_price: float, stoploss: float, initial: bool = False):
+    def adjust_stop_loss(self, current_price: float, stoploss: float,
+                         initial: bool = False) -> None:
         """
         This adjusts the stop loss to it's most recently observed setting
         :param current_price: Current rate the asset is traded
@@ -301,15 +316,16 @@ class Trade(_DECL_BASE):
             # Update open rate and actual amount
             self.open_rate = Decimal(order['price'])
             self.amount = Decimal(order['amount'])
+            self.recalc_open_trade_price()
             logger.info('%s_BUY has been fulfilled for %s.', order_type.upper(), self)
             self.open_order_id = None
         elif order_type in ('market', 'limit') and order['side'] == 'sell':
             self.close(order['price'])
             logger.info('%s_SELL has been fulfilled for %s.', order_type.upper(), self)
-        elif order_type == 'stop_loss_limit':
+        elif order_type in ('stop_loss_limit', 'stop-loss'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
-            logger.info('STOP_LOSS_LIMIT is hit for %s.', self)
+            logger.info('%s is hit for %s.', order_type.upper(), self)
             self.close(order['average'])
         else:
             raise ValueError(f'Unknown order type: {order_type}')
@@ -321,7 +337,8 @@ class Trade(_DECL_BASE):
         and marks trade as closed
         """
         self.close_rate = Decimal(rate)
-        self.close_profit = self.calc_profit_percent()
+        self.close_profit = self.calc_profit_ratio()
+        self.close_profit_abs = self.calc_profit()
         self.close_date = datetime.utcnow()
         self.is_open = False
         self.open_order_id = None
@@ -330,31 +347,36 @@ class Trade(_DECL_BASE):
             self
         )
 
-    def calc_open_trade_price(self, fee: Optional[float] = None) -> float:
+    def _calc_open_trade_price(self) -> float:
         """
-        Calculate the open_rate including fee.
-        :param fee: fee to use on the open rate (optional).
-        If rate is not set self.fee will be used
+        Calculate the open_rate including open_fee.
         :return: Price in of the open trade incl. Fees
         """
-        buy_trade = (Decimal(self.amount) * Decimal(self.open_rate))
-        fees = buy_trade * Decimal(fee or self.fee_open)
+        buy_trade = Decimal(self.amount) * Decimal(self.open_rate)
+        fees = buy_trade * Decimal(self.fee_open)
         return float(buy_trade + fees)
+
+    def recalc_open_trade_price(self) -> None:
+        """
+        Recalculate open_trade_price.
+        Must be called whenever open_rate or fee_open is changed.
+        """
+        self.open_trade_price = self._calc_open_trade_price()
 
     def calc_close_trade_price(self, rate: Optional[float] = None,
                                fee: Optional[float] = None) -> float:
         """
         Calculate the close_rate including fee
         :param fee: fee to use on the close rate (optional).
-        If rate is not set self.fee will be used
+            If rate is not set self.fee will be used
         :param rate: rate to compare with (optional).
-        If rate is not set self.close_rate will be used
+            If rate is not set self.close_rate will be used
         :return: Price in BTC of the open trade
         """
         if rate is None and not self.close_rate:
             return 0.0
 
-        sell_trade = (Decimal(self.amount) * Decimal(rate or self.close_rate))
+        sell_trade = Decimal(self.amount) * Decimal(rate or self.close_rate)
         fees = sell_trade * Decimal(fee or self.fee_close)
         return float(sell_trade - fees)
 
@@ -363,35 +385,64 @@ class Trade(_DECL_BASE):
         """
         Calculate the absolute profit in stake currency between Close and Open trade
         :param fee: fee to use on the close rate (optional).
-        If rate is not set self.fee will be used
+            If rate is not set self.fee will be used
         :param rate: close rate to compare with (optional).
-        If rate is not set self.close_rate will be used
+            If rate is not set self.close_rate will be used
         :return:  profit in stake currency as float
         """
-        open_trade_price = self.calc_open_trade_price()
         close_trade_price = self.calc_close_trade_price(
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
-        profit = close_trade_price - open_trade_price
+        profit = close_trade_price - self.open_trade_price
         return float(f"{profit:.8f}")
 
-    def calc_profit_percent(self, rate: Optional[float] = None,
-                            fee: Optional[float] = None) -> float:
+    def calc_profit_ratio(self, rate: Optional[float] = None,
+                          fee: Optional[float] = None) -> float:
         """
-        Calculates the profit in percentage (including fee).
+        Calculates the profit as ratio (including fee).
         :param rate: rate to compare with (optional).
-        If rate is not set self.close_rate will be used
+            If rate is not set self.close_rate will be used
         :param fee: fee to use on the close rate (optional).
-        :return: profit in percentage as float
+        :return: profit ratio as float
         """
-        open_trade_price = self.calc_open_trade_price()
         close_trade_price = self.calc_close_trade_price(
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
-        profit_percent = (close_trade_price / open_trade_price) - 1
-        return float(f"{profit_percent:.8f}")
+        profit_ratio = (close_trade_price / self.open_trade_price) - 1
+        return float(f"{profit_ratio:.8f}")
+
+    @staticmethod
+    def get_trades(trade_filter=None) -> Query:
+        """
+        Helper function to query Trades using filters.
+        :param trade_filter: Optional filter to apply to trades
+                             Can be either a Filter object, or a List of filters
+                             e.g. `(trade_filter=[Trade.id == trade_id, Trade.is_open.is_(True),])`
+                             e.g. `(trade_filter=Trade.id == trade_id)`
+        :return: unsorted query object
+        """
+        if trade_filter is not None:
+            if not isinstance(trade_filter, list):
+                trade_filter = [trade_filter]
+            return Trade.query.filter(*trade_filter)
+        else:
+            return Trade.query
+
+    @staticmethod
+    def get_open_trades() -> List[Any]:
+        """
+        Query trades from persistence layer
+        """
+        return Trade.get_trades(Trade.is_open.is_(True)).all()
+
+    @staticmethod
+    def get_open_order_trades():
+        """
+        Returns all open trades
+        """
+        return Trade.get_trades(Trade.open_order_id.isnot(None)).all()
 
     @staticmethod
     def total_open_trades_stakes() -> float:
@@ -405,11 +456,38 @@ class Trade(_DECL_BASE):
         return total_open_stake_amount or 0
 
     @staticmethod
-    def get_open_trades() -> List[Any]:
+    def get_overall_performance() -> List[Dict[str, Any]]:
         """
-        Query trades from persistence layer
+        Returns List of dicts containing all Trades, including profit and trade count
         """
-        return Trade.query.filter(Trade.is_open.is_(True)).all()
+        pair_rates = Trade.session.query(
+            Trade.pair,
+            func.sum(Trade.close_profit).label('profit_sum'),
+            func.count(Trade.pair).label('count')
+        ).filter(Trade.is_open.is_(False))\
+            .group_by(Trade.pair) \
+            .order_by(desc('profit_sum')) \
+            .all()
+        return [
+            {
+                'pair': pair,
+                'profit': rate,
+                'count': count
+            }
+            for pair, rate, count in pair_rates
+        ]
+
+    @staticmethod
+    def get_best_pair():
+        """
+        Get best pair with closed trade.
+        """
+        best_pair = Trade.session.query(
+            Trade.pair, func.sum(Trade.close_profit).label('profit_sum')
+        ).filter(Trade.is_open.is_(False)) \
+            .group_by(Trade.pair) \
+            .order_by(desc('profit_sum')).first()
+        return best_pair
 
     @staticmethod
     def stoploss_reinitialization(desired_stoploss):

@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict
 from tabulate import tabulate
 from telegram import ParseMode, ReplyKeyboardMarkup, Update
 from telegram.error import NetworkError, TelegramError
-from telegram.ext import CommandHandler, Updater, CallbackContext
+from telegram.ext import CallbackContext, CommandHandler, Updater
 
 from freqtrade.__init__ import __version__
 from freqtrade.rpc import RPC, RPCException, RPCMessageType
@@ -95,6 +95,7 @@ class Telegram(RPC):
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
             CommandHandler('reload_conf', self._reload_conf),
+            CommandHandler('show_config', self._show_config),
             CommandHandler('stopbuy', self._stopbuy),
             CommandHandler('whitelist', self._whitelist),
             CommandHandler('blacklist', self._blacklist),
@@ -133,23 +134,32 @@ class Telegram(RPC):
                 msg['stake_amount_fiat'] = 0
 
             message = ("*{exchange}:* Buying {pair}\n"
-                       "at rate `{limit:.8f}\n"
-                       "({stake_amount:.6f} {stake_currency}").format(**msg)
+                       "*Amount:* `{amount:.8f}`\n"
+                       "*Open Rate:* `{limit:.8f}`\n"
+                       "*Current Rate:* `{current_rate:.8f}`\n"
+                       "*Total:* `({stake_amount:.6f} {stake_currency}").format(**msg)
 
             if msg.get('fiat_currency', None):
-                message += ",{stake_amount_fiat:.3f} {fiat_currency}".format(**msg)
+                message += ", {stake_amount_fiat:.3f} {fiat_currency}".format(**msg)
             message += ")`"
+
+        elif msg['type'] == RPCMessageType.BUY_CANCEL_NOTIFICATION:
+            message = "*{exchange}:* Cancelling Open Buy Order for {pair}".format(**msg)
 
         elif msg['type'] == RPCMessageType.SELL_NOTIFICATION:
             msg['amount'] = round(msg['amount'], 8)
-            msg['profit_percent'] = round(msg['profit_percent'] * 100, 2)
+            msg['profit_percent'] = round(msg['profit_ratio'] * 100, 2)
+            msg['duration'] = msg['close_date'].replace(
+                microsecond=0) - msg['open_date'].replace(microsecond=0)
+            msg['duration_min'] = msg['duration'].total_seconds() / 60
 
             message = ("*{exchange}:* Selling {pair}\n"
-                       "*Rate:* `{limit:.8f}`\n"
                        "*Amount:* `{amount:.8f}`\n"
                        "*Open Rate:* `{open_rate:.8f}`\n"
                        "*Current Rate:* `{current_rate:.8f}`\n"
+                       "*Close Rate:* `{limit:.8f}`\n"
                        "*Sell Reason:* `{sell_reason}`\n"
+                       "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
                        "*Profit:* `{profit_percent:.2f}%`").format(**msg)
 
             # Check if all sell properties are available.
@@ -158,8 +168,11 @@ class Telegram(RPC):
                and self._fiat_converter):
                 msg['profit_fiat'] = self._fiat_converter.convert_amount(
                     msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
-                message += ('` ({gain}: {profit_amount:.8f} {stake_currency}`'
-                            '` / {profit_fiat:.3f} {fiat_currency})`').format(**msg)
+                message += (' `({gain}: {profit_amount:.8f} {stake_currency}'
+                            ' / {profit_fiat:.3f} {fiat_currency})`').format(**msg)
+
+        elif msg['type'] == RPCMessageType.SELL_CANCEL_NOTIFICATION:
+            message = "*{exchange}:* Cancelling Open Sell Order for {pair}".format(**msg)
 
         elif msg['type'] == RPCMessageType.STATUS_NOTIFICATION:
             message = '*Status:* `{status}`'.format(**msg)
@@ -234,8 +247,9 @@ class Telegram(RPC):
         :return: None
         """
         try:
-            df_statuses = self._rpc_status_table()
-            message = tabulate(df_statuses, headers='keys', tablefmt='simple')
+            statlist, head = self._rpc_status_table(self._config['stake_currency'],
+                                                    self._config.get('fiat_display_currency', ''))
+            message = tabulate(statlist, headers=head, tablefmt='simple')
             self._send_msg(f"<pre>{message}</pre>", parse_mode=ParseMode.HTML)
         except RPCException as e:
             self._send_msg(str(e))
@@ -323,15 +337,24 @@ class Telegram(RPC):
     def _balance(self, update: Update, context: CallbackContext) -> None:
         """ Handler for /balance """
         try:
-            result = self._rpc_balance(self._config.get('fiat_display_currency', ''))
+            result = self._rpc_balance(self._config['stake_currency'],
+                                       self._config.get('fiat_display_currency', ''))
+
             output = ''
+            if self._config['dry_run']:
+                output += (
+                    f"*Warning:* Simulated balances in Dry Mode.\n"
+                    "This mode is still experimental!\n"
+                    "Starting capital: "
+                    f"`{self._config['dry_run_wallet']}` {self._config['stake_currency']}.\n"
+                    )
             for currency in result['currencies']:
-                if currency['est_btc'] > 0.0001:
+                if currency['est_stake'] > 0.0001:
                     curr_output = "*{currency}:*\n" \
                             "\t`Available: {free: .8f}`\n" \
                             "\t`Balance: {balance: .8f}`\n" \
                             "\t`Pending: {used: .8f}`\n" \
-                            "\t`Est. BTC: {est_btc: .8f}`\n".format(**currency)
+                            "\t`Est. {stake}: {est_stake: .8f}`\n".format(**currency)
                 else:
                     curr_output = "*{currency}:* not showing <1$ amount \n".format(**currency)
 
@@ -343,7 +366,7 @@ class Telegram(RPC):
                     output += curr_output
 
             output += "\n*Estimated Value*:\n" \
-                      "\t`BTC: {total: .8f}`\n" \
+                      "\t`{stake}: {total: .8f}`\n" \
                       "\t`{symbol}: {value: .2f}`\n".format(**result)
             self._send_msg(output)
         except RPCException as e:
@@ -538,6 +561,8 @@ class Telegram(RPC):
                   "*/stop:* `Stops the trader`\n" \
                   "*/status [table]:* `Lists all open trades`\n" \
                   "         *table :* `will display trades in a table`\n" \
+                  "                `pending buy orders are marked with an asterisk (*)`\n" \
+                  "                `pending sell orders are marked with a double asterisk (**)`\n" \
                   "*/profit:* `Lists cumulative profit from all finished trades`\n" \
                   "*/forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, " \
                   "regardless of profit`\n" \
@@ -549,6 +574,7 @@ class Telegram(RPC):
                   "*/balance:* `Show account balance per currency`\n" \
                   "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n" \
                   "*/reload_conf:* `Reload configuration file` \n" \
+                  "*/show_config:* `Show running configuration` \n" \
                   "*/whitelist:* `Show current whitelist` \n" \
                   "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs " \
                   "to the blacklist.` \n" \
@@ -568,6 +594,37 @@ class Telegram(RPC):
         :return: None
         """
         self._send_msg('*Version:* `{}`'.format(__version__))
+
+    @authorized_only
+    def _show_config(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /show_config.
+        Show config information information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        val = self._rpc_show_config()
+        if val['trailing_stop']:
+            sl_info = (
+                f"*Initial Stoploss:* `{val['stoploss']}`\n"
+                f"*Trailing stop positive:* `{val['trailing_stop_positive']}`\n"
+                f"*Trailing stop offset:* `{val['trailing_stop_positive_offset']}`\n"
+                f"*Only trail above offset:* `{val['trailing_only_offset_is_reached']}`\n"
+            )
+
+        else:
+            sl_info = f"*Stoploss:* `{val['stoploss']}`\n"
+
+        self._send_msg(
+            f"*Mode:* `{'Dry-run' if val['dry_run'] else 'Live'}`\n"
+            f"*Exchange:* `{val['exchange']}`\n"
+            f"*Stake per trade:* `{val['stake_amount']} {val['stake_currency']}`\n"
+            f"*Minimum ROI:* `{val['minimal_roi']}`\n"
+            f"{sl_info}"
+            f"*Ticker Interval:* `{val['ticker_interval']}`\n"
+            f"*Strategy:* `{val['strategy']}`"
+        )
 
     def _send_msg(self, msg: str, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
         """

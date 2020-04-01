@@ -4,94 +4,148 @@ import logging
 from unittest.mock import MagicMock
 
 import arrow
+import pytest
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
-from freqtrade.data.converter import parse_ticker_dataframe
-from freqtrade.data.history import load_tickerdata_file
+from freqtrade.data.history import load_data
+from freqtrade.exceptions import DependencyException
 from freqtrade.persistence import Trade
+from freqtrade.resolvers import StrategyResolver
 from tests.conftest import get_patched_exchange, log_has
-from freqtrade.strategy.default_strategy import DefaultStrategy
+
+from .strats.default_strategy import DefaultStrategy
 
 # Avoid to reinit the same object again and again
 _STRATEGY = DefaultStrategy(config={})
 
 
-def test_returns_latest_buy_signal(mocker, default_conf, ticker_history):
-    mocker.patch.object(
-        _STRATEGY, '_analyze_ticker_internal',
-        return_value=DataFrame([{'buy': 1, 'sell': 0, 'date': arrow.utcnow()}])
-    )
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', ticker_history) == (True, False)
+def test_returns_latest_signal(mocker, default_conf, ohlcv_history):
+    ohlcv_history.loc[1, 'date'] = arrow.utcnow()
+    # Take a copy to correctly modify the call
+    mocked_history = ohlcv_history.copy()
+    mocked_history['sell'] = 0
+    mocked_history['buy'] = 0
+    mocked_history.loc[1, 'sell'] = 1
 
     mocker.patch.object(
         _STRATEGY, '_analyze_ticker_internal',
-        return_value=DataFrame([{'buy': 0, 'sell': 1, 'date': arrow.utcnow()}])
-    )
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', ticker_history) == (False, True)
-
-
-def test_returns_latest_sell_signal(mocker, default_conf, ticker_history):
-    mocker.patch.object(
-        _STRATEGY, '_analyze_ticker_internal',
-        return_value=DataFrame([{'sell': 1, 'buy': 0, 'date': arrow.utcnow()}])
+        return_value=mocked_history
     )
 
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', ticker_history) == (False, True)
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', ohlcv_history) == (False, True)
+    mocked_history.loc[1, 'sell'] = 0
+    mocked_history.loc[1, 'buy'] = 1
 
     mocker.patch.object(
         _STRATEGY, '_analyze_ticker_internal',
-        return_value=DataFrame([{'sell': 0, 'buy': 1, 'date': arrow.utcnow()}])
+        return_value=mocked_history
     )
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', ticker_history) == (True, False)
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', ohlcv_history) == (True, False)
+    mocked_history.loc[1, 'sell'] = 0
+    mocked_history.loc[1, 'buy'] = 0
+
+    mocker.patch.object(
+        _STRATEGY, '_analyze_ticker_internal',
+        return_value=mocked_history
+    )
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', ohlcv_history) == (False, False)
 
 
 def test_get_signal_empty(default_conf, mocker, caplog):
     assert (False, False) == _STRATEGY.get_signal('foo', default_conf['ticker_interval'],
                                                   DataFrame())
-    assert log_has('Empty ticker history for pair foo', caplog)
+    assert log_has('Empty candle (OHLCV) data for pair foo', caplog)
     caplog.clear()
 
     assert (False, False) == _STRATEGY.get_signal('bar', default_conf['ticker_interval'],
                                                   [])
-    assert log_has('Empty ticker history for pair bar', caplog)
+    assert log_has('Empty candle (OHLCV) data for pair bar', caplog)
 
 
-def test_get_signal_exception_valueerror(default_conf, mocker, caplog, ticker_history):
+def test_get_signal_exception_valueerror(default_conf, mocker, caplog, ohlcv_history):
     caplog.set_level(logging.INFO)
     mocker.patch.object(
         _STRATEGY, '_analyze_ticker_internal',
         side_effect=ValueError('xyz')
     )
     assert (False, False) == _STRATEGY.get_signal('foo', default_conf['ticker_interval'],
-                                                  ticker_history)
-    assert log_has('Unable to analyze ticker for pair foo: xyz', caplog)
+                                                  ohlcv_history)
+    assert log_has('Unable to analyze candle (OHLCV) data for pair foo: xyz', caplog)
 
 
-def test_get_signal_empty_dataframe(default_conf, mocker, caplog, ticker_history):
+def test_get_signal_empty_dataframe(default_conf, mocker, caplog, ohlcv_history):
     caplog.set_level(logging.INFO)
     mocker.patch.object(
         _STRATEGY, '_analyze_ticker_internal',
         return_value=DataFrame([])
     )
+    mocker.patch.object(_STRATEGY, 'assert_df')
+
     assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
-                                                  ticker_history)
+                                                  ohlcv_history)
     assert log_has('Empty dataframe for pair xyz', caplog)
 
 
-def test_get_signal_old_dataframe(default_conf, mocker, caplog, ticker_history):
-    caplog.set_level(logging.INFO)
+def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
     # default_conf defines a 5m interval. we check interval * 2 + 5m
     # this is necessary as the last candle is removed (partial candles) by default
-    oldtime = arrow.utcnow().shift(minutes=-16)
-    ticks = DataFrame([{'buy': 1, 'date': oldtime}])
+    ohlcv_history.loc[1, 'date'] = arrow.utcnow().shift(minutes=-16)
+    # Take a copy to correctly modify the call
+    mocked_history = ohlcv_history.copy()
+    mocked_history['sell'] = 0
+    mocked_history['buy'] = 0
+    mocked_history.loc[1, 'buy'] = 1
+
+    caplog.set_level(logging.INFO)
     mocker.patch.object(
         _STRATEGY, '_analyze_ticker_internal',
-        return_value=DataFrame(ticks)
+        return_value=mocked_history
+    )
+    mocker.patch.object(_STRATEGY, 'assert_df')
+    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
+                                                  ohlcv_history)
+    assert log_has('Outdated history for pair xyz. Last tick is 16 minutes old', caplog)
+
+
+def test_assert_df_raise(default_conf, mocker, caplog, ohlcv_history):
+    # default_conf defines a 5m interval. we check interval * 2 + 5m
+    # this is necessary as the last candle is removed (partial candles) by default
+    ohlcv_history.loc[1, 'date'] = arrow.utcnow().shift(minutes=-16)
+    # Take a copy to correctly modify the call
+    mocked_history = ohlcv_history.copy()
+    mocked_history['sell'] = 0
+    mocked_history['buy'] = 0
+    mocked_history.loc[1, 'buy'] = 1
+
+    caplog.set_level(logging.INFO)
+    mocker.patch.object(
+        _STRATEGY, 'assert_df',
+        side_effect=DependencyException('Dataframe returned...')
     )
     assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
-                                                  ticker_history)
-    assert log_has('Outdated history for pair xyz. Last tick is 16 minutes old', caplog)
+                                                  ohlcv_history)
+    assert log_has('Unable to analyze candle (OHLCV) data for pair xyz: Dataframe returned...',
+                   caplog)
+
+
+def test_assert_df(default_conf, mocker, ohlcv_history):
+    # Ensure it's running when passed correctly
+    _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
+                        ohlcv_history.loc[1, 'close'], ohlcv_history.loc[1, 'date'])
+
+    with pytest.raises(DependencyException, match=r"Dataframe returned from strategy.*length\."):
+        _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history) + 1,
+                            ohlcv_history.loc[1, 'close'], ohlcv_history.loc[1, 'date'])
+
+    with pytest.raises(DependencyException,
+                       match=r"Dataframe returned from strategy.*last close price\."):
+        _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
+                            ohlcv_history.loc[1, 'close'] + 0.01, ohlcv_history.loc[1, 'date'])
+    with pytest.raises(DependencyException,
+                       match=r"Dataframe returned from strategy.*last date\."):
+        _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
+                            ohlcv_history.loc[1, 'close'], ohlcv_history.loc[0, 'date'])
 
 
 def test_get_signal_handles_exceptions(mocker, default_conf):
@@ -103,15 +157,15 @@ def test_get_signal_handles_exceptions(mocker, default_conf):
     assert _STRATEGY.get_signal(exchange, 'ETH/BTC', '5m') == (False, False)
 
 
-def test_tickerdata_to_dataframe(default_conf, testdatadir) -> None:
-    strategy = DefaultStrategy(default_conf)
+def test_ohlcvdata_to_dataframe(default_conf, testdatadir) -> None:
+    default_conf.update({'strategy': 'DefaultStrategy'})
+    strategy = StrategyResolver.load_strategy(default_conf)
 
-    timerange = TimeRange(None, 'line', 0, -100)
-    tick = load_tickerdata_file(testdatadir, 'UNITTEST/BTC', '1m', timerange=timerange)
-    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
-                                                         fill_missing=True)}
-    data = strategy.tickerdata_to_dataframe(tickerlist)
-    assert len(data['UNITTEST/BTC']) == 102       # partial candle was removed
+    timerange = TimeRange.parse_timerange('1510694220-1510700340')
+    data = load_data(testdatadir, '1m', ['UNITTEST/BTC'], timerange=timerange,
+                     fill_up_missing=True)
+    processed = strategy.ohlcvdata_to_dataframe(data)
+    assert len(processed['UNITTEST/BTC']) == 102  # partial candle was removed
 
 
 def test_min_roi_reached(default_conf, fee) -> None:
@@ -120,11 +174,13 @@ def test_min_roi_reached(default_conf, fee) -> None:
     min_roi_list = [{20: 0.05, 55: 0.01, 0: 0.1},
                     {0: 0.1, 20: 0.05, 55: 0.01}]
     for roi in min_roi_list:
-        strategy = DefaultStrategy(default_conf)
+        default_conf.update({'strategy': 'DefaultStrategy'})
+        strategy = StrategyResolver.load_strategy(default_conf)
         strategy.minimal_roi = roi
         trade = Trade(
             pair='ETH/BTC',
             stake_amount=0.001,
+            amount=5,
             open_date=arrow.utcnow().shift(hours=-1).datetime,
             fee_open=fee.return_value,
             fee_close=fee.return_value,
@@ -157,11 +213,13 @@ def test_min_roi_reached2(default_conf, fee) -> None:
                      },
                     ]
     for roi in min_roi_list:
-        strategy = DefaultStrategy(default_conf)
+        default_conf.update({'strategy': 'DefaultStrategy'})
+        strategy = StrategyResolver.load_strategy(default_conf)
         strategy.minimal_roi = roi
         trade = Trade(
             pair='ETH/BTC',
             stake_amount=0.001,
+            amount=5,
             open_date=arrow.utcnow().shift(hours=-1).datetime,
             fee_open=fee.return_value,
             fee_close=fee.return_value,
@@ -190,11 +248,13 @@ def test_min_roi_reached3(default_conf, fee) -> None:
                30: 0.05,
                55: 0.30,
                }
-    strategy = DefaultStrategy(default_conf)
+    default_conf.update({'strategy': 'DefaultStrategy'})
+    strategy = StrategyResolver.load_strategy(default_conf)
     strategy.minimal_roi = min_roi
     trade = Trade(
             pair='ETH/BTC',
             stake_amount=0.001,
+            amount=5,
             open_date=arrow.utcnow().shift(hours=-1).datetime,
             fee_open=fee.return_value,
             fee_close=fee.return_value,
@@ -216,7 +276,7 @@ def test_min_roi_reached3(default_conf, fee) -> None:
     assert strategy.min_roi_reached(trade, 0.31, arrow.utcnow().shift(minutes=-2).datetime)
 
 
-def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
+def test_analyze_ticker_default(ohlcv_history, mocker, caplog) -> None:
     caplog.set_level(logging.DEBUG)
     ind_mock = MagicMock(side_effect=lambda x, meta: x)
     buy_mock = MagicMock(side_effect=lambda x, meta: x)
@@ -229,7 +289,7 @@ def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
 
     )
     strategy = DefaultStrategy({})
-    strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
+    strategy.analyze_ticker(ohlcv_history, {'pair': 'ETH/BTC'})
     assert ind_mock.call_count == 1
     assert buy_mock.call_count == 1
     assert buy_mock.call_count == 1
@@ -238,7 +298,7 @@ def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
     assert not log_has('Skipping TA Analysis for already analyzed candle', caplog)
     caplog.clear()
 
-    strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
+    strategy.analyze_ticker(ohlcv_history, {'pair': 'ETH/BTC'})
     # No analysis happens as process_only_new_candles is true
     assert ind_mock.call_count == 2
     assert buy_mock.call_count == 2
@@ -247,7 +307,7 @@ def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
     assert not log_has('Skipping TA Analysis for already analyzed candle', caplog)
 
 
-def test__analyze_ticker_internal_skip_analyze(ticker_history, mocker, caplog) -> None:
+def test__analyze_ticker_internal_skip_analyze(ohlcv_history, mocker, caplog) -> None:
     caplog.set_level(logging.DEBUG)
     ind_mock = MagicMock(side_effect=lambda x, meta: x)
     buy_mock = MagicMock(side_effect=lambda x, meta: x)
@@ -262,7 +322,7 @@ def test__analyze_ticker_internal_skip_analyze(ticker_history, mocker, caplog) -
     strategy = DefaultStrategy({})
     strategy.process_only_new_candles = True
 
-    ret = strategy._analyze_ticker_internal(ticker_history, {'pair': 'ETH/BTC'})
+    ret = strategy._analyze_ticker_internal(ohlcv_history, {'pair': 'ETH/BTC'})
     assert 'high' in ret.columns
     assert 'low' in ret.columns
     assert 'close' in ret.columns
@@ -274,7 +334,7 @@ def test__analyze_ticker_internal_skip_analyze(ticker_history, mocker, caplog) -
     assert not log_has('Skipping TA Analysis for already analyzed candle', caplog)
     caplog.clear()
 
-    ret = strategy._analyze_ticker_internal(ticker_history, {'pair': 'ETH/BTC'})
+    ret = strategy._analyze_ticker_internal(ohlcv_history, {'pair': 'ETH/BTC'})
     # No analysis happens as process_only_new_candles is true
     assert ind_mock.call_count == 1
     assert buy_mock.call_count == 1
@@ -289,7 +349,8 @@ def test__analyze_ticker_internal_skip_analyze(ticker_history, mocker, caplog) -
 
 
 def test_is_pair_locked(default_conf):
-    strategy = DefaultStrategy(default_conf)
+    default_conf.update({'strategy': 'DefaultStrategy'})
+    strategy = StrategyResolver.load_strategy(default_conf)
     # dict should be empty
     assert not strategy._pair_locked_until
 
@@ -299,6 +360,19 @@ def test_is_pair_locked(default_conf):
     # ETH/BTC locked for 4 minutes
     assert strategy.is_pair_locked(pair)
 
+    # Test lock does not change
+    lock = strategy._pair_locked_until[pair]
+    strategy.lock_pair(pair, arrow.utcnow().shift(minutes=2).datetime)
+    assert lock == strategy._pair_locked_until[pair]
+
     # XRP/BTC should not be locked now
     pair = 'XRP/BTC'
+    assert not strategy.is_pair_locked(pair)
+
+    # Unlocking a pair that's not locked should not raise an error
+    strategy.unlock_pair(pair)
+
+    # Unlock original pair
+    pair = 'ETH/BTC'
+    strategy.unlock_pair(pair)
     assert not strategy.is_pair_locked(pair)

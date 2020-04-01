@@ -1,6 +1,6 @@
 from pandas import DataFrame
 
-from freqtrade.strategy.default_strategy import DefaultStrategy
+from .strats.default_strategy import DefaultStrategy
 
 
 def test_default_strategy_structure():

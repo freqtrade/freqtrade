@@ -1,8 +1,8 @@
 site_name: Freqtrade
 nav:
-    - About: index.md
-    - Installation: installation.md
+    - Home: index.md
     - Installation Docker: docker.md
+    - Installation: installation.md
     - Configuration: configuration.md
     - Strategy Customization: strategy-customization.md
     - Stoploss: stoploss.md
@@ -11,16 +11,23 @@ nav:
         - Telegram: telegram-usage.md
         - Web Hook: webhook-config.md
         - REST API: rest-api.md
+    - Data Downloading: data-download.md
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
-    - Edge positioning: edge.md
+    - Edge Positioning: edge.md
+    - Utility Subcommands: utils.md
+    - Exchange-specific Notes: exchanges.md
     - FAQ: faq.md
-    - Data Analysis: data-analysis.md
-    - Plotting: plotting.md
+    - Data Analysis:
+        - Jupyter Notebooks: data-analysis.md
+        - Strategy analysis: strategy_analysis_example.md
+        - Plotting: plotting.md
     - SQL Cheatsheet: sql_cheatsheet.md
-    - Sandbox testing: sandbox-testing.md
-    - Deprecated features: deprecated.md
-    - Contributors guide: developer.md
+    - Advanced Post-installation Tasks: advanced-setup.md
+    - Advanced Hyperopt: advanced-hyperopt.md
+    - Sandbox Testing: sandbox-testing.md
+    - Deprecated Features: deprecated.md
+    - Contributors Guide: developer.md
 theme:
   name: material
   logo: 'images/logo.png'
@@ -28,6 +35,8 @@ theme:
   palette:
     primary: 'blue grey'
     accent: 'tear'
+extra_css:
+  - 'stylesheets/ft.extra.css'
 markdown_extensions:
     - admonition
     - codehilite:
@@ -46,3 +55,4 @@ markdown_extensions:
     - pymdownx.tasklist:
         custom_checkbox: true
     - pymdownx.tilde
+    - mdx_truly_sane_lists

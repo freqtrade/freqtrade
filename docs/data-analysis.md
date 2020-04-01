@@ -8,6 +8,27 @@ You can analyze the results of backtests and trading history easily using Jupyte
 * Don't forget to start a Jupyter notebook server from within your conda or venv environment or use [nb_conda_kernels](https://github.com/Anaconda-Platform/nb_conda_kernels)*
 * Copy the example notebook before use so your changes don't get clobbered with the next freqtrade update.
 
+### Using virtual environment with system-wide Jupyter installation
+
+Sometimes it can be desired to use a system-wide installation of Jupyter notebook, and use a jupyter kernel from the virtual environment.
+This prevents you from installing the full jupyter suite multiple times per system, and provides an easy way to switch between tasks (freqtrade / other analytics tasks).
+
+For this to work, first activate your virtual environment and run the following commands:
+
+``` bash
+# Activate virtual environment
+source .env/bin/activate
+
+pip install ipykernel
+ipython kernel install --user --name=freqtrade
+# Restart jupyter (lab / notebook)
+# select kernel "freqtrade" in the notebook
+```
+
+!!! Note
+    This section is provided for completeness, the Freqtrade Team won't provide full support for problems with this setup and will recommend to install Jupyter in the virtual environment directly, as that is the easiest way to get jupyter notebooks up and running. For help with this setup please refer to the [Project Jupyter](https://jupyter.org/) [documentation](https://jupyter.org/documentation) or [help channels](https://jupyter.org/community).
+
+    
 ## Fine print  
 
 Some tasks don't work especially well in notebooks. For example, anything using asynchronous execution is a problem for Jupyter. Also, freqtrade's primary entry point is the shell cli, so using pure python in a notebook bypasses arguments that provide required objects and parameters to helper functions. You may need to set those values or create expected objects manually.
@@ -61,34 +82,6 @@ except:
 print(Path.cwd())
 ```
 
-## Load existing objects into a Jupyter notebook
-
-These examples assume that you have already generated data using the cli. They will allow you to drill deeper into your results, and perform analysis which otherwise would make the output very difficult to digest due to information overload.
-
-### Load backtest results into a pandas dataframe
-
-```python
-from freqtrade.data.btanalysis import load_backtest_data
-
-# Load backtest results
-df = load_backtest_data("user_data/backtest_results/backtest-result.json")
-
-# Show value-counts per pair
-df.groupby("pair")["sell_reason"].value_counts()
-```
-
-### Load live trading results into a pandas dataframe
-
-``` python
-from freqtrade.data.btanalysis import load_trades_from_db
-
-# Fetch trades from database
-df = load_trades_from_db("sqlite:///tradesv3.sqlite")
-
-# Display results
-df.groupby("pair")["sell_reason"].value_counts()
-```
-
 ### Load multiple configuration files
 
 This option can be useful to inspect the results of passing in multiple configs.
@@ -114,99 +107,9 @@ Best avoid relative paths, since this starts at the storage location of the jupy
 }
 ```
 
-### Load exchange data to a pandas dataframe
+### Further Data analysis documentation
 
-This loads candle data to a dataframe
-
-```python
-from pathlib import Path
-from freqtrade.data.history import load_pair_history
-
-# Load data using values passed to function
-ticker_interval = "5m"
-data_location = Path('user_data', 'data', 'bitrex')
-pair = "BTC_USDT"
-candles = load_pair_history(datadir=data_location,
-                            ticker_interval=ticker_interval,
-                            pair=pair)
-
-# Confirm success
-print(f"Loaded len(candles) rows of data for {pair} from {data_location}")
-candles.head()
-```
-
-## Strategy debugging example  
-
-Debugging a strategy can be time-consuming. FreqTrade offers helper functions to visualize raw data.
-
-### Define variables used in analyses  
-
-You can override strategy settings as demonstrated below.
-
-```python
-# Customize these according to your needs.
-
-# Define some constants
-ticker_interval = "5m"
-# Name of the strategy class
-strategy_name = 'SampleStrategy'
-# Path to user data
-user_data_dir = 'user_data'
-# Location of the strategy
-strategy_location = Path(user_data_dir, 'strategies')
-# Location of the data
-data_location = Path(user_data_dir, 'data', 'binance')
-# Pair to analyze - Only use one pair here
-pair = "BTC_USDT"
-```
-
-### Load exchange data
-
-```python
-from pathlib import Path
-from freqtrade.data.history import load_pair_history
-
-# Load data using values set above
-candles = load_pair_history(datadir=data_location,
-                            ticker_interval=ticker_interval,
-                            pair=pair)
-
-# Confirm success
-print(f"Loaded {len(candles)} rows of data for {pair} from {data_location}")
-candles.head()
-```
-
-### Load and run strategy  
-
-* Rerun each time the strategy file is changed
-
-```python
-from freqtrade.resolvers import StrategyResolver
-
-# Load strategy using values set above
-strategy = StrategyResolver({'strategy': strategy_name,
-                            'user_data_dir': user_data_dir,
-                            'strategy_path': strategy_location}).strategy
-
-# Generate buy/sell signals using strategy
-df = strategy.analyze_ticker(candles, {'pair': pair})
-```
-
-### Display the trade details
-
-* Note that using `data.tail()` is preferable to `data.head()` as most indicators have some "startup" data at the top of the dataframe.
-* Some possible problems
-    * Columns with NaN values at the end of the dataframe
-    * Columns used in `crossed*()` functions with completely different units
-* Comparison with full backtest
-    * having 200 buy signals as output for one pair from `analyze_ticker()` does not necessarily mean that 200 trades will be made during backtesting.
-    * Assuming you use only one condition such as, `df['rsi'] < 30` as buy condition, this will generate multiple "buy" signals for each pair in sequence (until rsi returns > 29). The bot will only buy on the first of these signals (and also only if a trade-slot ("max_open_trades") is still available), or on one of the middle signals, as soon as a "slot" becomes available.  
-
-```python
-# Report results
-print(f"Generated {df['buy'].sum()} buy signals")
-data = df.set_index('date', drop=True)
-data.tail()
-```
+* [Strategy debugging](strategy_analysis_example.md) - also available as Jupyter notebook (`user_data/notebooks/strategy_analysis_example.ipynb`)
+* [Plotting](plotting.md)
 
 Feel free to submit an issue or Pull Request enhancing this document if you would like to share ideas on how to best analyze the data.

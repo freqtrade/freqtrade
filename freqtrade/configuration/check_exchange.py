@@ -1,13 +1,26 @@
 import logging
 from typing import Any, Dict
 
-from freqtrade import OperationalException
+from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import (available_exchanges, get_exchange_bad_reason,
-                                is_exchange_available, is_exchange_bad,
+                                is_exchange_bad, is_exchange_known_ccxt,
                                 is_exchange_officially_supported)
 from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
+
+
+def remove_credentials(config: Dict[str, Any]) -> None:
+    """
+    Removes exchange keys from the configuration and specifies dry-run
+    Used for backtesting / hyperopt / edge and utils.
+    Modifies the input dict!
+    """
+    config['exchange']['key'] = ''
+    config['exchange']['secret'] = ''
+    config['exchange']['password'] = ''
+    config['exchange']['uid'] = ''
+    config['dry_run'] = True
 
 
 def check_exchange(config: Dict[str, Any], check_for_bad: bool = True) -> bool:
@@ -21,7 +34,8 @@ def check_exchange(config: Dict[str, Any], check_for_bad: bool = True) -> bool:
              and thus is not known for the Freqtrade at all.
     """
 
-    if config['runmode'] in [RunMode.PLOT] and not config.get('exchange', {}).get('name'):
+    if (config['runmode'] in [RunMode.PLOT, RunMode.UTIL_NO_EXCHANGE, RunMode.OTHER]
+       and not config.get('exchange', {}).get('name')):
         # Skip checking exchange in plot mode, since it requires no exchange
         return True
     logger.info("Checking exchange...")
@@ -31,15 +45,15 @@ def check_exchange(config: Dict[str, Any], check_for_bad: bool = True) -> bool:
         raise OperationalException(
             f'This command requires a configured exchange. You should either use '
             f'`--exchange <exchange_name>` or specify a configuration file via `--config`.\n'
-            f'The following exchanges are supported by ccxt: '
+            f'The following exchanges are available for Freqtrade: '
             f'{", ".join(available_exchanges())}'
         )
 
-    if not is_exchange_available(exchange):
+    if not is_exchange_known_ccxt(exchange):
         raise OperationalException(
-                f'Exchange "{exchange}" is not supported by ccxt '
+                f'Exchange "{exchange}" is not known to the ccxt library '
                 f'and therefore not available for the bot.\n'
-                f'The following exchanges are supported by ccxt: '
+                f'The following exchanges are available for Freqtrade: '
                 f'{", ".join(available_exchanges())}'
         )
 
@@ -51,8 +65,8 @@ def check_exchange(config: Dict[str, Any], check_for_bad: bool = True) -> bool:
         logger.info(f'Exchange "{exchange}" is officially supported '
                     f'by the Freqtrade development team.')
     else:
-        logger.warning(f'Exchange "{exchange}" is supported by ccxt '
-                       f'and therefore available for the bot but not officially supported '
+        logger.warning(f'Exchange "{exchange}" is known to the the ccxt library, '
+                       f'available for the bot, but not officially supported '
                        f'by the Freqtrade development team. '
                        f'It may work flawlessly (please report back) or have serious issues. '
                        f'Use it at your own discretion.')

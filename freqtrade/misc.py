@@ -6,6 +6,7 @@ import logging
 import re
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 from typing.io import IO
 
 import numpy as np
@@ -40,28 +41,30 @@ def datesarray_to_datetimearray(dates: np.ndarray) -> np.ndarray:
     return dates.dt.to_pydatetime()
 
 
-def file_dump_json(filename: Path, data, is_zip=False) -> None:
+def file_dump_json(filename: Path, data: Any, is_zip: bool = False) -> None:
     """
     Dump JSON data into a file
     :param filename: file to create
     :param data: JSON Data to save
     :return:
     """
-    logger.info(f'dumping json to "{filename}"')
 
     if is_zip:
         if filename.suffix != '.gz':
             filename = filename.with_suffix('.gz')
+        logger.info(f'dumping json to "{filename}"')
+
         with gzip.open(filename, 'w') as fp:
             rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
     else:
+        logger.info(f'dumping json to "{filename}"')
         with open(filename, 'w') as fp:
             rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
 
     logger.debug(f'done json to "{filename}"')
 
 
-def json_load(datafile: IO):
+def json_load(datafile: IO) -> Any:
     """
     load data with rapidjson
     Use this to have a consistent experience,
@@ -72,20 +75,28 @@ def json_load(datafile: IO):
 
 def file_load_json(file):
 
-    gzipfile = file.with_suffix(file.suffix + '.gz')
-
+    if file.suffix != ".gz":
+        gzipfile = file.with_suffix(file.suffix + '.gz')
+    else:
+        gzipfile = file
     # Try gzip file first, otherwise regular json file.
     if gzipfile.is_file():
-        logger.debug('Loading ticker data from file %s', gzipfile)
-        with gzip.open(gzipfile) as tickerdata:
-            pairdata = json_load(tickerdata)
+        logger.debug(f"Loading historical data from file {gzipfile}")
+        with gzip.open(gzipfile) as datafile:
+            pairdata = json_load(datafile)
     elif file.is_file():
-        logger.debug('Loading ticker data from file %s', file)
-        with open(file) as tickerdata:
-            pairdata = json_load(tickerdata)
+        logger.debug(f"Loading historical data from file {file}")
+        with open(file) as datafile:
+            pairdata = json_load(datafile)
     else:
         return None
     return pairdata
+
+
+def pair_to_filename(pair: str) -> str:
+    for ch in ['/', '-', ' ', '.', '@', '$', '+', ':']:
+        pair = pair.replace(ch, '_')
+    return pair
 
 
 def format_ms_time(date: int) -> str:
@@ -121,3 +132,19 @@ def round_dict(d, n):
     Rounds float values in the dict to n digits after the decimal point.
     """
     return {k: (round(v, n) if isinstance(v, float) else v) for k, v in d.items()}
+
+
+def plural(num: float, singular: str, plural: str = None) -> str:
+    return singular if (num == 1 or num == -1) else plural or singular + 's'
+
+
+def render_template(templatefile: str, arguments: dict = {}) -> str:
+
+    from jinja2 import Environment, PackageLoader, select_autoescape
+
+    env = Environment(
+        loader=PackageLoader('freqtrade', 'templates'),
+        autoescape=select_autoescape(['html', 'xml'])
+    )
+    template = env.get_template(templatefile)
+    return template.render(**arguments)

@@ -1,12 +1,11 @@
 """
 Dataprovider
 Responsible to provide data to the bot
-including Klines, tickers, historic data
+including ticker and orderbook data, live and historical candle (OHLCV) data
 Common Interface for bot and strategy to access data.
 """
 import logging
-from pathlib import Path
-from typing import List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from pandas import DataFrame
 
@@ -37,53 +36,62 @@ class DataProvider:
     @property
     def available_pairs(self) -> List[Tuple[str, str]]:
         """
-        Return a list of tuples containing pair, ticker_interval for which data is currently cached.
+        Return a list of tuples containing (pair, timeframe) for which data is currently cached.
         Should be whitelist + open trades.
         """
         return list(self._exchange._klines.keys())
 
-    def ohlcv(self, pair: str, ticker_interval: str = None, copy: bool = True) -> DataFrame:
+    def ohlcv(self, pair: str, timeframe: str = None, copy: bool = True) -> DataFrame:
         """
-        Get ohlcv data for the given pair as DataFrame
+        Get candle (OHLCV) data for the given pair as DataFrame
         Please use the `available_pairs` method to verify which pairs are currently cached.
         :param pair: pair to get the data for
-        :param ticker_interval: ticker interval to get data for
+        :param timeframe: Timeframe to get data for
         :param copy: copy dataframe before returning if True.
                      Use False only for read-only operations (where the dataframe is not modified)
         """
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
-            return self._exchange.klines((pair, ticker_interval or self._config['ticker_interval']),
+            return self._exchange.klines((pair, timeframe or self._config['ticker_interval']),
                                          copy=copy)
         else:
             return DataFrame()
 
-    def historic_ohlcv(self, pair: str, ticker_interval: str = None) -> DataFrame:
+    def historic_ohlcv(self, pair: str, timeframe: str = None) -> DataFrame:
         """
-        Get stored historic ohlcv data
+        Get stored historical candle (OHLCV) data
         :param pair: pair to get the data for
-        :param ticker_interval: ticker interval to get data for
+        :param timeframe: timeframe to get data for
         """
         return load_pair_history(pair=pair,
-                                 ticker_interval=ticker_interval or self._config['ticker_interval'],
-                                 datadir=Path(self._config['datadir'])
+                                 timeframe=timeframe or self._config['ticker_interval'],
+                                 datadir=self._config['datadir']
                                  )
 
-    def get_pair_dataframe(self, pair: str, ticker_interval: str = None) -> DataFrame:
+    def get_pair_dataframe(self, pair: str, timeframe: str = None) -> DataFrame:
         """
-        Return pair ohlcv data, either live or cached historical -- depending
+        Return pair candle (OHLCV) data, either live or cached historical -- depending
         on the runmode.
         :param pair: pair to get the data for
-        :param ticker_interval: ticker interval to get data for
+        :param timeframe: timeframe to get data for
+        :return: Dataframe for this pair
         """
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
-            # Get live ohlcv data.
-            data = self.ohlcv(pair=pair, ticker_interval=ticker_interval)
+            # Get live OHLCV data.
+            data = self.ohlcv(pair=pair, timeframe=timeframe)
         else:
-            # Get historic ohlcv data (cached on disk).
-            data = self.historic_ohlcv(pair=pair, ticker_interval=ticker_interval)
+            # Get historical OHLCV data (cached on disk).
+            data = self.historic_ohlcv(pair=pair, timeframe=timeframe)
         if len(data) == 0:
-            logger.warning(f"No data found for ({pair}, {ticker_interval}).")
+            logger.warning(f"No data found for ({pair}, {timeframe}).")
         return data
+
+    def market(self, pair: str) -> Optional[Dict[str, Any]]:
+        """
+        Return market data for the pair
+        :param pair: Pair to get the data for
+        :return: Market data dict from ccxt or None if market info is not available for the pair
+        """
+        return self._exchange.markets.get(pair)
 
     def ticker(self, pair: str):
         """
@@ -92,9 +100,9 @@ class DataProvider:
         # TODO: Implement me
         pass
 
-    def orderbook(self, pair: str, maximum: int):
+    def orderbook(self, pair: str, maximum: int) -> Dict[str, List]:
         """
-        return latest orderbook data
+        fetch latest orderbook data
         :param pair: pair to get the data for
         :param maximum: Maximum number of orderbook entries to query
         :return: dict including bids/asks with a total of `maximum` entries.

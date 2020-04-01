@@ -11,7 +11,7 @@ Few pointers for contributions:
 - Create your PR against the `develop` branch, not `master`.
 - New features need to contain unit tests and must be PEP8 conformant (max-line-length = 100).
 
-If you are unsure, discuss the feature on our [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LWEyODBiNzkzNzcyNzU0MWYyYzE5NjIyOTQxMzBmMGUxOTIzM2YyN2Y4NWY1YTEwZDgwYTRmMzE2NmM5ZmY2MTg)
+If you are unsure, discuss the feature on our [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE)
 or in a [issue](https://github.com/freqtrade/freqtrade/issues) before a PR.
 
 ## Getting started
@@ -48,7 +48,7 @@ pytest tests/test_<file_name>.py::test_<method_name>
 #### Run Flake8
 
 ```bash
-flake8 freqtrade
+flake8 freqtrade tests scripts
 ```
 
 We receive a lot of code that fails the `flake8` checks.
@@ -109,11 +109,11 @@ Exceptions:
 
 Contributors may be given commit privileges. Preference will be given to those with:
 
-1. Past contributions to FreqTrade and other related open-source projects. Contributions to FreqTrade include both code (both accepted and pending) and friendly participation in the issue tracker and Pull request reviews. Quantity and quality are considered.
+1. Past contributions to Freqtrade and other related open-source projects. Contributions to Freqtrade include both code (both accepted and pending) and friendly participation in the issue tracker and Pull request reviews. Quantity and quality are considered.
 1. A coding style that the other core committers find simple, minimal, and clean.
 1. Access to resources for cross-platform development and testing.
 1. Time to devote to the project regularly.
 
-Beeing a Committer does not grant write permission on `develop` or `master` for security reasons (Users trust FreqTrade with their Exchange API keys).
+Being a Committer does not grant write permission on `develop` or `master` for security reasons (Users trust Freqtrade with their Exchange API keys).
 
-After beeing Committer for some time, a Committer may be named Core Committer and given full repository access.
+After being Committer for some time, a Committer may be named Core Committer and given full repository access.

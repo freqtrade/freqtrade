@@ -4,7 +4,7 @@
 
 ### The bot does not start
 
-Running the bot with `freqtrade --config config.json` does show the output `freqtrade: command not found`.
+Running the bot with `freqtrade trade --config config.json` does show the output `freqtrade: command not found`.
 
 This could have the following reasons:
 
@@ -38,28 +38,78 @@ like pauses. You can stop your bot, adjust settings and start it again.
 
 ### I want to improve the bot with a new strategy
 
-That's great. We have a nice backtesting and hyperoptimizing setup. See
+That's great. We have a nice backtesting and hyperoptimization setup. See
 the tutorial [here|Testing-new-strategies-with-Hyperopt](bot-usage.md#hyperopt-commands).
 
 ### Is there a setting to only SELL the coins being held and not perform anymore BUYS?
 
 You can use the `/forcesell all` command from Telegram.
 
-### I get the message "RESTRICTED_MARKET"
+### I'm getting the "RESTRICTED_MARKET" message in the log
 
 Currently known to happen for US Bittrex users.  
-Bittrex split its exchange into US and International versions.
-The International version has more pairs available, however the API always returns all pairs, so there is currently no automated way to detect if you're affected by the restriction.
 
-If you have restricted pairs in your whitelist, you'll get a warning message in the log on FreqTrade startup for each restricted pair.
-If you're an "International" Customer on the Bittrex exchange, then this warning will probably not impact you.
-If you're a US customer, the bot will fail to create orders for these pairs, and you should remove them from your Whitelist.
+Read [the Bittrex section about restricted markets](exchanges.md#restricted-markets) for more information.
+
+### I'm getting the "Exchange Bittrex does not support market orders." message and cannot run my strategy
+
+As the message says, Bittrex does not support market orders and you have one of the [order types](configuration.md/#understand-order_types) set to "market". Probably your strategy was written with other exchanges in mind and sets "market" orders for "stoploss" orders, which is correct and preferable for most of the exchanges supporting market orders (but not for Bittrex).
+
+To fix it for Bittrex, redefine order types in the strategy to use "limit" instead of "market":
+
+```
+    order_types = {
+        ...
+        'stoploss': 'limit',
+        ...
+    }
+```
+
+Same fix should be done in the configuration file, if order types are defined in your custom config rather than in the strategy.
+
+### How do I search the bot logs for something?
+
+By default, the bot writes its log into stderr stream. This is implemented this way so that you can easily separate the bot's diagnostics messages from Backtesting, Edge and Hyperopt results, output from other various Freqtrade utility subcommands, as well as from the output of your custom `print()`'s you may have inserted into your strategy. So if you need to search the log messages with the grep utility, you need to redirect stderr to stdout and disregard stdout.
+
+* In unix shells, this normally can be done as simple as:
+```shell
+$ freqtrade --some-options 2>&1 >/dev/null | grep 'something'
+```
+(note, `2>&1` and `>/dev/null` should be written in this order)
+
+* Bash interpreter also supports so called process substitution syntax, you can grep the log for a string with it as:
+```shell
+$ freqtrade --some-options 2> >(grep 'something') >/dev/null
+```
+or
+```shell
+$ freqtrade --some-options 2> >(grep -v 'something' 1>&2)
+```
+
+* You can also write the copy of Freqtrade log messages to a file with the `--logfile` option:
+```shell
+$ freqtrade --logfile /path/to/mylogfile.log --some-options
+```
+and then grep it as:
+```shell
+$ cat /path/to/mylogfile.log | grep 'something'
+```
+or even on the fly, as the bot works and the logfile grows:
+```shell
+$ tail -f /path/to/mylogfile.log | grep 'something'
+```
+from a separate terminal window.
+
+On Windows, the `--logfilename` option is also supported by Freqtrade and you can use the `findstr` command to search the log for the string of interest:
+```
+> type \path\to\mylogfile.log | findstr "something"
+```
 
 ## Hyperopt module
 
 ### How many epoch do I need to get a good Hyperopt result?
 
-Per default Hyperopts without `-e` or `--epochs` parameter will only
+Per default Hyperopt called without the `-e`/`--epochs` command line option will only
 run 100 epochs, means 100 evals of your triggers, guards, ... Too few
 to find a great result (unless if you are very lucky), so you probably
 have to run it for 10.000 or more. But it will take an eternity to

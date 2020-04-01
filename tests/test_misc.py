@@ -4,10 +4,12 @@ import datetime
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from freqtrade.data.converter import parse_ticker_dataframe
-from freqtrade.data.history import pair_data_filename
+import pytest
+
+from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.misc import (datesarray_to_datetimearray, file_dump_json,
-                            file_load_json, format_ms_time, shorten_date)
+                            file_load_json, format_ms_time, pair_to_filename,
+                            plural, shorten_date)
 
 
 def test_shorten_date() -> None:
@@ -16,9 +18,9 @@ def test_shorten_date() -> None:
     assert shorten_date(str_data) == str_shorten_data
 
 
-def test_datesarray_to_datetimearray(ticker_history_list):
-    dataframes = parse_ticker_dataframe(ticker_history_list, "5m", pair="UNITTEST/BTC",
-                                        fill_missing=True)
+def test_datesarray_to_datetimearray(ohlcv_history_list):
+    dataframes = ohlcv_to_dataframe(ohlcv_history_list, "5m", pair="UNITTEST/BTC",
+                                    fill_missing=True)
     dates = datesarray_to_datetimearray(dataframes['date'])
 
     assert isinstance(dates[0], datetime.datetime)
@@ -48,14 +50,34 @@ def test_file_dump_json(mocker) -> None:
 def test_file_load_json(mocker, testdatadir) -> None:
 
     # 7m .json does not exist
-    ret = file_load_json(pair_data_filename(testdatadir, 'UNITTEST/BTC', '7m'))
+    ret = file_load_json(testdatadir / 'UNITTEST_BTC-7m.json')
     assert not ret
     # 1m json exists (but no .gz exists)
-    ret = file_load_json(pair_data_filename(testdatadir, 'UNITTEST/BTC', '1m'))
+    ret = file_load_json(testdatadir / 'UNITTEST_BTC-1m.json')
     assert ret
     # 8 .json is empty and will fail if it's loaded. .json.gz is a copy of 1.json
-    ret = file_load_json(pair_data_filename(testdatadir, 'UNITTEST/BTC', '8m'))
+    ret = file_load_json(testdatadir / 'UNITTEST_BTC-8m.json')
     assert ret
+
+
+@pytest.mark.parametrize("pair,expected_result", [
+    ("ETH/BTC", 'ETH_BTC'),
+    ("Fabric Token/ETH", 'Fabric_Token_ETH'),
+    ("ETHH20", 'ETHH20'),
+    (".XBTBON2H", '_XBTBON2H'),
+    ("ETHUSD.d", 'ETHUSD_d'),
+    ("ADA-0327", 'ADA_0327'),
+    ("BTC-USD-200110", 'BTC_USD_200110'),
+    ("F-AKRO/USDT", 'F_AKRO_USDT'),
+    ("LC+/ETH", 'LC__ETH'),
+    ("CMT@18/ETH", 'CMT_18_ETH'),
+    ("LBTC:1022/SAI", 'LBTC_1022_SAI'),
+    ("$PAC/BTC", '_PAC_BTC'),
+    ("ACC_OLD/BTC", 'ACC_OLD_BTC'),
+])
+def test_pair_to_filename(pair, expected_result):
+    pair_s = pair_to_filename(pair)
+    assert pair_s == expected_result
 
 
 def test_format_ms_time() -> None:
@@ -69,3 +91,35 @@ def test_format_ms_time() -> None:
     # Date 2017-12-13 08:02:01
     date_in_epoch_ms = 1513152121000
     assert format_ms_time(date_in_epoch_ms) == res.astimezone(None).strftime('%Y-%m-%dT%H:%M:%S')
+
+
+def test_plural() -> None:
+    assert plural(0, "page") == "pages"
+    assert plural(0.0, "page") == "pages"
+    assert plural(1, "page") == "page"
+    assert plural(1.0, "page") == "page"
+    assert plural(2, "page") == "pages"
+    assert plural(2.0, "page") == "pages"
+    assert plural(-1, "page") == "page"
+    assert plural(-1.0, "page") == "page"
+    assert plural(-2, "page") == "pages"
+    assert plural(-2.0, "page") == "pages"
+    assert plural(0.5, "page") == "pages"
+    assert plural(1.5, "page") == "pages"
+    assert plural(-0.5, "page") == "pages"
+    assert plural(-1.5, "page") == "pages"
+
+    assert plural(0, "ox", "oxen") == "oxen"
+    assert plural(0.0, "ox", "oxen") == "oxen"
+    assert plural(1, "ox", "oxen") == "ox"
+    assert plural(1.0, "ox", "oxen") == "ox"
+    assert plural(2, "ox", "oxen") == "oxen"
+    assert plural(2.0, "ox", "oxen") == "oxen"
+    assert plural(-1, "ox", "oxen") == "ox"
+    assert plural(-1.0, "ox", "oxen") == "ox"
+    assert plural(-2, "ox", "oxen") == "oxen"
+    assert plural(-2.0, "ox", "oxen") == "oxen"
+    assert plural(0.5, "ox", "oxen") == "oxen"
+    assert plural(1.5, "ox", "oxen") == "oxen"
+    assert plural(-0.5, "ox", "oxen") == "oxen"
+    assert plural(-1.5, "ox", "oxen") == "oxen"
