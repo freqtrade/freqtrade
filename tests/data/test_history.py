@@ -612,7 +612,7 @@ def test_jsondatahandler_ohlcv_get_pairs(testdatadir):
 def test_jsondatahandler_trades_get_pairs(testdatadir):
     pairs = JsonGzDataHandler.trades_get_pairs(testdatadir)
     # Convert to set to avoid failures due to sorting
-    assert set(pairs) == {'XRP/ETH'}
+    assert set(pairs) == {'XRP/ETH', 'XRP/OLD'}
 
 
 def test_jsondatahandler_ohlcv_purge(mocker, testdatadir):
@@ -623,6 +623,17 @@ def test_jsondatahandler_ohlcv_purge(mocker, testdatadir):
 
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
     assert dh.ohlcv_purge('UNITTEST/NONEXIST', '5m')
+
+
+def test_jsondatahandler_trades_load(mocker, testdatadir, caplog):
+    dh = JsonGzDataHandler(testdatadir)
+    logmsg = "Old trades format detected - converting"
+    dh.trades_load('XRP/ETH')
+    assert not log_has(logmsg, caplog)
+
+    # Test conversation is happening
+    dh.trades_load('XRP/OLD')
+    assert log_has(logmsg, caplog)
 
 
 def test_jsondatahandler_trades_purge(mocker, testdatadir):
