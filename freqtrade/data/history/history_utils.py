@@ -15,6 +15,7 @@ from freqtrade.data.converter import (ohlcv_to_dataframe,
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
+from freqtrade.misc import format_ms_time
 
 logger = logging.getLogger(__name__)
 
@@ -271,10 +272,12 @@ def _download_trades_history(exchange: Exchange,
         if trades and since < trades[-1][0]:
             # Reset since to the last available point
             # - 5 seconds (to ensure we're getting all trades)
+            logger.info(f"Using last trade date -5s - Downloading trades for {pair} "
+                        f"since: {format_ms_time(since)}.")
             since = trades[-1][0] - (5 * 1000)
 
-        logger.debug("Current Start: %s", trades[0][0] if trades else 'None')
-        logger.debug("Current End: %s", trades[-1][0] if trades else 'None')
+        logger.debug(f"Current Start: {format_ms_time(trades[0][0]) if trades else 'None'}")
+        logger.debug(f"Current End: {format_ms_time(trades[-1][0]) if trades else 'None'}")
         logger.info(f"Current Amount of trades: {len(trades)}")
 
         # Default since_ms to 30 days if nothing is given
@@ -289,8 +292,8 @@ def _download_trades_history(exchange: Exchange,
         trades = trades_remove_duplicates(trades)
         data_handler.trades_store(pair, data=trades)
 
-        logger.debug("New Start: %s", trades[0][0])
-        logger.debug("New End: %s", trades[-1][0])
+        logger.debug(f"New Start: {format_ms_time(trades[0][0])}")
+        logger.debug(f"New End: {format_ms_time(trades[-1][0])}")
         logger.info(f"New Amount of trades: {len(trades)}")
         return True
 

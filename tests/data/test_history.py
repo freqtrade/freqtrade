@@ -547,18 +547,18 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
     assert log_has("New Amount of trades: 5", caplog)
     assert file1.is_file()
 
-    # clean files freshly downloaded
-    _clean_test_file(file1)
     ght_mock.reset_mock()
-    since_time = int(trades_history[-2][0] // 1000)
+    since_time = int(trades_history[-3][0] // 1000)
+    since_time2 = int(trades_history[-1][0] // 1000)
     timerange = TimeRange('date', None, since_time, 0)
     assert _download_trades_history(data_handler=data_handler, exchange=exchange,
                                     pair='ETH/BTC', timerange=timerange)
 
     assert ght_mock.call_count == 1
     # Check this in seconds - since we had to convert to seconds above too.
-    assert int(ght_mock.call_args_list[0].kwargs['since'] // 1000) == since_time - 5
+    assert int(ght_mock.call_args_list[0].kwargs['since'] // 1000) == since_time2 - 5
 
+    # clean files freshly downloaded
     _clean_test_file(file1)
 
     mocker.patch('freqtrade.exchange.Exchange.get_historic_trades',
