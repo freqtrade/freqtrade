@@ -160,10 +160,15 @@ def test_backtest_record(default_conf, fee, mocker):
     # reset test to test with strategy name
     names = []
     records = []
-    results['Strat'] = pd.DataFrame()
+    results['Strat'] = results['DefStrat']
+    results['Strat2'] = results['DefStrat']
     store_backtest_result(Path("backtest-result.json"), results)
     # Assert file_dump_json was only called once
-    assert names == [Path('backtest-result-DefStrat.json')]
+    assert names == [
+        Path('backtest-result-DefStrat.json'),
+        Path('backtest-result-Strat.json'),
+        Path('backtest-result-Strat2.json'),
+    ]
     records = records[0]
     # Ensure records are of correct type
     assert len(records) == 4
