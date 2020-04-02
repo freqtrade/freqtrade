@@ -1233,6 +1233,7 @@ def trades_history():
             [1565798399862, '126181332', None, 'sell', 0.019626, 0.011, 0.00021588599999999999],
             [1565798399872, '126181333', None, 'sell', 0.019626, 0.011, 0.00021588599999999999]]
 
+
 @pytest.fixture(scope="function")
 def fetch_trades_result():
     return [{'info': {'a': 126181329,

@@ -218,33 +218,37 @@ def test_trades_dict_to_list(fetch_trades_result):
         assert t[6] == fetch_trades_result[i]['cost']
 
 
-
 def test_convert_trades_format(mocker, default_conf, testdatadir):
-    file = testdatadir / "XRP_ETH-trades.json.gz"
-    file_new = testdatadir / "XRP_ETH-trades.json"
-    _backup_file(file, copy_file=True)
-    default_conf['datadir'] = testdatadir
+    files = [{'old': testdatadir / "XRP_ETH-trades.json.gz",
+              'new': testdatadir / "XRP_ETH-trades.json"},
+             {'old': testdatadir / "XRP_OLD-trades.json.gz",
+              'new': testdatadir / "XRP_OLD-trades.json"},
+             ]
+    for file in files:
+        _backup_file(file['old'], copy_file=True)
+        assert not file['new'].exists()
 
-    assert not file_new.exists()
+    default_conf['datadir'] = testdatadir
 
     convert_trades_format(default_conf, convert_from='jsongz',
                           convert_to='json', erase=False)
 
-    assert file_new.exists()
-    assert file.exists()
+    for file in files:
+        assert file['new'].exists()
+        assert file['old'].exists()
 
-    # Remove original file
-    file.unlink()
+        # Remove original file
+        file['old'].unlink()
     # Convert back
     convert_trades_format(default_conf, convert_from='json',
                           convert_to='jsongz', erase=True)
+    for file in files:
+        assert file['old'].exists()
+        assert not file['new'].exists()
 
-    assert file.exists()
-    assert not file_new.exists()
-
-    _clean_test_file(file)
-    if file_new.exists():
-        file_new.unlink()
+        _clean_test_file(file['old'])
+        if file['new'].exists():
+            file['new'].unlink()
 
 
 def test_convert_ohlcv_format(mocker, default_conf, testdatadir):

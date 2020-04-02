@@ -260,7 +260,9 @@ def _download_trades_history(exchange: Exchange,
     """
     try:
 
-        since = timerange.startts * 1000 if timerange and timerange.starttype == 'date' else None
+        since = timerange.startts * 1000 if \
+            (timerange and timerange.starttype == 'date') else int(arrow.utcnow().shift(
+                days=-30).float_timestamp) * 1000
 
         trades = data_handler.trades_load(pair)
 
@@ -282,9 +284,7 @@ def _download_trades_history(exchange: Exchange,
 
         # Default since_ms to 30 days if nothing is given
         new_trades = exchange.get_historic_trades(pair=pair,
-                                                  since=since if since else
-                                                  int(arrow.utcnow().shift(
-                                                      days=-30).float_timestamp) * 1000,
+                                                  since=since,
                                                   from_id=from_id,
                                                   )
         trades.extend(new_trades[1])
