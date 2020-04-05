@@ -191,3 +191,18 @@ def test_calculate_max_drawdown(testdatadir):
     assert low == Timestamp('2018-01-30 04:45:00', tz='UTC')
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
         drawdown, h, low = calculate_max_drawdown(DataFrame())
+
+
+def test_calculate_max_drawdown2():
+    values = [0.011580, 0.010048, 0.011340, 0.012161, 0.010416, 0.010009, 0.020024,
+              -0.024662, -0.022350, 0.020496, -0.029859, -0.030511, 0.010041, 0.010872,
+              -0.025782, 0.010400, 0.012374, 0.012467, 0.114741, 0.010303, 0.010088,
+              -0.033961, 0.010680, 0.010886, -0.029274, 0.011178, 0.010693, 0.010711]
+
+    dates = [Arrow(2020, 1, 1).shift(days=i) for i in range(len(values))]
+    df = DataFrame(zip(values, dates), columns=['profit', 'open_time'])
+    drawdown, h, low = calculate_max_drawdown(df, date_col='open_time', value_col='profit')
+    assert isinstance(drawdown, float)
+    # High must be before low
+    assert h < low
+    assert drawdown == 0.091755
