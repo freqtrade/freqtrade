@@ -219,7 +219,7 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_time'
     max_drawdown_df['high_value'] = max_drawdown_df['cumulative'].cummax()
     max_drawdown_df['drawdown'] = max_drawdown_df['cumulative'] - max_drawdown_df['high_value']
 
-    high_date = profit_results.loc[max_drawdown_df['high_value'].idxmax(), date_col]
-    low_date = profit_results.loc[max_drawdown_df['drawdown'].idxmin(), date_col]
-
+    idxmin = max_drawdown_df['drawdown'].idxmin()
+    high_date = profit_results.loc[max_drawdown_df.iloc[:idxmin]['high_value'].idxmax(), date_col]
+    low_date = profit_results.loc[idxmin, date_col]
     return abs(min(max_drawdown_df['drawdown'])), high_date, low_date
