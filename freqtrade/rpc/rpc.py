@@ -270,7 +270,7 @@ class RPC:
             })
 
         return {
-            "trades" : output
+            "trades": output
         }
 
     def _rpc_trade_statistics(

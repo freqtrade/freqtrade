@@ -358,7 +358,7 @@ class ApiServer(RPC):
         results = self._rpc_balance(self._config['stake_currency'],
                                     self._config.get('fiat_display_currency', ''))
         return self.rest_dump(results)
-    
+
     @require_login
     @rpc_catch_errors
     def _trades(self):
