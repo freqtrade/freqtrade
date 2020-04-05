@@ -206,3 +206,7 @@ def test_calculate_max_drawdown2():
     # High must be before low
     assert h < low
     assert drawdown == 0.091755
+
+    df = DataFrame(zip(values[:5], dates[:5]), columns=['profit', 'open_time'])
+    with pytest.raises(ValueError, match='No losing trade, therefore no drawdown.'):
+        calculate_max_drawdown(df, date_col='open_time', value_col='profit')
