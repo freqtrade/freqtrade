@@ -227,7 +227,7 @@ class RPC:
         ]
 
     def _rpc_trade_history(
-            self, last_trades_number: int) -> List[List[Any]]:
+            self, last_trades_number: int) -> Dict[str, List[Dict[str, Any]]]:
         """ Returns the X last trades """
         if last_trades_number > 0:
             trades = Trade.get_trades().order_by(Trade.id.desc()).limit(last_trades_number)
