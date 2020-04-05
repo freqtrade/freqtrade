@@ -173,7 +173,8 @@ class ApiServer(RPC):
                               view_func=self._show_config, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/ping', 'ping',
                               view_func=self._ping, methods=['GET'])
-
+        self.app.add_url_rule(f'{BASE_URI}/trades', 'trades',
+                              view_func=self._trades, methods=['GET'])
         # Combined actions and infos
         self.app.add_url_rule(f'{BASE_URI}/blacklist', 'blacklist', view_func=self._blacklist,
                               methods=['GET', 'POST'])
@@ -356,6 +357,19 @@ class ApiServer(RPC):
         """
         results = self._rpc_balance(self._config['stake_currency'],
                                     self._config.get('fiat_display_currency', ''))
+        return self.rest_dump(results)
+    
+    @require_login
+    @rpc_catch_errors
+    def _trades(self):
+        """
+        Handler for /trades.
+
+        Returns the X last trades in json format
+        """
+        last_trades_number = request.args.get('last_trades_number', 0)
+        last_trades_number = int(last_trades_number)
+        results = self._rpc_trade_history(last_trades_number)
         return self.rest_dump(results)
 
     @require_login

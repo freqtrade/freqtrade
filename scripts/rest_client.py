@@ -156,6 +156,13 @@ class FtRestClient():
         """
         return self._get("show_config")
 
+    def history(self, number=None):
+        """Return the amount of open trades.
+
+        :return: json object
+        """
+        return self._get("trades", params={"last_trades_number": number} if number else 0)
+
     def whitelist(self):
         """Show the current whitelist.
 
