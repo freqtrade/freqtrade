@@ -227,50 +227,21 @@ class RPC:
         ]
 
     def _rpc_trade_history(
-            self, last_trades_number: int) -> Dict[str, List[Dict[str, Any]]]:
+            self, limit: int) -> Dict[str, List[Dict[str, Any]]]:
         """ Returns the X last trades """
-        if last_trades_number > 0:
-            trades = Trade.get_trades().order_by(Trade.id.desc()).limit(last_trades_number)
+        if limit > 0:
+            trades = Trade.get_trades().order_by(Trade.id.desc()).limit(limit)
         else:
             trades = Trade.get_trades().order_by(Trade.id.desc()).all()
 
         output = []
 
         for trade in trades:
-            output.append({
-                'id': trade.id,
-                'pair': trade.pair,
-                'exchange': trade.exchange,
-                'is_open': trade.is_open if trade.is_open is not None else 0,
-                'open_rate': trade.open_rate,
-                'close_rate': trade.close_rate,
-                'fee_open': trade.fee_open,
-                'fee_close': trade.fee_close,
-                'open_rate_requested': trade.open_rate_requested,
-                'open_trade_price': trade.open_trade_price,
-                'close_rate_requested': trade.close_rate_requested,
-                'close_profit': trade.close_profit,
-                'close_profit_abs': trade.close_profit_abs,
-                'stake_amount': trade.stake_amount,
-                'amount': trade.amount,
-                'open_date': trade.open_date,
-                'close_date': trade.close_date,
-                'open_order_id': trade.open_order_id,
-                'stop_loss': trade.stop_loss,
-                'stop_loss_pct': trade.stop_loss_pct,
-                'initial_stop_loss': trade.initial_stop_loss,
-                'initial_stop_loss_pct': trade.initial_stop_loss_pct,
-                'stoploss_order_id': trade.stoploss_order_id,
-                'stoploss_last_update': trade.stoploss_last_update,
-                'max_rate': trade.max_rate,
-                'min_rate': trade.min_rate,
-                'sell_reason': trade.sell_reason,
-                'strategy': trade.strategy,
-                'ticker_interval': trade.ticker_interval,
-            })
+            output.append(trade.to_json())
 
         return {
-            "trades": output
+            "trades": output,
+            "trades_count": len(output)
         }
 
     def _rpc_trade_statistics(

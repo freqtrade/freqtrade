@@ -367,9 +367,8 @@ class ApiServer(RPC):
 
         Returns the X last trades in json format
         """
-        last_trades_number = request.args.get('last_trades_number', 0)
-        last_trades_number = int(last_trades_number)
-        results = self._rpc_trade_history(last_trades_number)
+        limit = int(request.args.get('limit', 0))
+        results = self._rpc_trade_history(limit)
         return self.rest_dump(results)
 
     @require_login
