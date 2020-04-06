@@ -22,7 +22,7 @@ from colorama import init as colorama_init
 from joblib import (Parallel, cpu_count, delayed, dump, load,
                     wrap_non_picklable_objects)
 from pandas import DataFrame, json_normalize, isna
-from tqdm import tqdm
+import progressbar
 import tabulate
 from os import path
 import io
@@ -44,7 +44,8 @@ with warnings.catch_warnings():
     from skopt import Optimizer
     from skopt.space import Dimension
 
-
+progressbar.streams.wrap_stderr()
+progressbar.streams.wrap_stdout()
 logger = logging.getLogger(__name__)
 
 
@@ -682,55 +683,67 @@ class Hyperopt:
                 logger.info(f'Effective number of parallel workers used: {jobs}')
 
                 # Define progressbar
-                self.progress_bar = tqdm(
-                    total=self.total_epochs, ncols=108, unit=' Epoch',
-                    bar_format='Epoch {n_fmt}/{total_fmt} ({percentage:3.0f}%)|{bar}|'
-                    ' [{elapsed}<{remaining} {rate_fmt}{postfix}]'
-                )
+                if self.print_colorized:
+                    widgets = [
+                        ' [Epoch ', progressbar.Counter(), ' of ', str(self.total_epochs),
+                        ' (', progressbar.Percentage(), ')] ',
+                        progressbar.Bar(marker=progressbar.AnimatedMarker(
+                            fill='█',
+                            fill_wrap='\x1b[32m{}\x1b[39m',
+                            marker_wrap='\x1b[31m{}\x1b[39m',
+                        )),
+                        ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
+                    ]
+                else:
+                    widgets = [
+                        ' [Epoch ', progressbar.Counter(), ' of ', str(self.total_epochs), '] ',
+                        progressbar.Bar(marker='█'),
+                        ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
+                    ]
+                with progressbar.ProgressBar(
+                         maxval=self.total_epochs, redirect_stdout=True, redirect_stderr=True,
+                         widgets=widgets
+                     ) as pbar:
+                    EVALS = ceil(self.total_epochs / jobs)
+                    for i in range(EVALS):
+                        # Correct the number of epochs to be processed for the last
+                        # iteration (should not exceed self.total_epochs in total)
+                        n_rest = (i + 1) * jobs - self.total_epochs
+                        current_jobs = jobs - n_rest if n_rest > 0 else jobs
 
-                EVALS = ceil(self.total_epochs / jobs)
-                for i in range(EVALS):
-                    # Correct the number of epochs to be processed for the last
-                    # iteration (should not exceed self.total_epochs in total)
-                    n_rest = (i + 1) * jobs - self.total_epochs
-                    current_jobs = jobs - n_rest if n_rest > 0 else jobs
+                        asked = self.opt.ask(n_points=current_jobs)
+                        f_val = self.run_optimizer_parallel(parallel, asked, i)
+                        self.opt.tell(asked, [v['loss'] for v in f_val])
+                        self.fix_optimizer_models_list()
 
-                    asked = self.opt.ask(n_points=current_jobs)
-                    f_val = self.run_optimizer_parallel(parallel, asked, i)
-                    self.opt.tell(asked, [v['loss'] for v in f_val])
-                    self.fix_optimizer_models_list()
+                        # Calculate progressbar outputs
+                        for j, val in enumerate(f_val):
+                            # Use human-friendly indexes here (starting from 1)
+                            current = i * jobs + j + 1
+                            val['current_epoch'] = current
+                            val['is_initial_point'] = current <= INITIAL_POINTS
 
-                    # Calculate progressbar outputs
-                    for j, val in enumerate(f_val):
-                        # Use human-friendly indexes here (starting from 1)
-                        current = i * jobs + j + 1
-                        val['current_epoch'] = current
-                        val['is_initial_point'] = current <= INITIAL_POINTS
-                        logger.debug(f"Optimizer epoch evaluated: {val}")
+                            logger.debug(f"Optimizer epoch evaluated: {val}")
 
-                        is_best = self.is_best_loss(val, self.current_best_loss)
-                        # This value is assigned here and not in the optimization method
-                        # to keep proper order in the list of results. That's because
-                        # evaluations can take different time. Here they are aligned in the
-                        # order they will be shown to the user.
-                        val['is_best'] = is_best
-                        output = self.get_results(val)
-                        if output:
-                            self.progress_bar.write(output)
-                        self.progress_bar.ncols = 108
-                        self.progress_bar.update(1)
+                            is_best = self.is_best_loss(val, self.current_best_loss)
+                            # This value is assigned here and not in the optimization method
+                            # to keep proper order in the list of results. That's because
+                            # evaluations can take different time. Here they are aligned in the
+                            # order they will be shown to the user.
+                            val['is_best'] = is_best
+                            self.print_results(val)
 
-                        if is_best:
-                            self.current_best_loss = val['loss']
-                        self.trials.append(val)
-                        # Save results after each best epoch and every 100 epochs
-                        if is_best or current % 100 == 0:
-                            self.save_trials()
-                self.progress_bar.ncols = 108
-                self.progress_bar.close()
+                            if is_best:
+                                self.current_best_loss = val['loss']
+                            self.trials.append(val)
+
+                            # Save results after each best epoch and every 100 epochs
+                            if is_best or current % 100 == 0:
+                                self.save_trials()
+
+                            pbar.update(current)
 
         except KeyboardInterrupt:
-            self.progress_bar.close()
             print('User interrupted..')
 
         self.save_trials(final=True)
@@ -743,9 +756,3 @@ class Hyperopt:
             # This is printed when Ctrl+C is pressed quickly, before first epochs have
             # a chance to be evaluated.
             print("No epochs evaluated yet, no best result.")
-
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        del state['trials']
-        del state['progress_bar']
-        return state
