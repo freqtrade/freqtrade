@@ -24,7 +24,7 @@ python-rapidjson==0.9.1
 sdnotify==0.3.2
 
 # Api server
-flask==1.1.1
+flask==1.1.2
 
 # Support for colorized terminal output
 colorama==0.4.3
