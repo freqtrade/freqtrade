@@ -385,6 +385,9 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
     # Combine close-values for all pairs, rename columns to "pair"
     df_comb = combine_dataframes_with_mean(data, "close")
 
+    # Trim trades to available OHLCV data
+    trades = extract_trades_of_period(df_comb, trades, date_index=True)
+
     # Add combined cumulative profit
     df_comb = create_cum_profit(df_comb, trades, 'cum_profit', timeframe)
 
