@@ -446,7 +446,6 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
                         'stop_loss_pct': None,
                         'trade_id': 1,
                         'close_rate_requested': None,
-                        'current_profit': -0.41,
                         'current_rate': 1.099e-05,
                         'fee_close': 0.0025,
                         'fee_open': 0.0025,
