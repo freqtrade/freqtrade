@@ -444,7 +444,22 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
                         'stake_amount': 0.001,
                         'stop_loss': 0.0,
                         'stop_loss_pct': None,
-                        'trade_id': 1}]
+                        'trade_id': 1,
+                        'close_rate_requested': None,
+                        'current_profit': -0.41,
+                        'current_rate': 1.099e-05,
+                        'fee_close': 0.0025,
+                        'fee_open': 0.0025,
+                        'open_date': ANY,
+                        'is_open': True,
+                        'max_rate': 0.0,
+                        'min_rate': None,
+                        'open_order_id': ANY,
+                        'open_rate_requested': 1.098e-05,
+                        'open_trade_price': 0.0010025,
+                        'sell_reason': None,
+                        'strategy': 'DefaultStrategy',
+                        'ticker_interval': 5}]
 
 
 def test_api_version(botclient):
@@ -533,7 +548,21 @@ def test_api_forcebuy(botclient, mocker, fee):
                        'stake_amount': 1,
                        'stop_loss': None,
                        'stop_loss_pct': None,
-                       'trade_id': None}
+                       'trade_id': None,
+                       'close_profit': None,
+                       'close_rate_requested': None,
+                       'fee_close': 0.0025,
+                       'fee_open': 0.0025,
+                       'is_open': False,
+                       'max_rate': None,
+                       'min_rate': None,
+                       'open_order_id': '123456',
+                       'open_rate_requested': None,
+                       'open_trade_price': 0.2460546025,
+                       'sell_reason': None,
+                       'strategy': None,
+                       'ticker_interval': None
+                       }
 
 
 def test_api_forcesell(botclient, mocker, ticker, fee, markets):

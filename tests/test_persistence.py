@@ -777,18 +777,31 @@ def test_to_json(default_conf, fee):
 
     assert result == {'trade_id': None,
                       'pair': 'ETH/BTC',
+                      'is_open': None,
                       'open_date_hum': '2 hours ago',
                       'open_date': trade.open_date.strftime("%Y-%m-%d %H:%M:%S"),
+                      'open_order_id': 'dry_run_buy_12345',
                       'close_date_hum': None,
                       'close_date': None,
                       'open_rate': 0.123,
+                      'open_rate_requested': None,
+                      'open_trade_price': 15.1668225,
+                      'fee_close': 0.0025,
+                      'fee_open': 0.0025,
                       'close_rate': None,
+                      'close_rate_requested': None,
                       'amount': 123.0,
                       'stake_amount': 0.001,
+                      'close_profit': None,
+                      'sell_reason': None,
                       'stop_loss': None,
                       'stop_loss_pct': None,
                       'initial_stop_loss': None,
-                      'initial_stop_loss_pct': None}
+                      'initial_stop_loss_pct': None,
+                      'min_rate': None,
+                      'max_rate': None,
+                      'strategy': None,
+                      'ticker_interval': None}
 
     # Simulate dry_run entries
     trade = Trade(
@@ -819,7 +832,20 @@ def test_to_json(default_conf, fee):
                       'stop_loss': None,
                       'stop_loss_pct': None,
                       'initial_stop_loss': None,
-                      'initial_stop_loss_pct': None}
+                      'initial_stop_loss_pct': None,
+                      'close_profit': None,
+                      'close_rate_requested': None,
+                      'fee_close': 0.0025,
+                      'fee_open': 0.0025,
+                      'is_open': None,
+                      'max_rate': None,
+                      'min_rate': None,
+                      'open_order_id': None,
+                      'open_rate_requested': None,
+                      'open_trade_price': 12.33075,
+                      'sell_reason': None,
+                      'strategy': None,
+                      'ticker_interval': None}
 
 
 def test_stoploss_reinitialization(default_conf, fee):
