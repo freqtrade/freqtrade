@@ -13,7 +13,7 @@ from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.state import State
-from tests.conftest import get_patched_freqtradebot, patch_get_signal
+from tests.conftest import get_patched_freqtradebot, patch_get_signal, create_mock_trades
 
 
 # Functions for recurrent object patching
@@ -209,6 +209,32 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
     # Try invalid data
     with pytest.raises(RPCException, match=r'.*must be an integer greater than 0*'):
         rpc._rpc_daily_profit(0, stake_currency, fiat_display_currency)
+
+
+def test_rpc_trade_history(mocker, default_conf, markets, fee):
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        markets=PropertyMock(return_value=markets)
+    )
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    create_mock_trades(fee)
+    rpc = RPC(freqtradebot)
+    rpc._fiat_converter = CryptoToFiatConverter()
+    trades = rpc._rpc_trade_history(2)
+    assert len(trades['trades']) == 2
+    assert trades['trades_count'] == 2
+    assert isinstance(trades['trades'][0], dict)
+    assert isinstance(trades['trades'][1], dict)
+
+    trades = rpc._rpc_trade_history(0)
+    assert len(trades['trades']) == 3
+    assert trades['trades_count'] == 3
+    # The first trade is for ETH ... sorting is descending
+    assert trades['trades'][-1]['pair'] == 'ETH/BTC'
+    assert trades['trades'][0]['pair'] == 'ETC/BTC'
+    assert trades['trades'][1]['pair'] == 'ETC/BTC'
 
 
 def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
