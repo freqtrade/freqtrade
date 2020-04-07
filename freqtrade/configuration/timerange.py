@@ -45,7 +45,7 @@ class TimeRange:
         """
         Adjust startts by <startup_candles> candles.
         Applies only if no startup-candles have been available.
-        :param timeframe_secs: Ticker timeframe in seconds e.g. `timeframe_to_seconds('5m')`
+        :param timeframe_secs: Timeframe in seconds e.g. `timeframe_to_seconds('5m')`
         :param startup_candles: Number of candles to move start-date forward
         :param min_date: Minimum data date loaded. Key kriterium to decide if start-time
                          has to be moved

@@ -2228,10 +2228,16 @@ def test_handle_timedout_limit_buy(mocker, default_conf, limit_buy_order) -> Non
     assert cancel_order_mock.call_count == 1
 
 
-def test_handle_timedout_limit_buy_corder_empty(mocker, default_conf, limit_buy_order) -> None:
+@pytest.mark.parametrize('cancelorder', [
+    {},
+    'String Return value',
+    123
+])
+def test_handle_timedout_limit_buy_corder_empty(mocker, default_conf, limit_buy_order,
+                                                cancelorder) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    cancel_order_mock = MagicMock(return_value={})
+    cancel_order_mock = MagicMock(return_value=cancelorder)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         cancel_order=cancel_order_mock

@@ -9,7 +9,7 @@ from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
-from freqtrade.data.converter import parse_ticker_dataframe, trades_to_ohlcv
+from freqtrade.data.converter import ohlcv_to_dataframe, trades_to_ohlcv
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
@@ -28,10 +28,10 @@ def load_pair_history(pair: str,
                       data_handler: IDataHandler = None,
                       ) -> DataFrame:
     """
-    Load cached ticker history for the given pair.
+    Load cached ohlcv history for the given pair.
 
     :param pair: Pair to load data for
-    :param timeframe: Ticker timeframe (e.g. "5m")
+    :param timeframe: Timeframe (e.g. "5m")
     :param datadir: Path to the data storage location.
     :param data_format: Format of the data. Ignored if data_handler is set.
     :param timerange: Limit data to be loaded to this timerange
@@ -63,10 +63,10 @@ def load_data(datadir: Path,
               data_format: str = 'json',
               ) -> Dict[str, DataFrame]:
     """
-    Load ticker history data for a list of pairs.
+    Load ohlcv history data for a list of pairs.
 
     :param datadir: Path to the data storage location.
-    :param timeframe: Ticker Timeframe (e.g. "5m")
+    :param timeframe: Timeframe (e.g. "5m")
     :param pairs: List of pairs to load
     :param timerange: Limit data to be loaded to this timerange
     :param fill_up_missing: Fill missing values with "No action"-candles
@@ -104,10 +104,10 @@ def refresh_data(datadir: Path,
                  timerange: Optional[TimeRange] = None,
                  ) -> None:
     """
-    Refresh ticker history data for a list of pairs.
+    Refresh ohlcv history data for a list of pairs.
 
     :param datadir: Path to the data storage location.
-    :param timeframe: Ticker Timeframe (e.g. "5m")
+    :param timeframe: Timeframe (e.g. "5m")
     :param pairs: List of pairs to load
     :param exchange: Exchange object
     :param timerange: Limit data to be loaded to this timerange
@@ -165,7 +165,7 @@ def _download_pair_history(datadir: Path,
     Based on @Rybolov work: https://github.com/rybolov/freqtrade-data
 
     :param pair: pair to download
-    :param timeframe: Ticker Timeframe (e.g 5m)
+    :param timeframe: Timeframe (e.g "5m")
     :param timerange: range of time to download
     :return: bool with success state
     """
@@ -194,8 +194,8 @@ def _download_pair_history(datadir: Path,
                                                    days=-30).float_timestamp) * 1000
                                                )
         # TODO: Maybe move parsing to exchange class (?)
-        new_dataframe = parse_ticker_dataframe(new_data, timeframe, pair,
-                                               fill_missing=False, drop_incomplete=True)
+        new_dataframe = ohlcv_to_dataframe(new_data, timeframe, pair,
+                                           fill_missing=False, drop_incomplete=True)
         if data.empty:
             data = new_dataframe
         else:
@@ -362,7 +362,7 @@ def validate_backtest_data(data: DataFrame, pair: str, min_date: datetime,
     :param pair: pair used for log output.
     :param min_date: start-date of the data
     :param max_date: end-date of the data
-    :param timeframe_min: ticker Timeframe in minutes
+    :param timeframe_min: Timeframe in minutes
     """
     # total difference in minutes / timeframe-minutes
     expected_frames = int((max_date - min_date).total_seconds() // 60 // timeframe_min)

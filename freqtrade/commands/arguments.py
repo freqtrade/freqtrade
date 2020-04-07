@@ -59,7 +59,7 @@ ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "download_trades", "exchang
 
 ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
                        "db_url", "trade_source", "export", "exportfilename",
-                       "timerange", "ticker_interval"]
+                       "timerange", "ticker_interval", "no_trades"]
 
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "ticker_interval"]
@@ -297,7 +297,7 @@ class Arguments:
         # Add convert-data subcommand
         convert_data_cmd = subparsers.add_parser(
             'convert-data',
-            help='Convert OHLCV data from one format to another.',
+            help='Convert candle (OHLCV) data from one format to another.',
             parents=[_common_parser],
         )
         convert_data_cmd.set_defaults(func=partial(start_convert_data, ohlcv=True))
@@ -306,7 +306,7 @@ class Arguments:
         # Add convert-trade-data subcommand
         convert_trade_data_cmd = subparsers.add_parser(
             'convert-trade-data',
-            help='Convert trade-data from one format to another.',
+            help='Convert trade data from one format to another.',
             parents=[_common_parser],
         )
         convert_trade_data_cmd.set_defaults(func=partial(start_convert_data, ohlcv=False))

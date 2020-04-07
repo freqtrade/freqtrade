@@ -172,8 +172,8 @@ class FreqtradeBot:
             _whitelist = self.edge.adjust(_whitelist)
 
         if trades:
-            # Extend active-pair whitelist with pairs from open trades
-            # It ensures that tickers are downloaded for open trades
+            # Extend active-pair whitelist with pairs of open trades
+            # It ensures that candle (OHLCV) data are downloaded for open trades as well
             _whitelist.extend([trade.pair for trade in trades if trade.pair not in _whitelist])
         return _whitelist
 
@@ -394,16 +394,18 @@ class FreqtradeBot:
             logger.info(f"Pair {pair} is currently locked.")
             return False
 
+        # get_free_open_trades is checked before create_trade is called
+        # but it is still used here to prevent opening too many trades within one iteration
+        if not self.get_free_open_trades():
+            logger.debug(f"Can't open a new trade for {pair}: max number of trades is reached.")
+            return False
+
         # running get_signal on historical data fetched
         (buy, sell) = self.strategy.get_signal(
             pair, self.strategy.ticker_interval,
             self.dataprovider.ohlcv(pair, self.strategy.ticker_interval))
 
         if buy and not sell:
-            if not self.get_free_open_trades():
-                logger.debug("Can't open a new trade: max number of trades is reached.")
-                return False
-
             stake_amount = self.get_trade_stake_amount(pair)
             if not stake_amount:
                 logger.debug(f"Stake amount is 0, ignoring possible trade for {pair}.")
@@ -628,7 +630,7 @@ class FreqtradeBot:
 
     def get_sell_rate(self, pair: str, refresh: bool) -> float:
         """
-        Get sell rate - either using get-ticker bid or first bid based on orderbook
+        Get sell rate - either using ticker bid or first bid based on orderbook
         The orderbook portion is only used for rpc messaging, which would otherwise fail
         for BitMex (has no bid/ask in fetch_ticker)
         or remain static in any other case since it's not updating.
@@ -891,6 +893,9 @@ class FreqtradeBot:
         if order['status'] != 'canceled':
             reason = "cancelled due to timeout"
             corder = self.exchange.cancel_order(trade.open_order_id, trade.pair)
+            # Some exchanges don't return a dict here.
+            if not isinstance(corder, dict):
+                corder = {}
             logger.info('Buy order %s for %s.', reason, trade)
         else:
             # Order was cancelled already, so we can reuse the existing dict
@@ -949,6 +954,7 @@ class FreqtradeBot:
 
             trade.close_rate = None
             trade.close_profit = None
+            trade.close_profit_abs = None
             trade.close_date = None
             trade.is_open = True
             trade.open_order_id = None
@@ -1043,7 +1049,7 @@ class FreqtradeBot:
         """
         profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
         profit_trade = trade.calc_profit(rate=profit_rate)
-        # Use cached ticker here - it was updated seconds ago.
+        # Use cached rates here - it was updated seconds ago.
         current_rate = self.get_sell_rate(trade.pair, False)
         profit_ratio = trade.calc_profit_ratio(profit_rate)
         gain = "profit" if profit_ratio > 0 else "loss"

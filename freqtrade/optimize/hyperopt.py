@@ -79,8 +79,8 @@ class Hyperopt:
 
         self.trials_file = (self.config['user_data_dir'] /
                             'hyperopt_results' / 'hyperopt_results.pickle')
-        self.tickerdata_pickle = (self.config['user_data_dir'] /
-                                  'hyperopt_results' / 'hyperopt_tickerdata.pkl')
+        self.data_pickle_file = (self.config['user_data_dir'] /
+                                 'hyperopt_results' / 'hyperopt_tickerdata.pkl')
         self.total_epochs = config.get('epochs', 0)
 
         self.current_best_loss = 100
@@ -134,7 +134,7 @@ class Hyperopt:
         """
         Remove hyperopt pickle files to restart hyperopt.
         """
-        for f in [self.tickerdata_pickle, self.trials_file]:
+        for f in [self.data_pickle_file, self.trials_file]:
             p = Path(f)
             if p.is_file():
                 logger.info(f"Removing `{p}`.")
@@ -533,7 +533,7 @@ class Hyperopt:
             self.backtesting.strategy.trailing_only_offset_is_reached = \
                 d['trailing_only_offset_is_reached']
 
-        processed = load(self.tickerdata_pickle)
+        processed = load(self.data_pickle_file)
 
         min_date, max_date = get_timerange(processed)
 
@@ -660,7 +660,7 @@ class Hyperopt:
             'Hyperopting with data from %s up to %s (%s days)..',
             min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
         )
-        dump(preprocessed, self.tickerdata_pickle)
+        dump(preprocessed, self.data_pickle_file)
 
         # We don't need exchange instance anymore while running hyperopt
         self.backtesting.exchange = None  # type: ignore

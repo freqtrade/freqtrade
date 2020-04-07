@@ -78,6 +78,9 @@ class SampleHyperOpt(IHyperOpt):
                         dataframe['close'], dataframe['sar']
                     ))
 
+            # Check that volume is not 0
+            conditions.append(dataframe['volume'] > 0)
+
             if conditions:
                 dataframe.loc[
                     reduce(lambda x, y: x & y, conditions),
@@ -137,6 +140,9 @@ class SampleHyperOpt(IHyperOpt):
                     conditions.append(qtpylib.crossed_above(
                         dataframe['sar'], dataframe['close']
                     ))
+
+            # Check that volume is not 0
+            conditions.append(dataframe['volume'] > 0)
 
             if conditions:
                 dataframe.loc[

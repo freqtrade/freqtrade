@@ -12,7 +12,7 @@ from pandas import DataFrame
 from pandas.testing import assert_frame_equal
 
 from freqtrade.configuration import TimeRange
-from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.data.history.history_utils import (
     _download_pair_history, _download_trades_history,
     _load_cached_data_for_updating, convert_trades_to_ohlcv, get_timerange,
@@ -63,7 +63,7 @@ def _clean_test_file(file: Path) -> None:
         file_swp.rename(file)
 
 
-def test_load_data_30min_ticker(mocker, caplog, default_conf, testdatadir) -> None:
+def test_load_data_30min_timeframe(mocker, caplog, default_conf, testdatadir) -> None:
     ld = load_pair_history(pair='UNITTEST/BTC', timeframe='30m', datadir=testdatadir)
     assert isinstance(ld, DataFrame)
     assert not log_has(
@@ -72,7 +72,7 @@ def test_load_data_30min_ticker(mocker, caplog, default_conf, testdatadir) -> No
     )
 
 
-def test_load_data_7min_ticker(mocker, caplog, default_conf, testdatadir) -> None:
+def test_load_data_7min_timeframe(mocker, caplog, default_conf, testdatadir) -> None:
     ld = load_pair_history(pair='UNITTEST/BTC', timeframe='7m', datadir=testdatadir)
     assert isinstance(ld, DataFrame)
     assert ld.empty
@@ -82,8 +82,8 @@ def test_load_data_7min_ticker(mocker, caplog, default_conf, testdatadir) -> Non
     )
 
 
-def test_load_data_1min_ticker(ticker_history, mocker, caplog, testdatadir) -> None:
-    mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ticker_history)
+def test_load_data_1min_timeframe(ohlcv_history, mocker, caplog, testdatadir) -> None:
+    mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ohlcv_history)
     file = testdatadir / 'UNITTEST_BTC-1m.json'
     _backup_file(file, copy_file=True)
     load_data(datadir=testdatadir, timeframe='1m', pairs=['UNITTEST/BTC'])
@@ -110,12 +110,12 @@ def test_load_data_startup_candles(mocker, caplog, default_conf, testdatadir) ->
     assert ltfmock.call_args_list[0][1]['timerange'].startts == timerange.startts - 20 * 60
 
 
-def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog,
+def test_load_data_with_new_pair_1min(ohlcv_history_list, mocker, caplog,
                                       default_conf, testdatadir) -> None:
     """
-    Test load_pair_history() with 1 min ticker
+    Test load_pair_history() with 1 min timeframe
     """
-    mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ticker_history_list)
+    mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ohlcv_history_list)
     exchange = get_patched_exchange(mocker, default_conf)
     file = testdatadir / 'MEME_BTC-1m.json'
 
@@ -188,8 +188,8 @@ def test_load_cached_data_for_updating(mocker, testdatadir) -> None:
     with open(test_filename, "rt") as file:
         test_data = json.load(file)
 
-    test_data_df = parse_ticker_dataframe(test_data, '1m', 'UNITTEST/BTC',
-                                          fill_missing=False, drop_incomplete=False)
+    test_data_df = ohlcv_to_dataframe(test_data, '1m', 'UNITTEST/BTC',
+                                      fill_missing=False, drop_incomplete=False)
     # now = last cached item + 1 hour
     now_ts = test_data[-1][0] / 1000 + 60 * 60
     mocker.patch('arrow.utcnow', return_value=arrow.get(now_ts))
@@ -230,8 +230,8 @@ def test_load_cached_data_for_updating(mocker, testdatadir) -> None:
     assert start_ts is None
 
 
-def test_download_pair_history(ticker_history_list, mocker, default_conf, testdatadir) -> None:
-    mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ticker_history_list)
+def test_download_pair_history(ohlcv_history_list, mocker, default_conf, testdatadir) -> None:
+    mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ohlcv_history_list)
     exchange = get_patched_exchange(mocker, default_conf)
     file1_1 = testdatadir / 'MEME_BTC-1m.json'
     file1_5 = testdatadir / 'MEME_BTC-5m.json'
@@ -293,7 +293,7 @@ def test_download_pair_history2(mocker, default_conf, testdatadir) -> None:
     assert json_dump_mock.call_count == 2
 
 
-def test_download_backtesting_data_exception(ticker_history, mocker, caplog,
+def test_download_backtesting_data_exception(ohlcv_history, mocker, caplog,
                                              default_conf, testdatadir) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv',
                  side_effect=Exception('File Error'))
@@ -321,15 +321,15 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
     # Make sure we start fresh - test missing data at start
     start = arrow.get('2018-01-01T00:00:00')
     end = arrow.get('2018-01-11T00:00:00')
-    tickerdata = load_data(testdatadir, '5m', ['UNITTEST/BTC'], startup_candles=20,
-                           timerange=TimeRange('date', 'date', start.timestamp, end.timestamp))
+    data = load_data(testdatadir, '5m', ['UNITTEST/BTC'], startup_candles=20,
+                     timerange=TimeRange('date', 'date', start.timestamp, end.timestamp))
     assert log_has(
         'Using indicator startup period: 20 ...', caplog
     )
     # timedifference in 5 minutes
     td = ((end - start).total_seconds() // 60 // 5) + 1
-    assert td != len(tickerdata['UNITTEST/BTC'])
-    start_real = tickerdata['UNITTEST/BTC'].iloc[0, 0]
+    assert td != len(data['UNITTEST/BTC'])
+    start_real = data['UNITTEST/BTC'].iloc[0, 0]
     assert log_has(f'Missing data at start for pair '
                    f'UNITTEST/BTC, data starts at {start_real.strftime("%Y-%m-%d %H:%M:%S")}',
                    caplog)
@@ -337,14 +337,14 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
     caplog.clear()
     start = arrow.get('2018-01-10T00:00:00')
     end = arrow.get('2018-02-20T00:00:00')
-    tickerdata = load_data(datadir=testdatadir, timeframe='5m', pairs=['UNITTEST/BTC'],
-                           timerange=TimeRange('date', 'date', start.timestamp, end.timestamp))
+    data = load_data(datadir=testdatadir, timeframe='5m', pairs=['UNITTEST/BTC'],
+                     timerange=TimeRange('date', 'date', start.timestamp, end.timestamp))
     # timedifference in 5 minutes
     td = ((end - start).total_seconds() // 60 // 5) + 1
-    assert td != len(tickerdata['UNITTEST/BTC'])
+    assert td != len(data['UNITTEST/BTC'])
 
     # Shift endtime with +5 - as last candle is dropped (partial candle)
-    end_real = arrow.get(tickerdata['UNITTEST/BTC'].iloc[-1, 0]).shift(minutes=5)
+    end_real = arrow.get(data['UNITTEST/BTC'].iloc[-1, 0]).shift(minutes=5)
     assert log_has(f'Missing data at end for pair '
                    f'UNITTEST/BTC, data ends at {end_real.strftime("%Y-%m-%d %H:%M:%S")}',
                    caplog)
@@ -403,7 +403,7 @@ def test_get_timerange(default_conf, mocker, testdatadir) -> None:
     default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    data = strategy.tickerdata_to_dataframe(
+    data = strategy.ohlcvdata_to_dataframe(
         load_data(
             datadir=testdatadir,
             timeframe='1m',
@@ -421,7 +421,7 @@ def test_validate_backtest_data_warn(default_conf, mocker, caplog, testdatadir) 
     default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    data = strategy.tickerdata_to_dataframe(
+    data = strategy.ohlcvdata_to_dataframe(
         load_data(
             datadir=testdatadir,
             timeframe='1m',
@@ -446,7 +446,7 @@ def test_validate_backtest_data(default_conf, mocker, caplog, testdatadir) -> No
     strategy = StrategyResolver.load_strategy(default_conf)
 
     timerange = TimeRange('index', 'index', 200, 250)
-    data = strategy.tickerdata_to_dataframe(
+    data = strategy.ohlcvdata_to_dataframe(
         load_data(
             datadir=testdatadir,
             timeframe='5m',

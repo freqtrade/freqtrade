@@ -355,7 +355,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "dataformat_ohlcv": Arg(
         '--data-format-ohlcv',
-        help='Storage format for downloaded ohlcv data. (default: `%(default)s`).',
+        help='Storage format for downloaded candle (OHLCV) data. (default: `%(default)s`).',
         choices=constants.AVAILABLE_DATAHANDLERS,
         default='json'
     ),
@@ -412,6 +412,11 @@ AVAILABLE_CLI_OPTIONS = {
         type=check_int_positive,
         metavar='INT',
         default=750,
+    ),
+    "no_trades": Arg(
+        '--no-trades',
+        help='Skip using trades from backtesting file and DB.',
+        action='store_true',
     ),
     "trade_source": Arg(
         '--trade-source',

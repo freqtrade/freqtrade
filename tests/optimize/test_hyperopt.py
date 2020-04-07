@@ -540,7 +540,7 @@ def test_start_calls_optimizer(mocker, default_conf, caplog, capsys) -> None:
         }])
     )
     patch_exchange(mocker)
-    # Co-test loading ticker-interval from strategy
+    # Co-test loading timeframe from strategy
     del default_conf['ticker_interval']
     default_conf.update({'config': 'config.json.example',
                          'hyperopt': 'DefaultHyperOpt',
@@ -550,7 +550,7 @@ def test_start_calls_optimizer(mocker, default_conf, caplog, capsys) -> None:
                          'hyperopt_jobs': 1, })
 
     hyperopt = Hyperopt(default_conf)
-    hyperopt.backtesting.strategy.tickerdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.ohlcvdata_to_dataframe = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     hyperopt.start()
@@ -560,7 +560,7 @@ def test_start_calls_optimizer(mocker, default_conf, caplog, capsys) -> None:
     out, err = capsys.readouterr()
     assert 'Best result:\n\n*    1/1: foo result Objective: 1.00000\n' in out
     assert dumper.called
-    # Should be called twice, once for tickerdata, once to save evaluations
+    # Should be called twice, once for historical candle data, once to save evaluations
     assert dumper.call_count == 2
     assert hasattr(hyperopt.backtesting.strategy, "advise_sell")
     assert hasattr(hyperopt.backtesting.strategy, "advise_buy")
@@ -646,8 +646,8 @@ def test_has_space(hyperopt, spaces, expected_results):
 
 
 def test_populate_indicators(hyperopt, testdatadir) -> None:
-    tickerlist = load_data(testdatadir, '1m', ['UNITTEST/BTC'], fill_up_missing=True)
-    dataframes = hyperopt.backtesting.strategy.tickerdata_to_dataframe(tickerlist)
+    data = load_data(testdatadir, '1m', ['UNITTEST/BTC'], fill_up_missing=True)
+    dataframes = hyperopt.backtesting.strategy.ohlcvdata_to_dataframe(data)
     dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
                                                              {'pair': 'UNITTEST/BTC'})
 
@@ -658,8 +658,8 @@ def test_populate_indicators(hyperopt, testdatadir) -> None:
 
 
 def test_buy_strategy_generator(hyperopt, testdatadir) -> None:
-    tickerlist = load_data(testdatadir, '1m', ['UNITTEST/BTC'], fill_up_missing=True)
-    dataframes = hyperopt.backtesting.strategy.tickerdata_to_dataframe(tickerlist)
+    data = load_data(testdatadir, '1m', ['UNITTEST/BTC'], fill_up_missing=True)
+    dataframes = hyperopt.backtesting.strategy.ohlcvdata_to_dataframe(data)
     dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
                                                              {'pair': 'UNITTEST/BTC'})
 
@@ -799,7 +799,7 @@ def test_clean_hyperopt(mocker, default_conf, caplog):
     h = Hyperopt(default_conf)
 
     assert unlinkmock.call_count == 2
-    assert log_has(f"Removing `{h.tickerdata_pickle}`.", caplog)
+    assert log_has(f"Removing `{h.data_pickle_file}`.", caplog)
 
 
 def test_continue_hyperopt(mocker, default_conf, caplog):
@@ -861,7 +861,7 @@ def test_print_json_spaces_all(mocker, default_conf, caplog, capsys) -> None:
                          })
 
     hyperopt = Hyperopt(default_conf)
-    hyperopt.backtesting.strategy.tickerdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.ohlcvdata_to_dataframe = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     hyperopt.start()
@@ -875,7 +875,7 @@ def test_print_json_spaces_all(mocker, default_conf, caplog, capsys) -> None:
     )
     assert result_str in out  # noqa: E501
     assert dumper.called
-    # Should be called twice, once for tickerdata, once to save evaluations
+    # Should be called twice, once for historical candle data, once to save evaluations
     assert dumper.call_count == 2
 
 
@@ -919,7 +919,7 @@ def test_print_json_spaces_default(mocker, default_conf, caplog, capsys) -> None
                          })
 
     hyperopt = Hyperopt(default_conf)
-    hyperopt.backtesting.strategy.tickerdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.ohlcvdata_to_dataframe = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     hyperopt.start()
@@ -929,7 +929,7 @@ def test_print_json_spaces_default(mocker, default_conf, caplog, capsys) -> None
     out, err = capsys.readouterr()
     assert '{"params":{"mfi-value":null,"sell-mfi-value":null},"minimal_roi":{},"stoploss":null}' in out  # noqa: E501
     assert dumper.called
-    # Should be called twice, once for tickerdata, once to save evaluations
+    # Should be called twice, once for historical candle data, once to save evaluations
     assert dumper.call_count == 2
 
 
@@ -969,7 +969,7 @@ def test_print_json_spaces_roi_stoploss(mocker, default_conf, caplog, capsys) ->
                          })
 
     hyperopt = Hyperopt(default_conf)
-    hyperopt.backtesting.strategy.tickerdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.ohlcvdata_to_dataframe = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     hyperopt.start()
@@ -979,7 +979,7 @@ def test_print_json_spaces_roi_stoploss(mocker, default_conf, caplog, capsys) ->
     out, err = capsys.readouterr()
     assert '{"minimal_roi":{},"stoploss":null}' in out
     assert dumper.called
-    # Should be called twice, once for tickerdata, once to save evaluations
+    # Should be called twice, once for historical candle data, once to save evaluations
     assert dumper.call_count == 2
 
 
@@ -1016,7 +1016,7 @@ def test_simplified_interface_roi_stoploss(mocker, default_conf, caplog, capsys)
                          'hyperopt_jobs': 1, })
 
     hyperopt = Hyperopt(default_conf)
-    hyperopt.backtesting.strategy.tickerdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.ohlcvdata_to_dataframe = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     del hyperopt.custom_hyperopt.__class__.buy_strategy_generator
@@ -1031,7 +1031,7 @@ def test_simplified_interface_roi_stoploss(mocker, default_conf, caplog, capsys)
     out, err = capsys.readouterr()
     assert 'Best result:\n\n*    1/1: foo result Objective: 1.00000\n' in out
     assert dumper.called
-    # Should be called twice, once for tickerdata, once to save evaluations
+    # Should be called twice, once for historical candle data, once to save evaluations
     assert dumper.call_count == 2
     assert hasattr(hyperopt.backtesting.strategy, "advise_sell")
     assert hasattr(hyperopt.backtesting.strategy, "advise_buy")
@@ -1059,7 +1059,7 @@ def test_simplified_interface_all_failed(mocker, default_conf, caplog, capsys) -
                          'hyperopt_jobs': 1, })
 
     hyperopt = Hyperopt(default_conf)
-    hyperopt.backtesting.strategy.tickerdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.ohlcvdata_to_dataframe = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     del hyperopt.custom_hyperopt.__class__.buy_strategy_generator
@@ -1104,7 +1104,7 @@ def test_simplified_interface_buy(mocker, default_conf, caplog, capsys) -> None:
                          'hyperopt_jobs': 1, })
 
     hyperopt = Hyperopt(default_conf)
-    hyperopt.backtesting.strategy.tickerdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.ohlcvdata_to_dataframe = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     # TODO: sell_strategy_generator() is actually not called because
@@ -1119,7 +1119,7 @@ def test_simplified_interface_buy(mocker, default_conf, caplog, capsys) -> None:
     out, err = capsys.readouterr()
     assert 'Best result:\n\n*    1/1: foo result Objective: 1.00000\n' in out
     assert dumper.called
-    # Should be called twice, once for tickerdata, once to save evaluations
+    # Should be called twice, once for historical candle data, once to save evaluations
     assert dumper.call_count == 2
     assert hasattr(hyperopt.backtesting.strategy, "advise_sell")
     assert hasattr(hyperopt.backtesting.strategy, "advise_buy")
@@ -1161,7 +1161,7 @@ def test_simplified_interface_sell(mocker, default_conf, caplog, capsys) -> None
                          'hyperopt_jobs': 1, })
 
     hyperopt = Hyperopt(default_conf)
-    hyperopt.backtesting.strategy.tickerdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.ohlcvdata_to_dataframe = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     # TODO: buy_strategy_generator() is actually not called because
@@ -1176,7 +1176,7 @@ def test_simplified_interface_sell(mocker, default_conf, caplog, capsys) -> None
     out, err = capsys.readouterr()
     assert 'Best result:\n\n*    1/1: foo result Objective: 1.00000\n' in out
     assert dumper.called
-    # Should be called twice, once for tickerdata, once to save evaluations
+    # Should be called twice, once for historical candle data, once to save evaluations
     assert dumper.call_count == 2
     assert hasattr(hyperopt.backtesting.strategy, "advise_sell")
     assert hasattr(hyperopt.backtesting.strategy, "advise_buy")
@@ -1210,7 +1210,7 @@ def test_simplified_interface_failed(mocker, default_conf, caplog, capsys, metho
                          'hyperopt_jobs': 1, })
 
     hyperopt = Hyperopt(default_conf)
-    hyperopt.backtesting.strategy.tickerdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.ohlcvdata_to_dataframe = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     delattr(hyperopt.custom_hyperopt.__class__, method)

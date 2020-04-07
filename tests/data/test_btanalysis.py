@@ -1,14 +1,15 @@
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 from arrow import Arrow
-from pandas import DataFrame, DateOffset, to_datetime, Timestamp
+from pandas import DataFrame, DateOffset, Timestamp, to_datetime
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
                                        analyze_trade_parallelism,
                                        calculate_max_drawdown,
-                                       combine_tickers_with_mean,
+                                       combine_dataframes_with_mean,
                                        create_cum_profit,
                                        extract_trades_of_period,
                                        load_backtest_data, load_trades,
@@ -104,6 +105,7 @@ def test_load_trades(default_conf, mocker):
     load_trades("DB",
                 db_url=default_conf.get('db_url'),
                 exportfilename=default_conf.get('exportfilename'),
+                no_trades=False
                 )
 
     assert db_mock.call_count == 1
@@ -111,22 +113,32 @@ def test_load_trades(default_conf, mocker):
 
     db_mock.reset_mock()
     bt_mock.reset_mock()
-    default_conf['exportfilename'] = "testfile.json"
+    default_conf['exportfilename'] = Path("testfile.json")
     load_trades("file",
                 db_url=default_conf.get('db_url'),
-                exportfilename=default_conf.get('exportfilename'),)
+                exportfilename=default_conf.get('exportfilename'),
+                )
 
     assert db_mock.call_count == 0
     assert bt_mock.call_count == 1
 
+    db_mock.reset_mock()
+    bt_mock.reset_mock()
+    default_conf['exportfilename'] = "testfile.json"
+    load_trades("file",
+                db_url=default_conf.get('db_url'),
+                exportfilename=default_conf.get('exportfilename'),
+                no_trades=True
+                )
 
-def test_combine_tickers_with_mean(testdatadir):
+    assert db_mock.call_count == 0
+    assert bt_mock.call_count == 0
+
+
+def test_combine_dataframes_with_mean(testdatadir):
     pairs = ["ETH/BTC", "ADA/BTC"]
-    tickers = load_data(datadir=testdatadir,
-                        pairs=pairs,
-                        timeframe='5m'
-                        )
-    df = combine_tickers_with_mean(tickers)
+    data = load_data(datadir=testdatadir, pairs=pairs, timeframe='5m')
+    df = combine_dataframes_with_mean(data)
     assert isinstance(df, DataFrame)
     assert "ETH/BTC" in df.columns
     assert "ADA/BTC" in df.columns

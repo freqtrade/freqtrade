@@ -476,12 +476,22 @@ def test_migrate_old(mocker, default_conf, fee):
                                      stake=default_conf.get("stake_amount"),
                                      amount=amount
                                      )
+    insert_table_old2 = """INSERT INTO trades (exchange, pair, is_open, fee,
+                          open_rate, close_rate, stake_amount, amount, open_date)
+                          VALUES ('BITTREX', 'BTC_ETC', 0, {fee},
+                          0.00258580, 0.00268580, {stake}, {amount},
+                          '2017-11-28 12:44:24.000000')
+                          """.format(fee=fee.return_value,
+                                     stake=default_conf.get("stake_amount"),
+                                     amount=amount
+                                     )
     engine = create_engine('sqlite://')
     mocker.patch('freqtrade.persistence.create_engine', lambda *args, **kwargs: engine)
 
     # Create table using the old format
     engine.execute(create_table_old)
     engine.execute(insert_table_old)
+    engine.execute(insert_table_old2)
     # Run init to test migration
     init(default_conf['db_url'], default_conf['dry_run'])
 
@@ -500,6 +510,15 @@ def test_migrate_old(mocker, default_conf, fee):
     assert trade.stop_loss == 0.0
     assert trade.initial_stop_loss == 0.0
     assert trade.open_trade_price == trade._calc_open_trade_price()
+    assert trade.close_profit_abs is None
+
+    trade = Trade.query.filter(Trade.id == 2).first()
+    assert trade.close_rate is not None
+    assert trade.is_open == 0
+    assert trade.open_rate_requested is None
+    assert trade.close_rate_requested is None
+    assert trade.close_rate is not None
+    assert pytest.approx(trade.close_profit_abs) == trade.calc_profit()
 
 
 def test_migrate_new(mocker, default_conf, fee, caplog):
@@ -583,6 +602,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert log_has("trying trades_bak2", caplog)
     assert log_has("Running database migration - backup available as trades_bak2", caplog)
     assert trade.open_trade_price == trade._calc_open_trade_price()
+    assert trade.close_profit_abs is None
 
 
 def test_migrate_mid_state(mocker, default_conf, fee, caplog):
