@@ -13,7 +13,7 @@ from freqtrade.__init__ import __version__
 from freqtrade.persistence import Trade
 from freqtrade.rpc.api_server import BASE_URI, ApiServer
 from freqtrade.state import State
-from tests.conftest import get_patched_freqtradebot, log_has, patch_get_signal
+from tests.conftest import get_patched_freqtradebot, log_has, patch_get_signal, create_mock_trades
 
 _TEST_USER = "FreqTrader"
 _TEST_PASS = "SuperSecurePassword1!"
@@ -300,6 +300,30 @@ def test_api_daily(botclient, mocker, ticker, fee, markets):
     assert_response(rc)
     assert len(rc.json) == 7
     assert rc.json[0][0] == str(datetime.utcnow().date())
+
+
+def test_api_trades(botclient, mocker, ticker, fee, markets):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, (True, False))
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        markets=PropertyMock(return_value=markets)
+    )
+    rc = client_get(client, f"{BASE_URI}/trades")
+    assert_response(rc)
+    assert len(rc.json) == 2
+    assert rc.json['trades_count'] == 0
+
+    create_mock_trades(fee)
+
+    rc = client_get(client, f"{BASE_URI}/trades")
+    assert_response(rc)
+    assert len(rc.json['trades']) == 3
+    assert rc.json['trades_count'] == 3
+    rc = client_get(client, f"{BASE_URI}/trades?limit=2")
+    assert_response(rc)
+    assert len(rc.json['trades']) == 2
+    assert rc.json['trades_count'] == 2
 
 
 def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
