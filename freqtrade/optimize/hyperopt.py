@@ -649,7 +649,7 @@ class Hyperopt:
         self.hyperopt_table_header = -1
         data, timerange = self.backtesting.load_bt_data()
 
-        preprocessed = self.backtesting.strategy.tickerdata_to_dataframe(data)
+        preprocessed = self.backtesting.strategy.ohlcvdata_to_dataframe(data)
         # Trim startup period from analyzed dataframe
         for pair, df in preprocessed.items():
             preprocessed[pair] = trim_dataframe(df, timerange)
