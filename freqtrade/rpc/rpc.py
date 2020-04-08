@@ -226,6 +226,20 @@ class RPC:
             for key, value in profit_days.items()
         ]
 
+    def _rpc_trade_history(self, limit: int) -> Dict:
+        """ Returns the X last trades """
+        if limit > 0:
+            trades = Trade.get_trades().order_by(Trade.id.desc()).limit(limit)
+        else:
+            trades = Trade.get_trades().order_by(Trade.id.desc()).all()
+
+        output = [trade.to_json() for trade in trades]
+
+        return {
+            "trades": output,
+            "trades_count": len(output)
+        }
+
     def _rpc_trade_statistics(
             self, stake_currency: str, fiat_display_currency: str) -> Dict[str, Any]:
         """ Returns cumulative profit statistics """
