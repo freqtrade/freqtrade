@@ -9,7 +9,7 @@ import pytest
 from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.misc import (datesarray_to_datetimearray, file_dump_json,
                             file_load_json, format_ms_time, pair_to_filename,
-                            plural, shorten_date)
+                            plural, safe_value_fallback, shorten_date)
 
 
 def test_shorten_date() -> None:
@@ -91,6 +91,19 @@ def test_format_ms_time() -> None:
     # Date 2017-12-13 08:02:01
     date_in_epoch_ms = 1513152121000
     assert format_ms_time(date_in_epoch_ms) == res.astimezone(None).strftime('%Y-%m-%dT%H:%M:%S')
+
+
+def test_safe_value_fallback():
+    dict1 = {'keya': None, 'keyb': 2, 'keyc': 5}
+    dict2 = {'keya': 20, 'keyb': None, 'keyc': 6}
+    assert safe_value_fallback(dict1, dict2, 'keya', 'keya') == 20
+    assert safe_value_fallback(dict2, dict1, 'keya', 'keya') == 20
+
+    assert safe_value_fallback(dict1, dict2, 'keyb', 'keyb') == 2
+    assert safe_value_fallback(dict2, dict1, 'keyb', 'keyb') == 2
+
+    assert safe_value_fallback(dict1, dict2, 'keyc', 'keyc') == 5
+    assert safe_value_fallback(dict2, dict1, 'keyc', 'keyc') == 6
 
 
 def test_plural() -> None:
