@@ -904,6 +904,7 @@ class FreqtradeBot:
             logger.info('Buy order %s for %s.', reason, trade)
 
         if corder.get('remaining', order['remaining']) == order['amount']:
+            logger.info('Buy order removed from database %s', trade)
             # if trade is not partially completed, just delete the trade
             Trade.session.delete(trade)
             Trade.session.flush()
