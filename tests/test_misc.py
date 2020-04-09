@@ -94,8 +94,8 @@ def test_format_ms_time() -> None:
 
 
 def test_safe_value_fallback():
-    dict1 = {'keya': None, 'keyb': 2, 'keyc': 5}
-    dict2 = {'keya': 20, 'keyb': None, 'keyc': 6}
+    dict1 = {'keya': None, 'keyb': 2, 'keyc': 5, 'keyd': None}
+    dict2 = {'keya': 20, 'keyb': None, 'keyc': 6, 'keyd': None}
     assert safe_value_fallback(dict1, dict2, 'keya', 'keya') == 20
     assert safe_value_fallback(dict2, dict1, 'keya', 'keya') == 20
 
@@ -104,6 +104,14 @@ def test_safe_value_fallback():
 
     assert safe_value_fallback(dict1, dict2, 'keyc', 'keyc') == 5
     assert safe_value_fallback(dict2, dict1, 'keyc', 'keyc') == 6
+
+    assert safe_value_fallback(dict1, dict2, 'keyd', 'keyd') is None
+    assert safe_value_fallback(dict2, dict1, 'keyd', 'keyd') is None
+    assert safe_value_fallback(dict2, dict1, 'keyd', 'keyd', 1234) == 1234
+
+    assert safe_value_fallback(dict1, dict2, 'keyNo', 'keyNo') is None
+    assert safe_value_fallback(dict2, dict1, 'keyNo', 'keyNo') is None
+    assert safe_value_fallback(dict2, dict1, 'keyNo', 'keyNo', 1234) == 1234
 
 
 def test_plural() -> None:
