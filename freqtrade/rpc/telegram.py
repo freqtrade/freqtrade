@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 logger.debug('Included module rpc.telegram ...')
 
-
 MAX_TELEGRAM_MESSAGE_LENGTH = 4096
 
 
@@ -29,6 +28,7 @@ def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
     :param command_handler: Telegram CommandHandler
     :return: decorated function
     """
+
     def wrapper(self, *args, **kwargs):
         """ Decorator logic """
         update = kwargs.get('update') or args[0]
@@ -165,7 +165,7 @@ class Telegram(RPC):
             # Check if all sell properties are available.
             # This might not be the case if the message origin is triggered by /forcesell
             if (all(prop in msg for prop in ['gain', 'fiat_currency', 'stake_currency'])
-               and self._fiat_converter):
+                    and self._fiat_converter):
                 msg['profit_fiat'] = self._fiat_converter.convert_amount(
                     msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
                 message += (' `({gain}: {profit_amount:.8f} {stake_currency}'
@@ -318,7 +318,7 @@ class Telegram(RPC):
             best_rate = stats['best_rate']
             # Message to display
             markdown_msg = "*ROI:* Close trades\n" \
-                           f"∙ `{profit_closed_coin:.8f} {stake_cur} "\
+                           f"∙ `{profit_closed_coin:.8f} {stake_cur} " \
                            f"({profit_closed_percent:.2f}%)`\n" \
                            f"∙ `{profit_closed_fiat:.3f} {fiat_disp_cur}`\n" \
                            f"*ROI:* All trades\n" \
@@ -347,14 +347,14 @@ class Telegram(RPC):
                     "This mode is still experimental!\n"
                     "Starting capital: "
                     f"`{self._config['dry_run_wallet']}` {self._config['stake_currency']}.\n"
-                    )
+                )
             for currency in result['currencies']:
                 if currency['est_stake'] > 0.0001:
                     curr_output = "*{currency}:*\n" \
-                            "\t`Available: {free: .8f}`\n" \
-                            "\t`Balance: {balance: .8f}`\n" \
-                            "\t`Pending: {used: .8f}`\n" \
-                            "\t`Est. {stake}: {est_stake: .8f}`\n".format(**currency)
+                                  "\t`Available: {free: .8f}`\n" \
+                                  "\t`Balance: {balance: .8f}`\n" \
+                                  "\t`Pending: {used: .8f}`\n" \
+                                  "\t`Est. {stake}: {est_stake: .8f}`\n".format(**currency)
                 else:
                     curr_output = "*{currency}:* not showing <1$ amount \n".format(**currency)
 
@@ -566,7 +566,7 @@ class Telegram(RPC):
                   "*/profit:* `Lists cumulative profit from all finished trades`\n" \
                   "*/forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, " \
                   "regardless of profit`\n" \
-                  f"{forcebuy_text if self._config.get('forcebuy_enable', False) else '' }" \
+                  f"{forcebuy_text if self._config.get('forcebuy_enable', False) else ''}" \
                   "*/performance:* `Show performance of each finished trade grouped by pair`\n" \
                   "*/daily <n>:* `Shows profit or loss per day, over the last n days`\n" \
                   "*/count:* `Show number of trades running compared to allowed number of trades`" \
@@ -634,10 +634,12 @@ class Telegram(RPC):
         :param parse_mode: telegram parse mode
         :return: None
         """
-
-        keyboard = [['/daily', '/profit', '/balance'],
-                    ['/status', '/status table', '/performance'],
-                    ['/count', '/start', '/stop', '/help']]
+        keyboard = [["/start", "/stop", "/status", "/status table"],
+                    ["/profit", "/forcebuy", "/forcesell"],
+                    ["/performance", "/daily", "/count"],
+                    ["/balance", "/stopbuy", "/reload_conf"],
+                    ["/show_config", "/whitelist", "/blacklist"],
+                    ["/edge", "/help", "/version"]]
 
         reply_markup = ReplyKeyboardMarkup(keyboard)
 
