@@ -688,7 +688,7 @@ class Hyperopt:
                         ' [Epoch ', progressbar.Counter(), ' of ', str(self.total_epochs),
                         ' (', progressbar.Percentage(), ')] ',
                         progressbar.Bar(marker=progressbar.AnimatedMarker(
-                            fill='█',
+                            fill='\N{FULL BLOCK}',
                         )),
                         ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
                     ]
