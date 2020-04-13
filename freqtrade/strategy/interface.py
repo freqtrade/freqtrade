@@ -467,8 +467,11 @@ class IStrategy(ABC):
         """
         Creates a dataframe and populates indicators for given candle (OHLCV) data
         Used by optimize operations only, not during dry / live runs.
+        Using .copy() to get a fresh copy of the dataframe for every strategy run.
+        Has positive effects on memory usage for whatever reason - also when
+        using only one strategy.
         """
-        return {pair: self.advise_indicators(pair_data, {'pair': pair})
+        return {pair: self.advise_indicators(pair_data.copy(), {'pair': pair})
                 for pair, pair_data in data.items()}
 
     def advise_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
