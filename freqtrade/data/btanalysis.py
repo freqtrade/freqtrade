@@ -220,13 +220,15 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_time'
     """
     if len(trades) == 0:
         raise ValueError("Trade dataframe empty.")
-    profit_results = trades.sort_values(date_col)
+    profit_results = trades.sort_values(date_col).reset_index(drop=True)
     max_drawdown_df = pd.DataFrame()
     max_drawdown_df['cumulative'] = profit_results[value_col].cumsum()
     max_drawdown_df['high_value'] = max_drawdown_df['cumulative'].cummax()
     max_drawdown_df['drawdown'] = max_drawdown_df['cumulative'] - max_drawdown_df['high_value']
 
-    high_date = profit_results.loc[max_drawdown_df['high_value'].idxmax(), date_col]
-    low_date = profit_results.loc[max_drawdown_df['drawdown'].idxmin(), date_col]
-
+    idxmin = max_drawdown_df['drawdown'].idxmin()
+    if idxmin == 0:
+        raise ValueError("No losing trade, therefore no drawdown.")
+    high_date = profit_results.loc[max_drawdown_df.iloc[:idxmin]['high_value'].idxmax(), date_col]
+    low_date = profit_results.loc[idxmin, date_col]
     return abs(min(max_drawdown_df['drawdown'])), high_date, low_date

@@ -266,7 +266,7 @@ def test_generate_profit_graph(testdatadir):
     filename = testdatadir / "backtest-result_test.json"
     trades = load_backtest_data(filename)
     timerange = TimeRange.parse_timerange("20180110-20180112")
-    pairs = ["TRX/BTC", "ADA/BTC"]
+    pairs = ["TRX/BTC", "XLM/BTC"]
     trades = trades[trades['close_time'] < pd.Timestamp('2018-01-12', tz='UTC')]
 
     data = history.load_data(datadir=testdatadir,
@@ -292,7 +292,7 @@ def test_generate_profit_graph(testdatadir):
 
     profit = find_trace_in_fig_data(figure.data, "Profit")
     assert isinstance(profit, go.Scatter)
-    profit = find_trace_in_fig_data(figure.data, "Max drawdown 0.00%")
+    profit = find_trace_in_fig_data(figure.data, "Max drawdown 10.45%")
     assert isinstance(profit, go.Scatter)
 
     for pair in pairs:
