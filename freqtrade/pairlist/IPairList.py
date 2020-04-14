@@ -55,13 +55,13 @@ class IPairList(ABC):
         """
 
         @cached(cache=self._log_cache)
-        def _log_on_refresh(logmethod, message: str):
+        def _log_on_refresh(message: str):
             logmethod(message)
 
         # Log as debug first
         logger.debug(message)
         # Call hidden function.
-        _log_on_refresh(logmethod, message)
+        _log_on_refresh(message)
 
     @abstractproperty
     def needstickers(self) -> bool:
