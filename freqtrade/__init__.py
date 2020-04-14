@@ -25,7 +25,7 @@ if __version__ == 'develop':
     except Exception:
         # git not available, ignore
         try:
-            # Try Fallback to freqtrade_commit file (created by CI whild building docker image)
+            # Try Fallback to freqtrade_commit file (created by CI while building docker image)
             from pathlib import Path
             versionfile = Path('./freqtrade_commit')
             if versionfile.is_file():
