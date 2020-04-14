@@ -43,8 +43,8 @@ class PriceFilter(IPairList):
         compare = ticker['last'] + 1 / pow(10, precision)
         changeperc = (compare - ticker['last']) / ticker['last']
         if changeperc > self._low_price_ratio:
-            logger.info(f"Removed {ticker['symbol']} from whitelist, "
-                        f"because 1 unit is {changeperc * 100:.3f}%")
+            self.log_on_refresh(logger.info, f"Removed {ticker['symbol']} from whitelist, "
+                                             f"because 1 unit is {changeperc * 100:.3f}%")
             return False
         return True
 
