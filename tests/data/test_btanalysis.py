@@ -201,7 +201,13 @@ def test_calculate_max_drawdown2():
 
     dates = [Arrow(2020, 1, 1).shift(days=i) for i in range(len(values))]
     df = DataFrame(zip(values, dates), columns=['profit', 'open_time'])
+    # sort by profit and reset index
+    df = df.sort_values('profit').reset_index(drop=True)
+    df1 = df.copy()
     drawdown, h, low = calculate_max_drawdown(df, date_col='open_time', value_col='profit')
+    # Ensure df has not been altered.
+    assert df.equals(df1)
+
     assert isinstance(drawdown, float)
     # High must be before low
     assert h < low
