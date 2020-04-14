@@ -1711,6 +1711,8 @@ def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     ({'status': 'closed', 'filled': 0.0}, True),
     ({'status': 'canceled', 'filled': 0.0}, True),
     ({'status': 'canceled', 'filled': 10.0}, False),
+    ({'status': 'unknown', 'filled': 10.0}, False),
+    ({'result': 'testest123'}, False),
     ])
 def test_check_order_canceled_empty(mocker, default_conf, exchange_name, order, result):
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
