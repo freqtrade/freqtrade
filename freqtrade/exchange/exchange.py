@@ -452,6 +452,17 @@ class Exchange:
                 price = ceil(big_price) / pow(10, symbol_prec)
         return price
 
+    def price_get_one_pip(self, pair: str, price: float) -> float:
+        """
+        Get's the "1 pip" value for this pair.
+        Used in PriceFilter to calculate the 1pip movements.
+        """
+        precision = self.markets[pair]['precision']['price']
+        if self.precisionMode == TICK_SIZE:
+            return price % precision
+        else:
+            return 1 / pow(10, precision)
+
     def dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                       rate: float, params: Dict = {}) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{randint(0, 10**6)}'
