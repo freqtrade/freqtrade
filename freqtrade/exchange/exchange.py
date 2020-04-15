@@ -459,7 +459,7 @@ class Exchange:
         """
         precision = self.markets[pair]['precision']['price']
         if self.precisionMode == TICK_SIZE:
-            return price % precision
+            return precision
         else:
             return 1 / pow(10, precision)
 
