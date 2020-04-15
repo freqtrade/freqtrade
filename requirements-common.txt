@@ -12,7 +12,7 @@ jsonschema==3.2.0
 TA-Lib==0.4.17
 tabulate==0.8.7
 pycoingecko==1.2.0
-jinja2==2.11.1
+jinja2==2.11.2
 
 # find first, C search in arrays
 py_find_1st==1.1.4
