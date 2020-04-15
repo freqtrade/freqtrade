@@ -35,12 +35,10 @@ class PriceFilter(IPairList):
         """
         Check if if one price-step (pip) is > than a certain barrier.
         :param ticker: ticker dict as returned from ccxt.load_markets()
-        :param precision: Precision
         :return: True if the pair can stay, false if it should be removed
         """
-        precision = self._exchange.markets[ticker['symbol']]['precision']['price']
-
-        compare = ticker['last'] + 1 / pow(10, precision)
+        compare = ticker['last'] + self._exchange.price_get_one_pip(ticker['symbol'],
+                                                                    ticker['last'])
         changeperc = (compare - ticker['last']) / ticker['last']
         if changeperc > self._low_price_ratio:
             logger.info(f"Removed {ticker['symbol']} from whitelist, "
