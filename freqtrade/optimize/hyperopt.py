@@ -665,7 +665,6 @@ class Hyperopt:
 
         self.dimensions: List[Dimension] = self.hyperopt_space()
         self.opt = self.get_optimizer(self.dimensions, config_jobs)
-
         try:
             with Parallel(n_jobs=config_jobs) as parallel:
                 jobs = parallel._effective_n_jobs()
@@ -693,7 +692,7 @@ class Hyperopt:
                         ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
                     ]
                 with progressbar.ProgressBar(
-                         maxval=self.total_epochs, redirect_stdout=True, redirect_stderr=True,
+                         maxval=self.total_epochs, redirect_stdout=False, redirect_stderr=False,
                          widgets=widgets
                      ) as pbar:
                     EVALS = ceil(self.total_epochs / jobs)
