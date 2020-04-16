@@ -328,7 +328,7 @@ class Trade(_DECL_BASE):
         if order_type in ('market', 'limit') and order['side'] == 'buy':
             # Update open rate and actual amount
             self.open_rate = Decimal(order['price'])
-            self.amount = Decimal(order['amount'])
+            self.amount = Decimal(order.get('filled', order['amount']))
             self.recalc_open_trade_price()
             logger.info('%s_BUY has been fulfilled for %s.', order_type.upper(), self)
             self.open_order_id = None

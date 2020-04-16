@@ -758,6 +758,7 @@ def limit_buy_order():
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
+        'filled': 90.99181073,
         'remaining': 0.0,
         'status': 'closed'
     }
@@ -773,6 +774,7 @@ def market_buy_order():
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00004099,
         'amount': 91.99181073,
+        'filled': 91.99181073,
         'remaining': 0.0,
         'status': 'closed'
     }
@@ -788,6 +790,7 @@ def market_sell_order():
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00004173,
         'amount': 91.99181073,
+        'filled': 91.99181073,
         'remaining': 0.0,
         'status': 'closed'
     }
@@ -803,6 +806,7 @@ def limit_buy_order_old():
         'datetime': str(arrow.utcnow().shift(minutes=-601).datetime),
         'price': 0.00001099,
         'amount': 90.99181073,
+        'filled': 0.0,
         'remaining': 90.99181073,
         'status': 'open'
     }
@@ -818,6 +822,7 @@ def limit_sell_order_old():
         'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
+        'filled': 0.0,
         'remaining': 90.99181073,
         'status': 'open'
     }
@@ -833,6 +838,7 @@ def limit_buy_order_old_partial():
         'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
+        'filled': 23.0,
         'remaining': 67.99181073,
         'status': 'open'
     }
@@ -856,6 +862,7 @@ def limit_sell_order():
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00001173,
         'amount': 90.99181073,
+        'filled': 90.99181073,
         'remaining': 0.0,
         'status': 'closed'
     }

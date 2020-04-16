@@ -913,6 +913,14 @@ class Exchange:
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
 
+    def check_order_canceled_empty(self, order: Dict) -> bool:
+        """
+        Verify if an order has been cancelled without being partially filled
+        :param order: Order dict as returned from get_order()
+        :return: True if order has been cancelled without being filled, False otherwise.
+        """
+        return order.get('status') in ('closed', 'canceled') and order.get('filled') == 0.0
+
     @retrier
     def cancel_order(self, order_id: str, pair: str) -> None:
         if self._config['dry_run']:
