@@ -20,6 +20,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
 from freqtrade.exceptions import DependencyException, InvalidOrderException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
+from freqtrade.misc import safe_value_fallback
 from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
@@ -889,18 +890,24 @@ class FreqtradeBot:
         """
         if order['status'] != 'canceled':
             reason = "cancelled due to timeout"
-            corder = self.exchange.cancel_order(trade.open_order_id, trade.pair)
-            # Some exchanges don't return a dict here.
-            if not isinstance(corder, dict):
+            try:
+                corder = self.exchange.cancel_order(trade.open_order_id, trade.pair)
+                # Some exchanges don't return a dict here.
+                if not isinstance(corder, dict):
+                    corder = {}
+                logger.info('Buy order %s for %s.', reason, trade)
+            except InvalidOrderException:
                 corder = {}
-            logger.info('Buy order %s for %s.', reason, trade)
+                logger.exception(
+                    f"Could not cancel buy order {trade.open_order_id} for pair {trade.pair}")
         else:
             # Order was cancelled already, so we can reuse the existing dict
             corder = order
             reason = "cancelled on exchange"
             logger.info('Buy order %s for %s.', reason, trade)
 
-        if corder.get('remaining', order['remaining']) == order['amount']:
+        if safe_value_fallback(corder, order, 'remaining', 'remaining') == order['amount']:
+            logger.info('Buy order fully cancelled. Removing %s from database.', trade)
             # if trade is not partially completed, just delete the trade
             Trade.session.delete(trade)
             Trade.session.flush()
@@ -911,7 +918,8 @@ class FreqtradeBot:
         # cancel_order may not contain the full order dict, so we need to fallback
         # to the order dict aquired before cancelling.
         # we need to fall back to the values from order if corder does not contain these keys.
-        trade.amount = order['amount'] - corder.get('remaining', order['remaining'])
+        trade.amount = order['amount'] - safe_value_fallback(corder, order,
+                                                             'remaining', 'remaining')
         trade.stake_amount = trade.amount * trade.open_rate
         self.update_trade_state(trade, corder if 'fee' in corder else order, trade.amount)
 

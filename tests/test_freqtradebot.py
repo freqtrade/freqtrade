@@ -2204,14 +2204,11 @@ def test_check_handle_timedout_exception(default_conf, ticker, open_trade, mocke
                       caplog)
 
 
-def test_handle_timedout_limit_buy(mocker, default_conf, limit_buy_order) -> None:
+def test_handle_timedout_limit_buy(mocker, caplog, default_conf, limit_buy_order) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     cancel_order_mock = MagicMock(return_value=limit_buy_order)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        cancel_order=cancel_order_mock
-    )
+    mocker.patch('freqtrade.exchange.Exchange.cancel_order', cancel_order_mock)
 
     freqtrade = FreqtradeBot(default_conf)
 
@@ -2227,9 +2224,14 @@ def test_handle_timedout_limit_buy(mocker, default_conf, limit_buy_order) -> Non
     assert not freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
     assert cancel_order_mock.call_count == 1
 
+    mocker.patch('freqtrade.exchange.Exchange.cancel_order', side_effect=InvalidOrderException)
+    assert not freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
+    assert log_has_re(r"Could not cancel buy order", caplog)
+
 
 @pytest.mark.parametrize('cancelorder', [
     {},
+    {'remaining': None},
     'String Return value',
     123
 ])
