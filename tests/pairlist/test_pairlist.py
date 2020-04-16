@@ -46,6 +46,28 @@ def static_pl_conf(whitelist_conf):
     return whitelist_conf
 
 
+def test_log_on_refresh(mocker, static_pl_conf, markets, tickers):
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          markets=PropertyMock(return_value=markets),
+                          exchange_has=MagicMock(return_value=True),
+                          get_tickers=tickers
+                          )
+    freqtrade = get_patched_freqtradebot(mocker, static_pl_conf)
+    logmock = MagicMock()
+    # Assign starting whitelist
+    pl = freqtrade.pairlists._pairlists[0]
+    pl.log_on_refresh(logmock, 'Hello world')
+    assert logmock.call_count == 1
+    pl.log_on_refresh(logmock, 'Hello world')
+    assert logmock.call_count == 1
+    assert pl._log_cache.currsize == 1
+    assert ('Hello world',) in pl._log_cache._Cache__data
+
+    pl.log_on_refresh(logmock, 'Hello world2')
+    assert logmock.call_count == 2
+    assert pl._log_cache.currsize == 2
+
+
 def test_load_pairlist_noexist(mocker, markets, default_conf):
     bot = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
