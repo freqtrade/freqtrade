@@ -1140,7 +1140,7 @@ class FreqtradeBot:
                 new_amount = self.get_real_amount(trade, order, order_amount)
                 if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
                     order['amount'] = new_amount
-                    del order['filled']
+                    order.pop('filled', None)
                     # Fee was applied, so set to 0
                     trade.fee_open = 0
                     trade.recalc_open_trade_price()
