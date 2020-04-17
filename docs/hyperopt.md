@@ -16,6 +16,24 @@ To learn how to get data for the pairs and exchange you're interested in, head o
 !!! Bug
     Hyperopt can crash when used with only 1 CPU Core as found out in [Issue #1133](https://github.com/freqtrade/freqtrade/issues/1133)
 
+## Install hyperopt dependencies
+
+Since Hyperopt dependencies are not needed to run a bot, they are not installed by default.
+
+### Docker
+
+The docker-image includes hyperopt dependencies, no further action needed
+
+!!! Note
+    Since Hyperopt is a resource intensive process, running it on a Raspberry Pi is not recommended, therefore the Raspberry image does not include Hyperopt dependencies.
+
+### Simple installation script (setup.sh) / Manual installation
+
+```bash
+source .env/bin/activate
+pip install -r requirements-hyperopt.txt
+```
+
 ## Prepare Hyperopting
 
 Before we start digging into Hyperopt, we recommend you to take a look at
