@@ -890,13 +890,8 @@ class FreqtradeBot:
         """
         if order['status'] != 'canceled':
             reason = "cancelled due to timeout"
-            try:
-                corder = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
-                                                                trade.amount)
-            except InvalidOrderException:
-                corder = {}
-                logger.exception(
-                    f"Could not cancel buy order {trade.open_order_id} for pair {trade.pair}")
+            corder = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
+                                                            trade.amount)
         else:
             # Order was cancelled already, so we can reuse the existing dict
             corder = order
