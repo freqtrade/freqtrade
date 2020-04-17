@@ -18,16 +18,16 @@ To learn how to get data for the pairs and exchange you're interested in, head o
 
 ## Install hyperopt dependencies
 
-Since Hyperopt dependencies are not needed to run a bot, they are not installed by default.
+Since Hyperopt dependencies are not needed to run the bot itself, are heavy, can not be easily built on some platforms (like Raspberry PI), they are not installed by default. Before you run Hyperopt, you need to install the corresponding dependencies, as described in this section below.
+
+!!! Note
+    Since Hyperopt is a resource intensive process, running it on a Raspberry Pi is not recommended nor supported.
 
 ### Docker
 
-The docker-image includes hyperopt dependencies, no further action needed
+The docker-image includes hyperopt dependencies, no further action needed.
 
-!!! Note
-    Since Hyperopt is a resource intensive process, running it on a Raspberry Pi is not recommended, therefore the Raspberry image does not include Hyperopt dependencies.
-
-### Simple installation script (setup.sh) / Manual installation
+### Easy installation script (setup.sh) / Manual installation
 
 ```bash
 source .env/bin/activate
