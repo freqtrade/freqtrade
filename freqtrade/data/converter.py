@@ -174,7 +174,7 @@ def trades_dict_to_list(trades: List[Dict]) -> List[List]:
     :param trades: List of trades, as returned by ccxt.fetch_trades.
     :return: List of Lists, with constants.DEFAULT_TRADES_COLUMNS as columns
     """
-    return [[t[col] for col in DEFAULT_TRADES_COLUMNS]for t in trades]
+    return [[t[col] for col in DEFAULT_TRADES_COLUMNS] for t in trades]
 
 
 def trades_to_ohlcv(trades: List, timeframe: str) -> DataFrame:
