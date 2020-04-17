@@ -34,7 +34,7 @@ The prevelance for all Options is as follows:
 
 - CLI arguments override any other option
 - Configuration files are used in sequence (last file wins), and override Strategy configurations.
-- Strategy configurations are only used if they are not set via configuration or via command line arguments. These options are market with [Strategy Override](#parameters-in-the-strategy) in the below table.
+- Strategy configurations are only used if they are not set via configuration or via command line arguments. These options are marked with [Strategy Override](#parameters-in-the-strategy) in the below table.
 
 Mandatory parameters are marked as **Required**, which means that they are required to be set in one of the possible ways.
 
