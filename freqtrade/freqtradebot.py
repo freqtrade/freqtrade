@@ -891,11 +891,8 @@ class FreqtradeBot:
         if order['status'] != 'canceled':
             reason = "cancelled due to timeout"
             try:
-                corder = self.exchange.cancel_order(trade.open_order_id, trade.pair)
-                # Some exchanges don't return a dict here.
-                if not isinstance(corder, dict):
-                    corder = {}
-                logger.info('Buy order %s for %s.', reason, trade)
+                corder = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
+                                                                trade.amount)
             except InvalidOrderException:
                 corder = {}
                 logger.exception(
@@ -904,7 +901,8 @@ class FreqtradeBot:
             # Order was cancelled already, so we can reuse the existing dict
             corder = order
             reason = "cancelled on exchange"
-            logger.info('Buy order %s for %s.', reason, trade)
+
+        logger.info('Buy order %s for %s.', reason, trade)
 
         if safe_value_fallback(corder, order, 'remaining', 'remaining') == order['amount']:
             logger.info('Buy order fully cancelled. Removing %s from database.', trade)
@@ -921,7 +919,7 @@ class FreqtradeBot:
         trade.amount = order['amount'] - safe_value_fallback(corder, order,
                                                              'remaining', 'remaining')
         trade.stake_amount = trade.amount * trade.open_rate
-        self.update_trade_state(trade, corder if 'fee' in corder else order, trade.amount)
+        self.update_trade_state(trade, corder, trade.amount)
 
         trade.open_order_id = None
         logger.info('Partial buy order timeout for %s.', trade)
