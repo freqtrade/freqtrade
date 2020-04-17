@@ -954,11 +954,12 @@ class Exchange:
         :param amount: Amount to use for fake response
         :return: Result from either cancel_order if usable, or fetch_order
         """
-        if self._config['dry_run']:
-            return {'fee': {}, 'status': 'canceled', 'amount': amount, 'info': {}}
-        corder = self.cancel_order(order_id, pair)
-        if self.is_cancel_order_result_suitable(corder):
-            return corder
+        try:
+            corder = self.cancel_order(order_id, pair)
+            if self.is_cancel_order_result_suitable(corder):
+                return corder
+        except InvalidOrderException:
+            logger.warning(f"Could not cancel order {order_id}.")
         try:
             order = self.get_order(order_id, pair)
         except InvalidOrderException:
