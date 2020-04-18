@@ -922,9 +922,9 @@ class Exchange:
         return order.get('status') in ('closed', 'canceled') and order.get('filled') == 0.0
 
     @retrier
-    def cancel_order(self, order_id: str, pair: str) -> None:
+    def cancel_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
-            return
+            return {}
 
         try:
             return self._api.cancel_order(order_id, pair)

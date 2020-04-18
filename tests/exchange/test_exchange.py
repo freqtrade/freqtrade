@@ -1728,7 +1728,7 @@ def test_get_historic_trades_notsupported(default_conf, mocker, caplog, exchange
 def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    assert exchange.cancel_order(order_id='123', pair='TKN/BTC') is None
+    assert exchange.cancel_order(order_id='123', pair='TKN/BTC') == {}
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
