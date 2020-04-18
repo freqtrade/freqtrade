@@ -890,21 +890,14 @@ class FreqtradeBot:
         """
         if order['status'] != 'canceled':
             reason = "cancelled due to timeout"
-            try:
-                corder = self.exchange.cancel_order(trade.open_order_id, trade.pair)
-                # Some exchanges don't return a dict here.
-                if not isinstance(corder, dict):
-                    corder = {}
-                logger.info('Buy order %s for %s.', reason, trade)
-            except InvalidOrderException:
-                corder = {}
-                logger.exception(
-                    f"Could not cancel buy order {trade.open_order_id} for pair {trade.pair}")
+            corder = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
+                                                            trade.amount)
         else:
             # Order was cancelled already, so we can reuse the existing dict
             corder = order
             reason = "cancelled on exchange"
-            logger.info('Buy order %s for %s.', reason, trade)
+
+        logger.info('Buy order %s for %s.', reason, trade)
 
         if safe_value_fallback(corder, order, 'remaining', 'remaining') == order['amount']:
             logger.info('Buy order fully cancelled. Removing %s from database.', trade)
@@ -921,7 +914,7 @@ class FreqtradeBot:
         trade.amount = order['amount'] - safe_value_fallback(corder, order,
                                                              'remaining', 'remaining')
         trade.stake_amount = trade.amount * trade.open_rate
-        self.update_trade_state(trade, corder if 'fee' in corder else order, trade.amount)
+        self.update_trade_state(trade, corder, trade.amount)
 
         trade.open_order_id = None
         logger.info('Partial buy order timeout for %s.', trade)
@@ -1140,7 +1133,7 @@ class FreqtradeBot:
                 new_amount = self.get_real_amount(trade, order, order_amount)
                 if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
                     order['amount'] = new_amount
-                    del order['filled']
+                    order.pop('filled', None)
                     # Fee was applied, so set to 0
                     trade.fee_open = 0
                     trade.recalc_open_trade_price()

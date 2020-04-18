@@ -1948,7 +1948,7 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, op
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         get_order=MagicMock(return_value=limit_buy_order_old),
-        cancel_order=cancel_order_mock,
+        cancel_order_with_result=cancel_order_mock,
         get_fee=fee
     )
     freqtrade = FreqtradeBot(default_conf)
@@ -2055,7 +2055,7 @@ def test_check_handle_cancelled_sell(default_conf, ticker, limit_sell_order_old,
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         get_order=MagicMock(return_value=limit_sell_order_old),
-        cancel_order=cancel_order_mock
+        cancel_order_with_result=cancel_order_mock
     )
     freqtrade = FreqtradeBot(default_conf)
 
@@ -2082,7 +2082,7 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         get_order=MagicMock(return_value=limit_buy_order_old_partial),
-        cancel_order=cancel_order_mock
+        cancel_order_with_result=cancel_order_mock
     )
     freqtrade = FreqtradeBot(default_conf)
 
@@ -2109,7 +2109,7 @@ def test_check_handle_timedout_partial_fee(default_conf, ticker, open_trade, cap
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         get_order=MagicMock(return_value=limit_buy_order_old_partial),
-        cancel_order=cancel_order_mock,
+        cancel_order_with_result=cancel_order_mock,
         get_trades_for_order=MagicMock(return_value=trades_for_order),
     )
     freqtrade = FreqtradeBot(default_conf)
@@ -2146,7 +2146,7 @@ def test_check_handle_timedout_partial_except(default_conf, ticker, open_trade, 
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         get_order=MagicMock(return_value=limit_buy_order_old_partial),
-        cancel_order=cancel_order_mock,
+        cancel_order_with_result=cancel_order_mock,
         get_trades_for_order=MagicMock(return_value=trades_for_order),
     )
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
@@ -2208,7 +2208,7 @@ def test_handle_timedout_limit_buy(mocker, caplog, default_conf, limit_buy_order
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     cancel_order_mock = MagicMock(return_value=limit_buy_order)
-    mocker.patch('freqtrade.exchange.Exchange.cancel_order', cancel_order_mock)
+    mocker.patch('freqtrade.exchange.Exchange.cancel_order_with_result', cancel_order_mock)
 
     freqtrade = FreqtradeBot(default_conf)
 
@@ -2226,7 +2226,6 @@ def test_handle_timedout_limit_buy(mocker, caplog, default_conf, limit_buy_order
 
     mocker.patch('freqtrade.exchange.Exchange.cancel_order', side_effect=InvalidOrderException)
     assert not freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
-    assert log_has_re(r"Could not cancel buy order", caplog)
 
 
 @pytest.mark.parametrize('cancelorder', [

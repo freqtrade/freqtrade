@@ -922,9 +922,9 @@ class Exchange:
         return order.get('status') in ('closed', 'canceled') and order.get('filled') == 0.0
 
     @retrier
-    def cancel_order(self, order_id: str, pair: str) -> None:
+    def cancel_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
-            return
+            return {}
 
         try:
             return self._api.cancel_order(order_id, pair)
@@ -936,6 +936,37 @@ class Exchange:
                 f'Could not cancel order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    def is_cancel_order_result_suitable(self, corder) -> bool:
+        if not isinstance(corder, dict):
+            return False
+
+        required = ('fee', 'status', 'amount')
+        return all(k in corder for k in required)
+
+    def cancel_order_with_result(self, order_id: str, pair: str, amount: float) -> Dict:
+        """
+        Cancel order returning a result.
+        Creates a fake result if cancel order returns a non-usable result
+        and get_order does not work (certain exchanges don't return cancelled orders)
+        :param order_id: Orderid to cancel
+        :param pair: Pair corresponding to order_id
+        :param amount: Amount to use for fake response
+        :return: Result from either cancel_order if usable, or fetch_order
+        """
+        try:
+            corder = self.cancel_order(order_id, pair)
+            if self.is_cancel_order_result_suitable(corder):
+                return corder
+        except InvalidOrderException:
+            logger.warning(f"Could not cancel order {order_id}.")
+        try:
+            order = self.get_order(order_id, pair)
+        except InvalidOrderException:
+            logger.warning(f"Could not fetch cancelled order {order_id}.")
+            order = {'fee': {}, 'status': 'canceled', 'amount': amount, 'info': {}}
+
+        return order
 
     @retrier
     def get_order(self, order_id: str, pair: str) -> Dict:
