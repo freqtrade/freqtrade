@@ -97,9 +97,9 @@ class Ftx(Exchange):
             raise OperationalException(e) from e
 
     @retrier
-    def cancel_stoploss_order(self, order_id: str, pair: str) -> None:
+    def cancel_stoploss_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
-            return
+            return {}
         try:
             return self._api.cancel_order(order_id, pair, params={'type': 'stop'})
         except ccxt.InvalidOrder as e:
