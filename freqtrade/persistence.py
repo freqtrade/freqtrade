@@ -86,7 +86,7 @@ def check_migrate(engine) -> None:
         logger.debug(f'trying {table_back_name}')
 
     # Check for latest column
-    if not has_column(cols, 'open_trade_price'):
+    if not has_column(cols, 'close_profit_abs'):
         logger.info(f'Running database migration - backup available as {table_back_name}')
 
         fee_open = get_column_def(cols, 'fee_open', 'fee')
@@ -106,6 +106,9 @@ def check_migrate(engine) -> None:
         ticker_interval = get_column_def(cols, 'ticker_interval', 'null')
         open_trade_price = get_column_def(cols, 'open_trade_price',
                                           f'amount * open_rate * (1 + {fee_open})')
+        close_profit_abs = get_column_def(
+            cols, 'close_profit_abs',
+            f"(amount * close_rate * (1 - {fee_close})) - {open_trade_price}")
 
         # Schema migration necessary
         engine.execute(f"alter table trades rename to {table_back_name}")
@@ -123,7 +126,7 @@ def check_migrate(engine) -> None:
                 stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
                 stoploss_order_id, stoploss_last_update,
                 max_rate, min_rate, sell_reason, strategy,
-                ticker_interval, open_trade_price
+                ticker_interval, open_trade_price, close_profit_abs
                 )
             select id, lower(exchange),
                 case
@@ -143,7 +146,7 @@ def check_migrate(engine) -> None:
                 {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
                 {max_rate} max_rate, {min_rate} min_rate, {sell_reason} sell_reason,
                 {strategy} strategy, {ticker_interval} ticker_interval,
-                {open_trade_price} open_trade_price
+                {open_trade_price} open_trade_price, {close_profit_abs} close_profit_abs
                 from {table_back_name}
              """)
 
@@ -185,11 +188,12 @@ class Trade(_DECL_BASE):
     fee_close = Column(Float, nullable=False, default=0.0)
     open_rate = Column(Float)
     open_rate_requested = Column(Float)
-    # open_trade_price - calcuated via _calc_open_trade_price
+    # open_trade_price - calculated via _calc_open_trade_price
     open_trade_price = Column(Float)
     close_rate = Column(Float)
     close_rate_requested = Column(Float)
     close_profit = Column(Float)
+    close_profit_abs = Column(Float)
     stake_amount = Column(Float, nullable=False)
     amount = Column(Float)
     open_date = Column(DateTime, nullable=False, default=datetime.utcnow)
@@ -229,6 +233,9 @@ class Trade(_DECL_BASE):
         return {
             'trade_id': self.id,
             'pair': self.pair,
+            'is_open': self.is_open,
+            'fee_open': self.fee_open,
+            'fee_close': self.fee_close,
             'open_date_hum': arrow.get(self.open_date).humanize(),
             'open_date': self.open_date.strftime("%Y-%m-%d %H:%M:%S"),
             'close_date_hum': (arrow.get(self.close_date).humanize()
@@ -236,14 +243,24 @@ class Trade(_DECL_BASE):
             'close_date': (self.close_date.strftime("%Y-%m-%d %H:%M:%S")
                            if self.close_date else None),
             'open_rate': self.open_rate,
+            'open_rate_requested': self.open_rate_requested,
+            'open_trade_price': self.open_trade_price,
             'close_rate': self.close_rate,
+            'close_rate_requested': self.close_rate_requested,
             'amount': round(self.amount, 8),
             'stake_amount': round(self.stake_amount, 8),
+            'close_profit': self.close_profit,
+            'sell_reason': self.sell_reason,
             'stop_loss': self.stop_loss,
             'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
             'initial_stop_loss': self.initial_stop_loss,
             'initial_stop_loss_pct': (self.initial_stop_loss_pct * 100
                                       if self.initial_stop_loss_pct else None),
+            'min_rate': self.min_rate,
+            'max_rate': self.max_rate,
+            'strategy': self.strategy,
+            'ticker_interval': self.ticker_interval,
+            'open_order_id': self.open_order_id,
         }
 
     def adjust_min_max_rates(self, current_price: float) -> None:
@@ -311,7 +328,7 @@ class Trade(_DECL_BASE):
         if order_type in ('market', 'limit') and order['side'] == 'buy':
             # Update open rate and actual amount
             self.open_rate = Decimal(order['price'])
-            self.amount = Decimal(order['amount'])
+            self.amount = Decimal(order.get('filled', order['amount']))
             self.recalc_open_trade_price()
             logger.info('%s_BUY has been fulfilled for %s.', order_type.upper(), self)
             self.open_order_id = None
@@ -334,6 +351,7 @@ class Trade(_DECL_BASE):
         """
         self.close_rate = Decimal(rate)
         self.close_profit = self.calc_profit_ratio()
+        self.close_profit_abs = self.calc_profit()
         self.close_date = datetime.utcnow()
         self.is_open = False
         self.open_order_id = None

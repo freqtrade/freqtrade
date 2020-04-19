@@ -8,10 +8,10 @@ import numpy as np
 import utils_find_1st as utf1st
 from pandas import DataFrame
 
-from freqtrade import constants
 from freqtrade.configuration import TimeRange
-from freqtrade.data import history
+from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
 from freqtrade.exceptions import OperationalException
+from freqtrade.data.history import get_timerange, load_data, refresh_data
 from freqtrade.strategy.interface import SellType
 
 logger = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ class Edge:
         if self.config['max_open_trades'] != float('inf'):
             logger.critical('max_open_trades should be -1 in config !')
 
-        if self.config['stake_amount'] != constants.UNLIMITED_STAKE_AMOUNT:
+        if self.config['stake_amount'] != UNLIMITED_STAKE_AMOUNT:
             raise OperationalException('Edge works only with unlimited stake amount')
 
         # Deprecated capital_available_percentage. Will use tradable_balance_ratio in the future.
@@ -96,7 +96,7 @@ class Edge:
         logger.info('Using local backtesting data (using whitelist in given config) ...')
 
         if self._refresh_pairs:
-            history.refresh_data(
+            refresh_data(
                 datadir=self.config['datadir'],
                 pairs=pairs,
                 exchange=self.exchange,
@@ -104,7 +104,7 @@ class Edge:
                 timerange=self._timerange,
             )
 
-        data = history.load_data(
+        data = load_data(
             datadir=self.config['datadir'],
             pairs=pairs,
             timeframe=self.strategy.ticker_interval,
@@ -122,7 +122,7 @@ class Edge:
         preprocessed = self.strategy.ohlcvdata_to_dataframe(data)
 
         # Print timeframe
-        min_date, max_date = history.get_timerange(preprocessed)
+        min_date, max_date = get_timerange(preprocessed)
         logger.info(
             'Measuring data from %s up to %s (%s days) ...',
             min_date.isoformat(),

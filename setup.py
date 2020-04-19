@@ -24,6 +24,7 @@ hyperopt = [
     'scikit-optimize',
     'filelock',
     'joblib',
+    'progressbar2',
     ]
 
 develop = [

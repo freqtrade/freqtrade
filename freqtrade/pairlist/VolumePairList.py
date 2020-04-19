@@ -39,7 +39,6 @@ class VolumePairList(IPairList):
         if not self._validate_keys(self._sort_key):
             raise OperationalException(
                 f'key {self._sort_key} not in {SORT_VALUES}')
-        self._last_refresh = 0
 
     @property
     def needstickers(self) -> bool:
@@ -68,16 +67,18 @@ class VolumePairList(IPairList):
         :return: new whitelist
         """
         # Generate dynamic whitelist
-        if self._last_refresh + self.refresh_period < datetime.now().timestamp():
+        # Must always run if this pairlist is not the first in the list.
+        if (self._pairlist_pos != 0 or
+                (self._last_refresh + self.refresh_period < datetime.now().timestamp())):
+
             self._last_refresh = int(datetime.now().timestamp())
-            return self._gen_pair_whitelist(pairlist,
-                                            tickers,
-                                            self._config['stake_currency'],
-                                            self._sort_key,
-                                            self._min_value
-                                            )
+            pairs = self._gen_pair_whitelist(pairlist, tickers,
+                                             self._config['stake_currency'],
+                                             self._sort_key, self._min_value)
         else:
-            return pairlist
+            pairs = pairlist
+        self.log_on_refresh(logger.info, f"Searching {self._number_pairs} pairs: {pairs}")
+        return pairs
 
     def _gen_pair_whitelist(self, pairlist: List[str], tickers: Dict,
                             base_currency: str, key: str, min_val: int) -> List[str]:
@@ -88,7 +89,6 @@ class VolumePairList(IPairList):
         :param tickers: Tickers (from exchange.get_tickers()).
         :return: List of pairs
         """
-
         if self._pairlist_pos == 0:
             # If VolumePairList is the first in the list, use fresh pairlist
             # Check if pair quote currency equals to the stake currency.
@@ -109,6 +109,5 @@ class VolumePairList(IPairList):
         pairs = self._verify_blacklist(pairs, aswarning=False)
         # Limit to X number of pairs
         pairs = pairs[:self._number_pairs]
-        logger.info(f"Searching {self._number_pairs} pairs: {pairs}")
 
         return pairs

@@ -74,23 +74,13 @@ Should you experience constant errors with Nonce (like `InvalidNonce`), it is be
 $ pip3 install web3
 ```
 
-### Send incomplete candles to the strategy
+### Getting latest price / Incomplete candles
 
 Most exchanges return current incomplete candle via their OHLCV/klines API interface.
 By default, Freqtrade assumes that incomplete candle is fetched from the exchange and removes the last candle assuming it's the incomplete candle.
 
 Whether your exchange returns incomplete candles or not can be checked using [the helper script](developer.md#Incomplete-candles) from the Contributor documentation.
 
-If the exchange does return incomplete candles and you would like to have incomplete candles in your strategy, you can set the following parameter in the configuration file.
+Due to the danger of repainting, Freqtrade does not allow you to use this incomplete candle.
 
-``` json
-{
-
-    "exchange": {
-        "_ft_has_params": {"ohlcv_partial_candle": false}
-    }
-}
-```
-
-!!! Warning "Danger of repainting"
-    Changing this parameter makes the strategy responsible to avoid repainting and handle this accordingly. Doing this is therefore not recommended, and should only be performed by experienced users who are fully aware of the impact this setting has.
+However, if it is based on the need for the latest price for your strategy - then this requirement can be acquired using the [data provider](strategy-customization.md#possible-options-for-dataprovider) from within the strategy.

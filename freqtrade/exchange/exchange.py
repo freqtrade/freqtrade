@@ -452,6 +452,17 @@ class Exchange:
                 price = ceil(big_price) / pow(10, symbol_prec)
         return price
 
+    def price_get_one_pip(self, pair: str, price: float) -> float:
+        """
+        Get's the "1 pip" value for this pair.
+        Used in PriceFilter to calculate the 1pip movements.
+        """
+        precision = self.markets[pair]['precision']['price']
+        if self.precisionMode == TICK_SIZE:
+            return precision
+        else:
+            return 1 / pow(10, precision)
+
     def dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                       rate: float, params: Dict = {}) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{randint(0, 10**6)}'
@@ -902,6 +913,14 @@ class Exchange:
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
 
+    def check_order_canceled_empty(self, order: Dict) -> bool:
+        """
+        Verify if an order has been cancelled without being partially filled
+        :param order: Order dict as returned from get_order()
+        :return: True if order has been cancelled without being filled, False otherwise.
+        """
+        return order.get('status') in ('closed', 'canceled') and order.get('filled') == 0.0
+
     @retrier
     def cancel_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
@@ -917,6 +936,37 @@ class Exchange:
                 f'Could not cancel order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    def is_cancel_order_result_suitable(self, corder) -> bool:
+        if not isinstance(corder, dict):
+            return False
+
+        required = ('fee', 'status', 'amount')
+        return all(k in corder for k in required)
+
+    def cancel_order_with_result(self, order_id: str, pair: str, amount: float) -> Dict:
+        """
+        Cancel order returning a result.
+        Creates a fake result if cancel order returns a non-usable result
+        and get_order does not work (certain exchanges don't return cancelled orders)
+        :param order_id: Orderid to cancel
+        :param pair: Pair corresponding to order_id
+        :param amount: Amount to use for fake response
+        :return: Result from either cancel_order if usable, or fetch_order
+        """
+        try:
+            corder = self.cancel_order(order_id, pair)
+            if self.is_cancel_order_result_suitable(corder):
+                return corder
+        except InvalidOrderException:
+            logger.warning(f"Could not cancel order {order_id}.")
+        try:
+            order = self.get_order(order_id, pair)
+        except InvalidOrderException:
+            logger.warning(f"Could not fetch cancelled order {order_id}.")
+            order = {'fee': {}, 'status': 'canceled', 'amount': amount, 'info': {}}
+
+        return order
 
     @retrier
     def get_order(self, order_id: str, pair: str) -> Dict:

@@ -34,13 +34,13 @@ The prevelance for all Options is as follows:
 
 - CLI arguments override any other option
 - Configuration files are used in sequence (last file wins), and override Strategy configurations.
-- Strategy configurations are only used if they are not set via configuration or via command line arguments. These options are market with [Strategy Override](#parameters-in-the-strategy) in the below table.
+- Strategy configurations are only used if they are not set via configuration or via command line arguments. These options are marked with [Strategy Override](#parameters-in-the-strategy) in the below table.
 
 Mandatory parameters are marked as **Required**, which means that they are required to be set in one of the possible ways.
 
 |  Parameter | Description |
 |------------|-------------|
-| `max_open_trades` | **Required.** Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades). [More information below](#configuring-amount-per-trade).<br> **Datatype:** Positive integer or -1.
+| `max_open_trades` | **Required.** Number of open trades your bot is allowed to have. Only one open trade per pair is possible, so the length of your pairlist is another limitation which can apply. If -1 then it is ignored (i.e. potentially unlimited open trades, limited by the pairlist). [More information below](#configuring-amount-per-trade).<br> **Datatype:** Positive integer or -1.
 | `stake_currency` | **Required.** Crypto-currency used for trading. [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** String
 | `stake_amount` | **Required.** Amount of crypto-currency your bot will use for each trade. Set it to `"unlimited"` to allow the bot to use all available balance. [More information below](#configuring-amount-per-trade). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Positive float or `"unlimited"`.
 | `tradable_balance_ratio` | Ratio of the total account balance the bot is allowed to trade. [More information below](#configuring-amount-per-trade). <br>*Defaults to `0.99` 99%).*<br> **Datatype:** Positive float between `0.1` and `1.0`.
