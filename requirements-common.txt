@@ -29,5 +29,5 @@ flask==1.1.2
 # Support for colorized terminal output
 colorama==0.4.3
 # Building config files interactively
-questionary==1.5.1
+questionary==1.5.2
 prompt-toolkit==3.0.5
