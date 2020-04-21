@@ -33,8 +33,8 @@ def create_userdata_dir(directory: str, create_dir: bool = False) -> Path:
     :param create_dir: Create directory if it does not exist.
     :return: Path object containing the directory
     """
-    sub_dirs = ["backtest_results", "data", "hyperopts", "hyperopt_results", "notebooks",
-                "plot", "strategies", ]
+    sub_dirs = ["backtest_results", "data", "hyperopts", "hyperopt_results", "logs",
+                "notebooks", "plot", "strategies", ]
     folder = Path(directory)
     if not folder.is_dir():
         if create_dir:
