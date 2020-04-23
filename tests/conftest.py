@@ -739,6 +739,31 @@ def shitcoinmarkets(markets):
             "future": False,
             "active": True
         },
+        'ADAHALF/USDT': {
+            "percentage": True,
+            "tierBased": False,
+            "taker": 0.001,
+            "maker": 0.001,
+            "precision": {
+                "base": 8,
+                "quote": 8,
+                "amount": 2,
+                "price": 4
+            },
+            "limits": {
+            },
+            "id": "ADAHALFUSDT",
+            "symbol": "ADAHALF/USDT",
+            "base": "ADAHALF",
+            "quote": "USDT",
+            "baseId": "ADAHALF",
+            "quoteId": "USDT",
+            "info": {},
+            "type": "spot",
+            "spot": True,
+            "future": False,
+            "active": True
+    },
         })
     return shitmarkets
 
@@ -1241,6 +1266,29 @@ def tickers():
             "average": None,
             "baseVolume": 439472.44,
             "quoteVolume": 323652.075405,
+            "info": {}
+        },
+        # Example of leveraged pair with incomplete info
+        "ADAHALF/USDT": {
+            "symbol": "ADAHALF/USDT",
+            "timestamp": 1580469388244,
+            "datetime": "2020-01-31T11:16:28.244Z",
+            "high": None,
+            "low": None,
+            "bid": 0.7305,
+            "bidVolume": None,
+            "ask": 0.7342,
+            "askVolume": None,
+            "vwap": None,
+            "open": None,
+            "close": None,
+            "last": None,
+            "previousClose": None,
+            "change": None,
+            "percentage": 2.628,
+            "average": None,
+            "baseVolume": 0.0,
+            "quoteVolume": 0.0,
             "info": {}
         },
     })
