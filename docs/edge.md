@@ -79,7 +79,7 @@ So lets say your Win rate is 28% and your Risk Reward Ratio is 5:
 Expectancy = (5 X 0.28) – 0.72 = 0.68
 ```
 
-Superficially, this means that on average you expect this strategy’s trades to return .68 times the size of your loses. This is important for two reasons: First, it may seem obvious, but you know right away that you have a positive return. Second, you now have a number you can compare to other candidate systems to make decisions about which ones you employ.
+Superficially, this means that on average you expect this strategy’s trades to return 1.68 times the size of your loses. Said another way, you can expect to win $1.68 for every $1 you lose. This is important for two reasons: First, it may seem obvious, but you know right away that you have a positive return. Second, you now have a number you can compare to other candidate systems to make decisions about which ones you employ.
 
 It is important to remember that any system with an expectancy greater than 0 is profitable using past data. The key is finding one that will be profitable in the future.
 
