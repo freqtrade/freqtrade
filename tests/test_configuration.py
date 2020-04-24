@@ -250,6 +250,7 @@ def test_load_config_with_params(default_conf, mocker) -> None:
         '--strategy', 'TestStrategy',
         '--strategy-path', '/some/path',
         '--db-url', 'sqlite:///someurl',
+        '--cancel-open-orders-on-exit',
     ]
     args = Arguments(arglist).get_parsed_arg()
     configuration = Configuration(args)
@@ -258,6 +259,7 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     assert validated_conf.get('strategy') == 'TestStrategy'
     assert validated_conf.get('strategy_path') == '/some/path'
     assert validated_conf.get('db_url') == 'sqlite:///someurl'
+    assert validated_conf.get('cancel_open_orders_on_exit') is True
 
     # Test conf provided db_url prod
     conf = default_conf.copy()

@@ -249,6 +249,7 @@ def default_conf(testdatadir):
         "fiat_display_currency": "USD",
         "ticker_interval": '5m',
         "dry_run": True,
+        "cancel_open_orders_on_exit": False,
         "minimal_roi": {
             "40": 0.0,
             "30": 0.01,

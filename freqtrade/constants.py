@@ -85,6 +85,7 @@ CONF_SCHEMA = {
         'fiat_display_currency': {'type': 'string', 'enum': SUPPORTED_FIAT},
         'dry_run': {'type': 'boolean'},
         'dry_run_wallet': {'type': 'number', 'default': DRY_RUN_WALLET},
+        'cancel_open_orders_on_exit': {'type': 'boolean', 'default': False},
         'process_only_new_candles': {'type': 'boolean'},
         'minimal_roi': {
             'type': 'object',
@@ -318,3 +319,10 @@ SCHEMA_MINIMAL_REQUIRED = [
     'dataformat_ohlcv',
     'dataformat_trades',
 ]
+
+CANCEL_REASON = {
+    "TIMEOUT": "cancelled due to timeout",
+    "PARTIALLY_FILLED": "partially filled - keeping order open",
+    "ALL_CANCELLED": "cancelled (all unfilled orders cancelled)",
+    "CANCELLED_ON_EXCHANGE": "cancelled on exchange",
+}

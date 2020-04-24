@@ -109,6 +109,11 @@ AVAILABLE_CLI_OPTIONS = {
         help='Enforce dry-run for trading (removes Exchange secrets and simulates trades).',
         action='store_true',
     ),
+    "cancel_open_orders_on_exit": Arg(
+        '--cancel-open-orders-on-exit',
+        help='Close unfilled open orders when the bot stops / exits',
+        action='store_true',
+    ),
     # Optimize common
     "ticker_interval": Arg(
         '-i', '--ticker-interval',
