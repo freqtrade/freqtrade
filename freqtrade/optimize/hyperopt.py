@@ -277,37 +277,6 @@ class Hyperopt:
             )
             self.hyperopt_table_header = 2
 
-    def get_results(self, results) -> str:
-        """
-        Log results if it is better than any previous evaluation
-        """
-        output = ''
-        is_best = results['is_best']
-
-        if self.print_all or is_best:
-            output = self.get_result_table(
-                self.config, results, self.total_epochs,
-                self.print_all, self.print_colorized,
-                self.hyperopt_table_header
-            )
-            self.hyperopt_table_header = 2
-        return output
-
-    @staticmethod
-    def print_results_explanation(results, total_epochs, highlight_best: bool,
-                                  print_colorized: bool) -> None:
-        """
-        Log results explanation string
-        """
-        explanation_str = Hyperopt._format_explanation_string(results, total_epochs)
-        # Colorize output
-        if print_colorized:
-            if results['total_profit'] > 0:
-                explanation_str = Fore.GREEN + explanation_str
-            if highlight_best and results['is_best']:
-                explanation_str = Style.BRIGHT + explanation_str
-        print(explanation_str)
-
     @staticmethod
     def _format_explanation_string(results, total_epochs) -> str:
         return (("*" if results['is_initial_point'] else " ") +
