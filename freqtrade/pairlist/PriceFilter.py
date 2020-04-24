@@ -37,6 +37,12 @@ class PriceFilter(IPairList):
         :param ticker: ticker dict as returned from ccxt.load_markets()
         :return: True if the pair can stay, false if it should be removed
         """
+        if ticker['last'] is None:
+
+            self.log_on_refresh(logger.info,
+                                f"Removed {ticker['symbol']} from whitelist, because "
+                                "ticker['last'] is empty (Usually no trade in the last 24h).")
+            return False
         compare = ticker['last'] + self._exchange.price_get_one_pip(ticker['symbol'],
                                                                     ticker['last'])
         changeperc = (compare - ticker['last']) / ticker['last']
@@ -47,7 +53,6 @@ class PriceFilter(IPairList):
         return True
 
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
-
         """
         Filters and sorts pairlist and returns the whitelist again.
         Called on each bot iteration - please use internal caching if necessary

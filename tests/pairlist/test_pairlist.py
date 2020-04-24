@@ -163,7 +163,7 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "bidVolume"}],
         "BTC",  ['HOT/BTC', 'FUEL/BTC', 'XRP/BTC', 'LTC/BTC', 'TKN/BTC']),
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"}],
-        "USDT", ['ETH/USDT', 'NANO/USDT']),
+        "USDT", ['ETH/USDT', 'NANO/USDT', 'ADAHALF/USDT']),
     # No pair for ETH ...
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"}],
      "ETH", []),
@@ -177,6 +177,10 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "PriceFilter", "low_price_ratio": 0.03}],
         "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC']),
+    # PriceFilter and VolumePairList
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
+      {"method": "PriceFilter", "low_price_ratio": 0.03}],
+        "USDT", ['ETH/USDT', 'NANO/USDT']),
     # Hot is removed by precision_filter, Fuel by low_price_filter.
     ([{"method": "VolumePairList", "number_assets": 6, "sort_key": "quoteVolume"},
       {"method": "PrecisionFilter"},
@@ -221,7 +225,9 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
             assert log_has_re(r'^Removed .* from whitelist, because stop price .* '
                               r'would be <= stop limit.*', caplog)
         if pairlist['method'] == 'PriceFilter':
-            assert log_has_re(r'^Removed .* from whitelist, because 1 unit is .*%$', caplog)
+            assert (log_has_re(r'^Removed .* from whitelist, because 1 unit is .*%$', caplog) or
+                    log_has_re(r"^Removed .* from whitelist, because ticker\['last'\] is empty.*",
+                               caplog))
 
 
 def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None:
