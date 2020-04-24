@@ -294,21 +294,6 @@ class Hyperopt:
         return output
 
     @staticmethod
-    def print_results_explanation(results, total_epochs, highlight_best: bool,
-                                  print_colorized: bool) -> None:
-        """
-        Log results explanation string
-        """
-        explanation_str = Hyperopt._format_explanation_string(results, total_epochs)
-        # Colorize output
-        if print_colorized:
-            if results['total_profit'] > 0:
-                explanation_str = Fore.GREEN + explanation_str
-            if highlight_best and results['is_best']:
-                explanation_str = Style.BRIGHT + explanation_str
-        print(explanation_str)
-
-    @staticmethod
     def _format_explanation_string(results, total_epochs) -> str:
         return (("*" if results['is_initial_point'] else " ") +
                 f"{results['current_epoch']:5d}/{total_epochs}: " +
