@@ -226,7 +226,8 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
                               r'would be <= stop limit.*', caplog)
         if pairlist['method'] == 'PriceFilter':
             assert (log_has_re(r'^Removed .* from whitelist, because 1 unit is .*%$', caplog) or
-                    log_has_re(r"^Removed .* from whitelist, because 'last' is empty.*", caplog))
+                    log_has_re(r"^Removed .* from whitelist, because ticker\['last'\] is empty.*",
+                               caplog))
 
 
 def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None:

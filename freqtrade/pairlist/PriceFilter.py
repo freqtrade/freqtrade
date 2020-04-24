@@ -40,8 +40,8 @@ class PriceFilter(IPairList):
         if ticker['last'] is None:
 
             self.log_on_refresh(logger.info,
-                                f"Removed {ticker['symbol']} from whitelist, "
-                                "because 'last' is empty (Usually no trade in the last 24h).")
+                                f"Removed {ticker['symbol']} from whitelist, because "
+                                "ticker['last'] is empty (Usually no trade in the last 24h).")
             return False
         compare = ticker['last'] + self._exchange.price_get_one_pip(ticker['symbol'],
                                                                     ticker['last'])
