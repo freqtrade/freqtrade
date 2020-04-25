@@ -252,7 +252,8 @@ function install() {
     echo "-------------------------"
     echo "Run the bot !"
     echo "-------------------------"
-    echo "You can now use the bot by executing 'source .env/bin/activate; freqtrade trade'."
+    echo "You can now use the bot by executing 'source .env/bin/activate; freqtrade <command>'."
+    echo "You verify that freqtrade is installed successfully by running 'source .env/bin/activate; freqtrade --version'."
 }
 
 function plot() {
