@@ -397,6 +397,7 @@ class Hyperopt:
         trials['is_profit'] = False
         trials.loc[trials['is_initial_point'], 'Best'] = '*'
         trials.loc[trials['is_best'], 'Best'] = 'Best'
+        trials.loc[trials['is_initial_point'] & trials['is_best'], 'Best'] = '* Best'
         trials.loc[trials['Total profit'] > 0, 'is_profit'] = True
         trials['Epoch'] = trials['Epoch'].astype(str)
         trials['Trades'] = trials['Trades'].astype(str)
