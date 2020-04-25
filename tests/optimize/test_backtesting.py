@@ -2,7 +2,7 @@
 
 import random
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 
 import numpy as np
 import pandas as pd
@@ -10,8 +10,9 @@ import pytest
 from arrow import Arrow
 
 from freqtrade import constants
+from freqtrade.commands.optimize_commands import (setup_optimize_configuration,
+                                                  start_backtesting)
 from freqtrade.configuration import TimeRange
-from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_backtesting
 from freqtrade.data import history
 from freqtrade.data.btanalysis import evaluate_result_multi
 from freqtrade.data.converter import clean_ohlcv_dataframe
@@ -333,8 +334,9 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest')
     mocker.patch('freqtrade.optimize.backtesting.show_backtest_results')
+    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
+                 PropertyMock(return_value=['UNITTEST/BTC']))
 
-    default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
     default_conf['ticker_interval'] = '1m'
     default_conf['datadir'] = testdatadir
     default_conf['export'] = None
@@ -362,9 +364,9 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) ->
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest')
-    mocker.patch('freqtrade.optimize.backtesting.show_backtest_results')
+    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
+                 PropertyMock(return_value=['UNITTEST/BTC']))
 
-    default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
     default_conf['ticker_interval'] = "1m"
     default_conf['datadir'] = testdatadir
     default_conf['export'] = None
@@ -373,6 +375,27 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) ->
     backtesting = Backtesting(default_conf)
     with pytest.raises(OperationalException, match='No data found. Terminating.'):
         backtesting.start()
+
+
+def test_backtesting_no_pair_left(default_conf, mocker, caplog, testdatadir) -> None:
+    def get_timerange(input1):
+        return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
+
+    mocker.patch('freqtrade.data.history.history_utils.load_pair_history',
+                 MagicMock(return_value=pd.DataFrame()))
+    mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest')
+    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
+                 PropertyMock(return_value=[]))
+
+    default_conf['ticker_interval'] = "1m"
+    default_conf['datadir'] = testdatadir
+    default_conf['export'] = None
+    default_conf['timerange'] = '20180101-20180102'
+
+    with pytest.raises(OperationalException, match='No pair in whitelist.'):
+        Backtesting(default_conf)
 
 
 def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
@@ -585,12 +608,12 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
 
 
 def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
-    default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
 
     patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', MagicMock())
     mocker.patch('freqtrade.optimize.backtesting.show_backtest_results', MagicMock())
-
+    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
+                 PropertyMock(return_value=['UNITTEST/BTC']))
     patched_configuration_load_config_file(mocker, default_conf)
 
     args = [
@@ -625,10 +648,11 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
 
 
 def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
-    default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
 
     patch_exchange(mocker)
     backtestmock = MagicMock()
+    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
+                 PropertyMock(return_value=['UNITTEST/BTC']))
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
     gen_table_mock = MagicMock()
     mocker.patch('freqtrade.optimize.optimize_reports.generate_text_table', gen_table_mock)
