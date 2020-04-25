@@ -9,10 +9,11 @@ from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.history import load_data
-from freqtrade.exceptions import DependencyException
+from freqtrade.exceptions import StrategyError
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import StrategyResolver
-from tests.conftest import get_patched_exchange, log_has
+from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
+from tests.conftest import get_patched_exchange, log_has, log_has_re
 
 from .strats.default_strategy import DefaultStrategy
 
@@ -71,7 +72,7 @@ def test_get_signal_exception_valueerror(default_conf, mocker, caplog, ohlcv_his
     )
     assert (False, False) == _STRATEGY.get_signal('foo', default_conf['ticker_interval'],
                                                   ohlcv_history)
-    assert log_has('Unable to analyze candle (OHLCV) data for pair foo: xyz', caplog)
+    assert log_has_re(r'Strategy caused the following exception: xyz.*', caplog)
 
 
 def test_get_signal_empty_dataframe(default_conf, mocker, caplog, ohlcv_history):
@@ -121,7 +122,7 @@ def test_assert_df_raise(default_conf, mocker, caplog, ohlcv_history):
     caplog.set_level(logging.INFO)
     mocker.patch.object(
         _STRATEGY, 'assert_df',
-        side_effect=DependencyException('Dataframe returned...')
+        side_effect=StrategyError('Dataframe returned...')
     )
     assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
                                                   ohlcv_history)
@@ -134,15 +135,15 @@ def test_assert_df(default_conf, mocker, ohlcv_history):
     _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
                         ohlcv_history.loc[1, 'close'], ohlcv_history.loc[1, 'date'])
 
-    with pytest.raises(DependencyException, match=r"Dataframe returned from strategy.*length\."):
+    with pytest.raises(StrategyError, match=r"Dataframe returned from strategy.*length\."):
         _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history) + 1,
                             ohlcv_history.loc[1, 'close'], ohlcv_history.loc[1, 'date'])
 
-    with pytest.raises(DependencyException,
+    with pytest.raises(StrategyError,
                        match=r"Dataframe returned from strategy.*last close price\."):
         _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
                             ohlcv_history.loc[1, 'close'] + 0.01, ohlcv_history.loc[1, 'date'])
-    with pytest.raises(DependencyException,
+    with pytest.raises(StrategyError,
                        match=r"Dataframe returned from strategy.*last date\."):
         _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
                             ohlcv_history.loc[1, 'close'], ohlcv_history.loc[0, 'date'])
@@ -389,3 +390,38 @@ def test_is_pair_locked(default_conf):
     pair = 'ETH/BTC'
     strategy.unlock_pair(pair)
     assert not strategy.is_pair_locked(pair)
+
+
+@pytest.mark.parametrize('error', [
+    ValueError, KeyError, Exception,
+])
+def test_strategy_safe_wrapper_error(caplog, error):
+    def failing_method():
+        raise error('This is an error.')
+
+    def working_method(argumentpassedin):
+        return argumentpassedin
+
+    with pytest.raises(StrategyError, match=r'This is an error.'):
+        strategy_safe_wrapper(failing_method, message='DeadBeef')()
+
+    assert log_has_re(r'DeadBeef.*', caplog)
+    ret = strategy_safe_wrapper(failing_method, message='DeadBeef', default_retval=True)()
+
+    assert isinstance(ret, bool)
+    assert ret
+
+
+@pytest.mark.parametrize('value', [
+    1, 22, 55, True, False, {'a': 1, 'b': '112'},
+    [1, 2, 3, 4], (4, 2, 3, 6)
+])
+def test_strategy_safe_wrapper(value):
+
+    def working_method(argumentpassedin):
+        return argumentpassedin
+
+    ret = strategy_safe_wrapper(working_method, message='DeadBeef')(value)
+
+    assert type(ret) == type(value)
+    assert ret == value

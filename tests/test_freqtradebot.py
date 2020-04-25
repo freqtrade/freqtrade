@@ -1939,6 +1939,53 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order,
         freqtrade.handle_trade(trade)
 
 
+def test_check_handle_timedout_buy_usercustom(default_conf, ticker, limit_buy_order_old, open_trade,
+                                              fee, mocker) -> None:
+    default_conf["unfilledtimeout"] = {"buy": 1400, "sell": 30}
+
+    rpc_mock = patch_RPCManager(mocker)
+    cancel_order_mock = MagicMock(return_value=limit_buy_order_old)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker,
+        get_order=MagicMock(return_value=limit_buy_order_old),
+        cancel_order=cancel_order_mock,
+        get_fee=fee
+    )
+    freqtrade = FreqtradeBot(default_conf)
+
+    Trade.session.add(open_trade)
+
+    # Return false - trade remains open
+    freqtrade.strategy.check_buy_timeout = MagicMock(return_value=False)
+    freqtrade.check_handle_timedout()
+    assert cancel_order_mock.call_count == 0
+    trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
+    nb_trades = len(trades)
+    assert nb_trades == 1
+    assert freqtrade.strategy.check_buy_timeout.call_count == 1
+
+    # Raise Keyerror ... (no impact on trade)
+    freqtrade.strategy.check_buy_timeout = MagicMock(side_effect=KeyError)
+    freqtrade.check_handle_timedout()
+    assert cancel_order_mock.call_count == 0
+    trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
+    nb_trades = len(trades)
+    assert nb_trades == 1
+    assert freqtrade.strategy.check_buy_timeout.call_count == 1
+
+    freqtrade.strategy.check_buy_timeout = MagicMock(return_value=True)
+    # Trade should be closed since the function returns true
+    freqtrade.check_handle_timedout()
+    assert cancel_order_mock.call_count == 1
+    assert rpc_mock.call_count == 1
+    trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
+    nb_trades = len(trades)
+    assert nb_trades == 0
+    assert freqtrade.strategy.check_buy_timeout.call_count == 1
+
+
 def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, open_trade,
                                    fee, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
@@ -1955,6 +2002,7 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, op
 
     Trade.session.add(open_trade)
 
+    freqtrade.strategy.check_buy_timeout = MagicMock(return_value=False)
     # check it does cancel buy orders over the time limit
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
@@ -1962,6 +2010,8 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, op
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     nb_trades = len(trades)
     assert nb_trades == 0
+    # Custom user buy-timeout is never called
+    assert freqtrade.strategy.check_buy_timeout.call_count == 0
 
 
 def test_check_handle_cancelled_buy(default_conf, ticker, limit_buy_order_old, open_trade,
@@ -2018,6 +2068,51 @@ def test_check_handle_timedout_buy_exception(default_conf, ticker, limit_buy_ord
     assert nb_trades == 1
 
 
+def test_check_handle_timedout_sell_usercustom(default_conf, ticker, limit_sell_order_old, mocker,
+                                               open_trade) -> None:
+    default_conf["unfilledtimeout"] = {"buy": 1440, "sell": 1440}
+    rpc_mock = patch_RPCManager(mocker)
+    cancel_order_mock = MagicMock()
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker,
+        get_order=MagicMock(return_value=limit_sell_order_old),
+        cancel_order=cancel_order_mock
+    )
+    freqtrade = FreqtradeBot(default_conf)
+
+    open_trade.open_date = arrow.utcnow().shift(hours=-5).datetime
+    open_trade.close_date = arrow.utcnow().shift(minutes=-601).datetime
+    open_trade.is_open = False
+
+    Trade.session.add(open_trade)
+
+    freqtrade.strategy.check_sell_timeout = MagicMock(return_value=False)
+    # Return false - No impact
+    freqtrade.check_handle_timedout()
+    assert cancel_order_mock.call_count == 0
+    assert rpc_mock.call_count == 0
+    assert open_trade.is_open is False
+    assert freqtrade.strategy.check_sell_timeout.call_count == 1
+
+    freqtrade.strategy.check_sell_timeout = MagicMock(side_effect=KeyError)
+    # Return Error - No impact
+    freqtrade.check_handle_timedout()
+    assert cancel_order_mock.call_count == 0
+    assert rpc_mock.call_count == 0
+    assert open_trade.is_open is False
+    assert freqtrade.strategy.check_sell_timeout.call_count == 1
+
+    # Return True - sells!
+    freqtrade.strategy.check_sell_timeout = MagicMock(return_value=True)
+    freqtrade.check_handle_timedout()
+    assert cancel_order_mock.call_count == 1
+    assert rpc_mock.call_count == 1
+    assert open_trade.is_open is True
+    assert freqtrade.strategy.check_sell_timeout.call_count == 1
+
+
 def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, mocker,
                                     open_trade) -> None:
     rpc_mock = patch_RPCManager(mocker)
@@ -2037,11 +2132,14 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
 
     Trade.session.add(open_trade)
 
+    freqtrade.strategy.check_sell_timeout = MagicMock(return_value=False)
     # check it does cancel sell orders over the time limit
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
     assert open_trade.is_open is True
+    # Custom user sell-timeout is never called
+    assert freqtrade.strategy.check_sell_timeout.call_count == 0
 
 
 def test_check_handle_cancelled_sell(default_conf, ticker, limit_sell_order_old, open_trade,

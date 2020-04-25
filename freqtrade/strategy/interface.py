@@ -3,21 +3,21 @@ IStrategy interface
 This module defines the interface to apply for strategies
 """
 import logging
+import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Dict, List, NamedTuple, Optional, Tuple
-import warnings
 
 import arrow
 from pandas import DataFrame
 
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.exceptions import StrategyError
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.persistence import Trade
+from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
-from freqtrade.exceptions import DependencyException
-
 
 logger = logging.getLogger(__name__)
 
@@ -149,6 +149,42 @@ class IStrategy(ABC):
         :return: DataFrame with sell column
         """
 
+    def check_buy_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
+        """
+        Check buy timeout function callback.
+        This method can be used to override the buy-timeout.
+        It is called whenever a limit buy order has been created,
+        and is not yet fully filled.
+        Configuration options in `unfilledtimeout` will be verified before this,
+        so ensure to set these timeouts high enough.
+
+        When not implemented by a strategy, this simply returns False.
+        :param pair: Pair the trade is for
+        :param trade: trade object.
+        :param order: Order dictionary as returned from CCXT.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return bool: When True is returned, then the buy-order is cancelled.
+        """
+        return False
+
+    def check_sell_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
+        """
+        Check sell timeout function callback.
+        This method can be used to override the sell-timeout.
+        It is called whenever a limit sell order has been created,
+        and is not yet fully filled.
+        Configuration options in `unfilledtimeout` will be verified before this,
+        so ensure to set these timeouts high enough.
+
+        When not implemented by a strategy, this simply returns False.
+        :param pair: Pair the trade is for
+        :param trade: trade object.
+        :param order: Order dictionary as returned from CCXT.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return bool: When True is returned, then the sell-order is cancelled.
+        """
+        return False
+
     def informative_pairs(self) -> List[Tuple[str, str]]:
         """
         Define additional, informative pair/interval combinations to be cached from the exchange.
@@ -258,8 +294,7 @@ class IStrategy(ABC):
         elif df_date != dataframe["date"].iloc[-1]:
             message = "last date"
         if message:
-            raise DependencyException("Dataframe returned from strategy has mismatching "
-                                      f"{message}.")
+            raise StrategyError(f"Dataframe returned from strategy has mismatching {message}.")
 
     def get_signal(self, pair: str, interval: str, dataframe: DataFrame) -> Tuple[bool, bool]:
         """
@@ -276,22 +311,13 @@ class IStrategy(ABC):
         latest_date = dataframe['date'].max()
         try:
             df_len, df_close, df_date = self.preserve_df(dataframe)
-            dataframe = self._analyze_ticker_internal(dataframe, {'pair': pair})
+            dataframe = strategy_safe_wrapper(
+                self._analyze_ticker_internal, message=""
+                )(dataframe, {'pair': pair})
             self.assert_df(dataframe, df_len, df_close, df_date)
-        except ValueError as error:
-            logger.warning('Unable to analyze candle (OHLCV) data for pair %s: %s',
-                           pair, str(error))
-            return False, False
-        except DependencyException as error:
-            logger.warning("Unable to analyze candle (OHLCV) data for pair %s: %s",
-                           pair, str(error))
-            return False, False
-        except Exception as error:
-            logger.exception(
-                'Unexpected error when analyzing candle (OHLCV) data for pair %s: %s',
-                pair,
-                str(error)
-            )
+        except StrategyError as error:
+            logger.warning(f"Unable to analyze candle (OHLCV) data for pair {pair}: {error}")
+
             return False, False
 
         if dataframe.empty:
