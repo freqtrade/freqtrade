@@ -544,7 +544,6 @@ A fixed slot (mirroring `bid_strategy.order_book_top`) can be defined by setting
     Using `ask_strategy.order_book_max` higher than 1 will result in improper dry-run results (significantly better than real orders executed on exchange), since dry-run assumes orders to be filled almost instantly.
     It is therefore advised to not use this setting for dry-runs.
 
-
 #### Sell price without Orderbook enabled
 
 When not using orderbook (`ask_strategy.use_order_book=False`), the price at the `ask_strategy.price_side` side (defaults to `"ask"`) from the ticker will be used as the sell price.
@@ -622,6 +621,7 @@ Min price precision is 8 decimals. If price is 0.00000011 - one step would be 0.
 These pairs are dangerous since it may be impossible to place the desired stoploss - and often result in high losses.
 
 #### Spread Filter
+
 Removes pairs that have a difference between asks and bids above the specified ratio (default `0.005`).
 Example:
 If `DOGE/BTC` maximum bid is 0.00000026 and minimum ask is 0.00000027 the ratio is calculated as: `1 - bid/ask ~= 0.037` which is `> 0.005` 
