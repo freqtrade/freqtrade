@@ -24,3 +24,9 @@ and in freqtrade 2019.7 (master branch).
 `--live` in the context of backtesting allowed to download the latest tick data for backtesting.
 Did only download the latest 500 candles, so was ineffective in getting good backtest data.
 Removed in 2019-7-dev (develop branch) and in freqtrade 2019-8 (master branch)
+
+### Allow running multiple pairlists in sequence
+
+The former `"pairlists"` section in the configuration has been removed, and is replaced by `pairlist` - being a list to specify a sequence of pairlists.
+
+The old option has been deprecated in 2019.11 and has been removed in 2020.4.
