@@ -585,7 +585,7 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 
 #### Volume Pair List
 
-`VolumePairList` selects `number_assets` top pairs based on `sort_key`, which can be one of `askVolume`, `bidVolume` and `quoteVolume` and defaults to `quoteVolume`.
+`VolumePairList` selects `number_assets` top pairs based on `sort_key`, which can only be `quoteVolume`.
 
 `VolumePairList` considers outputs of previous pairlists unless  it's the first configured pairlist, it does not consider `pair_whitelist`, but selects the top assets from all available markets (with matching stake-currency) on the exchange.
 
@@ -593,8 +593,6 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 
 `VolumePairList` is based on the ticker data, as reported by the ccxt library:
 
-* The `bidVolume` is the volume (amount) of current best bid in the orderbook.
-* The `askVolume` is the volume (amount) of current best ask in the orderbook.
 * The `quoteVolume` is the amount of quote (stake) currency traded (bought or sold) in last 24 hours.
 
 ```json
