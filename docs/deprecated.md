@@ -27,9 +27,9 @@ Removed in 2019-7-dev (develop branch) and in freqtrade 2019-8 (master branch)
 
 ### Allow running multiple pairlists in sequence
 
-The former `"pairlist"` section in the configuration has been removed, and is replaced by `pairlists` - being a list to specify a sequence of pairlists.
+The former `"pairlist"` section in the configuration has been removed, and is replaced by `"pairlists"` - being a list to specify a sequence of pairlists.
 
-The old option has been deprecated in 2019.11 and has been removed in 2020.4.
+The old section of configuration parameters (`"pairlist"`) has been deprecated in 2019.11 and has been removed in 2020.4.
 
 ### deprecation of bidVolume and askVolume from volumepairlist
 
