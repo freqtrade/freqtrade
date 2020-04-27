@@ -65,6 +65,9 @@ class Backtesting:
         self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
 
         self.pairlists = PairListManager(self.exchange, self.config)
+        if 'VolumePairList' in self.pairlists.name_list:
+            raise OperationalException("VolumePairList not allowed for backtesting.")
+
         self.pairlists.refresh_pairlist()
 
         if len(self.pairlists.whitelist) == 0:

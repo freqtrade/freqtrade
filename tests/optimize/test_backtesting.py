@@ -378,9 +378,7 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) ->
 
 
 def test_backtesting_no_pair_left(default_conf, mocker, caplog, testdatadir) -> None:
-    def get_timerange(input1):
-        return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
-
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     mocker.patch('freqtrade.data.history.history_utils.load_pair_history',
                  MagicMock(return_value=pd.DataFrame()))
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
@@ -395,6 +393,10 @@ def test_backtesting_no_pair_left(default_conf, mocker, caplog, testdatadir) -> 
     default_conf['timerange'] = '20180101-20180102'
 
     with pytest.raises(OperationalException, match='No pair in whitelist.'):
+        Backtesting(default_conf)
+
+    default_conf['pairlists'] = [{"method": "VolumePairList", "number_assets": 5}]
+    with pytest.raises(OperationalException, match='VolumePairList not allowed for backtesting.'):
         Backtesting(default_conf)
 
 
