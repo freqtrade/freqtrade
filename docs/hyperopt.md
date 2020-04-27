@@ -64,7 +64,7 @@ Optional - can also be loaded from a strategy:
     Assuming the optional methods are not in your hyperopt file, please use `--strategy AweSomeStrategy` which contains these methods so hyperopt can use these methods instead.
 
 !!! Note
-    You will always have to provide a strategy to Hyperopt even if it contains all methods.
+    You always have to provide a strategy to Hyperopt, even if your custom Hyperopt class contains all methods.
 
 Rarely you may also need to override:
 
