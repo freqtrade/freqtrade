@@ -63,6 +63,9 @@ Optional - can also be loaded from a strategy:
 !!! Note
     Assuming the optional methods are not in your hyperopt file, please use `--strategy AweSomeStrategy` which contains these methods so hyperopt can use these methods instead.
 
+!!! Note
+    You always have to provide a strategy to Hyperopt, even if your custom Hyperopt class contains all methods.
+
 Rarely you may also need to override:
 
 * `roi_space` - for custom ROI optimization (if you need the ranges for the ROI parameters in the optimization hyperspace that differ from default)
