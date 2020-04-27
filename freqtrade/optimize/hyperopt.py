@@ -626,6 +626,7 @@ class Hyperopt:
 
         # We don't need exchange instance anymore while running hyperopt
         self.backtesting.exchange = None  # type: ignore
+        self.backtesting.pairlists = None  # type: ignore
 
         self.trials = self.load_previous_results(self.trials_file)
 

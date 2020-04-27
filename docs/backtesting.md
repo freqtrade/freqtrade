@@ -17,8 +17,12 @@ For details on downloading, please refer to the [Data Downloading](data-download
 
 The result of backtesting will confirm if your bot has better odds of making a profit than a loss.
 
-!!! Tip "Using dynamic pairlists for backtesting"
-    While using dynamic pairlists during backtesting is not possible, a dynamic pairlist using current data can be generated via the [`test-pairlist`](utils.md#test-pairlist) command, and needs to be specified as `"pair_whitelist"` attribute in the configuration.
+!!! Warning "Using dynamic pairlists for backtesting"
+    Using dynamic pairlists is possible, however it relies on the current market conditions - which will not reflect the historic status of the pairlist.
+    Also, when using pairlists other than StaticPairlist, reproducability of backtesting-results cannot be guaranteed.
+    Please read the [pairlists documentation](configuration.md#pairlists) for more information.
+
+    To achieve reproducible results, best generate a pairlist via the [`test-pairlist`](utils.md#test-pairlist) command and use that as static pairlist.
 
 ### Run a backtesting against the currencies listed in your config file
 
