@@ -4,11 +4,11 @@ from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
-from freqtrade.exceptions import OperationalException
 from freqtrade.constants import AVAILABLE_PAIRLISTS
-from freqtrade.resolvers import PairListResolver
+from freqtrade.exceptions import OperationalException
 from freqtrade.pairlist.pairlistmanager import PairListManager
-from tests.conftest import get_patched_freqtradebot, log_has_re
+from freqtrade.resolvers import PairListResolver
+from tests.conftest import get_patched_freqtradebot, log_has, log_has_re
 
 # whitelist, blacklist
 
@@ -228,6 +228,13 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
             assert (log_has_re(r'^Removed .* from whitelist, because 1 unit is .*%$', caplog) or
                     log_has_re(r"^Removed .* from whitelist, because ticker\['last'\] is empty.*",
                                caplog))
+        if pairlist['method'] == 'VolumePairList':
+            logmsg = ("DEPRECATED: using any key other than quoteVolume for "
+                      "VolumePairList is deprecated.")
+            if pairlist['sort_key'] != 'quoteVolume':
+                assert log_has(logmsg, caplog)
+            else:
+                assert not log_has(logmsg, caplog)
 
 
 def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None:

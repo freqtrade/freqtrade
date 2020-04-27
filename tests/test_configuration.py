@@ -1041,18 +1041,6 @@ def test_process_temporary_deprecated_settings(mocker, default_conf, setting, ca
     assert default_conf[setting[0]][setting[1]] == setting[5]
 
 
-def test_process_deprecated_setting_pairlists(mocker, default_conf, caplog):
-    patched_configuration_load_config_file(mocker, default_conf)
-    default_conf.update({'pairlist': {
-        'method': 'VolumePairList',
-        'config': {'precision_filter': True}
-    }})
-
-    process_temporary_deprecated_settings(default_conf)
-    assert log_has_re(r'DEPRECATED.*precision_filter.*', caplog)
-    assert log_has_re(r'DEPRECATED.*in pairlist is deprecated and must be moved*', caplog)
-
-
 def test_process_deprecated_setting_edge(mocker, edge_conf, caplog):
     patched_configuration_load_config_file(mocker, edge_conf)
     edge_conf.update({'edge': {
