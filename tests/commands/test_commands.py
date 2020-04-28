@@ -727,7 +727,7 @@ def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
     assert re.match("['ETH/BTC', 'TKN/BTC', 'BLK/BTC', 'LTC/BTC', 'XRP/BTC']", captured.out)
 
 
-def test_hyperopt_list(mocker, capsys, hyperopt_results):
+def test_hyperopt_list(mocker, capsys, caplog, hyperopt_results):
     mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.load_previous_results',
         MagicMock(return_value=hyperopt_results)
@@ -911,8 +911,7 @@ def test_hyperopt_list(mocker, capsys, hyperopt_results):
     pargs['config'] = None
     start_hyperopt_list(pargs)
     captured = capsys.readouterr()
-    assert all(x in captured.out
-               for x in ["CSV-File created!"])
+    log_has("CSV file created: test_file.csv", caplog)
     f = Path("test_file.csv")
     assert 'Best,1,2,-1.25%,-0.00125625,,-2.51,"3,930.0 m",0.43662' in f.read_text()
     assert f.is_file()
