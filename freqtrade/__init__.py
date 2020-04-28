@@ -1,5 +1,5 @@
 """ Freqtrade bot """
-__version__ = '2020.3'
+__version__ = '2020.4'
 
 if __version__ == 'develop':
 
@@ -24,4 +24,11 @@ if __version__ == 'develop':
         #     stderr=subprocess.DEVNULL).decode("utf-8").rstrip().strip('"')
     except Exception:
         # git not available, ignore
-        pass
+        try:
+            # Try Fallback to freqtrade_commit file (created by CI while building docker image)
+            from pathlib import Path
+            versionfile = Path('./freqtrade_commit')
+            if versionfile.is_file():
+                __version__ = f"docker-{versionfile.read_text()[:8]}"
+        except Exception:
+            pass

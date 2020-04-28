@@ -6,15 +6,31 @@ algorithms included in the `scikit-optimize` package to accomplish this. The
 search will burn all your CPU cores, make your laptop sound like a fighter jet
 and still take a long time.
 
-In general, the search for best parameters starts with a few random combinations and then uses Bayesian search with a
-ML regressor algorithm (currently ExtraTreesRegressor) to quickly find a combination of parameters in the search hyperspace
-that minimizes the value of the [loss function](#loss-functions).
+In general, the search for best parameters starts with a few random combinations (see [below](#reproducible-results) for more details) and then uses Bayesian search with a ML regressor algorithm (currently ExtraTreesRegressor) to quickly find a combination of parameters in the search hyperspace that minimizes the value of the [loss function](#loss-functions).
 
 Hyperopt requires historic data to be available, just as backtesting does.
 To learn how to get data for the pairs and exchange you're interested in, head over to the [Data Downloading](data-download.md) section of the documentation.
 
 !!! Bug
     Hyperopt can crash when used with only 1 CPU Core as found out in [Issue #1133](https://github.com/freqtrade/freqtrade/issues/1133)
+
+## Install hyperopt dependencies
+
+Since Hyperopt dependencies are not needed to run the bot itself, are heavy, can not be easily built on some platforms (like Raspberry PI), they are not installed by default. Before you run Hyperopt, you need to install the corresponding dependencies, as described in this section below.
+
+!!! Note
+    Since Hyperopt is a resource intensive process, running it on a Raspberry Pi is not recommended nor supported.
+
+### Docker
+
+The docker-image includes hyperopt dependencies, no further action needed.
+
+### Easy installation script (setup.sh) / Manual installation
+
+```bash
+source .env/bin/activate
+pip install -r requirements-hyperopt.txt
+```
 
 ## Prepare Hyperopting
 
@@ -46,6 +62,9 @@ Optional - can also be loaded from a strategy:
 
 !!! Note
     Assuming the optional methods are not in your hyperopt file, please use `--strategy AweSomeStrategy` which contains these methods so hyperopt can use these methods instead.
+
+!!! Note
+    You always have to provide a strategy to Hyperopt, even if your custom Hyperopt class contains all methods.
 
 Rarely you may also need to override:
 
@@ -293,7 +312,7 @@ You can also enable position stacking in the configuration file by explicitly se
 
 ### Reproducible results
 
-The search for optimal parameters starts with a few (currently 30) random combinations in the hyperspace of parameters, random Hyperopt epochs. These random epochs are marked with a leading asterisk sign at the Hyperopt output.
+The search for optimal parameters starts with a few (currently 30) random combinations in the hyperspace of parameters, random Hyperopt epochs. These random epochs are marked with an asterisk character (`*`) in the first column in the Hyperopt output.
 
 The initial state for generation of these random values (random state) is controlled by the value of the `--random-state` command line option. You can set it to some arbitrary value of your choice to obtain reproducible results.
 

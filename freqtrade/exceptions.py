@@ -35,3 +35,10 @@ class TemporaryError(FreqtradeException):
     This could happen when an exchange is congested, unavailable, or the user
     has networking problems. Usually resolves itself after a time.
     """
+
+
+class StrategyError(FreqtradeException):
+    """
+    Errors with custom user-code deteced.
+    Usually caused by errors in the strategy.
+    """

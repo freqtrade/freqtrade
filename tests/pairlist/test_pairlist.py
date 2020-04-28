@@ -46,6 +46,28 @@ def static_pl_conf(whitelist_conf):
     return whitelist_conf
 
 
+def test_log_on_refresh(mocker, static_pl_conf, markets, tickers):
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          markets=PropertyMock(return_value=markets),
+                          exchange_has=MagicMock(return_value=True),
+                          get_tickers=tickers
+                          )
+    freqtrade = get_patched_freqtradebot(mocker, static_pl_conf)
+    logmock = MagicMock()
+    # Assign starting whitelist
+    pl = freqtrade.pairlists._pairlists[0]
+    pl.log_on_refresh(logmock, 'Hello world')
+    assert logmock.call_count == 1
+    pl.log_on_refresh(logmock, 'Hello world')
+    assert logmock.call_count == 1
+    assert pl._log_cache.currsize == 1
+    assert ('Hello world',) in pl._log_cache._Cache__data
+
+    pl.log_on_refresh(logmock, 'Hello world2')
+    assert logmock.call_count == 2
+    assert pl._log_cache.currsize == 2
+
+
 def test_load_pairlist_noexist(mocker, markets, default_conf):
     bot = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
@@ -141,7 +163,7 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "bidVolume"}],
         "BTC",  ['HOT/BTC', 'FUEL/BTC', 'XRP/BTC', 'LTC/BTC', 'TKN/BTC']),
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"}],
-        "USDT", ['ETH/USDT', 'NANO/USDT']),
+        "USDT", ['ETH/USDT', 'NANO/USDT', 'ADAHALF/USDT']),
     # No pair for ETH ...
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"}],
      "ETH", []),
@@ -155,6 +177,10 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "PriceFilter", "low_price_ratio": 0.03}],
         "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC']),
+    # PriceFilter and VolumePairList
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
+      {"method": "PriceFilter", "low_price_ratio": 0.03}],
+        "USDT", ['ETH/USDT', 'NANO/USDT']),
     # Hot is removed by precision_filter, Fuel by low_price_filter.
     ([{"method": "VolumePairList", "number_assets": 6, "sort_key": "quoteVolume"},
       {"method": "PrecisionFilter"},
@@ -199,7 +225,9 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
             assert log_has_re(r'^Removed .* from whitelist, because stop price .* '
                               r'would be <= stop limit.*', caplog)
         if pairlist['method'] == 'PriceFilter':
-            assert log_has_re(r'^Removed .* from whitelist, because 1 unit is .*%$', caplog)
+            assert (log_has_re(r'^Removed .* from whitelist, because 1 unit is .*%$', caplog) or
+                    log_has_re(r"^Removed .* from whitelist, because ticker\['last'\] is empty.*",
+                               caplog))
 
 
 def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None:

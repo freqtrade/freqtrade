@@ -166,6 +166,52 @@ def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
     freqtrade.exchange.refresh_latest_ohlcv = lambda p: None
 
 
+def create_mock_trades(fee):
+    """
+    Create some fake trades ...
+    """
+    # Simulate dry_run entries
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        amount=123.0,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_rate=0.123,
+        exchange='bittrex',
+        open_order_id='dry_run_buy_12345'
+    )
+    Trade.session.add(trade)
+
+    trade = Trade(
+        pair='ETC/BTC',
+        stake_amount=0.001,
+        amount=123.0,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_rate=0.123,
+        close_rate=0.128,
+        close_profit=0.005,
+        exchange='bittrex',
+        is_open=False,
+        open_order_id='dry_run_sell_12345'
+    )
+    Trade.session.add(trade)
+
+    # Simulate prod entry
+    trade = Trade(
+        pair='ETC/BTC',
+        stake_amount=0.001,
+        amount=123.0,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_rate=0.123,
+        exchange='bittrex',
+        open_order_id='prod_buy_12345'
+    )
+    Trade.session.add(trade)
+
+
 @pytest.fixture(autouse=True)
 def patch_coingekko(mocker) -> None:
     """
@@ -693,6 +739,31 @@ def shitcoinmarkets(markets):
             "future": False,
             "active": True
         },
+        'ADAHALF/USDT': {
+            "percentage": True,
+            "tierBased": False,
+            "taker": 0.001,
+            "maker": 0.001,
+            "precision": {
+                "base": 8,
+                "quote": 8,
+                "amount": 2,
+                "price": 4
+            },
+            "limits": {
+            },
+            "id": "ADAHALFUSDT",
+            "symbol": "ADAHALF/USDT",
+            "base": "ADAHALF",
+            "quote": "USDT",
+            "baseId": "ADAHALF",
+            "quoteId": "USDT",
+            "info": {},
+            "type": "spot",
+            "spot": True,
+            "future": False,
+            "active": True
+    },
         })
     return shitmarkets
 
@@ -712,6 +783,7 @@ def limit_buy_order():
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
+        'filled': 90.99181073,
         'remaining': 0.0,
         'status': 'closed'
     }
@@ -727,6 +799,7 @@ def market_buy_order():
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00004099,
         'amount': 91.99181073,
+        'filled': 91.99181073,
         'remaining': 0.0,
         'status': 'closed'
     }
@@ -742,6 +815,7 @@ def market_sell_order():
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00004173,
         'amount': 91.99181073,
+        'filled': 91.99181073,
         'remaining': 0.0,
         'status': 'closed'
     }
@@ -757,6 +831,7 @@ def limit_buy_order_old():
         'datetime': str(arrow.utcnow().shift(minutes=-601).datetime),
         'price': 0.00001099,
         'amount': 90.99181073,
+        'filled': 0.0,
         'remaining': 90.99181073,
         'status': 'open'
     }
@@ -772,6 +847,7 @@ def limit_sell_order_old():
         'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
+        'filled': 0.0,
         'remaining': 90.99181073,
         'status': 'open'
     }
@@ -787,6 +863,7 @@ def limit_buy_order_old_partial():
         'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
+        'filled': 23.0,
         'remaining': 67.99181073,
         'status': 'open'
     }
@@ -810,6 +887,7 @@ def limit_sell_order():
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00001173,
         'amount': 90.99181073,
+        'filled': 90.99181073,
         'remaining': 0.0,
         'status': 'closed'
     }
@@ -1188,6 +1266,29 @@ def tickers():
             "average": None,
             "baseVolume": 439472.44,
             "quoteVolume": 323652.075405,
+            "info": {}
+        },
+        # Example of leveraged pair with incomplete info
+        "ADAHALF/USDT": {
+            "symbol": "ADAHALF/USDT",
+            "timestamp": 1580469388244,
+            "datetime": "2020-01-31T11:16:28.244Z",
+            "high": None,
+            "low": None,
+            "bid": 0.7305,
+            "bidVolume": None,
+            "ask": 0.7342,
+            "askVolume": None,
+            "vwap": None,
+            "open": None,
+            "close": None,
+            "last": None,
+            "previousClose": None,
+            "change": None,
+            "percentage": 2.628,
+            "average": None,
+            "baseVolume": 0.0,
+            "quoteVolume": 0.0,
             "info": {}
         },
     })

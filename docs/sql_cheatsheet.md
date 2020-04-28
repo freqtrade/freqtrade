@@ -67,22 +67,32 @@ SELECT * FROM trades;
 
 !!! Warning
   	Manually selling a pair on the exchange will not be detected by the bot and it will try to sell anyway. Whenever possible, forcesell <tradeid> should be used to accomplish the same thing.  
-		It is strongly advised to backup your database file before making any manual changes.
+	It is strongly advised to backup your database file before making any manual changes.
 
 !!! Note
   	This should not be necessary after /forcesell, as forcesell orders are closed automatically by the bot on the next iteration.
 
 ```sql
 UPDATE trades
-SET is_open=0, close_date=<close_date>, close_rate=<close_rate>, close_profit=close_rate/open_rate-1, sell_reason=<sell_reason>  
+SET is_open=0,
+  close_date=<close_date>,
+  close_rate=<close_rate>,
+  close_profit=close_rate/open_rate-1,
+  close_profit_abs = (amount * <close_rate> * (1 - fee_close) - (amount * open_rate * 1 - fee_open),
+  sell_reason=<sell_reason>
 WHERE id=<trade_ID_to_update>;
 ```
 
-##### Example
+### Example
 
 ```sql
 UPDATE trades
-SET is_open=0, close_date='2017-12-20 03:08:45.103418', close_rate=0.19638016, close_profit=0.0496, sell_reason='force_sell'  
+SET is_open=0,
+  close_date='2017-12-20 03:08:45.103418',
+  close_rate=0.19638016,
+  close_profit=0.0496,
+  close_profit_abs = (amount * 0.19638016 * (1 - fee_close) - (amount * open_rate * 1 - fee_open)
+  sell_reason='force_sell'  
 WHERE id=31;
 ```
 
@@ -98,11 +108,4 @@ VALUES ('bittrex', 'ETH/BTC', 1, 0.0025, 0.0025, <open_rate>, <stake_amount>, <a
 ```sql
 INSERT INTO trades (exchange, pair, is_open, fee_open, fee_close, open_rate, stake_amount, amount, open_date)
 VALUES ('bittrex', 'ETH/BTC', 1, 0.0025, 0.0025, 0.00258580, 0.002, 0.7715262081, '2017-11-28 12:44:24.000000')
-```
-
-## Fix wrong fees in the table
-If your DB was created before [PR#200](https://github.com/freqtrade/freqtrade/pull/200) was merged (before 12/23/17).
-
-```sql
-UPDATE trades SET fee=0.0025 WHERE fee=0.005;
 ```

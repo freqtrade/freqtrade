@@ -24,13 +24,14 @@ def store_backtest_result(recordfilename: Path, all_results: Dict[str, DataFrame
                    for index, t in results.iterrows()]
 
         if records:
+            filename = recordfilename
             if len(all_results) > 1:
                 # Inject strategy to filename
-                recordfilename = Path.joinpath(
+                filename = Path.joinpath(
                     recordfilename.parent,
                     f'{recordfilename.stem}-{strategy}').with_suffix(recordfilename.suffix)
-            logger.info(f'Dumping backtest results to {recordfilename}')
-            file_dump_json(recordfilename, records)
+            logger.info(f'Dumping backtest results to {filename}')
+            file_dump_json(filename, records)
 
 
 def generate_text_table(data: Dict[str, Dict], stake_currency: str, max_open_trades: int,

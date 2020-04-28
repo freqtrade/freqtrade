@@ -18,13 +18,13 @@ def _set_loggers(verbosity: int = 0) -> None:
     """
 
     logging.getLogger('requests').setLevel(
-            logging.INFO if verbosity <= 1 else logging.DEBUG
+        logging.INFO if verbosity <= 1 else logging.DEBUG
     )
     logging.getLogger("urllib3").setLevel(
-            logging.INFO if verbosity <= 1 else logging.DEBUG
+        logging.INFO if verbosity <= 1 else logging.DEBUG
     )
     logging.getLogger('ccxt.base.exchange').setLevel(
-            logging.INFO if verbosity <= 2 else logging.DEBUG
+        logging.INFO if verbosity <= 2 else logging.DEBUG
     )
     logging.getLogger('telegram').setLevel(logging.INFO)
 

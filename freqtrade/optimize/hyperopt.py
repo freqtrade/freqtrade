@@ -7,7 +7,6 @@ This module contains the hyperopt logic
 import locale
 import logging
 import random
-import sys
 import warnings
 from math import ceil
 from collections import OrderedDict
@@ -18,10 +17,10 @@ from typing import Any, Dict, List, Optional
 
 import rapidjson
 from colorama import Fore, Style
-from colorama import init as colorama_init
 from joblib import (Parallel, cpu_count, delayed, dump, load,
                     wrap_non_picklable_objects)
 from pandas import DataFrame, json_normalize, isna
+import progressbar
 import tabulate
 from os import path
 import io
@@ -43,7 +42,8 @@ with warnings.catch_warnings():
     from skopt import Optimizer
     from skopt.space import Dimension
 
-
+progressbar.streams.wrap_stderr()
+progressbar.streams.wrap_stdout()
 logger = logging.getLogger(__name__)
 
 
@@ -266,35 +266,16 @@ class Hyperopt:
         Log results if it is better than any previous evaluation
         """
         is_best = results['is_best']
-        if not self.print_all:
-            # Print '\n' after each 100th epoch to separate dots from the log messages.
-            # Otherwise output is messy on a terminal.
-            print('.', end='' if results['current_epoch'] % 100 != 0 else None)  # type: ignore
-            sys.stdout.flush()
 
         if self.print_all or is_best:
-            if not self.print_all:
-                # Separate the results explanation string from dots
-                print("\n")
-            self.print_result_table(self.config, results, self.total_epochs,
-                                    self.print_all, self.print_colorized,
-                                    self.hyperopt_table_header)
+            print(
+                self.get_result_table(
+                    self.config, results, self.total_epochs,
+                    self.print_all, self.print_colorized,
+                    self.hyperopt_table_header
+                )
+            )
             self.hyperopt_table_header = 2
-
-    @staticmethod
-    def print_results_explanation(results, total_epochs, highlight_best: bool,
-                                  print_colorized: bool) -> None:
-        """
-        Log results explanation string
-        """
-        explanation_str = Hyperopt._format_explanation_string(results, total_epochs)
-        # Colorize output
-        if print_colorized:
-            if results['total_profit'] > 0:
-                explanation_str = Fore.GREEN + explanation_str
-            if highlight_best and results['is_best']:
-                explanation_str = Style.BRIGHT + explanation_str
-        print(explanation_str)
 
     @staticmethod
     def _format_explanation_string(results, total_epochs) -> str:
@@ -304,13 +285,13 @@ class Hyperopt:
                 f"Objective: {results['loss']:.5f}")
 
     @staticmethod
-    def print_result_table(config: dict, results: list, total_epochs: int, highlight_best: bool,
-                           print_colorized: bool, remove_header: int) -> None:
+    def get_result_table(config: dict, results: list, total_epochs: int, highlight_best: bool,
+                         print_colorized: bool, remove_header: int) -> str:
         """
         Log result table
         """
         if not results:
-            return
+            return ''
 
         tabulate.PRESERVE_WHITESPACE = True
 
@@ -323,8 +304,9 @@ class Hyperopt:
         trials.columns = ['Best', 'Epoch', 'Trades', 'Avg profit', 'Total profit',
                           'Profit', 'Avg duration', 'Objective', 'is_initial_point', 'is_best']
         trials['is_profit'] = False
-        trials.loc[trials['is_initial_point'], 'Best'] = '*'
+        trials.loc[trials['is_initial_point'], 'Best'] = '*     '
         trials.loc[trials['is_best'], 'Best'] = 'Best'
+        trials.loc[trials['is_initial_point'] & trials['is_best'], 'Best'] = '* Best'
         trials.loc[trials['Total profit'] > 0, 'is_profit'] = True
         trials['Trades'] = trials['Trades'].astype(str)
 
@@ -381,7 +363,7 @@ class Hyperopt:
                 trials.to_dict(orient='list'), tablefmt='psql',
                 headers='keys', stralign="right"
             )
-        print(table)
+        return table
 
     @staticmethod
     def export_csv_file(config: dict, results: list, total_epochs: int, highlight_best: bool,
@@ -415,6 +397,7 @@ class Hyperopt:
         trials['is_profit'] = False
         trials.loc[trials['is_initial_point'], 'Best'] = '*'
         trials.loc[trials['is_best'], 'Best'] = 'Best'
+        trials.loc[trials['is_initial_point'] & trials['is_best'], 'Best'] = '* Best'
         trials.loc[trials['Total profit'] > 0, 'is_profit'] = True
         trials['Epoch'] = trials['Epoch'].astype(str)
         trials['Trades'] = trials['Trades'].astype(str)
@@ -653,48 +636,75 @@ class Hyperopt:
 
         self.dimensions: List[Dimension] = self.hyperopt_space()
         self.opt = self.get_optimizer(self.dimensions, config_jobs)
-
-        if self.print_colorized:
-            colorama_init(autoreset=True)
-
         try:
             with Parallel(n_jobs=config_jobs) as parallel:
                 jobs = parallel._effective_n_jobs()
                 logger.info(f'Effective number of parallel workers used: {jobs}')
-                EVALS = ceil(self.total_epochs / jobs)
-                for i in range(EVALS):
-                    # Correct the number of epochs to be processed for the last
-                    # iteration (should not exceed self.total_epochs in total)
-                    n_rest = (i + 1) * jobs - self.total_epochs
-                    current_jobs = jobs - n_rest if n_rest > 0 else jobs
 
-                    asked = self.opt.ask(n_points=current_jobs)
-                    f_val = self.run_optimizer_parallel(parallel, asked, i)
-                    self.opt.tell(asked, [v['loss'] for v in f_val])
-                    self.fix_optimizer_models_list()
+                # Define progressbar
+                if self.print_colorized:
+                    widgets = [
+                        ' [Epoch ', progressbar.Counter(), ' of ', str(self.total_epochs),
+                        ' (', progressbar.Percentage(), ')] ',
+                        progressbar.Bar(marker=progressbar.AnimatedMarker(
+                            fill='\N{FULL BLOCK}',
+                            fill_wrap=Fore.GREEN + '{}' + Fore.RESET,
+                            marker_wrap=Style.BRIGHT + '{}' + Style.RESET_ALL,
+                        )),
+                        ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
+                    ]
+                else:
+                    widgets = [
+                        ' [Epoch ', progressbar.Counter(), ' of ', str(self.total_epochs),
+                        ' (', progressbar.Percentage(), ')] ',
+                        progressbar.Bar(marker=progressbar.AnimatedMarker(
+                            fill='\N{FULL BLOCK}',
+                        )),
+                        ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
+                    ]
+                with progressbar.ProgressBar(
+                         maxval=self.total_epochs, redirect_stdout=False, redirect_stderr=False,
+                         widgets=widgets
+                     ) as pbar:
+                    EVALS = ceil(self.total_epochs / jobs)
+                    for i in range(EVALS):
+                        # Correct the number of epochs to be processed for the last
+                        # iteration (should not exceed self.total_epochs in total)
+                        n_rest = (i + 1) * jobs - self.total_epochs
+                        current_jobs = jobs - n_rest if n_rest > 0 else jobs
 
-                    for j, val in enumerate(f_val):
-                        # Use human-friendly indexes here (starting from 1)
-                        current = i * jobs + j + 1
-                        val['current_epoch'] = current
-                        val['is_initial_point'] = current <= INITIAL_POINTS
-                        logger.debug(f"Optimizer epoch evaluated: {val}")
+                        asked = self.opt.ask(n_points=current_jobs)
+                        f_val = self.run_optimizer_parallel(parallel, asked, i)
+                        self.opt.tell(asked, [v['loss'] for v in f_val])
+                        self.fix_optimizer_models_list()
 
-                        is_best = self.is_best_loss(val, self.current_best_loss)
-                        # This value is assigned here and not in the optimization method
-                        # to keep proper order in the list of results. That's because
-                        # evaluations can take different time. Here they are aligned in the
-                        # order they will be shown to the user.
-                        val['is_best'] = is_best
+                        # Calculate progressbar outputs
+                        for j, val in enumerate(f_val):
+                            # Use human-friendly indexes here (starting from 1)
+                            current = i * jobs + j + 1
+                            val['current_epoch'] = current
+                            val['is_initial_point'] = current <= INITIAL_POINTS
 
-                        self.print_results(val)
+                            logger.debug(f"Optimizer epoch evaluated: {val}")
 
-                        if is_best:
-                            self.current_best_loss = val['loss']
-                        self.trials.append(val)
-                        # Save results after each best epoch and every 100 epochs
-                        if is_best or current % 100 == 0:
-                            self.save_trials()
+                            is_best = self.is_best_loss(val, self.current_best_loss)
+                            # This value is assigned here and not in the optimization method
+                            # to keep proper order in the list of results. That's because
+                            # evaluations can take different time. Here they are aligned in the
+                            # order they will be shown to the user.
+                            val['is_best'] = is_best
+                            self.print_results(val)
+
+                            if is_best:
+                                self.current_best_loss = val['loss']
+                            self.trials.append(val)
+
+                            # Save results after each best epoch and every 100 epochs
+                            if is_best or current % 100 == 0:
+                                self.save_trials()
+
+                            pbar.update(current)
+
         except KeyboardInterrupt:
             print('User interrupted..')
 

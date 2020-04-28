@@ -10,6 +10,7 @@ from freqtrade.data.btanalysis import (calculate_max_drawdown,
                                        create_cum_profit,
                                        extract_trades_of_period, load_trades)
 from freqtrade.data.converter import trim_dataframe
+from freqtrade.exchange import timeframe_to_prev_date
 from freqtrade.data.history import load_data
 from freqtrade.misc import pair_to_filename
 from freqtrade.resolvers import StrategyResolver
@@ -122,7 +123,8 @@ def add_profit(fig, row, data: pd.DataFrame, column: str, name: str) -> make_sub
     return fig
 
 
-def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame) -> make_subplots:
+def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame,
+                     timeframe: str) -> make_subplots:
     """
     Add scatter points indicating max drawdown
     """
@@ -132,12 +134,12 @@ def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame) -> m
         drawdown = go.Scatter(
             x=[highdate, lowdate],
             y=[
-                df_comb.loc[highdate, 'cum_profit'],
-                df_comb.loc[lowdate, 'cum_profit'],
+                df_comb.loc[timeframe_to_prev_date(timeframe, highdate), 'cum_profit'],
+                df_comb.loc[timeframe_to_prev_date(timeframe, lowdate), 'cum_profit'],
             ],
             mode='markers',
-            name=f"Max drawdown {max_drawdown:.2f}%",
-            text=f"Max drawdown {max_drawdown:.2f}%",
+            name=f"Max drawdown {max_drawdown * 100:.2f}%",
+            text=f"Max drawdown {max_drawdown * 100:.2f}%",
             marker=dict(
                 symbol='square-open',
                 size=9,
@@ -383,6 +385,9 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
     # Combine close-values for all pairs, rename columns to "pair"
     df_comb = combine_dataframes_with_mean(data, "close")
 
+    # Trim trades to available OHLCV data
+    trades = extract_trades_of_period(df_comb, trades, date_index=True)
+
     # Add combined cumulative profit
     df_comb = create_cum_profit(df_comb, trades, 'cum_profit', timeframe)
 
@@ -405,7 +410,7 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
 
     fig.add_trace(avgclose, 1, 1)
     fig = add_profit(fig, 2, df_comb, 'cum_profit', 'Profit')
-    fig = add_max_drawdown(fig, 2, trades, df_comb)
+    fig = add_max_drawdown(fig, 2, trades, df_comb, timeframe)
 
     for pair in pairs:
         profit_col = f'cum_profit_{pair}'

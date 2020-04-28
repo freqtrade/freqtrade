@@ -151,13 +151,20 @@ def load_trades(source: str, db_url: str, exportfilename: Path,
         return load_backtest_data(exportfilename)
 
 
-def extract_trades_of_period(dataframe: pd.DataFrame, trades: pd.DataFrame) -> pd.DataFrame:
+def extract_trades_of_period(dataframe: pd.DataFrame, trades: pd.DataFrame,
+                             date_index=False) -> pd.DataFrame:
     """
     Compare trades and backtested pair DataFrames to get trades performed on backtested period
     :return: the DataFrame of a trades of period
     """
-    trades = trades.loc[(trades['open_time'] >= dataframe.iloc[0]['date']) &
-                        (trades['close_time'] <= dataframe.iloc[-1]['date'])]
+    if date_index:
+        trades_start = dataframe.index[0]
+        trades_stop = dataframe.index[-1]
+    else:
+        trades_start = dataframe.iloc[0]['date']
+        trades_stop = dataframe.iloc[-1]['date']
+    trades = trades.loc[(trades['open_time'] >= trades_start) &
+                        (trades['close_time'] <= trades_stop)]
     return trades
 
 
@@ -213,13 +220,15 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_time'
     """
     if len(trades) == 0:
         raise ValueError("Trade dataframe empty.")
-    profit_results = trades.sort_values(date_col)
+    profit_results = trades.sort_values(date_col).reset_index(drop=True)
     max_drawdown_df = pd.DataFrame()
     max_drawdown_df['cumulative'] = profit_results[value_col].cumsum()
     max_drawdown_df['high_value'] = max_drawdown_df['cumulative'].cummax()
     max_drawdown_df['drawdown'] = max_drawdown_df['cumulative'] - max_drawdown_df['high_value']
 
-    high_date = profit_results.loc[max_drawdown_df['high_value'].idxmax(), date_col]
-    low_date = profit_results.loc[max_drawdown_df['drawdown'].idxmin(), date_col]
-
+    idxmin = max_drawdown_df['drawdown'].idxmin()
+    if idxmin == 0:
+        raise ValueError("No losing trade, therefore no drawdown.")
+    high_date = profit_results.loc[max_drawdown_df.iloc[:idxmin]['high_value'].idxmax(), date_col]
+    low_date = profit_results.loc[idxmin, date_col]
     return abs(min(max_drawdown_df['drawdown'])), high_date, low_date

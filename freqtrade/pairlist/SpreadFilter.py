@@ -49,9 +49,9 @@ class SpreadFilter(IPairList):
             if 'bid' in ticker and 'ask' in ticker:
                 spread = 1 - ticker['bid'] / ticker['ask']
                 if not ticker or spread > self._max_spread_ratio:
-                    logger.info(f"Removed {ticker['symbol']} from whitelist, "
-                                f"because spread {spread * 100:.3f}% >"
-                                f"{self._max_spread_ratio * 100}%")
+                    self.log_on_refresh(logger.info, f"Removed {ticker['symbol']} from whitelist, "
+                                                     f"because spread {spread * 100:.3f}% >"
+                                                     f"{self._max_spread_ratio * 100}%")
                     pairlist.remove(p)
             else:
                 pairlist.remove(p)

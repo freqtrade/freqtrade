@@ -253,6 +253,32 @@ def test_price_to_precision(default_conf, mocker, price, precision_mode, precisi
     assert pytest.approx(exchange.price_to_precision(pair, price)) == expected
 
 
+@pytest.mark.parametrize("price,precision_mode,precision,expected", [
+    (2.34559, 2, 4, 0.0001),
+    (2.34559, 2, 5, 0.00001),
+    (2.34559, 2, 3, 0.001),
+    (2.9999, 2, 3, 0.001),
+    (200.0511, 2, 3, 0.001),
+    # Tests for Tick_size
+    (2.34559, 4, 0.0001, 0.0001),
+    (2.34559, 4, 0.00001, 0.00001),
+    (2.34559, 4, 0.0025, 0.0025),
+    (2.9909, 4, 0.0025, 0.0025),
+    (234.43, 4, 0.5, 0.5),
+    (234.43, 4, 0.0025, 0.0025),
+    (234.43, 4, 0.00013, 0.00013),
+
+])
+def test_price_get_one_pip(default_conf, mocker, price, precision_mode, precision, expected):
+    markets = PropertyMock(return_value={'ETH/BTC': {'precision': {'price': precision}}})
+    exchange = get_patched_exchange(mocker, default_conf, id="binance")
+    mocker.patch('freqtrade.exchange.Exchange.markets', markets)
+    mocker.patch('freqtrade.exchange.Exchange.precisionMode',
+                 PropertyMock(return_value=precision_mode))
+    pair = 'ETH/BTC'
+    assert pytest.approx(exchange.price_get_one_pip(pair, price)) == expected
+
+
 def test_set_sandbox(default_conf, mocker):
     """
     Test working scenario
@@ -1702,7 +1728,69 @@ def test_get_historic_trades_notsupported(default_conf, mocker, caplog, exchange
 def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    assert exchange.cancel_order(order_id='123', pair='TKN/BTC') is None
+    assert exchange.cancel_order(order_id='123', pair='TKN/BTC') == {}
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+@pytest.mark.parametrize("order,result", [
+    ({'status': 'closed', 'filled': 10}, False),
+    ({'status': 'closed', 'filled': 0.0}, True),
+    ({'status': 'canceled', 'filled': 0.0}, True),
+    ({'status': 'canceled', 'filled': 10.0}, False),
+    ({'status': 'unknown', 'filled': 10.0}, False),
+    ({'result': 'testest123'}, False),
+    ])
+def test_check_order_canceled_empty(mocker, default_conf, exchange_name, order, result):
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    assert exchange.check_order_canceled_empty(order) == result
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+@pytest.mark.parametrize("order,result", [
+    ({'status': 'closed', 'amount': 10, 'fee': {}}, True),
+    ({'status': 'closed', 'amount': 0.0, 'fee': {}}, True),
+    ({'status': 'canceled', 'amount': 0.0, 'fee': {}}, True),
+    ({'status': 'canceled', 'amount': 10.0}, False),
+    ({'amount': 10.0, 'fee': {}}, False),
+    ({'result': 'testest123'}, False),
+    ('hello_world', False),
+])
+def test_is_cancel_order_result_suitable(mocker, default_conf, exchange_name, order, result):
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    assert exchange.is_cancel_order_result_suitable(order) == result
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+@pytest.mark.parametrize("corder,call_corder,call_forder", [
+    ({'status': 'closed', 'amount': 10, 'fee': {}}, 1, 0),
+    ({'amount': 10, 'fee': {}}, 1, 1),
+])
+def test_cancel_order_with_result(default_conf, mocker, exchange_name, corder,
+                                  call_corder, call_forder):
+    default_conf['dry_run'] = False
+    api_mock = MagicMock()
+    api_mock.cancel_order = MagicMock(return_value=corder)
+    api_mock.fetch_order = MagicMock(return_value={})
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    res = exchange.cancel_order_with_result('1234', 'ETH/BTC', 1234)
+    assert isinstance(res, dict)
+    assert api_mock.cancel_order.call_count == call_corder
+    assert api_mock.fetch_order.call_count == call_forder
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_cancel_order_with_result_error(default_conf, mocker, exchange_name, caplog):
+    default_conf['dry_run'] = False
+    api_mock = MagicMock()
+    api_mock.cancel_order = MagicMock(side_effect=ccxt.InvalidOrder("Did not find order"))
+    api_mock.fetch_order = MagicMock(side_effect=ccxt.InvalidOrder("Did not find order"))
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+
+    res = exchange.cancel_order_with_result('1234', 'ETH/BTC', 1541)
+    assert isinstance(res, dict)
+    assert log_has("Could not cancel order 1234.", caplog)
+    assert log_has("Could not fetch cancelled order 1234.", caplog)
+    assert res['amount'] == 1541
 
 
 # Ensure that if not dry_run, we should call API
