@@ -376,13 +376,13 @@ class Hyperopt:
 
         # Verification for overwrite
         if path.isfile(csv_file):
-            logger.error("CSV-File already exists!")
+            logger.error(f"CSV file already exists: {csv_file}")
             return
 
         try:
             io.open(csv_file, 'w+').close()
         except IOError:
-            logger.error("Filed to create CSV-File!")
+            logger.error(f"Failed to create CSV file: {csv_file}")
             return
 
         trials = json_normalize(results, max_level=1)
@@ -420,7 +420,7 @@ class Hyperopt:
 
         trials = trials.drop(columns=['is_initial_point', 'is_best', 'is_profit'])
         trials.to_csv(csv_file, index=False, header=True, mode='w', encoding='UTF-8')
-        print("CSV-File created!")
+        logger.info(f"CSV file created: {csv_file}")
 
     def has_space(self, space: str) -> bool:
         """
