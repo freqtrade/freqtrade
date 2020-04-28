@@ -75,8 +75,8 @@ class Hyperopt:
         self.custom_hyperoptloss = HyperOptLossResolver.load_hyperoptloss(self.config)
         self.calculate_loss = self.custom_hyperoptloss.hyperopt_loss_function
 
-        self.trials_file = (self.config['user_data_dir'] /
-                            'hyperopt_results' / 'hyperopt_results.pickle')
+        self.results_file = (self.config['user_data_dir'] /
+                             'hyperopt_results' / 'hyperopt_results.pickle')
         self.data_pickle_file = (self.config['user_data_dir'] /
                                  'hyperopt_results' / 'hyperopt_tickerdata.pkl')
         self.total_epochs = config.get('epochs', 0)
@@ -88,10 +88,10 @@ class Hyperopt:
         else:
             logger.info("Continuing on previous hyperopt results.")
 
-        self.num_trials_saved = 0
+        self.num_epochs_saved = 0
 
         # Previous evaluations
-        self.trials: List = []
+        self.epochs: List = []
 
         # Populate functions here (hasattr is slow so should not be run during "regular" operations)
         if hasattr(self.custom_hyperopt, 'populate_indicators'):
@@ -132,7 +132,7 @@ class Hyperopt:
         """
         Remove hyperopt pickle files to restart hyperopt.
         """
-        for f in [self.data_pickle_file, self.trials_file]:
+        for f in [self.data_pickle_file, self.results_file]:
             p = Path(f)
             if p.is_file():
                 logger.info(f"Removing `{p}`.")
@@ -151,27 +151,26 @@ class Hyperopt:
         # and the values are taken from the list of parameters.
         return {d.name: v for d, v in zip(dimensions, raw_params)}
 
-    def save_trials(self, final: bool = False) -> None:
+    def _save_results(self) -> None:
         """
-        Save hyperopt trials to file
+        Save hyperopt results to file
         """
-        num_trials = len(self.trials)
-        if num_trials > self.num_trials_saved:
-            logger.debug(f"Saving {num_trials} {plural(num_trials, 'epoch')}.")
-            dump(self.trials, self.trials_file)
-            self.num_trials_saved = num_trials
-        if final:
-            logger.info(f"{num_trials} {plural(num_trials, 'epoch')} "
-                        f"saved to '{self.trials_file}'.")
+        num_epochs = len(self.epochs)
+        if num_epochs > self.num_epochs_saved:
+            logger.debug(f"Saving {num_epochs} {plural(num_epochs, 'epoch')}.")
+            dump(self.epochs, self.results_file)
+            self.num_epochs_saved = num_epochs
+            logger.debug(f"{self.num_epochs_saved} {plural(self.num_epochs_saved, 'epoch')} "
+                         f"saved to '{self.results_file}'.")
 
     @staticmethod
-    def _read_trials(trials_file: Path) -> List:
+    def _read_results(results_file: Path) -> List:
         """
-        Read hyperopt trials file
+        Read hyperopt results from file
         """
-        logger.info("Reading Trials from '%s'", trials_file)
-        trials = load(trials_file)
-        return trials
+        logger.info("Reading epochs from '%s'", results_file)
+        data = load(results_file)
+        return data
 
     def _get_params_details(self, params: Dict) -> Dict:
         """
@@ -588,19 +587,20 @@ class Hyperopt:
                         wrap_non_picklable_objects(self.generate_optimizer))(v, i) for v in asked)
 
     @staticmethod
-    def load_previous_results(trials_file: Path) -> List:
+    def load_previous_results(results_file: Path) -> List:
         """
         Load data for epochs from the file if we have one
         """
-        trials: List = []
-        if trials_file.is_file() and trials_file.stat().st_size > 0:
-            trials = Hyperopt._read_trials(trials_file)
-            if trials[0].get('is_best') is None:
+        epochs: List = []
+        if results_file.is_file() and results_file.stat().st_size > 0:
+            epochs = Hyperopt._read_results(results_file)
+            # Detection of some old format, without 'is_best' field saved
+            if epochs[0].get('is_best') is None:
                 raise OperationalException(
                     "The file with Hyperopt results is incompatible with this version "
                     "of Freqtrade and cannot be loaded.")
-            logger.info(f"Loaded {len(trials)} previous evaluations from disk.")
-        return trials
+            logger.info(f"Loaded {len(epochs)} previous evaluations from disk.")
+        return epochs
 
     def _set_random_state(self, random_state: Optional[int]) -> int:
         return random_state or random.randint(1, 2**16 - 1)
@@ -628,7 +628,7 @@ class Hyperopt:
         self.backtesting.exchange = None  # type: ignore
         self.backtesting.pairlists = None  # type: ignore
 
-        self.trials = self.load_previous_results(self.trials_file)
+        self.epochs = self.load_previous_results(self.results_file)
 
         cpus = cpu_count()
         logger.info(f"Found {cpus} CPU cores. Let's make them scream!")
@@ -698,23 +698,25 @@ class Hyperopt:
 
                             if is_best:
                                 self.current_best_loss = val['loss']
-                            self.trials.append(val)
+                            self.epochs.append(val)
 
                             # Save results after each best epoch and every 100 epochs
                             if is_best or current % 100 == 0:
-                                self.save_trials()
+                                self._save_results()
 
                             pbar.update(current)
 
         except KeyboardInterrupt:
             print('User interrupted..')
 
-        self.save_trials(final=True)
+        self._save_results()
+        logger.info(f"{self.num_epochs_saved} {plural(self.num_epochs_saved, 'epoch')} "
+                    f"saved to '{self.results_file}'.")
 
-        if self.trials:
-            sorted_trials = sorted(self.trials, key=itemgetter('loss'))
-            results = sorted_trials[0]
-            self.print_epoch_details(results, self.total_epochs, self.print_json)
+        if self.epochs:
+            sorted_epochs = sorted(self.epochs, key=itemgetter('loss'))
+            best_epoch = sorted_epochs[0]
+            self.print_epoch_details(best_epoch, self.total_epochs, self.print_json)
         else:
             # This is printed when Ctrl+C is pressed quickly, before first epochs have
             # a chance to be evaluated.
