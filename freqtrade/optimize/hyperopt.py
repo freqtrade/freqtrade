@@ -49,9 +49,9 @@ logger = logging.getLogger(__name__)
 
 INITIAL_POINTS = 30
 
-# Keep no more than 2*SKOPT_MODELS_MAX_NUM models
-# in the skopt models list
-SKOPT_MODELS_MAX_NUM = 10
+# Keep no more than SKOPT_MODEL_QUEUE_SIZE models
+# in the skopt model queue, to optimize memory consumption
+SKOPT_MODEL_QUEUE_SIZE = 10
 
 MAX_LOSS = 100000  # just a big enough number to be bad result in loss optimization
 
@@ -563,24 +563,8 @@ class Hyperopt:
             n_initial_points=INITIAL_POINTS,
             acq_optimizer_kwargs={'n_jobs': cpu_count},
             random_state=self.random_state,
+            model_queue_size=SKOPT_MODEL_QUEUE_SIZE,
         )
-
-    def fix_optimizer_models_list(self) -> None:
-        """
-        WORKAROUND: Since skopt is not actively supported, this resolves problems with skopt
-        memory usage, see also: https://github.com/scikit-optimize/scikit-optimize/pull/746
-
-        This may cease working when skopt updates if implementation of this intrinsic
-        part changes.
-        """
-        n = len(self.opt.models) - SKOPT_MODELS_MAX_NUM
-        # Keep no more than 2*SKOPT_MODELS_MAX_NUM models in the skopt models list,
-        # remove the old ones. These are actually of no use, the current model
-        # from the estimator is the only one used in the skopt optimizer.
-        # Freqtrade code also does not inspect details of the models.
-        if n >= SKOPT_MODELS_MAX_NUM:
-            logger.debug(f"Fixing skopt models list, removing {n} old items...")
-            del self.opt.models[0:n]
 
     def run_optimizer_parallel(self, parallel, asked, i) -> List:
         return parallel(delayed(
@@ -677,7 +661,6 @@ class Hyperopt:
                         asked = self.opt.ask(n_points=current_jobs)
                         f_val = self.run_optimizer_parallel(parallel, asked, i)
                         self.opt.tell(asked, [v['loss'] for v in f_val])
-                        self.fix_optimizer_models_list()
 
                         # Calculate progressbar outputs
                         for j, val in enumerate(f_val):
