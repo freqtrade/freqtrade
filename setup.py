@@ -21,7 +21,7 @@ plot = ['plotly>=4.0']
 hyperopt = [
     'scipy',
     'scikit-learn',
-    'scikit-optimize',
+    'scikit-optimize>=0.7.4',
     'filelock',
     'joblib',
     'progressbar2',
