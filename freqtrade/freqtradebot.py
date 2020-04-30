@@ -1177,6 +1177,15 @@ class FreqtradeBot:
                 and order['fee']['cost'] is not None
                 )
 
+    def _extract_cost_curr_rate(self, order: Dict) -> Tuple[float, str, float]:
+        """
+        :param order: Order or trade (one trade) dict
+        :return: Tuple with cost, currency, rate of the given fee dict
+        """
+        return (order['fee']['cost'],
+                order['fee']['currency'],
+                order['fee'].get('rate', None))
+
     def get_real_amount(self, trade: Trade, order: Dict, order_amount: float = None) -> float:
         """
         Get real amount for the trade
