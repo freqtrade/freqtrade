@@ -261,7 +261,7 @@ def calculate_outstanding_balance(
         open_time = pair_trades.index.values
         close_time = pair_trades["close_time"].values
         close = pair_candles["close"].values
-        profits = pair_trades["profit_percent"].values - slippage
+        profits = pair_trades["profitperc"].values - slippage
         # at the open_time candle, the balance is matched to the close of the candle
         pair_balance = np.where(
             # only the rows with actual trades
