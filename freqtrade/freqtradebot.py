@@ -1162,6 +1162,17 @@ class FreqtradeBot:
 
         return False
 
+    def _order_has_fee(self, order: Dict) -> bool:
+        """
+        Verifies if the passed in order dict has the needed keys to extract fees
+        :param order: Order or trade (one trade) dict
+        :return: True if the fee substructure contains currency and cost, false otherwise
+        """
+        if not isinstance(order, dict):
+            return False
+        return ('fee' in order and order['fee'] is not None and
+                (order['fee'].keys() >= {'currency', 'cost'}))
+
     def get_real_amount(self, trade: Trade, order: Dict, order_amount: float = None) -> float:
         """
         Get real amount for the trade
@@ -1175,8 +1186,7 @@ class FreqtradeBot:
 
         trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)
         # use fee from order-dict if possible
-        if ('fee' in order and order['fee'] is not None and
-                (order['fee'].keys() >= {'currency', 'cost'})):
+        if self._order_has_fee(order):
             if (order['fee']['currency'] is not None and
                     order['fee']['cost'] is not None and
                     trade_base_currency == order['fee']['currency']):
@@ -1196,8 +1206,7 @@ class FreqtradeBot:
         fee_abs = 0
         for exectrade in trades:
             amount += exectrade['amount']
-            if ("fee" in exectrade and exectrade['fee'] is not None and
-                    (exectrade['fee'].keys() >= {'currency', 'cost'})):
+            if self._order_has_fee(exectrade):
                 # only applies if fee is in quote currency!
                 if (exectrade['fee']['currency'] is not None and
                         exectrade['fee']['cost'] is not None and
