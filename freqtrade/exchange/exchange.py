@@ -1063,6 +1063,32 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    @staticmethod
+    def order_has_fee(order: Dict) -> bool:
+        """
+        Verifies if the passed in order dict has the needed keys to extract fees,
+        and that these keys (currency, cost) are not empty.
+        :param order: Order or trade (one trade) dict
+        :return: True if the fee substructure contains currency and cost, false otherwise
+        """
+        if not isinstance(order, dict):
+            return False
+        return ('fee' in order and order['fee'] is not None
+                and (order['fee'].keys() >= {'currency', 'cost'})
+                and order['fee']['currency'] is not None
+                and order['fee']['cost'] is not None
+                )
+
+    @staticmethod
+    def extract_cost_curr_rate(order: Dict) -> Tuple[float, str, float]:
+        """
+        :param order: Order or trade (one trade) dict
+        :return: Tuple with cost, currency, rate of the given fee dict
+        """
+        return (order['fee']['cost'],
+                order['fee']['currency'],
+                order['fee'].get('rate', None))
+
 
 def is_exchange_bad(exchange_name: str) -> bool:
     return exchange_name in BAD_EXCHANGES
