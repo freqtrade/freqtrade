@@ -1085,7 +1085,7 @@ class Exchange:
                 )
 
     @staticmethod
-    def extract_cost_curr_rate(order: Dict) -> Tuple[float, str, float]:
+    def extract_cost_curr_rate(order: Dict) -> Tuple[float, str, Optional[float]]:
         """
         Extract tuple of cost, currency, rate.
         Requires order_has_fee to run first!
@@ -1095,6 +1095,7 @@ class Exchange:
         return (order['fee']['cost'],
                 order['fee']['currency'],
                 order['fee'].get('rate', None))
+        # calculate rate ? (order['fee']['cost'] / (order['amount'] * order['price']))
 
 
 def is_exchange_bad(exchange_name: str) -> bool:
