@@ -1164,14 +1164,18 @@ class FreqtradeBot:
 
     def _order_has_fee(self, order: Dict) -> bool:
         """
-        Verifies if the passed in order dict has the needed keys to extract fees
+        Verifies if the passed in order dict has the needed keys to extract fees,
+        and that these keys (currency, cost) are not empty.
         :param order: Order or trade (one trade) dict
         :return: True if the fee substructure contains currency and cost, false otherwise
         """
         if not isinstance(order, dict):
             return False
-        return ('fee' in order and order['fee'] is not None and
-                (order['fee'].keys() >= {'currency', 'cost'}))
+        return ('fee' in order and order['fee'] is not None
+                and (order['fee'].keys() >= {'currency', 'cost'})
+                and order['fee']['currency'] is not None
+                and order['fee']['cost'] is not None
+                )
 
     def get_real_amount(self, trade: Trade, order: Dict, order_amount: float = None) -> float:
         """
@@ -1187,9 +1191,7 @@ class FreqtradeBot:
         trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)
         # use fee from order-dict if possible
         if self._order_has_fee(order):
-            if (order['fee']['currency'] is not None and
-                    order['fee']['cost'] is not None and
-                    trade_base_currency == order['fee']['currency']):
+            if trade_base_currency == order['fee']['currency']:
                 new_amount = order_amount - order['fee']['cost']
                 logger.info("Applying fee on amount for %s (from %s to %s) from Order",
                             trade, order['amount'], new_amount)
@@ -1208,9 +1210,7 @@ class FreqtradeBot:
             amount += exectrade['amount']
             if self._order_has_fee(exectrade):
                 # only applies if fee is in quote currency!
-                if (exectrade['fee']['currency'] is not None and
-                        exectrade['fee']['cost'] is not None and
-                        trade_base_currency == exectrade['fee']['currency']):
+                if trade_base_currency == exectrade['fee']['currency']:
                     fee_abs += exectrade['fee']['cost']
 
         if not isclose(amount, order_amount, abs_tol=constants.MATH_CLOSE_PREC):
