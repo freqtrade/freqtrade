@@ -1087,6 +1087,8 @@ class Exchange:
     @staticmethod
     def extract_cost_curr_rate(order: Dict) -> Tuple[float, str, float]:
         """
+        Extract tuple of cost, currency, rate.
+        Requires order_has_fee to run first!
         :param order: Order or trade (one trade) dict
         :return: Tuple with cost, currency, rate of the given fee dict
         """

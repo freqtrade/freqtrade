@@ -2145,3 +2145,23 @@ def test_symbol_is_pair(market_symbol, base_currency, quote_currency, expected_r
 ])
 def test_market_is_active(market, expected_result) -> None:
     assert market_is_active(market) == expected_result
+
+
+@pytest.mark.parametrize("order,expected", [
+    ([{'fee'}], False),
+    ({'fee': None}, False),
+    ({'fee': {'currency': 'ETH/BTC'}}, False),
+    ({'fee': {'currency': 'ETH/BTC', 'cost': None}}, False),
+    ({'fee': {'currency': 'ETH/BTC', 'cost': 0.01}}, True),
+])
+def test_order_has_fee(order, expected) -> None:
+    assert Exchange.order_has_fee(order) == expected
+
+
+@pytest.mark.parametrize("order,expected", [
+    ({'fee': {'currency': 'ETH/BTC', 'cost': 0.43}}, (0.43, 'ETH/BTC', None)),
+    ({'fee': {'currency': 'ETH/USDT', 'cost': 0.01}}, (0.01, 'ETH/USDT', None)),
+    ({'fee': {'currency': 'ETH/USDT', 'cost': 0.34, 'rate': 0.01}}, (0.34, 'ETH/USDT', 0.01)),
+])
+def test_extract_cost_curr_rate(order, expected) -> None:
+    assert Exchange.extract_cost_curr_rate(order) == expected
