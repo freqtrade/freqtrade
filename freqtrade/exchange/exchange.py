@@ -472,26 +472,31 @@ class Exchange:
             'pair': pair,
             'price': rate,
             'amount': _amount,
-            "cost": _amount * rate,
+            'cost': _amount * rate,
             'type': ordertype,
             'side': side,
             'remaining': _amount,
             'datetime': arrow.utcnow().isoformat(),
             'status': "closed" if ordertype == "market" else "open",
             'fee': None,
-            "info": {}
+            'info': {}
         }
-        self._store_dry_order(dry_order)
+        self._store_dry_order(dry_order, pair)
         # Copy order and close it - so the returned order is open unless it's a market order
         return dry_order
 
-    def _store_dry_order(self, dry_order: Dict) -> None:
+    def _store_dry_order(self, dry_order: Dict, pair: str) -> None:
         closed_order = dry_order.copy()
-        if closed_order["type"] in ["market", "limit"]:
+        if closed_order['type'] in ["market", "limit"]:
             closed_order.update({
-                "status": "closed",
-                "filled": closed_order["amount"],
-                "remaining": 0
+                'status': 'closed',
+                'filled': closed_order['amount'],
+                'remaining': 0,
+                'fee': {
+                    'currency': self.get_pair_quote_currency(pair),
+                    'cost': dry_order['amount'] * self.get_fee(pair),
+                    'rate': self.get_fee(pair)
+                }
             })
         if closed_order["type"] in ["stop_loss_limit"]:
             closed_order["info"].update({"stopPrice": closed_order["price"]})
