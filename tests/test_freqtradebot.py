@@ -3285,8 +3285,6 @@ def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order,
 
 def test_get_real_amount_quote(default_conf, trades_for_order, buy_order_fee, fee, caplog, mocker):
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
     amount = sum(x['amount'] for x in trades_for_order)
     trade = Trade(
         pair='LTC/ETH',
@@ -3297,8 +3295,7 @@ def test_get_real_amount_quote(default_conf, trades_for_order, buy_order_fee, fe
         fee_close=fee.return_value,
         open_order_id="123456"
     )
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     # Amount is reduced by "fee"
     assert freqtrade.get_real_amount(trade, buy_order_fee) == amount - (amount * 0.001)
@@ -3310,8 +3307,6 @@ def test_get_real_amount_quote(default_conf, trades_for_order, buy_order_fee, fe
 def test_get_real_amount_no_trade(default_conf, buy_order_fee, caplog, mocker, fee):
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=[])
 
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
     amount = buy_order_fee['amount']
     trade = Trade(
         pair='LTC/ETH',
@@ -3322,8 +3317,7 @@ def test_get_real_amount_no_trade(default_conf, buy_order_fee, caplog, mocker, f
         fee_close=fee.return_value,
         open_order_id="123456"
     )
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     # Amount is reduced by "fee"
     assert freqtrade.get_real_amount(trade, buy_order_fee) == amount
@@ -3335,8 +3329,6 @@ def test_get_real_amount_no_trade(default_conf, buy_order_fee, caplog, mocker, f
 def test_get_real_amount_stake(default_conf, trades_for_order, buy_order_fee, fee, mocker):
     trades_for_order[0]['fee']['currency'] = 'ETH'
 
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     amount = sum(x['amount'] for x in trades_for_order)
     trade = Trade(
@@ -3348,8 +3340,7 @@ def test_get_real_amount_stake(default_conf, trades_for_order, buy_order_fee, fe
         open_rate=0.245441,
         open_order_id="123456"
     )
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     # Amount does not change
     assert freqtrade.get_real_amount(trade, buy_order_fee) == amount
@@ -3362,8 +3353,6 @@ def test_get_real_amount_no_currency_in_fee(default_conf, trades_for_order, buy_
     limit_buy_order['fee'] = {'cost': 0.004, 'currency': None}
     trades_for_order[0]['fee']['currency'] = None
 
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     amount = sum(x['amount'] for x in trades_for_order)
     trade = Trade(
@@ -3375,8 +3364,7 @@ def test_get_real_amount_no_currency_in_fee(default_conf, trades_for_order, buy_
         open_rate=0.245441,
         open_order_id="123456"
     )
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     # Amount does not change
     assert freqtrade.get_real_amount(trade, limit_buy_order) == amount
@@ -3386,8 +3374,6 @@ def test_get_real_amount_BNB(default_conf, trades_for_order, buy_order_fee, fee,
     trades_for_order[0]['fee']['currency'] = 'BNB'
     trades_for_order[0]['fee']['cost'] = 0.00094518
 
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     amount = sum(x['amount'] for x in trades_for_order)
     trade = Trade(
@@ -3399,16 +3385,13 @@ def test_get_real_amount_BNB(default_conf, trades_for_order, buy_order_fee, fee,
         open_rate=0.245441,
         open_order_id="123456"
     )
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     # Amount does not change
     assert freqtrade.get_real_amount(trade, buy_order_fee) == amount
 
 
 def test_get_real_amount_multi(default_conf, trades_for_order2, buy_order_fee, caplog, fee, mocker):
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order2)
     amount = float(sum(x['amount'] for x in trades_for_order2))
     trade = Trade(
@@ -3420,8 +3403,7 @@ def test_get_real_amount_multi(default_conf, trades_for_order2, buy_order_fee, c
         open_rate=0.245441,
         open_order_id="123456"
     )
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     # Amount is reduced by "fee"
     assert freqtrade.get_real_amount(trade, buy_order_fee) == amount - (amount * 0.001)
@@ -3435,8 +3417,6 @@ def test_get_real_amount_fromorder(default_conf, trades_for_order, buy_order_fee
     limit_buy_order = deepcopy(buy_order_fee)
     limit_buy_order['fee'] = {'cost': 0.004, 'currency': 'LTC'}
 
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order',
                  return_value=[trades_for_order])
     amount = float(sum(x['amount'] for x in trades_for_order))
@@ -3449,8 +3429,7 @@ def test_get_real_amount_fromorder(default_conf, trades_for_order, buy_order_fee
         open_rate=0.245441,
         open_order_id="123456"
     )
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     # Amount is reduced by "fee"
     assert freqtrade.get_real_amount(trade, limit_buy_order) == amount - 0.004
@@ -3463,8 +3442,6 @@ def test_get_real_amount_invalid_order(default_conf, trades_for_order, buy_order
     limit_buy_order = deepcopy(buy_order_fee)
     limit_buy_order['fee'] = {'cost': 0.004}
 
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=[])
     amount = float(sum(x['amount'] for x in trades_for_order))
     trade = Trade(
@@ -3476,8 +3453,7 @@ def test_get_real_amount_invalid_order(default_conf, trades_for_order, buy_order
         open_rate=0.245441,
         open_order_id="123456"
     )
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     # Amount does not change
     assert freqtrade.get_real_amount(trade, limit_buy_order) == amount
@@ -3487,8 +3463,6 @@ def test_get_real_amount_wrong_amount(default_conf, trades_for_order, buy_order_
     limit_buy_order = deepcopy(buy_order_fee)
     limit_buy_order['amount'] = limit_buy_order['amount'] - 0.001
 
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     amount = float(sum(x['amount'] for x in trades_for_order))
     trade = Trade(
@@ -3500,8 +3474,7 @@ def test_get_real_amount_wrong_amount(default_conf, trades_for_order, buy_order_
         fee_close=fee.return_value,
         open_order_id="123456"
     )
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     # Amount does not change
     with pytest.raises(DependencyException, match=r"Half bought\? Amounts don't match"):
@@ -3514,8 +3487,6 @@ def test_get_real_amount_wrong_amount_rounding(default_conf, trades_for_order, b
     limit_buy_order = deepcopy(buy_order_fee)
     trades_for_order[0]['amount'] = trades_for_order[0]['amount'] + 1e-15
 
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     amount = float(sum(x['amount'] for x in trades_for_order))
     trade = Trade(
@@ -3527,8 +3498,7 @@ def test_get_real_amount_wrong_amount_rounding(default_conf, trades_for_order, b
         open_rate=0.245441,
         open_order_id="123456"
     )
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     # Amount changes by fee amount.
     assert isclose(freqtrade.get_real_amount(trade, limit_buy_order), amount - (amount * 0.001),
@@ -3539,8 +3509,6 @@ def test_get_real_amount_invalid(default_conf, trades_for_order, buy_order_fee, 
     # Remove "Currency" from fee dict
     trades_for_order[0]['fee'] = {'cost': 0.008}
 
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     amount = sum(x['amount'] for x in trades_for_order)
     trade = Trade(
@@ -3553,15 +3521,12 @@ def test_get_real_amount_invalid(default_conf, trades_for_order, buy_order_fee, 
 
         open_order_id="123456"
     )
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
     # Amount does not change
     assert freqtrade.get_real_amount(trade, buy_order_fee) == amount
 
 
 def test_get_real_amount_open_trade(default_conf, fee, mocker):
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
     amount = 12345
     trade = Trade(
         pair='LTC/ETH',
@@ -3577,8 +3542,7 @@ def test_get_real_amount_open_trade(default_conf, fee, mocker):
         'amount': amount,
         'status': 'open',
     }
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
     assert freqtrade.get_real_amount(trade, order) == amount
 
 
