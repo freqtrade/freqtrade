@@ -86,11 +86,15 @@ def check_migrate(engine) -> None:
         logger.debug(f'trying {table_back_name}')
 
     # Check for latest column
-    if not has_column(cols, 'close_profit_abs'):
+    if not has_column(cols, 'fee_close_cost'):
         logger.info(f'Running database migration - backup available as {table_back_name}')
 
         fee_open = get_column_def(cols, 'fee_open', 'fee')
+        fee_open_cost = get_column_def(cols, 'fee_open_cost', 'null')
+        fee_open_currency = get_column_def(cols, 'fee_open_currency', 'null')
         fee_close = get_column_def(cols, 'fee_close', 'fee')
+        fee_close_cost = get_column_def(cols, 'fee_close_cost', 'null')
+        fee_close_currency = get_column_def(cols, 'fee_close_currency', 'null')
         open_rate_requested = get_column_def(cols, 'open_rate_requested', 'null')
         close_rate_requested = get_column_def(cols, 'close_rate_requested', 'null')
         stop_loss = get_column_def(cols, 'stop_loss', '0.0')
@@ -120,7 +124,9 @@ def check_migrate(engine) -> None:
 
         # Copy data back - following the correct schema
         engine.execute(f"""insert into trades
-                (id, exchange, pair, is_open, fee_open, fee_close, open_rate,
+                (id, exchange, pair, is_open,
+                fee_open, fee_open_cost, fee_open_currency,
+                fee_close, fee_close_cost, fee_open_currency, open_rate,
                 open_rate_requested, close_rate, close_rate_requested, close_profit,
                 stake_amount, amount, open_date, close_date, open_order_id,
                 stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
@@ -136,7 +142,9 @@ def check_migrate(engine) -> None:
                     else pair
                     end
                 pair,
-                is_open, {fee_open} fee_open, {fee_close} fee_close,
+                is_open, {fee_open} fee_open, {fee_open_cost} fee_open_cost,
+                {fee_open_currency} fee_open_currency, {fee_close} fee_close,
+                {fee_close_cost} fee_close_cost, {fee_close_currency} fee_close_currency,
                 open_rate, {open_rate_requested} open_rate_requested, close_rate,
                 {close_rate_requested} close_rate_requested, close_profit,
                 stake_amount, amount, open_date, close_date, open_order_id,
@@ -185,7 +193,11 @@ class Trade(_DECL_BASE):
     pair = Column(String, nullable=False, index=True)
     is_open = Column(Boolean, nullable=False, default=True, index=True)
     fee_open = Column(Float, nullable=False, default=0.0)
+    fee_open_cost = Column(Float, nullable=True)
+    fee_open_currency = Column(String, nullable=True)
     fee_close = Column(Float, nullable=False, default=0.0)
+    fee_close_cost = Column(Float, nullable=True)
+    fee_close_currency = Column(String, nullable=True)
     open_rate = Column(Float)
     open_rate_requested = Column(Float)
     # open_trade_price - calculated via _calc_open_trade_price
@@ -235,7 +247,11 @@ class Trade(_DECL_BASE):
             'pair': self.pair,
             'is_open': self.is_open,
             'fee_open': self.fee_open,
+            'fee_open_cost': self.fee_open_cost,
+            'fee_open_currency': self.fee_open_currency,
             'fee_close': self.fee_close,
+            'fee_close_cost': self.fee_close_cost,
+            'fee_close_currency': self.fee_close_currency,
             'open_date_hum': arrow.get(self.open_date).humanize(),
             'open_date': self.open_date.strftime("%Y-%m-%d %H:%M:%S"),
             'close_date_hum': (arrow.get(self.close_date).humanize()

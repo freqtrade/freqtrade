@@ -465,6 +465,10 @@ def test_migrate_old(mocker, default_conf, fee):
     assert trade.initial_stop_loss == 0.0
     assert trade.open_trade_price == trade._calc_open_trade_price()
     assert trade.close_profit_abs is None
+    assert trade.fee_open_cost is None
+    assert trade.fee_open_currency is None
+    assert trade.fee_close_cost is None
+    assert trade.fee_close_currency is None
 
     trade = Trade.query.filter(Trade.id == 2).first()
     assert trade.close_rate is not None
