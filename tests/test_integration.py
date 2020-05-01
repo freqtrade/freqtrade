@@ -67,7 +67,6 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
     mocker.patch.multiple(
         'freqtrade.freqtradebot.FreqtradeBot',
         create_stoploss_order=MagicMock(return_value=True),
-        update_trade_state=MagicMock(),
         _notify_sell=MagicMock(),
     )
     mocker.patch("freqtrade.strategy.interface.IStrategy.should_sell", should_sell_mock)
@@ -97,8 +96,9 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
 
     # Only order for 3rd trade needs to be cancelled
     assert cancel_order_mock.call_count == 1
-    # Wallets must be updated between stoploss cancellation and selling.
-    assert wallets_mock.call_count == 2
+    # Wallets must be updated between stoploss cancellation and selling, and will be updated again
+    # During update_trade_state
+    assert wallets_mock.call_count == 3
 
     trade = trades[0]
     assert trade.sell_reason == SellType.STOPLOSS_ON_EXCHANGE.value
@@ -144,7 +144,6 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
     mocker.patch.multiple(
         'freqtrade.freqtradebot.FreqtradeBot',
         create_stoploss_order=MagicMock(return_value=True),
-        update_trade_state=MagicMock(),
         _notify_sell=MagicMock(),
     )
     should_sell_mock = MagicMock(side_effect=[
