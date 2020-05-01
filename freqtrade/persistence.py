@@ -394,6 +394,15 @@ class Trade(_DECL_BASE):
             if fee_rate is not None:
                 self.fee_close = fee_rate
 
+    def fee_updated(self, side: str) -> bool:
+        """
+        Verify if this side (buy / sell) has already been updated
+        """
+        if side == 'buy':
+            return self.fee_open_currency is not None
+        elif side == 'sell':
+            return self.fee_close_currency is not None
+
     def _calc_open_trade_price(self) -> float:
         """
         Calculate the open_rate including open_fee.

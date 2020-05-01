@@ -1174,7 +1174,7 @@ class FreqtradeBot:
         if order_amount is None:
             order_amount = order['amount']
         # Only run for closed orders
-        if trade.fee_open_currency is not None or order['status'] == 'open':
+        if trade.fee_updated(order['side']) or order['status'] == 'open':
             return order_amount
 
         trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)

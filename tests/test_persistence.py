@@ -890,8 +890,12 @@ def test_update_fee(fee):
     fee_currency = 'BTC'
     fee_rate = 0.0075
     assert trade.fee_open_currency is None
+    assert not trade.fee_updated('buy')
+    assert not trade.fee_updated('sell')
 
     trade.update_fee(fee_cost, fee_currency, fee_rate, 'buy')
+    assert trade.fee_updated('buy')
+    assert not trade.fee_updated('sell')
     assert trade.fee_open_currency == fee_currency
     assert trade.fee_open_cost == fee_cost
     assert trade.fee_open == fee_rate
@@ -902,6 +906,8 @@ def test_update_fee(fee):
 
     fee_rate = 0.0076
     trade.update_fee(fee_cost, fee_currency, fee_rate, 'sell')
+    assert trade.fee_updated('buy')
+    assert trade.fee_updated('sell')
     assert trade.fee_close == 0.0076
     assert trade.fee_close_cost == fee_cost
     assert trade.fee_close == fee_rate
