@@ -1164,10 +1164,12 @@ class FreqtradeBot:
 
     def get_real_amount(self, trade: Trade, order: Dict, order_amount: float = None) -> float:
         """
-        Get real amount for the trade
+        Detect and update trade fee.
+        Calls trade.update_fee() uppon correct detection.
+        Returns modified amount if the fee was taken from the destination currency.
         Necessary for exchanges which charge fees in base currency (e.g. binance)
+        :return: identical (or new) amount for the trade
         """
-        fee_currency = None
         # Init variables
         if order_amount is None:
             order_amount = order['amount']
@@ -1186,17 +1188,23 @@ class FreqtradeBot:
                             f"to {order_amount}) from Order")
             trade.update_fee(fee_cost, fee_currency, fee_rate, order['side'])
             return order_amount
+        return self.fee_detection_from_trades(trade, order, order_amount)
 
-        # Fallback to Trades
+    def fee_detection_from_trades(self, trade: Trade, order: Dict, order_amount: float) -> float:
+        """
+        fee-detection fallback to Trades. Parses result of fetch_my_trades to get correct fee.
+        """
         trades = self.exchange.get_trades_for_order(trade.open_order_id, trade.pair,
                                                     trade.open_date)
 
         if len(trades) == 0:
             logger.info("Applying fee on amount for %s failed: myTrade-Dict empty found", trade)
             return order_amount
+        fee_currency = None
         amount = 0
         fee_abs = 0.0
         fee_cost = 0.0
+        trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)
         fee_rate_array: List[float] = []
         for exectrade in trades:
             amount += exectrade['amount']
