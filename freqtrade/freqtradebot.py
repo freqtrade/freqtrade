@@ -1167,20 +1167,25 @@ class FreqtradeBot:
         Get real amount for the trade
         Necessary for exchanges which charge fees in base currency (e.g. binance)
         """
+        fee_currency = None
+        # Init variables
         if order_amount is None:
             order_amount = order['amount']
         # Only run for closed orders
-        if trade.fee_open == 0 or order['status'] == 'open':
+        if trade.fee_open_currency is not None or order['status'] == 'open':
             return order_amount
 
         trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)
         # use fee from order-dict if possible
-        if self._order_has_fee(order):
-            if trade_base_currency == order['fee']['currency']:
-                new_amount = order_amount - order['fee']['cost']
-                logger.info("Applying fee on amount for %s (from %s to %s) from Order",
-                            trade, order['amount'], new_amount)
-                return new_amount
+        if self.exchange.order_has_fee(order):
+            fee_cost, fee_currency, fee_rate = self.exchange.extract_cost_curr_rate(order)
+            logger.info(f"Fee for Trade {trade}:  {fee_cost:.8g} {fee_currency} - rate: {fee_rate}")
+            if trade_base_currency == fee_currency:
+                order_amount = order_amount - fee_cost
+                logger.info(f"Applying fee on amount for {trade} (from {order['amount']} "
+                            f"to {order_amount}) from Order")
+            trade.update_fee(fee_cost, fee_currency, fee_rate, order['side'])
+            return order_amount
 
         # Fallback to Trades
         trades = self.exchange.get_trades_for_order(trade.open_order_id, trade.pair,
@@ -1190,13 +1195,25 @@ class FreqtradeBot:
             logger.info("Applying fee on amount for %s failed: myTrade-Dict empty found", trade)
             return order_amount
         amount = 0
-        fee_abs = 0
+        fee_abs = 0.0
+        fee_cost = 0.0
+        fee_rate_array: List[float] = []
         for exectrade in trades:
             amount += exectrade['amount']
-            if self._order_has_fee(exectrade):
+            if self.exchange.order_has_fee(exectrade):
+                fee_cost_, fee_currency, fee_rate_ = self.exchange.extract_cost_curr_rate(exectrade)
+                fee_cost += fee_cost_
+                if fee_rate_ is not None:
+                    fee_rate_array.append(fee_rate_)
                 # only applies if fee is in quote currency!
-                if trade_base_currency == exectrade['fee']['currency']:
-                    fee_abs += exectrade['fee']['cost']
+                if trade_base_currency == fee_currency:
+                    fee_abs += fee_cost_
+        # Ensure at least one trade was found:
+        if fee_currency:
+            # fee_rate should use mean
+
+            fee_rate = sum(fee_rate_array) / float(len(fee_rate_array)) if fee_rate_array else None
+            trade.update_fee(fee_cost, fee_currency, fee_rate, order['side'])
 
         if not isclose(amount, order_amount, abs_tol=constants.MATH_CLOSE_PREC):
             logger.warning(f"Amount {amount} does not match amount {trade.amount}")
