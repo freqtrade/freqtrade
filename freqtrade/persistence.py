@@ -394,7 +394,7 @@ class Trade(_DECL_BASE):
             if fee_rate is not None:
                 self.fee_close = fee_rate
 
-    def fee_updated(self, side: str) -> bool:
+    def fee_updated(self, side) -> bool:
         """
         Verify if this side (buy / sell) has already been updated
         """

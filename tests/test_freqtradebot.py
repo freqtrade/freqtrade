@@ -3541,6 +3541,7 @@ def test_get_real_amount_open_trade(default_conf, fee, mocker):
         'id': 'mocked_order',
         'amount': amount,
         'status': 'open',
+        'side': 'buy',
     }
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     assert freqtrade.get_real_amount(trade, order) == amount

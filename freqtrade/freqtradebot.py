@@ -1174,19 +1174,20 @@ class FreqtradeBot:
         if order_amount is None:
             order_amount = order['amount']
         # Only run for closed orders
-        if trade.fee_updated(order['side']) or order['status'] == 'open':
+        if trade.fee_updated(order.get('side')) or order['status'] == 'open':
             return order_amount
 
         trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)
         # use fee from order-dict if possible
         if self.exchange.order_has_fee(order):
             fee_cost, fee_currency, fee_rate = self.exchange.extract_cost_curr_rate(order)
-            logger.info(f"Fee for Trade {trade}:  {fee_cost:.8g} {fee_currency} - rate: {fee_rate}")
+            logger.info(f"Fee for Trade {trade} [{order.get('side')}]: "
+                        f"{fee_cost:.8g} {fee_currency} - rate: {fee_rate}")
             if trade_base_currency == fee_currency:
                 order_amount = order_amount - fee_cost
                 logger.info(f"Applying fee on amount for {trade} (from {order['amount']} "
                             f"to {order_amount}) from Order")
-            trade.update_fee(fee_cost, fee_currency, fee_rate, order['side'])
+            trade.update_fee(fee_cost, fee_currency, fee_rate, order.get('side'))
             return order_amount
         return self.fee_detection_from_trades(trade, order, order_amount)
 
@@ -1221,7 +1222,7 @@ class FreqtradeBot:
             # fee_rate should use mean
 
             fee_rate = sum(fee_rate_array) / float(len(fee_rate_array)) if fee_rate_array else None
-            trade.update_fee(fee_cost, fee_currency, fee_rate, order['side'])
+            trade.update_fee(fee_cost, fee_currency, fee_rate, order.get('side'))
 
         if not isclose(amount, order_amount, abs_tol=constants.MATH_CLOSE_PREC):
             logger.warning(f"Amount {amount} does not match amount {trade.amount}")
