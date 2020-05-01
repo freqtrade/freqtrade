@@ -1032,7 +1032,7 @@ class FreqtradeBot:
         trade.sell_reason = sell_reason.value
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') == 'closed':
-            trade.update(order)
+            self.update_trade_state(trade, order)
         Trade.session.flush()
 
         # Lock pair for one candle to prevent immediate rebuys
