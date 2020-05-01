@@ -874,6 +874,39 @@ def test_stoploss_reinitialization(default_conf, fee):
     assert trade_adj.initial_stop_loss_pct == -0.04
 
 
+def test_update_fee(fee):
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        fee_open=fee.return_value,
+        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        amount=10,
+        fee_close=fee.return_value,
+        exchange='bittrex',
+        open_rate=1,
+        max_rate=1,
+    )
+    fee_cost = 0.15
+    fee_currency = 'BTC'
+    fee_rate = 0.0075
+    assert trade.fee_open_currency is None
+
+    trade.update_fee(fee_cost, fee_currency, fee_rate, 'buy')
+    assert trade.fee_open_currency == fee_currency
+    assert trade.fee_open_cost == fee_cost
+    assert trade.fee_open == fee_rate
+    # Setting buy rate should "guess" close rate
+    assert trade.fee_close == fee_rate
+    assert trade.fee_close_currency is None
+    assert trade.fee_close_cost is None
+
+    fee_rate = 0.0076
+    trade.update_fee(fee_cost, fee_currency, fee_rate, 'sell')
+    assert trade.fee_close == 0.0076
+    assert trade.fee_close_cost == fee_cost
+    assert trade.fee_close == fee_rate
+
+
 @pytest.mark.usefixtures("init_persistence")
 def test_total_open_trades_stakes(fee):
 
