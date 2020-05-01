@@ -648,7 +648,7 @@ class Hyperopt:
                         ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
                     ]
                 with progressbar.ProgressBar(
-                         maxval=self.total_epochs, redirect_stdout=False, redirect_stderr=False,
+                         max_value=self.total_epochs, redirect_stdout=False, redirect_stderr=False,
                          widgets=widgets
                      ) as pbar:
                     EVALS = ceil(self.total_epochs / jobs)
