@@ -494,7 +494,7 @@ class Exchange:
                 'remaining': 0,
                 'fee': {
                     'currency': self.get_pair_quote_currency(pair),
-                    'cost': dry_order['amount'] * self.get_fee(pair),
+                    'cost': dry_order['cost'] * self.get_fee(pair),
                     'rate': self.get_fee(pair)
                 }
             })
