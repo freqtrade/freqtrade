@@ -97,8 +97,7 @@ class DataProvider:
         """
         Return last ticker data
         """
-        # TODO: Implement me
-        pass
+        return self._exchange.fetch_ticker(pair)
 
     def orderbook(self, pair: str, maximum: int) -> Dict[str, List]:
         """
