@@ -1144,8 +1144,6 @@ class FreqtradeBot:
                 if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
                     order['amount'] = new_amount
                     order.pop('filled', None)
-                    # Fee was applied, so set to 0
-                    trade.fee_open = 0
                     trade.recalc_open_trade_price()
             except DependencyException as exception:
                 logger.warning("Could not update trade amount: %s", exception)

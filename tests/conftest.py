@@ -873,7 +873,7 @@ def limit_buy_order_old_partial():
 def limit_buy_order_old_partial_canceled(limit_buy_order_old_partial):
     res = deepcopy(limit_buy_order_old_partial)
     res['status'] = 'canceled'
-    res['fee'] = {'cost': 0.0001, 'currency': 'ETH'}
+    res['fee'] = {'cost': 0.023, 'currency': 'ETH'}
     return res
 
 

@@ -377,7 +377,7 @@ class Trade(_DECL_BASE):
         )
 
     def update_fee(self, fee_cost: float, fee_currency: Optional[str], fee_rate: Optional[float],
-                   side: str) -> None:
+                   side) -> None:
         """
         Update Fee parameters. Only acts once per side
         """

@@ -2229,9 +2229,10 @@ def test_check_handle_timedout_partial_fee(default_conf, ticker, open_trade, cap
     assert len(trades) == 1
     # Verify that trade has been updated
     assert trades[0].amount == (limit_buy_order_old_partial['amount'] -
-                                limit_buy_order_old_partial['remaining']) - 0.0001
+                                limit_buy_order_old_partial['remaining']) - 0.023
     assert trades[0].open_order_id is None
-    assert trades[0].fee_open == 0
+    assert trades[0].fee_updated('buy')
+    assert pytest.approx(trades[0].fee_open) == 0.001
 
 
 def test_check_handle_timedout_partial_except(default_conf, ticker, open_trade, caplog, fee,
