@@ -402,6 +402,8 @@ class Trade(_DECL_BASE):
             return self.fee_open_currency is not None
         elif side == 'sell':
             return self.fee_close_currency is not None
+        else:
+            return False
 
     def _calc_open_trade_price(self) -> float:
         """

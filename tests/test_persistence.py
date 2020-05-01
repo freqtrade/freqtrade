@@ -913,6 +913,36 @@ def test_update_fee(fee):
     assert trade.fee_close == fee_rate
 
 
+def test_fee_updated(fee):
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        fee_open=fee.return_value,
+        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        amount=10,
+        fee_close=fee.return_value,
+        exchange='bittrex',
+        open_rate=1,
+        max_rate=1,
+    )
+
+    assert trade.fee_open_currency is None
+    assert not trade.fee_updated('buy')
+    assert not trade.fee_updated('sell')
+    assert not trade.fee_updated('asdf')
+
+    trade.update_fee(0.15, 'BTC', 0.0075, 'buy')
+    assert trade.fee_updated('buy')
+    assert not trade.fee_updated('sell')
+    assert trade.fee_open_currency is not None
+    assert trade.fee_close_currency is None
+
+    trade.update_fee(0.15, 'ABC', 0.0075, 'sell')
+    assert trade.fee_updated('buy')
+    assert trade.fee_updated('sell')
+    assert not trade.fee_updated('asfd')
+
+
 @pytest.mark.usefixtures("init_persistence")
 def test_total_open_trades_stakes(fee):
 
