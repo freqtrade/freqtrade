@@ -2159,9 +2159,44 @@ def test_order_has_fee(order, expected) -> None:
 
 
 @pytest.mark.parametrize("order,expected", [
-    ({'fee': {'currency': 'ETH/BTC', 'cost': 0.43}}, (0.43, 'ETH/BTC', None)),
-    ({'fee': {'currency': 'ETH/USDT', 'cost': 0.01}}, (0.01, 'ETH/USDT', None)),
-    ({'fee': {'currency': 'ETH/USDT', 'cost': 0.34, 'rate': 0.01}}, (0.34, 'ETH/USDT', 0.01)),
+    ({'symbol': 'ETH/BTC', 'fee': {'currency': 'ETH', 'cost': 0.43}},
+        (0.43, 'ETH', 0.01)),
+    ({'symbol': 'ETH/USDT', 'fee': {'currency': 'USDT', 'cost': 0.01}},
+        (0.01, 'USDT', 0.01)),
+    ({'symbol': 'BTC/USDT', 'fee': {'currency': 'USDT', 'cost': 0.34, 'rate': 0.01}},
+        (0.34, 'USDT', 0.01)),
 ])
-def test_extract_cost_curr_rate(order, expected) -> None:
-    assert Exchange.extract_cost_curr_rate(order) == expected
+def test_extract_cost_curr_rate(mocker, default_conf, order, expected) -> None:
+    mocker.patch('freqtrade.exchange.Exchange.calculate_fee_rate', MagicMock(return_value=0.01))
+    ex = get_patched_exchange(mocker, default_conf)
+    assert ex.extract_cost_curr_rate(order) == expected
+
+
+@pytest.mark.parametrize("order,expected", [
+    # Using base-currency
+    ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
+        'fee': {'currency': 'ETH', 'cost': 0.004, 'rate': None}}, 0.1),
+    ({'symbol': 'ETH/BTC', 'amount': 0.05, 'cost': 0.05,
+        'fee': {'currency': 'ETH', 'cost': 0.004, 'rate': None}}, 0.08),
+    # Using quote currency
+    ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
+        'fee': {'currency': 'BTC', 'cost': 0.005}}, 0.1),
+    ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
+        'fee': {'currency': 'BTC', 'cost': 0.002, 'rate': None}}, 0.04),
+    # Using foreign currency
+    ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
+        'fee': {'currency': 'NEO', 'cost': 0.0012}}, 0.001944),
+    ({'symbol': 'ETH/BTC', 'amount': 2.21, 'cost': 0.02992561,
+        'fee': {'currency': 'NEO', 'cost': 0.00027452}}, 0.00074305),
+    # TODO: More tests here!
+    # Rate included in return - return as is
+    ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
+        'fee': {'currency': 'USDT', 'cost': 0.34, 'rate': 0.01}}, 0.01),
+    ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
+        'fee': {'currency': 'USDT', 'cost': 0.34, 'rate': 0.005}}, 0.005),
+])
+def test_calculate_fee_rate(mocker, default_conf, order, expected) -> None:
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', return_value={'last': 0.081})
+
+    ex = get_patched_exchange(mocker, default_conf)
+    assert ex.calculate_fee_rate(order) == expected
