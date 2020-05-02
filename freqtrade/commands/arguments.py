@@ -64,6 +64,8 @@ ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "ticker_interval"]
 
+ARGS_SHOW_TRADES = ["db_url", "trade_ids", "print_json"]
+
 ARGS_HYPEROPT_LIST = ["hyperopt_list_best", "hyperopt_list_profitable",
                       "hyperopt_list_min_trades", "hyperopt_list_max_trades",
                       "hyperopt_list_min_avg_time", "hyperopt_list_max_avg_time",
@@ -78,7 +80,7 @@ ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperop
 NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list-timeframes",
                     "list-markets", "list-pairs", "list-strategies",
                     "list-hyperopts", "hyperopt-list", "hyperopt-show",
-                    "plot-dataframe", "plot-profit"]
+                    "plot-dataframe", "plot-profit", "show-trades"]
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-hyperopt", "new-strategy"]
 
@@ -163,7 +165,7 @@ class Arguments:
                                         start_list_markets, start_list_strategies,
                                         start_list_timeframes, start_new_config,
                                         start_new_hyperopt, start_new_strategy,
-                                        start_plot_dataframe, start_plot_profit,
+                                        start_plot_dataframe, start_plot_profit, start_show_trades,
                                         start_backtesting, start_hyperopt, start_edge,
                                         start_test_pairlist, start_trading)
 
@@ -329,6 +331,15 @@ class Arguments:
         )
         plot_profit_cmd.set_defaults(func=start_plot_profit)
         self._build_args(optionlist=ARGS_PLOT_PROFIT, parser=plot_profit_cmd)
+
+        # Add show-trades subcommand
+        show_trades = subparsers.add_parser(
+            'show-trades',
+            help='Show trades.',
+            parents=[_common_parser],
+        )
+        show_trades.set_defaults(func=start_show_trades)
+        self._build_args(optionlist=ARGS_SHOW_TRADES, parser=show_trades)
 
         # Add hyperopt-list subcommand
         hyperopt_list_cmd = subparsers.add_parser(
