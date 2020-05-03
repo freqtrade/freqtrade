@@ -982,7 +982,7 @@ class FreqtradeBot:
         if wallet_amount >= amount:
             return amount
         elif wallet_amount > amount * 0.98:
-            logger.info(f"{pair} - Falling back to wallet-amount.")
+            logger.info(f"{pair} - Falling back to wallet-amount {wallet_amount} -> {amount}.")
             return wallet_amount
         else:
             raise DependencyException(
