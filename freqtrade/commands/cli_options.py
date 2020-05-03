@@ -426,8 +426,8 @@ AVAILABLE_CLI_OPTIONS = {
         default="file",
     ),
     "trade_ids": Arg(
-        '--tradeids',
-        help='Specify Trade ids to trade',
+        '--trade-ids',
+        help='Specify the list of trade ids.',
         nargs='+',
     ),
     # hyperopt-list, hyperopt-show

@@ -529,7 +529,7 @@ Print selected (or all) trades from database to screen.
 ```
 usage: freqtrade show-trades [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                              [-d PATH] [--userdir PATH] [--db-url PATH]
-                             [--tradeids TRADE_IDS [TRADE_IDS ...]]
+                             [--trade-ids TRADE_IDS [TRADE_IDS ...]]
                              [--print-json]
 
 optional arguments:
@@ -538,8 +538,8 @@ optional arguments:
                         deployments (default: `sqlite:///tradesv3.sqlite` for
                         Live Run mode, `sqlite:///tradesv3.dryrun.sqlite` for
                         Dry Run).
-  --tradeids TRADE_IDS [TRADE_IDS ...]
-                        Specify Trade ids to trade
+  --trade-ids TRADE_IDS [TRADE_IDS ...]
+                        Specify the list of trade ids.
   --print-json          Print output in JSON format.
 
 Common arguments:
@@ -564,5 +564,5 @@ Common arguments:
 Print trades with id 2 and 3 as json
 
 ``` bash
-freqtrade show-trades --db-url sqlite:///tradesv3.sqlite --tradeids 2 3 --print-json
+freqtrade show-trades --db-url sqlite:///tradesv3.sqlite --trade-ids 2 3 --print-json
 ```

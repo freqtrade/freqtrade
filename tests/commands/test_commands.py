@@ -1066,7 +1066,7 @@ def test_show_trades(mocker, fee, capsys, caplog):
         "--db-url",
         "sqlite:///",
         "--print-json",
-        "--tradeids", "1", "2"
+        "--trade-ids", "1", "2"
     ]
     pargs = get_args(args)
     pargs['config'] = None
