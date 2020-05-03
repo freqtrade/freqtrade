@@ -3305,7 +3305,8 @@ def test_get_real_amount_quote(default_conf, trades_for_order, buy_order_fee, fe
                    caplog)
 
 
-def test_get_real_amount_quote_dust(default_conf, trades_for_order, buy_order_fee, fee, caplog, mocker):
+def test_get_real_amount_quote_dust(default_conf, trades_for_order, buy_order_fee, fee,
+                                    caplog, mocker):
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     walletmock = mocker.patch('freqtrade.wallets.Wallets.update')
     mocker.patch('freqtrade.wallets.Wallets.get_free', return_value=8.1122)
@@ -3326,7 +3327,7 @@ def test_get_real_amount_quote_dust(default_conf, trades_for_order, buy_order_fe
     assert freqtrade.get_real_amount(trade, buy_order_fee) == amount
     assert walletmock.call_count == 1
     assert log_has_re(r'Fee amount for Trade.* was in base currency '
-                        '- Eating Fee 0.008 into dust', caplog)
+                      '- Eating Fee 0.008 into dust', caplog)
 
 
 def test_get_real_amount_no_trade(default_conf, buy_order_fee, caplog, mocker, fee):
@@ -3570,6 +3571,36 @@ def test_get_real_amount_open_trade(default_conf, fee, mocker):
     }
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     assert freqtrade.get_real_amount(trade, order) == amount
+
+
+@pytest.mark.parametrize('amount,fee_abs,wallet,amount_exp', [
+    (8.0, 0.0, 10, 8),
+    (8.0, 0.0, 0, 8),
+    (8.0, 0.1, 0, 7.9),
+    (8.0, 0.1, 10, 8),
+    (8.0, 0.1, 8.0, 8.0),
+    (8.0, 0.1, 7.9, 7.9),
+])
+def test_apply_fee_conditional(default_conf, fee, caplog, mocker,
+                               amount, fee_abs, wallet, amount_exp):
+    walletmock = mocker.patch('freqtrade.wallets.Wallets.update')
+    # mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
+    mocker.patch('freqtrade.wallets.Wallets.get_free', return_value=wallet)
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=amount,
+        exchange='binance',
+        open_rate=0.245441,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_order_id="123456"
+    )
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+
+    walletmock.reset_mock()
+    # Amount is kept as is
+    assert freqtrade.apply_fee_conditional(trade, 'LTC', amount, fee_abs) == amount_exp
+    assert walletmock.call_count == 1
 
 
 def test_order_book_depth_of_market(default_conf, ticker, limit_buy_order, fee, mocker,
