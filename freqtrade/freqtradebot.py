@@ -54,8 +54,11 @@ class FreqtradeBot:
         # Init objects
         self.config = config
 
-        self._sell_rate_cache = TTLCache(maxsize=100, ttl=5)
-        self._buy_rate_cache = TTLCache(maxsize=100, ttl=5)
+        _process_throttle_secs = self.config['internals'].get('process_throttle_secs',
+                                                              constants.PROCESS_THROTTLE_SECS)
+        # Use 3x process_throttle_secs for caching to avoid delays in RPC methods.
+        self._sell_rate_cache = TTLCache(maxsize=100, ttl=_process_throttle_secs * 3)
+        self._buy_rate_cache = TTLCache(maxsize=100, ttl=_process_throttle_secs * 3)
 
         self.strategy: IStrategy = StrategyResolver.load_strategy(self.config)
 
