@@ -3584,7 +3584,6 @@ def test_get_real_amount_open_trade(default_conf, fee, mocker):
 def test_apply_fee_conditional(default_conf, fee, caplog, mocker,
                                amount, fee_abs, wallet, amount_exp):
     walletmock = mocker.patch('freqtrade.wallets.Wallets.update')
-    # mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
     mocker.patch('freqtrade.wallets.Wallets.get_free', return_value=wallet)
     trade = Trade(
         pair='LTC/ETH',
