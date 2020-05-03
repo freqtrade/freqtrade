@@ -1160,6 +1160,23 @@ class FreqtradeBot:
 
         return False
 
+    def apply_fee_conditional(self, trade: Trade, trade_base_currency: str,
+                              amount: float, fee: float) -> float:
+        """
+        Applies the fee to amount (either from Order or from Trades).
+        Can eat into dust if more than the required asset is available.
+        """
+        if fee != 0 and self.wallets.get_free(trade_base_currency) >= amount:
+            # Eat into dust if we own more than base currency
+            logger.info(f"Fee amount for {trade} was in base currency - "
+                        f"Eating Fee {fee} into dust.")
+        elif fee != 0:
+            real_amount = self.exchange.amount_to_precision(trade.pair, amount - fee)
+            logger.info(f"Applying fee on amount for {trade} "
+                        f"(from {amount} to {real_amount}).")
+            return real_amount
+        return amount
+
     def get_real_amount(self, trade: Trade, order: Dict, order_amount: float = None) -> float:
         """
         Detect and update trade fee.
@@ -1181,11 +1198,12 @@ class FreqtradeBot:
             fee_cost, fee_currency, fee_rate = self.exchange.extract_cost_curr_rate(order)
             logger.info(f"Fee for Trade {trade} [{order.get('side')}]: "
                         f"{fee_cost:.8g} {fee_currency} - rate: {fee_rate}")
-            if trade_base_currency == fee_currency:
-                order_amount = order_amount - fee_cost
-                logger.info(f"Applying fee on amount for {trade} (from {order['amount']} "
-                            f"to {order_amount}) from Order")
+
             trade.update_fee(fee_cost, fee_currency, fee_rate, order.get('side', ''))
+            if trade_base_currency == fee_currency:
+                # Apply fee to amount
+                return self.apply_fee_conditional(trade, trade_base_currency,
+                                                  amount=order_amount, fee=fee_cost)
             return order_amount
         return self.fee_detection_from_trades(trade, order, order_amount)
 
@@ -1218,15 +1236,15 @@ class FreqtradeBot:
         # Ensure at least one trade was found:
         if fee_currency:
             # fee_rate should use mean
-
             fee_rate = sum(fee_rate_array) / float(len(fee_rate_array)) if fee_rate_array else None
             trade.update_fee(fee_cost, fee_currency, fee_rate, order.get('side', ''))
 
         if not isclose(amount, order_amount, abs_tol=constants.MATH_CLOSE_PREC):
             logger.warning(f"Amount {amount} does not match amount {trade.amount}")
             raise DependencyException("Half bought? Amounts don't match")
-        real_amount = amount - fee_abs
+
         if fee_abs != 0:
-            logger.info(f"Applying fee on amount for {trade} "
-                        f"(from {order_amount} to {real_amount}) from Trades")
-        return real_amount
+            return self.apply_fee_conditional(trade, trade_base_currency,
+                                              amount=amount, fee=fee_abs)
+        else:
+            return amount

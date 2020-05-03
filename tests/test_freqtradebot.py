@@ -2221,7 +2221,7 @@ def test_check_handle_timedout_partial_fee(default_conf, ticker, open_trade, cap
     # and apply fees if necessary.
     freqtrade.check_handle_timedout()
 
-    assert log_has_re(r"Applying fee on amount for Trade.* Order", caplog)
+    assert log_has_re(r"Applying fee on amount for Trade.*", caplog)
 
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 2
@@ -3301,7 +3301,7 @@ def test_get_real_amount_quote(default_conf, trades_for_order, buy_order_fee, fe
     # Amount is reduced by "fee"
     assert freqtrade.get_real_amount(trade, buy_order_fee) == amount - (amount * 0.001)
     assert log_has('Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
-                   'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.992) from Trades',
+                   'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.992).',
                    caplog)
 
 
@@ -3409,7 +3409,7 @@ def test_get_real_amount_multi(default_conf, trades_for_order2, buy_order_fee, c
     # Amount is reduced by "fee"
     assert freqtrade.get_real_amount(trade, buy_order_fee) == amount - (amount * 0.001)
     assert log_has('Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
-                   'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.992) from Trades',
+                   'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.992).',
                    caplog)
 
 
@@ -3435,7 +3435,7 @@ def test_get_real_amount_fromorder(default_conf, trades_for_order, buy_order_fee
     # Amount is reduced by "fee"
     assert freqtrade.get_real_amount(trade, limit_buy_order) == amount - 0.004
     assert log_has('Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
-                   'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.996) from Order',
+                   'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.996).',
                    caplog)
 
 
