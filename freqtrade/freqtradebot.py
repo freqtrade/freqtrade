@@ -1161,17 +1161,18 @@ class FreqtradeBot:
         return False
 
     def apply_fee_conditional(self, trade: Trade, trade_base_currency: str,
-                              amount: float, fee: float) -> float:
+                              amount: float, fee_abs: float) -> float:
         """
         Applies the fee to amount (either from Order or from Trades).
         Can eat into dust if more than the required asset is available.
         """
-        if fee != 0 and self.wallets.get_free(trade_base_currency) >= amount:
+        self.wallets.update()
+        if fee_abs != 0 and self.wallets.get_free(trade_base_currency) >= amount:
             # Eat into dust if we own more than base currency
             logger.info(f"Fee amount for {trade} was in base currency - "
-                        f"Eating Fee {fee} into dust.")
-        elif fee != 0:
-            real_amount = self.exchange.amount_to_precision(trade.pair, amount - fee)
+                        f"Eating Fee {fee_abs} into dust.")
+        elif fee_abs != 0:
+            real_amount = self.exchange.amount_to_precision(trade.pair, amount - fee_abs)
             logger.info(f"Applying fee on amount for {trade} "
                         f"(from {amount} to {real_amount}).")
             return real_amount
@@ -1203,7 +1204,7 @@ class FreqtradeBot:
             if trade_base_currency == fee_currency:
                 # Apply fee to amount
                 return self.apply_fee_conditional(trade, trade_base_currency,
-                                                  amount=order_amount, fee=fee_cost)
+                                                  amount=order_amount, fee_abs=fee_cost)
             return order_amount
         return self.fee_detection_from_trades(trade, order, order_amount)
 
@@ -1245,6 +1246,6 @@ class FreqtradeBot:
 
         if fee_abs != 0:
             return self.apply_fee_conditional(trade, trade_base_currency,
-                                              amount=amount, fee=fee_abs)
+                                              amount=amount, fee_abs=fee_abs)
         else:
             return amount
