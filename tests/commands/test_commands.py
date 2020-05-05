@@ -1077,3 +1077,11 @@ def test_show_trades(mocker, fee, capsys, caplog):
     assert '"trade_id": 1' in captured.out
     assert '"trade_id": 2' in captured.out
     assert '"trade_id": 3' not in captured.out
+    args = [
+        "show-trades",
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+
+    with pytest.raises(OperationalException, match=r"--db-url is required for this command."):
+        start_show_trades(pargs)
