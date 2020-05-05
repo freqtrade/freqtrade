@@ -2348,11 +2348,12 @@ def test_handle_timedout_limit_buy_corder_empty(mocker, default_conf, limit_buy_
     trade = MagicMock()
     trade.pair = 'LTC/ETH'
     limit_buy_order['remaining'] = limit_buy_order['amount']
+    limit_buy_order['filled'] = 0.0
     assert freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
     assert cancel_order_mock.call_count == 1
 
     cancel_order_mock.reset_mock()
-    limit_buy_order['amount'] = 2
+    limit_buy_order['filled'] = 1.0
     assert not freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
     assert cancel_order_mock.call_count == 1
 
