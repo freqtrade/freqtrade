@@ -898,7 +898,7 @@ class FreqtradeBot:
         Buy timeout - cancel order
         :return: True if order was fully cancelled
         """
-        if order['status'] != 'canceled':
+        if order['status'] not in ('canceled', 'closed'):
             reason = "cancelled due to timeout"
             corder = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
                                                             trade.amount)
@@ -909,7 +909,7 @@ class FreqtradeBot:
 
         logger.info('Buy order %s for %s.', reason, trade)
 
-        if safe_value_fallback(corder, order, 'remaining', 'remaining') == order['amount']:
+        if safe_value_fallback(corder, order, 'filled', 'filled') == 0.0:
             logger.info('Buy order fully cancelled. Removing %s from database.', trade)
             # if trade is not partially completed, just delete the trade
             Trade.session.delete(trade)
@@ -921,8 +921,7 @@ class FreqtradeBot:
         # cancel_order may not contain the full order dict, so we need to fallback
         # to the order dict aquired before cancelling.
         # we need to fall back to the values from order if corder does not contain these keys.
-        trade.amount = order['amount'] - safe_value_fallback(corder, order,
-                                                             'remaining', 'remaining')
+        trade.amount = safe_value_fallback(corder, order, 'filled', 'filled')
         trade.stake_amount = trade.amount * trade.open_rate
         self.update_trade_state(trade, corder, trade.amount)
 

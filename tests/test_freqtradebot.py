@@ -2346,7 +2346,6 @@ def test_handle_timedout_limit_buy_exchanges(mocker, caplog, default_conf,
     assert log_has_re(r'Buy order fully cancelled. Removing .* from database\.', caplog)
 
 
-
 @pytest.mark.parametrize('cancelorder', [
     {},
     {'remaining': None},
