@@ -10,11 +10,13 @@ from freqtrade.commands import (start_convert_data, start_create_userdir,
                                 start_list_hyperopts, start_list_markets,
                                 start_list_strategies, start_list_timeframes,
                                 start_new_hyperopt, start_new_strategy,
-                                start_test_pairlist, start_trading)
+                                start_show_trades, start_test_pairlist,
+                                start_trading)
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
-from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
+from tests.conftest import (create_mock_trades, get_args, log_has, log_has_re,
+                            patch_exchange,
                             patched_configuration_load_config_file)
 
 
@@ -1040,3 +1042,38 @@ def test_convert_data_trades(mocker, testdatadir):
     assert trades_mock.call_args[1]['convert_from'] == 'jsongz'
     assert trades_mock.call_args[1]['convert_to'] == 'json'
     assert trades_mock.call_args[1]['erase'] is False
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_show_trades(mocker, fee, capsys, caplog):
+    mocker.patch("freqtrade.persistence.init")
+    create_mock_trades(fee)
+    args = [
+        "show-trades",
+        "--db-url",
+        "sqlite:///"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_show_trades(pargs)
+    assert log_has("Printing 3 Trades: ", caplog)
+    captured = capsys.readouterr()
+    assert "Trade(id=1" in captured.out
+    assert "Trade(id=2" in captured.out
+    assert "Trade(id=3" in captured.out
+    args = [
+        "show-trades",
+        "--db-url",
+        "sqlite:///",
+        "--print-json",
+        "--trade-ids", "1", "2"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_show_trades(pargs)
+
+    captured = capsys.readouterr()
+    assert log_has("Printing 2 Trades: ", caplog)
+    assert '"trade_id": 1' in captured.out
+    assert '"trade_id": 2' in captured.out
+    assert '"trade_id": 3' not in captured.out

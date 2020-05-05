@@ -197,3 +197,25 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
                   args.get('list_pairs_print_json', False) or
                   args.get('print_csv', False)):
             print(f"{summary_str}.")
+
+
+def start_show_trades(args: Dict[str, Any]) -> None:
+    """
+    Show trades
+    """
+    from freqtrade.persistence import init, Trade
+    import json
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+    init(config['db_url'], clean_open_orders=False)
+    tfilter = []
+
+    if config.get('trade_ids'):
+        tfilter.append(Trade.id.in_(config['trade_ids']))
+
+    trades = Trade.get_trades(tfilter).all()
+    logger.info(f"Printing {len(trades)} Trades: ")
+    if config.get('print_json', False):
+        print(json.dumps([trade.to_json() for trade in trades], indent=4))
+    else:
+        for trade in trades:
+            print(trade)
