@@ -625,7 +625,7 @@ class Telegram(RPC):
             f"*Minimum ROI:* `{val['minimal_roi']}`\n"
             f"{sl_info}"
             f"*Ticker Interval:* `{val['ticker_interval']}`\n"
-            f"*Strategy:* `{val['strategy']}\n`"
+            f"*Strategy:* `{val['strategy']}`\n"
             f"*Current state:* `{val['state']}`"
         )
 
