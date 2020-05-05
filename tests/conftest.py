@@ -877,6 +877,99 @@ def limit_buy_order_old_partial_canceled(limit_buy_order_old_partial):
     return res
 
 
+@pytest.fixture(scope='function')
+def limit_buy_order_canceled_empty(request):
+    # Indirect fixture
+    # Documentation:
+    # https://docs.pytest.org/en/latest/example/parametrize.html#apply-indirect-on-particular-arguments
+
+    exchange_name = request.param
+    if exchange_name == 'ftx':
+        return {
+            'info': {},
+            'id': '1234512345',
+            'clientOrderId': None,
+            'timestamp': arrow.utcnow().shift(minutes=-601).timestamp,
+            'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+            'lastTradeTimestamp': None,
+            'symbol': 'LTC/USDT',
+            'type': 'limit',
+            'side': 'buy',
+            'price': 34.3225,
+            'amount': 0.55,
+            'cost': 0.0,
+            'average': None,
+            'filled': 0.0,
+            'remaining': 0.0,
+            'status': 'closed',
+            'fee': None,
+            'trades': None
+        }
+    elif exchange_name == 'kraken':
+        return {
+            'info': {},
+            'id': 'AZNPFF-4AC4N-7MKTAT',
+            'clientOrderId': None,
+            'timestamp': arrow.utcnow().shift(minutes=-601).timestamp,
+            'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+            'lastTradeTimestamp': None,
+            'status': 'canceled',
+            'symbol': 'LTC/USDT',
+            'type': 'limit',
+            'side': 'buy',
+            'price': 34.3225,
+            'cost': 0.0,
+            'amount': 0.55,
+            'filled': 0.0,
+            'average': 0.0,
+            'remaining': 0.55,
+            'fee': {'cost': 0.0, 'rate': None, 'currency': 'USDT'},
+            'trades': []
+        }
+    elif exchange_name == 'binance':
+        return {
+            'info': {},
+            'id': '1234512345',
+            'clientOrderId': 'alb1234123',
+            'timestamp': arrow.utcnow().shift(minutes=-601).timestamp,
+            'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+            'lastTradeTimestamp': None,
+            'symbol': 'LTC/USDT',
+            'type': 'limit',
+            'side': 'buy',
+            'price': 0.016804,
+            'amount': 0.55,
+            'cost': 0.0,
+            'average': None,
+            'filled': 0.0,
+            'remaining': 0.55,
+            'status': 'canceled',
+            'fee': None,
+            'trades': None
+        }
+    else:
+        return {
+            'info': {},
+            'id': '1234512345',
+            'clientOrderId': 'alb1234123',
+            'timestamp': arrow.utcnow().shift(minutes=-601).timestamp,
+            'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+            'lastTradeTimestamp': None,
+            'symbol': 'LTC/USDT',
+            'type': 'limit',
+            'side': 'buy',
+            'price': 0.016804,
+            'amount': 0.55,
+            'cost': 0.0,
+            'average': None,
+            'filled': 0.0,
+            'remaining': 0.55,
+            'status': 'canceled',
+            'fee': None,
+            'trades': None
+        }
+
+
 @pytest.fixture
 def limit_sell_order():
     return {
