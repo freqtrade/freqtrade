@@ -14,6 +14,9 @@ class State(Enum):
     STOPPED = 2
     RELOAD_CONF = 3
 
+    def __str__(self):
+        return f"{self.name.lower()}"
+
 
 class RunMode(Enum):
     """
