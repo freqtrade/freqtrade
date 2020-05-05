@@ -206,6 +206,11 @@ def start_show_trades(args: Dict[str, Any]) -> None:
     from freqtrade.persistence import init, Trade
     import json
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+
+    if 'db_url' not in config:
+        raise OperationalException("--db-url is required for this command.")
+
+    logger.info(f'Using DB: "{config["db_url"]}"')
     init(config['db_url'], clean_open_orders=False)
     tfilter = []
 
