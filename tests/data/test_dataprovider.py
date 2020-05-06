@@ -1,10 +1,10 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 
 from pandas import DataFrame
 
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.state import RunMode
-from tests.conftest import get_patched_exchange
+from tests.conftest import get_patched_exchange, get_patched_freqtradebot
 
 
 def test_ohlcv(mocker, default_conf, ohlcv_history):
@@ -64,8 +64,8 @@ def test_get_pair_dataframe(mocker, default_conf, ohlcv_history):
     assert dp.get_pair_dataframe("NONESENSE/AAA", ticker_interval).empty
 
     # Test with and without parameter
-    assert dp.get_pair_dataframe("UNITTEST/BTC",
-                                 ticker_interval).equals(dp.get_pair_dataframe("UNITTEST/BTC"))
+    assert dp.get_pair_dataframe("UNITTEST/BTC", ticker_interval)\
+        .equals(dp.get_pair_dataframe("UNITTEST/BTC"))
 
     default_conf["runmode"] = RunMode.LIVE
     dp = DataProvider(default_conf, exchange)
@@ -90,10 +90,7 @@ def test_available_pairs(mocker, default_conf, ohlcv_history):
 
     dp = DataProvider(default_conf, exchange)
     assert len(dp.available_pairs) == 2
-    assert dp.available_pairs == [
-        ("XRP/BTC", ticker_interval),
-        ("UNITTEST/BTC", ticker_interval),
-    ]
+    assert dp.available_pairs == [("XRP/BTC", ticker_interval), ("UNITTEST/BTC", ticker_interval), ]
 
 
 def test_refresh(mocker, default_conf, ohlcv_history):
@@ -152,3 +149,23 @@ def test_market(mocker, default_conf, markets):
 
     res = dp.market('UNITTEST/BTC')
     assert res is None
+
+
+def test_current_whitelist(mocker, shitcoinmarkets, tickers, default_conf):
+    default_conf.update(
+        {"pairlists": [{"method": "VolumePairList",
+                        "number_assets": 10,
+                        "sort_key": "quoteVolume"}], }, )
+    default_conf['exchange']['pair_blacklist'] = ['BLK/BTC']
+
+    mocker.patch.multiple('freqtrade.exchange.Exchange', get_tickers=tickers,
+                          exchange_has=MagicMock(return_value=True), )
+    bot = get_patched_freqtradebot(mocker, default_conf)
+    # Remock markets with shitcoinmarkets since get_patched_freqtradebot uses the markets fixture
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          markets=PropertyMock(return_value=shitcoinmarkets), )
+    # argument: use the whitelist dynamically by exchange-volume
+    whitelist = ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC', 'HOT/BTC', 'FUEL/BTC']
+
+    current_wl = bot.dataprovider.current_whitelist()
+    assert whitelist == current_wl

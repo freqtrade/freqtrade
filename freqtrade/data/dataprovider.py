@@ -116,3 +116,17 @@ class DataProvider:
         can be "live", "dry-run", "backtest", "edgecli", "hyperopt" or "other".
         """
         return RunMode(self._config.get('runmode', RunMode.OTHER))
+
+    def current_whitelist(self) -> List[str]:
+        """
+        fetch latest available whitelist.
+
+        Useful when you have a large whitelist and need to call each pair as an informative pair.
+        As available pairs does not show whitelist until after informative pairs have been cached.
+        :return: list of pairs in whitelist
+        """
+        from freqtrade.pairlist.pairlistmanager import PairListManager
+
+        pairlists = PairListManager(self._exchange, self._config)
+        pairlists.refresh_pairlist()
+        return pairlists.whitelist
