@@ -2313,7 +2313,7 @@ def test_handle_timedout_limit_buy(mocker, caplog, default_conf, limit_buy_order
     Trade.session = MagicMock()
     trade = MagicMock()
     trade.pair = 'LTC/ETH'
-    limit_buy_order['filled'] = 0
+    limit_buy_order['filled'] = 0.0
     limit_buy_order['status'] = 'open'
     assert freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
     assert cancel_order_mock.call_count == 1
@@ -2323,6 +2323,7 @@ def test_handle_timedout_limit_buy(mocker, caplog, default_conf, limit_buy_order
     assert not freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
     assert cancel_order_mock.call_count == 1
 
+    limit_buy_order['filled'] = 2
     mocker.patch('freqtrade.exchange.Exchange.cancel_order', side_effect=InvalidOrderException)
     assert not freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
 
