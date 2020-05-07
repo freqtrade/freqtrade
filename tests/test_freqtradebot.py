@@ -2313,17 +2313,39 @@ def test_handle_timedout_limit_buy(mocker, caplog, default_conf, limit_buy_order
     Trade.session = MagicMock()
     trade = MagicMock()
     trade.pair = 'LTC/ETH'
-    limit_buy_order['remaining'] = limit_buy_order['amount']
+    limit_buy_order['filled'] = 0.0
+    limit_buy_order['status'] = 'open'
     assert freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
     assert cancel_order_mock.call_count == 1
 
     cancel_order_mock.reset_mock()
-    limit_buy_order['amount'] = 2
+    limit_buy_order['filled'] = 2
     assert not freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
     assert cancel_order_mock.call_count == 1
 
+    limit_buy_order['filled'] = 2
     mocker.patch('freqtrade.exchange.Exchange.cancel_order', side_effect=InvalidOrderException)
     assert not freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
+
+
+@pytest.mark.parametrize("limit_buy_order_canceled_empty", ['binance', 'ftx', 'kraken', 'bittrex'],
+                         indirect=['limit_buy_order_canceled_empty'])
+def test_handle_timedout_limit_buy_exchanges(mocker, caplog, default_conf,
+                                             limit_buy_order_canceled_empty) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    cancel_order_mock = mocker.patch(
+        'freqtrade.exchange.Exchange.cancel_order_with_result',
+        return_value=limit_buy_order_canceled_empty)
+
+    freqtrade = FreqtradeBot(default_conf)
+
+    Trade.session = MagicMock()
+    trade = MagicMock()
+    trade.pair = 'LTC/ETH'
+    assert freqtrade.handle_timedout_limit_buy(trade, limit_buy_order_canceled_empty)
+    assert cancel_order_mock.call_count == 0
+    assert log_has_re(r'Buy order fully cancelled. Removing .* from database\.', caplog)
 
 
 @pytest.mark.parametrize('cancelorder', [
@@ -2347,12 +2369,14 @@ def test_handle_timedout_limit_buy_corder_empty(mocker, default_conf, limit_buy_
     Trade.session = MagicMock()
     trade = MagicMock()
     trade.pair = 'LTC/ETH'
-    limit_buy_order['remaining'] = limit_buy_order['amount']
+    limit_buy_order['filled'] = 0.0
+    limit_buy_order['status'] = 'open'
+
     assert freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
     assert cancel_order_mock.call_count == 1
 
     cancel_order_mock.reset_mock()
-    limit_buy_order['amount'] = 2
+    limit_buy_order['filled'] = 1.0
     assert not freqtrade.handle_timedout_limit_buy(trade, limit_buy_order)
     assert cancel_order_mock.call_count == 1
 
