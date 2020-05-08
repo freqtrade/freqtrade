@@ -135,6 +135,10 @@ def test_main_operational_exception1(mocker, default_conf, caplog) -> None:
         'freqtrade.commands.list_commands.available_exchanges',
         MagicMock(side_effect=KeyboardInterrupt)
     )
+    with pytest.raises(SystemExit):
+        main(args)
+
+    assert log_has_re(r'SIGINT.*', caplog)
 
 
 def test_main_reload_conf(mocker, default_conf, caplog) -> None:
