@@ -32,7 +32,7 @@ def test_setup_utils_configuration():
     assert config['exchange']['secret'] == ''
 
 
-def test_start_trading_fail(mocker):
+def test_start_trading_fail(mocker, caplog):
 
     mocker.patch("freqtrade.worker.Worker.run", MagicMock(side_effect=OperationalException))
 
@@ -43,16 +43,15 @@ def test_start_trading_fail(mocker):
         'trade',
         '-c', 'config.json.example'
     ]
-    with pytest.raises(OperationalException):
-        start_trading(get_args(args))
+    start_trading(get_args(args))
     assert exitmock.call_count == 1
 
     exitmock.reset_mock()
-
+    caplog.clear()
     mocker.patch("freqtrade.worker.Worker.__init__", MagicMock(side_effect=OperationalException))
-    with pytest.raises(OperationalException):
-        start_trading(get_args(args))
+    start_trading(get_args(args))
     assert exitmock.call_count == 0
+    assert log_has('Fatal exception!', caplog)
 
 
 def test_list_exchanges(capsys):
