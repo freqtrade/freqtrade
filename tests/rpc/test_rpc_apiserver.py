@@ -256,7 +256,7 @@ def test_api_count(botclient, mocker, ticker, fee, markets):
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
-        fetch_ticker=ticker,
+        get_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
@@ -293,7 +293,7 @@ def test_api_daily(botclient, mocker, ticker, fee, markets):
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
-        fetch_ticker=ticker,
+        get_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
@@ -333,7 +333,7 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
-        fetch_ticker=ticker,
+        get_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
@@ -348,7 +348,7 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
-        fetch_ticker=ticker,
+        get_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
@@ -438,7 +438,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
-        fetch_ticker=ticker,
+        get_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
@@ -594,7 +594,7 @@ def test_api_forcesell(botclient, mocker, ticker, fee, markets):
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
-        fetch_ticker=ticker,
+        get_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )

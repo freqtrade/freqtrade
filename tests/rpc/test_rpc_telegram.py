@@ -194,7 +194,7 @@ def test_status(default_conf, update, mocker, fee, ticker,) -> None:
 def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker,
+        get_ticker=ticker,
         get_fee=fee,
     )
     msg_mock = MagicMock()
@@ -244,7 +244,7 @@ def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
 def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker,
+        get_ticker=ticker,
         buy=MagicMock(return_value={'id': 'mocked_order_id'}),
         get_fee=fee,
     )
@@ -297,7 +297,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
     )
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker,
+        get_ticker=ticker,
         get_fee=fee,
     )
     msg_mock = MagicMock()
@@ -364,7 +364,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
 def test_daily_wrong_input(default_conf, update, ticker, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker
+        get_ticker=ticker
     )
     msg_mock = MagicMock()
     mocker.patch.multiple(
@@ -402,7 +402,7 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker,
+        get_ticker=ticker,
         get_fee=fee,
     )
     msg_mock = MagicMock()
@@ -434,7 +434,7 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     msg_mock.reset_mock()
 
     # Update the ticker with a market going up
-    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', ticker_sell_up)
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker', ticker_sell_up)
     trade.update(limit_sell_order)
 
     trade.close_date = datetime.utcnow()
@@ -691,7 +691,7 @@ def test_forcesell_handle(default_conf, update, ticker, fee,
     patch_whitelist(mocker, default_conf)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker,
+        get_ticker=ticker,
         get_fee=fee,
     )
 
@@ -706,7 +706,7 @@ def test_forcesell_handle(default_conf, update, ticker, fee,
     assert trade
 
     # Increase the price and sell it
-    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', ticker_sell_up)
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker', ticker_sell_up)
 
     # /forcesell 1
     context = MagicMock()
@@ -746,7 +746,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee,
 
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker,
+        get_ticker=ticker,
         get_fee=fee,
     )
 
@@ -760,7 +760,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee,
     # Decrease the price and sell it
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker_sell_down
+        get_ticker=ticker_sell_down
     )
 
     trade = Trade.query.first()
@@ -803,7 +803,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
     patch_whitelist(mocker, default_conf)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker,
+        get_ticker=ticker,
         get_fee=fee,
     )
     default_conf['max_open_trades'] = 4
@@ -954,7 +954,7 @@ def test_performance_handle(default_conf, update, ticker, fee,
     )
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker,
+        get_ticker=ticker,
         get_fee=fee,
     )
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
@@ -989,7 +989,7 @@ def test_count_handle(default_conf, update, ticker, fee, mocker) -> None:
     )
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker,
+        get_ticker=ticker,
         buy=MagicMock(return_value={'id': 'mocked_order_id'}),
         get_fee=fee,
     )

@@ -263,7 +263,7 @@ class FreqtradeBot:
             used_rate = order_book_rate
         else:
             logger.info(f"Using Last {bid_strategy['price_side'].capitalize()} / Last Price")
-            ticker = self.exchange.fetch_ticker(pair)
+            ticker = self.exchange.get_ticker(pair)
             ticker_rate = ticker[bid_strategy['price_side']]
             if ticker['last'] and ticker_rate > ticker['last']:
                 balance = self.config['bid_strategy']['ask_last_balance']
@@ -638,7 +638,7 @@ class FreqtradeBot:
         """
         Get sell rate - either using ticker bid or first bid based on orderbook
         The orderbook portion is only used for rpc messaging, which would otherwise fail
-        for BitMex (has no bid/ask in fetch_ticker)
+        for BitMex (has no bid/ask in get_ticker)
         or remain static in any other case since it's not updating.
         :param pair: Pair to get rate for
         :param refresh: allow cached data
@@ -660,7 +660,7 @@ class FreqtradeBot:
             rate = next(self._order_book_gen(pair, f"{ask_strategy['price_side']}s"))
 
         else:
-            rate = self.exchange.fetch_ticker(pair)[ask_strategy['price_side']]
+            rate = self.exchange.get_ticker(pair)[ask_strategy['price_side']]
         self._sell_rate_cache[pair] = rate
         return rate
 

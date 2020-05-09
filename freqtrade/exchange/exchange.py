@@ -619,7 +619,7 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def fetch_ticker(self, pair: str) -> dict:
+    def get_ticker(self, pair: str) -> dict:
         try:
             if pair not in self._api.markets or not self._api.markets[pair].get('active'):
                 raise DependencyException(f"Pair {pair} not available")
