@@ -335,12 +335,16 @@ def test_edge_init_error(mocker, edge_conf,):
         get_patched_freqtradebot(mocker, edge_conf)
 
 
-def test_process_expectancy(mocker, edge_conf):
+@pytest.mark.parametrize("fee,risk_reward_ratio,expectancy", [
+    (0.0005, 306.5384615384, 101.5128205128),
+    (0.001, 152.6923076923, 50.2307692308),
+])
+def test_process_expectancy(mocker, edge_conf, fee, risk_reward_ratio, expectancy):
     edge_conf['edge']['min_trade_number'] = 2
     freqtrade = get_patched_freqtradebot(mocker, edge_conf)
 
     def get_fee(*args, **kwargs):
-        return 0.001
+        return fee
 
     freqtrade.exchange.get_fee = get_fee
     edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
@@ -394,9 +398,9 @@ def test_process_expectancy(mocker, edge_conf):
     assert 'TEST/BTC' in final
     assert final['TEST/BTC'].stoploss == -0.9
     assert round(final['TEST/BTC'].winrate, 10) == 0.3333333333
-    assert round(final['TEST/BTC'].risk_reward_ratio, 10) == 306.5384615384
+    assert round(final['TEST/BTC'].risk_reward_ratio, 10) == risk_reward_ratio
     assert round(final['TEST/BTC'].required_risk_reward, 10) == 2.0
-    assert round(final['TEST/BTC'].expectancy, 10) == 101.5128205128
+    assert round(final['TEST/BTC'].expectancy, 10) == expectancy
 
     # Pop last item so no trade is profitable
     trades.pop()
