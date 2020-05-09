@@ -1041,9 +1041,9 @@ class Exchange:
 
             return matched_trades
 
-        except ccxt.NetworkError as e:
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f'Could not get trades due to networking error. Message: {e}') from e
+                f'Could not get trades due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
