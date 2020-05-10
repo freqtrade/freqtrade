@@ -949,8 +949,12 @@ class FreqtradeBot:
         if order['remaining'] == order['amount'] or order.get('filled') == 0.0:
             if not self.exchange.check_order_canceled_empty(order):
                 reason = "cancelled due to timeout"
-                # if trade is not partially completed, just delete the trade
-                self.exchange.cancel_order(trade.open_order_id, trade.pair)
+                try:
+                    # if trade is not partially completed, just delete the trade
+                    self.exchange.cancel_order(trade.open_order_id, trade.pair)
+                except InvalidOrderException:
+                    logger.exception(f"Could not cancel sell order {trade.open_order_id}")
+                    return 'error cancelling order'
                 logger.info('Sell order %s for %s.', reason, trade)
             else:
                 reason = "cancelled on exchange"

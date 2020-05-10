@@ -2405,6 +2405,21 @@ def test_handle_timedout_limit_sell(mocker, default_conf) -> None:
     assert cancel_order_mock.call_count == 1
 
 
+def test_handle_timedout_limit_sell_cancel_exception(mocker, default_conf) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch(
+        'freqtrade.exchange.Exchange.cancel_order', side_effect=InvalidOrderException())
+
+    freqtrade = FreqtradeBot(default_conf)
+
+    trade = MagicMock()
+    order = {'remaining': 1,
+             'amount': 1,
+             'status': "open"}
+    assert freqtrade.handle_timedout_limit_sell(trade, order) == 'error cancelling order'
+
+
 def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
