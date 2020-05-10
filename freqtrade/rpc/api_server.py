@@ -160,9 +160,9 @@ class ApiServer(RPC):
 
         # Actions to control the bot
         self.app.add_url_rule(f'{BASE_URI}/token/login', 'login',
-                              view_func=self._login, methods=['POST'])
+                              view_func=self._token_login, methods=['POST'])
         self.app.add_url_rule(f'{BASE_URI}/token/refresh', 'token_refresh',
-                              view_func=self._refresh_token, methods=['POST'])
+                              view_func=self._token_refresh, methods=['POST'])
         self.app.add_url_rule(f'{BASE_URI}/start', 'start',
                               view_func=self._start, methods=['POST'])
         self.app.add_url_rule(f'{BASE_URI}/stop', 'stop', view_func=self._stop, methods=['POST'])
@@ -216,7 +216,7 @@ class ApiServer(RPC):
 
     @require_login
     @rpc_catch_errors
-    def _login(self):
+    def _token_login(self):
         """
         Handler for /token/login
         Returns a JWT token
@@ -234,7 +234,7 @@ class ApiServer(RPC):
 
     @jwt_refresh_token_required
     @rpc_catch_errors
-    def _refresh_token(self):
+    def _token_refresh(self):
         """
         Handler for /token/refresh
         Returns a JWT token based on a JWT refresh token
