@@ -97,7 +97,7 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
     # Only order for 3rd trade needs to be cancelled
     assert cancel_order_mock.call_count == 1
     # Wallets must be updated between stoploss cancellation and selling, and will be updated again
-    # During update_trade_state
+    # during update_trade_state
     assert wallets_mock.call_count == 3
 
     trade = trades[0]
