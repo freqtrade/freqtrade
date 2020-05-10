@@ -579,7 +579,7 @@ class Telegram(RPC):
                   "*/whitelist:* `Show current whitelist` \n" \
                   "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs " \
                   "to the blacklist.` \n" \
-                  "*/edge:* `Shows validated pairs by Edge if it is enabeld` \n" \
+                  "*/edge:* `Shows validated pairs by Edge if it is enabled` \n" \
                   "*/help:* `This help message`\n" \
                   "*/version:* `Show version`"
 
