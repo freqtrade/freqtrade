@@ -206,7 +206,7 @@ whitelist
 ## Advanced API usage using JWT tokens
 
 !!! Note
-    The below should be done in an application, and is not intended to be used on a regular basis.
+    The below should be done in an application (a Freqtrade REST API client, which fetches info via API), and is not intended to be used on a regular basis.
 
 Freqtrade's REST API also offers JWT tokens.
 You can login using the following command, and subsequently use the resulting access_token.
