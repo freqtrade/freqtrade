@@ -11,6 +11,7 @@ Sample configuration:
         "enabled": true,
         "listen_ip_address": "127.0.0.1",
         "listen_port": 8080,
+        "jwt_secret_key": "somethingrandom",
         "username": "Freqtrader",
         "password": "SuperSecret1!"
     },
@@ -29,7 +30,7 @@ This should return the response:
 {"status":"pong"}
 ```
 
-All other endpoints return sensitive info and require authentication, so are not available through a web browser.
+All other endpoints return sensitive info and require authentication and are therefore not available through a web browser.
 
 To generate a secure password, either use a password manager, or use the below code snipped.
 
@@ -37,6 +38,9 @@ To generate a secure password, either use a password manager, or use the below c
 import secrets
 secrets.token_hex()
 ```
+
+!!! Hint
+    Use the same method to also generate a JWT secret key (`jwt_secret_key`).
 
 ### Configuration with docker
 

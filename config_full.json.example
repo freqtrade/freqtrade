@@ -120,6 +120,7 @@
         "enabled": false,
         "listen_ip_address": "127.0.0.1",
         "listen_port": 8080,
+        "jwt_secret_key": "somethingrandom",
         "username": "freqtrader",
         "password": "SuperSecurePassword"
     },

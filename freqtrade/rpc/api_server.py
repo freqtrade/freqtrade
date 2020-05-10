@@ -91,7 +91,8 @@ class ApiServer(RPC):
         self.app = Flask(__name__)
 
         # Setup the Flask-JWT-Extended extension
-        self.app.config['JWT_SECRET_KEY'] = 'super-secret'  # Change this!
+        self.app.config['JWT_SECRET_KEY'] = self._config['api_server'].get(
+            'jwt_secret_key', 'super-secret')
 
         self.jwt = JWTManager(self.app)
         self.app.json_encoder = ArrowJSONEncoder
