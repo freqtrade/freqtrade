@@ -242,10 +242,6 @@ class Edge:
         # All returned values are relative, they are defined as ratios.
         stake = 0.015
 
-        # Fee should be applied twice
-        open_fee = self.fee
-        close_fee = self.fee
-
         result['trade_duration'] = result['close_time'] - result['open_time']
 
         result['trade_duration'] = result['trade_duration'].map(
@@ -255,12 +251,12 @@ class Edge:
 
         # Buy Price
         result['buy_vol'] = stake / result['open_rate']  # How many target are we buying
-        result['buy_fee'] = stake * open_fee
+        result['buy_fee'] = stake * self.fee
         result['buy_spend'] = stake + result['buy_fee']  # How much we're spending
 
         # Sell price
         result['sell_sum'] = result['buy_vol'] * result['close_rate']
-        result['sell_fee'] = result['sell_sum'] * close_fee
+        result['sell_fee'] = result['sell_sum'] * self.fee
         result['sell_take'] = result['sell_sum'] - result['sell_fee']
 
         # profit_ratio
