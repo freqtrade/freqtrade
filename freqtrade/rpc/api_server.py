@@ -45,8 +45,7 @@ def require_login(func: Callable[[Any, Any], Any]):
     def func_wrapper(obj, *args, **kwargs):
         verify_jwt_in_request_optional()
         auth = request.authorization
-        i = get_jwt_identity()
-        if i or auth and obj.check_auth(auth.username, auth.password):
+        if get_jwt_identity() or auth and obj.check_auth(auth.username, auth.password):
             return func(obj, *args, **kwargs)
         else:
             return jsonify({"error": "Unauthorized"}), 401
