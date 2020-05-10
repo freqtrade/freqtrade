@@ -150,6 +150,12 @@ def test_api__init__(default_conf, mocker):
     """
     Test __init__() method
     """
+    default_conf.update({"api_server": {"enabled": True,
+                                        "listen_ip_address": "127.0.0.1",
+                                        "listen_port": 8080,
+                                        "username": "TestUser",
+                                        "password": "testPass",
+                                        }})
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
     mocker.patch('freqtrade.rpc.api_server.ApiServer.run', MagicMock())
 
