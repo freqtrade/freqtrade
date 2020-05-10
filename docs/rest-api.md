@@ -221,7 +221,7 @@ You can login using the following command, and subsequently use the resulting ac
 
 ```
 
-Since the access-token has a short timeout (15 min) - the refresh-token should be used to get a fresh access token:
+Since the access token has a short timeout (15 min) - the `token/refresh` request should be used periodically to get a fresh access token:
 
 ``` bash
 > curl -X POST --header "Authorization: Bearer ${refresh_token}"http://localhost:8080/api/v1/token/refresh
