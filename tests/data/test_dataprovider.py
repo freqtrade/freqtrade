@@ -164,7 +164,9 @@ def test_current_whitelist(exchange, PairListManager, default_conf):
 
     # Simulate volumepairs from exchange.
     # pairlist.refresh_pairlist()
-    # Set the pairs manually... this would be done in refresh pairlist default whitelist + volumePL - blacklist
+
+    # Set the pairs manually... this would be done in refresh pairlist
+    # default whitelist + volumePL - blacklist
     default_whitelist = default_conf['exchange']['pair_whitelist']
     default_blacklist = default_conf['exchange']['pair_blacklist']
     volume_pairlist = ['ETH/BTC', 'LINK/BTC', 'ZRX/BTC', 'BCH/BTC', 'XRP/BTC']
@@ -176,6 +178,6 @@ def test_current_whitelist(exchange, PairListManager, default_conf):
 
     assert dp.current_whitelist() == pairlist._whitelist
 
-    with pytest.raises(OperationalException) as e:
+    with pytest.raises(OperationalException):
         dp = DataProvider(default_conf, exchange)
         dp.current_whitelist()

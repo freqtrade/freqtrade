@@ -22,7 +22,7 @@ class DataProvider:
     def __init__(self, config: dict, exchange: Exchange, pairlists=None) -> None:
         self._config = config
         self._exchange = exchange
-        self._pairlists: Optional = pairlists
+        self._pairlists = pairlists
 
     def refresh(self,
                 pairlist: List[Tuple[str, str]],
