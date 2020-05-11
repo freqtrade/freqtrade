@@ -1,10 +1,12 @@
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import MagicMock, patch
 
 from pandas import DataFrame
+import pytest
 
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
-from tests.conftest import get_patched_exchange, get_patched_freqtradebot
+from tests.conftest import get_patched_exchange
 
 
 def test_ohlcv(mocker, default_conf, ohlcv_history):
@@ -151,21 +153,29 @@ def test_market(mocker, default_conf, markets):
     assert res is None
 
 
-def test_current_whitelist(mocker, shitcoinmarkets, tickers, default_conf):
-    default_conf.update(
-        {"pairlists": [{"method": "VolumePairList",
-                        "number_assets": 10,
-                        "sort_key": "quoteVolume"}], }, )
-    default_conf['exchange']['pair_blacklist'] = ['BLK/BTC']
+@patch('freqtrade.pairlist.pairlistmanager.PairListManager')
+@patch('freqtrade.exchange.Exchange')
+def test_current_whitelist(exchange, PairListManager, default_conf):
+    # patch default conf to volumepairlist
+    default_conf['pairlists'][0] = {'method': 'VolumePairList', "number_assets": 5}
 
-    mocker.patch.multiple('freqtrade.exchange.Exchange', get_tickers=tickers,
-                          exchange_has=MagicMock(return_value=True), )
-    bot = get_patched_freqtradebot(mocker, default_conf)
-    # Remock markets with shitcoinmarkets since get_patched_freqtradebot uses the markets fixture
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
-                          markets=PropertyMock(return_value=shitcoinmarkets), )
-    # argument: use the whitelist dynamically by exchange-volume
-    whitelist = ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC', 'HOT/BTC', 'FUEL/BTC']
+    pairlist = PairListManager(exchange, default_conf)
+    dp = DataProvider(default_conf, exchange, pairlist)
 
-    current_wl = bot.dataprovider.current_whitelist()
-    assert whitelist == current_wl
+    # Simulate volumepairs from exchange.
+    # pairlist.refresh_pairlist()
+    # Set the pairs manually... this would be done in refresh pairlist default whitelist + volumePL - blacklist
+    default_whitelist = default_conf['exchange']['pair_whitelist']
+    default_blacklist = default_conf['exchange']['pair_blacklist']
+    volume_pairlist = ['ETH/BTC', 'LINK/BTC', 'ZRX/BTC', 'BCH/BTC', 'XRP/BTC']
+    current_whitelist = list(set(volume_pairlist + default_whitelist))
+    for pair in default_blacklist:
+        if pair in current_whitelist:
+            current_whitelist.remove(pair)
+    pairlist._whitelist = current_whitelist
+
+    assert dp.current_whitelist() == pairlist._whitelist
+
+    with pytest.raises(OperationalException) as e:
+        dp = DataProvider(default_conf, exchange)
+        dp.current_whitelist()
