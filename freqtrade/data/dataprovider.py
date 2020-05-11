@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from pandas import DataFrame
 
 from freqtrade.data.history import load_pair_history
+from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.state import RunMode
 
@@ -18,9 +19,10 @@ logger = logging.getLogger(__name__)
 
 class DataProvider:
 
-    def __init__(self, config: dict, exchange: Exchange) -> None:
+    def __init__(self, config: dict, exchange: Exchange, pairlists=None) -> None:
         self._config = config
         self._exchange = exchange
+        self._pairlists = pairlists
 
     def refresh(self,
                 pairlist: List[Tuple[str, str]],
@@ -125,8 +127,8 @@ class DataProvider:
         As available pairs does not show whitelist until after informative pairs have been cached.
         :return: list of pairs in whitelist
         """
-        from freqtrade.pairlist.pairlistmanager import PairListManager
 
-        pairlists = PairListManager(self._exchange, self._config)
-        pairlists.refresh_pairlist()
-        return pairlists.whitelist
+        if self._pairlists:
+            return self._pairlists.whitelist
+        else:
+            raise OperationalException("Dataprovider was not initialized with a pairlist provider.")
