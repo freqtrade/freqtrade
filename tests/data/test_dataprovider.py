@@ -1,9 +1,10 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from pandas import DataFrame
 import pytest
 
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
 from tests.conftest import get_patched_exchange
@@ -153,30 +154,24 @@ def test_market(mocker, default_conf, markets):
     assert res is None
 
 
-@patch('freqtrade.pairlist.pairlistmanager.PairListManager')
-@patch('freqtrade.exchange.Exchange')
-def test_current_whitelist(exchange, PairListManager, default_conf):
+def test_current_whitelist(mocker, default_conf, tickers):
     # patch default conf to volumepairlist
     default_conf['pairlists'][0] = {'method': 'VolumePairList', "number_assets": 5}
+
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          exchange_has=MagicMock(return_value=True),
+                          get_tickers=tickers)
+    exchange = get_patched_exchange(mocker, default_conf)
 
     pairlist = PairListManager(exchange, default_conf)
     dp = DataProvider(default_conf, exchange, pairlist)
 
     # Simulate volumepairs from exchange.
-    # pairlist.refresh_pairlist()
-
-    # Set the pairs manually... this would be done in refresh pairlist
-    # default whitelist + volumePL - blacklist
-    default_whitelist = default_conf['exchange']['pair_whitelist']
-    default_blacklist = default_conf['exchange']['pair_blacklist']
-    volume_pairlist = ['ETH/BTC', 'LINK/BTC', 'ZRX/BTC', 'BCH/BTC', 'XRP/BTC']
-    current_whitelist = list(set(volume_pairlist + default_whitelist))
-    for pair in default_blacklist:
-        if pair in current_whitelist:
-            current_whitelist.remove(pair)
-    pairlist._whitelist = current_whitelist
+    pairlist.refresh_pairlist()
 
     assert dp.current_whitelist() == pairlist._whitelist
+    # The identity of the 2 lists should be identical
+    assert dp.current_whitelist() is pairlist._whitelist
 
     with pytest.raises(OperationalException):
         dp = DataProvider(default_conf, exchange)
