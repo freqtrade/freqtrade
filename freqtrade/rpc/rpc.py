@@ -104,6 +104,7 @@ class RPC:
             'ticker_interval': config['ticker_interval'],
             'exchange': config['exchange']['name'],
             'strategy': config['strategy'],
+            'forcebuy_enabled': self._freqtrade.config.get('forcebuy_enable', False),
             'state': str(self._freqtrade.state)
         }
         return val
