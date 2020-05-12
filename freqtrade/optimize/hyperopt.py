@@ -387,12 +387,19 @@ class Hyperopt:
         trials = json_normalize(results, max_level=1)
         trials['Best'] = ''
         trials['Stake currency'] = config['stake_currency']
-        trials = trials[['Best', 'current_epoch', 'results_metrics.trade_count',
-                         'results_metrics.avg_profit', 'results_metrics.total_profit',
-                         'Stake currency', 'results_metrics.profit', 'results_metrics.duration',
-                         'loss', 'is_initial_point', 'is_best']]
-        trials.columns = ['Best', 'Epoch', 'Trades', 'Avg profit', 'Total profit', 'Stake currency',
-                          'Profit', 'Avg duration', 'Objective', 'is_initial_point', 'is_best']
+
+        base_metrics = ['Best', 'current_epoch', 'results_metrics.trade_count',
+                        'results_metrics.avg_profit', 'results_metrics.total_profit',
+                        'Stake currency', 'results_metrics.profit', 'results_metrics.duration',
+                        'loss', 'is_initial_point', 'is_best']
+        param_metrics = [("params_dict."+param) for param in results[0]['params_dict'].keys()]
+        trials = trials[base_metrics + param_metrics]
+
+        base_columns = ['Best', 'Epoch', 'Trades', 'Avg profit', 'Total profit', 'Stake currency',
+                        'Profit', 'Avg duration', 'Objective', 'is_initial_point', 'is_best']
+        param_columns = list(results[0]['params_dict'].keys())
+        trials.columns = base_columns + param_columns
+
         trials['is_profit'] = False
         trials.loc[trials['is_initial_point'], 'Best'] = '*'
         trials.loc[trials['is_best'], 'Best'] = 'Best'
