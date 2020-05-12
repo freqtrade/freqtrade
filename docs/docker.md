@@ -65,7 +65,7 @@ docker-compose up -d
 
 #### Docker-compose logs
 
-Logs will be written to `user_data/freqtrade.log`. 
+Logs will be written to `user_data/logs/freqtrade.log`. 
 Alternatively, you can check the latest logs using `docker-compose logs -f`.
 
 #### Database
