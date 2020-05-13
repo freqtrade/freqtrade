@@ -1162,6 +1162,7 @@ class FreqtradeBot:
         # Updating wallets when order is closed
         if not trade.is_open:
             self.wallets.update()
+        return False
 
     def apply_fee_conditional(self, trade: Trade, trade_base_currency: str,
                               amount: float, fee_abs: float) -> float:
