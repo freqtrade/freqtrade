@@ -383,13 +383,13 @@ if self.dp:
 ```
 
 #### *current_whitelist()*
-Imagine you've developed a strategy that trades the `1m` timeframe using signals generated from a `1d` timeframe on the top 10 volume pairs by volume. 
+Imagine you've developed a strategy that trades the `5m` timeframe using signals generated from a `1d` timeframe on the top 10 volume pairs by volume. 
 
 The strategy might look something like this:
 
-*Scan through the top 10 pairs by volume using the `VolumePairList` every minute and use a 14 day ATR to buy and sell.*
+*Scan through the top 10 pairs by volume using the `VolumePairList` every 5 minutes and use a 14 day ATR to buy and sell.*
 
-Due to the limited available data, it's impossible to resample our `1m` candles into daily candles for use in the 14 day ATR. Most exchanges limit us to just 500 candles which effectively gives us around 1/3 of a daily candle. We need 14 days at least!
+Due to the limited available data, it's very difficult to resample our `5m` candles into daily candles for use in a 14 day ATR. Most exchanges limit us to just 500 candles which effectively gives us around 1.74 daily candles. We need 14 days at least!
 
 Since we can't resample our data we will have to use an informative pair; and since our whitelist will be dynamic we don't know which pair(s) to use.
 
@@ -399,7 +399,7 @@ This is where calling `self.dp.current_whitelist()` comes in handy.
 class SampleStrategy(IStrategy):
     # strategy init stuff...
 
-    ticker_interval = '1m'
+    ticker_interval = '5m'
 
     # more strategy init stuff..
 
@@ -416,8 +416,7 @@ class SampleStrategy(IStrategy):
         informative = self.dp.get_pair_dataframe(pair=metadata['pair'], timeframe='1d')
         # Get the 14 day ATR.
         atr = ta.ATR(informative, timeperiod=14)
-        # Assign the Daily atr to the 1 minute dataframe.
-        dataframe['daily_atr'] = atr
+        # Do other stuff
 ```
 
 #### *get_pair_dataframe(pair, timeframe)*
