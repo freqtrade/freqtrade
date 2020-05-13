@@ -18,12 +18,11 @@ from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE,
                                             TRUNCATE, decimal_to_precision)
 from pandas import DataFrame
 
-from freqtrade.data.converter import ohlcv_to_dataframe
+from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.exceptions import (DependencyException, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange.common import BAD_EXCHANGES, retrier, retrier_async
 from freqtrade.misc import deep_merge_dicts
-
 
 CcxtModuleType = Any
 
@@ -769,7 +768,7 @@ class Exchange:
     @retrier_async
     async def _async_fetch_trades(self, pair: str,
                                   since: Optional[int] = None,
-                                  params: Optional[dict] = None) -> List[Dict]:
+                                  params: Optional[dict] = None) -> List[List]:
         """
         Asyncronously gets trade history using fetch_trades.
         Handles exchange errors, does one call to the exchange.
@@ -789,7 +788,7 @@ class Exchange:
                     '(' + arrow.get(since // 1000).isoformat() + ') ' if since is not None else ''
                 )
                 trades = await self._api_async.fetch_trades(pair, since=since, limit=1000)
-            return trades
+            return trades_dict_to_list(trades)
         except ccxt.NotSupported as e:
             raise OperationalException(
                 f'Exchange {self._api.name} does not support fetching historical trade data.'
@@ -803,7 +802,7 @@ class Exchange:
     async def _async_get_trade_history_id(self, pair: str,
                                           until: int,
                                           since: Optional[int] = None,
-                                          from_id: Optional[str] = None) -> Tuple[str, List[Dict]]:
+                                          from_id: Optional[str] = None) -> Tuple[str, List[List]]:
         """
         Asyncronously gets trade history using fetch_trades
         use this when exchange uses id-based iteration (check `self._trades_pagination`)
@@ -814,7 +813,7 @@ class Exchange:
         returns tuple: (pair, trades-list)
         """
 
-        trades: List[Dict] = []
+        trades: List[List] = []
 
         if not from_id:
             # Fetch first elements using timebased method to get an ID to paginate on
@@ -823,7 +822,9 @@ class Exchange:
             # e.g. Binance returns the "last 1000" candles within a 1h time interval
             # - so we will miss the first trades.
             t = await self._async_fetch_trades(pair, since=since)
-            from_id = t[-1]['id']
+            # DEFAULT_TRADES_COLUMNS: 0 -> timestamp
+            # DEFAULT_TRADES_COLUMNS: 1 -> id
+            from_id = t[-1][1]
             trades.extend(t[:-1])
         while True:
             t = await self._async_fetch_trades(pair,
@@ -831,21 +832,21 @@ class Exchange:
             if len(t):
                 # Skip last id since its the key for the next call
                 trades.extend(t[:-1])
-                if from_id == t[-1]['id'] or t[-1]['timestamp'] > until:
+                if from_id == t[-1][1] or t[-1][0] > until:
                     logger.debug(f"Stopping because from_id did not change. "
-                                 f"Reached {t[-1]['timestamp']} > {until}")
+                                 f"Reached {t[-1][0]} > {until}")
                     # Reached the end of the defined-download period - add last trade as well.
                     trades.extend(t[-1:])
                     break
 
-                from_id = t[-1]['id']
+                from_id = t[-1][1]
             else:
                 break
 
         return (pair, trades)
 
     async def _async_get_trade_history_time(self, pair: str, until: int,
-                                            since: Optional[int] = None) -> Tuple[str, List]:
+                                            since: Optional[int] = None) -> Tuple[str, List[List]]:
         """
         Asyncronously gets trade history using fetch_trades,
         when the exchange uses time-based iteration (check `self._trades_pagination`)
@@ -855,16 +856,18 @@ class Exchange:
         returns tuple: (pair, trades-list)
         """
 
-        trades: List[Dict] = []
+        trades: List[List] = []
+        # DEFAULT_TRADES_COLUMNS: 0 -> timestamp
+        # DEFAULT_TRADES_COLUMNS: 1 -> id
         while True:
             t = await self._async_fetch_trades(pair, since=since)
             if len(t):
-                since = t[-1]['timestamp']
+                since = t[-1][1]
                 trades.extend(t)
                 # Reached the end of the defined-download period
-                if until and t[-1]['timestamp'] > until:
+                if until and t[-1][0] > until:
                     logger.debug(
-                        f"Stopping because until was reached. {t[-1]['timestamp']} > {until}")
+                        f"Stopping because until was reached. {t[-1][0]} > {until}")
                     break
             else:
                 break
@@ -874,7 +877,7 @@ class Exchange:
     async def _async_get_trade_history(self, pair: str,
                                        since: Optional[int] = None,
                                        until: Optional[int] = None,
-                                       from_id: Optional[str] = None) -> Tuple[str, List[Dict]]:
+                                       from_id: Optional[str] = None) -> Tuple[str, List[List]]:
         """
         Async wrapper handling downloading trades using either time or id based methods.
         """
