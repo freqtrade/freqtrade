@@ -1,13 +1,20 @@
 # SQL Helper
+
 This page contains some help if you want to edit your sqlite db.
 
 ## Install sqlite3
-**Ubuntu/Debian installation**
+
+Sqlite3 is a terminal based sqlite application.
+Feel free to use a visual Database editor like SqliteBrowser if you feel more comfortable with that.
+
+### Ubuntu/Debian installation
+
 ```bash
 sudo apt-get install sqlite3
 ```
 
 ## Open the DB
+
 ```bash
 sqlite3
 .open <filepath>
@@ -16,45 +23,61 @@ sqlite3
 ## Table structure
 
 ### List tables
+
 ```bash
 .tables
 ```
 
 ### Display table structure
+
 ```bash
 .schema <table_name>
 ```
 
 ### Trade table structure
+
 ```sql
-CREATE TABLE trades (
-	id INTEGER NOT NULL,
-	exchange VARCHAR NOT NULL,
-	pair VARCHAR NOT NULL,
-	is_open BOOLEAN NOT NULL,
-	fee_open FLOAT NOT NULL,
-	fee_close FLOAT NOT NULL,
-	open_rate FLOAT,
-	open_rate_requested FLOAT,
-	close_rate FLOAT,
-	close_rate_requested FLOAT,
-	close_profit FLOAT,
-	stake_amount FLOAT NOT NULL,
-	amount FLOAT,
-	open_date DATETIME NOT NULL,
-	close_date DATETIME,
-	open_order_id VARCHAR,
-	stop_loss FLOAT,
-	initial_stop_loss FLOAT,
-	stoploss_order_id VARCHAR,
-	stoploss_last_update DATETIME,
-	max_rate FLOAT,
-	sell_reason VARCHAR,
-	strategy VARCHAR,
-	ticker_interval INTEGER,
-	PRIMARY KEY (id),
-	CHECK (is_open IN (0, 1))
+CREATE TABLE trades
+    id INTEGER NOT NULL,
+    exchange VARCHAR NOT NULL,
+    pair VARCHAR NOT NULL,
+    is_open BOOLEAN NOT NULL,
+    fee_open FLOAT NOT NULL,
+    fee_open_cost FLOAT,
+    fee_open_currency VARCHAR,
+    fee_close FLOAT NOT NULL,
+    fee_close_cost FLOAT,
+    fee_close_currency VARCHAR,
+    open_rate FLOAT,
+    open_rate_requested FLOAT,
+    open_trade_price FLOAT,
+    close_rate FLOAT,
+    close_rate_requested FLOAT,
+    close_profit FLOAT,
+    close_profit_abs FLOAT,
+    stake_amount FLOAT NOT NULL,
+    amount FLOAT,
+    open_date DATETIME NOT NULL,
+    close_date DATETIME,
+    open_order_id VARCHAR,
+    stop_loss FLOAT,
+    stop_loss_pct FLOAT,
+    initial_stop_loss FLOAT,
+    initial_stop_loss_pct FLOAT,
+    stoploss_order_id VARCHAR,
+    stoploss_last_update DATETIME,
+    max_rate FLOAT,
+    min_rate FLOAT,
+    sell_reason VARCHAR,
+    strategy VARCHAR,
+    ticker_interval INTEGER,
+    PRIMARY KEY (id),
+    CHECK (is_open IN (0, 1))
 );
+CREATE INDEX ix_trades_stoploss_order_id ON trades (stoploss_order_id);
+CREATE INDEX ix_trades_pair ON trades (pair);
+CREATE INDEX ix_trades_is_open ON trades (is_open);
+
 ```
 
 ## Get all trades in the table
