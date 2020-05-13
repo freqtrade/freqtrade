@@ -71,14 +71,14 @@ class FreqtradeBot:
 
         self.wallets = Wallets(self.config, self.exchange)
 
-        self.dataprovider = DataProvider(self.config, self.exchange)
+        self.pairlists = PairListManager(self.exchange, self.config)
+
+        self.dataprovider = DataProvider(self.config, self.exchange, self.pairlists)
 
         # Attach Dataprovider to Strategy baseclass
         IStrategy.dp = self.dataprovider
         # Attach Wallets to Strategy baseclass
         IStrategy.wallets = self.wallets
-
-        self.pairlists = PairListManager(self.exchange, self.config)
 
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
