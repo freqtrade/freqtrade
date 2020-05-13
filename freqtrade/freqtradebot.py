@@ -752,7 +752,7 @@ class FreqtradeBot:
         # We check if stoploss order is fulfilled
         if stoploss_order and stoploss_order['status'] == 'closed':
             trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
-            trade.update(stoploss_order)
+            self.update_trade_state(trade, stoploss_order, sl_order=True)
             # Lock pair for one candle to prevent immediate rebuys
             self.strategy.lock_pair(trade.pair,
                                     timeframe_to_next_date(self.config['ticker_interval']))
@@ -1123,7 +1123,7 @@ class FreqtradeBot:
 #
 
     def update_trade_state(self, trade: Trade, action_order: dict = None,
-                           order_amount: float = None) -> bool:
+                           order_amount: float = None, sl_order: bool = False) -> bool:
         """
         Checks trades with open orders and updates the amount if necessary
         Handles closing both buy and sell orders.
@@ -1131,34 +1131,37 @@ class FreqtradeBot:
         """
         # Get order details for actual price per unit
         if trade.open_order_id:
-            # Update trade with order values
-            logger.info('Found open order for %s', trade)
-            try:
-                order = action_order or self.exchange.get_order(trade.open_order_id, trade.pair)
-            except InvalidOrderException as exception:
-                logger.warning('Unable to fetch order %s: %s', trade.open_order_id, exception)
-                return False
-            # Try update amount (binance-fix)
-            try:
-                new_amount = self.get_real_amount(trade, order, order_amount)
-                if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
-                    order['amount'] = new_amount
-                    order.pop('filled', None)
-                    trade.recalc_open_trade_price()
-            except DependencyException as exception:
-                logger.warning("Could not update trade amount: %s", exception)
+            order_id = trade.open_order_id
+        elif trade.stoploss_order_id and sl_order:
+            order_id = trade.stoploss_order_id
+        else:
+            return False
+        # Update trade with order values
+        logger.info('Found open order for %s', trade)
+        try:
+            order = action_order or self.exchange.get_order(order_id, trade.pair)
+        except InvalidOrderException as exception:
+            logger.warning('Unable to fetch order %s: %s', order_id, exception)
+            return False
+        # Try update amount (binance-fix)
+        try:
+            new_amount = self.get_real_amount(trade, order, order_amount)
+            if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
+                order['amount'] = new_amount
+                order.pop('filled', None)
+                trade.recalc_open_trade_price()
+        except DependencyException as exception:
+            logger.warning("Could not update trade amount: %s", exception)
 
-            if self.exchange.check_order_canceled_empty(order):
-                # Trade has been cancelled on exchange
-                # Handling of this will happen in check_handle_timeout.
-                return True
-            trade.update(order)
+        if self.exchange.check_order_canceled_empty(order):
+            # Trade has been cancelled on exchange
+            # Handling of this will happen in check_handle_timeout.
+            return True
+        trade.update(order)
 
-            # Updating wallets when order is closed
-            if not trade.is_open:
-                self.wallets.update()
-
-        return False
+        # Updating wallets when order is closed
+        if not trade.is_open:
+            self.wallets.update()
 
     def apply_fee_conditional(self, trade: Trade, trade_base_currency: str,
                               amount: float, fee_abs: float) -> float:

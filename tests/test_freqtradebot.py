@@ -1140,7 +1140,8 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
         'status': 'closed',
         'type': 'stop_loss_limit',
         'price': 3,
-        'average': 2
+        'average': 2,
+        'amount': limit_buy_order['amount'],
     })
     mocker.patch('freqtrade.exchange.Exchange.get_order', stoploss_order_hit)
     assert freqtrade.handle_stoploss_on_exchange(trade) is True

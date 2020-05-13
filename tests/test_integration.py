@@ -44,6 +44,8 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
     }
     stoploss_order_closed = stoploss_order_open.copy()
     stoploss_order_closed['status'] = 'closed'
+    stoploss_order_closed['filled'] = stoploss_order_closed['amount']
+
     # Sell first trade based on stoploss, keep 2nd and 3rd trade open
     stoploss_order_mock = MagicMock(
         side_effect=[stoploss_order_closed, stoploss_order_open, stoploss_order_open])
@@ -98,7 +100,7 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
     assert cancel_order_mock.call_count == 1
     # Wallets must be updated between stoploss cancellation and selling, and will be updated again
     # during update_trade_state
-    assert wallets_mock.call_count == 3
+    assert wallets_mock.call_count == 4
 
     trade = trades[0]
     assert trade.sell_reason == SellType.STOPLOSS_ON_EXCHANGE.value
