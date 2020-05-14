@@ -780,7 +780,7 @@ def limit_buy_order():
         'id': 'mocked_limit_buy',
         'type': 'limit',
         'side': 'buy',
-        'pair': 'mocked',
+        'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
@@ -796,7 +796,7 @@ def market_buy_order():
         'id': 'mocked_market_buy',
         'type': 'market',
         'side': 'buy',
-        'pair': 'mocked',
+        'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00004099,
         'amount': 91.99181073,
@@ -812,7 +812,7 @@ def market_sell_order():
         'id': 'mocked_limit_sell',
         'type': 'market',
         'side': 'sell',
-        'pair': 'mocked',
+        'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00004173,
         'amount': 91.99181073,
@@ -828,7 +828,7 @@ def limit_buy_order_old():
         'id': 'mocked_limit_buy_old',
         'type': 'limit',
         'side': 'buy',
-        'pair': 'mocked',
+        'symbol': 'mocked',
         'datetime': str(arrow.utcnow().shift(minutes=-601).datetime),
         'price': 0.00001099,
         'amount': 90.99181073,
@@ -844,7 +844,7 @@ def limit_sell_order_old():
         'id': 'mocked_limit_sell_old',
         'type': 'limit',
         'side': 'sell',
-        'pair': 'ETH/BTC',
+        'symbol': 'ETH/BTC',
         'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
@@ -860,7 +860,7 @@ def limit_buy_order_old_partial():
         'id': 'mocked_limit_buy_old_partial',
         'type': 'limit',
         'side': 'buy',
-        'pair': 'ETH/BTC',
+        'symbol': 'ETH/BTC',
         'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
@@ -874,7 +874,7 @@ def limit_buy_order_old_partial():
 def limit_buy_order_old_partial_canceled(limit_buy_order_old_partial):
     res = deepcopy(limit_buy_order_old_partial)
     res['status'] = 'canceled'
-    res['fee'] = {'cost': 0.0001, 'currency': 'ETH'}
+    res['fee'] = {'cost': 0.023, 'currency': 'ETH'}
     return res
 
 
@@ -1585,7 +1585,7 @@ def buy_order_fee():
         'id': 'mocked_limit_buy_old',
         'type': 'limit',
         'side': 'buy',
-        'pair': 'mocked',
+        'symbol': 'mocked',
         'datetime': str(arrow.utcnow().shift(minutes=-601).datetime),
         'price': 0.245441,
         'amount': 8.0,

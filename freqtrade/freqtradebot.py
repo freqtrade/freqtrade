@@ -613,7 +613,7 @@ class FreqtradeBot:
                     trades_closed += 1
                     continue
                 # Check if we can sell our current pair
-                if trade.open_order_id is None and self.handle_trade(trade):
+                if trade.open_order_id is None and trade.is_open and self.handle_trade(trade):
                     trades_closed += 1
 
             except DependencyException as exception:
@@ -755,7 +755,7 @@ class FreqtradeBot:
         # We check if stoploss order is fulfilled
         if stoploss_order and stoploss_order['status'] == 'closed':
             trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
-            trade.update(stoploss_order)
+            self.update_trade_state(trade, stoploss_order, sl_order=True)
             # Lock pair for one candle to prevent immediate rebuys
             self.strategy.lock_pair(trade.pair,
                                     timeframe_to_next_date(self.config['ticker_interval']))
@@ -1042,7 +1042,7 @@ class FreqtradeBot:
         trade.sell_reason = sell_reason.value
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') == 'closed':
-            trade.update(order)
+            self.update_trade_state(trade, order)
         Trade.session.flush()
 
         # Lock pair for one candle to prevent immediate rebuys
@@ -1133,7 +1133,7 @@ class FreqtradeBot:
 #
 
     def update_trade_state(self, trade: Trade, action_order: dict = None,
-                           order_amount: float = None) -> bool:
+                           order_amount: float = None, sl_order: bool = False) -> bool:
         """
         Checks trades with open orders and updates the amount if necessary
         Handles closing both buy and sell orders.
@@ -1141,84 +1141,125 @@ class FreqtradeBot:
         """
         # Get order details for actual price per unit
         if trade.open_order_id:
-            # Update trade with order values
-            logger.info('Found open order for %s', trade)
-            try:
-                order = action_order or self.exchange.get_order(trade.open_order_id, trade.pair)
-            except InvalidOrderException as exception:
-                logger.warning('Unable to fetch order %s: %s', trade.open_order_id, exception)
-                return False
-            # Try update amount (binance-fix)
-            try:
-                new_amount = self.get_real_amount(trade, order, order_amount)
-                if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
-                    order['amount'] = new_amount
-                    order.pop('filled', None)
-                    # Fee was applied, so set to 0
-                    trade.fee_open = 0
-                    trade.recalc_open_trade_price()
-            except DependencyException as exception:
-                logger.warning("Could not update trade amount: %s", exception)
+            order_id = trade.open_order_id
+        elif trade.stoploss_order_id and sl_order:
+            order_id = trade.stoploss_order_id
+        else:
+            return False
+        # Update trade with order values
+        logger.info('Found open order for %s', trade)
+        try:
+            order = action_order or self.exchange.get_order(order_id, trade.pair)
+        except InvalidOrderException as exception:
+            logger.warning('Unable to fetch order %s: %s', order_id, exception)
+            return False
+        # Try update amount (binance-fix)
+        try:
+            new_amount = self.get_real_amount(trade, order, order_amount)
+            if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
+                order['amount'] = new_amount
+                order.pop('filled', None)
+                trade.recalc_open_trade_price()
+        except DependencyException as exception:
+            logger.warning("Could not update trade amount: %s", exception)
 
-            if self.exchange.check_order_canceled_empty(order):
-                # Trade has been cancelled on exchange
-                # Handling of this will happen in check_handle_timeout.
-                return True
-            trade.update(order)
+        if self.exchange.check_order_canceled_empty(order):
+            # Trade has been cancelled on exchange
+            # Handling of this will happen in check_handle_timeout.
+            return True
+        trade.update(order)
 
-            # Updating wallets when order is closed
-            if not trade.is_open:
-                self.wallets.update()
-
+        # Updating wallets when order is closed
+        if not trade.is_open:
+            self.wallets.update()
         return False
+
+    def apply_fee_conditional(self, trade: Trade, trade_base_currency: str,
+                              amount: float, fee_abs: float) -> float:
+        """
+        Applies the fee to amount (either from Order or from Trades).
+        Can eat into dust if more than the required asset is available.
+        """
+        self.wallets.update()
+        if fee_abs != 0 and self.wallets.get_free(trade_base_currency) >= amount:
+            # Eat into dust if we own more than base currency
+            logger.info(f"Fee amount for {trade} was in base currency - "
+                        f"Eating Fee {fee_abs} into dust.")
+        elif fee_abs != 0:
+            real_amount = self.exchange.amount_to_precision(trade.pair, amount - fee_abs)
+            logger.info(f"Applying fee on amount for {trade} "
+                        f"(from {amount} to {real_amount}).")
+            return real_amount
+        return amount
 
     def get_real_amount(self, trade: Trade, order: Dict, order_amount: float = None) -> float:
         """
-        Get real amount for the trade
+        Detect and update trade fee.
+        Calls trade.update_fee() uppon correct detection.
+        Returns modified amount if the fee was taken from the destination currency.
         Necessary for exchanges which charge fees in base currency (e.g. binance)
+        :return: identical (or new) amount for the trade
         """
+        # Init variables
         if order_amount is None:
             order_amount = order['amount']
         # Only run for closed orders
-        if trade.fee_open == 0 or order['status'] == 'open':
+        if trade.fee_updated(order.get('side', '')) or order['status'] == 'open':
             return order_amount
 
         trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)
         # use fee from order-dict if possible
-        if ('fee' in order and order['fee'] is not None and
-                (order['fee'].keys() >= {'currency', 'cost'})):
-            if (order['fee']['currency'] is not None and
-                    order['fee']['cost'] is not None and
-                    trade_base_currency == order['fee']['currency']):
-                new_amount = order_amount - order['fee']['cost']
-                logger.info("Applying fee on amount for %s (from %s to %s) from Order",
-                            trade, order['amount'], new_amount)
-                return new_amount
+        if self.exchange.order_has_fee(order):
+            fee_cost, fee_currency, fee_rate = self.exchange.extract_cost_curr_rate(order)
+            logger.info(f"Fee for Trade {trade} [{order.get('side')}]: "
+                        f"{fee_cost:.8g} {fee_currency} - rate: {fee_rate}")
 
-        # Fallback to Trades
+            trade.update_fee(fee_cost, fee_currency, fee_rate, order.get('side', ''))
+            if trade_base_currency == fee_currency:
+                # Apply fee to amount
+                return self.apply_fee_conditional(trade, trade_base_currency,
+                                                  amount=order_amount, fee_abs=fee_cost)
+            return order_amount
+        return self.fee_detection_from_trades(trade, order, order_amount)
+
+    def fee_detection_from_trades(self, trade: Trade, order: Dict, order_amount: float) -> float:
+        """
+        fee-detection fallback to Trades. Parses result of fetch_my_trades to get correct fee.
+        """
         trades = self.exchange.get_trades_for_order(trade.open_order_id, trade.pair,
                                                     trade.open_date)
 
         if len(trades) == 0:
             logger.info("Applying fee on amount for %s failed: myTrade-Dict empty found", trade)
             return order_amount
+        fee_currency = None
         amount = 0
-        fee_abs = 0
+        fee_abs = 0.0
+        fee_cost = 0.0
+        trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)
+        fee_rate_array: List[float] = []
         for exectrade in trades:
             amount += exectrade['amount']
-            if ("fee" in exectrade and exectrade['fee'] is not None and
-                    (exectrade['fee'].keys() >= {'currency', 'cost'})):
+            if self.exchange.order_has_fee(exectrade):
+                fee_cost_, fee_currency, fee_rate_ = self.exchange.extract_cost_curr_rate(exectrade)
+                fee_cost += fee_cost_
+                if fee_rate_ is not None:
+                    fee_rate_array.append(fee_rate_)
                 # only applies if fee is in quote currency!
-                if (exectrade['fee']['currency'] is not None and
-                        exectrade['fee']['cost'] is not None and
-                        trade_base_currency == exectrade['fee']['currency']):
-                    fee_abs += exectrade['fee']['cost']
+                if trade_base_currency == fee_currency:
+                    fee_abs += fee_cost_
+        # Ensure at least one trade was found:
+        if fee_currency:
+            # fee_rate should use mean
+            fee_rate = sum(fee_rate_array) / float(len(fee_rate_array)) if fee_rate_array else None
+            trade.update_fee(fee_cost, fee_currency, fee_rate, order.get('side', ''))
 
         if not isclose(amount, order_amount, abs_tol=constants.MATH_CLOSE_PREC):
             logger.warning(f"Amount {amount} does not match amount {trade.amount}")
             raise DependencyException("Half bought? Amounts don't match")
-        real_amount = amount - fee_abs
+
         if fee_abs != 0:
-            logger.info(f"Applying fee on amount for {trade} "
-                        f"(from {order_amount} to {real_amount}) from Trades")
-        return real_amount
+            return self.apply_fee_conditional(trade, trade_base_currency,
+                                              amount=amount, fee_abs=fee_abs)
+        else:
+            return amount
