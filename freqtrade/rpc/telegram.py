@@ -208,7 +208,7 @@ class Telegram(RPC):
                  self._send_msg(str(e))
 
         try:
-            location = '/freqtrade/user_data/logs'
+            location = '../../user_data/logs'
             for filename in os.listdir(location):
                 if filename == 'freqtrade.log':
                     f  = open(os.path.join(location, 'freqtrade.log'), "r")
