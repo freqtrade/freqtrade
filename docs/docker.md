@@ -22,6 +22,9 @@ Freqtrade provides an official Docker image on [Dockerhub](https://hub.docker.co
 !!! Note
     All below comands use relative directories and will have to be executed from the directory containing the `docker-compose.yml` file.
 
+!!! Note "Docker on Raspberry"
+    If you're running freqtrade on a Raspberry PI, you must change the image from `freqtradeorg/freqtrade:master` to `freqtradeorg/freqtrade:master_pi` or `freqtradeorg/freqtrade:develop_pi`, otherwise the image will not work.
+
 ### Docker quick start
 
 Create a new directory and place the [docker-compose file](https://github.com/freqtrade/freqtrade/blob/develop/docker-compose.yml) in this directory.
