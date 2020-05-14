@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from pandas import DataFrame
 
 from freqtrade.data.history import load_pair_history
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.state import RunMode
 
@@ -97,9 +97,14 @@ class DataProvider:
 
     def ticker(self, pair: str):
         """
-        Return last ticker data
+        Return last ticker data from exchange
+        :param pair: Pair to get the data for
+        :return: Ticker dict from exchange or empty dict if ticker is not available for the pair
         """
-        return self._exchange.fetch_ticker(pair)
+        try:
+            return self._exchange.fetch_ticker(pair)
+        except DependencyException:
+            return {}
 
     def orderbook(self, pair: str, maximum: int) -> Dict[str, List]:
         """
