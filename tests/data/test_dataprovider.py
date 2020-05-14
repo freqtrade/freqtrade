@@ -154,6 +154,23 @@ def test_market(mocker, default_conf, markets):
     assert res is None
 
 
+def test_ticker(mocker, default_conf, tickers, markets):
+    api_mock = MagicMock()
+    api_mock.markets = markets
+    api_mock.fetch_ticker = MagicMock(side_effect=lambda x: tickers().get(x))
+    exchange = get_patched_exchange(mocker, default_conf, api_mock=api_mock)
+
+    dp = DataProvider(default_conf, exchange)
+    res = dp.ticker('ETH/BTC')
+
+    assert type(res) is dict
+    assert 'symbol' in res
+    assert res['symbol'] == 'ETH/BTC'
+
+    res = dp.ticker('UNITTEST/BTC')
+    assert res == {}
+
+
 def test_current_whitelist(mocker, default_conf, tickers):
     # patch default conf to volumepairlist
     default_conf['pairlists'][0] = {'method': 'VolumePairList', "number_assets": 5}
