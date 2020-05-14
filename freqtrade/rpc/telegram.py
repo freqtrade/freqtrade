@@ -4,6 +4,8 @@
 This module manage Telegram communication
 """
 import logging
+import os # added to acces log file on filesystem
+
 from typing import Any, Callable, Dict
 
 from tabulate import tabulate
@@ -102,6 +104,7 @@ class Telegram(RPC):
             CommandHandler('edge', self._edge),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
+            CommandHandler('logs', self._logs)  # added command handler
         ]
         for handle in handles:
             self._updater.dispatcher.add_handler(handle)
@@ -188,6 +191,42 @@ class Telegram(RPC):
             raise NotImplementedError('Unknown message type: {}'.format(msg['type']))
 
         self._send_msg(message)
+
+
+    @authorized_only   # added log command, to access the logs even from Telegram
+    def _logs(self, update: Update, context: CallbackContext) -> None:
+        """
+        Returns the last logs stored
+
+        :return: None
+        """
+        
+        if context.args:
+            try:
+                 number_of_rows = context.args[0]
+            except RPCException as e:
+                 self._send_msg(str(e))
+
+        try:
+            location = '/freqtrade/user_data/logs'
+            for filename in os.listdir(location):
+                if filename == 'freqtrade.log':
+                    f  = open(os.path.join(location, 'freqtrade.log'), "r")
+                    content = f.read()
+            l = content.split('\n')
+            try:
+                number_of_rows = int(number_of_rows) + 1
+                l = l[-number_of_rows:-1]
+            except:    
+                l = l[-20:-1]            
+            message = ''
+            for line in l:
+                message += line + '\n'
+
+            self._send_msg(f"<pre>{message}</pre>", parse_mode=ParseMode.HTML)
+        except RPCException as e:
+            self._send_msg(str(e))
+
 
     @authorized_only
     def _status(self, update: Update, context: CallbackContext) -> None:
@@ -579,9 +618,10 @@ class Telegram(RPC):
                   "*/whitelist:* `Show current whitelist` \n" \
                   "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs " \
                   "to the blacklist.` \n" \
-                  "*/edge:* `Shows validated pairs by Edge if it is enabled` \n" \
+                  "*/edge:* `Shows validated pairs by Edge if it is enabeld` \n" \
                   "*/help:* `This help message`\n" \
-                  "*/version:* `Show version`"
+                  "*/version:* `Show version`\n"\
+                  "*/logs [n]:* `Shows last [n] log entries from bot (default 20)`" # added explanation for log command
 
         self._send_msg(message)
 
@@ -621,12 +661,10 @@ class Telegram(RPC):
             f"*Mode:* `{'Dry-run' if val['dry_run'] else 'Live'}`\n"
             f"*Exchange:* `{val['exchange']}`\n"
             f"*Stake per trade:* `{val['stake_amount']} {val['stake_currency']}`\n"
-            f"*Max open Trades:* `{val['max_open_trades']}`\n"
             f"*Minimum ROI:* `{val['minimal_roi']}`\n"
             f"{sl_info}"
             f"*Ticker Interval:* `{val['ticker_interval']}`\n"
-            f"*Strategy:* `{val['strategy']}`\n"
-            f"*Current state:* `{val['state']}`"
+            f"*Strategy:* `{val['strategy']}`"
         )
 
     def _send_msg(self, msg: str, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
