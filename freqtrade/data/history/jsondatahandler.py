@@ -1,6 +1,7 @@
+import logging
 import re
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import numpy as np
 from pandas import DataFrame, read_json, to_datetime
@@ -8,8 +9,11 @@ from pandas import DataFrame, read_json, to_datetime
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
+from freqtrade.data.converter import trades_dict_to_list
 
-from .idatahandler import IDataHandler
+from .idatahandler import IDataHandler, TradeList
+
+logger = logging.getLogger(__name__)
 
 
 class JsonDataHandler(IDataHandler):
@@ -113,24 +117,26 @@ class JsonDataHandler(IDataHandler):
         # Check if regex found something and only return these results to avoid exceptions.
         return [match[0].replace('_', '/') for match in _tmp if match]
 
-    def trades_store(self, pair: str, data: List[Dict]) -> None:
+    def trades_store(self, pair: str, data: TradeList) -> None:
         """
         Store trades data (list of Dicts) to file
         :param pair: Pair - used for filename
-        :param data: List of Dicts containing trade data
+        :param data: List of Lists containing trade data,
+                     column sequence as in DEFAULT_TRADES_COLUMNS
         """
         filename = self._pair_trades_filename(self._datadir, pair)
         misc.file_dump_json(filename, data, is_zip=self._use_zip)
 
-    def trades_append(self, pair: str, data: List[Dict]):
+    def trades_append(self, pair: str, data: TradeList):
         """
         Append data to existing files
         :param pair: Pair - used for filename
-        :param data: List of Dicts containing trade data
+        :param data: List of Lists containing trade data,
+                     column sequence as in DEFAULT_TRADES_COLUMNS
         """
         raise NotImplementedError()
 
-    def trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> List[Dict]:
+    def _trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
         """
         Load a pair from file, either .json.gz or .json
         # TODO: respect timerange ...
@@ -140,9 +146,15 @@ class JsonDataHandler(IDataHandler):
         """
         filename = self._pair_trades_filename(self._datadir, pair)
         tradesdata = misc.file_load_json(filename)
+
         if not tradesdata:
             return []
 
+        if isinstance(tradesdata[0], dict):
+            # Convert trades dict to list
+            logger.info("Old trades format detected - converting")
+            tradesdata = trades_dict_to_list(tradesdata)
+            pass
         return tradesdata
 
     def trades_purge(self, pair: str) -> bool:

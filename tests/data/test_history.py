@@ -547,6 +547,17 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
     assert log_has("New Amount of trades: 5", caplog)
     assert file1.is_file()
 
+    ght_mock.reset_mock()
+    since_time = int(trades_history[-3][0] // 1000)
+    since_time2 = int(trades_history[-1][0] // 1000)
+    timerange = TimeRange('date', None, since_time, 0)
+    assert _download_trades_history(data_handler=data_handler, exchange=exchange,
+                                    pair='ETH/BTC', timerange=timerange)
+
+    assert ght_mock.call_count == 1
+    # Check this in seconds - since we had to convert to seconds above too.
+    assert int(ght_mock.call_args_list[0][1]['since'] // 1000) == since_time2 - 5
+
     # clean files freshly downloaded
     _clean_test_file(file1)
 
@@ -601,7 +612,7 @@ def test_jsondatahandler_ohlcv_get_pairs(testdatadir):
 def test_jsondatahandler_trades_get_pairs(testdatadir):
     pairs = JsonGzDataHandler.trades_get_pairs(testdatadir)
     # Convert to set to avoid failures due to sorting
-    assert set(pairs) == {'XRP/ETH'}
+    assert set(pairs) == {'XRP/ETH', 'XRP/OLD'}
 
 
 def test_jsondatahandler_ohlcv_purge(mocker, testdatadir):
@@ -612,6 +623,17 @@ def test_jsondatahandler_ohlcv_purge(mocker, testdatadir):
 
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
     assert dh.ohlcv_purge('UNITTEST/NONEXIST', '5m')
+
+
+def test_jsondatahandler_trades_load(mocker, testdatadir, caplog):
+    dh = JsonGzDataHandler(testdatadir)
+    logmsg = "Old trades format detected - converting"
+    dh.trades_load('XRP/ETH')
+    assert not log_has(logmsg, caplog)
+
+    # Test conversation is happening
+    dh.trades_load('XRP/OLD')
+    assert log_has(logmsg, caplog)
 
 
 def test_jsondatahandler_trades_purge(mocker, testdatadir):

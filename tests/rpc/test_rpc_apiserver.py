@@ -94,6 +94,33 @@ def test_api_unauthorized(botclient):
     assert rc.json == {'error': 'Unauthorized'}
 
 
+def test_api_token_login(botclient):
+    ftbot, client = botclient
+    rc = client_post(client, f"{BASE_URI}/token/login")
+    assert_response(rc)
+    assert 'access_token' in rc.json
+    assert 'refresh_token' in rc.json
+
+    # test Authentication is working with JWT tokens too
+    rc = client.get(f"{BASE_URI}/count",
+                    content_type="application/json",
+                    headers={'Authorization': f'Bearer {rc.json["access_token"]}'})
+    assert_response(rc)
+
+
+def test_api_token_refresh(botclient):
+    ftbot, client = botclient
+    rc = client_post(client, f"{BASE_URI}/token/login")
+    assert_response(rc)
+    rc = client.post(f"{BASE_URI}/token/refresh",
+                     content_type="application/json",
+                     data=None,
+                     headers={'Authorization': f'Bearer {rc.json["refresh_token"]}'})
+    assert_response(rc)
+    assert 'access_token' in rc.json
+    assert 'refresh_token' not in rc.json
+
+
 def test_api_stop_workflow(botclient):
     ftbot, client = botclient
     assert ftbot.state == State.RUNNING
@@ -123,6 +150,12 @@ def test_api__init__(default_conf, mocker):
     """
     Test __init__() method
     """
+    default_conf.update({"api_server": {"enabled": True,
+                                        "listen_ip_address": "127.0.0.1",
+                                        "listen_port": 8080,
+                                        "username": "TestUser",
+                                        "password": "testPass",
+                                        }})
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
     mocker.patch('freqtrade.rpc.api_server.ApiServer.run', MagicMock())
 
@@ -283,6 +316,7 @@ def test_api_show_config(botclient, mocker):
     assert 'dry_run' in rc.json
     assert rc.json['exchange'] == 'bittrex'
     assert rc.json['ticker_interval'] == '5m'
+    assert rc.json['state'] == 'running'
     assert not rc.json['trailing_stop']
 
 

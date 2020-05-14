@@ -54,8 +54,11 @@ class FreqtradeBot:
         # Init objects
         self.config = config
 
-        self._sell_rate_cache = TTLCache(maxsize=100, ttl=5)
-        self._buy_rate_cache = TTLCache(maxsize=100, ttl=5)
+        # Cache values for 1800 to avoid frequent polling of the exchange for prices
+        # Caching only applies to RPC methods, so prices for open trades are still
+        # refreshed once every iteration.
+        self._sell_rate_cache = TTLCache(maxsize=100, ttl=1800)
+        self._buy_rate_cache = TTLCache(maxsize=100, ttl=1800)
 
         self.strategy: IStrategy = StrategyResolver.load_strategy(self.config)
 
@@ -68,14 +71,14 @@ class FreqtradeBot:
 
         self.wallets = Wallets(self.config, self.exchange)
 
-        self.dataprovider = DataProvider(self.config, self.exchange)
+        self.pairlists = PairListManager(self.exchange, self.config)
+
+        self.dataprovider = DataProvider(self.config, self.exchange, self.pairlists)
 
         # Attach Dataprovider to Strategy baseclass
         IStrategy.dp = self.dataprovider
         # Attach Wallets to Strategy baseclass
         IStrategy.wallets = self.wallets
-
-        self.pairlists = PairListManager(self.exchange, self.config)
 
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
@@ -898,7 +901,8 @@ class FreqtradeBot:
         Buy timeout - cancel order
         :return: True if order was fully cancelled
         """
-        if order['status'] != 'canceled':
+        # Cancelled orders may have the status of 'canceled' or 'closed'
+        if order['status'] not in ('canceled', 'closed'):
             reason = "cancelled due to timeout"
             corder = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
                                                             trade.amount)
@@ -909,7 +913,10 @@ class FreqtradeBot:
 
         logger.info('Buy order %s for %s.', reason, trade)
 
-        if safe_value_fallback(corder, order, 'remaining', 'remaining') == order['amount']:
+        # Using filled to determine the filled amount
+        filled_amount = safe_value_fallback(corder, order, 'filled', 'filled')
+
+        if isclose(filled_amount, 0.0, abs_tol=constants.MATH_CLOSE_PREC):
             logger.info('Buy order fully cancelled. Removing %s from database.', trade)
             # if trade is not partially completed, just delete the trade
             Trade.session.delete(trade)
@@ -921,8 +928,7 @@ class FreqtradeBot:
         # cancel_order may not contain the full order dict, so we need to fallback
         # to the order dict aquired before cancelling.
         # we need to fall back to the values from order if corder does not contain these keys.
-        trade.amount = order['amount'] - safe_value_fallback(corder, order,
-                                                             'remaining', 'remaining')
+        trade.amount = filled_amount
         trade.stake_amount = trade.amount * trade.open_rate
         self.update_trade_state(trade, corder, trade.amount)
 
@@ -943,8 +949,12 @@ class FreqtradeBot:
         if order['remaining'] == order['amount'] or order.get('filled') == 0.0:
             if not self.exchange.check_order_canceled_empty(order):
                 reason = "cancelled due to timeout"
-                # if trade is not partially completed, just delete the trade
-                self.exchange.cancel_order(trade.open_order_id, trade.pair)
+                try:
+                    # if trade is not partially completed, just delete the trade
+                    self.exchange.cancel_order(trade.open_order_id, trade.pair)
+                except InvalidOrderException:
+                    logger.exception(f"Could not cancel sell order {trade.open_order_id}")
+                    return 'error cancelling order'
                 logger.info('Sell order %s for %s.', reason, trade)
             else:
                 reason = "cancelled on exchange"
@@ -982,7 +992,7 @@ class FreqtradeBot:
         if wallet_amount >= amount:
             return amount
         elif wallet_amount > amount * 0.98:
-            logger.info(f"{pair} - Falling back to wallet-amount.")
+            logger.info(f"{pair} - Falling back to wallet-amount {wallet_amount} -> {amount}.")
             return wallet_amount
         else:
             raise DependencyException(
