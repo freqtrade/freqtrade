@@ -71,14 +71,14 @@ class FreqtradeBot:
 
         self.wallets = Wallets(self.config, self.exchange)
 
-        self.dataprovider = DataProvider(self.config, self.exchange)
+        self.pairlists = PairListManager(self.exchange, self.config)
+
+        self.dataprovider = DataProvider(self.config, self.exchange, self.pairlists)
 
         # Attach Dataprovider to Strategy baseclass
         IStrategy.dp = self.dataprovider
         # Attach Wallets to Strategy baseclass
         IStrategy.wallets = self.wallets
-
-        self.pairlists = PairListManager(self.exchange, self.config)
 
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
@@ -946,32 +946,31 @@ class FreqtradeBot:
         :return: Reason for cancel
         """
         # if trade is not partially completed, just cancel the trade
-        if order['remaining'] == order['amount'] or order.get('filled') == 0.0:
-            if not self.exchange.check_order_canceled_empty(order):
-                reason = "cancelled due to timeout"
-                try:
-                    # if trade is not partially completed, just delete the trade
-                    self.exchange.cancel_order(trade.open_order_id, trade.pair)
-                except InvalidOrderException:
-                    logger.exception(f"Could not cancel sell order {trade.open_order_id}")
-                    return 'error cancelling order'
-                logger.info('Sell order %s for %s.', reason, trade)
-            else:
-                reason = "cancelled on exchange"
-                logger.info('Sell order %s for %s.', reason, trade)
+        if not (
+            order['remaining'] == order['amount'] or order.get('filled') == 0.0
+        ):
+            # TODO: figure out how to handle partially complete sell orders
+            return 'partially filled - keeping order open'
+        if self.exchange.check_order_canceled_empty(order):
+            reason = "cancelled on exchange"
+        else:
+            reason = "cancelled due to timeout"
+            try:
+                # if trade is not partially completed, just delete the trade
+                self.exchange.cancel_order(trade.open_order_id, trade.pair)
+            except InvalidOrderException:
+                logger.exception(f"Could not cancel sell order {trade.open_order_id}")
+                return 'error cancelling order'
+        logger.info('Sell order %s for %s.', reason, trade)
+        trade.close_rate = None
+        trade.close_rate_requested = None
+        trade.close_profit = None
+        trade.close_profit_abs = None
+        trade.close_date = None
+        trade.is_open = True
+        trade.open_order_id = None
 
-            trade.close_rate = None
-            trade.close_rate_requested = None
-            trade.close_profit = None
-            trade.close_profit_abs = None
-            trade.close_date = None
-            trade.is_open = True
-            trade.open_order_id = None
-
-            return reason
-
-        # TODO: figure out how to handle partially complete sell orders
-        return 'partially filled - keeping order open'
+        return reason
 
     def _safe_sell_amount(self, pair: str, amount: float) -> float:
         """

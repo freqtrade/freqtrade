@@ -248,14 +248,14 @@ git clone https://github.com/freqtrade/freqtrade.git
 
 Install ta-lib according to the [ta-lib documentation](https://github.com/mrjbq7/ta-lib#windows).
 
-As compiling from source on windows has heavy dependencies (requires a partial visual studio installation), there is also a repository of unofficial precompiled windows Wheels [here](https://www.lfd.uci.edu/~gohlke/pythonlibs/#ta-lib), which needs to be downloaded and installed using `pip install TA_Lib‑0.4.17‑cp36‑cp36m‑win32.whl` (make sure to use the version matching your python version)
+As compiling from source on windows has heavy dependencies (requires a partial visual studio installation), there is also a repository of unofficial precompiled windows Wheels [here](https://www.lfd.uci.edu/~gohlke/pythonlibs/#ta-lib), which needs to be downloaded and installed using `pip install TA_Lib‑0.4.18‑cp38‑cp38‑win_amd64.whl` (make sure to use the version matching your python version)
 
 ```cmd
 >cd \path\freqtrade-develop
 >python -m venv .env
 >.env\Scripts\activate.bat
 REM optionally install ta-lib from wheel
-REM >pip install TA_Lib‑0.4.17‑cp36‑cp36m‑win32.whl
+REM >pip install TA_Lib‑0.4.18‑cp38‑cp38‑win_amd64.whl
 >pip install -r requirements.txt
 >pip install -e .
 >freqtrade
