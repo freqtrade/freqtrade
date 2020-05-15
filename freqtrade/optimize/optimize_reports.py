@@ -1,37 +1,77 @@
 import logging
+import json
+import numpy as np
 from datetime import timedelta
 from pathlib import Path
 from typing import Dict
 
-from pandas import DataFrame
+from pandas import DataFrame, Series
 from tabulate import tabulate
 
+from freqtrade.configuration import TimeRange
 from freqtrade.misc import file_dump_json
+from freqtrade.data.history import load_data
+from freqtrade.strategy.interface import SellType
+
+
+
 
 logger = logging.getLogger(__name__)
 
 
-def store_backtest_result(recordfilename: Path, all_results: Dict[str, DataFrame]) -> None:
+def store_backtest_result(config, all_data: Dict[str, Dict], all_results: Dict[str, DataFrame]) -> None:
     """
     Stores backtest results to file (one file per strategy)
     :param recordfilename: Destination filename
     :param all_results: Dict of Dataframes, one results dataframe per strategy
     """
-    for strategy, results in all_results.items():
-        records = [(t.pair, t.profit_percent, t.open_time.timestamp(),
-                    t.close_time.timestamp(), t.open_index - 1, t.trade_duration,
-                    t.open_rate, t.close_rate, t.open_at_end, t.sell_reason.value)
-                   for index, t in results.iterrows()]
+    recordfilename = config['exportfilename']
+    if config['export'] == 'all' :
+        for strategy in all_data.items():
+            data = {}
+            for pair in strategy[1]:
+                data[pair] = {}
+                data[pair]["trades"] = []
+                for index, trade in all_results[strategy[0]].iterrows():
+                    if trade.pair == pair:
+                        trade_dict = Series.to_dict(trade)
+                        trade_dict['open_time'] = trade_dict['open_time'].timestamp()
+                        trade_dict['close_time'] = trade_dict['close_time'].timestamp()
+                        trade_dict['sell_reason'] = trade_dict['sell_reason'].value
+                        data[pair]["trades"].append( trade_dict )
 
-        if records:
+                candles_dict = DataFrame.to_dict( strategy[1][pair][~strategy[1][pair].isin([np.nan, np.inf, -np.inf]).any(1)], orient='index' )
+                data[pair]["candles"] = []
+                for candle_key in candles_dict.keys():
+                    candle_dict = candles_dict[candle_key]
+                    candle_dict['date'] = candle_dict['date'].timestamp()
+                    data[pair]["candles"].append( candle_dict )
             filename = recordfilename
-            if len(all_results) > 1:
+            if len(all_data) > 1:
+                filename = recordfilename
                 # Inject strategy to filename
                 filename = Path.joinpath(
                     recordfilename.parent,
                     f'{recordfilename.stem}-{strategy}').with_suffix(recordfilename.suffix)
-            logger.info(f'Dumping backtest results to {filename}')
-            file_dump_json(filename, records)
+            logger.info(f'Dumping all of backtest results to {filename}')
+            file_dump_json(filename, data)
+
+    else:
+        for strategy, results in all_results.items():
+            records = [(t.pair, t.profit_percent, t.open_time.timestamp(),
+                        t.close_time.timestamp(), t.open_index - 1, t.trade_duration,
+                        t.open_rate, t.close_rate, t.open_at_end, t.sell_reason.value)
+                       for index, t in results.iterrows()]
+
+            if records:
+                filename = recordfilename
+                if len(all_results) > 1:
+                    # Inject strategy to filename
+                    filename = Path.joinpath(
+                        recordfilename.parent,
+                        f'{recordfilename.stem}-{strategy}').with_suffix(recordfilename.suffix)
+                logger.info(f'Dumping trades of backtest results to {filename}')
+                file_dump_json(filename, records)
 
 
 def generate_text_table(data: Dict[str, Dict], stake_currency: str, max_open_trades: int,

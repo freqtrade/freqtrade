@@ -382,6 +382,7 @@ class Backtesting:
         data, timerange = self.load_bt_data()
 
         all_results = {}
+        preprocessed_data = {}
         for strat in self.strategylist:
             logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
             self._set_strategy(strat)
@@ -398,6 +399,10 @@ class Backtesting:
                 'Backtesting with data from %s up to %s (%s days)..',
                 min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
             )
+
+            # Store reprocessed data for later use in export
+            preprocessed_data[self.strategy.get_strategy_name()] = preprocessed
+
             # Execute backtest and print results
             all_results[self.strategy.get_strategy_name()] = self.backtest(
                 processed=preprocessed,
@@ -409,6 +414,6 @@ class Backtesting:
             )
 
         if self.config.get('export', False):
-            store_backtest_result(self.config['exportfilename'], all_results)
+            store_backtest_result(self.config, preprocessed_data, all_results)
         # Show backtest results
         show_backtest_results(self.config, data, all_results)
