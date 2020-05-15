@@ -69,44 +69,44 @@ def test_log_on_refresh(mocker, static_pl_conf, markets, tickers):
 
 
 def test_load_pairlist_noexist(mocker, markets, default_conf):
-    bot = get_patched_freqtradebot(mocker, default_conf)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
-    plm = PairListManager(bot.exchange, default_conf)
+    plm = PairListManager(freqtrade.exchange, default_conf)
     with pytest.raises(OperationalException,
                        match=r"Impossible to load Pairlist 'NonexistingPairList'. "
                              r"This class does not exist or contains Python code errors."):
-        PairListResolver.load_pairlist('NonexistingPairList', bot.exchange, plm,
+        PairListResolver.load_pairlist('NonexistingPairList', freqtrade.exchange, plm,
                                        default_conf, {}, 1)
 
 
 def test_refresh_market_pair_not_in_whitelist(mocker, markets, static_pl_conf):
 
-    freqtradebot = get_patched_freqtradebot(mocker, static_pl_conf)
+    freqtrade = get_patched_freqtradebot(mocker, static_pl_conf)
 
     mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
-    freqtradebot.pairlists.refresh_pairlist()
+    freqtrade.pairlists.refresh_pairlist()
     # List ordered by BaseVolume
     whitelist = ['ETH/BTC', 'TKN/BTC']
     # Ensure all except those in whitelist are removed
-    assert set(whitelist) == set(freqtradebot.pairlists.whitelist)
+    assert set(whitelist) == set(freqtrade.pairlists.whitelist)
     # Ensure config dict hasn't been changed
     assert (static_pl_conf['exchange']['pair_whitelist'] ==
-            freqtradebot.config['exchange']['pair_whitelist'])
+            freqtrade.config['exchange']['pair_whitelist'])
 
 
 def test_refresh_static_pairlist(mocker, markets, static_pl_conf):
-    freqtradebot = get_patched_freqtradebot(mocker, static_pl_conf)
+    freqtrade = get_patched_freqtradebot(mocker, static_pl_conf)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         exchange_has=MagicMock(return_value=True),
         markets=PropertyMock(return_value=markets),
     )
-    freqtradebot.pairlists.refresh_pairlist()
+    freqtrade.pairlists.refresh_pairlist()
     # List ordered by BaseVolume
     whitelist = ['ETH/BTC', 'TKN/BTC']
     # Ensure all except those in whitelist are removed
-    assert set(whitelist) == set(freqtradebot.pairlists.whitelist)
-    assert static_pl_conf['exchange']['pair_blacklist'] == freqtradebot.pairlists.blacklist
+    assert set(whitelist) == set(freqtrade.pairlists.whitelist)
+    assert static_pl_conf['exchange']['pair_blacklist'] == freqtrade.pairlists.blacklist
 
 
 def test_refresh_pairlist_dynamic(mocker, shitcoinmarkets, tickers, whitelist_conf):
@@ -116,7 +116,7 @@ def test_refresh_pairlist_dynamic(mocker, shitcoinmarkets, tickers, whitelist_co
         get_tickers=tickers,
         exchange_has=MagicMock(return_value=True),
     )
-    bot = get_patched_freqtradebot(mocker, whitelist_conf)
+    freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
     # Remock markets with shitcoinmarkets since get_patched_freqtradebot uses the markets fixture
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -124,9 +124,9 @@ def test_refresh_pairlist_dynamic(mocker, shitcoinmarkets, tickers, whitelist_co
      )
     # argument: use the whitelist dynamically by exchange-volume
     whitelist = ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC', 'HOT/BTC']
-    bot.pairlists.refresh_pairlist()
+    freqtrade.pairlists.refresh_pairlist()
 
-    assert whitelist == bot.pairlists.whitelist
+    assert whitelist == freqtrade.pairlists.whitelist
 
     whitelist_conf['pairlists'] = [{'method': 'VolumePairList',
                                     'config': {}
@@ -136,7 +136,7 @@ def test_refresh_pairlist_dynamic(mocker, shitcoinmarkets, tickers, whitelist_co
     with pytest.raises(OperationalException,
                        match=r'`number_assets` not specified. Please check your configuration '
                              r'for "pairlist.config.number_assets"'):
-        PairListManager(bot.exchange, whitelist_conf)
+        PairListManager(freqtrade.exchange, whitelist_conf)
 
 
 def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
@@ -144,13 +144,13 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
         'freqtrade.exchange.Exchange',
         exchange_has=MagicMock(return_value=True),
     )
-    freqtradebot = get_patched_freqtradebot(mocker, whitelist_conf)
+    freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
     mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets_empty))
 
     # argument: use the whitelist dynamically by exchange-volume
     whitelist = []
     whitelist_conf['exchange']['pair_whitelist'] = []
-    freqtradebot.pairlists.refresh_pairlist()
+    freqtrade.pairlists.refresh_pairlist()
     pairslist = whitelist_conf['exchange']['pair_whitelist']
 
     assert set(whitelist) == set(pairslist)
@@ -312,18 +312,18 @@ def test_volumepairlist_caching(mocker, markets, whitelist_conf, tickers):
                           exchange_has=MagicMock(return_value=True),
                           get_tickers=tickers
                           )
-    bot = get_patched_freqtradebot(mocker, whitelist_conf)
-    assert bot.pairlists._pairlists[0]._last_refresh == 0
+    freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
+    assert freqtrade.pairlists._pairlists[0]._last_refresh == 0
     assert tickers.call_count == 0
-    bot.pairlists.refresh_pairlist()
+    freqtrade.pairlists.refresh_pairlist()
     assert tickers.call_count == 1
 
-    assert bot.pairlists._pairlists[0]._last_refresh != 0
-    lrf = bot.pairlists._pairlists[0]._last_refresh
-    bot.pairlists.refresh_pairlist()
+    assert freqtrade.pairlists._pairlists[0]._last_refresh != 0
+    lrf = freqtrade.pairlists._pairlists[0]._last_refresh
+    freqtrade.pairlists.refresh_pairlist()
     assert tickers.call_count == 1
     # Time should not be updated.
-    assert bot.pairlists._pairlists[0]._last_refresh == lrf
+    assert freqtrade.pairlists._pairlists[0]._last_refresh == lrf
 
 
 def test_pairlistmanager_no_pairlist(mocker, markets, whitelist_conf, caplog):
