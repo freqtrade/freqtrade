@@ -38,14 +38,12 @@ class PriceFilter(IPairList):
         :return: True if the pair can stay, false if it should be removed
         """
         if ticker['last'] is None:
-
             self.log_on_refresh(logger.info,
                                 f"Removed {ticker['symbol']} from whitelist, because "
                                 "ticker['last'] is empty (Usually no trade in the last 24h).")
             return False
-        compare = ticker['last'] + self._exchange.price_get_one_pip(ticker['symbol'],
-                                                                    ticker['last'])
-        changeperc = (compare - ticker['last']) / ticker['last']
+        compare = self._exchange.price_get_one_pip(ticker['symbol'], ticker['last'])
+        changeperc = compare / ticker['last']
         if changeperc > self._low_price_ratio:
             self.log_on_refresh(logger.info, f"Removed {ticker['symbol']} from whitelist, "
                                              f"because 1 unit is {changeperc * 100:.3f}%")
