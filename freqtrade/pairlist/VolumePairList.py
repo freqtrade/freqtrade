@@ -27,6 +27,7 @@ class VolumePairList(IPairList):
                 f'`number_assets` not specified. Please check your configuration '
                 'for "pairlist.config.number_assets"')
 
+        self._stake_currency = config['stake_currency']
         self._number_pairs = self._pairlistconfig['number_assets']
         self._sort_key = self._pairlistconfig.get('sort_key', 'quoteVolume')
         self._min_value = self._pairlistconfig.get('min_value', 0)
@@ -79,9 +80,7 @@ class VolumePairList(IPairList):
                 (self._last_refresh + self.refresh_period < datetime.now().timestamp())):
 
             self._last_refresh = int(datetime.now().timestamp())
-            pairs = self._gen_pair_whitelist(pairlist, tickers,
-                                             self._config['stake_currency'],
-                                             self._sort_key, self._min_value)
+            pairs = self._gen_pair_whitelist(pairlist, tickers)
         else:
             pairs = pairlist
 
@@ -89,29 +88,29 @@ class VolumePairList(IPairList):
 
         return pairs
 
-    def _gen_pair_whitelist(self, pairlist: List[str], tickers: Dict,
-                            base_currency: str, key: str, min_val: int) -> List[str]:
+    def _gen_pair_whitelist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
         Updates the whitelist with with a dynamically generated list
-        :param base_currency: base currency as str
-        :param key: sort key (defaults to 'quoteVolume')
+        :param pairlist: pairlist to filter or sort
         :param tickers: Tickers (from exchange.get_tickers()).
         :return: List of pairs
         """
         if self._pairlist_pos == 0:
             # If VolumePairList is the first in the list, use fresh pairlist
             # Check if pair quote currency equals to the stake currency.
-            filtered_tickers = [v for k, v in tickers.items()
-                                if (self._exchange.get_pair_quote_currency(k) == base_currency
-                                    and v[key] is not None)]
+            filtered_tickers = [
+                    v for k, v in tickers.items()
+                    if (self._exchange.get_pair_quote_currency(k) == self._stake_currency
+                    and v[self._sort_key] is not None)]
         else:
             # If other pairlist is in front, use the incoming pairlist.
             filtered_tickers = [v for k, v in tickers.items() if k in pairlist]
 
-        if min_val > 0:
-            filtered_tickers = [v for v in filtered_tickers if v[key] > min_val]
+        if self._min_value > 0:
+            filtered_tickers = [
+                    v for v in filtered_tickers if v[self._sort_key] > self._min_value]
 
-        sorted_tickers = sorted(filtered_tickers, reverse=True, key=lambda t: t[key])
+        sorted_tickers = sorted(filtered_tickers, reverse=True, key=lambda t: t[self._sort_key])
 
         # Validate whitelist to only have active market pairs
         pairs = self._whitelist_for_active_markets([s['symbol'] for s in sorted_tickers])

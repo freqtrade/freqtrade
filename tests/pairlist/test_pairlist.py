@@ -206,6 +206,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
                                       pairlists, base_currency, whitelist_result,
                                       caplog) -> None:
     whitelist_conf['pairlists'] = pairlists
+    whitelist_conf['stake_currency'] = base_currency
 
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
@@ -215,7 +216,6 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
                           markets=PropertyMock(return_value=shitcoinmarkets),
                           )
 
-    freqtrade.config['stake_currency'] = base_currency
     freqtrade.pairlists.refresh_pairlist()
     whitelist = freqtrade.pairlists.whitelist
 
