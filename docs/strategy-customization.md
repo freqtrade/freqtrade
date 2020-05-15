@@ -370,7 +370,7 @@ Please always check the mode of operation to select the correct method to get da
 - `market(pair)` - Returns market data for the pair: fees, limits, precisions, activity flag, etc. See [ccxt documentation](https://github.com/ccxt/ccxt/wiki/Manual#markets) for more details on the Market data structure.
 - `ohlcv(pair, timeframe)` - Currently cached candle (OHLCV) data for the pair, returns DataFrame or empty DataFrame.
 - [`orderbook(pair, maximum)`](#orderbookpair-maximum) - Returns latest orderbook data for the pair, a dict with bids/asks with a total of `maximum` entries.
-- `ticker(pair)` - Returns current ticker data for the pair. See [ccxt documentation](https://github.com/ccxt/ccxt/wiki/Manual#price-tickers) for more details on the Ticker data structure.
+- [`ticker(pair)`](#tickerpair) - Returns current ticker data for the pair. See [ccxt documentation](https://github.com/ccxt/ccxt/wiki/Manual#price-tickers) for more details on the Ticker data structure.
 - `runmode` - Property containing the current runmode.
 
 #### Example Usages:
@@ -462,6 +462,12 @@ if self.dp:
         dataframe['volume24h'] = ticker['quoteVolume']
         dataframe['vwap'] = ticker['vwap']
 ```
+
+!!! Warning
+    Although the ticker data structure is a part of the ccxt Unified Interface, the values returned by this method can
+    vary for different exchanges. For instance, many exchanges do not return `vwap` values, the FTX exchange
+    does not always fills in the `last` field (so it can be None), etc. So you need to carefully verify the ticker
+    data returned from the exchange you are working with.
 
 ***
 ### Additional data (Wallets)
