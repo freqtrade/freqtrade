@@ -26,6 +26,7 @@ class VolumePairList(IPairList):
             raise OperationalException(
                 f'`number_assets` not specified. Please check your configuration '
                 'for "pairlist.config.number_assets"')
+
         self._number_pairs = self._pairlistconfig['number_assets']
         self._sort_key = self._pairlistconfig.get('sort_key', 'quoteVolume')
         self._min_value = self._pairlistconfig.get('min_value', 0)
@@ -36,9 +37,11 @@ class VolumePairList(IPairList):
                 'Exchange does not support dynamic whitelist.'
                 'Please edit your config and restart the bot'
             )
+
         if not self._validate_keys(self._sort_key):
             raise OperationalException(
                 f'key {self._sort_key} not in {SORT_VALUES}')
+
         if self._sort_key != 'quoteVolume':
             logger.warning(
                 "DEPRECATED: using any key other than quoteVolume for VolumePairList is deprecated."
@@ -81,7 +84,9 @@ class VolumePairList(IPairList):
                                              self._sort_key, self._min_value)
         else:
             pairs = pairlist
+
         self.log_on_refresh(logger.info, f"Searching {self._number_pairs} pairs: {pairs}")
+
         return pairs
 
     def _gen_pair_whitelist(self, pairlist: List[str], tickers: Dict,
@@ -100,11 +105,11 @@ class VolumePairList(IPairList):
                                 if (self._exchange.get_pair_quote_currency(k) == base_currency
                                     and v[key] is not None)]
         else:
-            # If other pairlist is in front, use the incomming pairlist.
+            # If other pairlist is in front, use the incoming pairlist.
             filtered_tickers = [v for k, v in tickers.items() if k in pairlist]
 
         if min_val > 0:
-            filtered_tickers = list(filter(lambda t: t[key] > min_val, filtered_tickers))
+            filtered_tickers = [v for v in filtered_tickers if v[key] > min_val]
 
         sorted_tickers = sorted(filtered_tickers, reverse=True, key=lambda t: t[key])
 
