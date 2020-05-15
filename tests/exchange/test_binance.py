@@ -42,7 +42,8 @@ def test_stoploss_order_binance(default_conf, mocker):
     assert api_mock.create_order.call_args_list[0][1]['type'] == order_type
     assert api_mock.create_order.call_args_list[0][1]['side'] == 'sell'
     assert api_mock.create_order.call_args_list[0][1]['amount'] == 1
-    assert api_mock.create_order.call_args_list[0][1]['price'] == 220
+    # Price should be 1% below stopprice
+    assert api_mock.create_order.call_args_list[0][1]['price'] == 220 * 0.99
     assert api_mock.create_order.call_args_list[0][1]['params'] == {'stopPrice': 220}
 
     # test exception handling
