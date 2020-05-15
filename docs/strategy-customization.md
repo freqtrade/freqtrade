@@ -467,7 +467,7 @@ if self.dp:
     Although the ticker data structure is a part of the ccxt Unified Interface, the values returned by this method can
     vary for different exchanges. For instance, many exchanges do not return `vwap` values, the FTX exchange
     does not always fills in the `last` field (so it can be None), etc. So you need to carefully verify the ticker
-    data returned from the exchange you are working with.
+    data returned from the exchange and add appropriate error handling / defaults.
 
 ***
 ### Additional data (Wallets)
