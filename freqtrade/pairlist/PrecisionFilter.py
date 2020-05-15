@@ -44,15 +44,19 @@ class PrecisionFilter(IPairList):
         :return: True if the pair can stay, false if it should be removed
         """
         stop_price = ticker['ask'] * stoploss
+
         # Adjust stop-prices to precision
         sp = self._exchange.price_to_precision(ticker["symbol"], stop_price)
+
         stop_gap_price = self._exchange.price_to_precision(ticker["symbol"], stop_price * 0.99)
         logger.debug(f"{ticker['symbol']} - {sp} : {stop_gap_price}")
+
         if sp <= stop_gap_price:
             self.log_on_refresh(logger.info,
                                 f"Removed {ticker['symbol']} from whitelist, "
                                 f"because stop price {sp} would be <= stop limit {stop_gap_price}")
             return False
+
         return True
 
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
