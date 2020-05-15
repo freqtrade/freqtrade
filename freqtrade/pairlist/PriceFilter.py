@@ -58,14 +58,12 @@ class PriceFilter(IPairList):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
-        # Copy list since we're modifying this list
-        for p in deepcopy(pairlist):
-            ticker = tickers.get(p)
-            if not ticker:
-                pairlist.remove(p)
-
-            # Filter out assets which would not allow setting a stoploss
-            if self._low_price_ratio and not self._validate_ticker_lowprice(ticker):
-                pairlist.remove(p)
+        if self._low_price_ratio:
+            # Copy list since we're modifying this list
+            for p in deepcopy(pairlist):
+                ticker = tickers[p]
+                # Filter out assets which would not allow setting a stoploss
+                if not self._validate_ticker_lowprice(ticker):
+                    pairlist.remove(p)
 
         return pairlist
