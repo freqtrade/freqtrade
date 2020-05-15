@@ -31,8 +31,24 @@ class SpreadFilter(IPairList):
         return (f"{self.name} - Filtering pairs with ask/bid diff above "
                 f"{self._max_spread_ratio * 100}%.")
 
-    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
+    def _validate_spread(self, ticker: dict) -> bool:
+        """
+        Validate spread for the ticker
+        :param ticker: ticker dict as returned from ccxt.load_markets()
+        :return: True if the pair can stay, False if it should be removed
+        """
+        if 'bid' in ticker and 'ask' in ticker:
+            spread = 1 - ticker['bid'] / ticker['ask']
+            if spread > self._max_spread_ratio:
+                self.log_on_refresh(logger.info, f"Removed {ticker['symbol']} from whitelist, "
+                                                 f"because spread {spread * 100:.3f}% >"
+                                                 f"{self._max_spread_ratio * 100}%")
+                return False
+            else:
+                return True
+        return False
 
+    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
         Filters and sorts pairlist and returns the whitelist again.
         Called on each bot iteration - please use internal caching if necessary
@@ -41,19 +57,10 @@ class SpreadFilter(IPairList):
         :return: new whitelist
         """
         # Copy list since we're modifying this list
-
-        spread = None
         for p in deepcopy(pairlist):
-            ticker = tickers.get(p)
-            assert ticker is not None
-            if 'bid' in ticker and 'ask' in ticker:
-                spread = 1 - ticker['bid'] / ticker['ask']
-                if not ticker or spread > self._max_spread_ratio:
-                    self.log_on_refresh(logger.info, f"Removed {ticker['symbol']} from whitelist, "
-                                                     f"because spread {spread * 100:.3f}% >"
-                                                     f"{self._max_spread_ratio * 100}%")
-                    pairlist.remove(p)
-            else:
+            ticker = tickers[p]
+            # Filter out assets
+            if not self._validate_spread(ticker):
                 pairlist.remove(p)
 
         return pairlist

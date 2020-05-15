@@ -41,7 +41,7 @@ class PrecisionFilter(IPairList):
         :param ticker: ticker dict as returned from ccxt.load_markets()
         :param stoploss: stoploss value as set in the configuration
                         (already cleaned to be 1 - stoploss)
-        :return: True if the pair can stay, false if it should be removed
+        :return: True if the pair can stay, False if it should be removed
         """
         stop_price = ticker['ask'] * stoploss
 
@@ -63,13 +63,12 @@ class PrecisionFilter(IPairList):
         """
         Filters and sorts pairlists and assigns and returns them again.
         """
-        # Copy list since we're modifying this list
-        for p in deepcopy(pairlist):
-            ticker = tickers.get(p)
-            # Filter out assets which would not allow setting a stoploss
-            if not ticker or (self._stoploss
-                              and not self._validate_precision_filter(ticker, self._stoploss)):
-                pairlist.remove(p)
-                continue
+        if self._stoploss:
+            # Copy list since we're modifying this list
+            for p in deepcopy(pairlist):
+                ticker = tickers[p]
+                # Filter out assets which would not allow setting a stoploss
+                if not self._validate_precision_filter(ticker, self._stoploss):
+                    pairlist.remove(p)
 
         return pairlist
