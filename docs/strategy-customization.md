@@ -367,9 +367,10 @@ Please always check the mode of operation to select the correct method to get da
 - [`current_whitelist()`](#current_whitelist) - Returns a current list of whitelisted pairs. Useful for accessing dynamic whitelists (ie. VolumePairlist)
 - [`get_pair_dataframe(pair, timeframe)`](#get_pair_dataframepair-timeframe) - This is a universal method, which returns either historical data (for backtesting) or cached live data (for the Dry-Run and Live-Run modes).
 - `historic_ohlcv(pair, timeframe)` - Returns historical data stored on disk.
-- `market(pair)` - Returns market data for the pair: fees, limits, precisions, activity flag, etc. See [ccxt documentation](https://github.com/ccxt/ccxt/wiki/Manual#markets) for more details on Market data structure.
+- `market(pair)` - Returns market data for the pair: fees, limits, precisions, activity flag, etc. See [ccxt documentation](https://github.com/ccxt/ccxt/wiki/Manual#markets) for more details on the Market data structure.
 - `ohlcv(pair, timeframe)` - Currently cached candle (OHLCV) data for the pair, returns DataFrame or empty DataFrame.
 - [`orderbook(pair, maximum)`](#orderbookpair-maximum) - Returns latest orderbook data for the pair, a dict with bids/asks with a total of `maximum` entries.
+- [`ticker(pair)`](#tickerpair) - Returns current ticker data for the pair. See [ccxt documentation](https://github.com/ccxt/ccxt/wiki/Manual#price-tickers) for more details on the Ticker data structure.
 - `runmode` - Property containing the current runmode.
 
 #### Example Usages:
@@ -450,6 +451,23 @@ if self.dp:
 !!! Warning
     The order book is not part of the historic data which means backtesting and hyperopt will not work if this
     method is used.
+
+#### *ticker(pair)*
+
+``` python
+if self.dp:
+    if self.dp.runmode.value in ('live', 'dry_run'):
+        ticker = self.dp.ticker(metadata['pair'])
+        dataframe['last_price'] = ticker['last']
+        dataframe['volume24h'] = ticker['quoteVolume']
+        dataframe['vwap'] = ticker['vwap']
+```
+
+!!! Warning
+    Although the ticker data structure is a part of the ccxt Unified Interface, the values returned by this method can
+    vary for different exchanges. For instance, many exchanges do not return `vwap` values, the FTX exchange
+    does not always fills in the `last` field (so it can be None), etc. So you need to carefully verify the ticker
+    data returned from the exchange and add appropriate error handling / defaults.
 
 ***
 ### Additional data (Wallets)

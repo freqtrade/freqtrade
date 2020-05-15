@@ -5,7 +5,7 @@ import pytest
 
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.pairlist.pairlistmanager import PairListManager
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.state import RunMode
 from tests.conftest import get_patched_exchange
 
@@ -152,6 +152,24 @@ def test_market(mocker, default_conf, markets):
 
     res = dp.market('UNITTEST/BTC')
     assert res is None
+
+
+def test_ticker(mocker, default_conf, tickers):
+    ticker_mock = MagicMock(return_value=tickers()['ETH/BTC'])
+    mocker.patch("freqtrade.exchange.Exchange.fetch_ticker", ticker_mock)
+    exchange = get_patched_exchange(mocker, default_conf)
+    dp = DataProvider(default_conf, exchange)
+    res = dp.ticker('ETH/BTC')
+    assert type(res) is dict
+    assert 'symbol' in res
+    assert res['symbol'] == 'ETH/BTC'
+
+    ticker_mock = MagicMock(side_effect=DependencyException('Pair not found'))
+    mocker.patch("freqtrade.exchange.Exchange.fetch_ticker", ticker_mock)
+    exchange = get_patched_exchange(mocker, default_conf)
+    dp = DataProvider(default_conf, exchange)
+    res = dp.ticker('UNITTEST/BTC')
+    assert res == {}
 
 
 def test_current_whitelist(mocker, default_conf, tickers):
