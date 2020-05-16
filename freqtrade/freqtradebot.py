@@ -145,7 +145,7 @@ class FreqtradeBot:
         self.active_pair_whitelist = self._refresh_whitelist(trades)
 
         # Refreshing candles
-        self.dataprovider.refresh(self._create_pair_whitelist(self.active_pair_whitelist),
+        self.dataprovider.refresh(self.dataprovider.create_pair_list(self.active_pair_whitelist),
                                   self.strategy.informative_pairs())
 
         with self._sell_lock:
@@ -183,12 +183,6 @@ class FreqtradeBot:
             # It ensures that candle (OHLCV) data are downloaded for open trades as well
             _whitelist.extend([trade.pair for trade in trades if trade.pair not in _whitelist])
         return _whitelist
-
-    def _create_pair_whitelist(self, pairs: List[str]) -> List[Tuple[str, str]]:
-        """
-        Create pair-whitelist tuple with (pair, ticker_interval)
-        """
-        return [(pair, self.config['ticker_interval']) for pair in pairs]
 
     def get_free_open_trades(self):
         """
