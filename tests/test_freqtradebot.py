@@ -22,7 +22,7 @@ from freqtrade.strategy.interface import SellCheckTuple, SellType
 from freqtrade.worker import Worker
 from tests.conftest import (get_patched_freqtradebot, get_patched_worker,
                             log_has, log_has_re, patch_edge, patch_exchange,
-                            patch_get_signal, patch_wallet, patch_whitelist)
+                            patch_get_signal, patch_wallet, patch_whitelist, create_mock_trades)
 
 
 def patch_RPCManager(mocker) -> MagicMock:
@@ -3882,3 +3882,21 @@ def test_sync_wallet_dry_run(mocker, default_conf, ticker, fee, limit_buy_order,
     assert log_has_re(r"Unable to create trade for XRP/BTC: "
                       r"Available balance \(0.0 BTC\) is lower than stake amount \(0.001 BTC\)",
                       caplog)
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_cancel_all_open_orders(mocker, default_conf, fee, limit_buy_order, limit_sell_order):
+    default_conf['cancel_open_orders_on_exit'] = True
+    mocker.patch('freqtrade.exchange.Exchange.get_order',
+                 side_effect=[DependencyException(), limit_sell_order, limit_buy_order])
+    buy_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_cancel_buy')
+    sell_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_cancel_sell')
+
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    create_mock_trades(fee)
+    trades = Trade.query.all()
+    assert len(trades) == 3
+    freqtrade.cancel_all_open_orders()
+    assert buy_mock.call_count == 1
+    assert sell_mock.call_count == 1
+
