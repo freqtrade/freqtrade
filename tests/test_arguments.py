@@ -64,14 +64,6 @@ def test_parse_args_db_url() -> None:
     assert args["db_url"] == 'sqlite:///test.sqlite'
 
 
-def test_parse_args_cancel_open_orders_on_exit() -> None:
-    args = Arguments(['trade']).get_parsed_arg()
-    assert args["cancel_open_orders_on_exit"] is False
-
-    args = Arguments(['trade', '--cancel-open-orders-on-exit']).get_parsed_arg()
-    assert args["cancel_open_orders_on_exit"] is True
-
-
 def test_parse_args_verbose() -> None:
     args = Arguments(['trade', '-v']).get_parsed_arg()
     assert args["verbosity"] == 1

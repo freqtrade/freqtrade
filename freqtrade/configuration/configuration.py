@@ -134,11 +134,6 @@ class Configuration:
         if config['runmode'] not in TRADING_MODES:
             return
 
-        if self.args.get('cancel_open_orders_on_exit', False):
-            config.update({
-                'cancel_open_orders_on_exit': self.args.get('cancel_open_orders_on_exit')
-            })
-
         if config.get('dry_run', False):
             logger.info('Dry run is enabled')
             if config.get('db_url') in [None, constants.DEFAULT_DB_PROD_URL]:
