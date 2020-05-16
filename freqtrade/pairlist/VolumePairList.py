@@ -101,7 +101,7 @@ class VolumePairList(IPairList):
             filtered_tickers = [
                     v for k, v in tickers.items()
                     if (self._exchange.get_pair_quote_currency(k) == self._stake_currency
-                    and v[self._sort_key] is not None)]
+                        and v[self._sort_key] is not None)]
         else:
             # If other pairlist is in front, use the incoming pairlist.
             filtered_tickers = [v for k, v in tickers.items() if k in pairlist]
