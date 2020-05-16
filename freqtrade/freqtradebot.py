@@ -170,7 +170,7 @@ class FreqtradeBot:
 
     def process_stopped(self) -> None:
         """
-        Close all trades that were left open
+        Close all orders that were left open
         """
         if self.config['cancel_open_orders_on_exit']:
             self.cancel_all_open_orders()

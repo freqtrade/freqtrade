@@ -111,7 +111,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "cancel_open_orders_on_exit": Arg(
         '--cancel-open-orders-on-exit',
-        help='Close unfilled open orders when the bot stops / exits',
+        help='Close unfilled and partially filled open orders when the bot stops / exits.',
         action='store_true',
     ),
     # Optimize common
