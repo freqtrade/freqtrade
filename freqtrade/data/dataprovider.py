@@ -25,7 +25,6 @@ class DataProvider:
         self._config = config
         self._exchange = exchange
         self._pairlists = pairlists
-        self._timeframe = self._config['ticker_interval']
 
     def refresh(self,
                 pairlist: ListPairsWithTimeframes,
@@ -50,7 +49,7 @@ class DataProvider:
         """
         Create list of pair tuples with (pair, ticker_interval)
         """
-        return [(pair, timeframe or self._timeframe) for pair in pairs]
+        return [(pair, timeframe or self._config['ticker_interval']) for pair in pairs]
 
     def ohlcv(self, pair: str, timeframe: str = None, copy: bool = True) -> DataFrame:
         """
@@ -62,7 +61,7 @@ class DataProvider:
                      Use False only for read-only operations (where the dataframe is not modified)
         """
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
-            return self._exchange.klines((pair, timeframe or self._timeframe),
+            return self._exchange.klines((pair, timeframe or self._config['ticker_interval']),
                                          copy=copy)
         else:
             return DataFrame()
@@ -74,7 +73,7 @@ class DataProvider:
         :param timeframe: timeframe to get data for
         """
         return load_pair_history(pair=pair,
-                                 timeframe=timeframe or self._timeframe,
+                                 timeframe=timeframe or self._config['ticker_interval'],
                                  datadir=self._config['datadir']
                                  )
 
