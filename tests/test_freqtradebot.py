@@ -48,13 +48,31 @@ def test_freqtradebot_state(mocker, default_conf, markets) -> None:
     assert freqtrade.state is State.STOPPED
 
 
-def test_cleanup(mocker, default_conf, caplog) -> None:
-    mock_cleanup = MagicMock()
-    mocker.patch('freqtrade.persistence.cleanup', mock_cleanup)
+def test_process_stopped(mocker, default_conf) -> None:
+
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    coo_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.cancel_all_open_orders')
+    freqtrade.process_stopped()
+    assert coo_mock.call_count == 0
+
+    default_conf['cancel_open_orders_on_exit'] = True
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    freqtrade.process_stopped()
+    assert coo_mock.call_count == 1
+
+
+def test_bot_cleanup(mocker, default_conf, caplog) -> None:
+    mock_cleanup = mocker.patch('freqtrade.persistence.cleanup')
+    coo_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.cancel_all_open_orders')
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     freqtrade.cleanup()
     assert log_has('Cleaning up modules ...', caplog)
     assert mock_cleanup.call_count == 1
+    assert coo_mock.call_count == 0
+
+    freqtrade.config['cancel_open_orders_on_exit'] = True
+    freqtrade.cleanup()
+    assert coo_mock.call_count == 1
 
 
 def test_order_dict_dry_run(default_conf, mocker, caplog) -> None:
