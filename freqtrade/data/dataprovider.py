@@ -9,10 +9,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from pandas import DataFrame
 
+from freqtrade.data.common import ListPairsWithTimeframes
 from freqtrade.data.history import load_pair_history
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.state import RunMode
+
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +27,8 @@ class DataProvider:
         self._pairlists = pairlists
 
     def refresh(self,
-                pairlist: List[Tuple[str, str]],
-                helping_pairs: List[Tuple[str, str]] = None) -> None:
+                pairlist: ListPairsWithTimeframes,
+                helping_pairs: ListPairsWithTimeframes = None) -> None:
         """
         Refresh data, called with each cycle
         """
@@ -36,7 +38,7 @@ class DataProvider:
             self._exchange.refresh_latest_ohlcv(pairlist)
 
     @property
-    def available_pairs(self) -> List[Tuple[str, str]]:
+    def available_pairs(self) -> ListPairsWithTimeframes:
         """
         Return a list of tuples containing (pair, timeframe) for which data is currently cached.
         Should be whitelist + open trades.

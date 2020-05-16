@@ -18,6 +18,7 @@ from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE,
                                             TRUNCATE, decimal_to_precision)
 from pandas import DataFrame
 
+from freqtrade.data.common import ListPairsWithTimeframes
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.exceptions import (DependencyException, InvalidOrderException,
                                   OperationalException, TemporaryError)
@@ -676,7 +677,7 @@ class Exchange:
         logger.info("Downloaded data for %s with length %s.", pair, len(data))
         return data
 
-    def refresh_latest_ohlcv(self, pair_list: List[Tuple[str, str]]) -> List[Tuple[str, List]]:
+    def refresh_latest_ohlcv(self, pair_list: ListPairsWithTimeframes) -> List[Tuple[str, List]]:
         """
         Refresh in-memory OHLCV asynchronously and set `_klines` with the result
         Loops asynchronously over pair_list and downloads all pairs async (semi-parallel).

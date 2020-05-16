@@ -12,6 +12,7 @@ from typing import Dict, List, NamedTuple, Optional, Tuple
 import arrow
 from pandas import DataFrame
 
+from freqtrade.data.common import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import StrategyError
 from freqtrade.exchange import timeframe_to_minutes
@@ -185,7 +186,7 @@ class IStrategy(ABC):
         """
         return False
 
-    def informative_pairs(self) -> List[Tuple[str, str]]:
+    def informative_pairs(self) -> ListPairsWithTimeframes:
         """
         Define additional, informative pair/interval combinations to be cached from the exchange.
         These pair/interval combinations are non-tradeable, unless they are part
