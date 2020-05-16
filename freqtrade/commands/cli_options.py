@@ -222,7 +222,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "print_json": Arg(
         '--print-json',
-        help='Print best result detailization in JSON format.',
+        help='Print output in JSON format.',
         action='store_true',
         default=False,
     ),
@@ -429,6 +429,11 @@ AVAILABLE_CLI_OPTIONS = {
         'Default: %(default)s',
         choices=["DB", "file"],
         default="file",
+    ),
+    "trade_ids": Arg(
+        '--trade-ids',
+        help='Specify the list of trade ids.',
+        nargs='+',
     ),
     # hyperopt-list, hyperopt-show
     "hyperopt_list_profitable": Arg(

@@ -649,6 +649,7 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
         assert log_has(line, caplog)
 
 
+@pytest.mark.filterwarnings("ignore:deprecated")
 def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
 
     patch_exchange(mocker)

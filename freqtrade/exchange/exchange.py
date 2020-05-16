@@ -18,12 +18,11 @@ from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE,
                                             TRUNCATE, decimal_to_precision)
 from pandas import DataFrame
 
-from freqtrade.data.converter import ohlcv_to_dataframe
+from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.exceptions import (DependencyException, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange.common import BAD_EXCHANGES, retrier, retrier_async
-from freqtrade.misc import deep_merge_dicts
-
+from freqtrade.misc import deep_merge_dicts, safe_value_fallback
 
 CcxtModuleType = Any
 
@@ -472,26 +471,31 @@ class Exchange:
             'pair': pair,
             'price': rate,
             'amount': _amount,
-            "cost": _amount * rate,
+            'cost': _amount * rate,
             'type': ordertype,
             'side': side,
             'remaining': _amount,
             'datetime': arrow.utcnow().isoformat(),
             'status': "closed" if ordertype == "market" else "open",
             'fee': None,
-            "info": {}
+            'info': {}
         }
-        self._store_dry_order(dry_order)
+        self._store_dry_order(dry_order, pair)
         # Copy order and close it - so the returned order is open unless it's a market order
         return dry_order
 
-    def _store_dry_order(self, dry_order: Dict) -> None:
+    def _store_dry_order(self, dry_order: Dict, pair: str) -> None:
         closed_order = dry_order.copy()
-        if closed_order["type"] in ["market", "limit"]:
+        if closed_order['type'] in ["market", "limit"]:
             closed_order.update({
-                "status": "closed",
-                "filled": closed_order["amount"],
-                "remaining": 0
+                'status': 'closed',
+                'filled': closed_order['amount'],
+                'remaining': 0,
+                'fee': {
+                    'currency': self.get_pair_quote_currency(pair),
+                    'cost': dry_order['cost'] * self.get_fee(pair),
+                    'rate': self.get_fee(pair)
+                }
             })
         if closed_order["type"] in ["stop_loss_limit"]:
             closed_order["info"].update({"stopPrice": closed_order["price"]})
@@ -769,7 +773,7 @@ class Exchange:
     @retrier_async
     async def _async_fetch_trades(self, pair: str,
                                   since: Optional[int] = None,
-                                  params: Optional[dict] = None) -> List[Dict]:
+                                  params: Optional[dict] = None) -> List[List]:
         """
         Asyncronously gets trade history using fetch_trades.
         Handles exchange errors, does one call to the exchange.
@@ -789,7 +793,7 @@ class Exchange:
                     '(' + arrow.get(since // 1000).isoformat() + ') ' if since is not None else ''
                 )
                 trades = await self._api_async.fetch_trades(pair, since=since, limit=1000)
-            return trades
+            return trades_dict_to_list(trades)
         except ccxt.NotSupported as e:
             raise OperationalException(
                 f'Exchange {self._api.name} does not support fetching historical trade data.'
@@ -803,7 +807,7 @@ class Exchange:
     async def _async_get_trade_history_id(self, pair: str,
                                           until: int,
                                           since: Optional[int] = None,
-                                          from_id: Optional[str] = None) -> Tuple[str, List[Dict]]:
+                                          from_id: Optional[str] = None) -> Tuple[str, List[List]]:
         """
         Asyncronously gets trade history using fetch_trades
         use this when exchange uses id-based iteration (check `self._trades_pagination`)
@@ -814,7 +818,7 @@ class Exchange:
         returns tuple: (pair, trades-list)
         """
 
-        trades: List[Dict] = []
+        trades: List[List] = []
 
         if not from_id:
             # Fetch first elements using timebased method to get an ID to paginate on
@@ -823,7 +827,9 @@ class Exchange:
             # e.g. Binance returns the "last 1000" candles within a 1h time interval
             # - so we will miss the first trades.
             t = await self._async_fetch_trades(pair, since=since)
-            from_id = t[-1]['id']
+            # DEFAULT_TRADES_COLUMNS: 0 -> timestamp
+            # DEFAULT_TRADES_COLUMNS: 1 -> id
+            from_id = t[-1][1]
             trades.extend(t[:-1])
         while True:
             t = await self._async_fetch_trades(pair,
@@ -831,21 +837,21 @@ class Exchange:
             if len(t):
                 # Skip last id since its the key for the next call
                 trades.extend(t[:-1])
-                if from_id == t[-1]['id'] or t[-1]['timestamp'] > until:
+                if from_id == t[-1][1] or t[-1][0] > until:
                     logger.debug(f"Stopping because from_id did not change. "
-                                 f"Reached {t[-1]['timestamp']} > {until}")
+                                 f"Reached {t[-1][0]} > {until}")
                     # Reached the end of the defined-download period - add last trade as well.
                     trades.extend(t[-1:])
                     break
 
-                from_id = t[-1]['id']
+                from_id = t[-1][1]
             else:
                 break
 
         return (pair, trades)
 
     async def _async_get_trade_history_time(self, pair: str, until: int,
-                                            since: Optional[int] = None) -> Tuple[str, List]:
+                                            since: Optional[int] = None) -> Tuple[str, List[List]]:
         """
         Asyncronously gets trade history using fetch_trades,
         when the exchange uses time-based iteration (check `self._trades_pagination`)
@@ -855,16 +861,18 @@ class Exchange:
         returns tuple: (pair, trades-list)
         """
 
-        trades: List[Dict] = []
+        trades: List[List] = []
+        # DEFAULT_TRADES_COLUMNS: 0 -> timestamp
+        # DEFAULT_TRADES_COLUMNS: 1 -> id
         while True:
             t = await self._async_fetch_trades(pair, since=since)
             if len(t):
-                since = t[-1]['timestamp']
+                since = t[-1][1]
                 trades.extend(t)
                 # Reached the end of the defined-download period
-                if until and t[-1]['timestamp'] > until:
+                if until and t[-1][0] > until:
                     logger.debug(
-                        f"Stopping because until was reached. {t[-1]['timestamp']} > {until}")
+                        f"Stopping because until was reached. {t[-1][0]} > {until}")
                     break
             else:
                 break
@@ -874,7 +882,7 @@ class Exchange:
     async def _async_get_trade_history(self, pair: str,
                                        since: Optional[int] = None,
                                        until: Optional[int] = None,
-                                       from_id: Optional[str] = None) -> Tuple[str, List[Dict]]:
+                                       from_id: Optional[str] = None) -> Tuple[str, List[List]]:
         """
         Async wrapper handling downloading trades using either time or id based methods.
         """
@@ -1041,9 +1049,9 @@ class Exchange:
 
             return matched_trades
 
-        except ccxt.NetworkError as e:
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f'Could not get trades due to networking error. Message: {e}') from e
+                f'Could not get trades due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
@@ -1062,6 +1070,61 @@ class Exchange:
                 f'Could not get fee info due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    @staticmethod
+    def order_has_fee(order: Dict) -> bool:
+        """
+        Verifies if the passed in order dict has the needed keys to extract fees,
+        and that these keys (currency, cost) are not empty.
+        :param order: Order or trade (one trade) dict
+        :return: True if the fee substructure contains currency and cost, false otherwise
+        """
+        if not isinstance(order, dict):
+            return False
+        return ('fee' in order and order['fee'] is not None
+                and (order['fee'].keys() >= {'currency', 'cost'})
+                and order['fee']['currency'] is not None
+                and order['fee']['cost'] is not None
+                )
+
+    def calculate_fee_rate(self, order: Dict) -> Optional[float]:
+        """
+        Calculate fee rate if it's not given by the exchange.
+        :param order: Order or trade (one trade) dict
+        """
+        if order['fee'].get('rate') is not None:
+            return order['fee'].get('rate')
+        fee_curr = order['fee']['currency']
+        # Calculate fee based on order details
+        if fee_curr in self.get_pair_base_currency(order['symbol']):
+            # Base currency - divide by amount
+            return round(
+                order['fee']['cost'] / safe_value_fallback(order, order, 'filled', 'amount'), 8)
+        elif fee_curr in self.get_pair_quote_currency(order['symbol']):
+            # Quote currency - divide by cost
+            return round(order['fee']['cost'] / order['cost'], 8)
+        else:
+            # If Fee currency is a different currency
+            try:
+                comb = self.get_valid_pair_combination(fee_curr, self._config['stake_currency'])
+                tick = self.fetch_ticker(comb)
+
+                fee_to_quote_rate = safe_value_fallback(tick, tick, 'last', 'ask')
+                return round((order['fee']['cost'] * fee_to_quote_rate) / order['cost'], 8)
+            except DependencyException:
+                return None
+
+    def extract_cost_curr_rate(self, order: Dict) -> Tuple[float, str, Optional[float]]:
+        """
+        Extract tuple of cost, currency, rate.
+        Requires order_has_fee to run first!
+        :param order: Order or trade (one trade) dict
+        :return: Tuple with cost, currency, rate of the given fee dict
+        """
+        return (order['fee']['cost'],
+                order['fee']['currency'],
+                self.calculate_fee_rate(order))
+        # calculate rate ? (order['fee']['cost'] / (order['amount'] * order['price']))
 
 
 def is_exchange_bad(exchange_name: str) -> bool:

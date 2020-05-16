@@ -356,8 +356,12 @@ class Configuration:
         self._args_to_config(config, argname='indicators2',
                              logstring='Using indicators2: {}')
 
+        self._args_to_config(config, argname='trade_ids',
+                             logstring='Filtering on trade_ids: {}')
+
         self._args_to_config(config, argname='plot_limit',
                              logstring='Limiting plot to: {}')
+
         self._args_to_config(config, argname='trade_source',
                              logstring='Using trades from: {}')
 

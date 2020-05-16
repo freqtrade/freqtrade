@@ -94,6 +94,7 @@ class RPC:
             'dry_run': config['dry_run'],
             'stake_currency': config['stake_currency'],
             'stake_amount': config['stake_amount'],
+            'max_open_trades': config['max_open_trades'],
             'minimal_roi': config['minimal_roi'].copy(),
             'stoploss': config['stoploss'],
             'trailing_stop': config['trailing_stop'],
@@ -103,6 +104,8 @@ class RPC:
             'ticker_interval': config['ticker_interval'],
             'exchange': config['exchange']['name'],
             'strategy': config['strategy'],
+            'forcebuy_enabled': config.get('forcebuy_enable', False),
+            'state': str(self._freqtrade.state)
         }
         return val
 

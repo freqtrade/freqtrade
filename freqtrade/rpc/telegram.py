@@ -579,7 +579,7 @@ class Telegram(RPC):
                   "*/whitelist:* `Show current whitelist` \n" \
                   "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs " \
                   "to the blacklist.` \n" \
-                  "*/edge:* `Shows validated pairs by Edge if it is enabeld` \n" \
+                  "*/edge:* `Shows validated pairs by Edge if it is enabled` \n" \
                   "*/help:* `This help message`\n" \
                   "*/version:* `Show version`"
 
@@ -621,10 +621,12 @@ class Telegram(RPC):
             f"*Mode:* `{'Dry-run' if val['dry_run'] else 'Live'}`\n"
             f"*Exchange:* `{val['exchange']}`\n"
             f"*Stake per trade:* `{val['stake_amount']} {val['stake_currency']}`\n"
+            f"*Max open Trades:* `{val['max_open_trades']}`\n"
             f"*Minimum ROI:* `{val['minimal_roi']}`\n"
             f"{sl_info}"
             f"*Ticker Interval:* `{val['ticker_interval']}`\n"
-            f"*Strategy:* `{val['strategy']}`"
+            f"*Strategy:* `{val['strategy']}`\n"
+            f"*Current state:* `{val['state']}`"
         )
 
     def _send_msg(self, msg: str, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:

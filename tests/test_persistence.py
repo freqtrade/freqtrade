@@ -465,6 +465,10 @@ def test_migrate_old(mocker, default_conf, fee):
     assert trade.initial_stop_loss == 0.0
     assert trade.open_trade_price == trade._calc_open_trade_price()
     assert trade.close_profit_abs is None
+    assert trade.fee_open_cost is None
+    assert trade.fee_open_currency is None
+    assert trade.fee_close_cost is None
+    assert trade.fee_close_currency is None
 
     trade = Trade.query.filter(Trade.id == 2).first()
     assert trade.close_rate is not None
@@ -741,7 +745,11 @@ def test_to_json(default_conf, fee):
                       'open_rate_requested': None,
                       'open_trade_price': 15.1668225,
                       'fee_close': 0.0025,
+                      'fee_close_cost': None,
+                      'fee_close_currency': None,
                       'fee_open': 0.0025,
+                      'fee_open_cost': None,
+                      'fee_open_currency': None,
                       'close_rate': None,
                       'close_rate_requested': None,
                       'amount': 123.0,
@@ -790,7 +798,11 @@ def test_to_json(default_conf, fee):
                       'close_profit': None,
                       'close_rate_requested': None,
                       'fee_close': 0.0025,
+                      'fee_close_cost': None,
+                      'fee_close_currency': None,
                       'fee_open': 0.0025,
+                      'fee_open_cost': None,
+                      'fee_open_currency': None,
                       'is_open': None,
                       'max_rate': None,
                       'min_rate': None,
@@ -860,6 +872,75 @@ def test_stoploss_reinitialization(default_conf, fee):
     assert trade_adj.stop_loss_pct == -0.04
     assert trade_adj.initial_stop_loss == 0.96
     assert trade_adj.initial_stop_loss_pct == -0.04
+
+
+def test_update_fee(fee):
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        fee_open=fee.return_value,
+        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        amount=10,
+        fee_close=fee.return_value,
+        exchange='bittrex',
+        open_rate=1,
+        max_rate=1,
+    )
+    fee_cost = 0.15
+    fee_currency = 'BTC'
+    fee_rate = 0.0075
+    assert trade.fee_open_currency is None
+    assert not trade.fee_updated('buy')
+    assert not trade.fee_updated('sell')
+
+    trade.update_fee(fee_cost, fee_currency, fee_rate, 'buy')
+    assert trade.fee_updated('buy')
+    assert not trade.fee_updated('sell')
+    assert trade.fee_open_currency == fee_currency
+    assert trade.fee_open_cost == fee_cost
+    assert trade.fee_open == fee_rate
+    # Setting buy rate should "guess" close rate
+    assert trade.fee_close == fee_rate
+    assert trade.fee_close_currency is None
+    assert trade.fee_close_cost is None
+
+    fee_rate = 0.0076
+    trade.update_fee(fee_cost, fee_currency, fee_rate, 'sell')
+    assert trade.fee_updated('buy')
+    assert trade.fee_updated('sell')
+    assert trade.fee_close == 0.0076
+    assert trade.fee_close_cost == fee_cost
+    assert trade.fee_close == fee_rate
+
+
+def test_fee_updated(fee):
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        fee_open=fee.return_value,
+        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        amount=10,
+        fee_close=fee.return_value,
+        exchange='bittrex',
+        open_rate=1,
+        max_rate=1,
+    )
+
+    assert trade.fee_open_currency is None
+    assert not trade.fee_updated('buy')
+    assert not trade.fee_updated('sell')
+    assert not trade.fee_updated('asdf')
+
+    trade.update_fee(0.15, 'BTC', 0.0075, 'buy')
+    assert trade.fee_updated('buy')
+    assert not trade.fee_updated('sell')
+    assert trade.fee_open_currency is not None
+    assert trade.fee_close_currency is None
+
+    trade.update_fee(0.15, 'ABC', 0.0075, 'sell')
+    assert trade.fee_updated('buy')
+    assert trade.fee_updated('sell')
+    assert not trade.fee_updated('asfd')
 
 
 @pytest.mark.usefixtures("init_persistence")

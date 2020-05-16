@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from pandas import DataFrame
 
 from freqtrade.data.history import load_pair_history
+from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.state import RunMode
 
@@ -18,9 +19,10 @@ logger = logging.getLogger(__name__)
 
 class DataProvider:
 
-    def __init__(self, config: dict, exchange: Exchange) -> None:
+    def __init__(self, config: dict, exchange: Exchange, pairlists=None) -> None:
         self._config = config
         self._exchange = exchange
+        self._pairlists = pairlists
 
     def refresh(self,
                 pairlist: List[Tuple[str, str]],
@@ -95,10 +97,14 @@ class DataProvider:
 
     def ticker(self, pair: str):
         """
-        Return last ticker data
+        Return last ticker data from exchange
+        :param pair: Pair to get the data for
+        :return: Ticker dict from exchange or empty dict if ticker is not available for the pair
         """
-        # TODO: Implement me
-        pass
+        try:
+            return self._exchange.fetch_ticker(pair)
+        except DependencyException:
+            return {}
 
     def orderbook(self, pair: str, maximum: int) -> Dict[str, List]:
         """
@@ -116,3 +122,17 @@ class DataProvider:
         can be "live", "dry-run", "backtest", "edgecli", "hyperopt" or "other".
         """
         return RunMode(self._config.get('runmode', RunMode.OTHER))
+
+    def current_whitelist(self) -> List[str]:
+        """
+        fetch latest available whitelist.
+
+        Useful when you have a large whitelist and need to call each pair as an informative pair.
+        As available pairs does not show whitelist until after informative pairs have been cached.
+        :return: list of pairs in whitelist
+        """
+
+        if self._pairlists:
+            return self._pairlists.whitelist
+        else:
+            raise OperationalException("Dataprovider was not initialized with a pairlist provider.")

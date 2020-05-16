@@ -49,6 +49,7 @@ def client_get(client, url):
 def assert_response(response, expected_code=200):
     assert response.status_code == expected_code
     assert response.content_type == "application/json"
+    assert ('Access-Control-Allow-Origin', '*') in response.headers._list
 
 
 def test_api_not_found(botclient):
@@ -94,6 +95,33 @@ def test_api_unauthorized(botclient):
     assert rc.json == {'error': 'Unauthorized'}
 
 
+def test_api_token_login(botclient):
+    ftbot, client = botclient
+    rc = client_post(client, f"{BASE_URI}/token/login")
+    assert_response(rc)
+    assert 'access_token' in rc.json
+    assert 'refresh_token' in rc.json
+
+    # test Authentication is working with JWT tokens too
+    rc = client.get(f"{BASE_URI}/count",
+                    content_type="application/json",
+                    headers={'Authorization': f'Bearer {rc.json["access_token"]}'})
+    assert_response(rc)
+
+
+def test_api_token_refresh(botclient):
+    ftbot, client = botclient
+    rc = client_post(client, f"{BASE_URI}/token/login")
+    assert_response(rc)
+    rc = client.post(f"{BASE_URI}/token/refresh",
+                     content_type="application/json",
+                     data=None,
+                     headers={'Authorization': f'Bearer {rc.json["refresh_token"]}'})
+    assert_response(rc)
+    assert 'access_token' in rc.json
+    assert 'refresh_token' not in rc.json
+
+
 def test_api_stop_workflow(botclient):
     ftbot, client = botclient
     assert ftbot.state == State.RUNNING
@@ -123,6 +151,12 @@ def test_api__init__(default_conf, mocker):
     """
     Test __init__() method
     """
+    default_conf.update({"api_server": {"enabled": True,
+                                        "listen_ip_address": "127.0.0.1",
+                                        "listen_port": 8080,
+                                        "username": "TestUser",
+                                        "password": "testPass",
+                                        }})
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
     mocker.patch('freqtrade.rpc.api_server.ApiServer.run', MagicMock())
 
@@ -283,6 +317,7 @@ def test_api_show_config(botclient, mocker):
     assert 'dry_run' in rc.json
     assert rc.json['exchange'] == 'bittrex'
     assert rc.json['ticker_interval'] == '5m'
+    assert rc.json['state'] == 'running'
     assert not rc.json['trailing_stop']
 
 
@@ -472,7 +507,11 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
                         'close_rate_requested': None,
                         'current_rate': 1.099e-05,
                         'fee_close': 0.0025,
+                        'fee_close_cost': None,
+                        'fee_close_currency': None,
                         'fee_open': 0.0025,
+                        'fee_open_cost': None,
+                        'fee_open_currency': None,
                         'open_date': ANY,
                         'is_open': True,
                         'max_rate': 0.0,
@@ -575,7 +614,11 @@ def test_api_forcebuy(botclient, mocker, fee):
                        'close_profit': None,
                        'close_rate_requested': None,
                        'fee_close': 0.0025,
+                       'fee_close_cost': None,
+                       'fee_close_currency': None,
                        'fee_open': 0.0025,
+                       'fee_open_cost': None,
+                       'fee_open_currency': None,
                        'is_open': False,
                        'max_rate': None,
                        'min_rate': None,

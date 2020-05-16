@@ -305,7 +305,8 @@ def default_conf(testdatadir):
         "user_data_dir": Path("user_data"),
         "verbosity": 3,
         "strategy_path": str(Path(__file__).parent / "strategy" / "strats"),
-        "strategy": "DefaultStrategy"
+        "strategy": "DefaultStrategy",
+        "internals": {},
     }
     return configuration
 
@@ -780,7 +781,7 @@ def limit_buy_order():
         'id': 'mocked_limit_buy',
         'type': 'limit',
         'side': 'buy',
-        'pair': 'mocked',
+        'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
@@ -796,7 +797,7 @@ def market_buy_order():
         'id': 'mocked_market_buy',
         'type': 'market',
         'side': 'buy',
-        'pair': 'mocked',
+        'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00004099,
         'amount': 91.99181073,
@@ -812,7 +813,7 @@ def market_sell_order():
         'id': 'mocked_limit_sell',
         'type': 'market',
         'side': 'sell',
-        'pair': 'mocked',
+        'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00004173,
         'amount': 91.99181073,
@@ -828,7 +829,7 @@ def limit_buy_order_old():
         'id': 'mocked_limit_buy_old',
         'type': 'limit',
         'side': 'buy',
-        'pair': 'mocked',
+        'symbol': 'mocked',
         'datetime': str(arrow.utcnow().shift(minutes=-601).datetime),
         'price': 0.00001099,
         'amount': 90.99181073,
@@ -844,7 +845,7 @@ def limit_sell_order_old():
         'id': 'mocked_limit_sell_old',
         'type': 'limit',
         'side': 'sell',
-        'pair': 'ETH/BTC',
+        'symbol': 'ETH/BTC',
         'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
@@ -860,7 +861,7 @@ def limit_buy_order_old_partial():
         'id': 'mocked_limit_buy_old_partial',
         'type': 'limit',
         'side': 'buy',
-        'pair': 'ETH/BTC',
+        'symbol': 'ETH/BTC',
         'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
@@ -874,8 +875,101 @@ def limit_buy_order_old_partial():
 def limit_buy_order_old_partial_canceled(limit_buy_order_old_partial):
     res = deepcopy(limit_buy_order_old_partial)
     res['status'] = 'canceled'
-    res['fee'] = {'cost': 0.0001, 'currency': 'ETH'}
+    res['fee'] = {'cost': 0.023, 'currency': 'ETH'}
     return res
+
+
+@pytest.fixture(scope='function')
+def limit_buy_order_canceled_empty(request):
+    # Indirect fixture
+    # Documentation:
+    # https://docs.pytest.org/en/latest/example/parametrize.html#apply-indirect-on-particular-arguments
+
+    exchange_name = request.param
+    if exchange_name == 'ftx':
+        return {
+            'info': {},
+            'id': '1234512345',
+            'clientOrderId': None,
+            'timestamp': arrow.utcnow().shift(minutes=-601).timestamp,
+            'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+            'lastTradeTimestamp': None,
+            'symbol': 'LTC/USDT',
+            'type': 'limit',
+            'side': 'buy',
+            'price': 34.3225,
+            'amount': 0.55,
+            'cost': 0.0,
+            'average': None,
+            'filled': 0.0,
+            'remaining': 0.0,
+            'status': 'closed',
+            'fee': None,
+            'trades': None
+        }
+    elif exchange_name == 'kraken':
+        return {
+            'info': {},
+            'id': 'AZNPFF-4AC4N-7MKTAT',
+            'clientOrderId': None,
+            'timestamp': arrow.utcnow().shift(minutes=-601).timestamp,
+            'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+            'lastTradeTimestamp': None,
+            'status': 'canceled',
+            'symbol': 'LTC/USDT',
+            'type': 'limit',
+            'side': 'buy',
+            'price': 34.3225,
+            'cost': 0.0,
+            'amount': 0.55,
+            'filled': 0.0,
+            'average': 0.0,
+            'remaining': 0.55,
+            'fee': {'cost': 0.0, 'rate': None, 'currency': 'USDT'},
+            'trades': []
+        }
+    elif exchange_name == 'binance':
+        return {
+            'info': {},
+            'id': '1234512345',
+            'clientOrderId': 'alb1234123',
+            'timestamp': arrow.utcnow().shift(minutes=-601).timestamp,
+            'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+            'lastTradeTimestamp': None,
+            'symbol': 'LTC/USDT',
+            'type': 'limit',
+            'side': 'buy',
+            'price': 0.016804,
+            'amount': 0.55,
+            'cost': 0.0,
+            'average': None,
+            'filled': 0.0,
+            'remaining': 0.55,
+            'status': 'canceled',
+            'fee': None,
+            'trades': None
+        }
+    else:
+        return {
+            'info': {},
+            'id': '1234512345',
+            'clientOrderId': 'alb1234123',
+            'timestamp': arrow.utcnow().shift(minutes=-601).timestamp,
+            'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+            'lastTradeTimestamp': None,
+            'symbol': 'LTC/USDT',
+            'type': 'limit',
+            'side': 'buy',
+            'price': 0.016804,
+            'amount': 0.55,
+            'cost': 0.0,
+            'average': None,
+            'filled': 0.0,
+            'remaining': 0.55,
+            'status': 'canceled',
+            'fee': None,
+            'trades': None
+        }
 
 
 @pytest.fixture
@@ -1329,6 +1423,15 @@ def trades_for_order():
 
 @pytest.fixture(scope="function")
 def trades_history():
+    return [[1565798399463, '126181329', None, 'buy', 0.019627, 0.04, 0.00078508],
+            [1565798399629, '126181330', None, 'buy', 0.019627, 0.244, 0.004788987999999999],
+            [1565798399752, '126181331', None, 'sell', 0.019626, 0.011, 0.00021588599999999999],
+            [1565798399862, '126181332', None, 'sell', 0.019626, 0.011, 0.00021588599999999999],
+            [1565798399872, '126181333', None, 'sell', 0.019626, 0.011, 0.00021588599999999999]]
+
+
+@pytest.fixture(scope="function")
+def fetch_trades_result():
     return [{'info': {'a': 126181329,
                       'p': '0.01962700',
                       'q': '0.04000000',
@@ -1483,7 +1586,7 @@ def buy_order_fee():
         'id': 'mocked_limit_buy_old',
         'type': 'limit',
         'side': 'buy',
-        'pair': 'mocked',
+        'symbol': 'mocked',
         'datetime': str(arrow.utcnow().shift(minutes=-601).datetime),
         'price': 0.245441,
         'amount': 8.0,
