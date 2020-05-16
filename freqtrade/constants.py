@@ -326,6 +326,6 @@ SCHEMA_MINIMAL_REQUIRED = [
 CANCEL_REASON = {
     "TIMEOUT": "cancelled due to timeout",
     "PARTIALLY_FILLED": "partially filled - keeping order open",
-    "ALL_CANCELLED": "cancelled (all unfilled orders cancelled)",
+    "ALL_CANCELLED": "cancelled (all unfilled and partially filled open orders cancelled)",
     "CANCELLED_ON_EXCHANGE": "cancelled on exchange",
 }
