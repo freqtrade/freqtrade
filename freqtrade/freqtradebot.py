@@ -116,6 +116,9 @@ class FreqtradeBot:
         """
         logger.info('Cleaning up modules ...')
 
+        if self.config['cancel_open_orders_on_exit']:
+            self.cancel_all_open_orders()
+
         self.rpc.cleanup()
         persistence.cleanup()
 
@@ -164,6 +167,13 @@ class FreqtradeBot:
             self.enter_positions()
 
         Trade.session.flush()
+
+    def process_stopped(self) -> None:
+        """
+        Close all orders that were left open
+        """
+        if self.config['cancel_open_orders_on_exit']:
+            self.cancel_all_open_orders()
 
     def _refresh_active_whitelist(self, trades: List[Trade] = []) -> List[str]:
         """
@@ -873,11 +883,7 @@ class FreqtradeBot:
                                              default_retval=False)(pair=trade.pair,
                                                                    trade=trade,
                                                                    order=order))):
-
-                self.handle_timedout_limit_buy(trade, order)
-                self.wallets.update()
-                order_type = self.strategy.order_types['buy']
-                self._notify_buy_cancel(trade, order_type)
+                self.handle_cancel_buy(trade, order, constants.CANCEL_REASON['TIMEOUT'])
 
             elif (order['side'] == 'sell' and (
                   trade_state_update
@@ -886,25 +892,43 @@ class FreqtradeBot:
                                            default_retval=False)(pair=trade.pair,
                                                                  trade=trade,
                                                                  order=order))):
-                reason = self.handle_timedout_limit_sell(trade, order)
-                self.wallets.update()
-                order_type = self.strategy.order_types['sell']
-                self._notify_sell_cancel(trade, order_type, reason)
+                self.handle_cancel_sell(trade, order, constants.CANCEL_REASON['TIMEOUT'])
 
-    def handle_timedout_limit_buy(self, trade: Trade, order: Dict) -> bool:
+    def cancel_all_open_orders(self) -> None:
         """
-        Buy timeout - cancel order
+        Cancel all orders that are currently open
+        :return: None
+        """
+
+        for trade in Trade.get_open_order_trades():
+            try:
+                order = self.exchange.get_order(trade.open_order_id, trade.pair)
+            except (DependencyException, InvalidOrderException):
+                logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
+                continue
+
+            if order['side'] == 'buy':
+                self.handle_cancel_buy(trade, order, constants.CANCEL_REASON['ALL_CANCELLED'])
+
+            elif order['side'] == 'sell':
+                self.handle_cancel_sell(trade, order, constants.CANCEL_REASON['ALL_CANCELLED'])
+
+    def handle_cancel_buy(self, trade: Trade, order: Dict, reason: str) -> bool:
+        """
+        Buy cancel - cancel order
         :return: True if order was fully cancelled
         """
+        was_trade_fully_canceled = False
+
         # Cancelled orders may have the status of 'canceled' or 'closed'
         if order['status'] not in ('canceled', 'closed'):
-            reason = "cancelled due to timeout"
+            reason = constants.CANCEL_REASON['TIMEOUT']
             corder = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
                                                             trade.amount)
         else:
             # Order was cancelled already, so we can reuse the existing dict
             corder = order
-            reason = "cancelled on exchange"
+            reason = constants.CANCEL_REASON['CANCELLED_ON_EXCHANGE']
 
         logger.info('Buy order %s for %s.', reason, trade)
 
@@ -916,43 +940,45 @@ class FreqtradeBot:
             # if trade is not partially completed, just delete the trade
             Trade.session.delete(trade)
             Trade.session.flush()
-            return True
+            was_trade_fully_canceled = True
+        else:
+            # if trade is partially complete, edit the stake details for the trade
+            # and close the order
+            # cancel_order may not contain the full order dict, so we need to fallback
+            # to the order dict aquired before cancelling.
+            # we need to fall back to the values from order if corder does not contain these keys.
+            trade.amount = filled_amount
+            trade.stake_amount = trade.amount * trade.open_rate
+            self.update_trade_state(trade, corder, trade.amount)
 
-        # if trade is partially complete, edit the stake details for the trade
-        # and close the order
-        # cancel_order may not contain the full order dict, so we need to fallback
-        # to the order dict aquired before cancelling.
-        # we need to fall back to the values from order if corder does not contain these keys.
-        trade.amount = filled_amount
-        trade.stake_amount = trade.amount * trade.open_rate
-        self.update_trade_state(trade, corder, trade.amount)
+            trade.open_order_id = None
+            logger.info('Partial buy order timeout for %s.', trade)
+            self.rpc.send_msg({
+                'type': RPCMessageType.STATUS_NOTIFICATION,
+                'status': f'Remaining buy order for {trade.pair} cancelled due to timeout'
+            })
 
-        trade.open_order_id = None
-        logger.info('Partial buy order timeout for %s.', trade)
-        self.rpc.send_msg({
-            'type': RPCMessageType.STATUS_NOTIFICATION,
-            'status': f'Remaining buy order for {trade.pair} cancelled due to timeout'
-        })
-        return False
+        self.wallets.update()
+        self._notify_buy_cancel(trade, order_type=self.strategy.order_types['buy'])
+        return was_trade_fully_canceled
 
-    def handle_timedout_limit_sell(self, trade: Trade, order: Dict) -> str:
+    def handle_cancel_sell(self, trade: Trade, order: Dict, reason: str) -> str:
         """
-        Sell timeout - cancel order and update trade
+        Sell cancel - cancel order and update trade
         :return: Reason for cancel
         """
-        # if trade is not partially completed, just cancel the trade
+        # if trade is not partially completed, just cancel the order
         if order['remaining'] == order['amount'] or order.get('filled') == 0.0:
             if not self.exchange.check_order_canceled_empty(order):
-                reason = "cancelled due to timeout"
                 try:
-                    # if trade is not partially completed, just delete the trade
+                    # if trade is not partially completed, just delete the order
                     self.exchange.cancel_order(trade.open_order_id, trade.pair)
                 except InvalidOrderException:
                     logger.exception(f"Could not cancel sell order {trade.open_order_id}")
                     return 'error cancelling order'
                 logger.info('Sell order %s for %s.', reason, trade)
             else:
-                reason = "cancelled on exchange"
+                reason = constants.CANCEL_REASON['CANCELLED_ON_EXCHANGE']
                 logger.info('Sell order %s for %s.', reason, trade)
 
             trade.close_rate = None
@@ -962,11 +988,17 @@ class FreqtradeBot:
             trade.close_date = None
             trade.is_open = True
             trade.open_order_id = None
+        else:
+            # TODO: figure out how to handle partially complete sell orders
+            reason = constants.CANCEL_REASON['PARTIALLY_FILLED']
 
-            return reason
-
-        # TODO: figure out how to handle partially complete sell orders
-        return 'partially filled - keeping order open'
+        self.wallets.update()
+        self._notify_sell_cancel(
+            trade,
+            order_type=self.strategy.order_types['sell'],
+            reason=reason
+        )
+        return reason
 
     def _safe_sell_amount(self, pair: str, amount: float) -> float:
         """
