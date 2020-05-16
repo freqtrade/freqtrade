@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict
 from arrow import Arrow
 from flask import Flask, jsonify, request
 from flask.json import JSONEncoder
+from flask_cors import CORS
 from flask_jwt_extended import (JWTManager, create_access_token,
                                 create_refresh_token, get_jwt_identity,
                                 jwt_refresh_token_required,
@@ -88,6 +89,7 @@ class ApiServer(RPC):
 
         self._config = freqtrade.config
         self.app = Flask(__name__)
+        self._cors = CORS(self.app, resources={r"/api/*": {"origins": "*"}})
 
         # Setup the Flask-JWT-Extended extension
         self.app.config['JWT_SECRET_KEY'] = self._config['api_server'].get(

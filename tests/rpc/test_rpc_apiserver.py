@@ -49,6 +49,7 @@ def client_get(client, url):
 def assert_response(response, expected_code=200):
     assert response.status_code == expected_code
     assert response.content_type == "application/json"
+    assert ('Access-Control-Allow-Origin', '*') in response.headers._list
 
 
 def test_api_not_found(botclient):
