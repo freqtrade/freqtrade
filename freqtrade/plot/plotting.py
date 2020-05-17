@@ -236,12 +236,20 @@ def create_plotconfig(indicators1: List[str], indicators2: List[str],
     :param plot_config: Dict of Dicts containing advanced plot configuration
     :return: plot_config - eventually with indicators 1 and 2
     """
-
     if plot_config:
         if indicators1:
-            plot_config['main_plot'] = {ind: {} for ind in indicators1}
+            for ind in indicators1:
+                #add indicators with no advanced plot_config.
+                if ind not in plot_config['main_plot'].keys():
+                    plot_config['main_plot'][ind] = {}
         if indicators2:
-            plot_config['subplots'] = {'Other': {ind: {} for ind in indicators2}}
+            #'Other' key not provided in strategy.plot_config.
+            if 'Other' not in plot_config['subplots'].keys():
+                plot_config['subplots'] = {'Other': plot_config['subplots']}
+            for ind in indicators2:
+                #add indicators with no advanced plot_config 
+                if ind not in plot_config['subplots']['Other'].keys():
+                    plot_config['subplots']['Other'][ind] = {}
 
     if not plot_config:
         # If no indicators and no plot-config given, use defaults.
@@ -255,6 +263,8 @@ def create_plotconfig(indicators1: List[str], indicators2: List[str],
             'main_plot': {ind: {} for ind in indicators1},
             'subplots': {'Other': {ind: {} for ind in indicators2}},
         }
+
+    #!!!NON SENSE - isnt it?
     if 'main_plot' not in plot_config:
         plot_config['main_plot'] = {}
 
@@ -280,6 +290,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     :return: Plotly figure
     """
     plot_config = create_plotconfig(indicators1, indicators2, plot_config)
+    print(plot_config)
 
     rows = 2 + len(plot_config['subplots'])
     row_widths = [1 for _ in plot_config['subplots']]
@@ -370,6 +381,29 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
             del plot_config['main_plot']['bb_upperband']
             del plot_config['main_plot']['bb_lowerband']
 
+    #fill area betwenn traces i.e. for ichimoku
+    if 'fill_area' in plot_config.keys():
+        for area in plot_config['fill_area']:
+            #!error: need exactly 2 trace
+            traces = area['traces']
+            color = area['color']
+        if traces[0] in data and traces[1] in data:
+            trace_b = go.Scatter(
+                x=data.date,
+                y=data.get(traces[0]),
+                showlegend=False,
+                line={'color': 'rgba(255,255,255,0)'},
+            )
+            trace_a = go.Scatter(
+                x=data.date,
+                y=data.get(traces[1]),
+                name=f'{traces[0]} * {traces[1]}',
+                fill="tonexty",
+                fillcolor=color,
+                line={'color': 'rgba(255,255,255,0)'},
+            )
+            fig.add_trace(trace_b)
+            fig.add_trace(trace_a)
     # Add indicators to main plot
     fig = add_indicators(fig=fig, row=1, indicators=plot_config['main_plot'], data=data)
 
