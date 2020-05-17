@@ -14,10 +14,8 @@ class PrecisionFilter(IPairList):
                  pairlist_pos: int) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
-        self._stoploss = self._config.get('stoploss')
-        if self._stoploss is not None:
-            # Precalculate sanitized stoploss value to avoid recalculation for every pair
-            self._stoploss = 1 - abs(self._stoploss)
+        # Precalculate sanitized stoploss value to avoid recalculation for every pair
+        self._stoploss = 1 - abs(self._config['stoploss'])
 
     @property
     def needstickers(self) -> bool:
@@ -63,12 +61,11 @@ class PrecisionFilter(IPairList):
         """
         Filters and sorts pairlists and assigns and returns them again.
         """
-        if self._stoploss:
-            # Copy list since we're modifying this list
-            for p in deepcopy(pairlist):
-                ticker = tickers[p]
-                # Filter out assets which would not allow setting a stoploss
-                if not self._validate_precision_filter(ticker, self._stoploss):
-                    pairlist.remove(p)
+        # Copy list since we're modifying this list
+        for p in deepcopy(pairlist):
+            ticker = tickers[p]
+            # Filter out assets which would not allow setting a stoploss
+            if not self._validate_precision_filter(ticker, self._stoploss):
+                pairlist.remove(p)
 
         return pairlist
