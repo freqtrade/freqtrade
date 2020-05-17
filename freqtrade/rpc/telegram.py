@@ -276,14 +276,18 @@ class Telegram(RPC):
                 stake_cur,
                 fiat_disp_cur
             )
-            stats_tab = tabulate(stats,
-                                 headers=[
-                                     'Day',
-                                     f'Profit {stake_cur}',
-                                     f'Profit {fiat_disp_cur}',
-                                     f'Trades'
-                                 ],
-                                 tablefmt='simple')
+            stats_tab = tabulate(
+                [[day['date'],
+                  f"{day['abs_profit']} {stats['stake_currency']}",
+                  f"{day['fiat_value']} {stats['fiat_display_currency']}",
+                  f"{day['trade_count']} trades"] for day in stats['data']],
+                headers=[
+                    'Day',
+                    f'Profit {stake_cur}',
+                    f'Profit {fiat_disp_cur}',
+                    f'Trades',
+                ],
+                tablefmt='simple')
             message = f'<b>Daily Profit over the last {timescale} days</b>:\n<pre>{stats_tab}</pre>'
             self._send_msg(message, parse_mode=ParseMode.HTML)
         except RPCException as e:
