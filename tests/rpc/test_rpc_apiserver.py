@@ -520,6 +520,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
                         'open_rate_requested': 1.098e-05,
                         'open_trade_price': 0.0010025,
                         'sell_reason': None,
+                        'sell_order_status': None,
                         'strategy': 'DefaultStrategy',
                         'ticker_interval': 5}]
 
@@ -626,6 +627,7 @@ def test_api_forcebuy(botclient, mocker, fee):
                        'open_rate_requested': None,
                        'open_trade_price': 0.2460546025,
                        'sell_reason': None,
+                       'sell_order_status': None,
                        'strategy': None,
                        'ticker_interval': None
                        }
