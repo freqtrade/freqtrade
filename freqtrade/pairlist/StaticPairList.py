@@ -1,13 +1,13 @@
 """
-Static List provider
+Static Pair List provider
 
-Provides lists as configured in config.json
-
- """
+Provides pair white list as it configured in config
+"""
 import logging
 from typing import Dict, List
 
 from freqtrade.pairlist.IPairList import IPairList
+
 
 logger = logging.getLogger(__name__)
 
