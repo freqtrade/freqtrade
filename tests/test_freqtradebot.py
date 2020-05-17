@@ -1976,6 +1976,10 @@ def test_check_handle_timedout_buy_usercustom(default_conf, ticker, limit_buy_or
 
     Trade.session.add(open_trade)
 
+    # Ensure default is to return empty (so not mocked yet)
+    freqtrade.check_handle_timedout()
+    assert cancel_order_mock.call_count == 0
+
     # Return false - trade remains open
     freqtrade.strategy.check_buy_timeout = MagicMock(return_value=False)
     freqtrade.check_handle_timedout()
@@ -2106,6 +2110,9 @@ def test_check_handle_timedout_sell_usercustom(default_conf, ticker, limit_sell_
     open_trade.is_open = False
 
     Trade.session.add(open_trade)
+    # Ensure default is false
+    freqtrade.check_handle_timedout()
+    assert cancel_order_mock.call_count == 0
 
     freqtrade.strategy.check_sell_timeout = MagicMock(return_value=False)
     # Return false - No impact
