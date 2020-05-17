@@ -1,9 +1,6 @@
 """
-Static List provider
-
-Provides lists as configured in config.json
-
- """
+PairList base class
+"""
 import logging
 from abc import ABC, abstractmethod, abstractproperty
 from copy import deepcopy
@@ -12,6 +9,7 @@ from typing import Any, Dict, List
 from cachetools import TTLCache, cached
 
 from freqtrade.exchange import market_is_active
+
 
 logger = logging.getLogger(__name__)
 
