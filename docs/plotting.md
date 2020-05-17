@@ -168,6 +168,7 @@ Additional features when using plot_config include:
 
 * Specify colors per indicator
 * Specify additional subplots
+* Specify idicator pairs to fill area in between 
 
 The sample plot configuration below specifies fixed colors for the indicators. Otherwise consecutive plots may produce different colorschemes each time, making comparisons difficult.
 It also allows multiple subplots to display both MACD and RSI at the same time.
@@ -194,7 +195,13 @@ Sample configuration with inline comments explaining the process:
             "RSI": {
                 'rsi': {'color': 'red'},
             }
-        }
+        },
+	'fill_area': {
+	    "Ichimoku Cloud": { 
+		'traces': ('senkou_a', 'senkou_b'),
+		'color': 'rgba(0,176,246,0.2)', 
+	     },
+	}
     }
 ```
 

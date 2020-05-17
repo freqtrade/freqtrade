@@ -383,7 +383,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
 
     #fill area betwenn traces i.e. for ichimoku
     if 'fill_area' in plot_config.keys():
-        for area in plot_config['fill_area']:
+        for label, area in plot_config['fill_area'].items():
             #!error: need exactly 2 trace
             traces = area['traces']
             color = area['color']
@@ -397,7 +397,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
             trace_a = go.Scatter(
                 x=data.date,
                 y=data.get(traces[1]),
-                name=f'{traces[0]} * {traces[1]}',
+                name=label,
                 fill="tonexty",
                 fillcolor=color,
                 line={'color': 'rgba(255,255,255,0)'},
