@@ -1,8 +1,12 @@
+"""
+Price pair list filter
+"""
 import logging
 from copy import deepcopy
 from typing import Any, Dict, List
 
 from freqtrade.pairlist.IPairList import IPairList
+
 
 logger = logging.getLogger(__name__)
 
@@ -61,9 +65,8 @@ class PriceFilter(IPairList):
         if self._low_price_ratio:
             # Copy list since we're modifying this list
             for p in deepcopy(pairlist):
-                ticker = tickers[p]
                 # Filter out assets which would not allow setting a stoploss
-                if not self._validate_ticker_lowprice(ticker):
+                if not self._validate_ticker_lowprice(tickers[p]):
                     pairlist.remove(p)
 
         return pairlist

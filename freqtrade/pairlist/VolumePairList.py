@@ -1,9 +1,8 @@
 """
 Volume PairList provider
 
-Provides lists as configured in config.json
-
- """
+Provides dynamic pair list based on trade volumes
+"""
 import logging
 from datetime import datetime
 from typing import Any, Dict, List
@@ -11,7 +10,9 @@ from typing import Any, Dict, List
 from freqtrade.exceptions import OperationalException
 from freqtrade.pairlist.IPairList import IPairList
 
+
 logger = logging.getLogger(__name__)
+
 
 SORT_VALUES = ['askVolume', 'bidVolume', 'quoteVolume']
 
@@ -115,7 +116,7 @@ class VolumePairList(IPairList):
         # Validate whitelist to only have active market pairs
         pairs = self._whitelist_for_active_markets([s['symbol'] for s in sorted_tickers])
         pairs = self._verify_blacklist(pairs, aswarning=False)
-        # Limit to X number of pairs
+        # Limit pairlist to the requested number of pairs
         pairs = pairs[:self._number_pairs]
 
         return pairs

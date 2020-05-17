@@ -1,8 +1,12 @@
+"""
+Precision pair list filter
+"""
 import logging
 from copy import deepcopy
 from typing import Any, Dict, List
 
 from freqtrade.pairlist.IPairList import IPairList
+
 
 logger = logging.getLogger(__name__)
 
@@ -63,9 +67,8 @@ class PrecisionFilter(IPairList):
         """
         # Copy list since we're modifying this list
         for p in deepcopy(pairlist):
-            ticker = tickers[p]
             # Filter out assets which would not allow setting a stoploss
-            if not self._validate_precision_filter(ticker, self._stoploss):
+            if not self._validate_precision_filter(tickers[p], self._stoploss):
                 pairlist.remove(p)
 
         return pairlist

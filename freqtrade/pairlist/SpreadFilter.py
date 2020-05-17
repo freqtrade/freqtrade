@@ -1,8 +1,12 @@
+"""
+Spread pair list filter
+"""
 import logging
 from copy import deepcopy
 from typing import Dict, List
 
 from freqtrade.pairlist.IPairList import IPairList
+
 
 logger = logging.getLogger(__name__)
 
