@@ -19,7 +19,7 @@ ORDERBOOK_SIDES = ['ask', 'bid']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
-                       'PrecisionFilter', 'PriceFilter', 'SpreadFilter']
+                       'PrecisionFilter', 'PriceFilter', 'ShuffleFilter', 'SpreadFilter']
 AVAILABLE_DATAHANDLERS = ['json', 'jsongz']
 DRY_RUN_WALLET = 1000
 MATH_CLOSE_PREC = 1e-14  # Precision used for float comparisons
