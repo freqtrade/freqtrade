@@ -333,8 +333,10 @@ def test_api_daily(botclient, mocker, ticker, fee, markets):
     )
     rc = client_get(client, f"{BASE_URI}/daily")
     assert_response(rc)
-    assert len(rc.json) == 7
-    assert rc.json[0][0] == str(datetime.utcnow().date())
+    assert len(rc.json['data']) == 7
+    assert rc.json['stake_currency'] == 'BTC'
+    assert rc.json['fiat_display_currency'] == 'USD'
+    assert rc.json['data'][0]['date'] == str(datetime.utcnow().date())
 
 
 def test_api_trades(botclient, mocker, ticker, fee, markets):

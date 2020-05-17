@@ -186,7 +186,7 @@ class RPC:
 
     def _rpc_daily_profit(
             self, timescale: int,
-            stake_currency: str, fiat_display_currency: str) -> List[List[Any]]:
+            stake_currency: str, fiat_display_currency: str) -> Dict[str, Any]:
         today = datetime.utcnow().date()
         profit_days: Dict[date, Dict] = {}
 
@@ -206,28 +206,26 @@ class RPC:
                 'trades': len(trades)
             }
 
-        return [
-            [
-                key,
-                '{value:.8f} {symbol}'.format(
-                    value=float(value['amount']),
-                    symbol=stake_currency
-                ),
-                '{value:.3f} {symbol}'.format(
+        data = [
+            {
+                'date': key,
+                'abs_profit': f'{float(value["amount"]):.8f}',
+                'fiat_value': '{value:.3f}'.format(
                     value=self._fiat_converter.convert_amount(
                         value['amount'],
                         stake_currency,
                         fiat_display_currency
                     ) if self._fiat_converter else 0,
-                    symbol=fiat_display_currency
                 ),
-                '{value} trade{s}'.format(
-                    value=value['trades'],
-                    s='' if value['trades'] < 2 else 's'
-                ),
-            ]
+                'trade_count': f'{value["trades"]}',
+            }
             for key, value in profit_days.items()
         ]
+        return {
+            'stake_currency': stake_currency,
+            'fiat_display_currency': fiat_display_currency,
+            'data': data
+        }
 
     def _rpc_trade_history(self, limit: int) -> Dict:
         """ Returns the X last trades """

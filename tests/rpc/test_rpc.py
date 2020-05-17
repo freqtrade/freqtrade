@@ -205,16 +205,18 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
     # Try valid data
     update.message.text = '/daily 2'
     days = rpc._rpc_daily_profit(7, stake_currency, fiat_display_currency)
-    assert len(days) == 7
-    for day in days:
+    assert len(days['data']) == 7
+    assert days['stake_currency'] == default_conf['stake_currency']
+    assert days['fiat_display_currency'] == default_conf['fiat_display_currency']
+    for day in days['data']:
         # [datetime.date(2018, 1, 11), '0.00000000 BTC', '0.000 USD']
-        assert (day[1] == '0.00000000 BTC' or
-                day[1] == '0.00006217 BTC')
+        assert (day['abs_profit'] == '0.00000000' or
+                day['abs_profit'] == '0.00006217')
 
-        assert (day[2] == '0.000 USD' or
-                day[2] == '0.767 USD')
+        assert (day['fiat_value'] == '0.000' or
+                day['fiat_value'] == '0.767')
     # ensure first day is current date
-    assert str(days[0][0]) == str(datetime.utcnow().date())
+    assert str(days['data'][0]['date']) == str(datetime.utcnow().date())
 
     # Try invalid data
     with pytest.raises(RPCException, match=r'.*must be an integer greater than 0*'):
