@@ -881,7 +881,7 @@ class FreqtradeBot:
 
             fully_cancelled = self.update_trade_state(trade, order)
 
-            if (order['side'] == 'buy' and (
+            if (order['side'] == 'buy' and (order['status'] == 'open' or fully_cancelled) and (
                     fully_cancelled
                     or self._check_timed_out('buy', order)
                     or strategy_safe_wrapper(self.strategy.check_buy_timeout,
@@ -890,7 +890,7 @@ class FreqtradeBot:
                                                                    order=order))):
                 self.handle_cancel_buy(trade, order, constants.CANCEL_REASON['TIMEOUT'])
 
-            elif (order['side'] == 'sell' and (
+            elif (order['side'] == 'sell' and (order['status'] == 'open' or fully_cancelled) and (
                   fully_cancelled
                   or self._check_timed_out('sell', order)
                   or strategy_safe_wrapper(self.strategy.check_sell_timeout,
