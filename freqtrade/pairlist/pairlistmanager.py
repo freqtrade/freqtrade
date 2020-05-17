@@ -1,9 +1,6 @@
 """
-Static List provider
-
-Provides lists as configured in config.json
-
- """
+PairList manager class
+"""
 import logging
 from copy import deepcopy
 from typing import Dict, List
@@ -13,6 +10,7 @@ from cachetools import TTLCache, cached
 from freqtrade.exceptions import OperationalException
 from freqtrade.pairlist.IPairList import IPairList
 from freqtrade.resolvers import PairListResolver
+
 
 logger = logging.getLogger(__name__)
 
@@ -79,8 +77,7 @@ class PairListManager():
         """
         Run pairlist through all configured pairlists.
         """
-
-        # tickers should be cached to avoid calling the exchange on each call.
+        # Tickers should be cached to avoid calling the exchange on each call.
         tickers: Dict = {}
         if self._tickers_needed:
             tickers = self._get_cached_tickers()
@@ -92,21 +89,21 @@ class PairListManager():
         for pl in self._pairlists:
             pairlist = pl.filter_pairlist(pairlist, tickers)
 
-        # Validation against blacklist happens after the pairlists to ensure blacklist is respected.
+        # Validation against blacklist happens after the pairlists to ensure
+        # blacklist is respected.
         pairlist = IPairList.verify_blacklist(pairlist, self.blacklist, True)
 
         self._whitelist = pairlist
 
     def _prepare_whitelist(self, pairlist: List[str], tickers) -> List[str]:
         """
-        Prepare pairlist for Pairlist Filters that use tickers data - remove
+        Prepare sanitized pairlist for Pairlist Filters that use tickers data - remove
         pairs that do not have ticker available
         """
         if self._tickers_needed:
             # Copy list since we're modifying this list
             for p in deepcopy(pairlist):
-                ticker = tickers.get(p)
-                if not ticker:
+                if p not in tickers:
                     pairlist.remove(p)
 
         return pairlist
