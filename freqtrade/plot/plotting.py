@@ -290,7 +290,6 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     :return: Plotly figure
     """
     plot_config = create_plotconfig(indicators1, indicators2, plot_config)
-    print(plot_config)
 
     rows = 2 + len(plot_config['subplots'])
     row_widths = [1 for _ in plot_config['subplots']]
@@ -384,8 +383,13 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     #fill area betwenn traces i.e. for ichimoku
     if 'fill_area' in plot_config.keys():
         for label, area in plot_config['fill_area'].items():
-            #!error: need exactly 2 trace
             traces = area['traces']
+            if len(traces) != 2:
+                raise Exception(
+                    f"plot_config.fill_area.traces = {traces}: " \
+                        + f"needs exactly 2 indicators. " \
+                        + f"{len(traces)} is given."
+                )
             color = area['color']
         if traces[0] in data and traces[1] in data:
             trace_b = go.Scatter(
