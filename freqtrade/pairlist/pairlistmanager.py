@@ -5,6 +5,7 @@ Provides lists as configured in config.json
 
  """
 import logging
+from copy import deepcopy
 from typing import Dict, List
 
 from cachetools import TTLCache, cached
@@ -79,12 +80,13 @@ class PairListManager():
         Run pairlist through all configured pairlists.
         """
 
-        pairlist = self._whitelist.copy()
-
         # tickers should be cached to avoid calling the exchange on each call.
         tickers: Dict = {}
         if self._tickers_needed:
             tickers = self._get_cached_tickers()
+
+        # Adjust whitelist if filters are using tickers
+        pairlist = self._prepare_whitelist(self._whitelist.copy(), tickers)
 
         # Process all pairlists in chain
         for pl in self._pairlists:
@@ -94,3 +96,17 @@ class PairListManager():
         pairlist = IPairList.verify_blacklist(pairlist, self.blacklist, True)
 
         self._whitelist = pairlist
+
+    def _prepare_whitelist(self, pairlist: List[str], tickers) -> List[str]:
+        """
+        Prepare pairlist for Pairlist Filters that use tickers data - remove
+        pairs that do not have ticker available
+        """
+        if self._tickers_needed:
+            # Copy list since we're modifying this list
+            for p in deepcopy(pairlist):
+                ticker = tickers.get(p)
+                if not ticker:
+                    pairlist.remove(p)
+
+        return pairlist
