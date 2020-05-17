@@ -1976,6 +1976,10 @@ def test_check_handle_timedout_buy_usercustom(default_conf, ticker, limit_buy_or
 
     Trade.session.add(open_trade)
 
+    # Ensure default is to return empty (so not mocked yet)
+    freqtrade.check_handle_timedout()
+    assert cancel_order_mock.call_count == 0
+
     # Return false - trade remains open
     freqtrade.strategy.check_buy_timeout = MagicMock(return_value=False)
     freqtrade.check_handle_timedout()
@@ -2106,6 +2110,9 @@ def test_check_handle_timedout_sell_usercustom(default_conf, ticker, limit_sell_
     open_trade.is_open = False
 
     Trade.session.add(open_trade)
+    # Ensure default is false
+    freqtrade.check_handle_timedout()
+    assert cancel_order_mock.call_count == 0
 
     freqtrade.strategy.check_sell_timeout = MagicMock(return_value=False)
     # Return false - No impact
@@ -2407,30 +2414,47 @@ def test_handle_cancel_buy_corder_empty(mocker, default_conf, limit_buy_order,
     assert cancel_order_mock.call_count == 1
 
 
-def test_handle_cancel_sell_limit(mocker, default_conf) -> None:
-    patch_RPCManager(mocker)
+def test_handle_cancel_sell_limit(mocker, default_conf, fee) -> None:
+    send_msg_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
     cancel_order_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        cancel_order=cancel_order_mock
+        cancel_order=cancel_order_mock,
     )
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate', return_value=0.245441)
 
     freqtrade = FreqtradeBot(default_conf)
-    freqtrade._notify_sell_cancel = MagicMock()
 
-    trade = MagicMock()
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=2,
+        exchange='binance',
+        open_rate=0.245441,
+        open_order_id="123456",
+        open_date=arrow.utcnow().datetime,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+    )
     order = {'remaining': 1,
              'amount': 1,
              'status': "open"}
     reason = CANCEL_REASON['TIMEOUT']
     assert freqtrade.handle_cancel_sell(trade, order, reason)
     assert cancel_order_mock.call_count == 1
+    assert send_msg_mock.call_count == 1
+
+    send_msg_mock.reset_mock()
+
     order['amount'] = 2
-    assert (freqtrade.handle_cancel_sell(trade, order, reason)
-            == CANCEL_REASON['PARTIALLY_FILLED'])
+    assert freqtrade.handle_cancel_sell(trade, order, reason) == CANCEL_REASON['PARTIALLY_FILLED']
     # Assert cancel_order was not called (callcount remains unchanged)
     assert cancel_order_mock.call_count == 1
+    assert send_msg_mock.call_count == 1
+    assert freqtrade.handle_cancel_sell(trade, order, reason) == CANCEL_REASON['PARTIALLY_FILLED']
+    # Message should not be iterated again
+    assert trade.sell_order_status == CANCEL_REASON['PARTIALLY_FILLED']
+    assert send_msg_mock.call_count == 1
 
 
 def test_handle_cancel_sell_cancel_exception(mocker, default_conf) -> None:
