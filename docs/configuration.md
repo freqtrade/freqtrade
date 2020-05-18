@@ -549,18 +549,19 @@ A fixed slot (mirroring `bid_strategy.order_book_top`) can be defined by setting
 
 When not using orderbook (`ask_strategy.use_order_book=False`), the price at the `ask_strategy.price_side` side (defaults to `"ask"`) from the ticker will be used as the sell price.
 
-## Pairlists
+## Pairlists and Pairlist Handlers
 
-Pairlists define the list of pairs that the bot should trade.
-There are [`StaticPairList`](#static-pair-list) and dynamic Whitelists available.
+Pairlist Handlers define the list of pairs (pairlist) that the bot should trade. They are configured in the `pairlists` section of the configuration settings.
 
-[`PrecisionFilter`](#precision-filter) and [`PriceFilter`](#price-pair-filter) act as filters, removing low-value pairs.
+In your configuration, you can use Static Pairlist (defined by the [`StaticPairList`](#static-pair-list) Pairlist Handler) and Dynamic Pairlist (defined by the [`VolumePairList`](#volume-pair-list) Pairlist Handler).
 
-All pairlists can be chained, and a combination of all pairlists will become your new whitelist. Pairlists are executed in the sequence they are configured. You should always configure either `StaticPairList` or `DynamicPairList` as starting pairlists.
+Additionaly, [`PrecisionFilter`](#precision-filter), [`PriceFilter`](#price-pair-filter) and [`SpreadFilter`](#spread-pair-filter) act as Pairlist Filters, removing low-value pairs.
 
-Inactive markets and blacklisted pairs are always removed from the resulting `pair_whitelist`.
+If multiple Pairlist Handlers are used, they are chained and a combination of all Pairlist Handlers forms the resulting pairlist the bot uses for trading / backtesting / downloading historical data. Pairlist Handlers are executed in the sequence they are configured. You should always configure either `StaticPairList` or `VolumePairList` as the starting Pairlist Handler.
 
-### Available Pairlists
+Inactive markets and blacklisted pairs are always removed from the resulting pairlist. Blacklisted pairs (those in the `pair_blacklist` configuration setting) are also always removed from the resulting pairlist.
+
+### Available Pairlist Handlers
 
 * [`StaticPairList`](#static-pair-list) (default, if not configured differently)
 * [`VolumePairList`](#volume-pair-list)
@@ -569,7 +570,7 @@ Inactive markets and blacklisted pairs are always removed from the resulting `pa
 * [`SpreadFilter`](#spread-filter)
 
 !!! Tip "Testing pairlists"
-    Pairlist configurations can be quite tricky to get right. Best use the [`test-pairlist`](utils.md#test-pairlist) subcommand to test your configuration quickly.
+    Pairlist configurations can be quite tricky to get right. Best use the [`test-pairlist`](utils.md#test-pairlist) utility subcommand to test your configuration quickly.
 
 #### Static Pair List
 
@@ -585,13 +586,18 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 
 #### Volume Pair List
 
-`VolumePairList` selects `number_assets` top pairs based on `sort_key`, which can only be `quoteVolume`.
+`VolumePairList` employs sorting/filtering of pairs by their trading volume. I selects `number_assets` top pairs with sorting based on the `sort_key` (which can only be `quoteVolume`).
 
-`VolumePairList` considers outputs of previous pairlists unless  it's the first configured pairlist, it does not consider `pair_whitelist`, but selects the top assets from all available markets (with matching stake-currency) on the exchange.
+!!! Deprecation
+    Other values for `sort_key` are now deprecated and this setting will be removed in the future versions.
 
-`refresh_period` allows setting the period (in seconds), at which the pairlist will be refreshed. Defaults to 1800s (30 minutes).
+When used in the chain of Pairlist Handlers in a non-leading position (after StaticPairList and other Pairlist Filters), `VolumePairList` considers outputs of previous Pairlist Handlers, adding its sorting/selection of the pairs by the trading volume.
 
-`VolumePairList` is based on the ticker data, as reported by the ccxt library:
+When used on the leading position of the chain of Pairlist Handlers, it does not consider `pair_whitelist` configuration setting, but selects the top assets from all available markets (with matching stake-currency) on the exchange.
+
+The `refresh_period` setting allows to define the period (in seconds), at which the pairlist will be refreshed. Defaults to 1800s (30 minutes).
+
+`VolumePairList` is based on the ticker data from exchange, as reported by the ccxt library:
 
 * The `quoteVolume` is the amount of quote (stake) currency traded (bought or sold) in last 24 hours.
 
@@ -604,30 +610,34 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 ],
 ```
 
-#### Precision Filter
+#### PrecisionFilter
 
-Filters low-value coins which would not allow setting a stoploss.
+Filters low-value coins which would not allow setting stoplosses.
 
-#### Price Pair Filter
+#### PriceFilter
 
 The `PriceFilter` allows filtering of pairs by price.
-Currently, only `low_price_ratio` is implemented, where a raise of 1 price unit (pip) is below the `low_price_ratio` ratio.
+
+Currently, only `low_price_ratio` setting is implemented, where a raise of 1 price unit (pip) is below the `low_price_ratio` ratio.
 This option is disabled by default, and will only apply if set to <> 0.
 
-Calculation example:  
-Min price precision is 8 decimals. If price is 0.00000011 - one step would be 0.00000012 - which is almost 10% higher than the previous value. 
+Calculation example:
 
-These pairs are dangerous since it may be impossible to place the desired stoploss - and often result in high losses.
+Min price precision is 8 decimals. If price is 0.00000011 - one step would be 0.00000012 - which is almost 10% higher than the previous value.
 
-#### Spread Filter
+These pairs are dangerous since it may be impossible to place the desired stoploss - and often result in high losses. Here is what the PriceFilters takes over.
+
+#### SpreadFilter
 
 Removes pairs that have a difference between asks and bids above the specified ratio (default `0.005`).
+
 Example:
-If `DOGE/BTC` maximum bid is 0.00000026 and minimum ask is 0.00000027 the ratio is calculated as: `1 - bid/ask ~= 0.037` which is `> 0.005` 
 
-### Full Pairlist example
+If `DOGE/BTC` maximum bid is 0.00000026 and minimum ask is 0.00000027 the ratio is calculated as: `1 - bid/ask ~= 0.037` which is `> 0.005`
 
-The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, sorting by `quoteVolume` and applies both [`PrecisionFilter`](#precision-filter) and [`PriceFilter`](#price-pair-filter), filtering all assets where 1 priceunit is > 1%.
+### Full example of Pairlist Handlers
+
+The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, sorting pairs by `quoteVolume` and applies both [`PrecisionFilter`](#precision-filter) and [`PriceFilter`](#price-pair-filter), filtering all assets where 1 priceunit is > 1%.
 
 ```json
 "exchange": {
