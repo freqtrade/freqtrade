@@ -545,5 +545,5 @@ class RPC:
     def _rpc_edge(self) -> List[Dict[str, Any]]:
         """ Returns information related to Edge """
         if not self._freqtrade.edge:
-            raise RPCException(f'Edge is not enabled.')
+            raise RPCException('Edge is not enabled.')
         return self._freqtrade.edge.accepted_pairs()

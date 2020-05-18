@@ -1,6 +1,6 @@
 import logging
 
-from freqtrade.exceptions import DependencyException, TemporaryError
+from freqtrade.exceptions import TemporaryError
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,7 @@ def retrier_async(f):
         count = kwargs.pop('count', API_RETRY_COUNT)
         try:
             return await f(*args, **kwargs)
-        except (TemporaryError, DependencyException) as ex:
+        except TemporaryError as ex:
             logger.warning('%s() returned exception: "%s"', f.__name__, ex)
             if count > 0:
                 count -= 1
@@ -111,7 +111,7 @@ def retrier(f):
         count = kwargs.pop('count', API_RETRY_COUNT)
         try:
             return f(*args, **kwargs)
-        except (TemporaryError, DependencyException) as ex:
+        except TemporaryError as ex:
             logger.warning('%s() returned exception: "%s"', f.__name__, ex)
             if count > 0:
                 count -= 1

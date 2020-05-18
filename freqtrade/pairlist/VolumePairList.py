@@ -25,7 +25,7 @@ class VolumePairList(IPairList):
 
         if 'number_assets' not in self._pairlistconfig:
             raise OperationalException(
-                f'`number_assets` not specified. Please check your configuration '
+                '`number_assets` not specified. Please check your configuration '
                 'for "pairlist.config.number_assets"')
 
         self._stake_currency = config['stake_currency']

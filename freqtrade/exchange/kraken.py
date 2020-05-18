@@ -7,7 +7,7 @@ import ccxt
 from freqtrade.exceptions import (DependencyException, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
-from freqtrade.exchange.exchange import retrier
+from freqtrade.exchange.common import retrier
 
 logger = logging.getLogger(__name__)
 

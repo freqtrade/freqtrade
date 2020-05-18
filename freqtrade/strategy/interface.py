@@ -7,7 +7,7 @@ import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from typing import Dict, NamedTuple, Optional, Tuple
 
 import arrow
 from pandas import DataFrame
@@ -17,7 +17,9 @@ from freqtrade.exceptions import StrategyError
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.persistence import Trade
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
+from freqtrade.typing import ListPairsWithTimeframes
 from freqtrade.wallets import Wallets
+
 
 logger = logging.getLogger(__name__)
 
@@ -185,7 +187,7 @@ class IStrategy(ABC):
         """
         return False
 
-    def informative_pairs(self) -> List[Tuple[str, str]]:
+    def informative_pairs(self) -> ListPairsWithTimeframes:
         """
         Define additional, informative pair/interval combinations to be cached from the exchange.
         These pair/interval combinations are non-tradeable, unless they are part

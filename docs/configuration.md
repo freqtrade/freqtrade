@@ -81,14 +81,14 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `exchange.key` | API key to use for the exchange. Only required when you are in production mode.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
 | `exchange.secret` | API secret to use for the exchange. Only required when you are in production mode.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
 | `exchange.password` | API password to use for the exchange. Only required when you are in production mode and for exchanges that use password for API requests.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
-| `exchange.pair_whitelist` | List of pairs to use by the bot for trading and to check for potential trades during backtesting. Not used by VolumePairList (see [below](#dynamic-pairlists)). <br> **Datatype:** List
-| `exchange.pair_blacklist` | List of pairs the bot must absolutely avoid for trading and backtesting (see [below](#dynamic-pairlists)). <br> **Datatype:** List
+| `exchange.pair_whitelist` | List of pairs to use by the bot for trading and to check for potential trades during backtesting. Not used by VolumePairList (see [below](#pairlists-and-pairlist-handlers)). <br> **Datatype:** List
+| `exchange.pair_blacklist` | List of pairs the bot must absolutely avoid for trading and backtesting (see [below](#pairlists-and-pairlist-handlers)). <br> **Datatype:** List
 | `exchange.ccxt_config` | Additional CCXT parameters passed to the regular ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> **Datatype:** Dict
 | `exchange.ccxt_async_config` | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> **Datatype:** Dict
 | `exchange.markets_refresh_interval` | The interval in minutes in which markets are reloaded. <br>*Defaults to `60` minutes.* <br> **Datatype:** Positive Integer
 | `edge.*` | Please refer to [edge configuration document](edge.md) for detailed explanation.
 | `experimental.block_bad_exchanges` | Block exchanges known to not work with freqtrade. Leave on default unless you want to test if that exchange works now. <br>*Defaults to `true`.* <br> **Datatype:** Boolean
-| `pairlists` | Define one or more pairlists to be used. [More information below](#dynamic-pairlists). <br>*Defaults to `StaticPairList`.*  <br> **Datatype:** List of Dicts
+| `pairlists` | Define one or more pairlists to be used. [More information below](#pairlists-and-pairlist-handlers). <br>*Defaults to `StaticPairList`.*  <br> **Datatype:** List of Dicts
 | `telegram.enabled` | Enable the usage of Telegram. <br> **Datatype:** Boolean
 | `telegram.token` | Your Telegram bot token. Only required if `telegram.enabled` is `true`. <br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
 | `telegram.chat_id` | Your personal Telegram account id. Only required if `telegram.enabled` is `true`. <br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
@@ -549,18 +549,19 @@ A fixed slot (mirroring `bid_strategy.order_book_top`) can be defined by setting
 
 When not using orderbook (`ask_strategy.use_order_book=False`), the price at the `ask_strategy.price_side` side (defaults to `"ask"`) from the ticker will be used as the sell price.
 
-## Pairlists
+## Pairlists and Pairlist Handlers
 
-Pairlists define the list of pairs that the bot should trade.
-There are [`StaticPairList`](#static-pair-list) and dynamic Whitelists available.
+Pairlist Handlers define the list of pairs (pairlist) that the bot should trade. They are configured in the `pairlists` section of the configuration settings.
 
-[`PrecisionFilter`](#precision-filter) and [`PriceFilter`](#price-pair-filter) act as filters, removing low-value pairs.
+In your configuration, you can use Static Pairlist (defined by the [`StaticPairList`](#static-pair-list) Pairlist Handler) and Dynamic Pairlist (defined by the [`VolumePairList`](#volume-pair-list) Pairlist Handler).
 
-All pairlists can be chained, and a combination of all pairlists will become your new whitelist. Pairlists are executed in the sequence they are configured. You should always configure either `StaticPairList` or `DynamicPairList` as starting pairlists.
+Additionaly, [`PrecisionFilter`](#precision-filter), [`PriceFilter`](#price-pair-filter) and [`SpreadFilter`](#spread-pair-filter) act as Pairlist Filters, removing certain pairs.
 
-Inactive markets and blacklisted pairs are always removed from the resulting `pair_whitelist`.
+If multiple Pairlist Handlers are used, they are chained and a combination of all Pairlist Handlers forms the resulting pairlist the bot uses for trading and backtesting. Pairlist Handlers are executed in the sequence they are configured. You should always configure either `StaticPairList` or `VolumePairList` as the starting Pairlist Handler.
 
-### Available Pairlists
+Inactive markets are always removed from the resulting pairlist. Explicitly blacklisted pairs (those in the `pair_blacklist` configuration setting) are also always removed from the resulting pairlist.
+
+### Available Pairlist Handlers
 
 * [`StaticPairList`](#static-pair-list) (default, if not configured differently)
 * [`VolumePairList`](#volume-pair-list)
@@ -569,7 +570,7 @@ Inactive markets and blacklisted pairs are always removed from the resulting `pa
 * [`SpreadFilter`](#spread-filter)
 
 !!! Tip "Testing pairlists"
-    Pairlist configurations can be quite tricky to get right. Best use the [`test-pairlist`](utils.md#test-pairlist) subcommand to test your configuration quickly.
+    Pairlist configurations can be quite tricky to get right. Best use the [`test-pairlist`](utils.md#test-pairlist) utility subcommand to test your configuration quickly.
 
 #### Static Pair List
 
@@ -585,13 +586,15 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 
 #### Volume Pair List
 
-`VolumePairList` selects `number_assets` top pairs based on `sort_key`, which can only be `quoteVolume`.
+`VolumePairList` employs sorting/filtering of pairs by their trading volume. I selects `number_assets` top pairs with sorting based on the `sort_key` (which can only be `quoteVolume`).
 
-`VolumePairList` considers outputs of previous pairlists unless  it's the first configured pairlist, it does not consider `pair_whitelist`, but selects the top assets from all available markets (with matching stake-currency) on the exchange.
+When used in the chain of Pairlist Handlers in a non-leading position (after StaticPairList and other Pairlist Filters), `VolumePairList` considers outputs of previous Pairlist Handlers, adding its sorting/selection of the pairs by the trading volume.
 
-`refresh_period` allows setting the period (in seconds), at which the pairlist will be refreshed. Defaults to 1800s (30 minutes).
+When used on the leading position of the chain of Pairlist Handlers, it does not consider `pair_whitelist` configuration setting, but selects the top assets from all available markets (with matching stake-currency) on the exchange.
 
-`VolumePairList` is based on the ticker data, as reported by the ccxt library:
+The `refresh_period` setting allows to define the period (in seconds), at which the pairlist will be refreshed. Defaults to 1800s (30 minutes).
+
+`VolumePairList` is based on the ticker data from exchange, as reported by the ccxt library:
 
 * The `quoteVolume` is the amount of quote (stake) currency traded (bought or sold) in last 24 hours.
 
@@ -604,30 +607,34 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 ],
 ```
 
-#### Precision Filter
+#### PrecisionFilter
 
-Filters low-value coins which would not allow setting a stoploss.
+Filters low-value coins which would not allow setting stoplosses.
 
-#### Price Pair Filter
+#### PriceFilter
 
 The `PriceFilter` allows filtering of pairs by price.
-Currently, only `low_price_ratio` is implemented, where a raise of 1 price unit (pip) is below the `low_price_ratio` ratio.
+
+Currently, only `low_price_ratio` setting is implemented, where a raise of 1 price unit (pip) is below the `low_price_ratio` ratio.
 This option is disabled by default, and will only apply if set to <> 0.
 
-Calculation example:  
-Min price precision is 8 decimals. If price is 0.00000011 - one step would be 0.00000012 - which is almost 10% higher than the previous value. 
+Calculation example:
 
-These pairs are dangerous since it may be impossible to place the desired stoploss - and often result in high losses.
+Min price precision is 8 decimals. If price is 0.00000011 - one step would be 0.00000012 - which is almost 10% higher than the previous value.
 
-#### Spread Filter
+These pairs are dangerous since it may be impossible to place the desired stoploss - and often result in high losses. Here is what the PriceFilters takes over.
+
+#### SpreadFilter
 
 Removes pairs that have a difference between asks and bids above the specified ratio (default `0.005`).
+
 Example:
-If `DOGE/BTC` maximum bid is 0.00000026 and minimum ask is 0.00000027 the ratio is calculated as: `1 - bid/ask ~= 0.037` which is `> 0.005` 
 
-### Full Pairlist example
+If `DOGE/BTC` maximum bid is 0.00000026 and minimum ask is 0.00000027 the ratio is calculated as: `1 - bid/ask ~= 0.037` which is `> 0.005`
 
-The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, sorting by `quoteVolume` and applies both [`PrecisionFilter`](#precision-filter) and [`PriceFilter`](#price-pair-filter), filtering all assets where 1 priceunit is > 1%.
+### Full example of Pairlist Handlers
+
+The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, sorting pairs by `quoteVolume` and applies both [`PrecisionFilter`](#precision-filter) and [`PriceFilter`](#price-pair-filter), filtering all assets where 1 priceunit is > 1%.
 
 ```json
 "exchange": {

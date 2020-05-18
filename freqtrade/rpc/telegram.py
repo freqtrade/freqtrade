@@ -234,7 +234,7 @@ class Telegram(RPC):
                         lines.append("*Open Order:* `{open_order}`")
 
                 # Filter empty lines using list-comprehension
-                messages.append("\n".join([l for l in lines if l]).format(**r))
+                messages.append("\n".join([line for line in lines if line]).format(**r))
 
             for msg in messages:
                 self._send_msg(msg)
@@ -289,7 +289,7 @@ class Telegram(RPC):
                     'Day',
                     f'Profit {stake_cur}',
                     f'Profit {fiat_disp_cur}',
-                    f'Trades',
+                    'Trades',
                 ],
                 tablefmt='simple')
             message = f'<b>Daily Profit over the last {timescale} days</b>:\n<pre>{stats_tab}</pre>'

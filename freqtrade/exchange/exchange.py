@@ -23,6 +23,7 @@ from freqtrade.exceptions import (DependencyException, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange.common import BAD_EXCHANGES, retrier, retrier_async
 from freqtrade.misc import deep_merge_dicts, safe_value_fallback
+from freqtrade.typing import ListPairsWithTimeframes
 
 CcxtModuleType = Any
 
@@ -366,8 +367,7 @@ class Exchange:
                 f"Invalid timeframe '{timeframe}'. This exchange supports: {self.timeframes}")
 
         if timeframe and timeframe_to_minutes(timeframe) < 1:
-            raise OperationalException(
-                f"Timeframes < 1m are currently not supported by Freqtrade.")
+            raise OperationalException("Timeframes < 1m are currently not supported by Freqtrade.")
 
     def validate_ordertypes(self, order_types: Dict) -> None:
         """
@@ -676,7 +676,7 @@ class Exchange:
         logger.info("Downloaded data for %s with length %s.", pair, len(data))
         return data
 
-    def refresh_latest_ohlcv(self, pair_list: List[Tuple[str, str]]) -> List[Tuple[str, List]]:
+    def refresh_latest_ohlcv(self, pair_list: ListPairsWithTimeframes) -> List[Tuple[str, List]]:
         """
         Refresh in-memory OHLCV asynchronously and set `_klines` with the result
         Loops asynchronously over pair_list and downloads all pairs async (semi-parallel).

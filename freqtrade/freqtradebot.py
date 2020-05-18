@@ -7,7 +7,7 @@ import traceback
 from datetime import datetime
 from math import isclose
 from threading import Lock
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import arrow
 from cachetools import TTLCache
@@ -84,7 +84,7 @@ class FreqtradeBot:
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
             self.config.get('edge', {}).get('enabled', False) else None
 
-        self.active_pair_whitelist = self._refresh_whitelist()
+        self.active_pair_whitelist = self._refresh_active_whitelist()
 
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')
@@ -145,10 +145,10 @@ class FreqtradeBot:
         # Query trades from persistence layer
         trades = Trade.get_open_trades()
 
-        self.active_pair_whitelist = self._refresh_whitelist(trades)
+        self.active_pair_whitelist = self._refresh_active_whitelist(trades)
 
         # Refreshing candles
-        self.dataprovider.refresh(self._create_pair_whitelist(self.active_pair_whitelist),
+        self.dataprovider.refresh(self.pairlists.create_pair_list(self.active_pair_whitelist),
                                   self.strategy.informative_pairs())
 
         with self._sell_lock:
@@ -175,9 +175,10 @@ class FreqtradeBot:
         if self.config['cancel_open_orders_on_exit']:
             self.cancel_all_open_orders()
 
-    def _refresh_whitelist(self, trades: List[Trade] = []) -> List[str]:
+    def _refresh_active_whitelist(self, trades: List[Trade] = []) -> List[str]:
         """
-        Refresh whitelist from pairlist or edge and extend it with trades.
+        Refresh active whitelist from pairlist or edge and extend it with
+        pairs that have open trades.
         """
         # Refresh whitelist
         self.pairlists.refresh_pairlist()
@@ -193,12 +194,6 @@ class FreqtradeBot:
             # It ensures that candle (OHLCV) data are downloaded for open trades as well
             _whitelist.extend([trade.pair for trade in trades if trade.pair not in _whitelist])
         return _whitelist
-
-    def _create_pair_whitelist(self, pairs: List[str]) -> List[Tuple[str, str]]:
-        """
-        Create pair-whitelist tuple with (pair, ticker_interval)
-        """
-        return [(pair, self.config['ticker_interval']) for pair in pairs]
 
     def get_free_open_trades(self):
         """
