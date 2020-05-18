@@ -176,7 +176,7 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
       {"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "PrecisionFilter"},
       {"method": "PriceFilter", "low_price_ratio": 0.03},
-      {"method": "SpreadFilter", "max_spread": 0.005},
+      {"method": "SpreadFilter", "max_spread_ratio": 0.005},
       {"method": "ShuffleFilter"}],
      "ETH", []),
     # Precisionfilter and quote volume
@@ -211,7 +211,7 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
      "BTC", ['TKN/BTC', 'ETH/BTC']),
     # SpreadFilter
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
-      {"method": "SpreadFilter", "max_spread": 0.005}],
+      {"method": "SpreadFilter", "max_spread_ratio": 0.005}],
      "USDT", ['ETH/USDT']),
     # ShuffleFilter
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
