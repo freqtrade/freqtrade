@@ -92,7 +92,7 @@ def patch_wallet(mocker, free=999.9) -> None:
 
 
 def patch_whitelist(mocker, conf) -> None:
-    mocker.patch('freqtrade.freqtradebot.FreqtradeBot._refresh_whitelist',
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot._refresh_active_whitelist',
                  MagicMock(return_value=conf['exchange']['pair_whitelist']))
 
 

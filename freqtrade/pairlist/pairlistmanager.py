@@ -10,6 +10,7 @@ from cachetools import TTLCache, cached
 from freqtrade.exceptions import OperationalException
 from freqtrade.pairlist.IPairList import IPairList
 from freqtrade.resolvers import PairListResolver
+from freqtrade.typing import ListPairsWithTimeframes
 
 
 logger = logging.getLogger(__name__)
@@ -107,3 +108,9 @@ class PairListManager():
                     pairlist.remove(p)
 
         return pairlist
+
+    def create_pair_list(self, pairs: List[str], timeframe: str = None) -> ListPairsWithTimeframes:
+        """
+        Create list of pair tuples with (pair, ticker_interval)
+        """
+        return [(pair, timeframe or self._config['ticker_interval']) for pair in pairs]
