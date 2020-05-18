@@ -131,8 +131,7 @@ class Worker:
         return result
 
     def _process_stopped(self) -> None:
-        # Maybe do here something in the future...
-        pass
+        self.freqtrade.process_stopped()
 
     def _process_running(self) -> None:
         try:
