@@ -244,7 +244,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     whitelist = freqtrade.pairlists.whitelist
 
     assert isinstance(whitelist, list)
-    
+
     # Verify length of pairlist matches (used for ShuffleFilter without seed)
     if type(whitelist_result) is list:
         assert whitelist == whitelist_result
