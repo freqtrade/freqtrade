@@ -517,9 +517,9 @@ def test_validate_pairs_restricted(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
 
     Exchange(default_conf)
-    assert log_has(f"Pair XRP/BTC is restricted for some users on this exchange."
-                   f"Please check if you are impacted by this restriction "
-                   f"on the exchange and eventually remove XRP/BTC from your whitelist.", caplog)
+    assert log_has("Pair XRP/BTC is restricted for some users on this exchange."
+                   "Please check if you are impacted by this restriction "
+                   "on the exchange and eventually remove XRP/BTC from your whitelist.", caplog)
 
 
 def test_validate_pairs_stakecompatibility(default_conf, mocker, caplog):
