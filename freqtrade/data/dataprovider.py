@@ -9,10 +9,10 @@ from typing import Any, Dict, List, Optional
 
 from pandas import DataFrame
 
-from freqtrade.data.common import ListPairsWithTimeframes
 from freqtrade.data.history import load_pair_history
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import Exchange
+from freqtrade.pairlist.pairlistmanager import ListPairsWithTimeframes
 from freqtrade.state import RunMode
 
 
@@ -44,12 +44,6 @@ class DataProvider:
         Should be whitelist + open trades.
         """
         return list(self._exchange._klines.keys())
-
-    def create_pair_list(self, pairs: List[str], timeframe: str = None) -> ListPairsWithTimeframes:
-        """
-        Create list of pair tuples with (pair, ticker_interval)
-        """
-        return [(pair, timeframe or self._config['ticker_interval']) for pair in pairs]
 
     def ohlcv(self, pair: str, timeframe: str = None, copy: bool = True) -> DataFrame:
         """

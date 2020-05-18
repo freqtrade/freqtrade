@@ -5,7 +5,7 @@ Provides lists as configured in config.json
 
  """
 import logging
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from cachetools import TTLCache, cached
 
@@ -13,7 +13,12 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.pairlist.IPairList import IPairList
 from freqtrade.resolvers import PairListResolver
 
+
 logger = logging.getLogger(__name__)
+
+
+# List of pairs with their timeframes
+ListPairsWithTimeframes = List[Tuple[str, str]]
 
 
 class PairListManager():
@@ -94,3 +99,9 @@ class PairListManager():
         pairlist = IPairList.verify_blacklist(pairlist, self.blacklist, True)
 
         self._whitelist = pairlist
+
+    def create_pair_list(self, pairs: List[str], timeframe: str = None) -> ListPairsWithTimeframes:
+        """
+        Create list of pair tuples with (pair, ticker_interval)
+        """
+        return [(pair, timeframe or self._config['ticker_interval']) for pair in pairs]

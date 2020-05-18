@@ -12,10 +12,10 @@ from typing import Dict, NamedTuple, Optional, Tuple
 import arrow
 from pandas import DataFrame
 
-from freqtrade.data.common import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import StrategyError
 from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.pairlist.pairlistmanager import ListPairsWithTimeframes
 from freqtrade.persistence import Trade
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets

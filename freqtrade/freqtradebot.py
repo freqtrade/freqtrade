@@ -145,7 +145,7 @@ class FreqtradeBot:
         self.active_pair_whitelist = self._refresh_active_whitelist(trades)
 
         # Refreshing candles
-        self.dataprovider.refresh(self.dataprovider.create_pair_list(self.active_pair_whitelist),
+        self.dataprovider.refresh(self.pairlists.create_pair_list(self.active_pair_whitelist),
                                   self.strategy.informative_pairs())
 
         with self._sell_lock:
