@@ -555,11 +555,11 @@ Pairlist Handlers define the list of pairs (pairlist) that the bot should trade.
 
 In your configuration, you can use Static Pairlist (defined by the [`StaticPairList`](#static-pair-list) Pairlist Handler) and Dynamic Pairlist (defined by the [`VolumePairList`](#volume-pair-list) Pairlist Handler).
 
-Additionaly, [`PrecisionFilter`](#precision-filter), [`PriceFilter`](#price-pair-filter) and [`SpreadFilter`](#spread-pair-filter) act as Pairlist Filters, removing low-value pairs.
+Additionaly, [`PrecisionFilter`](#precision-filter), [`PriceFilter`](#price-pair-filter) and [`SpreadFilter`](#spread-pair-filter) act as Pairlist Filters, removing certain pairs.
 
-If multiple Pairlist Handlers are used, they are chained and a combination of all Pairlist Handlers forms the resulting pairlist the bot uses for trading / backtesting / downloading historical data. Pairlist Handlers are executed in the sequence they are configured. You should always configure either `StaticPairList` or `VolumePairList` as the starting Pairlist Handler.
+If multiple Pairlist Handlers are used, they are chained and a combination of all Pairlist Handlers forms the resulting pairlist the bot uses for trading and backtesting. Pairlist Handlers are executed in the sequence they are configured. You should always configure either `StaticPairList` or `VolumePairList` as the starting Pairlist Handler.
 
-Inactive markets and blacklisted pairs are always removed from the resulting pairlist. Blacklisted pairs (those in the `pair_blacklist` configuration setting) are also always removed from the resulting pairlist.
+Inactive markets are always removed from the resulting pairlist. Explicitly blacklisted pairs (those in the `pair_blacklist` configuration setting) are also always removed from the resulting pairlist.
 
 ### Available Pairlist Handlers
 
@@ -587,9 +587,6 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 #### Volume Pair List
 
 `VolumePairList` employs sorting/filtering of pairs by their trading volume. I selects `number_assets` top pairs with sorting based on the `sort_key` (which can only be `quoteVolume`).
-
-!!! Deprecation
-    Other values for `sort_key` are now deprecated and this setting will be removed in the future versions.
 
 When used in the chain of Pairlist Handlers in a non-leading position (after StaticPairList and other Pairlist Filters), `VolumePairList` considers outputs of previous Pairlist Handlers, adding its sorting/selection of the pairs by the trading volume.
 
