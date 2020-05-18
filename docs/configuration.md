@@ -555,7 +555,7 @@ Pairlist Handlers define the list of pairs (pairlist) that the bot should trade.
 
 In your configuration, you can use Static Pairlist (defined by the [`StaticPairList`](#static-pair-list) Pairlist Handler) and Dynamic Pairlist (defined by the [`VolumePairList`](#volume-pair-list) Pairlist Handler).
 
-Additionaly, [`PrecisionFilter`](#precision-filter), [`PriceFilter`](#price-pair-filter) and [`SpreadFilter`](#spread-pair-filter) act as Pairlist Filters, removing certain pairs.
+Additionaly, [`PrecisionFilter`](#precisionfilter), [`PriceFilter`](#pricefilter), [`ShuffleFilter`](#shufflefilter) and [`SpreadFilter`](#spreadfilter) act as Pairlist Filters, removing certain pairs and/or moving their positions in the pairlist.
 
 If multiple Pairlist Handlers are used, they are chained and a combination of all Pairlist Handlers forms the resulting pairlist the bot uses for trading and backtesting. Pairlist Handlers are executed in the sequence they are configured. You should always configure either `StaticPairList` or `VolumePairList` as the starting Pairlist Handler.
 
@@ -565,9 +565,10 @@ Inactive markets are always removed from the resulting pairlist. Explicitly blac
 
 * [`StaticPairList`](#static-pair-list) (default, if not configured differently)
 * [`VolumePairList`](#volume-pair-list)
-* [`PrecisionFilter`](#precision-filter)
-* [`PriceFilter`](#price-pair-filter)
-* [`SpreadFilter`](#spread-filter)
+* [`PrecisionFilter`](#precisionfilter)
+* [`PriceFilter`](#pricefilter)
+* [`ShuffleFilter`](#shufflefilter)
+* [`SpreadFilter`](#spreadfilter)
 
 !!! Tip "Testing pairlists"
     Pairlist configurations can be quite tricky to get right. Best use the [`test-pairlist`](utils.md#test-pairlist) utility subcommand to test your configuration quickly.
@@ -624,17 +625,24 @@ Min price precision is 8 decimals. If price is 0.00000011 - one step would be 0.
 
 These pairs are dangerous since it may be impossible to place the desired stoploss - and often result in high losses. Here is what the PriceFilters takes over.
 
+#### ShuffleFilter
+
+Shuffles (randomizes) pairs in the pairlist. It can be used for preventing the bot from trading some of the pairs more frequently then others when you want all pairs be treated with the same priority.
+
+!!! Tip
+    You may set the `seed` value for this Pairlist to obtain reproducible results, which can be useful for repeated backtesting sessions. If `seed` is not set, the pairs are shuffled in the non-repeatable random order.
+
 #### SpreadFilter
 
-Removes pairs that have a difference between asks and bids above the specified ratio (default `0.005`).
+Removes pairs that have a difference between asks and bids above the specified ratio, `max_spread_ratio` (defaults to `0.005`).
 
 Example:
 
-If `DOGE/BTC` maximum bid is 0.00000026 and minimum ask is 0.00000027 the ratio is calculated as: `1 - bid/ask ~= 0.037` which is `> 0.005`
+If `DOGE/BTC` maximum bid is 0.00000026 and minimum ask is 0.00000027, the ratio is calculated as: `1 - bid/ask ~= 0.037` which is `> 0.005` and this pair will be filtered out.
 
 ### Full example of Pairlist Handlers
 
-The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, sorting pairs by `quoteVolume` and applies both [`PrecisionFilter`](#precision-filter) and [`PriceFilter`](#price-pair-filter), filtering all assets where 1 priceunit is > 1%.
+The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, sorting pairs by `quoteVolume` and applies both [`PrecisionFilter`](#precisionfilter) and [`PriceFilter`](#price-filter), filtering all assets where 1 priceunit is > 1%. Then the `SpreadFilter` is applied and pairs are finally shuffled with the random seed set to some predefined value.
 
 ```json
 "exchange": {
@@ -648,7 +656,9 @@ The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, 
         "sort_key": "quoteVolume",
     },
     {"method": "PrecisionFilter"},
-    {"method": "PriceFilter", "low_price_ratio": 0.01}
+    {"method": "PriceFilter", "low_price_ratio": 0.01},
+    {"method": "SpreadFilter", "max_spread_ratio": 0.005},
+    {"method": "ShuffleFilter", "seed": 42}
     ],
 ```
 
