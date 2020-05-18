@@ -3,20 +3,17 @@ PairList manager class
 """
 import logging
 from copy import deepcopy
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 from cachetools import TTLCache, cached
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.pairlist.IPairList import IPairList
 from freqtrade.resolvers import PairListResolver
+from freqtrade.typing import ListPairsWithTimeframes
 
 
 logger = logging.getLogger(__name__)
-
-
-# List of pairs with their timeframes
-ListPairsWithTimeframes = List[Tuple[str, str]]
 
 
 class PairListManager():

@@ -12,8 +12,8 @@ from pandas import DataFrame
 from freqtrade.data.history import load_pair_history
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import Exchange
-from freqtrade.pairlist.pairlistmanager import ListPairsWithTimeframes
 from freqtrade.state import RunMode
+from freqtrade.typing import ListPairsWithTimeframes
 
 
 logger = logging.getLogger(__name__)
