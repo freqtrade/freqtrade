@@ -73,7 +73,7 @@ def test_load_config_file_error(default_conf, mocker, caplog) -> None:
     mocker.patch('freqtrade.configuration.load_config.open', mocker.mock_open(read_data=filedata))
     mocker.patch.object(Path, "read_text", MagicMock(return_value=filedata))
 
-    with pytest.raises(OperationalException, match=f".*Please verify the following segment.*"):
+    with pytest.raises(OperationalException, match=r".*Please verify the following segment.*"):
         load_config_file('somefile')
 
 

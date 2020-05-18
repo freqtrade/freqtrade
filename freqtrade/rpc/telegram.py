@@ -226,11 +226,15 @@ class Telegram(RPC):
                     # Adding stoploss and stoploss percentage only if it is not None
                     "*Stoploss:* `{stop_loss:.8f}` " +
                     ("`({stop_loss_pct:.2f}%)`" if r['stop_loss_pct'] else ""),
-
-                    "*Open Order:* `{open_order}`" if r['open_order'] else ""
                 ]
+                if r['open_order']:
+                    if r['sell_order_status']:
+                        lines.append("*Open Order:* `{open_order}` - `{sell_order_status}`")
+                    else:
+                        lines.append("*Open Order:* `{open_order}`")
+
                 # Filter empty lines using list-comprehension
-                messages.append("\n".join([l for l in lines if l]).format(**r))
+                messages.append("\n".join([line for line in lines if line]).format(**r))
 
             for msg in messages:
                 self._send_msg(msg)
@@ -276,14 +280,18 @@ class Telegram(RPC):
                 stake_cur,
                 fiat_disp_cur
             )
-            stats_tab = tabulate(stats,
-                                 headers=[
-                                     'Day',
-                                     f'Profit {stake_cur}',
-                                     f'Profit {fiat_disp_cur}',
-                                     f'Trades'
-                                 ],
-                                 tablefmt='simple')
+            stats_tab = tabulate(
+                [[day['date'],
+                  f"{day['abs_profit']} {stats['stake_currency']}",
+                  f"{day['fiat_value']} {stats['fiat_display_currency']}",
+                  f"{day['trade_count']} trades"] for day in stats['data']],
+                headers=[
+                    'Day',
+                    f'Profit {stake_cur}',
+                    f'Profit {fiat_disp_cur}',
+                    'Trades',
+                ],
+                tablefmt='simple')
             message = f'<b>Daily Profit over the last {timescale} days</b>:\n<pre>{stats_tab}</pre>'
             self._send_msg(message, parse_mode=ParseMode.HTML)
         except RPCException as e:

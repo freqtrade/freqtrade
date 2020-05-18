@@ -51,7 +51,7 @@ def deploy_new_strategy(strategy_name: str, strategy_path: Path, subtemplate: st
     )
     additional_methods = render_template_with_fallback(
         templatefile=f"subtemplates/strategy_methods_{subtemplate}.j2",
-        templatefallbackfile=f"subtemplates/strategy_methods_empty.j2",
+        templatefallbackfile="subtemplates/strategy_methods_empty.j2",
     )
 
     strategy_text = render_template(templatefile='base_strategy.py.j2',

@@ -60,6 +60,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'open_trade_price': ANY,
         'close_rate_requested': ANY,
         'sell_reason': ANY,
+        'sell_order_status': ANY,
         'min_rate': ANY,
         'max_rate': ANY,
         'strategy': ANY,
@@ -82,7 +83,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
     } == results[0]
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
-                 MagicMock(side_effect=DependencyException(f"Pair 'ETH/BTC' not available")))
+                 MagicMock(side_effect=DependencyException("Pair 'ETH/BTC' not available")))
     results = rpc._rpc_trade_status()
     assert isnan(results[0]['current_profit'])
     assert isnan(results[0]['current_rate'])
@@ -103,6 +104,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'open_trade_price': ANY,
         'close_rate_requested': ANY,
         'sell_reason': ANY,
+        'sell_order_status': ANY,
         'min_rate': ANY,
         'max_rate': ANY,
         'strategy': ANY,
@@ -165,7 +167,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert '-0.41% (-0.06)' == result[0][3]
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
-                 MagicMock(side_effect=DependencyException(f"Pair 'ETH/BTC' not available")))
+                 MagicMock(side_effect=DependencyException("Pair 'ETH/BTC' not available")))
     result, headers = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
     assert 'instantly' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
@@ -203,16 +205,18 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
     # Try valid data
     update.message.text = '/daily 2'
     days = rpc._rpc_daily_profit(7, stake_currency, fiat_display_currency)
-    assert len(days) == 7
-    for day in days:
+    assert len(days['data']) == 7
+    assert days['stake_currency'] == default_conf['stake_currency']
+    assert days['fiat_display_currency'] == default_conf['fiat_display_currency']
+    for day in days['data']:
         # [datetime.date(2018, 1, 11), '0.00000000 BTC', '0.000 USD']
-        assert (day[1] == '0.00000000 BTC' or
-                day[1] == '0.00006217 BTC')
+        assert (day['abs_profit'] == '0.00000000' or
+                day['abs_profit'] == '0.00006217')
 
-        assert (day[2] == '0.000 USD' or
-                day[2] == '0.767 USD')
+        assert (day['fiat_value'] == '0.000' or
+                day['fiat_value'] == '0.767')
     # ensure first day is current date
-    assert str(days[0][0]) == str(datetime.utcnow().date())
+    assert str(days['data'][0]['date']) == str(datetime.utcnow().date())
 
     # Try invalid data
     with pytest.raises(RPCException, match=r'.*must be an integer greater than 0*'):
@@ -315,7 +319,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
 
     # Test non-available pair
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
-                 MagicMock(side_effect=DependencyException(f"Pair 'ETH/BTC' not available")))
+                 MagicMock(side_effect=DependencyException("Pair 'ETH/BTC' not available")))
     stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
     assert stats['trade_count'] == 2
     assert stats['first_trade_date'] == 'just now'

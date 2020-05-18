@@ -333,8 +333,10 @@ def test_api_daily(botclient, mocker, ticker, fee, markets):
     )
     rc = client_get(client, f"{BASE_URI}/daily")
     assert_response(rc)
-    assert len(rc.json) == 7
-    assert rc.json[0][0] == str(datetime.utcnow().date())
+    assert len(rc.json['data']) == 7
+    assert rc.json['stake_currency'] == 'BTC'
+    assert rc.json['fiat_display_currency'] == 'USD'
+    assert rc.json['data'][0]['date'] == str(datetime.utcnow().date())
 
 
 def test_api_trades(botclient, mocker, ticker, fee, markets):
@@ -520,6 +522,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
                         'open_rate_requested': 1.098e-05,
                         'open_trade_price': 0.0010025,
                         'sell_reason': None,
+                        'sell_order_status': None,
                         'strategy': 'DefaultStrategy',
                         'ticker_interval': 5}]
 
@@ -626,6 +629,7 @@ def test_api_forcebuy(botclient, mocker, fee):
                        'open_rate_requested': None,
                        'open_trade_price': 0.2460546025,
                        'sell_reason': None,
+                       'sell_order_status': None,
                        'strategy': None,
                        'ticker_interval': None
                        }

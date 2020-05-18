@@ -874,10 +874,10 @@ class FreqtradeBot:
                 logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
                 continue
 
-            trade_state_update = self.update_trade_state(trade, order)
+            fully_cancelled = self.update_trade_state(trade, order)
 
-            if (order['side'] == 'buy' and (
-                    trade_state_update
+            if (order['side'] == 'buy' and (order['status'] == 'open' or fully_cancelled) and (
+                    fully_cancelled
                     or self._check_timed_out('buy', order)
                     or strategy_safe_wrapper(self.strategy.check_buy_timeout,
                                              default_retval=False)(pair=trade.pair,
@@ -885,8 +885,8 @@ class FreqtradeBot:
                                                                    order=order))):
                 self.handle_cancel_buy(trade, order, constants.CANCEL_REASON['TIMEOUT'])
 
-            elif (order['side'] == 'sell' and (
-                  trade_state_update
+            elif (order['side'] == 'sell' and (order['status'] == 'open' or fully_cancelled) and (
+                  fully_cancelled
                   or self._check_timed_out('sell', order)
                   or strategy_safe_wrapper(self.strategy.check_sell_timeout,
                                            default_retval=False)(pair=trade.pair,
@@ -1121,6 +1121,11 @@ class FreqtradeBot:
         """
         Sends rpc notification when a sell cancel occured.
         """
+        if trade.sell_order_status == reason:
+            return
+        else:
+            trade.sell_order_status = reason
+
         profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
         profit_trade = trade.calc_profit(rate=profit_rate)
         current_rate = self.get_sell_rate(trade.pair, False)

@@ -477,6 +477,7 @@ def test_migrate_old(mocker, default_conf, fee):
     assert trade.close_rate_requested is None
     assert trade.close_rate is not None
     assert pytest.approx(trade.close_profit_abs) == trade.calc_profit()
+    assert trade.sell_order_status is None
 
 
 def test_migrate_new(mocker, default_conf, fee, caplog):
@@ -756,6 +757,7 @@ def test_to_json(default_conf, fee):
                       'stake_amount': 0.001,
                       'close_profit': None,
                       'sell_reason': None,
+                      'sell_order_status': None,
                       'stop_loss': None,
                       'stop_loss_pct': None,
                       'initial_stop_loss': None,
@@ -810,6 +812,7 @@ def test_to_json(default_conf, fee):
                       'open_rate_requested': None,
                       'open_trade_price': 12.33075,
                       'sell_reason': None,
+                      'sell_order_status': None,
                       'strategy': None,
                       'ticker_interval': None}
 

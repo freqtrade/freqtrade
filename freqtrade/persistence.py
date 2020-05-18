@@ -86,7 +86,7 @@ def check_migrate(engine) -> None:
         logger.debug(f'trying {table_back_name}')
 
     # Check for latest column
-    if not has_column(cols, 'fee_close_cost'):
+    if not has_column(cols, 'sell_order_status'):
         logger.info(f'Running database migration - backup available as {table_back_name}')
 
         fee_open = get_column_def(cols, 'fee_open', 'fee')
@@ -113,6 +113,7 @@ def check_migrate(engine) -> None:
         close_profit_abs = get_column_def(
             cols, 'close_profit_abs',
             f"(amount * close_rate * (1 - {fee_close})) - {open_trade_price}")
+        sell_order_status = get_column_def(cols, 'sell_order_status', 'null')
 
         # Schema migration necessary
         engine.execute(f"alter table trades rename to {table_back_name}")
@@ -131,7 +132,7 @@ def check_migrate(engine) -> None:
                 stake_amount, amount, open_date, close_date, open_order_id,
                 stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
                 stoploss_order_id, stoploss_last_update,
-                max_rate, min_rate, sell_reason, strategy,
+                max_rate, min_rate, sell_reason, sell_order_status, strategy,
                 ticker_interval, open_trade_price, close_profit_abs
                 )
             select id, lower(exchange),
@@ -153,6 +154,7 @@ def check_migrate(engine) -> None:
                 {initial_stop_loss_pct} initial_stop_loss_pct,
                 {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
                 {max_rate} max_rate, {min_rate} min_rate, {sell_reason} sell_reason,
+                {sell_order_status} sell_order_status,
                 {strategy} strategy, {ticker_interval} ticker_interval,
                 {open_trade_price} open_trade_price, {close_profit_abs} close_profit_abs
                 from {table_back_name}
@@ -228,6 +230,7 @@ class Trade(_DECL_BASE):
     # Lowest price reached
     min_rate = Column(Float, nullable=True)
     sell_reason = Column(String, nullable=True)
+    sell_order_status = Column(String, nullable=True)
     strategy = Column(String, nullable=True)
     ticker_interval = Column(Integer, nullable=True)
 
@@ -267,6 +270,7 @@ class Trade(_DECL_BASE):
             'stake_amount': round(self.stake_amount, 8),
             'close_profit': self.close_profit,
             'sell_reason': self.sell_reason,
+            'sell_order_status': self.sell_order_status,
             'stop_loss': self.stop_loss,
             'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
             'initial_stop_loss': self.initial_stop_loss,
@@ -370,6 +374,7 @@ class Trade(_DECL_BASE):
         self.close_profit_abs = self.calc_profit()
         self.close_date = datetime.utcnow()
         self.is_open = False
+        self.sell_order_status = 'closed'
         self.open_order_id = None
         logger.info(
             'Marking %s as closed as the trade is fulfilled and found no open orders for it.',

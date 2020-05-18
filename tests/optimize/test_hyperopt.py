@@ -820,7 +820,7 @@ def test_continue_hyperopt(mocker, default_conf, caplog):
     Hyperopt(default_conf)
 
     assert unlinkmock.call_count == 0
-    assert log_has(f"Continuing on previous hyperopt results.", caplog)
+    assert log_has("Continuing on previous hyperopt results.", caplog)
 
 
 def test_print_json_spaces_all(mocker, default_conf, caplog, capsys) -> None:

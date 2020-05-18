@@ -163,7 +163,7 @@ def deploy_new_config(config_path: Path, selections: Dict[str, Any]) -> None:
             )
     except TemplateNotFound:
         selections['exchange'] = render_template(
-            templatefile=f"subtemplates/exchange_generic.j2",
+            templatefile="subtemplates/exchange_generic.j2",
             arguments=selections
         )
 
