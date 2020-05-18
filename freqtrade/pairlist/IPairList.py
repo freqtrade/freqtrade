@@ -1,22 +1,23 @@
 """
-Static List provider
-
-Provides lists as configured in config.json
-
- """
+PairList base class
+"""
 import logging
 from abc import ABC, abstractmethod, abstractproperty
 from copy import deepcopy
-from typing import Dict, List
+from typing import Any, Dict, List
+
+from cachetools import TTLCache, cached
 
 from freqtrade.exchange import market_is_active
+
 
 logger = logging.getLogger(__name__)
 
 
 class IPairList(ABC):
 
-    def __init__(self, exchange, pairlistmanager, config, pairlistconfig: dict,
+    def __init__(self, exchange, pairlistmanager,
+                 config: Dict[str, Any], pairlistconfig: Dict[str, Any],
                  pairlist_pos: int) -> None:
         """
         :param exchange: Exchange instance
@@ -30,6 +31,9 @@ class IPairList(ABC):
         self._config = config
         self._pairlistconfig = pairlistconfig
         self._pairlist_pos = pairlist_pos
+        self.refresh_period = self._pairlistconfig.get('refresh_period', 1800)
+        self._last_refresh = 0
+        self._log_cache = TTLCache(maxsize=1024, ttl=self.refresh_period)
 
     @property
     def name(self) -> str:
@@ -38,6 +42,24 @@ class IPairList(ABC):
         -> no need to overwrite in subclasses
         """
         return self.__class__.__name__
+
+    def log_on_refresh(self, logmethod, message: str) -> None:
+        """
+        Logs message - not more often than "refresh_period" to avoid log spamming
+        Logs the log-message as debug as well to simplify debugging.
+        :param logmethod: Function that'll be called. Most likely `logger.info`.
+        :param message: String containing the message to be sent to the function.
+        :return: None.
+        """
+
+        @cached(cache=self._log_cache)
+        def _log_on_refresh(message: str):
+            logmethod(message)
+
+        # Log as debug first
+        logger.debug(message)
+        # Call hidden function.
+        _log_on_refresh(message)
 
     @abstractproperty
     def needstickers(self) -> bool:
@@ -66,21 +88,37 @@ class IPairList(ABC):
         """
 
     @staticmethod
-    def verify_blacklist(pairlist: List[str], blacklist: List[str]) -> List[str]:
+    def verify_blacklist(pairlist: List[str], blacklist: List[str],
+                         aswarning: bool) -> List[str]:
         """
         Verify and remove items from pairlist - returning a filtered pairlist.
+        Logs a warning or info depending on `aswarning`.
+        Pairlists explicitly using this method shall use `aswarning=False`!
+        :param pairlist: Pairlist to validate
+        :param blacklist: Blacklist to validate pairlist against
+        :param aswarning: Log message as Warning or info
+        :return: pairlist - blacklisted pairs
         """
         for pair in deepcopy(pairlist):
             if pair in blacklist:
-                logger.warning(f"Pair {pair} in your blacklist. Removing it from whitelist...")
+                if aswarning:
+                    logger.warning(f"Pair {pair} in your blacklist. Removing it from whitelist...")
+                else:
+                    logger.info(f"Pair {pair} in your blacklist. Removing it from whitelist...")
                 pairlist.remove(pair)
         return pairlist
 
-    def _verify_blacklist(self, pairlist: List[str]) -> List[str]:
+    def _verify_blacklist(self, pairlist: List[str], aswarning: bool = True) -> List[str]:
         """
         Proxy method to verify_blacklist for easy access for child classes.
+        Logs a warning or info depending on `aswarning`.
+        Pairlists explicitly using this method shall use aswarning=False!
+        :param pairlist: Pairlist to validate
+        :param aswarning: Log message as Warning or info.
+        :return: pairlist - blacklisted pairs
         """
-        return IPairList.verify_blacklist(pairlist, self._pairlistmanager.blacklist)
+        return IPairList.verify_blacklist(pairlist, self._pairlistmanager.blacklist,
+                                          aswarning=aswarning)
 
     def _whitelist_for_active_markets(self, pairlist: List[str]) -> List[str]:
         """
@@ -98,7 +136,8 @@ class IPairList(ABC):
                 logger.warning(f"Pair {pair} is not compatible with exchange "
                                f"{self._exchange.name}. Removing it from whitelist..")
                 continue
-            if not pair.endswith(self._config['stake_currency']):
+
+            if self._exchange.get_pair_quote_currency(pair) != self._config['stake_currency']:
                 logger.warning(f"Pair {pair} is not compatible with your stake currency "
                                f"{self._config['stake_currency']}. Removing it from whitelist..")
                 continue
@@ -111,6 +150,5 @@ class IPairList(ABC):
             if pair not in sanitized_whitelist:
                 sanitized_whitelist.append(pair)
 
-        sanitized_whitelist = self._verify_blacklist(sanitized_whitelist)
         # We need to remove pairs that are unknown
         return sanitized_whitelist

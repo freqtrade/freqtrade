@@ -5,7 +5,7 @@ Functions to handle deprecated settings
 import logging
 from typing import Any, Dict
 
-from freqtrade import OperationalException
+from freqtrade.exceptions import OperationalException
 
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 def check_conflicting_settings(config: Dict[str, Any],
                                section1: str, name1: str,
-                               section2: str, name2: str):
+                               section2: str, name2: str) -> None:
     section1_config = config.get(section1, {})
     section2_config = config.get(section2, {})
     if name1 in section1_config and name2 in section2_config:
@@ -28,7 +28,7 @@ def check_conflicting_settings(config: Dict[str, Any],
 
 def process_deprecated_setting(config: Dict[str, Any],
                                section1: str, name1: str,
-                               section2: str, name2: str):
+                               section2: str, name2: str) -> None:
     section2_config = config.get(section2, {})
 
     if name2 in section2_config:
@@ -58,25 +58,12 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
     process_deprecated_setting(config, 'ask_strategy', 'ignore_roi_if_buy_signal',
                                'experimental', 'ignore_roi_if_buy_signal')
 
-    if not config.get('pairlists') and not config.get('pairlists'):
-        config['pairlists'] = [{'method': 'StaticPairList'}]
+    if (config.get('edge', {}).get('enabled', False)
+       and 'capital_available_percentage' in config.get('edge', {})):
         logger.warning(
             "DEPRECATED: "
-            "Pairlists must be defined explicitly in the future."
-            "Defaulting to StaticPairList for now.")
-
-    if config.get('pairlist', {}).get("method") == 'VolumePairList':
-        logger.warning(
-            "DEPRECATED: "
-            f"Using VolumePairList in pairlist is deprecated and must be moved to pairlists. "
-            "Please refer to the docs on configuration details")
-        pl = {'method': 'VolumePairList'}
-        pl.update(config.get('pairlist', {}).get('config'))
-        config['pairlists'].append(pl)
-
-    if config.get('pairlist', {}).get('config', {}).get('precision_filter'):
-        logger.warning(
-            "DEPRECATED: "
-            f"Using precision_filter setting is deprecated and has been replaced by"
-            "PrecisionFilter. Please refer to the docs on configuration details")
-        config['pairlists'].append({'method': 'PrecisionFilter'})
+            "Using 'edge.capital_available_percentage' has been deprecated in favor of "
+            "'tradable_balance_ratio'. Please migrate your configuration to "
+            "'tradable_balance_ratio' and remove 'capital_available_percentage' "
+            "from the edge configuration."
+        )

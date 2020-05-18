@@ -1,7 +1,6 @@
 # Strategy Customization
 
-This page explains where to customize your strategies, and add new
-indicators.
+This page explains where to customize your strategies, and add new indicators.
 
 ## Install a custom strategy file
 
@@ -84,7 +83,7 @@ def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame
     Performance Note: For the best performance be frugal on the number of indicators
     you are using. Let uncomment only the indicator you are using in your strategies
     or your hyperopt configuration, otherwise you will waste your memory and CPU usage.
-    :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
+    :param dataframe: Dataframe with data from the exchange
     :param metadata: Additional information, like the currently traded pair
     :return: a Dataframe with all mandatory indicators for the strategies
     """
@@ -249,6 +248,23 @@ minimal_roi = {
 
 While technically not completely disabled, this would sell once the trade reaches 10000% Profit.
 
+To use times based on candle duration (ticker_interval or timeframe), the following snippet can be handy.
+This will allow you to change the ticket_interval for the strategy, and ROI times will still be set as candles (e.g. after 3 candles ...)
+
+``` python
+from freqtrade.exchange import timeframe_to_minutes
+
+class AwesomeStrategy(IStrategy):
+
+    ticker_interval = "1d"
+    ticker_interval_mins = timeframe_to_minutes(ticker_interval)
+    minimal_roi = {
+        "0": 0.05,                             # 5% for the first 3 candles
+        str(ticker_interval_mins * 3)): 0.02,  # 2% after 3 candles
+        str(ticker_interval_mins * 6)): 0.01,  # 1% After 6 candles
+    }
+```
+
 ### Stoploss
 
 Setting a stoploss is highly recommended to protect your capital from strong moves against you.
@@ -267,13 +283,14 @@ If your exchange supports it, it's recommended to also set `"stoploss_on_exchang
 
 For more information on order_types please look [here](configuration.md#understand-order_types).
 
-### Ticker interval
+### Timeframe (ticker interval)
 
 This is the set of candles the bot should download and use for the analysis.
 Common values are `"1m"`, `"5m"`, `"15m"`, `"1h"`, however all values supported by your exchange should work.
 
-Please note that the same buy/sell signals may work with one interval, but not the other.
-This setting is accessible within the strategy by using `self.ticker_interval`.
+Please note that the same buy/sell signals may work well with one timeframe, but not with the others.
+
+This setting is accessible within the strategy methods as the `self.ticker_interval` attribute.
 
 ### Metadata dict
 
@@ -307,67 +324,14 @@ class Awesomestrategy(IStrategy):
 !!! Note
     If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
 
-### Additional data (DataProvider)
+***
 
-The strategy provides access to the `DataProvider`. This allows you to get additional data to use in your strategy.
-
-All methods return `None` in case of failure (do not raise an exception).
-
-Please always check the mode of operation to select the correct method to get data (samples see below).
-
-#### Possible options for DataProvider
-
-- `available_pairs` - Property with tuples listing cached pairs with their intervals (pair, interval).
-- `ohlcv(pair, timeframe)` - Currently cached ticker data for the pair, returns DataFrame or empty DataFrame.
-- `historic_ohlcv(pair, timeframe)` - Returns historical data stored on disk.
-- `get_pair_dataframe(pair, timeframe)` - This is a universal method, which returns either historical data (for backtesting) or cached live data (for the Dry-Run and Live-Run modes).
-- `orderbook(pair, maximum)` - Returns latest orderbook data for the pair, a dict with bids/asks with a total of `maximum` entries.
-- `market(pair)` - Returns market data for the pair: fees, limits, precisions, activity flag, etc. See [ccxt documentation](https://github.com/ccxt/ccxt/wiki/Manual#markets) for more details on Market data structure.
-- `runmode` - Property containing the current runmode.
-
-#### Example: fetch live ohlcv / historic data for the first informative pair
-
-``` python
-if self.dp:
-    inf_pair, inf_timeframe = self.informative_pairs()[0]
-    informative = self.dp.get_pair_dataframe(pair=inf_pair,
-                                             timeframe=inf_timeframe)
-```
-
-!!! Warning "Warning about backtesting"
-    Be carefull when using dataprovider in backtesting. `historic_ohlcv()` (and `get_pair_dataframe()`
-    for the backtesting runmode) provides the full time-range in one go,
-    so please be aware of it and make sure to not "look into the future" to avoid surprises when running in dry/live mode).
-
-!!! Warning "Warning in hyperopt"
-    This option cannot currently be used during hyperopt.
-
-#### Orderbook
-
-``` python
-if self.dp:
-    if self.dp.runmode in ('live', 'dry_run'):
-        ob = self.dp.orderbook(metadata['pair'], 1)
-        dataframe['best_bid'] = ob['bids'][0][0]
-        dataframe['best_ask'] = ob['asks'][0][0]
-```
-
-!!! Warning
-    The order book is not part of the historic data which means backtesting and hyperopt will not work if this
-    method is used.
-
-#### Available Pairs
-
-``` python
-if self.dp:
-    for pair, ticker in self.dp.available_pairs:
-        print(f"available {pair}, {ticker}")
-```
+### Additional data (informative_pairs)
 
 #### Get data for non-tradeable pairs
 
 Data for additional, informative pairs (reference pairs) can be beneficial for some strategies.
-Ohlcv data for these pairs will be downloaded as part of the regular whitelist refresh process and is available via `DataProvider` just as other pairs (see above).
+Ohlcv data for these pairs will be downloaded as part of the regular whitelist refresh process and is available via `DataProvider` just as other pairs (see below).
 These parts will **not** be traded unless they are also specified in the pair whitelist, or have been selected by Dynamic Whitelisting.
 
 The pairs need to be specified as tuples in the format `("pair", "interval")`, with pair as the first and time interval as the second argument.
@@ -387,6 +351,125 @@ def informative_pairs(self):
     It is however better to use resampling to longer time-intervals when possible
     to avoid hammering the exchange with too many requests and risk being blocked.
 
+***
+
+### Additional data (DataProvider)
+
+The strategy provides access to the `DataProvider`. This allows you to get additional data to use in your strategy.
+
+All methods return `None` in case of failure (do not raise an exception).
+
+Please always check the mode of operation to select the correct method to get data (samples see below).
+
+#### Possible options for DataProvider
+
+- [`available_pairs`](#available_pairs) - Property with tuples listing cached pairs with their intervals (pair, interval).
+- [`current_whitelist()`](#current_whitelist) - Returns a current list of whitelisted pairs. Useful for accessing dynamic whitelists (ie. VolumePairlist)
+- [`get_pair_dataframe(pair, timeframe)`](#get_pair_dataframepair-timeframe) - This is a universal method, which returns either historical data (for backtesting) or cached live data (for the Dry-Run and Live-Run modes).
+- `historic_ohlcv(pair, timeframe)` - Returns historical data stored on disk.
+- `market(pair)` - Returns market data for the pair: fees, limits, precisions, activity flag, etc. See [ccxt documentation](https://github.com/ccxt/ccxt/wiki/Manual#markets) for more details on the Market data structure.
+- `ohlcv(pair, timeframe)` - Currently cached candle (OHLCV) data for the pair, returns DataFrame or empty DataFrame.
+- [`orderbook(pair, maximum)`](#orderbookpair-maximum) - Returns latest orderbook data for the pair, a dict with bids/asks with a total of `maximum` entries.
+- [`ticker(pair)`](#tickerpair) - Returns current ticker data for the pair. See [ccxt documentation](https://github.com/ccxt/ccxt/wiki/Manual#price-tickers) for more details on the Ticker data structure.
+- `runmode` - Property containing the current runmode.
+
+#### Example Usages:
+
+#### *available_pairs*
+
+``` python
+if self.dp:
+    for pair, timeframe in self.dp.available_pairs:
+        print(f"available {pair}, {timeframe}")
+```
+
+#### *current_whitelist()*
+Imagine you've developed a strategy that trades the `5m` timeframe using signals generated from a `1d` timeframe on the top 10 volume pairs by volume. 
+
+The strategy might look something like this:
+
+*Scan through the top 10 pairs by volume using the `VolumePairList` every 5 minutes and use a 14 day ATR to buy and sell.*
+
+Due to the limited available data, it's very difficult to resample our `5m` candles into daily candles for use in a 14 day ATR. Most exchanges limit us to just 500 candles which effectively gives us around 1.74 daily candles. We need 14 days at least!
+
+Since we can't resample our data we will have to use an informative pair; and since our whitelist will be dynamic we don't know which pair(s) to use.
+
+This is where calling `self.dp.current_whitelist()` comes in handy.
+
+```python
+class SampleStrategy(IStrategy):
+    # strategy init stuff...
+
+    ticker_interval = '5m'
+
+    # more strategy init stuff..
+
+    def informative_pairs(self):
+
+        # get access to all pairs available in whitelist. 
+        pairs = self.dp.current_whitelist()
+        # Assign tf to each pair so they can be downloaded and cached for strategy.
+        informative_pairs = [(pair, '1d') for pair in pairs]
+        return informative_pairs
+
+    def populate_indicators(self, dataframe, metadata):
+        # Get the informative pair
+        informative = self.dp.get_pair_dataframe(pair=metadata['pair'], timeframe='1d')
+        # Get the 14 day ATR.
+        atr = ta.ATR(informative, timeperiod=14)
+        # Do other stuff
+```
+
+#### *get_pair_dataframe(pair, timeframe)*
+
+``` python
+# fetch live / historical candle (OHLCV) data for the first informative pair
+if self.dp:
+    inf_pair, inf_timeframe = self.informative_pairs()[0]
+    informative = self.dp.get_pair_dataframe(pair=inf_pair,
+                                             timeframe=inf_timeframe)
+```
+
+!!! Warning "Warning about backtesting"
+    Be carefull when using dataprovider in backtesting. `historic_ohlcv()` (and `get_pair_dataframe()`
+    for the backtesting runmode) provides the full time-range in one go,
+    so please be aware of it and make sure to not "look into the future" to avoid surprises when running in dry/live mode).
+
+!!! Warning "Warning in hyperopt"
+    This option cannot currently be used during hyperopt.
+
+#### *orderbook(pair, maximum)*
+
+``` python
+if self.dp:
+    if self.dp.runmode.value in ('live', 'dry_run'):
+        ob = self.dp.orderbook(metadata['pair'], 1)
+        dataframe['best_bid'] = ob['bids'][0][0]
+        dataframe['best_ask'] = ob['asks'][0][0]
+```
+
+!!! Warning
+    The order book is not part of the historic data which means backtesting and hyperopt will not work if this
+    method is used.
+
+#### *ticker(pair)*
+
+``` python
+if self.dp:
+    if self.dp.runmode.value in ('live', 'dry_run'):
+        ticker = self.dp.ticker(metadata['pair'])
+        dataframe['last_price'] = ticker['last']
+        dataframe['volume24h'] = ticker['quoteVolume']
+        dataframe['vwap'] = ticker['vwap']
+```
+
+!!! Warning
+    Although the ticker data structure is a part of the ccxt Unified Interface, the values returned by this method can
+    vary for different exchanges. For instance, many exchanges do not return `vwap` values, the FTX exchange
+    does not always fills in the `last` field (so it can be None), etc. So you need to carefully verify the ticker
+    data returned from the exchange and add appropriate error handling / defaults.
+
+***
 ### Additional data (Wallets)
 
 The strategy provides access to the `Wallets` object. This contains the current balances on the exchange.
@@ -409,6 +492,7 @@ if self.wallets:
 - `get_used(asset)` - currently tied up balance (open orders)
 - `get_total(asset)` - total available balance - sum of the 2 above
 
+***
 ### Additional data (Trades)
 
 A history of Trades can be retrieved in the strategy by querying the database.
@@ -422,7 +506,7 @@ from freqtrade.persistence import Trade
 The following example queries for the current pair and trades from today, however other filters can easily be added.
 
 ``` python
-if self.config['runmode'] in ('live', 'dry_run'):
+if self.config['runmode'].value in ('live', 'dry_run'):
     trades = Trade.get_trades([Trade.pair == metadata['pair'],
                                Trade.open_date > datetime.utcnow() - timedelta(days=1),
                                Trade.is_open == False,
@@ -434,7 +518,7 @@ if self.config['runmode'] in ('live', 'dry_run'):
 Get amount of stake_currency currently invested in Trades:
 
 ``` python
-if self.config['runmode'] in ('live', 'dry_run'):
+if self.config['runmode'].value in ('live', 'dry_run'):
     total_stakes = Trade.total_open_trades_stakes()
 ```
 
@@ -442,7 +526,7 @@ Retrieve performance per pair.
 Returns a List of dicts per pair.
 
 ``` python
-if self.config['runmode'] in ('live', 'dry_run'):
+if self.config['runmode'].value in ('live', 'dry_run'):
     performance = Trade.get_overall_performance()
 ```
 
@@ -454,6 +538,51 @@ Sample return value: ETH/BTC had 5 trades, with a total profit of 1.5% (ratio of
 
 !!! Warning
     Trade history is not available during backtesting or hyperopt.
+
+### Prevent trades from happening for a specific pair
+
+Freqtrade locks pairs automatically for the current candle (until that candle is over) when a pair is sold, preventing an immediate re-buy of that pair.
+
+Locked pairs will show the message `Pair <pair> is currently locked.`.
+
+#### Locking pairs from within the strategy
+
+Sometimes it may be desired to lock a pair after certain events happen (e.g. multiple losing trades in a row).
+
+Freqtrade has an easy method to do this from within the strategy, by calling `self.lock_pair(pair, until)`.
+`until` must be a datetime object in the future, after which trading will be reenabled for that pair.
+
+Locks can also be lifted manually, by calling `self.unlock_pair(pair)`.
+
+To verify if a pair is currently locked, use `self.is_pair_locked(pair)`.
+
+!!! Note
+    Locked pairs are not persisted, so a restart of the bot, or calling `/reload_conf` will reset locked pairs.
+
+!!! Warning
+    Locking pairs is not functioning during backtesting.
+
+##### Pair locking example
+
+``` python
+from freqtrade.persistence import Trade
+from datetime import timedelta, datetime, timezone
+# Put the above lines a the top of the strategy file, next to all the other imports
+# --------
+
+# Within populate indicators (or populate_buy):
+if self.config['runmode'].value in ('live', 'dry_run'):
+   # fetch closed trades for the last 2 days
+    trades = Trade.get_trades([Trade.pair == metadata['pair'],
+                               Trade.open_date > datetime.utcnow() - timedelta(days=2),
+                               Trade.is_open == False,
+                ]).all()
+    # Analyze the conditions you'd like to lock the pair .... will probably be different for every strategy
+    sumprofit = sum(trade.close_profit for trade in trades)
+    if sumprofit < 0:
+        # Lock pair for 12 hours
+        self.lock_pair(metadata['pair'], until=datetime.now(timezone.utc) + timedelta(hours=12))
+```
 
 ### Print created dataframe
 
@@ -479,11 +608,6 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
 Printing more than a few rows is also possible (simply use  `print(dataframe)` instead of `print(dataframe.tail())`), however not recommended, as that will be very verbose (~500 lines per pair every 5 seconds).
 
-### Where can i find a strategy template?
-
-The strategy template is located in the file
-[user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_strategy.py).
-
 ### Specify custom strategy location
 
 If you want to use a strategy from a different directory you can pass `--strategy-path`
@@ -491,6 +615,27 @@ If you want to use a strategy from a different directory you can pass `--strateg
 ```bash
 freqtrade trade --strategy AwesomeStrategy --strategy-path /some/directory
 ```
+
+### Derived strategies
+
+The strategies can be derived from other strategies. This avoids duplication of your custom strategy code. You can use this technique to override small parts of your main strategy, leaving the rest untouched:
+
+``` python
+class MyAwesomeStrategy(IStrategy):
+    ...
+    stoploss = 0.13
+    trailing_stop = False
+    # All other attributes and methods are here as they
+    # should be in any custom strategy...
+    ...
+
+class MyAwesomeStrategy2(MyAwesomeStrategy):
+    # Override something
+    stoploss = 0.08
+    trailing_stop = True
+```
+
+Both attributes and methods may be overriden, altering behavior of the original strategy in a way you need.
 
 ### Common mistakes when developing strategies
 

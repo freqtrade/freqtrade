@@ -134,25 +134,30 @@ class Telegram(RPC):
                 msg['stake_amount_fiat'] = 0
 
             message = ("*{exchange}:* Buying {pair}\n"
-                       "at rate `{limit:.8f}\n"
-                       "({stake_amount:.6f} {stake_currency}").format(**msg)
+                       "*Amount:* `{amount:.8f}`\n"
+                       "*Open Rate:* `{limit:.8f}`\n"
+                       "*Current Rate:* `{current_rate:.8f}`\n"
+                       "*Total:* `({stake_amount:.6f} {stake_currency}").format(**msg)
 
             if msg.get('fiat_currency', None):
-                message += ",{stake_amount_fiat:.3f} {fiat_currency}".format(**msg)
+                message += ", {stake_amount_fiat:.3f} {fiat_currency}".format(**msg)
             message += ")`"
+
+        elif msg['type'] == RPCMessageType.BUY_CANCEL_NOTIFICATION:
+            message = "*{exchange}:* Cancelling Open Buy Order for {pair}".format(**msg)
 
         elif msg['type'] == RPCMessageType.SELL_NOTIFICATION:
             msg['amount'] = round(msg['amount'], 8)
-            msg['profit_percent'] = round(msg['profit_percent'] * 100, 2)
+            msg['profit_percent'] = round(msg['profit_ratio'] * 100, 2)
             msg['duration'] = msg['close_date'].replace(
                 microsecond=0) - msg['open_date'].replace(microsecond=0)
             msg['duration_min'] = msg['duration'].total_seconds() / 60
 
             message = ("*{exchange}:* Selling {pair}\n"
-                       "*Rate:* `{limit:.8f}`\n"
                        "*Amount:* `{amount:.8f}`\n"
                        "*Open Rate:* `{open_rate:.8f}`\n"
                        "*Current Rate:* `{current_rate:.8f}`\n"
+                       "*Close Rate:* `{limit:.8f}`\n"
                        "*Sell Reason:* `{sell_reason}`\n"
                        "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
                        "*Profit:* `{profit_percent:.2f}%`").format(**msg)
@@ -163,8 +168,12 @@ class Telegram(RPC):
                and self._fiat_converter):
                 msg['profit_fiat'] = self._fiat_converter.convert_amount(
                     msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
-                message += ('` ({gain}: {profit_amount:.8f} {stake_currency}`'
-                            '` / {profit_fiat:.3f} {fiat_currency})`').format(**msg)
+                message += (' `({gain}: {profit_amount:.8f} {stake_currency}'
+                            ' / {profit_fiat:.3f} {fiat_currency})`').format(**msg)
+
+        elif msg['type'] == RPCMessageType.SELL_CANCEL_NOTIFICATION:
+            message = ("*{exchange}:* Cancelling Open Sell Order "
+                       "for {pair}. Reason: {reason}").format(**msg)
 
         elif msg['type'] == RPCMessageType.STATUS_NOTIFICATION:
             message = '*Status:* `{status}`'.format(**msg)
@@ -217,11 +226,15 @@ class Telegram(RPC):
                     # Adding stoploss and stoploss percentage only if it is not None
                     "*Stoploss:* `{stop_loss:.8f}` " +
                     ("`({stop_loss_pct:.2f}%)`" if r['stop_loss_pct'] else ""),
-
-                    "*Open Order:* `{open_order}`" if r['open_order'] else ""
                 ]
+                if r['open_order']:
+                    if r['sell_order_status']:
+                        lines.append("*Open Order:* `{open_order}` - `{sell_order_status}`")
+                    else:
+                        lines.append("*Open Order:* `{open_order}`")
+
                 # Filter empty lines using list-comprehension
-                messages.append("\n".join([l for l in lines if l]).format(**r))
+                messages.append("\n".join([line for line in lines if line]).format(**r))
 
             for msg in messages:
                 self._send_msg(msg)
@@ -267,14 +280,18 @@ class Telegram(RPC):
                 stake_cur,
                 fiat_disp_cur
             )
-            stats_tab = tabulate(stats,
-                                 headers=[
-                                     'Day',
-                                     f'Profit {stake_cur}',
-                                     f'Profit {fiat_disp_cur}',
-                                     f'Trades'
-                                 ],
-                                 tablefmt='simple')
+            stats_tab = tabulate(
+                [[day['date'],
+                  f"{day['abs_profit']} {stats['stake_currency']}",
+                  f"{day['fiat_value']} {stats['fiat_display_currency']}",
+                  f"{day['trade_count']} trades"] for day in stats['data']],
+                headers=[
+                    'Day',
+                    f'Profit {stake_cur}',
+                    f'Profit {fiat_disp_cur}',
+                    'Trades',
+                ],
+                tablefmt='simple')
             message = f'<b>Daily Profit over the last {timescale} days</b>:\n<pre>{stats_tab}</pre>'
             self._send_msg(message, parse_mode=ParseMode.HTML)
         except RPCException as e:
@@ -335,7 +352,7 @@ class Telegram(RPC):
             output = ''
             if self._config['dry_run']:
                 output += (
-                    f"*Warning:*Simulated balances in Dry Mode.\n"
+                    f"*Warning:* Simulated balances in Dry Mode.\n"
                     "This mode is still experimental!\n"
                     "Starting capital: "
                     f"`{self._config['dry_run_wallet']}` {self._config['stake_currency']}.\n"
@@ -358,7 +375,7 @@ class Telegram(RPC):
                     output += curr_output
 
             output += "\n*Estimated Value*:\n" \
-                      "\t`BTC: {total: .8f}`\n" \
+                      "\t`{stake}: {total: .8f}`\n" \
                       "\t`{symbol}: {value: .2f}`\n".format(**result)
             self._send_msg(output)
         except RPCException as e:
@@ -553,6 +570,8 @@ class Telegram(RPC):
                   "*/stop:* `Stops the trader`\n" \
                   "*/status [table]:* `Lists all open trades`\n" \
                   "         *table :* `will display trades in a table`\n" \
+                  "                `pending buy orders are marked with an asterisk (*)`\n" \
+                  "                `pending sell orders are marked with a double asterisk (**)`\n" \
                   "*/profit:* `Lists cumulative profit from all finished trades`\n" \
                   "*/forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, " \
                   "regardless of profit`\n" \
@@ -568,7 +587,7 @@ class Telegram(RPC):
                   "*/whitelist:* `Show current whitelist` \n" \
                   "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs " \
                   "to the blacklist.` \n" \
-                  "*/edge:* `Shows validated pairs by Edge if it is enabeld` \n" \
+                  "*/edge:* `Shows validated pairs by Edge if it is enabled` \n" \
                   "*/help:* `This help message`\n" \
                   "*/version:* `Show version`"
 
@@ -610,10 +629,12 @@ class Telegram(RPC):
             f"*Mode:* `{'Dry-run' if val['dry_run'] else 'Live'}`\n"
             f"*Exchange:* `{val['exchange']}`\n"
             f"*Stake per trade:* `{val['stake_amount']} {val['stake_currency']}`\n"
+            f"*Max open Trades:* `{val['max_open_trades']}`\n"
             f"*Minimum ROI:* `{val['minimal_roi']}`\n"
             f"{sl_info}"
             f"*Ticker Interval:* `{val['ticker_interval']}`\n"
-            f"*Strategy:* `{val['strategy']}`"
+            f"*Strategy:* `{val['strategy']}`\n"
+            f"*Current state:* `{val['state']}`"
         )
 
     def _send_msg(self, msg: str, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:

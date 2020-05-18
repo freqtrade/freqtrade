@@ -1,44 +1,34 @@
-""" FreqTrade bot """
+""" Freqtrade bot """
 __version__ = 'develop'
 
 if __version__ == 'develop':
 
     try:
         import subprocess
+
         __version__ = 'develop-' + subprocess.check_output(
             ['git', 'log', '--format="%h"', '-n 1'],
             stderr=subprocess.DEVNULL).decode("utf-8").rstrip().strip('"')
+
+        # from datetime import datetime
+        # last_release = subprocess.check_output(
+        #     ['git', 'tag']
+        # ).decode('utf-8').split()[-1].split(".")
+        # # Releases are in the format "2020.1" - we increment the latest version for dev.
+        # prefix = f"{last_release[0]}.{int(last_release[1]) + 1}"
+        # dev_version = int(datetime.now().timestamp() // 1000)
+        # __version__ = f"{prefix}.dev{dev_version}"
+
+        #  subprocess.check_output(
+        #     ['git', 'log', '--format="%h"', '-n 1'],
+        #     stderr=subprocess.DEVNULL).decode("utf-8").rstrip().strip('"')
     except Exception:
         # git not available, ignore
-        pass
-
-
-class DependencyException(Exception):
-    """
-    Indicates that an assumed dependency is not met.
-    This could happen when there is currently not enough money on the account.
-    """
-
-
-class OperationalException(Exception):
-    """
-    Requires manual intervention and will usually stop the bot.
-    This happens when an exchange returns an unexpected error during runtime
-    or given configuration is invalid.
-    """
-
-
-class InvalidOrderException(Exception):
-    """
-    This is returned when the order is not valid. Example:
-    If stoploss on exchange order is hit, then trying to cancel the order
-    should return this exception.
-    """
-
-
-class TemporaryError(Exception):
-    """
-    Temporary network or exchange related error.
-    This could happen when an exchange is congested, unavailable, or the user
-    has networking problems. Usually resolves itself after a time.
-    """
+        try:
+            # Try Fallback to freqtrade_commit file (created by CI while building docker image)
+            from pathlib import Path
+            versionfile = Path('./freqtrade_commit')
+            if versionfile.is_file():
+                __version__ = f"docker-{versionfile.read_text()[:8]}"
+        except Exception:
+            pass

@@ -1,24 +1,31 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
 
-from freqtrade.data.converter import parse_ticker_dataframe, ohlcv_fill_up_missing_data
-from freqtrade.data.history import load_pair_history, validate_backtest_data, get_timerange
+from freqtrade.configuration.timerange import TimeRange
+from freqtrade.data.converter import (convert_ohlcv_format,
+                                      convert_trades_format,
+                                      ohlcv_fill_up_missing_data,
+                                      ohlcv_to_dataframe, trades_dict_to_list,
+                                      trades_remove_duplicates, trim_dataframe)
+from freqtrade.data.history import (get_timerange, load_data,
+                                    load_pair_history, validate_backtest_data)
 from tests.conftest import log_has
+from tests.data.test_history import _backup_file, _clean_test_file
 
 
 def test_dataframe_correct_columns(result):
     assert result.columns.tolist() == ['date', 'open', 'high', 'low', 'close', 'volume']
 
 
-def test_parse_ticker_dataframe(ticker_history_list, caplog):
+def test_ohlcv_to_dataframe(ohlcv_history_list, caplog):
     columns = ['date', 'open', 'high', 'low', 'close', 'volume']
 
     caplog.set_level(logging.DEBUG)
     # Test file with BV data
-    dataframe = parse_ticker_dataframe(ticker_history_list, '5m',
-                                       pair="UNITTEST/BTC", fill_missing=True)
+    dataframe = ohlcv_to_dataframe(ohlcv_history_list, '5m', pair="UNITTEST/BTC",
+                                   fill_missing=True)
     assert dataframe.columns.tolist() == columns
-    assert log_has('Parsing tickerlist to dataframe', caplog)
+    assert log_has('Converting candle (OHLCV) data to dataframe for pair UNITTEST/BTC.', caplog)
 
 
 def test_ohlcv_fill_up_missing_data(testdatadir, caplog):
@@ -78,7 +85,8 @@ def test_ohlcv_fill_up_missing_data2(caplog):
     ]
 
     # Generate test-data without filling missing
-    data = parse_ticker_dataframe(ticks, timeframe, pair="UNITTEST/BTC", fill_missing=False)
+    data = ohlcv_to_dataframe(ticks, timeframe, pair="UNITTEST/BTC",
+                              fill_missing=False)
     assert len(data) == 3
     caplog.set_level(logging.DEBUG)
     data2 = ohlcv_fill_up_missing_data(data, timeframe, "UNITTEST/BTC")
@@ -134,14 +142,152 @@ def test_ohlcv_drop_incomplete(caplog):
      ]
     ]
     caplog.set_level(logging.DEBUG)
-    data = parse_ticker_dataframe(ticks, timeframe, pair="UNITTEST/BTC",
-                                  fill_missing=False, drop_incomplete=False)
+    data = ohlcv_to_dataframe(ticks, timeframe, pair="UNITTEST/BTC",
+                              fill_missing=False, drop_incomplete=False)
     assert len(data) == 4
     assert not log_has("Dropping last candle", caplog)
 
     # Drop last candle
-    data = parse_ticker_dataframe(ticks, timeframe, pair="UNITTEST/BTC",
-                                  fill_missing=False, drop_incomplete=True)
+    data = ohlcv_to_dataframe(ticks, timeframe, pair="UNITTEST/BTC",
+                              fill_missing=False, drop_incomplete=True)
     assert len(data) == 3
 
     assert log_has("Dropping last candle", caplog)
+
+
+def test_trim_dataframe(testdatadir) -> None:
+    data = load_data(
+        datadir=testdatadir,
+        timeframe='1m',
+        pairs=['UNITTEST/BTC']
+    )['UNITTEST/BTC']
+    min_date = int(data.iloc[0]['date'].timestamp())
+    max_date = int(data.iloc[-1]['date'].timestamp())
+    data_modify = data.copy()
+
+    # Remove first 30 minutes (1800 s)
+    tr = TimeRange('date', None, min_date + 1800, 0)
+    data_modify = trim_dataframe(data_modify, tr)
+    assert not data_modify.equals(data)
+    assert len(data_modify) < len(data)
+    assert len(data_modify) == len(data) - 30
+    assert all(data_modify.iloc[-1] == data.iloc[-1])
+    assert all(data_modify.iloc[0] == data.iloc[30])
+
+    data_modify = data.copy()
+    # Remove last 30 minutes (1800 s)
+    tr = TimeRange(None, 'date', 0, max_date - 1800)
+    data_modify = trim_dataframe(data_modify, tr)
+    assert not data_modify.equals(data)
+    assert len(data_modify) < len(data)
+    assert len(data_modify) == len(data) - 30
+    assert all(data_modify.iloc[0] == data.iloc[0])
+    assert all(data_modify.iloc[-1] == data.iloc[-31])
+
+    data_modify = data.copy()
+    # Remove first 25 and last 30 minutes (1800 s)
+    tr = TimeRange('date', 'date', min_date + 1500, max_date - 1800)
+    data_modify = trim_dataframe(data_modify, tr)
+    assert not data_modify.equals(data)
+    assert len(data_modify) < len(data)
+    assert len(data_modify) == len(data) - 55
+    # first row matches 25th original row
+    assert all(data_modify.iloc[0] == data.iloc[25])
+
+
+def test_trades_remove_duplicates(trades_history):
+    trades_history1 = trades_history * 3
+    assert len(trades_history1) == len(trades_history) * 3
+    res = trades_remove_duplicates(trades_history1)
+    assert len(res) == len(trades_history)
+    for i, t in enumerate(res):
+        assert t == trades_history[i]
+
+
+def test_trades_dict_to_list(fetch_trades_result):
+    res = trades_dict_to_list(fetch_trades_result)
+    assert isinstance(res, list)
+    assert isinstance(res[0], list)
+    for i, t in enumerate(res):
+        assert t[0] == fetch_trades_result[i]['timestamp']
+        assert t[1] == fetch_trades_result[i]['id']
+        assert t[2] == fetch_trades_result[i]['type']
+        assert t[3] == fetch_trades_result[i]['side']
+        assert t[4] == fetch_trades_result[i]['price']
+        assert t[5] == fetch_trades_result[i]['amount']
+        assert t[6] == fetch_trades_result[i]['cost']
+
+
+def test_convert_trades_format(mocker, default_conf, testdatadir):
+    files = [{'old': testdatadir / "XRP_ETH-trades.json.gz",
+              'new': testdatadir / "XRP_ETH-trades.json"},
+             {'old': testdatadir / "XRP_OLD-trades.json.gz",
+              'new': testdatadir / "XRP_OLD-trades.json"},
+             ]
+    for file in files:
+        _backup_file(file['old'], copy_file=True)
+        assert not file['new'].exists()
+
+    default_conf['datadir'] = testdatadir
+
+    convert_trades_format(default_conf, convert_from='jsongz',
+                          convert_to='json', erase=False)
+
+    for file in files:
+        assert file['new'].exists()
+        assert file['old'].exists()
+
+        # Remove original file
+        file['old'].unlink()
+    # Convert back
+    convert_trades_format(default_conf, convert_from='json',
+                          convert_to='jsongz', erase=True)
+    for file in files:
+        assert file['old'].exists()
+        assert not file['new'].exists()
+
+        _clean_test_file(file['old'])
+        if file['new'].exists():
+            file['new'].unlink()
+
+
+def test_convert_ohlcv_format(mocker, default_conf, testdatadir):
+    file1 = testdatadir / "XRP_ETH-5m.json"
+    file1_new = testdatadir / "XRP_ETH-5m.json.gz"
+    file2 = testdatadir / "XRP_ETH-1m.json"
+    file2_new = testdatadir / "XRP_ETH-1m.json.gz"
+    _backup_file(file1, copy_file=True)
+    _backup_file(file2, copy_file=True)
+    default_conf['datadir'] = testdatadir
+    default_conf['pairs'] = ['XRP_ETH']
+    default_conf['timeframes'] = ['1m', '5m']
+
+    assert not file1_new.exists()
+    assert not file2_new.exists()
+
+    convert_ohlcv_format(default_conf, convert_from='json',
+                         convert_to='jsongz', erase=False)
+
+    assert file1_new.exists()
+    assert file2_new.exists()
+    assert file1.exists()
+    assert file2.exists()
+
+    # Remove original files
+    file1.unlink()
+    file2.unlink()
+    # Convert back
+    convert_ohlcv_format(default_conf, convert_from='jsongz',
+                         convert_to='json', erase=True)
+
+    assert file1.exists()
+    assert file2.exists()
+    assert not file1_new.exists()
+    assert not file2_new.exists()
+
+    _clean_test_file(file1)
+    _clean_test_file(file2)
+    if file1_new.exists():
+        file1_new.unlink()
+    if file2_new.exists():
+        file2_new.unlink()

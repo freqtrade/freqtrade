@@ -5,8 +5,9 @@ from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
-from freqtrade import OperationalException
-from freqtrade.configuration import Arguments
+from pathlib import Path
+from freqtrade.commands import Arguments
+from freqtrade.exceptions import FreqtradeException, OperationalException
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.main import main
 from freqtrade.state import State
@@ -26,7 +27,8 @@ def test_parse_args_backtesting(mocker) -> None:
     Test that main() can start backtesting and also ensure we can pass some specific arguments
     further argument parsing is done in test_arguments.py
     """
-    backtesting_mock = mocker.patch('freqtrade.optimize.start_backtesting', MagicMock())
+    mocker.patch.object(Path, "is_file", MagicMock(side_effect=[False, True]))
+    backtesting_mock = mocker.patch('freqtrade.commands.start_backtesting')
     backtesting_mock.__name__ = PropertyMock("start_backtesting")
     # it's sys.exit(0) at the end of backtesting
     with pytest.raises(SystemExit):
@@ -42,7 +44,8 @@ def test_parse_args_backtesting(mocker) -> None:
 
 
 def test_main_start_hyperopt(mocker) -> None:
-    hyperopt_mock = mocker.patch('freqtrade.optimize.start_hyperopt', MagicMock())
+    mocker.patch.object(Path, "is_file", MagicMock(side_effect=[False, True]))
+    hyperopt_mock = mocker.patch('freqtrade.commands.start_hyperopt', MagicMock())
     hyperopt_mock.__name__ = PropertyMock("start_hyperopt")
     # it's sys.exit(0) at the end of hyperopt
     with pytest.raises(SystemExit):
@@ -96,7 +99,7 @@ def test_main_operational_exception(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.cleanup', MagicMock())
     mocker.patch(
         'freqtrade.worker.Worker._worker',
-        MagicMock(side_effect=OperationalException('Oh snap!'))
+        MagicMock(side_effect=FreqtradeException('Oh snap!'))
     )
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.wallets.Wallets.update', MagicMock())
@@ -110,6 +113,32 @@ def test_main_operational_exception(mocker, default_conf, caplog) -> None:
         main(args)
     assert log_has('Using config: config.json.example ...', caplog)
     assert log_has('Oh snap!', caplog)
+
+
+def test_main_operational_exception1(mocker, default_conf, caplog) -> None:
+    patch_exchange(mocker)
+    mocker.patch(
+        'freqtrade.commands.list_commands.available_exchanges',
+        MagicMock(side_effect=ValueError('Oh snap!'))
+    )
+    patched_configuration_load_config_file(mocker, default_conf)
+
+    args = ['list-exchanges']
+
+    # Test Main + the KeyboardInterrupt exception
+    with pytest.raises(SystemExit):
+        main(args)
+
+    assert log_has('Fatal exception!', caplog)
+    assert not log_has_re(r'SIGINT.*', caplog)
+    mocker.patch(
+        'freqtrade.commands.list_commands.available_exchanges',
+        MagicMock(side_effect=KeyboardInterrupt)
+    )
+    with pytest.raises(SystemExit):
+        main(args)
+
+    assert log_has_re(r'SIGINT.*', caplog)
 
 
 def test_main_reload_conf(mocker, default_conf, caplog) -> None:

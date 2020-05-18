@@ -4,10 +4,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from freqtrade import OperationalException
 from freqtrade.configuration.directory_operations import (copy_sample_files,
                                                           create_datadir,
                                                           create_userdata_dir)
+from freqtrade.exceptions import OperationalException
 from tests.conftest import log_has, log_has_re
 
 
@@ -25,7 +25,7 @@ def test_create_userdata_dir(mocker, default_conf, caplog) -> None:
     md = mocker.patch.object(Path, 'mkdir', MagicMock())
 
     x = create_userdata_dir('/tmp/bar', create_dir=True)
-    assert md.call_count == 8
+    assert md.call_count == 9
     assert md.call_args[1]['parents'] is False
     assert log_has(f'Created user-data directory: {Path("/tmp/bar")}', caplog)
     assert isinstance(x, Path)

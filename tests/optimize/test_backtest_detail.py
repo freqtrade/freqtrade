@@ -364,7 +364,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     default_conf["trailing_stop"] = data.trailing_stop
     default_conf["trailing_only_offset_is_reached"] = data.trailing_only_offset_is_reached
     # Only add this to configuration If it's necessary
-    if data.trailing_stop_positive:
+    if data.trailing_stop_positive is not None:
         default_conf["trailing_stop_positive"] = data.trailing_stop_positive
     default_conf["trailing_stop_positive_offset"] = data.trailing_stop_positive_offset
     default_conf["ask_strategy"] = {"use_sell_signal": data.use_sell_signal}
@@ -382,13 +382,11 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     data_processed = {pair: frame.copy()}
     min_date, max_date = get_timerange({pair: frame})
     results = backtesting.backtest(
-        {
-            'stake_amount': default_conf['stake_amount'],
-            'processed': data_processed,
-            'max_open_trades': 10,
-            'start_date': min_date,
-            'end_date': max_date,
-        }
+        processed=data_processed,
+        stake_amount=default_conf['stake_amount'],
+        start_date=min_date,
+        end_date=max_date,
+        max_open_trades=10,
     )
 
     assert len(results) == len(data.trades)

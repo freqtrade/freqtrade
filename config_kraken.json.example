@@ -2,9 +2,11 @@
     "max_open_trades": 5,
     "stake_currency": "EUR",
     "stake_amount": 10,
+    "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "EUR",
-    "ticker_interval" : "5m",
+    "ticker_interval": "5m",
     "dry_run": true,
+    "cancel_open_orders_on_exit": false,
     "trailing_stop": false,
     "unfilledtimeout": {
         "buy": 10,
@@ -22,7 +24,7 @@
     "ask_strategy":{
         "use_order_book": false,
         "order_book_min": 1,
-        "order_book_max": 9,
+        "order_book_max": 1,
         "use_sell_signal": true,
         "sell_profit_only": false,
         "ignore_roi_if_buy_signal": false
@@ -70,7 +72,6 @@
         "enabled": false,
         "process_throttle_secs": 3600,
         "calculate_since_number_of_days": 7,
-        "capital_available_percentage": 0.5,
         "allowed_risk": 0.01,
         "stoploss_range_min": -0.01,
         "stoploss_range_max": -0.1,

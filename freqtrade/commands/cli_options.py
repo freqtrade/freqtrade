@@ -1,7 +1,7 @@
 """
 Definition of cli arguments used in arguments.py
 """
-import argparse
+from argparse import ArgumentTypeError
 
 from freqtrade import __version__, constants
 
@@ -12,7 +12,7 @@ def check_int_positive(value: str) -> int:
         if uint <= 0:
             raise ValueError
     except ValueError:
-        raise argparse.ArgumentTypeError(
+        raise ArgumentTypeError(
             f"{value} is invalid for this parameter, should be a positive integer value"
         )
     return uint
@@ -24,7 +24,7 @@ def check_int_nonzero(value: str) -> int:
         if uint == 0:
             raise ValueError
     except ValueError:
-        raise argparse.ArgumentTypeError(
+        raise ArgumentTypeError(
             f"{value} is invalid for this parameter, should be a non-zero integer value"
         )
     return uint
@@ -59,7 +59,8 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "config": Arg(
         '-c', '--config',
-        help=f'Specify configuration file (default: `{constants.DEFAULT_CONFIG}`). '
+        help=f'Specify configuration file (default: `userdir/{constants.DEFAULT_CONFIG}` '
+        f'or `config.json` whichever exists). '
         f'Multiple --config options may be used. '
         f'Can be set to `-` to read config from stdin.',
         action='append',
@@ -118,14 +119,14 @@ AVAILABLE_CLI_OPTIONS = {
         help='Specify what timerange of data to use.',
     ),
     "max_open_trades": Arg(
-        '--max_open_trades',
-        help='Specify max_open_trades to use.',
+        '--max-open-trades',
+        help='Override the value of the `max_open_trades` configuration setting.',
         type=int,
         metavar='INT',
     ),
     "stake_amount": Arg(
-        '--stake_amount',
-        help='Specify stake_amount.',
+        '--stake-amount',
+        help='Override the value of the `stake_amount` configuration setting.',
         type=float,
     ),
     # Backtesting
@@ -216,9 +217,16 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "print_json": Arg(
         '--print-json',
-        help='Print best result detailization in JSON format.',
+        help='Print output in JSON format.',
         action='store_true',
         default=False,
+    ),
+    "export_csv": Arg(
+        '--export-csv',
+        help='Export to CSV-File.'
+        ' This will disable table print.'
+        ' Example: --export-csv hyperopt.csv',
+        metavar='FILE',
     ),
     "hyperopt_jobs": Arg(
         '-j', '--job-workers',
@@ -256,7 +264,8 @@ AVAILABLE_CLI_OPTIONS = {
         help='Specify the class name of the hyperopt loss function class (IHyperOptLoss). '
         'Different functions can generate completely different results, '
         'since the target for optimization is different. Built-in Hyperopt-loss-functions are: '
-        'DefaultHyperOptLoss, OnlyProfitHyperOptLoss, SharpeHyperOptLoss.'
+        'DefaultHyperOptLoss, OnlyProfitHyperOptLoss, SharpeHyperOptLoss, SharpeHyperOptLossDaily, '
+        'SortinoHyperOptLoss, SortinoHyperOptLossDaily.'
         '(default: `%(default)s`).',
         metavar='NAME',
         default=constants.DEFAULT_HYPEROPT_LOSS,
@@ -332,6 +341,30 @@ AVAILABLE_CLI_OPTIONS = {
              'desired timeframe as specified as --timeframes/-t.',
         action='store_true',
     ),
+    "format_from": Arg(
+        '--format-from',
+        help='Source format for data conversion.',
+        choices=constants.AVAILABLE_DATAHANDLERS,
+        required=True,
+    ),
+    "format_to": Arg(
+        '--format-to',
+        help='Destination format for data conversion.',
+        choices=constants.AVAILABLE_DATAHANDLERS,
+        required=True,
+    ),
+    "dataformat_ohlcv": Arg(
+        '--data-format-ohlcv',
+        help='Storage format for downloaded candle (OHLCV) data. (default: `%(default)s`).',
+        choices=constants.AVAILABLE_DATAHANDLERS,
+        default='json'
+    ),
+    "dataformat_trades": Arg(
+        '--data-format-trades',
+        help='Storage format for downloaded trades data. (default: `%(default)s`).',
+        choices=constants.AVAILABLE_DATAHANDLERS,
+        default='jsongz'
+    ),
     "exchange": Arg(
         '--exchange',
         help=f'Exchange name (default: `{constants.DEFAULT_EXCHANGE}`). '
@@ -339,8 +372,8 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "timeframes": Arg(
         '-t', '--timeframes',
-        help=f'Specify which tickers to download. Space-separated list. '
-        f'Default: `1m 5m`.',
+        help='Specify which tickers to download. Space-separated list. '
+        'Default: `1m 5m`.',
         choices=['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h',
                  '6h', '8h', '12h', '1d', '3d', '1w'],
         default=['1m', '5m'],
@@ -354,24 +387,22 @@ AVAILABLE_CLI_OPTIONS = {
     # Templating options
     "template": Arg(
         '--template',
-        help='Use a template which is either `minimal` or '
-        '`full` (containing multiple sample indicators). Default: `%(default)s`.',
-        choices=['full', 'minimal'],
+        help='Use a template which is either `minimal`, '
+        '`full` (containing multiple sample indicators) or `advanced`. Default: `%(default)s`.',
+        choices=['full', 'minimal', 'advanced'],
         default='full',
     ),
     # Plot dataframe
     "indicators1": Arg(
         '--indicators1',
         help='Set indicators from your strategy you want in the first row of the graph. '
-        'Space-separated list. Example: `ema3 ema5`. Default: `%(default)s`.',
-        default=['sma', 'ema3', 'ema5'],
+        "Space-separated list. Example: `ema3 ema5`. Default: `['sma', 'ema3', 'ema5']`.",
         nargs='+',
     ),
     "indicators2": Arg(
         '--indicators2',
         help='Set indicators from your strategy you want in the third row of the graph. '
-        'Space-separated list. Example: `fastd fastk`. Default: `%(default)s`.',
-        default=['macd', 'macdsignal'],
+        "Space-separated list. Example: `fastd fastk`. Default: `['macd', 'macdsignal']`.",
         nargs='+',
     ),
     "plot_limit": Arg(
@@ -382,12 +413,22 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='INT',
         default=750,
     ),
+    "no_trades": Arg(
+        '--no-trades',
+        help='Skip using trades from backtesting file and DB.',
+        action='store_true',
+    ),
     "trade_source": Arg(
         '--trade-source',
         help='Specify the source for trades (Can be DB or file (backtest file)) '
         'Default: %(default)s',
         choices=["DB", "file"],
         default="file",
+    ),
+    "trade_ids": Arg(
+        '--trade-ids',
+        help='Specify the list of trade ids.',
+        nargs='+',
     ),
     # hyperopt-list, hyperopt-show
     "hyperopt_list_profitable": Arg(
@@ -399,6 +440,54 @@ AVAILABLE_CLI_OPTIONS = {
         '--best',
         help='Select only best epochs.',
         action='store_true',
+    ),
+    "hyperopt_list_min_trades": Arg(
+        '--min-trades',
+        help='Select epochs with more than INT trades.',
+        type=check_int_positive,
+        metavar='INT',
+    ),
+    "hyperopt_list_max_trades": Arg(
+        '--max-trades',
+        help='Select epochs with less than INT trades.',
+        type=check_int_positive,
+        metavar='INT',
+    ),
+    "hyperopt_list_min_avg_time": Arg(
+        '--min-avg-time',
+        help='Select epochs on above average time.',
+        type=float,
+        metavar='FLOAT',
+    ),
+    "hyperopt_list_max_avg_time": Arg(
+        '--max-avg-time',
+        help='Select epochs on under average time.',
+        type=float,
+        metavar='FLOAT',
+    ),
+    "hyperopt_list_min_avg_profit": Arg(
+        '--min-avg-profit',
+        help='Select epochs on above average profit.',
+        type=float,
+        metavar='FLOAT',
+    ),
+    "hyperopt_list_max_avg_profit": Arg(
+        '--max-avg-profit',
+        help='Select epochs on below average profit.',
+        type=float,
+        metavar='FLOAT',
+    ),
+    "hyperopt_list_min_total_profit": Arg(
+        '--min-total-profit',
+        help='Select epochs on above total profit.',
+        type=float,
+        metavar='FLOAT',
+    ),
+    "hyperopt_list_max_total_profit": Arg(
+        '--max-total-profit',
+        help='Select epochs on below total profit.',
+        type=float,
+        metavar='FLOAT',
     ),
     "hyperopt_list_no_details": Arg(
         '--no-details',

@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 from numpy import NAN, mean
 
-from freqtrade import DependencyException, TemporaryError
+from freqtrade.exceptions import DependencyException, TemporaryError
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -26,7 +26,9 @@ class RPCMessageType(Enum):
     WARNING_NOTIFICATION = 'warning'
     CUSTOM_NOTIFICATION = 'custom'
     BUY_NOTIFICATION = 'buy'
+    BUY_CANCEL_NOTIFICATION = 'buy_cancel'
     SELL_NOTIFICATION = 'sell'
+    SELL_CANCEL_NOTIFICATION = 'sell_cancel'
 
     def __repr__(self):
         return self.value
@@ -39,6 +41,7 @@ class RPCException(Exception):
 
     raise RPCException('*Status:* `no active trade`')
     """
+
     def __init__(self, message: str) -> None:
         super().__init__(self)
         self.message = message
@@ -88,9 +91,10 @@ class RPC:
         """
         config = self._freqtrade.config
         val = {
-            'dry_run': config.get('dry_run', False),
+            'dry_run': config['dry_run'],
             'stake_currency': config['stake_currency'],
             'stake_amount': config['stake_amount'],
+            'max_open_trades': config['max_open_trades'],
             'minimal_roi': config['minimal_roi'].copy(),
             'stoploss': config['stoploss'],
             'trailing_stop': config['trailing_stop'],
@@ -100,6 +104,8 @@ class RPC:
             'ticker_interval': config['ticker_interval'],
             'exchange': config['exchange']['name'],
             'strategy': config['strategy'],
+            'forcebuy_enabled': config.get('forcebuy_enable', False),
+            'state': str(self._freqtrade.state)
         }
         return val
 
@@ -139,10 +145,11 @@ class RPC:
                 results.append(trade_dict)
             return results
 
-    def _rpc_status_table(self, stake_currency, fiat_display_currency: str) -> Tuple[List, List]:
+    def _rpc_status_table(self, stake_currency: str,
+                          fiat_display_currency: str) -> Tuple[List, List]:
         trades = Trade.get_open_trades()
         if not trades:
-            raise RPCException('no active order')
+            raise RPCException('no active trade')
         else:
             trades_list = []
             for trade in trades:
@@ -151,20 +158,22 @@ class RPC:
                     current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
                 except DependencyException:
                     current_rate = NAN
-                trade_perc = (100 * trade.calc_profit_ratio(current_rate))
+                trade_percent = (100 * trade.calc_profit_ratio(current_rate))
                 trade_profit = trade.calc_profit(current_rate)
-                profit_str = f'{trade_perc:.2f}%'
+                profit_str = f'{trade_percent:.2f}%'
                 if self._fiat_converter:
                     fiat_profit = self._fiat_converter.convert_amount(
-                            trade_profit,
-                            stake_currency,
-                            fiat_display_currency
-                        )
+                        trade_profit,
+                        stake_currency,
+                        fiat_display_currency
+                    )
                     if fiat_profit and not isnan(fiat_profit):
                         profit_str += f" ({fiat_profit:.2f})"
                 trades_list.append([
                     trade.id,
-                    trade.pair,
+                    trade.pair + ('*' if (trade.open_order_id is not None
+                                          and trade.close_rate_requested is None) else '')
+                               + ('**' if (trade.close_rate_requested is not None) else ''),
                     shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
                     profit_str
                 ])
@@ -177,7 +186,7 @@ class RPC:
 
     def _rpc_daily_profit(
             self, timescale: int,
-            stake_currency: str, fiat_display_currency: str) -> List[List[Any]]:
+            stake_currency: str, fiat_display_currency: str) -> Dict[str, Any]:
         today = datetime.utcnow().date()
         profit_days: Dict[date, Dict] = {}
 
@@ -191,34 +200,46 @@ class RPC:
                 Trade.close_date >= profitday,
                 Trade.close_date < (profitday + timedelta(days=1))
             ]).order_by(Trade.close_date).all()
-            curdayprofit = sum(trade.calc_profit() for trade in trades)
+            curdayprofit = sum(trade.close_profit_abs for trade in trades)
             profit_days[profitday] = {
                 'amount': f'{curdayprofit:.8f}',
                 'trades': len(trades)
             }
 
-        return [
-            [
-                key,
-                '{value:.8f} {symbol}'.format(
-                    value=float(value['amount']),
-                    symbol=stake_currency
-                ),
-                '{value:.3f} {symbol}'.format(
+        data = [
+            {
+                'date': key,
+                'abs_profit': f'{float(value["amount"]):.8f}',
+                'fiat_value': '{value:.3f}'.format(
                     value=self._fiat_converter.convert_amount(
                         value['amount'],
                         stake_currency,
                         fiat_display_currency
                     ) if self._fiat_converter else 0,
-                    symbol=fiat_display_currency
                 ),
-                '{value} trade{s}'.format(
-                    value=value['trades'],
-                    s='' if value['trades'] < 2 else 's'
-                ),
-            ]
+                'trade_count': f'{value["trades"]}',
+            }
             for key, value in profit_days.items()
         ]
+        return {
+            'stake_currency': stake_currency,
+            'fiat_display_currency': fiat_display_currency,
+            'data': data
+        }
+
+    def _rpc_trade_history(self, limit: int) -> Dict:
+        """ Returns the X last trades """
+        if limit > 0:
+            trades = Trade.get_trades().order_by(Trade.id.desc()).limit(limit)
+        else:
+            trades = Trade.get_trades().order_by(Trade.id.desc()).all()
+
+        output = [trade.to_json() for trade in trades]
+
+        return {
+            "trades": output,
+            "trades_count": len(output)
+        }
 
     def _rpc_trade_statistics(
             self, stake_currency: str, fiat_display_currency: str) -> Dict[str, Any]:
@@ -226,9 +247,9 @@ class RPC:
         trades = Trade.get_trades().order_by(Trade.id).all()
 
         profit_all_coin = []
-        profit_all_perc = []
+        profit_all_ratio = []
         profit_closed_coin = []
-        profit_closed_perc = []
+        profit_closed_ratio = []
         durations = []
 
         for trade in trades:
@@ -240,21 +261,21 @@ class RPC:
                 durations.append((trade.close_date - trade.open_date).total_seconds())
 
             if not trade.is_open:
-                profit_percent = trade.calc_profit_ratio()
-                profit_closed_coin.append(trade.calc_profit())
-                profit_closed_perc.append(profit_percent)
+                profit_ratio = trade.close_profit
+                profit_closed_coin.append(trade.close_profit_abs)
+                profit_closed_ratio.append(profit_ratio)
             else:
                 # Get current rate
                 try:
                     current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
                 except DependencyException:
                     current_rate = NAN
-                profit_percent = trade.calc_profit_ratio(rate=current_rate)
+                profit_ratio = trade.calc_profit_ratio(rate=current_rate)
 
             profit_all_coin.append(
                 trade.calc_profit(rate=trade.close_rate or current_rate)
             )
-            profit_all_perc.append(profit_percent)
+            profit_all_ratio.append(profit_ratio)
 
         best_pair = Trade.get_best_pair()
 
@@ -265,7 +286,7 @@ class RPC:
 
         # Prepare data to display
         profit_closed_coin_sum = round(sum(profit_closed_coin), 8)
-        profit_closed_percent = (round(mean(profit_closed_perc) * 100, 2) if profit_closed_perc
+        profit_closed_percent = (round(mean(profit_closed_ratio) * 100, 2) if profit_closed_ratio
                                  else 0.0)
         profit_closed_fiat = self._fiat_converter.convert_amount(
             profit_closed_coin_sum,
@@ -274,7 +295,7 @@ class RPC:
         ) if self._fiat_converter else 0
 
         profit_all_coin_sum = round(sum(profit_all_coin), 8)
-        profit_all_percent = round(mean(profit_all_perc) * 100, 2) if profit_all_perc else 0.0
+        profit_all_percent = round(mean(profit_all_ratio) * 100, 2) if profit_all_ratio else 0.0
         profit_all_fiat = self._fiat_converter.convert_amount(
             profit_all_coin_sum,
             stake_currency,
@@ -306,6 +327,8 @@ class RPC:
         except (TemporaryError, DependencyException):
             raise RPCException('Error getting current tickers.')
 
+        self._freqtrade.wallets.update(require_update=False)
+
         for coin, balance in self._freqtrade.wallets.get_all_balances().items():
             if not balance.total:
                 continue
@@ -335,20 +358,21 @@ class RPC:
                 'stake': stake_currency,
             })
         if total == 0.0:
-            if self._freqtrade.config.get('dry_run', False):
+            if self._freqtrade.config['dry_run']:
                 raise RPCException('Running in Dry Run, balances are not available.')
             else:
                 raise RPCException('All balances are zero.')
 
         symbol = fiat_display_currency
-        value = self._fiat_converter.convert_amount(total, 'BTC',
+        value = self._fiat_converter.convert_amount(total, stake_currency,
                                                     symbol) if self._fiat_converter else 0
         return {
             'currencies': output,
             'total': total,
             'symbol': symbol,
             'value': value,
-            'note': 'Simulated balances' if self._freqtrade.config.get('dry_run', False) else ''
+            'stake': stake_currency,
+            'note': 'Simulated balances' if self._freqtrade.config['dry_run'] else ''
         }
 
     def _rpc_start(self) -> Dict[str, str]:
@@ -382,7 +406,7 @@ class RPC:
 
         return {'status': 'No more buy will occur from now. Run /reload_conf to reset.'}
 
-    def _rpc_forcesell(self, trade_id) -> Dict[str, str]:
+    def _rpc_forcesell(self, trade_id: str) -> Dict[str, str]:
         """
         Handler for forcesell <id>.
         Sells the given trade at current price
@@ -417,24 +441,27 @@ class RPC:
         if self._freqtrade.state != State.RUNNING:
             raise RPCException('trader is not running')
 
-        if trade_id == 'all':
-            # Execute sell for all open orders
-            for trade in Trade.get_open_trades():
-                _exec_forcesell(trade)
+        with self._freqtrade._sell_lock:
+            if trade_id == 'all':
+                # Execute sell for all open orders
+                for trade in Trade.get_open_trades():
+                    _exec_forcesell(trade)
+                Trade.session.flush()
+                self._freqtrade.wallets.update()
+                return {'result': 'Created sell orders for all open trades.'}
+
+            # Query for trade
+            trade = Trade.get_trades(
+                trade_filter=[Trade.id == trade_id, Trade.is_open.is_(True), ]
+            ).first()
+            if not trade:
+                logger.warning('forcesell: Invalid argument received')
+                raise RPCException('invalid argument')
+
+            _exec_forcesell(trade)
             Trade.session.flush()
-            return {'result': 'Created sell orders for all open trades.'}
-
-        # Query for trade
-        trade = Trade.get_trades(
-            trade_filter=[Trade.id == trade_id, Trade.is_open.is_(True), ]
-        ).first()
-        if not trade:
-            logger.warning('forcesell: Invalid argument received')
-            raise RPCException('invalid argument')
-
-        _exec_forcesell(trade)
-        Trade.session.flush()
-        return {'result': f'Created sell order for trade {trade_id}.'}
+            self._freqtrade.wallets.update()
+            return {'result': f'Created sell order for trade {trade_id}.'}
 
     def _rpc_forcebuy(self, pair: str, price: Optional[float]) -> Optional[Trade]:
         """
@@ -448,9 +475,9 @@ class RPC:
         if self._freqtrade.state != State.RUNNING:
             raise RPCException('trader is not running')
 
-        # Check pair is in stake currency
+        # Check if pair quote currency equals to the stake currency.
         stake_currency = self._freqtrade.config.get('stake_currency')
-        if not pair.endswith(stake_currency):
+        if not self._freqtrade.exchange.get_pair_quote_currency(pair) == stake_currency:
             raise RPCException(
                 f'Wrong pair selected. Please pairs with stake {stake_currency} pairs only')
         # check if valid pair
@@ -461,7 +488,7 @@ class RPC:
             raise RPCException(f'position for {pair} already open - id: {trade.id}')
 
         # gen stake amount
-        stakeamount = self._freqtrade._get_trade_stake_amount(pair)
+        stakeamount = self._freqtrade.get_trade_stake_amount(pair)
 
         # execute buy
         if self._freqtrade.execute_buy(pair, stakeamount, price):
@@ -505,7 +532,7 @@ class RPC:
         if add:
             stake_currency = self._freqtrade.config.get('stake_currency')
             for pair in add:
-                if (pair.endswith(stake_currency)
+                if (self._freqtrade.exchange.get_pair_quote_currency(pair) == stake_currency
                         and pair not in self._freqtrade.pairlists.blacklist):
                     self._freqtrade.pairlists.blacklist.append(pair)
 
@@ -518,5 +545,5 @@ class RPC:
     def _rpc_edge(self) -> List[Dict[str, Any]]:
         """ Returns information related to Edge """
         if not self._freqtrade.edge:
-            raise RPCException(f'Edge is not enabled.')
+            raise RPCException('Edge is not enabled.')
         return self._freqtrade.edge.accepted_pairs()

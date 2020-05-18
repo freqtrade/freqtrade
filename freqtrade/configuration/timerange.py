@@ -7,6 +7,7 @@ from typing import Optional
 
 import arrow
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -30,7 +31,7 @@ class TimeRange:
         return (self.starttype == other.starttype and self.stoptype == other.stoptype
                 and self.startts == other.startts and self.stopts == other.stopts)
 
-    def subtract_start(self, seconds) -> None:
+    def subtract_start(self, seconds: int) -> None:
         """
         Subtracts <seconds> from startts if startts is set.
         :param seconds: Seconds to subtract from starttime
@@ -44,7 +45,7 @@ class TimeRange:
         """
         Adjust startts by <startup_candles> candles.
         Applies only if no startup-candles have been available.
-        :param timeframe_secs: Ticker timeframe in seconds e.g. `timeframe_to_seconds('5m')`
+        :param timeframe_secs: Timeframe in seconds e.g. `timeframe_to_seconds('5m')`
         :param startup_candles: Number of candles to move start-date forward
         :param min_date: Minimum data date loaded. Key kriterium to decide if start-time
                          has to be moved
@@ -59,7 +60,7 @@ class TimeRange:
             self.starttype = 'date'
 
     @staticmethod
-    def parse_timerange(text: Optional[str]):
+    def parse_timerange(text: Optional[str]) -> 'TimeRange':
         """
         Parse the value of the argument --timerange to determine what is the range desired
         :param text: value from --timerange

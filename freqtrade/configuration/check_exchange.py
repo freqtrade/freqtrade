@@ -1,16 +1,16 @@
 import logging
 from typing import Any, Dict
 
-from freqtrade import OperationalException
+from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import (available_exchanges, get_exchange_bad_reason,
-                                is_exchange_known_ccxt, is_exchange_bad,
+                                is_exchange_bad, is_exchange_known_ccxt,
                                 is_exchange_officially_supported)
 from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
 
 
-def remove_credentials(config: Dict[str, Any]):
+def remove_credentials(config: Dict[str, Any]) -> None:
     """
     Removes exchange keys from the configuration and specifies dry-run
     Used for backtesting / hyperopt / edge and utils.

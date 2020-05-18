@@ -3,13 +3,13 @@ import shutil
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from freqtrade import OperationalException
+from freqtrade.exceptions import OperationalException
 from freqtrade.constants import USER_DATA_FILES
 
 logger = logging.getLogger(__name__)
 
 
-def create_datadir(config: Dict[str, Any], datadir: Optional[str] = None) -> str:
+def create_datadir(config: Dict[str, Any], datadir: Optional[str] = None) -> Path:
 
     folder = Path(datadir) if datadir else Path(f"{config['user_data_dir']}/data")
     if not datadir:
@@ -20,10 +20,10 @@ def create_datadir(config: Dict[str, Any], datadir: Optional[str] = None) -> str
     if not folder.is_dir():
         folder.mkdir(parents=True)
         logger.info(f'Created data directory: {datadir}')
-    return str(folder)
+    return folder
 
 
-def create_userdata_dir(directory: str, create_dir=False) -> Path:
+def create_userdata_dir(directory: str, create_dir: bool = False) -> Path:
     """
     Create userdata directory structure.
     if create_dir is True, then the parent-directory will be created if it does not exist.
@@ -33,8 +33,8 @@ def create_userdata_dir(directory: str, create_dir=False) -> Path:
     :param create_dir: Create directory if it does not exist.
     :return: Path object containing the directory
     """
-    sub_dirs = ["backtest_results", "data", "hyperopts", "hyperopt_results", "notebooks",
-                "plot", "strategies", ]
+    sub_dirs = ["backtest_results", "data", "hyperopts", "hyperopt_results", "logs",
+                "notebooks", "plot", "strategies", ]
     folder = Path(directory)
     if not folder.is_dir():
         if create_dir:

@@ -1,8 +1,8 @@
 site_name: Freqtrade
 nav:
-    - About: index.md
-    - Installation: installation.md
+    - Home: index.md
     - Installation Docker: docker.md
+    - Installation: installation.md
     - Configuration: configuration.md
     - Strategy Customization: strategy-customization.md
     - Stoploss: stoploss.md
@@ -24,6 +24,7 @@ nav:
         - Plotting: plotting.md
     - SQL Cheatsheet: sql_cheatsheet.md
     - Advanced Post-installation Tasks: advanced-setup.md
+    - Advanced Strategy: strategy-advanced.md
     - Advanced Hyperopt: advanced-hyperopt.md
     - Sandbox Testing: sandbox-testing.md
     - Deprecated Features: deprecated.md

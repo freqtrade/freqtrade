@@ -16,14 +16,15 @@ if readme_file.is_file():
     readme_long = (Path(__file__).parent / "README.md").read_text()
 
 # Requirements used for submodules
-api = ['flask']
+api = ['flask', 'flask-jwt-extended', 'flask-cors']
 plot = ['plotly>=4.0']
 hyperopt = [
     'scipy',
     'scikit-learn',
-    'scikit-optimize',
+    'scikit-optimize>=0.7.0',
     'filelock',
     'joblib',
+    'progressbar2',
     ]
 
 develop = [
@@ -59,7 +60,7 @@ setup(name='freqtrade',
       license='GPLv3',
       packages=['freqtrade'],
       setup_requires=['pytest-runner', 'numpy'],
-      tests_require=['pytest', 'pytest-mock', 'pytest-cov'],
+      tests_require=['pytest', 'pytest-asyncio', 'pytest-cov', 'pytest-mock', ],
       install_requires=[
           # from requirements-common.txt
           'ccxt>=1.18.1080',
@@ -73,12 +74,14 @@ setup(name='freqtrade',
           'jsonschema',
           'TA-Lib',
           'tabulate',
-          'coinmarketcap',
+          'pycoingecko',
           'py_find_1st',
           'python-rapidjson',
           'sdnotify',
           'colorama',
           'jinja2',
+          'questionary',
+          'prompt-toolkit',
           # from requirements.txt
           'numpy',
           'pandas',
@@ -99,8 +102,12 @@ setup(name='freqtrade',
           ],
       },
       classifiers=[
-          'Programming Language :: Python :: 3.6',
-          'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
-          'Topic :: Office/Business :: Financial :: Investment',
+          'Environment :: Console',
           'Intended Audience :: Science/Research',
+          'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+          'Programming Language :: Python :: 3.6',
+          'Programming Language :: Python :: 3.7',
+          'Operating System :: MacOS',
+          'Operating System :: Unix',
+          'Topic :: Office/Business :: Financial :: Investment',
       ])

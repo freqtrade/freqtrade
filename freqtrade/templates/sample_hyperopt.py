@@ -20,23 +20,28 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 class SampleHyperOpt(IHyperOpt):
     """
     This is a sample Hyperopt to inspire you.
-    Feel free to customize it.
 
-    More information in https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md
+    More information in the documentation: https://www.freqtrade.io/en/latest/hyperopt/
 
     You should:
     - Rename the class name to some unique name.
     - Add any methods you want to build your hyperopt.
     - Add any lib you need to build your hyperopt.
 
+    An easier way to get a new hyperopt file is by using
+    `freqtrade new-hyperopt --hyperopt MyCoolHyperopt`.
+
     You must keep:
     - The prototypes for the methods: populate_indicators, indicator_space, buy_strategy_generator.
 
-    The roi_space, generate_roi_table, stoploss_space methods are no longer required to be
-    copied in every custom hyperopt. However, you may override them if you need the
-    'roi' and the 'stoploss' spaces that differ from the defaults offered by Freqtrade.
-    Sample implementation of these methods can be found in
-    https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/sample_hyperopt_advanced.py
+    The methods roi_space, generate_roi_table and stoploss_space are not required
+    and are provided by default.
+    However, you may override them if you need 'roi' and 'stoploss' spaces that
+    differ from the defaults offered by Freqtrade.
+    Sample implementation of these methods will be copied to `user_data/hyperopts` when
+    creating the user-data directory using `freqtrade create-userdir --userdir user_data`,
+    or is available online under the following URL:
+    https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt_advanced.py.
     """
 
     @staticmethod
@@ -72,6 +77,9 @@ class SampleHyperOpt(IHyperOpt):
                     conditions.append(qtpylib.crossed_above(
                         dataframe['close'], dataframe['sar']
                     ))
+
+            # Check that volume is not 0
+            conditions.append(dataframe['volume'] > 0)
 
             if conditions:
                 dataframe.loc[
@@ -132,6 +140,9 @@ class SampleHyperOpt(IHyperOpt):
                     conditions.append(qtpylib.crossed_above(
                         dataframe['sar'], dataframe['close']
                     ))
+
+            # Check that volume is not 0
+            conditions.append(dataframe['volume'] > 0)
 
             if conditions:
                 dataframe.loc[

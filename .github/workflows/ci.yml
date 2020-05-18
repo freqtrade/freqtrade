@@ -7,6 +7,8 @@ on:
       - develop
       - github_actions_tests
     tags:
+    release:
+      types: [published]
   pull_request:
   schedule:
     - cron:  '0 5 * * 4'
@@ -18,10 +20,10 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-18.04, macos-latest ]
-        python-version: [3.7]
+        python-version: [3.7, 3.8]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Set up Python
       uses: actions/setup-python@v1
@@ -64,19 +66,17 @@ jobs:
         pip install -e .
 
     - name: Tests
-      env:
-        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        COVERALLS_SERVICE_NAME: travis-ci
-        TRAVIS: "true"
       run: |
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc
+
+    - name: Coveralls
+      if: (startsWith(matrix.os, 'ubuntu') && matrix.python-version == '3.8')
+      env:
+        # Coveralls token. Not used as secret due to github not providing secrets to forked repositories
+        COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
+      run: |
         # Allow failure for coveralls
-        # Fake travis environment to get coveralls working correctly
-        export TRAVIS_PULL_REQUEST="https://github.com/${GITHUB_REPOSITORY}/pull/$(cat $GITHUB_EVENT_PATH | jq -r .number)"
-        export TRAVIS_BRANCH=${GITHUB_REF#"ref/heads"}
-        export CI_BRANCH=${GITHUB_REF#"ref/heads"}
-        echo "${TRAVIS_BRANCH}"
-        coveralls || true
+        coveralls -v  || true
 
     - name: Backtesting
       run: |
@@ -115,10 +115,10 @@ jobs:
     strategy:
       matrix:
         os: [ windows-latest ]
-        python-version: [3.7]
+        python-version: [3.7, 3.8]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Set up Python
       uses: actions/setup-python@v1
@@ -130,8 +130,7 @@ jobs:
       if: startsWith(runner.os, 'Windows')
       with:
         path: ~\AppData\Local\pip\Cache
-        key: ${{ runner.os }}-pip
-        restore-keys: ${{ runner.os }}-pip
+        key: ${{ matrix.os }}-${{ matrix.python-version }}-pip
 
     - name: Installation
       run: |
@@ -175,7 +174,7 @@ jobs:
   docs_check:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Documentation syntax
       run: |
@@ -193,14 +192,39 @@ jobs:
   deploy:
     needs: [ build, build_windows, docs_check ]
     runs-on: ubuntu-18.04
-    if: (github.event_name == 'push' || github.event_name == 'schedule') && github.repository == 'freqtrade/freqtrade'
+    if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
 
     - name: Extract branch name
       shell: bash
       run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
       id: extract_branch
+
+    - name: Build distribution
+      run: |
+        pip install -U setuptools wheel
+        python setup.py sdist bdist_wheel
+
+    - name: Publish to PyPI (Test)
+      uses: pypa/gh-action-pypi-publish@master
+      if: (steps.extract_branch.outputs.branch == 'master' || github.event_name == 'release')
+      with:
+        user: __token__
+        password: ${{ secrets.pypi_test_password }}
+        repository_url: https://test.pypi.org/legacy/
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@master
+      if: (steps.extract_branch.outputs.branch == 'master' || github.event_name == 'release')
+      with:
+        user: __token__
+        password: ${{ secrets.pypi_password }}
 
     - name: Build and test and push docker image
       env:

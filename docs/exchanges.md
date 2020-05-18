@@ -5,7 +5,7 @@ This page combines common gotchas and informations which are exchange-specific a
 ## Binance
 
 !!! Tip "Stoploss on Exchange"
-    Binance is currently the only exchange supporting `stoploss_on_exchange`. It provides great advantages, so we recommend to benefit from it.
+    Binance supports `stoploss_on_exchange` and uses stop-loss-limit orders. It provides great advantages, so we recommend to benefit from it.
 
 ### Blacklists
 
@@ -22,12 +22,19 @@ Binance has been split into 3, and users must use the correct ccxt exchange ID f
 
 ## Kraken
 
+!!! Tip "Stoploss on Exchange"
+    Kraken supports `stoploss_on_exchange` and uses stop-loss-market orders. It provides great advantages, so we recommend to benefit from it, however since the resulting order is a stoploss-market order, sell-rates are not guaranteed, which makes this feature less secure than on other exchanges. This limitation is based on kraken's policy [source](https://blog.kraken.com/post/1234/announcement-delisting-pairs-and-temporary-suspension-of-advanced-order-types/) and [source2](https://blog.kraken.com/post/1494/kraken-enables-advanced-orders-and-adds-10-currency-pairs/) - which has stoploss-limit orders disabled.
+
 ### Historic Kraken data
 
 The Kraken API does only provide 720 historic candles, which is sufficient for Freqtrade dry-run and live trade modes, but is a problem for backtesting.
 To download data for the Kraken exchange, using `--dl-trades` is mandatory, otherwise the bot will download the same 720 candles over and over, and you'll not have enough backtest data.
 
 ## Bittrex
+
+### Order types
+
+Bittrex does not support market orders. If you have a message at the bot startup about this, you should change order type values set in your configuration and/or in the strategy from `"market"` to `"limit"`. See some more details on this [here in the FAQ](faq.md#im-getting-the-exchange-bittrex-does-not-support-market-orders-message-and-cannot-run-my-strategy).
 
 ### Restricted markets
 
@@ -55,6 +62,11 @@ res = [ f"{x['MarketCurrency']}/{x['BaseCurrency']}" for x in ct.publicGetMarket
 print(res)
 ```
 
+## All exchanges
+
+Should you experience constant errors with Nonce (like `InvalidNonce`), it is best to regenerate the API keys. Resetting Nonce is difficult and it's usually easier to regenerate the API keys.
+
+
 ## Random notes for other exchanges
 
 * The Ocean (exchange id: `theocean`) exchange uses Web3 functionality and requires `web3` python package to be installed:
@@ -62,23 +74,13 @@ print(res)
 $ pip3 install web3
 ```
 
-### Send incomplete candles to the strategy
+### Getting latest price / Incomplete candles
 
-Most exchanges return incomplete candles via their ohlcv / klines interface.
-By default, Freqtrade assumes that incomplete candles are returned and removes the last candle assuming it's an incomplete candle.
+Most exchanges return current incomplete candle via their OHLCV/klines API interface.
+By default, Freqtrade assumes that incomplete candle is fetched from the exchange and removes the last candle assuming it's the incomplete candle.
 
 Whether your exchange returns incomplete candles or not can be checked using [the helper script](developer.md#Incomplete-candles) from the Contributor documentation.
 
-If the exchange does return incomplete candles and you would like to have incomplete candles in your strategy, you can set the following parameter in the configuration file.
+Due to the danger of repainting, Freqtrade does not allow you to use this incomplete candle.
 
-``` json
-{
-
-    "exchange": {
-        "_ft_has_params": {"ohlcv_partial_candle": false}
-    }
-}
-```
-
-!!! Warning "Danger of repainting"
-    Changing this parameter makes the strategy responsible to avoid repainting and handle this accordingly. Doing this is therefore not recommended, and should only be performed by experienced users who are fully aware of the impact this setting has.
+However, if it is based on the need for the latest price for your strategy - then this requirement can be acquired using the [data provider](strategy-customization.md#possible-options-for-dataprovider) from within the strategy.

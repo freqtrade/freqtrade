@@ -7,15 +7,16 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-from freqtrade import OperationalException, constants
+from freqtrade import constants
 from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.deprecated_settings import process_temporary_deprecated_settings
 from freqtrade.configuration.directory_operations import (create_datadir,
                                                           create_userdata_dir)
 from freqtrade.configuration.load_config import load_config_file
+from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import setup_logging
 from freqtrade.misc import deep_merge_dicts, json_load
-from freqtrade.state import RunMode, TRADING_MODES, NON_UTIL_MODES
+from freqtrade.state import NON_UTIL_MODES, TRADING_MODES, RunMode
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +96,8 @@ class Configuration:
         # Keep a copy of the original configuration file
         config['original_config'] = deepcopy(config)
 
+        self._process_logging_options(config)
+
         self._process_runmode(config)
 
         self._process_common_options(config)
@@ -145,8 +148,6 @@ class Configuration:
 
     def _process_common_options(self, config: Dict[str, Any]) -> None:
 
-        self._process_logging_options(config)
-
         # Set strategy if not specified in config and or if it's non default
         if self.args.get("strategy") or not config.get('strategy'):
             config.update({'strategy': self.args.get("strategy")})
@@ -165,10 +166,6 @@ class Configuration:
         # Support for sd_notify
         if 'sd_notify' in self.args and self.args["sd_notify"]:
             config['internals'].update({'sd_notify': True})
-
-        self._args_to_config(config, argname='dry_run',
-                             logstring='Parameter --dry-run detected, '
-                             'overriding dry_run to: {} ...')
 
     def _process_datadir_options(self, config: Dict[str, Any]) -> None:
         """
@@ -199,6 +196,7 @@ class Configuration:
         if self.args.get('exportfilename'):
             self._args_to_config(config, argname='exportfilename',
                                  logstring='Storing backtest results to {} ...')
+            config['exportfilename'] = Path(config['exportfilename'])
         else:
             config['exportfilename'] = (config['user_data_dir']
                                         / 'backtest_results/backtest-result.json')
@@ -223,13 +221,13 @@ class Configuration:
             logger.info('max_open_trades set to unlimited ...')
         elif 'max_open_trades' in self.args and self.args["max_open_trades"]:
             config.update({'max_open_trades': self.args["max_open_trades"]})
-            logger.info('Parameter --max_open_trades detected, '
+            logger.info('Parameter --max-open-trades detected, '
                         'overriding max_open_trades to: %s ...', config.get('max_open_trades'))
         elif config['runmode'] in NON_UTIL_MODES:
             logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
 
         self._args_to_config(config, argname='stake_amount',
-                             logstring='Parameter --stake_amount detected, '
+                             logstring='Parameter --stake-amount detected, '
                              'overriding stake_amount to: {} ...')
 
         self._args_to_config(config, argname='fee',
@@ -285,6 +283,9 @@ class Configuration:
         self._args_to_config(config, argname='print_json',
                              logstring='Parameter --print-json detected ...')
 
+        self._args_to_config(config, argname='export_csv',
+                             logstring='Parameter --export-csv detected: {}')
+
         self._args_to_config(config, argname='hyperopt_jobs',
                              logstring='Parameter -j/--job-workers detected: {}')
 
@@ -309,6 +310,30 @@ class Configuration:
         self._args_to_config(config, argname='hyperopt_list_profitable',
                              logstring='Parameter --profitable detected: {}')
 
+        self._args_to_config(config, argname='hyperopt_list_min_trades',
+                             logstring='Parameter --min-trades detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_max_trades',
+                             logstring='Parameter --max-trades detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_min_avg_time',
+                             logstring='Parameter --min-avg-time detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_max_avg_time',
+                             logstring='Parameter --max-avg-time detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_min_avg_profit',
+                             logstring='Parameter --min-avg-profit detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_max_avg_profit',
+                             logstring='Parameter --max-avg-profit detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_min_total_profit',
+                             logstring='Parameter --min-total-profit detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_max_total_profit',
+                             logstring='Parameter --max-total-profit detected: {}')
+
         self._args_to_config(config, argname='hyperopt_list_no_details',
                              logstring='Parameter --no-details detected: {}')
 
@@ -326,28 +351,46 @@ class Configuration:
         self._args_to_config(config, argname='indicators2',
                              logstring='Using indicators2: {}')
 
+        self._args_to_config(config, argname='trade_ids',
+                             logstring='Filtering on trade_ids: {}')
+
         self._args_to_config(config, argname='plot_limit',
                              logstring='Limiting plot to: {}')
+
         self._args_to_config(config, argname='trade_source',
                              logstring='Using trades from: {}')
 
         self._args_to_config(config, argname='erase',
                              logstring='Erase detected. Deleting existing data.')
 
+        self._args_to_config(config, argname='no_trades',
+                             logstring='Parameter --no-trades detected.')
+
         self._args_to_config(config, argname='timeframes',
                              logstring='timeframes --timeframes: {}')
 
         self._args_to_config(config, argname='days',
                              logstring='Detected --days: {}')
+
         self._args_to_config(config, argname='download_trades',
                              logstring='Detected --dl-trades: {}')
 
+        self._args_to_config(config, argname='dataformat_ohlcv',
+                             logstring='Using "{}" to store OHLCV data.')
+
+        self._args_to_config(config, argname='dataformat_trades',
+                             logstring='Using "{}" to store trades data.')
+
     def _process_runmode(self, config: Dict[str, Any]) -> None:
+
+        self._args_to_config(config, argname='dry_run',
+                             logstring='Parameter --dry-run detected, '
+                             'overriding dry_run to: {} ...')
 
         if not self.runmode:
             # Handle real mode, infer dry/live from config
             self.runmode = RunMode.DRY_RUN if config.get('dry_run', True) else RunMode.LIVE
-            logger.info(f"Runmode set to {self.runmode}.")
+            logger.info(f"Runmode set to {self.runmode.value}.")
 
         config.update({'runmode': self.runmode})
 
@@ -403,7 +446,7 @@ class Configuration:
             config['pairs'] = config.get('exchange', {}).get('pair_whitelist')
         else:
             # Fall back to /dl_path/pairs.json
-            pairs_file = Path(config['datadir']) / "pairs.json"
+            pairs_file = config['datadir'] / "pairs.json"
             if pairs_file.exists():
                 with pairs_file.open('r') as f:
                     config['pairs'] = json_load(f)

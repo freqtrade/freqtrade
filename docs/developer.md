@@ -1,6 +1,6 @@
 # Development Help
 
-This page is intended for developers of FreqTrade, people who want to contribute to the FreqTrade codebase or documentation, or people who want to understand the source code of the application they're running.
+This page is intended for developers of Freqtrade, people who want to contribute to the Freqtrade codebase or documentation, or people who want to understand the source code of the application they're running.
 
 All contributions, bug reports, bug fixes, documentation improvements, enhancements and ideas are welcome. We [track issues](https://github.com/freqtrade/freqtrade/issues) on [GitHub](https://github.com) and also have a dev channel in [slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE) where you can ask questions.
 
@@ -153,7 +153,7 @@ In VolumePairList, this implements different methods of sorting, does early vali
 ## Implement a new Exchange (WIP)
 
 !!! Note
-    This section is a Work in Progress and is not a complete guide on how to test a new exchange with FreqTrade.
+    This section is a Work in Progress and is not a complete guide on how to test a new exchange with Freqtrade.
 
 Most exchanges supported by CCXT should work out of the box.
 
@@ -165,7 +165,7 @@ Since CCXT does not provide unification for Stoploss On Exchange yet, we'll need
 
 ### Incomplete candles
 
-While fetching OHLCV data, we're may end up getting incomplete candles (Depending on the exchange).
+While fetching candle (OHLCV) data, we may end up getting incomplete candles (depending on the exchange).
 To demonstrate this, we'll use daily candles (`"1d"`) to keep things simple.
 We query the api (`ct.fetch_ohlcv()`) for the timeframe and look at the date of the last entry. If this entry changes or shows the date of a "incomplete" candle, then we should drop this since having incomplete candles is problematic because indicators assume that only complete candles are passed to them, and will generate a lot of false buy signals. By default, we're therefore removing the last candle assuming it's incomplete.
 
@@ -174,14 +174,14 @@ To check how the new exchange behaves, you can use the following snippet:
 ``` python
 import ccxt
 from datetime import datetime
-from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.data.converter import ohlcv_to_dataframe
 ct = ccxt.binance()
 timeframe = "1d"
 pair = "XLM/BTC"  # Make sure to use a pair that exists on that exchange!
 raw = ct.fetch_ohlcv(pair, timeframe=timeframe)
 
 # convert to dataframe
-df1 = parse_ticker_dataframe(raw, timeframe, pair=pair, drop_incomplete=False)
+df1 = ohlcv_to_dataframe(raw, timeframe, pair=pair, drop_incomplete=False)
 
 print(df1.tail(1))
 print(datetime.utcnow())
@@ -234,7 +234,7 @@ git checkout -b new_release <commitid>
 
 Determine if crucial bugfixes have been made between this commit and the current state, and eventually cherry-pick these.
 
-* Edit `freqtrade/__init__.py` and add the version matching the current date (for example `2019.7` for July 2019). Minor versions can be `2019.7-1` should we need to do a second release that month.
+* Edit `freqtrade/__init__.py` and add the version matching the current date (for example `2019.7` for July 2019). Minor versions can be `2019.7.1` should we need to do a second release that month. Version numbers must follow allowed versions from PEP0440 to avoid failures pushing to pypi.
 * Commit this part
 * push that branch to the remote and create a PR against the master branch
 
@@ -266,4 +266,24 @@ Once the PR against master is merged (best right after merging):
 * Use the button "Draft a new release" in the Github UI (subsection releases).
 * Use the version-number specified as tag.
 * Use "master" as reference (this step comes after the above PR is merged).
-* Use the above changelog as release comment (as codeblock).
+* Use the above changelog as release comment (as codeblock)
+
+## Releases
+
+### pypi
+
+To create a pypi release, please run the following commands:
+
+Additional requirement: `wheel`, `twine` (for uploading), account on pypi with proper permissions.
+
+``` bash
+python setup.py sdist bdist_wheel
+
+# For pypi test (to check if some change to the installation did work)
+twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+
+# For production:
+twine upload dist/*
+```
+
+Please don't push non-releases to the productive / real pypi instance.

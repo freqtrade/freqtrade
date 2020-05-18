@@ -2,11 +2,17 @@ import logging
 import threading
 from datetime import date, datetime
 from ipaddress import IPv4Address
-from typing import Dict, Callable, Any
+from typing import Any, Callable, Dict
 
 from arrow import Arrow
 from flask import Flask, jsonify, request
 from flask.json import JSONEncoder
+from flask_cors import CORS
+from flask_jwt_extended import (JWTManager, create_access_token,
+                                create_refresh_token, get_jwt_identity,
+                                jwt_refresh_token_required,
+                                verify_jwt_in_request_optional)
+from werkzeug.security import safe_str_cmp
 from werkzeug.serving import make_server
 
 from freqtrade.__init__ import __version__
@@ -38,9 +44,9 @@ class ArrowJSONEncoder(JSONEncoder):
 def require_login(func: Callable[[Any, Any], Any]):
 
     def func_wrapper(obj, *args, **kwargs):
-
+        verify_jwt_in_request_optional()
         auth = request.authorization
-        if auth and obj.check_auth(auth.username, auth.password):
+        if get_jwt_identity() or auth and obj.check_auth(auth.username, auth.password):
             return func(obj, *args, **kwargs)
         else:
             return jsonify({"error": "Unauthorized"}), 401
@@ -70,8 +76,8 @@ class ApiServer(RPC):
     """
 
     def check_auth(self, username, password):
-        return (username == self._config['api_server'].get('username') and
-                password == self._config['api_server'].get('password'))
+        return (safe_str_cmp(username, self._config['api_server'].get('username')) and
+                safe_str_cmp(password, self._config['api_server'].get('password')))
 
     def __init__(self, freqtrade) -> None:
         """
@@ -83,6 +89,13 @@ class ApiServer(RPC):
 
         self._config = freqtrade.config
         self.app = Flask(__name__)
+        self._cors = CORS(self.app, resources={r"/api/*": {"origins": "*"}})
+
+        # Setup the Flask-JWT-Extended extension
+        self.app.config['JWT_SECRET_KEY'] = self._config['api_server'].get(
+            'jwt_secret_key', 'super-secret')
+
+        self.jwt = JWTManager(self.app)
         self.app.json_encoder = ArrowJSONEncoder
 
         # Register application handling
@@ -148,6 +161,10 @@ class ApiServer(RPC):
         self.app.register_error_handler(404, self.page_not_found)
 
         # Actions to control the bot
+        self.app.add_url_rule(f'{BASE_URI}/token/login', 'login',
+                              view_func=self._token_login, methods=['POST'])
+        self.app.add_url_rule(f'{BASE_URI}/token/refresh', 'token_refresh',
+                              view_func=self._token_refresh, methods=['POST'])
         self.app.add_url_rule(f'{BASE_URI}/start', 'start',
                               view_func=self._start, methods=['POST'])
         self.app.add_url_rule(f'{BASE_URI}/stop', 'stop', view_func=self._stop, methods=['POST'])
@@ -173,7 +190,8 @@ class ApiServer(RPC):
                               view_func=self._show_config, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/ping', 'ping',
                               view_func=self._ping, methods=['GET'])
-
+        self.app.add_url_rule(f'{BASE_URI}/trades', 'trades',
+                              view_func=self._trades, methods=['GET'])
         # Combined actions and infos
         self.app.add_url_rule(f'{BASE_URI}/blacklist', 'blacklist', view_func=self._blacklist,
                               methods=['GET', 'POST'])
@@ -197,6 +215,37 @@ class ApiServer(RPC):
             'reason': f"There's no API call for {request.base_url}.",
             'code': 404
         }), 404
+
+    @require_login
+    @rpc_catch_errors
+    def _token_login(self):
+        """
+        Handler for /token/login
+        Returns a JWT token
+        """
+        auth = request.authorization
+        if auth and self.check_auth(auth.username, auth.password):
+            keystuff = {'u': auth.username}
+            ret = {
+                'access_token': create_access_token(identity=keystuff),
+                'refresh_token': create_refresh_token(identity=keystuff),
+            }
+            return self.rest_dump(ret)
+
+        return jsonify({"error": "Unauthorized"}), 401
+
+    @jwt_refresh_token_required
+    @rpc_catch_errors
+    def _token_refresh(self):
+        """
+        Handler for /token/refresh
+        Returns a JWT token based on a JWT refresh token
+        """
+        current_user = get_jwt_identity()
+        new_token = create_access_token(identity=current_user, fresh=False)
+
+        ret = {'access_token': new_token}
+        return self.rest_dump(ret)
 
     @require_login
     @rpc_catch_errors
@@ -356,6 +405,18 @@ class ApiServer(RPC):
         """
         results = self._rpc_balance(self._config['stake_currency'],
                                     self._config.get('fiat_display_currency', ''))
+        return self.rest_dump(results)
+
+    @require_login
+    @rpc_catch_errors
+    def _trades(self):
+        """
+        Handler for /trades.
+
+        Returns the X last trades in json format
+        """
+        limit = int(request.args.get('limit', 0))
+        results = self._rpc_trade_history(limit)
         return self.rest_dump(results)
 
     @require_login

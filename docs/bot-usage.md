@@ -45,19 +45,23 @@ optional arguments:
   -h, --help            show this help message and exit
   --db-url PATH         Override trades database URL, this is useful in custom
                         deployments (default: `sqlite:///tradesv3.sqlite` for
-                        Live Run mode, `sqlite://` for Dry Run).
+                        Live Run mode, `sqlite:///tradesv3.dryrun.sqlite` for
+                        Dry Run).
   --sd-notify           Notify systemd service manager.
   --dry-run             Enforce dry-run for trading (removes Exchange secrets
                         and simulates trades).
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified.
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
   -V, --version         show program's version number and exit
   -c PATH, --config PATH
-                        Specify configuration file (default: `config.json`).
-                        Multiple --config options may be used. Can be set to
-                        `-` to read config from stdin.
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
   -d PATH, --datadir PATH
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
@@ -68,6 +72,8 @@ Strategy arguments:
                         Specify strategy class name which will be used by the
                         bot.
   --strategy-path PATH  Specify additional strategy lookup path.
+.
+
 ```
 
 ### How to specify which configuration file be used?
@@ -138,10 +144,10 @@ It is recommended to use version control to keep track of changes to your strate
 ### How to use **--strategy**?
 
 This parameter will allow you to load your custom strategy class.
-Per default without `--strategy` or `-s` the bot will load the
-`DefaultStrategy` included with the bot (`freqtrade/strategy/default_strategy.py`).
+To test the bot installation, you can use the `SampleStrategy` installed by the `create-userdir` subcommand (usually `user_data/strategy/sample_strategy.py`).
 
-The bot will search your strategy file within `user_data/strategies` and `freqtrade/strategy`.
+The bot will search your strategy file within `user_data/strategies`.
+To use other directories, please read the next section about `--strategy-path`.
 
 To load a strategy, simply pass the class name (e.g.: `CustomStrategy`) in this parameter.
 
@@ -192,8 +198,8 @@ Backtesting also uses the config specified via `-c/--config`.
 usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                              [-d PATH] [--userdir PATH] [-s NAME]
                              [--strategy-path PATH] [-i TICKER_INTERVAL]
-                             [--timerange TIMERANGE] [--max_open_trades INT]
-                             [--stake_amount STAKE_AMOUNT] [--fee FLOAT]
+                             [--timerange TIMERANGE] [--max-open-trades INT]
+                             [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
                              [--eps] [--dmmp]
                              [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
                              [--export EXPORT] [--export-filename PATH]
@@ -205,10 +211,12 @@ optional arguments:
                         `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
-  --max_open_trades INT
-                        Specify max_open_trades to use.
-  --stake_amount STAKE_AMOUNT
-                        Specify stake_amount.
+  --max-open-trades INT
+                        Override the value of the `max_open_trades`
+                        configuration setting.
+  --stake-amount STAKE_AMOUNT
+                        Override the value of the `stake_amount` configuration
+                        setting.
   --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
                         entry and exit).
   --eps, --enable-position-stacking
@@ -236,12 +244,15 @@ optional arguments:
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified.
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
   -V, --version         show program's version number and exit
   -c PATH, --config PATH
-                        Specify configuration file (default: `config.json`).
-                        Multiple --config options may be used. Can be set to
-                        `-` to read config from stdin.
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
   -d PATH, --datadir PATH
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
@@ -264,17 +275,17 @@ Check the corresponding [Data Downloading](data-download.md) section for more de
 ## Hyperopt commands
 
 To optimize your strategy, you can use hyperopt parameter hyperoptimization
-to find optimal parameter values for your stategy.
+to find optimal parameter values for your strategy.
 
 ```
 usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                           [--userdir PATH] [-s NAME] [--strategy-path PATH]
                           [-i TICKER_INTERVAL] [--timerange TIMERANGE]
-                          [--max_open_trades INT]
-                          [--stake_amount STAKE_AMOUNT] [--fee FLOAT]
+                          [--max-open-trades INT]
+                          [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
                           [--hyperopt NAME] [--hyperopt-path PATH] [--eps]
                           [-e INT]
-                          [--spaces {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
+                          [--spaces {all,buy,sell,roi,stoploss,trailing,default} [{all,buy,sell,roi,stoploss,trailing,default} ...]]
                           [--dmmp] [--print-all] [--no-color] [--print-json]
                           [-j JOBS] [--random-state INT] [--min-trades INT]
                           [--continue] [--hyperopt-loss NAME]
@@ -286,10 +297,12 @@ optional arguments:
                         `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
-  --max_open_trades INT
-                        Specify max_open_trades to use.
-  --stake_amount STAKE_AMOUNT
-                        Specify stake_amount.
+  --max-open-trades INT
+                        Override the value of the `max_open_trades`
+                        configuration setting.
+  --stake-amount STAKE_AMOUNT
+                        Override the value of the `stake_amount` configuration
+                        setting.
   --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
                         entry and exit).
   --hyperopt NAME       Specify hyperopt class name which will be used by the
@@ -300,9 +313,9 @@ optional arguments:
                         Allow buying the same pair multiple times (position
                         stacking).
   -e INT, --epochs INT  Specify number of epochs (default: 100).
-  --spaces {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]
+  --spaces {all,buy,sell,roi,stoploss,trailing,default} [{all,buy,sell,roi,stoploss,trailing,default} ...]
                         Specify which parameters to hyperopt. Space-separated
-                        list. Default: `all`.
+                        list.
   --dmmp, --disable-max-market-positions
                         Disable applying `max_open_trades` during backtest
                         (same as setting `max_open_trades` to a very high
@@ -310,7 +323,7 @@ optional arguments:
   --print-all           Print all results, not only the best ones.
   --no-color            Disable colorization of hyperopt results. May be
                         useful if you are redirecting output to a file.
-  --print-json          Print best result detailization in JSON format.
+  --print-json          Print best results in JSON format.
   -j JOBS, --job-workers JOBS
                         The number of concurrently running jobs for
                         hyperoptimization (hyperopt worker processes). If -1
@@ -328,18 +341,23 @@ optional arguments:
                         class (IHyperOptLoss). Different functions can
                         generate completely different results, since the
                         target for optimization is different. Built-in
-                        Hyperopt-loss-functions are: DefaultHyperOptLoss,
-                        OnlyProfitHyperOptLoss, SharpeHyperOptLoss (default:
-                        `DefaultHyperOptLoss`).
+                        Hyperopt-loss-functions are:
+                        DefaultHyperOptLoss, OnlyProfitHyperOptLoss,
+                        SharpeHyperOptLoss, SharpeHyperOptLossDaily,
+                        SortinoHyperOptLoss, SortinoHyperOptLossDaily.
+                        (default: `DefaultHyperOptLoss`).
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified.
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
   -V, --version         show program's version number and exit
   -c PATH, --config PATH
-                        Specify configuration file (default: `config.json`).
-                        Multiple --config options may be used. Can be set to
-                        `-` to read config from stdin.
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
   -d PATH, --datadir PATH
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
@@ -350,6 +368,7 @@ Strategy arguments:
                         Specify strategy class name which will be used by the
                         bot.
   --strategy-path PATH  Specify additional strategy lookup path.
+
 ```
 
 ## Edge commands
@@ -360,7 +379,7 @@ To know your trade expectancy and winrate against historical data, you can use E
 usage: freqtrade edge [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                       [--userdir PATH] [-s NAME] [--strategy-path PATH]
                       [-i TICKER_INTERVAL] [--timerange TIMERANGE]
-                      [--max_open_trades INT] [--stake_amount STAKE_AMOUNT]
+                      [--max-open-trades INT] [--stake-amount STAKE_AMOUNT]
                       [--fee FLOAT] [--stoplosses STOPLOSS_RANGE]
 
 optional arguments:
@@ -370,10 +389,12 @@ optional arguments:
                         `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
-  --max_open_trades INT
-                        Specify max_open_trades to use.
-  --stake_amount STAKE_AMOUNT
-                        Specify stake_amount.
+  --max-open-trades INT
+                        Override the value of the `max_open_trades`
+                        configuration setting.
+  --stake-amount STAKE_AMOUNT
+                        Override the value of the `stake_amount` configuration
+                        setting.
   --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
                         entry and exit).
   --stoplosses STOPLOSS_RANGE
@@ -384,12 +405,15 @@ optional arguments:
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified.
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
   -V, --version         show program's version number and exit
   -c PATH, --config PATH
-                        Specify configuration file (default: `config.json`).
-                        Multiple --config options may be used. Can be set to
-                        `-` to read config from stdin.
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
   -d PATH, --datadir PATH
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
@@ -400,6 +424,7 @@ Strategy arguments:
                         Specify strategy class name which will be used by the
                         bot.
   --strategy-path PATH  Specify additional strategy lookup path.
+
 ```
 
 To understand edge and how to read the results, please read the [edge documentation](edge.md).

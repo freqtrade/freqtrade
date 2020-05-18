@@ -45,7 +45,7 @@ dependencies:
   - pip:
     # Required for app
     - cython
-    - coinmarketcap
+    - pycoingecko
     - ccxt
     - TA-Lib
     - py_find_1st

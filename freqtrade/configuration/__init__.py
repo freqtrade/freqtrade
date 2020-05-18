@@ -1,5 +1,7 @@
-from freqtrade.configuration.arguments import Arguments  # noqa: F401
-from freqtrade.configuration.check_exchange import check_exchange, remove_credentials  # noqa: F401
-from freqtrade.configuration.timerange import TimeRange  # noqa: F401
-from freqtrade.configuration.configuration import Configuration  # noqa: F401
-from freqtrade.configuration.config_validation import validate_config_consistency  # noqa: F401
+# flake8: noqa: F401
+
+from freqtrade.configuration.config_setup import setup_utils_configuration
+from freqtrade.configuration.check_exchange import check_exchange, remove_credentials
+from freqtrade.configuration.timerange import TimeRange
+from freqtrade.configuration.configuration import Configuration
+from freqtrade.configuration.config_validation import validate_config_consistency

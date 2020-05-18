@@ -3,22 +3,24 @@ from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pandas as pd
 import plotly.graph_objects as go
 import pytest
 from plotly.subplots import make_subplots
 
-from freqtrade import OperationalException
+from freqtrade.commands import start_plot_dataframe, start_plot_profit
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import create_cum_profit, load_backtest_data
-from freqtrade.plot.plot_utils import start_plot_dataframe, start_plot_profit
+from freqtrade.exceptions import OperationalException
 from freqtrade.plot.plotting import (add_indicators, add_profit,
-                                     load_and_plot_trades,
+                                     create_plotconfig,
                                      generate_candlestick_graph,
                                      generate_plot_filename,
                                      generate_profit_graph, init_plotscript,
-                                     plot_profit, plot_trades, store_plot_file)
-from freqtrade.strategy.default_strategy import DefaultStrategy
+                                     load_and_plot_trades, plot_profit,
+                                     plot_trades, store_plot_file)
+from freqtrade.resolvers import StrategyResolver
 from tests.conftest import get_args, log_has, log_has_re
 
 
@@ -47,17 +49,17 @@ def test_init_plotscript(default_conf, mocker, testdatadir):
     default_conf['trade_source'] = "file"
     default_conf['ticker_interval'] = "5m"
     default_conf["datadir"] = testdatadir
-    default_conf['exportfilename'] = str(testdatadir / "backtest-result_test.json")
+    default_conf['exportfilename'] = testdatadir / "backtest-result_test.json"
     ret = init_plotscript(default_conf)
-    assert "tickers" in ret
+    assert "ohlcv" in ret
     assert "trades" in ret
     assert "pairs" in ret
 
     default_conf['pairs'] = ["TRX/BTC", "ADA/BTC"]
     ret = init_plotscript(default_conf)
-    assert "tickers" in ret
-    assert "TRX/BTC" in ret["tickers"]
-    assert "ADA/BTC" in ret["tickers"]
+    assert "ohlcv" in ret
+    assert "TRX/BTC" in ret["ohlcv"]
+    assert "ADA/BTC" in ret["ohlcv"]
 
 
 def test_add_indicators(default_conf, testdatadir, caplog):
@@ -66,12 +68,14 @@ def test_add_indicators(default_conf, testdatadir, caplog):
 
     data = history.load_pair_history(pair=pair, timeframe='1m',
                                      datadir=testdatadir, timerange=timerange)
-    indicators1 = ["ema10"]
-    indicators2 = ["macd"]
+    indicators1 = {"ema10": {}}
+    indicators2 = {"macd": {"color": "red"}}
+
+    default_conf.update({'strategy': 'DefaultStrategy'})
+    strategy = StrategyResolver.load_strategy(default_conf)
 
     # Generate buy/sell signals and indicators
-    strat = DefaultStrategy(default_conf)
-    data = strat.analyze_ticker(data, {'pair': pair})
+    data = strategy.analyze_ticker(data, {'pair': pair})
     fig = generate_empty_figure()
 
     # Row 1
@@ -86,9 +90,10 @@ def test_add_indicators(default_conf, testdatadir, caplog):
     macd = find_trace_in_fig_data(figure.data, "macd")
     assert isinstance(macd, go.Scatter)
     assert macd.yaxis == "y3"
+    assert macd.line.color == "red"
 
     # No indicator found
-    fig3 = add_indicators(fig=deepcopy(fig), row=3, indicators=['no_indicator'], data=data)
+    fig3 = add_indicators(fig=deepcopy(fig), row=3, indicators={'no_indicator': {}}, data=data)
     assert fig == fig3
     assert log_has_re(r'Indicator "no_indicator" ignored\..*', caplog)
 
@@ -108,17 +113,29 @@ def test_plot_trades(testdatadir, caplog):
     figure = fig1.layout.figure
 
     # Check buys - color, should be in first graph, ...
-    trade_buy = find_trace_in_fig_data(figure.data, "trade_buy")
+    trade_buy = find_trace_in_fig_data(figure.data, 'Trade buy')
     assert isinstance(trade_buy, go.Scatter)
     assert trade_buy.yaxis == 'y'
     assert len(trades) == len(trade_buy.x)
-    assert trade_buy.marker.color == 'green'
+    assert trade_buy.marker.color == 'cyan'
+    assert trade_buy.marker.symbol == 'circle-open'
+    assert trade_buy.text[0] == '4.0%, roi, 15 min'
 
-    trade_sell = find_trace_in_fig_data(figure.data, "trade_sell")
+    trade_sell = find_trace_in_fig_data(figure.data, 'Sell - Profit')
     assert isinstance(trade_sell, go.Scatter)
     assert trade_sell.yaxis == 'y'
-    assert len(trades) == len(trade_sell.x)
-    assert trade_sell.marker.color == 'red'
+    assert len(trades.loc[trades['profitperc'] > 0]) == len(trade_sell.x)
+    assert trade_sell.marker.color == 'green'
+    assert trade_sell.marker.symbol == 'square-open'
+    assert trade_sell.text[0] == '4.0%, roi, 15 min'
+
+    trade_sell_loss = find_trace_in_fig_data(figure.data, 'Sell - Loss')
+    assert isinstance(trade_sell_loss, go.Scatter)
+    assert trade_sell_loss.yaxis == 'y'
+    assert len(trades.loc[trades['profitperc'] <= 0]) == len(trade_sell_loss.x)
+    assert trade_sell_loss.marker.color == 'red'
+    assert trade_sell_loss.marker.symbol == 'square-open'
+    assert trade_sell_loss.text[5] == '-10.4%, stop_loss, 720 min'
 
 
 def test_generate_candlestick_graph_no_signals_no_trades(default_conf, mocker, testdatadir, caplog):
@@ -167,9 +184,11 @@ def test_generate_candlestick_graph_no_trades(default_conf, mocker, testdatadir)
     data = history.load_pair_history(pair=pair, timeframe='1m',
                                      datadir=testdatadir, timerange=timerange)
 
+    default_conf.update({'strategy': 'DefaultStrategy'})
+    strategy = StrategyResolver.load_strategy(default_conf)
+
     # Generate buy/sell signals and indicators
-    strat = DefaultStrategy(default_conf)
-    data = strat.analyze_ticker(data, {'pair': pair})
+    data = strategy.analyze_ticker(data, {'pair': pair})
 
     indicators1 = []
     indicators2 = []
@@ -247,16 +266,17 @@ def test_generate_profit_graph(testdatadir):
     filename = testdatadir / "backtest-result_test.json"
     trades = load_backtest_data(filename)
     timerange = TimeRange.parse_timerange("20180110-20180112")
-    pairs = ["TRX/BTC", "ADA/BTC"]
+    pairs = ["TRX/BTC", "XLM/BTC"]
+    trades = trades[trades['close_time'] < pd.Timestamp('2018-01-12', tz='UTC')]
 
-    tickers = history.load_data(datadir=testdatadir,
-                                pairs=pairs,
-                                timeframe='5m',
-                                timerange=timerange
-                                )
+    data = history.load_data(datadir=testdatadir,
+                             pairs=pairs,
+                             timeframe='5m',
+                             timerange=timerange)
+
     trades = trades[trades['pair'].isin(pairs)]
 
-    fig = generate_profit_graph(pairs, tickers, trades, timeframe="5m")
+    fig = generate_profit_graph(pairs, data, trades, timeframe="5m")
     assert isinstance(fig, go.Figure)
 
     assert fig.layout.title.text == "Freqtrade Profit plot"
@@ -265,12 +285,14 @@ def test_generate_profit_graph(testdatadir):
     assert fig.layout.yaxis3.title.text == "Profit"
 
     figure = fig.layout.figure
-    assert len(figure.data) == 4
+    assert len(figure.data) == 5
 
     avgclose = find_trace_in_fig_data(figure.data, "Avg close price")
     assert isinstance(avgclose, go.Scatter)
 
     profit = find_trace_in_fig_data(figure.data, "Profit")
+    assert isinstance(profit, go.Scatter)
+    profit = find_trace_in_fig_data(figure.data, "Max drawdown 10.45%")
     assert isinstance(profit, go.Scatter)
 
     for pair in pairs:
@@ -296,7 +318,7 @@ def test_start_plot_dataframe(mocker):
 def test_load_and_plot_trades(default_conf, mocker, caplog, testdatadir):
     default_conf['trade_source'] = 'file'
     default_conf["datadir"] = testdatadir
-    default_conf['exportfilename'] = str(testdatadir / "backtest-result_test.json")
+    default_conf['exportfilename'] = testdatadir / "backtest-result_test.json"
     default_conf['indicators1'] = ["sma5", "ema10"]
     default_conf['indicators2'] = ["macd"]
     default_conf['pairs'] = ["ETH/BTC", "LTC/BTC"]
@@ -307,7 +329,7 @@ def test_load_and_plot_trades(default_conf, mocker, caplog, testdatadir):
         "freqtrade.plot.plotting",
         generate_candlestick_graph=candle_mock,
         store_plot_file=store_mock
-        )
+    )
     load_and_plot_trades(default_conf)
 
     # Both mocks should be called once per pair
@@ -352,7 +374,7 @@ def test_start_plot_profit_error(mocker):
 def test_plot_profit(default_conf, mocker, testdatadir, caplog):
     default_conf['trade_source'] = 'file'
     default_conf["datadir"] = testdatadir
-    default_conf['exportfilename'] = str(testdatadir / "backtest-result_test.json")
+    default_conf['exportfilename'] = testdatadir / "backtest-result_test.json"
     default_conf['pairs'] = ["ETH/BTC", "LTC/BTC"]
 
     profit_mock = MagicMock()
@@ -370,3 +392,47 @@ def test_plot_profit(default_conf, mocker, testdatadir, caplog):
 
     assert profit_mock.call_args_list[0][0][0] == default_conf['pairs']
     assert store_mock.call_args_list[0][1]['auto_open'] is True
+
+
+@pytest.mark.parametrize("ind1,ind2,plot_conf,exp", [
+    # No indicators, use plot_conf
+    ([], [], {},
+     {'main_plot': {'sma': {}, 'ema3': {}, 'ema5': {}},
+      'subplots': {'Other': {'macd': {}, 'macdsignal': {}}}}),
+    # use indicators
+    (['sma', 'ema3'], ['macd'], {},
+     {'main_plot': {'sma': {}, 'ema3': {}}, 'subplots': {'Other': {'macd': {}}}}),
+    # only main_plot - adds empty subplots
+    ([], [], {'main_plot': {'sma': {}}},
+     {'main_plot': {'sma': {}}, 'subplots': {}}),
+    # Main and subplots
+    ([], [], {'main_plot': {'sma': {}}, 'subplots': {'RSI': {'rsi': {'color': 'red'}}}},
+     {'main_plot': {'sma': {}}, 'subplots': {'RSI': {'rsi': {'color': 'red'}}}}),
+    # no main_plot, adds empty main_plot
+    ([], [], {'subplots': {'RSI': {'rsi': {'color': 'red'}}}},
+     {'main_plot': {}, 'subplots': {'RSI': {'rsi': {'color': 'red'}}}}),
+    # indicator 1 / 2 should have prevelance
+    (['sma', 'ema3'], ['macd'],
+     {'main_plot': {'sma': {}}, 'subplots': {'RSI': {'rsi': {'color': 'red'}}}},
+     {'main_plot': {'sma': {}, 'ema3': {}}, 'subplots': {'Other': {'macd': {}}}}
+     ),
+    # indicator 1 - overrides plot_config main_plot
+    (['sma', 'ema3'], [],
+     {'main_plot': {'sma': {}}, 'subplots': {'RSI': {'rsi': {'color': 'red'}}}},
+     {'main_plot': {'sma': {}, 'ema3': {}}, 'subplots': {'RSI': {'rsi': {'color': 'red'}}}}
+     ),
+    # indicator 2 - overrides plot_config subplots
+    ([], ['macd', 'macd_signal'],
+     {'main_plot': {'sma': {}}, 'subplots': {'RSI': {'rsi': {'color': 'red'}}}},
+     {'main_plot': {'sma': {}}, 'subplots': {'Other': {'macd': {}, 'macd_signal': {}}}}
+     ),
+])
+def test_create_plotconfig(ind1, ind2, plot_conf, exp):
+
+    res = create_plotconfig(ind1, ind2, plot_conf)
+    assert 'main_plot' in res
+    assert 'subplots' in res
+    assert isinstance(res['main_plot'], dict)
+    assert isinstance(res['subplots'], dict)
+
+    assert res == exp
