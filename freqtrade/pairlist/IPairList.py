@@ -86,14 +86,14 @@ class IPairList(ABC):
         :return: new whitelist
         """
 
-    def verify_blacklist(self, pairlist: List[str]) -> List[str]:
+    def verify_blacklist(self, pairlist: List[str], logmethod) -> List[str]:
         """
         Proxy method to verify_blacklist for easy access for child classes.
-        Uses `aswarning=False`, as it should be for Pairlist Handlers.
         :param pairlist: Pairlist to validate
+        :param logmethod: Function that'll be called, `logger.info` or `logger.warning`.
         :return: pairlist - blacklisted pairs
         """
-        return self._pairlistmanager.verify_blacklist(pairlist, aswarning=False)
+        return self._pairlistmanager.verify_blacklist(pairlist, logmethod)
 
     def _whitelist_for_active_markets(self, pairlist: List[str]) -> List[str]:
         """
