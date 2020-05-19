@@ -115,7 +115,7 @@ class VolumePairList(IPairList):
 
         # Validate whitelist to only have active market pairs
         pairs = self._whitelist_for_active_markets([s['symbol'] for s in sorted_tickers])
-        pairs = self._verify_blacklist(pairs, aswarning=False)
+        pairs = self.verify_blacklist(pairs)
         # Limit pairlist to the requested number of pairs
         pairs = pairs[:self._number_pairs]
 

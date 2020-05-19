@@ -93,7 +93,7 @@ class PairListManager():
 
         # Validation against blacklist happens after the chain of Pairlist Handlers
         # to ensure blacklist is respected.
-        pairlist = IPairList.verify_blacklist(pairlist, self.blacklist, True)
+        pairlist = self.verify_blacklist(pairlist, True)
 
         self._whitelist = pairlist
 
@@ -108,6 +108,24 @@ class PairListManager():
                 if p not in tickers:
                     pairlist.remove(p)
 
+        return pairlist
+
+    def verify_blacklist(self, pairlist: List[str], aswarning: bool) -> List[str]:
+        """
+        Verify and remove items from pairlist - returning a filtered pairlist.
+        Logs a warning or info depending on `aswarning`.
+        Pairlist Handlers explicitly using this method shall use `aswarning=False`!
+        :param pairlist: Pairlist to validate
+        :param aswarning: Log message as Warning or Info
+        :return: pairlist - blacklisted pairs
+        """
+        for pair in deepcopy(pairlist):
+            if pair in self._blacklist:
+                if aswarning:
+                    logger.warning(f"Pair {pair} in your blacklist. Removing it from whitelist...")
+                else:
+                    logger.info(f"Pair {pair} in your blacklist. Removing it from whitelist...")
+                pairlist.remove(pair)
         return pairlist
 
     def create_pair_list(self, pairs: List[str], timeframe: str = None) -> ListPairsWithTimeframes:
