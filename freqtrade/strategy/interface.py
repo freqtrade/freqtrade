@@ -310,7 +310,6 @@ class IStrategy(ABC):
             logger.warning('Empty candle (OHLCV) data for pair %s', pair)
             return False, False
 
-        latest_date = dataframe['date'].max()
         try:
             df_len, df_close, df_date = self.preserve_df(dataframe)
             dataframe = strategy_safe_wrapper(
@@ -326,17 +325,17 @@ class IStrategy(ABC):
             logger.warning('Empty dataframe for pair %s', pair)
             return False, False
 
+        latest_date = dataframe['date'].max()
         latest = dataframe.loc[dataframe['date'] == latest_date].iloc[-1]
 
         # Check if dataframe is out of date
-        signal_date = arrow.get(latest['date'])
         interval_minutes = timeframe_to_minutes(interval)
         offset = self.config.get('exchange', {}).get('outdated_offset', 5)
-        if signal_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + offset))):
+        if latest_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + offset))):
             logger.warning(
                 'Outdated history for pair %s. Last tick is %s minutes old',
                 pair,
-                (arrow.utcnow() - signal_date).seconds // 60
+                (arrow.utcnow() - latest_date).seconds // 60
             )
             return False, False
 
