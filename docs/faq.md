@@ -100,7 +100,7 @@ $ tail -f /path/to/mylogfile.log | grep 'something'
 ```
 from a separate terminal window.
 
-On Windows, the `--logfilename` option is also supported by Freqtrade and you can use the `findstr` command to search the log for the string of interest:
+On Windows, the `--logfile` option is also supported by Freqtrade and you can use the `findstr` command to search the log for the string of interest:
 ```
 > type \path\to\mylogfile.log | findstr "something"
 ```

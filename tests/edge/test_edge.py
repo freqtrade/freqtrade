@@ -11,7 +11,7 @@ import pytest
 from pandas import DataFrame, to_datetime
 
 from freqtrade.exceptions import OperationalException
-from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.strategy.interface import SellType
 from tests.conftest import get_patched_freqtradebot, log_has
@@ -26,7 +26,7 @@ from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
 # 5) Stoploss and sell are hit. should sell on stoploss
 ####################################################################
 
-ticker_start_time = arrow.get(2018, 10, 3)
+tests_start_time = arrow.get(2018, 10, 3)
 ticker_interval_in_minute = 60
 _ohlc = {'date': 0, 'buy': 1, 'open': 2, 'high': 3, 'low': 4, 'close': 5, 'sell': 6, 'volume': 7}
 
@@ -43,10 +43,10 @@ def _validate_ohlc(buy_ohlc_sell_matrice):
 
 def _build_dataframe(buy_ohlc_sell_matrice):
     _validate_ohlc(buy_ohlc_sell_matrice)
-    tickers = []
+    data = []
     for ohlc in buy_ohlc_sell_matrice:
-        ticker = {
-            'date': ticker_start_time.shift(
+        d = {
+            'date': tests_start_time.shift(
                 minutes=(
                     ohlc[0] *
                     ticker_interval_in_minute)).timestamp *
@@ -57,9 +57,9 @@ def _build_dataframe(buy_ohlc_sell_matrice):
             'low': ohlc[4],
             'close': ohlc[5],
             'sell': ohlc[6]}
-        tickers.append(ticker)
+        data.append(d)
 
-    frame = DataFrame(tickers)
+    frame = DataFrame(data)
     frame['date'] = to_datetime(frame['date'],
                                 unit='ms',
                                 utc=True,
@@ -69,7 +69,7 @@ def _build_dataframe(buy_ohlc_sell_matrice):
 
 
 def _time_on_candle(number):
-    return np.datetime64(ticker_start_time.shift(
+    return np.datetime64(tests_start_time.shift(
         minutes=(number * ticker_interval_in_minute)).timestamp * 1000, 'ms')
 
 
@@ -163,8 +163,8 @@ def test_edge_results(edge_conf, mocker, caplog, data) -> None:
     for c, trade in enumerate(data.trades):
         res = results.iloc[c]
         assert res.exit_type == trade.sell_reason
-        assert res.open_time == np.datetime64(_get_frame_time_from_offset(trade.open_tick))
-        assert res.close_time == np.datetime64(_get_frame_time_from_offset(trade.close_tick))
+        assert res.open_time == _get_frame_time_from_offset(trade.open_tick).replace(tzinfo=None)
+        assert res.close_time == _get_frame_time_from_offset(trade.close_tick).replace(tzinfo=None)
 
 
 def test_adjust(mocker, edge_conf):
@@ -262,7 +262,7 @@ def mocked_load_data(datadir, pairs=[], timeframe='0m',
 
     NEOBTC = [
         [
-            ticker_start_time.shift(minutes=(x * ticker_interval_in_minute)).timestamp * 1000,
+            tests_start_time.shift(minutes=(x * ticker_interval_in_minute)).timestamp * 1000,
             math.sin(x * hz) / 1000 + base,
             math.sin(x * hz) / 1000 + base + 0.0001,
             math.sin(x * hz) / 1000 + base - 0.0001,
@@ -274,7 +274,7 @@ def mocked_load_data(datadir, pairs=[], timeframe='0m',
     base = 0.002
     LTCBTC = [
         [
-            ticker_start_time.shift(minutes=(x * ticker_interval_in_minute)).timestamp * 1000,
+            tests_start_time.shift(minutes=(x * ticker_interval_in_minute)).timestamp * 1000,
             math.sin(x * hz) / 1000 + base,
             math.sin(x * hz) / 1000 + base + 0.0001,
             math.sin(x * hz) / 1000 + base - 0.0001,
@@ -282,16 +282,18 @@ def mocked_load_data(datadir, pairs=[], timeframe='0m',
             123.45
         ] for x in range(0, 500)]
 
-    pairdata = {'NEO/BTC': parse_ticker_dataframe(NEOBTC, '1h', pair="NEO/BTC", fill_missing=True),
-                'LTC/BTC': parse_ticker_dataframe(LTCBTC, '1h', pair="LTC/BTC", fill_missing=True)}
+    pairdata = {'NEO/BTC': ohlcv_to_dataframe(NEOBTC, '1h', pair="NEO/BTC",
+                                              fill_missing=True),
+                'LTC/BTC': ohlcv_to_dataframe(LTCBTC, '1h', pair="LTC/BTC",
+                                              fill_missing=True)}
     return pairdata
 
 
 def test_edge_process_downloaded_data(mocker, edge_conf):
     freqtrade = get_patched_freqtradebot(mocker, edge_conf)
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.001))
-    mocker.patch('freqtrade.data.history.refresh_data', MagicMock())
-    mocker.patch('freqtrade.data.history.load_data', mocked_load_data)
+    mocker.patch('freqtrade.edge.edge_positioning.refresh_data', MagicMock())
+    mocker.patch('freqtrade.edge.edge_positioning.load_data', mocked_load_data)
     edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
 
     assert edge.calculate()
@@ -302,8 +304,8 @@ def test_edge_process_downloaded_data(mocker, edge_conf):
 def test_edge_process_no_data(mocker, edge_conf, caplog):
     freqtrade = get_patched_freqtradebot(mocker, edge_conf)
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.001))
-    mocker.patch('freqtrade.data.history.refresh_data', MagicMock())
-    mocker.patch('freqtrade.data.history.load_data', MagicMock(return_value={}))
+    mocker.patch('freqtrade.edge.edge_positioning.refresh_data', MagicMock())
+    mocker.patch('freqtrade.edge.edge_positioning.load_data', MagicMock(return_value={}))
     edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
 
     assert not edge.calculate()
@@ -315,8 +317,8 @@ def test_edge_process_no_data(mocker, edge_conf, caplog):
 def test_edge_process_no_trades(mocker, edge_conf, caplog):
     freqtrade = get_patched_freqtradebot(mocker, edge_conf)
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.001))
-    mocker.patch('freqtrade.data.history.refresh_data', MagicMock())
-    mocker.patch('freqtrade.data.history.load_data', mocked_load_data)
+    mocker.patch('freqtrade.edge.edge_positioning.refresh_data', MagicMock())
+    mocker.patch('freqtrade.edge.edge_positioning.load_data', mocked_load_data)
     # Return empty
     mocker.patch('freqtrade.edge.Edge._find_trades_for_stoploss_range', MagicMock(return_value=[]))
     edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
@@ -333,12 +335,16 @@ def test_edge_init_error(mocker, edge_conf,):
         get_patched_freqtradebot(mocker, edge_conf)
 
 
-def test_process_expectancy(mocker, edge_conf):
+@pytest.mark.parametrize("fee,risk_reward_ratio,expectancy", [
+    (0.0005, 306.5384615384, 101.5128205128),
+    (0.001, 152.6923076923, 50.2307692308),
+])
+def test_process_expectancy(mocker, edge_conf, fee, risk_reward_ratio, expectancy):
     edge_conf['edge']['min_trade_number'] = 2
     freqtrade = get_patched_freqtradebot(mocker, edge_conf)
 
     def get_fee(*args, **kwargs):
-        return 0.001
+        return fee
 
     freqtrade.exchange.get_fee = get_fee
     edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
@@ -392,9 +398,9 @@ def test_process_expectancy(mocker, edge_conf):
     assert 'TEST/BTC' in final
     assert final['TEST/BTC'].stoploss == -0.9
     assert round(final['TEST/BTC'].winrate, 10) == 0.3333333333
-    assert round(final['TEST/BTC'].risk_reward_ratio, 10) == 306.5384615384
+    assert round(final['TEST/BTC'].risk_reward_ratio, 10) == risk_reward_ratio
     assert round(final['TEST/BTC'].required_risk_reward, 10) == 2.0
-    assert round(final['TEST/BTC'].expectancy, 10) == 101.5128205128
+    assert round(final['TEST/BTC'].expectancy, 10) == expectancy
 
     # Pop last item so no trade is profitable
     trades.pop()

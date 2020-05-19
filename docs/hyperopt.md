@@ -6,15 +6,31 @@ algorithms included in the `scikit-optimize` package to accomplish this. The
 search will burn all your CPU cores, make your laptop sound like a fighter jet
 and still take a long time.
 
-In general, the search for best parameters starts with a few random combinations and then uses Bayesian search with a
-ML regressor algorithm (currently ExtraTreesRegressor) to quickly find a combination of parameters in the search hyperspace
-that minimizes the value of the [loss function](#loss-functions).
+In general, the search for best parameters starts with a few random combinations (see [below](#reproducible-results) for more details) and then uses Bayesian search with a ML regressor algorithm (currently ExtraTreesRegressor) to quickly find a combination of parameters in the search hyperspace that minimizes the value of the [loss function](#loss-functions).
 
 Hyperopt requires historic data to be available, just as backtesting does.
 To learn how to get data for the pairs and exchange you're interested in, head over to the [Data Downloading](data-download.md) section of the documentation.
 
 !!! Bug
     Hyperopt can crash when used with only 1 CPU Core as found out in [Issue #1133](https://github.com/freqtrade/freqtrade/issues/1133)
+
+## Install hyperopt dependencies
+
+Since Hyperopt dependencies are not needed to run the bot itself, are heavy, can not be easily built on some platforms (like Raspberry PI), they are not installed by default. Before you run Hyperopt, you need to install the corresponding dependencies, as described in this section below.
+
+!!! Note
+    Since Hyperopt is a resource intensive process, running it on a Raspberry Pi is not recommended nor supported.
+
+### Docker
+
+The docker-image includes hyperopt dependencies, no further action needed.
+
+### Easy installation script (setup.sh) / Manual installation
+
+```bash
+source .env/bin/activate
+pip install -r requirements-hyperopt.txt
+```
 
 ## Prepare Hyperopting
 
@@ -46,6 +62,9 @@ Optional - can also be loaded from a strategy:
 
 !!! Note
     Assuming the optional methods are not in your hyperopt file, please use `--strategy AweSomeStrategy` which contains these methods so hyperopt can use these methods instead.
+
+!!! Note
+    You always have to provide a strategy to Hyperopt, even if your custom Hyperopt class contains all methods.
 
 Rarely you may also need to override:
 
@@ -103,9 +122,10 @@ Place the corresponding settings into the following methods
 The configuration and rules are the same than for buy signals.
 To avoid naming collisions in the search-space, please prefix all sell-spaces with `sell-`.
 
-#### Using ticker-interval as part of the Strategy
+#### Using timeframe as a part of the Strategy
 
-The Strategy exposes the ticker-interval as `self.ticker_interval`. The same value is available as class-attribute `HyperoptName.ticker_interval`.
+The Strategy class exposes the timeframe (ticker interval) value as the `self.ticker_interval` attribute.
+The same value is available as class-attribute `HyperoptName.ticker_interval`.
 In the case of the linked sample-value this would be `SampleHyperOpt.ticker_interval`.
 
 ## Solving a Mystery
@@ -158,6 +178,9 @@ So let's write the buy strategy using these values:
                     conditions.append(qtpylib.crossed_above(
                         dataframe['macd'], dataframe['macdsignal']
                     ))
+
+            # Check that volume is not 0
+            conditions.append(dataframe['volume'] > 0)
 
             if conditions:
                 dataframe.loc[
@@ -222,11 +245,11 @@ The `--spaces all` option determines that all possible parameters should be opti
 !!! Warning
     When switching parameters or changing configuration options, make sure to not use the argument `--continue` so temporary results can be removed.
 
-### Execute Hyperopt with Different Ticker-Data Source
+### Execute Hyperopt with different historical data source
 
-If you would like to hyperopt parameters using an alternate ticker data that
-you have on-disk, use the `--datadir PATH` option. Default hyperopt will
-use data from directory `user_data/data`.
+If you would like to hyperopt parameters using an alternate historical data set that
+you have on-disk, use the `--datadir PATH` option. By default, hyperopt
+uses data from directory `user_data/data`.
 
 ### Running Hyperopt with Smaller Testset
 
@@ -289,7 +312,7 @@ You can also enable position stacking in the configuration file by explicitly se
 
 ### Reproducible results
 
-The search for optimal parameters starts with a few (currently 30) random combinations in the hyperspace of parameters, random Hyperopt epochs. These random epochs are marked with a leading asterisk sign at the Hyperopt output.
+The search for optimal parameters starts with a few (currently 30) random combinations in the hyperspace of parameters, random Hyperopt epochs. These random epochs are marked with an asterisk character (`*`) in the first column in the Hyperopt output.
 
 The initial state for generation of these random values (random state) is controlled by the value of the `--random-state` command line option. You can set it to some arbitrary value of your choice to obtain reproducible results.
 
@@ -380,7 +403,7 @@ As stated in the comment, you can also use it as the value of the `minimal_roi` 
 
 #### Default ROI Search Space
 
-If you are optimizing ROI, Freqtrade creates the 'roi' optimization hyperspace for you -- it's the hyperspace of components for the ROI tables. By default, each ROI table generated by the Freqtrade consists of 4 rows (steps). Hyperopt implements adaptive ranges for ROI tables with ranges for values in the ROI steps that depend on the ticker_interval used. By default the values vary in the following ranges (for some of the most used ticker intervals, values are rounded to 5 digits after the decimal point):
+If you are optimizing ROI, Freqtrade creates the 'roi' optimization hyperspace for you -- it's the hyperspace of components for the ROI tables. By default, each ROI table generated by the Freqtrade consists of 4 rows (steps). Hyperopt implements adaptive ranges for ROI tables with ranges for values in the ROI steps that depend on the ticker_interval used. By default the values vary in the following ranges (for some of the most used timeframes, values are rounded to 5 digits after the decimal point):
 
 | # step | 1m     |                   | 5m       |             | 1h         |                   | 1d           |                   |
 | ------ | ------ | ----------------- | -------- | ----------- | ---------- | ----------------- | ------------ | ----------------- |
@@ -389,7 +412,7 @@ If you are optimizing ROI, Freqtrade creates the 'roi' optimization hyperspace f
 | 3      | 4...20 | 0.00387...0.01547 | 20...100 | 0.01...0.04 | 240...1200 | 0.02294...0.09177 | 5760...28800 | 0.04059...0.16237 |
 | 4      | 6...44 | 0.0               | 30...220 | 0.0         | 360...2640 | 0.0               | 8640...63360 | 0.0               |
 
-These ranges should be sufficient in most cases. The minutes in the steps (ROI dict keys) are scaled linearly depending on the ticker interval used. The ROI values in the steps (ROI dict values) are scaled logarithmically depending on the ticker interval used.
+These ranges should be sufficient in most cases. The minutes in the steps (ROI dict keys) are scaled linearly depending on the timeframe (ticker interval) used. The ROI values in the steps (ROI dict values) are scaled logarithmically depending on the timeframe used.
 
 If you have the `generate_roi_table()` and `roi_space()` methods in your custom hyperopt file, remove them in order to utilize these adaptive ROI tables and the ROI hyperoptimization space generated by Freqtrade by default.
 

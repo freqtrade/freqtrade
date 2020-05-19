@@ -8,15 +8,19 @@ from abc import ABC, abstractclassmethod, abstractmethod
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Type
+from typing import List, Optional, Type
 
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
-from freqtrade.data.converter import clean_ohlcv_dataframe, trim_dataframe
+from freqtrade.data.converter import (clean_ohlcv_dataframe,
+                                      trades_remove_duplicates, trim_dataframe)
 from freqtrade.exchange import timeframe_to_seconds
 
 logger = logging.getLogger(__name__)
+
+# Type for trades list
+TradeList = List[List]
 
 
 class IDataHandler(ABC):
@@ -55,7 +59,7 @@ class IDataHandler(ABC):
         Implements the loading and conversion to a Pandas dataframe.
         Timerange trimming and dataframe validation happens outside of this method.
         :param pair: Pair to load data
-        :param timeframe: Ticker timeframe (e.g. "5m")
+        :param timeframe: Timeframe (e.g. "5m")
         :param timerange: Limit data to be loaded to this timerange.
                         Optionally implemented by subclasses to avoid loading
                         all data where possible.
@@ -67,7 +71,7 @@ class IDataHandler(ABC):
         """
         Remove data for this pair
         :param pair: Delete data for this pair.
-        :param timeframe: Ticker timeframe (e.g. "5m")
+        :param timeframe: Timeframe (e.g. "5m")
         :return: True when deleted, false if file did not exist.
         """
 
@@ -89,23 +93,25 @@ class IDataHandler(ABC):
         """
 
     @abstractmethod
-    def trades_store(self, pair: str, data: List[Dict]) -> None:
+    def trades_store(self, pair: str, data: TradeList) -> None:
         """
         Store trades data (list of Dicts) to file
         :param pair: Pair - used for filename
-        :param data: List of Dicts containing trade data
+        :param data: List of Lists containing trade data,
+                     column sequence as in DEFAULT_TRADES_COLUMNS
         """
 
     @abstractmethod
-    def trades_append(self, pair: str, data: List[Dict]):
+    def trades_append(self, pair: str, data: TradeList):
         """
         Append data to existing files
         :param pair: Pair - used for filename
-        :param data: List of Dicts containing trade data
+        :param data: List of Lists containing trade data,
+                     column sequence as in DEFAULT_TRADES_COLUMNS
         """
 
     @abstractmethod
-    def trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> List[Dict]:
+    def _trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
         """
         Load a pair from file, either .json.gz or .json
         :param pair: Load trades for this pair
@@ -121,6 +127,16 @@ class IDataHandler(ABC):
         :return: True when deleted, false if file did not exist.
         """
 
+    def trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
+        """
+        Load a pair from file, either .json.gz or .json
+        Removes duplicates in the process.
+        :param pair: Load trades for this pair
+        :param timerange: Timerange to load trades for - currently not implemented
+        :return: List of trades
+        """
+        return trades_remove_duplicates(self._trades_load(pair, timerange=timerange))
+
     def ohlcv_load(self, pair, timeframe: str,
                    timerange: Optional[TimeRange] = None,
                    fill_missing: bool = True,
@@ -129,10 +145,10 @@ class IDataHandler(ABC):
                    warn_no_data: bool = True
                    ) -> DataFrame:
         """
-        Load cached ticker history for the given pair.
+        Load cached candle (OHLCV) data for the given pair.
 
         :param pair: Pair to load data for
-        :param timeframe: Ticker timeframe (e.g. "5m")
+        :param timeframe: Timeframe (e.g. "5m")
         :param timerange: Limit data to be loaded to this timerange
         :param fill_missing: Fill missing values with "No action"-candles
         :param drop_incomplete: Drop last candle assuming it may be incomplete.
@@ -147,12 +163,7 @@ class IDataHandler(ABC):
 
         pairdf = self._ohlcv_load(pair, timeframe,
                                   timerange=timerange_startup)
-        if pairdf.empty:
-            if warn_no_data:
-                logger.warning(
-                    f'No history data for pair: "{pair}", timeframe: {timeframe}. '
-                    'Use `freqtrade download-data` to download the data'
-                )
+        if self._check_empty_df(pairdf, pair, timeframe, warn_no_data):
             return pairdf
         else:
             enddate = pairdf.iloc[-1]['date']
@@ -160,13 +171,30 @@ class IDataHandler(ABC):
             if timerange_startup:
                 self._validate_pairdata(pair, pairdf, timerange_startup)
                 pairdf = trim_dataframe(pairdf, timerange_startup)
+                if self._check_empty_df(pairdf, pair, timeframe, warn_no_data):
+                    return pairdf
 
             # incomplete candles should only be dropped if we didn't trim the end beforehand.
-            return clean_ohlcv_dataframe(pairdf, timeframe,
-                                         pair=pair,
-                                         fill_missing=fill_missing,
-                                         drop_incomplete=(drop_incomplete and
-                                                          enddate == pairdf.iloc[-1]['date']))
+            pairdf = clean_ohlcv_dataframe(pairdf, timeframe,
+                                           pair=pair,
+                                           fill_missing=fill_missing,
+                                           drop_incomplete=(drop_incomplete and
+                                                            enddate == pairdf.iloc[-1]['date']))
+            self._check_empty_df(pairdf, pair, timeframe, warn_no_data)
+            return pairdf
+
+    def _check_empty_df(self, pairdf: DataFrame, pair: str, timeframe: str, warn_no_data: bool):
+        """
+        Warn on empty dataframe
+        """
+        if pairdf.empty:
+            if warn_no_data:
+                logger.warning(
+                    f'No history data for pair: "{pair}", timeframe: {timeframe}. '
+                    'Use `freqtrade download-data` to download the data'
+                )
+            return True
+        return False
 
     def _validate_pairdata(self, pair, pairdata: DataFrame, timerange: TimeRange):
         """

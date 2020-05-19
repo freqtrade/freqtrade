@@ -19,11 +19,14 @@ ORDERBOOK_SIDES = ['ask', 'bid']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
-                       'PrecisionFilter', 'PriceFilter', 'SpreadFilter']
+                       'PrecisionFilter', 'PriceFilter', 'ShuffleFilter', 'SpreadFilter']
 AVAILABLE_DATAHANDLERS = ['json', 'jsongz']
 DRY_RUN_WALLET = 1000
 MATH_CLOSE_PREC = 1e-14  # Precision used for float comparisons
 DEFAULT_DATAFRAME_COLUMNS = ['date', 'open', 'high', 'low', 'close', 'volume']
+# Don't modify sequence of DEFAULT_TRADES_COLUMNS
+# it has wide consequences for stored trades files
+DEFAULT_TRADES_COLUMNS = ['timestamp', 'id', 'type', 'side', 'price', 'amount', 'cost']
 
 USERPATH_HYPEROPTS = 'hyperopts'
 USERPATH_STRATEGIES = 'strategies'
@@ -85,6 +88,7 @@ CONF_SCHEMA = {
         'fiat_display_currency': {'type': 'string', 'enum': SUPPORTED_FIAT},
         'dry_run': {'type': 'boolean'},
         'dry_run_wallet': {'type': 'number', 'default': DRY_RUN_WALLET},
+        'cancel_open_orders_on_exit': {'type': 'boolean', 'default': False},
         'process_only_new_candles': {'type': 'boolean'},
         'minimal_roi': {
             'type': 'object',
@@ -318,3 +322,10 @@ SCHEMA_MINIMAL_REQUIRED = [
     'dataformat_ohlcv',
     'dataformat_trades',
 ]
+
+CANCEL_REASON = {
+    "TIMEOUT": "cancelled due to timeout",
+    "PARTIALLY_FILLED": "partially filled - keeping order open",
+    "ALL_CANCELLED": "cancelled (all unfilled and partially filled open orders cancelled)",
+    "CANCELLED_ON_EXCHANGE": "cancelled on exchange",
+}

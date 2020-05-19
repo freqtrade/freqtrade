@@ -253,6 +253,32 @@ def test_price_to_precision(default_conf, mocker, price, precision_mode, precisi
     assert pytest.approx(exchange.price_to_precision(pair, price)) == expected
 
 
+@pytest.mark.parametrize("price,precision_mode,precision,expected", [
+    (2.34559, 2, 4, 0.0001),
+    (2.34559, 2, 5, 0.00001),
+    (2.34559, 2, 3, 0.001),
+    (2.9999, 2, 3, 0.001),
+    (200.0511, 2, 3, 0.001),
+    # Tests for Tick_size
+    (2.34559, 4, 0.0001, 0.0001),
+    (2.34559, 4, 0.00001, 0.00001),
+    (2.34559, 4, 0.0025, 0.0025),
+    (2.9909, 4, 0.0025, 0.0025),
+    (234.43, 4, 0.5, 0.5),
+    (234.43, 4, 0.0025, 0.0025),
+    (234.43, 4, 0.00013, 0.00013),
+
+])
+def test_price_get_one_pip(default_conf, mocker, price, precision_mode, precision, expected):
+    markets = PropertyMock(return_value={'ETH/BTC': {'precision': {'price': precision}}})
+    exchange = get_patched_exchange(mocker, default_conf, id="binance")
+    mocker.patch('freqtrade.exchange.Exchange.markets', markets)
+    mocker.patch('freqtrade.exchange.Exchange.precisionMode',
+                 PropertyMock(return_value=precision_mode))
+    pair = 'ETH/BTC'
+    assert pytest.approx(exchange.price_get_one_pip(pair, price)) == expected
+
+
 def test_set_sandbox(default_conf, mocker):
     """
     Test working scenario
@@ -491,9 +517,9 @@ def test_validate_pairs_restricted(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
 
     Exchange(default_conf)
-    assert log_has(f"Pair XRP/BTC is restricted for some users on this exchange."
-                   f"Please check if you are impacted by this restriction "
-                   f"on the exchange and eventually remove XRP/BTC from your whitelist.", caplog)
+    assert log_has("Pair XRP/BTC is restricted for some users on this exchange."
+                   "Please check if you are impacted by this restriction "
+                   "on the exchange and eventually remove XRP/BTC from your whitelist.", caplog)
 
 
 def test_validate_pairs_stakecompatibility(default_conf, mocker, caplog):
@@ -581,7 +607,7 @@ def test_validate_timeframes_failed(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     with pytest.raises(OperationalException,
-                       match=r"Invalid ticker interval '3m'. This exchange supports.*"):
+                       match=r"Invalid timeframe '3m'. This exchange supports.*"):
         Exchange(default_conf)
     default_conf["ticker_interval"] = "15s"
 
@@ -1211,7 +1237,7 @@ def test_fetch_ticker(default_conf, mocker, exchange_name):
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    tick = [
+    ohlcv = [
         [
             arrow.utcnow().timestamp * 1000,  # unix timestamp ms
             1,  # open
@@ -1224,7 +1250,7 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
     pair = 'ETH/BTC'
 
     async def mock_candle_hist(pair, timeframe, since_ms):
-        return pair, timeframe, tick
+        return pair, timeframe, ohlcv
 
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
@@ -1232,12 +1258,12 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
     ret = exchange.get_historic_ohlcv(pair, "5m", int((arrow.utcnow().timestamp - since) * 1000))
 
     assert exchange._async_get_candle_history.call_count == 2
-    # Returns twice the above tick
+    # Returns twice the above OHLCV data
     assert len(ret) == 2
 
 
 def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
-    tick = [
+    ohlcv = [
         [
             (arrow.utcnow().timestamp - 1) * 1000,  # unix timestamp ms
             1,  # open
@@ -1258,14 +1284,14 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
 
     caplog.set_level(logging.DEBUG)
     exchange = get_patched_exchange(mocker, default_conf)
-    exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
+    exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
 
     pairs = [('IOTA/ETH', '5m'), ('XRP/ETH', '5m')]
     # empty dicts
     assert not exchange._klines
     exchange.refresh_latest_ohlcv(pairs)
 
-    assert log_has(f'Refreshing ohlcv data for {len(pairs)} pairs', caplog)
+    assert log_has(f'Refreshing candle (OHLCV) data for {len(pairs)} pairs', caplog)
     assert exchange._klines
     assert exchange._api_async.fetch_ohlcv.call_count == 2
     for pair in pairs:
@@ -1283,14 +1309,15 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m'), ('XRP/ETH', '5m')])
 
     assert exchange._api_async.fetch_ohlcv.call_count == 2
-    assert log_has(f"Using cached ohlcv data for pair {pairs[0][0]}, timeframe {pairs[0][1]} ...",
+    assert log_has(f"Using cached candle (OHLCV) data for pair {pairs[0][0]}, "
+                   f"timeframe {pairs[0][1]} ...",
                    caplog)
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_name):
-    tick = [
+    ohlcv = [
         [
             arrow.utcnow().timestamp * 1000,  # unix timestamp ms
             1,  # open
@@ -1304,7 +1331,7 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
     caplog.set_level(logging.DEBUG)
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     # Monkey-patch async function
-    exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
+    exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
 
     pair = 'ETH/BTC'
     res = await exchange._async_get_candle_history(pair, "5m")
@@ -1312,9 +1339,9 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
     assert len(res) == 3
     assert res[0] == pair
     assert res[1] == "5m"
-    assert res[2] == tick
+    assert res[2] == ohlcv
     assert exchange._api_async.fetch_ohlcv.call_count == 1
-    assert not log_has(f"Using cached ohlcv data for {pair} ...", caplog)
+    assert not log_has(f"Using cached candle (OHLCV) data for {pair} ...", caplog)
 
     # exchange = Exchange(default_conf)
     await async_ccxt_exception(mocker, default_conf, MagicMock(),
@@ -1322,14 +1349,15 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
                                pair='ABCD/BTC', timeframe=default_conf['ticker_interval'])
 
     api_mock = MagicMock()
-    with pytest.raises(OperationalException, match=r'Could not fetch ticker data*'):
+    with pytest.raises(OperationalException,
+                       match=r'Could not fetch historical candle \(OHLCV\) data.*'):
         api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.BaseError("Unknown error"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         await exchange._async_get_candle_history(pair, "5m",
                                                  (arrow.utcnow().timestamp - 2000) * 1000)
 
     with pytest.raises(OperationalException, match=r'Exchange.* does not support fetching '
-                                                   r'historical candlestick data\..*'):
+                                                   r'historical candle \(OHLCV\) data\..*'):
         api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.NotSupported("Not supported"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         await exchange._async_get_candle_history(pair, "5m",
@@ -1339,7 +1367,7 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
 @pytest.mark.asyncio
 async def test__async_get_candle_history_empty(default_conf, mocker, caplog):
     """ Test empty exchange result """
-    tick = []
+    ohlcv = []
 
     caplog.set_level(logging.DEBUG)
     exchange = get_patched_exchange(mocker, default_conf)
@@ -1353,7 +1381,7 @@ async def test__async_get_candle_history_empty(default_conf, mocker, caplog):
     assert len(res) == 3
     assert res[0] == pair
     assert res[1] == "5m"
-    assert res[2] == tick
+    assert res[2] == ohlcv
     assert exchange._api_async.fetch_ohlcv.call_count == 1
 
 
@@ -1431,8 +1459,8 @@ async def test___async_get_candle_history_sort(default_conf, mocker, exchange_na
         return sorted(data, key=key)
 
     # GDAX use-case (real data from GDAX)
-    # This ticker history is ordered DESC (newest first, oldest last)
-    tick = [
+    # This OHLCV data is ordered DESC (newest first, oldest last)
+    ohlcv = [
         [1527833100000, 0.07666, 0.07671, 0.07666, 0.07668, 16.65244264],
         [1527832800000, 0.07662, 0.07666, 0.07662, 0.07666, 1.30051526],
         [1527832500000, 0.07656, 0.07661, 0.07656, 0.07661, 12.034778840000001],
@@ -1445,31 +1473,31 @@ async def test___async_get_candle_history_sort(default_conf, mocker, exchange_na
         [1527830400000, 0.07649, 0.07651, 0.07649, 0.07651, 2.5734867]
     ]
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
+    exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
     sort_mock = mocker.patch('freqtrade.exchange.exchange.sorted', MagicMock(side_effect=sort_data))
-    # Test the ticker history sort
+    # Test the OHLCV data sort
     res = await exchange._async_get_candle_history('ETH/BTC', default_conf['ticker_interval'])
     assert res[0] == 'ETH/BTC'
-    ticks = res[2]
+    res_ohlcv = res[2]
 
     assert sort_mock.call_count == 1
-    assert ticks[0][0] == 1527830400000
-    assert ticks[0][1] == 0.07649
-    assert ticks[0][2] == 0.07651
-    assert ticks[0][3] == 0.07649
-    assert ticks[0][4] == 0.07651
-    assert ticks[0][5] == 2.5734867
+    assert res_ohlcv[0][0] == 1527830400000
+    assert res_ohlcv[0][1] == 0.07649
+    assert res_ohlcv[0][2] == 0.07651
+    assert res_ohlcv[0][3] == 0.07649
+    assert res_ohlcv[0][4] == 0.07651
+    assert res_ohlcv[0][5] == 2.5734867
 
-    assert ticks[9][0] == 1527833100000
-    assert ticks[9][1] == 0.07666
-    assert ticks[9][2] == 0.07671
-    assert ticks[9][3] == 0.07666
-    assert ticks[9][4] == 0.07668
-    assert ticks[9][5] == 16.65244264
+    assert res_ohlcv[9][0] == 1527833100000
+    assert res_ohlcv[9][1] == 0.07666
+    assert res_ohlcv[9][2] == 0.07671
+    assert res_ohlcv[9][3] == 0.07666
+    assert res_ohlcv[9][4] == 0.07668
+    assert res_ohlcv[9][5] == 16.65244264
 
     # Bittrex use-case (real data from Bittrex)
-    # This ticker history is ordered ASC (oldest first, newest last)
-    tick = [
+    # This OHLCV data is ordered ASC (oldest first, newest last)
+    ohlcv = [
         [1527827700000, 0.07659999, 0.0766, 0.07627, 0.07657998, 1.85216924],
         [1527828000000, 0.07657995, 0.07657995, 0.0763, 0.0763, 26.04051037],
         [1527828300000, 0.0763, 0.07659998, 0.0763, 0.0764, 10.36434124],
@@ -1481,46 +1509,46 @@ async def test___async_get_candle_history_sort(default_conf, mocker, exchange_na
         [1527830100000, 0.076695, 0.07671, 0.07624171, 0.07671, 1.80689244],
         [1527830400000, 0.07671, 0.07674399, 0.07629216, 0.07655213, 2.31452783]
     ]
-    exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
+    exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
     # Reset sort mock
     sort_mock = mocker.patch('freqtrade.exchange.sorted', MagicMock(side_effect=sort_data))
-    # Test the ticker history sort
+    # Test the OHLCV data sort
     res = await exchange._async_get_candle_history('ETH/BTC', default_conf['ticker_interval'])
     assert res[0] == 'ETH/BTC'
     assert res[1] == default_conf['ticker_interval']
-    ticks = res[2]
+    res_ohlcv = res[2]
     # Sorted not called again - data is already in order
     assert sort_mock.call_count == 0
-    assert ticks[0][0] == 1527827700000
-    assert ticks[0][1] == 0.07659999
-    assert ticks[0][2] == 0.0766
-    assert ticks[0][3] == 0.07627
-    assert ticks[0][4] == 0.07657998
-    assert ticks[0][5] == 1.85216924
+    assert res_ohlcv[0][0] == 1527827700000
+    assert res_ohlcv[0][1] == 0.07659999
+    assert res_ohlcv[0][2] == 0.0766
+    assert res_ohlcv[0][3] == 0.07627
+    assert res_ohlcv[0][4] == 0.07657998
+    assert res_ohlcv[0][5] == 1.85216924
 
-    assert ticks[9][0] == 1527830400000
-    assert ticks[9][1] == 0.07671
-    assert ticks[9][2] == 0.07674399
-    assert ticks[9][3] == 0.07629216
-    assert ticks[9][4] == 0.07655213
-    assert ticks[9][5] == 2.31452783
+    assert res_ohlcv[9][0] == 1527830400000
+    assert res_ohlcv[9][1] == 0.07671
+    assert res_ohlcv[9][2] == 0.07674399
+    assert res_ohlcv[9][3] == 0.07629216
+    assert res_ohlcv[9][4] == 0.07655213
+    assert res_ohlcv[9][5] == 2.31452783
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 async def test__async_fetch_trades(default_conf, mocker, caplog, exchange_name,
-                                   trades_history):
+                                   fetch_trades_result):
 
     caplog.set_level(logging.DEBUG)
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     # Monkey-patch async function
-    exchange._api_async.fetch_trades = get_mock_coro(trades_history)
+    exchange._api_async.fetch_trades = get_mock_coro(fetch_trades_result)
 
     pair = 'ETH/BTC'
     res = await exchange._async_fetch_trades(pair, since=None, params=None)
     assert type(res) is list
-    assert isinstance(res[0], dict)
-    assert isinstance(res[1], dict)
+    assert isinstance(res[0], list)
+    assert isinstance(res[1], list)
 
     assert exchange._api_async.fetch_trades.call_count == 1
     assert exchange._api_async.fetch_trades.call_args[0][0] == pair
@@ -1566,7 +1594,7 @@ async def test__async_get_trade_history_id(default_conf, mocker, caplog, exchang
         if 'since' in kwargs:
             # Return first 3
             return trades_history[:-2]
-        elif kwargs.get('params', {}).get(pagination_arg) == trades_history[-3]['id']:
+        elif kwargs.get('params', {}).get(pagination_arg) == trades_history[-3][1]:
             # Return 2
             return trades_history[-3:-1]
         else:
@@ -1576,8 +1604,8 @@ async def test__async_get_trade_history_id(default_conf, mocker, caplog, exchang
     exchange._async_fetch_trades = MagicMock(side_effect=mock_get_trade_hist)
 
     pair = 'ETH/BTC'
-    ret = await exchange._async_get_trade_history_id(pair, since=trades_history[0]["timestamp"],
-                                                     until=trades_history[-1]["timestamp"]-1)
+    ret = await exchange._async_get_trade_history_id(pair, since=trades_history[0][0],
+                                                     until=trades_history[-1][0]-1)
     assert type(ret) is tuple
     assert ret[0] == pair
     assert type(ret[1]) is list
@@ -1586,7 +1614,7 @@ async def test__async_get_trade_history_id(default_conf, mocker, caplog, exchang
     fetch_trades_cal = exchange._async_fetch_trades.call_args_list
     # first call (using since, not fromId)
     assert fetch_trades_cal[0][0][0] == pair
-    assert fetch_trades_cal[0][1]['since'] == trades_history[0]["timestamp"]
+    assert fetch_trades_cal[0][1]['since'] == trades_history[0][0]
 
     # 2nd call
     assert fetch_trades_cal[1][0][0] == pair
@@ -1602,7 +1630,7 @@ async def test__async_get_trade_history_time(default_conf, mocker, caplog, excha
     caplog.set_level(logging.DEBUG)
 
     async def mock_get_trade_hist(pair, *args, **kwargs):
-        if kwargs['since'] == trades_history[0]["timestamp"]:
+        if kwargs['since'] == trades_history[0][0]:
             return trades_history[:-1]
         else:
             return trades_history[-1:]
@@ -1612,8 +1640,8 @@ async def test__async_get_trade_history_time(default_conf, mocker, caplog, excha
     # Monkey-patch async function
     exchange._async_fetch_trades = MagicMock(side_effect=mock_get_trade_hist)
     pair = 'ETH/BTC'
-    ret = await exchange._async_get_trade_history_time(pair, since=trades_history[0]["timestamp"],
-                                                       until=trades_history[-1]["timestamp"]-1)
+    ret = await exchange._async_get_trade_history_time(pair, since=trades_history[0][0],
+                                                       until=trades_history[-1][0]-1)
     assert type(ret) is tuple
     assert ret[0] == pair
     assert type(ret[1]) is list
@@ -1622,11 +1650,11 @@ async def test__async_get_trade_history_time(default_conf, mocker, caplog, excha
     fetch_trades_cal = exchange._async_fetch_trades.call_args_list
     # first call (using since, not fromId)
     assert fetch_trades_cal[0][0][0] == pair
-    assert fetch_trades_cal[0][1]['since'] == trades_history[0]["timestamp"]
+    assert fetch_trades_cal[0][1]['since'] == trades_history[0][0]
 
     # 2nd call
     assert fetch_trades_cal[1][0][0] == pair
-    assert fetch_trades_cal[0][1]['since'] == trades_history[0]["timestamp"]
+    assert fetch_trades_cal[0][1]['since'] == trades_history[0][0]
     assert log_has_re(r"Stopping because until was reached.*", caplog)
 
 
@@ -1638,7 +1666,7 @@ async def test__async_get_trade_history_time_empty(default_conf, mocker, caplog,
     caplog.set_level(logging.DEBUG)
 
     async def mock_get_trade_hist(pair, *args, **kwargs):
-        if kwargs['since'] == trades_history[0]["timestamp"]:
+        if kwargs['since'] == trades_history[0][0]:
             return trades_history[:-1]
         else:
             return []
@@ -1648,8 +1676,8 @@ async def test__async_get_trade_history_time_empty(default_conf, mocker, caplog,
     # Monkey-patch async function
     exchange._async_fetch_trades = MagicMock(side_effect=mock_get_trade_hist)
     pair = 'ETH/BTC'
-    ret = await exchange._async_get_trade_history_time(pair, since=trades_history[0]["timestamp"],
-                                                       until=trades_history[-1]["timestamp"]-1)
+    ret = await exchange._async_get_trade_history_time(pair, since=trades_history[0][0],
+                                                       until=trades_history[-1][0]-1)
     assert type(ret) is tuple
     assert ret[0] == pair
     assert type(ret[1]) is list
@@ -1658,7 +1686,7 @@ async def test__async_get_trade_history_time_empty(default_conf, mocker, caplog,
     fetch_trades_cal = exchange._async_fetch_trades.call_args_list
     # first call (using since, not fromId)
     assert fetch_trades_cal[0][0][0] == pair
-    assert fetch_trades_cal[0][1]['since'] == trades_history[0]["timestamp"]
+    assert fetch_trades_cal[0][1]['since'] == trades_history[0][0]
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
@@ -1670,8 +1698,8 @@ def test_get_historic_trades(default_conf, mocker, caplog, exchange_name, trades
 
     exchange._async_get_trade_history_id = get_mock_coro((pair, trades_history))
     exchange._async_get_trade_history_time = get_mock_coro((pair, trades_history))
-    ret = exchange.get_historic_trades(pair, since=trades_history[0]["timestamp"],
-                                       until=trades_history[-1]["timestamp"])
+    ret = exchange.get_historic_trades(pair, since=trades_history[0][0],
+                                       until=trades_history[-1][0])
 
     # Depending on the exchange, one or the other method should be called
     assert sum([exchange._async_get_trade_history_id.call_count,
@@ -1692,15 +1720,77 @@ def test_get_historic_trades_notsupported(default_conf, mocker, caplog, exchange
 
     with pytest.raises(OperationalException,
                        match="This exchange does not suport downloading Trades."):
-        exchange.get_historic_trades(pair, since=trades_history[0]["timestamp"],
-                                     until=trades_history[-1]["timestamp"])
+        exchange.get_historic_trades(pair, since=trades_history[0][0],
+                                     until=trades_history[-1][0])
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    assert exchange.cancel_order(order_id='123', pair='TKN/BTC') is None
+    assert exchange.cancel_order(order_id='123', pair='TKN/BTC') == {}
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+@pytest.mark.parametrize("order,result", [
+    ({'status': 'closed', 'filled': 10}, False),
+    ({'status': 'closed', 'filled': 0.0}, True),
+    ({'status': 'canceled', 'filled': 0.0}, True),
+    ({'status': 'canceled', 'filled': 10.0}, False),
+    ({'status': 'unknown', 'filled': 10.0}, False),
+    ({'result': 'testest123'}, False),
+    ])
+def test_check_order_canceled_empty(mocker, default_conf, exchange_name, order, result):
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    assert exchange.check_order_canceled_empty(order) == result
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+@pytest.mark.parametrize("order,result", [
+    ({'status': 'closed', 'amount': 10, 'fee': {}}, True),
+    ({'status': 'closed', 'amount': 0.0, 'fee': {}}, True),
+    ({'status': 'canceled', 'amount': 0.0, 'fee': {}}, True),
+    ({'status': 'canceled', 'amount': 10.0}, False),
+    ({'amount': 10.0, 'fee': {}}, False),
+    ({'result': 'testest123'}, False),
+    ('hello_world', False),
+])
+def test_is_cancel_order_result_suitable(mocker, default_conf, exchange_name, order, result):
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    assert exchange.is_cancel_order_result_suitable(order) == result
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+@pytest.mark.parametrize("corder,call_corder,call_forder", [
+    ({'status': 'closed', 'amount': 10, 'fee': {}}, 1, 0),
+    ({'amount': 10, 'fee': {}}, 1, 1),
+])
+def test_cancel_order_with_result(default_conf, mocker, exchange_name, corder,
+                                  call_corder, call_forder):
+    default_conf['dry_run'] = False
+    api_mock = MagicMock()
+    api_mock.cancel_order = MagicMock(return_value=corder)
+    api_mock.fetch_order = MagicMock(return_value={})
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    res = exchange.cancel_order_with_result('1234', 'ETH/BTC', 1234)
+    assert isinstance(res, dict)
+    assert api_mock.cancel_order.call_count == call_corder
+    assert api_mock.fetch_order.call_count == call_forder
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_cancel_order_with_result_error(default_conf, mocker, exchange_name, caplog):
+    default_conf['dry_run'] = False
+    api_mock = MagicMock()
+    api_mock.cancel_order = MagicMock(side_effect=ccxt.InvalidOrder("Did not find order"))
+    api_mock.fetch_order = MagicMock(side_effect=ccxt.InvalidOrder("Did not find order"))
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+
+    res = exchange.cancel_order_with_result('1234', 'ETH/BTC', 1541)
+    assert isinstance(res, dict)
+    assert log_has("Could not cancel order 1234.", caplog)
+    assert log_has("Could not fetch cancelled order 1234.", caplog)
+    assert res['amount'] == 1541
 
 
 # Ensure that if not dry_run, we should call API
@@ -2055,3 +2145,58 @@ def test_symbol_is_pair(market_symbol, base_currency, quote_currency, expected_r
 ])
 def test_market_is_active(market, expected_result) -> None:
     assert market_is_active(market) == expected_result
+
+
+@pytest.mark.parametrize("order,expected", [
+    ([{'fee'}], False),
+    ({'fee': None}, False),
+    ({'fee': {'currency': 'ETH/BTC'}}, False),
+    ({'fee': {'currency': 'ETH/BTC', 'cost': None}}, False),
+    ({'fee': {'currency': 'ETH/BTC', 'cost': 0.01}}, True),
+])
+def test_order_has_fee(order, expected) -> None:
+    assert Exchange.order_has_fee(order) == expected
+
+
+@pytest.mark.parametrize("order,expected", [
+    ({'symbol': 'ETH/BTC', 'fee': {'currency': 'ETH', 'cost': 0.43}},
+        (0.43, 'ETH', 0.01)),
+    ({'symbol': 'ETH/USDT', 'fee': {'currency': 'USDT', 'cost': 0.01}},
+        (0.01, 'USDT', 0.01)),
+    ({'symbol': 'BTC/USDT', 'fee': {'currency': 'USDT', 'cost': 0.34, 'rate': 0.01}},
+        (0.34, 'USDT', 0.01)),
+])
+def test_extract_cost_curr_rate(mocker, default_conf, order, expected) -> None:
+    mocker.patch('freqtrade.exchange.Exchange.calculate_fee_rate', MagicMock(return_value=0.01))
+    ex = get_patched_exchange(mocker, default_conf)
+    assert ex.extract_cost_curr_rate(order) == expected
+
+
+@pytest.mark.parametrize("order,expected", [
+    # Using base-currency
+    ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
+        'fee': {'currency': 'ETH', 'cost': 0.004, 'rate': None}}, 0.1),
+    ({'symbol': 'ETH/BTC', 'amount': 0.05, 'cost': 0.05,
+        'fee': {'currency': 'ETH', 'cost': 0.004, 'rate': None}}, 0.08),
+    # Using quote currency
+    ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
+        'fee': {'currency': 'BTC', 'cost': 0.005}}, 0.1),
+    ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
+        'fee': {'currency': 'BTC', 'cost': 0.002, 'rate': None}}, 0.04),
+    # Using foreign currency
+    ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
+        'fee': {'currency': 'NEO', 'cost': 0.0012}}, 0.001944),
+    ({'symbol': 'ETH/BTC', 'amount': 2.21, 'cost': 0.02992561,
+        'fee': {'currency': 'NEO', 'cost': 0.00027452}}, 0.00074305),
+    # TODO: More tests here!
+    # Rate included in return - return as is
+    ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
+        'fee': {'currency': 'USDT', 'cost': 0.34, 'rate': 0.01}}, 0.01),
+    ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
+        'fee': {'currency': 'USDT', 'cost': 0.34, 'rate': 0.005}}, 0.005),
+])
+def test_calculate_fee_rate(mocker, default_conf, order, expected) -> None:
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', return_value={'last': 0.081})
+
+    ex = get_patched_exchange(mocker, default_conf)
+    assert ex.calculate_fee_rate(order) == expected

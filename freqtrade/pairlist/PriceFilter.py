@@ -1,8 +1,12 @@
+"""
+Price pair list filter
+"""
 import logging
 from copy import deepcopy
 from typing import Any, Dict, List
 
 from freqtrade.pairlist.IPairList import IPairList
+
 
 logger = logging.getLogger(__name__)
 
@@ -35,21 +39,22 @@ class PriceFilter(IPairList):
         """
         Check if if one price-step (pip) is > than a certain barrier.
         :param ticker: ticker dict as returned from ccxt.load_markets()
-        :param precision: Precision
         :return: True if the pair can stay, false if it should be removed
         """
-        precision = self._exchange.markets[ticker['symbol']]['precision']['price']
-
-        compare = ticker['last'] + 1 / pow(10, precision)
-        changeperc = (compare - ticker['last']) / ticker['last']
+        if ticker['last'] is None:
+            self.log_on_refresh(logger.info,
+                                f"Removed {ticker['symbol']} from whitelist, because "
+                                "ticker['last'] is empty (Usually no trade in the last 24h).")
+            return False
+        compare = self._exchange.price_get_one_pip(ticker['symbol'], ticker['last'])
+        changeperc = compare / ticker['last']
         if changeperc > self._low_price_ratio:
-            logger.info(f"Removed {ticker['symbol']} from whitelist, "
-                        f"because 1 unit is {changeperc * 100:.3f}%")
+            self.log_on_refresh(logger.info, f"Removed {ticker['symbol']} from whitelist, "
+                                             f"because 1 unit is {changeperc * 100:.3f}%")
             return False
         return True
 
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
-
         """
         Filters and sorts pairlist and returns the whitelist again.
         Called on each bot iteration - please use internal caching if necessary
@@ -57,14 +62,11 @@ class PriceFilter(IPairList):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
-        # Copy list since we're modifying this list
-        for p in deepcopy(pairlist):
-            ticker = tickers.get(p)
-            if not ticker:
-                pairlist.remove(p)
-
-            # Filter out assets which would not allow setting a stoploss
-            if self._low_price_ratio and not self._validate_ticker_lowprice(ticker):
-                pairlist.remove(p)
+        if self._low_price_ratio:
+            # Copy list since we're modifying this list
+            for p in deepcopy(pairlist):
+                # Filter out assets which would not allow setting a stoploss
+                if not self._validate_ticker_lowprice(tickers[p]):
+                    pairlist.remove(p)
 
         return pairlist

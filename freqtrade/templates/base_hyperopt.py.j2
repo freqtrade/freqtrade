@@ -66,6 +66,9 @@ class {{ hyperopt }}(IHyperOpt):
                         dataframe['close'], dataframe['sar']
                     ))
 
+            # Check that the candle had volume
+            conditions.append(dataframe['volume'] > 0)
+
             if conditions:
                 dataframe.loc[
                     reduce(lambda x, y: x & y, conditions),
@@ -110,6 +113,9 @@ class {{ hyperopt }}(IHyperOpt):
                     conditions.append(qtpylib.crossed_above(
                         dataframe['sar'], dataframe['close']
                     ))
+
+            # Check that the candle had volume
+            conditions.append(dataframe['volume'] > 0)
 
             if conditions:
                 dataframe.loc[

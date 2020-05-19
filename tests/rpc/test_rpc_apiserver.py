@@ -13,7 +13,7 @@ from freqtrade.__init__ import __version__
 from freqtrade.persistence import Trade
 from freqtrade.rpc.api_server import BASE_URI, ApiServer
 from freqtrade.state import State
-from tests.conftest import get_patched_freqtradebot, log_has, patch_get_signal
+from tests.conftest import get_patched_freqtradebot, log_has, patch_get_signal, create_mock_trades
 
 _TEST_USER = "FreqTrader"
 _TEST_PASS = "SuperSecurePassword1!"
@@ -49,6 +49,7 @@ def client_get(client, url):
 def assert_response(response, expected_code=200):
     assert response.status_code == expected_code
     assert response.content_type == "application/json"
+    assert ('Access-Control-Allow-Origin', '*') in response.headers._list
 
 
 def test_api_not_found(botclient):
@@ -94,6 +95,33 @@ def test_api_unauthorized(botclient):
     assert rc.json == {'error': 'Unauthorized'}
 
 
+def test_api_token_login(botclient):
+    ftbot, client = botclient
+    rc = client_post(client, f"{BASE_URI}/token/login")
+    assert_response(rc)
+    assert 'access_token' in rc.json
+    assert 'refresh_token' in rc.json
+
+    # test Authentication is working with JWT tokens too
+    rc = client.get(f"{BASE_URI}/count",
+                    content_type="application/json",
+                    headers={'Authorization': f'Bearer {rc.json["access_token"]}'})
+    assert_response(rc)
+
+
+def test_api_token_refresh(botclient):
+    ftbot, client = botclient
+    rc = client_post(client, f"{BASE_URI}/token/login")
+    assert_response(rc)
+    rc = client.post(f"{BASE_URI}/token/refresh",
+                     content_type="application/json",
+                     data=None,
+                     headers={'Authorization': f'Bearer {rc.json["refresh_token"]}'})
+    assert_response(rc)
+    assert 'access_token' in rc.json
+    assert 'refresh_token' not in rc.json
+
+
 def test_api_stop_workflow(botclient):
     ftbot, client = botclient
     assert ftbot.state == State.RUNNING
@@ -123,6 +151,12 @@ def test_api__init__(default_conf, mocker):
     """
     Test __init__() method
     """
+    default_conf.update({"api_server": {"enabled": True,
+                                        "listen_ip_address": "127.0.0.1",
+                                        "listen_port": 8080,
+                                        "username": "TestUser",
+                                        "password": "testPass",
+                                        }})
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
     mocker.patch('freqtrade.rpc.api_server.ApiServer.run', MagicMock())
 
@@ -283,6 +317,7 @@ def test_api_show_config(botclient, mocker):
     assert 'dry_run' in rc.json
     assert rc.json['exchange'] == 'bittrex'
     assert rc.json['ticker_interval'] == '5m'
+    assert rc.json['state'] == 'running'
     assert not rc.json['trailing_stop']
 
 
@@ -298,8 +333,34 @@ def test_api_daily(botclient, mocker, ticker, fee, markets):
     )
     rc = client_get(client, f"{BASE_URI}/daily")
     assert_response(rc)
-    assert len(rc.json) == 7
-    assert rc.json[0][0] == str(datetime.utcnow().date())
+    assert len(rc.json['data']) == 7
+    assert rc.json['stake_currency'] == 'BTC'
+    assert rc.json['fiat_display_currency'] == 'USD'
+    assert rc.json['data'][0]['date'] == str(datetime.utcnow().date())
+
+
+def test_api_trades(botclient, mocker, ticker, fee, markets):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, (True, False))
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        markets=PropertyMock(return_value=markets)
+    )
+    rc = client_get(client, f"{BASE_URI}/trades")
+    assert_response(rc)
+    assert len(rc.json) == 2
+    assert rc.json['trades_count'] == 0
+
+    create_mock_trades(fee)
+
+    rc = client_get(client, f"{BASE_URI}/trades")
+    assert_response(rc)
+    assert len(rc.json['trades']) == 3
+    assert rc.json['trades_count'] == 3
+    rc = client_get(client, f"{BASE_URI}/trades?limit=2")
+    assert_response(rc)
+    assert len(rc.json['trades']) == 2
+    assert rc.json['trades_count'] == 2
 
 
 def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
@@ -444,7 +505,26 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
                         'stake_amount': 0.001,
                         'stop_loss': 0.0,
                         'stop_loss_pct': None,
-                        'trade_id': 1}]
+                        'trade_id': 1,
+                        'close_rate_requested': None,
+                        'current_rate': 1.099e-05,
+                        'fee_close': 0.0025,
+                        'fee_close_cost': None,
+                        'fee_close_currency': None,
+                        'fee_open': 0.0025,
+                        'fee_open_cost': None,
+                        'fee_open_currency': None,
+                        'open_date': ANY,
+                        'is_open': True,
+                        'max_rate': 0.0,
+                        'min_rate': None,
+                        'open_order_id': ANY,
+                        'open_rate_requested': 1.098e-05,
+                        'open_trade_price': 0.0010025,
+                        'sell_reason': None,
+                        'sell_order_status': None,
+                        'strategy': 'DefaultStrategy',
+                        'ticker_interval': 5}]
 
 
 def test_api_version(botclient):
@@ -533,7 +613,26 @@ def test_api_forcebuy(botclient, mocker, fee):
                        'stake_amount': 1,
                        'stop_loss': None,
                        'stop_loss_pct': None,
-                       'trade_id': None}
+                       'trade_id': None,
+                       'close_profit': None,
+                       'close_rate_requested': None,
+                       'fee_close': 0.0025,
+                       'fee_close_cost': None,
+                       'fee_close_currency': None,
+                       'fee_open': 0.0025,
+                       'fee_open_cost': None,
+                       'fee_open_currency': None,
+                       'is_open': False,
+                       'max_rate': None,
+                       'min_rate': None,
+                       'open_order_id': '123456',
+                       'open_rate_requested': None,
+                       'open_trade_price': 0.2460546025,
+                       'sell_reason': None,
+                       'sell_order_status': None,
+                       'strategy': None,
+                       'ticker_interval': None
+                       }
 
 
 def test_api_forcesell(botclient, mocker, ticker, fee, markets):

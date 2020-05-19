@@ -170,6 +170,7 @@ def test_status(default_conf, update, mocker, fee, ticker,) -> None:
             'current_profit': -0.59,
             'initial_stop_loss': 1.098e-05,
             'stop_loss': 1.099e-05,
+            'sell_order_status': None,
             'initial_stop_loss_pct': -0.05,
             'stop_loss_pct': -0.01,
             'open_order': '(limit buy rem=0.00000000)'
@@ -1316,18 +1317,20 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
         'type': RPCMessageType.SELL_CANCEL_NOTIFICATION,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
+        'reason': 'Cancelled on exchange'
     })
     assert msg_mock.call_args[0][0] \
-        == ('*Binance:* Cancelling Open Sell Order for KEY/ETH')
+        == ('*Binance:* Cancelling Open Sell Order for KEY/ETH. Reason: Cancelled on exchange')
 
     msg_mock.reset_mock()
     telegram.send_msg({
         'type': RPCMessageType.SELL_CANCEL_NOTIFICATION,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
+        'reason': 'timeout'
     })
     assert msg_mock.call_args[0][0] \
-        == ('*Binance:* Cancelling Open Sell Order for KEY/ETH')
+        == ('*Binance:* Cancelling Open Sell Order for KEY/ETH. Reason: timeout')
     # Reset singleton function to avoid random breaks
     telegram._fiat_converter.convert_amount = old_convamount
 

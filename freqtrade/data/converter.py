@@ -1,24 +1,27 @@
 """
 Functions to convert data from one format to another
 """
+import itertools
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict
+from operator import itemgetter
+from typing import Any, Dict, List
 
 import pandas as pd
 from pandas import DataFrame, to_datetime
 
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
+from freqtrade.constants import (DEFAULT_DATAFRAME_COLUMNS,
+                                 DEFAULT_TRADES_COLUMNS)
 
 logger = logging.getLogger(__name__)
 
 
-def parse_ticker_dataframe(ticker: list, timeframe: str, pair: str, *,
-                           fill_missing: bool = True,
-                           drop_incomplete: bool = True) -> DataFrame:
+def ohlcv_to_dataframe(ohlcv: list, timeframe: str, pair: str, *,
+                       fill_missing: bool = True, drop_incomplete: bool = True) -> DataFrame:
     """
-    Converts a ticker-list (format ccxt.fetch_ohlcv) to a Dataframe
-    :param ticker: ticker list, as returned by exchange.async_get_candle_history
+    Converts a list with candle (OHLCV) data (in format returned by ccxt.fetch_ohlcv)
+    to a Dataframe
+    :param ohlcv: list with candle (OHLCV) data, as returned by exchange.async_get_candle_history
     :param timeframe: timeframe (e.g. 5m). Used to fill up eventual missing data
     :param pair: Pair this data is for (used to warn if fillup was necessary)
     :param fill_missing: fill up missing candles with 0 candles
@@ -26,21 +29,18 @@ def parse_ticker_dataframe(ticker: list, timeframe: str, pair: str, *,
     :param drop_incomplete: Drop the last candle of the dataframe, assuming it's incomplete
     :return: DataFrame
     """
-    logger.debug("Parsing tickerlist to dataframe")
+    logger.debug(f"Converting candle (OHLCV) data to dataframe for pair {pair}.")
     cols = DEFAULT_DATAFRAME_COLUMNS
-    frame = DataFrame(ticker, columns=cols)
+    df = DataFrame(ohlcv, columns=cols)
 
-    frame['date'] = to_datetime(frame['date'],
-                                unit='ms',
-                                utc=True,
-                                infer_datetime_format=True)
+    df['date'] = to_datetime(df['date'], unit='ms', utc=True, infer_datetime_format=True)
 
-    # Some exchanges return int values for volume and even for ohlc.
+    # Some exchanges return int values for Volume and even for OHLC.
     # Convert them since TA-LIB indicators used in the strategy assume floats
     # and fail with exception...
-    frame = frame.astype(dtype={'open': 'float', 'high': 'float', 'low': 'float', 'close': 'float',
-                                'volume': 'float'})
-    return clean_ohlcv_dataframe(frame, timeframe, pair,
+    df = df.astype(dtype={'open': 'float', 'high': 'float', 'low': 'float', 'close': 'float',
+                          'volume': 'float'})
+    return clean_ohlcv_dataframe(df, timeframe, pair,
                                  fill_missing=fill_missing,
                                  drop_incomplete=drop_incomplete)
 
@@ -49,11 +49,11 @@ def clean_ohlcv_dataframe(data: DataFrame, timeframe: str, pair: str, *,
                           fill_missing: bool = True,
                           drop_incomplete: bool = True) -> DataFrame:
     """
-    Clense a ohlcv dataframe by
+    Clense a OHLCV dataframe by
       * Grouping it by date (removes duplicate tics)
       * dropping last candles if requested
       * Filling up missing data (if requested)
-    :param data: DataFrame containing ohlcv data.
+    :param data: DataFrame containing candle (OHLCV) data.
     :param timeframe: timeframe (e.g. 5m). Used to fill up eventual missing data
     :param pair: Pair this data is for (used to warn if fillup was necessary)
     :param fill_missing: fill up missing candles with 0 candles
@@ -88,16 +88,16 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
     """
     from freqtrade.exchange import timeframe_to_minutes
 
-    ohlc_dict = {
+    ohlcv_dict = {
         'open': 'first',
         'high': 'max',
         'low': 'min',
         'close': 'last',
         'volume': 'sum'
     }
-    ticker_minutes = timeframe_to_minutes(timeframe)
+    timeframe_minutes = timeframe_to_minutes(timeframe)
     # Resample to create "NAN" values
-    df = dataframe.resample(f'{ticker_minutes}min', on='date').agg(ohlc_dict)
+    df = dataframe.resample(f'{timeframe_minutes}min', on='date').agg(ohlcv_dict)
 
     # Forwardfill close for missing columns
     df['close'] = df['close'].fillna(method='ffill')
@@ -157,22 +157,43 @@ def order_book_to_dataframe(bids: list, asks: list) -> DataFrame:
     return frame
 
 
-def trades_to_ohlcv(trades: list, timeframe: str) -> DataFrame:
+def trades_remove_duplicates(trades: List[List]) -> List[List]:
     """
-    Converts trades list to ohlcv list
+    Removes duplicates from the trades list.
+    Uses itertools.groupby to avoid converting to pandas.
+    Tests show it as being pretty efficient on lists of 4M Lists.
+    :param trades: List of Lists with constants.DEFAULT_TRADES_COLUMNS as columns
+    :return: same format as above, but with duplicates removed
+    """
+    return [i for i, _ in itertools.groupby(sorted(trades, key=itemgetter(0)))]
+
+
+def trades_dict_to_list(trades: List[Dict]) -> List[List]:
+    """
+    Convert fetch_trades result into a List (to be more memory efficient).
+    :param trades: List of trades, as returned by ccxt.fetch_trades.
+    :return: List of Lists, with constants.DEFAULT_TRADES_COLUMNS as columns
+    """
+    return [[t[col] for col in DEFAULT_TRADES_COLUMNS] for t in trades]
+
+
+def trades_to_ohlcv(trades: List, timeframe: str) -> DataFrame:
+    """
+    Converts trades list to OHLCV list
     TODO: This should get a dedicated test
     :param trades: List of trades, as returned by ccxt.fetch_trades.
-    :param timeframe: Ticker timeframe to resample data to
-    :return: ohlcv Dataframe.
+    :param timeframe: Timeframe to resample data to
+    :return: OHLCV Dataframe.
     """
     from freqtrade.exchange import timeframe_to_minutes
-    ticker_minutes = timeframe_to_minutes(timeframe)
-    df = pd.DataFrame(trades)
-    df['datetime'] = pd.to_datetime(df['datetime'])
-    df = df.set_index('datetime')
+    timeframe_minutes = timeframe_to_minutes(timeframe)
+    df = pd.DataFrame(trades, columns=DEFAULT_TRADES_COLUMNS)
+    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms',
+                                     utc=True,)
+    df = df.set_index('timestamp')
 
-    df_new = df['price'].resample(f'{ticker_minutes}min').ohlc()
-    df_new['volume'] = df['amount'].resample(f'{ticker_minutes}min').sum()
+    df_new = df['price'].resample(f'{timeframe_minutes}min').ohlc()
+    df_new['volume'] = df['amount'].resample(f'{timeframe_minutes}min').sum()
     df_new['date'] = df_new.index
     # Drop 0 volume rows
     df_new = df_new.dropna()
@@ -206,7 +227,7 @@ def convert_trades_format(config: Dict[str, Any], convert_from: str, convert_to:
 
 def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: str, erase: bool):
     """
-    Convert ohlcv from one format to another format.
+    Convert OHLCV from one format to another
     :param config: Config dictionary
     :param convert_from: Source format
     :param convert_to: Target format
@@ -216,7 +237,7 @@ def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: 
     src = get_datahandler(config['datadir'], convert_from)
     trg = get_datahandler(config['datadir'], convert_to)
     timeframes = config.get('timeframes', [config.get('ticker_interval')])
-    logger.info(f"Converting OHLCV for timeframe {timeframes}")
+    logger.info(f"Converting candle (OHLCV) for timeframe {timeframes}")
 
     if 'pairs' not in config:
         config['pairs'] = []
@@ -224,7 +245,7 @@ def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: 
         for timeframe in timeframes:
             config['pairs'].extend(src.ohlcv_get_pairs(config['datadir'],
                                                        timeframe))
-    logger.info(f"Converting OHLCV for {config['pairs']}")
+    logger.info(f"Converting candle (OHLCV) data for {config['pairs']}")
 
     for timeframe in timeframes:
         for pair in config['pairs']:

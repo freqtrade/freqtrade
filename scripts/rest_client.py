@@ -156,6 +156,14 @@ class FtRestClient():
         """
         return self._get("show_config")
 
+    def trades(self, limit=None):
+        """Return trades history.
+
+        :param limit: Limits trades to the X last trades. No limit to get all the trades.
+        :return: json object
+        """
+        return self._get("trades", params={"limit": limit} if limit else 0)
+
     def whitelist(self):
         """Show the current whitelist.
 
