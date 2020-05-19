@@ -1,5 +1,5 @@
 """
-PairList base class
+PairList Handler base class
 """
 import logging
 from abc import ABC, abstractmethod, abstractproperty
@@ -21,10 +21,10 @@ class IPairList(ABC):
                  pairlist_pos: int) -> None:
         """
         :param exchange: Exchange instance
-        :param pairlistmanager: Instanciating Pairlist manager
+        :param pairlistmanager: Instantiated Pairlist manager
         :param config: Global bot configuration
-        :param pairlistconfig: Configuration for this pairlist - can be empty.
-        :param pairlist_pos: Position of the filter in the pairlist-filter-list
+        :param pairlistconfig: Configuration for this Pairlist Handler - can be empty.
+        :param pairlist_pos: Position of the Pairlist Handler in the chain
         """
         self._exchange = exchange
         self._pairlistmanager = pairlistmanager
@@ -93,10 +93,10 @@ class IPairList(ABC):
         """
         Verify and remove items from pairlist - returning a filtered pairlist.
         Logs a warning or info depending on `aswarning`.
-        Pairlists explicitly using this method shall use `aswarning=False`!
+        Pairlist Handlers explicitly using this method shall use `aswarning=False`!
         :param pairlist: Pairlist to validate
         :param blacklist: Blacklist to validate pairlist against
-        :param aswarning: Log message as Warning or info
+        :param aswarning: Log message as Warning or Info
         :return: pairlist - blacklisted pairs
         """
         for pair in deepcopy(pairlist):
