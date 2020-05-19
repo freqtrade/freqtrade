@@ -10,8 +10,6 @@ from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
 from tests.conftest import get_patched_freqtradebot, log_has, log_has_re
 
-# whitelist, blacklist
-
 
 @pytest.fixture(scope="function")
 def whitelist_conf(default_conf):
@@ -55,7 +53,7 @@ def test_log_on_refresh(mocker, static_pl_conf, markets, tickers):
     freqtrade = get_patched_freqtradebot(mocker, static_pl_conf)
     logmock = MagicMock()
     # Assign starting whitelist
-    pl = freqtrade.pairlists._pairlists[0]
+    pl = freqtrade.pairlists._pairlist_handlers[0]
     pl.log_on_refresh(logmock, 'Hello world')
     assert logmock.call_count == 1
     pl.log_on_refresh(logmock, 'Hello world')
@@ -321,7 +319,8 @@ def test__whitelist_for_active_markets(mocker, whitelist_conf, markets, pairlist
     caplog.clear()
 
     # Assign starting whitelist
-    new_whitelist = freqtrade.pairlists._pairlists[0]._whitelist_for_active_markets(whitelist)
+    pairlist_handler = freqtrade.pairlists._pairlist_handlers[0]
+    new_whitelist = pairlist_handler._whitelist_for_active_markets(whitelist)
 
     assert set(new_whitelist) == set(['ETH/BTC', 'TKN/BTC'])
     assert log_message in caplog.text
@@ -344,17 +343,17 @@ def test_volumepairlist_caching(mocker, markets, whitelist_conf, tickers):
                           get_tickers=tickers
                           )
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
-    assert freqtrade.pairlists._pairlists[0]._last_refresh == 0
+    assert freqtrade.pairlists._pairlist_handlers[0]._last_refresh == 0
     assert tickers.call_count == 0
     freqtrade.pairlists.refresh_pairlist()
     assert tickers.call_count == 1
 
-    assert freqtrade.pairlists._pairlists[0]._last_refresh != 0
-    lrf = freqtrade.pairlists._pairlists[0]._last_refresh
+    assert freqtrade.pairlists._pairlist_handlers[0]._last_refresh != 0
+    lrf = freqtrade.pairlists._pairlist_handlers[0]._last_refresh
     freqtrade.pairlists.refresh_pairlist()
     assert tickers.call_count == 1
     # Time should not be updated.
-    assert freqtrade.pairlists._pairlists[0]._last_refresh == lrf
+    assert freqtrade.pairlists._pairlist_handlers[0]._last_refresh == lrf
 
 
 def test_pairlistmanager_no_pairlist(mocker, markets, whitelist_conf, caplog):
@@ -363,5 +362,5 @@ def test_pairlistmanager_no_pairlist(mocker, markets, whitelist_conf, caplog):
     whitelist_conf['pairlists'] = []
 
     with pytest.raises(OperationalException,
-                       match=r"No Pairlist defined!"):
+                       match=r"No Pairlist Handlers defined"):
         get_patched_freqtradebot(mocker, whitelist_conf)
