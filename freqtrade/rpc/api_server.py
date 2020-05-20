@@ -89,7 +89,9 @@ class ApiServer(RPC):
 
         self._config = freqtrade.config
         self.app = Flask(__name__)
-        self._cors = CORS(self.app, resources={r"/api/*": {"origins": "*"}})
+        self._cors = CORS(self.app,
+                          resources={r"/api/*": {"origins": "*", "supports_credentials": True}},
+                          )
 
         # Setup the Flask-JWT-Extended extension
         self.app.config['JWT_SECRET_KEY'] = self._config['api_server'].get(
