@@ -2,8 +2,7 @@
 Spread pair list filter
 """
 import logging
-from copy import deepcopy
-from typing import Dict, List
+from typing import Any, Dict
 
 from freqtrade.pairlist.IPairList import IPairList
 
@@ -13,7 +12,8 @@ logger = logging.getLogger(__name__)
 
 class SpreadFilter(IPairList):
 
-    def __init__(self, exchange, pairlistmanager, config, pairlistconfig: dict,
+    def __init__(self, exchange, pairlistmanager,
+                 config: Dict[str, Any], pairlistconfig: Dict[str, Any],
                  pairlist_pos: int) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
@@ -35,7 +35,7 @@ class SpreadFilter(IPairList):
         return (f"{self.name} - Filtering pairs with ask/bid diff above "
                 f"{self._max_spread_ratio * 100}%.")
 
-    def _validate_spread(self, ticker: dict) -> bool:
+    def _validate_pair(self, ticker: dict) -> bool:
         """
         Validate spread for the ticker
         :param ticker: ticker dict as returned from ccxt.load_markets()
@@ -51,20 +51,3 @@ class SpreadFilter(IPairList):
             else:
                 return True
         return False
-
-    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
-        """
-        Filters and sorts pairlist and returns the whitelist again.
-        Called on each bot iteration - please use internal caching if necessary
-        :param pairlist: pairlist to filter or sort
-        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
-        :return: new whitelist
-        """
-        # Copy list since we're modifying this list
-        for p in deepcopy(pairlist):
-            ticker = tickers[p]
-            # Filter out assets
-            if not self._validate_spread(ticker):
-                pairlist.remove(p)
-
-        return pairlist

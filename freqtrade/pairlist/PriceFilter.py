@@ -2,8 +2,7 @@
 Price pair list filter
 """
 import logging
-from copy import deepcopy
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from freqtrade.pairlist.IPairList import IPairList
 
@@ -35,12 +34,15 @@ class PriceFilter(IPairList):
         """
         return f"{self.name} - Filtering pairs priced below {self._low_price_ratio * 100}%."
 
-    def _validate_ticker_lowprice(self, ticker) -> bool:
+    def _validate_pair(self, ticker) -> bool:
         """
         Check if if one price-step (pip) is > than a certain barrier.
         :param ticker: ticker dict as returned from ccxt.load_markets()
         :return: True if the pair can stay, false if it should be removed
         """
+        if not self._low_price_ratio:
+            return True
+
         if ticker['last'] is None:
             self.log_on_refresh(logger.info,
                                 f"Removed {ticker['symbol']} from whitelist, because "
@@ -53,20 +55,3 @@ class PriceFilter(IPairList):
                                              f"because 1 unit is {changeperc * 100:.3f}%")
             return False
         return True
-
-    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
-        """
-        Filters and sorts pairlist and returns the whitelist again.
-        Called on each bot iteration - please use internal caching if necessary
-        :param pairlist: pairlist to filter or sort
-        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
-        :return: new whitelist
-        """
-        if self._low_price_ratio:
-            # Copy list since we're modifying this list
-            for p in deepcopy(pairlist):
-                # Filter out assets which would not allow setting a stoploss
-                if not self._validate_ticker_lowprice(tickers[p]):
-                    pairlist.remove(p)
-
-        return pairlist
