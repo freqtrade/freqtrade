@@ -39,17 +39,21 @@ def client_post(client, url, data={}):
     return client.post(url,
                        content_type="application/json",
                        data=data,
-                       headers={'Authorization': _basic_auth_str(_TEST_USER, _TEST_PASS)})
+                       headers={'Authorization': _basic_auth_str(_TEST_USER, _TEST_PASS),
+                                'Origin': 'example.com'})
 
 
 def client_get(client, url):
-    return client.get(url, headers={'Authorization': _basic_auth_str(_TEST_USER, _TEST_PASS)})
+    # Add fake Origin to ensure CORS kicks in
+    return client.get(url, headers={'Authorization': _basic_auth_str(_TEST_USER, _TEST_PASS),
+                                    'Origin': 'example.com'})
 
 
-def assert_response(response, expected_code=200):
+def assert_response(response, expected_code=200, needs_cors=True):
     assert response.status_code == expected_code
     assert response.content_type == "application/json"
-    assert ('Access-Control-Allow-Origin', '*') in response.headers._list
+    if needs_cors:
+        assert ('Access-Control-Allow-Credentials', 'true') in response.headers._list
 
 
 def test_api_not_found(botclient):
@@ -66,12 +70,12 @@ def test_api_not_found(botclient):
 def test_api_unauthorized(botclient):
     ftbot, client = botclient
     rc = client.get(f"{BASE_URI}/ping")
-    assert_response(rc)
+    assert_response(rc, needs_cors=False)
     assert rc.json == {'status': 'pong'}
 
     # Don't send user/pass information
     rc = client.get(f"{BASE_URI}/version")
-    assert_response(rc, 401)
+    assert_response(rc, 401, needs_cors=False)
     assert rc.json == {'error': 'Unauthorized'}
 
     # Change only username
@@ -105,7 +109,8 @@ def test_api_token_login(botclient):
     # test Authentication is working with JWT tokens too
     rc = client.get(f"{BASE_URI}/count",
                     content_type="application/json",
-                    headers={'Authorization': f'Bearer {rc.json["access_token"]}'})
+                    headers={'Authorization': f'Bearer {rc.json["access_token"]}',
+                             'Origin': 'example.com'})
     assert_response(rc)
 
 
@@ -116,7 +121,8 @@ def test_api_token_refresh(botclient):
     rc = client.post(f"{BASE_URI}/token/refresh",
                      content_type="application/json",
                      data=None,
-                     headers={'Authorization': f'Bearer {rc.json["refresh_token"]}'})
+                     headers={'Authorization': f'Bearer {rc.json["refresh_token"]}',
+                              'Origin': 'example.com'})
     assert_response(rc)
     assert 'access_token' in rc.json
     assert 'refresh_token' not in rc.json
