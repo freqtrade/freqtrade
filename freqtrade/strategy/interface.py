@@ -310,7 +310,6 @@ class IStrategy(ABC):
             logger.warning('Empty candle (OHLCV) data for pair %s', pair)
             return False, False
 
-        latest_date = dataframe['date'].max()
         try:
             df_len, df_close, df_date = self.preserve_df(dataframe)
             dataframe = strategy_safe_wrapper(
@@ -326,25 +325,25 @@ class IStrategy(ABC):
             logger.warning('Empty dataframe for pair %s', pair)
             return False, False
 
+        latest_date = dataframe['date'].max()
         latest = dataframe.loc[dataframe['date'] == latest_date].iloc[-1]
 
-        signal_date = arrow.get(latest['date'])
         interval_minutes = timeframe_to_minutes(interval)
 
         # Check if dataframe is out of date
         offset = self.config.get('exchange', {}).get('outdated_offset', 5)
-        if signal_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + offset))):
+        if latest_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + offset))):
             logger.warning(
                 'Outdated history for pair %s. Last tick is %s minutes old',
                 pair,
-                int((arrow.utcnow() - signal_date).total_seconds() // 60)
+                int((arrow.utcnow() - latest_date).total_seconds() // 60)
             )
             return False, False
 
         # Check if dataframe has new candle
-        if (arrow.utcnow() - signal_date).total_seconds() // 60 >= interval_minutes:
+        if (arrow.utcnow() - latest_date).total_seconds() // 60 >= interval_minutes:
             logger.warning('Old candle for pair %s. Last candle is %s minutes old',
-                           pair, int((arrow.utcnow() - signal_date).total_seconds() // 60))
+                           pair, int((arrow.utcnow() - latest_date).total_seconds() // 60))
             return False, False
 
         (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
