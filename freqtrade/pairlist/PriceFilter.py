@@ -18,6 +18,7 @@ class PriceFilter(IPairList):
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
         self._low_price_ratio = pairlistconfig.get('low_price_ratio', 0)
+        self._enabled = self._low_price_ratio != 0
 
     @property
     def needstickers(self) -> bool:
@@ -40,9 +41,6 @@ class PriceFilter(IPairList):
         :param ticker: ticker dict as returned from ccxt.load_markets()
         :return: True if the pair can stay, false if it should be removed
         """
-        if not self._low_price_ratio:
-            return True
-
         if ticker['last'] is None:
             self.log_on_refresh(logger.info,
                                 f"Removed {ticker['symbol']} from whitelist, because "

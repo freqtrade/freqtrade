@@ -18,6 +18,7 @@ class SpreadFilter(IPairList):
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
         self._max_spread_ratio = pairlistconfig.get('max_spread_ratio', 0.005)
+        self._enabled = self._max_spread_ratio != 0
 
     @property
     def needstickers(self) -> bool:

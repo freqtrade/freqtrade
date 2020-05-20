@@ -26,6 +26,8 @@ class IPairList(ABC):
         :param pairlistconfig: Configuration for this Pairlist Handler - can be empty.
         :param pairlist_pos: Position of the Pairlist Handler in the chain
         """
+        self._enabled = True
+
         self._exchange = exchange
         self._pairlistmanager = pairlistmanager
         self._config = config
@@ -103,11 +105,12 @@ class IPairList(ABC):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
-        # Copy list since we're modifying this list
-        for p in deepcopy(pairlist):
-            # Filter out assets
-            if not self._validate_pair(tickers[p]):
-                pairlist.remove(p)
+        if self._enabled:
+            # Copy list since we're modifying this list
+            for p in deepcopy(pairlist):
+                # Filter out assets
+                if not self._validate_pair(tickers[p]):
+                    pairlist.remove(p)
 
         return pairlist
 
