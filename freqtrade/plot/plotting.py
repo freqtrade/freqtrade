@@ -237,19 +237,24 @@ def create_plotconfig(indicators1: List[str], indicators2: List[str],
     :return: plot_config - eventually with indicators 1 and 2
     """
     if plot_config:
+        #maybe main or sub is given, not both.
+        if 'main_plot' not in plot_config.keys():
+            plot_config['main_plot'] = {}
+
+        if 'subplots' not in plot_config.keys():
+            plot_config['subplots'] = {}
         if indicators1:
             for ind in indicators1:
-                #add indicators with no advanced plot_config.
+                #add indicators with NO advanced plot_config, only! to be sure
+                #indicator colors given in advanced plot_config will not be
+                #overwritten.
                 if ind not in plot_config['main_plot'].keys():
                     plot_config['main_plot'][ind] = {}
         if indicators2:
-            #'Other' key not provided in strategy.plot_config.
-            if 'Other' not in plot_config['subplots'].keys():
-                plot_config['subplots'] = {'Other': plot_config['subplots']}
-            for ind in indicators2:
-                #add indicators with no advanced plot_config 
-                if ind not in plot_config['subplots']['Other'].keys():
-                    plot_config['subplots']['Other'][ind] = {}
+            #add other indicators given on cmd line to advanced plot_config.
+            plot_config['subplots'].update(
+                {'Other' : {ind : {} for ind in indicators2}}
+            )
 
     if not plot_config:
         # If no indicators and no plot-config given, use defaults.
@@ -264,12 +269,6 @@ def create_plotconfig(indicators1: List[str], indicators2: List[str],
             'subplots': {'Other': {ind: {} for ind in indicators2}},
         }
 
-    #!!!NON SENSE - isnt it?
-    if 'main_plot' not in plot_config:
-        plot_config['main_plot'] = {}
-
-    if 'subplots' not in plot_config:
-        plot_config['subplots'] = {}
     return plot_config
 
 
@@ -290,7 +289,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     :return: Plotly figure
     """
     plot_config = create_plotconfig(indicators1, indicators2, plot_config)
-
+    print(plot_config)
     rows = 2 + len(plot_config['subplots'])
     row_widths = [1 for _ in plot_config['subplots']]
     # Define the graph
