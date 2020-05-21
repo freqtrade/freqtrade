@@ -3,6 +3,7 @@ PairList Handler base class
 """
 import logging
 from abc import ABC, abstractmethod, abstractproperty
+from copy import deepcopy
 from typing import Any, Dict, List
 
 from cachetools import TTLCache, cached
@@ -25,6 +26,8 @@ class IPairList(ABC):
         :param pairlistconfig: Configuration for this Pairlist Handler - can be empty.
         :param pairlist_pos: Position of the Pairlist Handler in the chain
         """
+        self._enabled = True
+
         self._exchange = exchange
         self._pairlistmanager = pairlistmanager
         self._config = config
@@ -75,16 +78,41 @@ class IPairList(ABC):
         -> Please overwrite in subclasses
         """
 
-    @abstractmethod
+    def _validate_pair(self, ticker) -> bool:
+        """
+        Check one pair against Pairlist Handler's specific conditions.
+
+        Either implement it in the Pairlist Handler or override the generic
+        filter_pairlist() method.
+
+        :param ticker: ticker dict as returned from ccxt.load_markets()
+        :return: True if the pair can stay, false if it should be removed
+        """
+        raise NotImplementedError()
+
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
         Filters and sorts pairlist and returns the whitelist again.
+
         Called on each bot iteration - please use internal caching if necessary
-        -> Please overwrite in subclasses
+        This generic implementation calls self._validate_pair() for each pair
+        in the pairlist.
+
+        Some Pairlist Handlers override this generic implementation and employ
+        own filtration.
+
         :param pairlist: pairlist to filter or sort
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
+        if self._enabled:
+            # Copy list since we're modifying this list
+            for p in deepcopy(pairlist):
+                # Filter out assets
+                if not self._validate_pair(tickers[p]):
+                    pairlist.remove(p)
+
+        return pairlist
 
     def verify_blacklist(self, pairlist: List[str], logmethod) -> List[str]:
         """

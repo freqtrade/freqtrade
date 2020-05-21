@@ -19,7 +19,8 @@ SORT_VALUES = ['askVolume', 'bidVolume', 'quoteVolume']
 
 class VolumePairList(IPairList):
 
-    def __init__(self, exchange, pairlistmanager, config: Dict[str, Any], pairlistconfig: dict,
+    def __init__(self, exchange, pairlistmanager,
+                 config: Dict[str, Any], pairlistconfig: Dict[str, Any],
                  pairlist_pos: int) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
