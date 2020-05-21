@@ -10,8 +10,9 @@ from freqtrade.data.btanalysis import (calculate_max_drawdown,
                                        create_cum_profit,
                                        extract_trades_of_period, load_trades)
 from freqtrade.data.converter import trim_dataframe
-from freqtrade.exchange import timeframe_to_prev_date
 from freqtrade.data.history import load_data
+from freqtrade.exceptions import OperationalException
+from freqtrade.exchange import timeframe_to_prev_date
 from freqtrade.misc import pair_to_filename
 from freqtrade.resolvers import StrategyResolver
 
@@ -504,6 +505,9 @@ def plot_profit(config: Dict[str, Any]) -> None:
     trades = trades[(trades['pair'].isin(plot_elements["pairs"]))
                     & (~trades['close_time'].isnull())
                     ]
+    if len(trades) == 0:
+        raise OperationalException("No trades found, cannot generate Profit-plot without "
+                                   "trades from either Backtest result or database.")
 
     # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
