@@ -19,7 +19,8 @@ def whitelist_conf(default_conf):
         'TKN/BTC',
         'TRST/BTC',
         'SWT/BTC',
-        'BCC/BTC'
+        'BCC/BTC',
+        'HOT/BTC'
     ]
     default_conf['exchange']['pair_blacklist'] = [
         'BLK/BTC'
@@ -202,6 +203,9 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
 
 
 @pytest.mark.parametrize("pairlists,base_currency,whitelist_result", [
+    # Empty pairlist
+    ([],
+     "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC', 'HOT/BTC']),
     # VolumePairList only
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"}],
      "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC', 'HOT/BTC']),
@@ -249,11 +253,11 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
      "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC']),
     # StaticPairlist only
     ([{"method": "StaticPairList"}],
-     "BTC", ['ETH/BTC', 'TKN/BTC']),
+     "BTC", ['ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
     # Static Pairlist before VolumePairList - sorting changes
     ([{"method": "StaticPairList"},
       {"method": "VolumePairList", "number_assets": 5, "sort_key": "bidVolume"}],
-     "BTC", ['TKN/BTC', 'ETH/BTC']),
+     "BTC", ['HOT/BTC', 'TKN/BTC', 'ETH/BTC']),
     # SpreadFilter
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "SpreadFilter", "max_spread_ratio": 0.005}],
@@ -270,6 +274,34 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "ShuffleFilter"}],
      "USDT", 3),
+    # PrecisionFilter after StaticPairList
+    ([{"method": "StaticPairList"},
+      {"method": "PrecisionFilter"}],
+     "BTC", ['ETH/BTC', 'TKN/BTC']),
+    # PrecisionFilter only
+    ([{"method": "PrecisionFilter"}],
+     "BTC", ['ETH/BTC', 'TKN/BTC']),
+    # PriceFilter after StaticPairList
+    ([{"method": "StaticPairList"},
+      {"method": "PriceFilter", "low_price_ratio": 0.02}],
+     "BTC", ['ETH/BTC', 'TKN/BTC']),
+    # PriceFilter only
+    ([{"method": "PriceFilter", "low_price_ratio": 0.02}],
+     "BTC", ['ETH/BTC', 'TKN/BTC']),
+    # ShuffleFilter after StaticPairList
+    ([{"method": "StaticPairList"},
+      {"method": "ShuffleFilter", "seed": 42}],
+     "BTC", ['TKN/BTC', 'ETH/BTC', 'HOT/BTC']),
+    # ShuffleFilter only
+    ([{"method": "ShuffleFilter", "seed": 42}],
+     "BTC", ['TKN/BTC', 'ETH/BTC', 'HOT/BTC']),
+    # SpreadFilter after StaticPairList
+    ([{"method": "StaticPairList"},
+      {"method": "SpreadFilter", "max_spread_ratio": 0.005}],
+     "BTC", ['ETH/BTC', 'TKN/BTC']),
+    # SpreadFilter only
+    ([{"method": "SpreadFilter", "max_spread_ratio": 0.005}],
+     "BTC", ['ETH/BTC', 'TKN/BTC']),
 ])
 def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, tickers,
                                       pairlists, base_currency, whitelist_result,
