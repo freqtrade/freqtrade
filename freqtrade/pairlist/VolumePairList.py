@@ -36,8 +36,8 @@ class VolumePairList(IPairList):
 
         if not self._exchange.exchange_has('fetchTickers'):
             raise OperationalException(
-                'Exchange does not support dynamic whitelist.'
-                'Please edit your config and restart the bot'
+                'Exchange does not support dynamic whitelist. '
+                'Please edit your config and restart the bot.'
             )
 
         if not self._validate_keys(self._sort_key):

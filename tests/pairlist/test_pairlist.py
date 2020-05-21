@@ -35,6 +35,28 @@ def whitelist_conf(default_conf):
 
 
 @pytest.fixture(scope="function")
+def whitelist_conf_2(default_conf):
+    default_conf['stake_currency'] = 'BTC'
+    default_conf['exchange']['pair_whitelist'] = [
+        'ETH/BTC', 'TKN/BTC', 'BLK/BTC', 'LTC/BTC',
+        'BTT/BTC', 'HOT/BTC', 'FUEL/BTC', 'XRP/BTC'
+    ]
+    default_conf['exchange']['pair_blacklist'] = [
+        'BLK/BTC'
+    ]
+    default_conf['pairlists'] = [
+        # {   "method": "StaticPairList"},
+        {
+            "method": "VolumePairList",
+            "number_assets": 5,
+            "sort_key": "quoteVolume",
+            "refresh_period": 0,
+        },
+    ]
+    return default_conf
+
+
+@pytest.fixture(scope="function")
 def static_pl_conf(whitelist_conf):
     whitelist_conf['pairlists'] = [
         {
@@ -119,22 +141,47 @@ def test_refresh_pairlist_dynamic(mocker, shitcoinmarkets, tickers, whitelist_co
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         markets=PropertyMock(return_value=shitcoinmarkets),
-     )
+    )
     # argument: use the whitelist dynamically by exchange-volume
     whitelist = ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC', 'HOT/BTC']
     freqtrade.pairlists.refresh_pairlist()
-
     assert whitelist == freqtrade.pairlists.whitelist
 
-    whitelist_conf['pairlists'] = [{'method': 'VolumePairList',
-                                    'config': {}
-                                    }
-                                   ]
-
+    whitelist_conf['pairlists'] = [{'method': 'VolumePairList'}]
     with pytest.raises(OperationalException,
                        match=r'`number_assets` not specified. Please check your configuration '
                              r'for "pairlist.config.number_assets"'):
         PairListManager(freqtrade.exchange, whitelist_conf)
+
+
+def test_refresh_pairlist_dynamic_2(mocker, shitcoinmarkets, tickers, whitelist_conf_2):
+
+    tickers_dict = tickers()
+
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        exchange_has=MagicMock(return_value=True),
+    )
+    # Remove caching of ticker data to emulate changing volume by the time of second call
+    mocker.patch.multiple(
+        'freqtrade.pairlist.pairlistmanager.PairListManager',
+        _get_cached_tickers=MagicMock(return_value=tickers_dict),
+    )
+    freqtrade = get_patched_freqtradebot(mocker, whitelist_conf_2)
+    # Remock markets with shitcoinmarkets since get_patched_freqtradebot uses the markets fixture
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        markets=PropertyMock(return_value=shitcoinmarkets),
+    )
+
+    whitelist = ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC', 'HOT/BTC']
+    freqtrade.pairlists.refresh_pairlist()
+    assert whitelist == freqtrade.pairlists.whitelist
+
+    whitelist = ['FUEL/BTC', 'ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC']
+    tickers_dict['FUEL/BTC']['quoteVolume'] = 10000.0
+    freqtrade.pairlists.refresh_pairlist()
+    assert whitelist == freqtrade.pairlists.whitelist
 
 
 def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
@@ -267,16 +314,15 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
 
 
 def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None:
-    default_conf['pairlists'] = [{'method': 'VolumePairList',
-                                  'config': {'number_assets': 10}
-                                  }]
+    default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10}]
 
     mocker.patch.multiple('freqtrade.exchange.Exchange',
                           get_tickers=tickers,
                           exchange_has=MagicMock(return_value=False),
                           )
 
-    with pytest.raises(OperationalException):
+    with pytest.raises(OperationalException,
+                       match=r'Exchange does not support dynamic whitelist.*'):
         get_patched_freqtradebot(mocker, default_conf)
 
 
