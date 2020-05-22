@@ -3,6 +3,9 @@
 """
 bot constants
 """
+from typing import List, Tuple
+
+
 DEFAULT_CONFIG = 'config.json'
 DEFAULT_EXCHANGE = 'bittrex'
 PROCESS_THROTTLE_SECS = 5  # sec
@@ -329,3 +332,6 @@ CANCEL_REASON = {
     "ALL_CANCELLED": "cancelled (all unfilled and partially filled open orders cancelled)",
     "CANCELLED_ON_EXCHANGE": "cancelled on exchange",
 }
+
+# List of pairs with their timeframes
+ListPairsWithTimeframes = List[Tuple[str, str]]
