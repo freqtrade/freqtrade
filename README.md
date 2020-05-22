@@ -79,8 +79,8 @@ positional arguments:
     trade               Trade module.
     create-userdir      Create user-data directory.
     new-config          Create new config
-    new-strategy        Create new strategy
     new-hyperopt        Create new hyperopt
+    new-strategy        Create new strategy
     download-data       Download backtesting data.
     convert-data        Convert candle (OHLCV) data from one format to another.
     convert-trade-data  Convert trade data from one format to another.

@@ -194,17 +194,17 @@ class Arguments:
         build_config_cmd.set_defaults(func=start_new_config)
         self._build_args(optionlist=ARGS_BUILD_CONFIG, parser=build_config_cmd)
 
-        # add new-strategy subcommand
-        build_strategy_cmd = subparsers.add_parser('new-strategy',
-                                                   help="Create new strategy")
-        build_strategy_cmd.set_defaults(func=start_new_strategy)
-        self._build_args(optionlist=ARGS_BUILD_STRATEGY, parser=build_strategy_cmd)
-
         # add new-hyperopt subcommand
         build_hyperopt_cmd = subparsers.add_parser('new-hyperopt',
                                                    help="Create new hyperopt")
         build_hyperopt_cmd.set_defaults(func=start_new_hyperopt)
         self._build_args(optionlist=ARGS_BUILD_HYPEROPT, parser=build_hyperopt_cmd)
+
+        # add new-strategy subcommand
+        build_strategy_cmd = subparsers.add_parser('new-strategy',
+                                                   help="Create new strategy")
+        build_strategy_cmd.set_defaults(func=start_new_strategy)
+        self._build_args(optionlist=ARGS_BUILD_STRATEGY, parser=build_strategy_cmd)
 
         # Add download-data subcommand
         download_data_cmd = subparsers.add_parser(
