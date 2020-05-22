@@ -27,3 +27,11 @@ def start_trading(args: Dict[str, Any]) -> int:
             logger.info("worker found ... calling exit")
             worker.exit()
     return 0
+
+
+def start_webserver(args: Dict[str, Any]) -> int:
+    """
+    Main entry point for webserver mode
+    """
+
+    print(args)
