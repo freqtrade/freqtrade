@@ -202,21 +202,21 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     assert set(whitelist) == set(pairslist)
 
 
-@pytest.mark.parametrize("pairlists,base_currency,whitelist_result,operational_exception", [
+@pytest.mark.parametrize("pairlists,base_currency,whitelist_result", [
     # VolumePairList only
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"}],
-     "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC', 'HOT/BTC'], False),
+     "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC', 'HOT/BTC']),
     # Different sorting depending on quote or bid volume
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "bidVolume"}],
-     "BTC",  ['HOT/BTC', 'FUEL/BTC', 'XRP/BTC', 'LTC/BTC', 'TKN/BTC'], False),
+     "BTC",  ['HOT/BTC', 'FUEL/BTC', 'XRP/BTC', 'LTC/BTC', 'TKN/BTC']),
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"}],
-     "USDT", ['ETH/USDT', 'NANO/USDT', 'ADAHALF/USDT'], False),
+     "USDT", ['ETH/USDT', 'NANO/USDT', 'ADAHALF/USDT']),
     # No pair for ETH, VolumePairList
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"}],
-     "ETH", [], False),
+     "ETH", []),
     # No pair for ETH, StaticPairList
     ([{"method": "StaticPairList"}],
-     "ETH", [], False),
+     "ETH", []),
     # No pair for ETH, all handlers
     ([{"method": "StaticPairList"},
       {"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
@@ -224,87 +224,87 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
       {"method": "PriceFilter", "low_price_ratio": 0.03},
       {"method": "SpreadFilter", "max_spread_ratio": 0.005},
       {"method": "ShuffleFilter"}],
-     "ETH", [], False),
+     "ETH", []),
     # Precisionfilter and quote volume
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "PrecisionFilter"}],
-     "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC'], False),
+     "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC']),
     # Precisionfilter bid
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "bidVolume"},
       {"method": "PrecisionFilter"}],
-     "BTC", ['FUEL/BTC', 'XRP/BTC', 'LTC/BTC', 'TKN/BTC'], False),
+     "BTC", ['FUEL/BTC', 'XRP/BTC', 'LTC/BTC', 'TKN/BTC']),
     # PriceFilter and VolumePairList
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "PriceFilter", "low_price_ratio": 0.03}],
-     "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC'], False),
+     "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC']),
     # PriceFilter and VolumePairList
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "PriceFilter", "low_price_ratio": 0.03}],
-     "USDT", ['ETH/USDT', 'NANO/USDT'], False),
+     "USDT", ['ETH/USDT', 'NANO/USDT']),
     # Hot is removed by precision_filter, Fuel by low_price_filter.
     ([{"method": "VolumePairList", "number_assets": 6, "sort_key": "quoteVolume"},
       {"method": "PrecisionFilter"},
       {"method": "PriceFilter", "low_price_ratio": 0.02}],
-     "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC'], False),
+     "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC']),
     # HOT and XRP are removed because below 1250 quoteVolume
     ([{"method": "VolumePairList", "number_assets": 5,
        "sort_key": "quoteVolume", "min_value": 1250}],
-     "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC'], False),
+     "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC']),
     # StaticPairlist only
     ([{"method": "StaticPairList"}],
-     "BTC", ['ETH/BTC', 'TKN/BTC', 'HOT/BTC'], False),
+     "BTC", ['ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
     # Static Pairlist before VolumePairList - sorting changes
     ([{"method": "StaticPairList"},
       {"method": "VolumePairList", "number_assets": 5, "sort_key": "bidVolume"}],
-     "BTC", ['HOT/BTC', 'TKN/BTC', 'ETH/BTC'], False),
+     "BTC", ['HOT/BTC', 'TKN/BTC', 'ETH/BTC']),
     # SpreadFilter
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "SpreadFilter", "max_spread_ratio": 0.005}],
-     "USDT", ['ETH/USDT'], False),
+     "USDT", ['ETH/USDT']),
     # ShuffleFilter
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "ShuffleFilter", "seed": 77}],
-     "USDT", ['ETH/USDT', 'ADAHALF/USDT', 'NANO/USDT'], False),
+     "USDT", ['ETH/USDT', 'ADAHALF/USDT', 'NANO/USDT']),
     # ShuffleFilter, other seed
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "ShuffleFilter", "seed": 42}],
-     "USDT", ['NANO/USDT', 'ETH/USDT', 'ADAHALF/USDT'], False),
+     "USDT", ['NANO/USDT', 'ETH/USDT', 'ADAHALF/USDT']),
     # ShuffleFilter, no seed
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "ShuffleFilter"}],
-     "USDT", 3, False),
+     "USDT", 3),  # whitelist_result is integer -- check only lenght of randomized pairlist
     # PrecisionFilter after StaticPairList
     ([{"method": "StaticPairList"},
       {"method": "PrecisionFilter"}],
-     "BTC", ['ETH/BTC', 'TKN/BTC'], False),
+     "BTC", ['ETH/BTC', 'TKN/BTC']),
     # PrecisionFilter only
     ([{"method": "PrecisionFilter"}],
-     "BTC", ['ETH/BTC', 'TKN/BTC'], True),
+     "BTC", None),  # OperationalException expected
     # PriceFilter after StaticPairList
     ([{"method": "StaticPairList"},
       {"method": "PriceFilter", "low_price_ratio": 0.02}],
-     "BTC", ['ETH/BTC', 'TKN/BTC'], False),
+     "BTC", ['ETH/BTC', 'TKN/BTC']),
     # PriceFilter only
     ([{"method": "PriceFilter", "low_price_ratio": 0.02}],
-     "BTC", ['ETH/BTC', 'TKN/BTC'], True),
+     "BTC", None),  # OperationalException expected
     # ShuffleFilter after StaticPairList
     ([{"method": "StaticPairList"},
       {"method": "ShuffleFilter", "seed": 42}],
-     "BTC", ['TKN/BTC', 'ETH/BTC', 'HOT/BTC'], False),
+     "BTC", ['TKN/BTC', 'ETH/BTC', 'HOT/BTC']),
     # ShuffleFilter only
     ([{"method": "ShuffleFilter", "seed": 42}],
-     "BTC", ['TKN/BTC', 'ETH/BTC', 'HOT/BTC'], True),
+     "BTC", None),  # OperationalException expected
     # SpreadFilter after StaticPairList
     ([{"method": "StaticPairList"},
       {"method": "SpreadFilter", "max_spread_ratio": 0.005}],
-     "BTC", ['ETH/BTC', 'TKN/BTC'], False),
+     "BTC", ['ETH/BTC', 'TKN/BTC']),
     # SpreadFilter only
     ([{"method": "SpreadFilter", "max_spread_ratio": 0.005}],
-     "BTC", ['ETH/BTC', 'TKN/BTC'], True),
+     "BTC", None),  # OperationalException expected
 ])
 def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, tickers,
                                       pairlists, base_currency, whitelist_result,
-                                      operational_exception, caplog) -> None:
+                                      caplog) -> None:
     whitelist_conf['pairlists'] = pairlists
     whitelist_conf['stake_currency'] = base_currency
 
@@ -316,7 +316,8 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
                           markets=PropertyMock(return_value=shitcoinmarkets),
                           )
 
-    if operational_exception:
+    # Set whitelist_result to None if pairlist is invalid and should produce exception
+    if whitelist_result is None:
         with pytest.raises(OperationalException,
                            match=r"This Pairlist Handler should not be used at the first position "
                                  r"in the list of Pairlist Handlers."):
