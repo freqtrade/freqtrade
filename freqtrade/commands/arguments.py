@@ -181,25 +181,6 @@ class Arguments:
         trade_cmd.set_defaults(func=start_trading)
         self._build_args(optionlist=ARGS_TRADE, parser=trade_cmd)
 
-        # Add backtesting subcommand
-        backtesting_cmd = subparsers.add_parser('backtesting', help='Backtesting module.',
-                                                parents=[_common_parser, _strategy_parser])
-        backtesting_cmd.set_defaults(func=start_backtesting)
-        self._build_args(optionlist=ARGS_BACKTEST, parser=backtesting_cmd)
-
-        # Add edge subcommand
-        edge_cmd = subparsers.add_parser('edge', help='Edge module.',
-                                         parents=[_common_parser, _strategy_parser])
-        edge_cmd.set_defaults(func=start_edge)
-        self._build_args(optionlist=ARGS_EDGE, parser=edge_cmd)
-
-        # Add hyperopt subcommand
-        hyperopt_cmd = subparsers.add_parser('hyperopt', help='Hyperopt module.',
-                                             parents=[_common_parser, _strategy_parser],
-                                             )
-        hyperopt_cmd.set_defaults(func=start_hyperopt)
-        self._build_args(optionlist=ARGS_HYPEROPT, parser=hyperopt_cmd)
-
         # add create-userdir subcommand
         create_userdir_cmd = subparsers.add_parser('create-userdir',
                                                    help="Create user-data directory.",
@@ -224,6 +205,18 @@ class Arguments:
                                                    help="Create new hyperopt")
         build_hyperopt_cmd.set_defaults(func=start_new_hyperopt)
         self._build_args(optionlist=ARGS_BUILD_HYPEROPT, parser=build_hyperopt_cmd)
+
+        # Add backtesting subcommand
+        backtesting_cmd = subparsers.add_parser('backtesting', help='Backtesting module.',
+                                                parents=[_common_parser, _strategy_parser])
+        backtesting_cmd.set_defaults(func=start_backtesting)
+        self._build_args(optionlist=ARGS_BACKTEST, parser=backtesting_cmd)
+
+        # Add edge subcommand
+        edge_cmd = subparsers.add_parser('edge', help='Edge module.',
+                                         parents=[_common_parser, _strategy_parser])
+        edge_cmd.set_defaults(func=start_edge)
+        self._build_args(optionlist=ARGS_EDGE, parser=edge_cmd)
 
         # Add list-strategies subcommand
         list_strategies_cmd = subparsers.add_parser(
@@ -287,6 +280,15 @@ class Arguments:
         test_pairlist_cmd.set_defaults(func=start_test_pairlist)
         self._build_args(optionlist=ARGS_TEST_PAIRLIST, parser=test_pairlist_cmd)
 
+        # Add show-trades subcommand
+        show_trades = subparsers.add_parser(
+            'show-trades',
+            help='Show trades.',
+            parents=[_common_parser],
+        )
+        show_trades.set_defaults(func=start_show_trades)
+        self._build_args(optionlist=ARGS_SHOW_TRADES, parser=show_trades)
+
         # Add download-data subcommand
         download_data_cmd = subparsers.add_parser(
             'download-data',
@@ -332,14 +334,12 @@ class Arguments:
         plot_profit_cmd.set_defaults(func=start_plot_profit)
         self._build_args(optionlist=ARGS_PLOT_PROFIT, parser=plot_profit_cmd)
 
-        # Add show-trades subcommand
-        show_trades = subparsers.add_parser(
-            'show-trades',
-            help='Show trades.',
-            parents=[_common_parser],
-        )
-        show_trades.set_defaults(func=start_show_trades)
-        self._build_args(optionlist=ARGS_SHOW_TRADES, parser=show_trades)
+        # Add hyperopt subcommand
+        hyperopt_cmd = subparsers.add_parser('hyperopt', help='Hyperopt module.',
+                                             parents=[_common_parser, _strategy_parser],
+                                             )
+        hyperopt_cmd.set_defaults(func=start_hyperopt)
+        self._build_args(optionlist=ARGS_HYPEROPT, parser=hyperopt_cmd)
 
         # Add hyperopt-list subcommand
         hyperopt_list_cmd = subparsers.add_parser(
