@@ -270,24 +270,6 @@ class Arguments:
         hyperopt_show_cmd.set_defaults(func=start_hyperopt_show)
         self._build_args(optionlist=ARGS_HYPEROPT_SHOW, parser=hyperopt_show_cmd)
 
-        # Add list-strategies subcommand
-        list_strategies_cmd = subparsers.add_parser(
-            'list-strategies',
-            help='Print available strategies.',
-            parents=[_common_parser],
-        )
-        list_strategies_cmd.set_defaults(func=start_list_strategies)
-        self._build_args(optionlist=ARGS_LIST_STRATEGIES, parser=list_strategies_cmd)
-
-        # Add list-hyperopts subcommand
-        list_hyperopts_cmd = subparsers.add_parser(
-            'list-hyperopts',
-            help='Print available hyperopt classes.',
-            parents=[_common_parser],
-        )
-        list_hyperopts_cmd.set_defaults(func=start_list_hyperopts)
-        self._build_args(optionlist=ARGS_LIST_HYPEROPTS, parser=list_hyperopts_cmd)
-
         # Add list-exchanges subcommand
         list_exchanges_cmd = subparsers.add_parser(
             'list-exchanges',
@@ -297,14 +279,14 @@ class Arguments:
         list_exchanges_cmd.set_defaults(func=start_list_exchanges)
         self._build_args(optionlist=ARGS_LIST_EXCHANGES, parser=list_exchanges_cmd)
 
-        # Add list-timeframes subcommand
-        list_timeframes_cmd = subparsers.add_parser(
-            'list-timeframes',
-            help='Print available ticker intervals (timeframes) for the exchange.',
+        # Add list-hyperopts subcommand
+        list_hyperopts_cmd = subparsers.add_parser(
+            'list-hyperopts',
+            help='Print available hyperopt classes.',
             parents=[_common_parser],
         )
-        list_timeframes_cmd.set_defaults(func=start_list_timeframes)
-        self._build_args(optionlist=ARGS_LIST_TIMEFRAMES, parser=list_timeframes_cmd)
+        list_hyperopts_cmd.set_defaults(func=start_list_hyperopts)
+        self._build_args(optionlist=ARGS_LIST_HYPEROPTS, parser=list_hyperopts_cmd)
 
         # Add list-markets subcommand
         list_markets_cmd = subparsers.add_parser(
@@ -324,13 +306,23 @@ class Arguments:
         list_pairs_cmd.set_defaults(func=partial(start_list_markets, pairs_only=True))
         self._build_args(optionlist=ARGS_LIST_PAIRS, parser=list_pairs_cmd)
 
-        # Add test-pairlist subcommand
-        test_pairlist_cmd = subparsers.add_parser(
-            'test-pairlist',
-            help='Test your pairlist configuration.',
+        # Add list-strategies subcommand
+        list_strategies_cmd = subparsers.add_parser(
+            'list-strategies',
+            help='Print available strategies.',
+            parents=[_common_parser],
         )
-        test_pairlist_cmd.set_defaults(func=start_test_pairlist)
-        self._build_args(optionlist=ARGS_TEST_PAIRLIST, parser=test_pairlist_cmd)
+        list_strategies_cmd.set_defaults(func=start_list_strategies)
+        self._build_args(optionlist=ARGS_LIST_STRATEGIES, parser=list_strategies_cmd)
+
+        # Add list-timeframes subcommand
+        list_timeframes_cmd = subparsers.add_parser(
+            'list-timeframes',
+            help='Print available ticker intervals (timeframes) for the exchange.',
+            parents=[_common_parser],
+        )
+        list_timeframes_cmd.set_defaults(func=start_list_timeframes)
+        self._build_args(optionlist=ARGS_LIST_TIMEFRAMES, parser=list_timeframes_cmd)
 
         # Add show-trades subcommand
         show_trades = subparsers.add_parser(
@@ -340,6 +332,14 @@ class Arguments:
         )
         show_trades.set_defaults(func=start_show_trades)
         self._build_args(optionlist=ARGS_SHOW_TRADES, parser=show_trades)
+
+        # Add test-pairlist subcommand
+        test_pairlist_cmd = subparsers.add_parser(
+            'test-pairlist',
+            help='Test your pairlist configuration.',
+        )
+        test_pairlist_cmd.set_defaults(func=start_test_pairlist)
+        self._build_args(optionlist=ARGS_TEST_PAIRLIST, parser=test_pairlist_cmd)
 
         # Add Plotting subcommand
         plot_dataframe_cmd = subparsers.add_parser(
