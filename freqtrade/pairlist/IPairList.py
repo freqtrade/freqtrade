@@ -8,6 +8,7 @@ from typing import Any, Dict, List
 
 from cachetools import TTLCache, cached
 
+from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import market_is_active
 
 
@@ -89,6 +90,16 @@ class IPairList(ABC):
         :return: True if the pair can stay, false if it should be removed
         """
         raise NotImplementedError()
+
+    def gen_pairlist(self, cached_pairlist: List[str], tickers: Dict) -> List[str]:
+        """
+        Generate the pairlist
+        :param cached_pairlist: Previously generated pairlist (cached)
+        :param tickers: Tickers (from exchange.get_tickers()).
+        :return: List of pairs
+        """
+        raise OperationalException("This Pairlist Handler should not be used "
+                                   "at the first position in the list of Pairlist Handlers.")
 
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """

@@ -30,6 +30,15 @@ class StaticPairList(IPairList):
         """
         return f"{self.name}"
 
+    def gen_pairlist(self, cached_pairlist: List[str], tickers: Dict) -> List[str]:
+        """
+        Generate the pairlist
+        :param cached_pairlist: Previously generated pairlist (cached)
+        :param tickers: Tickers (from exchange.get_tickers()).
+        :return: List of pairs
+        """
+        return self._whitelist_for_active_markets(self._config['exchange']['pair_whitelist'])
+
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
         Filters and sorts pairlist and returns the whitelist again.
@@ -38,4 +47,4 @@ class StaticPairList(IPairList):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
-        return self._whitelist_for_active_markets(self._config['exchange']['pair_whitelist'])
+        return pairlist
