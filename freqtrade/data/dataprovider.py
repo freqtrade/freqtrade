@@ -13,7 +13,7 @@ from freqtrade.data.history import load_pair_history
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.state import RunMode
-from freqtrade.typing import ListPairsWithTimeframes
+from freqtrade.constants import ListPairsWithTimeframes
 
 
 logger = logging.getLogger(__name__)
