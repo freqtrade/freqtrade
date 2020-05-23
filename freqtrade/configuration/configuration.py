@@ -71,7 +71,7 @@ class Configuration:
 
             # Merge config options, overwriting old values
             config = deep_merge_dicts(load_config_file(path), config)
-
+        config['config_files'] = files
         # Normalize config
         if 'internals' not in config:
             config['internals'] = {}
