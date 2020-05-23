@@ -1,9 +1,12 @@
-## Step 1: Have you search for this issue before posting it?
+<!-- 
+Note: this section will not show up in the issue.
+Have you search for this issue before posting it?
 
 If you have discovered a bug in the bot, please [search our issue tracker](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue). 
 If it hasn't been reported, please create a new issue.
+-->
 
-## Step 2: Describe your environment
+## Describe your environment
 
   * Operating system: ____
   * Python Version: _____ (`python -V`)
@@ -11,7 +14,9 @@ If it hasn't been reported, please create a new issue.
   * Branch: Master | Develop
   * Last Commit ID: _____ (`git log --format="%H" -n 1`)
   
-## Step 3: Describe the problem:
+Note: All issues other than enhancement requests will be closed without further comment if the above template is deleted or not filled out..
+
+## Describe the problem:
 
 *Explain the problem you have encountered*
 
@@ -26,7 +31,9 @@ If it hasn't been reported, please create a new issue.
   * What happened?
   * What did you expect to happen?
 
-### Relevant code exceptions or logs:
+### Relevant code exceptions or logs
+
+Note: Please copy/paste code, no screenshots of logs.
 
   ```
   // paste your log here
