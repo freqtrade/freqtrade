@@ -215,8 +215,8 @@ class Telegram(RPC):
                     "*Open Rate:* `{open_rate:.8f}`",
                     "*Close Rate:* `{close_rate}`" if r['close_rate'] else "",
                     "*Current Rate:* `{current_rate:.8f}`",
-                    "*Close Profit:* `{close_profit}`" if r['close_profit'] else "",
-                    "*Current Profit:* `{current_profit:.2f}%`",
+                    "*Close Profit:* `{close_profit}`" if r['close_profit_perc'] else "",
+                    "*Current Profit:* `{current_profit_perc:.2f}%`",
 
                     # Adding initial stoploss only if it is different from stoploss
                     "*Initial Stoploss:* `{initial_stop_loss:.8f}` " +
