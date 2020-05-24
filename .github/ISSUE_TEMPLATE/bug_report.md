@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 <!-- 
-Have you search for this issue before posting it?
+Have you searched for similar issues before posting it?
 
 If you have discovered a bug in the bot, please [search our issue tracker](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue). 
 If it hasn't been reported, please create a new issue.
@@ -22,7 +22,7 @@ Please do not use bug reports to request for new features.
   * CCXT version: _____ (`pip freeze | grep ccxt`)
   * Version: ____ (`freqtrade -V` | `docker-compose run --rm freqtrade -V`)
   
-Note: All issues other than enhancement requests will be closed without further comment if the above template is deleted or not filled out..
+Note: All issues other than enhancement requests will be closed without further comment if the above template is deleted or not filled out.
 
 ## Describe the problem:
 
@@ -41,7 +41,7 @@ Note: All issues other than enhancement requests will be closed without further 
 
 ### Relevant code exceptions or logs
 
-Note: Please copy/paste code, no screenshots of logs please.
+Note: Please copy/paste text of the messages, no screenshots of logs please.
 
   ```
   // paste your log here
