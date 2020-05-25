@@ -34,6 +34,13 @@ def store_backtest_result(recordfilename: Path, all_results: Dict[str, DataFrame
             file_dump_json(filename, records)
 
 
+def _get_line_floatfmt() -> List[str]:
+    """
+    Generate floatformat (goes in line with _generate_result_line())
+    """
+    return ['s', 'd', '.2f', '.2f', '.8f', '.2f', 'd', 'd', 'd', 'd']
+
+
 def _get_line_header(first_column: str, stake_currency: str) -> List[str]:
     """
     Generate header lines (goes in line with _generate_result_line())
@@ -43,31 +50,36 @@ def _get_line_header(first_column: str, stake_currency: str) -> List[str]:
             'Wins', 'Draws', 'Losses']
 
 
-def _generate_result_line(result: DataFrame, max_open_trades: int, first_column: str) -> List:
+def _generate_result_line(result: DataFrame, max_open_trades: int, first_column: str) -> Dict:
     """
-    Generate One Result line.
-    Columns are:
-        first_column
-        'Buys', 'Avg Profit %', 'Cum Profit %', f'Tot Profit',
-        'Tot Profit %', 'Avg Duration', 'Wins', 'Draws', 'Losses'
+    Generate one result dict, with "first_column" as key.
     """
-    return [
-        first_column,
-        len(result.index),
-        result.profit_percent.mean() * 100.0,
-        result.profit_percent.sum() * 100.0,
-        result.profit_abs.sum(),
-        result.profit_percent.sum() * 100.0 / max_open_trades,
-        str(timedelta(
-            minutes=round(result.trade_duration.mean()))) if not result.empty else '0:00',
-        len(result[result.profit_abs > 0]),
-        len(result[result.profit_abs == 0]),
-        len(result[result.profit_abs < 0])
-    ]
+    return {
+        'key': first_column,
+        'trades': len(result.index),
+        'profit_mean': result.profit_percent.mean(),
+        'profit_mean_pct': result.profit_percent.mean() * 100.0,
+        'profit_sum': result.profit_percent.sum() * 100.0,
+        'profit_sum_pct': result.profit_percent.sum() * 100.0,
+        'profit_total_abs': result.profit_abs.sum(),
+        'profit_total_pct': result.profit_percent.sum() * 100.0 / max_open_trades,
+        'duration_avg': str(timedelta(
+                            minutes=round(result.trade_duration.mean()))
+                            ) if not result.empty else '0:00',
+        # 'duration_max': str(timedelta(
+        #                     minutes=round(result.trade_duration.max()))
+        #                     ) if not result.empty else '0:00',
+        # 'duration_min': str(timedelta(
+        #                     minutes=round(result.trade_duration.min()))
+        #                     ) if not result.empty else '0:00',
+        'wins': len(result[result.profit_abs > 0]),
+        'draws': len(result[result.profit_abs == 0]),
+        'losses': len(result[result.profit_abs < 0]),
+    }
 
 
 def _generate_pair_results(data: Dict[str, Dict], stake_currency: str, max_open_trades: int,
-                           results: DataFrame, skip_nan: bool = False) -> Tuple:
+                           results: DataFrame, skip_nan: bool = False) -> List[Dict]:
     """
     Generates and returns a list  for the given backtest data and the results dataframe
     :param data: Dict of <pair: dataframe> containing data that was used during backtesting.
@@ -78,9 +90,8 @@ def _generate_pair_results(data: Dict[str, Dict], stake_currency: str, max_open_
     :return: Tuple of (data, headers, floatfmt) of summarized results.
     """
 
-    floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.2f', 'd', 'd', 'd', 'd')
     tabular_data = []
-    headers = _get_line_header('Pair', stake_currency)
+
     for pair in data:
         result = results[results.pair == pair]
         if skip_nan and result.profit_abs.isnull().all():
@@ -90,7 +101,7 @@ def _generate_pair_results(data: Dict[str, Dict], stake_currency: str, max_open_
 
     # Append Total
     tabular_data.append(_generate_result_line(results, max_open_trades, 'TOTAL'))
-    return tabular_data, headers, floatfmt
+    return tabular_data
 
 
 def generate_text_table(data: Dict[str, Dict], stake_currency: str, max_open_trades: int,
@@ -105,10 +116,15 @@ def generate_text_table(data: Dict[str, Dict], stake_currency: str, max_open_tra
     :return: pretty printed table with tabulate as string
     """
 
-    tabular_data, headers, floatfmt = _generate_pair_results(data, stake_currency, max_open_trades,
-                                                             results, skip_nan)
+    headers = _get_line_header('Pair', stake_currency)
+    floatfmt = _get_line_floatfmt()
+    pair_results = _generate_pair_results(data, stake_currency, max_open_trades, results, skip_nan)
+    output = [[
+        t['key'], t['trades'], t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'],
+        t['profit_total_pct'], t['duration_avg'], t['wins'], t['draws'], t['losses']
+    ] for t in pair_results]
     # Ignore type as floatfmt does allow tuples but mypy does not know that
-    return tabulate(tabular_data, headers=headers,
+    return tabulate(output, headers=headers,
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore
 
 
@@ -147,7 +163,7 @@ def generate_sell_reason_stats(max_open_trades: int,
     return tabular_data
 
 
-def generate_text_table_sell_reason(sell_reason_stats: Dict[str, Any], stake_currency: str) -> str:
+def generate_text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]], stake_currency: str) -> str:
     """
     Generate small table outlining Backtest results
     :param stake_currency: Stakecurrency used
@@ -174,8 +190,8 @@ def generate_text_table_sell_reason(sell_reason_stats: Dict[str, Any], stake_cur
     return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
 
 
-def _generate_strategy_summary(stake_currency: str, max_open_trades: str,
-                               all_results: Dict) -> Tuple[List, List, List]:
+def _generate_strategy_summary(stake_currency: str, max_open_trades: int,
+                               all_results: Dict) -> List[Dict]:
     """
     Generate summary per strategy
     :param stake_currency: stake-currency - used to correctly name headers
@@ -184,15 +200,13 @@ def _generate_strategy_summary(stake_currency: str, max_open_trades: str,
     :return: Tuple of (data, headers, floatfmt) of summarized results.
     """
 
-    floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.2f', 'd', 'd', 'd', 'd')
     tabular_data = []
-    headers = _get_line_header('Strategy', stake_currency)
     for strategy, results in all_results.items():
         tabular_data.append(_generate_result_line(results, max_open_trades, strategy))
-    return tabular_data, headers, floatfmt
+    return tabular_data
 
 
-def generate_text_table_strategy(stake_currency: str, max_open_trades: str,
+def generate_text_table_strategy(stake_currency: str, max_open_trades: int,
                                  all_results: Dict) -> str:
     """
     Generate summary table per strategy
@@ -201,11 +215,16 @@ def generate_text_table_strategy(stake_currency: str, max_open_trades: str,
     :param all_results: Dict of <Strategyname: BacktestResult> containing results for all strategies
     :return: pretty printed table with tabulate as string
     """
+    floatfmt = _get_line_floatfmt()
+    headers = _get_line_header('Strategy', stake_currency)
+    strategy_results = _generate_strategy_summary(stake_currency, max_open_trades, all_results)
 
-    tabular_data, headers, floatfmt = _generate_strategy_summary(stake_currency,
-                                                                 max_open_trades, all_results)
+    output = [[
+        t['key'], t['trades'], t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'],
+        t['profit_total_pct'], t['duration_avg'], t['wins'], t['draws'], t['losses']
+    ] for t in strategy_results]
     # Ignore type as floatfmt does allow tuples but mypy does not know that
-    return tabulate(tabular_data, headers=headers,
+    return tabulate(output, headers=headers,
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore
 
 
