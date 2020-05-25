@@ -38,7 +38,7 @@ fi
 # Show all available images
 docker images
 
-docker push ${IMAGE_NAME}
+# docker push ${IMAGE_NAME}
 if [ $? -ne 0 ]; then
     echo "failed pushing to repo"
     return 1

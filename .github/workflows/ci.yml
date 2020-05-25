@@ -190,6 +190,15 @@ jobs:
         channel: '#notifications'
         url: ${{ secrets.SLACK_WEBHOOK }}
 
+  cleanup-prior-runs:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Cleanup previous runs on this branch
+      uses: rokroskar/workflow-run-cleanup-action@v0.2.2
+      if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master' && github.repository == 'freqtrade/freqtrade'"
+      env:
+        GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
   deploy:
     needs: [ build, build_windows, docs_check ]
     runs-on: ubuntu-18.04
