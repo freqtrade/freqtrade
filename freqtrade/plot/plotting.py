@@ -237,7 +237,7 @@ def create_plotconfig(indicators1: List[str], indicators2: List[str],
     :return: plot_config - eventually with indicators 1 and 2
     """
     if plot_config:
-        #maybe main or sub is given, not both.
+        # maybe main or sub is given, not both.
         if 'main_plot' not in plot_config.keys():
             plot_config['main_plot'] = {}
 
@@ -245,15 +245,15 @@ def create_plotconfig(indicators1: List[str], indicators2: List[str],
             plot_config['subplots'] = {}
         if indicators1:
             for ind in indicators1:
-                #add indicators with NO advanced plot_config, only! to be sure
-                #indicator colors given in advanced plot_config will not be
-                #overwritten.
+                # add indicators with NO advanced plot_config, only! to be sure
+                # indicator colors given in advanced plot_config will not be
+                # overwritten.
                 if ind not in plot_config['main_plot'].keys():
                     plot_config['main_plot'][ind] = {}
         if indicators2:
-            #add other indicators given on cmd line to advanced plot_config.
+            # add other indicators given on cmd line to advanced plot_config.
             plot_config['subplots'].update(
-                {'Other' : {ind : {} for ind in indicators2}}
+                {'Other': {ind: {} for ind in indicators2}}
             )
 
     if not plot_config:
@@ -378,15 +378,15 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
             del plot_config['main_plot']['bb_upperband']
             del plot_config['main_plot']['bb_lowerband']
 
-    #fill area betwenn traces i.e. for ichimoku
+    # fill area betwenn traces i.e. for ichimoku
     if 'fill_area' in plot_config.keys():
         for label, area in plot_config['fill_area'].items():
             traces = area['traces']
             if len(traces) != 2:
                 raise Exception(
-                    f"plot_config.fill_area.traces = {traces}: " \
-                        + f"needs exactly 2 indicators. " \
-                        + f"{len(traces)} is given."
+                    f"plot_config.fill_area.traces = {traces}: " +
+                    f"needs exactly 2 indicators. " +
+                    f"{len(traces)} is given."
                 )
             color = area['color']
         if traces[0] in data and traces[1] in data:
@@ -406,6 +406,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
             )
             fig.add_trace(trace_b)
             fig.add_trace(trace_a)
+
     # Add indicators to main plot
     fig = add_indicators(fig=fig, row=1, indicators=plot_config['main_plot'], data=data)
 
