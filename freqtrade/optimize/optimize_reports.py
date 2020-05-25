@@ -78,7 +78,7 @@ def _generate_result_line(result: DataFrame, max_open_trades: int, first_column:
     }
 
 
-def generate_pair_results(data: Dict[str, Dict], stake_currency: str, max_open_trades: int,
+def generate_pair_metrics(data: Dict[str, Dict], stake_currency: str, max_open_trades: int,
                           results: DataFrame, skip_nan: bool = False) -> List[Dict]:
     """
     Generates and returns a list  for the given backtest data and the results dataframe
@@ -184,7 +184,7 @@ def generate_text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]],
     return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
 
 
-def generate_strategy_summary(stake_currency: str, max_open_trades: int,
+def generate_strategy_metrics(stake_currency: str, max_open_trades: int,
                               all_results: Dict) -> List[Dict]:
     """
     Generate summary per strategy
@@ -249,12 +249,12 @@ def generate_edge_table(results: dict) -> str:
 def show_backtest_results(config: Dict, btdata: Dict[str, DataFrame],
                           all_results: Dict[str, DataFrame]):
     for strategy, results in all_results.items():
-        pair_results = generate_pair_results(btdata, stake_currency=config['stake_currency'],
+        pair_results = generate_pair_metrics(btdata, stake_currency=config['stake_currency'],
                                              max_open_trades=config['max_open_trades'],
                                              results=results, skip_nan=False)
         sell_reason_stats = generate_sell_reason_stats(max_open_trades=config['max_open_trades'],
                                                        results=results)
-        left_open_results = generate_pair_results(btdata, stake_currency=config['stake_currency'],
+        left_open_results = generate_pair_metrics(btdata, stake_currency=config['stake_currency'],
                                                   max_open_trades=config['max_open_trades'],
                                                   results=results.loc[results['open_at_end']],
                                                   skip_nan=True)
@@ -282,7 +282,7 @@ def show_backtest_results(config: Dict, btdata: Dict[str, DataFrame],
 
     if len(all_results) > 1:
         # Print Strategy summary table
-        strategy_results = generate_strategy_summary(stake_currency=config['stake_currency'],
+        strategy_results = generate_strategy_metrics(stake_currency=config['stake_currency'],
                                                      max_open_trades=config['max_open_trades'],
                                                      all_results=all_results)
 

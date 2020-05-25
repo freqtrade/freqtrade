@@ -6,8 +6,8 @@ from arrow import Arrow
 
 from freqtrade.edge import PairInfo
 from freqtrade.optimize.optimize_reports import (
-    generate_pair_results, generate_edge_table, generate_sell_reason_stats,
-    generate_text_table, generate_text_table_sell_reason, generate_strategy_summary,
+    generate_pair_metrics, generate_edge_table, generate_sell_reason_stats,
+    generate_text_table, generate_text_table_sell_reason, generate_strategy_metrics,
     generate_text_table_strategy, store_backtest_result)
 from freqtrade.strategy.interface import SellType
 from tests.conftest import patch_exchange
@@ -38,13 +38,13 @@ def test_generate_text_table(default_conf, mocker):
         '          15.00 |        0:20:00 |      2 |       0 |        0 |'
     )
 
-    pair_results = generate_pair_results(data={'ETH/BTC': {}}, stake_currency='BTC',
+    pair_results = generate_pair_metrics(data={'ETH/BTC': {}}, stake_currency='BTC',
                                          max_open_trades=2, results=results)
     assert generate_text_table(pair_results,
                                stake_currency='BTC') == result_str
 
 
-def test_generate_pair_results(default_conf, mocker):
+def test_generate_pair_metrics(default_conf, mocker):
 
     results = pd.DataFrame(
         {
@@ -58,7 +58,7 @@ def test_generate_pair_results(default_conf, mocker):
         }
     )
 
-    pair_results = generate_pair_results(data={'ETH/BTC': {}}, stake_currency='BTC',
+    pair_results = generate_pair_metrics(data={'ETH/BTC': {}}, stake_currency='BTC',
                                          max_open_trades=2, results=results)
     assert isinstance(pair_results, list)
     assert len(pair_results) == 2
@@ -174,7 +174,7 @@ def test_generate_text_table_strategy(default_conf, mocker):
         '          45.00 |        0:20:00 |      3 |       0 |        0 |'
     )
 
-    strategy_results = generate_strategy_summary(stake_currency='BTC',
+    strategy_results = generate_strategy_metrics(stake_currency='BTC',
                                                  max_open_trades=2,
                                                  all_results=results)
 
