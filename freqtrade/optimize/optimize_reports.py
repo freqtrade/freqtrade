@@ -112,50 +112,40 @@ def generate_text_table(data: Dict[str, Dict], stake_currency: str, max_open_tra
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore
 
 
-def _generate_text_table_sell_reason(stake_currency: str, max_open_trades: int,
-                                     results: DataFrame) -> Tuple:
+def generate_sell_reason_stats(stake_currency: str, max_open_trades: int,
+                               results: DataFrame) -> List[Dict]:
     """
     Generate small table outlining Backtest results
     :param stake_currency: Stakecurrency used
     :param max_open_trades: Max_open_trades parameter
-    :param results: Dataframe containing the backtest result
-    :return: Tuple of (List, Headers) containing the summary
+    :param results: Dataframe containing the backtest result for one strategy
+    :return: List of Dicts containing the metrics per Sell reason
     """
     tabular_data = []
-    headers = [
-        "Sell Reason",
-        "Sells",
-        "Wins",
-        "Draws",
-        "Losses",
-        "Avg Profit %",
-        "Cum Profit %",
-        f"Tot Profit {stake_currency}",
-        "Tot Profit %",
-    ]
+
     for reason, count in results['sell_reason'].value_counts().iteritems():
         result = results.loc[results['sell_reason'] == reason]
-        wins = len(result[result['profit_abs'] > 0])
-        draws = len(result[result['profit_abs'] == 0])
-        loss = len(result[result['profit_abs'] < 0])
-        profit_mean = round(result['profit_percent'].mean() * 100.0, 2)
-        profit_sum = round(result["profit_percent"].sum() * 100.0, 2)
-        profit_tot = result['profit_abs'].sum()
+
+        profit_mean = result['profit_percent'].mean()
+        profit_sum = result["profit_percent"].sum()
         profit_percent_tot = round(result['profit_percent'].sum() * 100.0 / max_open_trades, 2)
+
         tabular_data.append(
-            [
-                reason.value,
-                count,
-                wins,
-                draws,
-                loss,
-                profit_mean,
-                profit_sum,
-                profit_tot,
-                profit_percent_tot,
-            ]
+            {
+                'sell_reason': reason.value,
+                'trades': count,
+                'wins': len(result[result['profit_abs'] > 0]),
+                'draws': len(result[result['profit_abs'] == 0]),
+                'losses': len(result[result['profit_abs'] < 0]),
+                'profit_mean': profit_mean,
+                'profit_mean_pct': round(profit_mean * 100, 2),
+                'profit_sum': profit_sum,
+                'profit_sum_pct': round(profit_sum * 100, 2),
+                'profit_total_abs': result['profit_abs'].sum(),
+                'profit_pct_total': profit_percent_tot,
+            }
         )
-    return tabular_data, headers
+    return tabular_data
 
 
 def generate_text_table_sell_reason(stake_currency: str,
@@ -164,14 +154,26 @@ def generate_text_table_sell_reason(stake_currency: str,
     Generate small table outlining Backtest results
     :param stake_currency: Stakecurrency used
     :param max_open_trades: Max_open_trades parameter
-    :param results: Dataframe containing the backtest result
+    :param results: Dataframe containing the backtest result  for one strategy
     :return: pretty printed table with tabulate as string
     """
-
-    tabular_data, headers = _generate_text_table_sell_reason(stake_currency,
-                                                             max_open_trades, results)
-
-    return tabulate(tabular_data, headers=headers, tablefmt="orgtbl", stralign="right")
+    headers = [
+        'Sell Reason',
+        'Sells',
+        'Wins',
+        'Draws',
+        'Losses',
+        'Avg Profit %',
+        'Cum Profit %',
+        f'Tot Profit {stake_currency}',
+        'Tot Profit %',
+    ]
+    sell_reason_stats = generate_sell_reason_stats(stake_currency, max_open_trades, results)
+    output = [[
+        t['sell_reason'], t['trades'], t['wins'], t['draws'], t['losses'],
+        t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'], t['profit_pct_total'],
+     ] for t in sell_reason_stats]
+    return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
 
 
 def _generate_strategy_summary(stake_currency: str, max_open_trades: str,
