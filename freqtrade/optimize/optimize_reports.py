@@ -249,18 +249,22 @@ def generate_edge_table(results: dict) -> str:
 def show_backtest_results(config: Dict, btdata: Dict[str, DataFrame],
                           all_results: Dict[str, DataFrame]):
     for strategy, results in all_results.items():
-
-        print(f"Result for strategy {strategy}")
         pair_results = generate_pair_results(btdata, stake_currency=config['stake_currency'],
                                              max_open_trades=config['max_open_trades'],
                                              results=results, skip_nan=False)
+        sell_reason_stats = generate_sell_reason_stats(max_open_trades=config['max_open_trades'],
+                                                       results=results)
+        left_open_results = generate_pair_results(btdata, stake_currency=config['stake_currency'],
+                                                  max_open_trades=config['max_open_trades'],
+                                                  results=results.loc[results['open_at_end']],
+                                                  skip_nan=True)
+        # Print results
+        print(f"Result for strategy {strategy}")
         table = generate_text_table(pair_results, stake_currency=config['stake_currency'])
         if isinstance(table, str):
             print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
         print(table)
 
-        sell_reason_stats = generate_sell_reason_stats(max_open_trades=config['max_open_trades'],
-                                                       results=results)
         table = generate_text_table_sell_reason(sell_reason_stats=sell_reason_stats,
                                                 stake_currency=config['stake_currency'],
                                                 )
@@ -268,10 +272,6 @@ def show_backtest_results(config: Dict, btdata: Dict[str, DataFrame],
             print(' SELL REASON STATS '.center(len(table.splitlines()[0]), '='))
         print(table)
 
-        left_open_results = generate_pair_results(btdata, stake_currency=config['stake_currency'],
-                                                  max_open_trades=config['max_open_trades'],
-                                                  results=results.loc[results['open_at_end']],
-                                                  skip_nan=True)
         table = generate_text_table(left_open_results, stake_currency=config['stake_currency'])
         if isinstance(table, str):
             print(' LEFT OPEN TRADES REPORT '.center(len(table.splitlines()[0]), '='))
