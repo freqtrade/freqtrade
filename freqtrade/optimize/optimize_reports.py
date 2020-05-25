@@ -87,7 +87,7 @@ def generate_pair_results(data: Dict[str, Dict], stake_currency: str, max_open_t
     :param max_open_trades: Maximum allowed open trades
     :param results: Dataframe containing the backtest results
     :param skip_nan: Print "left open" open trades
-    :return: Tuple of (data, headers, floatfmt) of summarized results.
+    :return: List of Dicts containing the metrics per pair
     """
 
     tabular_data = []
@@ -107,11 +107,8 @@ def generate_pair_results(data: Dict[str, Dict], stake_currency: str, max_open_t
 def generate_text_table(pair_results: List[Dict[str, Any]], stake_currency: str) -> str:
     """
     Generates and returns a text table for the given backtest data and the results dataframe
-    :param data: Dict of <pair: dataframe> containing data that was used during backtesting.
+    :param pair_results: List of Dictionaries - one entry per pair + final TOTAL row
     :param stake_currency: stake-currency - used to correctly name headers
-    :param max_open_trades: Maximum allowed open trades
-    :param results: Dataframe containing the backtest results
-    :param skip_nan: Print "left open" open trades
     :return: pretty printed table with tabulate as string
     """
 
@@ -126,8 +123,7 @@ def generate_text_table(pair_results: List[Dict[str, Any]], stake_currency: str)
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore
 
 
-def generate_sell_reason_stats(max_open_trades: int,
-                               results: DataFrame) -> List[Dict]:
+def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List[Dict]:
     """
     Generate small table outlining Backtest results
     :param max_open_trades: Max_open_trades parameter
@@ -165,9 +161,8 @@ def generate_text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]],
                                     stake_currency: str) -> str:
     """
     Generate small table outlining Backtest results
+    :param sell_reason_stats: Sell reason metrics
     :param stake_currency: Stakecurrency used
-    :param max_open_trades: Max_open_trades parameter
-    :param results: Dataframe containing the backtest result  for one strategy
     :return: pretty printed table with tabulate as string
     """
     headers = [
@@ -189,14 +184,14 @@ def generate_text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]],
     return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
 
 
-def _generate_strategy_summary(stake_currency: str, max_open_trades: int,
-                               all_results: Dict) -> List[Dict]:
+def generate_strategy_summary(stake_currency: str, max_open_trades: int,
+                              all_results: Dict) -> List[Dict]:
     """
     Generate summary per strategy
     :param stake_currency: stake-currency - used to correctly name headers
     :param max_open_trades: Maximum allowed open trades used for backtest
     :param all_results: Dict of <Strategyname: BacktestResult> containing results for all strategies
-    :return: Tuple of (data, headers, floatfmt) of summarized results.
+    :return: List of Dicts containing the metrics per Strategy
     """
 
     tabular_data = []
@@ -205,8 +200,7 @@ def _generate_strategy_summary(stake_currency: str, max_open_trades: int,
     return tabular_data
 
 
-def generate_text_table_strategy(stake_currency: str, max_open_trades: int,
-                                 all_results: Dict) -> str:
+def generate_text_table_strategy(strategy_results, stake_currency: str) -> str:
     """
     Generate summary table per strategy
     :param stake_currency: stake-currency - used to correctly name headers
@@ -216,7 +210,6 @@ def generate_text_table_strategy(stake_currency: str, max_open_trades: int,
     """
     floatfmt = _get_line_floatfmt()
     headers = _get_line_header('Strategy', stake_currency)
-    strategy_results = _generate_strategy_summary(stake_currency, max_open_trades, all_results)
 
     output = [[
         t['key'], t['trades'], t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'],
@@ -289,9 +282,11 @@ def show_backtest_results(config: Dict, btdata: Dict[str, DataFrame],
 
     if len(all_results) > 1:
         # Print Strategy summary table
-        table = generate_text_table_strategy(config['stake_currency'],
-                                             config['max_open_trades'],
-                                             all_results=all_results)
+        strategy_results = generate_strategy_summary(stake_currency=config['stake_currency'],
+                                                     max_open_trades=config['max_open_trades'],
+                                                     all_results=all_results)
+
+        table = generate_text_table_strategy(strategy_results, config['stake_currency'])
         print(' STRATEGY SUMMARY '.center(len(table.splitlines()[0]), '='))
         print(table)
         print('=' * len(table.splitlines()[0]))

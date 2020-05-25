@@ -7,7 +7,7 @@ from arrow import Arrow
 from freqtrade.edge import PairInfo
 from freqtrade.optimize.optimize_reports import (
     generate_pair_results, generate_edge_table, generate_sell_reason_stats,
-    generate_text_table, generate_text_table_sell_reason,
+    generate_text_table, generate_text_table_sell_reason, generate_strategy_summary,
     generate_text_table_strategy, store_backtest_result)
 from freqtrade.strategy.interface import SellType
 from tests.conftest import patch_exchange
@@ -173,7 +173,12 @@ def test_generate_text_table_strategy(default_conf, mocker):
         '| TestStrategy2 |      3 |          30.00 |          90.00 |       1.30000000 |'
         '          45.00 |        0:20:00 |      3 |       0 |        0 |'
     )
-    assert generate_text_table_strategy('BTC', 2, all_results=results) == result_str
+
+    strategy_results = generate_strategy_summary(stake_currency='BTC',
+                                                 max_open_trades=2,
+                                                 all_results=results)
+
+    assert generate_text_table_strategy(strategy_results, 'BTC') == result_str
 
 
 def test_generate_edge_table(edge_conf, mocker):
