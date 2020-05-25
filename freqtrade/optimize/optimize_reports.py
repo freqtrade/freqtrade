@@ -1,7 +1,7 @@
 import logging
 from datetime import timedelta
 from pathlib import Path
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Any
 
 from pandas import DataFrame
 from tabulate import tabulate
@@ -112,11 +112,10 @@ def generate_text_table(data: Dict[str, Dict], stake_currency: str, max_open_tra
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore
 
 
-def generate_sell_reason_stats(stake_currency: str, max_open_trades: int,
+def generate_sell_reason_stats(max_open_trades: int,
                                results: DataFrame) -> List[Dict]:
     """
     Generate small table outlining Backtest results
-    :param stake_currency: Stakecurrency used
     :param max_open_trades: Max_open_trades parameter
     :param results: Dataframe containing the backtest result for one strategy
     :return: List of Dicts containing the metrics per Sell reason
@@ -148,8 +147,7 @@ def generate_sell_reason_stats(stake_currency: str, max_open_trades: int,
     return tabular_data
 
 
-def generate_text_table_sell_reason(stake_currency: str,
-                                    max_open_trades: int, results: DataFrame) -> str:
+def generate_text_table_sell_reason(sell_reason_stats: Dict[str, Any], stake_currency: str) -> str:
     """
     Generate small table outlining Backtest results
     :param stake_currency: Stakecurrency used
@@ -168,7 +166,7 @@ def generate_text_table_sell_reason(stake_currency: str,
         f'Tot Profit {stake_currency}',
         'Tot Profit %',
     ]
-    sell_reason_stats = generate_sell_reason_stats(stake_currency, max_open_trades, results)
+
     output = [[
         t['sell_reason'], t['trades'], t['wins'], t['draws'], t['losses'],
         t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'], t['profit_pct_total'],
@@ -249,9 +247,11 @@ def show_backtest_results(config: Dict, btdata: Dict[str, DataFrame],
             print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
         print(table)
 
-        table = generate_text_table_sell_reason(stake_currency=config['stake_currency'],
-                                                max_open_trades=config['max_open_trades'],
-                                                results=results)
+        sell_reason_stats = generate_sell_reason_stats(max_open_trades=config['max_open_trades'],
+                                                       results=results)
+        table = generate_text_table_sell_reason(sell_reason_stats=sell_reason_stats,
+                                                stake_currency=config['stake_currency'],
+                                                )
         if isinstance(table, str):
             print(' SELL REASON STATS '.center(len(table.splitlines()[0]), '='))
         print(table)

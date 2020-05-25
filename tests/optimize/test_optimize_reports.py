@@ -6,6 +6,7 @@ from arrow import Arrow
 from freqtrade.edge import PairInfo
 from freqtrade.optimize.optimize_reports import (
     generate_edge_table, generate_text_table, generate_text_table_sell_reason,
+    generate_sell_reason_stats,
     generate_text_table_strategy, store_backtest_result)
 from freqtrade.strategy.interface import SellType
 from tests.conftest import patch_exchange
@@ -65,8 +66,11 @@ def test_generate_text_table_sell_reason(default_conf, mocker):
         '|     stop_loss |       1 |      0 |       0 |        1 |'
         '            -10 |            -10 |             -0.2 |             -5 |'
     )
-    assert generate_text_table_sell_reason(stake_currency='BTC', max_open_trades=2,
-                                           results=results) == result_str
+
+    sell_reason_stats = generate_sell_reason_stats(max_open_trades=2,
+                                                   results=results)
+    assert generate_text_table_sell_reason(sell_reason_stats=sell_reason_stats,
+                                           stake_currency='BTC') == result_str
 
 
 def test_generate_text_table_strategy(default_conf, mocker):
