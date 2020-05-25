@@ -12,12 +12,12 @@ echo "${GITHUB_SHA}" > freqtrade_commit
 
 if [ "${GITHUB_EVENT_NAME}" = "schedule" ]; then
     echo "event ${GITHUB_EVENT_NAME}: full rebuild - skipping cache"
-    docker buildx build --platform linux/arm/v7 -t ${IMAGE_NAME}:${TAG} --push .
+    docker buildx build -f Dockerfile.armhf --platform ${PI_PLATFORM} -t ${IMAGE_NAME}:${TAG} --push .
 else
     echo "event ${GITHUB_EVENT_NAME}: building with cache"
     # Pull last build to avoid rebuilding the whole image
     docker pull --platform ${PI_PLATFORM} ${IMAGE_NAME}:${TAG}
-    docker buildx build --cache-from ${IMAGE_NAME}:${TAG} --platform ${PI_PLATFORM} -t ${IMAGE_NAME}:${TAG} --push .
+    docker buildx build --cache-from ${IMAGE_NAME}:${TAG} -f Dockerfile.armhf --platform ${PI_PLATFORM} -t ${IMAGE_NAME}:${TAG} --push .
 fi
 
 if [ $? -ne 0 ]; then
