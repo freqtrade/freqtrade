@@ -658,10 +658,17 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
                  PropertyMock(return_value=['UNITTEST/BTC']))
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
     gen_table_mock = MagicMock()
-    mocker.patch('freqtrade.optimize.optimize_reports.generate_text_table', gen_table_mock)
+    sell_reason_mock = MagicMock()
     gen_strattable_mock = MagicMock()
-    mocker.patch('freqtrade.optimize.optimize_reports.generate_text_table_strategy',
-                 gen_strattable_mock)
+    gen_strat_summary = MagicMock()
+
+    mocker.patch.multiple('freqtrade.optimize.optimize_reports',
+                          generate_text_table=gen_table_mock,
+                          generate_text_table_strategy=gen_strattable_mock,
+                          generate_pair_results=MagicMock(),
+                          generate_sell_reason_stats=sell_reason_mock,
+                          generate_strategy_summary=gen_strat_summary,
+                          )
     patched_configuration_load_config_file(mocker, default_conf)
 
     args = [
@@ -683,6 +690,8 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
     assert backtestmock.call_count == 2
     assert gen_table_mock.call_count == 4
     assert gen_strattable_mock.call_count == 1
+    assert sell_reason_mock.call_count == 2
+    assert gen_strat_summary.call_count == 1
 
     # check the logs, that will contain the backtest result
     exists = [
