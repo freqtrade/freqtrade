@@ -2,7 +2,7 @@
 name: Bug report
 about: Create a report to help us improve
 title: ''
-labels: Triage Needed
+labels: "Triage Needed"
 assignees: ''
 
 ---
@@ -20,7 +20,7 @@ Please do not use bug reports to request for new features.
   * Operating system: ____
   * Python Version: _____ (`python -V`)
   * CCXT version: _____ (`pip freeze | grep ccxt`)
-  * Version: ____ (`freqtrade -V` | `docker-compose run --rm freqtrade -V`)
+  * Freqtrade Version: ____ (`freqtrade -V` or `docker-compose run --rm freqtrade -V` for Freqtrade running in docker)
   
 Note: All issues other than enhancement requests will be closed without further comment if the above template is deleted or not filled out.
 
