@@ -6,6 +6,7 @@ Provides pair white list as it configured in config
 import logging
 from typing import Dict, List
 
+from freqtrade.exceptions import OperationalException
 from freqtrade.pairlist.IPairList import IPairList
 
 
@@ -47,4 +48,8 @@ class StaticPairList(IPairList):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
-        return pairlist
+        if self._pairlist_pos != 0:
+            raise OperationalException(f"{self.name} can only be used in the first position "
+                                       "in the list of Pairlist Handlers.")
+        else:
+            return pairlist

@@ -279,28 +279,32 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
      "BTC", ['ETH/BTC', 'TKN/BTC']),
     # PrecisionFilter only
     ([{"method": "PrecisionFilter"}],
-     "BTC", None),  # OperationalException expected
+     "BTC", 'filter_at_the_beginning'),  # OperationalException expected
     # PriceFilter after StaticPairList
     ([{"method": "StaticPairList"},
       {"method": "PriceFilter", "low_price_ratio": 0.02}],
      "BTC", ['ETH/BTC', 'TKN/BTC']),
     # PriceFilter only
     ([{"method": "PriceFilter", "low_price_ratio": 0.02}],
-     "BTC", None),  # OperationalException expected
+     "BTC", 'filter_at_the_beginning'),  # OperationalException expected
     # ShuffleFilter after StaticPairList
     ([{"method": "StaticPairList"},
       {"method": "ShuffleFilter", "seed": 42}],
      "BTC", ['TKN/BTC', 'ETH/BTC', 'HOT/BTC']),
     # ShuffleFilter only
     ([{"method": "ShuffleFilter", "seed": 42}],
-     "BTC", None),  # OperationalException expected
+     "BTC", 'filter_at_the_beginning'),  # OperationalException expected
     # SpreadFilter after StaticPairList
     ([{"method": "StaticPairList"},
       {"method": "SpreadFilter", "max_spread_ratio": 0.005}],
      "BTC", ['ETH/BTC', 'TKN/BTC']),
     # SpreadFilter only
     ([{"method": "SpreadFilter", "max_spread_ratio": 0.005}],
-     "BTC", None),  # OperationalException expected
+     "BTC", 'filter_at_the_beginning'),  # OperationalException expected
+    # Static Pairlist after VolumePairList, on a non-first position
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "bidVolume"},
+      {"method": "StaticPairList"}],
+     "BTC", 'static_in_the_middle'),
 ])
 def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, tickers,
                                       pairlists, base_currency, whitelist_result,
@@ -317,9 +321,14 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
                           )
 
     # Set whitelist_result to None if pairlist is invalid and should produce exception
-    if whitelist_result is None:
+    if whitelist_result == 'filter_at_the_beginning':
         with pytest.raises(OperationalException,
                            match=r"This Pairlist Handler should not be used at the first position "
+                                 r"in the list of Pairlist Handlers."):
+            freqtrade.pairlists.refresh_pairlist()
+    elif whitelist_result == 'static_in_the_middle':
+        with pytest.raises(OperationalException,
+                           match=r"StaticPairList can only be used in the first position "
                                  r"in the list of Pairlist Handlers."):
             freqtrade.pairlists.refresh_pairlist()
     else:
