@@ -101,7 +101,7 @@ jobs:
 
     - name: Slack Notification
       uses: homoluctus/slatify@v1.8.0
-      if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+      if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
         job_name: '*Freqtrade CI ${{ matrix.os }}*'
@@ -163,7 +163,7 @@ jobs:
 
     - name: Slack Notification
       uses: homoluctus/slatify@v1.8.0
-      if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+      if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
         job_name: '*Freqtrade CI windows*'
@@ -198,6 +198,20 @@ jobs:
       if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master' && github.repository == 'freqtrade/freqtrade'"
       env:
         GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
+  # Notify on slack only once - when CI completes (and after deploy) in case it's successfull
+  notify-complete:
+    needs: [ build, build_windows, docs_check ]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Slack Notification
+      uses: homoluctus/slatify@v1.8.0
+      if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+      with:
+        type: ${{ job.status }}
+        job_name: '*Freqtrade CI*'
+        channel: '#notifications'
+        url: ${{ secrets.SLACK_WEBHOOK }}
 
   deploy:
     needs: [ build, build_windows, docs_check ]
@@ -263,7 +277,7 @@ jobs:
     - name: Build Raspberry docker image
       env:
         IMAGE_NAME: freqtradeorg/freqtrade
-        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
+        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}_pi
       run: |
         build_helpers/publish_docker_pi.sh
 
