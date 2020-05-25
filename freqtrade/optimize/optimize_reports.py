@@ -104,8 +104,7 @@ def _generate_pair_results(data: Dict[str, Dict], stake_currency: str, max_open_
     return tabular_data
 
 
-def generate_text_table(data: Dict[str, Dict], stake_currency: str, max_open_trades: int,
-                        results: DataFrame, skip_nan: bool = False) -> str:
+def generate_text_table(pair_results: List[Dict[str, Any]], stake_currency: str) -> str:
     """
     Generates and returns a text table for the given backtest data and the results dataframe
     :param data: Dict of <pair: dataframe> containing data that was used during backtesting.
@@ -118,7 +117,6 @@ def generate_text_table(data: Dict[str, Dict], stake_currency: str, max_open_tra
 
     headers = _get_line_header('Pair', stake_currency)
     floatfmt = _get_line_floatfmt()
-    pair_results = _generate_pair_results(data, stake_currency, max_open_trades, results, skip_nan)
     output = [[
         t['key'], t['trades'], t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'],
         t['profit_total_pct'], t['duration_avg'], t['wins'], t['draws'], t['losses']
@@ -259,9 +257,10 @@ def show_backtest_results(config: Dict, btdata: Dict[str, DataFrame],
     for strategy, results in all_results.items():
 
         print(f"Result for strategy {strategy}")
-        table = generate_text_table(btdata, stake_currency=config['stake_currency'],
-                                    max_open_trades=config['max_open_trades'],
-                                    results=results)
+        pair_results = _generate_pair_results(btdata, stake_currency=config['stake_currency'],
+                                              max_open_trades=config['max_open_trades'],
+                                              results=results, skip_nan=False)
+        table = generate_text_table(pair_results, stake_currency=config['stake_currency'])
         if isinstance(table, str):
             print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
         print(table)
@@ -275,10 +274,11 @@ def show_backtest_results(config: Dict, btdata: Dict[str, DataFrame],
             print(' SELL REASON STATS '.center(len(table.splitlines()[0]), '='))
         print(table)
 
-        table = generate_text_table(btdata,
-                                    stake_currency=config['stake_currency'],
-                                    max_open_trades=config['max_open_trades'],
-                                    results=results.loc[results.open_at_end], skip_nan=True)
+        left_open_results = _generate_pair_results(btdata, stake_currency=config['stake_currency'],
+                                                   max_open_trades=config['max_open_trades'],
+                                                   results=results.loc[results['open_at_end']],
+                                                   skip_nan=True)
+        table = generate_text_table(left_open_results, stake_currency=config['stake_currency'])
         if isinstance(table, str):
             print(' LEFT OPEN TRADES REPORT '.center(len(table.splitlines()[0]), '='))
         print(table)

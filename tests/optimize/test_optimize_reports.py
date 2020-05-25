@@ -6,9 +6,9 @@ from arrow import Arrow
 
 from freqtrade.edge import PairInfo
 from freqtrade.optimize.optimize_reports import (
-    generate_edge_table, generate_sell_reason_stats, generate_text_table,
-    generate_text_table_sell_reason, generate_text_table_strategy,
-    store_backtest_result)
+    _generate_pair_results, generate_edge_table, generate_sell_reason_stats,
+    generate_text_table, generate_text_table_sell_reason,
+    generate_text_table_strategy, store_backtest_result)
 from freqtrade.strategy.interface import SellType
 from tests.conftest import patch_exchange
 
@@ -37,9 +37,12 @@ def test_generate_text_table(default_conf, mocker):
         '|   TOTAL |      2 |          15.00 |          30.00 |       0.60000000 |'
         '          15.00 |        0:20:00 |      2 |       0 |        0 |'
     )
-    assert generate_text_table(data={'ETH/BTC': {}},
-                               stake_currency='BTC', max_open_trades=2,
-                               results=results) == result_str
+
+    pair_results = _generate_pair_results(data={'ETH/BTC': {}}, stake_currency='BTC',
+                                          max_open_trades=2,
+                                          results=results)
+    assert generate_text_table(pair_results,
+                               stake_currency='BTC') == result_str
 
 
 def test_generate_text_table_sell_reason(default_conf):
