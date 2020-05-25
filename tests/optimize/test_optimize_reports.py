@@ -6,7 +6,7 @@ from arrow import Arrow
 
 from freqtrade.edge import PairInfo
 from freqtrade.optimize.optimize_reports import (
-    _generate_pair_results, generate_edge_table, generate_sell_reason_stats,
+    generate_pair_results, generate_edge_table, generate_sell_reason_stats,
     generate_text_table, generate_text_table_sell_reason,
     generate_text_table_strategy, store_backtest_result)
 from freqtrade.strategy.interface import SellType
@@ -38,11 +38,35 @@ def test_generate_text_table(default_conf, mocker):
         '          15.00 |        0:20:00 |      2 |       0 |        0 |'
     )
 
-    pair_results = _generate_pair_results(data={'ETH/BTC': {}}, stake_currency='BTC',
-                                          max_open_trades=2,
-                                          results=results)
+    pair_results = generate_pair_results(data={'ETH/BTC': {}}, stake_currency='BTC',
+                                         max_open_trades=2, results=results)
     assert generate_text_table(pair_results,
                                stake_currency='BTC') == result_str
+
+
+def test_generate_pair_results(default_conf, mocker):
+
+    results = pd.DataFrame(
+        {
+            'pair': ['ETH/BTC', 'ETH/BTC'],
+            'profit_percent': [0.1, 0.2],
+            'profit_abs': [0.2, 0.4],
+            'trade_duration': [10, 30],
+            'wins': [2, 0],
+            'draws': [0, 0],
+            'losses': [0, 0]
+        }
+    )
+
+    pair_results = generate_pair_results(data={'ETH/BTC': {}}, stake_currency='BTC',
+                                         max_open_trades=2, results=results)
+    assert isinstance(pair_results, list)
+    assert len(pair_results) == 2
+    assert pair_results[-1]['key'] == 'TOTAL'
+    assert (
+        pytest.approx(pair_results[-1]['profit_mean_pct']) == pair_results[-1]['profit_mean'] * 100)
+    assert (
+        pytest.approx(pair_results[-1]['profit_sum_pct']) == pair_results[-1]['profit_sum'] * 100)
 
 
 def test_generate_text_table_sell_reason(default_conf):

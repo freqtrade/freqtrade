@@ -1,7 +1,7 @@
 import logging
 from datetime import timedelta
 from pathlib import Path
-from typing import Dict, Tuple, List, Any
+from typing import Dict, List, Any
 
 from pandas import DataFrame
 from tabulate import tabulate
@@ -59,7 +59,7 @@ def _generate_result_line(result: DataFrame, max_open_trades: int, first_column:
         'trades': len(result.index),
         'profit_mean': result.profit_percent.mean(),
         'profit_mean_pct': result.profit_percent.mean() * 100.0,
-        'profit_sum': result.profit_percent.sum() * 100.0,
+        'profit_sum': result.profit_percent.sum(),
         'profit_sum_pct': result.profit_percent.sum() * 100.0,
         'profit_total_abs': result.profit_abs.sum(),
         'profit_total_pct': result.profit_percent.sum() * 100.0 / max_open_trades,
@@ -78,8 +78,8 @@ def _generate_result_line(result: DataFrame, max_open_trades: int, first_column:
     }
 
 
-def _generate_pair_results(data: Dict[str, Dict], stake_currency: str, max_open_trades: int,
-                           results: DataFrame, skip_nan: bool = False) -> List[Dict]:
+def generate_pair_results(data: Dict[str, Dict], stake_currency: str, max_open_trades: int,
+                          results: DataFrame, skip_nan: bool = False) -> List[Dict]:
     """
     Generates and returns a list  for the given backtest data and the results dataframe
     :param data: Dict of <pair: dataframe> containing data that was used during backtesting.
@@ -161,7 +161,8 @@ def generate_sell_reason_stats(max_open_trades: int,
     return tabular_data
 
 
-def generate_text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]], stake_currency: str) -> str:
+def generate_text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]],
+                                    stake_currency: str) -> str:
     """
     Generate small table outlining Backtest results
     :param stake_currency: Stakecurrency used
@@ -257,9 +258,9 @@ def show_backtest_results(config: Dict, btdata: Dict[str, DataFrame],
     for strategy, results in all_results.items():
 
         print(f"Result for strategy {strategy}")
-        pair_results = _generate_pair_results(btdata, stake_currency=config['stake_currency'],
-                                              max_open_trades=config['max_open_trades'],
-                                              results=results, skip_nan=False)
+        pair_results = generate_pair_results(btdata, stake_currency=config['stake_currency'],
+                                             max_open_trades=config['max_open_trades'],
+                                             results=results, skip_nan=False)
         table = generate_text_table(pair_results, stake_currency=config['stake_currency'])
         if isinstance(table, str):
             print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
@@ -274,10 +275,10 @@ def show_backtest_results(config: Dict, btdata: Dict[str, DataFrame],
             print(' SELL REASON STATS '.center(len(table.splitlines()[0]), '='))
         print(table)
 
-        left_open_results = _generate_pair_results(btdata, stake_currency=config['stake_currency'],
-                                                   max_open_trades=config['max_open_trades'],
-                                                   results=results.loc[results['open_at_end']],
-                                                   skip_nan=True)
+        left_open_results = generate_pair_results(btdata, stake_currency=config['stake_currency'],
+                                                  max_open_trades=config['max_open_trades'],
+                                                  results=results.loc[results['open_at_end']],
+                                                  skip_nan=True)
         table = generate_text_table(left_open_results, stake_currency=config['stake_currency'])
         if isinstance(table, str):
             print(' LEFT OPEN TRADES REPORT '.center(len(table.splitlines()[0]), '='))
