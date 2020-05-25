@@ -1,13 +1,14 @@
 from pathlib import Path
 
 import pandas as pd
+import pytest
 from arrow import Arrow
 
 from freqtrade.edge import PairInfo
 from freqtrade.optimize.optimize_reports import (
-    generate_edge_table, generate_text_table, generate_text_table_sell_reason,
-    generate_sell_reason_stats,
-    generate_text_table_strategy, store_backtest_result)
+    generate_edge_table, generate_sell_reason_stats, generate_text_table,
+    generate_text_table_sell_reason, generate_text_table_strategy,
+    store_backtest_result)
 from freqtrade.strategy.interface import SellType
 from tests.conftest import patch_exchange
 
@@ -41,7 +42,7 @@ def test_generate_text_table(default_conf, mocker):
                                results=results) == result_str
 
 
-def test_generate_text_table_sell_reason(default_conf, mocker):
+def test_generate_text_table_sell_reason(default_conf):
 
     results = pd.DataFrame(
         {
@@ -71,6 +72,41 @@ def test_generate_text_table_sell_reason(default_conf, mocker):
                                                    results=results)
     assert generate_text_table_sell_reason(sell_reason_stats=sell_reason_stats,
                                            stake_currency='BTC') == result_str
+
+
+def test_generate_sell_reason_stats(default_conf):
+
+    results = pd.DataFrame(
+        {
+            'pair': ['ETH/BTC', 'ETH/BTC', 'ETH/BTC'],
+            'profit_percent': [0.1, 0.2, -0.1],
+            'profit_abs': [0.2, 0.4, -0.2],
+            'trade_duration': [10, 30, 10],
+            'wins': [2, 0, 0],
+            'draws': [0, 0, 0],
+            'losses': [0, 0, 1],
+            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
+        }
+    )
+
+    sell_reason_stats = generate_sell_reason_stats(max_open_trades=2,
+                                                   results=results)
+    roi_result = sell_reason_stats[0]
+    assert roi_result['sell_reason'] == 'roi'
+    assert roi_result['trades'] == 2
+    assert pytest.approx(roi_result['profit_mean']) == 0.15
+    assert roi_result['profit_mean_pct'] == round(roi_result['profit_mean'] * 100, 2)
+    assert pytest.approx(roi_result['profit_mean']) == 0.15
+    assert roi_result['profit_mean_pct'] == round(roi_result['profit_mean'] * 100, 2)
+
+    stop_result = sell_reason_stats[1]
+
+    assert stop_result['sell_reason'] == 'stop_loss'
+    assert stop_result['trades'] == 1
+    assert pytest.approx(stop_result['profit_mean']) == -0.1
+    assert stop_result['profit_mean_pct'] == round(stop_result['profit_mean'] * 100, 2)
+    assert pytest.approx(stop_result['profit_mean']) == -0.1
+    assert stop_result['profit_mean_pct'] == round(stop_result['profit_mean'] * 100, 2)
 
 
 def test_generate_text_table_strategy(default_conf, mocker):
