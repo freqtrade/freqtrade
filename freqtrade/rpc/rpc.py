@@ -136,10 +136,10 @@ class RPC:
                 trade_dict.update(dict(
                     base_currency=self._freqtrade.config['stake_currency'],
                     close_profit=trade.close_profit or None,
-                    close_profit_perc=fmt_close_profit,
+                    close_profit_pct=fmt_close_profit,
                     current_rate=current_rate,
                     current_profit=current_profit,
-                    current_profit_perc=round(current_profit * 100, 2),
+                    current_profit_pct=round(current_profit * 100, 2),
                     open_order='({} {} rem={:.8f})'.format(
                         order['type'], order['side'], order['remaining']
                     ) if order else None,
