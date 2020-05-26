@@ -11,18 +11,21 @@ import arrow
 import pytest
 import requests
 
-from freqtrade.constants import MATH_CLOSE_PREC, UNLIMITED_STAKE_AMOUNT, CANCEL_REASON
+from freqtrade.constants import (CANCEL_REASON, MATH_CLOSE_PREC,
+                                 UNLIMITED_STAKE_AMOUNT)
 from freqtrade.exceptions import (DependencyException, InvalidOrderException,
-                                  OperationalException, TemporaryError)
+                                  OperationalException, PricingException,
+                                  TemporaryError)
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.state import RunMode, State
 from freqtrade.strategy.interface import SellCheckTuple, SellType
 from freqtrade.worker import Worker
-from tests.conftest import (get_patched_freqtradebot, get_patched_worker,
-                            log_has, log_has_re, patch_edge, patch_exchange,
-                            patch_get_signal, patch_wallet, patch_whitelist, create_mock_trades)
+from tests.conftest import (create_mock_trades, get_patched_freqtradebot,
+                            get_patched_worker, log_has, log_has_re,
+                            patch_edge, patch_exchange, patch_get_signal,
+                            patch_wallet, patch_whitelist)
 
 
 def patch_RPCManager(mocker) -> MagicMock:
@@ -3772,29 +3775,26 @@ def test_order_book_bid_strategy1(mocker, default_conf, order_book_l2) -> None:
     assert ticker_mock.call_count == 0
 
 
-def test_order_book_bid_strategy2(mocker, default_conf, order_book_l2) -> None:
-    """
-    test if function get_buy_rate will return the ask rate (since its value is lower)
-    instead of the order book rate (even if enabled)
-    """
+def test_order_book_bid_strategy_exception(mocker, default_conf, caplog) -> None:
     patch_exchange(mocker)
     ticker_mock = MagicMock(return_value={'ask': 0.042, 'last': 0.046})
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_order_book=order_book_l2,
+        get_order_book=MagicMock(return_value={'bids': [[]], 'asks': [[]]}),
         fetch_ticker=ticker_mock,
 
     )
     default_conf['exchange']['name'] = 'binance'
     default_conf['bid_strategy']['use_order_book'] = True
-    default_conf['bid_strategy']['order_book_top'] = 2
+    default_conf['bid_strategy']['order_book_top'] = 1
     default_conf['bid_strategy']['ask_last_balance'] = 0
     default_conf['telegram']['enabled'] = False
 
     freqtrade = FreqtradeBot(default_conf)
     # orderbook shall be used even if tickers would be lower.
-    assert freqtrade.get_buy_rate('ETH/BTC', True) != 0.042
-    assert ticker_mock.call_count == 0
+    with pytest.raises(PricingException):
+        freqtrade.get_buy_rate('ETH/BTC', refresh=True)
+    assert log_has_re(r'Buy Price from orderbook could not be determined.', caplog)
 
 
 def test_check_depth_of_market_buy(default_conf, mocker, order_book_l2) -> None:
