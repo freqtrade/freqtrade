@@ -34,22 +34,3 @@ if [ $? -ne 0 ]; then
     echo "failed building image"
     return 1
 fi
-
-# Tag as latest for develop builds
-if [ "${TAG}" = "develop" ]; then
-    docker tag ${IMAGE_NAME}:$TAG ${IMAGE_NAME}:latest
-fi
-
-if [ $? -ne 0 ]; then
-    echo "failed login"
-    return 1
-fi
-
-# Show all available images
-docker images
-
-# docker push ${IMAGE_NAME}
-if [ $? -ne 0 ]; then
-    echo "failed pushing to repo"
-    return 1
-fi
