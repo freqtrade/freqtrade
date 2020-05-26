@@ -3818,7 +3818,7 @@ def test_check_depth_of_market_buy(default_conf, mocker, order_book_l2) -> None:
 
 
 def test_order_book_ask_strategy(default_conf, limit_buy_order, limit_sell_order,
-                                 fee, mocker, order_book_l2) -> None:
+                                 fee, mocker, order_book_l2, caplog) -> None:
     """
     test order book ask strategy
     """
@@ -3856,6 +3856,13 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order, limit_sell_order
 
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
+    assert trade.close_rate_requested == order_book_l2.return_value['asks'][0][0]
+
+    mocker.patch('freqtrade.exchange.Exchange.get_order_book',
+                 return_value={'bids': [[]], 'asks': [[]]})
+    with pytest.raises(PricingException):
+        freqtrade.handle_trade(trade)
+    assert log_has('Sell Price at location 1 from orderbook could not be determined.', caplog)
 
 
 @pytest.mark.parametrize('side,ask,bid,expected', [
@@ -3896,7 +3903,6 @@ def test_get_sell_rate_orderbook(default_conf, mocker, caplog, side, expected, o
     default_conf['ask_strategy']['use_order_book'] = True
     default_conf['ask_strategy']['order_book_min'] = 1
     default_conf['ask_strategy']['order_book_max'] = 2
-    # TODO: min/max is irrelevant for this test until refactoring
     pair = "ETH/BTC"
     mocker.patch('freqtrade.exchange.Exchange.get_order_book', order_book_l2)
     ft = get_patched_freqtradebot(mocker, default_conf)
@@ -3907,6 +3913,22 @@ def test_get_sell_rate_orderbook(default_conf, mocker, caplog, side, expected, o
     rate = ft.get_sell_rate(pair, False)
     assert rate == expected
     assert log_has("Using cached sell rate for ETH/BTC.", caplog)
+
+
+def test_get_sell_rate_orderbook_exception(default_conf, mocker, caplog):
+    # Test orderbook mode
+    default_conf['ask_strategy']['price_side'] = 'ask'
+    default_conf['ask_strategy']['use_order_book'] = True
+    default_conf['ask_strategy']['order_book_min'] = 1
+    default_conf['ask_strategy']['order_book_max'] = 2
+    pair = "ETH/BTC"
+    # Test What happens if the exchange returns an empty orderbook.
+    mocker.patch('freqtrade.exchange.Exchange.get_order_book',
+                 return_value={'bids': [[]], 'asks': [[]]})
+    ft = get_patched_freqtradebot(mocker, default_conf)
+    with pytest.raises(PricingException):
+        ft.get_sell_rate(pair, True)
+    assert log_has("Sell Price at location from orderbook could not be determined.", caplog)
 
 
 def test_startup_state(default_conf, mocker):
