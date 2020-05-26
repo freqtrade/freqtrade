@@ -6,7 +6,7 @@
 TAG=$(echo "${BRANCH_NAME}" | sed -e "s/\//_/g")
 PI_PLATFORM="linux/arm/v7"
 echo "Running for ${TAG}"
-CACHE_TAG=${IMAGE_NAME}:${TAG}_cache
+CACHE_TAG=freqtradeorg/freqtrade_cache:${TAG}_cache
 
 # Add commit and commit_message to docker container
 echo "${GITHUB_SHA}" > freqtrade_commit

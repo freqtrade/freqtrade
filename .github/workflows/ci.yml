@@ -6,7 +6,6 @@ on:
       - master
       - develop
       - github_actions_tests
-      - rpi_crosscompile
     tags:
     release:
       types: [published]
