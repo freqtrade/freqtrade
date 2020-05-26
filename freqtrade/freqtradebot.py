@@ -18,7 +18,7 @@ from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.exceptions import DependencyException, InvalidOrderException, PricingException
+from freqtrade.exceptions import DependencyException, InvalidOrderException, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
 from freqtrade.misc import safe_value_fallback
 from freqtrade.pairlist.pairlistmanager import PairListManager
@@ -270,7 +270,7 @@ class FreqtradeBot:
                     "Buy Price from orderbook could not be determined."
                     f"Orderbook: {order_book}"
                  )
-                raise PricingException from e
+                raise PricingError from e
             logger.info(f'...top {order_book_top} order book buy rate {rate_from_l2:.8f}')
             used_rate = rate_from_l2
         else:
@@ -675,7 +675,7 @@ class FreqtradeBot:
                 logger.warning(
                     f"Sell Price at location from orderbook could not be determined."
                 )
-                raise PricingException from e
+                raise PricingError from e
         else:
             rate = self.exchange.fetch_ticker(pair)[ask_strategy['price_side']]
         self._sell_rate_cache[pair] = rate
@@ -718,7 +718,7 @@ class FreqtradeBot:
                     logger.warning(
                         f"Sell Price at location {i} from orderbook could not be determined."
                     )
-                    raise PricingException from e
+                    raise PricingError from e
                 logger.debug(f"  order book {config_ask_strategy['price_side']} top {i}: "
                              f"{sell_rate:0.8f}")
 

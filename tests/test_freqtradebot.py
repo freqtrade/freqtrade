@@ -14,7 +14,7 @@ import requests
 from freqtrade.constants import (CANCEL_REASON, MATH_CLOSE_PREC,
                                  UNLIMITED_STAKE_AMOUNT)
 from freqtrade.exceptions import (DependencyException, InvalidOrderException,
-                                  OperationalException, PricingException,
+                                  OperationalException, PricingError,
                                   TemporaryError)
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
@@ -3792,7 +3792,7 @@ def test_order_book_bid_strategy_exception(mocker, default_conf, caplog) -> None
 
     freqtrade = FreqtradeBot(default_conf)
     # orderbook shall be used even if tickers would be lower.
-    with pytest.raises(PricingException):
+    with pytest.raises(PricingError):
         freqtrade.get_buy_rate('ETH/BTC', refresh=True)
     assert log_has_re(r'Buy Price from orderbook could not be determined.', caplog)
 
@@ -3860,7 +3860,7 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order, limit_sell_order
 
     mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book',
                  return_value={'bids': [[]], 'asks': [[]]})
-    with pytest.raises(PricingException):
+    with pytest.raises(PricingError):
         freqtrade.handle_trade(trade)
     assert log_has('Sell Price at location 1 from orderbook could not be determined.', caplog)
 
@@ -3926,7 +3926,7 @@ def test_get_sell_rate_orderbook_exception(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book',
                  return_value={'bids': [[]], 'asks': [[]]})
     ft = get_patched_freqtradebot(mocker, default_conf)
-    with pytest.raises(PricingException):
+    with pytest.raises(PricingError):
         ft.get_sell_rate(pair, True)
     assert log_has("Sell Price at location from orderbook could not be determined.", caplog)
 

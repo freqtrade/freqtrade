@@ -21,7 +21,7 @@ class DependencyException(FreqtradeException):
     """
 
 
-class PricingException(DependencyException):
+class PricingError(DependencyException):
     """
     Subclass of DependencyException.
     Indicates that the price could not be determined.
