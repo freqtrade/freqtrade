@@ -260,7 +260,7 @@ class FreqtradeBot:
                 f"Getting price from order book {bid_strategy['price_side'].capitalize()} side."
             )
             order_book_top = bid_strategy.get('order_book_top', 1)
-            order_book = self.exchange.get_order_book(pair, order_book_top)
+            order_book = self.exchange.fetch_l2_order_book(pair, order_book_top)
             logger.debug('order_book %s', order_book)
             # top 1 = index 0
             try:
@@ -453,7 +453,7 @@ class FreqtradeBot:
         """
         conf_bids_to_ask_delta = conf.get('bids_to_ask_delta', 0)
         logger.info(f"Checking depth of market for {pair} ...")
-        order_book = self.exchange.get_order_book(pair, 1000)
+        order_book = self.exchange.fetch_l2_order_book(pair, 1000)
         order_book_data_frame = order_book_to_dataframe(order_book['bids'], order_book['asks'])
         order_book_bids = order_book_data_frame['b_size'].sum()
         order_book_asks = order_book_data_frame['a_size'].sum()
@@ -642,7 +642,7 @@ class FreqtradeBot:
         """
         Helper generator to query orderbook in loop (used for early sell-order placing)
         """
-        order_book = self.exchange.get_order_book(pair, order_book_max)
+        order_book = self.exchange.fetch_l2_order_book(pair, order_book_max)
         for i in range(order_book_min, order_book_max + 1):
             yield order_book[side][i - 1][0]
 

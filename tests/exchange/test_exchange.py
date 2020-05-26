@@ -1413,13 +1413,13 @@ def test_refresh_latest_ohlcv_inv_result(default_conf, mocker, caplog):
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_get_order_book(default_conf, mocker, order_book_l2, exchange_name):
+def test_fetch_l2_order_book(default_conf, mocker, order_book_l2, exchange_name):
     default_conf['exchange']['name'] = exchange_name
     api_mock = MagicMock()
 
     api_mock.fetch_l2_order_book = order_book_l2
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-    order_book = exchange.get_order_book(pair='ETH/BTC', limit=10)
+    order_book = exchange.fetch_l2_order_book(pair='ETH/BTC', limit=10)
     assert 'bids' in order_book
     assert 'asks' in order_book
     assert len(order_book['bids']) == 10
@@ -1427,20 +1427,20 @@ def test_get_order_book(default_conf, mocker, order_book_l2, exchange_name):
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_get_order_book_exception(default_conf, mocker, exchange_name):
+def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
     with pytest.raises(OperationalException):
         api_mock.fetch_l2_order_book = MagicMock(side_effect=ccxt.NotSupported("Not supported"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-        exchange.get_order_book(pair='ETH/BTC', limit=50)
+        exchange.fetch_l2_order_book(pair='ETH/BTC', limit=50)
     with pytest.raises(TemporaryError):
         api_mock.fetch_l2_order_book = MagicMock(side_effect=ccxt.NetworkError("DeadBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-        exchange.get_order_book(pair='ETH/BTC', limit=50)
+        exchange.fetch_l2_order_book(pair='ETH/BTC', limit=50)
     with pytest.raises(OperationalException):
         api_mock.fetch_l2_order_book = MagicMock(side_effect=ccxt.BaseError("DeadBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-        exchange.get_order_book(pair='ETH/BTC', limit=50)
+        exchange.fetch_l2_order_book(pair='ETH/BTC', limit=50)
 
 
 def make_fetch_ohlcv_mock(data):
