@@ -327,6 +327,7 @@ class IStrategy(ABC):
 
         latest_date = dataframe['date'].max()
         latest = dataframe.loc[dataframe['date'] == latest_date].iloc[-1]
+        latest_date = arrow.get(latest_date)
 
         # Check if dataframe is out of date
         interval_minutes = timeframe_to_minutes(interval)
