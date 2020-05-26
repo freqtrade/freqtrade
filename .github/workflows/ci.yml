@@ -264,6 +264,14 @@ jobs:
       run: |
         build_helpers/publish_docker.sh
 
+    # We need docker experimental to pull the ARM image.
+    - name: Switch docker to experimental
+      run: |
+          docker version -f '{{.Server.Experimental}}'
+          echo $'{\n    "experimental": true\n}' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
+          docker version -f '{{.Server.Experimental}}'
+
     - name: Set up Docker Buildx
       id: buildx
       uses: crazy-max/ghaction-docker-buildx@v1

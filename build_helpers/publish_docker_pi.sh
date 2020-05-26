@@ -16,8 +16,8 @@ if [ "${GITHUB_EVENT_NAME}" = "schedule" ]; then
 else
     echo "event ${GITHUB_EVENT_NAME}: building with cache"
     # Pull last build to avoid rebuilding the whole image
-    docker pull --platform ${PI_PLATFORM} ${IMAGE_NAME}:${TAG}
-    docker buildx build --cache-from ${IMAGE_NAME}:${TAG} -f Dockerfile.armhf --platform ${PI_PLATFORM} -t ${IMAGE_NAME}:${TAG} --push .
+    # docker pull --platform ${PI_PLATFORM} ${IMAGE_NAME}:${TAG}
+    docker buildx build --cache-from=type=registry,ref=${IMAGE_NAME}:${TAG} -f Dockerfile.armhf --platform ${PI_PLATFORM} -t ${IMAGE_NAME}:${TAG} --push .
 fi
 
 if [ $? -ne 0 ]; then
