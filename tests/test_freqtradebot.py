@@ -11,18 +11,21 @@ import arrow
 import pytest
 import requests
 
-from freqtrade.constants import MATH_CLOSE_PREC, UNLIMITED_STAKE_AMOUNT, CANCEL_REASON
+from freqtrade.constants import (CANCEL_REASON, MATH_CLOSE_PREC,
+                                 UNLIMITED_STAKE_AMOUNT)
 from freqtrade.exceptions import (DependencyException, InvalidOrderException,
-                                  OperationalException, TemporaryError)
+                                  OperationalException, PricingError,
+                                  TemporaryError)
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.state import RunMode, State
 from freqtrade.strategy.interface import SellCheckTuple, SellType
 from freqtrade.worker import Worker
-from tests.conftest import (get_patched_freqtradebot, get_patched_worker,
-                            log_has, log_has_re, patch_edge, patch_exchange,
-                            patch_get_signal, patch_wallet, patch_whitelist, create_mock_trades)
+from tests.conftest import (create_mock_trades, get_patched_freqtradebot,
+                            get_patched_worker, log_has, log_has_re,
+                            patch_edge, patch_exchange, patch_get_signal,
+                            patch_wallet, patch_whitelist)
 
 
 def patch_RPCManager(mocker) -> MagicMock:
@@ -3695,7 +3698,7 @@ def test_order_book_depth_of_market(default_conf, ticker, limit_buy_order, fee, 
     default_conf['bid_strategy']['check_depth_of_market']['bids_to_ask_delta'] = 0.1
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.get_order_book', order_book_l2)
+    mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book', order_book_l2)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
@@ -3732,7 +3735,7 @@ def test_order_book_depth_of_market_high_delta(default_conf, ticker, limit_buy_o
     default_conf['bid_strategy']['check_depth_of_market']['bids_to_ask_delta'] = 100
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.get_order_book', order_book_l2)
+    mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book', order_book_l2)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
@@ -3757,7 +3760,7 @@ def test_order_book_bid_strategy1(mocker, default_conf, order_book_l2) -> None:
     ticker_mock = MagicMock(return_value={'ask': 0.045, 'last': 0.046})
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_order_book=order_book_l2,
+        fetch_l2_order_book=order_book_l2,
         fetch_ticker=ticker_mock,
 
     )
@@ -3772,29 +3775,26 @@ def test_order_book_bid_strategy1(mocker, default_conf, order_book_l2) -> None:
     assert ticker_mock.call_count == 0
 
 
-def test_order_book_bid_strategy2(mocker, default_conf, order_book_l2) -> None:
-    """
-    test if function get_buy_rate will return the ask rate (since its value is lower)
-    instead of the order book rate (even if enabled)
-    """
+def test_order_book_bid_strategy_exception(mocker, default_conf, caplog) -> None:
     patch_exchange(mocker)
     ticker_mock = MagicMock(return_value={'ask': 0.042, 'last': 0.046})
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_order_book=order_book_l2,
+        fetch_l2_order_book=MagicMock(return_value={'bids': [[]], 'asks': [[]]}),
         fetch_ticker=ticker_mock,
 
     )
     default_conf['exchange']['name'] = 'binance'
     default_conf['bid_strategy']['use_order_book'] = True
-    default_conf['bid_strategy']['order_book_top'] = 2
+    default_conf['bid_strategy']['order_book_top'] = 1
     default_conf['bid_strategy']['ask_last_balance'] = 0
     default_conf['telegram']['enabled'] = False
 
     freqtrade = FreqtradeBot(default_conf)
     # orderbook shall be used even if tickers would be lower.
-    assert freqtrade.get_buy_rate('ETH/BTC', True) != 0.042
-    assert ticker_mock.call_count == 0
+    with pytest.raises(PricingError):
+        freqtrade.get_buy_rate('ETH/BTC', refresh=True)
+    assert log_has_re(r'Buy Price from orderbook could not be determined.', caplog)
 
 
 def test_check_depth_of_market_buy(default_conf, mocker, order_book_l2) -> None:
@@ -3804,7 +3804,7 @@ def test_check_depth_of_market_buy(default_conf, mocker, order_book_l2) -> None:
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_order_book=order_book_l2
+        fetch_l2_order_book=order_book_l2
     )
     default_conf['telegram']['enabled'] = False
     default_conf['exchange']['name'] = 'binance'
@@ -3818,11 +3818,11 @@ def test_check_depth_of_market_buy(default_conf, mocker, order_book_l2) -> None:
 
 
 def test_order_book_ask_strategy(default_conf, limit_buy_order, limit_sell_order,
-                                 fee, mocker, order_book_l2) -> None:
+                                 fee, mocker, order_book_l2, caplog) -> None:
     """
     test order book ask strategy
     """
-    mocker.patch('freqtrade.exchange.Exchange.get_order_book', order_book_l2)
+    mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book', order_book_l2)
     default_conf['exchange']['name'] = 'binance'
     default_conf['ask_strategy']['use_order_book'] = True
     default_conf['ask_strategy']['order_book_min'] = 1
@@ -3856,6 +3856,13 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order, limit_sell_order
 
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
+    assert trade.close_rate_requested == order_book_l2.return_value['asks'][0][0]
+
+    mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book',
+                 return_value={'bids': [[]], 'asks': [[]]})
+    with pytest.raises(PricingError):
+        freqtrade.handle_trade(trade)
+    assert log_has('Sell Price at location 1 from orderbook could not be determined.', caplog)
 
 
 @pytest.mark.parametrize('side,ask,bid,expected', [
@@ -3896,9 +3903,8 @@ def test_get_sell_rate_orderbook(default_conf, mocker, caplog, side, expected, o
     default_conf['ask_strategy']['use_order_book'] = True
     default_conf['ask_strategy']['order_book_min'] = 1
     default_conf['ask_strategy']['order_book_max'] = 2
-    # TODO: min/max is irrelevant for this test until refactoring
     pair = "ETH/BTC"
-    mocker.patch('freqtrade.exchange.Exchange.get_order_book', order_book_l2)
+    mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book', order_book_l2)
     ft = get_patched_freqtradebot(mocker, default_conf)
     rate = ft.get_sell_rate(pair, True)
     assert not log_has("Using cached sell rate for ETH/BTC.", caplog)
@@ -3907,6 +3913,22 @@ def test_get_sell_rate_orderbook(default_conf, mocker, caplog, side, expected, o
     rate = ft.get_sell_rate(pair, False)
     assert rate == expected
     assert log_has("Using cached sell rate for ETH/BTC.", caplog)
+
+
+def test_get_sell_rate_orderbook_exception(default_conf, mocker, caplog):
+    # Test orderbook mode
+    default_conf['ask_strategy']['price_side'] = 'ask'
+    default_conf['ask_strategy']['use_order_book'] = True
+    default_conf['ask_strategy']['order_book_min'] = 1
+    default_conf['ask_strategy']['order_book_max'] = 2
+    pair = "ETH/BTC"
+    # Test What happens if the exchange returns an empty orderbook.
+    mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book',
+                 return_value={'bids': [[]], 'asks': [[]]})
+    ft = get_patched_freqtradebot(mocker, default_conf)
+    with pytest.raises(PricingError):
+        ft.get_sell_rate(pair, True)
+    assert log_has("Sell Price at location from orderbook could not be determined.", caplog)
 
 
 def test_startup_state(default_conf, mocker):

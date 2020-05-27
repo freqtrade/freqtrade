@@ -21,6 +21,14 @@ class DependencyException(FreqtradeException):
     """
 
 
+class PricingError(DependencyException):
+    """
+    Subclass of DependencyException.
+    Indicates that the price could not be determined.
+    Implicitly a buy / sell operation.
+    """
+
+
 class InvalidOrderException(FreqtradeException):
     """
     This is returned when the order is not valid. Example:

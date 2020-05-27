@@ -18,7 +18,7 @@ from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.exceptions import DependencyException, InvalidOrderException
+from freqtrade.exceptions import DependencyException, InvalidOrderException, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
 from freqtrade.misc import safe_value_fallback
 from freqtrade.pairlist.pairlistmanager import PairListManager
@@ -260,12 +260,19 @@ class FreqtradeBot:
                 f"Getting price from order book {bid_strategy['price_side'].capitalize()} side."
             )
             order_book_top = bid_strategy.get('order_book_top', 1)
-            order_book = self.exchange.get_order_book(pair, order_book_top)
+            order_book = self.exchange.fetch_l2_order_book(pair, order_book_top)
             logger.debug('order_book %s', order_book)
             # top 1 = index 0
-            order_book_rate = order_book[f"{bid_strategy['price_side']}s"][order_book_top - 1][0]
-            logger.info(f'...top {order_book_top} order book buy rate {order_book_rate:.8f}')
-            used_rate = order_book_rate
+            try:
+                rate_from_l2 = order_book[f"{bid_strategy['price_side']}s"][order_book_top - 1][0]
+            except (IndexError, KeyError) as e:
+                logger.warning(
+                    "Buy Price from orderbook could not be determined."
+                    f"Orderbook: {order_book}"
+                 )
+                raise PricingError from e
+            logger.info(f'...top {order_book_top} order book buy rate {rate_from_l2:.8f}')
+            used_rate = rate_from_l2
         else:
             logger.info(f"Using Last {bid_strategy['price_side'].capitalize()} / Last Price")
             ticker = self.exchange.fetch_ticker(pair)
@@ -446,7 +453,7 @@ class FreqtradeBot:
         """
         conf_bids_to_ask_delta = conf.get('bids_to_ask_delta', 0)
         logger.info(f"Checking depth of market for {pair} ...")
-        order_book = self.exchange.get_order_book(pair, 1000)
+        order_book = self.exchange.fetch_l2_order_book(pair, 1000)
         order_book_data_frame = order_book_to_dataframe(order_book['bids'], order_book['asks'])
         order_book_bids = order_book_data_frame['b_size'].sum()
         order_book_asks = order_book_data_frame['a_size'].sum()
@@ -635,7 +642,7 @@ class FreqtradeBot:
         """
         Helper generator to query orderbook in loop (used for early sell-order placing)
         """
-        order_book = self.exchange.get_order_book(pair, order_book_max)
+        order_book = self.exchange.fetch_l2_order_book(pair, order_book_max)
         for i in range(order_book_min, order_book_max + 1):
             yield order_book[side][i - 1][0]
 
@@ -662,8 +669,11 @@ class FreqtradeBot:
             logger.info(
                 f"Getting price from order book {ask_strategy['price_side'].capitalize()} side."
             )
-            rate = next(self._order_book_gen(pair, f"{ask_strategy['price_side']}s"))
-
+            try:
+                rate = next(self._order_book_gen(pair, f"{ask_strategy['price_side']}s"))
+            except (IndexError, KeyError) as e:
+                logger.warning("Sell Price at location from orderbook could not be determined.")
+                raise PricingError from e
         else:
             rate = self.exchange.fetch_ticker(pair)[ask_strategy['price_side']]
         self._sell_rate_cache[pair] = rate
@@ -690,16 +700,23 @@ class FreqtradeBot:
                 self.dataprovider.ohlcv(trade.pair, self.strategy.ticker_interval))
 
         if config_ask_strategy.get('use_order_book', False):
-            logger.debug(f'Using order book for selling {trade.pair}...')
             # logger.debug('Order book %s',orderBook)
             order_book_min = config_ask_strategy.get('order_book_min', 1)
             order_book_max = config_ask_strategy.get('order_book_max', 1)
+            logger.info(f'Using order book between {order_book_min} and {order_book_max} '
+                        f'for selling {trade.pair}...')
 
             order_book = self._order_book_gen(trade.pair, f"{config_ask_strategy['price_side']}s",
                                               order_book_min=order_book_min,
                                               order_book_max=order_book_max)
             for i in range(order_book_min, order_book_max + 1):
-                sell_rate = next(order_book)
+                try:
+                    sell_rate = next(order_book)
+                except (IndexError, KeyError) as e:
+                    logger.warning(
+                        f"Sell Price at location {i} from orderbook could not be determined."
+                    )
+                    raise PricingError from e
                 logger.debug(f"  order book {config_ask_strategy['price_side']} top {i}: "
                              f"{sell_rate:0.8f}")
 
