@@ -257,10 +257,12 @@ class Trade(_DECL_BASE):
             'fee_close_currency': self.fee_close_currency,
             'open_date_hum': arrow.get(self.open_date).humanize(),
             'open_date': self.open_date.strftime("%Y-%m-%d %H:%M:%S"),
+            'open_timestamp': int(self.open_date.timestamp() * 1000),
             'close_date_hum': (arrow.get(self.close_date).humanize()
                                if self.close_date else None),
             'close_date': (self.close_date.strftime("%Y-%m-%d %H:%M:%S")
                            if self.close_date else None),
+            'close_timestamp': int(self.close_date.timestamp() * 1000) if self.close_date else None,
             'open_rate': self.open_rate,
             'open_rate_requested': self.open_rate_requested,
             'open_trade_price': self.open_trade_price,
