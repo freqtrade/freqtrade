@@ -215,13 +215,15 @@ class Telegram(RPC):
                     "*Open Rate:* `{open_rate:.8f}`",
                     "*Close Rate:* `{close_rate}`" if r['close_rate'] else "",
                     "*Current Rate:* `{current_rate:.8f}`",
-                    "*Close Profit:* `{close_profit_pct}`" if r['close_profit_pct'] else "",
+                    ("*Close Profit:* `{close_profit_pct}`"
+                     if r['close_profit_pct'] is not None else ""),
                     "*Current Profit:* `{current_profit_pct:.2f}%`",
 
                     # Adding initial stoploss only if it is different from stoploss
                     "*Initial Stoploss:* `{initial_stop_loss:.8f}` " +
-                    ("`({initial_stop_loss_pct:.2f}%)`" if r['initial_stop_loss_pct'] else "")
-                    if r['stop_loss'] != r['initial_stop_loss'] else "",
+                    ("`({initial_stop_loss_pct:.2f}%)`") if (
+                        r['stop_loss'] != r['initial_stop_loss']
+                        and r['initial_stop_loss_pct'] is not None) else "",
 
                     # Adding stoploss and stoploss percentage only if it is not None
                     "*Stoploss:* `{stop_loss:.8f}` " +

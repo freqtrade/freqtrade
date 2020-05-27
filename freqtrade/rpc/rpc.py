@@ -131,11 +131,11 @@ class RPC:
                     current_rate = NAN
                 current_profit = trade.calc_profit_ratio(current_rate)
                 fmt_close_profit = (f'{round(trade.close_profit * 100, 2):.2f}%'
-                                    if trade.close_profit else None)
+                                    if trade.close_profit is not None else None)
                 trade_dict = trade.to_json()
                 trade_dict.update(dict(
                     base_currency=self._freqtrade.config['stake_currency'],
-                    close_profit=trade.close_profit or None,
+                    close_profit=trade.close_profit if trade.close_profit is not None else None,
                     close_profit_pct=fmt_close_profit,
                     current_rate=current_rate,
                     current_profit=current_profit,
