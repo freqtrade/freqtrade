@@ -1,7 +1,7 @@
 import logging
 from datetime import timedelta
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 from pandas import DataFrame
 from tabulate import tabulate
