@@ -672,9 +672,7 @@ class FreqtradeBot:
             try:
                 rate = next(self._order_book_gen(pair, f"{ask_strategy['price_side']}s"))
             except (IndexError, KeyError) as e:
-                logger.warning(
-                    f"Sell Price at location from orderbook could not be determined."
-                )
+                logger.warning("Sell Price at location from orderbook could not be determined.")
                 raise PricingError from e
         else:
             rate = self.exchange.fetch_ticker(pair)[ask_strategy['price_side']]
