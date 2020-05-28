@@ -533,16 +533,26 @@ class RPC:
 
     def _rpc_blacklist(self, add: List[str] = None) -> Dict:
         """ Returns the currently active blacklist"""
+        errors = {}
         if add:
             stake_currency = self._freqtrade.config.get('stake_currency')
             for pair in add:
-                if (self._freqtrade.exchange.get_pair_quote_currency(pair) == stake_currency
-                        and pair not in self._freqtrade.pairlists.blacklist):
-                    self._freqtrade.pairlists.blacklist.append(pair)
+                if self._freqtrade.exchange.get_pair_quote_currency(pair) == stake_currency:
+                    if pair not in self._freqtrade.pairlists.blacklist:
+                        self._freqtrade.pairlists.blacklist.append(pair)
+                    else:
+                        errors[pair] = {
+                            'error_msg': f'Pair {pair} already in pairlist.'}
+
+                else:
+                    errors[pair] = {
+                        'error_msg': f"Pair {pair} does not match stake currency."
+                    }
 
         res = {'method': self._freqtrade.pairlists.name_list,
                'length': len(self._freqtrade.pairlists.blacklist),
                'blacklist': self._freqtrade.pairlists.blacklist,
+               'errors': errors,
                }
         return res
 

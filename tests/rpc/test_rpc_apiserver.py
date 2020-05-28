@@ -554,7 +554,9 @@ def test_api_blacklist(botclient, mocker):
     assert_response(rc)
     assert rc.json == {"blacklist": ["DOGE/BTC", "HOT/BTC"],
                        "length": 2,
-                       "method": ["StaticPairList"]}
+                       "method": ["StaticPairList"],
+                       "errors": {},
+                       }
 
     # Add ETH/BTC to blacklist
     rc = client_post(client, f"{BASE_URI}/blacklist",
@@ -562,7 +564,9 @@ def test_api_blacklist(botclient, mocker):
     assert_response(rc)
     assert rc.json == {"blacklist": ["DOGE/BTC", "HOT/BTC", "ETH/BTC"],
                        "length": 3,
-                       "method": ["StaticPairList"]}
+                       "method": ["StaticPairList"],
+                       "errors": {},
+                       }
 
 
 def test_api_whitelist(botclient):
