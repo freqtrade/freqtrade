@@ -415,9 +415,12 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
 
     for pair in pairs:
         profit_col = f'cum_profit_{pair}'
-        df_comb = create_cum_profit(df_comb, trades[trades['pair'] == pair], profit_col, timeframe)
-
-        fig = add_profit(fig, 3, df_comb, profit_col, f"Profit {pair}")
+        try:
+            df_comb = create_cum_profit(df_comb, trades[trades['pair'] == pair], profit_col,
+                                        timeframe)
+            fig = add_profit(fig, 3, df_comb, profit_col, f"Profit {pair}")
+        except ValueError:
+            pass
 
     return fig
 
