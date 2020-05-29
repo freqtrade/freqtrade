@@ -328,18 +328,23 @@ class Telegram(RPC):
             best_pair = stats['best_pair']
             best_rate = stats['best_rate']
             # Message to display
-            markdown_msg = "*ROI:* Close trades\n" \
-                           f"∙ `{profit_closed_coin:.8f} {stake_cur} "\
-                           f"({profit_closed_percent:.2f}%)`\n" \
-                           f"∙ `{profit_closed_fiat:.3f} {fiat_disp_cur}`\n" \
-                           f"*ROI:* All trades\n" \
-                           f"∙ `{profit_all_coin:.8f} {stake_cur} ({profit_all_percent:.2f}%)`\n" \
-                           f"∙ `{profit_all_fiat:.3f} {fiat_disp_cur}`\n" \
-                           f"*Total Trade Count:* `{trade_count}`\n" \
-                           f"*First Trade opened:* `{first_trade_date}`\n" \
-                           f"*Latest Trade opened:* `{latest_trade_date}`\n" \
-                           f"*Avg. Duration:* `{avg_duration}`\n" \
-                           f"*Best Performing:* `{best_pair}: {best_rate:.2f}%`"
+            if stats['closed_trade_count'] > 0:
+                markdown_msg = ("*ROI:* Close trades\n"
+                                f"∙ `{profit_closed_coin:.8f} {stake_cur} "
+                                f"({profit_closed_percent:.2f}%)`\n"
+                                f"∙ `{profit_closed_fiat:.3f} {fiat_disp_cur}`\n")
+            else:
+                markdown_msg = "`No closed trade` \n"
+
+            markdown_msg += (f"*ROI:* All trades\n"
+                             f"∙ `{profit_all_coin:.8f} {stake_cur} ({profit_all_percent:.2f}%)`\n"
+                             f"∙ `{profit_all_fiat:.3f} {fiat_disp_cur}`\n"
+                             f"*Total Trade Count:* `{trade_count}`\n"
+                             f"*First Trade opened:* `{first_trade_date}`\n"
+                             f"*Latest Trade opened:* `{latest_trade_date}`")
+            if stats['closed_trade_count'] > 0:
+                markdown_msg += (f"\n*Avg. Duration:* `{avg_duration}`\n"
+                                 f"*Best Performing:* `{best_pair}: {best_rate:.2f}%`")
             self._send_msg(markdown_msg)
         except RPCException as e:
             self._send_msg(str(e))

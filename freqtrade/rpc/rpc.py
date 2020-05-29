@@ -310,6 +310,7 @@ class RPC:
             'profit_all_percent': profit_all_percent,
             'profit_all_fiat': profit_all_fiat,
             'trade_count': len(trades),
+            'closed_trade_count': len([t for t in trades if not t.is_open]),
             'first_trade_date': arrow.get(first_date).humanize() if first_date else '',
             'first_trade_timestamp': int(first_date.timestamp() * 1000) if first_date else 0,
             'latest_trade_date': arrow.get(last_date).humanize() if last_date else '',

@@ -431,7 +431,8 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
                        'profit_closed_coin': 6.217e-05,
                        'profit_closed_fiat': 0,
                        'profit_closed_percent': 6.2,
-                       'trade_count': 1
+                       'trade_count': 1,
+                       'closed_trade_count': 1,
                        }
 
 
