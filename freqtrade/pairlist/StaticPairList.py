@@ -4,7 +4,7 @@ Static Pair List provider
 Provides pair white list as it configured in config
 """
 import logging
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.pairlist.IPairList import IPairList
@@ -14,6 +14,15 @@ logger = logging.getLogger(__name__)
 
 
 class StaticPairList(IPairList):
+
+    def __init__(self, exchange, pairlistmanager,
+                 config: Dict[str, Any], pairlistconfig: Dict[str, Any],
+                 pairlist_pos: int) -> None:
+        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
+
+        if self._pairlist_pos != 0:
+            raise OperationalException(f"{self.name} can only be used in the first position "
+                                       "in the list of Pairlist Handlers.")
 
     @property
     def needstickers(self) -> bool:
@@ -48,8 +57,4 @@ class StaticPairList(IPairList):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
-        if self._pairlist_pos != 0:
-            raise OperationalException(f"{self.name} can only be used in the first position "
-                                       "in the list of Pairlist Handlers.")
-        else:
-            return pairlist
+        return pairlist

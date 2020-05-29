@@ -313,8 +313,15 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     whitelist_conf['stake_currency'] = base_currency
 
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
-    freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
 
+    if whitelist_result == 'static_in_the_middle':
+        with pytest.raises(OperationalException,
+                           match=r"StaticPairList can only be used in the first position "
+                                 r"in the list of Pairlist Handlers."):
+            freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
+        return
+
+    freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
     mocker.patch.multiple('freqtrade.exchange.Exchange',
                           get_tickers=tickers,
                           markets=PropertyMock(return_value=shitcoinmarkets),
@@ -324,11 +331,6 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     if whitelist_result == 'filter_at_the_beginning':
         with pytest.raises(OperationalException,
                            match=r"This Pairlist Handler should not be used at the first position "
-                                 r"in the list of Pairlist Handlers."):
-            freqtrade.pairlists.refresh_pairlist()
-    elif whitelist_result == 'static_in_the_middle':
-        with pytest.raises(OperationalException,
-                           match=r"StaticPairList can only be used in the first position "
                                  r"in the list of Pairlist Handlers."):
             freqtrade.pairlists.refresh_pairlist()
     else:
