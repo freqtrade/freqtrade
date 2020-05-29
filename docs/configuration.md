@@ -136,6 +136,7 @@ Values set in the configuration file always overwrite values set in the strategy
 * `stake_currency`
 * `stake_amount`
 * `unfilledtimeout`
+* `disable_dataframe_checks`
 * `use_sell_signal` (ask_strategy)
 * `sell_profit_only` (ask_strategy)
 * `ignore_roi_if_buy_signal` (ask_strategy)
