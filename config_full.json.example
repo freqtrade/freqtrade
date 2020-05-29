@@ -132,6 +132,7 @@
         "process_throttle_secs": 5,
         "heartbeat_interval": 60
     },
+    "disable_dataframe_checks": false,
     "strategy": "DefaultStrategy",
     "strategy_path": "user_data/strategies/",
     "dataformat_ohlcv": "json",

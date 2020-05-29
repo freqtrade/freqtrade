@@ -106,6 +106,9 @@ class IStrategy(ABC):
     # run "populate_indicators" only for new candle
     process_only_new_candles: bool = False
 
+    # Disable checking the dataframe (converts the error into a warning message)
+    disable_dataframe_checks: bool = False
+
     # Count of candles the strategy requires before producing valid signals
     startup_candle_count: int = 0
 
@@ -285,8 +288,7 @@ class IStrategy(ABC):
         """ keep some data for dataframes """
         return len(dataframe), dataframe["close"].iloc[-1], dataframe["date"].iloc[-1]
 
-    @staticmethod
-    def assert_df(dataframe: DataFrame, df_len: int, df_close: float, df_date: datetime):
+    def assert_df(self, dataframe: DataFrame, df_len: int, df_close: float, df_date: datetime):
         """ make sure data is unmodified """
         message = ""
         if df_len != len(dataframe):
@@ -296,7 +298,10 @@ class IStrategy(ABC):
         elif df_date != dataframe["date"].iloc[-1]:
             message = "last date"
         if message:
-            raise StrategyError(f"Dataframe returned from strategy has mismatching {message}.")
+            if self.disable_dataframe_checks:
+                logger.warning(f"Dataframe returned from strategy has mismatching {message}.")
+            else:
+                raise StrategyError(f"Dataframe returned from strategy has mismatching {message}.")
 
     def get_signal(self, pair: str, interval: str, dataframe: DataFrame) -> Tuple[bool, bool]:
         """

@@ -130,7 +130,7 @@ def test_assert_df_raise(default_conf, mocker, caplog, ohlcv_history):
                    caplog)
 
 
-def test_assert_df(default_conf, mocker, ohlcv_history):
+def test_assert_df(default_conf, mocker, ohlcv_history, caplog):
     # Ensure it's running when passed correctly
     _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
                         ohlcv_history.loc[1, 'close'], ohlcv_history.loc[1, 'date'])
@@ -147,6 +147,14 @@ def test_assert_df(default_conf, mocker, ohlcv_history):
                        match=r"Dataframe returned from strategy.*last date\."):
         _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
                             ohlcv_history.loc[1, 'close'], ohlcv_history.loc[0, 'date'])
+
+    _STRATEGY.disable_dataframe_checks = True
+    caplog.clear()
+    _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
+                        ohlcv_history.loc[1, 'close'], ohlcv_history.loc[0, 'date'])
+    assert log_has_re(r"Dataframe returned from strategy.*last date\.", caplog)
+    # reset to avoid problems in other tests
+    _STRATEGY.disable_dataframe_checks = False
 
 
 def test_get_signal_handles_exceptions(mocker, default_conf):
