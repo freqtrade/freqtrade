@@ -281,11 +281,6 @@ class RPC:
 
         best_pair = Trade.get_best_pair()
 
-        if not best_pair:
-            raise RPCException('no closed trade')
-
-        bp_pair, bp_rate = best_pair
-
         # Prepare data to display
         profit_closed_coin_sum = round(sum(profit_closed_coin), 8)
         profit_closed_percent = (round(mean(profit_closed_ratio) * 100, 2) if profit_closed_ratio
@@ -304,6 +299,8 @@ class RPC:
             fiat_display_currency
         ) if self._fiat_converter else 0
 
+        first_date = trades[0].open_date if trades else None
+        last_date = trades[-1].open_date if trades else None
         num = float(len(durations) or 1)
         return {
             'profit_closed_coin': profit_closed_coin_sum,
@@ -313,13 +310,13 @@ class RPC:
             'profit_all_percent': profit_all_percent,
             'profit_all_fiat': profit_all_fiat,
             'trade_count': len(trades),
-            'first_trade_date': arrow.get(trades[0].open_date).humanize(),
-            'first_trade_timestamp': int(trades[0].open_date.timestamp() * 1000),
-            'latest_trade_date': arrow.get(trades[-1].open_date).humanize(),
-            'latest_trade_timestamp': int(trades[-1].open_date.timestamp() * 1000),
+            'first_trade_date': arrow.get(first_date).humanize() if first_date else '',
+            'first_trade_timestamp': int(first_date.timestamp() * 1000) if first_date else 0,
+            'latest_trade_date': arrow.get(last_date).humanize() if last_date else '',
+            'latest_trade_timestamp': int(last_date.timestamp() * 1000) if last_date else 0,
             'avg_duration': str(timedelta(seconds=sum(durations) / num)).split('.')[0],
-            'best_pair': bp_pair,
-            'best_rate': round(bp_rate * 100, 2),
+            'best_pair': best_pair[0] if best_pair else '',
+            'best_rate': round(best_pair[1] * 100, 2) if best_pair else 0,
         }
 
     def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> Dict:
