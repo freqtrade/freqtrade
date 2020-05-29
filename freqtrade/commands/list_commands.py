@@ -163,7 +163,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
             tabular_data.append({'Id': v['id'], 'Symbol': v['symbol'],
                                  'Base': v['base'], 'Quote': v['quote'],
                                  'Active': market_is_active(v),
-                                 **({'Is pair': symbol_is_pair(v['symbol'])}
+                                 **({'Is pair': symbol_is_pair(v)}
                                     if not pairs_only else {})})
 
         if (args.get('print_one_column', False) or

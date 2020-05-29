@@ -214,7 +214,7 @@ class Exchange:
         if quote_currencies:
             markets = {k: v for k, v in markets.items() if v['quote'] in quote_currencies}
         if pairs_only:
-            markets = {k: v for k, v in markets.items() if symbol_is_pair(v['symbol'])}
+            markets = {k: v for k, v in markets.items() if symbol_is_pair(v)}
         if active_only:
             markets = {k: v for k, v in markets.items() if market_is_active(v)}
         return markets
@@ -1210,7 +1210,7 @@ def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
     return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
 
 
-def symbol_is_pair(market_symbol: str, base_currency: str = None,
+def symbol_is_pair(market_symbol: Dict[str, Any], base_currency: str = None,
                    quote_currency: str = None) -> bool:
     """
     Check if the market symbol is a pair, i.e. that its symbol consists of the base currency and the
@@ -1218,10 +1218,12 @@ def symbol_is_pair(market_symbol: str, base_currency: str = None,
     it also checks that the symbol contains appropriate base and/or quote currency part before
     and after the separating character correspondingly.
     """
-    symbol_parts = market_symbol.split('/')
+    symbol_parts = market_symbol['symbol'].split('/')
     return (len(symbol_parts) == 2 and
-            (symbol_parts[0] == base_currency if base_currency else len(symbol_parts[0]) > 0) and
-            (symbol_parts[1] == quote_currency if quote_currency else len(symbol_parts[1]) > 0))
+            (market_symbol.get('base') == base_currency
+                if base_currency else len(symbol_parts[0]) > 0) and
+            (market_symbol.get('quote') == quote_currency
+                if quote_currency else len(symbol_parts[1]) > 0))
 
 
 def market_is_active(market: Dict) -> bool:
