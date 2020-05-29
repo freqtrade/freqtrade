@@ -130,7 +130,7 @@ This should contain the name of the Pairlist Handler, as well as a short descrip
 
 Override this method if the Pairlist Handler can be used as the leading Pairlist Handler in the chain, defining the initial pairlist which is then handled by all Pairlist Handlers in the chain. Examples are `StaticPairList` and `VolumePairList`.
 
-This is called with each iteration of the bot - so consider implementing caching for compute/network heavy calculations.
+This is called with each iteration of the bot (only if the Pairlist Handler is at the first location) - so consider implementing caching for compute/network heavy calculations.
 
 It must return the resulting pairlist (which may then be passed into the chain of Pairlist Handlers).
 
