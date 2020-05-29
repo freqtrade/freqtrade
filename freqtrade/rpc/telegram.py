@@ -311,43 +311,40 @@ class Telegram(RPC):
         stake_cur = self._config['stake_currency']
         fiat_disp_cur = self._config.get('fiat_display_currency', '')
 
-        try:
-            stats = self._rpc_trade_statistics(
-                stake_cur,
-                fiat_disp_cur)
-            profit_closed_coin = stats['profit_closed_coin']
-            profit_closed_percent = stats['profit_closed_percent']
-            profit_closed_fiat = stats['profit_closed_fiat']
-            profit_all_coin = stats['profit_all_coin']
-            profit_all_percent = stats['profit_all_percent']
-            profit_all_fiat = stats['profit_all_fiat']
-            trade_count = stats['trade_count']
-            first_trade_date = stats['first_trade_date']
-            latest_trade_date = stats['latest_trade_date']
-            avg_duration = stats['avg_duration']
-            best_pair = stats['best_pair']
-            best_rate = stats['best_rate']
-            # Message to display
-            if stats['closed_trade_count'] > 0:
-                markdown_msg = ("*ROI:* Close trades\n"
-                                f"∙ `{profit_closed_coin:.8f} {stake_cur} "
-                                f"({profit_closed_percent:.2f}%)`\n"
-                                f"∙ `{profit_closed_fiat:.3f} {fiat_disp_cur}`\n")
-            else:
-                markdown_msg = "`No closed trade` \n"
+        stats = self._rpc_trade_statistics(
+            stake_cur,
+            fiat_disp_cur)
+        profit_closed_coin = stats['profit_closed_coin']
+        profit_closed_percent = stats['profit_closed_percent']
+        profit_closed_fiat = stats['profit_closed_fiat']
+        profit_all_coin = stats['profit_all_coin']
+        profit_all_percent = stats['profit_all_percent']
+        profit_all_fiat = stats['profit_all_fiat']
+        trade_count = stats['trade_count']
+        first_trade_date = stats['first_trade_date']
+        latest_trade_date = stats['latest_trade_date']
+        avg_duration = stats['avg_duration']
+        best_pair = stats['best_pair']
+        best_rate = stats['best_rate']
+        # Message to display
+        if stats['closed_trade_count'] > 0:
+            markdown_msg = ("*ROI:* Close trades\n"
+                            f"∙ `{profit_closed_coin:.8f} {stake_cur} "
+                            f"({profit_closed_percent:.2f}%)`\n"
+                            f"∙ `{profit_closed_fiat:.3f} {fiat_disp_cur}`\n")
+        else:
+            markdown_msg = "`No closed trade` \n"
 
-            markdown_msg += (f"*ROI:* All trades\n"
-                             f"∙ `{profit_all_coin:.8f} {stake_cur} ({profit_all_percent:.2f}%)`\n"
-                             f"∙ `{profit_all_fiat:.3f} {fiat_disp_cur}`\n"
-                             f"*Total Trade Count:* `{trade_count}`\n"
-                             f"*First Trade opened:* `{first_trade_date}`\n"
-                             f"*Latest Trade opened:* `{latest_trade_date}`")
-            if stats['closed_trade_count'] > 0:
-                markdown_msg += (f"\n*Avg. Duration:* `{avg_duration}`\n"
-                                 f"*Best Performing:* `{best_pair}: {best_rate:.2f}%`")
-            self._send_msg(markdown_msg)
-        except RPCException as e:
-            self._send_msg(str(e))
+        markdown_msg += (f"*ROI:* All trades\n"
+                         f"∙ `{profit_all_coin:.8f} {stake_cur} ({profit_all_percent:.2f}%)`\n"
+                         f"∙ `{profit_all_fiat:.3f} {fiat_disp_cur}`\n"
+                         f"*Total Trade Count:* `{trade_count}`\n"
+                         f"*First Trade opened:* `{first_trade_date}`\n"
+                         f"*Latest Trade opened:* `{latest_trade_date}`")
+        if stats['closed_trade_count'] > 0:
+            markdown_msg += (f"\n*Avg. Duration:* `{avg_duration}`\n"
+                             f"*Best Performing:* `{best_pair}: {best_rate:.2f}%`")
+        self._send_msg(markdown_msg)
 
     @authorized_only
     def _balance(self, update: Update, context: CallbackContext) -> None:
