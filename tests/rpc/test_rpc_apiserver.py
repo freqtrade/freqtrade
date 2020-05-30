@@ -396,9 +396,8 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
     )
 
     rc = client_get(client, f"{BASE_URI}/profit")
-    assert_response(rc, 502)
-    assert len(rc.json) == 1
-    assert rc.json == {"error": "Error querying _profit: no closed trade"}
+    assert_response(rc, 200)
+    assert rc.json['trade_count'] == 0
 
     ftbot.enter_positions()
     trade = Trade.query.first()
@@ -406,8 +405,11 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
     # Simulate fulfilled LIMIT_BUY order for trade
     trade.update(limit_buy_order)
     rc = client_get(client, f"{BASE_URI}/profit")
-    assert_response(rc, 502)
-    assert rc.json == {"error": "Error querying _profit: no closed trade"}
+    assert_response(rc, 200)
+    # One open trade
+    assert rc.json['trade_count'] == 1
+    assert rc.json['best_pair'] == ''
+    assert rc.json['best_rate'] == 0
 
     trade.update(limit_sell_order)
 
@@ -429,7 +431,8 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
                        'profit_closed_coin': 6.217e-05,
                        'profit_closed_fiat': 0,
                        'profit_closed_percent': 6.2,
-                       'trade_count': 1
+                       'trade_count': 1,
+                       'closed_trade_count': 1,
                        }
 
 

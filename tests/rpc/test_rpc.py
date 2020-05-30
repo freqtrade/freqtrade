@@ -290,8 +290,12 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
     rpc = RPC(freqtradebot)
     rpc._fiat_converter = CryptoToFiatConverter()
 
-    with pytest.raises(RPCException, match=r'.*no closed trade*'):
-        rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
+    res = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
+    assert res['trade_count'] == 0
+    assert res['first_trade_date'] == ''
+    assert res['first_trade_timestamp'] == 0
+    assert res['latest_trade_date'] == ''
+    assert res['latest_trade_timestamp'] == 0
 
     # Create some test data
     freqtradebot.enter_positions()

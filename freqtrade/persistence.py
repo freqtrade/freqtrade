@@ -553,6 +553,7 @@ class Trade(_DECL_BASE):
     def get_best_pair():
         """
         Get best pair with closed trade.
+        :returns: Tuple containing (pair, profit_sum)
         """
         best_pair = Trade.session.query(
             Trade.pair, func.sum(Trade.close_profit).label('profit_sum')

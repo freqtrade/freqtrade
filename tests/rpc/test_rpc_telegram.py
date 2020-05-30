@@ -420,7 +420,7 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
 
     telegram._profit(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
-    assert 'no closed trade' in msg_mock.call_args_list[0][0][0]
+    assert 'No trades yet.' in msg_mock.call_args_list[0][0][0]
     msg_mock.reset_mock()
 
     # Create some test data
@@ -432,7 +432,9 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
 
     telegram._profit(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
-    assert 'no closed trade' in msg_mock.call_args_list[-1][0][0]
+    assert 'No closed trade' in msg_mock.call_args_list[-1][0][0]
+    assert '*ROI:* All trades' in msg_mock.call_args_list[-1][0][0]
+    assert '∙ `-0.00000500 BTC (-0.50%)`' in msg_mock.call_args_list[-1][0][0]
     msg_mock.reset_mock()
 
     # Update the ticker with a market going up
@@ -444,7 +446,7 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
 
     telegram._profit(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
-    assert '*ROI:* Close trades' in msg_mock.call_args_list[-1][0][0]
+    assert '*ROI:* Closed trades' in msg_mock.call_args_list[-1][0][0]
     assert '∙ `0.00006217 BTC (6.20%)`' in msg_mock.call_args_list[-1][0][0]
     assert '∙ `0.933 USD`' in msg_mock.call_args_list[-1][0][0]
     assert '*ROI:* All trades' in msg_mock.call_args_list[-1][0][0]
