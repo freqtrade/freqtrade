@@ -328,7 +328,7 @@ class Telegram(RPC):
         best_rate = stats['best_rate']
         # Message to display
         if stats['closed_trade_count'] > 0:
-            markdown_msg = ("*ROI:* Close trades\n"
+            markdown_msg = ("*ROI:* Closed trades\n"
                             f"∙ `{profit_closed_coin:.8f} {stake_cur} "
                             f"({profit_closed_percent:.2f}%)`\n"
                             f"∙ `{profit_closed_fiat:.3f} {fiat_disp_cur}`\n")
