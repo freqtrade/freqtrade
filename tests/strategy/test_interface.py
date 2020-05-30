@@ -153,7 +153,7 @@ def test_assert_df(default_conf, mocker, ohlcv_history, caplog):
     _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
                         ohlcv_history.loc[1, 'close'], ohlcv_history.loc[0, 'date'])
     assert log_has_re(r"Dataframe returned from strategy.*last date\.", caplog)
-    # reset to avoid problems in other tests
+    # reset to avoid problems in other tests due to test leakage
     _STRATEGY.disable_dataframe_checks = False
 
 
