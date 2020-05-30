@@ -88,15 +88,19 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     caplog.clear()
     conf = copy.deepcopy(default_conf)
     conf['exchange']['ccxt_config'] = {'TestKWARG': 11}
+    conf['exchange']['ccxt_sync_config'] = {'TestKWARG44': 11}
     conf['exchange']['ccxt_async_config'] = {'asyncio_loop': True}
-
+    asynclogmsg = "Applying additional ccxt config: {'TestKWARG': 11, 'asyncio_loop': True}"
     ex = Exchange(conf)
-    assert not log_has("Applying additional ccxt config: {'aiohttp_trust_env': True}", caplog)
     assert not ex._api_async.aiohttp_trust_env
     assert hasattr(ex._api, 'TestKWARG')
     assert ex._api.TestKWARG == 11
-    assert not hasattr(ex._api_async, 'TestKWARG')
-    assert log_has("Applying additional ccxt config: {'TestKWARG': 11}", caplog)
+    # ccxt_config is assigned to both sync and async
+    assert not hasattr(ex._api_async, 'TestKWARG44')
+
+    assert hasattr(ex._api_async, 'TestKWARG')
+    assert log_has("Applying additional ccxt config: {'TestKWARG': 11, 'TestKWARG44': 11}", caplog)
+    assert log_has(asynclogmsg, caplog)
 
 
 def test_destroy(default_conf, mocker, caplog):
