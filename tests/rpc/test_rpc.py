@@ -77,13 +77,19 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stake_amount': 0.001,
         'close_profit': None,
         'close_profit_pct': None,
+        'close_profit_abs': None,
         'current_profit': -0.00408133,
         'current_profit_pct': -0.41,
         'stop_loss': 0.0,
+        'stop_loss_pct': None,
+        'stoploss_order_id': None,
+        'stoploss_last_update': None,
+        'stoploss_last_update_timestamp': None,
         'initial_stop_loss': 0.0,
         'initial_stop_loss_pct': None,
-        'stop_loss_pct': None,
-        'open_order': '(limit buy rem=0.00000000)'
+        'open_order': '(limit buy rem=0.00000000)',
+        'exchange': 'bittrex',
+
     } == results[0]
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
@@ -125,13 +131,18 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stake_amount': 0.001,
         'close_profit': None,
         'close_profit_pct': None,
+        'close_profit_abs': None,
         'current_profit': ANY,
         'current_profit_pct': ANY,
         'stop_loss': 0.0,
+        'stop_loss_pct': None,
+        'stoploss_order_id': None,
+        'stoploss_last_update': None,
+        'stoploss_last_update_timestamp': None,
         'initial_stop_loss': 0.0,
         'initial_stop_loss_pct': None,
-        'stop_loss_pct': None,
-        'open_order': '(limit buy rem=0.00000000)'
+        'open_order': '(limit buy rem=0.00000000)',
+        'exchange': 'bittrex',
     } == results[0]
 
 

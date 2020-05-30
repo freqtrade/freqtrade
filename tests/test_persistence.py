@@ -758,16 +758,22 @@ def test_to_json(default_conf, fee):
                       'amount': 123.0,
                       'stake_amount': 0.001,
                       'close_profit': None,
+                      'close_profit_abs': None,
                       'sell_reason': None,
                       'sell_order_status': None,
                       'stop_loss': None,
                       'stop_loss_pct': None,
+                      'stoploss_order_id': None,
+                      'stoploss_last_update': None,
+                      'stoploss_last_update_timestamp': None,
                       'initial_stop_loss': None,
                       'initial_stop_loss_pct': None,
                       'min_rate': None,
                       'max_rate': None,
                       'strategy': None,
-                      'ticker_interval': None}
+                      'ticker_interval': None,
+                      'exchange': 'bittrex',
+                      }
 
     # Simulate dry_run entries
     trade = Trade(
@@ -799,9 +805,13 @@ def test_to_json(default_conf, fee):
                       'stake_amount': 0.001,
                       'stop_loss': None,
                       'stop_loss_pct': None,
+                      'stoploss_order_id': None,
+                      'stoploss_last_update': None,
+                      'stoploss_last_update_timestamp': None,
                       'initial_stop_loss': None,
                       'initial_stop_loss_pct': None,
                       'close_profit': None,
+                      'close_profit_abs': None,
                       'close_rate_requested': None,
                       'fee_close': 0.0025,
                       'fee_close_cost': None,
@@ -818,7 +828,9 @@ def test_to_json(default_conf, fee):
                       'sell_reason': None,
                       'sell_order_status': None,
                       'strategy': None,
-                      'ticker_interval': None}
+                      'ticker_interval': None,
+                      'exchange': 'bittrex',
+                      }
 
 
 def test_stoploss_reinitialization(default_conf, fee):

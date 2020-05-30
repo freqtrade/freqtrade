@@ -502,6 +502,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
                         'close_timestamp': None,
                         'close_profit': None,
                         'close_profit_pct': None,
+                        'close_profit_abs': None,
                         'close_rate': None,
                         'current_profit': -0.00408133,
                         'current_profit_pct': -0.41,
@@ -517,6 +518,9 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
                         'stake_amount': 0.001,
                         'stop_loss': 0.0,
                         'stop_loss_pct': None,
+                        'stoploss_order_id': None,
+                        'stoploss_last_update': None,
+                        'stoploss_last_update_timestamp': None,
                         'trade_id': 1,
                         'close_rate_requested': None,
                         'current_rate': 1.099e-05,
@@ -536,7 +540,9 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
                         'sell_reason': None,
                         'sell_order_status': None,
                         'strategy': 'DefaultStrategy',
-                        'ticker_interval': 5}]
+                        'ticker_interval': 5,
+                        'exchange': 'bittrex',
+                        }]
 
 
 def test_api_version(botclient):
@@ -627,8 +633,12 @@ def test_api_forcebuy(botclient, mocker, fee):
                        'stake_amount': 1,
                        'stop_loss': None,
                        'stop_loss_pct': None,
+                       'stoploss_order_id': None,
+                       'stoploss_last_update': None,
+                       'stoploss_last_update_timestamp': None,
                        'trade_id': None,
                        'close_profit': None,
+                       'close_profit_abs': None,
                        'close_rate_requested': None,
                        'fee_close': 0.0025,
                        'fee_close_cost': None,
@@ -645,7 +655,8 @@ def test_api_forcebuy(botclient, mocker, fee):
                        'sell_reason': None,
                        'sell_order_status': None,
                        'strategy': None,
-                       'ticker_interval': None
+                       'ticker_interval': None,
+                       'exchange': 'bittrex',
                        }
 
 

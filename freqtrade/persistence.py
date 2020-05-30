@@ -271,10 +271,16 @@ class Trade(_DECL_BASE):
             'amount': round(self.amount, 8),
             'stake_amount': round(self.stake_amount, 8),
             'close_profit': self.close_profit,
+            'close_profit_abs': self.close_profit_abs,
             'sell_reason': self.sell_reason,
             'sell_order_status': self.sell_order_status,
             'stop_loss': self.stop_loss,
             'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
+            'stoploss_order_id': self.stoploss_order_id,
+            'stoploss_last_update': (self.stoploss_last_update.strftime("%Y-%m-%d %H:%M:%S")
+                                     if self.stoploss_last_update else None),
+            'stoploss_last_update_timestamp': (int(self.stoploss_last_update.timestamp() * 1000)
+                                               if self.stoploss_last_update else None),
             'initial_stop_loss': self.initial_stop_loss,
             'initial_stop_loss_pct': (self.initial_stop_loss_pct * 100
                                       if self.initial_stop_loss_pct else None),
@@ -283,6 +289,7 @@ class Trade(_DECL_BASE):
             'strategy': self.strategy,
             'ticker_interval': self.ticker_interval,
             'open_order_id': self.open_order_id,
+            'exchange': self.exchange,
         }
 
     def adjust_min_max_rates(self, current_price: float) -> None:
