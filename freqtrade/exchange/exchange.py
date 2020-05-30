@@ -98,12 +98,14 @@ class Exchange:
 
         # Initialize ccxt objects
         ccxt_config = self._ccxt_config.copy()
-        ccxt_config = deep_merge_dicts(exchange_config.get('ccxt_config', {}),
-                                       ccxt_config)
-        self._api = self._init_ccxt(
-            exchange_config, ccxt_kwargs=ccxt_config)
+        ccxt_config = deep_merge_dicts(exchange_config.get('ccxt_config', {}), ccxt_config)
+        ccxt_config = deep_merge_dicts(exchange_config.get('ccxt_sync_config', {}), ccxt_config)
+
+        self._api = self._init_ccxt(exchange_config, ccxt_kwargs=ccxt_config)
 
         ccxt_async_config = self._ccxt_config.copy()
+        ccxt_async_config = deep_merge_dicts(exchange_config.get('ccxt_config', {}),
+                                             ccxt_async_config)
         ccxt_async_config = deep_merge_dicts(exchange_config.get('ccxt_async_config', {}),
                                              ccxt_async_config)
         self._api_async = self._init_ccxt(
