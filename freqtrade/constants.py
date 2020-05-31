@@ -221,6 +221,7 @@ CONF_SCHEMA = {
                 },
                 'username': {'type': 'string'},
                 'password': {'type': 'string'},
+                'verbosity': {'type': 'string', 'enum': ['error', 'info']},
             },
             'required': ['enabled', 'listen_ip_address', 'listen_port', 'username', 'password']
         },
