@@ -634,7 +634,6 @@ def test_set_loggers() -> None:
     previous_value1 = logging.getLogger('requests').level
     previous_value2 = logging.getLogger('ccxt.base.exchange').level
     previous_value3 = logging.getLogger('telegram').level
-    previous_value3 = logging.getLogger('werkzeug').level
 
     _set_loggers()
 
