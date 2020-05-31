@@ -81,6 +81,15 @@
         "token": "your_telegram_token",
         "chat_id": "your_telegram_chat_id"
     },
+    "api_server": {
+        "enabled": false,
+        "listen_ip_address": "127.0.0.1",
+        "listen_port": 8080,
+        "verbosity": "info",
+        "jwt_secret_key": "somethingrandom",
+        "username": "",
+        "password": ""
+    },
     "initial_state": "running",
     "forcebuy_enable": false,
     "internals": {
