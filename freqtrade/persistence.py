@@ -249,32 +249,40 @@ class Trade(_DECL_BASE):
             'trade_id': self.id,
             'pair': self.pair,
             'is_open': self.is_open,
+            'exchange': self.exchange,
+            'amount': round(self.amount, 8),
+            'stake_amount': round(self.stake_amount, 8),
+            'strategy': self.strategy,
+            'ticker_interval': self.ticker_interval,
+
             'fee_open': self.fee_open,
             'fee_open_cost': self.fee_open_cost,
             'fee_open_currency': self.fee_open_currency,
             'fee_close': self.fee_close,
             'fee_close_cost': self.fee_close_cost,
             'fee_close_currency': self.fee_close_currency,
+
             'open_date_hum': arrow.get(self.open_date).humanize(),
             'open_date': self.open_date.strftime("%Y-%m-%d %H:%M:%S"),
             'open_timestamp': int(self.open_date.timestamp() * 1000),
+            'open_rate': self.open_rate,
+            'open_rate_requested': self.open_rate_requested,
+            'open_trade_price': self.open_trade_price,
+
             'close_date_hum': (arrow.get(self.close_date).humanize()
                                if self.close_date else None),
             'close_date': (self.close_date.strftime("%Y-%m-%d %H:%M:%S")
                            if self.close_date else None),
             'close_timestamp': int(self.close_date.timestamp() * 1000) if self.close_date else None,
-            'open_rate': self.open_rate,
-            'open_rate_requested': self.open_rate_requested,
-            'open_trade_price': self.open_trade_price,
             'close_rate': self.close_rate,
             'close_rate_requested': self.close_rate_requested,
-            'amount': round(self.amount, 8),
-            'stake_amount': round(self.stake_amount, 8),
             'close_profit': self.close_profit,
             'close_profit_abs': self.close_profit_abs,
+
             'sell_reason': self.sell_reason,
             'sell_order_status': self.sell_order_status,
             'stop_loss': self.stop_loss,
+            'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,
             'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
             'stoploss_order_id': self.stoploss_order_id,
             'stoploss_last_update': (self.stoploss_last_update.strftime("%Y-%m-%d %H:%M:%S")
@@ -282,14 +290,14 @@ class Trade(_DECL_BASE):
             'stoploss_last_update_timestamp': (int(self.stoploss_last_update.timestamp() * 1000)
                                                if self.stoploss_last_update else None),
             'initial_stop_loss': self.initial_stop_loss,
+            'initial_stop_loss_ratio': (self.initial_stop_loss_pct
+                                        if self.initial_stop_loss_pct else None),
             'initial_stop_loss_pct': (self.initial_stop_loss_pct * 100
                                       if self.initial_stop_loss_pct else None),
             'min_rate': self.min_rate,
             'max_rate': self.max_rate,
-            'strategy': self.strategy,
-            'ticker_interval': self.ticker_interval,
+
             'open_order_id': self.open_order_id,
-            'exchange': self.exchange,
         }
 
     def adjust_min_max_rates(self, current_price: float) -> None:
