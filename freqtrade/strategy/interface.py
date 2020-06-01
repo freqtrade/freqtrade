@@ -62,7 +62,7 @@ class IStrategy(ABC):
     Attributes you can use:
         minimal_roi -> Dict: Minimal ROI designed for the strategy
         stoploss -> float: optimal stoploss designed for the strategy
-        ticker_interval -> str: value of the timeframe (ticker interval) to use with the strategy
+        timeframe -> str: value of the timeframe (ticker interval) to use with the strategy
     """
     # Strategy interface version
     # Default to version 2

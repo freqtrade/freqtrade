@@ -547,7 +547,7 @@ class FreqtradeBot:
             exchange=self.exchange.id,
             open_order_id=order_id,
             strategy=self.strategy.get_strategy_name(),
-            ticker_interval=timeframe_to_minutes(self.config['ticker_interval'])
+            ticker_interval=timeframe_to_minutes(self.config['timeframe'])
         )
 
         # Update fees if order is closed
@@ -780,7 +780,7 @@ class FreqtradeBot:
             self.update_trade_state(trade, stoploss_order, sl_order=True)
             # Lock pair for one candle to prevent immediate rebuys
             self.strategy.lock_pair(trade.pair,
-                                    timeframe_to_next_date(self.config['ticker_interval']))
+                                    timeframe_to_next_date(self.config['timeframe']))
             self._notify_sell(trade, "stoploss")
             return True
 
@@ -1090,7 +1090,7 @@ class FreqtradeBot:
         Trade.session.flush()
 
         # Lock pair for one candle to prevent immediate rebuys
-        self.strategy.lock_pair(trade.pair, timeframe_to_next_date(self.config['ticker_interval']))
+        self.strategy.lock_pair(trade.pair, timeframe_to_next_date(self.config['timeframe']))
 
         self._notify_sell(trade, order_type)
 

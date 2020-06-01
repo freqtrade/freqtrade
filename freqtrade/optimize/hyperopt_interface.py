@@ -37,7 +37,8 @@ class IHyperOpt(ABC):
         self.config = config
 
         # Assign ticker_interval to be used in hyperopt
-        IHyperOpt.ticker_interval = str(config['ticker_interval'])
+        IHyperOpt.ticker_interval = str(config['timeframe'])  # DEPRECTED
+        IHyperOpt.timeframe = str(config['timeframe'])
 
     @staticmethod
     def buy_strategy_generator(params: Dict[str, Any]) -> Callable:
@@ -218,9 +219,10 @@ class IHyperOpt(ABC):
     # Why do I still need such shamanic mantras in modern python?
     def __getstate__(self):
         state = self.__dict__.copy()
-        state['ticker_interval'] = self.ticker_interval
+        state['timeframe'] = self.timeframe
         return state
 
     def __setstate__(self, state):
         self.__dict__.update(state)
-        IHyperOpt.ticker_interval = state['ticker_interval']
+        IHyperOpt.ticker_interval = state['timeframe']
+        IHyperOpt.timeframe = state['timeframe']

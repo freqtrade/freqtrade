@@ -77,8 +77,9 @@ class HyperOptLossResolver(IResolver):
                                                         config, kwargs={},
                                                         extra_dir=config.get('hyperopt_path'))
 
-        # Assign ticker_interval to be used in hyperopt
-        hyperoptloss.__class__.ticker_interval = str(config['ticker_interval'])
+        # Assign timeframe to be used in hyperopt
+        hyperoptloss.__class__.ticker_interval = str(config['timeframe'])
+        hyperoptloss.__class__.timeframe = str(config['timeframe'])
 
         if not hasattr(hyperoptloss, 'hyperopt_loss_function'):
             raise OperationalException(

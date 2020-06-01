@@ -186,7 +186,7 @@ def test_strategy_override_timeframe(caplog, default_conf):
     })
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    assert strategy.ticker_interval == 60
+    assert strategy.timeframe == 60
     assert strategy.stake_currency == 'ETH'
     assert log_has("Override strategy 'timeframe' with value in config file: 60.",
                    caplog)
