@@ -1898,6 +1898,7 @@ def test_get_stoploss_order(default_conf, mocker, exchange_name):
                            'get_stoploss_order', 'fetch_order',
                            order_id='_', pair='TKN/BTC')
 
+
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_name(default_conf, mocker, exchange_name):
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)

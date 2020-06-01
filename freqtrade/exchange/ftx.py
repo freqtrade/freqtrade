@@ -30,7 +30,6 @@ class Ftx(Exchange):
         """
         Creates a stoploss market order.
         Stoploss market orders is the only stoploss type supported by ftx.
-        TODO: This doesnot work yet as the order cannot be aquired via fetch_orders - so Freqtrade assumes the order as always missing.
         """
 
         ordertype = "stop"
@@ -46,6 +45,7 @@ class Ftx(Exchange):
             params = self._params.copy()
 
             amount = self.amount_to_precision(pair, amount)
+            # set orderPrice to place limit order (?)
 
             order = self._api.create_order(symbol=pair, type=ordertype, side='sell',
                                            amount=amount, price=stop_price, params=params)
