@@ -259,7 +259,7 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
                             all_results: Dict[str, DataFrame]):
     stake_currency = config['stake_currency']
     max_open_trades = config['max_open_trades']
-    result = {'strategy': {}}
+    result: Dict[str, Any] = {'strategy': {}}
     for strategy, results in all_results.items():
 
         pair_results = generate_pair_metrics(btdata, stake_currency=stake_currency,
