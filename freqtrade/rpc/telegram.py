@@ -215,22 +215,28 @@ class Telegram(RPC):
                     "*Open Rate:* `{open_rate:.8f}`",
                     "*Close Rate:* `{close_rate}`" if r['close_rate'] else "",
                     "*Current Rate:* `{current_rate:.8f}`",
-                    "*Close Profit:* `{close_profit}`" if r['close_profit'] else "",
-                    "*Current Profit:* `{current_profit:.2f}%`",
+                    ("*Close Profit:* `{close_profit_pct}`"
+                     if r['close_profit_pct'] is not None else ""),
+                    "*Current Profit:* `{current_profit_pct:.2f}%`",
 
                     # Adding initial stoploss only if it is different from stoploss
                     "*Initial Stoploss:* `{initial_stop_loss:.8f}` " +
-                    ("`({initial_stop_loss_pct:.2f}%)`" if r['initial_stop_loss_pct'] else "")
-                    if r['stop_loss'] != r['initial_stop_loss'] else "",
+                    ("`({initial_stop_loss_pct:.2f}%)`") if (
+                        r['stop_loss'] != r['initial_stop_loss']
+                        and r['initial_stop_loss_pct'] is not None) else "",
 
                     # Adding stoploss and stoploss percentage only if it is not None
                     "*Stoploss:* `{stop_loss:.8f}` " +
                     ("`({stop_loss_pct:.2f}%)`" if r['stop_loss_pct'] else ""),
-
-                    "*Open Order:* `{open_order}`" if r['open_order'] else ""
                 ]
+                if r['open_order']:
+                    if r['sell_order_status']:
+                        lines.append("*Open Order:* `{open_order}` - `{sell_order_status}`")
+                    else:
+                        lines.append("*Open Order:* `{open_order}`")
+
                 # Filter empty lines using list-comprehension
-                messages.append("\n".join([l for l in lines if l]).format(**r))
+                messages.append("\n".join([line for line in lines if line]).format(**r))
 
             for msg in messages:
                 self._send_msg(msg)
@@ -276,14 +282,18 @@ class Telegram(RPC):
                 stake_cur,
                 fiat_disp_cur
             )
-            stats_tab = tabulate(stats,
-                                 headers=[
-                                     'Day',
-                                     f'Profit {stake_cur}',
-                                     f'Profit {fiat_disp_cur}',
-                                     f'Trades'
-                                 ],
-                                 tablefmt='simple')
+            stats_tab = tabulate(
+                [[day['date'],
+                  f"{day['abs_profit']} {stats['stake_currency']}",
+                  f"{day['fiat_value']} {stats['fiat_display_currency']}",
+                  f"{day['trade_count']} trades"] for day in stats['data']],
+                headers=[
+                    'Day',
+                    f'Profit {stake_cur}',
+                    f'Profit {fiat_disp_cur}',
+                    'Trades',
+                ],
+                tablefmt='simple')
             message = f'<b>Daily Profit over the last {timescale} days</b>:\n<pre>{stats_tab}</pre>'
             self._send_msg(message, parse_mode=ParseMode.HTML)
         except RPCException as e:
@@ -579,7 +589,7 @@ class Telegram(RPC):
                   "*/whitelist:* `Show current whitelist` \n" \
                   "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs " \
                   "to the blacklist.` \n" \
-                  "*/edge:* `Shows validated pairs by Edge if it is enabeld` \n" \
+                  "*/edge:* `Shows validated pairs by Edge if it is enabled` \n" \
                   "*/help:* `This help message`\n" \
                   "*/version:* `Show version`"
 
@@ -621,10 +631,12 @@ class Telegram(RPC):
             f"*Mode:* `{'Dry-run' if val['dry_run'] else 'Live'}`\n"
             f"*Exchange:* `{val['exchange']}`\n"
             f"*Stake per trade:* `{val['stake_amount']} {val['stake_currency']}`\n"
+            f"*Max open Trades:* `{val['max_open_trades']}`\n"
             f"*Minimum ROI:* `{val['minimal_roi']}`\n"
             f"{sl_info}"
             f"*Ticker Interval:* `{val['ticker_interval']}`\n"
-            f"*Strategy:* `{val['strategy']}`"
+            f"*Strategy:* `{val['strategy']}`\n"
+            f"*Current state:* `{val['state']}`"
         )
 
     def _send_msg(self, msg: str, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:

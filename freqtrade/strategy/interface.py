@@ -7,7 +7,7 @@ import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from typing import Dict, NamedTuple, Optional, Tuple
 
 import arrow
 from pandas import DataFrame
@@ -17,7 +17,9 @@ from freqtrade.exceptions import StrategyError
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.persistence import Trade
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
+from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.wallets import Wallets
+
 
 logger = logging.getLogger(__name__)
 
@@ -185,7 +187,7 @@ class IStrategy(ABC):
         """
         return False
 
-    def informative_pairs(self) -> List[Tuple[str, str]]:
+    def informative_pairs(self) -> ListPairsWithTimeframes:
         """
         Define additional, informative pair/interval combinations to be cached from the exchange.
         These pair/interval combinations are non-tradeable, unless they are part
@@ -308,7 +310,6 @@ class IStrategy(ABC):
             logger.warning('Empty candle (OHLCV) data for pair %s', pair)
             return False, False
 
-        latest_date = dataframe['date'].max()
         try:
             df_len, df_close, df_date = self.preserve_df(dataframe)
             dataframe = strategy_safe_wrapper(
@@ -324,17 +325,19 @@ class IStrategy(ABC):
             logger.warning('Empty dataframe for pair %s', pair)
             return False, False
 
+        latest_date = dataframe['date'].max()
         latest = dataframe.loc[dataframe['date'] == latest_date].iloc[-1]
+        # Explicitly convert to arrow object to ensure the below comparison does not fail
+        latest_date = arrow.get(latest_date)
 
         # Check if dataframe is out of date
-        signal_date = arrow.get(latest['date'])
         interval_minutes = timeframe_to_minutes(interval)
         offset = self.config.get('exchange', {}).get('outdated_offset', 5)
-        if signal_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + offset))):
+        if latest_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + offset))):
             logger.warning(
                 'Outdated history for pair %s. Last tick is %s minutes old',
                 pair,
-                (arrow.utcnow() - signal_date).seconds // 60
+                (arrow.utcnow() - latest_date).seconds // 60
             )
             return False, False
 

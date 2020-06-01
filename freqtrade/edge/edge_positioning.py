@@ -238,20 +238,9 @@ class Edge:
         :param result Dataframe
         :return: result Dataframe
         """
-
-        # stake and fees
-        # stake = 0.015
-        # 0.05% is 0.0005
-        # fee = 0.001
-
-        # we set stake amount to an arbitrary amount.
-        # as it doesn't change the calculation.
-        # all returned values are relative.
-        # they are defined as ratios.
+        # We set stake amount to an arbitrary amount, as it doesn't change the calculation.
+        # All returned values are relative, they are defined as ratios.
         stake = 0.015
-        fee = self.fee
-        open_fee = fee / 2
-        close_fee = fee / 2
 
         result['trade_duration'] = result['close_time'] - result['open_time']
 
@@ -262,12 +251,12 @@ class Edge:
 
         # Buy Price
         result['buy_vol'] = stake / result['open_rate']  # How many target are we buying
-        result['buy_fee'] = stake * open_fee
+        result['buy_fee'] = stake * self.fee
         result['buy_spend'] = stake + result['buy_fee']  # How much we're spending
 
         # Sell price
         result['sell_sum'] = result['buy_vol'] * result['close_rate']
-        result['sell_fee'] = result['sell_sum'] * close_fee
+        result['sell_fee'] = result['sell_sum'] * self.fee
         result['sell_take'] = result['sell_sum'] - result['sell_fee']
 
         # profit_ratio

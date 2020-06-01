@@ -20,7 +20,7 @@ class Binance(Exchange):
         "trades_pagination_arg": "fromId",
     }
 
-    def get_order_book(self, pair: str, limit: int = 100) -> dict:
+    def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:
         """
         get order book level 2 from exchange
 
@@ -30,7 +30,7 @@ class Binance(Exchange):
         # get next-higher step in the limit_range list
         limit = min(list(filter(lambda x: limit <= x, limit_range)))
 
-        return super().get_order_book(pair, limit)
+        return super().fetch_l2_order_book(pair, limit)
 
     def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
         """
@@ -72,7 +72,7 @@ class Binance(Exchange):
             rate = self.price_to_precision(pair, rate)
 
             order = self._api.create_order(symbol=pair, type=ordertype, side='sell',
-                                           amount=amount, price=stop_price, params=params)
+                                           amount=amount, price=rate, params=params)
             logger.info('stoploss limit order added for %s. '
                         'stop price: %s. limit: %s', pair, stop_price, rate)
             return order

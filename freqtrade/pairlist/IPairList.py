@@ -1,9 +1,6 @@
 """
-Static List provider
-
-Provides lists as configured in config.json
-
- """
+PairList Handler base class
+"""
 import logging
 from abc import ABC, abstractmethod, abstractproperty
 from copy import deepcopy
@@ -12,6 +9,7 @@ from typing import Any, Dict, List
 from cachetools import TTLCache, cached
 
 from freqtrade.exchange import market_is_active
+
 
 logger = logging.getLogger(__name__)
 
@@ -23,11 +21,13 @@ class IPairList(ABC):
                  pairlist_pos: int) -> None:
         """
         :param exchange: Exchange instance
-        :param pairlistmanager: Instanciating Pairlist manager
+        :param pairlistmanager: Instantiated Pairlist manager
         :param config: Global bot configuration
-        :param pairlistconfig: Configuration for this pairlist - can be empty.
-        :param pairlist_pos: Position of the filter in the pairlist-filter-list
+        :param pairlistconfig: Configuration for this Pairlist Handler - can be empty.
+        :param pairlist_pos: Position of the Pairlist Handler in the chain
         """
+        self._enabled = True
+
         self._exchange = exchange
         self._pairlistmanager = pairlistmanager
         self._config = config
@@ -78,49 +78,50 @@ class IPairList(ABC):
         -> Please overwrite in subclasses
         """
 
-    @abstractmethod
+    def _validate_pair(self, ticker) -> bool:
+        """
+        Check one pair against Pairlist Handler's specific conditions.
+
+        Either implement it in the Pairlist Handler or override the generic
+        filter_pairlist() method.
+
+        :param ticker: ticker dict as returned from ccxt.load_markets()
+        :return: True if the pair can stay, false if it should be removed
+        """
+        raise NotImplementedError()
+
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
         Filters and sorts pairlist and returns the whitelist again.
+
         Called on each bot iteration - please use internal caching if necessary
-        -> Please overwrite in subclasses
+        This generic implementation calls self._validate_pair() for each pair
+        in the pairlist.
+
+        Some Pairlist Handlers override this generic implementation and employ
+        own filtration.
+
         :param pairlist: pairlist to filter or sort
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
+        if self._enabled:
+            # Copy list since we're modifying this list
+            for p in deepcopy(pairlist):
+                # Filter out assets
+                if not self._validate_pair(tickers[p]):
+                    pairlist.remove(p)
 
-    @staticmethod
-    def verify_blacklist(pairlist: List[str], blacklist: List[str],
-                         aswarning: bool) -> List[str]:
-        """
-        Verify and remove items from pairlist - returning a filtered pairlist.
-        Logs a warning or info depending on `aswarning`.
-        Pairlists explicitly using this method shall use `aswarning=False`!
-        :param pairlist: Pairlist to validate
-        :param blacklist: Blacklist to validate pairlist against
-        :param aswarning: Log message as Warning or info
-        :return: pairlist - blacklisted pairs
-        """
-        for pair in deepcopy(pairlist):
-            if pair in blacklist:
-                if aswarning:
-                    logger.warning(f"Pair {pair} in your blacklist. Removing it from whitelist...")
-                else:
-                    logger.info(f"Pair {pair} in your blacklist. Removing it from whitelist...")
-                pairlist.remove(pair)
         return pairlist
 
-    def _verify_blacklist(self, pairlist: List[str], aswarning: bool = True) -> List[str]:
+    def verify_blacklist(self, pairlist: List[str], logmethod) -> List[str]:
         """
         Proxy method to verify_blacklist for easy access for child classes.
-        Logs a warning or info depending on `aswarning`.
-        Pairlists explicitly using this method shall use aswarning=False!
         :param pairlist: Pairlist to validate
-        :param aswarning: Log message as Warning or info.
+        :param logmethod: Function that'll be called, `logger.info` or `logger.warning`.
         :return: pairlist - blacklisted pairs
         """
-        return IPairList.verify_blacklist(pairlist, self._pairlistmanager.blacklist,
-                                          aswarning=aswarning)
+        return self._pairlistmanager.verify_blacklist(pairlist, logmethod)
 
     def _whitelist_for_active_markets(self, pairlist: List[str]) -> List[str]:
         """

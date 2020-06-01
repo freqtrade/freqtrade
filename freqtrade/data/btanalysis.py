@@ -194,7 +194,10 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     :param col_name: Column name that will be assigned the results
     :param timeframe: Timeframe used during the operations
     :return: Returns df with one additional column, col_name, containing the cumulative profit.
+    :raise: ValueError if trade-dataframe was found empty.
     """
+    if len(trades) == 0:
+        raise ValueError("Trade dataframe empty.")
     from freqtrade.exchange import timeframe_to_minutes
     timeframe_minutes = timeframe_to_minutes(timeframe)
     # Resample to timeframe to make sure trades match candles

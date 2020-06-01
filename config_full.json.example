@@ -8,6 +8,7 @@
     "amend_last_stake_amount": false,
     "last_stake_amount_min_ratio": 0.5,
     "dry_run": false,
+    "cancel_open_orders_on_exit": false,
     "ticker_interval": "5m",
     "trailing_stop": false,
     "trailing_stop_positive": 0.005,
@@ -120,6 +121,7 @@
         "enabled": false,
         "listen_ip_address": "127.0.0.1",
         "listen_port": 8080,
+        "jwt_secret_key": "somethingrandom",
         "username": "freqtrader",
         "password": "SuperSecurePassword"
     },

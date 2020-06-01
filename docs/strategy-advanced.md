@@ -20,7 +20,7 @@ It applies a tight timeout for higher priced assets, while allowing more time to
 The function must return either `True` (cancel order) or `False` (keep order alive).
 
 ``` python
-from datetime import datetime, timestamp
+from datetime import datetime, timedelta
 from freqtrade.persistence import Trade
 
 class Awesomestrategy(IStrategy):
@@ -59,7 +59,7 @@ class Awesomestrategy(IStrategy):
 ### Custom order timeout example (using additional data)
 
 ``` python
-from datetime import datetime, timestamp
+from datetime import datetime
 from freqtrade.persistence import Trade
 
 class Awesomestrategy(IStrategy):

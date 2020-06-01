@@ -1,8 +1,11 @@
 from unittest.mock import MagicMock
 
 from pandas import DataFrame
+import pytest
 
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.pairlist.pairlistmanager import PairListManager
+from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.state import RunMode
 from tests.conftest import get_patched_exchange
 
@@ -64,8 +67,8 @@ def test_get_pair_dataframe(mocker, default_conf, ohlcv_history):
     assert dp.get_pair_dataframe("NONESENSE/AAA", ticker_interval).empty
 
     # Test with and without parameter
-    assert dp.get_pair_dataframe("UNITTEST/BTC",
-                                 ticker_interval).equals(dp.get_pair_dataframe("UNITTEST/BTC"))
+    assert dp.get_pair_dataframe("UNITTEST/BTC", ticker_interval)\
+        .equals(dp.get_pair_dataframe("UNITTEST/BTC"))
 
     default_conf["runmode"] = RunMode.LIVE
     dp = DataProvider(default_conf, exchange)
@@ -90,10 +93,7 @@ def test_available_pairs(mocker, default_conf, ohlcv_history):
 
     dp = DataProvider(default_conf, exchange)
     assert len(dp.available_pairs) == 2
-    assert dp.available_pairs == [
-        ("XRP/BTC", ticker_interval),
-        ("UNITTEST/BTC", ticker_interval),
-    ]
+    assert dp.available_pairs == [("XRP/BTC", ticker_interval), ("UNITTEST/BTC", ticker_interval), ]
 
 
 def test_refresh(mocker, default_conf, ohlcv_history):
@@ -152,3 +152,45 @@ def test_market(mocker, default_conf, markets):
 
     res = dp.market('UNITTEST/BTC')
     assert res is None
+
+
+def test_ticker(mocker, default_conf, tickers):
+    ticker_mock = MagicMock(return_value=tickers()['ETH/BTC'])
+    mocker.patch("freqtrade.exchange.Exchange.fetch_ticker", ticker_mock)
+    exchange = get_patched_exchange(mocker, default_conf)
+    dp = DataProvider(default_conf, exchange)
+    res = dp.ticker('ETH/BTC')
+    assert type(res) is dict
+    assert 'symbol' in res
+    assert res['symbol'] == 'ETH/BTC'
+
+    ticker_mock = MagicMock(side_effect=DependencyException('Pair not found'))
+    mocker.patch("freqtrade.exchange.Exchange.fetch_ticker", ticker_mock)
+    exchange = get_patched_exchange(mocker, default_conf)
+    dp = DataProvider(default_conf, exchange)
+    res = dp.ticker('UNITTEST/BTC')
+    assert res == {}
+
+
+def test_current_whitelist(mocker, default_conf, tickers):
+    # patch default conf to volumepairlist
+    default_conf['pairlists'][0] = {'method': 'VolumePairList', "number_assets": 5}
+
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          exchange_has=MagicMock(return_value=True),
+                          get_tickers=tickers)
+    exchange = get_patched_exchange(mocker, default_conf)
+
+    pairlist = PairListManager(exchange, default_conf)
+    dp = DataProvider(default_conf, exchange, pairlist)
+
+    # Simulate volumepairs from exchange.
+    pairlist.refresh_pairlist()
+
+    assert dp.current_whitelist() == pairlist._whitelist
+    # The identity of the 2 lists should be identical
+    assert dp.current_whitelist() is pairlist._whitelist
+
+    with pytest.raises(OperationalException):
+        dp = DataProvider(default_conf, exchange)
+        dp.current_whitelist()

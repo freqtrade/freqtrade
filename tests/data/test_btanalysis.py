@@ -178,6 +178,10 @@ def test_create_cum_profit1(testdatadir):
     assert cum_profits.iloc[0]['cum_profits'] == 0
     assert cum_profits.iloc[-1]['cum_profits'] == 0.0798005
 
+    with pytest.raises(ValueError, match='Trade dataframe empty.'):
+        create_cum_profit(df.set_index('date'), bt_data[bt_data["pair"] == 'NOTAPAIR'],
+                          "cum_profits", timeframe="5m")
+
 
 def test_calculate_max_drawdown(testdatadir):
     filename = testdatadir / "backtest-result_test.json"

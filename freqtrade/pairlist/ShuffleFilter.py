@@ -1,10 +1,9 @@
 """
-Static Pair List provider
-
-Provides pair white list as it configured in config
+Shuffle pair list filter
 """
 import logging
-from typing import Dict, List
+import random
+from typing import Any, Dict, List
 
 from freqtrade.pairlist.IPairList import IPairList
 
@@ -12,7 +11,15 @@ from freqtrade.pairlist.IPairList import IPairList
 logger = logging.getLogger(__name__)
 
 
-class StaticPairList(IPairList):
+class ShuffleFilter(IPairList):
+
+    def __init__(self, exchange, pairlistmanager,
+                 config: Dict[str, Any], pairlistconfig: Dict[str, Any],
+                 pairlist_pos: int) -> None:
+        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
+
+        self._seed = pairlistconfig.get('seed')
+        self._random = random.Random(self._seed)
 
     @property
     def needstickers(self) -> bool:
@@ -26,9 +33,9 @@ class StaticPairList(IPairList):
     def short_desc(self) -> str:
         """
         Short whitelist method description - used for startup-messages
-        -> Please overwrite in subclasses
         """
-        return f"{self.name}"
+        return (f"{self.name} - Shuffling pairs" +
+                (f", seed = {self._seed}." if self._seed is not None else "."))
 
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
@@ -38,4 +45,7 @@ class StaticPairList(IPairList):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
-        return self._whitelist_for_active_markets(self._config['exchange']['pair_whitelist'])
+        # Shuffle is done inplace
+        self._random.shuffle(pairlist)
+
+        return pairlist

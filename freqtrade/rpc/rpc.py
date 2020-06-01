@@ -94,6 +94,7 @@ class RPC:
             'dry_run': config['dry_run'],
             'stake_currency': config['stake_currency'],
             'stake_amount': config['stake_amount'],
+            'max_open_trades': config['max_open_trades'],
             'minimal_roi': config['minimal_roi'].copy(),
             'stoploss': config['stoploss'],
             'trailing_stop': config['trailing_stop'],
@@ -103,6 +104,8 @@ class RPC:
             'ticker_interval': config['ticker_interval'],
             'exchange': config['exchange']['name'],
             'strategy': config['strategy'],
+            'forcebuy_enabled': config.get('forcebuy_enable', False),
+            'state': str(self._freqtrade.state)
         }
         return val
 
@@ -128,13 +131,15 @@ class RPC:
                     current_rate = NAN
                 current_profit = trade.calc_profit_ratio(current_rate)
                 fmt_close_profit = (f'{round(trade.close_profit * 100, 2):.2f}%'
-                                    if trade.close_profit else None)
+                                    if trade.close_profit is not None else None)
                 trade_dict = trade.to_json()
                 trade_dict.update(dict(
                     base_currency=self._freqtrade.config['stake_currency'],
-                    close_profit=fmt_close_profit,
+                    close_profit=trade.close_profit if trade.close_profit is not None else None,
+                    close_profit_pct=fmt_close_profit,
                     current_rate=current_rate,
-                    current_profit=round(current_profit * 100, 2),
+                    current_profit=current_profit,
+                    current_profit_pct=round(current_profit * 100, 2),
                     open_order='({} {} rem={:.8f})'.format(
                         order['type'], order['side'], order['remaining']
                     ) if order else None,
@@ -183,7 +188,7 @@ class RPC:
 
     def _rpc_daily_profit(
             self, timescale: int,
-            stake_currency: str, fiat_display_currency: str) -> List[List[Any]]:
+            stake_currency: str, fiat_display_currency: str) -> Dict[str, Any]:
         today = datetime.utcnow().date()
         profit_days: Dict[date, Dict] = {}
 
@@ -203,28 +208,26 @@ class RPC:
                 'trades': len(trades)
             }
 
-        return [
-            [
-                key,
-                '{value:.8f} {symbol}'.format(
-                    value=float(value['amount']),
-                    symbol=stake_currency
-                ),
-                '{value:.3f} {symbol}'.format(
+        data = [
+            {
+                'date': key,
+                'abs_profit': f'{float(value["amount"]):.8f}',
+                'fiat_value': '{value:.3f}'.format(
                     value=self._fiat_converter.convert_amount(
                         value['amount'],
                         stake_currency,
                         fiat_display_currency
                     ) if self._fiat_converter else 0,
-                    symbol=fiat_display_currency
                 ),
-                '{value} trade{s}'.format(
-                    value=value['trades'],
-                    s='' if value['trades'] < 2 else 's'
-                ),
-            ]
+                'trade_count': f'{value["trades"]}',
+            }
             for key, value in profit_days.items()
         ]
+        return {
+            'stake_currency': stake_currency,
+            'fiat_display_currency': fiat_display_currency,
+            'data': data
+        }
 
     def _rpc_trade_history(self, limit: int) -> Dict:
         """ Returns the X last trades """
@@ -311,7 +314,9 @@ class RPC:
             'profit_all_fiat': profit_all_fiat,
             'trade_count': len(trades),
             'first_trade_date': arrow.get(trades[0].open_date).humanize(),
+            'first_trade_timestamp': int(trades[0].open_date.timestamp() * 1000),
             'latest_trade_date': arrow.get(trades[-1].open_date).humanize(),
+            'latest_trade_timestamp': int(trades[-1].open_date.timestamp() * 1000),
             'avg_duration': str(timedelta(seconds=sum(durations) / num)).split('.')[0],
             'best_pair': bp_pair,
             'best_rate': round(bp_rate * 100, 2),
@@ -544,5 +549,5 @@ class RPC:
     def _rpc_edge(self) -> List[Dict[str, Any]]:
         """ Returns information related to Edge """
         if not self._freqtrade.edge:
-            raise RPCException(f'Edge is not enabled.')
+            raise RPCException('Edge is not enabled.')
         return self._freqtrade.edge.accepted_pairs()
