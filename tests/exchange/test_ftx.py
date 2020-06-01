@@ -34,6 +34,14 @@ def test_stoploss_order_ftx(default_conf, mocker):
     # stoploss_on_exchange_limit_ratio is irrelevant for ftx market orders
     order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=190,
                               order_types={'stoploss_on_exchange_limit_ratio': 1.05})
+
+    assert api_mock.create_order.call_args_list[0][1]['symbol'] == 'ETH/BTC'
+    assert api_mock.create_order.call_args_list[0][1]['type'] == STOPLOSS_ORDERTYPE
+    assert api_mock.create_order.call_args_list[0][1]['side'] == 'sell'
+    assert api_mock.create_order.call_args_list[0][1]['amount'] == 1
+    assert api_mock.create_order.call_args_list[0][1]['price'] == 190
+    assert 'orderPrice' not in api_mock.create_order.call_args_list[0][1]['params']
+
     assert api_mock.create_order.call_count == 1
 
     api_mock.create_order.reset_mock()
@@ -48,6 +56,22 @@ def test_stoploss_order_ftx(default_conf, mocker):
     assert api_mock.create_order.call_args_list[0][1]['side'] == 'sell'
     assert api_mock.create_order.call_args_list[0][1]['amount'] == 1
     assert api_mock.create_order.call_args_list[0][1]['price'] == 220
+    assert 'orderPrice' not in api_mock.create_order.call_args_list[0][1]['params']
+
+    api_mock.create_order.reset_mock()
+    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220,
+                              order_types={'stoploss': 'limit'})
+
+    assert 'id' in order
+    assert 'info' in order
+    assert order['id'] == order_id
+    assert api_mock.create_order.call_args_list[0][1]['symbol'] == 'ETH/BTC'
+    assert api_mock.create_order.call_args_list[0][1]['type'] == STOPLOSS_ORDERTYPE
+    assert api_mock.create_order.call_args_list[0][1]['side'] == 'sell'
+    assert api_mock.create_order.call_args_list[0][1]['amount'] == 1
+    assert api_mock.create_order.call_args_list[0][1]['price'] == 220
+    assert 'orderPrice' in api_mock.create_order.call_args_list[0][1]['params']
+    assert api_mock.create_order.call_args_list[0][1]['params']['orderPrice'] == 217.8
 
     # test exception handling
     with pytest.raises(DependencyException):

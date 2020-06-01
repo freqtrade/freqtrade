@@ -28,9 +28,13 @@ class Ftx(Exchange):
 
     def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
         """
-        Creates a stoploss market order.
-        Stoploss market orders is the only stoploss type supported by ftx.
+        Creates a stoploss order.
+        depending on order_types.stoploss configuration, uses 'market' or limit order.
+
+        Limit orders are defined by having orderPrice set, otherwise a market order is used.
         """
+        limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
+        limit_rate = stop_price * limit_price_pct
 
         ordertype = "stop"
 
@@ -43,9 +47,11 @@ class Ftx(Exchange):
 
         try:
             params = self._params.copy()
+            if order_types.get('stoploss', 'market') == 'limit':
+                # set orderPrice to place limit order, otherwise it's a market order
+                params['orderPrice'] = limit_rate
 
             amount = self.amount_to_precision(pair, amount)
-            # set orderPrice to place limit order (?)
 
             order = self._api.create_order(symbol=pair, type=ordertype, side='sell',
                                            amount=amount, price=stop_price, params=params)
