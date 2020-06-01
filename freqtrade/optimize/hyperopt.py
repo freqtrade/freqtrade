@@ -4,26 +4,26 @@
 This module contains the hyperopt logic
 """
 
+import io
 import locale
 import logging
 import random
 import warnings
-from math import ceil
 from collections import OrderedDict
+from math import ceil
 from operator import itemgetter
 from pathlib import Path
 from pprint import pprint
 from typing import Any, Dict, List, Optional
 
+import progressbar
 import rapidjson
+import tabulate
 from colorama import Fore, Style
+from colorama import init as colorama_init
 from joblib import (Parallel, cpu_count, delayed, dump, load,
                     wrap_non_picklable_objects)
-from pandas import DataFrame, json_normalize, isna
-import progressbar
-import tabulate
-from os import path
-import io
+from pandas import DataFrame, isna, json_normalize
 
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.history import get_timerange
@@ -32,7 +32,8 @@ from freqtrade.misc import plural, round_dict
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
 from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F401
-from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F401
+from freqtrade.optimize.hyperopt_loss_interface import \
+    IHyperOptLoss  # noqa: F401
 from freqtrade.resolvers.hyperopt_resolver import (HyperOptLossResolver,
                                                    HyperOptResolver)
 
@@ -374,7 +375,7 @@ class Hyperopt:
             return
 
         # Verification for overwrite
-        if path.isfile(csv_file):
+        if Path(csv_file).is_file():
             logger.error(f"CSV file already exists: {csv_file}")
             return
 
@@ -603,7 +604,7 @@ class Hyperopt:
         data, timerange = self.backtesting.load_bt_data()
 
         preprocessed = self.backtesting.strategy.ohlcvdata_to_dataframe(data)
-
+        colorama_init(autoreset=True)
         # Trim startup period from analyzed dataframe
         for pair, df in preprocessed.items():
             preprocessed[pair] = trim_dataframe(df, timerange)
