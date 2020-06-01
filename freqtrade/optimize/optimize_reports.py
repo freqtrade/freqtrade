@@ -255,12 +255,13 @@ def generate_edge_table(results: dict) -> str:
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore
 
 
-def show_backtest_results(config: Dict, btdata: Dict[str, DataFrame],
-                          all_results: Dict[str, DataFrame]):
+def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
+                            all_results: Dict[str, DataFrame]):
     stake_currency = config['stake_currency']
     max_open_trades = config['max_open_trades']
-
+    result = {'strategy': {}}
     for strategy, results in all_results.items():
+
         pair_results = generate_pair_metrics(btdata, stake_currency=stake_currency,
                                              max_open_trades=max_open_trades,
                                              results=results, skip_nan=False)
@@ -270,21 +271,43 @@ def show_backtest_results(config: Dict, btdata: Dict[str, DataFrame],
                                                   max_open_trades=max_open_trades,
                                                   results=results.loc[results['open_at_end']],
                                                   skip_nan=True)
+        strat_stats = {
+            'trades': backtest_result_to_list(results),
+            'results_per_pair': pair_results,
+            'sell_reason_summary': sell_reason_stats,
+            'left_open_trades': left_open_results,
+            }
+        result['strategy'][strategy] = strat_stats
+
+    strategy_results = generate_strategy_metrics(stake_currency=stake_currency,
+                                                 max_open_trades=max_open_trades,
+                                                 all_results=all_results)
+
+    result['strategy_comparison'] = strategy_results
+
+    return result
+
+
+def show_backtest_results(config: Dict, backtest_stats: Dict):
+    stake_currency = config['stake_currency']
+
+    for strategy, results in backtest_stats['strategy'].items():
+
         # Print results
         print(f"Result for strategy {strategy}")
-        table = generate_text_table(pair_results, stake_currency=stake_currency)
+        table = generate_text_table(results['results_per_pair'], stake_currency=stake_currency)
         if isinstance(table, str):
             print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
         print(table)
 
-        table = generate_text_table_sell_reason(sell_reason_stats=sell_reason_stats,
+        table = generate_text_table_sell_reason(sell_reason_stats=results['sell_reason_summary'],
                                                 stake_currency=stake_currency,
                                                 )
         if isinstance(table, str):
             print(' SELL REASON STATS '.center(len(table.splitlines()[0]), '='))
         print(table)
 
-        table = generate_text_table(left_open_results, stake_currency=stake_currency)
+        table = generate_text_table(results['left_open_trades'], stake_currency=stake_currency)
         if isinstance(table, str):
             print(' LEFT OPEN TRADES REPORT '.center(len(table.splitlines()[0]), '='))
         print(table)
@@ -292,13 +315,10 @@ def show_backtest_results(config: Dict, btdata: Dict[str, DataFrame],
             print('=' * len(table.splitlines()[0]))
         print()
 
-    if len(all_results) > 1:
+    if len(backtest_stats['strategy']) > 1:
         # Print Strategy summary table
-        strategy_results = generate_strategy_metrics(stake_currency=stake_currency,
-                                                     max_open_trades=max_open_trades,
-                                                     all_results=all_results)
 
-        table = generate_text_table_strategy(strategy_results, stake_currency)
+        table = generate_text_table_strategy(backtest_stats['strategy_comparison'], stake_currency)
         print(' STRATEGY SUMMARY '.center(len(table.splitlines()[0]), '='))
         print(table)
         print('=' * len(table.splitlines()[0]))
