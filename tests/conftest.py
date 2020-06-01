@@ -247,7 +247,7 @@ def default_conf(testdatadir):
         "stake_currency": "BTC",
         "stake_amount": 0.001,
         "fiat_display_currency": "USD",
-        "ticker_interval": '5m',
+        "timeframe": '5m',
         "dry_run": True,
         "cancel_open_orders_on_exit": False,
         "minimal_roi": {

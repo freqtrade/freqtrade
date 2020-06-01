@@ -72,6 +72,7 @@ CONF_SCHEMA = {
     'properties': {
         'max_open_trades': {'type': ['integer', 'number'], 'minimum': -1},
         'ticker_interval': {'type': 'string'},
+        'timeframe': {'type': 'string'},
         'stake_currency': {'type': 'string'},
         'stake_amount': {
             'type': ['number', 'string'],
@@ -303,6 +304,7 @@ CONF_SCHEMA = {
 
 SCHEMA_TRADE_REQUIRED = [
     'exchange',
+    'timeframe',
     'max_open_trades',
     'stake_currency',
     'stake_amount',

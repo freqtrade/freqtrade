@@ -29,7 +29,7 @@ def test_setup_optimize_configuration_without_arguments(mocker, default_conf, ca
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
-    assert 'ticker_interval' in config
+    assert 'timeframe' in config
     assert not log_has_re('Parameter -i/--ticker-interval detected .*', caplog)
 
     assert 'timerange' not in config
@@ -48,7 +48,7 @@ def test_setup_edge_configuration_with_arguments(mocker, edge_conf, caplog) -> N
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
         '--datadir', '/foo/bar',
-        '--ticker-interval', '1m',
+        '--timeframe', '1m',
         '--timerange', ':100',
         '--stoplosses=-0.01,-0.10,-0.001'
     ]
@@ -62,8 +62,8 @@ def test_setup_edge_configuration_with_arguments(mocker, edge_conf, caplog) -> N
     assert 'datadir' in config
     assert config['runmode'] == RunMode.EDGE
     assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
-    assert 'ticker_interval' in config
-    assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
+    assert 'timeframe' in config
+    assert log_has('Parameter -i/--timeframe detected ... Using timeframe: 1m ...',
                    caplog)
 
     assert 'timerange' in config

@@ -1350,7 +1350,7 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
     # exchange = Exchange(default_conf)
     await async_ccxt_exception(mocker, default_conf, MagicMock(),
                                "_async_get_candle_history", "fetch_ohlcv",
-                               pair='ABCD/BTC', timeframe=default_conf['ticker_interval'])
+                               pair='ABCD/BTC', timeframe=default_conf['timeframe'])
 
     api_mock = MagicMock()
     with pytest.raises(OperationalException,
@@ -1480,7 +1480,7 @@ async def test___async_get_candle_history_sort(default_conf, mocker, exchange_na
     exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
     sort_mock = mocker.patch('freqtrade.exchange.exchange.sorted', MagicMock(side_effect=sort_data))
     # Test the OHLCV data sort
-    res = await exchange._async_get_candle_history('ETH/BTC', default_conf['ticker_interval'])
+    res = await exchange._async_get_candle_history('ETH/BTC', default_conf['timeframe'])
     assert res[0] == 'ETH/BTC'
     res_ohlcv = res[2]
 
@@ -1517,9 +1517,9 @@ async def test___async_get_candle_history_sort(default_conf, mocker, exchange_na
     # Reset sort mock
     sort_mock = mocker.patch('freqtrade.exchange.sorted', MagicMock(side_effect=sort_data))
     # Test the OHLCV data sort
-    res = await exchange._async_get_candle_history('ETH/BTC', default_conf['ticker_interval'])
+    res = await exchange._async_get_candle_history('ETH/BTC', default_conf['timeframe'])
     assert res[0] == 'ETH/BTC'
-    assert res[1] == default_conf['ticker_interval']
+    assert res[1] == default_conf['timeframe']
     res_ohlcv = res[2]
     # Sorted not called again - data is already in order
     assert sort_mock.call_count == 0
