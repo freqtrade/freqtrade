@@ -1048,8 +1048,9 @@ def test_process_deprecated_setting_edge(mocker, edge_conf, caplog):
         'capital_available_percentage': 0.5,
     }})
 
-    process_temporary_deprecated_settings(edge_conf)
-    assert log_has_re(r"DEPRECATED.*Using 'edge.capital_available_percentage'*", caplog)
+    with pytest.raises(OperationalException,
+                       match=r"DEPRECATED.*Using 'edge.capital_available_percentage'*"):
+        process_temporary_deprecated_settings(edge_conf)
 
 
 def test_check_conflicting_settings(mocker, default_conf, caplog):
