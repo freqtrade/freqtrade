@@ -604,7 +604,7 @@ class Hyperopt:
         data, timerange = self.backtesting.load_bt_data()
 
         preprocessed = self.backtesting.strategy.ohlcvdata_to_dataframe(data)
-        colorama_init(autoreset=True)
+
         # Trim startup period from analyzed dataframe
         for pair, df in preprocessed.items():
             preprocessed[pair] = trim_dataframe(df, timerange)
@@ -629,6 +629,10 @@ class Hyperopt:
 
         self.dimensions: List[Dimension] = self.hyperopt_space()
         self.opt = self.get_optimizer(self.dimensions, config_jobs)
+
+        if self.print_colorized:
+            colorama_init(autoreset=True)
+
         try:
             with Parallel(n_jobs=config_jobs) as parallel:
                 jobs = parallel._effective_n_jobs()
