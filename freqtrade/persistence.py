@@ -281,7 +281,8 @@ class Trade(_DECL_BASE):
 
             'sell_reason': self.sell_reason,
             'sell_order_status': self.sell_order_status,
-            'stop_loss': self.stop_loss,
+            'stop_loss': self.stop_loss,  # Deprecated - should not be used
+            'stop_loss_abs': self.stop_loss,
             'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,
             'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
             'stoploss_order_id': self.stoploss_order_id,
@@ -289,7 +290,8 @@ class Trade(_DECL_BASE):
                                      if self.stoploss_last_update else None),
             'stoploss_last_update_timestamp': (int(self.stoploss_last_update.timestamp() * 1000)
                                                if self.stoploss_last_update else None),
-            'initial_stop_loss': self.initial_stop_loss,
+            'initial_stop_loss': self.initial_stop_loss,  # Deprecated - should not be used
+            'initial_stop_loss_abs': self.initial_stop_loss,
             'initial_stop_loss_ratio': (self.initial_stop_loss_pct
                                         if self.initial_stop_loss_pct else None),
             'initial_stop_loss_pct': (self.initial_stop_loss_pct * 100
