@@ -18,10 +18,7 @@ def store_backtest_result(recordfilename: Path, all_results: Dict[str, DataFrame
     :param all_results: Dict of Dataframes, one results dataframe per strategy
     """
     for strategy, results in all_results.items():
-        records = [(t.pair, t.profit_percent, t.open_time.timestamp(),
-                    t.close_time.timestamp(), t.open_index - 1, t.trade_duration,
-                    t.open_rate, t.close_rate, t.open_at_end, t.sell_reason.value)
-                   for index, t in results.iterrows()]
+        records = backtest_result_to_list(results)
 
         if records:
             filename = recordfilename
@@ -32,6 +29,18 @@ def store_backtest_result(recordfilename: Path, all_results: Dict[str, DataFrame
                     f'{recordfilename.stem}-{strategy}').with_suffix(recordfilename.suffix)
             logger.info(f'Dumping backtest results to {filename}')
             file_dump_json(filename, records)
+
+
+def backtest_result_to_list(results: DataFrame) -> List[List]:
+    """
+    Converts a list of Backtest-results to list
+    :param results: Dataframe containing results for one strategy
+    :return: List of Lists containing the trades
+    """
+    return [[t.pair, t.profit_percent, t.open_time.timestamp(),
+             t.close_time.timestamp(), t.open_index - 1, t.trade_duration,
+             t.open_rate, t.close_rate, t.open_at_end, t.sell_reason.value]
+            for index, t in results.iterrows()]
 
 
 def _get_line_floatfmt() -> List[str]:
