@@ -578,7 +578,7 @@ def test_validate_pairs_stakecompatibility_fail(default_conf, mocker, caplog):
     ('5m'), ("1m"), ("15m"), ("1h")
 ])
 def test_validate_timeframes(default_conf, mocker, timeframe):
-    default_conf["ticker_interval"] = timeframe
+    default_conf["timeframe"] = timeframe
     api_mock = MagicMock()
     id_mock = PropertyMock(return_value='test_exchange')
     type(api_mock).id = id_mock
@@ -596,7 +596,7 @@ def test_validate_timeframes(default_conf, mocker, timeframe):
 
 
 def test_validate_timeframes_failed(default_conf, mocker):
-    default_conf["ticker_interval"] = "3m"
+    default_conf["timeframe"] = "3m"
     api_mock = MagicMock()
     id_mock = PropertyMock(return_value='test_exchange')
     type(api_mock).id = id_mock
@@ -613,7 +613,7 @@ def test_validate_timeframes_failed(default_conf, mocker):
     with pytest.raises(OperationalException,
                        match=r"Invalid timeframe '3m'. This exchange supports.*"):
         Exchange(default_conf)
-    default_conf["ticker_interval"] = "15s"
+    default_conf["timeframe"] = "15s"
 
     with pytest.raises(OperationalException,
                        match=r"Timeframes < 1m are currently not supported by Freqtrade."):
@@ -621,7 +621,7 @@ def test_validate_timeframes_failed(default_conf, mocker):
 
 
 def test_validate_timeframes_emulated_ohlcv_1(default_conf, mocker):
-    default_conf["ticker_interval"] = "3m"
+    default_conf["timeframe"] = "3m"
     api_mock = MagicMock()
     id_mock = PropertyMock(return_value='test_exchange')
     type(api_mock).id = id_mock
@@ -641,7 +641,7 @@ def test_validate_timeframes_emulated_ohlcv_1(default_conf, mocker):
 
 
 def test_validate_timeframes_emulated_ohlcvi_2(default_conf, mocker):
-    default_conf["ticker_interval"] = "3m"
+    default_conf["timeframe"] = "3m"
     api_mock = MagicMock()
     id_mock = PropertyMock(return_value='test_exchange')
     type(api_mock).id = id_mock
@@ -662,7 +662,7 @@ def test_validate_timeframes_emulated_ohlcvi_2(default_conf, mocker):
 
 
 def test_validate_timeframes_not_in_config(default_conf, mocker):
-    del default_conf["ticker_interval"]
+    del default_conf["timeframe"]
     api_mock = MagicMock()
     id_mock = PropertyMock(return_value='test_exchange')
     type(api_mock).id = id_mock
