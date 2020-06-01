@@ -639,7 +639,7 @@ class Telegram(RPC):
             f"*Max open Trades:* `{val['max_open_trades']}`\n"
             f"*Minimum ROI:* `{val['minimal_roi']}`\n"
             f"{sl_info}"
-            f"*Ticker Interval:* `{val['ticker_interval']}`\n"
+            f"*Timeframe:* `{val['timeframe']}`\n"
             f"*Strategy:* `{val['strategy']}`\n"
             f"*Current state:* `{val['state']}`"
         )
