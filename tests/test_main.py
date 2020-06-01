@@ -35,12 +35,12 @@ def test_parse_args_backtesting(mocker) -> None:
         main(['backtesting'])
     assert backtesting_mock.call_count == 1
     call_args = backtesting_mock.call_args[0][0]
-    assert call_args["config"] == ['config.json']
-    assert call_args["verbosity"] == 0
-    assert call_args["command"] == 'backtesting'
-    assert call_args["func"] is not None
-    assert callable(call_args["func"])
-    assert call_args["ticker_interval"] is None
+    assert call_args['config'] == ['config.json']
+    assert call_args['verbosity'] == 0
+    assert call_args['command'] == 'backtesting'
+    assert call_args['func'] is not None
+    assert callable(call_args['func'])
+    assert call_args['timeframe'] is None
 
 
 def test_main_start_hyperopt(mocker) -> None:

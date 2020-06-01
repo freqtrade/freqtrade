@@ -54,12 +54,12 @@ def test_returns_latest_signal(mocker, default_conf, ohlcv_history):
 
 
 def test_get_signal_empty(default_conf, mocker, caplog):
-    assert (False, False) == _STRATEGY.get_signal('foo', default_conf['ticker_interval'],
+    assert (False, False) == _STRATEGY.get_signal('foo', default_conf['timeframe'],
                                                   DataFrame())
     assert log_has('Empty candle (OHLCV) data for pair foo', caplog)
     caplog.clear()
 
-    assert (False, False) == _STRATEGY.get_signal('bar', default_conf['ticker_interval'],
+    assert (False, False) == _STRATEGY.get_signal('bar', default_conf['timeframe'],
                                                   [])
     assert log_has('Empty candle (OHLCV) data for pair bar', caplog)
 
@@ -70,7 +70,7 @@ def test_get_signal_exception_valueerror(default_conf, mocker, caplog, ohlcv_his
         _STRATEGY, '_analyze_ticker_internal',
         side_effect=ValueError('xyz')
     )
-    assert (False, False) == _STRATEGY.get_signal('foo', default_conf['ticker_interval'],
+    assert (False, False) == _STRATEGY.get_signal('foo', default_conf['timeframe'],
                                                   ohlcv_history)
     assert log_has_re(r'Strategy caused the following exception: xyz.*', caplog)
 
@@ -83,7 +83,7 @@ def test_get_signal_empty_dataframe(default_conf, mocker, caplog, ohlcv_history)
     )
     mocker.patch.object(_STRATEGY, 'assert_df')
 
-    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
+    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['timeframe'],
                                                   ohlcv_history)
     assert log_has('Empty dataframe for pair xyz', caplog)
 
@@ -104,7 +104,7 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
         return_value=mocked_history
     )
     mocker.patch.object(_STRATEGY, 'assert_df')
-    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
+    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['timeframe'],
                                                   ohlcv_history)
     assert log_has('Outdated history for pair xyz. Last tick is 16 minutes old', caplog)
 
@@ -124,7 +124,7 @@ def test_assert_df_raise(default_conf, mocker, caplog, ohlcv_history):
         _STRATEGY, 'assert_df',
         side_effect=StrategyError('Dataframe returned...')
     )
-    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
+    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['timeframe'],
                                                   ohlcv_history)
     assert log_has('Unable to analyze candle (OHLCV) data for pair xyz: Dataframe returned...',
                    caplog)

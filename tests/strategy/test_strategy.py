@@ -106,7 +106,7 @@ def test_strategy(result, default_conf):
     assert default_conf['stoploss'] == -0.10
 
     assert strategy.ticker_interval == '5m'
-    assert default_conf['ticker_interval'] == '5m'
+    assert default_conf['timeframe'] == '5m'
 
     df_indicators = strategy.advise_indicators(result, metadata=metadata)
     assert 'adx' in df_indicators
@@ -176,19 +176,19 @@ def test_strategy_override_trailing_stop_positive(caplog, default_conf):
                    caplog)
 
 
-def test_strategy_override_ticker_interval(caplog, default_conf):
+def test_strategy_override_timeframe(caplog, default_conf):
     caplog.set_level(logging.INFO)
 
     default_conf.update({
         'strategy': 'DefaultStrategy',
-        'ticker_interval': 60,
+        'timeframe': 60,
         'stake_currency': 'ETH'
     })
     strategy = StrategyResolver.load_strategy(default_conf)
 
     assert strategy.ticker_interval == 60
     assert strategy.stake_currency == 'ETH'
-    assert log_has("Override strategy 'ticker_interval' with value in config file: 60.",
+    assert log_has("Override strategy 'timeframe' with value in config file: 60.",
                    caplog)
 
 

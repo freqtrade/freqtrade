@@ -117,7 +117,7 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
         '--config', 'config.json',
         '--hyperopt', 'DefaultHyperOpt',
         '--datadir', '/foo/bar',
-        '--ticker-interval', '1m',
+        '--timeframe', '1m',
         '--timerange', ':100',
         '--enable-position-stacking',
         '--disable-max-market-positions',
@@ -137,7 +137,7 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
 
     assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
     assert 'timeframe' in config
-    assert log_has('Parameter -i/--ticker-interval detected ... Using timeframe: 1m ...',
+    assert log_has('Parameter -i/--timeframe detected ... Using timeframe: 1m ...',
                    caplog)
 
     assert 'position_stacking' in config
