@@ -79,7 +79,7 @@ class Ftx(Exchange):
                 raise InvalidOrderException(
                     f'Tried to get an invalid dry-run-order (id: {order_id}). Message: {e}') from e
         try:
-            orders = self._api.fetch_orders('BNB/USD', None, params={'type': 'stop'})
+            orders = self._api.fetch_orders(pair, None, params={'type': 'stop'})
 
             order = [order for order in orders if order['id'] == order_id]
             if len(order) == 1:
