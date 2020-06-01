@@ -3931,6 +3931,26 @@ def test_get_sell_rate_orderbook_exception(default_conf, mocker, caplog):
     assert log_has("Sell Price at location from orderbook could not be determined.", caplog)
 
 
+def test_get_sell_rate_exception(default_conf, mocker, caplog):
+    # Ticker on one side can be empty in certain circumstances.
+    default_conf['ask_strategy']['price_side'] = 'ask'
+    pair = "ETH/BTC"
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', return_value={'ask': None, 'bid': 0.12})
+    ft = get_patched_freqtradebot(mocker, default_conf)
+    with pytest.raises(PricingError, match=r"Sell-Rate for ETH/BTC was empty."):
+        ft.get_sell_rate(pair, True)
+
+    ft.config['ask_strategy']['price_side'] = 'bid'
+    assert ft.get_sell_rate(pair, True) == 0.12
+    # Reverse sides
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', return_value={'ask': 0.13, 'bid': None})
+    with pytest.raises(PricingError, match=r"Sell-Rate for ETH/BTC was empty."):
+        ft.get_sell_rate(pair, True)
+
+    ft.config['ask_strategy']['price_side'] = 'ask'
+    assert ft.get_sell_rate(pair, True) == 0.13
+
+
 def test_startup_state(default_conf, mocker):
     default_conf['pairlist'] = {'method': 'VolumePairList',
                                 'config': {'number_assets': 20}
