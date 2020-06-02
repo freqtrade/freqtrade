@@ -358,8 +358,9 @@ def test_deprecate_populate_indicators(result, default_conf):
 
 
 @pytest.mark.filterwarnings("ignore:deprecated")
-def test_call_deprecated_function(result, monkeypatch, default_conf):
+def test_call_deprecated_function(result, monkeypatch, default_conf, caplog):
     default_location = Path(__file__).parent / "strats"
+    del default_conf['timeframe']
     default_conf.update({'strategy': 'TestStrategyLegacy',
                          'strategy_path': default_location})
     strategy = StrategyResolver.load_strategy(default_conf)
@@ -384,6 +385,9 @@ def test_call_deprecated_function(result, monkeypatch, default_conf):
     selldf = strategy.advise_sell(result, metadata=metadata)
     assert isinstance(selldf, DataFrame)
     assert 'sell' in selldf
+
+    assert log_has('DEPRECATED: Please migrate to using timeframe instead of ticker_interval.',
+                   caplog)
 
 
 def test_strategy_interface_versioning(result, monkeypatch, default_conf):
