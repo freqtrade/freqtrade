@@ -889,14 +889,19 @@ class Exchange:
         Async wrapper handling downloading trades using either time or id based methods.
         """
 
+        logger.debug(f"_async_get_trade_history(), pair: {pair}, "
+                     f"since: {since}, until: {until}, from_id: {from_id}")
+
+        if until is None:
+            until = ccxt.Exchange.milliseconds()
+            logger.debug(f"Exchange milliseconds: {until}")
+
         if self._trades_pagination == 'time':
             return await self._async_get_trade_history_time(
-                pair=pair, since=since,
-                until=until or ccxt.Exchange.milliseconds())
+                pair=pair, since=since, until=until)
         elif self._trades_pagination == 'id':
             return await self._async_get_trade_history_id(
-                pair=pair, since=since,
-                until=until or ccxt.Exchange.milliseconds(), from_id=from_id
+                pair=pair, since=since, until=until, from_id=from_id
             )
         else:
             raise OperationalException(f"Exchange {self.name} does use neither time, "
