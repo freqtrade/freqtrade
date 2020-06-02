@@ -547,7 +547,7 @@ class FreqtradeBot:
             exchange=self.exchange.id,
             open_order_id=order_id,
             strategy=self.strategy.get_strategy_name(),
-            ticker_interval=timeframe_to_minutes(self.config['timeframe'])
+            timeframe=timeframe_to_minutes(self.config['timeframe'])
         )
 
         # Update fees if order is closed
