@@ -360,7 +360,6 @@ class ApiServer(RPC):
         Returns a cumulative profit statistics
         :return: stats
         """
-        logger.info("LocalRPC - Profit Command Called")
 
         stats = self._rpc_trade_statistics(self._config['stake_currency'],
                                            self._config.get('fiat_display_currency')
@@ -377,8 +376,6 @@ class ApiServer(RPC):
         Returns a cumulative performance statistics
         :return: stats
         """
-        logger.info("LocalRPC - performance Command Called")
-
         stats = self._rpc_performance()
 
         return self.rest_dump(stats)

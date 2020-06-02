@@ -654,12 +654,14 @@ def test_set_loggers() -> None:
     assert logging.getLogger('requests').level is logging.DEBUG
     assert logging.getLogger('ccxt.base.exchange').level is logging.INFO
     assert logging.getLogger('telegram').level is logging.INFO
+    assert logging.getLogger('werkzeug').level is logging.INFO
 
-    _set_loggers(verbosity=3)
+    _set_loggers(verbosity=3, api_verbosity='error')
 
     assert logging.getLogger('requests').level is logging.DEBUG
     assert logging.getLogger('ccxt.base.exchange').level is logging.DEBUG
     assert logging.getLogger('telegram').level is logging.INFO
+    assert logging.getLogger('werkzeug').level is logging.ERROR
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
