@@ -286,7 +286,7 @@ def test_backtesting_init(mocker, default_conf, order_types) -> None:
     assert not backtesting.strategy.order_types["stoploss_on_exchange"]
 
 
-def test_backtesting_init_no_ticker_interval(mocker, default_conf, caplog) -> None:
+def test_backtesting_init_no_timeframe(mocker, default_conf, caplog) -> None:
     patch_exchange(mocker)
     del default_conf['timeframe']
     default_conf['strategy_list'] = ['DefaultStrategy',
@@ -453,7 +453,7 @@ def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
                 t["close_rate"], 6) < round(ln.iloc[0]["high"], 6))
 
 
-def test_backtest_1min_ticker_interval(default_conf, fee, mocker, testdatadir) -> None:
+def test_backtest_1min_timeframe(default_conf, fee, mocker, testdatadir) -> None:
     default_conf['ask_strategy']['use_sell_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)

@@ -197,7 +197,8 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
                    "Using populate_sell_trend from the strategy.", caplog)
     assert log_has("Hyperopt class does not provide populate_buy_trend() method. "
                    "Using populate_buy_trend from the strategy.", caplog)
-    assert hasattr(x, "ticker_interval")
+    assert hasattr(x, "ticker_interval")  # DEPRECATED
+    assert hasattr(x, "timeframe")
 
 
 def test_hyperoptresolver_wrongname(mocker, default_conf, caplog) -> None:
