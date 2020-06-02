@@ -27,7 +27,7 @@ from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
 ####################################################################
 
 tests_start_time = arrow.get(2018, 10, 3)
-ticker_interval_in_minute = 60
+timeframe_in_minute = 60
 _ohlc = {'date': 0, 'buy': 1, 'open': 2, 'high': 3, 'low': 4, 'close': 5, 'sell': 6, 'volume': 7}
 
 # Helpers for this test file
@@ -49,7 +49,7 @@ def _build_dataframe(buy_ohlc_sell_matrice):
             'date': tests_start_time.shift(
                 minutes=(
                     ohlc[0] *
-                    ticker_interval_in_minute)).timestamp *
+                    timeframe_in_minute)).timestamp *
             1000,
             'buy': ohlc[1],
             'open': ohlc[2],
@@ -70,7 +70,7 @@ def _build_dataframe(buy_ohlc_sell_matrice):
 
 def _time_on_candle(number):
     return np.datetime64(tests_start_time.shift(
-        minutes=(number * ticker_interval_in_minute)).timestamp * 1000, 'ms')
+        minutes=(number * timeframe_in_minute)).timestamp * 1000, 'ms')
 
 
 # End helper functions
@@ -262,7 +262,7 @@ def mocked_load_data(datadir, pairs=[], timeframe='0m',
 
     NEOBTC = [
         [
-            tests_start_time.shift(minutes=(x * ticker_interval_in_minute)).timestamp * 1000,
+            tests_start_time.shift(minutes=(x * timeframe_in_minute)).timestamp * 1000,
             math.sin(x * hz) / 1000 + base,
             math.sin(x * hz) / 1000 + base + 0.0001,
             math.sin(x * hz) / 1000 + base - 0.0001,
@@ -274,7 +274,7 @@ def mocked_load_data(datadir, pairs=[], timeframe='0m',
     base = 0.002
     LTCBTC = [
         [
-            tests_start_time.shift(minutes=(x * ticker_interval_in_minute)).timestamp * 1000,
+            tests_start_time.shift(minutes=(x * timeframe_in_minute)).timestamp * 1000,
             math.sin(x * hz) / 1000 + base,
             math.sin(x * hz) / 1000 + base + 0.0001,
             math.sin(x * hz) / 1000 + base - 0.0001,

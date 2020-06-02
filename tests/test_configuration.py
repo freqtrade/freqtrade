@@ -401,8 +401,8 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'datadir' in config
     assert 'user_data_dir' in config
     assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
-    assert 'ticker_interval' in config
-    assert not log_has('Parameter -i/--ticker-interval detected ...', caplog)
+    assert 'timeframe' in config
+    assert not log_has('Parameter -i/--timeframe detected ...', caplog)
 
     assert 'position_stacking' not in config
     assert not log_has('Parameter --enable-position-stacking detected ...', caplog)
@@ -448,8 +448,8 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert log_has('Using user-data directory: {} ...'.format(Path("/tmp/freqtrade")), caplog)
     assert 'user_data_dir' in config
 
-    assert 'ticker_interval' in config
-    assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
+    assert 'timeframe' in config
+    assert log_has('Parameter -i/--timeframe detected ... Using timeframe: 1m ...',
                    caplog)
 
     assert 'position_stacking' in config
@@ -494,8 +494,8 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
-    assert 'ticker_interval' in config
-    assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
+    assert 'timeframe' in config
+    assert log_has('Parameter -i/--timeframe detected ... Using timeframe: 1m ...',
                    caplog)
 
     assert 'strategy_list' in config

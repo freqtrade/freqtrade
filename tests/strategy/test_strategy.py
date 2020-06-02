@@ -105,6 +105,7 @@ def test_strategy(result, default_conf):
     assert strategy.stoploss == -0.10
     assert default_conf['stoploss'] == -0.10
 
+    assert strategy.timeframe == '5m'
     assert strategy.ticker_interval == '5m'
     assert default_conf['timeframe'] == '5m'
 

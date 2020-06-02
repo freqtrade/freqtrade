@@ -100,14 +100,14 @@ class Edge:
                 datadir=self.config['datadir'],
                 pairs=pairs,
                 exchange=self.exchange,
-                timeframe=self.strategy.ticker_interval,
+                timeframe=self.strategy.timeframe,
                 timerange=self._timerange,
             )
 
         data = load_data(
             datadir=self.config['datadir'],
             pairs=pairs,
-            timeframe=self.strategy.ticker_interval,
+            timeframe=self.strategy.timeframe,
             timerange=self._timerange,
             startup_candles=self.strategy.startup_candle_count,
             data_format=self.config.get('dataformat_ohlcv', 'json'),
