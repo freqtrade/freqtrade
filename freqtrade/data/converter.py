@@ -197,7 +197,7 @@ def trades_to_ohlcv(trades: List, timeframe: str) -> DataFrame:
     df_new['date'] = df_new.index
     # Drop 0 volume rows
     df_new = df_new.dropna()
-    return df_new[DEFAULT_DATAFRAME_COLUMNS]
+    return df_new.loc[:, DEFAULT_DATAFRAME_COLUMNS]
 
 
 def convert_trades_format(config: Dict[str, Any], convert_from: str, convert_to: str, erase: bool):
