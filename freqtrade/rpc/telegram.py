@@ -539,6 +539,11 @@ class Telegram(RPC):
         try:
 
             blacklist = self._rpc_blacklist(context.args)
+            errmsgs = []
+            for pair, error in blacklist['errors'].items():
+                errmsgs.append(f"Error adding `{pair}` to blacklist: `{error['error_msg']}`")
+            if errmsgs:
+                self._send_msg('\n'.join(errmsgs))
 
             message = f"Blacklist contains {blacklist['length']} pairs\n"
             message += f"`{', '.join(blacklist['blacklist'])}`"
