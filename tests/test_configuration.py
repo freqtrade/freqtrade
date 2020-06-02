@@ -1137,3 +1137,15 @@ def test_process_deprecated_setting(mocker, default_conf, caplog):
                                'sectionB', 'deprecated_setting')
     assert not log_has_re('DEPRECATED', caplog)
     assert default_conf['sectionA']['new_setting'] == 'valA'
+
+
+def test_process_deprecated_ticker_interval(mocker, default_conf, caplog):
+    message = "DEPRECATED: Please use 'timeframe' instead of 'ticker_interval."
+    process_temporary_deprecated_settings(default_conf)
+    assert not log_has(message, caplog)
+
+    del default_conf['timeframe']
+    default_conf['ticker_interval'] = '15m'
+    process_temporary_deprecated_settings(default_conf)
+    assert log_has(message, caplog)
+    assert default_conf['ticker_interval'] == '15m'

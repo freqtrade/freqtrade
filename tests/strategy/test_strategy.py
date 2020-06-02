@@ -370,6 +370,8 @@ def test_call_deprecated_function(result, monkeypatch, default_conf):
     assert strategy._buy_fun_len == 2
     assert strategy._sell_fun_len == 2
     assert strategy.INTERFACE_VERSION == 1
+    assert strategy.timeframe == '5m'
+    assert strategy.ticker_interval == '5m'
 
     indicator_df = strategy.advise_indicators(result, metadata=metadata)
     assert isinstance(indicator_df, DataFrame)
