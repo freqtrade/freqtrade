@@ -12,7 +12,7 @@ real data. This is what we call
 [backtesting](https://en.wikipedia.org/wiki/Backtesting).
 
 Backtesting will use the crypto-currencies (pairs) from your config file and load historical candle (OHCLV) data from `user_data/data/<exchange>` by default.
-If no data is available for the exchange / pair / timeframe (ticker interval) combination, backtesting will ask you to download them first using `freqtrade download-data`.
+If no data is available for the exchange / pair / timeframe combination, backtesting will ask you to download them first using `freqtrade download-data`.
 For details on downloading, please refer to the [Data Downloading](data-download.md) section in the documentation.
 
 The result of backtesting will confirm if your bot has better odds of making a profit than a loss.
@@ -35,7 +35,7 @@ freqtrade backtesting
 #### With 1 min candle (OHLCV) data
 
 ```bash
-freqtrade backtesting --ticker-interval 1m
+freqtrade backtesting --timeframe 1m
 ```
 
 #### Using a different on-disk historical candle (OHLCV) data source
@@ -58,7 +58,7 @@ Where `-s SampleStrategy` refers to the class name within the strategy file `sam
 #### Comparing multiple Strategies
 
 ```bash
-freqtrade backtesting --strategy-list SampleStrategy1 AwesomeStrategy --ticker-interval 5m
+freqtrade backtesting --strategy-list SampleStrategy1 AwesomeStrategy --timeframe 5m
 ```
 
 Where `SampleStrategy1` and `AwesomeStrategy` refer to class names of strategies.
@@ -228,13 +228,13 @@ You can then load the trades to perform further analysis as shown in our [data a
 
 To compare multiple strategies, a list of Strategies can be provided to backtesting.
 
-This is limited to 1 timeframe (ticker interval) value per run. However, data is only loaded once from disk so if you have multiple
+This is limited to 1 timeframe value per run. However, data is only loaded once from disk so if you have multiple
 strategies you'd like to compare, this will give a nice runtime boost.
 
 All listed Strategies need to be in the same directory.
 
 ``` bash
-freqtrade backtesting --timerange 20180401-20180410 --ticker-interval 5m --strategy-list Strategy001 Strategy002 --export trades
+freqtrade backtesting --timerange 20180401-20180410 --timeframe 5m --strategy-list Strategy001 Strategy002 --export trades
 ```
 
 This will save the results to `user_data/backtest_results/backtest-result-<strategy>.json`, injecting the strategy-name into the target filename.

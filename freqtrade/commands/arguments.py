@@ -318,7 +318,7 @@ class Arguments:
         # Add list-timeframes subcommand
         list_timeframes_cmd = subparsers.add_parser(
             'list-timeframes',
-            help='Print available ticker intervals (timeframes) for the exchange.',
+            help='Print available timeframes for the exchange.',
             parents=[_common_parser],
         )
         list_timeframes_cmd.set_defaults(func=start_list_timeframes)

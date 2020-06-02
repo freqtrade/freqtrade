@@ -142,7 +142,7 @@ By letting the bot know how much history is needed, backtest trades can start at
 Let's try to backtest 1 month (January 2019) of 5m candles using the an example strategy with EMA100, as above.
 
 ``` bash
-freqtrade backtesting --timerange 20190101-20190201 --ticker-interval 5m
+freqtrade backtesting --timerange 20190101-20190201 --timeframe 5m
 ```
 
 Assuming `startup_candle_count` is set to 100, backtesting knows it needs 100 candles to generate valid buy signals. It will load data from `20190101 - (100 * 5m)` - which is ~2019-12-31 15:30:00.

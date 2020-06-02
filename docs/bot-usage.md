@@ -9,22 +9,35 @@ This page explains the different parameters of the bot and how to run it.
 
 ```
 usage: freqtrade [-h] [-V]
-                 {trade,backtesting,edge,hyperopt,create-userdir,list-exchanges,list-timeframes,download-data,plot-dataframe,plot-profit}
+                 {trade,create-userdir,new-config,new-hyperopt,new-strategy,download-data,convert-data,convert-trade-data,backtesting,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-hyperopts,list-markets,list-pairs,list-strategies,list-timeframes,show-trades,test-pairlist,plot-dataframe,plot-profit}
                  ...
 
 Free, open source crypto trading bot
 
 positional arguments:
-  {trade,backtesting,edge,hyperopt,create-userdir,list-exchanges,list-timeframes,download-data,plot-dataframe,plot-profit}
+  {trade,create-userdir,new-config,new-hyperopt,new-strategy,download-data,convert-data,convert-trade-data,backtesting,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-hyperopts,list-markets,list-pairs,list-strategies,list-timeframes,show-trades,test-pairlist,plot-dataframe,plot-profit}
     trade               Trade module.
+    create-userdir      Create user-data directory.
+    new-config          Create new config
+    new-hyperopt        Create new hyperopt
+    new-strategy        Create new strategy
+    download-data       Download backtesting data.
+    convert-data        Convert candle (OHLCV) data from one format to
+                        another.
+    convert-trade-data  Convert trade data from one format to another.
     backtesting         Backtesting module.
     edge                Edge module.
     hyperopt            Hyperopt module.
-    create-userdir      Create user-data directory.
+    hyperopt-list       List Hyperopt results
+    hyperopt-show       Show details of Hyperopt results
     list-exchanges      Print available exchanges.
-    list-timeframes     Print available ticker intervals (timeframes) for the
-                        exchange.
-    download-data       Download backtesting data.
+    list-hyperopts      Print available hyperopt classes.
+    list-markets        Print markets on exchange.
+    list-pairs          Print pairs on exchange.
+    list-strategies     Print available strategies.
+    list-timeframes     Print available timeframes for the exchange.
+    show-trades         Show trades.
+    test-pairlist       Test your pairlist configuration.
     plot-dataframe      Plot candles with indicators.
     plot-profit         Generate plot showing profits.
 
