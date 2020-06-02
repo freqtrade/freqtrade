@@ -214,7 +214,7 @@ class Exchange:
         if quote_currencies:
             markets = {k: v for k, v in markets.items() if v['quote'] in quote_currencies}
         if pairs_only:
-            markets = {k: v for k, v in markets.items() if self.symbol_is_pair(v)}
+            markets = {k: v for k, v in markets.items() if self.market_is_tradable(v)}
         if active_only:
             markets = {k: v for k, v in markets.items() if market_is_active(v)}
         return markets
