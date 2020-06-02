@@ -890,7 +890,7 @@ class Exchange:
         logger.debug(f"_async_get_trade_history(), pair: {pair}, "
                      f"since: {since}, until: {until}, from_id: {from_id}")
 
-        if not until:
+        if until is None:
             exchange_msec = ccxt.Exchange.milliseconds()
             logger.debug(f"Exchange milliseconds: {exchange_msec}")
             until = exchange_msec
