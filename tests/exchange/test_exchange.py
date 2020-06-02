@@ -2192,12 +2192,18 @@ def test_extract_cost_curr_rate(mocker, default_conf, order, expected) -> None:
         'fee': {'currency': 'NEO', 'cost': 0.0012}}, 0.001944),
     ({'symbol': 'ETH/BTC', 'amount': 2.21, 'cost': 0.02992561,
         'fee': {'currency': 'NEO', 'cost': 0.00027452}}, 0.00074305),
-    # TODO: More tests here!
     # Rate included in return - return as is
     ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
         'fee': {'currency': 'USDT', 'cost': 0.34, 'rate': 0.01}}, 0.01),
     ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
         'fee': {'currency': 'USDT', 'cost': 0.34, 'rate': 0.005}}, 0.005),
+    # 0.1% filled - no costs (kraken - #3431)
+    ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.0,
+      'fee': {'currency': 'BTC', 'cost': 0.0, 'rate': None}}, None),
+    ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.0,
+      'fee': {'currency': 'ETH', 'cost': 0.0, 'rate': None}}, 0.0),
+    ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.0,
+      'fee': {'currency': 'NEO', 'cost': 0.0, 'rate': None}}, None),
 ])
 def test_calculate_fee_rate(mocker, default_conf, order, expected) -> None:
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', return_value={'last': 0.081})
