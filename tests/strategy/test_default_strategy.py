@@ -18,7 +18,6 @@ def test_default_strategy(result):
     metadata = {'pair': 'ETH/BTC'}
     assert type(strategy.minimal_roi) is dict
     assert type(strategy.stoploss) is float
-    assert type(strategy.ticker_interval) is str
     assert type(strategy.timeframe) is str
     indicators = strategy.populate_indicators(result, metadata)
     assert type(indicators) is DataFrame

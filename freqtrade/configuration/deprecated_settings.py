@@ -67,3 +67,9 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
             "'tradable_balance_ratio' and remove 'capital_available_percentage' "
             "from the edge configuration."
         )
+    if 'ticker_interval' in config:
+        logger.warning(
+            "DEPRECATED: "
+            "Please use 'timeframe' instead of 'ticker_interval."
+        )
+        config['timeframe'] = config['ticker_interval']

@@ -85,8 +85,8 @@ class IStrategy(ABC):
     trailing_stop_positive_offset: float = 0.0
     trailing_only_offset_is_reached = False
 
-    # associated ticker interval
-    ticker_interval: str
+    # associated timeframe
+    timeframe: str
 
     # Optional order types
     order_types: Dict = {
