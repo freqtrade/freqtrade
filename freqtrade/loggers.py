@@ -11,7 +11,7 @@ from freqtrade.exceptions import OperationalException
 logger = logging.getLogger(__name__)
 
 
-def _set_loggers(verbosity: int = 0) -> None:
+def _set_loggers(verbosity: int = 0, api_verbosity: str = 'info') -> None:
     """
     Set the logging level for third party libraries
     :return: None
@@ -27,6 +27,10 @@ def _set_loggers(verbosity: int = 0) -> None:
         logging.INFO if verbosity <= 2 else logging.DEBUG
     )
     logging.getLogger('telegram').setLevel(logging.INFO)
+
+    logging.getLogger('werkzeug').setLevel(
+        logging.ERROR if api_verbosity == 'error' else logging.INFO
+    )
 
 
 def setup_logging(config: Dict[str, Any]) -> None:
@@ -77,5 +81,5 @@ def setup_logging(config: Dict[str, Any]) -> None:
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         handlers=log_handlers
     )
-    _set_loggers(verbosity)
+    _set_loggers(verbosity, config.get('api_server', {}).get('verbosity', 'info'))
     logger.info('Verbosity set to %s', verbosity)

@@ -82,12 +82,16 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'current_profit': -0.00408133,
         'current_profit_pct': -0.41,
         'stop_loss': 0.0,
+        'stop_loss_abs': 0.0,
         'stop_loss_pct': None,
+        'stop_loss_ratio': None,
         'stoploss_order_id': None,
         'stoploss_last_update': None,
         'stoploss_last_update_timestamp': None,
         'initial_stop_loss': 0.0,
+        'initial_stop_loss_abs': 0.0,
         'initial_stop_loss_pct': None,
+        'initial_stop_loss_ratio': None,
         'open_order': '(limit buy rem=0.00000000)',
         'exchange': 'bittrex',
 
@@ -137,12 +141,16 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'current_profit': ANY,
         'current_profit_pct': ANY,
         'stop_loss': 0.0,
+        'stop_loss_abs': 0.0,
         'stop_loss_pct': None,
+        'stop_loss_ratio': None,
         'stoploss_order_id': None,
         'stoploss_last_update': None,
         'stoploss_last_update_timestamp': None,
         'initial_stop_loss': 0.0,
+        'initial_stop_loss_abs': 0.0,
         'initial_stop_loss_pct': None,
+        'initial_stop_loss_ratio': None,
         'open_order': '(limit buy rem=0.00000000)',
         'exchange': 'bittrex',
     } == results[0]
@@ -849,6 +857,20 @@ def test_rpc_blacklist(mocker, default_conf) -> None:
     assert len(ret['blacklist']) == 3
     assert ret['blacklist'] == default_conf['exchange']['pair_blacklist']
     assert ret['blacklist'] == ['DOGE/BTC', 'HOT/BTC', 'ETH/BTC']
+
+    ret = rpc._rpc_blacklist(["ETH/BTC"])
+    assert 'errors' in ret
+    assert isinstance(ret['errors'], dict)
+    assert ret['errors']['ETH/BTC']['error_msg'] == 'Pair ETH/BTC already in pairlist.'
+
+    ret = rpc._rpc_blacklist(["ETH/ETH"])
+    assert 'StaticPairList' in ret['method']
+    assert len(ret['blacklist']) == 3
+    assert ret['blacklist'] == default_conf['exchange']['pair_blacklist']
+    assert ret['blacklist'] == ['DOGE/BTC', 'HOT/BTC', 'ETH/BTC']
+    assert 'errors' in ret
+    assert isinstance(ret['errors'], dict)
+    assert ret['errors']['ETH/ETH']['error_msg'] == 'Pair ETH/ETH does not match stake currency.'
 
 
 def test_rpc_edge_disabled(mocker, default_conf) -> None:

@@ -11,6 +11,7 @@ Sample configuration:
         "enabled": true,
         "listen_ip_address": "127.0.0.1",
         "listen_port": 8080,
+        "verbosity": "info",
         "jwt_secret_key": "somethingrandom",
         "username": "Freqtrader",
         "password": "SuperSecret1!"

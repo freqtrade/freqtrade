@@ -676,6 +676,8 @@ class FreqtradeBot:
                 raise PricingError from e
         else:
             rate = self.exchange.fetch_ticker(pair)[ask_strategy['price_side']]
+        if rate is None:
+            raise PricingError(f"Sell-Rate for {pair} was empty.")
         self._sell_rate_cache[pair] = rate
         return rate
 
@@ -719,6 +721,9 @@ class FreqtradeBot:
                     raise PricingError from e
                 logger.debug(f"  order book {config_ask_strategy['price_side']} top {i}: "
                              f"{sell_rate:0.8f}")
+                # Assign sell-rate to cache - otherwise sell-rate is never updated in the cache,
+                # resulting in outdated RPC messages
+                self._sell_rate_cache[trade.pair] = sell_rate
 
                 if self._check_and_execute_sell(trade, sell_rate, buy, sell):
                     return True
