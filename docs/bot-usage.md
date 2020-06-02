@@ -72,7 +72,6 @@ Strategy arguments:
                         Specify strategy class name which will be used by the
                         bot.
   --strategy-path PATH  Specify additional strategy lookup path.
-.
 
 ```
 
@@ -197,7 +196,7 @@ Backtesting also uses the config specified via `-c/--config`.
 ```
 usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                              [-d PATH] [--userdir PATH] [-s NAME]
-                             [--strategy-path PATH] [-i TICKER_INTERVAL]
+                             [--strategy-path PATH] [-i TIMEFRAME]
                              [--timerange TIMERANGE] [--max-open-trades INT]
                              [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
                              [--eps] [--dmmp]
@@ -206,7 +205,7 @@ usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
 
 optional arguments:
   -h, --help            show this help message and exit
-  -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
+  -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
                         Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
                         `1d`).
   --timerange TIMERANGE
@@ -280,7 +279,7 @@ to find optimal parameter values for your strategy.
 ```
 usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                           [--userdir PATH] [-s NAME] [--strategy-path PATH]
-                          [-i TICKER_INTERVAL] [--timerange TIMERANGE]
+                          [-i TIMEFRAME] [--timerange TIMERANGE]
                           [--max-open-trades INT]
                           [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
                           [--hyperopt NAME] [--hyperopt-path PATH] [--eps]
@@ -292,7 +291,7 @@ usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
 
 optional arguments:
   -h, --help            show this help message and exit
-  -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
+  -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
                         Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
                         `1d`).
   --timerange TIMERANGE
@@ -323,7 +322,7 @@ optional arguments:
   --print-all           Print all results, not only the best ones.
   --no-color            Disable colorization of hyperopt results. May be
                         useful if you are redirecting output to a file.
-  --print-json          Print best results in JSON format.
+  --print-json          Print output in JSON format.
   -j JOBS, --job-workers JOBS
                         The number of concurrently running jobs for
                         hyperoptimization (hyperopt worker processes). If -1
@@ -341,11 +340,11 @@ optional arguments:
                         class (IHyperOptLoss). Different functions can
                         generate completely different results, since the
                         target for optimization is different. Built-in
-                        Hyperopt-loss-functions are:
-                        DefaultHyperOptLoss, OnlyProfitHyperOptLoss,
-                        SharpeHyperOptLoss, SharpeHyperOptLossDaily,
-                        SortinoHyperOptLoss, SortinoHyperOptLossDaily.
-                        (default: `DefaultHyperOptLoss`).
+                        Hyperopt-loss-functions are: DefaultHyperOptLoss,
+                        OnlyProfitHyperOptLoss, SharpeHyperOptLoss,
+                        SharpeHyperOptLossDaily, SortinoHyperOptLoss,
+                        SortinoHyperOptLossDaily.(default:
+                        `DefaultHyperOptLoss`).
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -378,13 +377,13 @@ To know your trade expectancy and winrate against historical data, you can use E
 ```
 usage: freqtrade edge [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                       [--userdir PATH] [-s NAME] [--strategy-path PATH]
-                      [-i TICKER_INTERVAL] [--timerange TIMERANGE]
+                      [-i TIMEFRAME] [--timerange TIMERANGE]
                       [--max-open-trades INT] [--stake-amount STAKE_AMOUNT]
                       [--fee FLOAT] [--stoplosses STOPLOSS_RANGE]
 
 optional arguments:
   -h, --help            show this help message and exit
-  -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
+  -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
                         Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
                         `1d`).
   --timerange TIMERANGE
