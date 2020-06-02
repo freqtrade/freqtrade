@@ -776,7 +776,6 @@ def test_to_json(default_conf, fee):
                       'min_rate': None,
                       'max_rate': None,
                       'strategy': None,
-                      'ticker_interval': None,
                       'timeframe': None,
                       'exchange': 'bittrex',
                       }
@@ -838,7 +837,6 @@ def test_to_json(default_conf, fee):
                       'sell_reason': None,
                       'sell_order_status': None,
                       'strategy': None,
-                      'ticker_interval': None,
                       'timeframe': None,
                       'exchange': 'bittrex',
                       }
