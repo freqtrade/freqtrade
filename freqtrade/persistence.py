@@ -258,6 +258,7 @@ class Trade(_DECL_BASE):
             'amount': round(self.amount, 8),
             'stake_amount': round(self.stake_amount, 8),
             'strategy': self.strategy,
+            'ticker_interval': self.timeframe,  # DEPRECATED
             'timeframe': self.timeframe,
 
             'fee_open': self.fee_open,
