@@ -86,6 +86,7 @@ class IStrategy(ABC):
     trailing_only_offset_is_reached = False
 
     # associated timeframe
+    ticker_interval: str  # DEPRECATED
     timeframe: str
 
     # Optional order types

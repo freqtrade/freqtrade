@@ -31,7 +31,8 @@ class IHyperOpt(ABC):
     Class attributes you can use:
         ticker_interval -> int: value of the ticker interval to use for the strategy
     """
-    ticker_interval: str
+    ticker_interval: str  # deprecated
+    timeframe: str
 
     def __init__(self, config: dict) -> None:
         self.config = config
