@@ -214,7 +214,7 @@ class Exchange:
         if quote_currencies:
             markets = {k: v for k, v in markets.items() if v['quote'] in quote_currencies}
         if pairs_only:
-            markets = {k: v for k, v in markets.items() if symbol_is_pair(v)}
+            markets = {k: v for k, v in markets.items() if self.symbol_is_pair(v)}
         if active_only:
             markets = {k: v for k, v in markets.items() if market_is_active(v)}
         return markets
@@ -237,6 +237,19 @@ class Exchange:
         Return a pair's quote currency
         """
         return self.markets.get(pair, {}).get('base', '')
+
+    def market_is_tradable(self, market: Dict[str, Any]) -> bool:
+        """
+        Check if the market symbol is tradable by Freqtrade.
+        By default, checks if it's splittable by `/` and both sides correspond to base / quote
+        """
+        symbol_parts = market['symbol'].split('/')
+        return (len(symbol_parts) == 2 and
+                len(symbol_parts[0]) > 0 and
+                len(symbol_parts[1]) > 0 and
+                symbol_parts[0] == market.get('base') and
+                symbol_parts[1] == market.get('quote')
+                )
 
     def klines(self, pair_interval: Tuple[str, str], copy: bool = True) -> DataFrame:
         if pair_interval in self._klines:
@@ -1208,22 +1221,6 @@ def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
     new_timestamp = ccxt.Exchange.round_timeframe(timeframe, date.timestamp() * 1000,
                                                   ROUND_UP) // 1000
     return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
-
-
-def symbol_is_pair(market_symbol: Dict[str, Any], base_currency: str = None,
-                   quote_currency: str = None) -> bool:
-    """
-    Check if the market symbol is a pair, i.e. that its symbol consists of the base currency and the
-    quote currency separated by '/' character. If base_currency and/or quote_currency is passed,
-    it also checks that the symbol contains appropriate base and/or quote currency part before
-    and after the separating character correspondingly.
-    """
-    symbol_parts = market_symbol['symbol'].split('/')
-    return (len(symbol_parts) == 2 and
-            (market_symbol.get('base') == base_currency
-                if base_currency else len(symbol_parts[0]) > 0) and
-            (market_symbol.get('quote') == quote_currency
-                if quote_currency else len(symbol_parts[1]) > 0))
 
 
 def market_is_active(market: Dict) -> bool:

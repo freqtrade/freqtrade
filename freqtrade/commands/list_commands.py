@@ -14,7 +14,7 @@ from freqtrade.configuration import setup_utils_configuration
 from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGIES
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import (available_exchanges, ccxt_exchanges,
-                                market_is_active, symbol_is_pair)
+                                market_is_active)
 from freqtrade.misc import plural
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
@@ -163,7 +163,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
             tabular_data.append({'Id': v['id'], 'Symbol': v['symbol'],
                                  'Base': v['base'], 'Quote': v['quote'],
                                  'Active': market_is_active(v),
-                                 **({'Is pair': symbol_is_pair(v)}
+                                 **({'Is pair': exchange.market_is_tradable(v)}
                                     if not pairs_only else {})})
 
         if (args.get('print_one_column', False) or
