@@ -87,7 +87,7 @@ def test_load_config_file_error_range(default_conf, mocker, caplog) -> None:
     assert isinstance(x, str)
     assert (x == '{"max_open_trades": 1, "stake_currency": "BTC", '
             '"stake_amount": .001, "fiat_display_currency": "USD", '
-            '"timeframe": "5m", "dry_run": true, ')
+            '"timeframe": "5m", "dry_run": true, "cance')
 
 
 def test__args_to_config(caplog):

@@ -288,6 +288,7 @@ class Trade(_DECL_BASE):
             'max_rate': self.max_rate,
             'strategy': self.strategy,
             'ticker_interval': self.ticker_interval,
+            'timeframe': self.ticker_interval,
             'open_order_id': self.open_order_id,
             'exchange': self.exchange,
         }

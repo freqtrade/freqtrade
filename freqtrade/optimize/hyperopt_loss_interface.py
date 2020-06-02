@@ -15,6 +15,7 @@ class IHyperOptLoss(ABC):
     Defines the custom loss function (`hyperopt_loss_function()` which is evaluated every epoch.)
     """
     ticker_interval: str
+    timeframe: str
 
     @staticmethod
     @abstractmethod

@@ -104,7 +104,7 @@ def test_refresh(mocker, default_conf, ohlcv_history):
     timeframe = default_conf["timeframe"]
     pairs = [("XRP/BTC", timeframe), ("UNITTEST/BTC", timeframe)]
 
-    pairs_non_trad = [("ETH/USDT", ticker_interval), ("BTC/TUSD", "1h")]
+    pairs_non_trad = [("ETH/USDT", timeframe), ("BTC/TUSD", "1h")]
 
     dp = DataProvider(default_conf, exchange)
     dp.refresh(pairs)
