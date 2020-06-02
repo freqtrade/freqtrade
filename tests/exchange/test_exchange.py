@@ -15,7 +15,7 @@ from freqtrade.exceptions import (DependencyException, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Binance, Exchange, Kraken
 from freqtrade.exchange.common import API_RETRY_COUNT
-from freqtrade.exchange.exchange import (market_is_active, symbol_is_pair,
+from freqtrade.exchange.exchange import (market_is_active,
                                          timeframe_to_minutes,
                                          timeframe_to_msecs,
                                          timeframe_to_next_date,
@@ -2117,25 +2117,42 @@ def test_timeframe_to_next_date():
     assert timeframe_to_next_date("5m") > date
 
 
-@pytest.mark.parametrize("market_symbol,base_currency,quote_currency,expected_result", [
-    ("BTC/USDT", None, None, True),
-    ("USDT/BTC", None, None, True),
-    ("BTCUSDT", None, None, False),
-    ("BTC/USDT", None, "USDT", True),
-    ("USDT/BTC", None, "USDT", False),
-    ("BTCUSDT", None, "USDT", False),
-    ("BTC/USDT", "BTC", None, True),
-    ("USDT/BTC", "BTC", None, False),
-    ("BTCUSDT", "BTC", None, False),
-    ("BTC/USDT", "BTC", "USDT", True),
-    ("BTC/USDT", "USDT", "BTC", False),
-    ("BTC/USDT", "BTC", "USD", False),
-    ("BTCUSDT", "BTC", "USDT", False),
-    ("BTC/", None, None, False),
-    ("/USDT", None, None, False),
+@pytest.mark.parametrize("market_symbol,base,quote,exchange,add_dict,expected_result", [
+    ("BTC/USDT", 'BTC', 'USDT', "binance", {}, True),
+    ("USDT/BTC", 'USDT', 'BTC', "binance", {}, True),
+    ("USDT/BTC", 'BTC', 'USDT', "binance", {}, False),  # Reversed currencies
+    ("BTCUSDT", 'BTC', 'USDT', "binance", {}, False),  # No seperating /
+    ("BTCUSDT", None, "USDT", "binance", {}, False),  #
+    ("USDT/BTC", "BTC", None, "binance", {}, False),
+    ("BTCUSDT", "BTC", None, "binance", {}, False),
+    ("BTC/USDT", "BTC", "USDT", "binance", {}, True),
+    ("BTC/USDT", "USDT", "BTC", "binance", {}, False),  # reversed currencies
+    ("BTC/USDT", "BTC", "USD", "binance", {}, False),  # Wrong quote currency
+    ("BTC/", "BTC", 'UNK', "binance", {}, False),
+    ("/USDT", 'UNK', 'USDT', "binance", {}, False),
+    ("BTC/EUR", 'BTC', 'EUR', "kraken", {"darkpool": False}, True),
+    ("EUR/BTC", 'EUR', 'BTC', "kraken", {"darkpool": False}, True),
+    ("EUR/BTC", 'BTC', 'EUR', "kraken", {"darkpool": False}, False),  # Reversed currencies
+    ("BTC/EUR", 'BTC', 'USD', "kraken", {"darkpool": False}, False),  # wrong quote currency
+    ("BTC/EUR", 'BTC', 'EUR', "kraken", {"darkpool": True}, False),  # no darkpools
+    ("BTC/EUR.d", 'BTC', 'EUR', "kraken", {"darkpool": True}, False),  # no darkpools
+    ("BTC/USD", 'BTC', 'USD', "ftx", {'spot': True}, True),
+    ("USD/BTC", 'USD', 'BTC', "ftx", {'spot': True}, True),
+    ("BTC/USD", 'BTC', 'USDT', "ftx", {'spot': True}, False),  # Wrong quote currency
+    ("BTC/USD", 'USD', 'BTC', "ftx", {'spot': True}, False),  # Reversed currencies
+    ("BTC/USD", 'BTC', 'USD', "ftx", {'spot': False}, False),  # Can only trade spot markets
+    ("BTC-PERP", 'BTC', 'USD', "ftx", {'spot': False}, False),  # Can only trade spot markets
 ])
-def test_symbol_is_pair(market_symbol, base_currency, quote_currency, expected_result) -> None:
-    assert symbol_is_pair(market_symbol, base_currency, quote_currency) == expected_result
+def test_market_is_tradable(mocker, default_conf, market_symbol, base,
+                            quote, add_dict, exchange, expected_result) -> None:
+    ex = get_patched_exchange(mocker, default_conf, id=exchange)
+    market = {
+        'symbol': market_symbol,
+        'base': base,
+        'quote': quote,
+        **(add_dict),
+    }
+    assert ex.market_is_tradable(market) == expected_result
 
 
 @pytest.mark.parametrize("market,expected_result", [

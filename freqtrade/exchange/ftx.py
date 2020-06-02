@@ -16,7 +16,7 @@ class Ftx(Exchange):
     def market_is_tradable(self, market: Dict[str, Any]) -> bool:
         """
         Check if the market symbol is tradable by Freqtrade.
-        Default checks + check if pair is darkpool pair.
+        Default checks + check if pair is spot pair (no futures trading yet).
         """
         parent_check = super().market_is_tradable(market)
 
