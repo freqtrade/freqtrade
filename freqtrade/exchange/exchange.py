@@ -891,9 +891,8 @@ class Exchange:
                      f"since: {since}, until: {until}, from_id: {from_id}")
 
         if until is None:
-            exchange_msec = ccxt.Exchange.milliseconds()
-            logger.debug(f"Exchange milliseconds: {exchange_msec}")
-            until = exchange_msec
+            until = ccxt.Exchange.milliseconds()
+            logger.debug(f"Exchange milliseconds: {until}")
 
         if self._trades_pagination == 'time':
             return await self._async_get_trade_history_time(
