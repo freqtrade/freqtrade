@@ -333,6 +333,7 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest')
+    mocker.patch('freqtrade.optimize.backtesting.generate_backtest_stats')
     mocker.patch('freqtrade.optimize.backtesting.show_backtest_results')
     mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
@@ -612,8 +613,9 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
 def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
 
     patch_exchange(mocker)
-    mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', MagicMock())
-    mocker.patch('freqtrade.optimize.backtesting.show_backtest_results', MagicMock())
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest')
+    mocker.patch('freqtrade.optimize.backtesting.generate_backtest_stats')
+    mocker.patch('freqtrade.optimize.backtesting.show_backtest_results')
     mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
     patched_configuration_load_config_file(mocker, default_conf)
