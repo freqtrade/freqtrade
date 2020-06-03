@@ -283,8 +283,9 @@ class RPC:
 
         # Prepare data to display
         profit_closed_coin_sum = round(sum(profit_closed_coin), 8)
-        profit_closed_percent = (round(mean(profit_closed_ratio) * 100, 2) if profit_closed_ratio
-                                 else 0.0)
+        profit_closed_ratio_mean = mean(profit_closed_ratio) if profit_closed_ratio else 0.0
+        profit_closed_ratio_sum = sum(profit_closed_ratio) if profit_closed_ratio else 0.0
+
         profit_closed_fiat = self._fiat_converter.convert_amount(
             profit_closed_coin_sum,
             stake_currency,
@@ -292,7 +293,8 @@ class RPC:
         ) if self._fiat_converter else 0
 
         profit_all_coin_sum = round(sum(profit_all_coin), 8)
-        profit_all_percent = round(mean(profit_all_ratio) * 100, 2) if profit_all_ratio else 0.0
+        profit_all_ratio_mean = mean(profit_all_ratio) if profit_all_ratio else 0.0
+        profit_all_ratio_sum = sum(profit_all_ratio) if profit_all_ratio else 0.0
         profit_all_fiat = self._fiat_converter.convert_amount(
             profit_all_coin_sum,
             stake_currency,
@@ -304,10 +306,18 @@ class RPC:
         num = float(len(durations) or 1)
         return {
             'profit_closed_coin': profit_closed_coin_sum,
-            'profit_closed_percent': profit_closed_percent,
+            'profit_closed_percent': round(profit_closed_ratio_mean * 100, 2),  # DEPRECATED
+            'profit_closed_percent_mean': round(profit_closed_ratio_mean * 100, 2),
+            'profit_closed_ratio_mean': profit_closed_ratio_mean,
+            'profit_closed_percent_sum': round(profit_closed_ratio_sum * 100, 2),
+            'profit_closed_ratio_sum': profit_closed_ratio_sum,
             'profit_closed_fiat': profit_closed_fiat,
             'profit_all_coin': profit_all_coin_sum,
-            'profit_all_percent': profit_all_percent,
+            'profit_all_percent': round(profit_all_ratio_mean * 100, 2),  # DEPRECATED
+            'profit_all_percent_mean': round(profit_all_ratio_mean * 100, 2),
+            'profit_all_ratio_mean': profit_all_ratio_mean,
+            'profit_all_percent_sum': round(profit_all_ratio_sum * 100, 2),
+            'profit_all_ratio_sum': profit_all_ratio_sum,
             'profit_all_fiat': profit_all_fiat,
             'trade_count': len(trades),
             'closed_trade_count': len([t for t in trades if not t.is_open]),
