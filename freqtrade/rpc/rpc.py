@@ -132,8 +132,8 @@ class RPC:
                 current_profit = trade.calc_profit_ratio(current_rate)
                 current_profit_abs = trade.calc_profit(current_rate)
                 # Calculate guaranteed profit (in case of trailing stop)
-                stoploss_entrypoint_dist = trade.open_rate - trade.stop_loss
-                stoploss_entrypoint_dist_ratio = stoploss_entrypoint_dist / trade.stop_loss
+                stoploss_entry_dist = trade.calc_profit(trade.stop_loss)
+                stoploss_entry_dist_ratio = trade.calc_profit_ratio(trade.stop_loss)
                 # calculate distance to stoploss
                 stoploss_current_dist = trade.stop_loss - current_rate
                 stoploss_current_dist_ratio = stoploss_current_dist / current_rate
@@ -151,8 +151,8 @@ class RPC:
                     current_profit_abs=current_profit_abs,
                     stoploss_current_dist=stoploss_current_dist,
                     stoploss_current_dist_ratio=round(stoploss_current_dist_ratio, 8),
-                    stoploss_entrypoint_dist=stoploss_entrypoint_dist,
-                    stoploss_entrypoint_dist_ratio=round(stoploss_entrypoint_dist_ratio, 8),
+                    stoploss_entry_dist=stoploss_entry_dist,
+                    stoploss_entry_dist_ratio=round(stoploss_entry_dist_ratio, 8),
                     open_order='({} {} rem={:.8f})'.format(
                         order['type'], order['side'], order['remaining']
                     ) if order else None,
