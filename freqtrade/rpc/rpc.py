@@ -130,6 +130,14 @@ class RPC:
                 except DependencyException:
                     current_rate = NAN
                 current_profit = trade.calc_profit_ratio(current_rate)
+                current_profit_abs = trade.calc_profit(current_rate)
+                # Calculate guaranteed profit (in case of trailing stop)
+                stoploss_entrypoint_dist = trade.open_rate - trade.stop_loss
+                stoploss_entrypoint_dist_ratio = stoploss_entrypoint_dist / trade.stop_loss
+                # calculate distance to stoploss
+                stoploss_current_dist = trade.stop_loss - current_rate
+                stoploss_current_dist_ratio = stoploss_current_dist / current_rate
+
                 fmt_close_profit = (f'{round(trade.close_profit * 100, 2):.2f}%'
                                     if trade.close_profit is not None else None)
                 trade_dict = trade.to_json()
@@ -140,6 +148,11 @@ class RPC:
                     current_rate=current_rate,
                     current_profit=current_profit,
                     current_profit_pct=round(current_profit * 100, 2),
+                    current_profit_abs=current_profit_abs,
+                    stoploss_current_dist=stoploss_current_dist,
+                    stoploss_current_dist_ratio=round(stoploss_current_dist_ratio, 8),
+                    stoploss_entrypoint_dist=stoploss_entrypoint_dist,
+                    stoploss_entrypoint_dist_ratio=round(stoploss_entrypoint_dist_ratio, 8),
                     open_order='({} {} rem={:.8f})'.format(
                         order['type'], order['side'], order['remaining']
                     ) if order else None,
