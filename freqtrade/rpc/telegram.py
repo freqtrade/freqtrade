@@ -133,7 +133,7 @@ class Telegram(RPC):
             else:
                 msg['stake_amount_fiat'] = 0
 
-            message = ("*{exchange}:* Buying {pair}\n"
+            message = ("🔵 *{exchange}:* Buying {pair}\n"
                        "*Amount:* `{amount:.8f}`\n"
                        "*Open Rate:* `{limit:.8f}`\n"
                        "*Current Rate:* `{current_rate:.8f}`\n"
@@ -144,7 +144,7 @@ class Telegram(RPC):
             message += ")`"
 
         elif msg['type'] == RPCMessageType.BUY_CANCEL_NOTIFICATION:
-            message = "*{exchange}:* Cancelling Open Buy Order for {pair}".format(**msg)
+            message = "⚠ *{exchange}:* Cancelling Open Buy Order for {pair}".format(**msg)
 
         elif msg['type'] == RPCMessageType.SELL_NOTIFICATION:
             msg['amount'] = round(msg['amount'], 8)
@@ -152,9 +152,20 @@ class Telegram(RPC):
             msg['duration'] = msg['close_date'].replace(
                 microsecond=0) - msg['open_date'].replace(microsecond=0)
             msg['duration_min'] = msg['duration'].total_seconds() / 60
+            
+            if float(msg['profit_percent']) >= 0.0:
+                message = "✳ *{exchange}:* Selling {pair}\n"
+                
+            elif float(msg['profit_percent']) > 5.0:
+                message = ("🚀 *{exchange}:* Selling {pair}\n").format(**msg)
 
-            message = ("*{exchange}:* Selling {pair}\n"
-                       "*Amount:* `{amount:.8f}`\n"
+            elif msg['sell_reason'] == "stop_loss":
+                message = ("⚠ *{exchange}:* Selling {pair}\n").format(**msg)
+
+            else:
+                message = ("❌ *{exchange}:* Selling {pair}\n").format(**msg)
+            
+            message += ("*Amount:* `{amount:.8f}`\n"
                        "*Open Rate:* `{open_rate:.8f}`\n"
                        "*Current Rate:* `{current_rate:.8f}`\n"
                        "*Close Rate:* `{limit:.8f}`\n"
@@ -172,14 +183,14 @@ class Telegram(RPC):
                             ' / {profit_fiat:.3f} {fiat_currency})`').format(**msg)
 
         elif msg['type'] == RPCMessageType.SELL_CANCEL_NOTIFICATION:
-            message = ("*{exchange}:* Cancelling Open Sell Order "
+            message = ("⚠ *{exchange}:* Cancelling Open Sell Order "
                        "for {pair}. Reason: {reason}").format(**msg)
 
         elif msg['type'] == RPCMessageType.STATUS_NOTIFICATION:
             message = '*Status:* `{status}`'.format(**msg)
 
         elif msg['type'] == RPCMessageType.WARNING_NOTIFICATION:
-            message = '*Warning:* `{status}`'.format(**msg)
+            message = '⚠ *Warning:* `{status}`'.format(**msg)
 
         elif msg['type'] == RPCMessageType.CUSTOM_NOTIFICATION:
             message = '{status}'.format(**msg)
