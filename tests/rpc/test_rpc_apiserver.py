@@ -495,6 +495,10 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     assert rc.json == []
 
     ftbot.enter_positions()
+    trades = Trade.get_open_trades()
+    trades[0].open_order_id = None
+    ftbot.exit_positions(trades)
+
     rc = client_get(client, f"{BASE_URI}/status")
     assert_response(rc)
     assert len(rc.json) == 1
@@ -509,25 +513,26 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
                         'close_rate': None,
                         'current_profit': -0.00408133,
                         'current_profit_pct': -0.41,
+                        'current_profit_abs': -4.09e-06,
                         'current_rate': 1.099e-05,
                         'open_date': ANY,
                         'open_date_hum': 'just now',
                         'open_timestamp': ANY,
-                        'open_order': '(limit buy rem=0.00000000)',
+                        'open_order': None,
                         'open_rate': 1.098e-05,
                         'pair': 'ETH/BTC',
                         'stake_amount': 0.001,
-                        'stop_loss': 0.0,
-                        'stop_loss_abs': 0.0,
-                        'stop_loss_pct': None,
-                        'stop_loss_ratio': None,
+                        'stop_loss': 9.882e-06,
+                        'stop_loss_abs': 9.882e-06,
+                        'stop_loss_pct': -10.0,
+                        'stop_loss_ratio': -0.1,
                         'stoploss_order_id': None,
-                        'stoploss_last_update': None,
-                        'stoploss_last_update_timestamp': None,
-                        'initial_stop_loss': 0.0,
-                        'initial_stop_loss_abs': 0.0,
-                        'initial_stop_loss_pct': None,
-                        'initial_stop_loss_ratio': None,
+                        'stoploss_last_update': ANY,
+                        'stoploss_last_update_timestamp': ANY,
+                        'initial_stop_loss': 9.882e-06,
+                        'initial_stop_loss_abs': 9.882e-06,
+                        'initial_stop_loss_pct': -10.0,
+                        'initial_stop_loss_ratio': -0.1,
                         'trade_id': 1,
                         'close_rate_requested': None,
                         'current_rate': 1.099e-05,
@@ -539,9 +544,9 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
                         'fee_open_currency': None,
                         'open_date': ANY,
                         'is_open': True,
-                        'max_rate': 0.0,
-                        'min_rate': None,
-                        'open_order_id': ANY,
+                        'max_rate': 1.099e-05,
+                        'min_rate': 1.098e-05,
+                        'open_order_id': None,
                         'open_rate_requested': 1.098e-05,
                         'open_trade_price': 0.0010025,
                         'sell_reason': None,
