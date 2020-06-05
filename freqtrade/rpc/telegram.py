@@ -636,13 +636,15 @@ class Telegram(RPC):
 
         else:
             sl_info = f"*Stoploss:* `{val['stoploss']}`\n"
-
+        import json
         self._send_msg(
             f"*Mode:* `{'Dry-run' if val['dry_run'] else 'Live'}`\n"
             f"*Exchange:* `{val['exchange']}`\n"
             f"*Stake per trade:* `{val['stake_amount']} {val['stake_currency']}`\n"
             f"*Max open Trades:* `{val['max_open_trades']}`\n"
             f"*Minimum ROI:* `{val['minimal_roi']}`\n"
+            f"*Ask strategy:* ```\n{val['ask_strategy']}```\n"
+            f"*Bid strategy:* ```\n{json.dumps(val['bid_strategy'])}```\n"
             f"{sl_info}"
             f"*Ticker Interval:* `{val['ticker_interval']}`\n"
             f"*Strategy:* `{val['strategy']}`\n"
