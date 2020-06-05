@@ -158,11 +158,11 @@ class Telegram(RPC):
                 microsecond=0) - msg['open_date'].replace(microsecond=0)
             msg['duration_min'] = msg['duration'].total_seconds() / 60
             
-            if float(msg['profit_percent']) >= 0.0:
-                message = "\N{EIGHT SPOKED ASTERISK} *{exchange}:* Selling {pair}\n"
-                
-            elif float(msg['profit_percent']) > 5.0:
+            if float(msg['profit_percent']) > 5.0:
                 message = ("\N{ROCKET} *{exchange}:* Selling {pair}\n").format(**msg)
+            
+            elif float(msg['profit_percent']) >= 0.0:
+                message = "\N{EIGHT SPOKED ASTERISK} *{exchange}:* Selling {pair}\n"
 
             elif msg['sell_reason'] == "stop_loss":
                 message = ("\N{WARNING SIGN} *{exchange}:* Selling {pair}\n").format(**msg)
