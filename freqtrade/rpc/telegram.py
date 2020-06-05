@@ -58,7 +58,12 @@ def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
 
 class Telegram(RPC):
     """  This class handles all telegram communication """
-
+    '🔵'.encode('ascii', 'namereplace')
+    '🚀'.encode('ascii', 'namereplace')
+    '✳'.encode('ascii', 'namereplace')
+    '❌'.encode('ascii', 'namereplace')
+    '⚠'.encode('ascii', 'namereplace')
+    
     def __init__(self, freqtrade) -> None:
         """
         Init the Telegram call, and init the super class RPC
@@ -133,7 +138,7 @@ class Telegram(RPC):
             else:
                 msg['stake_amount_fiat'] = 0
 
-            message = ("*{exchange}:* Buying {pair}\n"
+            message = ("\N{LARGE BLUE CIRCLE} *{exchange}:* Buying {pair}\n"
                        "*Amount:* `{amount:.8f}`\n"
                        "*Open Rate:* `{limit:.8f}`\n"
                        "*Current Rate:* `{current_rate:.8f}`\n"
@@ -144,7 +149,7 @@ class Telegram(RPC):
             message += ")`"
 
         elif msg['type'] == RPCMessageType.BUY_CANCEL_NOTIFICATION:
-            message = "*{exchange}:* Cancelling Open Buy Order for {pair}".format(**msg)
+            message = "\N{WARNING SIGN} *{exchange}:* Cancelling Open Buy Order for {pair}".format(**msg)
 
         elif msg['type'] == RPCMessageType.SELL_NOTIFICATION:
             msg['amount'] = round(msg['amount'], 8)
@@ -152,9 +157,20 @@ class Telegram(RPC):
             msg['duration'] = msg['close_date'].replace(
                 microsecond=0) - msg['open_date'].replace(microsecond=0)
             msg['duration_min'] = msg['duration'].total_seconds() / 60
+            
+            if float(msg['profit_percent']) > 5.0:
+                message = ("\N{ROCKET} *{exchange}:* Selling {pair}\n").format(**msg)
+            
+            elif float(msg['profit_percent']) >= 0.0:
+                message = "\N{EIGHT SPOKED ASTERISK} *{exchange}:* Selling {pair}\n"
 
-            message = ("*{exchange}:* Selling {pair}\n"
-                       "*Amount:* `{amount:.8f}`\n"
+            elif msg['sell_reason'] == "stop_loss":
+                message = ("\N{WARNING SIGN} *{exchange}:* Selling {pair}\n").format(**msg)
+
+            else:
+                message = ("\N{CROSS MARK} *{exchange}:* Selling {pair}\n").format(**msg)
+            
+            message += ("*Amount:* `{amount:.8f}`\n"
                        "*Open Rate:* `{open_rate:.8f}`\n"
                        "*Current Rate:* `{current_rate:.8f}`\n"
                        "*Close Rate:* `{limit:.8f}`\n"
@@ -172,14 +188,14 @@ class Telegram(RPC):
                             ' / {profit_fiat:.3f} {fiat_currency})`').format(**msg)
 
         elif msg['type'] == RPCMessageType.SELL_CANCEL_NOTIFICATION:
-            message = ("*{exchange}:* Cancelling Open Sell Order "
+            message = ("\N{WARNING SIGN} *{exchange}:* Cancelling Open Sell Order "
                        "for {pair}. Reason: {reason}").format(**msg)
 
         elif msg['type'] == RPCMessageType.STATUS_NOTIFICATION:
             message = '*Status:* `{status}`'.format(**msg)
 
         elif msg['type'] == RPCMessageType.WARNING_NOTIFICATION:
-            message = '*Warning:* `{status}`'.format(**msg)
+            message = '\N{WARNING SIGN} *Warning:* `{status}`'.format(**msg)
 
         elif msg['type'] == RPCMessageType.CUSTOM_NOTIFICATION:
             message = '{status}'.format(**msg)
@@ -311,43 +327,38 @@ class Telegram(RPC):
         stake_cur = self._config['stake_currency']
         fiat_disp_cur = self._config.get('fiat_display_currency', '')
 
-        stats = self._rpc_trade_statistics(
-            stake_cur,
-            fiat_disp_cur)
-        profit_closed_coin = stats['profit_closed_coin']
-        profit_closed_percent = stats['profit_closed_percent']
-        profit_closed_fiat = stats['profit_closed_fiat']
-        profit_all_coin = stats['profit_all_coin']
-        profit_all_percent = stats['profit_all_percent']
-        profit_all_fiat = stats['profit_all_fiat']
-        trade_count = stats['trade_count']
-        first_trade_date = stats['first_trade_date']
-        latest_trade_date = stats['latest_trade_date']
-        avg_duration = stats['avg_duration']
-        best_pair = stats['best_pair']
-        best_rate = stats['best_rate']
-        if stats['trade_count'] == 0:
-            markdown_msg = 'No trades yet.'
-        else:
+        try:
+            stats = self._rpc_trade_statistics(
+                stake_cur,
+                fiat_disp_cur)
+            profit_closed_coin = stats['profit_closed_coin']
+            profit_closed_percent = stats['profit_closed_percent']
+            profit_closed_fiat = stats['profit_closed_fiat']
+            profit_all_coin = stats['profit_all_coin']
+            profit_all_percent = stats['profit_all_percent']
+            profit_all_fiat = stats['profit_all_fiat']
+            trade_count = stats['trade_count']
+            first_trade_date = stats['first_trade_date']
+            latest_trade_date = stats['latest_trade_date']
+            avg_duration = stats['avg_duration']
+            best_pair = stats['best_pair']
+            best_rate = stats['best_rate']
             # Message to display
-            if stats['closed_trade_count'] > 0:
-                markdown_msg = ("*ROI:* Closed trades\n"
-                                f"∙ `{profit_closed_coin:.8f} {stake_cur} "
-                                f"({profit_closed_percent:.2f}%)`\n"
-                                f"∙ `{profit_closed_fiat:.3f} {fiat_disp_cur}`\n")
-            else:
-                markdown_msg = "`No closed trade` \n"
-
-            markdown_msg += (f"*ROI:* All trades\n"
-                             f"∙ `{profit_all_coin:.8f} {stake_cur} ({profit_all_percent:.2f}%)`\n"
-                             f"∙ `{profit_all_fiat:.3f} {fiat_disp_cur}`\n"
-                             f"*Total Trade Count:* `{trade_count}`\n"
-                             f"*First Trade opened:* `{first_trade_date}`\n"
-                             f"*Latest Trade opened:* `{latest_trade_date}`")
-            if stats['closed_trade_count'] > 0:
-                markdown_msg += (f"\n*Avg. Duration:* `{avg_duration}`\n"
-                                 f"*Best Performing:* `{best_pair}: {best_rate:.2f}%`")
-        self._send_msg(markdown_msg)
+            markdown_msg = "*ROI:* Close trades\n" \
+                           f"∙ `{profit_closed_coin:.8f} {stake_cur} "\
+                           f"({profit_closed_percent:.2f}%)`\n" \
+                           f"∙ `{profit_closed_fiat:.3f} {fiat_disp_cur}`\n" \
+                           f"*ROI:* All trades\n" \
+                           f"∙ `{profit_all_coin:.8f} {stake_cur} ({profit_all_percent:.2f}%)`\n" \
+                           f"∙ `{profit_all_fiat:.3f} {fiat_disp_cur}`\n" \
+                           f"*Total Trade Count:* `{trade_count}`\n" \
+                           f"*First Trade opened:* `{first_trade_date}`\n" \
+                           f"*Latest Trade opened:* `{latest_trade_date}`\n" \
+                           f"*Avg. Duration:* `{avg_duration}`\n" \
+                           f"*Best Performing:* `{best_pair}: {best_rate:.2f}%`"
+            self._send_msg(markdown_msg)
+        except RPCException as e:
+            self._send_msg(str(e))
 
     @authorized_only
     def _balance(self, update: Update, context: CallbackContext) -> None:
@@ -539,11 +550,6 @@ class Telegram(RPC):
         try:
 
             blacklist = self._rpc_blacklist(context.args)
-            errmsgs = []
-            for pair, error in blacklist['errors'].items():
-                errmsgs.append(f"Error adding `{pair}` to blacklist: `{error['error_msg']}`")
-            if errmsgs:
-                self._send_msg('\n'.join(errmsgs))
 
             message = f"Blacklist contains {blacklist['length']} pairs\n"
             message += f"`{', '.join(blacklist['blacklist'])}`"
