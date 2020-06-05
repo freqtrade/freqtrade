@@ -1221,7 +1221,6 @@ def test_send_msg_buy_notification(default_conf, mocker) -> None:
         'amount': 1333.3333333333335,
         'open_date': arrow.utcnow().shift(hours=-1)
     })
-    '🔵'.encode('ascii', 'namereplace')
     assert msg_mock.call_args[0][0] \
         == '\N{LARGE BLUE CIRCLE} *Bittrex:* Buying ETH/BTC\n' \
            '*Amount:* `1333.33333333`\n' \
@@ -1244,7 +1243,6 @@ def test_send_msg_buy_cancel_notification(default_conf, mocker) -> None:
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
     })
-    '⚠'.encode('ascii', 'namereplace')
     assert msg_mock.call_args[0][0] \
         == ('\N{WARNING SIGN} *Bittrex:* Cancelling Open Buy Order for ETH/BTC')
 
@@ -1278,7 +1276,6 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'open_date': arrow.utcnow().shift(hours=-1),
         'close_date': arrow.utcnow(),
     })
-    '⚠'.encode('ascii', 'namereplace')
     assert msg_mock.call_args[0][0] \
         == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH\n'
             '*Amount:* `1333.33333333`\n'
@@ -1337,7 +1334,6 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
         'pair': 'KEY/ETH',
         'reason': 'Cancelled on exchange'
     })
-    '⚠'.encode('ascii', 'namereplace')
     assert msg_mock.call_args[0][0] \
         == ('\N{WARNING SIGN} *Binance:* Cancelling Open Sell Order for KEY/ETH. Reason: Cancelled on exchange')
 
@@ -1383,7 +1379,6 @@ def test_warning_notification(default_conf, mocker) -> None:
         'type': RPCMessageType.WARNING_NOTIFICATION,
         'status': 'message'
     })
-    '⚠'.encode('ascii', 'namereplace')
     assert msg_mock.call_args[0][0] == '\N{WARNING SIGN} *Warning:* `message`'
 
 
@@ -1442,7 +1437,6 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
         'amount': 1333.3333333333335,
         'open_date': arrow.utcnow().shift(hours=-1)
     })
-    '🔵'.encode('ascii', 'namereplace')
     assert msg_mock.call_args[0][0] \
         == '\N{LARGE BLUE CIRCLE} *Bittrex:* Buying ETH/BTC\n' \
            '*Amount:* `1333.33333333`\n' \
@@ -1479,7 +1473,6 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
         'open_date': arrow.utcnow().shift(hours=-2, minutes=-35, seconds=-3),
         'close_date': arrow.utcnow(),
     })
-    '⚠'.encode('ascii', 'namereplace')
     assert msg_mock.call_args[0][0] \
         == '\N{WARNING SIGN} *Binance:* Selling KEY/ETH\n' \
            '*Amount:* `1333.33333333`\n' \
