@@ -315,10 +315,12 @@ class Telegram(RPC):
             stake_cur,
             fiat_disp_cur)
         profit_closed_coin = stats['profit_closed_coin']
-        profit_closed_percent = stats['profit_closed_percent']
+        profit_closed_percent_mean = stats['profit_closed_percent_mean']
+        profit_closed_percent_sum = stats['profit_closed_percent_sum']
         profit_closed_fiat = stats['profit_closed_fiat']
         profit_all_coin = stats['profit_all_coin']
-        profit_all_percent = stats['profit_all_percent']
+        profit_all_percent_mean = stats['profit_all_percent_mean']
+        profit_all_percent_sum = stats['profit_all_percent_sum']
         profit_all_fiat = stats['profit_all_fiat']
         trade_count = stats['trade_count']
         first_trade_date = stats['first_trade_date']
@@ -333,13 +335,16 @@ class Telegram(RPC):
             if stats['closed_trade_count'] > 0:
                 markdown_msg = ("*ROI:* Closed trades\n"
                                 f"∙ `{profit_closed_coin:.8f} {stake_cur} "
-                                f"({profit_closed_percent:.2f}%)`\n"
+                                f"({profit_closed_percent_mean:.2f}%) "
+                                f"({profit_closed_percent_sum} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
                                 f"∙ `{profit_closed_fiat:.3f} {fiat_disp_cur}`\n")
             else:
                 markdown_msg = "`No closed trade` \n"
 
             markdown_msg += (f"*ROI:* All trades\n"
-                             f"∙ `{profit_all_coin:.8f} {stake_cur} ({profit_all_percent:.2f}%)`\n"
+                             f"∙ `{profit_all_coin:.8f} {stake_cur} "
+                             f"({profit_all_percent_mean:.2f}%) "
+                             f"({profit_all_percent_sum} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
                              f"∙ `{profit_all_fiat:.3f} {fiat_disp_cur}`\n"
                              f"*Total Trade Count:* `{trade_count}`\n"
                              f"*First Trade opened:* `{first_trade_date}`\n"
