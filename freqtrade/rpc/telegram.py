@@ -125,6 +125,12 @@ class Telegram(RPC):
 
     def send_msg(self, msg: Dict[str, Any]) -> None:
         """ Send a message to telegram channel """
+        
+        '🔵'.encode('ascii', 'namereplace')
+        '🚀'.encode('ascii', 'namereplace')
+        '✳'.encode('ascii', 'namereplace')
+        '❌'.encode('ascii', 'namereplace')
+        '⚠'.encode('ascii', 'namereplace')
 
         if msg['type'] == RPCMessageType.BUY_NOTIFICATION:
             if self._fiat_converter:
@@ -133,7 +139,7 @@ class Telegram(RPC):
             else:
                 msg['stake_amount_fiat'] = 0
 
-            message = ("*{exchange}:* Buying {pair}\n"
+            message = ("\N{LARGE BLUE CIRCLE} *{exchange}:* Buying {pair}\n"
                        "*Amount:* `{amount:.8f}`\n"
                        "*Open Rate:* `{limit:.8f}`\n"
                        "*Current Rate:* `{current_rate:.8f}`\n"
@@ -144,7 +150,7 @@ class Telegram(RPC):
             message += ")`"
 
         elif msg['type'] == RPCMessageType.BUY_CANCEL_NOTIFICATION:
-            message = "*{exchange}:* Cancelling Open Buy Order for {pair}".format(**msg)
+            message = "\N{WARNING SIGN} *{exchange}:* Cancelling Open Buy Order for {pair}".format(**msg)
 
         elif msg['type'] == RPCMessageType.SELL_NOTIFICATION:
             msg['amount'] = round(msg['amount'], 8)
@@ -153,8 +159,19 @@ class Telegram(RPC):
                 microsecond=0) - msg['open_date'].replace(microsecond=0)
             msg['duration_min'] = msg['duration'].total_seconds() / 60
 
-            message = ("*{exchange}:* Selling {pair}\n"
-                       "*Amount:* `{amount:.8f}`\n"
+            if float(msg['profit_percent']) >= 5.0:
+                message = ("\N{ROCKET} *{exchange}:* Selling {pair}\n").format(**msg)
+
+            elif float(msg['profit_percent']) >= 0.0:
+                message = "\N{EIGHT SPOKED ASTERISK} *{exchange}:* Selling {pair}\n"
+
+            elif msg['sell_reason'] == "stop_loss":
+                message = ("\N{WARNING SIGN} *{exchange}:* Selling {pair}\n").format(**msg)
+
+            else:
+                message = ("\N{CROSS MARK} *{exchange}:* Selling {pair}\n").format(**msg)
+
+            message += ("*Amount:* `{amount:.8f}`\n"
                        "*Open Rate:* `{open_rate:.8f}`\n"
                        "*Current Rate:* `{current_rate:.8f}`\n"
                        "*Close Rate:* `{limit:.8f}`\n"
@@ -172,14 +189,14 @@ class Telegram(RPC):
                             ' / {profit_fiat:.3f} {fiat_currency})`').format(**msg)
 
         elif msg['type'] == RPCMessageType.SELL_CANCEL_NOTIFICATION:
-            message = ("*{exchange}:* Cancelling Open Sell Order "
+            message = ("\N{WARNING SIGN} *{exchange}:* Cancelling Open Sell Order "
                        "for {pair}. Reason: {reason}").format(**msg)
 
         elif msg['type'] == RPCMessageType.STATUS_NOTIFICATION:
             message = '*Status:* `{status}`'.format(**msg)
 
         elif msg['type'] == RPCMessageType.WARNING_NOTIFICATION:
-            message = '*Warning:* `{status}`'.format(**msg)
+            message = '\N{WARNING SIGN} *Warning:* `{status}`'.format(**msg)
 
         elif msg['type'] == RPCMessageType.CUSTOM_NOTIFICATION:
             message = '{status}'.format(**msg)
