@@ -126,12 +126,6 @@ class Telegram(RPC):
     def send_msg(self, msg: Dict[str, Any]) -> None:
         """ Send a message to telegram channel """
 
-        '🔵'.encode('ascii', 'namereplace')
-        '🚀'.encode('ascii', 'namereplace')
-        '✳'.encode('ascii', 'namereplace')
-        '❌'.encode('ascii', 'namereplace')
-        '⚠'.encode('ascii', 'namereplace')
-
         if msg['type'] == RPCMessageType.BUY_NOTIFICATION:
             if self._fiat_converter:
                 msg['stake_amount_fiat'] = self._fiat_converter.convert_amount(
