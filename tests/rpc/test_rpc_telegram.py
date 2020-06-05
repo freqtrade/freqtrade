@@ -1335,7 +1335,8 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
         'reason': 'Cancelled on exchange'
     })
     assert msg_mock.call_args[0][0] \
-        == ('\N{WARNING SIGN} *Binance:* Cancelling Open Sell Order for KEY/ETH. Reason: Cancelled on exchange')
+        == ('\N{WARNING SIGN} *Binance:* Cancelling Open Sell Order for KEY/ETH. '
+            'Reason: Cancelled on exchange')
 
     msg_mock.reset_mock()
     telegram.send_msg({
