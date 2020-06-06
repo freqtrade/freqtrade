@@ -1225,7 +1225,7 @@ def test_send_msg_buy_notification(default_conf, mocker) -> None:
         'open_date': arrow.utcnow().shift(hours=-1)
     })
     assert msg_mock.call_args[0][0] \
-        == '*Bittrex:* Buying ETH/BTC\n' \
+        == '\N{LARGE BLUE CIRCLE} *Bittrex:* Buying ETH/BTC\n' \
            '*Amount:* `1333.33333333`\n' \
            '*Open Rate:* `0.00001099`\n' \
            '*Current Rate:* `0.00001099`\n' \
@@ -1247,7 +1247,7 @@ def test_send_msg_buy_cancel_notification(default_conf, mocker) -> None:
         'pair': 'ETH/BTC',
     })
     assert msg_mock.call_args[0][0] \
-        == ('*Bittrex:* Cancelling Open Buy Order for ETH/BTC')
+        == ('\N{WARNING SIGN} *Bittrex:* Cancelling Open Buy Order for ETH/BTC')
 
 
 def test_send_msg_sell_notification(default_conf, mocker) -> None:
@@ -1280,7 +1280,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'close_date': arrow.utcnow(),
     })
     assert msg_mock.call_args[0][0] \
-        == ('*Binance:* Selling KEY/ETH\n'
+        == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH\n'
             '*Amount:* `1333.33333333`\n'
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
@@ -1308,7 +1308,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'close_date': arrow.utcnow(),
     })
     assert msg_mock.call_args[0][0] \
-        == ('*Binance:* Selling KEY/ETH\n'
+        == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH\n'
             '*Amount:* `1333.33333333`\n'
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
@@ -1338,7 +1338,8 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
         'reason': 'Cancelled on exchange'
     })
     assert msg_mock.call_args[0][0] \
-        == ('*Binance:* Cancelling Open Sell Order for KEY/ETH. Reason: Cancelled on exchange')
+        == ('\N{WARNING SIGN} *Binance:* Cancelling Open Sell Order for KEY/ETH. '
+            'Reason: Cancelled on exchange')
 
     msg_mock.reset_mock()
     telegram.send_msg({
@@ -1348,7 +1349,7 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
         'reason': 'timeout'
     })
     assert msg_mock.call_args[0][0] \
-        == ('*Binance:* Cancelling Open Sell Order for KEY/ETH. Reason: timeout')
+        == ('\N{WARNING SIGN} *Binance:* Cancelling Open Sell Order for KEY/ETH. Reason: timeout')
     # Reset singleton function to avoid random breaks
     telegram._fiat_converter.convert_amount = old_convamount
 
@@ -1382,7 +1383,7 @@ def test_warning_notification(default_conf, mocker) -> None:
         'type': RPCMessageType.WARNING_NOTIFICATION,
         'status': 'message'
     })
-    assert msg_mock.call_args[0][0] == '*Warning:* `message`'
+    assert msg_mock.call_args[0][0] == '\N{WARNING SIGN} *Warning:* `message`'
 
 
 def test_custom_notification(default_conf, mocker) -> None:
@@ -1441,7 +1442,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
         'open_date': arrow.utcnow().shift(hours=-1)
     })
     assert msg_mock.call_args[0][0] \
-        == '*Bittrex:* Buying ETH/BTC\n' \
+        == '\N{LARGE BLUE CIRCLE} *Bittrex:* Buying ETH/BTC\n' \
            '*Amount:* `1333.33333333`\n' \
            '*Open Rate:* `0.00001099`\n' \
            '*Current Rate:* `0.00001099`\n' \
@@ -1477,7 +1478,7 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
         'close_date': arrow.utcnow(),
     })
     assert msg_mock.call_args[0][0] \
-        == '*Binance:* Selling KEY/ETH\n' \
+        == '\N{WARNING SIGN} *Binance:* Selling KEY/ETH\n' \
            '*Amount:* `1333.33333333`\n' \
            '*Open Rate:* `0.00007500`\n' \
            '*Current Rate:* `0.00003201`\n' \
@@ -1485,6 +1486,29 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
            '*Sell Reason:* `stop_loss`\n' \
            '*Duration:* `2:35:03 (155.1 min)`\n' \
            '*Profit:* `-57.41%`'
+
+
+@pytest.mark.parametrize('msg,expected', [
+    ({'profit_percent': 20.1, 'sell_reason': 'roi'}, "\N{ROCKET}"),
+    ({'profit_percent': 5.1, 'sell_reason': 'roi'}, "\N{ROCKET}"),
+    ({'profit_percent': 2.56, 'sell_reason': 'roi'}, "\N{EIGHT SPOKED ASTERISK}"),
+    ({'profit_percent': 1.0, 'sell_reason': 'roi'}, "\N{EIGHT SPOKED ASTERISK}"),
+    ({'profit_percent': 0.0, 'sell_reason': 'roi'}, "\N{EIGHT SPOKED ASTERISK}"),
+    ({'profit_percent': -5.0, 'sell_reason': 'stop_loss'}, "\N{WARNING SIGN}"),
+    ({'profit_percent': -2.0, 'sell_reason': 'sell_signal'}, "\N{CROSS MARK}"),
+])
+def test__sell_emoji(default_conf, mocker, msg, expected):
+    del default_conf['fiat_display_currency']
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    telegram = Telegram(freqtradebot)
+
+    assert telegram._get_sell_emoji(msg) == expected
 
 
 def test__send_msg(default_conf, mocker) -> None:
