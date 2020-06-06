@@ -30,7 +30,7 @@ Binance has been split into 3, and users must use the correct ccxt exchange ID f
 The Kraken API does only provide 720 historic candles, which is sufficient for Freqtrade dry-run and live trade modes, but is a problem for backtesting.
 To download data for the Kraken exchange, using `--dl-trades` is mandatory, otherwise the bot will download the same 720 candles over and over, and you'll not have enough backtest data.
 
-Due to the heavy rate-limiting applied by Kraken, the follwoing configuration section should be used to download data:
+Due to the heavy rate-limiting applied by Kraken, the following configuration section should be used to download data:
 
 ``` json
     "ccxt_async_config": {
