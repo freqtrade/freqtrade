@@ -154,9 +154,9 @@ class Telegram(RPC):
                 microsecond=0) - msg['open_date'].replace(microsecond=0)
             msg['duration_min'] = msg['duration'].total_seconds() / 60
 
-            msg['emoij'] = self._get_sell_emoij(msg)
+            msg['emoji'] = self._get_sell_emoji(msg)
 
-            message = ("{emoij} *{exchange}:* Selling {pair}\n"
+            message = ("{emoji} *{exchange}:* Selling {pair}\n"
                        "*Amount:* `{amount:.8f}`\n"
                        "*Open Rate:* `{open_rate:.8f}`\n"
                        "*Current Rate:* `{current_rate:.8f}`\n"
@@ -192,7 +192,7 @@ class Telegram(RPC):
 
         self._send_msg(message)
 
-    def _get_sell_emoij(self, msg):
+    def _get_sell_emoji(self, msg):
         """
         Get emoji for sell-side
         """
