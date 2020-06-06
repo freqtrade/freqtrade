@@ -325,6 +325,8 @@ def test_api_show_config(botclient, mocker):
     assert rc.json['ticker_interval'] == '5m'
     assert rc.json['state'] == 'running'
     assert not rc.json['trailing_stop']
+    assert 'bid_strategy' in rc.json
+    assert 'ask_strategy' in rc.json
 
 
 def test_api_daily(botclient, mocker, ticker, fee, markets):

@@ -144,8 +144,8 @@ class Telegram(RPC):
             message += ")`"
 
         elif msg['type'] == RPCMessageType.BUY_CANCEL_NOTIFICATION:
-            message = "\N{WARNING SIGN} *{exchange}:* " \
-                      "Cancelling Open Buy Order for {pair}".format(**msg)
+            message = ("\N{WARNING SIGN} *{exchange}:* "
+                       "Cancelling Open Buy Order for {pair}".format(**msg))
 
         elif msg['type'] == RPCMessageType.SELL_NOTIFICATION:
             msg['amount'] = round(msg['amount'], 8)
@@ -388,11 +388,11 @@ class Telegram(RPC):
                 )
             for currency in result['currencies']:
                 if currency['est_stake'] > 0.0001:
-                    curr_output = "*{currency}:*\n" \
-                                  "\t`Available: {free: .8f}`\n" \
-                                  "\t`Balance: {balance: .8f}`\n" \
-                                  "\t`Pending: {used: .8f}`\n" \
-                                  "\t`Est. {stake}: {est_stake: .8f}`\n".format(**currency)
+                    curr_output = ("*{currency}:*\n"
+                                   "\t`Available: {free: .8f}`\n"
+                                   "\t`Balance: {balance: .8f}`\n"
+                                   "\t`Pending: {used: .8f}`\n"
+                                   "\t`Est. {stake}: {est_stake: .8f}`\n").format(**currency)
                 else:
                     curr_output = "*{currency}:* not showing <1$ amount \n".format(**currency)
 
@@ -403,9 +403,9 @@ class Telegram(RPC):
                 else:
                     output += curr_output
 
-            output += "\n*Estimated Value*:\n" \
-                      "\t`{stake}: {total: .8f}`\n" \
-                      "\t`{symbol}: {value: .2f}`\n".format(**result)
+            output += ("\n*Estimated Value*:\n"
+                       "\t`{stake}: {total: .8f}`\n"
+                       "\t`{symbol}: {value: .2f}`\n").format(**result)
             self._send_msg(output)
         except RPCException as e:
             self._send_msg(str(e))
@@ -598,32 +598,32 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
-        forcebuy_text = "*/forcebuy <pair> [<rate>]:* `Instantly buys the given pair. " \
-                        "Optionally takes a rate at which to buy.` \n"
-        message = "*/start:* `Starts the trader`\n" \
-                  "*/stop:* `Stops the trader`\n" \
-                  "*/status [table]:* `Lists all open trades`\n" \
-                  "         *table :* `will display trades in a table`\n" \
-                  "                `pending buy orders are marked with an asterisk (*)`\n" \
-                  "                `pending sell orders are marked with a double asterisk (**)`\n" \
-                  "*/profit:* `Lists cumulative profit from all finished trades`\n" \
-                  "*/forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, " \
-                  "regardless of profit`\n" \
-                  f"{forcebuy_text if self._config.get('forcebuy_enable', False) else ''}" \
-                  "*/performance:* `Show performance of each finished trade grouped by pair`\n" \
-                  "*/daily <n>:* `Shows profit or loss per day, over the last n days`\n" \
-                  "*/count:* `Show number of trades running compared to allowed number of trades`" \
-                  "\n" \
-                  "*/balance:* `Show account balance per currency`\n" \
-                  "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n" \
-                  "*/reload_conf:* `Reload configuration file` \n" \
-                  "*/show_config:* `Show running configuration` \n" \
-                  "*/whitelist:* `Show current whitelist` \n" \
-                  "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs " \
-                  "to the blacklist.` \n" \
-                  "*/edge:* `Shows validated pairs by Edge if it is enabled` \n" \
-                  "*/help:* `This help message`\n" \
-                  "*/version:* `Show version`"
+        forcebuy_text = ("*/forcebuy <pair> [<rate>]:* `Instantly buys the given pair. "
+                         "Optionally takes a rate at which to buy.` \n")
+        message = ("*/start:* `Starts the trader`\n"
+                   "*/stop:* `Stops the trader`\n"
+                   "*/status [table]:* `Lists all open trades`\n"
+                   "         *table :* `will display trades in a table`\n"
+                   "                `pending buy orders are marked with an asterisk (*)`\n"
+                   "                `pending sell orders are marked with a double asterisk (**)`\n"
+                   "*/profit:* `Lists cumulative profit from all finished trades`\n"
+                   "*/forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, "
+                   "regardless of profit`\n"
+                   f"{forcebuy_text if self._config.get('forcebuy_enable', False) else ''}"
+                   "*/performance:* `Show performance of each finished trade grouped by pair`\n"
+                   "*/daily <n>:* `Shows profit or loss per day, over the last n days`\n"
+                   "*/count:* `Show number of trades running compared to allowed number of trades`"
+                   "\n"
+                   "*/balance:* `Show account balance per currency`\n"
+                   "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n"
+                   "*/reload_conf:* `Reload configuration file` \n"
+                   "*/show_config:* `Show running configuration` \n"
+                   "*/whitelist:* `Show current whitelist` \n"
+                   "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs "
+                   "to the blacklist.` \n"
+                   "*/edge:* `Shows validated pairs by Edge if it is enabled` \n"
+                   "*/help:* `This help message`\n"
+                   "*/version:* `Show version`")
 
         self._send_msg(message)
 
@@ -665,6 +665,8 @@ class Telegram(RPC):
             f"*Stake per trade:* `{val['stake_amount']} {val['stake_currency']}`\n"
             f"*Max open Trades:* `{val['max_open_trades']}`\n"
             f"*Minimum ROI:* `{val['minimal_roi']}`\n"
+            f"*Ask strategy:* ```\n{val['ask_strategy']}```\n"
+            f"*Bid strategy:* ```\n{val['bid_strategy']}```\n"
             f"{sl_info}"
             f"*Ticker Interval:* `{val['ticker_interval']}`\n"
             f"*Strategy:* `{val['strategy']}`\n"

@@ -105,6 +105,8 @@ class RPC:
             'exchange': config['exchange']['name'],
             'strategy': config['strategy'],
             'forcebuy_enabled': config.get('forcebuy_enable', False),
+            'ask_strategy': config.get('ask_strategy', {}),
+            'bid_strategy': config.get('bid_strategy', {}),
             'state': str(self._freqtrade.state)
         }
         return val
