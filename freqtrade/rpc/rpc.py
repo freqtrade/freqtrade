@@ -132,6 +132,14 @@ class RPC:
                 except DependencyException:
                     current_rate = NAN
                 current_profit = trade.calc_profit_ratio(current_rate)
+                current_profit_abs = trade.calc_profit(current_rate)
+                # Calculate guaranteed profit (in case of trailing stop)
+                stoploss_entry_dist = trade.calc_profit(trade.stop_loss)
+                stoploss_entry_dist_ratio = trade.calc_profit_ratio(trade.stop_loss)
+                # calculate distance to stoploss
+                stoploss_current_dist = trade.stop_loss - current_rate
+                stoploss_current_dist_ratio = stoploss_current_dist / current_rate
+
                 fmt_close_profit = (f'{round(trade.close_profit * 100, 2):.2f}%'
                                     if trade.close_profit is not None else None)
                 trade_dict = trade.to_json()
@@ -142,6 +150,11 @@ class RPC:
                     current_rate=current_rate,
                     current_profit=current_profit,
                     current_profit_pct=round(current_profit * 100, 2),
+                    current_profit_abs=current_profit_abs,
+                    stoploss_current_dist=stoploss_current_dist,
+                    stoploss_current_dist_ratio=round(stoploss_current_dist_ratio, 8),
+                    stoploss_entry_dist=stoploss_entry_dist,
+                    stoploss_entry_dist_ratio=round(stoploss_entry_dist_ratio, 8),
                     open_order='({} {} rem={:.8f})'.format(
                         order['type'], order['side'], order['remaining']
                     ) if order else None,
@@ -285,8 +298,9 @@ class RPC:
 
         # Prepare data to display
         profit_closed_coin_sum = round(sum(profit_closed_coin), 8)
-        profit_closed_percent = (round(mean(profit_closed_ratio) * 100, 2) if profit_closed_ratio
-                                 else 0.0)
+        profit_closed_ratio_mean = mean(profit_closed_ratio) if profit_closed_ratio else 0.0
+        profit_closed_ratio_sum = sum(profit_closed_ratio) if profit_closed_ratio else 0.0
+
         profit_closed_fiat = self._fiat_converter.convert_amount(
             profit_closed_coin_sum,
             stake_currency,
@@ -294,7 +308,8 @@ class RPC:
         ) if self._fiat_converter else 0
 
         profit_all_coin_sum = round(sum(profit_all_coin), 8)
-        profit_all_percent = round(mean(profit_all_ratio) * 100, 2) if profit_all_ratio else 0.0
+        profit_all_ratio_mean = mean(profit_all_ratio) if profit_all_ratio else 0.0
+        profit_all_ratio_sum = sum(profit_all_ratio) if profit_all_ratio else 0.0
         profit_all_fiat = self._fiat_converter.convert_amount(
             profit_all_coin_sum,
             stake_currency,
@@ -306,10 +321,18 @@ class RPC:
         num = float(len(durations) or 1)
         return {
             'profit_closed_coin': profit_closed_coin_sum,
-            'profit_closed_percent': profit_closed_percent,
+            'profit_closed_percent': round(profit_closed_ratio_mean * 100, 2),  # DEPRECATED
+            'profit_closed_percent_mean': round(profit_closed_ratio_mean * 100, 2),
+            'profit_closed_ratio_mean': profit_closed_ratio_mean,
+            'profit_closed_percent_sum': round(profit_closed_ratio_sum * 100, 2),
+            'profit_closed_ratio_sum': profit_closed_ratio_sum,
             'profit_closed_fiat': profit_closed_fiat,
             'profit_all_coin': profit_all_coin_sum,
-            'profit_all_percent': profit_all_percent,
+            'profit_all_percent': round(profit_all_ratio_mean * 100, 2),  # DEPRECATED
+            'profit_all_percent_mean': round(profit_all_ratio_mean * 100, 2),
+            'profit_all_ratio_mean': profit_all_ratio_mean,
+            'profit_all_percent_sum': round(profit_all_ratio_sum * 100, 2),
+            'profit_all_ratio_sum': profit_all_ratio_sum,
             'profit_all_fiat': profit_all_fiat,
             'trade_count': len(trades),
             'closed_trade_count': len([t for t in trades if not t.is_open]),
