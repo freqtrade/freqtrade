@@ -71,10 +71,10 @@ def test_init(default_conf, mocker, caplog) -> None:
     assert start_polling.dispatcher.add_handler.call_count > 0
     assert start_polling.start_polling.call_count == 1
 
-    message_str = "rpc.telegram is listening for following commands: [['status'], ['profit'], " \
-                  "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], " \
-                  "['performance'], ['daily'], ['count'], ['reload_conf'], ['show_config'], " \
-                  "['stopbuy'], ['whitelist'], ['blacklist'], ['edge'], ['help'], ['version']]"
+    message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
+                   "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], "
+                   "['performance'], ['daily'], ['count'], ['reload_conf'], ['show_config'], "
+                   "['stopbuy'], ['whitelist'], ['blacklist'], ['edge'], ['help'], ['version']]")
 
     assert log_has(message_str, caplog)
 
@@ -1016,9 +1016,8 @@ def test_count_handle(default_conf, update, ticker, fee, mocker) -> None:
     msg_mock.reset_mock()
     telegram._count(update=update, context=MagicMock())
 
-    msg = '<pre>  current    max    total stake\n---------  -----  -------------\n' \
-          '        1      {}          {}</pre>'\
-        .format(
+    msg = ('<pre>  current    max    total stake\n---------  -----  -------------\n'
+           '        1      {}          {}</pre>').format(
             default_conf['max_open_trades'],
             default_conf['stake_amount']
         )
@@ -1441,12 +1440,11 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
         'amount': 1333.3333333333335,
         'open_date': arrow.utcnow().shift(hours=-1)
     })
-    assert msg_mock.call_args[0][0] \
-        == '\N{LARGE BLUE CIRCLE} *Bittrex:* Buying ETH/BTC\n' \
-           '*Amount:* `1333.33333333`\n' \
-           '*Open Rate:* `0.00001099`\n' \
-           '*Current Rate:* `0.00001099`\n' \
-           '*Total:* `(0.001000 BTC)`'
+    assert msg_mock.call_args[0][0] == ('\N{LARGE BLUE CIRCLE} *Bittrex:* Buying ETH/BTC\n'
+                                        '*Amount:* `1333.33333333`\n'
+                                        '*Open Rate:* `0.00001099`\n'
+                                        '*Current Rate:* `0.00001099`\n'
+                                        '*Total:* `(0.001000 BTC)`')
 
 
 def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
@@ -1477,15 +1475,14 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
         'open_date': arrow.utcnow().shift(hours=-2, minutes=-35, seconds=-3),
         'close_date': arrow.utcnow(),
     })
-    assert msg_mock.call_args[0][0] \
-        == '\N{WARNING SIGN} *Binance:* Selling KEY/ETH\n' \
-           '*Amount:* `1333.33333333`\n' \
-           '*Open Rate:* `0.00007500`\n' \
-           '*Current Rate:* `0.00003201`\n' \
-           '*Close Rate:* `0.00003201`\n' \
-           '*Sell Reason:* `stop_loss`\n' \
-           '*Duration:* `2:35:03 (155.1 min)`\n' \
-           '*Profit:* `-57.41%`'
+    assert msg_mock.call_args[0][0] == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH\n'
+                                        '*Amount:* `1333.33333333`\n'
+                                        '*Open Rate:* `0.00007500`\n'
+                                        '*Current Rate:* `0.00003201`\n'
+                                        '*Close Rate:* `0.00003201`\n'
+                                        '*Sell Reason:* `stop_loss`\n'
+                                        '*Duration:* `2:35:03 (155.1 min)`\n'
+                                        '*Profit:* `-57.41%`')
 
 
 @pytest.mark.parametrize('msg,expected', [
