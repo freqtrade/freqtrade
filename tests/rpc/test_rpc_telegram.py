@@ -1485,6 +1485,29 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
            '*Profit:* `-57.41%`'
 
 
+@pytest.mark.parametrize('msg,expected', [
+    ({'profit_percent': 20.1, 'sell_reason': 'roi'}, "\N{ROCKET}"),
+    ({'profit_percent': 5.1, 'sell_reason': 'roi'}, "\N{ROCKET}"),
+    ({'profit_percent': 2.56, 'sell_reason': 'roi'}, "\N{EIGHT SPOKED ASTERISK}"),
+    ({'profit_percent': 1.0, 'sell_reason': 'roi'}, "\N{EIGHT SPOKED ASTERISK}"),
+    ({'profit_percent': 0.0, 'sell_reason': 'roi'}, "\N{EIGHT SPOKED ASTERISK}"),
+    ({'profit_percent': -5.0, 'sell_reason': 'stop_loss'}, "\N{WARNING SIGN}"),
+    ({'profit_percent': -2.0, 'sell_reason': 'sell_signal'}, "\N{CROSS MARK}"),
+])
+def test__sell_emoji(default_conf, mocker, msg, expected):
+    del default_conf['fiat_display_currency']
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    telegram = Telegram(freqtradebot)
+
+    assert telegram._get_sell_emoij(msg) == expected
+
+
 def test__send_msg(default_conf, mocker) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
     bot = MagicMock()

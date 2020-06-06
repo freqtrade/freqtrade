@@ -154,25 +154,16 @@ class Telegram(RPC):
                 microsecond=0) - msg['open_date'].replace(microsecond=0)
             msg['duration_min'] = msg['duration'].total_seconds() / 60
 
-            if float(msg['profit_percent']) >= 5.0:
-                message = ("\N{ROCKET} *{exchange}:* Selling {pair}\n").format(**msg)
+            msg['emoij'] = self._get_sell_emoij(msg)
 
-            elif float(msg['profit_percent']) >= 0.0:
-                message = "\N{EIGHT SPOKED ASTERISK} *{exchange}:* Selling {pair}\n"
-
-            elif msg['sell_reason'] == "stop_loss":
-                message = ("\N{WARNING SIGN} *{exchange}:* Selling {pair}\n").format(**msg)
-
-            else:
-                message = ("\N{CROSS MARK} *{exchange}:* Selling {pair}\n").format(**msg)
-
-            message += ("*Amount:* `{amount:.8f}`\n"
-                        "*Open Rate:* `{open_rate:.8f}`\n"
-                        "*Current Rate:* `{current_rate:.8f}`\n"
-                        "*Close Rate:* `{limit:.8f}`\n"
-                        "*Sell Reason:* `{sell_reason}`\n"
-                        "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
-                        "*Profit:* `{profit_percent:.2f}%`").format(**msg)
+            message = ("{emoij} *{exchange}:* Selling {pair}\n"
+                       "*Amount:* `{amount:.8f}`\n"
+                       "*Open Rate:* `{open_rate:.8f}`\n"
+                       "*Current Rate:* `{current_rate:.8f}`\n"
+                       "*Close Rate:* `{limit:.8f}`\n"
+                       "*Sell Reason:* `{sell_reason}`\n"
+                       "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
+                       "*Profit:* `{profit_percent:.2f}%`").format(**msg)
 
             # Check if all sell properties are available.
             # This might not be the case if the message origin is triggered by /forcesell
@@ -200,6 +191,20 @@ class Telegram(RPC):
             raise NotImplementedError('Unknown message type: {}'.format(msg['type']))
 
         self._send_msg(message)
+
+    def _get_sell_emoij(self, msg):
+        """
+        Get emoji for sell-side
+        """
+
+        if float(msg['profit_percent']) >= 5.0:
+            return "\N{ROCKET}"
+        elif float(msg['profit_percent']) >= 0.0:
+            return "\N{EIGHT SPOKED ASTERISK}"
+        elif msg['sell_reason'] == "stop_loss":
+            return"\N{WARNING SIGN}"
+        else:
+            return "\N{CROSS MARK}"
 
     @authorized_only
     def _status(self, update: Update, context: CallbackContext) -> None:
