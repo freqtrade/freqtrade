@@ -1505,7 +1505,7 @@ def test__sell_emoji(default_conf, mocker, msg, expected):
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     telegram = Telegram(freqtradebot)
 
-    assert telegram._get_sell_emoij(msg) == expected
+    assert telegram._get_sell_emoji(msg) == expected
 
 
 def test__send_msg(default_conf, mocker) -> None:
