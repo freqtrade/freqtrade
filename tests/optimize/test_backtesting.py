@@ -401,7 +401,6 @@ def test_backtesting_no_pair_left(default_conf, mocker, caplog, testdatadir) -> 
         Backtesting(default_conf)
 
 
-
 def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, tickers) -> None:
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     mocker.patch('freqtrade.exchange.Exchange.get_tickers', tickers)
@@ -426,6 +425,12 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
 
     default_conf['pairlists'] = [{"method": "StaticPairList"}, {"method": "PrecisionFilter"}, ]
     Backtesting(default_conf)
+
+    # Multiple strategies
+    default_conf['strategy_list'] = ['DefaultStrategy', 'TestStrategyLegacy']
+    with pytest.raises(OperationalException,
+                       match='PrecisionFilter not allowed for backtesting multiple strategies.'):
+        Backtesting(default_conf)
 
 
 def test_backtest(default_conf, fee, mocker, testdatadir) -> None:

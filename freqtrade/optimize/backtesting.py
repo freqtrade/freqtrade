@@ -65,20 +65,6 @@ class Backtesting:
         self.strategylist: List[IStrategy] = []
         self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
 
-        self.pairlists = PairListManager(self.exchange, self.config)
-        if 'VolumePairList' in self.pairlists.name_list:
-            raise OperationalException("VolumePairList not allowed for backtesting.")
-
-        self.pairlists.refresh_pairlist()
-
-        if len(self.pairlists.whitelist) == 0:
-            raise OperationalException("No pair in whitelist.")
-
-        if config.get('fee'):
-            self.fee = config['fee']
-        else:
-            self.fee = self.exchange.get_fee(symbol=self.pairlists.whitelist[0])
-
         if self.config.get('runmode') != RunMode.HYPEROPT:
             self.dataprovider = DataProvider(self.config, self.exchange)
             IStrategy.dp = self.dataprovider
@@ -100,6 +86,25 @@ class Backtesting:
                                        "configuration or as cli argument `--ticker-interval 5m`")
         self.timeframe = str(self.config.get('ticker_interval'))
         self.timeframe_min = timeframe_to_minutes(self.timeframe)
+
+        self.pairlists = PairListManager(self.exchange, self.config)
+        if 'VolumePairList' in self.pairlists.name_list:
+            raise OperationalException("VolumePairList not allowed for backtesting.")
+
+        if len(self.strategylist) > 1 and 'PrecisionFilter' in self.pairlists.name_list:
+            raise OperationalException(
+                "PrecisionFilter not allowed for backtesting multiple strategies."
+            )
+
+        self.pairlists.refresh_pairlist()
+
+        if len(self.pairlists.whitelist) == 0:
+            raise OperationalException("No pair in whitelist.")
+
+        if config.get('fee'):
+            self.fee = config['fee']
+        else:
+            self.fee = self.exchange.get_fee(symbol=self.pairlists.whitelist[0])
 
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
