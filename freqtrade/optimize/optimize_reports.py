@@ -65,25 +65,25 @@ def _generate_result_line(result: DataFrame, max_open_trades: int, first_column:
     """
     return {
         'key': first_column,
-        'trades': len(result.index),
-        'profit_mean': result.profit_percent.mean(),
-        'profit_mean_pct': result.profit_percent.mean() * 100.0,
-        'profit_sum': result.profit_percent.sum(),
-        'profit_sum_pct': result.profit_percent.sum() * 100.0,
-        'profit_total_abs': result.profit_abs.sum(),
-        'profit_total_pct': result.profit_percent.sum() * 100.0 / max_open_trades,
+        'trades': len(result),
+        'profit_mean': result['profit_percent'].mean(),
+        'profit_mean_pct': result['profit_percent'].mean() * 100.0,
+        'profit_sum': result['profit_percent'].sum(),
+        'profit_sum_pct': result['profit_percent'].sum() * 100.0,
+        'profit_total_abs': result['profit_abs'].sum(),
+        'profit_total_pct': result['profit_percent'].sum() * 100.0 / max_open_trades,
         'duration_avg': str(timedelta(
-                            minutes=round(result.trade_duration.mean()))
+                            minutes=round(result['trade_duration'].mean()))
                             ) if not result.empty else '0:00',
         # 'duration_max': str(timedelta(
-        #                     minutes=round(result.trade_duration.max()))
+        #                     minutes=round(result['trade_duration'].max()))
         #                     ) if not result.empty else '0:00',
         # 'duration_min': str(timedelta(
-        #                     minutes=round(result.trade_duration.min()))
+        #                     minutes=round(result['trade_duration'].min()))
         #                     ) if not result.empty else '0:00',
-        'wins': len(result[result.profit_abs > 0]),
-        'draws': len(result[result.profit_abs == 0]),
-        'losses': len(result[result.profit_abs < 0]),
+        'wins': len(result[result['profit_abs'] > 0]),
+        'draws': len(result[result['profit_abs'] == 0]),
+        'losses': len(result[result['profit_abs'] < 0]),
     }
 
 
@@ -102,8 +102,8 @@ def generate_pair_metrics(data: Dict[str, Dict], stake_currency: str, max_open_t
     tabular_data = []
 
     for pair in data:
-        result = results[results.pair == pair]
-        if skip_nan and result.profit_abs.isnull().all():
+        result = results[results['pair'] == pair]
+        if skip_nan and result['profit_abs'].isnull().all():
             continue
 
         tabular_data.append(_generate_result_line(result, max_open_trades, pair))
