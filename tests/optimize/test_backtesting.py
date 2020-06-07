@@ -666,7 +666,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
 
     mocker.patch.multiple('freqtrade.optimize.optimize_reports',
                           generate_text_table=gen_table_mock,
-                          generate_text_table_strategy=gen_strattable_mock,
+                          text_table_strategy=gen_strattable_mock,
                           generate_pair_metrics=MagicMock(),
                           generate_sell_reason_stats=sell_reason_mock,
                           generate_strategy_metrics=gen_strat_summary,

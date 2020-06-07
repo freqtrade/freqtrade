@@ -245,8 +245,7 @@ def generate_text_table(pair_results: List[Dict[str, Any]], stake_currency: str)
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")
 
 
-def generate_text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]],
-                                    stake_currency: str) -> str:
+def text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]], stake_currency: str) -> str:
     """
     Generate small table outlining Backtest results
     :param sell_reason_stats: Sell reason metrics
@@ -272,7 +271,7 @@ def generate_text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]],
     return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
 
 
-def generate_text_table_strategy(strategy_results, stake_currency: str) -> str:
+def text_table_strategy(strategy_results, stake_currency: str) -> str:
     """
     Generate summary table per strategy
     :param stake_currency: stake-currency - used to correctly name headers
@@ -304,9 +303,8 @@ def show_backtest_results(config: Dict, backtest_stats: Dict):
             print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
         print(table)
 
-        table = generate_text_table_sell_reason(sell_reason_stats=results['sell_reason_summary'],
-                                                stake_currency=stake_currency,
-                                                )
+        table = text_table_sell_reason(sell_reason_stats=results['sell_reason_summary'],
+                                       stake_currency=stake_currency)
         if isinstance(table, str):
             print(' SELL REASON STATS '.center(len(table.splitlines()[0]), '='))
         print(table)
@@ -322,7 +320,7 @@ def show_backtest_results(config: Dict, backtest_stats: Dict):
     if len(backtest_stats['strategy']) > 1:
         # Print Strategy summary table
 
-        table = generate_text_table_strategy(backtest_stats['strategy_comparison'], stake_currency)
+        table = text_table_strategy(backtest_stats['strategy_comparison'], stake_currency)
         print(' STRATEGY SUMMARY '.center(len(table.splitlines()[0]), '='))
         print(table)
         print('=' * len(table.splitlines()[0]))
