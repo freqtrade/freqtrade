@@ -659,17 +659,17 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
     mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
-    gen_table_mock = MagicMock()
+    text_table_mock = MagicMock()
     sell_reason_mock = MagicMock()
-    gen_strattable_mock = MagicMock()
-    gen_strat_summary = MagicMock()
+    strattable_mock = MagicMock()
+    strat_summary = MagicMock()
 
     mocker.patch.multiple('freqtrade.optimize.optimize_reports',
-                          generate_text_table=gen_table_mock,
-                          text_table_strategy=gen_strattable_mock,
+                          text_table_bt_results=text_table_mock,
+                          text_table_strategy=strattable_mock,
                           generate_pair_metrics=MagicMock(),
                           generate_sell_reason_stats=sell_reason_mock,
-                          generate_strategy_metrics=gen_strat_summary,
+                          generate_strategy_metrics=strat_summary,
                           )
     patched_configuration_load_config_file(mocker, default_conf)
 
@@ -690,10 +690,10 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
     start_backtesting(args)
     # 2 backtests, 4 tables
     assert backtestmock.call_count == 2
-    assert gen_table_mock.call_count == 4
-    assert gen_strattable_mock.call_count == 1
+    assert text_table_mock.call_count == 4
+    assert strattable_mock.call_count == 1
     assert sell_reason_mock.call_count == 2
-    assert gen_strat_summary.call_count == 1
+    assert strat_summary.call_count == 1
 
     # check the logs, that will contain the backtest result
     exists = [

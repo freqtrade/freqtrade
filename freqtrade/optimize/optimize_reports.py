@@ -226,7 +226,7 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
 # Start output section
 ###
 
-def generate_text_table(pair_results: List[Dict[str, Any]], stake_currency: str) -> str:
+def text_table_bt_results(pair_results: List[Dict[str, Any]], stake_currency: str) -> str:
     """
     Generates and returns a text table for the given backtest data and the results dataframe
     :param pair_results: List of Dictionaries - one entry per pair + final TOTAL row
@@ -298,7 +298,7 @@ def show_backtest_results(config: Dict, backtest_stats: Dict):
 
         # Print results
         print(f"Result for strategy {strategy}")
-        table = generate_text_table(results['results_per_pair'], stake_currency=stake_currency)
+        table = text_table_bt_results(results['results_per_pair'], stake_currency=stake_currency)
         if isinstance(table, str):
             print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
         print(table)
@@ -309,7 +309,7 @@ def show_backtest_results(config: Dict, backtest_stats: Dict):
             print(' SELL REASON STATS '.center(len(table.splitlines()[0]), '='))
         print(table)
 
-        table = generate_text_table(results['left_open_trades'], stake_currency=stake_currency)
+        table = text_table_bt_results(results['left_open_trades'], stake_currency=stake_currency)
         if isinstance(table, str):
             print(' LEFT OPEN TRADES REPORT '.center(len(table.splitlines()[0]), '='))
         print(table)
