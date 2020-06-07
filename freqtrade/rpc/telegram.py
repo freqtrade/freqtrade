@@ -3,6 +3,7 @@
 """
 This module manage Telegram communication
 """
+import json
 import logging
 from typing import Any, Callable, Dict
 
@@ -665,8 +666,8 @@ class Telegram(RPC):
             f"*Stake per trade:* `{val['stake_amount']} {val['stake_currency']}`\n"
             f"*Max open Trades:* `{val['max_open_trades']}`\n"
             f"*Minimum ROI:* `{val['minimal_roi']}`\n"
-            f"*Ask strategy:* ```\n{val['ask_strategy']}```\n"
-            f"*Bid strategy:* ```\n{val['bid_strategy']}```\n"
+            f"*Ask strategy:* ```\n{json.dumps(val['ask_strategy'])}```\n"
+            f"*Bid strategy:* ```\n{json.dumps(val['bid_strategy'])}```\n"
             f"{sl_info}"
             f"*Ticker Interval:* `{val['ticker_interval']}`\n"
             f"*Strategy:* `{val['strategy']}`\n"
