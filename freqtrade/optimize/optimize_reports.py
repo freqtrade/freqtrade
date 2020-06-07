@@ -190,7 +190,14 @@ def generate_edge_table(results: dict) -> str:
 
 
 def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
-                            all_results: Dict[str, DataFrame]):
+                            all_results: Dict[str, DataFrame]) -> Dict[str, Any]:
+    """
+    :param config: Configuration object used for backtest
+    :param btdata: Backtest data
+    :param all_results: backtest result - dictionary with { Strategy: results}.
+    :return:
+    Dictionary containing results per strategy and a stratgy summary.
+    """
     stake_currency = config['stake_currency']
     max_open_trades = config['max_open_trades']
     result: Dict[str, Any] = {'strategy': {}}
