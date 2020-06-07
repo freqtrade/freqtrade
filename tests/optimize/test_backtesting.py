@@ -401,6 +401,33 @@ def test_backtesting_no_pair_left(default_conf, mocker, caplog, testdatadir) -> 
         Backtesting(default_conf)
 
 
+
+def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, tickers) -> None:
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    mocker.patch('freqtrade.exchange.Exchange.get_tickers', tickers)
+    mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
+    mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest')
+    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
+                 PropertyMock(return_value=['XRP/BTC']))
+    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.refresh_pairlist')
+
+    default_conf['ticker_interval'] = "1m"
+    default_conf['datadir'] = testdatadir
+    default_conf['export'] = None
+    # Use stoploss from strategy
+    del default_conf['stoploss']
+    default_conf['timerange'] = '20180101-20180102'
+
+    default_conf['pairlists'] = [{"method": "VolumePairList", "number_assets": 5}]
+    with pytest.raises(OperationalException, match='VolumePairList not allowed for backtesting.'):
+        Backtesting(default_conf)
+
+    default_conf['pairlists'] = [{"method": "StaticPairList"}, {"method": "PrecisionFilter"}, ]
+    Backtesting(default_conf)
+
+
 def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
     default_conf['ask_strategy']['use_sell_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
