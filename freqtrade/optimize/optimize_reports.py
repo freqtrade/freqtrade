@@ -6,6 +6,7 @@ from typing import Any, Dict, List
 from pandas import DataFrame
 from tabulate import tabulate
 
+from freqtrade.data.btanalysis import calculate_max_drawdown
 from freqtrade.misc import file_dump_json
 
 logger = logging.getLogger(__name__)
@@ -212,11 +213,20 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
                                                   max_open_trades=max_open_trades,
                                                   results=results.loc[results['open_at_end']],
                                                   skip_nan=True)
+
+        max_drawdown, drawdown_start, drawdown_end = calculate_max_drawdown(
+            results, value_col='profit_percent')
+
         strat_stats = {
             'trades': backtest_result_to_list(results),
             'results_per_pair': pair_results,
             'sell_reason_summary': sell_reason_stats,
             'left_open_trades': left_open_results,
+            'max_drawdown': max_drawdown,
+            'drawdown_start': drawdown_start,
+            'drawdown_start_ts': drawdown_start.timestamp(),
+            'drawdown_end': drawdown_end,
+            'drawdown_end_ts': drawdown_end.timestamp(),
             }
         result['strategy'][strategy] = strat_stats
 
@@ -298,6 +308,16 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")
 
 
+def text_table_add_metrics(strategy_results: Dict) -> str:
+    xxx = [
+        ('Max Drawdown', f"{round(strategy_results['max_drawdown'] * 100, 2)}%"),
+        ('Drawdown Start', strategy_results['drawdown_start'].strftime('%Y-%m-%d %H:%M:%S')),
+        ('Drawdown End', strategy_results['drawdown_end'].strftime('%Y-%m-%d %H:%M:%S')),
+    ]
+
+    return tabulate(xxx, headers=["Metric", "Value"], tablefmt="orgtbl")
+
+
 def show_backtest_results(config: Dict, backtest_stats: Dict):
     stake_currency = config['stake_currency']
 
@@ -320,6 +340,12 @@ def show_backtest_results(config: Dict, backtest_stats: Dict):
         if isinstance(table, str):
             print(' LEFT OPEN TRADES REPORT '.center(len(table.splitlines()[0]), '='))
         print(table)
+
+        table = text_table_add_metrics(results)
+        if isinstance(table, str):
+            print(' SUMMARY METRICS '.center(len(table.splitlines()[0]), '='))
+        print(table)
+
         if isinstance(table, str):
             print('=' * len(table.splitlines()[0]))
         print()
