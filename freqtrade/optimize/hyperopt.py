@@ -12,7 +12,7 @@ from math import ceil
 from collections import OrderedDict
 from operator import itemgetter
 from pathlib import Path
-from pprint import pprint
+from pprint import pformat
 from typing import Any, Dict, List, Optional
 
 import rapidjson
@@ -244,11 +244,21 @@ class Hyperopt:
     def _params_pretty_print(params, space: str, header: str) -> None:
         if space in params:
             space_params = Hyperopt._space_params(params, space, 5)
+            print(f"\n    # {header}")
             if space == 'stoploss':
-                print(header, space_params.get('stoploss'))
+                print("    stoploss =", space_params.get('stoploss'))
+            elif space == 'roi':
+                minimal_roi_result = rapidjson.dumps(
+                    OrderedDict(
+                        (str(k), v) for k, v in space_params.items()
+                    ),
+                    default=str, indent=4, number_mode=rapidjson.NM_NATIVE)
+                minimal_roi_result = minimal_roi_result.replace("\n", "\n    ")
+                print(f"    minimal_roi = {minimal_roi_result}")
             else:
-                print(header)
-                pprint(space_params, indent=4)
+                params_result = pformat(space_params, indent=4).replace("}", "\n}")
+                params_result = params_result.replace("{", "{\n ").replace("\n", "\n    ")
+                print(f"    {space}_params = {params_result}")
 
     @staticmethod
     def _space_params(params, space: str, r: int = None) -> Dict:
