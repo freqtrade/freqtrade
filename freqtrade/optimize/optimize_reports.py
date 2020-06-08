@@ -1,5 +1,5 @@
 import logging
-from datetime import timedelta
+from datetime import timedelta, datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -214,21 +214,32 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
                                                   results=results.loc[results['open_at_end']],
                                                   skip_nan=True)
 
-        max_drawdown, drawdown_start, drawdown_end = calculate_max_drawdown(
-            results, value_col='profit_percent')
-
         strat_stats = {
             'trades': backtest_result_to_list(results),
             'results_per_pair': pair_results,
             'sell_reason_summary': sell_reason_stats,
             'left_open_trades': left_open_results,
-            'max_drawdown': max_drawdown,
-            'drawdown_start': drawdown_start,
-            'drawdown_start_ts': drawdown_start.timestamp(),
-            'drawdown_end': drawdown_end,
-            'drawdown_end_ts': drawdown_end.timestamp(),
             }
         result['strategy'][strategy] = strat_stats
+
+        try:
+            max_drawdown, drawdown_start, drawdown_end = calculate_max_drawdown(
+                results, value_col='profit_percent')
+            strat_stats.update({
+                'max_drawdown': max_drawdown,
+                'drawdown_start': drawdown_start,
+                'drawdown_start_ts': drawdown_start.timestamp(),
+                'drawdown_end': drawdown_end,
+                'drawdown_end_ts': drawdown_end.timestamp(),
+            })
+        except ValueError:
+            strat_stats.update({
+                'max_drawdown': 0.0,
+                'drawdown_start': datetime.min,
+                'drawdown_start_ts': datetime.min.timestamp(),
+                'drawdown_end': datetime.min,
+                'drawdown_end_ts': datetime.min.timestamp(),
+            })
 
     strategy_results = generate_strategy_metrics(stake_currency=stake_currency,
                                                  max_open_trades=max_open_trades,
@@ -309,13 +320,16 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
 
 
 def text_table_add_metrics(strategy_results: Dict) -> str:
-    xxx = [
-        ('Max Drawdown', f"{round(strategy_results['max_drawdown'] * 100, 2)}%"),
-        ('Drawdown Start', strategy_results['drawdown_start'].strftime('%Y-%m-%d %H:%M:%S')),
-        ('Drawdown End', strategy_results['drawdown_end'].strftime('%Y-%m-%d %H:%M:%S')),
-    ]
+    if len(strategy_results['trades']) > 0:
+        metrics = [
+            ('Max Drawdown', f"{round(strategy_results['max_drawdown'] * 100, 2)}%"),
+            ('Drawdown Start', strategy_results['drawdown_start'].strftime('%Y-%m-%d %H:%M:%S')),
+            ('Drawdown End', strategy_results['drawdown_end'].strftime('%Y-%m-%d %H:%M:%S')),
+        ]
 
-    return tabulate(xxx, headers=["Metric", "Value"], tablefmt="orgtbl")
+        return tabulate(metrics, headers=["Metric", "Value"], tablefmt="orgtbl")
+    else:
+        return
 
 
 def show_backtest_results(config: Dict, backtest_stats: Dict):
