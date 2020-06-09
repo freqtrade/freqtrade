@@ -333,6 +333,9 @@ Configuration:
 !!! Note
     If `stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new order.
 
+!!! Warning "Using market orders"
+    Please read the section [Market order pricing](#market-order-pricing) section when using market orders.
+
 !!! Warning "Warning: stoploss_on_exchange failures"
     If stoploss on exchange creation fails for some reason, then an "emergency sell" is initiated. By default, this will sell the asset using a market order. The order-type for the emergency-sell can be changed by setting the `emergencysell` value in the `order_types` dictionary - however this is not advised.
 
@@ -459,6 +462,9 @@ Prices are always retrieved right before an order is placed, either by querying 
 !!! Note
     Orderbook data used by Freqtrade are the data retrieved from exchange by the ccxt's function `fetch_order_book()`, i.e. are usually data from the L2-aggregated orderbook, while the ticker data are the structures returned by the ccxt's `fetch_ticker()`/`fetch_tickers()` functions. Refer to the ccxt library [documentation](https://github.com/ccxt/ccxt/wiki/Manual#market-data) for more details.
 
+!!! Warning "Using market orders"
+    Please read the section [Market order pricing](#market-order-pricing) section when using market orders.
+
 ### Buy price
 
 #### Check depth of market
@@ -552,6 +558,29 @@ A fixed slot (mirroring `bid_strategy.order_book_top`) can be defined by setting
 #### Sell price without Orderbook enabled
 
 When not using orderbook (`ask_strategy.use_order_book=False`), the price at the `ask_strategy.price_side` side (defaults to `"ask"`) from the ticker will be used as the sell price.
+
+### Market order pricing
+
+When using market orders, prices should be configured to use the "correct" side of the orderbook to allow realistic pricing detection.
+Assuming both buy and sell are using market orders, a configuration similar to the following might be used
+
+``` jsonc
+  "order_types": {
+    "buy": "market",
+    "sell": "market"
+    // ...
+  },
+  "bid_strategy": {
+    "price_side": "ask",
+    //...
+  },
+  "ask_strategy":{
+    "price_side": "bid",
+    //...
+  },
+```
+
+Obviously, if only one side is using limit orders, different pricing combinations can be used.
 
 ## Pairlists and Pairlist Handlers
 
