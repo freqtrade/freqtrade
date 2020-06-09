@@ -7,6 +7,7 @@ from arrow import Arrow
 from pandas import DataFrame
 from tabulate import tabulate
 
+from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data.btanalysis import calculate_max_drawdown
 from freqtrade.misc import file_dump_json
 
@@ -338,15 +339,15 @@ def text_table_add_metrics(strategy_results: Dict) -> str:
         metrics = [
             ('Total trades', strategy_results['total_trades']),
             ('First trade', datetime.fromtimestamp(min_trade[2],
-                                                   tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')),
+                                                   tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)),
             ('First trade Pair', min_trade[0]),
-            ('Backtesting from', strategy_results['backtest_start'].strftime('%Y-%m-%d %H:%M:%S')),
-            ('Backtesting to', strategy_results['backtest_end'].strftime('%Y-%m-%d %H:%M:%S')),
+            ('Backtesting from', strategy_results['backtest_start'].strftime(DATETIME_PRINT_FORMAT)),
+            ('Backtesting to', strategy_results['backtest_end'].strftime(DATETIME_PRINT_FORMAT)),
             ('Trades per day', strategy_results['trades_per_day']),
             ('', ''),  # Empty line to improve readability
             ('Max Drawdown', f"{round(strategy_results['max_drawdown'] * 100, 2)}%"),
-            ('Drawdown Start', strategy_results['drawdown_start'].strftime('%Y-%m-%d %H:%M:%S')),
-            ('Drawdown End', strategy_results['drawdown_end'].strftime('%Y-%m-%d %H:%M:%S')),
+            ('Drawdown Start', strategy_results['drawdown_start'].strftime(DATETIME_PRINT_FORMAT)),
+            ('Drawdown End', strategy_results['drawdown_end'].strftime(DATETIME_PRINT_FORMAT)),
         ]
 
         return tabulate(metrics, headers=["Metric", "Value"], tablefmt="orgtbl")

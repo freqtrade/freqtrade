@@ -11,6 +11,7 @@ from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 import arrow
 from pandas import DataFrame
 
+from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.configuration import (TimeRange, remove_credentials,
                                      validate_config_consistency)
 from freqtrade.data import history
@@ -137,10 +138,10 @@ class Backtesting:
 
         min_date, max_date = history.get_timerange(data)
 
-        logger.info(
-            'Loading data from %s up to %s (%s days)..',
-            min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
-        )
+        logger.info(f'Loading data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
+                    f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
+                    f'({(max_date - min_date).days} days)..')
+
         # Adjust startts forward if not enough data is available
         timerange.adjust_start_if_necessary(timeframe_to_seconds(self.timeframe),
                                             self.required_startup, min_date)
@@ -400,10 +401,9 @@ class Backtesting:
                 preprocessed[pair] = trim_dataframe(df, timerange)
             min_date, max_date = history.get_timerange(preprocessed)
 
-            logger.info(
-                'Backtesting with data from %s up to %s (%s days)..',
-                min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
-            )
+            logger.info(f'Backtesting with data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
+                        f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
+                        f'({(max_date - min_date).days} days)..')
             # Execute backtest and print results
             all_results[self.strategy.get_strategy_name()] = self.backtest(
                 processed=preprocessed,

@@ -9,7 +9,7 @@ import utils_find_1st as utf1st
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
+from freqtrade.constants import UNLIMITED_STAKE_AMOUNT, DATETIME_PRINT_FORMAT
 from freqtrade.exceptions import OperationalException
 from freqtrade.data.history import get_timerange, load_data, refresh_data
 from freqtrade.strategy.interface import SellType
@@ -121,12 +121,9 @@ class Edge:
 
         # Print timeframe
         min_date, max_date = get_timerange(preprocessed)
-        logger.info(
-            'Measuring data from %s up to %s (%s days) ...',
-            min_date.isoformat(),
-            max_date.isoformat(),
-            (max_date - min_date).days
-        )
+        logger.info(f'Measuring data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
+                    f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
+                    f'({(max_date - min_date).days} days)..')
         headers = ['date', 'buy', 'open', 'close', 'sell', 'high', 'low']
 
         trades: list = []
