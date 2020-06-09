@@ -141,12 +141,12 @@ def test_main_operational_exception1(mocker, default_conf, caplog) -> None:
     assert log_has_re(r'SIGINT.*', caplog)
 
 
-def test_main_reload_conf(mocker, default_conf, caplog) -> None:
+def test_main_reload_config(mocker, default_conf, caplog) -> None:
     patch_exchange(mocker)
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.cleanup', MagicMock())
     # Simulate Running, reload, running workflow
     worker_mock = MagicMock(side_effect=[State.RUNNING,
-                                         State.RELOAD_CONF,
+                                         State.RELOAD_CONFIG,
                                          State.RUNNING,
                                          OperationalException("Oh snap!")])
     mocker.patch('freqtrade.worker.Worker._worker', worker_mock)

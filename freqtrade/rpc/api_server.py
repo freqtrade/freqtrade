@@ -172,8 +172,8 @@ class ApiServer(RPC):
         self.app.add_url_rule(f'{BASE_URI}/stop', 'stop', view_func=self._stop, methods=['POST'])
         self.app.add_url_rule(f'{BASE_URI}/stopbuy', 'stopbuy',
                               view_func=self._stopbuy, methods=['POST'])
-        self.app.add_url_rule(f'{BASE_URI}/reload_conf', 'reload_conf',
-                              view_func=self._reload_conf, methods=['POST'])
+        self.app.add_url_rule(f'{BASE_URI}/reload_config', 'reload_config',
+                              view_func=self._reload_config, methods=['POST'])
         # Info commands
         self.app.add_url_rule(f'{BASE_URI}/balance', 'balance',
                               view_func=self._balance, methods=['GET'])
@@ -304,12 +304,12 @@ class ApiServer(RPC):
 
     @require_login
     @rpc_catch_errors
-    def _reload_conf(self):
+    def _reload_config(self):
         """
-        Handler for /reload_conf.
+        Handler for /reload_config.
         Triggers a config file reload
         """
-        msg = self._rpc_reload_conf()
+        msg = self._rpc_reload_config()
         return self.rest_dump(msg)
 
     @require_login

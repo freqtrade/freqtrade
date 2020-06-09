@@ -95,7 +95,9 @@ class Telegram(RPC):
             CommandHandler('performance', self._performance),
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
-            CommandHandler('reload_conf', self._reload_conf),
+            CommandHandler('reload_conf', self._reload_config),
+            CommandHandler('reload_config', self._reload_config),
+            CommandHandler('show_conf', self._reload_config),
             CommandHandler('show_config', self._show_config),
             CommandHandler('stopbuy', self._stopbuy),
             CommandHandler('whitelist', self._whitelist),
@@ -436,15 +438,15 @@ class Telegram(RPC):
         self._send_msg('Status: `{status}`'.format(**msg))
 
     @authorized_only
-    def _reload_conf(self, update: Update, context: CallbackContext) -> None:
+    def _reload_config(self, update: Update, context: CallbackContext) -> None:
         """
-        Handler for /reload_conf.
+        Handler for /reload_config.
         Triggers a config file reload
         :param bot: telegram bot
         :param update: message update
         :return: None
         """
-        msg = self._rpc_reload_conf()
+        msg = self._rpc_reload_config()
         self._send_msg('Status: `{status}`'.format(**msg))
 
     @authorized_only
@@ -617,7 +619,7 @@ class Telegram(RPC):
                    "\n"
                    "*/balance:* `Show account balance per currency`\n"
                    "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n"
-                   "*/reload_conf:* `Reload configuration file` \n"
+                   "*/reload_config:* `Reload configuration file` \n"
                    "*/show_config:* `Show running configuration` \n"
                    "*/whitelist:* `Show current whitelist` \n"
                    "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs "

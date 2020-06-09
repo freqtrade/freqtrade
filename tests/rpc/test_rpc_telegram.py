@@ -73,8 +73,9 @@ def test_init(default_conf, mocker, caplog) -> None:
 
     message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
                    "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], "
-                   "['performance'], ['daily'], ['count'], ['reload_conf'], ['show_config'], "
-                   "['stopbuy'], ['whitelist'], ['blacklist'], ['edge'], ['help'], ['version']]")
+                   "['performance'], ['daily'], ['count'], ['reload_conf'], ['reload_config'], "
+                   "['show_conf'], ['show_config'], ['stopbuy'], ['whitelist'], "
+                   "['blacklist'], ['edge'], ['help'], ['version']]")
 
     assert log_has(message_str, caplog)
 
@@ -666,11 +667,11 @@ def test_stopbuy_handle(default_conf, update, mocker) -> None:
     telegram._stopbuy(update=update, context=MagicMock())
     assert freqtradebot.config['max_open_trades'] == 0
     assert msg_mock.call_count == 1
-    assert 'No more buy will occur from now. Run /reload_conf to reset.' \
+    assert 'No more buy will occur from now. Run /reload_config to reset.' \
         in msg_mock.call_args_list[0][0][0]
 
 
-def test_reload_conf_handle(default_conf, update, mocker) -> None:
+def test_reload_config_handle(default_conf, update, mocker) -> None:
     msg_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
@@ -683,8 +684,8 @@ def test_reload_conf_handle(default_conf, update, mocker) -> None:
 
     freqtradebot.state = State.RUNNING
     assert freqtradebot.state == State.RUNNING
-    telegram._reload_conf(update=update, context=MagicMock())
-    assert freqtradebot.state == State.RELOAD_CONF
+    telegram._reload_config(update=update, context=MagicMock())
+    assert freqtradebot.state == State.RELOAD_CONFIG
     assert msg_mock.call_count == 1
     assert 'reloading config' in msg_mock.call_args_list[0][0][0]
 

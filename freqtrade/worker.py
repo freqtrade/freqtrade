@@ -71,7 +71,7 @@ class Worker:
         state = None
         while True:
             state = self._worker(old_state=state)
-            if state == State.RELOAD_CONF:
+            if state == State.RELOAD_CONFIG:
                 self._reconfigure()
 
     def _worker(self, old_state: Optional[State]) -> State:

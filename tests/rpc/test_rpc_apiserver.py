@@ -251,10 +251,10 @@ def test_api_cleanup(default_conf, mocker, caplog):
 def test_api_reloadconf(botclient):
     ftbot, client = botclient
 
-    rc = client_post(client, f"{BASE_URI}/reload_conf")
+    rc = client_post(client, f"{BASE_URI}/reload_config")
     assert_response(rc)
     assert rc.json == {'status': 'reloading config ...'}
-    assert ftbot.state == State.RELOAD_CONF
+    assert ftbot.state == State.RELOAD_CONFIG
 
 
 def test_api_stopbuy(botclient):
@@ -263,7 +263,7 @@ def test_api_stopbuy(botclient):
 
     rc = client_post(client, f"{BASE_URI}/stopbuy")
     assert_response(rc)
-    assert rc.json == {'status': 'No more buy will occur from now. Run /reload_conf to reset.'}
+    assert rc.json == {'status': 'No more buy will occur from now. Run /reload_config to reset.'}
     assert ftbot.config['max_open_trades'] == 0
 
 

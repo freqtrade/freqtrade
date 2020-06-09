@@ -557,7 +557,7 @@ Locks can also be lifted manually, by calling `self.unlock_pair(pair)`.
 To verify if a pair is currently locked, use `self.is_pair_locked(pair)`.
 
 !!! Note
-    Locked pairs are not persisted, so a restart of the bot, or calling `/reload_conf` will reset locked pairs.
+    Locked pairs are not persisted, so a restart of the bot, or calling `/reload_config` will reset locked pairs.
 
 !!! Warning
     Locking pairs is not functioning during backtesting.
