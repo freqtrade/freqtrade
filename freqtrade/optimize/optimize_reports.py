@@ -250,9 +250,9 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
             strat_stats.update({
                 'max_drawdown': 0.0,
                 'drawdown_start': datetime.min,
-                'drawdown_start_ts': datetime.min.timestamp(),
+                'drawdown_start_ts': datetime(1970, 1, 1).timestamp(),
                 'drawdown_end': datetime.min,
-                'drawdown_end_ts': datetime.min.timestamp(),
+                'drawdown_end_ts': datetime(1970, 1, 1).timestamp(),
             })
 
     strategy_results = generate_strategy_metrics(stake_currency=stake_currency,

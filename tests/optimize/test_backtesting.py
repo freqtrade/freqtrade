@@ -349,8 +349,8 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     exists = [
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
-        'Backtesting with data from 2017-11-14T21:17:00+00:00 '
-        'up to 2017-11-14T22:59:00+00:00 (0 days)..'
+        'Backtesting with data from 2017-11-14 21:17:00 '
+        'up to 2017-11-14 22:59:00 (0 days)..'
     ]
     for line in exists:
         assert log_has(line, caplog)
@@ -672,10 +672,10 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
         f'Using data directory: {testdatadir} ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
-        'Loading data from 2017-11-14T20:57:00+00:00 '
-        'up to 2017-11-14T22:58:00+00:00 (0 days)..',
-        'Backtesting with data from 2017-11-14T21:17:00+00:00 '
-        'up to 2017-11-14T22:58:00+00:00 (0 days)..',
+        'Loading data from 2017-11-14 20:57:00 '
+        'up to 2017-11-14 22:58:00 (0 days)..',
+        'Backtesting with data from 2017-11-14 21:17:00 '
+        'up to 2017-11-14 22:58:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...'
     ]
 
@@ -735,10 +735,10 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         f'Using data directory: {testdatadir} ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
-        'Loading data from 2017-11-14T20:57:00+00:00 '
-        'up to 2017-11-14T22:58:00+00:00 (0 days)..',
-        'Backtesting with data from 2017-11-14T21:17:00+00:00 '
-        'up to 2017-11-14T22:58:00+00:00 (0 days)..',
+        'Loading data from 2017-11-14 20:57:00 '
+        'up to 2017-11-14 22:58:00 (0 days)..',
+        'Backtesting with data from 2017-11-14 21:17:00 '
+        'up to 2017-11-14 22:58:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...',
         'Running backtesting for Strategy DefaultStrategy',
         'Running backtesting for Strategy TestStrategyLegacy',
@@ -818,10 +818,10 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
         f'Using data directory: {testdatadir} ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
-        'Loading data from 2017-11-14T20:57:00+00:00 '
-        'up to 2017-11-14T22:58:00+00:00 (0 days)..',
-        'Backtesting with data from 2017-11-14T21:17:00+00:00 '
-        'up to 2017-11-14T22:58:00+00:00 (0 days)..',
+        'Loading data from 2017-11-14 20:57:00 '
+        'up to 2017-11-14 22:58:00 (0 days)..',
+        'Backtesting with data from 2017-11-14 21:17:00 '
+        'up to 2017-11-14 22:58:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...',
         'Running backtesting for Strategy DefaultStrategy',
         'Running backtesting for Strategy TestStrategyLegacy',
