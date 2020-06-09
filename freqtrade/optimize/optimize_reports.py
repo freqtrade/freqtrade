@@ -1,8 +1,9 @@
 import logging
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
+from arrow import Arrow
 from pandas import DataFrame
 from tabulate import tabulate
 
@@ -191,11 +192,15 @@ def generate_edge_table(results: dict) -> str:
 
 
 def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
-                            all_results: Dict[str, DataFrame]) -> Dict[str, Any]:
+                            all_results: Dict[str, DataFrame],
+                            min_date: Arrow, max_date: Arrow
+                            ) -> Dict[str, Any]:
     """
     :param config: Configuration object used for backtest
     :param btdata: Backtest data
     :param all_results: backtest result - dictionary with { Strategy: results}.
+    :param min_date: Backtest start date
+    :param max_date: Backtest end date
     :return:
     Dictionary containing results per strategy and a stratgy summary.
     """
@@ -214,11 +219,19 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
                                                   results=results.loc[results['open_at_end']],
                                                   skip_nan=True)
 
+        backtest_days = (max_date - min_date).days
         strat_stats = {
             'trades': backtest_result_to_list(results),
             'results_per_pair': pair_results,
             'sell_reason_summary': sell_reason_stats,
             'left_open_trades': left_open_results,
+            'total_trades': len(results),
+            'backtest_start': min_date.datetime,
+            'backtest_start_ts': min_date.timestamp,
+            'backtest_end': max_date.datetime,
+            'backtest_end_ts': max_date.timestamp,
+            'backtest_days': backtest_days,
+            'trades_per_day': round(len(results) / backtest_days, 2) if backtest_days > 0 else None
             }
         result['strategy'][strategy] = strat_stats
 
@@ -321,7 +334,16 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
 
 def text_table_add_metrics(strategy_results: Dict) -> str:
     if len(strategy_results['trades']) > 0:
+        min_trade = min(strategy_results['trades'], key=lambda x: x[2])
         metrics = [
+            ('Total trades', strategy_results['total_trades']),
+            ('First trade', datetime.fromtimestamp(min_trade[2],
+                                                   tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')),
+            ('First trade Pair', min_trade[0]),
+            ('Backtesting from', strategy_results['backtest_start'].strftime('%Y-%m-%d %H:%M:%S')),
+            ('Backtesting to', strategy_results['backtest_end'].strftime('%Y-%m-%d %H:%M:%S')),
+            ('Trades per day', strategy_results['trades_per_day']),
+            ('', ''),  # Empty line to improve readability
             ('Max Drawdown', f"{round(strategy_results['max_drawdown'] * 100, 2)}%"),
             ('Drawdown Start', strategy_results['drawdown_start'].strftime('%Y-%m-%d %H:%M:%S')),
             ('Drawdown End', strategy_results['drawdown_end'].strftime('%Y-%m-%d %H:%M:%S')),

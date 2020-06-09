@@ -417,5 +417,6 @@ class Backtesting:
         if self.config.get('export', False):
             store_backtest_result(self.config['exportfilename'], all_results)
         # Show backtest results
-        stats = generate_backtest_stats(self.config, data, all_results)
+        stats = generate_backtest_stats(self.config, data, all_results,
+                                        min_date=min_date, max_date=max_date)
         show_backtest_results(self.config, stats)
