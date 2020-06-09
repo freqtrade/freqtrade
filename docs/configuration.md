@@ -591,7 +591,7 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 
 #### Volume Pair List
 
-`VolumePairList` employs sorting/filtering of pairs by their trading volume. I selects `number_assets` top pairs with sorting based on the `sort_key` (which can only be `quoteVolume`).
+`VolumePairList` employs sorting/filtering of pairs by their trading volume. It selects `number_assets` top pairs with sorting based on the `sort_key` (which can only be `quoteVolume`).
 
 When used in the chain of Pairlist Handlers in a non-leading position (after StaticPairList and other Pairlist Filters), `VolumePairList` considers outputs of previous Pairlist Handlers, adding its sorting/selection of the pairs by the trading volume.
 
@@ -609,7 +609,7 @@ The `refresh_period` setting allows to define the period (in seconds), at which 
         "number_assets": 20,
         "sort_key": "quoteVolume",
         "refresh_period": 1800,
-],
+}],
 ```
 
 #### PrecisionFilter
