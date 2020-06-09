@@ -21,6 +21,14 @@ class DependencyException(FreqtradeException):
     """
 
 
+class PricingError(DependencyException):
+    """
+    Subclass of DependencyException.
+    Indicates that the price could not be determined.
+    Implicitly a buy / sell operation.
+    """
+
+
 class InvalidOrderException(FreqtradeException):
     """
     This is returned when the order is not valid. Example:
@@ -34,4 +42,11 @@ class TemporaryError(FreqtradeException):
     Temporary network or exchange related error.
     This could happen when an exchange is congested, unavailable, or the user
     has networking problems. Usually resolves itself after a time.
+    """
+
+
+class StrategyError(FreqtradeException):
+    """
+    Errors with custom user-code deteced.
+    Usually caused by errors in the strategy.
     """

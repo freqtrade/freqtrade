@@ -3,6 +3,9 @@
 """
 bot constants
 """
+from typing import List, Tuple
+
+
 DEFAULT_CONFIG = 'config.json'
 DEFAULT_EXCHANGE = 'bittrex'
 PROCESS_THROTTLE_SECS = 5  # sec
@@ -19,11 +22,14 @@ ORDERBOOK_SIDES = ['ask', 'bid']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
-                       'PrecisionFilter', 'PriceFilter', 'SpreadFilter']
+                       'PrecisionFilter', 'PriceFilter', 'ShuffleFilter', 'SpreadFilter']
 AVAILABLE_DATAHANDLERS = ['json', 'jsongz']
 DRY_RUN_WALLET = 1000
 MATH_CLOSE_PREC = 1e-14  # Precision used for float comparisons
 DEFAULT_DATAFRAME_COLUMNS = ['date', 'open', 'high', 'low', 'close', 'volume']
+# Don't modify sequence of DEFAULT_TRADES_COLUMNS
+# it has wide consequences for stored trades files
+DEFAULT_TRADES_COLUMNS = ['timestamp', 'id', 'type', 'side', 'price', 'amount', 'cost']
 
 USERPATH_HYPEROPTS = 'hyperopts'
 USERPATH_STRATEGIES = 'strategies'
@@ -85,6 +91,7 @@ CONF_SCHEMA = {
         'fiat_display_currency': {'type': 'string', 'enum': SUPPORTED_FIAT},
         'dry_run': {'type': 'boolean'},
         'dry_run_wallet': {'type': 'number', 'default': DRY_RUN_WALLET},
+        'cancel_open_orders_on_exit': {'type': 'boolean', 'default': False},
         'process_only_new_candles': {'type': 'boolean'},
         'minimal_roi': {
             'type': 'object',
@@ -214,12 +221,14 @@ CONF_SCHEMA = {
                 },
                 'username': {'type': 'string'},
                 'password': {'type': 'string'},
+                'verbosity': {'type': 'string', 'enum': ['error', 'info']},
             },
             'required': ['enabled', 'listen_ip_address', 'listen_port', 'username', 'password']
         },
         'db_url': {'type': 'string'},
         'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
         'forcebuy_enable': {'type': 'boolean'},
+        'disable_dataframe_checks': {'type': 'boolean'},
         'internals': {
             'type': 'object',
             'default': {},
@@ -278,7 +287,6 @@ CONF_SCHEMA = {
                 'process_throttle_secs': {'type': 'integer', 'minimum': 600},
                 'calculate_since_number_of_days': {'type': 'integer'},
                 'allowed_risk': {'type': 'number'},
-                'capital_available_percentage': {'type': 'number'},
                 'stoploss_range_min': {'type': 'number'},
                 'stoploss_range_max': {'type': 'number'},
                 'stoploss_range_step': {'type': 'number'},
@@ -318,3 +326,13 @@ SCHEMA_MINIMAL_REQUIRED = [
     'dataformat_ohlcv',
     'dataformat_trades',
 ]
+
+CANCEL_REASON = {
+    "TIMEOUT": "cancelled due to timeout",
+    "PARTIALLY_FILLED": "partially filled - keeping order open",
+    "ALL_CANCELLED": "cancelled (all unfilled and partially filled open orders cancelled)",
+    "CANCELLED_ON_EXCHANGE": "cancelled on exchange",
+}
+
+# List of pairs with their timeframes
+ListPairsWithTimeframes = List[Tuple[str, str]]

@@ -217,7 +217,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "print_json": Arg(
         '--print-json',
-        help='Print best result detailization in JSON format.',
+        help='Print output in JSON format.',
         action='store_true',
         default=False,
     ),
@@ -355,7 +355,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "dataformat_ohlcv": Arg(
         '--data-format-ohlcv',
-        help='Storage format for downloaded ohlcv data. (default: `%(default)s`).',
+        help='Storage format for downloaded candle (OHLCV) data. (default: `%(default)s`).',
         choices=constants.AVAILABLE_DATAHANDLERS,
         default='json'
     ),
@@ -372,8 +372,8 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "timeframes": Arg(
         '-t', '--timeframes',
-        help=f'Specify which tickers to download. Space-separated list. '
-        f'Default: `1m 5m`.',
+        help='Specify which tickers to download. Space-separated list. '
+        'Default: `1m 5m`.',
         choices=['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h',
                  '6h', '8h', '12h', '1d', '3d', '1w'],
         default=['1m', '5m'],
@@ -387,9 +387,9 @@ AVAILABLE_CLI_OPTIONS = {
     # Templating options
     "template": Arg(
         '--template',
-        help='Use a template which is either `minimal` or '
-        '`full` (containing multiple sample indicators). Default: `%(default)s`.',
-        choices=['full', 'minimal'],
+        help='Use a template which is either `minimal`, '
+        '`full` (containing multiple sample indicators) or `advanced`. Default: `%(default)s`.',
+        choices=['full', 'minimal', 'advanced'],
         default='full',
     ),
     # Plot dataframe
@@ -413,12 +413,22 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='INT',
         default=750,
     ),
+    "no_trades": Arg(
+        '--no-trades',
+        help='Skip using trades from backtesting file and DB.',
+        action='store_true',
+    ),
     "trade_source": Arg(
         '--trade-source',
         help='Specify the source for trades (Can be DB or file (backtest file)) '
         'Default: %(default)s',
         choices=["DB", "file"],
         default="file",
+    ),
+    "trade_ids": Arg(
+        '--trade-ids',
+        help='Specify the list of trade ids.',
+        nargs='+',
     ),
     # hyperopt-list, hyperopt-show
     "hyperopt_list_profitable": Arg(

@@ -30,6 +30,15 @@ Binance has been split into 3, and users must use the correct ccxt exchange ID f
 The Kraken API does only provide 720 historic candles, which is sufficient for Freqtrade dry-run and live trade modes, but is a problem for backtesting.
 To download data for the Kraken exchange, using `--dl-trades` is mandatory, otherwise the bot will download the same 720 candles over and over, and you'll not have enough backtest data.
 
+Due to the heavy rate-limiting applied by Kraken, the following configuration section should be used to download data:
+
+``` json
+    "ccxt_async_config": {
+        "enableRateLimit": true,
+        "rateLimit": 3100
+    },
+```
+
 ## Bittrex
 
 ### Order types
@@ -62,6 +71,25 @@ res = [ f"{x['MarketCurrency']}/{x['BaseCurrency']}" for x in ct.publicGetMarket
 print(res)
 ```
 
+## FTX
+
+### Using subaccounts
+
+To use subaccounts with FTX, you need to edit the configuration and add the following:
+
+``` json
+"exchange": {
+    "ccxt_config": {
+        "headers": {
+            "FTX-SUBACCOUNT": "name"
+        }
+    },
+}
+```
+
+!!! Note
+    Older versions of freqtrade may require this key to be added to `"ccxt_async_config"` as well.
+
 ## All exchanges
 
 Should you experience constant errors with Nonce (like `InvalidNonce`), it is best to regenerate the API keys. Resetting Nonce is difficult and it's usually easier to regenerate the API keys.
@@ -74,23 +102,13 @@ Should you experience constant errors with Nonce (like `InvalidNonce`), it is be
 $ pip3 install web3
 ```
 
-### Send incomplete candles to the strategy
+### Getting latest price / Incomplete candles
 
-Most exchanges return incomplete candles via their ohlcv / klines interface.
-By default, Freqtrade assumes that incomplete candles are returned and removes the last candle assuming it's an incomplete candle.
+Most exchanges return current incomplete candle via their OHLCV/klines API interface.
+By default, Freqtrade assumes that incomplete candle is fetched from the exchange and removes the last candle assuming it's the incomplete candle.
 
 Whether your exchange returns incomplete candles or not can be checked using [the helper script](developer.md#Incomplete-candles) from the Contributor documentation.
 
-If the exchange does return incomplete candles and you would like to have incomplete candles in your strategy, you can set the following parameter in the configuration file.
+Due to the danger of repainting, Freqtrade does not allow you to use this incomplete candle.
 
-``` json
-{
-
-    "exchange": {
-        "_ft_has_params": {"ohlcv_partial_candle": false}
-    }
-}
-```
-
-!!! Warning "Danger of repainting"
-    Changing this parameter makes the strategy responsible to avoid repainting and handle this accordingly. Doing this is therefore not recommended, and should only be performed by experienced users who are fully aware of the impact this setting has.
+However, if it is based on the need for the latest price for your strategy - then this requirement can be acquired using the [data provider](strategy-customization.md#possible-options-for-dataprovider) from within the strategy.

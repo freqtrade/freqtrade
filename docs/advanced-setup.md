@@ -37,30 +37,30 @@ as the watchdog.
 
 ## Advanced Logging
 
-On many Linux systems the bot can be configured to send its log messages to `syslog` or `journald` system services. Logging to a remote `syslog` server is also available on Windows. The special values for the `--logfilename` command line option can be used for this.
+On many Linux systems the bot can be configured to send its log messages to `syslog` or `journald` system services. Logging to a remote `syslog` server is also available on Windows. The special values for the `--logfile` command line option can be used for this.
 
 ### Logging to syslog
 
-To send Freqtrade log messages to a local or remote `syslog` service use the `--logfilename` command line option with the value in the following format:
+To send Freqtrade log messages to a local or remote `syslog` service use the `--logfile` command line option with the value in the following format:
 
-* `--logfilename syslog:<syslog_address>` -- send log messages to `syslog` service using the `<syslog_address>` as the syslog address.
+* `--logfile syslog:<syslog_address>` -- send log messages to `syslog` service using the `<syslog_address>` as the syslog address.
 
 The syslog address can be either a Unix domain socket (socket filename) or a UDP socket specification, consisting of IP address and UDP port, separated by the `:` character.
 
 So, the following are the examples of possible usages:
 
-* `--logfilename syslog:/dev/log` -- log to syslog (rsyslog) using the `/dev/log` socket, suitable for most systems.
-* `--logfilename syslog` -- same as above, the shortcut for `/dev/log`.
-* `--logfilename syslog:/var/run/syslog` -- log to syslog (rsyslog) using the `/var/run/syslog` socket. Use this on MacOS.
-* `--logfilename syslog:localhost:514` -- log to local syslog using UDP socket, if it listens on port 514.
-* `--logfilename syslog:<ip>:514` -- log to remote syslog at IP address and port 514. This may be used on Windows for remote logging to an external syslog server.
+* `--logfile syslog:/dev/log` -- log to syslog (rsyslog) using the `/dev/log` socket, suitable for most systems.
+* `--logfile syslog` -- same as above, the shortcut for `/dev/log`.
+* `--logfile syslog:/var/run/syslog` -- log to syslog (rsyslog) using the `/var/run/syslog` socket. Use this on MacOS.
+* `--logfile syslog:localhost:514` -- log to local syslog using UDP socket, if it listens on port 514.
+* `--logfile syslog:<ip>:514` -- log to remote syslog at IP address and port 514. This may be used on Windows for remote logging to an external syslog server.
 
 Log messages are send to `syslog` with the `user` facility. So you can see them with the following commands:
 
 * `tail -f /var/log/user`, or 
 * install a comprehensive graphical viewer (for instance, 'Log File Viewer' for Ubuntu).
 
-On many systems `syslog` (`rsyslog`) fetches data from `journald` (and vice versa), so both `--logfilename syslog` or `--logfilename journald` can be used and the messages be viewed with both `journalctl` and a syslog viewer utility. You can combine this in any way which suites you better.
+On many systems `syslog` (`rsyslog`) fetches data from `journald` (and vice versa), so both `--logfile syslog` or `--logfile journald` can be used and the messages be viewed with both `journalctl` and a syslog viewer utility. You can combine this in any way which suites you better.
 
 For `rsyslog` the messages from the bot can be redirected into a separate dedicated log file. To achieve this, add
 ```
@@ -78,9 +78,9 @@ $RepeatedMsgReduction on
 
 This needs the `systemd` python package installed as the dependency, which is not available on Windows. Hence, the whole journald logging functionality is not available for a bot running on Windows.
 
-To send Freqtrade log messages to `journald` system service use the `--logfilename` command line option with the value in the following format:
+To send Freqtrade log messages to `journald` system service use the `--logfile` command line option with the value in the following format:
 
-* `--logfilename journald` -- send log messages to `journald`.
+* `--logfile journald` -- send log messages to `journald`.
 
 Log messages are send to `journald` with the `user` facility. So you can see them with the following commands:
 
@@ -89,4 +89,4 @@ Log messages are send to `journald` with the `user` facility. So you can see the
 
 There are many other options in the `journalctl` utility to filter the messages, see manual pages for this utility.
 
-On many systems `syslog` (`rsyslog`) fetches data from `journald` (and vice versa), so both `--logfilename syslog` or `--logfilename journald` can be used and the messages be viewed with both `journalctl` and a syslog viewer utility. You can combine this in any way which suites you better.
+On many systems `syslog` (`rsyslog`) fetches data from `journald` (and vice versa), so both `--logfile syslog` or `--logfile journald` can be used and the messages be viewed with both `journalctl` and a syslog viewer utility. You can combine this in any way which suites you better.

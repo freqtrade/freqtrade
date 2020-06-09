@@ -8,10 +8,10 @@ import numpy as np
 import utils_find_1st as utf1st
 from pandas import DataFrame
 
-from freqtrade import constants
 from freqtrade.configuration import TimeRange
-from freqtrade.data import history
+from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
 from freqtrade.exceptions import OperationalException
+from freqtrade.data.history import get_timerange, load_data, refresh_data
 from freqtrade.strategy.interface import SellType
 
 logger = logging.getLogger(__name__)
@@ -54,12 +54,10 @@ class Edge:
         if self.config['max_open_trades'] != float('inf'):
             logger.critical('max_open_trades should be -1 in config !')
 
-        if self.config['stake_amount'] != constants.UNLIMITED_STAKE_AMOUNT:
+        if self.config['stake_amount'] != UNLIMITED_STAKE_AMOUNT:
             raise OperationalException('Edge works only with unlimited stake amount')
 
-        # Deprecated capital_available_percentage. Will use tradable_balance_ratio in the future.
-        self._capital_percentage: float = self.edge_config.get(
-            'capital_available_percentage', self.config['tradable_balance_ratio'])
+        self._capital_ratio: float = self.config['tradable_balance_ratio']
         self._allowed_risk: float = self.edge_config.get('allowed_risk')
         self._since_number_of_days: int = self.edge_config.get('calculate_since_number_of_days', 14)
         self._last_updated: int = 0  # Timestamp of pairs last updated time
@@ -96,7 +94,7 @@ class Edge:
         logger.info('Using local backtesting data (using whitelist in given config) ...')
 
         if self._refresh_pairs:
-            history.refresh_data(
+            refresh_data(
                 datadir=self.config['datadir'],
                 pairs=pairs,
                 exchange=self.exchange,
@@ -104,7 +102,7 @@ class Edge:
                 timerange=self._timerange,
             )
 
-        data = history.load_data(
+        data = load_data(
             datadir=self.config['datadir'],
             pairs=pairs,
             timeframe=self.strategy.ticker_interval,
@@ -119,10 +117,10 @@ class Edge:
             logger.critical("No data found. Edge is stopped ...")
             return False
 
-        preprocessed = self.strategy.tickerdata_to_dataframe(data)
+        preprocessed = self.strategy.ohlcvdata_to_dataframe(data)
 
         # Print timeframe
-        min_date, max_date = history.get_timerange(preprocessed)
+        min_date, max_date = get_timerange(preprocessed)
         logger.info(
             'Measuring data from %s up to %s (%s days) ...',
             min_date.isoformat(),
@@ -137,10 +135,10 @@ class Edge:
             pair_data = pair_data.sort_values(by=['date'])
             pair_data = pair_data.reset_index(drop=True)
 
-            ticker_data = self.strategy.advise_sell(
+            df_analyzed = self.strategy.advise_sell(
                 self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
 
-            trades += self._find_trades_for_stoploss_range(ticker_data, pair, self._stoploss_range)
+            trades += self._find_trades_for_stoploss_range(df_analyzed, pair, self._stoploss_range)
 
         # If no trade found then exit
         if len(trades) == 0:
@@ -157,7 +155,7 @@ class Edge:
     def stake_amount(self, pair: str, free_capital: float,
                      total_capital: float, capital_in_trade: float) -> float:
         stoploss = self.stoploss(pair)
-        available_capital = (total_capital + capital_in_trade) * self._capital_percentage
+        available_capital = (total_capital + capital_in_trade) * self._capital_ratio
         allowed_capital_at_risk = available_capital * self._allowed_risk
         max_position_size = abs(allowed_capital_at_risk / stoploss)
         position_size = min(max_position_size, free_capital)
@@ -238,20 +236,9 @@ class Edge:
         :param result Dataframe
         :return: result Dataframe
         """
-
-        # stake and fees
-        # stake = 0.015
-        # 0.05% is 0.0005
-        # fee = 0.001
-
-        # we set stake amount to an arbitrary amount.
-        # as it doesn't change the calculation.
-        # all returned values are relative.
-        # they are defined as ratios.
+        # We set stake amount to an arbitrary amount, as it doesn't change the calculation.
+        # All returned values are relative, they are defined as ratios.
         stake = 0.015
-        fee = self.fee
-        open_fee = fee / 2
-        close_fee = fee / 2
 
         result['trade_duration'] = result['close_time'] - result['open_time']
 
@@ -262,12 +249,12 @@ class Edge:
 
         # Buy Price
         result['buy_vol'] = stake / result['open_rate']  # How many target are we buying
-        result['buy_fee'] = stake * open_fee
+        result['buy_fee'] = stake * self.fee
         result['buy_spend'] = stake + result['buy_fee']  # How much we're spending
 
         # Sell price
         result['sell_sum'] = result['buy_vol'] * result['close_rate']
-        result['sell_fee'] = result['sell_sum'] * close_fee
+        result['sell_fee'] = result['sell_sum'] * self.fee
         result['sell_take'] = result['sell_sum'] - result['sell_fee']
 
         # profit_ratio
@@ -317,7 +304,7 @@ class Edge:
         }
 
         # Group by (pair and stoploss) by applying above aggregator
-        df = results.groupby(['pair', 'stoploss'])['profit_abs', 'trade_duration'].agg(
+        df = results.groupby(['pair', 'stoploss'])[['profit_abs', 'trade_duration']].agg(
             groupby_aggregator).reset_index(col_level=1)
 
         # Dropping level 0 as we don't need it
@@ -359,11 +346,11 @@ class Edge:
         # Returning a list of pairs in order of "expectancy"
         return final
 
-    def _find_trades_for_stoploss_range(self, ticker_data, pair, stoploss_range):
-        buy_column = ticker_data['buy'].values
-        sell_column = ticker_data['sell'].values
-        date_column = ticker_data['date'].values
-        ohlc_columns = ticker_data[['open', 'high', 'low', 'close']].values
+    def _find_trades_for_stoploss_range(self, df, pair, stoploss_range):
+        buy_column = df['buy'].values
+        sell_column = df['sell'].values
+        date_column = df['date'].values
+        ohlc_columns = df[['open', 'high', 'low', 'close']].values
 
         result: list = []
         for stoploss in stoploss_range:

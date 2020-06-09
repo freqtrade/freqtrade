@@ -116,7 +116,7 @@ class SampleStrategy(IStrategy):
         Performance Note: For the best performance be frugal on the number of indicators
         you are using. Let uncomment only the indicator you are using in your strategies
         or your hyperopt configuration, otherwise you will waste your memory and CPU usage.
-        :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
+        :param dataframe: Dataframe with data from the exchange
         :param metadata: Additional information, like the currently traded pair
         :return: a Dataframe with all mandatory indicators for the strategies
         """
