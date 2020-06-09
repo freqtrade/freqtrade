@@ -139,8 +139,8 @@ class FreqtradeBot:
         :return: True if one or more trades has been created or closed, False otherwise
         """
 
-        # Check whether markets have to be reloaded
-        self.exchange._reload_markets()
+        # Check whether markets have to be reloaded and reload them when it's needed
+        self.exchange.reload_markets()
 
         # Query trades from persistence layer
         trades = Trade.get_open_trades()

@@ -264,8 +264,8 @@ class Exchange:
         except ccxt.BaseError as e:
             logger.warning('Unable to initialize markets. Reason: %s', e)
 
-    def _reload_markets(self) -> None:
-        """Reload markets if refresh interval has passed"""
+    def reload_markets(self) -> None:
+        """Reload markets if refresh interval has passed """
         # Check whether markets have to be reloaded
         if (self._last_markets_refresh > 0) and (
                 self._last_markets_refresh + self.markets_refresh_interval
