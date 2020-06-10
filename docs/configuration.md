@@ -572,11 +572,11 @@ Assuming both buy and sell are using market orders, a configuration similar to t
   },
   "bid_strategy": {
     "price_side": "ask",
-    //...
+    // ...
   },
   "ask_strategy":{
     "price_side": "bid",
-    //...
+    // ...
   },
 ```
 
