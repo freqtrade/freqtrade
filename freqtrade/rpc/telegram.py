@@ -96,7 +96,7 @@ class Telegram(RPC):
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
             #CommandHandler('reload_conf', self._reload_config),
-            CommandHandler(('reload_config' or 'reload_con'), self._reload_config),
+            CommandHandler(('reload_config' or 'reload_conf'), self._reload_config),
             #CommandHandler('show_conf', self._reload_config),
             CommandHandler('show_config' or 'show_conf', self._show_config),
             CommandHandler('stopbuy', self._stopbuy),
