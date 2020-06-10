@@ -52,7 +52,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/start` | | Starts the trader
 | `/stop` | | Stops the trader
 | `/stopbuy` | | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
-| `/reload_conf` | | Reloads the configuration file
+| `/reload_config` | | Reloads the configuration file
 | `/show_config` | | Shows part of the current configuration with relevant settings to operation
 | `/status` | | Lists all open trades
 | `/status table` | | List all open trades in a table format. Pending buy orders are marked with an asterisk (*) Pending sell orders are marked with a double asterisk (**)
@@ -85,14 +85,14 @@ Below, example of Telegram message you will receive for each command.
 
 ### /stopbuy
 
-> **status:** `Setting max_open_trades to 0. Run /reload_conf to reset.`
+> **status:** `Setting max_open_trades to 0. Run /reload_config to reset.`
 
 Prevents the bot from opening new trades by temporarily setting "max_open_trades" to 0. Open trades will be handled via their regular rules (ROI / Sell-signal, stoploss, ...).
 
 After this, give the bot time to close off open trades (can be checked via `/status table`).
 Once all positions are sold, run `/stop` to completely stop the bot.
 
-`/reload_conf` resets "max_open_trades" to the value set in the configuration and resets this command. 
+`/reload_config` resets "max_open_trades" to the value set in the configuration and resets this command.
 
 !!! Warning
    The stop-buy signal is ONLY active while the bot is running, and is not persisted anyway, so restarting the bot will cause this to reset.
@@ -209,7 +209,7 @@ Shows the current whitelist
 Shows the current blacklist.
 If Pair is set, then this pair will be added to the pairlist.
 Also supports multiple pairs, seperated by a space.
-Use `/reload_conf` to reset the blacklist.
+Use `/reload_config` to reset the blacklist.
 
 > Using blacklist `StaticPairList` with 2 pairs  
 >`DODGE/BTC`, `HOT/BTC`.

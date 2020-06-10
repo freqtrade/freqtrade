@@ -101,7 +101,7 @@ Simplified example:
 
 ## Changing stoploss on open trades
 
-A stoploss on an open trade can be changed by changing the value in the configuration or strategy and use the `/reload_conf` command (alternatively, completely stopping and restarting the bot also works).
+A stoploss on an open trade can be changed by changing the value in the configuration or strategy and use the `/reload_config` command (alternatively, completely stopping and restarting the bot also works).
 
 The new stoploss value will be applied to open trades (and corresponding log-messages will be generated).
 
