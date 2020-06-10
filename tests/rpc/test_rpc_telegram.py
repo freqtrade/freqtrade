@@ -72,10 +72,9 @@ def test_init(default_conf, mocker, caplog) -> None:
     assert start_polling.start_polling.call_count == 1
 
     message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
-                   "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], "
-                   "['performance'], ['daily'], ['count'], ['reload_config'], "
-                   "['show_config'], ['stopbuy'], ['whitelist'], "
-                   "['blacklist'], ['edge'], ['help'], ['version']]")
+                   "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], ['performance'], "
+                   "['daily'], ['count'], ['reload_config', 'reload_conf'], ['show_config', 'show_conf'], "
+                   "['stopbuy'], ['whitelist'], ['blacklist'], ['edge'], ['help'], ['version']]")
 
     assert log_has(message_str, caplog)
 
