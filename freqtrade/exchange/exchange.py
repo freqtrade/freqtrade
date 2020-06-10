@@ -190,7 +190,7 @@ class Exchange:
     def markets(self) -> Dict:
         """exchange ccxt markets"""
         if not self._api.markets:
-            logger.warning("Markets were not loaded. Loading them now..")
+            logger.info("Markets were not loaded. Loading them now..")
             self._load_markets()
         return self._api.markets
 
