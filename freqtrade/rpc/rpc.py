@@ -653,3 +653,13 @@ class RPC:
         if not self._freqtrade.edge:
             raise RPCException('Edge is not enabled.')
         return self._freqtrade.edge.accepted_pairs()
+
+    def _rpc_analysed_history(self, pair, timeframe):
+
+        data, last_analyzed = self._freqtrade.dataprovider.get_analyzed_dataframe(pair, timeframe)
+        return {
+            'columns': data.columns,
+            'data': data.values.tolist(),
+            'length': len(data),
+            'last_analyzed': last_analyzed,
+        }

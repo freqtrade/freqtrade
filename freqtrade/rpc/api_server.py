@@ -212,6 +212,8 @@ class ApiServer(RPC):
                               view_func=self._trades, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/trades/<int:tradeid>', 'trades_delete',
                               view_func=self._trades_delete, methods=['DELETE'])
+        self.app.add_url_rule(f'{BASE_URI}/pair_history', 'pair_history',
+                              view_func=self._analysed_history, methods=['GET'])
         # Combined actions and infos
         self.app.add_url_rule(f'{BASE_URI}/blacklist', 'blacklist', view_func=self._blacklist,
                               methods=['GET', 'POST'])
@@ -499,4 +501,16 @@ class ApiServer(RPC):
         """
         tradeid = request.json.get("tradeid")
         results = self._rpc_forcesell(tradeid)
+        return self.rest_dump(results)
+
+    @require_login
+    @rpc_catch_errors
+    def _analysed_history(self):
+        """
+        Handler for /pair_history.
+        """
+        pair = request.args.get("pair")
+        timeframe = request.args.get("timeframe")
+
+        results = self._rpc_analysed_history(pair, timeframe)
         return self.rest_dump(results)
