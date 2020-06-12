@@ -139,7 +139,7 @@ By letting the bot know how much history is needed, backtest trades can start at
 
 #### Example
 
-Let's try to backtest 1 month (January 2019) of 5m candles using the an example strategy with EMA100, as above.
+Let's try to backtest 1 month (January 2019) of 5m candles using an example strategy with EMA100, as above.
 
 ``` bash
 freqtrade backtesting --timerange 20190101-20190201 --ticker-interval 5m
