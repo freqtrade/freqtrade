@@ -5,16 +5,16 @@ including ticker and orderbook data, live and historical candle (OHLCV) data
 Common Interface for bot and strategy to access data.
 """
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
+from arrow import Arrow
 from pandas import DataFrame
 
+from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.history import load_pair_history
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.state import RunMode
-from freqtrade.constants import ListPairsWithTimeframes
-
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +25,21 @@ class DataProvider:
         self._config = config
         self._exchange = exchange
         self._pairlists = pairlists
+        self.__cached_pairs: Dict[Tuple(str, str), DataFrame] = {}
+
+    def _set_cached_df(self, pair: str, timeframe: str, dataframe: DataFrame) -> None:
+        """
+        Store cached Dataframe.
+        Using private method as this should never be used by a user
+        (but the class is exposed via `self.dp` to the strategy)
+        :param pair: pair to get the data for
+        :param timeframe: Timeframe to get data for
+        :param dataframe: analyzed dataframe
+        """
+        self.__cached_pairs[(pair, timeframe)] = {
+            'data': dataframe,
+            'updated': Arrow.utcnow().datetime,
+        }
 
     def refresh(self,
                 pairlist: ListPairsWithTimeframes,
@@ -88,6 +103,19 @@ class DataProvider:
         if len(data) == 0:
             logger.warning(f"No data found for ({pair}, {timeframe}).")
         return data
+
+    def get_analyzed_dataframe(self, pair: str, timeframe: str = None) -> DataFrame:
+        """
+        :param pair: pair to get the data for
+        :param timeframe: timeframe to get data for
+        :return: Analyzed Dataframe for this pair
+        """
+        # TODO: check updated time and don't return outdated data.
+        if (pair, timeframe) in self._set_cached_df:
+            return self._set_cached_df[(pair, timeframe)]['data']
+        else:
+            # TODO: this is most likely wrong...
+            raise ValueError(f"No analyzed dataframe found for ({pair}, {timeframe})")
 
     def market(self, pair: str) -> Optional[Dict[str, Any]]:
         """

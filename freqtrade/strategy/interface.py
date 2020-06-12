@@ -273,6 +273,7 @@ class IStrategy(ABC):
             # Defs that only make change on new candle data.
             dataframe = self.analyze_ticker(dataframe, metadata)
             self._last_candle_seen_per_pair[pair] = dataframe.iloc[-1]['date']
+            self.dp._set_cached_df(pair, self.timeframe, dataframe)
         else:
             logger.debug("Skipping TA Analysis for already analyzed candle")
             dataframe['buy'] = 0
@@ -348,13 +349,8 @@ class IStrategy(ABC):
             return False, False
 
         (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
-        logger.debug(
-            'trigger: %s (pair=%s) buy=%s sell=%s',
-            latest['date'],
-            pair,
-            str(buy),
-            str(sell)
-        )
+        logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
+                     latest['date'], pair, str(buy), str(sell))
         return buy, sell
 
     def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
