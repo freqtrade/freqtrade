@@ -256,21 +256,32 @@ class Exchange:
                                      "Please check your config.json")
                 raise OperationalException(f'Exchange {name} does not provide a sandbox api')
 
+    def _load_async_markets(self, reload: bool = False) -> None:
+        try:
+            if self._api_async:
+                asyncio.get_event_loop().run_until_complete(
+                    self._api_async.load_markets(reload=reload))
+
+        except ccxt.BaseError as e:
+            logger.warning('Could not load async markets. Reason: %s', e)
+            return
+
     def _load_markets(self) -> None:
-        """ Initialize markets """
+        """ Initialize markets both sync and async """
         try:
             self._api.load_markets()
+            self._load_async_markets()
             self._last_markets_refresh = arrow.utcnow().timestamp
         except ccxt.BaseError as e:
             logger.warning('Unable to initialize markets. Reason: %s', e)
 
     def reload_markets(self) -> None:
-        """Reload markets if refresh interval has passed """
+        """Reload markets both sync and async if refresh interval has passed """
         # Check whether markets have to be reloaded
         if (self._last_markets_refresh > 0) and (
                 self._last_markets_refresh + self.markets_refresh_interval
                 > arrow.utcnow().timestamp):
-            return
+            return None
         logger.debug("Performing scheduled market reload..")
         try:
             self._api.load_markets(reload=True)
