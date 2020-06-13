@@ -9,12 +9,12 @@ from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.history import load_data
-from freqtrade.exceptions import StrategyError
+from freqtrade.exceptions import StrategyError, OperationalException
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.data.dataprovider import DataProvider
-from tests.conftest import get_patched_exchange, log_has, log_has_re
+from tests.conftest import log_has, log_has_re
 
 from .strats.default_strategy import DefaultStrategy
 
@@ -53,6 +53,28 @@ def test_returns_latest_signal(mocker, default_conf, ohlcv_history):
         return_value=(mocked_history, 0)
     )
     assert _STRATEGY.get_signal('ETH/BTC', '5m') == (False, False)
+
+
+def test_trade_no_dataprovider(default_conf, mocker, caplog):
+    strategy = DefaultStrategy({})
+    with pytest.raises(OperationalException, match="DataProvider not found."):
+        strategy.get_signal('ETH/BTC', '5m')
+
+    with pytest.raises(OperationalException, match="DataProvider not found."):
+        strategy.analyze_pair('ETH/BTC')
+
+
+def test_analyze_pair_empty(default_conf, mocker, caplog, ohlcv_history):
+    mocker.patch.object(_STRATEGY.dp, 'ohlcv', return_value=ohlcv_history)
+    mocker.patch.object(
+        _STRATEGY, '_analyze_ticker_internal',
+        return_value=DataFrame([])
+    )
+    mocker.patch.object(_STRATEGY, 'assert_df')
+
+    _STRATEGY.analyze_pair('ETH/BTC')
+
+    assert log_has('Empty dataframe for pair ETH/BTC', caplog)
 
 
 def test_get_signal_empty(default_conf, mocker, caplog):
