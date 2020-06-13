@@ -85,7 +85,7 @@ class Kraken(Exchange):
             return order
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
-                f'Insufficient funds to create {ordertype} sell order on market {pair}.'
+                f'Insufficient funds to create {ordertype} sell order on market {pair}. '
                 f'Tried to create stoploss with amount {amount} at stoploss {stop_price}. '
                 f'Message: {e}') from e
         except ccxt.InvalidOrder as e:
