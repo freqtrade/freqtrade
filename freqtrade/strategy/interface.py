@@ -353,10 +353,6 @@ class IStrategy(ABC):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, timeframe)
 
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
-            logger.warning('Empty candle (OHLCV) data for pair %s', pair)
-            return False, False
-
-        if dataframe.empty:
             logger.warning('Empty dataframe for pair %s', pair)
             return False, False
 
