@@ -251,9 +251,9 @@ class Hyperopt:
             if space == 'stoploss':
                 params_result += f"stoploss = {space_params.get('stoploss')}"
             elif space == 'roi':
-                minimal_roi_result = rapidjson.dumps(
                 # TODO: get rid of OrderedDict when support for python 3.6 will be
                 # dropped (dicts keep the order as the language feature)
+                minimal_roi_result = rapidjson.dumps(
                     OrderedDict(
                         (str(k), v) for k, v in space_params.items()
                     ),
