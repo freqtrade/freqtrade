@@ -190,7 +190,7 @@ class Exchange:
     def markets(self) -> Dict:
         """exchange ccxt markets"""
         if not self._api.markets:
-            logger.warning("Markets were not loaded. Loading them now..")
+            logger.info("Markets were not loaded. Loading them now..")
             self._load_markets()
         return self._api.markets
 
@@ -275,8 +275,8 @@ class Exchange:
         except ccxt.BaseError as e:
             logger.warning('Unable to initialize markets. Reason: %s', e)
 
-    def _reload_markets(self) -> None:
-        """Reload markets both sync and async, if refresh interval has passed"""
+    def reload_markets(self) -> None:
+        """Reload markets both sync and async if refresh interval has passed """
         # Check whether markets have to be reloaded
         if (self._last_markets_refresh > 0) and (
                 self._last_markets_refresh + self.markets_refresh_interval
