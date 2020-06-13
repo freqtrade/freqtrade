@@ -204,6 +204,10 @@ class IStrategy(ABC):
         """
         return []
 
+###
+# END - Intended to be overridden by strategy
+###
+
     def get_strategy_name(self) -> str:
         """
         Returns strategy class name
@@ -308,6 +312,7 @@ class IStrategy(ABC):
     def get_signal(self, pair: str, interval: str, dataframe: DataFrame) -> Tuple[bool, bool]:
         """
         Calculates current signal based several technical analysis indicators
+        Used by Bot to get the latest signal
         :param pair: pair in format ANT/BTC
         :param interval: Interval to use (in min)
         :param dataframe: Dataframe to analyze
@@ -496,7 +501,8 @@ class IStrategy(ABC):
 
     def ohlcvdata_to_dataframe(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
-        Creates a dataframe and populates indicators for given candle (OHLCV) data
+        Populates indicators for given candle (OHLCV) data (for multiple pairs)
+        Does not run advice_buy or advise_sell!
         Used by optimize operations only, not during dry / live runs.
         Using .copy() to get a fresh copy of the dataframe for every strategy run.
         Has positive effects on memory usage for whatever reason - also when
