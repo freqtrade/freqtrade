@@ -7,19 +7,18 @@ import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Dict, NamedTuple, Optional, Tuple
+from typing import Dict, List, NamedTuple, Optional, Tuple
 
 import arrow
 from pandas import DataFrame
 
+from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import StrategyError
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.persistence import Trade
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
-from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.wallets import Wallets
-
 
 logger = logging.getLogger(__name__)
 
@@ -289,6 +288,38 @@ class IStrategy(ABC):
 
         return dataframe
 
+    def analyze_pair(self, pair: str):
+        """
+        Fetch data for this pair from dataprovider and analyze.
+        Stores the dataframe into the dataprovider.
+        The analyzed dataframe is then accessible via `dp.get_analyzed_dataframe()`.
+        :param pair: Pair to analyze.
+        """
+        dataframe = self.dp.ohlcv(pair, self.timeframe)
+        if not isinstance(dataframe, DataFrame) or dataframe.empty:
+            logger.warning('Empty candle (OHLCV) data for pair %s', pair)
+            return
+
+        try:
+            df_len, df_close, df_date = self.preserve_df(dataframe)
+
+            dataframe = strategy_safe_wrapper(
+                self._analyze_ticker_internal, message=""
+            )(dataframe, {'pair': pair})
+
+            self.assert_df(dataframe, df_len, df_close, df_date)
+        except StrategyError as error:
+            logger.warning(f"Unable to analyze candle (OHLCV) data for pair {pair}: {error}")
+            return
+
+        if dataframe.empty:
+            logger.warning('Empty dataframe for pair %s', pair)
+            return
+
+    def analyze(self, pairs: List[str]):
+        for pair in pairs:
+            self.analyze_pair(pair)
+
     @staticmethod
     def preserve_df(dataframe: DataFrame) -> Tuple[int, float, datetime]:
         """ keep some data for dataframes """
@@ -309,28 +340,20 @@ class IStrategy(ABC):
             else:
                 raise StrategyError(f"Dataframe returned from strategy has mismatching {message}.")
 
-    def get_signal(self, pair: str, interval: str, dataframe: DataFrame) -> Tuple[bool, bool]:
+    def get_signal(self, pair: str, timeframe: str) -> Tuple[bool, bool]:
         """
         Calculates current signal based several technical analysis indicators
         Used by Bot to get the latest signal
         :param pair: pair in format ANT/BTC
-        :param interval: Interval to use (in min)
+        :param timeframe: timeframe to use
         :param dataframe: Dataframe to analyze
         :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
         """
+
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, timeframe)
+
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning('Empty candle (OHLCV) data for pair %s', pair)
-            return False, False
-
-        try:
-            df_len, df_close, df_date = self.preserve_df(dataframe)
-            dataframe = strategy_safe_wrapper(
-                self._analyze_ticker_internal, message=""
-                )(dataframe, {'pair': pair})
-            self.assert_df(dataframe, df_len, df_close, df_date)
-        except StrategyError as error:
-            logger.warning(f"Unable to analyze candle (OHLCV) data for pair {pair}: {error}")
-
             return False, False
 
         if dataframe.empty:
@@ -343,9 +366,9 @@ class IStrategy(ABC):
         latest_date = arrow.get(latest_date)
 
         # Check if dataframe is out of date
-        interval_minutes = timeframe_to_minutes(interval)
+        timeframe_minutes = timeframe_to_minutes(timeframe)
         offset = self.config.get('exchange', {}).get('outdated_offset', 5)
-        if latest_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + offset))):
+        if latest_date < (arrow.utcnow().shift(minutes=-(timeframe_minutes * 2 + offset))):
             logger.warning(
                 'Outdated history for pair %s. Last tick is %s minutes old',
                 pair,

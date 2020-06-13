@@ -151,6 +151,8 @@ class FreqtradeBot:
         self.dataprovider.refresh(self.pairlists.create_pair_list(self.active_pair_whitelist),
                                   self.strategy.informative_pairs())
 
+        self.strategy.analyze(self.active_pair_whitelist)
+
         with self._sell_lock:
             # Check and handle any timed out open orders
             self.check_handle_timedout()
@@ -420,9 +422,7 @@ class FreqtradeBot:
             return False
 
         # running get_signal on historical data fetched
-        (buy, sell) = self.strategy.get_signal(
-            pair, self.strategy.timeframe,
-            self.dataprovider.ohlcv(pair, self.strategy.timeframe))
+        (buy, sell) = self.strategy.get_signal(pair, self.strategy.timeframe)
 
         if buy and not sell:
             stake_amount = self.get_trade_stake_amount(pair)
@@ -697,9 +697,7 @@ class FreqtradeBot:
 
         if (config_ask_strategy.get('use_sell_signal', True) or
                 config_ask_strategy.get('ignore_roi_if_buy_signal', False)):
-            (buy, sell) = self.strategy.get_signal(
-                trade.pair, self.strategy.timeframe,
-                self.dataprovider.ohlcv(trade.pair, self.strategy.timeframe))
+            (buy, sell) = self.strategy.get_signal(trade.pair, self.strategy.timeframe)
 
         if config_ask_strategy.get('use_order_book', False):
             order_book_min = config_ask_strategy.get('order_book_min', 1)
