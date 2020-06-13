@@ -705,7 +705,7 @@ def test_validate_order_types(default_conf, mocker):
         'buy': 'limit',
         'sell': 'limit',
         'stoploss': 'market',
-        'stoploss_on_exchange': 'false'
+        'stoploss_on_exchange': False
     }
 
     with pytest.raises(OperationalException,
