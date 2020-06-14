@@ -366,6 +366,7 @@ Please always check the mode of operation to select the correct method to get da
 - [`available_pairs`](#available_pairs) - Property with tuples listing cached pairs with their intervals (pair, interval).
 - [`current_whitelist()`](#current_whitelist) - Returns a current list of whitelisted pairs. Useful for accessing dynamic whitelists (ie. VolumePairlist)
 - [`get_pair_dataframe(pair, timeframe)`](#get_pair_dataframepair-timeframe) - This is a universal method, which returns either historical data (for backtesting) or cached live data (for the Dry-Run and Live-Run modes).
+- [`get_analyzed_dataframe(pair, timeframe)`](#get_analyzed_dataframepair-timeframe) - Returns the analyzed dataframe (after calling `populate_indicators()`, `populate_buy()`, `populate_sell()`) and the time of the latest analysis.
 - `historic_ohlcv(pair, timeframe)` - Returns historical data stored on disk.
 - `market(pair)` - Returns market data for the pair: fees, limits, precisions, activity flag, etc. See [ccxt documentation](https://github.com/ccxt/ccxt/wiki/Manual#markets) for more details on the Market data structure.
 - `ohlcv(pair, timeframe)` - Currently cached candle (OHLCV) data for the pair, returns DataFrame or empty DataFrame.
@@ -431,12 +432,24 @@ if self.dp:
 ```
 
 !!! Warning "Warning about backtesting"
-    Be carefull when using dataprovider in backtesting. `historic_ohlcv()` (and `get_pair_dataframe()`
+    Be careful when using dataprovider in backtesting. `historic_ohlcv()` (and `get_pair_dataframe()`
     for the backtesting runmode) provides the full time-range in one go,
     so please be aware of it and make sure to not "look into the future" to avoid surprises when running in dry/live mode).
 
 !!! Warning "Warning in hyperopt"
     This option cannot currently be used during hyperopt.
+
+#### *get_analyzed_dataframe(pair, timeframe)*
+
+This method is used by freqtrade internally to determine the last signal.
+It can also be used in specific callbacks to get the signal that caused the action (see [Advanced Strategy Documentation](strategy-advanced.md) for more details on available callbacks).
+
+``` python
+# fetch current dataframe
+if self.dp:
+    dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=metadata['pair'],
+                                                             timeframe=self.ticker_interval)
+```
 
 #### *orderbook(pair, maximum)*
 
