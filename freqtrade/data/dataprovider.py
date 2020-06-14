@@ -5,7 +5,7 @@ including ticker and orderbook data, live and historical candle (OHLCV) data
 Common Interface for bot and strategy to access data.
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from arrow import Arrow
@@ -107,14 +107,14 @@ class DataProvider:
         :param pair: pair to get the data for
         :param timeframe: timeframe to get data for
         :return: Tuple of (Analyzed Dataframe, lastrefreshed) for the requested pair / timeframe
-            combination
+            combination.
+            Returns empty dataframe and Epoch 0 (1970-01-01) if no dataframe was cached.
         """
-        # TODO: check updated time and don't return outdated data.
         if (pair, timeframe) in self.__cached_pairs:
             return self.__cached_pairs[(pair, timeframe)]
         else:
-            # TODO: this is most likely wrong...
-            raise ValueError(f"No analyzed dataframe found for ({pair}, {timeframe})")
+
+            return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
 
     def market(self, pair: str) -> Optional[Dict[str, Any]]:
         """
