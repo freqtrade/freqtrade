@@ -151,7 +151,7 @@ class FreqtradeBot:
         self.dataprovider.refresh(self.pairlists.create_pair_list(self.active_pair_whitelist),
                                   self.strategy.informative_pairs())
 
-        strategy_safe_wrapper(self.strategy.bot_loop_start)()
+        strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)()
 
         self.strategy.analyze(self.active_pair_whitelist)
 

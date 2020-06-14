@@ -1964,6 +1964,18 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order,
         freqtrade.handle_trade(trade)
 
 
+def test_bot_loop_start_called_once(mocker, default_conf, caplog):
+    ftbot = get_patched_freqtradebot(mocker, default_conf)
+    patch_get_signal(ftbot)
+    ftbot.strategy.bot_loop_start = MagicMock(side_effect=ValueError)
+    ftbot.strategy.analyze = MagicMock()
+
+    ftbot.process()
+    assert log_has_re(r'Strategy caused the following exception.*', caplog)
+    assert ftbot.strategy.bot_loop_start.call_count == 1
+    assert ftbot.strategy.analyze.call_count == 1
+
+
 def test_check_handle_timedout_buy_usercustom(default_conf, ticker, limit_buy_order_old, open_trade,
                                               fee, mocker) -> None:
     default_conf["unfilledtimeout"] = {"buy": 1400, "sell": 30}
