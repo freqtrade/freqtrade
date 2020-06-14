@@ -79,7 +79,7 @@ class Exchange:
 
         if config['dry_run']:
             logger.info('Instance is running with dry_run enabled')
-
+        logger.info(f"Using CCXT {ccxt.__version__}")
         exchange_config = config['exchange']
 
         # Deep merge ft_has with default ft_has options
@@ -952,6 +952,9 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    # Assign method to get_stoploss_order to allow easy overriding in other classes
+    cancel_stoploss_order = cancel_order
+
     def is_cancel_order_result_suitable(self, corder) -> bool:
         if not isinstance(corder, dict):
             return False
@@ -1003,6 +1006,9 @@ class Exchange:
                 f'Could not get order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    # Assign method to get_stoploss_order to allow easy overriding in other classes
+    get_stoploss_order = get_order
 
     @retrier
     def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:

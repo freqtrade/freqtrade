@@ -73,6 +73,11 @@ print(res)
 
 ## FTX
 
+!!! Tip "Stoploss on Exchange"
+    FTX supports `stoploss_on_exchange` and can use both stop-loss-market and stop-loss-limit orders. It provides great advantages, so we recommend to benefit from it.
+    You can use either `"limit"` or `"market"` in the `order_types.stoploss` configuration setting to decide.
+
+
 ### Using subaccounts
 
 To use subaccounts with FTX, you need to edit the configuration and add the following:

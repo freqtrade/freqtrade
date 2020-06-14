@@ -272,7 +272,7 @@ the static list of pairs) if we should buy.
 
 ### Understand order_types
 
-The `order_types` configuration parameter maps actions (`buy`, `sell`, `stoploss`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
+The `order_types` configuration parameter maps actions (`buy`, `sell`, `stoploss`, `emergencysell`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
 
 This allows to buy using limit orders, sell using
 limit-orders, and create stoplosses using using market orders. It also allows to set the
@@ -288,8 +288,12 @@ If this is configured, the following 4 values (`buy`, `sell`, `stoploss` and
 `emergencysell` is an optional value, which defaults to `market` and is used when creating stoploss on exchange orders fails.
 The below is the default which is used if this is not configured in either strategy or configuration file.
 
-Since `stoploss_on_exchange` uses limit orders, the exchange needs 2 prices, the stoploss_price and the Limit price.
-`stoploss` defines the stop-price - and limit should be slightly below this. This defaults to 0.99 / 1% (configurable via `stoploss_on_exchange_limit_ratio`).
+Not all Exchanges support `stoploss_on_exchange`. If an exchange supports both limit and market stoploss orders, then the value of `stoploss` will be used to determine the stoploss type.
+
+If `stoploss_on_exchange` uses limit orders, the exchange needs 2 prices, the stoploss_price and the Limit price.
+`stoploss` defines the stop-price - and limit should be slightly below this.
+
+This defaults to 0.99 / 1% (configurable via `stoploss_on_exchange_limit_ratio`).
 Calculation example: we bought the asset at 100$.
 Stop-price is 95$, then limit would be `95 * 0.99 = 94.05$` - so the stoploss will happen between 95$ and 94.05$.
 
@@ -331,7 +335,7 @@ Configuration:
     refer to [the stoploss documentation](stoploss.md).
 
 !!! Note
-    If `stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new order.
+    If `stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new stoploss order.
 
 !!! Warning "Using market orders"
     Please read the section [Market order pricing](#market-order-pricing) section when using market orders.
