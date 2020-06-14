@@ -57,6 +57,9 @@ def test_returns_latest_signal(mocker, default_conf, ohlcv_history):
 
 def test_trade_no_dataprovider(default_conf, mocker, caplog):
     strategy = DefaultStrategy({})
+    # Delete DP for sure (suffers from test leakage, as we update this in the base class)
+    if strategy.dp:
+        del strategy.dp
     with pytest.raises(OperationalException, match="DataProvider not found."):
         strategy.get_signal('ETH/BTC', '5m')
 
@@ -416,6 +419,14 @@ def test_is_pair_locked(default_conf):
     pair = 'ETH/BTC'
     strategy.unlock_pair(pair)
     assert not strategy.is_pair_locked(pair)
+
+
+def test_is_informative_pairs_callback(default_conf):
+    default_conf.update({'strategy': 'TestStrategyLegacy'})
+    strategy = StrategyResolver.load_strategy(default_conf)
+    # Should return empty
+    # Uses fallback to base implementation
+    assert [] == strategy.informative_pairs()
 
 
 @pytest.mark.parametrize('error', [

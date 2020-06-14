@@ -194,7 +194,7 @@ class IStrategy(ABC):
         """
         Called at the start of the bot iteration (one loop).
         Might be used to perform pair-independent tasks
-        (e.g. like lock pairs with negative profit in the last hour)
+        (e.g. gather some remote ressource for comparison)
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """
         pass

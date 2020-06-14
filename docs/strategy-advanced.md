@@ -89,3 +89,30 @@ class Awesomestrategy(IStrategy):
             return True
         return False
 ```
+
+## Bot loop start callback
+
+A simple callback which is called at the start of every bot iteration.
+This can be used to perform calculations which are pair independent.
+
+
+``` python
+import requests
+
+class Awesomestrategy(IStrategy):
+
+    # ... populate_* methods
+
+    def bot_loop_start(self, **kwargs) -> None:
+        """
+        Called at the start of the bot iteration (one loop).
+        Might be used to perform pair-independent tasks
+        (e.g. gather some remote ressource for comparison)
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        """
+        if self.config['runmode'].value in ('live', 'dry_run'):
+            # Assign this to the class by using self.*
+            # can then be used by populate_* methods
+            self.remote_data = requests.get('https://some_remote_source.example.com')
+
+```

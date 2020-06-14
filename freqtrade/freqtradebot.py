@@ -151,6 +151,8 @@ class FreqtradeBot:
         self.dataprovider.refresh(self.pairlists.create_pair_list(self.active_pair_whitelist),
                                   self.strategy.informative_pairs())
 
+        strategy_safe_wrapper(self.strategy.bot_loop_start)()
+
         self.strategy.analyze(self.active_pair_whitelist)
 
         with self._sell_lock:

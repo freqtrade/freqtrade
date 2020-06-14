@@ -1,4 +1,13 @@
 
+def bot_loop_start(self, **kwargs) -> None:
+    """
+    Called at the start of the bot iteration (one loop).
+    Might be used to perform pair-independent tasks
+    (e.g. gather some remote ressource for comparison)
+    :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+    """
+    pass
+
 def check_buy_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -> bool:
     """
     Check buy timeout function callback.
