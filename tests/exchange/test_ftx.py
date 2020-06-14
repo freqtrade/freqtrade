@@ -149,7 +149,7 @@ def test_get_stoploss_order(default_conf, mocker):
 
     api_mock.fetch_orders = MagicMock(return_value=[{'id': 'Y', 'status': '456'}])
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id='ftx')
-    with pytest.raises(InvalidOrderException, match=r"Could not get Stoploss Order for id X"):
+    with pytest.raises(InvalidOrderException, match=r"Could not get stoploss order for id X"):
         exchange.get_stoploss_order('X', 'TKN/BTC')['status']
 
     with pytest.raises(InvalidOrderException):
