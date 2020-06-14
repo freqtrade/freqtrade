@@ -497,6 +497,12 @@ class FreqtradeBot:
 
         amount = stake_amount / buy_limit_requested
         order_type = self.strategy.order_types['buy']
+        if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
+                pair=pair, order_type=order_type, amount=amount, rate=buy_limit_requested,
+                time_in_force=time_in_force):
+            logger.info(f"User requested abortion of buying {pair}")
+            return False
+
         order = self.exchange.buy(pair=pair, ordertype=order_type,
                                   amount=amount, rate=buy_limit_requested,
                                   time_in_force=time_in_force)
@@ -1077,12 +1083,20 @@ class FreqtradeBot:
             order_type = self.strategy.order_types.get("emergencysell", "market")
 
         amount = self._safe_sell_amount(trade.pair, trade.amount)
+        time_in_force = self.strategy.order_time_in_force['sell']
+
+        if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
+                pair=trade.pair, trade=trade, order_type=order_type, amount=amount, rate=limit,
+                time_in_force=time_in_force,
+                sell_reason=sell_reason.value):
+            logger.info(f"User requested abortion of selling {trade.pair}")
+            return False
 
         # Execute sell and update trade record
         order = self.exchange.sell(pair=str(trade.pair),
                                    ordertype=order_type,
                                    amount=amount, rate=limit,
-                                   time_in_force=self.strategy.order_time_in_force['sell']
+                                   time_in_force=time_in_force
                                    )
 
         trade.open_order_id = order['id']
