@@ -975,6 +975,7 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     freqtrade = FreqtradeBot(default_conf)
+    freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=False)
     stake_amount = 2
     bid = 0.11
     buy_rate_mock = MagicMock(return_value=bid)
@@ -996,6 +997,13 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order) -> None:
     )
     pair = 'ETH/BTC'
 
+    assert not freqtrade.execute_buy(pair, stake_amount)
+    assert buy_rate_mock.call_count == 1
+    assert buy_mm.call_count == 0
+    assert freqtrade.strategy.confirm_trade_entry.call_count == 1
+    buy_rate_mock.reset_mock()
+
+    freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=True)
     assert freqtrade.execute_buy(pair, stake_amount)
     assert buy_rate_mock.call_count == 1
     assert buy_mm.call_count == 1
@@ -1003,6 +1011,7 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order) -> None:
     assert call_args['pair'] == pair
     assert call_args['rate'] == bid
     assert call_args['amount'] == stake_amount / bid
+    buy_rate_mock.reset_mock()
 
     # Should create an open trade with an open order id
     # As the order is not fulfilled yet
@@ -1015,7 +1024,7 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order) -> None:
     fix_price = 0.06
     assert freqtrade.execute_buy(pair, stake_amount, fix_price)
     # Make sure get_buy_rate wasn't called again
-    assert buy_rate_mock.call_count == 1
+    assert buy_rate_mock.call_count == 0
 
     assert buy_mm.call_count == 2
     call_args = buy_mm.call_args_list[1][1]
