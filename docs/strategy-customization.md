@@ -454,6 +454,13 @@ if self.dp:
                                                              timeframe=self.ticker_interval)
 ```
 
+!!! Note "No data available"
+    Returns an empty dataframe if the requested pair was not cached.
+    This should not happen when using whitelisted pairs.
+
+!!! Warning "Warning in hyperopt"
+    This option cannot currently be used during hyperopt.
+    
 #### *orderbook(pair, maximum)*
 
 ``` python
