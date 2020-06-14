@@ -1,6 +1,8 @@
 # Strategy Customization
 
-This page explains where to customize your strategies, and add new indicators.
+This page explains how to customize your strategies, and add new indicators.
+
+Please familiarize yourself with [Freqtrade basics](bot-basics.md) first.
 
 ## Install a custom strategy file
 
@@ -385,6 +387,7 @@ if self.dp:
 ```
 
 #### *current_whitelist()*
+
 Imagine you've developed a strategy that trades the `5m` timeframe using signals generated from a `1d` timeframe on the top 10 volume pairs by volume. 
 
 The strategy might look something like this:

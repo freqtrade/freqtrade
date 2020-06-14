@@ -1,7 +1,9 @@
 # Advanced Strategies
 
 This page explains some advanced concepts available for strategies.
-If you're just getting started, please be familiar with the methods described in the [Strategy Customization](strategy-customization.md) documentation first.
+If you're just getting started, please be familiar with the methods described in the [Strategy Customization](strategy-customization.md) documentation and with the [Freqtrade basics](bot-basics.md) first.
+
+[Freqtrade basics](bot-basics.md) describes in which sequence each method defined below is called, which can be helpful to understand which method to use.
 
 !!! Note
     All callback methods described below should only be implemented in a strategy if they are also actively used.
