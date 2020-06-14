@@ -354,7 +354,7 @@ class IStrategy(ABC):
 
     def get_signal(self, pair: str, timeframe: str) -> Tuple[bool, bool]:
         """
-        Calculates current signal based several technical analysis indicators
+        Calculates current signal based based on the buy / sell columns of the dataframe.
         Used by Bot to get the latest signal
         :param pair: pair in format ANT/BTC
         :param timeframe: timeframe to use
