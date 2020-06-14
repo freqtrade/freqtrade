@@ -1070,6 +1070,39 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order) -> None:
     assert not freqtrade.execute_buy(pair, stake_amount)
 
 
+def test_execute_buy_confirm_error(mocker, default_conf, fee, limit_buy_order) -> None:
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    mocker.patch.multiple(
+        'freqtrade.freqtradebot.FreqtradeBot',
+        get_buy_rate=MagicMock(return_value=0.11),
+        _get_min_pair_stake_amount=MagicMock(return_value=1)
+    )
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=MagicMock(return_value={
+            'bid': 0.00001172,
+            'ask': 0.00001173,
+            'last': 0.00001172
+        }),
+        buy=MagicMock(return_value=limit_buy_order),
+        get_fee=fee,
+    )
+    stake_amount = 2
+    pair = 'ETH/BTC'
+
+    freqtrade.strategy.confirm_trade_entry = MagicMock(side_effect=ValueError)
+    assert freqtrade.execute_buy(pair, stake_amount)
+
+    freqtrade.strategy.confirm_trade_entry = MagicMock(side_effect=Exception)
+    assert freqtrade.execute_buy(pair, stake_amount)
+
+    freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=True)
+    assert freqtrade.execute_buy(pair, stake_amount)
+
+    freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=False)
+    assert not freqtrade.execute_buy(pair, stake_amount)
+
+
 def test_add_stoploss_on_exchange(mocker, default_conf, limit_buy_order) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)

@@ -57,9 +57,9 @@ def test_returns_latest_signal(mocker, default_conf, ohlcv_history):
 
 def test_trade_no_dataprovider(default_conf, mocker, caplog):
     strategy = DefaultStrategy({})
-    # Delete DP for sure (suffers from test leakage, as we update this in the base class)
-    if strategy.dp:
-        del strategy.dp
+    # Delete DP for sure (suffers from test leakage, as this is updated in the base class)
+    if strategy.dp is not None:
+        strategy.dp = None
     with pytest.raises(OperationalException, match="DataProvider not found."):
         strategy.get_signal('ETH/BTC', '5m')
 

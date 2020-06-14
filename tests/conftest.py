@@ -787,6 +787,7 @@ def limit_buy_order():
         'price': 0.00001099,
         'amount': 90.99181073,
         'filled': 90.99181073,
+        'cost': 0.0009999,
         'remaining': 0.0,
         'status': 'closed'
     }

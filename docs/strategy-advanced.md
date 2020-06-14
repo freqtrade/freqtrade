@@ -135,7 +135,7 @@ class Awesomestrategy(IStrategy):
         """
         Called right before placing a buy order.
         Timing for this function is critical, so avoid doing heavy computations or
-        network reqeusts in this method.
+        network requests in this method.
 
         For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
 
@@ -171,7 +171,7 @@ class Awesomestrategy(IStrategy):
         """
         Called right before placing a regular sell order.
         Timing for this function is critical, so avoid doing heavy computations or
-        network reqeusts in this method.
+        network requests in this method.
 
         For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
 
