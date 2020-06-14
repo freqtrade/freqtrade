@@ -2502,22 +2502,33 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, mocker) -> N
     patch_whitelist(mocker, default_conf)
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
+    freqtrade.strategy.confirm_trade_exit = MagicMock(return_value=False)
 
     # Create some test data
     freqtrade.enter_positions()
+    rpc_mock.reset_mock()
 
     trade = Trade.query.first()
     assert trade
+    assert freqtrade.strategy.confirm_trade_exit.call_count == 0
 
     # Increase the price and sell it
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_sell_up
     )
+    # Prevented sell ...
+    freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'], sell_reason=SellType.ROI)
+    assert rpc_mock.call_count == 0
+    assert freqtrade.strategy.confirm_trade_exit.call_count == 1
+
+    # Repatch with true
+    freqtrade.strategy.confirm_trade_exit = MagicMock(return_value=True)
 
     freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'], sell_reason=SellType.ROI)
+    assert freqtrade.strategy.confirm_trade_exit.call_count == 1
 
-    assert rpc_mock.call_count == 2
+    assert rpc_mock.call_count == 1
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,
