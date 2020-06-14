@@ -448,6 +448,11 @@ def test_strategy_safe_wrapper_error(caplog, error):
     assert isinstance(ret, bool)
     assert ret
 
+    caplog.clear()
+    # Test supressing error
+    ret = strategy_safe_wrapper(failing_method, message='DeadBeef', supress_error=True)()
+    assert log_has_re(r'DeadBeef.*', caplog)
+
 
 @pytest.mark.parametrize('value', [
     1, 22, 55, True, False, {'a': 1, 'b': '112'},
