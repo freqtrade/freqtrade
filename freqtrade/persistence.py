@@ -380,7 +380,7 @@ class Trade(_DECL_BASE):
         elif order_type in ('market', 'limit') and order['side'] == 'sell':
             self.close(order['price'])
             logger.info('%s_SELL has been fulfilled for %s.', order_type.upper(), self)
-        elif order_type in ('stop_loss_limit', 'stop-loss'):
+        elif order_type in ('stop_loss_limit', 'stop-loss', 'stop'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
             logger.info('%s is hit for %s.', order_type.upper(), self)

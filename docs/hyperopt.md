@@ -265,7 +265,7 @@ freqtrade hyperopt --timerange 20180401-20180501
 Hyperopt can reuse `populate_indicators`, `populate_buy_trend`, `populate_sell_trend` from your strategy, assuming these methods are **not** in your custom hyperopt file, and a strategy is provided.
 
 ```bash
-freqtrade hyperopt --strategy SampleStrategy --customhyperopt SampleHyperopt
+freqtrade hyperopt --strategy SampleStrategy --hyperopt SampleHyperopt
 ```
 
 ### Running Hyperopt with Smaller Search Space

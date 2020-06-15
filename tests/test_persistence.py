@@ -298,7 +298,7 @@ def test_calc_profit(limit_buy_order, limit_sell_order, fee):
         fee_close=fee.return_value,
         exchange='bittrex',
     )
-    trade.open_order_id = 'profit_percent'
+    trade.open_order_id = 'something'
     trade.update(limit_buy_order)  # Buy @ 0.00001099
 
     # Custom closing rate and regular fee rate
@@ -332,7 +332,7 @@ def test_calc_profit_ratio(limit_buy_order, limit_sell_order, fee):
         fee_close=fee.return_value,
         exchange='bittrex',
     )
-    trade.open_order_id = 'profit_percent'
+    trade.open_order_id = 'something'
     trade.update(limit_buy_order)  # Buy @ 0.00001099
 
     # Get percent of profit with a custom rate (Higher than open rate)

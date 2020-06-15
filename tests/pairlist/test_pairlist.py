@@ -421,6 +421,23 @@ def test__whitelist_for_active_markets(mocker, whitelist_conf, markets, pairlist
     assert log_message in caplog.text
 
 
+@pytest.mark.parametrize("pairlist", AVAILABLE_PAIRLISTS)
+def test__whitelist_for_active_markets_empty(mocker, whitelist_conf, markets, pairlist, tickers):
+    whitelist_conf['pairlists'][0]['method'] = pairlist
+
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
+
+    freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          markets=PropertyMock(return_value=None),
+                          get_tickers=tickers
+                          )
+    # Assign starting whitelist
+    pairlist_handler = freqtrade.pairlists._pairlist_handlers[0]
+    with pytest.raises(OperationalException, match=r'Markets not loaded.*'):
+        pairlist_handler._whitelist_for_active_markets(['ETH/BTC'])
+
+
 def test_volumepairlist_invalid_sortvalue(mocker, markets, whitelist_conf):
     whitelist_conf['pairlists'][0].update({"sort_key": "asdf"})
 

@@ -1590,6 +1590,7 @@ def buy_order_fee():
         'datetime': str(arrow.utcnow().shift(minutes=-601).datetime),
         'price': 0.245441,
         'amount': 8.0,
+        'cost': 1.963528,
         'remaining': 90.99181073,
         'status': 'closed',
         'fee': None

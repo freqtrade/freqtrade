@@ -139,8 +139,8 @@ class FreqtradeBot:
         :return: True if one or more trades has been created or closed, False otherwise
         """
 
-        # Check whether markets have to be reloaded
-        self.exchange._reload_markets()
+        # Check whether markets have to be reloaded and reload them when it's needed
+        self.exchange.reload_markets()
 
         # Query trades from persistence layer
         trades = Trade.get_open_trades()
@@ -702,11 +702,10 @@ class FreqtradeBot:
                 self.dataprovider.ohlcv(trade.pair, self.strategy.timeframe))
 
         if config_ask_strategy.get('use_order_book', False):
-            # logger.debug('Order book %s',orderBook)
             order_book_min = config_ask_strategy.get('order_book_min', 1)
             order_book_max = config_ask_strategy.get('order_book_max', 1)
-            logger.info(f'Using order book between {order_book_min} and {order_book_max} '
-                        f'for selling {trade.pair}...')
+            logger.debug(f'Using order book between {order_book_min} and {order_book_max} '
+                         f'for selling {trade.pair}...')
 
             order_book = self._order_book_gen(trade.pair, f"{config_ask_strategy['price_side']}s",
                                               order_book_min=order_book_min,
@@ -774,13 +773,13 @@ class FreqtradeBot:
 
         try:
             # First we check if there is already a stoploss on exchange
-            stoploss_order = self.exchange.get_order(trade.stoploss_order_id, trade.pair) \
+            stoploss_order = self.exchange.get_stoploss_order(trade.stoploss_order_id, trade.pair) \
                 if trade.stoploss_order_id else None
         except InvalidOrderException as exception:
             logger.warning('Unable to fetch stoploss order: %s', exception)
 
         # We check if stoploss order is fulfilled
-        if stoploss_order and stoploss_order['status'] == 'closed':
+        if stoploss_order and stoploss_order['status'] in ('closed', 'triggered'):
             trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
             self.update_trade_state(trade, stoploss_order, sl_order=True)
             # Lock pair for one candle to prevent immediate rebuys
@@ -807,7 +806,7 @@ class FreqtradeBot:
                 return False
 
         # If stoploss order is canceled for some reason we add it
-        if stoploss_order and stoploss_order['status'] == 'canceled':
+        if stoploss_order and stoploss_order['status'] in ('canceled', 'cancelled'):
             if self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss,
                                           rate=trade.stop_loss):
                 return False
@@ -840,7 +839,7 @@ class FreqtradeBot:
                 logger.info('Trailing stoploss: cancelling current stoploss on exchange (id:{%s}) '
                             'in order to add another one ...', order['id'])
                 try:
-                    self.exchange.cancel_order(order['id'], trade.pair)
+                    self.exchange.cancel_stoploss_order(order['id'], trade.pair)
                 except InvalidOrderException:
                     logger.exception(f"Could not cancel stoploss order {order['id']} "
                                      f"for pair {trade.pair}")
@@ -1068,7 +1067,7 @@ class FreqtradeBot:
         # First cancelling stoploss on exchange ...
         if self.strategy.order_types.get('stoploss_on_exchange') and trade.stoploss_order_id:
             try:
-                self.exchange.cancel_order(trade.stoploss_order_id, trade.pair)
+                self.exchange.cancel_stoploss_order(trade.stoploss_order_id, trade.pair)
             except InvalidOrderException:
                 logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
 

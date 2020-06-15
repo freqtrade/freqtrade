@@ -139,7 +139,7 @@ By letting the bot know how much history is needed, backtest trades can start at
 
 #### Example
 
-Let's try to backtest 1 month (January 2019) of 5m candles using the an example strategy with EMA100, as above.
+Let's try to backtest 1 month (January 2019) of 5m candles using an example strategy with EMA100, as above.
 
 ``` bash
 freqtrade backtesting --timerange 20190101-20190201 --timeframe 5m
@@ -557,7 +557,7 @@ Locks can also be lifted manually, by calling `self.unlock_pair(pair)`.
 To verify if a pair is currently locked, use `self.is_pair_locked(pair)`.
 
 !!! Note
-    Locked pairs are not persisted, so a restart of the bot, or calling `/reload_conf` will reset locked pairs.
+    Locked pairs are not persisted, so a restart of the bot, or calling `/reload_config` will reset locked pairs.
 
 !!! Warning
     Locking pairs is not functioning during backtesting.

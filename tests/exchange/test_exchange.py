@@ -25,7 +25,7 @@ from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import get_patched_exchange, log_has, log_has_re
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
-EXCHANGES = ['bittrex', 'binance', 'kraken', ]
+EXCHANGES = ['bittrex', 'binance', 'kraken', 'ftx']
 
 
 # Source: https://stackoverflow.com/questions/29881236/how-to-mock-asyncio-coroutines
@@ -352,7 +352,7 @@ def test__load_markets(default_conf, mocker, caplog):
     assert ex.markets == expected_return
 
 
-def test__reload_markets(default_conf, mocker, caplog):
+def test_reload_markets(default_conf, mocker, caplog):
     caplog.set_level(logging.DEBUG)
     initial_markets = {'ETH/BTC': {}}
 
@@ -371,17 +371,17 @@ def test__reload_markets(default_conf, mocker, caplog):
     assert exchange.markets == initial_markets
 
     # less than 10 minutes have passed, no reload
-    exchange._reload_markets()
+    exchange.reload_markets()
     assert exchange.markets == initial_markets
 
     # more than 10 minutes have passed, reload is executed
     exchange._last_markets_refresh = arrow.utcnow().timestamp - 15 * 60
-    exchange._reload_markets()
+    exchange.reload_markets()
     assert exchange.markets == updated_markets
     assert log_has('Performing scheduled market reload..', caplog)
 
 
-def test__reload_markets_exception(default_conf, mocker, caplog):
+def test_reload_markets_exception(default_conf, mocker, caplog):
     caplog.set_level(logging.DEBUG)
 
     api_mock = MagicMock()
@@ -390,7 +390,7 @@ def test__reload_markets_exception(default_conf, mocker, caplog):
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
 
     # less than 10 minutes have passed, no reload
-    exchange._reload_markets()
+    exchange.reload_markets()
     assert exchange._last_markets_refresh == 0
     assert log_has_re(r"Could not reload markets.*", caplog)
 
@@ -1258,7 +1258,8 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
 
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
-    since = 5 * 60 * 500 * 1.8
+
+    since = 5 * 60 * exchange._ft_has['ohlcv_candle_limit'] * 1.8
     ret = exchange.get_historic_ohlcv(pair, "5m", int((arrow.utcnow().timestamp - since) * 1000))
 
     assert exchange._async_get_candle_history.call_count == 2
@@ -1733,6 +1734,7 @@ def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     assert exchange.cancel_order(order_id='123', pair='TKN/BTC') == {}
+    assert exchange.cancel_stoploss_order(order_id='123', pair='TKN/BTC') == {}
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
@@ -1818,6 +1820,25 @@ def test_cancel_order(default_conf, mocker, exchange_name):
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_cancel_stoploss_order(default_conf, mocker, exchange_name):
+    default_conf['dry_run'] = False
+    api_mock = MagicMock()
+    api_mock.cancel_order = MagicMock(return_value=123)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    assert exchange.cancel_stoploss_order(order_id='_', pair='TKN/BTC') == 123
+
+    with pytest.raises(InvalidOrderException):
+        api_mock.cancel_order = MagicMock(side_effect=ccxt.InvalidOrder("Did not find order"))
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+        exchange.cancel_stoploss_order(order_id='_', pair='TKN/BTC')
+    assert api_mock.cancel_order.call_count == 1
+
+    ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
+                           "cancel_stoploss_order", "cancel_order",
+                           order_id='_', pair='TKN/BTC')
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_order(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = True
     order = MagicMock()
@@ -1843,6 +1864,38 @@ def test_get_order(default_conf, mocker, exchange_name):
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            'get_order', 'fetch_order',
+                           order_id='_', pair='TKN/BTC')
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_get_stoploss_order(default_conf, mocker, exchange_name):
+    # Don't test FTX here - that needs a seperate test
+    if exchange_name == 'ftx':
+        return
+    default_conf['dry_run'] = True
+    order = MagicMock()
+    order.myid = 123
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    exchange._dry_run_open_orders['X'] = order
+    assert exchange.get_stoploss_order('X', 'TKN/BTC').myid == 123
+
+    with pytest.raises(InvalidOrderException, match=r'Tried to get an invalid dry-run-order.*'):
+        exchange.get_stoploss_order('Y', 'TKN/BTC')
+
+    default_conf['dry_run'] = False
+    api_mock = MagicMock()
+    api_mock.fetch_order = MagicMock(return_value=456)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    assert exchange.get_stoploss_order('X', 'TKN/BTC') == 456
+
+    with pytest.raises(InvalidOrderException):
+        api_mock.fetch_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+        exchange.get_stoploss_order(order_id='_', pair='TKN/BTC')
+    assert api_mock.fetch_order.call_count == 1
+
+    ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
+                           'get_stoploss_order', 'fetch_order',
                            order_id='_', pair='TKN/BTC')
 
 
@@ -2192,12 +2245,18 @@ def test_extract_cost_curr_rate(mocker, default_conf, order, expected) -> None:
         'fee': {'currency': 'NEO', 'cost': 0.0012}}, 0.001944),
     ({'symbol': 'ETH/BTC', 'amount': 2.21, 'cost': 0.02992561,
         'fee': {'currency': 'NEO', 'cost': 0.00027452}}, 0.00074305),
-    # TODO: More tests here!
     # Rate included in return - return as is
     ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
         'fee': {'currency': 'USDT', 'cost': 0.34, 'rate': 0.01}}, 0.01),
     ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
         'fee': {'currency': 'USDT', 'cost': 0.34, 'rate': 0.005}}, 0.005),
+    # 0.1% filled - no costs (kraken - #3431)
+    ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.0,
+      'fee': {'currency': 'BTC', 'cost': 0.0, 'rate': None}}, None),
+    ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.0,
+      'fee': {'currency': 'ETH', 'cost': 0.0, 'rate': None}}, 0.0),
+    ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.0,
+      'fee': {'currency': 'NEO', 'cost': 0.0, 'rate': None}}, None),
 ])
 def test_calculate_fee_rate(mocker, default_conf, order, expected) -> None:
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', return_value={'last': 0.081})

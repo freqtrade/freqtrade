@@ -272,7 +272,7 @@ the static list of pairs) if we should buy.
 
 ### Understand order_types
 
-The `order_types` configuration parameter maps actions (`buy`, `sell`, `stoploss`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
+The `order_types` configuration parameter maps actions (`buy`, `sell`, `stoploss`, `emergencysell`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
 
 This allows to buy using limit orders, sell using
 limit-orders, and create stoplosses using using market orders. It also allows to set the
@@ -288,8 +288,12 @@ If this is configured, the following 4 values (`buy`, `sell`, `stoploss` and
 `emergencysell` is an optional value, which defaults to `market` and is used when creating stoploss on exchange orders fails.
 The below is the default which is used if this is not configured in either strategy or configuration file.
 
-Since `stoploss_on_exchange` uses limit orders, the exchange needs 2 prices, the stoploss_price and the Limit price.
-`stoploss` defines the stop-price - and limit should be slightly below this. This defaults to 0.99 / 1% (configurable via `stoploss_on_exchange_limit_ratio`).
+Not all Exchanges support `stoploss_on_exchange`. If an exchange supports both limit and market stoploss orders, then the value of `stoploss` will be used to determine the stoploss type.
+
+If `stoploss_on_exchange` uses limit orders, the exchange needs 2 prices, the stoploss_price and the Limit price.
+`stoploss` defines the stop-price - and limit should be slightly below this.
+
+This defaults to 0.99 / 1% (configurable via `stoploss_on_exchange_limit_ratio`).
 Calculation example: we bought the asset at 100$.
 Stop-price is 95$, then limit would be `95 * 0.99 = 94.05$` - so the stoploss will happen between 95$ and 94.05$.
 
@@ -331,7 +335,10 @@ Configuration:
     refer to [the stoploss documentation](stoploss.md).
 
 !!! Note
-    If `stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new order.
+    If `stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new stoploss order.
+
+!!! Warning "Using market orders"
+    Please read the section [Market order pricing](#market-order-pricing) section when using market orders.
 
 !!! Warning "Warning: stoploss_on_exchange failures"
     If stoploss on exchange creation fails for some reason, then an "emergency sell" is initiated. By default, this will sell the asset using a market order. The order-type for the emergency-sell can be changed by setting the `emergencysell` value in the `order_types` dictionary - however this is not advised.
@@ -459,6 +466,9 @@ Prices are always retrieved right before an order is placed, either by querying 
 !!! Note
     Orderbook data used by Freqtrade are the data retrieved from exchange by the ccxt's function `fetch_order_book()`, i.e. are usually data from the L2-aggregated orderbook, while the ticker data are the structures returned by the ccxt's `fetch_ticker()`/`fetch_tickers()` functions. Refer to the ccxt library [documentation](https://github.com/ccxt/ccxt/wiki/Manual#market-data) for more details.
 
+!!! Warning "Using market orders"
+    Please read the section [Market order pricing](#market-order-pricing) section when using market orders.
+
 ### Buy price
 
 #### Check depth of market
@@ -553,6 +563,29 @@ A fixed slot (mirroring `bid_strategy.order_book_top`) can be defined by setting
 
 When not using orderbook (`ask_strategy.use_order_book=False`), the price at the `ask_strategy.price_side` side (defaults to `"ask"`) from the ticker will be used as the sell price.
 
+### Market order pricing
+
+When using market orders, prices should be configured to use the "correct" side of the orderbook to allow realistic pricing detection.
+Assuming both buy and sell are using market orders, a configuration similar to the following might be used
+
+``` jsonc
+  "order_types": {
+    "buy": "market",
+    "sell": "market"
+    // ...
+  },
+  "bid_strategy": {
+    "price_side": "ask",
+    // ...
+  },
+  "ask_strategy":{
+    "price_side": "bid",
+    // ...
+  },
+```
+
+Obviously, if only one side is using limit orders, different pricing combinations can be used.
+
 ## Pairlists and Pairlist Handlers
 
 Pairlist Handlers define the list of pairs (pairlist) that the bot should trade. They are configured in the `pairlists` section of the configuration settings.
@@ -591,7 +624,7 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 
 #### Volume Pair List
 
-`VolumePairList` employs sorting/filtering of pairs by their trading volume. I selects `number_assets` top pairs with sorting based on the `sort_key` (which can only be `quoteVolume`).
+`VolumePairList` employs sorting/filtering of pairs by their trading volume. It selects `number_assets` top pairs with sorting based on the `sort_key` (which can only be `quoteVolume`).
 
 When used in the chain of Pairlist Handlers in a non-leading position (after StaticPairList and other Pairlist Filters), `VolumePairList` considers outputs of previous Pairlist Handlers, adding its sorting/selection of the pairs by the trading volume.
 
@@ -609,7 +642,7 @@ The `refresh_period` setting allows to define the period (in seconds), at which 
         "number_assets": 20,
         "sort_key": "quoteVolume",
         "refresh_period": 1800,
-],
+}],
 ```
 
 #### PrecisionFilter
