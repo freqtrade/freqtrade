@@ -6,55 +6,51 @@ If you do not know what things mentioned here mean, you probably do not need it.
 
 ## Running multiple instances of Freqtrade
 
-This page is meant to be a quick tip for new users on how to run multiple bots a the same time, on the same computer (or other devices). 
+This section will show you how to run multiple bots a the same time, on the same computer (or other devices).
 
-In order to keep track of your trades, profits, etc., freqtrade is using a SQLite database where it stores various types of information such as the trades you performed in the past and the current position(s) you are holding at any time. This allow you to keep track of your profits, but most importantly, keep track of ongoing activity if the bot process would finish unexpectedly for one or another reason.
+### Things to consider
 
-As for various other things, upon docker or manual install, [freqtrade will create by default two different databases, one for dry-run, and the other for live trades.](https://www.freqtrade.io/en/latest/docker/#create-your-database-file)
+* use different database files.
+* use different telegram Bots (requires 2 different configuration files).
+* use different ports (*applies only when webserver is enabled).
 
-By default, executing the trade command in the command line interface, without specifying any database (`--db-url`) argument, freqtrade will store your trades and performance history in one of these two default databases, depending if dry-run mode is enabled or not. These databases are actual .sqlite files which are stored in your main freqtrade folder, under the name `tradesv3.dryrun.sqlite` for the dry-run mode, and `tradesv3.sqlite` for the live mode.
+#### Different database files
 
-The optional argument to the trade command used to specify the path of these files is `--db-url`. So when you are starting a bot with only the config and strategy arguments in dry-run mode for instance :
+In order to keep track of your trades, profits, etc., freqtrade is using a SQLite database where it stores various types of information such as the trades you performed in the past and the current position(s) you are holding at any time. This allows you to keep track of your profits, but most importantly, keep track of ongoing activity if the bot process would be restarted or would be terminated unexpectently.
+
+Freqtrade will, by default, use seperate database files for dry-run and live bots (this assumes no database-url is given in either configuration nor via command line argument).
+For live trading mode, the default database will be `tradesv3.sqlite`, and for dry-run, it will be `tradesv3.dryrun.sqlite`.
+
+The optional argument to the trade command used to specify the path of these files is `--db-url`, which requires a valid SQLAlchemy url.
+So when you are starting a bot with only the config and strategy arguments in dry-run mode, the following 2 commands would have the same outcome.
 
 ``` bash
 freqtrade trade -c MyConfig.json -s MyStrategy
-```
-
-is equivalent to:
-
-``` bash
+# is equivalent to
 freqtrade trade -c MyConfig.json -s MyStrategy --db-url sqlite:///tradesv3.dryrun.sqlite
 ```
 
-That means that if you are running the trade command in two different terminals, for example to test your strategy both for trades in USDT and in another instance for trades in BTC, you will have to run them with different databases. Even if you are using the same configuration file and strategy.
+That means that if you are running the trade command in two different terminals, for example to test your strategy both for trades in USDT and in another instance for trades in BTC, you will have to run them with different databases.
 
- If you specify the URL of a database which does not exist, freqtrade will create one with the name you specified. So for example if you want to test your custom strategy in BTC vs USDT, you could type in one terminal :
-
-``` bash
-freqtrade trade -c MyConfigBTC.json -s MyCustomStrategy --db-url sqlite://path/tradesBTC.dryrun.sqlite
-```
-
-and in the other
+If you specify the URL of a database which does not exist, freqtrade will create one with the name you specified. So to test your custom strategy in BTC and USDT, you could use the following commands (in 2 seperate terminals):
 
 ``` bash
-freqtrade trade -c MyConfigUSDT.json -s MyCustomStrategy --db-url sqlite://path/path/tradesUSDT.dryrun.sqlite
+# Terminal 1:
+freqtrade trade -c MyConfigBTC.json -s MyCustomStrategy --db-url sqlite:///user_data/tradesBTC.dryrun.sqlite
+# Terminal 2:
+freqtrade trade -c MyConfigUSDT.json -s MyCustomStrategy --db-url sqlite:///user_data/tradesUSDT.dryrun.sqlite
 ```
 
-Conversely, if you wish to do the same thing in production mode, you will also have to create at least one new database (in addition to the default one) and specify the path to the "live" databases, for example :
+Conversely, if you wish to do the same thing in production mode, you will also have to create at least one new database (in addition to the default one) and specify the path to the "live" databases, for example:
 
 ``` bash
-freqtrade trade -c MyConfigBTC.json -s MyCustomStrategy --db-url sqlite://path/tradesBTC.live.sqlite
+# Terminal 1:
+freqtrade trade -c MyConfigBTC.json -s MyCustomStrategy --db-url sqlite:///user_data/tradesBTC.live.sqlite
+# Terminal 2:
+freqtrade trade -c MyConfigUSDT.json -s MyCustomStrategy --db-url sqlite:///user_data/tradesUSDT.live.sqlite
 ```
 
-and in the other
-
-``` bash
-freqtrade trade -c MyConfigUSDT.json -s MyCustomStrategy --db-url sqlite://path/path/tradesUSDT.live.sqlite
-```
-
-For more information regarding usage of the sqlite databases, for example to manually enter or remove trades, please refer to the following page:
-
-https://www.freqtrade.io/en/latest/sql_cheatsheet/
+For more information regarding usage of the sqlite databases, for example to manually enter or remove trades, please refer to the [SQL Cheatsheet](sql_cheatsheet.md)
 
 ## Configure the bot running as a systemd service
 
