@@ -811,3 +811,27 @@ def test_api_forcesell(botclient, mocker, ticker, fee, markets):
                      data='{"tradeid": "1"}')
     assert_response(rc)
     assert rc.json == {'result': 'Created sell order for trade 1.'}
+
+
+def test_api_pair_history(botclient, ohlcv_history):
+    ftbot, client = botclient
+    timeframe = '5m'
+    amount = 2
+    ohlcv_history['sma'] = ohlcv_history['close'].rolling(2).mean()
+    ftbot.dataprovider._set_cached_df("XRP/BTC", timeframe, ohlcv_history)
+
+    rc = client_get(client,
+                    f"{BASE_URI}/pair_history?limit={amount}&pair=XRP%2FBTC&timeframe={timeframe}")
+    assert_response(rc)
+    assert 'columns' in rc.json
+    assert isinstance(rc.json['columns'], list)
+    assert rc.json['columns'] == ['date', 'open', 'high', 'low', 'close', 'volume', 'sma']
+
+    assert 'data' in rc.json
+    assert len(rc.json['data']) == amount
+
+    assert (rc.json['data'] ==
+            [[1511686200000, 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869, None],
+             [1511686500000, 8.88e-05, 8.942e-05, 8.88e-05,
+                 8.893e-05, 0.05874751, 8.886500000000001e-05]
+             ])
