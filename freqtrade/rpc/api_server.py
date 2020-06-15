@@ -517,7 +517,7 @@ class ApiServer(RPC):
         """
         pair = request.args.get("pair")
         timeframe = request.args.get("timeframe")
-        limit = request.args.get("limit")
+        limit = request.args.get("limit", type=int)
 
         results = self._rpc_analysed_history(pair, timeframe, limit)
         return self.rest_dump(results)

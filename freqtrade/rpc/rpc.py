@@ -9,7 +9,7 @@ from math import isnan
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import arrow
-from numpy import NAN, mean
+from numpy import NAN, mean, int64
 
 from freqtrade.constants import CANCEL_REASON
 from freqtrade.exceptions import ExchangeError, PricingError
@@ -656,12 +656,14 @@ class RPC:
 
     def _rpc_analysed_history(self, pair, timeframe, limit):
 
-        data, last_analyzed = self._freqtrade.dataprovider.get_analyzed_dataframe(pair, timeframe)
+        _data, last_analyzed = self._freqtrade.dataprovider.get_analyzed_dataframe(pair, timeframe)
         if limit:
-            data = data.iloc[:-limit]
+            _data = _data.iloc[-limit:]
+        _data = _data.replace({NAN: None})
+        _data['date'] = _data['date'].astype(int64) // 1000 // 1000
         return {
-            'columns': data.columns,
-            'data': data.values.tolist(),
-            'length': len(data),
+            'columns': list(_data.columns),
+            'data': _data.values.tolist(),
+            'length': len(_data),
             'last_analyzed': last_analyzed,
         }
