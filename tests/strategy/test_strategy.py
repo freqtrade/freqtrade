@@ -386,7 +386,7 @@ def test_call_deprecated_function(result, monkeypatch, default_conf, caplog):
     assert isinstance(selldf, DataFrame)
     assert 'sell' in selldf
 
-    assert log_has('DEPRECATED: Please migrate to using timeframe instead of ticker_interval.',
+    assert log_has("DEPRECATED: Please migrate to using 'timeframe' instead of 'ticker_interval'.",
                    caplog)
 
 

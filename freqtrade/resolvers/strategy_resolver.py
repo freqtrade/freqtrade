@@ -54,7 +54,7 @@ class StrategyResolver(IResolver):
             # Assign ticker_interval to timeframe to keep compatibility
             if 'timeframe' not in config:
                 logger.warning(
-                    "DEPRECATED: Please migrate to using timeframe instead of ticker_interval."
+                    "DEPRECATED: Please migrate to using 'timeframe' instead of 'ticker_interval'."
                     )
                 strategy.timeframe = strategy.ticker_interval
 

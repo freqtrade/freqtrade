@@ -31,14 +31,14 @@ class IHyperOpt(ABC):
     Class attributes you can use:
         ticker_interval -> int: value of the ticker interval to use for the strategy
     """
-    ticker_interval: str  # deprecated
+    ticker_interval: str  # DEPRECATED
     timeframe: str
 
     def __init__(self, config: dict) -> None:
         self.config = config
 
         # Assign ticker_interval to be used in hyperopt
-        IHyperOpt.ticker_interval = str(config['timeframe'])  # DEPRECTED
+        IHyperOpt.ticker_interval = str(config['timeframe'])  # DEPRECATED
         IHyperOpt.timeframe = str(config['timeframe'])
 
     @staticmethod
