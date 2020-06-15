@@ -26,15 +26,15 @@ logger = logging.getLogger(__name__)
 BASE_URI = "/api/v1"
 
 
-class ArrowJSONEncoder(JSONEncoder):
+class FTJSONEncoder(JSONEncoder):
     def default(self, obj):
         try:
             if isinstance(obj, Arrow):
                 return obj.for_json()
-            elif isinstance(obj, date):
-                return obj.strftime("%Y-%m-%d")
             elif isinstance(obj, datetime):
                 return obj.strftime(DATETIME_PRINT_FORMAT)
+            elif isinstance(obj, date):
+                return obj.strftime("%Y-%m-%d")
             iterable = iter(obj)
         except TypeError:
             pass
@@ -108,7 +108,7 @@ class ApiServer(RPC):
             'jwt_secret_key', 'super-secret')
 
         self.jwt = JWTManager(self.app)
-        self.app.json_encoder = ArrowJSONEncoder
+        self.app.json_encoder = FTJSONEncoder
 
         self.app.teardown_appcontext(shutdown_session)
 
@@ -508,9 +508,16 @@ class ApiServer(RPC):
     def _analysed_history(self):
         """
         Handler for /pair_history.
+        Takes the following get arguments:
+        get:
+          parameters:
+            - pair: Pair
+            - timeframe: Timeframe to get data for (should be aligned to strategy.timeframe)
+            - limit: Limit return length to the latest X candles
         """
         pair = request.args.get("pair")
         timeframe = request.args.get("timeframe")
+        limit = request.args.get("limit")
 
-        results = self._rpc_analysed_history(pair, timeframe)
+        results = self._rpc_analysed_history(pair, timeframe, limit)
         return self.rest_dump(results)
