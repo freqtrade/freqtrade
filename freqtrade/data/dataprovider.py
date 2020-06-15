@@ -26,7 +26,7 @@ class DataProvider:
         self._config = config
         self._exchange = exchange
         self._pairlists = pairlists
-        self.__cached_pairs: Dict[PairWithTimeframe, Tuple(DataFrame, datetime)] = {}
+        self.__cached_pairs: Dict[PairWithTimeframe, Tuple[DataFrame, datetime]] = {}
 
     def _set_cached_df(self, pair: str, timeframe: str, dataframe: DataFrame) -> None:
         """
@@ -102,8 +102,7 @@ class DataProvider:
             logger.warning(f"No data found for ({pair}, {timeframe}).")
         return data
 
-    def get_analyzed_dataframe(self, pair: str,
-                               timeframe: str = None) -> Tuple[DataFrame, datetime]:
+    def get_analyzed_dataframe(self, pair: str, timeframe: str) -> Tuple[DataFrame, datetime]:
         """
         :param pair: pair to get the data for
         :param timeframe: timeframe to get data for

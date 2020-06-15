@@ -14,7 +14,7 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.exceptions import StrategyError
+from freqtrade.exceptions import StrategyError, OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.persistence import Trade
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
@@ -276,7 +276,8 @@ class IStrategy(ABC):
             # Defs that only make change on new candle data.
             dataframe = self.analyze_ticker(dataframe, metadata)
             self._last_candle_seen_per_pair[pair] = dataframe.iloc[-1]['date']
-            self.dp._set_cached_df(pair, self.timeframe, dataframe)
+            if self.dp:
+                self.dp._set_cached_df(pair, self.timeframe, dataframe)
         else:
             logger.debug("Skipping TA Analysis for already analyzed candle")
             dataframe['buy'] = 0
@@ -295,6 +296,8 @@ class IStrategy(ABC):
         The analyzed dataframe is then accessible via `dp.get_analyzed_dataframe()`.
         :param pair: Pair to analyze.
         """
+        if not self.dp:
+            raise OperationalException("DataProvider not found.")
         dataframe = self.dp.ohlcv(pair, self.timeframe)
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning('Empty candle (OHLCV) data for pair %s', pair)
@@ -349,6 +352,8 @@ class IStrategy(ABC):
         :param dataframe: Dataframe to analyze
         :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
         """
+        if not self.dp:
+            raise OperationalException("DataProvider not found.")
 
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, timeframe)
 
