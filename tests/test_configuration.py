@@ -87,7 +87,7 @@ def test_load_config_file_error_range(default_conf, mocker, caplog) -> None:
     assert isinstance(x, str)
     assert (x == '{"max_open_trades": 1, "stake_currency": "BTC", '
             '"stake_amount": .001, "fiat_display_currency": "USD", '
-            '"ticker_interval": "5m", "dry_run": true, ')
+            '"timeframe": "5m", "dry_run": true, "cance')
 
 
 def test__args_to_config(caplog):
@@ -401,8 +401,8 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'datadir' in config
     assert 'user_data_dir' in config
     assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
-    assert 'ticker_interval' in config
-    assert not log_has('Parameter -i/--ticker-interval detected ...', caplog)
+    assert 'timeframe' in config
+    assert not log_has('Parameter -i/--timeframe detected ...', caplog)
 
     assert 'position_stacking' not in config
     assert not log_has('Parameter --enable-position-stacking detected ...', caplog)
@@ -448,8 +448,8 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert log_has('Using user-data directory: {} ...'.format(Path("/tmp/freqtrade")), caplog)
     assert 'user_data_dir' in config
 
-    assert 'ticker_interval' in config
-    assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
+    assert 'timeframe' in config
+    assert log_has('Parameter -i/--timeframe detected ... Using timeframe: 1m ...',
                    caplog)
 
     assert 'position_stacking' in config
@@ -494,8 +494,8 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
-    assert 'ticker_interval' in config
-    assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
+    assert 'timeframe' in config
+    assert log_has('Parameter -i/--timeframe detected ... Using timeframe: 1m ...',
                    caplog)
 
     assert 'strategy_list' in config
@@ -1140,3 +1140,15 @@ def test_process_deprecated_setting(mocker, default_conf, caplog):
                                'sectionB', 'deprecated_setting')
     assert not log_has_re('DEPRECATED', caplog)
     assert default_conf['sectionA']['new_setting'] == 'valA'
+
+
+def test_process_deprecated_ticker_interval(mocker, default_conf, caplog):
+    message = "DEPRECATED: Please use 'timeframe' instead of 'ticker_interval."
+    process_temporary_deprecated_settings(default_conf)
+    assert not log_has(message, caplog)
+
+    del default_conf['timeframe']
+    default_conf['ticker_interval'] = '15m'
+    process_temporary_deprecated_settings(default_conf)
+    assert log_has(message, caplog)
+    assert default_conf['ticker_interval'] == '15m'

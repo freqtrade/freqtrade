@@ -924,7 +924,7 @@ def test_process_informative_pairs_added(default_conf, ticker, mocker) -> None:
     assert refresh_mock.call_count == 1
     assert ("BTC/ETH", "1m") in refresh_mock.call_args[0][0]
     assert ("ETH/USDT", "1h") in refresh_mock.call_args[0][0]
-    assert ("ETH/BTC", default_conf["ticker_interval"]) in refresh_mock.call_args[0][0]
+    assert ("ETH/BTC", default_conf["timeframe"]) in refresh_mock.call_args[0][0]
 
 
 @pytest.mark.parametrize("side,ask,bid,last,last_ab,expected", [

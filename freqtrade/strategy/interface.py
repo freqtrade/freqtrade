@@ -62,7 +62,7 @@ class IStrategy(ABC):
     Attributes you can use:
         minimal_roi -> Dict: Minimal ROI designed for the strategy
         stoploss -> float: optimal stoploss designed for the strategy
-        ticker_interval -> str: value of the timeframe (ticker interval) to use with the strategy
+        timeframe -> str: value of the timeframe (ticker interval) to use with the strategy
     """
     # Strategy interface version
     # Default to version 2
@@ -85,8 +85,9 @@ class IStrategy(ABC):
     trailing_stop_positive_offset: float = 0.0
     trailing_only_offset_is_reached = False
 
-    # associated ticker interval
-    ticker_interval: str
+    # associated timeframe
+    ticker_interval: str  # DEPRECATED
+    timeframe: str
 
     # Optional order types
     order_types: Dict = {

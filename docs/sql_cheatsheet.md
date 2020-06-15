@@ -70,7 +70,7 @@ CREATE TABLE trades
     min_rate FLOAT,
     sell_reason VARCHAR,
     strategy VARCHAR,
-    ticker_interval INTEGER,
+    timeframe INTEGER,
     PRIMARY KEY (id),
     CHECK (is_open IN (0, 1))
 );

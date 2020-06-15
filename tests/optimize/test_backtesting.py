@@ -81,7 +81,7 @@ def load_data_test(what, testdatadir):
 
 def simple_backtest(config, contour, num_results, mocker, testdatadir) -> None:
     patch_exchange(mocker)
-    config['ticker_interval'] = '1m'
+    config['timeframe'] = '1m'
     backtesting = Backtesting(config)
 
     data = load_data_test(contour, testdatadir)
@@ -165,7 +165,7 @@ def test_setup_optimize_configuration_without_arguments(mocker, default_conf, ca
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
-    assert 'ticker_interval' in config
+    assert 'timeframe' in config
     assert not log_has_re('Parameter -i/--ticker-interval detected .*', caplog)
 
     assert 'position_stacking' not in config
@@ -189,7 +189,7 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
         '--datadir', '/foo/bar',
-        '--ticker-interval', '1m',
+        '--timeframe', '1m',
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--timerange', ':100',
@@ -208,8 +208,8 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
     assert config['runmode'] == RunMode.BACKTEST
 
     assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
-    assert 'ticker_interval' in config
-    assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
+    assert 'timeframe' in config
+    assert log_has('Parameter -i/--timeframe detected ... Using timeframe: 1m ...',
                    caplog)
 
     assert 'position_stacking' in config
@@ -286,9 +286,9 @@ def test_backtesting_init(mocker, default_conf, order_types) -> None:
     assert not backtesting.strategy.order_types["stoploss_on_exchange"]
 
 
-def test_backtesting_init_no_ticker_interval(mocker, default_conf, caplog) -> None:
+def test_backtesting_init_no_timeframe(mocker, default_conf, caplog) -> None:
     patch_exchange(mocker)
-    del default_conf['ticker_interval']
+    del default_conf['timeframe']
     default_conf['strategy_list'] = ['DefaultStrategy',
                                      'SampleStrategy']
 
@@ -338,7 +338,7 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
 
-    default_conf['ticker_interval'] = '1m'
+    default_conf['timeframe'] = '1m'
     default_conf['datadir'] = testdatadir
     default_conf['export'] = None
     default_conf['timerange'] = '-1510694220'
@@ -368,7 +368,7 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) ->
     mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
 
-    default_conf['ticker_interval'] = "1m"
+    default_conf['timeframe'] = "1m"
     default_conf['datadir'] = testdatadir
     default_conf['export'] = None
     default_conf['timerange'] = '20180101-20180102'
@@ -388,7 +388,7 @@ def test_backtesting_no_pair_left(default_conf, mocker, caplog, testdatadir) -> 
     mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=[]))
 
-    default_conf['ticker_interval'] = "1m"
+    default_conf['timeframe'] = "1m"
     default_conf['datadir'] = testdatadir
     default_conf['export'] = None
     default_conf['timerange'] = '20180101-20180102'
@@ -454,7 +454,7 @@ def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
                 t["close_rate"], 6) < round(ln.iloc[0]["high"], 6))
 
 
-def test_backtest_1min_ticker_interval(default_conf, fee, mocker, testdatadir) -> None:
+def test_backtest_1min_timeframe(default_conf, fee, mocker, testdatadir) -> None:
     default_conf['ask_strategy']['use_sell_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
@@ -535,7 +535,7 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf,
                                         pair='UNITTEST/BTC', datadir=testdatadir)
-    default_conf['ticker_interval'] = '1m'
+    default_conf['timeframe'] = '1m'
     backtesting = Backtesting(default_conf)
     backtesting.strategy.advise_buy = _trend_alternate  # Override
     backtesting.strategy.advise_sell = _trend_alternate  # Override
@@ -574,7 +574,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
 
     # Remove data for one pair from the beginning of the data
     data[pair] = data[pair][tres:].reset_index()
-    default_conf['ticker_interval'] = '5m'
+    default_conf['timeframe'] = '5m'
 
     backtesting = Backtesting(default_conf)
     backtesting.strategy.advise_buy = _trend_alternate_hold  # Override
@@ -625,7 +625,7 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
         '--datadir', str(testdatadir),
-        '--ticker-interval', '1m',
+        '--timeframe', '1m',
         '--timerange', '1510694220-1510700340',
         '--enable-position-stacking',
         '--disable-max-market-positions'
@@ -634,7 +634,7 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
     start_backtesting(args)
     # check the logs, that will contain the backtest result
     exists = [
-        'Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
+        'Parameter -i/--timeframe detected ... Using timeframe: 1m ...',
         'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
         'Parameter --timerange detected: 1510694220-1510700340 ...',
         f'Using data directory: {testdatadir} ...',
@@ -678,7 +678,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         '--config', 'config.json',
         '--datadir', str(testdatadir),
         '--strategy-path', str(Path(__file__).parents[1] / 'strategy/strats'),
-        '--ticker-interval', '1m',
+        '--timeframe', '1m',
         '--timerange', '1510694220-1510700340',
         '--enable-position-stacking',
         '--disable-max-market-positions',
@@ -697,7 +697,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
 
     # check the logs, that will contain the backtest result
     exists = [
-        'Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
+        'Parameter -i/--timeframe detected ... Using timeframe: 1m ...',
         'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
         'Parameter --timerange detected: 1510694220-1510700340 ...',
         f'Using data directory: {testdatadir} ...',
@@ -767,7 +767,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
         '--config', 'config.json',
         '--datadir', str(testdatadir),
         '--strategy-path', str(Path(__file__).parents[1] / 'strategy/strats'),
-        '--ticker-interval', '1m',
+        '--timeframe', '1m',
         '--timerange', '1510694220-1510700340',
         '--enable-position-stacking',
         '--disable-max-market-positions',
@@ -780,7 +780,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
 
     # check the logs, that will contain the backtest result
     exists = [
-        'Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
+        'Parameter -i/--timeframe detected ... Using timeframe: 1m ...',
         'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
         'Parameter --timerange detected: 1510694220-1510700340 ...',
         f'Using data directory: {testdatadir} ...',

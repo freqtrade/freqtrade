@@ -103,7 +103,7 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
                "open_rate", "close_rate", "amount", "duration", "sell_reason",
                "fee_open", "fee_close", "open_rate_requested", "close_rate_requested",
                "stake_amount", "max_rate", "min_rate", "id", "exchange",
-               "stop_loss", "initial_stop_loss", "strategy", "ticker_interval"]
+               "stop_loss", "initial_stop_loss", "strategy", "timeframe"]
 
     trades = pd.DataFrame([(t.pair,
                             t.open_date.replace(tzinfo=timezone.utc),
@@ -121,7 +121,7 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
                             t.min_rate,
                             t.id, t.exchange,
                             t.stop_loss, t.initial_stop_loss,
-                            t.strategy, t.ticker_interval
+                            t.strategy, t.timeframe
                             )
                            for t in Trade.get_trades().all()],
                           columns=columns)

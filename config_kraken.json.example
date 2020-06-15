@@ -4,7 +4,7 @@
     "stake_amount": 10,
     "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "EUR",
-    "ticker_interval": "5m",
+    "timeframe": "5m",
     "dry_run": true,
     "cancel_open_orders_on_exit": false,
     "trailing_stop": false,

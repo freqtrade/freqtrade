@@ -47,7 +47,7 @@ def generate_empty_figure():
 def test_init_plotscript(default_conf, mocker, testdatadir):
     default_conf['timerange'] = "20180110-20180112"
     default_conf['trade_source'] = "file"
-    default_conf['ticker_interval'] = "5m"
+    default_conf['timeframe'] = "5m"
     default_conf["datadir"] = testdatadir
     default_conf['exportfilename'] = testdatadir / "backtest-result_test.json"
     ret = init_plotscript(default_conf)

@@ -578,7 +578,7 @@ def test_validate_pairs_stakecompatibility_fail(default_conf, mocker, caplog):
     ('5m'), ("1m"), ("15m"), ("1h")
 ])
 def test_validate_timeframes(default_conf, mocker, timeframe):
-    default_conf["ticker_interval"] = timeframe
+    default_conf["timeframe"] = timeframe
     api_mock = MagicMock()
     id_mock = PropertyMock(return_value='test_exchange')
     type(api_mock).id = id_mock
@@ -596,7 +596,7 @@ def test_validate_timeframes(default_conf, mocker, timeframe):
 
 
 def test_validate_timeframes_failed(default_conf, mocker):
-    default_conf["ticker_interval"] = "3m"
+    default_conf["timeframe"] = "3m"
     api_mock = MagicMock()
     id_mock = PropertyMock(return_value='test_exchange')
     type(api_mock).id = id_mock
@@ -613,7 +613,7 @@ def test_validate_timeframes_failed(default_conf, mocker):
     with pytest.raises(OperationalException,
                        match=r"Invalid timeframe '3m'. This exchange supports.*"):
         Exchange(default_conf)
-    default_conf["ticker_interval"] = "15s"
+    default_conf["timeframe"] = "15s"
 
     with pytest.raises(OperationalException,
                        match=r"Timeframes < 1m are currently not supported by Freqtrade."):
@@ -621,7 +621,7 @@ def test_validate_timeframes_failed(default_conf, mocker):
 
 
 def test_validate_timeframes_emulated_ohlcv_1(default_conf, mocker):
-    default_conf["ticker_interval"] = "3m"
+    default_conf["timeframe"] = "3m"
     api_mock = MagicMock()
     id_mock = PropertyMock(return_value='test_exchange')
     type(api_mock).id = id_mock
@@ -641,7 +641,7 @@ def test_validate_timeframes_emulated_ohlcv_1(default_conf, mocker):
 
 
 def test_validate_timeframes_emulated_ohlcvi_2(default_conf, mocker):
-    default_conf["ticker_interval"] = "3m"
+    default_conf["timeframe"] = "3m"
     api_mock = MagicMock()
     id_mock = PropertyMock(return_value='test_exchange')
     type(api_mock).id = id_mock
@@ -662,7 +662,7 @@ def test_validate_timeframes_emulated_ohlcvi_2(default_conf, mocker):
 
 
 def test_validate_timeframes_not_in_config(default_conf, mocker):
-    del default_conf["ticker_interval"]
+    del default_conf["timeframe"]
     api_mock = MagicMock()
     id_mock = PropertyMock(return_value='test_exchange')
     type(api_mock).id = id_mock
@@ -1351,7 +1351,7 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
     # exchange = Exchange(default_conf)
     await async_ccxt_exception(mocker, default_conf, MagicMock(),
                                "_async_get_candle_history", "fetch_ohlcv",
-                               pair='ABCD/BTC', timeframe=default_conf['ticker_interval'])
+                               pair='ABCD/BTC', timeframe=default_conf['timeframe'])
 
     api_mock = MagicMock()
     with pytest.raises(OperationalException,
@@ -1481,7 +1481,7 @@ async def test___async_get_candle_history_sort(default_conf, mocker, exchange_na
     exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
     sort_mock = mocker.patch('freqtrade.exchange.exchange.sorted', MagicMock(side_effect=sort_data))
     # Test the OHLCV data sort
-    res = await exchange._async_get_candle_history('ETH/BTC', default_conf['ticker_interval'])
+    res = await exchange._async_get_candle_history('ETH/BTC', default_conf['timeframe'])
     assert res[0] == 'ETH/BTC'
     res_ohlcv = res[2]
 
@@ -1518,9 +1518,9 @@ async def test___async_get_candle_history_sort(default_conf, mocker, exchange_na
     # Reset sort mock
     sort_mock = mocker.patch('freqtrade.exchange.sorted', MagicMock(side_effect=sort_data))
     # Test the OHLCV data sort
-    res = await exchange._async_get_candle_history('ETH/BTC', default_conf['ticker_interval'])
+    res = await exchange._async_get_candle_history('ETH/BTC', default_conf['timeframe'])
     assert res[0] == 'ETH/BTC'
-    assert res[1] == default_conf['ticker_interval']
+    assert res[1] == default_conf['timeframe']
     res_ohlcv = res[2]
     # Sorted not called again - data is already in order
     assert sort_mock.call_count == 0

@@ -86,7 +86,7 @@ def check_migrate(engine) -> None:
         logger.debug(f'trying {table_back_name}')
 
     # Check for latest column
-    if not has_column(cols, 'sell_order_status'):
+    if not has_column(cols, 'timeframe'):
         logger.info(f'Running database migration - backup available as {table_back_name}')
 
         fee_open = get_column_def(cols, 'fee_open', 'fee')
@@ -107,7 +107,12 @@ def check_migrate(engine) -> None:
         min_rate = get_column_def(cols, 'min_rate', 'null')
         sell_reason = get_column_def(cols, 'sell_reason', 'null')
         strategy = get_column_def(cols, 'strategy', 'null')
-        ticker_interval = get_column_def(cols, 'ticker_interval', 'null')
+        # If ticker-interval existed use that, else null.
+        if has_column(cols, 'ticker_interval'):
+            timeframe = get_column_def(cols, 'timeframe', 'ticker_interval')
+        else:
+            timeframe = get_column_def(cols, 'timeframe', 'null')
+
         open_trade_price = get_column_def(cols, 'open_trade_price',
                                           f'amount * open_rate * (1 + {fee_open})')
         close_profit_abs = get_column_def(
@@ -133,7 +138,7 @@ def check_migrate(engine) -> None:
                 stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
                 stoploss_order_id, stoploss_last_update,
                 max_rate, min_rate, sell_reason, sell_order_status, strategy,
-                ticker_interval, open_trade_price, close_profit_abs
+                timeframe, open_trade_price, close_profit_abs
                 )
             select id, lower(exchange),
                 case
@@ -155,7 +160,7 @@ def check_migrate(engine) -> None:
                 {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
                 {max_rate} max_rate, {min_rate} min_rate, {sell_reason} sell_reason,
                 {sell_order_status} sell_order_status,
-                {strategy} strategy, {ticker_interval} ticker_interval,
+                {strategy} strategy, {timeframe} timeframe,
                 {open_trade_price} open_trade_price, {close_profit_abs} close_profit_abs
                 from {table_back_name}
              """)
@@ -232,7 +237,7 @@ class Trade(_DECL_BASE):
     sell_reason = Column(String, nullable=True)
     sell_order_status = Column(String, nullable=True)
     strategy = Column(String, nullable=True)
-    ticker_interval = Column(Integer, nullable=True)
+    timeframe = Column(Integer, nullable=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -253,7 +258,8 @@ class Trade(_DECL_BASE):
             'amount': round(self.amount, 8),
             'stake_amount': round(self.stake_amount, 8),
             'strategy': self.strategy,
-            'ticker_interval': self.ticker_interval,
+            'ticker_interval': self.timeframe,  # DEPRECATED
+            'timeframe': self.timeframe,
 
             'fee_open': self.fee_open,
             'fee_open_cost': self.fee_open_cost,

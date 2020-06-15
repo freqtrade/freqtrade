@@ -323,6 +323,7 @@ def test_api_show_config(botclient, mocker):
     assert 'dry_run' in rc.json
     assert rc.json['exchange'] == 'bittrex'
     assert rc.json['ticker_interval'] == '5m'
+    assert rc.json['timeframe'] == '5m'
     assert rc.json['state'] == 'running'
     assert not rc.json['trailing_stop']
     assert 'bid_strategy' in rc.json
@@ -567,6 +568,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
                         'sell_order_status': None,
                         'strategy': 'DefaultStrategy',
                         'ticker_interval': 5,
+                        'timeframe': 5,
                         'exchange': 'bittrex',
                         }]
 
@@ -690,6 +692,7 @@ def test_api_forcebuy(botclient, mocker, fee):
                        'sell_order_status': None,
                        'strategy': None,
                        'ticker_interval': None,
+                       'timeframe': None,
                        'exchange': 'bittrex',
                        }
 

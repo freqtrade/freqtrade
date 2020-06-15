@@ -9,7 +9,7 @@
     "last_stake_amount_min_ratio": 0.5,
     "dry_run": false,
     "cancel_open_orders_on_exit": false,
-    "ticker_interval": "5m",
+    "timeframe": "5m",
     "trailing_stop": false,
     "trailing_stop_positive": 0.005,
     "trailing_stop_positive_offset": 0.0051,

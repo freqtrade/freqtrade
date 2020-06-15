@@ -9,7 +9,7 @@
     "fiat_display_currency": "USD",             // C++-style comment
     "amount_reserve_percent" : 0.05,		// And more, tabs before this comment
     "dry_run": false,
-    "ticker_interval": "5m",
+    "timeframe": "5m",
     "trailing_stop": false,
     "trailing_stop_positive": 0.005,
     "trailing_stop_positive_offset": 0.0051,

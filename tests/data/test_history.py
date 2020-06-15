@@ -354,7 +354,7 @@ def test_init(default_conf, mocker) -> None:
     assert {} == load_data(
         datadir=Path(''),
         pairs=[],
-        timeframe=default_conf['ticker_interval']
+        timeframe=default_conf['timeframe']
     )
 
 
@@ -363,13 +363,13 @@ def test_init_with_refresh(default_conf, mocker) -> None:
     refresh_data(
         datadir=Path(''),
         pairs=[],
-        timeframe=default_conf['ticker_interval'],
+        timeframe=default_conf['timeframe'],
         exchange=exchange
     )
     assert {} == load_data(
         datadir=Path(''),
         pairs=[],
-        timeframe=default_conf['ticker_interval']
+        timeframe=default_conf['timeframe']
     )
 
 

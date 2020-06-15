@@ -115,7 +115,7 @@ class Exchange:
 
         if validate:
             # Check if timeframe is available
-            self.validate_timeframes(config.get('ticker_interval'))
+            self.validate_timeframes(config.get('timeframe'))
 
             # Initial markets load
             self._load_markets()
