@@ -6,13 +6,13 @@ If you do not know what things mentioned here mean, you probably do not need it.
 
 ## Running multiple instances of Freqtrade
 
-This section will show you how to run multiple bots a the same time, on the same computer (or other devices).
+This section will show you how to run multiple bots a the same time, on the same machine.
 
 ### Things to consider
 
 * use different database files.
 * use different telegram Bots (requires 2 different configuration files).
-* use different ports (*applies only when webserver is enabled).
+* use different ports (applies only when webserver is enabled).
 
 #### Different database files
 
