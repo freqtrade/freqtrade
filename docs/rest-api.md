@@ -11,6 +11,7 @@ Sample configuration:
         "enabled": true,
         "listen_ip_address": "127.0.0.1",
         "listen_port": 8080,
+        "verbosity": "info",
         "jwt_secret_key": "somethingrandom",
         "username": "Freqtrader",
         "password": "SuperSecret1!"
@@ -109,7 +110,7 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `start` | | Starts the trader
 | `stop` | | Stops the trader
 | `stopbuy` | | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
-| `reload_conf` | | Reloads the configuration file
+| `reload_config` | | Reloads the configuration file
 | `show_config` | | Shows part of the current configuration with relevant settings to operation
 | `status` | | Lists all open trades
 | `count` | | Displays number of trades used and available
@@ -173,7 +174,7 @@ profit
         Returns the profit summary
         :returns: json object
 
-reload_conf
+reload_config
         Reload configuration
         :returns: json object
 
@@ -195,7 +196,7 @@ stop
 
 stopbuy
         Stop buying (but handle sells gracefully).
-        use reload_conf to reset
+        use reload_config to reset
         :returns: json object
 
 version

@@ -79,7 +79,7 @@ class Exchange:
 
         if config['dry_run']:
             logger.info('Instance is running with dry_run enabled')
-
+        logger.info(f"Using CCXT {ccxt.__version__}")
         exchange_config = config['exchange']
 
         # Deep merge ft_has with default ft_has options
@@ -115,7 +115,7 @@ class Exchange:
 
         if validate:
             # Check if timeframe is available
-            self.validate_timeframes(config.get('ticker_interval'))
+            self.validate_timeframes(config.get('timeframe'))
 
             # Initial markets load
             self._load_markets()
@@ -190,7 +190,7 @@ class Exchange:
     def markets(self) -> Dict:
         """exchange ccxt markets"""
         if not self._api.markets:
-            logger.warning("Markets were not loaded. Loading them now..")
+            logger.info("Markets were not loaded. Loading them now..")
             self._load_markets()
         return self._api.markets
 
@@ -275,8 +275,8 @@ class Exchange:
         except ccxt.BaseError as e:
             logger.warning('Unable to initialize markets. Reason: %s', e)
 
-    def _reload_markets(self) -> None:
-        """Reload markets both sync and async, if refresh interval has passed"""
+    def reload_markets(self) -> None:
+        """Reload markets both sync and async if refresh interval has passed """
         # Check whether markets have to be reloaded
         if (self._last_markets_refresh > 0) and (
                 self._last_markets_refresh + self.markets_refresh_interval
@@ -889,14 +889,19 @@ class Exchange:
         Async wrapper handling downloading trades using either time or id based methods.
         """
 
+        logger.debug(f"_async_get_trade_history(), pair: {pair}, "
+                     f"since: {since}, until: {until}, from_id: {from_id}")
+
+        if until is None:
+            until = ccxt.Exchange.milliseconds()
+            logger.debug(f"Exchange milliseconds: {until}")
+
         if self._trades_pagination == 'time':
             return await self._async_get_trade_history_time(
-                pair=pair, since=since,
-                until=until or ccxt.Exchange.milliseconds())
+                pair=pair, since=since, until=until)
         elif self._trades_pagination == 'id':
             return await self._async_get_trade_history_id(
-                pair=pair, since=since,
-                until=until or ccxt.Exchange.milliseconds(), from_id=from_id
+                pair=pair, since=since, until=until, from_id=from_id
             )
         else:
             raise OperationalException(f"Exchange {self.name} does use neither time, "
@@ -946,6 +951,9 @@ class Exchange:
                 f'Could not cancel order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    # Assign method to get_stoploss_order to allow easy overriding in other classes
+    cancel_stoploss_order = cancel_order
 
     def is_cancel_order_result_suitable(self, corder) -> bool:
         if not isinstance(corder, dict):
@@ -998,6 +1006,9 @@ class Exchange:
                 f'Could not get order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    # Assign method to get_stoploss_order to allow easy overriding in other classes
+    get_stoploss_order = get_order
 
     @retrier
     def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:
@@ -1104,9 +1115,12 @@ class Exchange:
                 order['fee']['cost'] / safe_value_fallback(order, order, 'filled', 'amount'), 8)
         elif fee_curr in self.get_pair_quote_currency(order['symbol']):
             # Quote currency - divide by cost
-            return round(order['fee']['cost'] / order['cost'], 8)
+            return round(order['fee']['cost'] / order['cost'], 8) if order['cost'] else None
         else:
             # If Fee currency is a different currency
+            if not order['cost']:
+                # If cost is None or 0.0 -> falsy, return None
+                return None
             try:
                 comb = self.get_valid_pair_combination(fee_curr, self._config['stake_currency'])
                 tick = self.fetch_ticker(comb)

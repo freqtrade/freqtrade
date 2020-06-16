@@ -71,7 +71,7 @@ CONF_SCHEMA = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': ['integer', 'number'], 'minimum': -1},
-        'ticker_interval': {'type': 'string'},
+        'timeframe': {'type': 'string'},
         'stake_currency': {'type': 'string'},
         'stake_amount': {
             'type': ['number', 'string'],
@@ -221,6 +221,7 @@ CONF_SCHEMA = {
                 },
                 'username': {'type': 'string'},
                 'password': {'type': 'string'},
+                'verbosity': {'type': 'string', 'enum': ['error', 'info']},
             },
             'required': ['enabled', 'listen_ip_address', 'listen_port', 'username', 'password']
         },
@@ -286,7 +287,6 @@ CONF_SCHEMA = {
                 'process_throttle_secs': {'type': 'integer', 'minimum': 600},
                 'calculate_since_number_of_days': {'type': 'integer'},
                 'allowed_risk': {'type': 'number'},
-                'capital_available_percentage': {'type': 'number'},
                 'stoploss_range_min': {'type': 'number'},
                 'stoploss_range_max': {'type': 'number'},
                 'stoploss_range_step': {'type': 'number'},
@@ -303,6 +303,7 @@ CONF_SCHEMA = {
 
 SCHEMA_TRADE_REQUIRED = [
     'exchange',
+    'timeframe',
     'max_open_trades',
     'stake_currency',
     'stake_amount',

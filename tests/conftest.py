@@ -247,7 +247,7 @@ def default_conf(testdatadir):
         "stake_currency": "BTC",
         "stake_amount": 0.001,
         "fiat_display_currency": "USD",
-        "ticker_interval": '5m',
+        "timeframe": '5m',
         "dry_run": True,
         "cancel_open_orders_on_exit": False,
         "minimal_roi": {
@@ -1590,6 +1590,7 @@ def buy_order_fee():
         'datetime': str(arrow.utcnow().shift(minutes=-601).datetime),
         'price': 0.245441,
         'amount': 8.0,
+        'cost': 1.963528,
         'remaining': 90.99181073,
         'status': 'closed',
         'fee': None

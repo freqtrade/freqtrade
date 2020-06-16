@@ -924,7 +924,7 @@ def test_process_informative_pairs_added(default_conf, ticker, mocker) -> None:
     assert refresh_mock.call_count == 1
     assert ("BTC/ETH", "1m") in refresh_mock.call_args[0][0]
     assert ("ETH/USDT", "1h") in refresh_mock.call_args[0][0]
-    assert ("ETH/BTC", default_conf["ticker_interval"]) in refresh_mock.call_args[0][0]
+    assert ("ETH/BTC", default_conf["timeframe"]) in refresh_mock.call_args[0][0]
 
 
 @pytest.mark.parametrize("side,ask,bid,last,last_ab,expected", [
@@ -1126,7 +1126,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     trade.stoploss_order_id = 100
 
     hanging_stoploss_order = MagicMock(return_value={'status': 'open'})
-    mocker.patch('freqtrade.exchange.Exchange.get_order', hanging_stoploss_order)
+    mocker.patch('freqtrade.exchange.Exchange.get_stoploss_order', hanging_stoploss_order)
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert trade.stoploss_order_id == 100
@@ -1139,7 +1139,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     trade.stoploss_order_id = 100
 
     canceled_stoploss_order = MagicMock(return_value={'status': 'canceled'})
-    mocker.patch('freqtrade.exchange.Exchange.get_order', canceled_stoploss_order)
+    mocker.patch('freqtrade.exchange.Exchange.get_stoploss_order', canceled_stoploss_order)
     stoploss.reset_mock()
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
@@ -1164,7 +1164,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
         'average': 2,
         'amount': limit_buy_order['amount'],
     })
-    mocker.patch('freqtrade.exchange.Exchange.get_order', stoploss_order_hit)
+    mocker.patch('freqtrade.exchange.Exchange.get_stoploss_order', stoploss_order_hit)
     assert freqtrade.handle_stoploss_on_exchange(trade) is True
     assert log_has('STOP_LOSS_LIMIT is hit for {}.'.format(trade), caplog)
     assert trade.stoploss_order_id is None
@@ -1183,7 +1183,8 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     # It should try to add stoploss order
     trade.stoploss_order_id = 100
     stoploss.reset_mock()
-    mocker.patch('freqtrade.exchange.Exchange.get_order', side_effect=InvalidOrderException())
+    mocker.patch('freqtrade.exchange.Exchange.get_stoploss_order',
+                 side_effect=InvalidOrderException())
     mocker.patch('freqtrade.exchange.Exchange.stoploss', stoploss)
     freqtrade.handle_stoploss_on_exchange(trade)
     assert stoploss.call_count == 1
@@ -1214,7 +1215,7 @@ def test_handle_sle_cancel_cant_recreate(mocker, default_conf, fee, caplog,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         sell=MagicMock(return_value={'id': limit_sell_order['id']}),
         get_fee=fee,
-        get_order=MagicMock(return_value={'status': 'canceled'}),
+        get_stoploss_order=MagicMock(return_value={'status': 'canceled'}),
         stoploss=MagicMock(side_effect=DependencyException()),
     )
     freqtrade = FreqtradeBot(default_conf)
@@ -1331,7 +1332,7 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
         }
     })
 
-    mocker.patch('freqtrade.exchange.Exchange.get_order', stoploss_order_hanging)
+    mocker.patch('freqtrade.exchange.Exchange.get_stoploss_order', stoploss_order_hanging)
 
     # stoploss initially at 5%
     assert freqtrade.handle_trade(trade) is False
@@ -1346,7 +1347,7 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
 
     cancel_order_mock = MagicMock()
     stoploss_order_mock = MagicMock()
-    mocker.patch('freqtrade.exchange.Exchange.cancel_order', cancel_order_mock)
+    mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order', cancel_order_mock)
     mocker.patch('freqtrade.exchange.Exchange.stoploss', stoploss_order_mock)
 
     # stoploss should not be updated as the interval is 60 seconds
@@ -1429,8 +1430,9 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
             'stopPrice': '0.1'
         }
     }
-    mocker.patch('freqtrade.exchange.Exchange.cancel_order', side_effect=InvalidOrderException())
-    mocker.patch('freqtrade.exchange.Exchange.get_order', stoploss_order_hanging)
+    mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order',
+                 side_effect=InvalidOrderException())
+    mocker.patch('freqtrade.exchange.Exchange.get_stoploss_order', stoploss_order_hanging)
     freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging)
     assert log_has_re(r"Could not cancel stoploss order abcd for pair ETH/BTC.*", caplog)
 
@@ -1439,7 +1441,7 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
 
     # Fail creating stoploss order
     caplog.clear()
-    cancel_mock = mocker.patch("freqtrade.exchange.Exchange.cancel_order", MagicMock())
+    cancel_mock = mocker.patch("freqtrade.exchange.Exchange.cancel_stoploss_order", MagicMock())
     mocker.patch("freqtrade.exchange.Exchange.stoploss", side_effect=DependencyException())
     freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging)
     assert cancel_mock.call_count == 1
@@ -1510,7 +1512,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
         }
     })
 
-    mocker.patch('freqtrade.exchange.Exchange.get_order', stoploss_order_hanging)
+    mocker.patch('freqtrade.exchange.Exchange.get_stoploss_order', stoploss_order_hanging)
 
     # stoploss initially at 20% as edge dictated it.
     assert freqtrade.handle_trade(trade) is False
@@ -1519,7 +1521,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
 
     cancel_order_mock = MagicMock()
     stoploss_order_mock = MagicMock()
-    mocker.patch('freqtrade.exchange.Exchange.cancel_order', cancel_order_mock)
+    mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order', cancel_order_mock)
     mocker.patch('freqtrade.exchange.Binance.stoploss', stoploss_order_mock)
 
     # price goes down 5%
@@ -2632,7 +2634,8 @@ def test_execute_sell_down_stoploss_on_exchange_dry_run(default_conf, ticker, fe
 
 def test_execute_sell_sloe_cancel_exception(mocker, default_conf, ticker, fee, caplog) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    mocker.patch('freqtrade.exchange.Exchange.cancel_order', side_effect=InvalidOrderException())
+    mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order',
+                 side_effect=InvalidOrderException())
     mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(return_value=300))
     sellmock = MagicMock()
     patch_exchange(mocker)
@@ -2680,7 +2683,7 @@ def test_execute_sell_with_stoploss_on_exchange(default_conf, ticker, fee, ticke
         amount_to_precision=lambda s, x, y: y,
         price_to_precision=lambda s, x, y: y,
         stoploss=stoploss,
-        cancel_order=cancel_order,
+        cancel_stoploss_order=cancel_order,
     )
 
     freqtrade = FreqtradeBot(default_conf)
@@ -2771,7 +2774,7 @@ def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf, ticker, f
         "fee": None,
         "trades": None
     })
-    mocker.patch('freqtrade.exchange.Exchange.get_order', stoploss_executed)
+    mocker.patch('freqtrade.exchange.Exchange.get_stoploss_order', stoploss_executed)
 
     freqtrade.exit_positions(trades)
     assert trade.stoploss_order_id is None
@@ -3929,6 +3932,28 @@ def test_get_sell_rate_orderbook_exception(default_conf, mocker, caplog):
     with pytest.raises(PricingError):
         ft.get_sell_rate(pair, True)
     assert log_has("Sell Price at location from orderbook could not be determined.", caplog)
+
+
+def test_get_sell_rate_exception(default_conf, mocker, caplog):
+    # Ticker on one side can be empty in certain circumstances.
+    default_conf['ask_strategy']['price_side'] = 'ask'
+    pair = "ETH/BTC"
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
+                 return_value={'ask': None, 'bid': 0.12})
+    ft = get_patched_freqtradebot(mocker, default_conf)
+    with pytest.raises(PricingError, match=r"Sell-Rate for ETH/BTC was empty."):
+        ft.get_sell_rate(pair, True)
+
+    ft.config['ask_strategy']['price_side'] = 'bid'
+    assert ft.get_sell_rate(pair, True) == 0.12
+    # Reverse sides
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
+                 return_value={'ask': 0.13, 'bid': None})
+    with pytest.raises(PricingError, match=r"Sell-Rate for ETH/BTC was empty."):
+        ft.get_sell_rate(pair, True)
+
+    ft.config['ask_strategy']['price_side'] = 'ask'
+    assert ft.get_sell_rate(pair, True) == 0.13
 
 
 def test_startup_state(default_conf, mocker):

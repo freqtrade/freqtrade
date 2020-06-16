@@ -60,10 +60,16 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
 
     if (config.get('edge', {}).get('enabled', False)
        and 'capital_available_percentage' in config.get('edge', {})):
-        logger.warning(
+        raise OperationalException(
             "DEPRECATED: "
             "Using 'edge.capital_available_percentage' has been deprecated in favor of "
             "'tradable_balance_ratio'. Please migrate your configuration to "
             "'tradable_balance_ratio' and remove 'capital_available_percentage' "
             "from the edge configuration."
         )
+    if 'ticker_interval' in config:
+        logger.warning(
+            "DEPRECATED: "
+            "Please use 'timeframe' instead of 'ticker_interval."
+        )
+        config['timeframe'] = config['ticker_interval']

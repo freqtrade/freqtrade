@@ -42,8 +42,12 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         rpc._rpc_trade_status()
 
     freqtradebot.enter_positions()
+    trades = Trade.get_open_trades()
+    trades[0].open_order_id = None
+    freqtradebot.exit_positions(trades)
+
     results = rpc._rpc_trade_status()
-    assert {
+    assert results[0] == {
         'trade_id': 1,
         'pair': 'ETH/BTC',
         'base_currency': 'BTC',
@@ -54,11 +58,11 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'fee_open': ANY,
         'fee_open_cost': ANY,
         'fee_open_currency': ANY,
-        'fee_close': ANY,
+        'fee_close': fee.return_value,
         'fee_close_cost': ANY,
         'fee_close_currency': ANY,
         'open_rate_requested': ANY,
-        'open_trade_price': ANY,
+        'open_trade_price': 0.0010025,
         'close_rate_requested': ANY,
         'sell_reason': ANY,
         'sell_order_status': ANY,
@@ -66,6 +70,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'max_rate': ANY,
         'strategy': ANY,
         'ticker_interval': ANY,
+        'timeframe': ANY,
         'open_order_id': ANY,
         'close_date': None,
         'close_date_hum': None,
@@ -80,24 +85,32 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'close_profit_abs': None,
         'current_profit': -0.00408133,
         'current_profit_pct': -0.41,
-        'stop_loss': 0.0,
-        'stop_loss_pct': None,
+        'current_profit_abs': -4.09e-06,
+        'stop_loss': 9.882e-06,
+        'stop_loss_abs': 9.882e-06,
+        'stop_loss_pct': -10.0,
+        'stop_loss_ratio': -0.1,
         'stoploss_order_id': None,
-        'stoploss_last_update': None,
-        'stoploss_last_update_timestamp': None,
-        'initial_stop_loss': 0.0,
-        'initial_stop_loss_pct': None,
-        'open_order': '(limit buy rem=0.00000000)',
+        'stoploss_last_update': ANY,
+        'stoploss_last_update_timestamp': ANY,
+        'initial_stop_loss': 9.882e-06,
+        'initial_stop_loss_abs': 9.882e-06,
+        'initial_stop_loss_pct': -10.0,
+        'initial_stop_loss_ratio': -0.1,
+        'stoploss_current_dist': -1.1080000000000002e-06,
+        'stoploss_current_dist_ratio': -0.10081893,
+        'stoploss_entry_dist': -0.00010475,
+        'stoploss_entry_dist_ratio': -0.10448878,
+        'open_order': None,
         'exchange': 'bittrex',
-
-    } == results[0]
+    }
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
                  MagicMock(side_effect=DependencyException("Pair 'ETH/BTC' not available")))
     results = rpc._rpc_trade_status()
     assert isnan(results[0]['current_profit'])
     assert isnan(results[0]['current_rate'])
-    assert {
+    assert results[0] == {
         'trade_id': 1,
         'pair': 'ETH/BTC',
         'base_currency': 'BTC',
@@ -108,7 +121,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'fee_open': ANY,
         'fee_open_cost': ANY,
         'fee_open_currency': ANY,
-        'fee_close': ANY,
+        'fee_close': fee.return_value,
         'fee_close_cost': ANY,
         'fee_close_currency': ANY,
         'open_rate_requested': ANY,
@@ -120,6 +133,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'max_rate': ANY,
         'strategy': ANY,
         'ticker_interval': ANY,
+        'timeframe': ANY,
         'open_order_id': ANY,
         'close_date': None,
         'close_date_hum': None,
@@ -134,16 +148,25 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'close_profit_abs': None,
         'current_profit': ANY,
         'current_profit_pct': ANY,
-        'stop_loss': 0.0,
-        'stop_loss_pct': None,
+        'current_profit_abs': ANY,
+        'stop_loss': 9.882e-06,
+        'stop_loss_abs': 9.882e-06,
+        'stop_loss_pct': -10.0,
+        'stop_loss_ratio': -0.1,
         'stoploss_order_id': None,
-        'stoploss_last_update': None,
-        'stoploss_last_update_timestamp': None,
-        'initial_stop_loss': 0.0,
-        'initial_stop_loss_pct': None,
-        'open_order': '(limit buy rem=0.00000000)',
+        'stoploss_last_update': ANY,
+        'stoploss_last_update_timestamp': ANY,
+        'initial_stop_loss': 9.882e-06,
+        'initial_stop_loss_abs': 9.882e-06,
+        'initial_stop_loss_pct': -10.0,
+        'initial_stop_loss_ratio': -0.1,
+        'stoploss_current_dist': ANY,
+        'stoploss_current_dist_ratio': ANY,
+        'stoploss_entry_dist': -0.00010475,
+        'stoploss_entry_dist_ratio': -0.10448878,
+        'open_order': None,
         'exchange': 'bittrex',
-    } == results[0]
+    }
 
 
 def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
@@ -571,7 +594,7 @@ def test_rpc_stopbuy(mocker, default_conf) -> None:
 
     assert freqtradebot.config['max_open_trades'] != 0
     result = rpc._rpc_stopbuy()
-    assert {'status': 'No more buy will occur from now. Run /reload_conf to reset.'} == result
+    assert {'status': 'No more buy will occur from now. Run /reload_config to reset.'} == result
     assert freqtradebot.config['max_open_trades'] == 0
 
 
@@ -847,6 +870,20 @@ def test_rpc_blacklist(mocker, default_conf) -> None:
     assert len(ret['blacklist']) == 3
     assert ret['blacklist'] == default_conf['exchange']['pair_blacklist']
     assert ret['blacklist'] == ['DOGE/BTC', 'HOT/BTC', 'ETH/BTC']
+
+    ret = rpc._rpc_blacklist(["ETH/BTC"])
+    assert 'errors' in ret
+    assert isinstance(ret['errors'], dict)
+    assert ret['errors']['ETH/BTC']['error_msg'] == 'Pair ETH/BTC already in pairlist.'
+
+    ret = rpc._rpc_blacklist(["ETH/ETH"])
+    assert 'StaticPairList' in ret['method']
+    assert len(ret['blacklist']) == 3
+    assert ret['blacklist'] == default_conf['exchange']['pair_blacklist']
+    assert ret['blacklist'] == ['DOGE/BTC', 'HOT/BTC', 'ETH/BTC']
+    assert 'errors' in ret
+    assert isinstance(ret['errors'], dict)
+    assert ret['errors']['ETH/ETH']['error_msg'] == 'Pair ETH/ETH does not match stake currency.'
 
 
 def test_rpc_edge_disabled(mocker, default_conf) -> None:

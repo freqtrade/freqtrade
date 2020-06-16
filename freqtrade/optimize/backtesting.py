@@ -18,7 +18,8 @@ from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
-from freqtrade.optimize.optimize_reports import (show_backtest_results,
+from freqtrade.optimize.optimize_reports import (generate_backtest_stats,
+                                                 show_backtest_results,
                                                  store_backtest_result)
 from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.persistence import Trade
@@ -94,10 +95,10 @@ class Backtesting:
             self.strategylist.append(StrategyResolver.load_strategy(self.config))
             validate_config_consistency(self.config)
 
-        if "ticker_interval" not in self.config:
+        if "timeframe" not in self.config:
             raise OperationalException("Timeframe (ticker interval) needs to be set in either "
-                                       "configuration or as cli argument `--ticker-interval 5m`")
-        self.timeframe = str(self.config.get('ticker_interval'))
+                                       "configuration or as cli argument `--timeframe 5m`")
+        self.timeframe = str(self.config.get('timeframe'))
         self.timeframe_min = timeframe_to_minutes(self.timeframe)
 
         # Get maximum required startup period
@@ -411,4 +412,5 @@ class Backtesting:
         if self.config.get('export', False):
             store_backtest_result(self.config['exportfilename'], all_results)
         # Show backtest results
-        show_backtest_results(self.config, data, all_results)
+        stats = generate_backtest_stats(self.config, data, all_results)
+        show_backtest_results(self.config, stats)

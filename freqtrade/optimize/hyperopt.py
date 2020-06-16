@@ -13,7 +13,7 @@ from collections import OrderedDict
 from math import ceil
 from operator import itemgetter
 from pathlib import Path
-from pprint import pprint
+from pprint import pformat
 from typing import Any, Dict, List, Optional
 
 import progressbar
@@ -231,6 +231,9 @@ class Hyperopt:
             if space in ['buy', 'sell']:
                 result_dict.setdefault('params', {}).update(space_params)
             elif space == 'roi':
+                # TODO: get rid of OrderedDict when support for python 3.6 will be
+                # dropped (dicts keep the order as the language feature)
+
                 # Convert keys in min_roi dict to strings because
                 # rapidjson cannot dump dicts with integer keys...
                 # OrderedDict is used to keep the numeric order of the items
@@ -245,11 +248,24 @@ class Hyperopt:
     def _params_pretty_print(params, space: str, header: str) -> None:
         if space in params:
             space_params = Hyperopt._space_params(params, space, 5)
+            params_result = f"\n# {header}\n"
             if space == 'stoploss':
-                print(header, space_params.get('stoploss'))
+                params_result += f"stoploss = {space_params.get('stoploss')}"
+            elif space == 'roi':
+                # TODO: get rid of OrderedDict when support for python 3.6 will be
+                # dropped (dicts keep the order as the language feature)
+                minimal_roi_result = rapidjson.dumps(
+                    OrderedDict(
+                        (str(k), v) for k, v in space_params.items()
+                    ),
+                    default=str, indent=4, number_mode=rapidjson.NM_NATIVE)
+                params_result += f"minimal_roi = {minimal_roi_result}"
             else:
-                print(header)
-                pprint(space_params, indent=4)
+                params_result += f"{space}_params = {pformat(space_params, indent=4)}"
+                params_result = params_result.replace("}", "\n}").replace("{", "{\n ")
+
+            params_result = params_result.replace("\n", "\n    ")
+            print(params_result)
 
     @staticmethod
     def _space_params(params, space: str, r: int = None) -> Dict:
