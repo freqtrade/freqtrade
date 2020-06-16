@@ -1144,11 +1144,21 @@ def test_process_deprecated_setting(mocker, default_conf, caplog):
 
 def test_process_deprecated_ticker_interval(mocker, default_conf, caplog):
     message = "DEPRECATED: Please use 'timeframe' instead of 'ticker_interval."
-    process_temporary_deprecated_settings(default_conf)
+    config = deepcopy(default_conf)
+    process_temporary_deprecated_settings(config)
     assert not log_has(message, caplog)
 
-    del default_conf['timeframe']
-    default_conf['ticker_interval'] = '15m'
-    process_temporary_deprecated_settings(default_conf)
+    del config['timeframe']
+    config['ticker_interval'] = '15m'
+    process_temporary_deprecated_settings(config)
     assert log_has(message, caplog)
-    assert default_conf['ticker_interval'] == '15m'
+    assert config['ticker_interval'] == '15m'
+
+    config = deepcopy(default_conf)
+    # Have both timeframe and ticker interval in config
+    # Can also happen when using ticker_interval in configuration, and --timeframe as cli argument
+    config['timeframe'] = '5m'
+    config['ticker_interval'] = '4h'
+    with pytest.raises(OperationalException,
+                       match=r"Both 'timeframe' and 'ticker_interval' detected."):
+        process_temporary_deprecated_settings(config)
