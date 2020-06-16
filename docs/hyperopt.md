@@ -370,6 +370,9 @@ By default, hyperopt prints colorized results -- epochs with positive profit are
 
 You can use the `--print-all` command line option if you would like to see all results in the hyperopt output, not only the best ones. When `--print-all` is used, current best results are also colorized by default -- they are printed in bold (bright) style. This can also be switched off with the `--no-color` command line option.
 
+!!! Note "Windows and color output"
+    Windows does not support color-output nativly, therefore it is automatically disabled. To have color-output for hyperopt running under windows, please consider using WSL.
+
 ### Understand Hyperopt ROI results
 
 If you are optimizing ROI (i.e. if optimization search-space contains 'all', 'default' or 'roi'), your result will look as follows and include a ROI table:
