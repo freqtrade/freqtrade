@@ -72,4 +72,9 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
             "DEPRECATED: "
             "Please use 'timeframe' instead of 'ticker_interval."
         )
+        if 'timeframe' in config:
+            raise OperationalException(
+                "Both 'timeframe' and 'ticker_interval' detected."
+                "Please remove 'ticker_interval' from your configuration to continue operating."
+                )
         config['timeframe'] = config['ticker_interval']
