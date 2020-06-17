@@ -285,6 +285,8 @@ class Exchange:
         logger.debug("Performing scheduled market reload..")
         try:
             self._api.load_markets(reload=True)
+            # Also reload async markets to avoid issues with newly listed pairs
+            self._load_async_markets(reload=True)
             self._last_markets_refresh = arrow.utcnow().timestamp
         except ccxt.BaseError:
             logger.exception("Could not reload markets.")

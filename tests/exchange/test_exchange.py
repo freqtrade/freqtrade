@@ -319,7 +319,12 @@ def test_set_sandbox_exception(default_conf, mocker):
 
 
 def test__load_async_markets(default_conf, mocker, caplog):
-    exchange = get_patched_exchange(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt')
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
+    mocker.patch('freqtrade.exchange.Exchange._load_markets')
+    mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+    exchange = Exchange(default_conf)
     exchange._api_async.load_markets = get_mock_coro(None)
     exchange._load_async_markets()
     assert exchange._api_async.load_markets.call_count == 1
@@ -365,6 +370,7 @@ def test_reload_markets(default_conf, mocker, caplog):
     default_conf['exchange']['markets_refresh_interval'] = 10
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance",
                                     mock_markets=False)
+    exchange._load_async_markets = MagicMock()
     exchange._last_markets_refresh = arrow.utcnow().timestamp
     updated_markets = {'ETH/BTC': {}, "LTC/BTC": {}}
 
@@ -373,11 +379,13 @@ def test_reload_markets(default_conf, mocker, caplog):
     # less than 10 minutes have passed, no reload
     exchange.reload_markets()
     assert exchange.markets == initial_markets
+    assert exchange._load_async_markets.call_count == 0
 
     # more than 10 minutes have passed, reload is executed
     exchange._last_markets_refresh = arrow.utcnow().timestamp - 15 * 60
     exchange.reload_markets()
     assert exchange.markets == updated_markets
+    assert exchange._load_async_markets.call_count == 1
     assert log_has('Performing scheduled market reload..', caplog)
 
 
