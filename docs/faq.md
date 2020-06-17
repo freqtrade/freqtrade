@@ -45,6 +45,10 @@ the tutorial [here|Testing-new-strategies-with-Hyperopt](bot-usage.md#hyperopt-c
 
 You can use the `/forcesell all` command from Telegram.
 
+### I want to run multiple bots on the same machine
+
+Please look at the [advanced setup documentation Page](advanced-setup.md#running-multiple-instances-of-freqtrade).
+
 ### I'm getting the "RESTRICTED_MARKET" message in the log
 
 Currently known to happen for US Bittrex users.  
