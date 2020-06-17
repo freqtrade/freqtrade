@@ -319,7 +319,12 @@ def test_set_sandbox_exception(default_conf, mocker):
 
 
 def test__load_async_markets(default_conf, mocker, caplog):
-    exchange = get_patched_exchange(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt')
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
+    mocker.patch('freqtrade.exchange.Exchange._load_markets')
+    mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+    exchange = Exchange(default_conf)
     exchange._api_async.load_markets = get_mock_coro(None)
     exchange._load_async_markets()
     assert exchange._api_async.load_markets.call_count == 1
