@@ -346,7 +346,7 @@ class IStrategy(ABC):
 
         return dataframe
 
-    def analyze_pair(self, pair: str):
+    def analyze_pair(self, pair: str) -> None:
         """
         Fetch data for this pair from dataprovider and analyze.
         Stores the dataframe into the dataprovider.
@@ -376,7 +376,11 @@ class IStrategy(ABC):
             logger.warning('Empty dataframe for pair %s', pair)
             return
 
-    def analyze(self, pairs: List[str]):
+    def analyze(self, pairs: List[str]) -> None:
+        """
+        Analyze all pairs using analyze_pair().
+        :param pairs: List of pairs to analyze
+        """
         for pair in pairs:
             self.analyze_pair(pair)
 
@@ -386,7 +390,9 @@ class IStrategy(ABC):
         return len(dataframe), dataframe["close"].iloc[-1], dataframe["date"].iloc[-1]
 
     def assert_df(self, dataframe: DataFrame, df_len: int, df_close: float, df_date: datetime):
-        """ make sure data is unmodified """
+        """
+        Ensure dataframe (length, last candle) was not modified, and has all elements we need.
+        """
         message = ""
         if df_len != len(dataframe):
             message = "length"
@@ -403,10 +409,9 @@ class IStrategy(ABC):
     def get_signal(self, pair: str, timeframe: str) -> Tuple[bool, bool]:
         """
         Calculates current signal based based on the buy / sell columns of the dataframe.
-        Used by Bot to get the latest signal
+        Used by Bot to get the signal to buy or sell
         :param pair: pair in format ANT/BTC
         :param timeframe: timeframe to use
-        :param dataframe: Dataframe to analyze
         :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
         """
         if not self.dp:
@@ -429,8 +434,7 @@ class IStrategy(ABC):
         if latest_date < (arrow.utcnow().shift(minutes=-(timeframe_minutes * 2 + offset))):
             logger.warning(
                 'Outdated history for pair %s. Last tick is %s minutes old',
-                pair,
-                (arrow.utcnow() - latest_date).seconds // 60
+                pair, (arrow.utcnow() - latest_date).seconds // 60
             )
             return False, False
 
