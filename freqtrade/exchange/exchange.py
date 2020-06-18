@@ -526,13 +526,13 @@ class Exchange:
 
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
-                f'Insufficient funds to create {ordertype} {side} order on market {pair}.'
+                f'Insufficient funds to create {ordertype} {side} order on market {pair}. '
                 f'Tried to {side} amount {amount} at rate {rate}.'
                 f'Message: {e}') from e
         except ccxt.InvalidOrder as e:
             raise DependencyException(
-                f'Could not create {ordertype} {side} order on market {pair}.'
-                f'Tried to {side} amount {amount} at rate {rate}.'
+                f'Could not create {ordertype} {side} order on market {pair}. '
+                f'Tried to {side} amount {amount} at rate {rate}. '
                 f'Message: {e}') from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
