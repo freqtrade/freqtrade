@@ -89,6 +89,11 @@ def test_get_signal_empty(default_conf, mocker, caplog):
     mocker.patch.object(_STRATEGY.dp, 'get_analyzed_dataframe', return_value=(None, 0))
     assert (False, False) == _STRATEGY.get_signal('bar', default_conf['timeframe'])
     assert log_has('Empty candle (OHLCV) data for pair bar', caplog)
+    caplog.clear()
+
+    mocker.patch.object(_STRATEGY.dp, 'get_analyzed_dataframe', return_value=(DataFrame([]), 0))
+    assert (False, False) == _STRATEGY.get_signal('baz', default_conf['timeframe'])
+    assert log_has('Empty candle (OHLCV) data for pair baz', caplog)
 
 
 def test_get_signal_exception_valueerror(default_conf, mocker, caplog, ohlcv_history):
@@ -108,15 +113,6 @@ def test_get_signal_exception_valueerror(default_conf, mocker, caplog, ohlcv_his
     )
     _STRATEGY.analyze_pair('foo')
     assert log_has_re(r'Strategy caused the following exception: xyz.*', caplog)
-
-
-def test_get_signal_empty_dataframe(default_conf, mocker, caplog, ohlcv_history):
-    caplog.set_level(logging.INFO)
-    mocker.patch.object(_STRATEGY.dp, 'get_analyzed_dataframe', return_value=(DataFrame([]), 0))
-    mocker.patch.object(_STRATEGY, 'assert_df')
-
-    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['timeframe'])
-    assert log_has('Empty dataframe for pair xyz', caplog)
 
 
 def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):

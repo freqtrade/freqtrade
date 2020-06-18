@@ -415,7 +415,7 @@ class IStrategy(ABC):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, timeframe)
 
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
-            logger.warning('Empty dataframe for pair %s', pair)
+            logger.warning(f'Empty candle (OHLCV) data for pair {pair}')
             return False, False
 
         latest_date = dataframe['date'].max()
