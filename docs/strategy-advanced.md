@@ -168,8 +168,8 @@ class Awesomestrategy(IStrategy):
 
     # ... populate_* methods
 
-    def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float, rate: float,
-                           time_in_force: str, sell_reason: str, ** kwargs) -> bool:
+    def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
+                           rate: float, time_in_force: str, sell_reason: str, **kwargs) -> bool:
         """
         Called right before placing a regular sell order.
         Timing for this function is critical, so avoid doing heavy computations or

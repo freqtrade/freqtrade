@@ -9,7 +9,7 @@ from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.history import load_data
-from freqtrade.exceptions import StrategyError, OperationalException
+from freqtrade.exceptions import StrategyError
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
