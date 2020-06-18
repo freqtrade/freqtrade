@@ -406,19 +406,15 @@ class IStrategy(ABC):
             else:
                 raise StrategyError(f"Dataframe returned from strategy has mismatching {message}.")
 
-    def get_signal(self, pair: str, timeframe: str) -> Tuple[bool, bool]:
+    def get_signal(self, pair: str, timeframe: str, dataframe: DataFrame) -> Tuple[bool, bool]:
         """
         Calculates current signal based based on the buy / sell columns of the dataframe.
         Used by Bot to get the signal to buy or sell
         :param pair: pair in format ANT/BTC
         :param timeframe: timeframe to use
+        :param dataframe: Analyzed dataframe to get signal from.
         :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
         """
-        if not self.dp:
-            raise OperationalException("DataProvider not found.")
-
-        dataframe, _ = self.dp.get_analyzed_dataframe(pair, timeframe)
-
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning(f'Empty candle (OHLCV) data for pair {pair}')
             return False, False

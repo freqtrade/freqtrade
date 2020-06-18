@@ -163,7 +163,7 @@ def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
     :param value: which value IStrategy.get_signal() must return
     :return: None
     """
-    freqtrade.strategy.get_signal = lambda e, s: value
+    freqtrade.strategy.get_signal = lambda e, s, x: value
     freqtrade.exchange.refresh_latest_ohlcv = lambda p: None
 
 

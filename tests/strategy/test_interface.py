@@ -31,40 +31,15 @@ def test_returns_latest_signal(mocker, default_conf, ohlcv_history):
     mocked_history['buy'] = 0
     mocked_history.loc[1, 'sell'] = 1
 
-    mocker.patch.object(
-        _STRATEGY.dp, 'get_analyzed_dataframe',
-        return_value=(mocked_history, 0)
-    )
-
-    assert _STRATEGY.get_signal('ETH/BTC', '5m') == (False, True)
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (False, True)
     mocked_history.loc[1, 'sell'] = 0
     mocked_history.loc[1, 'buy'] = 1
 
-    mocker.patch.object(
-        _STRATEGY.dp, 'get_analyzed_dataframe',
-        return_value=(mocked_history, 0)
-    )
-    assert _STRATEGY.get_signal('ETH/BTC', '5m') == (True, False)
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (True, False)
     mocked_history.loc[1, 'sell'] = 0
     mocked_history.loc[1, 'buy'] = 0
 
-    mocker.patch.object(
-        _STRATEGY.dp, 'get_analyzed_dataframe',
-        return_value=(mocked_history, 0)
-    )
-    assert _STRATEGY.get_signal('ETH/BTC', '5m') == (False, False)
-
-
-def test_trade_no_dataprovider(default_conf, mocker, caplog):
-    strategy = DefaultStrategy({})
-    # Delete DP for sure (suffers from test leakage, as this is updated in the base class)
-    if strategy.dp is not None:
-        strategy.dp = None
-    with pytest.raises(OperationalException, match="DataProvider not found."):
-        strategy.get_signal('ETH/BTC', '5m')
-
-    with pytest.raises(OperationalException, match="DataProvider not found."):
-        strategy.analyze_pair('ETH/BTC')
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (False, False)
 
 
 def test_analyze_pair_empty(default_conf, mocker, caplog, ohlcv_history):
@@ -81,18 +56,15 @@ def test_analyze_pair_empty(default_conf, mocker, caplog, ohlcv_history):
 
 
 def test_get_signal_empty(default_conf, mocker, caplog):
-    mocker.patch.object(_STRATEGY.dp, 'get_analyzed_dataframe', return_value=(DataFrame(), 0))
-    assert (False, False) == _STRATEGY.get_signal('foo', default_conf['timeframe'])
+    assert (False, False) == _STRATEGY.get_signal('foo', default_conf['timeframe'], DataFrame())
     assert log_has('Empty candle (OHLCV) data for pair foo', caplog)
     caplog.clear()
 
-    mocker.patch.object(_STRATEGY.dp, 'get_analyzed_dataframe', return_value=(None, 0))
-    assert (False, False) == _STRATEGY.get_signal('bar', default_conf['timeframe'])
+    assert (False, False) == _STRATEGY.get_signal('bar', default_conf['timeframe'], None)
     assert log_has('Empty candle (OHLCV) data for pair bar', caplog)
     caplog.clear()
 
-    mocker.patch.object(_STRATEGY.dp, 'get_analyzed_dataframe', return_value=(DataFrame([]), 0))
-    assert (False, False) == _STRATEGY.get_signal('baz', default_conf['timeframe'])
+    assert (False, False) == _STRATEGY.get_signal('baz', default_conf['timeframe'], DataFrame([]))
     assert log_has('Empty candle (OHLCV) data for pair baz', caplog)
 
 
@@ -126,10 +98,9 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
     mocked_history.loc[1, 'buy'] = 1
 
     caplog.set_level(logging.INFO)
-    mocker.patch.object(_STRATEGY.dp, 'get_analyzed_dataframe', return_value=(mocked_history, 0))
     mocker.patch.object(_STRATEGY, 'assert_df')
 
-    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['timeframe'])
+    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['timeframe'], mocked_history)
     assert log_has('Outdated history for pair xyz. Last tick is 16 minutes old', caplog)
 
 
