@@ -94,7 +94,7 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
-    assert 'ticker_interval' in config
+    assert 'timeframe' in config
     assert not log_has_re('Parameter -i/--ticker-interval detected .*', caplog)
 
     assert 'position_stacking' not in config
@@ -117,7 +117,7 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
         '--config', 'config.json',
         '--hyperopt', 'DefaultHyperOpt',
         '--datadir', '/foo/bar',
-        '--ticker-interval', '1m',
+        '--timeframe', '1m',
         '--timerange', ':100',
         '--enable-position-stacking',
         '--disable-max-market-positions',
@@ -136,8 +136,8 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
     assert config['runmode'] == RunMode.HYPEROPT
 
     assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
-    assert 'ticker_interval' in config
-    assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
+    assert 'timeframe' in config
+    assert log_has('Parameter -i/--timeframe detected ... Using timeframe: 1m ...',
                    caplog)
 
     assert 'position_stacking' in config
@@ -197,7 +197,8 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
                    "Using populate_sell_trend from the strategy.", caplog)
     assert log_has("Hyperopt class does not provide populate_buy_trend() method. "
                    "Using populate_buy_trend from the strategy.", caplog)
-    assert hasattr(x, "ticker_interval")
+    assert hasattr(x, "ticker_interval")  # DEPRECATED
+    assert hasattr(x, "timeframe")
 
 
 def test_hyperoptresolver_wrongname(mocker, default_conf, caplog) -> None:
@@ -544,7 +545,7 @@ def test_start_calls_optimizer(mocker, default_conf, caplog, capsys) -> None:
     )
     patch_exchange(mocker)
     # Co-test loading timeframe from strategy
-    del default_conf['ticker_interval']
+    del default_conf['timeframe']
     default_conf.update({'config': 'config.json.example',
                          'hyperopt': 'DefaultHyperOpt',
                          'epochs': 1,

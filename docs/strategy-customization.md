@@ -142,7 +142,7 @@ By letting the bot know how much history is needed, backtest trades can start at
 Let's try to backtest 1 month (January 2019) of 5m candles using an example strategy with EMA100, as above.
 
 ``` bash
-freqtrade backtesting --timerange 20190101-20190201 --ticker-interval 5m
+freqtrade backtesting --timerange 20190101-20190201 --timeframe 5m
 ```
 
 Assuming `startup_candle_count` is set to 100, backtesting knows it needs 100 candles to generate valid buy signals. It will load data from `20190101 - (100 * 5m)` - which is ~2019-12-31 15:30:00.
@@ -248,7 +248,7 @@ minimal_roi = {
 
 While technically not completely disabled, this would sell once the trade reaches 10000% Profit.
 
-To use times based on candle duration (ticker_interval or timeframe), the following snippet can be handy.
+To use times based on candle duration (timeframe), the following snippet can be handy.
 This will allow you to change the ticket_interval for the strategy, and ROI times will still be set as candles (e.g. after 3 candles ...)
 
 ``` python
@@ -256,12 +256,12 @@ from freqtrade.exchange import timeframe_to_minutes
 
 class AwesomeStrategy(IStrategy):
 
-    ticker_interval = "1d"
-    ticker_interval_mins = timeframe_to_minutes(ticker_interval)
+    timeframe = "1d"
+    timeframe_mins = timeframe_to_minutes(timeframe)
     minimal_roi = {
         "0": 0.05,                             # 5% for the first 3 candles
-        str(ticker_interval_mins * 3)): 0.02,  # 2% after 3 candles
-        str(ticker_interval_mins * 6)): 0.01,  # 1% After 6 candles
+        str(timeframe_mins * 3)): 0.02,  # 2% after 3 candles
+        str(timeframe_mins * 6)): 0.01,  # 1% After 6 candles
     }
 ```
 
@@ -290,7 +290,7 @@ Common values are `"1m"`, `"5m"`, `"15m"`, `"1h"`, however all values supported 
 
 Please note that the same buy/sell signals may work well with one timeframe, but not with the others.
 
-This setting is accessible within the strategy methods as the `self.ticker_interval` attribute.
+This setting is accessible within the strategy methods as the `self.timeframe` attribute.
 
 ### Metadata dict
 
@@ -400,7 +400,7 @@ This is where calling `self.dp.current_whitelist()` comes in handy.
 class SampleStrategy(IStrategy):
     # strategy init stuff...
 
-    ticker_interval = '5m'
+    timeframe = '5m'
 
     # more strategy init stuff..
 

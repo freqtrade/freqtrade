@@ -469,6 +469,7 @@ def test_migrate_old(mocker, default_conf, fee):
     assert trade.fee_open_currency is None
     assert trade.fee_close_cost is None
     assert trade.fee_close_currency is None
+    assert trade.timeframe is None
 
     trade = Trade.query.filter(Trade.id == 2).first()
     assert trade.close_rate is not None
@@ -512,11 +513,11 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
                                 );"""
     insert_table_old = """INSERT INTO trades (exchange, pair, is_open, fee,
                           open_rate, stake_amount, amount, open_date,
-                          stop_loss, initial_stop_loss, max_rate)
+                          stop_loss, initial_stop_loss, max_rate, ticker_interval)
                           VALUES ('binance', 'ETC/BTC', 1, {fee},
                           0.00258580, {stake}, {amount},
                           '2019-11-28 12:44:24.000000',
-                          0.0, 0.0, 0.0)
+                          0.0, 0.0, 0.0, '5m')
                           """.format(fee=fee.return_value,
                                      stake=default_conf.get("stake_amount"),
                                      amount=amount
@@ -554,7 +555,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.initial_stop_loss == 0.0
     assert trade.sell_reason is None
     assert trade.strategy is None
-    assert trade.ticker_interval is None
+    assert trade.timeframe == '5m'
     assert trade.stoploss_order_id is None
     assert trade.stoploss_last_update is None
     assert log_has("trying trades_bak1", caplog)
@@ -776,6 +777,7 @@ def test_to_json(default_conf, fee):
                       'max_rate': None,
                       'strategy': None,
                       'ticker_interval': None,
+                      'timeframe': None,
                       'exchange': 'bittrex',
                       }
 
@@ -837,6 +839,7 @@ def test_to_json(default_conf, fee):
                       'sell_order_status': None,
                       'strategy': None,
                       'ticker_interval': None,
+                      'timeframe': None,
                       'exchange': 'bittrex',
                       }
 

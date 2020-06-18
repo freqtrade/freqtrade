@@ -79,7 +79,7 @@ class Exchange:
 
         if config['dry_run']:
             logger.info('Instance is running with dry_run enabled')
-
+        logger.info(f"Using CCXT {ccxt.__version__}")
         exchange_config = config['exchange']
 
         # Deep merge ft_has with default ft_has options
@@ -115,7 +115,7 @@ class Exchange:
 
         if validate:
             # Check if timeframe is available
-            self.validate_timeframes(config.get('ticker_interval'))
+            self.validate_timeframes(config.get('timeframe'))
 
             # Initial markets load
             self._load_markets()
@@ -285,6 +285,8 @@ class Exchange:
         logger.debug("Performing scheduled market reload..")
         try:
             self._api.load_markets(reload=True)
+            # Also reload async markets to avoid issues with newly listed pairs
+            self._load_async_markets(reload=True)
             self._last_markets_refresh = arrow.utcnow().timestamp
         except ccxt.BaseError:
             logger.exception("Could not reload markets.")
@@ -959,6 +961,9 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    # Assign method to get_stoploss_order to allow easy overriding in other classes
+    cancel_stoploss_order = cancel_order
+
     def is_cancel_order_result_suitable(self, corder) -> bool:
         if not isinstance(corder, dict):
             return False
@@ -1010,6 +1015,9 @@ class Exchange:
                 f'Could not get order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    # Assign method to get_stoploss_order to allow easy overriding in other classes
+    get_stoploss_order = get_order
 
     @retrier
     def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:

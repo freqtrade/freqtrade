@@ -95,10 +95,10 @@ class Backtesting:
             self.strategylist.append(StrategyResolver.load_strategy(self.config))
             validate_config_consistency(self.config)
 
-        if "ticker_interval" not in self.config:
+        if "timeframe" not in self.config:
             raise OperationalException("Timeframe (ticker interval) needs to be set in either "
-                                       "configuration or as cli argument `--ticker-interval 5m`")
-        self.timeframe = str(self.config.get('ticker_interval'))
+                                       "configuration or as cli argument `--timeframe 5m`")
+        self.timeframe = str(self.config.get('timeframe'))
         self.timeframe_min = timeframe_to_minutes(self.timeframe)
 
         # Get maximum required startup period

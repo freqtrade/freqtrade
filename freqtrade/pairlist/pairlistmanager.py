@@ -131,6 +131,6 @@ class PairListManager():
 
     def create_pair_list(self, pairs: List[str], timeframe: str = None) -> ListPairsWithTimeframes:
         """
-        Create list of pair tuples with (pair, ticker_interval)
+        Create list of pair tuples with (pair, timeframe)
         """
-        return [(pair, timeframe or self._config['ticker_interval']) for pair in pairs]
+        return [(pair, timeframe or self._config['timeframe']) for pair in pairs]

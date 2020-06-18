@@ -12,7 +12,7 @@ from tests.conftest import get_patched_exchange
 
 def test_ohlcv(mocker, default_conf, ohlcv_history):
     default_conf["runmode"] = RunMode.DRY_RUN
-    timeframe = default_conf["ticker_interval"]
+    timeframe = default_conf["timeframe"]
     exchange = get_patched_exchange(mocker, default_conf)
     exchange._klines[("XRP/BTC", timeframe)] = ohlcv_history
     exchange._klines[("UNITTEST/BTC", timeframe)] = ohlcv_history
@@ -53,47 +53,47 @@ def test_historic_ohlcv(mocker, default_conf, ohlcv_history):
 
 def test_get_pair_dataframe(mocker, default_conf, ohlcv_history):
     default_conf["runmode"] = RunMode.DRY_RUN
-    ticker_interval = default_conf["ticker_interval"]
+    timeframe = default_conf["timeframe"]
     exchange = get_patched_exchange(mocker, default_conf)
-    exchange._klines[("XRP/BTC", ticker_interval)] = ohlcv_history
-    exchange._klines[("UNITTEST/BTC", ticker_interval)] = ohlcv_history
+    exchange._klines[("XRP/BTC", timeframe)] = ohlcv_history
+    exchange._klines[("UNITTEST/BTC", timeframe)] = ohlcv_history
 
     dp = DataProvider(default_conf, exchange)
     assert dp.runmode == RunMode.DRY_RUN
-    assert ohlcv_history.equals(dp.get_pair_dataframe("UNITTEST/BTC", ticker_interval))
-    assert isinstance(dp.get_pair_dataframe("UNITTEST/BTC", ticker_interval), DataFrame)
-    assert dp.get_pair_dataframe("UNITTEST/BTC", ticker_interval) is not ohlcv_history
-    assert not dp.get_pair_dataframe("UNITTEST/BTC", ticker_interval).empty
-    assert dp.get_pair_dataframe("NONESENSE/AAA", ticker_interval).empty
+    assert ohlcv_history.equals(dp.get_pair_dataframe("UNITTEST/BTC", timeframe))
+    assert isinstance(dp.get_pair_dataframe("UNITTEST/BTC", timeframe), DataFrame)
+    assert dp.get_pair_dataframe("UNITTEST/BTC", timeframe) is not ohlcv_history
+    assert not dp.get_pair_dataframe("UNITTEST/BTC", timeframe).empty
+    assert dp.get_pair_dataframe("NONESENSE/AAA", timeframe).empty
 
     # Test with and without parameter
-    assert dp.get_pair_dataframe("UNITTEST/BTC", ticker_interval)\
+    assert dp.get_pair_dataframe("UNITTEST/BTC", timeframe)\
         .equals(dp.get_pair_dataframe("UNITTEST/BTC"))
 
     default_conf["runmode"] = RunMode.LIVE
     dp = DataProvider(default_conf, exchange)
     assert dp.runmode == RunMode.LIVE
-    assert isinstance(dp.get_pair_dataframe("UNITTEST/BTC", ticker_interval), DataFrame)
-    assert dp.get_pair_dataframe("NONESENSE/AAA", ticker_interval).empty
+    assert isinstance(dp.get_pair_dataframe("UNITTEST/BTC", timeframe), DataFrame)
+    assert dp.get_pair_dataframe("NONESENSE/AAA", timeframe).empty
 
     historymock = MagicMock(return_value=ohlcv_history)
     mocker.patch("freqtrade.data.dataprovider.load_pair_history", historymock)
     default_conf["runmode"] = RunMode.BACKTEST
     dp = DataProvider(default_conf, exchange)
     assert dp.runmode == RunMode.BACKTEST
-    assert isinstance(dp.get_pair_dataframe("UNITTEST/BTC", ticker_interval), DataFrame)
-    # assert dp.get_pair_dataframe("NONESENSE/AAA", ticker_interval).empty
+    assert isinstance(dp.get_pair_dataframe("UNITTEST/BTC", timeframe), DataFrame)
+    # assert dp.get_pair_dataframe("NONESENSE/AAA", timeframe).empty
 
 
 def test_available_pairs(mocker, default_conf, ohlcv_history):
     exchange = get_patched_exchange(mocker, default_conf)
-    ticker_interval = default_conf["ticker_interval"]
-    exchange._klines[("XRP/BTC", ticker_interval)] = ohlcv_history
-    exchange._klines[("UNITTEST/BTC", ticker_interval)] = ohlcv_history
+    timeframe = default_conf["timeframe"]
+    exchange._klines[("XRP/BTC", timeframe)] = ohlcv_history
+    exchange._klines[("UNITTEST/BTC", timeframe)] = ohlcv_history
 
     dp = DataProvider(default_conf, exchange)
     assert len(dp.available_pairs) == 2
-    assert dp.available_pairs == [("XRP/BTC", ticker_interval), ("UNITTEST/BTC", ticker_interval), ]
+    assert dp.available_pairs == [("XRP/BTC", timeframe), ("UNITTEST/BTC", timeframe), ]
 
 
 def test_refresh(mocker, default_conf, ohlcv_history):
@@ -101,10 +101,10 @@ def test_refresh(mocker, default_conf, ohlcv_history):
     mocker.patch("freqtrade.exchange.Exchange.refresh_latest_ohlcv", refresh_mock)
 
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
-    ticker_interval = default_conf["ticker_interval"]
-    pairs = [("XRP/BTC", ticker_interval), ("UNITTEST/BTC", ticker_interval)]
+    timeframe = default_conf["timeframe"]
+    pairs = [("XRP/BTC", timeframe), ("UNITTEST/BTC", timeframe)]
 
-    pairs_non_trad = [("ETH/USDT", ticker_interval), ("BTC/TUSD", "1h")]
+    pairs_non_trad = [("ETH/USDT", timeframe), ("BTC/TUSD", "1h")]
 
     dp = DataProvider(default_conf, exchange)
     dp.refresh(pairs)

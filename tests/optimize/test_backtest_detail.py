@@ -360,7 +360,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     """
     default_conf["stoploss"] = data.stop_loss
     default_conf["minimal_roi"] = data.roi
-    default_conf["ticker_interval"] = tests_timeframe
+    default_conf["timeframe"] = tests_timeframe
     default_conf["trailing_stop"] = data.trailing_stop
     default_conf["trailing_only_offset_is_reached"] = data.trailing_only_offset_is_reached
     # Only add this to configuration If it's necessary

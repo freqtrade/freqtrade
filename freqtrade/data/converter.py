@@ -236,12 +236,12 @@ def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: 
     from freqtrade.data.history.idatahandler import get_datahandler
     src = get_datahandler(config['datadir'], convert_from)
     trg = get_datahandler(config['datadir'], convert_to)
-    timeframes = config.get('timeframes', [config.get('ticker_interval')])
+    timeframes = config.get('timeframes', [config.get('timeframe')])
     logger.info(f"Converting candle (OHLCV) for timeframe {timeframes}")
 
     if 'pairs' not in config:
         config['pairs'] = []
-        # Check timeframes or fall back to ticker_interval.
+        # Check timeframes or fall back to timeframe.
         for timeframe in timeframes:
             config['pairs'].extend(src.ohlcv_get_pairs(config['datadir'],
                                                        timeframe))

@@ -669,7 +669,7 @@ class Telegram(RPC):
             f"*Ask strategy:* ```\n{json.dumps(val['ask_strategy'])}```\n"
             f"*Bid strategy:* ```\n{json.dumps(val['bid_strategy'])}```\n"
             f"{sl_info}"
-            f"*Ticker Interval:* `{val['ticker_interval']}`\n"
+            f"*Timeframe:* `{val['timeframe']}`\n"
             f"*Strategy:* `{val['strategy']}`\n"
             f"*Current state:* `{val['state']}`"
         )
