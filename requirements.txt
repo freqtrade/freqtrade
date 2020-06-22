@@ -2,4 +2,4 @@
 -r requirements-common.txt
 
 numpy==1.18.5
-pandas==1.0.4
+pandas==1.0.5
