@@ -835,3 +835,18 @@ def test_api_pair_history(botclient, ohlcv_history):
              [1511686500000, 8.88e-05, 8.942e-05, 8.88e-05,
                  8.893e-05, 0.05874751, 8.886500000000001e-05]
              ])
+
+
+def test_api_plot_config(botclient):
+    ftbot, client = botclient
+
+    rc = client_get(client, f"{BASE_URI}/plot_config")
+    assert_response(rc)
+    assert rc.json == {}
+
+    ftbot.strategy.plot_config = {'main_plot': {'sma': {}},
+                                  'subplots': {'RSI': {'rsi': {'color': 'red'}}}}
+    rc = client_get(client, f"{BASE_URI}/plot_config")
+    assert_response(rc)
+    assert rc.json == ftbot.strategy.plot_config
+    assert isinstance(rc.json['main_plot'], dict)

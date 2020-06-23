@@ -214,6 +214,8 @@ class ApiServer(RPC):
                               view_func=self._trades_delete, methods=['DELETE'])
         self.app.add_url_rule(f'{BASE_URI}/pair_history', 'pair_history',
                               view_func=self._analysed_history, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/plot_config', 'plot_config',
+                              view_func=self._plot_config, methods=['GET'])
         # Combined actions and infos
         self.app.add_url_rule(f'{BASE_URI}/blacklist', 'blacklist', view_func=self._blacklist,
                               methods=['GET', 'POST'])
@@ -521,3 +523,11 @@ class ApiServer(RPC):
 
         results = self._rpc_analysed_history(pair, timeframe, limit)
         return self.rest_dump(results)
+
+    @require_login
+    @rpc_catch_errors
+    def _plot_config(self):
+        """
+        Handler for /plot_config.
+        """
+        return self.rest_dump(self._rpc_plot_config())

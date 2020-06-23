@@ -654,7 +654,7 @@ class RPC:
             raise RPCException('Edge is not enabled.')
         return self._freqtrade.edge.accepted_pairs()
 
-    def _rpc_analysed_history(self, pair, timeframe, limit):
+    def _rpc_analysed_history(self, pair, timeframe, limit) -> Dict[str, Any]:
 
         _data, last_analyzed = self._freqtrade.dataprovider.get_analyzed_dataframe(pair, timeframe)
         if limit:
@@ -667,3 +667,7 @@ class RPC:
             'length': len(_data),
             'last_analyzed': last_analyzed,
         }
+
+    def _rpc_plot_config(self) -> Dict[str, Any]:
+
+        return self._freqtrade.strategy.plot_config
