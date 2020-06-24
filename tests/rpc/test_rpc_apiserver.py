@@ -24,6 +24,7 @@ def botclient(default_conf, mocker):
     default_conf.update({"api_server": {"enabled": True,
                                         "listen_ip_address": "127.0.0.1",
                                         "listen_port": 8080,
+                                        "CORS_origins": ['http://example.com'],
                                         "username": _TEST_USER,
                                         "password": _TEST_PASS,
                                         }})
@@ -40,13 +41,13 @@ def client_post(client, url, data={}):
                        content_type="application/json",
                        data=data,
                        headers={'Authorization': _basic_auth_str(_TEST_USER, _TEST_PASS),
-                                'Origin': 'example.com'})
+                                'Origin': 'http://example.com'})
 
 
 def client_get(client, url):
     # Add fake Origin to ensure CORS kicks in
     return client.get(url, headers={'Authorization': _basic_auth_str(_TEST_USER, _TEST_PASS),
-                                    'Origin': 'example.com'})
+                                    'Origin': 'http://example.com'})
 
 
 def assert_response(response, expected_code=200, needs_cors=True):
@@ -54,6 +55,7 @@ def assert_response(response, expected_code=200, needs_cors=True):
     assert response.content_type == "application/json"
     if needs_cors:
         assert ('Access-Control-Allow-Credentials', 'true') in response.headers._list
+        assert ('Access-Control-Allow-Origin', 'http://example.com') in response.headers._list
 
 
 def test_api_not_found(botclient):
@@ -110,7 +112,7 @@ def test_api_token_login(botclient):
     rc = client.get(f"{BASE_URI}/count",
                     content_type="application/json",
                     headers={'Authorization': f'Bearer {rc.json["access_token"]}',
-                             'Origin': 'example.com'})
+                             'Origin': 'http://example.com'})
     assert_response(rc)
 
 
@@ -122,7 +124,7 @@ def test_api_token_refresh(botclient):
                      content_type="application/json",
                      data=None,
                      headers={'Authorization': f'Bearer {rc.json["refresh_token"]}',
-                              'Origin': 'example.com'})
+                              'Origin': 'http://example.com'})
     assert_response(rc)
     assert 'access_token' in rc.json
     assert 'refresh_token' not in rc.json
