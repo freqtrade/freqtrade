@@ -8,6 +8,7 @@ from pandas import DataFrame, DateOffset, Timestamp, to_datetime
 from freqtrade.configuration import TimeRange
 from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
                                        analyze_trade_parallelism,
+                                       calculate_market_change,
                                        calculate_max_drawdown,
                                        combine_dataframes_with_mean,
                                        create_cum_profit,
@@ -133,6 +134,14 @@ def test_load_trades(default_conf, mocker):
 
     assert db_mock.call_count == 0
     assert bt_mock.call_count == 0
+
+
+def test_calculate_market_change(testdatadir):
+    pairs = ["ETH/BTC", "ADA/BTC"]
+    data = load_data(datadir=testdatadir, pairs=pairs, timeframe='5m')
+    result = calculate_market_change(data)
+    assert isinstance(result, float)
+    assert pytest.approx(result) == 0.00955514
 
 
 def test_combine_dataframes_with_mean(testdatadir):

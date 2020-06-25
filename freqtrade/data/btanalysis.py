@@ -168,6 +168,26 @@ def extract_trades_of_period(dataframe: pd.DataFrame, trades: pd.DataFrame,
     return trades
 
 
+def calculate_market_change(data: Dict[str, pd.DataFrame], column: str = "close") -> float:
+    """
+    Calculate market change based on "column".
+    Calculation is done by taking the first non-null and the last non-null element of each column
+    and calculating the pctchange as "(last - first) / first".
+    Then the results per pair are combined as mean.
+
+    :param data: Dict of Dataframes, dict key should be pair.
+    :param column: Column in the original dataframes to use
+    :return:
+    """
+    tmp_means = []
+    for pair, df in data.items():
+        start = df[column].dropna().iloc[0]
+        end = df[column].dropna().iloc[-1]
+        tmp_means.append((end - start) / start)
+
+    return np.mean(tmp_means)
+
+
 def combine_dataframes_with_mean(data: Dict[str, pd.DataFrame],
                                  column: str = "close") -> pd.DataFrame:
     """

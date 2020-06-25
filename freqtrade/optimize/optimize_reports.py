@@ -8,7 +8,7 @@ from pandas import DataFrame
 from tabulate import tabulate
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
-from freqtrade.data.btanalysis import calculate_max_drawdown
+from freqtrade.data.btanalysis import calculate_max_drawdown, calculate_market_change
 from freqtrade.misc import file_dump_json
 
 logger = logging.getLogger(__name__)
@@ -208,6 +208,8 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
     stake_currency = config['stake_currency']
     max_open_trades = config['max_open_trades']
     result: Dict[str, Any] = {'strategy': {}}
+    market_change = calculate_market_change(btdata, 'close')
+
     for strategy, results in all_results.items():
 
         pair_results = generate_pair_metrics(btdata, stake_currency=stake_currency,
@@ -232,8 +234,9 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
             'backtest_end': max_date.datetime,
             'backtest_end_ts': max_date.timestamp,
             'backtest_days': backtest_days,
-            'trades_per_day': round(len(results) / backtest_days, 2) if backtest_days > 0 else None
-            }
+            'trades_per_day': round(len(results) / backtest_days, 2) if backtest_days > 0 else None,
+            'market_change': market_change,
+        }
         result['strategy'][strategy] = strat_stats
 
         try:
@@ -348,11 +351,12 @@ def text_table_add_metrics(strategy_results: Dict) -> str:
             ('Max Drawdown', f"{round(strategy_results['max_drawdown'] * 100, 2)}%"),
             ('Drawdown Start', strategy_results['drawdown_start'].strftime(DATETIME_PRINT_FORMAT)),
             ('Drawdown End', strategy_results['drawdown_end'].strftime(DATETIME_PRINT_FORMAT)),
+            ('Market change', f"{round(strategy_results['market_change'] * 100, 2)}%"),
         ]
 
         return tabulate(metrics, headers=["Metric", "Value"], tablefmt="orgtbl")
     else:
-        return
+        return ''
 
 
 def show_backtest_results(config: Dict, backtest_stats: Dict):
