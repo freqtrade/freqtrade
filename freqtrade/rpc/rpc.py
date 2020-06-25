@@ -284,7 +284,7 @@ class RPC:
                 profit_ratio = trade.close_profit
                 profit_closed_coin.append(trade.close_profit_abs)
                 profit_closed_ratio.append(profit_ratio)
-                if trade.close_profit > 0:
+                if trade.close_profit >= 0:
                     winning_trades += 1
                 else:
                     losing_trades += 1
