@@ -228,7 +228,7 @@ class Backtesting:
             open_rate=buy_row.open,
             open_date=buy_row.date,
             stake_amount=stake_amount,
-            amount=stake_amount / buy_row.open,
+            amount=round(stake_amount / buy_row.open, 8),
             fee_open=self.fee,
             fee_close=self.fee,
             is_open=True,

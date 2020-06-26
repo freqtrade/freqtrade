@@ -16,7 +16,7 @@ from freqtrade.persistence import Trade
 logger = logging.getLogger(__name__)
 
 # must align with columns in backtest.py
-BT_DATA_COLUMNS = ["pair", "profit_percent", "open_date", "close_date", "index", "duration",
+BT_DATA_COLUMNS = ["pair", "profit_percent", "open_date", "close_date", "index", "trade_duration",
                    "open_rate", "close_rate", "open_at_end", "sell_reason"]
 
 
@@ -144,7 +144,7 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
     persistence.init(db_url, clean_open_orders=False)
 
     columns = ["pair", "open_date", "close_date", "profit", "profit_percent",
-               "open_rate", "close_rate", "amount", "duration", "sell_reason",
+               "open_rate", "close_rate", "amount", "trade_duration", "sell_reason",
                "fee_open", "fee_close", "open_rate_requested", "close_rate_requested",
                "stake_amount", "max_rate", "min_rate", "id", "exchange",
                "stop_loss", "initial_stop_loss", "strategy", "timeframe"]
