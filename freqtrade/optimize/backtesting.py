@@ -40,11 +40,13 @@ class BacktestResult(NamedTuple):
     profit_percent: float
     profit_abs: float
     open_date: datetime
+    open_rate: float
+    open_fee: float
     close_date: datetime
+    close_rate: float
+    close_fee: float
     trade_duration: float
     open_at_end: bool
-    open_rate: float
-    close_rate: float
     sell_reason: SellType
 
 
@@ -247,11 +249,13 @@ class Backtesting:
                                       profit_percent=trade.calc_profit_ratio(rate=closerate),
                                       profit_abs=trade.calc_profit(rate=closerate),
                                       open_date=buy_row.date,
+                                      open_rate=buy_row.open,
+                                      open_fee=self.fee,
                                       close_date=sell_row.date,
+                                      close_rate=closerate,
+                                      close_fee=self.fee,
                                       trade_duration=trade_dur,
                                       open_at_end=False,
-                                      open_rate=buy_row.open,
-                                      close_rate=closerate,
                                       sell_reason=sell.sell_type
                                       )
         if partial_ohlcv:
@@ -261,12 +265,14 @@ class Backtesting:
                                     profit_percent=trade.calc_profit_ratio(rate=sell_row.open),
                                     profit_abs=trade.calc_profit(rate=sell_row.open),
                                     open_date=buy_row.date,
+                                    open_rate=buy_row.open,
+                                    open_fee=self.fee,
                                     close_date=sell_row.date,
+                                    close_rate=sell_row.open,
+                                    close_fee=self.fee,
                                     trade_duration=int((
                                         sell_row.date - buy_row.date).total_seconds() // 60),
                                     open_at_end=True,
-                                    open_rate=buy_row.open,
-                                    close_rate=sell_row.open,
                                     sell_reason=SellType.FORCE_SELL
                                     )
             logger.debug(f"{pair} - Force selling still open trade, "

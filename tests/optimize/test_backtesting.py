@@ -462,12 +462,14 @@ def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
          'open_date': pd.to_datetime([Arrow(2018, 1, 29, 18, 40, 0).datetime,
                                       Arrow(2018, 1, 30, 3, 30, 0).datetime], utc=True
                                      ),
+         'open_rate': [0.104445, 0.10302485],
+         'open_fee': [0.0025, 0.0025],
          'close_date': pd.to_datetime([Arrow(2018, 1, 29, 22, 35, 0).datetime,
                                        Arrow(2018, 1, 30, 4, 10, 0).datetime], utc=True),
+         'close_rate': [0.104969, 0.103541],
+         'close_fee': [0.0025, 0.0025],
          'trade_duration': [235, 40],
          'open_at_end': [False, False],
-         'open_rate': [0.104445, 0.10302485],
-         'close_rate': [0.104969, 0.103541],
          'sell_reason': [SellType.ROI, SellType.ROI]
          })
     pd.testing.assert_frame_equal(results, expected)
