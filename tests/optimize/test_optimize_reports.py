@@ -214,8 +214,6 @@ def test_backtest_record(default_conf, fee, mocker):
                                                         Arrow(2017, 11, 14, 22, 58, 00).datetime],
                                          "open_rate": [0.002543, 0.003003, 0.003089, 0.003214],
                                          "close_rate": [0.002546, 0.003014, 0.003103, 0.003217],
-                                         "open_index": [1, 119, 153, 185],
-                                         "close_index": [118, 151, 184, 199],
                                          "trade_duration": [123, 34, 31, 14],
                                          "open_at_end": [False, False, False, True],
                                          "sell_reason": [SellType.ROI, SellType.STOP_LOSS,

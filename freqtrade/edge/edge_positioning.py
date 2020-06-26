@@ -429,8 +429,6 @@ class Edge:
                      'profit_abs': '',
                      'open_date': date_column[open_trade_index],
                      'close_date': date_column[exit_index],
-                     'open_index': start_point + open_trade_index,
-                     'close_index': start_point + exit_index,
                      'trade_duration': '',
                      'open_rate': round(open_price, 15),
                      'close_rate': round(exit_price, 15),

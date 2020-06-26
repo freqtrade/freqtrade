@@ -41,8 +41,6 @@ class BacktestResult(NamedTuple):
     profit_abs: float
     open_date: datetime
     close_date: datetime
-    open_index: int
-    close_index: int
     trade_duration: float
     open_at_end: bool
     open_rate: float
@@ -251,8 +249,6 @@ class Backtesting:
                                       open_date=buy_row.date,
                                       close_date=sell_row.date,
                                       trade_duration=trade_dur,
-                                      open_index=buy_row.Index,
-                                      close_index=sell_row.Index,
                                       open_at_end=False,
                                       open_rate=buy_row.open,
                                       close_rate=closerate,
@@ -268,8 +264,6 @@ class Backtesting:
                                     close_date=sell_row.date,
                                     trade_duration=int((
                                         sell_row.date - buy_row.date).total_seconds() // 60),
-                                    open_index=buy_row.Index,
-                                    close_index=sell_row.Index,
                                     open_at_end=True,
                                     open_rate=buy_row.open,
                                     close_rate=sell_row.open,

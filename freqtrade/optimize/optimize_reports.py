@@ -52,8 +52,10 @@ def backtest_result_to_list(results: DataFrame) -> List[List]:
     :param results: Dataframe containing results for one strategy
     :return: List of Lists containing the trades
     """
+    # Return 0 as "index" for compatibility reasons (for now)
+    # TODO: Evaluate if we can remove this
     return [[t.pair, t.profit_percent, t.open_date.timestamp(),
-             t.open_date.timestamp(), t.open_index - 1, t.trade_duration,
+             t.open_date.timestamp(), 0, t.trade_duration,
              t.open_rate, t.close_rate, t.open_at_end, t.sell_reason.value]
             for index, t in results.iterrows()]
 
