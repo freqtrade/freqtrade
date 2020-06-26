@@ -267,7 +267,7 @@ def test_generate_profit_graph(testdatadir):
     trades = load_backtest_data(filename)
     timerange = TimeRange.parse_timerange("20180110-20180112")
     pairs = ["TRX/BTC", "XLM/BTC"]
-    trades = trades[trades['close_time'] < pd.Timestamp('2018-01-12', tz='UTC')]
+    trades = trades[trades['close_date'] < pd.Timestamp('2018-01-12', tz='UTC')]
 
     data = history.load_data(datadir=testdatadir,
                              pairs=pairs,

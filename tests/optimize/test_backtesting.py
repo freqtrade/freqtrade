@@ -459,10 +459,10 @@ def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
         {'pair': [pair, pair],
          'profit_percent': [0.0, 0.0],
          'profit_abs': [0.0, 0.0],
-         'open_time': pd.to_datetime([Arrow(2018, 1, 29, 18, 40, 0).datetime,
+         'open_date': pd.to_datetime([Arrow(2018, 1, 29, 18, 40, 0).datetime,
                                       Arrow(2018, 1, 30, 3, 30, 0).datetime], utc=True
                                      ),
-         'close_time': pd.to_datetime([Arrow(2018, 1, 29, 22, 35, 0).datetime,
+         'close_date': pd.to_datetime([Arrow(2018, 1, 29, 22, 35, 0).datetime,
                                        Arrow(2018, 1, 30, 4, 10, 0).datetime], utc=True),
          'open_index': [78, 184],
          'close_index': [125, 192],
@@ -475,12 +475,12 @@ def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
     pd.testing.assert_frame_equal(results, expected)
     data_pair = processed[pair]
     for _, t in results.iterrows():
-        ln = data_pair.loc[data_pair["date"] == t["open_time"]]
+        ln = data_pair.loc[data_pair["date"] == t["open_date"]]
         # Check open trade rate alignes to open rate
         assert ln is not None
         assert round(ln.iloc[0]["open"], 6) == round(t["open_rate"], 6)
         # check close trade rate alignes to close rate or is between high and low
-        ln = data_pair.loc[data_pair["date"] == t["close_time"]]
+        ln = data_pair.loc[data_pair["date"] == t["close_date"]]
         assert (round(ln.iloc[0]["open"], 6) == round(t["close_rate"], 6) or
                 round(ln.iloc[0]["low"], 6) < round(
                 t["close_rate"], 6) < round(ln.iloc[0]["high"], 6))
@@ -756,10 +756,10 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
         pd.DataFrame({'pair': ['XRP/BTC', 'LTC/BTC'],
                       'profit_percent': [0.0, 0.0],
                       'profit_abs': [0.0, 0.0],
-                      'open_time': pd.to_datetime(['2018-01-29 18:40:00',
+                      'open_date': pd.to_datetime(['2018-01-29 18:40:00',
                                                    '2018-01-30 03:30:00', ], utc=True
                                                   ),
-                      'close_time': pd.to_datetime(['2018-01-29 20:45:00',
+                      'close_date': pd.to_datetime(['2018-01-29 20:45:00',
                                                     '2018-01-30 05:35:00', ], utc=True),
                       'open_index': [78, 184],
                       'close_index': [125, 192],
@@ -772,11 +772,11 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
         pd.DataFrame({'pair': ['XRP/BTC', 'LTC/BTC', 'ETH/BTC'],
                       'profit_percent': [0.03, 0.01, 0.1],
                       'profit_abs': [0.01, 0.02, 0.2],
-                      'open_time': pd.to_datetime(['2018-01-29 18:40:00',
+                      'open_date': pd.to_datetime(['2018-01-29 18:40:00',
                                                    '2018-01-30 03:30:00',
                                                    '2018-01-30 05:30:00'], utc=True
                                                   ),
-                      'close_time': pd.to_datetime(['2018-01-29 20:45:00',
+                      'close_date': pd.to_datetime(['2018-01-29 20:45:00',
                                                     '2018-01-30 05:35:00',
                                                     '2018-01-30 08:30:00'], utc=True),
                       'open_index': [78, 184, 185],

@@ -47,7 +47,7 @@ def test_load_trades_from_db(default_conf, fee, mocker):
     assert len(trades) == 3
     assert isinstance(trades, DataFrame)
     assert "pair" in trades.columns
-    assert "open_time" in trades.columns
+    assert "open_date" in trades.columns
     assert "profit_percent" in trades.columns
 
     for col in BT_DATA_COLUMNS:
@@ -67,13 +67,13 @@ def test_extract_trades_of_period(testdatadir):
         {'pair': [pair, pair, pair, pair],
          'profit_percent': [0.0, 0.1, -0.2, -0.5],
          'profit_abs': [0.0, 1, -2, -5],
-         'open_time': to_datetime([Arrow(2017, 11, 13, 15, 40, 0).datetime,
+         'open_date': to_datetime([Arrow(2017, 11, 13, 15, 40, 0).datetime,
                                    Arrow(2017, 11, 14, 9, 41, 0).datetime,
                                    Arrow(2017, 11, 14, 14, 20, 0).datetime,
                                    Arrow(2017, 11, 15, 3, 40, 0).datetime,
                                    ], utc=True
                                   ),
-         'close_time': to_datetime([Arrow(2017, 11, 13, 16, 40, 0).datetime,
+         'close_date': to_datetime([Arrow(2017, 11, 13, 16, 40, 0).datetime,
                                     Arrow(2017, 11, 14, 10, 41, 0).datetime,
                                     Arrow(2017, 11, 14, 15, 25, 0).datetime,
                                     Arrow(2017, 11, 15, 3, 55, 0).datetime,
@@ -82,10 +82,10 @@ def test_extract_trades_of_period(testdatadir):
     trades1 = extract_trades_of_period(data, trades)
     # First and last trade are dropped as they are out of range
     assert len(trades1) == 2
-    assert trades1.iloc[0].open_time == Arrow(2017, 11, 14, 9, 41, 0).datetime
-    assert trades1.iloc[0].close_time == Arrow(2017, 11, 14, 10, 41, 0).datetime
-    assert trades1.iloc[-1].open_time == Arrow(2017, 11, 14, 14, 20, 0).datetime
-    assert trades1.iloc[-1].close_time == Arrow(2017, 11, 14, 15, 25, 0).datetime
+    assert trades1.iloc[0].open_date == Arrow(2017, 11, 14, 9, 41, 0).datetime
+    assert trades1.iloc[0].close_date == Arrow(2017, 11, 14, 10, 41, 0).datetime
+    assert trades1.iloc[-1].open_date == Arrow(2017, 11, 14, 14, 20, 0).datetime
+    assert trades1.iloc[-1].close_date == Arrow(2017, 11, 14, 15, 25, 0).datetime
 
 
 def test_analyze_trade_parallelism(default_conf, mocker, testdatadir):
@@ -174,7 +174,7 @@ def test_create_cum_profit1(testdatadir):
     filename = testdatadir / "backtest-result_test.json"
     bt_data = load_backtest_data(filename)
     # Move close-time to "off" the candle, to make sure the logic still works
-    bt_data.loc[:, 'close_time'] = bt_data.loc[:, 'close_time'] + DateOffset(seconds=20)
+    bt_data.loc[:, 'close_date'] = bt_data.loc[:, 'close_date'] + DateOffset(seconds=20)
     timerange = TimeRange.parse_timerange("20180110-20180112")
 
     df = load_pair_history(pair="TRX/BTC", timeframe='5m',
@@ -213,11 +213,11 @@ def test_calculate_max_drawdown2():
               -0.033961, 0.010680, 0.010886, -0.029274, 0.011178, 0.010693, 0.010711]
 
     dates = [Arrow(2020, 1, 1).shift(days=i) for i in range(len(values))]
-    df = DataFrame(zip(values, dates), columns=['profit', 'open_time'])
+    df = DataFrame(zip(values, dates), columns=['profit', 'open_date'])
     # sort by profit and reset index
     df = df.sort_values('profit').reset_index(drop=True)
     df1 = df.copy()
-    drawdown, h, low = calculate_max_drawdown(df, date_col='open_time', value_col='profit')
+    drawdown, h, low = calculate_max_drawdown(df, date_col='open_date', value_col='profit')
     # Ensure df has not been altered.
     assert df.equals(df1)
 
@@ -226,6 +226,6 @@ def test_calculate_max_drawdown2():
     assert h < low
     assert drawdown == 0.091755
 
-    df = DataFrame(zip(values[:5], dates[:5]), columns=['profit', 'open_time'])
+    df = DataFrame(zip(values[:5], dates[:5]), columns=['profit', 'open_date'])
     with pytest.raises(ValueError, match='No losing trade, therefore no drawdown.'):
-        calculate_max_drawdown(df, date_col='open_time', value_col='profit')
+        calculate_max_drawdown(df, date_col='open_date', value_col='profit')
