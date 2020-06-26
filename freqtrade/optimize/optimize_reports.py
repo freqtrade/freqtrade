@@ -69,8 +69,8 @@ def _generate_result_line(result: DataFrame, max_open_trades: int, first_column:
     return {
         'key': first_column,
         'trades': len(result),
-        'profit_mean': result['profit_percent'].mean(),
-        'profit_mean_pct': result['profit_percent'].mean() * 100.0,
+        'profit_mean': result['profit_percent'].mean() if len(result) > 0 else 0.0,
+        'profit_mean_pct': result['profit_percent'].mean() * 100.0 if len(result) > 0 else 0.0,
         'profit_sum': result['profit_percent'].sum(),
         'profit_sum_pct': result['profit_percent'].sum() * 100.0,
         'profit_total_abs': result['profit_abs'].sum(),
