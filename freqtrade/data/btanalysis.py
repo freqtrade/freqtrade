@@ -20,6 +20,34 @@ BT_DATA_COLUMNS = ["pair", "profit_percent", "open_date", "close_date", "index",
                    "open_rate", "close_rate", "open_at_end", "sell_reason"]
 
 
+def get_latest_backtest_filename(directory: Union[Path, str]) -> str:
+    """
+    Get latest backtest export based on '.last_result.json'.
+    :param directory: Directory to search for last result
+    :return: string containing the filename of the latest backtest result
+    :raises: ValueError in the following cases:
+        * Directory does not exist
+        * `directory/.last_result.json` does not exist
+        * `directory/.last_result.json` has the wrong content
+    """
+    if isinstance(directory, str):
+        directory = Path(directory)
+    if not directory.is_dir():
+        raise ValueError(f"Directory {directory} does not exist.")
+    filename = directory / '.last_result.json'
+
+    if not filename.is_file():
+        raise ValueError(f"Directory {directory} does not seem to contain backtest statistics yet.")
+
+    with filename.open() as file:
+        data = json_load(file)
+
+    if 'latest_backtest' not in data:
+        raise ValueError("Invalid .last_result.json format")
+
+    return data['latest_backtest']
+
+
 def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
     """
     Load backtest statistics file.
