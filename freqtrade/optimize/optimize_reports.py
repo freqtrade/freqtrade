@@ -14,6 +14,18 @@ from freqtrade.misc import file_dump_json
 logger = logging.getLogger(__name__)
 
 
+def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> None:
+
+    filename = Path.joinpath(recordfilename.parent,
+                             f'{recordfilename.stem}-{datetime.now().isoformat()}'
+                             ).with_suffix(recordfilename.suffix)
+    file_dump_json(filename, stats)
+
+    latest_filename = Path.joinpath(recordfilename.parent,
+                                    '.last_result.json')
+    file_dump_json(latest_filename, {'latest_backtest': str(filename.name)})
+
+
 def store_backtest_result(recordfilename: Path, all_results: Dict[str, DataFrame]) -> None:
     """
     Stores backtest results to file (one file per strategy)
@@ -224,7 +236,7 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
 
         backtest_days = (max_date - min_date).days
         strat_stats = {
-            'trades': backtest_result_to_list(results),
+            'trades': results.to_dict(orient='records'),
             'results_per_pair': pair_results,
             'sell_reason_summary': sell_reason_stats,
             'left_open_trades': left_open_results,
@@ -338,12 +350,11 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
 
 def text_table_add_metrics(strategy_results: Dict) -> str:
     if len(strategy_results['trades']) > 0:
-        min_trade = min(strategy_results['trades'], key=lambda x: x[2])
+        min_trade = min(strategy_results['trades'], key=lambda x: x['open_time'])
         metrics = [
             ('Total trades', strategy_results['total_trades']),
-            ('First trade', datetime.fromtimestamp(min_trade[2],
-                                                   tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)),
-            ('First trade Pair', min_trade[0]),
+            ('First trade', min_trade['open_time'].strftime(DATETIME_PRINT_FORMAT)),
+            ('First trade Pair', min_trade['pair']),
             ('Backtesting from', strategy_results['backtest_start'].strftime(DATETIME_PRINT_FORMAT)),
             ('Backtesting to', strategy_results['backtest_end'].strftime(DATETIME_PRINT_FORMAT)),
             ('Trades per day', strategy_results['trades_per_day']),

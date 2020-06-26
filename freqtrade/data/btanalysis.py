@@ -3,7 +3,7 @@ Helpers when analyzing backtest data
 """
 import logging
 from pathlib import Path
-from typing import Dict, Union, Tuple
+from typing import Dict, Union, Tuple, Any
 
 import numpy as np
 import pandas as pd
@@ -18,6 +18,23 @@ logger = logging.getLogger(__name__)
 # must align with columns in backtest.py
 BT_DATA_COLUMNS = ["pair", "profit_percent", "open_time", "close_time", "index", "duration",
                    "open_rate", "close_rate", "open_at_end", "sell_reason"]
+
+
+def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
+    """
+    Load backtest statistics file.
+    :param filename: pathlib.Path object, or string pointing to the file.
+    :return: a dictionary containing the resulting file.
+    """
+    if isinstance(filename, str):
+        filename = Path(filename)
+    if not filename.is_file():
+        raise ValueError(f"File {filename} does not exist.")
+
+    with filename.open() as file:
+        data = json_load(file)
+
+    return data
 
 
 def load_backtest_data(filename: Union[Path, str]) -> pd.DataFrame:
