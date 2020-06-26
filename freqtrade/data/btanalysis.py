@@ -141,7 +141,6 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
     :param db_url: Sqlite url (default format sqlite:///tradesv3.dry-run.sqlite)
     :return: Dataframe containing Trades
     """
-    trades: pd.DataFrame = pd.DataFrame([], columns=BT_DATA_COLUMNS)
     persistence.init(db_url, clean_open_orders=False)
 
     columns = ["pair", "open_date", "close_date", "profit", "profit_percent",
