@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -348,21 +348,21 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")
 
 
-def text_table_add_metrics(strategy_results: Dict) -> str:
-    if len(strategy_results['trades']) > 0:
-        min_trade = min(strategy_results['trades'], key=lambda x: x['open_date'])
+def text_table_add_metrics(strat_results: Dict) -> str:
+    if len(strat_results['trades']) > 0:
+        min_trade = min(strat_results['trades'], key=lambda x: x['open_date'])
         metrics = [
-            ('Total trades', strategy_results['total_trades']),
+            ('Total trades', strat_results['total_trades']),
             ('First trade', min_trade['open_date'].strftime(DATETIME_PRINT_FORMAT)),
             ('First trade Pair', min_trade['pair']),
-            ('Backtesting from', strategy_results['backtest_start'].strftime(DATETIME_PRINT_FORMAT)),
-            ('Backtesting to', strategy_results['backtest_end'].strftime(DATETIME_PRINT_FORMAT)),
-            ('Trades per day', strategy_results['trades_per_day']),
+            ('Backtesting from', strat_results['backtest_start'].strftime(DATETIME_PRINT_FORMAT)),
+            ('Backtesting to', strat_results['backtest_end'].strftime(DATETIME_PRINT_FORMAT)),
+            ('Trades per day', strat_results['trades_per_day']),
             ('', ''),  # Empty line to improve readability
-            ('Max Drawdown', f"{round(strategy_results['max_drawdown'] * 100, 2)}%"),
-            ('Drawdown Start', strategy_results['drawdown_start'].strftime(DATETIME_PRINT_FORMAT)),
-            ('Drawdown End', strategy_results['drawdown_end'].strftime(DATETIME_PRINT_FORMAT)),
-            ('Market change', f"{round(strategy_results['market_change'] * 100, 2)}%"),
+            ('Max Drawdown', f"{round(strat_results['max_drawdown'] * 100, 2)}%"),
+            ('Drawdown Start', strat_results['drawdown_start'].strftime(DATETIME_PRINT_FORMAT)),
+            ('Drawdown End', strat_results['drawdown_end'].strftime(DATETIME_PRINT_FORMAT)),
+            ('Market change', f"{round(strat_results['market_change'] * 100, 2)}%"),
         ]
 
         return tabulate(metrics, headers=["Metric", "Value"], tablefmt="orgtbl")
