@@ -373,21 +373,21 @@ def show_backtest_results(config: Dict, backtest_stats: Dict):
 
         table = text_table_sell_reason(sell_reason_stats=results['sell_reason_summary'],
                                        stake_currency=stake_currency)
-        if isinstance(table, str):
+        if isinstance(table, str) and len(table) > 0:
             print(' SELL REASON STATS '.center(len(table.splitlines()[0]), '='))
         print(table)
 
         table = text_table_bt_results(results['left_open_trades'], stake_currency=stake_currency)
-        if isinstance(table, str):
+        if isinstance(table, str) and len(table) > 0:
             print(' LEFT OPEN TRADES REPORT '.center(len(table.splitlines()[0]), '='))
         print(table)
 
         table = text_table_add_metrics(results)
-        if isinstance(table, str):
+        if isinstance(table, str) and len(table) > 0:
             print(' SUMMARY METRICS '.center(len(table.splitlines()[0]), '='))
         print(table)
 
-        if isinstance(table, str):
+        if isinstance(table, str) and len(table) > 0:
             print('=' * len(table.splitlines()[0]))
         print()
 
