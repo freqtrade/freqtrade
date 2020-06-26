@@ -1,14 +1,22 @@
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
 import pytest
 from arrow import Arrow
 
+from freqtrade.configuration import TimeRange
+from freqtrade.data import history
 from freqtrade.edge import PairInfo
-from freqtrade.optimize.optimize_reports import (
-    generate_pair_metrics, generate_edge_table, generate_sell_reason_stats,
-    text_table_bt_results, text_table_sell_reason, generate_strategy_metrics,
-    text_table_strategy, store_backtest_result)
+from freqtrade.optimize.optimize_reports import (generate_backtest_stats,
+                                                 generate_edge_table,
+                                                 generate_pair_metrics,
+                                                 generate_sell_reason_stats,
+                                                 generate_strategy_metrics,
+                                                 store_backtest_result,
+                                                 text_table_bt_results,
+                                                 text_table_sell_reason,
+                                                 text_table_strategy)
 from freqtrade.strategy.interface import SellType
 from tests.conftest import patch_exchange
 
@@ -41,6 +49,71 @@ def test_text_table_bt_results(default_conf, mocker):
     pair_results = generate_pair_metrics(data={'ETH/BTC': {}}, stake_currency='BTC',
                                          max_open_trades=2, results=results)
     assert text_table_bt_results(pair_results, stake_currency='BTC') == result_str
+
+
+def test_generate_backtest_stats(default_conf, testdatadir):
+    results = {'DefStrat': pd.DataFrame({"pair": ["UNITTEST/BTC", "UNITTEST/BTC",
+                                                  "UNITTEST/BTC", "UNITTEST/BTC"],
+                                         "profit_percent": [0.003312, 0.010801, 0.013803, 0.002780],
+                                         "profit_abs": [0.000003, 0.000011, 0.000014, 0.000003],
+                                         "open_date": [Arrow(2017, 11, 14, 19, 32, 00).datetime,
+                                                       Arrow(2017, 11, 14, 21, 36, 00).datetime,
+                                                       Arrow(2017, 11, 14, 22, 12, 00).datetime,
+                                                       Arrow(2017, 11, 14, 22, 44, 00).datetime],
+                                         "close_date": [Arrow(2017, 11, 14, 21, 35, 00).datetime,
+                                                        Arrow(2017, 11, 14, 22, 10, 00).datetime,
+                                                        Arrow(2017, 11, 14, 22, 43, 00).datetime,
+                                                        Arrow(2017, 11, 14, 22, 58, 00).datetime],
+                                         "open_rate": [0.002543, 0.003003, 0.003089, 0.003214],
+                                         "close_rate": [0.002546, 0.003014, 0.003103, 0.003217],
+                                         "trade_duration": [123, 34, 31, 14],
+                                         "open_at_end": [False, False, False, True],
+                                         "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
+                                                         SellType.ROI, SellType.FORCE_SELL]
+                                         })}
+    timerange = TimeRange.parse_timerange('1510688220-1510700340')
+    min_date = Arrow.fromtimestamp(1510688220)
+    max_date = Arrow.fromtimestamp(1510700340)
+    btdata = history.load_data(testdatadir, '1m', ['UNITTEST/BTC'], timerange=timerange,
+                               fill_up_missing=True)
+
+    stats = generate_backtest_stats(default_conf, btdata, results, min_date, max_date)
+    assert isinstance(stats, dict)
+    assert 'strategy' in stats
+    assert 'DefStrat' in stats['strategy']
+    assert 'strategy_comparison' in stats
+    strat_stats = stats['strategy']['DefStrat']
+    assert strat_stats['backtest_start'] == min_date.datetime
+    assert strat_stats['backtest_end'] == max_date.datetime
+    assert strat_stats['total_trades'] == len(results['DefStrat'])
+    # Above sample had no loosing trade
+    assert strat_stats['max_drawdown'] == 0.0
+
+    results = {'DefStrat': pd.DataFrame({"pair": ["UNITTEST/BTC", "UNITTEST/BTC",
+                                                  "UNITTEST/BTC", "UNITTEST/BTC"],
+                                         "profit_percent": [0.003312, 0.010801, -0.013803, 0.002780],
+                                         "profit_abs": [0.000003, 0.000011, -0.000014, 0.000003],
+                                         "open_date": [Arrow(2017, 11, 14, 19, 32, 00).datetime,
+                                                       Arrow(2017, 11, 14, 21, 36, 00).datetime,
+                                                       Arrow(2017, 11, 14, 22, 12, 00).datetime,
+                                                       Arrow(2017, 11, 14, 22, 44, 00).datetime],
+                                         "close_date": [Arrow(2017, 11, 14, 21, 35, 00).datetime,
+                                                        Arrow(2017, 11, 14, 22, 10, 00).datetime,
+                                                        Arrow(2017, 11, 14, 22, 43, 00).datetime,
+                                                        Arrow(2017, 11, 14, 22, 58, 00).datetime],
+                                         "open_rate": [0.002543, 0.003003, 0.003089, 0.003214],
+                                         "close_rate": [0.002546, 0.003014, 0.0032903, 0.003217],
+                                         "trade_duration": [123, 34, 31, 14],
+                                         "open_at_end": [False, False, False, True],
+                                         "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
+                                                         SellType.ROI, SellType.FORCE_SELL]
+                                         })}
+
+    assert strat_stats['max_drawdown'] == 0.0
+    assert strat_stats['drawdown_start'] == Arrow.fromtimestamp(0).datetime
+    assert strat_stats['drawdown_end'] == Arrow.fromtimestamp(0).datetime
+    assert strat_stats['drawdown_end_ts'] == 0
+    assert strat_stats['drawdown_start_ts'] == 0
 
 
 def test_generate_pair_metrics(default_conf, mocker):

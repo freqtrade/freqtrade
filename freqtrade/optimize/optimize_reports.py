@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -266,10 +266,10 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
         except ValueError:
             strat_stats.update({
                 'max_drawdown': 0.0,
-                'drawdown_start': datetime.min,
-                'drawdown_start_ts': datetime(1970, 1, 1).timestamp(),
-                'drawdown_end': datetime.min,
-                'drawdown_end_ts': datetime(1970, 1, 1).timestamp(),
+                'drawdown_start': datetime(1970, 1, 1, tzinfo=timezone.utc),
+                'drawdown_start_ts': 0,
+                'drawdown_end': datetime(1970, 1, 1, tzinfo=timezone.utc),
+                'drawdown_end_ts': 0,
             })
 
     strategy_results = generate_strategy_metrics(stake_currency=stake_currency,
