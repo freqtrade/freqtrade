@@ -45,6 +45,7 @@ class BacktestResult(NamedTuple):
     close_date: datetime
     close_rate: float
     close_fee: float
+    amount: float
     trade_duration: float
     open_at_end: bool
     sell_reason: SellType
@@ -254,6 +255,7 @@ class Backtesting:
                                       close_date=sell_row.date,
                                       close_rate=closerate,
                                       close_fee=self.fee,
+                                      amount=trade.amount,
                                       trade_duration=trade_dur,
                                       open_at_end=False,
                                       sell_reason=sell.sell_type
@@ -270,6 +272,7 @@ class Backtesting:
                                     close_date=sell_row.date,
                                     close_rate=sell_row.open,
                                     close_fee=self.fee,
+                                    amount=trade.amount,
                                     trade_duration=int((
                                         sell_row.date - buy_row.date).total_seconds() // 60),
                                     open_at_end=True,

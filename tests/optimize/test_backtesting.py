@@ -468,6 +468,7 @@ def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
                                        Arrow(2018, 1, 30, 4, 10, 0).datetime], utc=True),
          'close_rate': [0.104969, 0.103541],
          'close_fee': [0.0025, 0.0025],
+         'amount': [0.009574, 0.009706],
          'trade_duration': [235, 40],
          'open_at_end': [False, False],
          'sell_reason': [SellType.ROI, SellType.ROI]

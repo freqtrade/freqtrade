@@ -250,6 +250,7 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
             'backtest_days': backtest_days,
             'trades_per_day': round(len(results) / backtest_days, 2) if backtest_days > 0 else None,
             'market_change': market_change,
+            'stake_amount': config['stake_amount']
         }
         result['strategy'][strategy] = strat_stats
 
