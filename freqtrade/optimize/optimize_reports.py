@@ -52,8 +52,8 @@ def backtest_result_to_list(results: DataFrame) -> List[List]:
     :param results: Dataframe containing results for one strategy
     :return: List of Lists containing the trades
     """
-    return [[t.pair, t.profit_percent, t.open_time.timestamp(),
-             t.close_time.timestamp(), t.open_index - 1, t.trade_duration,
+    return [[t.pair, t.profit_percent, t.open_date.timestamp(),
+             t.open_date.timestamp(), t.open_index - 1, t.trade_duration,
              t.open_rate, t.close_rate, t.open_at_end, t.sell_reason.value]
             for index, t in results.iterrows()]
 
@@ -350,10 +350,10 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
 
 def text_table_add_metrics(strategy_results: Dict) -> str:
     if len(strategy_results['trades']) > 0:
-        min_trade = min(strategy_results['trades'], key=lambda x: x['open_time'])
+        min_trade = min(strategy_results['trades'], key=lambda x: x['open_date'])
         metrics = [
             ('Total trades', strategy_results['total_trades']),
-            ('First trade', min_trade['open_time'].strftime(DATETIME_PRINT_FORMAT)),
+            ('First trade', min_trade['open_date'].strftime(DATETIME_PRINT_FORMAT)),
             ('First trade Pair', min_trade['pair']),
             ('Backtesting from', strategy_results['backtest_start'].strftime(DATETIME_PRINT_FORMAT)),
             ('Backtesting to', strategy_results['backtest_end'].strftime(DATETIME_PRINT_FORMAT)),

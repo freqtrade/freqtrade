@@ -16,7 +16,7 @@ from freqtrade.persistence import Trade
 logger = logging.getLogger(__name__)
 
 # must align with columns in backtest.py
-BT_DATA_COLUMNS = ["pair", "profit_percent", "open_time", "close_time", "index", "duration",
+BT_DATA_COLUMNS = ["pair", "profit_percent", "open_date", "close_date", "index", "duration",
                    "open_rate", "close_rate", "open_at_end", "sell_reason"]
 
 
@@ -54,18 +54,18 @@ def load_backtest_data(filename: Union[Path, str]) -> pd.DataFrame:
 
     df = pd.DataFrame(data, columns=BT_DATA_COLUMNS)
 
-    df['open_time'] = pd.to_datetime(df['open_time'],
+    df['open_date'] = pd.to_datetime(df['open_date'],
                                      unit='s',
                                      utc=True,
                                      infer_datetime_format=True
                                      )
-    df['close_time'] = pd.to_datetime(df['close_time'],
+    df['close_date'] = pd.to_datetime(df['close_date'],
                                       unit='s',
                                       utc=True,
                                       infer_datetime_format=True
                                       )
     df['profit'] = df['close_rate'] - df['open_rate']
-    df = df.sort_values("open_time").reset_index(drop=True)
+    df = df.sort_values("open_date").reset_index(drop=True)
     return df
 
 
@@ -79,9 +79,9 @@ def analyze_trade_parallelism(results: pd.DataFrame, timeframe: str) -> pd.DataF
     """
     from freqtrade.exchange import timeframe_to_minutes
     timeframe_min = timeframe_to_minutes(timeframe)
-    dates = [pd.Series(pd.date_range(row[1].open_time, row[1].close_time,
+    dates = [pd.Series(pd.date_range(row[1]['open_date'], row[1]['close_date'],
                                      freq=f"{timeframe_min}min"))
-             for row in results[['open_time', 'close_time']].iterrows()]
+             for row in results[['open_date', 'close_date']].iterrows()]
     deltas = [len(x) for x in dates]
     dates = pd.Series(pd.concat(dates).values, name='date')
     df2 = pd.DataFrame(np.repeat(results.values, deltas, axis=0), columns=results.columns)
@@ -116,7 +116,7 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
     trades: pd.DataFrame = pd.DataFrame([], columns=BT_DATA_COLUMNS)
     persistence.init(db_url, clean_open_orders=False)
 
-    columns = ["pair", "open_time", "close_time", "profit", "profit_percent",
+    columns = ["pair", "open_date", "close_date", "profit", "profit_percent",
                "open_rate", "close_rate", "amount", "duration", "sell_reason",
                "fee_open", "fee_close", "open_rate_requested", "close_rate_requested",
                "stake_amount", "max_rate", "min_rate", "id", "exchange",
@@ -180,8 +180,8 @@ def extract_trades_of_period(dataframe: pd.DataFrame, trades: pd.DataFrame,
     else:
         trades_start = dataframe.iloc[0]['date']
         trades_stop = dataframe.iloc[-1]['date']
-    trades = trades.loc[(trades['open_time'] >= trades_start) &
-                        (trades['close_time'] <= trades_stop)]
+    trades = trades.loc[(trades['open_date'] >= trades_start) &
+                        (trades['close_date'] <= trades_stop)]
     return trades
 
 
@@ -227,7 +227,7 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     """
     Adds a column `col_name` with the cumulative profit for the given trades array.
     :param df: DataFrame with date index
-    :param trades: DataFrame containing trades (requires columns close_time and profit_percent)
+    :param trades: DataFrame containing trades (requires columns close_date and profit_percent)
     :param col_name: Column name that will be assigned the results
     :param timeframe: Timeframe used during the operations
     :return: Returns df with one additional column, col_name, containing the cumulative profit.
@@ -238,7 +238,7 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     from freqtrade.exchange import timeframe_to_minutes
     timeframe_minutes = timeframe_to_minutes(timeframe)
     # Resample to timeframe to make sure trades match candles
-    _trades_sum = trades.resample(f'{timeframe_minutes}min', on='close_time'
+    _trades_sum = trades.resample(f'{timeframe_minutes}min', on='close_date'
                                   )[['profit_percent']].sum()
     df.loc[:, col_name] = _trades_sum.cumsum()
     # Set first value to 0
@@ -248,13 +248,13 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     return df
 
 
-def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_time',
+def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date',
                            value_col: str = 'profit_percent'
                            ) -> Tuple[float, pd.Timestamp, pd.Timestamp]:
     """
     Calculate max drawdown and the corresponding close dates
-    :param trades: DataFrame containing trades (requires columns close_time and profit_percent)
-    :param date_col: Column in DataFrame to use for dates (defaults to 'close_time')
+    :param trades: DataFrame containing trades (requires columns close_date and profit_percent)
+    :param date_col: Column in DataFrame to use for dates (defaults to 'close_date')
     :param value_col: Column in DataFrame to use for values (defaults to 'profit_percent')
     :return: Tuple (float, highdate, lowdate) with absolute max drawdown, high and low time
     :raise: ValueError if trade-dataframe was found empty.

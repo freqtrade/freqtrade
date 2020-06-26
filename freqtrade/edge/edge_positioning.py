@@ -237,7 +237,7 @@ class Edge:
         # All returned values are relative, they are defined as ratios.
         stake = 0.015
 
-        result['trade_duration'] = result['close_time'] - result['open_time']
+        result['trade_duration'] = result['close_date'] - result['open_date']
 
         result['trade_duration'] = result['trade_duration'].map(
             lambda x: int(x.total_seconds() / 60))
@@ -427,8 +427,8 @@ class Edge:
                      'stoploss': stoploss,
                      'profit_ratio': '',
                      'profit_abs': '',
-                     'open_time': date_column[open_trade_index],
-                     'close_time': date_column[exit_index],
+                     'open_date': date_column[open_trade_index],
+                     'close_date': date_column[exit_index],
                      'open_index': start_point + open_trade_index,
                      'close_index': start_point + exit_index,
                      'trade_duration': '',

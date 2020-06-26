@@ -45,7 +45,7 @@ class SortinoHyperOptLossDaily(IHyperOptLoss):
                              normalize=True)
 
         sum_daily = (
-            results.resample(resample_freq, on='close_time').agg(
+            results.resample(resample_freq, on='close_date').agg(
                 {"profit_percent_after_slippage": sum}).reindex(t_index).fillna(0)
         )
 

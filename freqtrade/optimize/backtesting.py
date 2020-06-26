@@ -39,8 +39,8 @@ class BacktestResult(NamedTuple):
     pair: str
     profit_percent: float
     profit_abs: float
-    open_time: datetime
-    close_time: datetime
+    open_date: datetime
+    close_date: datetime
     open_index: int
     close_index: int
     trade_duration: float
@@ -248,8 +248,8 @@ class Backtesting:
                 return BacktestResult(pair=pair,
                                       profit_percent=trade.calc_profit_ratio(rate=closerate),
                                       profit_abs=trade.calc_profit(rate=closerate),
-                                      open_time=buy_row.date,
-                                      close_time=sell_row.date,
+                                      open_date=buy_row.date,
+                                      close_date=sell_row.date,
                                       trade_duration=trade_dur,
                                       open_index=buy_row.Index,
                                       close_index=sell_row.Index,
@@ -264,8 +264,8 @@ class Backtesting:
             bt_res = BacktestResult(pair=pair,
                                     profit_percent=trade.calc_profit_ratio(rate=sell_row.open),
                                     profit_abs=trade.calc_profit(rate=sell_row.open),
-                                    open_time=buy_row.date,
-                                    close_time=sell_row.date,
+                                    open_date=buy_row.date,
+                                    close_date=sell_row.date,
                                     trade_duration=int((
                                         sell_row.date - buy_row.date).total_seconds() // 60),
                                     open_index=buy_row.Index,
@@ -358,8 +358,8 @@ class Backtesting:
 
                 if trade_entry:
                     logger.debug(f"{pair} - Locking pair till "
-                                 f"close_time={trade_entry.close_time}")
-                    lock_pair_until[pair] = trade_entry.close_time
+                                 f"close_date={trade_entry.close_date}")
+                    lock_pair_until[pair] = trade_entry.close_date
                     trades.append(trade_entry)
                 else:
                     # Set lock_pair_until to end of testing period if trade could not be closed
@@ -421,4 +421,5 @@ class Backtesting:
         stats = generate_backtest_stats(self.config, data, all_results,
                                         min_date=min_date, max_date=max_date)
         show_backtest_results(self.config, stats)
-        store_backtest_stats(self.config['exportfilename'], stats)
+        if self.config.get('export', False):
+            store_backtest_stats(self.config['exportfilename'], stats)

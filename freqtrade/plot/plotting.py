@@ -63,7 +63,7 @@ def init_plotscript(config):
         exportfilename=config.get('exportfilename'),
         no_trades=no_trades
     )
-    trades = trim_dataframe(trades, timerange, 'open_time')
+    trades = trim_dataframe(trades, timerange, 'open_date')
 
     return {"ohlcv": data,
             "trades": trades,
@@ -166,7 +166,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
                                                   f"{row['sell_reason']}, {row['duration']} min",
                                                   axis=1)
         trade_buys = go.Scatter(
-            x=trades["open_time"],
+            x=trades["open_date"],
             y=trades["open_rate"],
             mode='markers',
             name='Trade buy',
@@ -181,7 +181,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
         )
 
         trade_sells = go.Scatter(
-            x=trades.loc[trades['profit_percent'] > 0, "close_time"],
+            x=trades.loc[trades['profit_percent'] > 0, "close_date"],
             y=trades.loc[trades['profit_percent'] > 0, "close_rate"],
             text=trades.loc[trades['profit_percent'] > 0, "desc"],
             mode='markers',
@@ -194,7 +194,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
             )
         )
         trade_sells_loss = go.Scatter(
-            x=trades.loc[trades['profit_percent'] <= 0, "close_time"],
+            x=trades.loc[trades['profit_percent'] <= 0, "close_date"],
             y=trades.loc[trades['profit_percent'] <= 0, "close_rate"],
             text=trades.loc[trades['profit_percent'] <= 0, "desc"],
             mode='markers',
@@ -506,7 +506,7 @@ def plot_profit(config: Dict[str, Any]) -> None:
     # Remove open pairs - we don't know the profit yet so can't calculate profit for these.
     # Also, If only one open pair is left, then the profit-generation would fail.
     trades = trades[(trades['pair'].isin(plot_elements["pairs"]))
-                    & (~trades['close_time'].isnull())
+                    & (~trades['close_date'].isnull())
                     ]
     if len(trades) == 0:
         raise OperationalException("No trades found, cannot generate Profit-plot without "
