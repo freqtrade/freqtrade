@@ -180,7 +180,8 @@ def create_mock_trades(fee):
         fee_close=fee.return_value,
         open_rate=0.123,
         exchange='bittrex',
-        open_order_id='dry_run_buy_12345'
+        open_order_id='dry_run_buy_12345',
+        strategy='DefaultStrategy',
     )
     Trade.session.add(trade)
 
@@ -195,7 +196,8 @@ def create_mock_trades(fee):
         close_profit=0.005,
         exchange='bittrex',
         is_open=False,
-        open_order_id='dry_run_sell_12345'
+        open_order_id='dry_run_sell_12345',
+        strategy='DefaultStrategy',
     )
     Trade.session.add(trade)
 
@@ -208,7 +210,8 @@ def create_mock_trades(fee):
         fee_close=fee.return_value,
         open_rate=0.123,
         exchange='bittrex',
-        open_order_id='prod_buy_12345'
+        open_order_id='prod_buy_12345',
+        strategy='DefaultStrategy',
     )
     Trade.session.add(trade)
 

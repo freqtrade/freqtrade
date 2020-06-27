@@ -43,7 +43,7 @@ def test_load_backtest_data(testdatadir):
     filename = testdatadir / "backtest-result_test.json"
     bt_data = load_backtest_data(filename)
     assert isinstance(bt_data, DataFrame)
-    assert list(bt_data.columns) == BT_DATA_COLUMNS + ["profit"]
+    assert list(bt_data.columns) == BT_DATA_COLUMNS + ["profit_abs"]
     assert len(bt_data) == 179
 
     # Test loading from string (must yield same result)
@@ -72,6 +72,10 @@ def test_load_trades_from_db(default_conf, fee, mocker):
     for col in BT_DATA_COLUMNS:
         if col not in ['index', 'open_at_end']:
             assert col in trades.columns
+    trades = load_trades_from_db(db_url=default_conf['db_url'], strategy='DefaultStrategy')
+    assert len(trades) == 3
+    trades = load_trades_from_db(db_url=default_conf['db_url'], strategy='NoneStrategy')
+    assert len(trades) == 0
 
 
 def test_extract_trades_of_period(testdatadir):
@@ -125,7 +129,8 @@ def test_load_trades(default_conf, mocker):
     load_trades("DB",
                 db_url=default_conf.get('db_url'),
                 exportfilename=default_conf.get('exportfilename'),
-                no_trades=False
+                no_trades=False,
+                strategy="DefaultStrategy",
                 )
 
     assert db_mock.call_count == 1
