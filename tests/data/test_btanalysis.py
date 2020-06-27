@@ -32,8 +32,10 @@ def test_get_latest_backtest_filename(testdatadir, mocker):
     res = get_latest_backtest_filename(testdatadir)
     assert res == 'backtest-result_new.json'
 
-    mocker.patch("freqtrade.data.btanalysis.json_load", return_value={})
+    res = get_latest_backtest_filename(str(testdatadir))
+    assert res == 'backtest-result_new.json'
 
+    mocker.patch("freqtrade.data.btanalysis.json_load", return_value={})
 
     with pytest.raises(ValueError, match=r"Invalid '.last_result.json' format."):
         get_latest_backtest_filename(testdatadir)
@@ -69,6 +71,29 @@ def test_load_backtest_data_new_format(testdatadir):
 
     with pytest.raises(ValueError, match=r"File .* does not exist\."):
         load_backtest_data(str("filename") + "nofile")
+
+    with pytest.raises(ValueError, match=r"Unknown dataformat."):
+        load_backtest_data(testdatadir / '.last_result.json')
+
+
+def test_load_backtest_data_multi(testdatadir):
+
+    filename = testdatadir / "backtest-result_multistrat.json"
+    for strategy in ('DefaultStrategy', 'TestStrategy'):
+        bt_data = load_backtest_data(filename, strategy=strategy)
+        assert isinstance(bt_data, DataFrame)
+        assert set(bt_data.columns) == set(list(BacktestResult._fields) + ["profit_abs"])
+        assert len(bt_data) == 179
+
+        # Test loading from string (must yield same result)
+        bt_data2 = load_backtest_data(str(filename), strategy=strategy)
+        assert bt_data.equals(bt_data2)
+
+    with pytest.raises(ValueError, match=r"Strategy XYZ not available in the backtest result\."):
+        load_backtest_data(filename, strategy='XYZ')
+
+    with pytest.raises(ValueError, match=r"Detected backtest result with more than one strategy.*"):
+        load_backtest_data(filename)
 
 
 @pytest.mark.usefixtures("init_persistence")
