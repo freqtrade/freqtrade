@@ -237,13 +237,13 @@ Since the access token has a short timeout (15 min) - the `token/refresh` reques
 ## CORS
 
 All web-based frontends are subject to [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) - Cross-Origin Resource Sharing.
-Since most request to the Freqtrade API must be authenticated, a proper CORS policy is key to avoid security problems.
-Also, the Standard disallows `*` CORS policies for requests with credentials, so this setting must be done appropriately.
+Since most of the requests to the Freqtrade API must be authenticated, a proper CORS policy is key to avoid security problems.
+Also, the standard disallows `*` CORS policies for requests with credentials, so this setting must be set appropriately.
 
-Users can configure this themselfs via the `CORS_origins` configuration setting.
+Users can configure this themselves via the `CORS_origins` configuration setting.
 It consists of a list of allowed sites that are allowed to consume resources from the bot's API.
 
-Assuming your Application would be deployed as `https://frequi.freqtrade.io/home/` - this would mean that the following configuration becomes necessary:
+Assuming your application is deployed as `https://frequi.freqtrade.io/home/` - this would mean that the following configuration becomes necessary:
 
 ```jsonc
 {
