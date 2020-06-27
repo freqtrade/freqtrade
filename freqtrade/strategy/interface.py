@@ -45,6 +45,10 @@ class SellType(Enum):
     EMERGENCY_SELL = "emergency_sell"
     NONE = ""
 
+    def __str__(self):
+        # explicitly convert to String to help with exporting data.
+        return self.value
+
 
 class SellCheckTuple(NamedTuple):
     """
