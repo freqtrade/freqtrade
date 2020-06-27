@@ -17,6 +17,7 @@ from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
                                        load_backtest_data, load_trades,
                                        load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
+from freqtrade.optimize.backtesting import BacktestResult
 from tests.conftest import create_mock_trades
 
 
@@ -38,12 +39,28 @@ def test_get_latest_backtest_filename(testdatadir, mocker):
         get_latest_backtest_filename(testdatadir)
 
 
-def test_load_backtest_data(testdatadir):
+def test_load_backtest_data_old_format(testdatadir):
 
     filename = testdatadir / "backtest-result_test.json"
     bt_data = load_backtest_data(filename)
     assert isinstance(bt_data, DataFrame)
     assert list(bt_data.columns) == BT_DATA_COLUMNS + ["profit_abs"]
+    assert len(bt_data) == 179
+
+    # Test loading from string (must yield same result)
+    bt_data2 = load_backtest_data(str(filename))
+    assert bt_data.equals(bt_data2)
+
+    with pytest.raises(ValueError, match=r"File .* does not exist\."):
+        load_backtest_data(str("filename") + "nofile")
+
+
+def test_load_backtest_data_new_format(testdatadir):
+
+    filename = testdatadir / "backtest-result_new.json"
+    bt_data = load_backtest_data(filename)
+    assert isinstance(bt_data, DataFrame)
+    assert set(bt_data.columns) == set(list(BacktestResult._fields) + ["profit_abs"])
     assert len(bt_data) == 179
 
     # Test loading from string (must yield same result)
