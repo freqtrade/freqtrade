@@ -175,6 +175,19 @@ class FreqtradeBot:
         if self.config['cancel_open_orders_on_exit']:
             self.cancel_all_open_orders()
 
+    def check_for_open_trades(self):
+        open_trades = Trade.get_trades([Trade.is_open == True,
+                                   ]).all()
+
+        if len(open_trades) is not 0:
+            msg = {
+                f'type': RPCMessageType.WARNING_NOTIFICATION,
+                f'status': f'{len(open_trades)} OPEN TRADES ACTIVE\n\n'
+                           f'Handle these trades manually or \'/start\' the bot again '
+                           f'and use \'/stopbuy\' to handle open trades gracefully.'
+            }
+            self.rpc.send_msg(msg)
+
     def _refresh_active_whitelist(self, trades: List[Trade] = []) -> List[str]:
         """
         Refresh active whitelist from pairlist or edge and extend it with
