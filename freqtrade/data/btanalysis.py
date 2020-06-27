@@ -3,7 +3,7 @@ Helpers when analyzing backtest data
 """
 import logging
 from pathlib import Path
-from typing import Dict, Union, Tuple, Any
+from typing import Dict, Union, Tuple, Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -65,24 +65,41 @@ def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
     return data
 
 
-def load_backtest_data(filename: Union[Path, str]) -> pd.DataFrame:
+def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = None) -> pd.DataFrame:
     """
     Load backtest data file.
     :param filename: pathlib.Path object, or string pointing to the file.
+    :param strategy: Strategy to load - mainly relevant for multi-strategy backtests
+                     Can also serve as protection to load the correct result.
     :return: a dataframe with the analysis results
     :raise: ValueError if loading goes wrong.
     """
     data = load_backtest_stats(filename)
     if not isinstance(data, list):
-        # new format
+        # new, nested format
         if 'strategy' not in data:
-            raise ValueError("Unknown dataformat")
-        if len(data['strategy']) != 1:
-            raise ValueError("Detected new Format with more than one strategy")
-        strategy = list(data['strategy'].keys())[0]
+            raise ValueError("Unknown dataformat.")
+
+        if not strategy:
+            if len(data['strategy']) == 1:
+                strategy = list(data['strategy'].keys())[0]
+            else:
+                raise ValueError("Detected backtest result with more than one strategy. "
+                                 "Please specify a strategy.")
+
+        if strategy not in data['strategy']:
+            raise ValueError(f"Strategy {strategy} not available in the backtest result.")
+
         data = data['strategy'][strategy]['trades']
         df = pd.DataFrame(data)
-
+        df['open_date'] = pd.to_datetime(df['open_date'],
+                                         utc=True,
+                                         infer_datetime_format=True
+                                         )
+        df['close_date'] = pd.to_datetime(df['close_date'],
+                                          utc=True,
+                                          infer_datetime_format=True
+                                          )
     else:
         # old format - only with lists.
         df = pd.DataFrame(data, columns=BT_DATA_COLUMNS)
@@ -140,10 +157,12 @@ def evaluate_result_multi(results: pd.DataFrame, timeframe: str,
     return df_final[df_final['open_trades'] > max_open_trades]
 
 
-def load_trades_from_db(db_url: str) -> pd.DataFrame:
+def load_trades_from_db(db_url: str, strategy: Optional[str] = None) -> pd.DataFrame:
     """
     Load trades from a DB (using dburl)
     :param db_url: Sqlite url (default format sqlite:///tradesv3.dry-run.sqlite)
+    :param strategy: Strategy to load - mainly relevant for multi-strategy backtests
+                     Can also serve as protection to load the correct result.
     :return: Dataframe containing Trades
     """
     persistence.init(db_url, clean_open_orders=False)
@@ -153,6 +172,10 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
                "fee_open", "fee_close", "open_rate_requested", "close_rate_requested",
                "stake_amount", "max_rate", "min_rate", "id", "exchange",
                "stop_loss", "initial_stop_loss", "strategy", "timeframe"]
+
+    filters = []
+    if strategy:
+        filters = Trade.strategy == strategy
 
     trades = pd.DataFrame([(t.pair,
                             t.open_date.replace(tzinfo=timezone.utc),
@@ -172,14 +195,14 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
                             t.stop_loss, t.initial_stop_loss,
                             t.strategy, t.timeframe
                             )
-                           for t in Trade.get_trades().all()],
+                           for t in Trade.get_trades(filters).all()],
                           columns=columns)
 
     return trades
 
 
 def load_trades(source: str, db_url: str, exportfilename: Path,
-                no_trades: bool = False) -> pd.DataFrame:
+                no_trades: bool = False, strategy: Optional[str] = None) -> pd.DataFrame:
     """
     Based on configuration option "trade_source":
     * loads data from DB (using `db_url`)
@@ -197,7 +220,7 @@ def load_trades(source: str, db_url: str, exportfilename: Path,
     if source == "DB":
         return load_trades_from_db(db_url)
     elif source == "file":
-        return load_backtest_data(exportfilename)
+        return load_backtest_data(exportfilename, strategy)
 
 
 def extract_trades_of_period(dataframe: pd.DataFrame, trades: pd.DataFrame,
