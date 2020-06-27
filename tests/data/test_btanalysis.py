@@ -13,10 +13,29 @@ from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
                                        combine_dataframes_with_mean,
                                        create_cum_profit,
                                        extract_trades_of_period,
+                                       get_latest_backtest_filename,
                                        load_backtest_data, load_trades,
                                        load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
 from tests.conftest import create_mock_trades
+
+
+def test_get_latest_backtest_filename(testdatadir, mocker):
+    with pytest.raises(ValueError, match=r"Directory .* does not exist\."):
+        get_latest_backtest_filename(testdatadir / 'does_not_exist')
+
+    with pytest.raises(ValueError,
+                       match=r"Directory .* does not seem to contain .*"):
+        get_latest_backtest_filename(testdatadir.parent)
+
+    res = get_latest_backtest_filename(testdatadir)
+    assert res == 'backtest-result_new.json'
+
+    mocker.patch("freqtrade.data.btanalysis.json_load", return_value={})
+
+
+    with pytest.raises(ValueError, match=r"Invalid '.last_result.json' format."):
+        get_latest_backtest_filename(testdatadir)
 
 
 def test_load_backtest_data(testdatadir):

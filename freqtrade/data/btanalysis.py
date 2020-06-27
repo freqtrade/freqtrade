@@ -33,17 +33,17 @@ def get_latest_backtest_filename(directory: Union[Path, str]) -> str:
     if isinstance(directory, str):
         directory = Path(directory)
     if not directory.is_dir():
-        raise ValueError(f"Directory {directory} does not exist.")
+        raise ValueError(f"Directory '{directory}' does not exist.")
     filename = directory / '.last_result.json'
 
     if not filename.is_file():
-        raise ValueError(f"Directory {directory} does not seem to contain backtest statistics yet.")
+        raise ValueError(f"Directory '{directory}' does not seem to contain backtest statistics yet.")
 
     with filename.open() as file:
         data = json_load(file)
 
     if 'latest_backtest' not in data:
-        raise ValueError("Invalid .last_result.json format")
+        raise ValueError("Invalid '.last_result.json' format.")
 
     return data['latest_backtest']
 
