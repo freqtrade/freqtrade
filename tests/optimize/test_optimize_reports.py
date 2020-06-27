@@ -2,23 +2,27 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+import re
 import pytest
 from arrow import Arrow
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.edge import PairInfo
+from freqtrade.data.btanalysis import get_latest_backtest_filename
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats,
                                                  generate_edge_table,
                                                  generate_pair_metrics,
                                                  generate_sell_reason_stats,
                                                  generate_strategy_metrics,
                                                  store_backtest_result,
+                                                 store_backtest_stats,
                                                  text_table_bt_results,
                                                  text_table_sell_reason,
                                                  text_table_strategy)
 from freqtrade.strategy.interface import SellType
 from tests.conftest import patch_exchange
+from tests.data.test_history import _backup_file, _clean_test_file
 
 
 def test_text_table_bt_results(default_conf, mocker):
@@ -114,6 +118,29 @@ def test_generate_backtest_stats(default_conf, testdatadir):
     assert strat_stats['drawdown_end'] == Arrow.fromtimestamp(0).datetime
     assert strat_stats['drawdown_end_ts'] == 0
     assert strat_stats['drawdown_start_ts'] == 0
+
+    # Test storing stats
+    filename = Path(testdatadir / 'btresult.json')
+    filename_last = Path(testdatadir / '.last_result.json')
+    _backup_file(filename_last, copy_file=True)
+    assert not filename.is_file()
+
+    store_backtest_stats(filename, stats)
+
+    # get real Filename (it's btresult-<date>.json)
+    last_fn = get_latest_backtest_filename(filename_last.parent)
+    assert re.match(r"btresult-.*\.json", last_fn)
+
+    filename1 = (testdatadir / last_fn)
+    assert filename1.is_file()
+    content = filename1.read_text()
+    assert 'max_drawdown' in content
+    assert 'strategy' in content
+
+    assert filename_last.is_file()
+
+    _clean_test_file(filename_last)
+    filename1.unlink()
 
 
 def test_generate_pair_metrics(default_conf, mocker):
