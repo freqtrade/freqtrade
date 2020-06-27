@@ -176,6 +176,10 @@ class FreqtradeBot:
             self.cancel_all_open_orders()
 
     def check_for_open_trades(self):
+        """
+        Notify the user when he stops the bot
+        and there are still open trades active.
+        """
         open_trades = Trade.get_trades([Trade.is_open == True,
                                    ]).all()
 
