@@ -70,29 +70,34 @@ def load_backtest_data(filename: Union[Path, str]) -> pd.DataFrame:
     Load backtest data file.
     :param filename: pathlib.Path object, or string pointing to the file.
     :return: a dataframe with the analysis results
+    :raise: ValueError if loading goes wrong.
     """
-    if isinstance(filename, str):
-        filename = Path(filename)
+    data = load_backtest_stats(filename)
+    if not isinstance(data, list):
+        # new format
+        if 'strategy' not in data:
+            raise ValueError("Unknown dataformat")
+        if len(data['strategy']) != 1:
+            raise ValueError("Detected new Format with more than one strategy")
+        strategy = list(data['strategy'].keys())[0]
+        data = data['strategy'][strategy]['trades']
+        df = pd.DataFrame(data)
 
-    if not filename.is_file():
-        raise ValueError(f"File {filename} does not exist.")
+    else:
+        # old format - only with lists.
+        df = pd.DataFrame(data, columns=BT_DATA_COLUMNS)
 
-    with filename.open() as file:
-        data = json_load(file)
-
-    df = pd.DataFrame(data, columns=BT_DATA_COLUMNS)
-
-    df['open_date'] = pd.to_datetime(df['open_date'],
-                                     unit='s',
-                                     utc=True,
-                                     infer_datetime_format=True
-                                     )
-    df['close_date'] = pd.to_datetime(df['close_date'],
-                                      unit='s',
-                                      utc=True,
-                                      infer_datetime_format=True
-                                      )
-    df['profit'] = df['close_rate'] - df['open_rate']
+        df['open_date'] = pd.to_datetime(df['open_date'],
+                                         unit='s',
+                                         utc=True,
+                                         infer_datetime_format=True
+                                         )
+        df['close_date'] = pd.to_datetime(df['close_date'],
+                                          unit='s',
+                                          utc=True,
+                                          infer_datetime_format=True
+                                          )
+        df['profit_abs'] = df['close_rate'] - df['open_rate']
     df = df.sort_values("open_date").reset_index(drop=True)
     return df
 
