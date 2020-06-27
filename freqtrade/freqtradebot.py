@@ -180,16 +180,16 @@ class FreqtradeBot:
         Notify the user when the bot is stopped
         and there are still open trades active.
         """
-        open_trades = Trade.get_trades([Trade.is_open == True,
-                                   ]).all()
+        open_trades = Trade.get_trades([Trade.is_open == 1,
+                                       ]).all()
 
-        if len(open_trades) is not 0:
+        if len(open_trades) != 0:
             msg = {
-                f'type': RPCMessageType.WARNING_NOTIFICATION,
-                f'status': f'{len(open_trades)} open trades active.\n\n'
+                'type': RPCMessageType.WARNING_NOTIFICATION,
+                'status':  f'{len(open_trades)} open trades active.\n\n'
                            f'Handle these trades manually on {self.exchange.name}, '
                            f'or \'/start\' the bot again and use \'/stopbuy\' '
-                           f'to handle open trades gracefully.'
+                           f'to handle open trades gracefully.',
             }
             self.rpc.send_msg(msg)
 
