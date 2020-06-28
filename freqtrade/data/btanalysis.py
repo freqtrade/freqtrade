@@ -59,7 +59,7 @@ def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
     if isinstance(filename, str):
         filename = Path(filename)
     if filename.is_dir():
-        filename = get_latest_backtest_filename(filename)
+        filename = filename / get_latest_backtest_filename(filename)
     if not filename.is_file():
         raise ValueError(f"File {filename} does not exist.")
     logger.info(f"Loading backtest result from {filename}")

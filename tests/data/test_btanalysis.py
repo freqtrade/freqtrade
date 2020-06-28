@@ -70,6 +70,10 @@ def test_load_backtest_data_new_format(testdatadir):
     bt_data2 = load_backtest_data(str(filename))
     assert bt_data.equals(bt_data2)
 
+    # Test loading from folder (must yield same result)
+    bt_data3 = load_backtest_data(testdatadir)
+    assert bt_data.equals(bt_data3)
+
     with pytest.raises(ValueError, match=r"File .* does not exist\."):
         load_backtest_data(str("filename") + "nofile")
 
