@@ -110,7 +110,7 @@ def retrier_async(f):
                 count -= 1
                 kwargs.update({'count': count})
                 logger.warning('retrying %s() still for %s times', f.__name__, count)
-                if isinstance(ex, DDosProtection) or isinstance(ex, RetryableOrderError):
+                if isinstance(ex, DDosProtection):
                     await asyncio.sleep(calculate_backoff(count + 1, API_RETRY_COUNT))
                 return await wrapper(*args, **kwargs)
             else:
