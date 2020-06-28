@@ -91,11 +91,11 @@ MAP_EXCHANGE_CHILDCLASS = {
 }
 
 
-def calculate_backoff(retry, max_retries):
+def calculate_backoff(retrycount, max_retries):
     """
     Calculate backoff
     """
-    return retry ** 2 + 1
+    return (max_retries - retrycount) ** 2 + 1
 
 
 def retrier_async(f):

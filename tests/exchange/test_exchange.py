@@ -2298,13 +2298,13 @@ def test_calculate_fee_rate(mocker, default_conf, order, expected) -> None:
     assert ex.calculate_fee_rate(order) == expected
 
 
-@pytest.mark.parametrize('retry,max_retries,expected', [
-    (0, 3, 1),
-    (1, 3, 2),
-    (2, 3, 5),
-    (3, 3, 10),
-    (0, 1, 1),
-    (1, 1, 2),
+@pytest.mark.parametrize('retrycount,max_retries,expected', [
+    (0, 3, 10),
+    (1, 3, 5),
+    (2, 3, 2),
+    (3, 3, 1),
+    (0, 1, 2),
+    (1, 1, 1),
 ])
-def test_calculate_backoff(retry, max_retries, expected):
-    assert calculate_backoff(retry, max_retries) == expected
+def test_calculate_backoff(retrycount, max_retries, expected):
+    assert calculate_backoff(retrycount, max_retries) == expected
