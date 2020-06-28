@@ -4,14 +4,14 @@ import copy
 import logging
 from datetime import datetime, timezone
 from random import randint
-from unittest.mock import MagicMock, Mock, PropertyMock
+from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
 import arrow
 import ccxt
 import pytest
 from pandas import DataFrame
 
-from freqtrade.exceptions import (DependencyException, InvalidOrderException,
+from freqtrade.exceptions import (DependencyException, InvalidOrderException, DDosProtection,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Binance, Exchange, Kraken
 from freqtrade.exchange.common import API_RETRY_COUNT
@@ -38,6 +38,14 @@ def get_mock_coro(return_value):
 
 def ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            fun, mock_ccxt_fun, **kwargs):
+
+    with patch('freqtrade.exchange.common.time.sleep'):
+        with pytest.raises(DDosProtection):
+            api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.DDoSProtection("DDos"))
+            exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+            getattr(exchange, fun)(**kwargs)
+        assert api_mock.__dict__[mock_ccxt_fun].call_count == API_RETRY_COUNT + 1
+
     with pytest.raises(TemporaryError):
         api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.NetworkError("DeaDBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
@@ -52,6 +60,13 @@ def ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
 
 
 async def async_ccxt_exception(mocker, default_conf, api_mock, fun, mock_ccxt_fun, **kwargs):
+
+    with patch('freqtrade.exchange.common.asyncio.sleep'):
+        with pytest.raises(DDosProtection):
+            api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.DDoSProtection("DeadBeef"))
+            exchange = get_patched_exchange(mocker, default_conf, api_mock)
+            await getattr(exchange, fun)(**kwargs)
+
     with pytest.raises(TemporaryError):
         api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.NetworkError("DeadBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock)

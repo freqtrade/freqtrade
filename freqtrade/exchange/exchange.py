@@ -18,12 +18,13 @@ from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE,
                                             TRUNCATE, decimal_to_precision)
 from pandas import DataFrame
 
+from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
-from freqtrade.exceptions import (DependencyException, InvalidOrderException,
-                                  OperationalException, TemporaryError)
+from freqtrade.exceptions import (DDosProtection, DependencyException,
+                                  InvalidOrderException, OperationalException,
+                                  TemporaryError)
 from freqtrade.exchange.common import BAD_EXCHANGES, retrier, retrier_async
 from freqtrade.misc import deep_merge_dicts, safe_value_fallback
-from freqtrade.constants import ListPairsWithTimeframes
 
 CcxtModuleType = Any
 
@@ -527,6 +528,8 @@ class Exchange:
                 f'Could not create {ordertype} {side} order on market {pair}.'
                 f'Tried to {side} amount {amount} at rate {rate}.'
                 f'Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not place {side} order due to {e.__class__.__name__}. Message: {e}') from e
@@ -606,6 +609,8 @@ class Exchange:
             balances.pop("used", None)
 
             return balances
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not get balance due to {e.__class__.__name__}. Message: {e}') from e
@@ -620,6 +625,8 @@ class Exchange:
             raise OperationalException(
                 f'Exchange {self._api.name} does not support fetching tickers in batch. '
                 f'Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not load tickers due to {e.__class__.__name__}. Message: {e}') from e
@@ -633,6 +640,8 @@ class Exchange:
                 raise DependencyException(f"Pair {pair} not available")
             data = self._api.fetch_ticker(pair)
             return data
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not load ticker due to {e.__class__.__name__}. Message: {e}') from e
@@ -766,6 +775,8 @@ class Exchange:
             raise OperationalException(
                 f'Exchange {self._api.name} does not support fetching historical '
                 f'candle (OHLCV) data. Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(f'Could not fetch historical candle (OHLCV) data '
                                  f'for pair {pair} due to {e.__class__.__name__}. '
@@ -802,6 +813,8 @@ class Exchange:
             raise OperationalException(
                 f'Exchange {self._api.name} does not support fetching historical trade data.'
                 f'Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(f'Could not load trade history due to {e.__class__.__name__}. '
                                  f'Message: {e}') from e
@@ -948,6 +961,8 @@ class Exchange:
         except ccxt.InvalidOrder as e:
             raise InvalidOrderException(
                 f'Could not cancel order. Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not cancel order due to {e.__class__.__name__}. Message: {e}') from e
@@ -1003,6 +1018,8 @@ class Exchange:
         except ccxt.InvalidOrder as e:
             raise InvalidOrderException(
                 f'Tried to get an invalid order (id: {order_id}). Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not get order due to {e.__class__.__name__}. Message: {e}') from e
@@ -1027,6 +1044,8 @@ class Exchange:
             raise OperationalException(
                 f'Exchange {self._api.name} does not support fetching order book.'
                 f'Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not get order book due to {e.__class__.__name__}. Message: {e}') from e
@@ -1063,7 +1082,8 @@ class Exchange:
             matched_trades = [trade for trade in my_trades if trade['order'] == order_id]
 
             return matched_trades
-
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not get trades due to {e.__class__.__name__}. Message: {e}') from e
@@ -1080,6 +1100,8 @@ class Exchange:
 
             return self._api.calculate_fee(symbol=symbol, type=type, side=side, amount=amount,
                                            price=price, takerOrMaker=taker_or_maker)['rate']
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not get fee info due to {e.__class__.__name__}. Message: {e}') from e

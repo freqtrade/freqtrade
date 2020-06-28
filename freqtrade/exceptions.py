@@ -45,6 +45,13 @@ class TemporaryError(FreqtradeException):
     """
 
 
+class DDosProtection(TemporaryError):
+    """
+    Temporary error caused by DDOS protection.
+    Bot will wait for a second and then retry.
+    """
+
+
 class StrategyError(FreqtradeException):
     """
     Errors with custom user-code deteced.

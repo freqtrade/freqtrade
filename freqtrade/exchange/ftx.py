@@ -4,8 +4,9 @@ from typing import Dict
 
 import ccxt
 
-from freqtrade.exceptions import (DependencyException, InvalidOrderException,
-                                  OperationalException, TemporaryError)
+from freqtrade.exceptions import (DDosProtection, DependencyException,
+                                  InvalidOrderException, OperationalException,
+                                  TemporaryError)
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
 
@@ -68,6 +69,8 @@ class Ftx(Exchange):
                 f'Could not create {ordertype} sell order on market {pair}. '
                 f'Tried to create stoploss with amount {amount} at stoploss {stop_price}. '
                 f'Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not place sell order due to {e.__class__.__name__}. Message: {e}') from e
@@ -96,6 +99,8 @@ class Ftx(Exchange):
         except ccxt.InvalidOrder as e:
             raise InvalidOrderException(
                 f'Tried to get an invalid order (id: {order_id}). Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not get order due to {e.__class__.__name__}. Message: {e}') from e
@@ -111,6 +116,8 @@ class Ftx(Exchange):
         except ccxt.InvalidOrder as e:
             raise InvalidOrderException(
                 f'Could not cancel order. Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not cancel order due to {e.__class__.__name__}. Message: {e}') from e

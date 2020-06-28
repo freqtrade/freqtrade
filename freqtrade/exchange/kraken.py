@@ -4,7 +4,7 @@ from typing import Dict
 
 import ccxt
 
-from freqtrade.exceptions import (DependencyException, InvalidOrderException,
+from freqtrade.exceptions import (DependencyException, InvalidOrderException, DDosProtection,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
@@ -45,6 +45,8 @@ class Kraken(Exchange):
                 balances[bal]['free'] = balances[bal]['total'] - balances[bal]['used']
 
             return balances
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not get balance due to {e.__class__.__name__}. Message: {e}') from e
@@ -93,6 +95,8 @@ class Kraken(Exchange):
                 f'Could not create {ordertype} sell order on market {pair}. '
                 f'Tried to create stoploss with amount {amount} at stoploss {stop_price}. '
                 f'Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not place sell order due to {e.__class__.__name__}. Message: {e}') from e

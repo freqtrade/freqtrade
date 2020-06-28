@@ -1,6 +1,8 @@
+import asyncio
 import logging
+import time
 
-from freqtrade.exceptions import TemporaryError
+from freqtrade.exceptions import DDosProtection, TemporaryError
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +101,8 @@ def retrier_async(f):
                 count -= 1
                 kwargs.update({'count': count})
                 logger.warning('retrying %s() still for %s times', f.__name__, count)
+                if isinstance(ex, DDosProtection):
+                    await asyncio.sleep(1)
                 return await wrapper(*args, **kwargs)
             else:
                 logger.warning('Giving up retrying: %s()', f.__name__)
@@ -117,6 +121,8 @@ def retrier(f):
                 count -= 1
                 kwargs.update({'count': count})
                 logger.warning('retrying %s() still for %s times', f.__name__, count)
+                if isinstance(ex, DDosProtection):
+                    time.sleep(1)
                 return wrapper(*args, **kwargs)
             else:
                 logger.warning('Giving up retrying: %s()', f.__name__)
