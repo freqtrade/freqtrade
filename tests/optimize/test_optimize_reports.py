@@ -118,6 +118,7 @@ def test_generate_backtest_stats(default_conf, testdatadir):
     assert strat_stats['drawdown_end'] == Arrow.fromtimestamp(0).datetime
     assert strat_stats['drawdown_end_ts'] == 0
     assert strat_stats['drawdown_start_ts'] == 0
+    assert strat_stats['pairlist'] == ['UNITTEST/BTC']
 
     # Test storing stats
     filename = Path(testdatadir / 'btresult.json')
@@ -136,6 +137,7 @@ def test_generate_backtest_stats(default_conf, testdatadir):
     content = filename1.read_text()
     assert 'max_drawdown' in content
     assert 'strategy' in content
+    assert 'pairlist' in content
 
     assert filename_last.is_file()
 
