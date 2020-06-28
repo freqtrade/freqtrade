@@ -22,7 +22,7 @@ from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.exceptions import (DDosProtection, ExchangeError,
                                   InvalidOrderException, OperationalException,
-                                  TemporaryError)
+                                  RetryableOrderError, TemporaryError)
 from freqtrade.exchange.common import BAD_EXCHANGES, retrier, retrier_async
 from freqtrade.misc import deep_merge_dicts, safe_value_fallback
 
@@ -1015,6 +1015,9 @@ class Exchange:
                     f'Tried to get an invalid dry-run-order (id: {order_id}). Message: {e}') from e
         try:
             return self._api.fetch_order(order_id, pair)
+        except ccxt.OrderNotFound as e:
+            raise RetryableOrderError(
+                f'Order not found (id: {order_id}). Message: {e}') from e
         except ccxt.InvalidOrder as e:
             raise InvalidOrderException(
                 f'Tried to get an invalid order (id: {order_id}). Message: {e}') from e

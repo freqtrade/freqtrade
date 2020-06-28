@@ -37,6 +37,13 @@ class InvalidOrderException(FreqtradeException):
     """
 
 
+class RetryableOrderError(InvalidOrderException):
+    """
+    This is returned when the order is not found.
+    This Error will be repeated with increasing backof (in line with DDosError).
+    """
+
+
 class ExchangeError(DependencyException):
     """
     Error raised out of the exchange.

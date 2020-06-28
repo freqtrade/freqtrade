@@ -3,7 +3,8 @@ import logging
 import time
 from functools import wraps
 
-from freqtrade.exceptions import DDosProtection, TemporaryError
+from freqtrade.exceptions import (DDosProtection, RetryableOrderError,
+                                  TemporaryError)
 
 logger = logging.getLogger(__name__)
 
@@ -109,8 +110,8 @@ def retrier_async(f):
                 count -= 1
                 kwargs.update({'count': count})
                 logger.warning('retrying %s() still for %s times', f.__name__, count)
-                if isinstance(ex, DDosProtection):
-                    await asyncio.sleep(1)
+                if isinstance(ex, DDosProtection) or isinstance(ex, RetryableOrderError):
+                    await asyncio.sleep(calculate_backoff(count + 1, API_RETRY_COUNT))
                 return await wrapper(*args, **kwargs)
             else:
                 logger.warning('Giving up retrying: %s()', f.__name__)
@@ -125,14 +126,15 @@ def retrier(_func=None, retries=API_RETRY_COUNT):
             count = kwargs.pop('count', retries)
             try:
                 return f(*args, **kwargs)
-            except TemporaryError as ex:
+            except (TemporaryError, RetryableOrderError) as ex:
                 logger.warning('%s() returned exception: "%s"', f.__name__, ex)
                 if count > 0:
                     count -= 1
                     kwargs.update({'count': count})
                     logger.warning('retrying %s() still for %s times', f.__name__, count)
-                    if isinstance(ex, DDosProtection):
-                        time.sleep(calculate_backoff(count, retries))
+                    if isinstance(ex, DDosProtection) or isinstance(ex, RetryableOrderError):
+                        # increasing backoff
+                        time.sleep(calculate_backoff(count + 1, retries))
                     return wrapper(*args, **kwargs)
                 else:
                     logger.warning('Giving up retrying: %s()', f.__name__)

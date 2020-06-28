@@ -2078,7 +2078,7 @@ def test_check_handle_timedout_buy_exception(default_conf, ticker, limit_buy_ord
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
         fetch_ticker=ticker,
-        fetch_order=MagicMock(side_effect=DependencyException),
+        fetch_order=MagicMock(side_effect=ExchangeError),
         cancel_order=cancel_order_mock,
         get_fee=fee
     )

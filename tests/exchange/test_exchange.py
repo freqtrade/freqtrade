@@ -1888,6 +1888,18 @@ def test_fetch_order(default_conf, mocker, exchange_name):
         exchange.fetch_order(order_id='_', pair='TKN/BTC')
     assert api_mock.fetch_order.call_count == 1
 
+    api_mock.fetch_order = MagicMock(side_effect=ccxt.OrderNotFound("Order not found"))
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    with patch('freqtrade.exchange.common.time.sleep') as tm:
+        with pytest.raises(InvalidOrderException):
+            exchange.fetch_order(order_id='_', pair='TKN/BTC')
+        # Ensure backoff is called
+        assert tm.call_args_list[0][0][0] == 1
+        assert tm.call_args_list[1][0][0] == 2
+        assert tm.call_args_list[2][0][0] == 5
+        assert tm.call_args_list[3][0][0] == 10
+    assert api_mock.fetch_order.call_count == API_RETRY_COUNT + 1
+
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            'fetch_order', 'fetch_order',
                            order_id='_', pair='TKN/BTC')
