@@ -969,7 +969,7 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    # Assign method to get_stoploss_order to allow easy overriding in other classes
+    # Assign method to fetch_stoploss_order to allow easy overriding in other classes
     cancel_stoploss_order = cancel_order
 
     def is_cancel_order_result_suitable(self, corder) -> bool:
@@ -1026,8 +1026,8 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    # Assign method to get_stoploss_order to allow easy overriding in other classes
-    get_stoploss_order = fetch_order
+    # Assign method to fetch_stoploss_order to allow easy overriding in other classes
+    fetch_stoploss_order = fetch_order
 
     @retrier
     def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:

@@ -773,8 +773,8 @@ class FreqtradeBot:
 
         try:
             # First we check if there is already a stoploss on exchange
-            stoploss_order = self.exchange.get_stoploss_order(trade.stoploss_order_id, trade.pair) \
-                if trade.stoploss_order_id else None
+            stoploss_order = self.exchange.fetch_stoploss_order(
+                trade.stoploss_order_id, trade.pair) if trade.stoploss_order_id else None
         except InvalidOrderException as exception:
             logger.warning('Unable to fetch stoploss order: %s', exception)
 

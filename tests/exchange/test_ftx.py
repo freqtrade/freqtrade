@@ -124,34 +124,34 @@ def test_stoploss_adjust_ftx(mocker, default_conf):
     assert not exchange.stoploss_adjust(1501, order)
 
 
-def test_get_stoploss_order(default_conf, mocker):
+def test_fetch_stoploss_order(default_conf, mocker):
     default_conf['dry_run'] = True
     order = MagicMock()
     order.myid = 123
     exchange = get_patched_exchange(mocker, default_conf, id='ftx')
     exchange._dry_run_open_orders['X'] = order
-    assert exchange.get_stoploss_order('X', 'TKN/BTC').myid == 123
+    assert exchange.fetch_stoploss_order('X', 'TKN/BTC').myid == 123
 
     with pytest.raises(InvalidOrderException, match=r'Tried to get an invalid dry-run-order.*'):
-        exchange.get_stoploss_order('Y', 'TKN/BTC')
+        exchange.fetch_stoploss_order('Y', 'TKN/BTC')
 
     default_conf['dry_run'] = False
     api_mock = MagicMock()
     api_mock.fetch_orders = MagicMock(return_value=[{'id': 'X', 'status': '456'}])
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id='ftx')
-    assert exchange.get_stoploss_order('X', 'TKN/BTC')['status'] == '456'
+    assert exchange.fetch_stoploss_order('X', 'TKN/BTC')['status'] == '456'
 
     api_mock.fetch_orders = MagicMock(return_value=[{'id': 'Y', 'status': '456'}])
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id='ftx')
     with pytest.raises(InvalidOrderException, match=r"Could not get stoploss order for id X"):
-        exchange.get_stoploss_order('X', 'TKN/BTC')['status']
+        exchange.fetch_stoploss_order('X', 'TKN/BTC')['status']
 
     with pytest.raises(InvalidOrderException):
         api_mock.fetch_orders = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id='ftx')
-        exchange.get_stoploss_order(order_id='_', pair='TKN/BTC')
+        exchange.fetch_stoploss_order(order_id='_', pair='TKN/BTC')
     assert api_mock.fetch_orders.call_count == 1
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, 'ftx',
-                           'get_stoploss_order', 'fetch_orders',
+                           'fetch_stoploss_order', 'fetch_orders',
                            order_id='_', pair='TKN/BTC')
