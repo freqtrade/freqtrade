@@ -8,7 +8,9 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data.btanalysis import (calculate_max_drawdown,
                                        combine_dataframes_with_mean,
                                        create_cum_profit,
-                                       extract_trades_of_period, load_trades)
+                                       extract_trades_of_period,
+                                       get_latest_backtest_filename,
+                                       load_trades)
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.history import load_data
 from freqtrade.exceptions import OperationalException
@@ -51,16 +53,18 @@ def init_plotscript(config):
     )
 
     no_trades = False
+    filename = config.get('exportfilename')
     if config.get('no_trades', False):
         no_trades = True
-    elif not config['exportfilename'].is_file() and config['trade_source'] == 'file':
-        logger.warning("Backtest file is missing skipping trades.")
-        no_trades = True
+    elif config['trade_source'] == 'file':
+        if not filename.is_dir() and not filename.is_file():
+            logger.warning("Backtest file is missing skipping trades.")
+            no_trades = True
 
     trades = load_trades(
         config['trade_source'],
         db_url=config.get('db_url'),
-        exportfilename=config.get('exportfilename'),
+        exportfilename=filename,
         no_trades=no_trades
     )
     trades = trim_dataframe(trades, timerange, 'open_date')
