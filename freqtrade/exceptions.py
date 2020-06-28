@@ -37,7 +37,14 @@ class InvalidOrderException(FreqtradeException):
     """
 
 
-class TemporaryError(DependencyException):
+class ExchangeError(DependencyException):
+    """
+    Error raised out of the exchange.
+    Has multiple Errors to determine the appropriate error.
+    """
+
+
+class TemporaryError(ExchangeError):
     """
     Temporary network or exchange related error.
     This could happen when an exchange is congested, unavailable, or the user

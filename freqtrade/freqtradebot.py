@@ -11,14 +11,14 @@ from typing import Any, Dict, List, Optional
 
 import arrow
 from cachetools import TTLCache
-from requests.exceptions import RequestException
 
 from freqtrade import __version__, constants, persistence
 from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.exceptions import DependencyException, InvalidOrderException, PricingError
+from freqtrade.exceptions import (DependencyException, ExchangeError,
+                                  InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
 from freqtrade.misc import safe_value_fallback
 from freqtrade.pairlist.pairlistmanager import PairListManager
@@ -755,7 +755,7 @@ class FreqtradeBot:
             logger.warning('Selling the trade forcefully')
             self.execute_sell(trade, trade.stop_loss, sell_reason=SellType.EMERGENCY_SELL)
 
-        except DependencyException:
+        except ExchangeError:
             trade.stoploss_order_id = None
             logger.exception('Unable to place a stoploss order on exchange.')
         return False
@@ -891,7 +891,7 @@ class FreqtradeBot:
                 if not trade.open_order_id:
                     continue
                 order = self.exchange.get_order(trade.open_order_id, trade.pair)
-            except (RequestException, DependencyException, InvalidOrderException):
+            except (ExchangeError, InvalidOrderException):
                 logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
                 continue
 

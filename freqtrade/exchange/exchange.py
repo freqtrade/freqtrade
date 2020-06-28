@@ -20,7 +20,7 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
-from freqtrade.exceptions import (DDosProtection, DependencyException,
+from freqtrade.exceptions import (DDosProtection, ExchangeError,
                                   InvalidOrderException, OperationalException,
                                   TemporaryError)
 from freqtrade.exchange.common import BAD_EXCHANGES, retrier, retrier_async
@@ -352,7 +352,7 @@ class Exchange:
         for pair in [f"{curr_1}/{curr_2}", f"{curr_2}/{curr_1}"]:
             if pair in self.markets and self.markets[pair].get('active'):
                 return pair
-        raise DependencyException(f"Could not combine {curr_1} and {curr_2} to get a valid pair.")
+        raise ExchangeError(f"Could not combine {curr_1} and {curr_2} to get a valid pair.")
 
     def validate_timeframes(self, timeframe: Optional[str]) -> None:
         """
@@ -519,12 +519,12 @@ class Exchange:
                                           amount, rate_for_order, params)
 
         except ccxt.InsufficientFunds as e:
-            raise DependencyException(
+            raise ExchangeError(
                 f'Insufficient funds to create {ordertype} {side} order on market {pair}.'
                 f'Tried to {side} amount {amount} at rate {rate}.'
                 f'Message: {e}') from e
         except ccxt.InvalidOrder as e:
-            raise DependencyException(
+            raise ExchangeError(
                 f'Could not create {ordertype} {side} order on market {pair}.'
                 f'Tried to {side} amount {amount} at rate {rate}.'
                 f'Message: {e}') from e
@@ -637,7 +637,7 @@ class Exchange:
     def fetch_ticker(self, pair: str) -> dict:
         try:
             if pair not in self._api.markets or not self._api.markets[pair].get('active'):
-                raise DependencyException(f"Pair {pair} not available")
+                raise ExchangeError(f"Pair {pair} not available")
             data = self._api.fetch_ticker(pair)
             return data
         except ccxt.DDoSProtection as e:
@@ -1151,7 +1151,7 @@ class Exchange:
 
                 fee_to_quote_rate = safe_value_fallback(tick, tick, 'last', 'ask')
                 return round((order['fee']['cost'] * fee_to_quote_rate) / order['cost'], 8)
-            except DependencyException:
+            except ExchangeError:
                 return None
 
     def extract_cost_curr_rate(self, order: Dict) -> Tuple[float, str, Optional[float]]:
