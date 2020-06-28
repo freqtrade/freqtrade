@@ -16,12 +16,17 @@ logger = logging.getLogger(__name__)
 
 def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> None:
 
-    filename = Path.joinpath(recordfilename.parent,
-                             f'{recordfilename.stem}-{datetime.now().isoformat()}'
-                             ).with_suffix(recordfilename.suffix)
+    if recordfilename.is_dir():
+        filename = recordfilename / \
+            f'backtest-result-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.json'
+    else:
+        filename = Path.joinpath(
+            recordfilename.parent,
+            f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
+            ).with_suffix(recordfilename.suffix)
     file_dump_json(filename, stats)
 
-    latest_filename = Path.joinpath(recordfilename.parent, LAST_BT_RESULT_FN)
+    latest_filename = Path.joinpath(filename.parent, LAST_BT_RESULT_FN)
     file_dump_json(latest_filename, {'latest_backtest': str(filename.name)})
 
 

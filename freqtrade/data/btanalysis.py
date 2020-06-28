@@ -38,7 +38,8 @@ def get_latest_backtest_filename(directory: Union[Path, str]) -> str:
     filename = directory / LAST_BT_RESULT_FN
 
     if not filename.is_file():
-        raise ValueError(f"Directory '{directory}' does not seem to contain backtest statistics yet.")
+        raise ValueError(
+            f"Directory '{directory}' does not seem to contain backtest statistics yet.")
 
     with filename.open() as file:
         data = json_load(file)
@@ -57,9 +58,11 @@ def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
     """
     if isinstance(filename, str):
         filename = Path(filename)
+    if filename.is_dir():
+        filename = get_latest_backtest_filename(filename)
     if not filename.is_file():
         raise ValueError(f"File {filename} does not exist.")
-
+    logger.info(f"Loading backtest result from {filename}")
     with filename.open() as file:
         data = json_load(file)
 
