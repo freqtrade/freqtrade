@@ -37,7 +37,7 @@ class InvalidOrderException(FreqtradeException):
     """
 
 
-class TemporaryError(FreqtradeException):
+class TemporaryError(DependencyException):
     """
     Temporary network or exchange related error.
     This could happen when an exchange is congested, unavailable, or the user
