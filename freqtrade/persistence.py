@@ -360,7 +360,7 @@ class Trade(_DECL_BASE):
     def update(self, order: Dict) -> None:
         """
         Updates this entity with amount and actual open/close rates.
-        :param order: order retrieved by exchange.get_order()
+        :param order: order retrieved by exchange.fetch_order()
         :return: None
         """
         order_type = order['type']

@@ -607,7 +607,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         cancel_order=cancel_order_mock,
-        get_order=MagicMock(
+        fetch_order=MagicMock(
             return_value={
                 'status': 'closed',
                 'type': 'limit',
@@ -653,7 +653,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     trade = Trade.query.filter(Trade.id == '1').first()
     filled_amount = trade.amount / 2
     mocker.patch(
-        'freqtrade.exchange.Exchange.get_order',
+        'freqtrade.exchange.Exchange.fetch_order',
         return_value={
             'status': 'open',
             'type': 'limit',
@@ -672,7 +672,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     amount = trade.amount
     # make an limit-buy open trade, if there is no 'filled', don't sell it
     mocker.patch(
-        'freqtrade.exchange.Exchange.get_order',
+        'freqtrade.exchange.Exchange.fetch_order',
         return_value={
             'status': 'open',
             'type': 'limit',
@@ -689,7 +689,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     freqtradebot.enter_positions()
     # make an limit-sell open trade
     mocker.patch(
-        'freqtrade.exchange.Exchange.get_order',
+        'freqtrade.exchange.Exchange.fetch_order',
         return_value={
             'status': 'open',
             'type': 'limit',

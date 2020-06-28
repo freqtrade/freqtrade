@@ -890,7 +890,7 @@ class FreqtradeBot:
             try:
                 if not trade.open_order_id:
                     continue
-                order = self.exchange.get_order(trade.open_order_id, trade.pair)
+                order = self.exchange.fetch_order(trade.open_order_id, trade.pair)
             except (ExchangeError, InvalidOrderException):
                 logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
                 continue
@@ -923,7 +923,7 @@ class FreqtradeBot:
 
         for trade in Trade.get_open_order_trades():
             try:
-                order = self.exchange.get_order(trade.open_order_id, trade.pair)
+                order = self.exchange.fetch_order(trade.open_order_id, trade.pair)
             except (DependencyException, InvalidOrderException):
                 logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
                 continue
@@ -1202,7 +1202,7 @@ class FreqtradeBot:
         # Update trade with order values
         logger.info('Found open order for %s', trade)
         try:
-            order = action_order or self.exchange.get_order(order_id, trade.pair)
+            order = action_order or self.exchange.fetch_order(order_id, trade.pair)
         except InvalidOrderException as exception:
             logger.warning('Unable to fetch order %s: %s', order_id, exception)
             return False

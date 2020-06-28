@@ -1865,31 +1865,31 @@ def test_cancel_stoploss_order(default_conf, mocker, exchange_name):
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_get_order(default_conf, mocker, exchange_name):
+def test_fetch_order(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = True
     order = MagicMock()
     order.myid = 123
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     exchange._dry_run_open_orders['X'] = order
-    assert exchange.get_order('X', 'TKN/BTC').myid == 123
+    assert exchange.fetch_order('X', 'TKN/BTC').myid == 123
 
     with pytest.raises(InvalidOrderException, match=r'Tried to get an invalid dry-run-order.*'):
-        exchange.get_order('Y', 'TKN/BTC')
+        exchange.fetch_order('Y', 'TKN/BTC')
 
     default_conf['dry_run'] = False
     api_mock = MagicMock()
     api_mock.fetch_order = MagicMock(return_value=456)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-    assert exchange.get_order('X', 'TKN/BTC') == 456
+    assert exchange.fetch_order('X', 'TKN/BTC') == 456
 
     with pytest.raises(InvalidOrderException):
         api_mock.fetch_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-        exchange.get_order(order_id='_', pair='TKN/BTC')
+        exchange.fetch_order(order_id='_', pair='TKN/BTC')
     assert api_mock.fetch_order.call_count == 1
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
-                           'get_order', 'fetch_order',
+                           'fetch_order', 'fetch_order',
                            order_id='_', pair='TKN/BTC')
 
 

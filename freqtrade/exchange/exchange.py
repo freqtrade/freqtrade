@@ -946,7 +946,7 @@ class Exchange:
     def check_order_canceled_empty(self, order: Dict) -> bool:
         """
         Verify if an order has been cancelled without being partially filled
-        :param order: Order dict as returned from get_order()
+        :param order: Order dict as returned from fetch_order()
         :return: True if order has been cancelled without being filled, False otherwise.
         """
         return order.get('status') in ('closed', 'canceled') and order.get('filled') == 0.0
@@ -983,7 +983,7 @@ class Exchange:
         """
         Cancel order returning a result.
         Creates a fake result if cancel order returns a non-usable result
-        and get_order does not work (certain exchanges don't return cancelled orders)
+        and fetch_order does not work (certain exchanges don't return cancelled orders)
         :param order_id: Orderid to cancel
         :param pair: Pair corresponding to order_id
         :param amount: Amount to use for fake response
@@ -996,7 +996,7 @@ class Exchange:
         except InvalidOrderException:
             logger.warning(f"Could not cancel order {order_id}.")
         try:
-            order = self.get_order(order_id, pair)
+            order = self.fetch_order(order_id, pair)
         except InvalidOrderException:
             logger.warning(f"Could not fetch cancelled order {order_id}.")
             order = {'fee': {}, 'status': 'canceled', 'amount': amount, 'info': {}}
@@ -1004,7 +1004,7 @@ class Exchange:
         return order
 
     @retrier
-    def get_order(self, order_id: str, pair: str) -> Dict:
+    def fetch_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
             try:
                 order = self._dry_run_open_orders[order_id]
@@ -1027,7 +1027,7 @@ class Exchange:
             raise OperationalException(e) from e
 
     # Assign method to get_stoploss_order to allow easy overriding in other classes
-    get_stoploss_order = get_order
+    get_stoploss_order = fetch_order
 
     @retrier
     def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:

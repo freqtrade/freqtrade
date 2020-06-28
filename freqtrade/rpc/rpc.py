@@ -126,7 +126,7 @@ class RPC:
             for trade in trades:
                 order = None
                 if trade.open_order_id:
-                    order = self._freqtrade.exchange.get_order(trade.open_order_id, trade.pair)
+                    order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
                 # calculate profit and send message to user
                 try:
                     current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
@@ -442,7 +442,7 @@ class RPC:
         def _exec_forcesell(trade: Trade) -> None:
             # Check if there is there is an open order
             if trade.open_order_id:
-                order = self._freqtrade.exchange.get_order(trade.open_order_id, trade.pair)
+                order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
 
                 # Cancel open LIMIT_BUY orders and close trade
                 if order and order['status'] == 'open' \
