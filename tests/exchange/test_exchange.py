@@ -37,20 +37,20 @@ def get_mock_coro(return_value):
 
 
 def ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
-                           fun, mock_ccxt_fun, **kwargs):
+                           fun, mock_ccxt_fun, retries=API_RETRY_COUNT + 1, **kwargs):
 
     with patch('freqtrade.exchange.common.time.sleep'):
         with pytest.raises(DDosProtection):
             api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.DDoSProtection("DDos"))
             exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
             getattr(exchange, fun)(**kwargs)
-        assert api_mock.__dict__[mock_ccxt_fun].call_count == API_RETRY_COUNT + 1
+        assert api_mock.__dict__[mock_ccxt_fun].call_count == retries
 
     with pytest.raises(TemporaryError):
         api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.NetworkError("DeaDBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         getattr(exchange, fun)(**kwargs)
-    assert api_mock.__dict__[mock_ccxt_fun].call_count == API_RETRY_COUNT + 1
+    assert api_mock.__dict__[mock_ccxt_fun].call_count == retries
 
     with pytest.raises(OperationalException):
         api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.BaseError("DeadBeef"))
@@ -59,19 +59,21 @@ def ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
     assert api_mock.__dict__[mock_ccxt_fun].call_count == 1
 
 
-async def async_ccxt_exception(mocker, default_conf, api_mock, fun, mock_ccxt_fun, **kwargs):
+async def async_ccxt_exception(mocker, default_conf, api_mock, fun, mock_ccxt_fun,
+                               retries=API_RETRY_COUNT + 1, **kwargs):
 
     with patch('freqtrade.exchange.common.asyncio.sleep'):
         with pytest.raises(DDosProtection):
             api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.DDoSProtection("DeadBeef"))
             exchange = get_patched_exchange(mocker, default_conf, api_mock)
             await getattr(exchange, fun)(**kwargs)
+        assert api_mock.__dict__[mock_ccxt_fun].call_count == retries
 
     with pytest.raises(TemporaryError):
         api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.NetworkError("DeadBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
         await getattr(exchange, fun)(**kwargs)
-    assert api_mock.__dict__[mock_ccxt_fun].call_count == API_RETRY_COUNT + 1
+    assert api_mock.__dict__[mock_ccxt_fun].call_count == retries
 
     with pytest.raises(OperationalException):
         api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.BaseError("DeadBeef"))
@@ -1142,9 +1144,10 @@ def test_get_balance_prod(default_conf, mocker, exchange_name):
         exchange.get_balance(currency='BTC')
 
 
-def test_get_balances_dry_run(default_conf, mocker):
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_get_balances_dry_run(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = True
-    exchange = get_patched_exchange(mocker, default_conf)
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     assert exchange.get_balances() == {}
 
 
@@ -2124,6 +2127,13 @@ def test_get_markets(default_conf, mocker, markets,
     ex = Exchange(default_conf)
     pairs = ex.get_markets(base_currencies, quote_currencies, pairs_only, active_only)
     assert sorted(pairs.keys()) == sorted(expected_keys)
+
+
+def test_get_markets_error(default_conf, mocker):
+    ex = get_patched_exchange(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=None))
+    with pytest.raises(OperationalException, match="Markets were not loaded."):
+        ex.get_markets('LTC', 'USDT', True, False)
 
 
 def test_timeframe_to_minutes():

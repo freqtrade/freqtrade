@@ -8,6 +8,7 @@ from freqtrade.exceptions import (DDosProtection, DependencyException,
                                   InvalidOrderException, OperationalException,
                                   TemporaryError)
 from freqtrade.exchange import Exchange
+from freqtrade.exchange.common import retrier
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,7 @@ class Binance(Exchange):
         """
         return order['type'] == 'stop_loss_limit' and stop_loss > float(order['info']['stopPrice'])
 
+    @retrier(retries=0)
     def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
         """
         creates a stoploss limit order.

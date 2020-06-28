@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import time
+from functools import wraps
 
 from freqtrade.exceptions import DDosProtection, TemporaryError
 
@@ -110,21 +111,28 @@ def retrier_async(f):
     return wrapper
 
 
-def retrier(f):
-    def wrapper(*args, **kwargs):
-        count = kwargs.pop('count', API_RETRY_COUNT)
-        try:
-            return f(*args, **kwargs)
-        except TemporaryError as ex:
-            logger.warning('%s() returned exception: "%s"', f.__name__, ex)
-            if count > 0:
-                count -= 1
-                kwargs.update({'count': count})
-                logger.warning('retrying %s() still for %s times', f.__name__, count)
-                if isinstance(ex, DDosProtection):
-                    time.sleep(1)
-                return wrapper(*args, **kwargs)
-            else:
-                logger.warning('Giving up retrying: %s()', f.__name__)
-                raise ex
-    return wrapper
+def retrier(_func=None, retries=API_RETRY_COUNT):
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            count = kwargs.pop('count', retries)
+            try:
+                return f(*args, **kwargs)
+            except TemporaryError as ex:
+                logger.warning('%s() returned exception: "%s"', f.__name__, ex)
+                if count > 0:
+                    count -= 1
+                    kwargs.update({'count': count})
+                    logger.warning('retrying %s() still for %s times', f.__name__, count)
+                    if isinstance(ex, DDosProtection):
+                        time.sleep(1)
+                    return wrapper(*args, **kwargs)
+                else:
+                    logger.warning('Giving up retrying: %s()', f.__name__)
+                    raise ex
+        return wrapper
+    # Support both @retrier and @retrier() syntax
+    if _func is None:
+        return decorator
+    else:
+        return decorator(_func)
