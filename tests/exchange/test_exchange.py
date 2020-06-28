@@ -14,7 +14,7 @@ from pandas import DataFrame
 from freqtrade.exceptions import (DependencyException, InvalidOrderException, DDosProtection,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Binance, Exchange, Kraken
-from freqtrade.exchange.common import API_RETRY_COUNT
+from freqtrade.exchange.common import API_RETRY_COUNT, calculate_backoff
 from freqtrade.exchange.exchange import (market_is_active, symbol_is_pair,
                                          timeframe_to_minutes,
                                          timeframe_to_msecs,
@@ -2296,3 +2296,15 @@ def test_calculate_fee_rate(mocker, default_conf, order, expected) -> None:
 
     ex = get_patched_exchange(mocker, default_conf)
     assert ex.calculate_fee_rate(order) == expected
+
+
+@pytest.mark.parametrize('retry,max_retries,expected', [
+    (0, 3, 1),
+    (1, 3, 2),
+    (2, 3, 5),
+    (3, 3, 10),
+    (0, 1, 1),
+    (1, 1, 2),
+])
+def test_calculate_backoff(retry, max_retries, expected):
+    assert calculate_backoff(retry, max_retries) == expected

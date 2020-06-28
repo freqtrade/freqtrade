@@ -91,6 +91,13 @@ MAP_EXCHANGE_CHILDCLASS = {
 }
 
 
+def calculate_backoff(retry, max_retries):
+    """
+    Calculate backoff
+    """
+    return retry ** 2 + 1
+
+
 def retrier_async(f):
     async def wrapper(*args, **kwargs):
         count = kwargs.pop('count', API_RETRY_COUNT)
@@ -125,13 +132,13 @@ def retrier(_func=None, retries=API_RETRY_COUNT):
                     kwargs.update({'count': count})
                     logger.warning('retrying %s() still for %s times', f.__name__, count)
                     if isinstance(ex, DDosProtection):
-                        time.sleep(1)
+                        time.sleep(calculate_backoff(count, retries))
                     return wrapper(*args, **kwargs)
                 else:
                     logger.warning('Giving up retrying: %s()', f.__name__)
                     raise ex
         return wrapper
-    # Support both @retrier and @retrier() syntax
+    # Support both @retrier and @retrier(retries=2) syntax
     if _func is None:
         return decorator
     else:
