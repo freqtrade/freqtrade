@@ -1,11 +1,11 @@
 from unittest.mock import MagicMock
 
-from pandas import DataFrame
 import pytest
+from pandas import DataFrame
 
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.pairlist.pairlistmanager import PairListManager
-from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.state import RunMode
 from tests.conftest import get_patched_exchange
 
@@ -164,7 +164,7 @@ def test_ticker(mocker, default_conf, tickers):
     assert 'symbol' in res
     assert res['symbol'] == 'ETH/BTC'
 
-    ticker_mock = MagicMock(side_effect=DependencyException('Pair not found'))
+    ticker_mock = MagicMock(side_effect=ExchangeError('Pair not found'))
     mocker.patch("freqtrade.exchange.Exchange.fetch_ticker", ticker_mock)
     exchange = get_patched_exchange(mocker, default_conf)
     dp = DataProvider(default_conf, exchange)

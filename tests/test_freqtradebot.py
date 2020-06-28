@@ -9,13 +9,12 @@ from unittest.mock import ANY, MagicMock, PropertyMock
 
 import arrow
 import pytest
-import requests
 
 from freqtrade.constants import (CANCEL_REASON, MATH_CLOSE_PREC,
                                  UNLIMITED_STAKE_AMOUNT)
-from freqtrade.exceptions import (DependencyException, InvalidOrderException,
-                                  OperationalException, PricingError,
-                                  TemporaryError)
+from freqtrade.exceptions import (DependencyException, ExchangeError,
+                                  InvalidOrderException, OperationalException,
+                                  PricingError, TemporaryError)
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
@@ -1172,7 +1171,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
 
     mocker.patch(
         'freqtrade.exchange.Exchange.stoploss',
-        side_effect=DependencyException()
+        side_effect=ExchangeError()
     )
     trade.is_open = True
     freqtrade.handle_stoploss_on_exchange(trade)
@@ -1216,7 +1215,7 @@ def test_handle_sle_cancel_cant_recreate(mocker, default_conf, fee, caplog,
         sell=MagicMock(return_value={'id': limit_sell_order['id']}),
         get_fee=fee,
         get_stoploss_order=MagicMock(return_value={'status': 'canceled'}),
-        stoploss=MagicMock(side_effect=DependencyException()),
+        stoploss=MagicMock(side_effect=ExchangeError()),
     )
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
@@ -1442,7 +1441,7 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
     # Fail creating stoploss order
     caplog.clear()
     cancel_mock = mocker.patch("freqtrade.exchange.Exchange.cancel_stoploss_order", MagicMock())
-    mocker.patch("freqtrade.exchange.Exchange.stoploss", side_effect=DependencyException())
+    mocker.patch("freqtrade.exchange.Exchange.stoploss", side_effect=ExchangeError())
     freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging)
     assert cancel_mock.call_count == 1
     assert log_has_re(r"Could not create trailing stoploss order for pair ETH/BTC\..*", caplog)
@@ -2320,7 +2319,7 @@ def test_check_handle_timedout_exception(default_conf, ticker, open_trade, mocke
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
-        get_order=MagicMock(side_effect=requests.exceptions.RequestException('Oh snap')),
+        get_order=MagicMock(side_effect=ExchangeError('Oh snap')),
         cancel_order=cancel_order_mock
     )
     freqtrade = FreqtradeBot(default_conf)

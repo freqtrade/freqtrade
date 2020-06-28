@@ -64,7 +64,7 @@ async def async_ccxt_exception(mocker, default_conf, api_mock, fun, mock_ccxt_fu
 
     with patch('freqtrade.exchange.common.asyncio.sleep'):
         with pytest.raises(DDosProtection):
-            api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.DDoSProtection("DeadBeef"))
+            api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.DDoSProtection("Dooh"))
             exchange = get_patched_exchange(mocker, default_conf, api_mock)
             await getattr(exchange, fun)(**kwargs)
         assert api_mock.__dict__[mock_ccxt_fun].call_count == retries
