@@ -1,15 +1,15 @@
-from datetime import datetime
+import re
 from pathlib import Path
 
 import pandas as pd
-import re
 import pytest
 from arrow import Arrow
 
 from freqtrade.configuration import TimeRange
+from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.data import history
-from freqtrade.edge import PairInfo
 from freqtrade.data.btanalysis import get_latest_backtest_filename
+from freqtrade.edge import PairInfo
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats,
                                                  generate_edge_table,
                                                  generate_pair_metrics,
@@ -93,25 +93,25 @@ def test_generate_backtest_stats(default_conf, testdatadir):
     # Above sample had no loosing trade
     assert strat_stats['max_drawdown'] == 0.0
 
-    results = {'DefStrat': pd.DataFrame({"pair": ["UNITTEST/BTC", "UNITTEST/BTC",
-                                                  "UNITTEST/BTC", "UNITTEST/BTC"],
-                                         "profit_percent": [0.003312, 0.010801, -0.013803, 0.002780],
-                                         "profit_abs": [0.000003, 0.000011, -0.000014, 0.000003],
-                                         "open_date": [Arrow(2017, 11, 14, 19, 32, 00).datetime,
-                                                       Arrow(2017, 11, 14, 21, 36, 00).datetime,
-                                                       Arrow(2017, 11, 14, 22, 12, 00).datetime,
-                                                       Arrow(2017, 11, 14, 22, 44, 00).datetime],
-                                         "close_date": [Arrow(2017, 11, 14, 21, 35, 00).datetime,
-                                                        Arrow(2017, 11, 14, 22, 10, 00).datetime,
-                                                        Arrow(2017, 11, 14, 22, 43, 00).datetime,
-                                                        Arrow(2017, 11, 14, 22, 58, 00).datetime],
-                                         "open_rate": [0.002543, 0.003003, 0.003089, 0.003214],
-                                         "close_rate": [0.002546, 0.003014, 0.0032903, 0.003217],
-                                         "trade_duration": [123, 34, 31, 14],
-                                         "open_at_end": [False, False, False, True],
-                                         "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
-                                                         SellType.ROI, SellType.FORCE_SELL]
-                                         })}
+    results = {'DefStrat': pd.DataFrame(
+        {"pair": ["UNITTEST/BTC", "UNITTEST/BTC", "UNITTEST/BTC", "UNITTEST/BTC"],
+         "profit_percent": [0.003312, 0.010801, -0.013803, 0.002780],
+         "profit_abs": [0.000003, 0.000011, -0.000014, 0.000003],
+         "open_date": [Arrow(2017, 11, 14, 19, 32, 00).datetime,
+                       Arrow(2017, 11, 14, 21, 36, 00).datetime,
+                       Arrow(2017, 11, 14, 22, 12, 00).datetime,
+                       Arrow(2017, 11, 14, 22, 44, 00).datetime],
+         "close_date": [Arrow(2017, 11, 14, 21, 35, 00).datetime,
+                        Arrow(2017, 11, 14, 22, 10, 00).datetime,
+                        Arrow(2017, 11, 14, 22, 43, 00).datetime,
+                        Arrow(2017, 11, 14, 22, 58, 00).datetime],
+         "open_rate": [0.002543, 0.003003, 0.003089, 0.003214],
+         "close_rate": [0.002546, 0.003014, 0.0032903, 0.003217],
+         "trade_duration": [123, 34, 31, 14],
+         "open_at_end": [False, False, False, True],
+         "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
+                         SellType.ROI, SellType.FORCE_SELL]
+         })}
 
     assert strat_stats['max_drawdown'] == 0.0
     assert strat_stats['drawdown_start'] == Arrow.fromtimestamp(0).datetime
@@ -122,7 +122,7 @@ def test_generate_backtest_stats(default_conf, testdatadir):
 
     # Test storing stats
     filename = Path(testdatadir / 'btresult.json')
-    filename_last = Path(testdatadir / '.last_result.json')
+    filename_last = Path(testdatadir / LAST_BT_RESULT_FN)
     _backup_file(filename_last, copy_file=True)
     assert not filename.is_file()
 

@@ -6,6 +6,7 @@ from arrow import Arrow
 from pandas import DataFrame, DateOffset, Timestamp, to_datetime
 
 from freqtrade.configuration import TimeRange
+from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
                                        analyze_trade_parallelism,
                                        calculate_market_change,
@@ -73,7 +74,7 @@ def test_load_backtest_data_new_format(testdatadir):
         load_backtest_data(str("filename") + "nofile")
 
     with pytest.raises(ValueError, match=r"Unknown dataformat."):
-        load_backtest_data(testdatadir / '.last_result.json')
+        load_backtest_data(testdatadir / LAST_BT_RESULT_FN)
 
 
 def test_load_backtest_data_multi(testdatadir):

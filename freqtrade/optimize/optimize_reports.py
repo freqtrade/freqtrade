@@ -7,7 +7,7 @@ from arrow import Arrow
 from pandas import DataFrame
 from tabulate import tabulate
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT
+from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
 from freqtrade.data.btanalysis import calculate_max_drawdown, calculate_market_change
 from freqtrade.misc import file_dump_json
 
@@ -21,8 +21,7 @@ def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> N
                              ).with_suffix(recordfilename.suffix)
     file_dump_json(filename, stats)
 
-    latest_filename = Path.joinpath(recordfilename.parent,
-                                    '.last_result.json')
+    latest_filename = Path.joinpath(recordfilename.parent, LAST_BT_RESULT_FN)
     file_dump_json(latest_filename, {'latest_backtest': str(filename.name)})
 
 
