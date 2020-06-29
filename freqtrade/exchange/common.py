@@ -111,7 +111,9 @@ def retrier_async(f):
                 kwargs.update({'count': count})
                 logger.warning('retrying %s() still for %s times', f.__name__, count)
                 if isinstance(ex, DDosProtection):
-                    await asyncio.sleep(calculate_backoff(count + 1, API_RETRY_COUNT))
+                    backoff_delay = calculate_backoff(count + 1, API_RETRY_COUNT)
+                    logger.debug(f"Applying DDosProtection backoff delay: {backoff_delay}")
+                    await asyncio.sleep(backoff_delay)
                 return await wrapper(*args, **kwargs)
             else:
                 logger.warning('Giving up retrying: %s()', f.__name__)
@@ -134,7 +136,9 @@ def retrier(_func=None, retries=API_RETRY_COUNT):
                     logger.warning('retrying %s() still for %s times', f.__name__, count)
                     if isinstance(ex, DDosProtection) or isinstance(ex, RetryableOrderError):
                         # increasing backoff
-                        time.sleep(calculate_backoff(count + 1, retries))
+                        backoff_delay = calculate_backoff(count + 1, retries)
+                        logger.debug(f"Applying DDosProtection backoff delay: {backoff_delay}")
+                        time.sleep(backoff_delay)
                     return wrapper(*args, **kwargs)
                 else:
                     logger.warning('Giving up retrying: %s()', f.__name__)
