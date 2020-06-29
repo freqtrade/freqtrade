@@ -5,7 +5,7 @@ import logging
 from typing import Any, Dict
 
 from freqtrade.pairlist.IPairList import IPairList
-
+from freqtrade.exceptions import OperationalException
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +17,10 @@ class PrecisionFilter(IPairList):
                  pairlist_pos: int) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
+        if 'stoploss' not in self._config:
+            raise OperationalException(
+                'PrecisionFilter can only work with stoploss defined. Please add the '
+                'stoploss key to your configuration (overwrites eventual strategy settings).')
         self._stoploss = self._config['stoploss']
         self._enabled = self._stoploss != 0
 
