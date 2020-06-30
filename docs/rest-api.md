@@ -11,7 +11,9 @@ Sample configuration:
         "enabled": true,
         "listen_ip_address": "127.0.0.1",
         "listen_port": 8080,
+        "verbosity": "info",
         "jwt_secret_key": "somethingrandom",
+        "CORS_origins": [],
         "username": "Freqtrader",
         "password": "SuperSecret1!"
     },
@@ -109,7 +111,7 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `start` | | Starts the trader
 | `stop` | | Stops the trader
 | `stopbuy` | | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
-| `reload_conf` | | Reloads the configuration file
+| `reload_config` | | Reloads the configuration file
 | `show_config` | | Shows part of the current configuration with relevant settings to operation
 | `status` | | Lists all open trades
 | `count` | | Displays number of trades used and available
@@ -173,7 +175,7 @@ profit
         Returns the profit summary
         :returns: json object
 
-reload_conf
+reload_config
         Reload configuration
         :returns: json object
 
@@ -195,7 +197,7 @@ stop
 
 stopbuy
         Stop buying (but handle sells gracefully).
-        use reload_conf to reset
+        use reload_config to reset
         :returns: json object
 
 version
@@ -231,3 +233,26 @@ Since the access token has a short timeout (15 min) - the `token/refresh` reques
 > curl -X POST --header "Authorization: Bearer ${refresh_token}"http://localhost:8080/api/v1/token/refresh
 {"access_token":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODkxMTk5NzQsIm5iZiI6MTU4OTExOTk3NCwianRpIjoiMDBjNTlhMWUtMjBmYS00ZTk0LTliZjAtNWQwNTg2MTdiZDIyIiwiZXhwIjoxNTg5MTIwODc0LCJpZGVudGl0eSI6eyJ1IjoiRnJlcXRyYWRlciJ9LCJmcmVzaCI6ZmFsc2UsInR5cGUiOiJhY2Nlc3MifQ.1seHlII3WprjjclY6DpRhen0rqdF4j6jbvxIhUFaSbs"}
 ```
+
+## CORS
+
+All web-based frontends are subject to [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) - Cross-Origin Resource Sharing.
+Since most of the requests to the Freqtrade API must be authenticated, a proper CORS policy is key to avoid security problems.
+Also, the standard disallows `*` CORS policies for requests with credentials, so this setting must be set appropriately.
+
+Users can configure this themselves via the `CORS_origins` configuration setting.
+It consists of a list of allowed sites that are allowed to consume resources from the bot's API.
+
+Assuming your application is deployed as `https://frequi.freqtrade.io/home/` - this would mean that the following configuration becomes necessary:
+
+```jsonc
+{
+    //...
+    "jwt_secret_key": "somethingrandom",
+    "CORS_origins": ["https://frequi.freqtrade.io"],
+    //...
+}
+```
+
+!!! Note
+    We strongly recommend to also set `jwt_secret_key` to something random and known only to yourself to avoid unauthorized access to your bot.

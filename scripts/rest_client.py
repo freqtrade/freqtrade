@@ -80,18 +80,18 @@ class FtRestClient():
         return self._post("stop")
 
     def stopbuy(self):
-        """Stop buying (but handle sells gracefully). Use `reload_conf` to reset.
+        """Stop buying (but handle sells gracefully). Use `reload_config` to reset.
 
         :return: json object
         """
         return self._post("stopbuy")
 
-    def reload_conf(self):
+    def reload_config(self):
         """Reload configuration.
 
         :return: json object
         """
-        return self._post("reload_conf")
+        return self._post("reload_config")
 
     def balance(self):
         """Get the account balance.

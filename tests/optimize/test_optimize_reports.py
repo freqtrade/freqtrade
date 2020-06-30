@@ -7,13 +7,13 @@ from arrow import Arrow
 from freqtrade.edge import PairInfo
 from freqtrade.optimize.optimize_reports import (
     generate_pair_metrics, generate_edge_table, generate_sell_reason_stats,
-    generate_text_table, generate_text_table_sell_reason, generate_strategy_metrics,
-    generate_text_table_strategy, store_backtest_result)
+    text_table_bt_results, text_table_sell_reason, generate_strategy_metrics,
+    text_table_strategy, store_backtest_result)
 from freqtrade.strategy.interface import SellType
 from tests.conftest import patch_exchange
 
 
-def test_generate_text_table(default_conf, mocker):
+def test_text_table_bt_results(default_conf, mocker):
 
     results = pd.DataFrame(
         {
@@ -40,8 +40,7 @@ def test_generate_text_table(default_conf, mocker):
 
     pair_results = generate_pair_metrics(data={'ETH/BTC': {}}, stake_currency='BTC',
                                          max_open_trades=2, results=results)
-    assert generate_text_table(pair_results,
-                               stake_currency='BTC') == result_str
+    assert text_table_bt_results(pair_results, stake_currency='BTC') == result_str
 
 
 def test_generate_pair_metrics(default_conf, mocker):
@@ -69,7 +68,7 @@ def test_generate_pair_metrics(default_conf, mocker):
         pytest.approx(pair_results[-1]['profit_sum_pct']) == pair_results[-1]['profit_sum'] * 100)
 
 
-def test_generate_text_table_sell_reason(default_conf):
+def test_text_table_sell_reason(default_conf):
 
     results = pd.DataFrame(
         {
@@ -97,8 +96,8 @@ def test_generate_text_table_sell_reason(default_conf):
 
     sell_reason_stats = generate_sell_reason_stats(max_open_trades=2,
                                                    results=results)
-    assert generate_text_table_sell_reason(sell_reason_stats=sell_reason_stats,
-                                           stake_currency='BTC') == result_str
+    assert text_table_sell_reason(sell_reason_stats=sell_reason_stats,
+                                  stake_currency='BTC') == result_str
 
 
 def test_generate_sell_reason_stats(default_conf):
@@ -136,7 +135,7 @@ def test_generate_sell_reason_stats(default_conf):
     assert stop_result['profit_mean_pct'] == round(stop_result['profit_mean'] * 100, 2)
 
 
-def test_generate_text_table_strategy(default_conf, mocker):
+def test_text_table_strategy(default_conf, mocker):
     results = {}
     results['TestStrategy1'] = pd.DataFrame(
         {
@@ -178,7 +177,7 @@ def test_generate_text_table_strategy(default_conf, mocker):
                                                  max_open_trades=2,
                                                  all_results=results)
 
-    assert generate_text_table_strategy(strategy_results, 'BTC') == result_str
+    assert text_table_strategy(strategy_results, 'BTC') == result_str
 
 
 def test_generate_edge_table(edge_conf, mocker):

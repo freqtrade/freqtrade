@@ -90,7 +90,9 @@ class ApiServer(RPC):
         self._config = freqtrade.config
         self.app = Flask(__name__)
         self._cors = CORS(self.app,
-                          resources={r"/api/*": {"supports_credentials": True, }}
+                          resources={r"/api/*": {
+                              "supports_credentials": True,
+                              "origins": self._config['api_server'].get('CORS_origins', [])}}
                           )
 
         # Setup the Flask-JWT-Extended extension
@@ -172,8 +174,8 @@ class ApiServer(RPC):
         self.app.add_url_rule(f'{BASE_URI}/stop', 'stop', view_func=self._stop, methods=['POST'])
         self.app.add_url_rule(f'{BASE_URI}/stopbuy', 'stopbuy',
                               view_func=self._stopbuy, methods=['POST'])
-        self.app.add_url_rule(f'{BASE_URI}/reload_conf', 'reload_conf',
-                              view_func=self._reload_conf, methods=['POST'])
+        self.app.add_url_rule(f'{BASE_URI}/reload_config', 'reload_config',
+                              view_func=self._reload_config, methods=['POST'])
         # Info commands
         self.app.add_url_rule(f'{BASE_URI}/balance', 'balance',
                               view_func=self._balance, methods=['GET'])
@@ -304,12 +306,12 @@ class ApiServer(RPC):
 
     @require_login
     @rpc_catch_errors
-    def _reload_conf(self):
+    def _reload_config(self):
         """
-        Handler for /reload_conf.
+        Handler for /reload_config.
         Triggers a config file reload
         """
-        msg = self._rpc_reload_conf()
+        msg = self._rpc_reload_config()
         return self.rest_dump(msg)
 
     @require_login
@@ -360,7 +362,6 @@ class ApiServer(RPC):
         Returns a cumulative profit statistics
         :return: stats
         """
-        logger.info("LocalRPC - Profit Command Called")
 
         stats = self._rpc_trade_statistics(self._config['stake_currency'],
                                            self._config.get('fiat_display_currency')
@@ -377,8 +378,6 @@ class ApiServer(RPC):
         Returns a cumulative performance statistics
         :return: stats
         """
-        logger.info("LocalRPC - performance Command Called")
-
         stats = self._rpc_performance()
 
         return self.rest_dump(stats)

@@ -109,7 +109,7 @@ The following command will convert all candle (OHLCV) data available in `~/.freq
 It'll also remove original json data files (`--erase` parameter).
 
 ``` bash
-freqtrade convert-data --format-from json --format-to jsongz --data-dir ~/.freqtrade/data/binance -t 5m 15m --erase
+freqtrade convert-data --format-from json --format-to jsongz --datadir ~/.freqtrade/data/binance -t 5m 15m --erase
 ```
 
 #### Subcommand convert-trade data
@@ -155,7 +155,7 @@ The following command will convert all available trade-data in `~/.freqtrade/dat
 It'll also remove original jsongz data files (`--erase` parameter).
 
 ``` bash
-freqtrade convert-trade-data --format-from jsongz --format-to json --data-dir ~/.freqtrade/data/kraken --erase
+freqtrade convert-trade-data --format-from jsongz --format-to json --datadir ~/.freqtrade/data/kraken --erase
 ```
 
 ### Pairs file

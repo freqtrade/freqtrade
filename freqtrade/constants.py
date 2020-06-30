@@ -22,7 +22,8 @@ ORDERBOOK_SIDES = ['ask', 'bid']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
-                       'PrecisionFilter', 'PriceFilter', 'ShuffleFilter', 'SpreadFilter']
+                       'AgeFilter', 'PrecisionFilter', 'PriceFilter',
+                       'ShuffleFilter', 'SpreadFilter']
 AVAILABLE_DATAHANDLERS = ['json', 'jsongz']
 DRY_RUN_WALLET = 1000
 MATH_CLOSE_PREC = 1e-14  # Precision used for float comparisons
@@ -71,7 +72,7 @@ CONF_SCHEMA = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': ['integer', 'number'], 'minimum': -1},
-        'ticker_interval': {'type': 'string'},
+        'timeframe': {'type': 'string'},
         'stake_currency': {'type': 'string'},
         'stake_amount': {
             'type': ['number', 'string'],
@@ -221,12 +222,16 @@ CONF_SCHEMA = {
                 },
                 'username': {'type': 'string'},
                 'password': {'type': 'string'},
+                'jwt_secret_key': {'type': 'string'},
+                'CORS_origins': {'type': 'array', 'items': {'type': 'string'}},
+                'verbosity': {'type': 'string', 'enum': ['error', 'info']},
             },
             'required': ['enabled', 'listen_ip_address', 'listen_port', 'username', 'password']
         },
         'db_url': {'type': 'string'},
         'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
         'forcebuy_enable': {'type': 'boolean'},
+        'disable_dataframe_checks': {'type': 'boolean'},
         'internals': {
             'type': 'object',
             'default': {},
@@ -285,7 +290,6 @@ CONF_SCHEMA = {
                 'process_throttle_secs': {'type': 'integer', 'minimum': 600},
                 'calculate_since_number_of_days': {'type': 'integer'},
                 'allowed_risk': {'type': 'number'},
-                'capital_available_percentage': {'type': 'number'},
                 'stoploss_range_min': {'type': 'number'},
                 'stoploss_range_max': {'type': 'number'},
                 'stoploss_range_step': {'type': 'number'},
@@ -302,6 +306,7 @@ CONF_SCHEMA = {
 
 SCHEMA_TRADE_REQUIRED = [
     'exchange',
+    'timeframe',
     'max_open_trades',
     'stake_currency',
     'stake_amount',

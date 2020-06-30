@@ -87,6 +87,9 @@ class PairListManager():
         # Adjust whitelist if filters are using tickers
         pairlist = self._prepare_whitelist(self._whitelist.copy(), tickers)
 
+        # Generate the pairlist with first Pairlist Handler in the chain
+        pairlist = self._pairlist_handlers[0].gen_pairlist(self._whitelist, tickers)
+
         # Process all Pairlist Handlers in the chain
         for pairlist_handler in self._pairlist_handlers:
             pairlist = pairlist_handler.filter_pairlist(pairlist, tickers)
@@ -128,6 +131,6 @@ class PairListManager():
 
     def create_pair_list(self, pairs: List[str], timeframe: str = None) -> ListPairsWithTimeframes:
         """
-        Create list of pair tuples with (pair, ticker_interval)
+        Create list of pair tuples with (pair, timeframe)
         """
-        return [(pair, timeframe or self._config['ticker_interval']) for pair in pairs]
+        return [(pair, timeframe or self._config['timeframe']) for pair in pairs]

@@ -8,6 +8,7 @@ from typing import Any, Dict, List
 
 from cachetools import TTLCache, cached
 
+from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import market_is_active
 
 
@@ -67,7 +68,7 @@ class IPairList(ABC):
     def needstickers(self) -> bool:
         """
         Boolean property defining if tickers are necessary.
-        If no Pairlist requries tickers, an empty List is passed
+        If no Pairlist requires tickers, an empty List is passed
         as tickers argument to filter_pairlist
         """
 
@@ -89,6 +90,24 @@ class IPairList(ABC):
         :return: True if the pair can stay, false if it should be removed
         """
         raise NotImplementedError()
+
+    def gen_pairlist(self, cached_pairlist: List[str], tickers: Dict) -> List[str]:
+        """
+        Generate the pairlist.
+
+        This method is called once by the pairlistmanager in the refresh_pairlist()
+        method to supply the starting pairlist for the chain of the Pairlist Handlers.
+        Pairlist Filters (those Pairlist Handlers that cannot be used at the first
+        position in the chain) shall not override this base implementation --
+        it will raise the exception if a Pairlist Handler is used at the first
+        position in the chain.
+
+        :param cached_pairlist: Previously generated pairlist (cached)
+        :param tickers: Tickers (from exchange.get_tickers()).
+        :return: List of pairs
+        """
+        raise OperationalException("This Pairlist Handler should not be used "
+                                   "at the first position in the list of Pairlist Handlers.")
 
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
@@ -131,6 +150,9 @@ class IPairList(ABC):
         black_listed
         """
         markets = self._exchange.markets
+        if not markets:
+            raise OperationalException(
+                    'Markets not loaded. Make sure that exchange is initialized correctly.')
 
         sanitized_whitelist: List[str] = []
         for pair in pairlist:

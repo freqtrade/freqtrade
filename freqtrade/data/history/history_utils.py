@@ -270,6 +270,11 @@ def _download_trades_history(exchange: Exchange,
         # DEFAULT_TRADES_COLUMNS: 0 -> timestamp
         # DEFAULT_TRADES_COLUMNS: 1 -> id
 
+        if trades and since < trades[0][0]:
+            # since is before the first trade
+            logger.info(f"Start earlier than available data. Redownloading trades for {pair}...")
+            trades = []
+
         from_id = trades[-1][1] if trades else None
         if trades and since < trades[-1][0]:
             # Reset since to the last available point
