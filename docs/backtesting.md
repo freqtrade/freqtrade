@@ -66,7 +66,7 @@ Where `SampleStrategy1` and `AwesomeStrategy` refer to class names of strategies
 #### Exporting trades to file
 
 ```bash
-freqtrade backtesting --export trades
+freqtrade backtesting --export trades --config config.json --strategy SampleStrategy
 ```
 
 The exported trades can be used for [further analysis](#further-backtest-result-analysis), or can be used by the plotting script `plot_dataframe.py` in the scripts directory.
