@@ -13,7 +13,7 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes, PairWithTimeframe
 from freqtrade.data.history import load_pair_history
-from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.state import RunMode
 
@@ -132,7 +132,7 @@ class DataProvider:
         """
         try:
             return self._exchange.fetch_ticker(pair)
-        except DependencyException:
+        except ExchangeError:
             return {}
 
     def orderbook(self, pair: str, maximum: int) -> Dict[str, List]:

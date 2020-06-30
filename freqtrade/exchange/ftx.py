@@ -4,8 +4,9 @@ from typing import Dict
 
 import ccxt
 
-from freqtrade.exceptions import (DependencyException, InvalidOrderException,
-                                  OperationalException, TemporaryError)
+from freqtrade.exceptions import (DDosProtection, ExchangeError,
+                                  InvalidOrderException, OperationalException,
+                                  TemporaryError)
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
 
@@ -26,6 +27,7 @@ class Ftx(Exchange):
         """
         return order['type'] == 'stop' and stop_loss > float(order['price'])
 
+    @retrier(retries=0)
     def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
         """
         Creates a stoploss order.
@@ -59,7 +61,7 @@ class Ftx(Exchange):
                         'stop price: %s.', pair, stop_price)
             return order
         except ccxt.InsufficientFunds as e:
-            raise DependencyException(
+            raise ExchangeError(
                 f'Insufficient funds to create {ordertype} sell order on market {pair}. '
                 f'Tried to create stoploss with amount {amount} at stoploss {stop_price}. '
                 f'Message: {e}') from e
@@ -68,6 +70,8 @@ class Ftx(Exchange):
                 f'Could not create {ordertype} sell order on market {pair}. '
                 f'Tried to create stoploss with amount {amount} at stoploss {stop_price}. '
                 f'Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not place sell order due to {e.__class__.__name__}. Message: {e}') from e
@@ -75,7 +79,7 @@ class Ftx(Exchange):
             raise OperationalException(e) from e
 
     @retrier
-    def get_stoploss_order(self, order_id: str, pair: str) -> Dict:
+    def fetch_stoploss_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
             try:
                 order = self._dry_run_open_orders[order_id]
@@ -96,6 +100,8 @@ class Ftx(Exchange):
         except ccxt.InvalidOrder as e:
             raise InvalidOrderException(
                 f'Tried to get an invalid order (id: {order_id}). Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not get order due to {e.__class__.__name__}. Message: {e}') from e
@@ -111,6 +117,8 @@ class Ftx(Exchange):
         except ccxt.InvalidOrder as e:
             raise InvalidOrderException(
                 f'Could not cancel order. Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not cancel order due to {e.__class__.__name__}. Message: {e}') from e

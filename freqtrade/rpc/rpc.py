@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 from numpy import NAN, mean
 
-from freqtrade.exceptions import DependencyException, TemporaryError
+from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -126,11 +126,11 @@ class RPC:
             for trade in trades:
                 order = None
                 if trade.open_order_id:
-                    order = self._freqtrade.exchange.get_order(trade.open_order_id, trade.pair)
+                    order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
                 # calculate profit and send message to user
                 try:
                     current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
-                except DependencyException:
+                except (ExchangeError, PricingError):
                     current_rate = NAN
                 current_profit = trade.calc_profit_ratio(current_rate)
                 current_profit_abs = trade.calc_profit(current_rate)
@@ -174,7 +174,7 @@ class RPC:
                 # calculate profit and send message to user
                 try:
                     current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
-                except DependencyException:
+                except (PricingError, ExchangeError):
                     current_rate = NAN
                 trade_percent = (100 * trade.calc_profit_ratio(current_rate))
                 trade_profit = trade.calc_profit(current_rate)
@@ -286,7 +286,7 @@ class RPC:
                 # Get current rate
                 try:
                     current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
-                except DependencyException:
+                except (PricingError, ExchangeError):
                     current_rate = NAN
                 profit_ratio = trade.calc_profit_ratio(rate=current_rate)
 
@@ -352,7 +352,7 @@ class RPC:
         total = 0.0
         try:
             tickers = self._freqtrade.exchange.get_tickers()
-        except (TemporaryError, DependencyException):
+        except (ExchangeError):
             raise RPCException('Error getting current tickers.')
 
         self._freqtrade.wallets.update(require_update=False)
@@ -373,7 +373,7 @@ class RPC:
                         if pair.startswith(stake_currency):
                             rate = 1.0 / rate
                         est_stake = rate * balance.total
-                except (TemporaryError, DependencyException):
+                except (ExchangeError):
                     logger.warning(f" Could not get rate for pair {coin}.")
                     continue
             total = total + (est_stake or 0)
@@ -442,7 +442,7 @@ class RPC:
         def _exec_forcesell(trade: Trade) -> None:
             # Check if there is there is an open order
             if trade.open_order_id:
-                order = self._freqtrade.exchange.get_order(trade.open_order_id, trade.pair)
+                order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
 
                 # Cancel open LIMIT_BUY orders and close trade
                 if order and order['status'] == 'open' \

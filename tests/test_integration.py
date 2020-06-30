@@ -62,7 +62,7 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
         get_fee=fee,
         amount_to_precision=lambda s, x, y: y,
         price_to_precision=lambda s, x, y: y,
-        get_stoploss_order=stoploss_order_mock,
+        fetch_stoploss_order=stoploss_order_mock,
         cancel_stoploss_order=cancel_order_mock,
     )
 
