@@ -366,7 +366,9 @@ class Telegram(RPC):
                              f"∙ `{profit_all_fiat:.3f} {fiat_disp_cur}`\n"
                              f"*Total Trade Count:* `{trade_count}`\n"
                              f"*First Trade opened:* `{first_trade_date}`\n"
-                             f"*Latest Trade opened:* `{latest_trade_date}`")
+                             f"*Latest Trade opened:* `{latest_trade_date}\n`"
+                             f"*Win / Loss:* `{stats['winning_trades']} / {stats['losing_trades']}`"
+                             )
             if stats['closed_trade_count'] > 0:
                 markdown_msg += (f"\n*Avg. Duration:* `{avg_duration}`\n"
                                  f"*Best Performing:* `{best_pair}: {best_rate:.2f}%`")
