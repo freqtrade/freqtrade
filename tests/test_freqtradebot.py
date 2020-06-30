@@ -4029,3 +4029,19 @@ def test_cancel_all_open_orders(mocker, default_conf, fee, limit_buy_order, limi
     freqtrade.cancel_all_open_orders()
     assert buy_mock.call_count == 1
     assert sell_mock.call_count == 1
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_check_for_open_trades(mocker, default_conf, fee, limit_buy_order, limit_sell_order):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+
+    freqtrade.check_for_open_trades()
+    assert freqtrade.rpc.send_msg.call_count == 0
+
+    create_mock_trades(fee)
+    trade = Trade.query.first()
+    trade.is_open = True
+
+    freqtrade.check_for_open_trades()
+    assert freqtrade.rpc.send_msg.call_count == 1
+    assert 'Handle these trades manually' in freqtrade.rpc.send_msg.call_args[0][0]['status']
