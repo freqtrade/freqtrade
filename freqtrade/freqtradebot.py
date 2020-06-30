@@ -11,14 +11,14 @@ from typing import Any, Dict, List, Optional
 
 import arrow
 from cachetools import TTLCache
-from requests.exceptions import RequestException
 
 from freqtrade import __version__, constants, persistence
 from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.exceptions import DependencyException, InvalidOrderException, PricingError
+from freqtrade.exceptions import (DependencyException, ExchangeError,
+                                  InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
 from freqtrade.misc import safe_value_fallback
 from freqtrade.pairlist.pairlistmanager import PairListManager
@@ -755,7 +755,7 @@ class FreqtradeBot:
             logger.warning('Selling the trade forcefully')
             self.execute_sell(trade, trade.stop_loss, sell_reason=SellType.EMERGENCY_SELL)
 
-        except DependencyException:
+        except ExchangeError:
             trade.stoploss_order_id = None
             logger.exception('Unable to place a stoploss order on exchange.')
         return False
@@ -773,8 +773,8 @@ class FreqtradeBot:
 
         try:
             # First we check if there is already a stoploss on exchange
-            stoploss_order = self.exchange.get_stoploss_order(trade.stoploss_order_id, trade.pair) \
-                if trade.stoploss_order_id else None
+            stoploss_order = self.exchange.fetch_stoploss_order(
+                trade.stoploss_order_id, trade.pair) if trade.stoploss_order_id else None
         except InvalidOrderException as exception:
             logger.warning('Unable to fetch stoploss order: %s', exception)
 
@@ -890,8 +890,8 @@ class FreqtradeBot:
             try:
                 if not trade.open_order_id:
                     continue
-                order = self.exchange.get_order(trade.open_order_id, trade.pair)
-            except (RequestException, DependencyException, InvalidOrderException):
+                order = self.exchange.fetch_order(trade.open_order_id, trade.pair)
+            except (ExchangeError, InvalidOrderException):
                 logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
                 continue
 
@@ -923,7 +923,7 @@ class FreqtradeBot:
 
         for trade in Trade.get_open_order_trades():
             try:
-                order = self.exchange.get_order(trade.open_order_id, trade.pair)
+                order = self.exchange.fetch_order(trade.open_order_id, trade.pair)
             except (DependencyException, InvalidOrderException):
                 logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
                 continue
@@ -1202,7 +1202,7 @@ class FreqtradeBot:
         # Update trade with order values
         logger.info('Found open order for %s', trade)
         try:
-            order = action_order or self.exchange.get_order(order_id, trade.pair)
+            order = action_order or self.exchange.fetch_order(order_id, trade.pair)
         except InvalidOrderException as exception:
             logger.warning('Unable to fetch order %s: %s', order_id, exception)
             return False

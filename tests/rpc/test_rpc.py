@@ -8,12 +8,13 @@ import pytest
 from numpy import isnan
 
 from freqtrade.edge import PairInfo
-from freqtrade.exceptions import DependencyException, TemporaryError
+from freqtrade.exceptions import ExchangeError, TemporaryError
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.state import State
-from tests.conftest import get_patched_freqtradebot, patch_get_signal, create_mock_trades
+from tests.conftest import (create_mock_trades, get_patched_freqtradebot,
+                            patch_get_signal)
 
 
 # Functions for recurrent object patching
@@ -106,7 +107,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
     }
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
-                 MagicMock(side_effect=DependencyException("Pair 'ETH/BTC' not available")))
+                 MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
     results = rpc._rpc_trade_status()
     assert isnan(results[0]['current_profit'])
     assert isnan(results[0]['current_rate'])
@@ -209,7 +210,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert '-0.41% (-0.06)' == result[0][3]
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
-                 MagicMock(side_effect=DependencyException("Pair 'ETH/BTC' not available")))
+                 MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
     result, headers = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
     assert 'instantly' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
@@ -365,7 +366,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
 
     # Test non-available pair
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
-                 MagicMock(side_effect=DependencyException("Pair 'ETH/BTC' not available")))
+                 MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
     stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
     assert stats['trade_count'] == 2
     assert stats['first_trade_date'] == 'just now'
@@ -606,7 +607,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         cancel_order=cancel_order_mock,
-        get_order=MagicMock(
+        fetch_order=MagicMock(
             return_value={
                 'status': 'closed',
                 'type': 'limit',
@@ -652,7 +653,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     trade = Trade.query.filter(Trade.id == '1').first()
     filled_amount = trade.amount / 2
     mocker.patch(
-        'freqtrade.exchange.Exchange.get_order',
+        'freqtrade.exchange.Exchange.fetch_order',
         return_value={
             'status': 'open',
             'type': 'limit',
@@ -671,7 +672,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     amount = trade.amount
     # make an limit-buy open trade, if there is no 'filled', don't sell it
     mocker.patch(
-        'freqtrade.exchange.Exchange.get_order',
+        'freqtrade.exchange.Exchange.fetch_order',
         return_value={
             'status': 'open',
             'type': 'limit',
@@ -688,7 +689,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     freqtradebot.enter_positions()
     # make an limit-sell open trade
     mocker.patch(
-        'freqtrade.exchange.Exchange.get_order',
+        'freqtrade.exchange.Exchange.fetch_order',
         return_value={
             'status': 'open',
             'type': 'limit',
