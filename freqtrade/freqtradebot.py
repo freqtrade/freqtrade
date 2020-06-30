@@ -119,6 +119,8 @@ class FreqtradeBot:
         if self.config['cancel_open_orders_on_exit']:
             self.cancel_all_open_orders()
 
+        self.check_for_open_trades()
+
         self.rpc.cleanup()
         persistence.cleanup()
 
@@ -174,6 +176,24 @@ class FreqtradeBot:
         """
         if self.config['cancel_open_orders_on_exit']:
             self.cancel_all_open_orders()
+
+    def check_for_open_trades(self):
+        """
+        Notify the user when the bot is stopped
+        and there are still open trades active.
+        """
+        open_trades = Trade.get_trades([Trade.is_open == 1]).all()
+
+        if len(open_trades) != 0:
+            msg = {
+                'type': RPCMessageType.WARNING_NOTIFICATION,
+                'status':  f"{len(open_trades)} open trades active.\n\n"
+                           f"Handle these trades manually on {self.exchange.name}, "
+                           f"or '/start' the bot again and use '/stopbuy' "
+                           f"to handle open trades gracefully. \n"
+                           f"{'Trades are simulated.' if self.config['dry_run'] else ''}",
+            }
+            self.rpc.send_msg(msg)
 
     def _refresh_active_whitelist(self, trades: List[Trade] = []) -> List[str]:
         """
