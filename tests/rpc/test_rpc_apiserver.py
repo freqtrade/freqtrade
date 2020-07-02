@@ -818,6 +818,10 @@ def test_api_pair_candles(botclient, ohlcv_history):
     timeframe = '5m'
     amount = 2
     ohlcv_history['sma'] = ohlcv_history['close'].rolling(2).mean()
+    ohlcv_history['buy'] = 0
+    ohlcv_history.iloc[1]['buy'] = 1
+    ohlcv_history['sell'] = 0
+
     ftbot.dataprovider._set_cached_df("XRP/BTC", timeframe, ohlcv_history)
 
     rc = client_get(client,
@@ -825,7 +829,9 @@ def test_api_pair_candles(botclient, ohlcv_history):
     assert_response(rc)
     assert 'columns' in rc.json
     assert isinstance(rc.json['columns'], list)
-    assert rc.json['columns'] == ['date', 'open', 'high', 'low', 'close', 'volume', 'sma']
+    assert rc.json['columns'] == ['date', 'open', 'high',
+                                  'low', 'close', 'volume', 'sma', 'buy', 'sell',
+                                  '_buy_signal_open', '_sell_signal_open']
     assert 'pair' in rc.json
     assert rc.json['pair'] == 'XRP/BTC'
 
@@ -833,9 +839,10 @@ def test_api_pair_candles(botclient, ohlcv_history):
     assert len(rc.json['data']) == amount
 
     assert (rc.json['data'] ==
-            [[1511686200000, 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869, None],
+            [[1511686200000, 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
+              None, 0, 0, None, None],
              [1511686500000, 8.88e-05, 8.942e-05, 8.88e-05,
-                 8.893e-05, 0.05874751, 8.886500000000001e-05]
+                 8.893e-05, 0.05874751, 8.886500000000001e-05, 0, 0, None, None]
              ])
 
 

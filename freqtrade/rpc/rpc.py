@@ -657,8 +657,16 @@ class RPC:
         return self._freqtrade.edge.accepted_pairs()
 
     def _convert_dataframe_to_dict(self, pair, dataframe, last_analyzed):
-        dataframe = dataframe.replace({NAN: None})
         dataframe['date'] = dataframe['date'].astype(int64) // 1000 // 1000
+        # Move open to seperate column when signal for easy plotting
+        if 'buy' in dataframe.columns:
+            buy_mask = (dataframe['buy'] == 1)
+            dataframe.loc[buy_mask, '_buy_signal_open'] = dataframe.loc[buy_mask, 'open']
+        if 'sell' in dataframe.columns:
+            sell_mask = (dataframe['sell'] == 1)
+            dataframe.loc[sell_mask, '_sell_signal_open'] = dataframe.loc[sell_mask, 'open']
+        dataframe = dataframe.replace({NAN: None})
+
         return {
             'pair': pair,
             'columns': list(dataframe.columns),
@@ -676,8 +684,7 @@ class RPC:
 
     def _rpc_analysed_history_full(self, pair: str, timeframe: str,
                                    timerange: str) -> Dict[str, Any]:
-        timerange = TimeRange.parse_timerange(None if self.config.get(
-            'timerange') is None else str(self.config.get('timerange')))
+        timerange = TimeRange.parse_timerange(timerange)
 
         _data = load_data(
             datadir=self._freqtrade.config.get("datadir"),
@@ -688,7 +695,7 @@ class RPC:
         )
         from freqtrade.resolvers.strategy_resolver import StrategyResolver
         strategy = StrategyResolver.load_strategy(self._freqtrade.config)
-        df_analyzed = strategy.analyze_ticker(_data, {'pair': pair})
+        df_analyzed = strategy.analyze_ticker(_data[pair], {'pair': pair})
 
         return self._convert_dataframe_to_dict(pair, df_analyzed, arrow.Arrow.utcnow().datetime)
 
