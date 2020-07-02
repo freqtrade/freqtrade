@@ -212,6 +212,8 @@ class ApiServer(RPC):
                               view_func=self._trades, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/trades/<int:tradeid>', 'trades_delete',
                               view_func=self._trades_delete, methods=['DELETE'])
+        self.app.add_url_rule(f'{BASE_URI}/pair_candles', 'pair_candles',
+                              view_func=self._analysed_candles, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/pair_history', 'pair_history',
                               view_func=self._analysed_history, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/plot_config', 'plot_config',
@@ -507,9 +509,10 @@ class ApiServer(RPC):
 
     @require_login
     @rpc_catch_errors
-    def _analysed_history(self):
+    def _analysed_candles(self):
         """
         Handler for /pair_history.
+        Returns the dataframe the bot is using during live/dry operations.
         Takes the following get arguments:
         get:
           parameters:
@@ -521,8 +524,30 @@ class ApiServer(RPC):
         timeframe = request.args.get("timeframe")
         limit = request.args.get("limit", type=int)
 
-        results = self._rpc_analysed_history(pair, timeframe, limit)
+        results = self._analysed_dataframe(pair, timeframe, limit)
         return self.rest_dump(results)
+
+    @require_login
+    @rpc_catch_errors
+    def _analysed_history(self):
+        """
+        Handler for /pair_history.
+        Returns the dataframe of a given timerange
+        Takes the following get arguments:
+        get:
+        parameters:
+            - pair: Pair
+            - timeframe: Timeframe to get data for (should be aligned to strategy.timeframe)
+            - timerange: timerange in the format YYYYMMDD-YYYYMMDD (YYYYMMDD- or (-YYYYMMDD))
+                         are als possible. If omitted uses all available data.
+        """
+        pair = request.args.get("pair")
+        timeframe = request.args.get("timeframe")
+        timerange = request.args.get("timerange")
+
+        results = self._rpc_analysed_history_full(pair, timeframe, timerange)
+        return self.rest_dump(results)
+
 
     @require_login
     @rpc_catch_errors

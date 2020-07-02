@@ -9,9 +9,11 @@ from math import isnan
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import arrow
-from numpy import NAN, mean, int64
+from numpy import NAN, int64, mean
 
+from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import CANCEL_REASON
+from freqtrade.data.history import load_data
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
@@ -654,19 +656,41 @@ class RPC:
             raise RPCException('Edge is not enabled.')
         return self._freqtrade.edge.accepted_pairs()
 
-    def _rpc_analysed_history(self, pair, timeframe, limit) -> Dict[str, Any]:
+    def _convert_dataframe_to_dict(self, pair, dataframe, last_analyzed):
+        dataframe = dataframe.replace({NAN: None})
+        dataframe['date'] = dataframe['date'].astype(int64) // 1000 // 1000
+        return {
+            'pair': pair,
+            'columns': list(dataframe.columns),
+            'data': dataframe.values.tolist(),
+            'length': len(dataframe),
+            'last_analyzed': last_analyzed,
+        }
+
+    def _analysed_dataframe(self, pair: str, timeframe: str, limit: int) -> Dict[str, Any]:
 
         _data, last_analyzed = self._freqtrade.dataprovider.get_analyzed_dataframe(pair, timeframe)
         if limit:
             _data = _data.iloc[-limit:]
-        _data = _data.replace({NAN: None})
-        _data['date'] = _data['date'].astype(int64) // 1000 // 1000
-        return {
-            'columns': list(_data.columns),
-            'data': _data.values.tolist(),
-            'length': len(_data),
-            'last_analyzed': last_analyzed,
-        }
+        return self._convert_dataframe_to_dict(pair, _data, last_analyzed)
+
+    def _rpc_analysed_history_full(self, pair: str, timeframe: str,
+                                   timerange: str) -> Dict[str, Any]:
+        timerange = TimeRange.parse_timerange(None if self.config.get(
+            'timerange') is None else str(self.config.get('timerange')))
+
+        _data = load_data(
+            datadir=self._freqtrade.config.get("datadir"),
+            pairs=[pair],
+            timeframe=self._freqtrade.config.get('timeframe', '5m'),
+            timerange=timerange,
+            data_format=self._freqtrade.config.get('dataformat_ohlcv', 'json'),
+        )
+        from freqtrade.resolvers.strategy_resolver import StrategyResolver
+        strategy = StrategyResolver.load_strategy(self._freqtrade.config)
+        df_analyzed = strategy.analyze_ticker(_data, {'pair': pair})
+
+        return self._convert_dataframe_to_dict(pair, df_analyzed, arrow.Arrow.utcnow().datetime)
 
     def _rpc_plot_config(self) -> Dict[str, Any]:
 
