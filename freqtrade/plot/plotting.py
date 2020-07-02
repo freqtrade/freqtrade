@@ -15,6 +15,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_prev_date
 from freqtrade.misc import pair_to_filename
 from freqtrade.resolvers import StrategyResolver
+from freqtrade.data.dataprovider import DataProvider
 
 logger = logging.getLogger(__name__)
 
@@ -474,6 +475,7 @@ def load_and_plot_trades(config: Dict[str, Any]):
         pair_counter += 1
         logger.info("analyse pair %s", pair)
 
+        strategy.dp = DataProvider(config, config["exchange"])
         df_analyzed = strategy.analyze_ticker(data, {'pair': pair})
         trades_pair = trades.loc[trades['pair'] == pair]
         trades_pair = extract_trades_of_period(df_analyzed, trades_pair)
