@@ -69,7 +69,7 @@ class AgeFilter(IPairList):
                 return True
             else:
                 self.log_on_refresh(logger.info, f"Removed {ticker['symbol']} from whitelist, "
-                                                 f"because age is less than "
+                                                 f"because age {len(daily_candles)} is less than "
                                                  f"{self._min_days_listed} "
                                                  f"{plural(self._min_days_listed, 'day')}")
                 return False
