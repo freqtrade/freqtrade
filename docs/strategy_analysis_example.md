@@ -18,7 +18,7 @@ config = Configuration.from_files([])
 # config = Configuration.from_files(["config.json"])
 
 # Define some constants
-config["ticker_interval"] = "5m"
+config["timeframe"] = "5m"
 # Name of the strategy class
 config["strategy"] = "SampleStrategy"
 # Location of the data
@@ -33,7 +33,7 @@ pair = "BTC_USDT"
 from freqtrade.data.history import load_pair_history
 
 candles = load_pair_history(datadir=data_location,
-                            timeframe=config["ticker_interval"],
+                            timeframe=config["timeframe"],
                             pair=pair)
 
 # Confirm success
