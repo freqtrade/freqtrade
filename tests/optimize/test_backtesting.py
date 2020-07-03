@@ -703,6 +703,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
                           generate_pair_metrics=MagicMock(),
                           generate_sell_reason_stats=sell_reason_mock,
                           generate_strategy_metrics=strat_summary,
+                          generate_daily_stats=MagicMock(),
                           )
     patched_configuration_load_config_file(mocker, default_conf)
 

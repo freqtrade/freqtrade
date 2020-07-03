@@ -18,13 +18,11 @@ from freqtrade.optimize.optimize_reports import (generate_backtest_stats,
                                                  generate_pair_metrics,
                                                  generate_sell_reason_stats,
                                                  generate_strategy_metrics,
-                                                 store_backtest_result,
                                                  store_backtest_stats,
                                                  text_table_bt_results,
                                                  text_table_sell_reason,
                                                  text_table_strategy)
 from freqtrade.strategy.interface import SellType
-from tests.conftest import patch_exchange
 from tests.data.test_history import _backup_file, _clean_test_file
 
 
@@ -308,75 +306,3 @@ def test_generate_edge_table(edge_conf, mocker):
     assert generate_edge_table(results).count('| ETH/BTC |') == 1
     assert generate_edge_table(results).count(
         '|   Risk Reward Ratio |   Required Risk Reward |   Expectancy |') == 1
-
-
-def test_backtest_record(default_conf, fee, mocker):
-    names = []
-    records = []
-    patch_exchange(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    mocker.patch(
-        'freqtrade.optimize.optimize_reports.file_dump_json',
-        new=lambda n, r: (names.append(n), records.append(r))
-    )
-
-    results = {'DefStrat': pd.DataFrame({"pair": ["UNITTEST/BTC", "UNITTEST/BTC",
-                                                  "UNITTEST/BTC", "UNITTEST/BTC"],
-                                         "profit_percent": [0.003312, 0.010801, 0.013803, 0.002780],
-                                         "profit_abs": [0.000003, 0.000011, 0.000014, 0.000003],
-                                         "open_date": [Arrow(2017, 11, 14, 19, 32, 00).datetime,
-                                                       Arrow(2017, 11, 14, 21, 36, 00).datetime,
-                                                       Arrow(2017, 11, 14, 22, 12, 00).datetime,
-                                                       Arrow(2017, 11, 14, 22, 44, 00).datetime],
-                                         "close_date": [Arrow(2017, 11, 14, 21, 35, 00).datetime,
-                                                        Arrow(2017, 11, 14, 22, 10, 00).datetime,
-                                                        Arrow(2017, 11, 14, 22, 43, 00).datetime,
-                                                        Arrow(2017, 11, 14, 22, 58, 00).datetime],
-                                         "open_rate": [0.002543, 0.003003, 0.003089, 0.003214],
-                                         "close_rate": [0.002546, 0.003014, 0.003103, 0.003217],
-                                         "trade_duration": [123, 34, 31, 14],
-                                         "open_at_end": [False, False, False, True],
-                                         "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
-                                                         SellType.ROI, SellType.FORCE_SELL]
-                                         })}
-    store_backtest_result(Path("backtest-result.json"), results)
-    # Assert file_dump_json was only called once
-    assert names == [Path('backtest-result.json')]
-    records = records[0]
-    # Ensure records are of correct type
-    assert len(records) == 4
-
-    # reset test to test with strategy name
-    names = []
-    records = []
-    results['Strat'] = results['DefStrat']
-    results['Strat2'] = results['DefStrat']
-    store_backtest_result(Path("backtest-result.json"), results)
-    assert names == [
-        Path('backtest-result-DefStrat.json'),
-        Path('backtest-result-Strat.json'),
-        Path('backtest-result-Strat2.json'),
-    ]
-    records = records[0]
-    # Ensure records are of correct type
-    assert len(records) == 4
-
-    # ('UNITTEST/BTC', 0.00331158, '1510684320', '1510691700', 0, 117)
-    # Below follows just a typecheck of the schema/type of trade-records
-    oix = None
-    for (pair, profit, date_buy, date_sell, buy_index, dur,
-         openr, closer, open_at_end, sell_reason) in records:
-        assert pair == 'UNITTEST/BTC'
-        assert isinstance(profit, float)
-        # FIX: buy/sell should be converted to ints
-        assert isinstance(date_buy, float)
-        assert isinstance(date_sell, float)
-        assert isinstance(openr, float)
-        assert isinstance(closer, float)
-        assert isinstance(open_at_end, bool)
-        assert isinstance(sell_reason, str)
-        isinstance(buy_index, pd._libs.tslib.Timestamp)
-        if oix:
-            assert buy_index > oix
-        oix = buy_index
-        assert dur > 0

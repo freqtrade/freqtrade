@@ -30,26 +30,6 @@ def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> N
     file_dump_json(latest_filename, {'latest_backtest': str(filename.name)})
 
 
-def store_backtest_result(recordfilename: Path, all_results: Dict[str, DataFrame]) -> None:
-    """
-    Stores backtest results to file (one file per strategy)
-    :param recordfilename: Destination filename
-    :param all_results: Dict of Dataframes, one results dataframe per strategy
-    """
-    for strategy, results in all_results.items():
-        records = backtest_result_to_list(results)
-
-        if records:
-            filename = recordfilename
-            if len(all_results) > 1:
-                # Inject strategy to filename
-                filename = Path.joinpath(
-                    recordfilename.parent,
-                    f'{recordfilename.stem}-{strategy}').with_suffix(recordfilename.suffix)
-            logger.info(f'Dumping backtest results to {filename}')
-            file_dump_json(filename, records)
-
-
 def backtest_result_to_list(results: DataFrame) -> List[List]:
     """
     Converts a list of Backtest-results to list
