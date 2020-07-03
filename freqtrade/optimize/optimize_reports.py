@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> None:
 
     if recordfilename.is_dir():
-        filename = recordfilename / \
-            f'backtest-result-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.json'
+        filename = (recordfilename /
+                    f'backtest-result-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.json')
     else:
         filename = Path.joinpath(
             recordfilename.parent,
