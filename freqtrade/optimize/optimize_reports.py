@@ -210,6 +210,23 @@ def generate_edge_table(results: dict) -> str:
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore
 
 
+def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
+    daily_profit = results.resample('1d', on='close_date')['profit_percent'].sum()
+    worst = min(daily_profit)
+    best = max(daily_profit)
+    winning_days = sum(daily_profit > 0)
+    draw_days = sum(daily_profit == 0)
+    losing_days = sum(daily_profit < 0)
+
+    return {
+        'backtest_best_day': best,
+        'backtest_worst_day': worst,
+        'winning_days': winning_days,
+        'draw_days': draw_days,
+        'losing_days': losing_days,
+    }
+
+
 def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
                             all_results: Dict[str, DataFrame],
                             min_date: Arrow, max_date: Arrow
@@ -239,9 +256,7 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
                                                   max_open_trades=max_open_trades,
                                                   results=results.loc[results['open_at_end']],
                                                   skip_nan=True)
-        daily_profit = results.resample('1d', on='close_date')['profit_percent'].sum()
-        worst = min(daily_profit)
-        best = max(daily_profit)
+        daily_stats = generate_daily_stats(results)
 
         backtest_days = (max_date - min_date).days
         strat_stats = {
@@ -255,13 +270,12 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
             'backtest_end': max_date.datetime,
             'backtest_end_ts': max_date.timestamp,
             'backtest_days': backtest_days,
-            'backtest_best_day': best,
-            'backtest_worst_day': worst,
 
             'trades_per_day': round(len(results) / backtest_days, 2) if backtest_days > 0 else None,
             'market_change': market_change,
             'pairlist': list(btdata.keys()),
-            'stake_amount': config['stake_amount']
+            'stake_amount': config['stake_amount'],
+            **daily_stats,
         }
         result['strategy'][strategy] = strat_stats
 
@@ -374,6 +388,8 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Trades per day', strat_results['trades_per_day']),
             ('Best day', f"{round(strat_results['backtest_best_day'] * 100, 2)}%"),
             ('Worst day', f"{round(strat_results['backtest_worst_day'] * 100, 2)}%"),
+            ('Days win/draw/lose', f"{strat_results['winning_days']} / "
+                f"{strat_results['draw_days']} / {strat_results['losing_days']}"),
             ('', ''),  # Empty line to improve readability
             ('Max Drawdown', f"{round(strat_results['max_drawdown'] * 100, 2)}%"),
             ('Drawdown Start', strat_results['drawdown_start'].strftime(DATETIME_PRINT_FORMAT)),
