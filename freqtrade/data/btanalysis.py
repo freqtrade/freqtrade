@@ -72,7 +72,7 @@ def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
 def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = None) -> pd.DataFrame:
     """
     Load backtest data file.
-    :param filename: pathlib.Path object, or string pointing to the file.
+    :param filename: pathlib.Path object, or string pointing to a file or directory
     :param strategy: Strategy to load - mainly relevant for multi-strategy backtests
                      Can also serve as protection to load the correct result.
     :return: a dataframe with the analysis results
