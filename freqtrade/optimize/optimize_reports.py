@@ -218,12 +218,19 @@ def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
     draw_days = sum(daily_profit == 0)
     losing_days = sum(daily_profit < 0)
 
+    winning_trades = results.loc[results['profit_percent'] > 0]
+    losing_trades = results.loc[results['profit_percent'] < 0]
+
     return {
         'backtest_best_day': best,
         'backtest_worst_day': worst,
         'winning_days': winning_days,
         'draw_days': draw_days,
         'losing_days': losing_days,
+        'winner_holding_avg': (timedelta(minutes=round(winning_trades['trade_duration'].mean()))
+                               if not winning_trades.empty else '0:00'),
+        'loser_holding_avg': (timedelta(minutes=round(losing_trades['trade_duration'].mean()))
+                              if not losing_trades.empty else '0:00'),
     }
 
 
@@ -390,6 +397,8 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Worst day', f"{round(strat_results['backtest_worst_day'] * 100, 2)}%"),
             ('Days win/draw/lose', f"{strat_results['winning_days']} / "
                 f"{strat_results['draw_days']} / {strat_results['losing_days']}"),
+            ('Avg. Duration Winners', f"{strat_results['winner_holding_avg']}"),
+            ('Avg. Duration Loser', f"{strat_results['loser_holding_avg']}"),
             ('', ''),  # Empty line to improve readability
             ('Max Drawdown', f"{round(strat_results['max_drawdown'] * 100, 2)}%"),
             ('Drawdown Start', strat_results['drawdown_start'].strftime(DATETIME_PRINT_FORMAT)),

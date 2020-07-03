@@ -224,23 +224,26 @@ The last element of the backtest report is the summary metrics table.
 It contains some useful key metrics about your strategy.
 
 ```
-============ SUMMARY METRICS =============
-| Metric           | Value               |
-|------------------+---------------------|
-| Total trades     | 429                 |
-| First trade      | 2019-01-01 18:30:00 |
-| First trade Pair | EOS/USDT            |
-| Backtesting from | 2019-01-01 00:00:00 |
-| Backtesting to   | 2019-05-01 00:00:00 |
-| Trades per day   | 3.575               |
-| Best day         | 25.27%              |
-| Worst day        | -30.67%             |
-|                  |                     |
-| Max Drawdown     | 50.63%              |
-| Drawdown Start   | 2019-02-15 14:10:00 |
-| Drawdown End     | 2019-04-11 18:15:00 |
-| Market change    | -5.88%              |
-==========================================
+=============== SUMMARY METRICS ===============
+| Metric                | Value               |
+|-----------------------+---------------------|
+
+| Total trades          | 429                 |
+| First trade           | 2019-01-01 18:30:00 |
+| First trade Pair      | EOS/USDT            |
+| Backtesting from      | 2019-01-01 00:00:00 |
+| Backtesting to        | 2019-05-01 00:00:00 |
+| Trades per day        | 3.575               |
+| Best day              | 25.27%              |
+| Worst day             | -30.67%             |
+| Avg. Duration Winners | 4:23:00             |
+| Avg. Duration Loser   | 6:55:00             |
+|                       |                     |
+| Max Drawdown          | 50.63%              |
+| Drawdown Start        | 2019-02-15 14:10:00 |
+| Drawdown End          | 2019-04-11 18:15:00 |
+| Market change         | -5.88%              |
+===============================================
 
 ```
 
@@ -250,10 +253,11 @@ It contains some useful key metrics about your strategy.
 - `Backtesting from` / `Backtesting to`: Backtesting range (usually defined as `--timerange from-to`).
 - `Trades per day`: Total trades / Backtest duration (this will give you information about how many trades to expect from the strategy).
 - `Best day` / `Worst day`: Best and worst day based on daily profit.
+- `Avg. Duration Winners` / `Avg. Duration Loser`: Average durations for winning and losing trades.
 - `Max Drawdown`: Maximum drawown experienced. a value of 50% means that from highest to subsequent lowest point, a 50% drop was experiened).
 - `Drawdown Start` / `Drawdown End`: From when to when was this large drawdown (can also be visualized via `plot-dataframe` subcommand).
 - `Market change`: Change of the market during the backtest period. Calculated as average of all pairs changes from the first to the last candle using the "close" column.
- 
+
 ### Assumptions made by backtesting
 
 Since backtesting lacks some detailed information about what happens within a candle, it needs to take a few assumptions:
