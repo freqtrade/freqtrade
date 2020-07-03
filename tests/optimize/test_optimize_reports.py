@@ -1,4 +1,5 @@
 import re
+from datetime import timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -8,9 +9,11 @@ from arrow import Arrow
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.data import history
-from freqtrade.data.btanalysis import get_latest_backtest_filename
+from freqtrade.data.btanalysis import (get_latest_backtest_filename,
+                                       load_backtest_data)
 from freqtrade.edge import PairInfo
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats,
+                                                 generate_daily_stats,
                                                  generate_edge_table,
                                                  generate_pair_metrics,
                                                  generate_sell_reason_stats,
@@ -168,6 +171,21 @@ def test_generate_pair_metrics(default_conf, mocker):
         pytest.approx(pair_results[-1]['profit_mean_pct']) == pair_results[-1]['profit_mean'] * 100)
     assert (
         pytest.approx(pair_results[-1]['profit_sum_pct']) == pair_results[-1]['profit_sum'] * 100)
+
+
+def test_generate_daily_stats(testdatadir):
+
+    filename = testdatadir / "backtest-result_new.json"
+    bt_data = load_backtest_data(filename)
+    res = generate_daily_stats(bt_data)
+    assert isinstance(res, dict)
+    assert round(res['backtest_best_day'], 4) == 0.1796
+    assert round(res['backtest_worst_day'], 4) == -0.1468
+    assert res['winning_days'] == 14
+    assert res['draw_days'] == 4
+    assert res['losing_days'] == 3
+    assert res['winner_holding_avg'] == timedelta(seconds=1440)
+    assert res['loser_holding_avg'] == timedelta(days=1, seconds=21420)
 
 
 def test_text_table_sell_reason(default_conf):
