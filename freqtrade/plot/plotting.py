@@ -9,7 +9,6 @@ from freqtrade.data.btanalysis import (calculate_max_drawdown,
                                        combine_dataframes_with_mean,
                                        create_cum_profit,
                                        extract_trades_of_period,
-                                       get_latest_backtest_filename,
                                        load_trades)
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.history import load_data
@@ -65,7 +64,8 @@ def init_plotscript(config):
         config['trade_source'],
         db_url=config.get('db_url'),
         exportfilename=filename,
-        no_trades=no_trades
+        no_trades=no_trades,
+        strategy=config.get("strategy"),
     )
     trades = trim_dataframe(trades, timerange, 'open_date')
 
