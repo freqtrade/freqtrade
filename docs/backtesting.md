@@ -233,6 +233,8 @@ It contains some useful key metrics about your strategy.
 | Backtesting from | 2019-01-01 00:00:00 |
 | Backtesting to   | 2019-05-01 00:00:00 |
 | Trades per day   | 3.575               |
+| Best day         | 25.27%              |
+| Worst day        | -30.67%             |
 |                  |                     |
 | Max Drawdown     | 50.63%              |
 | Drawdown Start   | 2019-02-15 14:10:00 |
@@ -244,11 +246,12 @@ It contains some useful key metrics about your strategy.
 
 - `Total trades`: Identical to the total trades of the backtest output table.
 - `First trade`: First trade entered.
-- `First trade pair`: Which pair was part of the first trade
-- `Backtesting from` / `Backtesting to`: Backtesting range (usually defined as `--timerange from-to`)
-- `Trades per day`: Total trades / Backtest duration (this will give you information about how many trades to expect from the strategy)
+- `First trade pair`: Which pair was part of the first trade.
+- `Backtesting from` / `Backtesting to`: Backtesting range (usually defined as `--timerange from-to`).
+- `Trades per day`: Total trades / Backtest duration (this will give you information about how many trades to expect from the strategy).
+- `Best day` / `Worst day`: Best and worst day based on daily profit.
 - `Max Drawdown`: Maximum drawown experienced. a value of 50% means that from highest to subsequent lowest point, a 50% drop was experiened).
-- `Drawdown Start` / `Drawdown End`: From when to when was this large drawdown (can also be visualized via `plot-dataframe` subcommand)
+- `Drawdown Start` / `Drawdown End`: From when to when was this large drawdown (can also be visualized via `plot-dataframe` subcommand).
 - `Market change`: Change of the market during the backtest period. Calculated as average of all pairs changes from the first to the last candle using the "close" column.
  
 ### Assumptions made by backtesting
