@@ -6,7 +6,7 @@ If you're just getting started, please be familiar with the methods described in
 [Freqtrade basics](bot-basics.md) describes in which sequence each method described below is called, which can be helpful to understand which method to use for your custom needs.
 
 !!! Note
-    All callback methods described below should only be implemented in a strategy if they are also actively used.
+    All callback methods described below should only be implemented in a strategy if they are actually used.
 
 ## Custom order timeout rules
 
