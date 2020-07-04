@@ -1,10 +1,10 @@
 # Freqtrade basics
 
-This page will try to teach you some basic concepts on how freqtrade works and operates.
+This page provides you some basic concepts on how Freqtrade works and operates.
 
 ## Freqtrade terminology
 
-* Trade: Open position
+* Trade: Open position.
 * Open Order: Order which is currently placed on the exchange, and is not yet complete.
 * Pair: Tradable pair, usually in the format of Quote/Base (e.g. XRP/USDT).
 * Timeframe: Candle length to use (e.g. `"5m"`, `"1h"`, ...).

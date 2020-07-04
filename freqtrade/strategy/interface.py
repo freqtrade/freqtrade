@@ -194,7 +194,7 @@ class IStrategy(ABC):
         """
         Called at the start of the bot iteration (one loop).
         Might be used to perform pair-independent tasks
-        (e.g. gather some remote ressource for comparison)
+        (e.g. gather some remote resource for comparison)
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """
         pass

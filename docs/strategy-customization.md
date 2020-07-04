@@ -1,8 +1,8 @@
 # Strategy Customization
 
-This page explains how to customize your strategies, and add new indicators.
+This page explains how to customize your strategies, add new indicators and set up trading rules.
 
-Please familiarize yourself with [Freqtrade basics](bot-basics.md) first.
+Please familiarize yourself with [Freqtrade basics](bot-basics.md) first, which provides overall info on how the bot operates.
 
 ## Install a custom strategy file
 

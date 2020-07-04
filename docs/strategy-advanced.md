@@ -3,7 +3,7 @@
 This page explains some advanced concepts available for strategies.
 If you're just getting started, please be familiar with the methods described in the [Strategy Customization](strategy-customization.md) documentation and with the [Freqtrade basics](bot-basics.md) first.
 
-[Freqtrade basics](bot-basics.md) describes in which sequence each method defined below is called, which can be helpful to understand which method to use.
+[Freqtrade basics](bot-basics.md) describes in which sequence each method described below is called, which can be helpful to understand which method to use for your custom needs.
 
 !!! Note
     All callback methods described below should only be implemented in a strategy if they are also actively used.
@@ -97,8 +97,8 @@ class Awesomestrategy(IStrategy):
 
 ## Bot loop start callback
 
-A simple callback which is called at the start of every bot iteration.
-This can be used to perform calculations which are pair independent.
+A simple callback which is called once at the start of every bot throttling iteration.
+This can be used to perform calculations which are pair independent (apply to all pairs), loading of external data, etc.
 
 ``` python
 import requests
@@ -111,7 +111,7 @@ class Awesomestrategy(IStrategy):
         """
         Called at the start of the bot iteration (one loop).
         Might be used to perform pair-independent tasks
-        (e.g. gather some remote ressource for comparison)
+        (e.g. gather some remote resource for comparison)
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """
         if self.config['runmode'].value in ('live', 'dry_run'):
@@ -125,7 +125,7 @@ class Awesomestrategy(IStrategy):
 
 ### Trade entry (buy order) confirmation
 
-`confirm_trade_entry()` an be used to abort a trade entry at the latest second (maybe because the price is not what we expect).
+`confirm_trade_entry()` can be used to abort a trade entry at the latest second (maybe because the price is not what we expect).
 
 ``` python
 class Awesomestrategy(IStrategy):
@@ -158,7 +158,7 @@ class Awesomestrategy(IStrategy):
 
 ### Trade exit (sell order) confirmation
 
-`confirm_trade_exit()` an be used to abort a trade exit (sell) at the latest second (maybe because the price is not what we expect).
+`confirm_trade_exit()` can be used to abort a trade exit (sell) at the latest second (maybe because the price is not what we expect).
 
 ``` python
 from freqtrade.persistence import Trade
