@@ -911,6 +911,7 @@ def test_process_informative_pairs_added(default_conf, ticker, mocker) -> None:
         refresh_latest_ohlcv=refresh_mock,
     )
     inf_pairs = MagicMock(return_value=[("BTC/ETH", '1m'), ("ETH/USDT", "1h")])
+    mocker.patch('freqtrade.strategy.interface.IStrategy.get_signal', return_value=(False, False))
     mocker.patch('time.sleep', return_value=None)
 
     freqtrade = FreqtradeBot(default_conf)
@@ -973,6 +974,7 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     freqtrade = FreqtradeBot(default_conf)
+    freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=False)
     stake_amount = 2
     bid = 0.11
     buy_rate_mock = MagicMock(return_value=bid)
@@ -994,6 +996,13 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order) -> None:
     )
     pair = 'ETH/BTC'
 
+    assert not freqtrade.execute_buy(pair, stake_amount)
+    assert buy_rate_mock.call_count == 1
+    assert buy_mm.call_count == 0
+    assert freqtrade.strategy.confirm_trade_entry.call_count == 1
+    buy_rate_mock.reset_mock()
+
+    freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=True)
     assert freqtrade.execute_buy(pair, stake_amount)
     assert buy_rate_mock.call_count == 1
     assert buy_mm.call_count == 1
@@ -1001,6 +1010,7 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order) -> None:
     assert call_args['pair'] == pair
     assert call_args['rate'] == bid
     assert call_args['amount'] == stake_amount / bid
+    buy_rate_mock.reset_mock()
 
     # Should create an open trade with an open order id
     # As the order is not fulfilled yet
@@ -1013,7 +1023,7 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order) -> None:
     fix_price = 0.06
     assert freqtrade.execute_buy(pair, stake_amount, fix_price)
     # Make sure get_buy_rate wasn't called again
-    assert buy_rate_mock.call_count == 1
+    assert buy_rate_mock.call_count == 0
 
     assert buy_mm.call_count == 2
     call_args = buy_mm.call_args_list[1][1]
@@ -1056,6 +1066,39 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order) -> None:
     limit_buy_order['price'] = 0.5
     limit_buy_order['cost'] = 0.0
     mocker.patch('freqtrade.exchange.Exchange.buy', MagicMock(return_value=limit_buy_order))
+    assert not freqtrade.execute_buy(pair, stake_amount)
+
+
+def test_execute_buy_confirm_error(mocker, default_conf, fee, limit_buy_order) -> None:
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    mocker.patch.multiple(
+        'freqtrade.freqtradebot.FreqtradeBot',
+        get_buy_rate=MagicMock(return_value=0.11),
+        _get_min_pair_stake_amount=MagicMock(return_value=1)
+    )
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=MagicMock(return_value={
+            'bid': 0.00001172,
+            'ask': 0.00001173,
+            'last': 0.00001172
+        }),
+        buy=MagicMock(return_value=limit_buy_order),
+        get_fee=fee,
+    )
+    stake_amount = 2
+    pair = 'ETH/BTC'
+
+    freqtrade.strategy.confirm_trade_entry = MagicMock(side_effect=ValueError)
+    assert freqtrade.execute_buy(pair, stake_amount)
+
+    freqtrade.strategy.confirm_trade_entry = MagicMock(side_effect=Exception)
+    assert freqtrade.execute_buy(pair, stake_amount)
+
+    freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=True)
+    assert freqtrade.execute_buy(pair, stake_amount)
+
+    freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=False)
     assert not freqtrade.execute_buy(pair, stake_amount)
 
 
@@ -1962,6 +2005,18 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order,
         freqtrade.handle_trade(trade)
 
 
+def test_bot_loop_start_called_once(mocker, default_conf, caplog):
+    ftbot = get_patched_freqtradebot(mocker, default_conf)
+    patch_get_signal(ftbot)
+    ftbot.strategy.bot_loop_start = MagicMock(side_effect=ValueError)
+    ftbot.strategy.analyze = MagicMock()
+
+    ftbot.process()
+    assert log_has_re(r'Strategy caused the following exception.*', caplog)
+    assert ftbot.strategy.bot_loop_start.call_count == 1
+    assert ftbot.strategy.analyze.call_count == 1
+
+
 def test_check_handle_timedout_buy_usercustom(default_conf, ticker, limit_buy_order_old, open_trade,
                                               fee, mocker) -> None:
     default_conf["unfilledtimeout"] = {"buy": 1400, "sell": 30}
@@ -2488,22 +2543,33 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, mocker) -> N
     patch_whitelist(mocker, default_conf)
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
+    freqtrade.strategy.confirm_trade_exit = MagicMock(return_value=False)
 
     # Create some test data
     freqtrade.enter_positions()
+    rpc_mock.reset_mock()
 
     trade = Trade.query.first()
     assert trade
+    assert freqtrade.strategy.confirm_trade_exit.call_count == 0
 
     # Increase the price and sell it
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_sell_up
     )
+    # Prevented sell ...
+    freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'], sell_reason=SellType.ROI)
+    assert rpc_mock.call_count == 0
+    assert freqtrade.strategy.confirm_trade_exit.call_count == 1
+
+    # Repatch with true
+    freqtrade.strategy.confirm_trade_exit = MagicMock(return_value=True)
 
     freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'], sell_reason=SellType.ROI)
+    assert freqtrade.strategy.confirm_trade_exit.call_count == 1
 
-    assert rpc_mock.call_count == 2
+    assert rpc_mock.call_count == 1
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,

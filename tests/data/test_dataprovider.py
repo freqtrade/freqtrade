@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 import pytest
@@ -194,3 +195,29 @@ def test_current_whitelist(mocker, default_conf, tickers):
     with pytest.raises(OperationalException):
         dp = DataProvider(default_conf, exchange)
         dp.current_whitelist()
+
+
+def test_get_analyzed_dataframe(mocker, default_conf, ohlcv_history):
+
+    default_conf["runmode"] = RunMode.DRY_RUN
+
+    timeframe = default_conf["timeframe"]
+    exchange = get_patched_exchange(mocker, default_conf)
+
+    dp = DataProvider(default_conf, exchange)
+    dp._set_cached_df("XRP/BTC", timeframe, ohlcv_history)
+    dp._set_cached_df("UNITTEST/BTC", timeframe, ohlcv_history)
+
+    assert dp.runmode == RunMode.DRY_RUN
+    dataframe, time = dp.get_analyzed_dataframe("UNITTEST/BTC", timeframe)
+    assert ohlcv_history.equals(dataframe)
+    assert isinstance(time, datetime)
+
+    dataframe, time = dp.get_analyzed_dataframe("XRP/BTC", timeframe)
+    assert ohlcv_history.equals(dataframe)
+    assert isinstance(time, datetime)
+
+    dataframe, time = dp.get_analyzed_dataframe("NOTHING/BTC", timeframe)
+    assert dataframe.empty
+    assert isinstance(time, datetime)
+    assert time == datetime(1970, 1, 1, tzinfo=timezone.utc)

@@ -153,6 +153,10 @@ class FreqtradeBot:
         self.dataprovider.refresh(self.pairlists.create_pair_list(self.active_pair_whitelist),
                                   self.strategy.informative_pairs())
 
+        strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)()
+
+        self.strategy.analyze(self.active_pair_whitelist)
+
         with self._sell_lock:
             # Check and handle any timed out open orders
             self.check_handle_timedout()
@@ -440,9 +444,8 @@ class FreqtradeBot:
             return False
 
         # running get_signal on historical data fetched
-        (buy, sell) = self.strategy.get_signal(
-            pair, self.strategy.timeframe,
-            self.dataprovider.ohlcv(pair, self.strategy.timeframe))
+        analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(pair, self.strategy.timeframe)
+        (buy, sell) = self.strategy.get_signal(pair, self.strategy.timeframe, analyzed_df)
 
         if buy and not sell:
             stake_amount = self.get_trade_stake_amount(pair)
@@ -515,6 +518,12 @@ class FreqtradeBot:
 
         amount = stake_amount / buy_limit_requested
         order_type = self.strategy.order_types['buy']
+        if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
+                pair=pair, order_type=order_type, amount=amount, rate=buy_limit_requested,
+                time_in_force=time_in_force):
+            logger.info(f"User requested abortion of buying {pair}")
+            return False
+
         order = self.exchange.buy(pair=pair, ordertype=order_type,
                                   amount=amount, rate=buy_limit_requested,
                                   time_in_force=time_in_force)
@@ -717,9 +726,10 @@ class FreqtradeBot:
 
         if (config_ask_strategy.get('use_sell_signal', True) or
                 config_ask_strategy.get('ignore_roi_if_buy_signal', False)):
-            (buy, sell) = self.strategy.get_signal(
-                trade.pair, self.strategy.timeframe,
-                self.dataprovider.ohlcv(trade.pair, self.strategy.timeframe))
+            analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
+                                                                      self.strategy.timeframe)
+
+            (buy, sell) = self.strategy.get_signal(trade.pair, self.strategy.timeframe, analyzed_df)
 
         if config_ask_strategy.get('use_order_book', False):
             order_book_min = config_ask_strategy.get('order_book_min', 1)
@@ -1097,12 +1107,20 @@ class FreqtradeBot:
             order_type = self.strategy.order_types.get("emergencysell", "market")
 
         amount = self._safe_sell_amount(trade.pair, trade.amount)
+        time_in_force = self.strategy.order_time_in_force['sell']
+
+        if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
+                pair=trade.pair, trade=trade, order_type=order_type, amount=amount, rate=limit,
+                time_in_force=time_in_force,
+                sell_reason=sell_reason.value):
+            logger.info(f"User requested abortion of selling {trade.pair}")
+            return False
 
         # Execute sell and update trade record
         order = self.exchange.sell(pair=str(trade.pair),
                                    ordertype=order_type,
                                    amount=amount, rate=limit,
-                                   time_in_force=self.strategy.order_time_in_force['sell']
+                                   time_in_force=time_in_force
                                    )
 
         trade.open_order_id = order['id']
