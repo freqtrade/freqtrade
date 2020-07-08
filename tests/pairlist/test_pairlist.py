@@ -275,11 +275,16 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "PriceFilter", "low_price_ratio": 0.03}],
      "USDT", ['ETH/USDT', 'NANO/USDT']),
-    # Hot is removed by precision_filter, Fuel by low_price_filter.
+    # Hot is removed by precision_filter, Fuel by low_price_ratio, Ripple by min_price.
     ([{"method": "VolumePairList", "number_assets": 6, "sort_key": "quoteVolume"},
       {"method": "PrecisionFilter"},
-      {"method": "PriceFilter", "low_price_ratio": 0.02}],
-     "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC']),
+      {"method": "PriceFilter", "low_price_ratio": 0.02, "min_price": 0.01}],
+     "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC']),
+    # Hot is removed by precision_filter, Fuel by low_price_ratio, Ethereum by max_price.
+    ([{"method": "VolumePairList", "number_assets": 6, "sort_key": "quoteVolume"},
+      {"method": "PrecisionFilter"},
+      {"method": "PriceFilter", "low_price_ratio": 0.02, "max_price": 0.05}],
+     "BTC", ['TKN/BTC', 'LTC/BTC', 'XRP/BTC']),
     # HOT and XRP are removed because below 1250 quoteVolume
     ([{"method": "VolumePairList", "number_assets": 5,
        "sort_key": "quoteVolume", "min_value": 1250}],
@@ -319,7 +324,7 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
      "BTC", 'filter_at_the_beginning'),  # OperationalException expected
     # PriceFilter after StaticPairList
     ([{"method": "StaticPairList"},
-      {"method": "PriceFilter", "low_price_ratio": 0.02}],
+      {"method": "PriceFilter", "low_price_ratio": 0.02, "min_price": 0.000001, "max_price": 0.1}],
      "BTC", ['ETH/BTC', 'TKN/BTC']),
     # PriceFilter only
     ([{"method": "PriceFilter", "low_price_ratio": 0.02}],
@@ -396,6 +401,10 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
                                   r'would be <= stop limit.*', caplog)
             if pairlist['method'] == 'PriceFilter' and whitelist_result:
                 assert (log_has_re(r'^Removed .* from whitelist, because 1 unit is .*%$', caplog) or
+                        log_has_re(r'^Removed .* from whitelist, '
+                                   r'because last price < .*%$', caplog) or
+                        log_has_re(r'^Removed .* from whitelist, '
+                                   r'because last price > .*%$', caplog) or
                         log_has_re(r"^Removed .* from whitelist, because ticker\['last'\] "
                                    r"is empty.*", caplog))
             if pairlist['method'] == 'VolumePairList':
