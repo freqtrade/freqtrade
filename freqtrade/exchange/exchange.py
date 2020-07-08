@@ -188,6 +188,11 @@ class Exchange:
         return list((self._api.timeframes or {}).keys())
 
     @property
+    def ohlcv_candle_limit(self) -> int:
+        """exchange ohlcv candle limit"""
+        return int(self._ohlcv_candle_limit)
+
+    @property
     def markets(self) -> Dict:
         """exchange ccxt markets"""
         if not self._api.markets:

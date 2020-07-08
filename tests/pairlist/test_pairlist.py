@@ -524,6 +524,38 @@ def test_volumepairlist_caching(mocker, markets, whitelist_conf, tickers):
     assert freqtrade.pairlists._pairlist_handlers[0]._last_refresh == lrf
 
 
+def test_agefilter_min_days_listed_too_small(mocker, default_conf, markets, tickers, caplog) -> None:
+    default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
+                                 {'method': 'AgeFilter', 'min_days_listed': -1}]
+
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          markets=PropertyMock(return_value=markets),
+                          exchange_has=MagicMock(return_value=True),
+                          get_tickers=tickers
+                          )
+
+    get_patched_freqtradebot(mocker, default_conf)
+
+    assert log_has_re(r'min_days_listed must be >= 1, '
+                      r'ignoring filter', caplog)
+
+
+def test_agefilter_min_days_listed_too_large(mocker, default_conf, markets, tickers, caplog) -> None:
+    default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
+                                 {'method': 'AgeFilter', 'min_days_listed': 99999}]
+
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          markets=PropertyMock(return_value=markets),
+                          exchange_has=MagicMock(return_value=True),
+                          get_tickers=tickers
+                          )
+
+    get_patched_freqtradebot(mocker, default_conf)
+
+    assert log_has_re(r'^min_days_listed exceeds '
+                      r'exchange max request size', caplog)
+
+
 def test_agefilter_caching(mocker, markets, whitelist_conf_3, tickers, ohlcv_history_list):
 
     mocker.patch.multiple('freqtrade.exchange.Exchange',

@@ -23,6 +23,16 @@ class AgeFilter(IPairList):
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
         self._min_days_listed = pairlistconfig.get('min_days_listed', 10)
+
+        if self._min_days_listed < 1:
+            self.log_on_refresh(logger.info, "min_days_listed must be >= 1, "
+                                             "ignoring filter")
+        if self._min_days_listed > exchange.ohlcv_candle_limit:
+            self._min_days_listed = min(self._min_days_listed, exchange.ohlcv_candle_limit)
+            self.log_on_refresh(logger.info, "min_days_listed exceeds "
+                                             "exchange max request size "
+                                             f"({exchange.ohlcv_candle_limit}), using "
+                                             f"min_days_listed={self._min_days_listed}")
         self._enabled = self._min_days_listed >= 1
 
     @property
