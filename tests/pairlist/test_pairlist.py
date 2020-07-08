@@ -524,7 +524,7 @@ def test_volumepairlist_caching(mocker, markets, whitelist_conf, tickers):
     assert freqtrade.pairlists._pairlist_handlers[0]._last_refresh == lrf
 
 
-def test_agefilter_min_days_listed_too_small(mocker, default_conf, markets, tickers, caplog) -> None:
+def test_agefilter_min_days_listed_too_small(mocker, default_conf, markets, tickers, caplog):
     default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
                                  {'method': 'AgeFilter', 'min_days_listed': -1}]
 
@@ -540,7 +540,7 @@ def test_agefilter_min_days_listed_too_small(mocker, default_conf, markets, tick
                       r'ignoring filter', caplog)
 
 
-def test_agefilter_min_days_listed_too_large(mocker, default_conf, markets, tickers, caplog) -> None:
+def test_agefilter_min_days_listed_too_large(mocker, default_conf, markets, tickers, caplog):
     default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
                                  {'method': 'AgeFilter', 'min_days_listed': 99999}]
 
