@@ -1,7 +1,7 @@
 FROM --platform=linux/arm/v7 python:3.7.7-slim-buster
 
 RUN apt-get update \
-  && apt-get -y install curl build-essential libssl-dev libatlas3-base libgfortran5 \
+  && apt-get -y install curl build-essential libssl-dev libatlas3-base libgfortran5 sqlite3 \
   && apt-get clean \
   && pip install --upgrade pip \
   && echo "[global]\nextra-index-url=https://www.piwheels.org/simple" > /etc/pip.conf
