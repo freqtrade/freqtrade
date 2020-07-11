@@ -548,7 +548,6 @@ class ApiServer(RPC):
         results = self._rpc_analysed_history_full(pair, timeframe, timerange)
         return self.rest_dump(results)
 
-
     @require_login
     @rpc_catch_errors
     def _plot_config(self):

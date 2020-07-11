@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import arrow
 from numpy import NAN, int64, mean
+from pandas import DataFrame
 
 from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import CANCEL_REASON
@@ -656,8 +657,9 @@ class RPC:
             raise RPCException('Edge is not enabled.')
         return self._freqtrade.edge.accepted_pairs()
 
-    def _convert_dataframe_to_dict(self, pair, dataframe, last_analyzed):
-        dataframe['date'] = dataframe['date'].astype(int64) // 1000 // 1000
+    def _convert_dataframe_to_dict(self, pair: str, dataframe: DataFrame, last_analyzed: datetime):
+
+        dataframe.loc[:, '__date_ts'] = dataframe.loc[:, 'date'].astype(int64) // 1000 // 1000
         # Move open to seperate column when signal for easy plotting
         if 'buy' in dataframe.columns:
             buy_mask = (dataframe['buy'] == 1)
@@ -673,13 +675,14 @@ class RPC:
             'data': dataframe.values.tolist(),
             'length': len(dataframe),
             'last_analyzed': last_analyzed,
+            'last_analyzed_ts': int(last_analyzed.timestamp()),
         }
 
     def _analysed_dataframe(self, pair: str, timeframe: str, limit: int) -> Dict[str, Any]:
 
         _data, last_analyzed = self._freqtrade.dataprovider.get_analyzed_dataframe(pair, timeframe)
         if limit:
-            _data = _data.iloc[-limit:]
+            _data = _data.iloc[-limit:].copy()
         return self._convert_dataframe_to_dict(pair, _data, last_analyzed)
 
     def _rpc_analysed_history_full(self, pair: str, timeframe: str,
