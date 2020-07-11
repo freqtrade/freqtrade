@@ -275,7 +275,7 @@ the static list of pairs) if we should buy.
 The `order_types` configuration parameter maps actions (`buy`, `sell`, `stoploss`, `emergencysell`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
 
 This allows to buy using limit orders, sell using
-limit-orders, and create stoplosses using using market orders. It also allows to set the
+limit-orders, and create stoplosses using market orders. It also allows to set the
 stoploss "on exchange" which means stoploss order would be placed immediately once
 the buy order is fulfilled.
 If `stoploss_on_exchange` and `trailing_stop` are both set, then the bot will use `stoploss_on_exchange_interval` to check and update the stoploss on exchange periodically.
