@@ -50,9 +50,7 @@ class IDataHandler(ABC):
     @abstractmethod
     def ohlcv_store(self, pair: str, timeframe: str, data: DataFrame) -> None:
         """
-        Store data in json format "values".
-            format looks as follows:
-            [[<date>,<open>,<high>,<low>,<close>]]
+        Store ohlcv data.
         :param pair: Pair - used to generate filename
         :timeframe: Timeframe - used to generate filename
         :data: Dataframe containing OHLCV data
@@ -239,6 +237,9 @@ def get_datahandlerclass(datatype: str) -> Type[IDataHandler]:
     elif datatype == 'jsongz':
         from .jsondatahandler import JsonGzDataHandler
         return JsonGzDataHandler
+    elif datatype == 'hdf5':
+        from .hdf5datahandler import HDF5Handler
+        return HDF5Handler
     else:
         raise ValueError(f"No datahandler for datatype {datatype} available.")
 
