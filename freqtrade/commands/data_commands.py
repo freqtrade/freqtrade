@@ -99,9 +99,10 @@ def start_list_data(args: Dict[str, Any]) -> None:
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
-    from freqtrade.data.history.idatahandler import get_datahandlerclass
+    from freqtrade.data.history.idatahandler import get_datahandler
     from tabulate import tabulate
-    dhc = get_datahandlerclass(config['dataformat_ohlcv'])
+    dhc = get_datahandler(config['datadir'], config['dataformat_ohlcv'])
+
     paircombs = dhc.ohlcv_get_available_data(config['datadir'])
 
     print(f"Found {len(paircombs)} pair / timeframe combinations.")

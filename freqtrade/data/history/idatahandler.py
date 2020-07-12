@@ -34,7 +34,7 @@ class IDataHandler(ABC):
         """
         Returns a list of all pairs with ohlcv data available in this datadir
         :param datadir: Directory to search for ohlcv files
-        :return: List of Pair
+        :return: List of Tuples of (pair, timeframe)
         """
 
     @abstractclassmethod

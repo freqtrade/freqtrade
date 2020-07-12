@@ -27,7 +27,7 @@ class JsonDataHandler(IDataHandler):
         """
         Returns a list of all pairs with ohlcv data available in this datadir
         :param datadir: Directory to search for ohlcv files
-        :return: List of Pair
+        :return: List of Tuples of (pair, timeframe)
         """
         _tmp = [re.search(r'^([a-zA-Z_]+)\-(\d+\S+)(?=.json)', p.name)
                 for p in datadir.glob(f"*.{cls._get_file_extension()}")]
