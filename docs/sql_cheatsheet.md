@@ -155,4 +155,4 @@ DELETE FROM trades WHERE id = 31;
 ```
 
 !!! Warning
-    This will remove this trade from the database. Please make sure you got the correct id and **NEVER** run this query without the where clause.
+    This will remove this trade from the database. Please make sure you got the correct id and **NEVER** run this query without the `where` clause.
