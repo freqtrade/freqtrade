@@ -13,6 +13,7 @@ from typing import List, Optional, Type
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
+from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.converter import (clean_ohlcv_dataframe,
                                       trades_remove_duplicates, trim_dataframe)
 from freqtrade.exchange import timeframe_to_seconds
@@ -27,6 +28,14 @@ class IDataHandler(ABC):
 
     def __init__(self, datadir: Path) -> None:
         self._datadir = datadir
+
+    @abstractclassmethod
+    def ohlcv_get_available_data(cls, datadir: Path) -> ListPairsWithTimeframes:
+        """
+        Returns a list of all pairs with ohlcv data available in this datadir
+        :param datadir: Directory to search for ohlcv files
+        :return: List of Pair
+        """
 
     @abstractclassmethod
     def ohlcv_get_pairs(cls, datadir: Path, timeframe: str) -> List[str]:
