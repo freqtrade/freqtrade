@@ -7,7 +7,7 @@ import pandas as pd
 
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
+from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS
 
 from .idatahandler import IDataHandler, TradeList
 
@@ -29,7 +29,7 @@ class HDF5Handler(IDataHandler):
         """
 
         _tmp = [re.search(r'^(\S+)(?=\-' + timeframe + '.h5)', p.name)
-                for p in datadir.glob(f"*{timeframe}.{cls._get_file_extension()}")]
+                for p in datadir.glob(f"*{timeframe}.h5")]
         # Check if regex found something and only return these results
         return [match[0].replace('_', '/') for match in _tmp if match]
 
@@ -43,8 +43,6 @@ class HDF5Handler(IDataHandler):
         """
         key = self._pair_ohlcv_key(pair, timeframe)
         _data = data.copy()
-        # Convert date to int
-        # _data['date'] = _data['date'].astype(np.int64) // 1000 // 1000
 
         filename = self._pair_data_filename(self._datadir, pair, timeframe)
         ds = pd.HDFStore(filename, mode='a', complevel=9)
@@ -115,7 +113,7 @@ class HDF5Handler(IDataHandler):
         :return: List of Pairs
         """
         _tmp = [re.search(r'^(\S+)(?=\-trades.h5)', p.name)
-                for p in datadir.glob(f"*trades.{cls._get_file_extension()}")]
+                for p in datadir.glob("*trades.h5")]
         # Check if regex found something and only return these results to avoid exceptions.
         return [match[0].replace('_', '/') for match in _tmp if match]
 
@@ -143,13 +141,25 @@ class HDF5Handler(IDataHandler):
 
     def _trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
         """
-        Load a pair from file, either .json.gz or .json
-        # TODO: respect timerange ...
+        Load a pair from h5 file.
         :param pair: Load trades for this pair
         :param timerange: Timerange to load trades for - currently not implemented
         :return: List of trades
         """
-        raise NotImplementedError()
+        key = self._pair_trades_key(pair)
+        filename = self._pair_trades_filename(self._datadir, pair)
+
+        if not filename.exists():
+            return []
+        where = []
+        if timerange:
+            if timerange.starttype == 'date':
+                where.append(f"timestamp >= {timerange.startts * 1e3}")
+            if timerange.stoptype == 'date':
+                where.append(f"timestamp < {timerange.stopts * 1e3}")
+
+        trades = pd.read_hdf(filename, key=key, mode="r", where=where)
+        return trades.values.tolist()
 
     def trades_purge(self, pair: str) -> bool:
         """
