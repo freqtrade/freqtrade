@@ -54,6 +54,8 @@ ARGS_BUILD_HYPEROPT = ["user_data_dir", "hyperopt", "template"]
 ARGS_CONVERT_DATA = ["pairs", "format_from", "format_to", "erase"]
 ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes"]
 
+ARGS_LIST_DATA = ["exchange", "dataformat_ohlcv"]
+
 ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "download_trades", "exchange",
                       "timeframes", "erase", "dataformat_ohlcv", "dataformat_trades"]
 
@@ -78,7 +80,7 @@ ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperop
                       "print_json", "hyperopt_show_no_header"]
 
 NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list-timeframes",
-                    "list-markets", "list-pairs", "list-strategies",
+                    "list-markets", "list-pairs", "list-strategies", "list-data",
                     "list-hyperopts", "hyperopt-list", "hyperopt-show",
                     "plot-dataframe", "plot-profit", "show-trades"]
 
@@ -159,7 +161,7 @@ class Arguments:
         self._build_args(optionlist=['version'], parser=self.parser)
 
         from freqtrade.commands import (start_create_userdir, start_convert_data,
-                                        start_download_data,
+                                        start_download_data, start_list_data,
                                         start_hyperopt_list, start_hyperopt_show,
                                         start_list_exchanges, start_list_hyperopts,
                                         start_list_markets, start_list_strategies,
@@ -232,6 +234,15 @@ class Arguments:
         )
         convert_trade_data_cmd.set_defaults(func=partial(start_convert_data, ohlcv=False))
         self._build_args(optionlist=ARGS_CONVERT_DATA, parser=convert_trade_data_cmd)
+
+        # Add list-data subcommand
+        list_data_cmd = subparsers.add_parser(
+            'list-data',
+            help='List downloaded data.',
+            parents=[_common_parser],
+        )
+        list_data_cmd.set_defaults(func=start_list_data)
+        self._build_args(optionlist=ARGS_LIST_DATA, parser=list_data_cmd)
 
         # Add backtesting subcommand
         backtesting_cmd = subparsers.add_parser('backtesting', help='Backtesting module.',
