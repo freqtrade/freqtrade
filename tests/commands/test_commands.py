@@ -6,12 +6,12 @@ import pytest
 
 from freqtrade.commands import (start_convert_data, start_create_userdir,
                                 start_download_data, start_hyperopt_list,
-                                start_hyperopt_show, start_list_exchanges,
-                                start_list_hyperopts, start_list_markets,
-                                start_list_strategies, start_list_timeframes,
-                                start_new_hyperopt, start_new_strategy,
-                                start_show_trades, start_test_pairlist,
-                                start_trading)
+                                start_hyperopt_show, start_list_data,
+                                start_list_exchanges, start_list_hyperopts,
+                                start_list_markets, start_list_strategies,
+                                start_list_timeframes, start_new_hyperopt,
+                                start_new_strategy, start_show_trades,
+                                start_test_pairlist, start_trading)
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
@@ -1041,6 +1041,23 @@ def test_convert_data_trades(mocker, testdatadir):
     assert trades_mock.call_args[1]['convert_from'] == 'jsongz'
     assert trades_mock.call_args[1]['convert_to'] == 'json'
     assert trades_mock.call_args[1]['erase'] is False
+
+
+def test_start_list_data(testdatadir, capsys):
+    args = [
+        "list-data",
+        "--data-format-ohlcv",
+        "json",
+        "--datadir",
+        str(testdatadir),
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_list_data(pargs)
+    captured = capsys.readouterr()
+    assert "Found 16 pair / timeframe combinations." in captured.out
+    assert "\npairs         timeframe\n" in captured.out
+    assert "\nUNITTEST/BTC  1m, 5m, 8m, 30m\n" in captured.out
 
 
 @pytest.mark.usefixtures("init_persistence")
