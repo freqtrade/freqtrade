@@ -676,6 +676,10 @@ class RPC:
             'length': len(dataframe),
             'last_analyzed': last_analyzed,
             'last_analyzed_ts': int(last_analyzed.timestamp()),
+            'data_start': str(dataframe.iloc[0]['date']),
+            'data_start_ts': int(dataframe.iloc[0]['__date_ts']),
+            'data_stop': str(dataframe.iloc[-1]['date']),
+            'data_stop_ts': int(dataframe.iloc[-1]['__date_ts']),
         }
 
     def _analysed_dataframe(self, pair: str, timeframe: str, limit: int) -> Dict[str, Any]:

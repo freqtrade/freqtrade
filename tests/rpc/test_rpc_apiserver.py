@@ -828,10 +828,18 @@ def test_api_pair_candles(botclient, ohlcv_history):
                     f"{BASE_URI}/pair_candles?limit={amount}&pair=XRP%2FBTC&timeframe={timeframe}")
     assert_response(rc)
     assert 'columns' in rc.json
+    assert 'data_start_ts' in rc.json
+    assert 'data_start' in rc.json
+    assert 'data_stop' in rc.json
+    assert 'data_stop_ts' in rc.json
+    assert rc.json['data_start'] == '2017-11-26 08:50:00+00:00'
+    assert rc.json['data_start_ts'] == 1511686200000
+    assert rc.json['data_stop'] == '2017-11-26 08:55:00+00:00'
+    assert rc.json['data_stop_ts'] == 1511686500000
     assert isinstance(rc.json['columns'], list)
     assert rc.json['columns'] == ['date', 'open', 'high',
                                   'low', 'close', 'volume', 'sma', 'buy', 'sell',
-                                  '_buy_signal_open', '_sell_signal_open']
+                                  '__date_ts', '_buy_signal_open', '_sell_signal_open']
     assert 'pair' in rc.json
     assert rc.json['pair'] == 'XRP/BTC'
 
@@ -839,10 +847,10 @@ def test_api_pair_candles(botclient, ohlcv_history):
     assert len(rc.json['data']) == amount
 
     assert (rc.json['data'] ==
-            [[1511686200000, 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
-              None, 0, 0, None, None],
-             [1511686500000, 8.88e-05, 8.942e-05, 8.88e-05,
-                 8.893e-05, 0.05874751, 8.886500000000001e-05, 0, 0, None, None]
+            [['2017-11-26 08:50:00', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
+              None, 0, 0, 1511686200000, None, None],
+             ['2017-11-26 08:55:00', 8.88e-05, 8.942e-05, 8.88e-05,
+                 8.893e-05, 0.05874751, 8.886500000000001e-05, 0, 0, 1511686500000, None, None]
              ])
 
 
