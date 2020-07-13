@@ -326,6 +326,8 @@ def test_api_show_config(botclient, mocker):
     assert rc.json['exchange'] == 'bittrex'
     assert rc.json['ticker_interval'] == '5m'
     assert rc.json['timeframe'] == '5m'
+    assert rc.json['timeframe_ms'] == 300000
+    assert rc.json['timeframe_min'] == 5
     assert rc.json['state'] == 'running'
     assert not rc.json['trailing_stop']
     assert 'bid_strategy' in rc.json
