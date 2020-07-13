@@ -12,6 +12,8 @@ import arrow
 from numpy import NAN, mean
 
 from freqtrade.exceptions import ExchangeError, PricingError
+
+from freqtrade.exchange import timeframe_to_msecs, timeframe_to_minutes
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -103,6 +105,8 @@ class RPC:
             'trailing_only_offset_is_reached': config.get('trailing_only_offset_is_reached'),
             'ticker_interval': config['timeframe'],  # DEPRECATED
             'timeframe': config['timeframe'],
+            'timeframe_ms': timeframe_to_msecs(config['timeframe']),
+            'timeframe_min': timeframe_to_minutes(config['timeframe']),
             'exchange': config['exchange']['name'],
             'strategy': config['strategy'],
             'forcebuy_enabled': config.get('forcebuy_enable', False),
