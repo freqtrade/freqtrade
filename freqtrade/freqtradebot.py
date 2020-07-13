@@ -11,14 +11,14 @@ from typing import Any, Dict, List, Optional
 
 import arrow
 from cachetools import TTLCache
-from requests.exceptions import RequestException
 
 from freqtrade import __version__, constants, persistence
 from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.exceptions import DependencyException, InvalidOrderException, PricingError
+from freqtrade.exceptions import (DependencyException, ExchangeError,
+                                  InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
 from freqtrade.misc import safe_value_fallback
 from freqtrade.pairlist.pairlistmanager import PairListManager
@@ -119,6 +119,8 @@ class FreqtradeBot:
         if self.config['cancel_open_orders_on_exit']:
             self.cancel_all_open_orders()
 
+        self.check_for_open_trades()
+
         self.rpc.cleanup()
         persistence.cleanup()
 
@@ -151,6 +153,10 @@ class FreqtradeBot:
         self.dataprovider.refresh(self.pairlists.create_pair_list(self.active_pair_whitelist),
                                   self.strategy.informative_pairs())
 
+        strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)()
+
+        self.strategy.analyze(self.active_pair_whitelist)
+
         with self._sell_lock:
             # Check and handle any timed out open orders
             self.check_handle_timedout()
@@ -174,6 +180,24 @@ class FreqtradeBot:
         """
         if self.config['cancel_open_orders_on_exit']:
             self.cancel_all_open_orders()
+
+    def check_for_open_trades(self):
+        """
+        Notify the user when the bot is stopped
+        and there are still open trades active.
+        """
+        open_trades = Trade.get_trades([Trade.is_open == 1]).all()
+
+        if len(open_trades) != 0:
+            msg = {
+                'type': RPCMessageType.WARNING_NOTIFICATION,
+                'status':  f"{len(open_trades)} open trades active.\n\n"
+                           f"Handle these trades manually on {self.exchange.name}, "
+                           f"or '/start' the bot again and use '/stopbuy' "
+                           f"to handle open trades gracefully. \n"
+                           f"{'Trades are simulated.' if self.config['dry_run'] else ''}",
+            }
+            self.rpc.send_msg(msg)
 
     def _refresh_active_whitelist(self, trades: List[Trade] = []) -> List[str]:
         """
@@ -420,9 +444,8 @@ class FreqtradeBot:
             return False
 
         # running get_signal on historical data fetched
-        (buy, sell) = self.strategy.get_signal(
-            pair, self.strategy.timeframe,
-            self.dataprovider.ohlcv(pair, self.strategy.timeframe))
+        analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(pair, self.strategy.timeframe)
+        (buy, sell) = self.strategy.get_signal(pair, self.strategy.timeframe, analyzed_df)
 
         if buy and not sell:
             stake_amount = self.get_trade_stake_amount(pair)
@@ -495,6 +518,12 @@ class FreqtradeBot:
 
         amount = stake_amount / buy_limit_requested
         order_type = self.strategy.order_types['buy']
+        if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
+                pair=pair, order_type=order_type, amount=amount, rate=buy_limit_requested,
+                time_in_force=time_in_force):
+            logger.info(f"User requested abortion of buying {pair}")
+            return False
+
         order = self.exchange.buy(pair=pair, ordertype=order_type,
                                   amount=amount, rate=buy_limit_requested,
                                   time_in_force=time_in_force)
@@ -697,9 +726,10 @@ class FreqtradeBot:
 
         if (config_ask_strategy.get('use_sell_signal', True) or
                 config_ask_strategy.get('ignore_roi_if_buy_signal', False)):
-            (buy, sell) = self.strategy.get_signal(
-                trade.pair, self.strategy.timeframe,
-                self.dataprovider.ohlcv(trade.pair, self.strategy.timeframe))
+            analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
+                                                                      self.strategy.timeframe)
+
+            (buy, sell) = self.strategy.get_signal(trade.pair, self.strategy.timeframe, analyzed_df)
 
         if config_ask_strategy.get('use_order_book', False):
             order_book_min = config_ask_strategy.get('order_book_min', 1)
@@ -755,7 +785,7 @@ class FreqtradeBot:
             logger.warning('Selling the trade forcefully')
             self.execute_sell(trade, trade.stop_loss, sell_reason=SellType.EMERGENCY_SELL)
 
-        except DependencyException:
+        except ExchangeError:
             trade.stoploss_order_id = None
             logger.exception('Unable to place a stoploss order on exchange.')
         return False
@@ -773,8 +803,8 @@ class FreqtradeBot:
 
         try:
             # First we check if there is already a stoploss on exchange
-            stoploss_order = self.exchange.get_stoploss_order(trade.stoploss_order_id, trade.pair) \
-                if trade.stoploss_order_id else None
+            stoploss_order = self.exchange.fetch_stoploss_order(
+                trade.stoploss_order_id, trade.pair) if trade.stoploss_order_id else None
         except InvalidOrderException as exception:
             logger.warning('Unable to fetch stoploss order: %s', exception)
 
@@ -888,8 +918,8 @@ class FreqtradeBot:
             try:
                 if not trade.open_order_id:
                     continue
-                order = self.exchange.get_order(trade.open_order_id, trade.pair)
-            except (RequestException, DependencyException, InvalidOrderException):
+                order = self.exchange.fetch_order(trade.open_order_id, trade.pair)
+            except (ExchangeError, InvalidOrderException):
                 logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
                 continue
 
@@ -921,7 +951,7 @@ class FreqtradeBot:
 
         for trade in Trade.get_open_order_trades():
             try:
-                order = self.exchange.get_order(trade.open_order_id, trade.pair)
+                order = self.exchange.fetch_order(trade.open_order_id, trade.pair)
             except (DependencyException, InvalidOrderException):
                 logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
                 continue
@@ -1075,12 +1105,20 @@ class FreqtradeBot:
             order_type = self.strategy.order_types.get("emergencysell", "market")
 
         amount = self._safe_sell_amount(trade.pair, trade.amount)
+        time_in_force = self.strategy.order_time_in_force['sell']
+
+        if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
+                pair=trade.pair, trade=trade, order_type=order_type, amount=amount, rate=limit,
+                time_in_force=time_in_force,
+                sell_reason=sell_reason.value):
+            logger.info(f"User requested abortion of selling {trade.pair}")
+            return False
 
         # Execute sell and update trade record
         order = self.exchange.sell(pair=str(trade.pair),
                                    ordertype=order_type,
                                    amount=amount, rate=limit,
-                                   time_in_force=self.strategy.order_time_in_force['sell']
+                                   time_in_force=time_in_force
                                    )
 
         trade.open_order_id = order['id']
@@ -1200,7 +1238,7 @@ class FreqtradeBot:
         # Update trade with order values
         logger.info('Found open order for %s', trade)
         try:
-            order = action_order or self.exchange.get_order(order_id, trade.pair)
+            order = action_order or self.exchange.fetch_order(order_id, trade.pair)
         except InvalidOrderException as exception:
             logger.warning('Unable to fetch order %s: %s', order_id, exception)
             return False

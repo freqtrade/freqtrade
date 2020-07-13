@@ -4,17 +4,17 @@ import copy
 import logging
 from datetime import datetime, timezone
 from random import randint
-from unittest.mock import MagicMock, Mock, PropertyMock
+from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
 import arrow
 import ccxt
 import pytest
 from pandas import DataFrame
 
-from freqtrade.exceptions import (DependencyException, InvalidOrderException,
+from freqtrade.exceptions import (DependencyException, InvalidOrderException, DDosProtection,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Binance, Exchange, Kraken
-from freqtrade.exchange.common import API_RETRY_COUNT
+from freqtrade.exchange.common import API_RETRY_COUNT, calculate_backoff
 from freqtrade.exchange.exchange import (market_is_active, symbol_is_pair,
                                          timeframe_to_minutes,
                                          timeframe_to_msecs,
@@ -37,12 +37,20 @@ def get_mock_coro(return_value):
 
 
 def ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
-                           fun, mock_ccxt_fun, **kwargs):
+                           fun, mock_ccxt_fun, retries=API_RETRY_COUNT + 1, **kwargs):
+
+    with patch('freqtrade.exchange.common.time.sleep'):
+        with pytest.raises(DDosProtection):
+            api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.DDoSProtection("DDos"))
+            exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+            getattr(exchange, fun)(**kwargs)
+        assert api_mock.__dict__[mock_ccxt_fun].call_count == retries
+
     with pytest.raises(TemporaryError):
         api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.NetworkError("DeaDBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         getattr(exchange, fun)(**kwargs)
-    assert api_mock.__dict__[mock_ccxt_fun].call_count == API_RETRY_COUNT + 1
+    assert api_mock.__dict__[mock_ccxt_fun].call_count == retries
 
     with pytest.raises(OperationalException):
         api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.BaseError("DeadBeef"))
@@ -51,12 +59,21 @@ def ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
     assert api_mock.__dict__[mock_ccxt_fun].call_count == 1
 
 
-async def async_ccxt_exception(mocker, default_conf, api_mock, fun, mock_ccxt_fun, **kwargs):
+async def async_ccxt_exception(mocker, default_conf, api_mock, fun, mock_ccxt_fun,
+                               retries=API_RETRY_COUNT + 1, **kwargs):
+
+    with patch('freqtrade.exchange.common.asyncio.sleep', get_mock_coro(None)):
+        with pytest.raises(DDosProtection):
+            api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.DDoSProtection("Dooh"))
+            exchange = get_patched_exchange(mocker, default_conf, api_mock)
+            await getattr(exchange, fun)(**kwargs)
+        assert api_mock.__dict__[mock_ccxt_fun].call_count == retries
+
     with pytest.raises(TemporaryError):
         api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.NetworkError("DeadBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
         await getattr(exchange, fun)(**kwargs)
-    assert api_mock.__dict__[mock_ccxt_fun].call_count == API_RETRY_COUNT + 1
+    assert api_mock.__dict__[mock_ccxt_fun].call_count == retries
 
     with pytest.raises(OperationalException):
         api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.BaseError("DeadBeef"))
@@ -1147,9 +1164,10 @@ def test_get_balance_prod(default_conf, mocker, exchange_name):
         exchange.get_balance(currency='BTC')
 
 
-def test_get_balances_dry_run(default_conf, mocker):
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_get_balances_dry_run(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = True
-    exchange = get_patched_exchange(mocker, default_conf)
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     assert exchange.get_balances() == {}
 
 
@@ -1867,36 +1885,48 @@ def test_cancel_stoploss_order(default_conf, mocker, exchange_name):
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_get_order(default_conf, mocker, exchange_name):
+def test_fetch_order(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = True
     order = MagicMock()
     order.myid = 123
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     exchange._dry_run_open_orders['X'] = order
-    assert exchange.get_order('X', 'TKN/BTC').myid == 123
+    assert exchange.fetch_order('X', 'TKN/BTC').myid == 123
 
     with pytest.raises(InvalidOrderException, match=r'Tried to get an invalid dry-run-order.*'):
-        exchange.get_order('Y', 'TKN/BTC')
+        exchange.fetch_order('Y', 'TKN/BTC')
 
     default_conf['dry_run'] = False
     api_mock = MagicMock()
     api_mock.fetch_order = MagicMock(return_value=456)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-    assert exchange.get_order('X', 'TKN/BTC') == 456
+    assert exchange.fetch_order('X', 'TKN/BTC') == 456
 
     with pytest.raises(InvalidOrderException):
         api_mock.fetch_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-        exchange.get_order(order_id='_', pair='TKN/BTC')
+        exchange.fetch_order(order_id='_', pair='TKN/BTC')
     assert api_mock.fetch_order.call_count == 1
 
+    api_mock.fetch_order = MagicMock(side_effect=ccxt.OrderNotFound("Order not found"))
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    with patch('freqtrade.exchange.common.time.sleep') as tm:
+        with pytest.raises(InvalidOrderException):
+            exchange.fetch_order(order_id='_', pair='TKN/BTC')
+        # Ensure backoff is called
+        assert tm.call_args_list[0][0][0] == 1
+        assert tm.call_args_list[1][0][0] == 2
+        assert tm.call_args_list[2][0][0] == 5
+        assert tm.call_args_list[3][0][0] == 10
+    assert api_mock.fetch_order.call_count == API_RETRY_COUNT + 1
+
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
-                           'get_order', 'fetch_order',
+                           'fetch_order', 'fetch_order',
                            order_id='_', pair='TKN/BTC')
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_get_stoploss_order(default_conf, mocker, exchange_name):
+def test_fetch_stoploss_order(default_conf, mocker, exchange_name):
     # Don't test FTX here - that needs a seperate test
     if exchange_name == 'ftx':
         return
@@ -1905,25 +1935,25 @@ def test_get_stoploss_order(default_conf, mocker, exchange_name):
     order.myid = 123
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     exchange._dry_run_open_orders['X'] = order
-    assert exchange.get_stoploss_order('X', 'TKN/BTC').myid == 123
+    assert exchange.fetch_stoploss_order('X', 'TKN/BTC').myid == 123
 
     with pytest.raises(InvalidOrderException, match=r'Tried to get an invalid dry-run-order.*'):
-        exchange.get_stoploss_order('Y', 'TKN/BTC')
+        exchange.fetch_stoploss_order('Y', 'TKN/BTC')
 
     default_conf['dry_run'] = False
     api_mock = MagicMock()
     api_mock.fetch_order = MagicMock(return_value=456)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-    assert exchange.get_stoploss_order('X', 'TKN/BTC') == 456
+    assert exchange.fetch_stoploss_order('X', 'TKN/BTC') == 456
 
     with pytest.raises(InvalidOrderException):
         api_mock.fetch_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-        exchange.get_stoploss_order(order_id='_', pair='TKN/BTC')
+        exchange.fetch_stoploss_order(order_id='_', pair='TKN/BTC')
     assert api_mock.fetch_order.call_count == 1
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
-                           'get_stoploss_order', 'fetch_order',
+                           'fetch_stoploss_order', 'fetch_order',
                            order_id='_', pair='TKN/BTC')
 
 
@@ -2131,6 +2161,13 @@ def test_get_markets(default_conf, mocker, markets,
     assert sorted(pairs.keys()) == sorted(expected_keys)
 
 
+def test_get_markets_error(default_conf, mocker):
+    ex = get_patched_exchange(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=None))
+    with pytest.raises(OperationalException, match="Markets were not loaded."):
+        ex.get_markets('LTC', 'USDT', True, False)
+
+
 def test_timeframe_to_minutes():
     assert timeframe_to_minutes("5m") == 5
     assert timeframe_to_minutes("10m") == 10
@@ -2291,3 +2328,15 @@ def test_calculate_fee_rate(mocker, default_conf, order, expected) -> None:
 
     ex = get_patched_exchange(mocker, default_conf)
     assert ex.calculate_fee_rate(order) == expected
+
+
+@pytest.mark.parametrize('retrycount,max_retries,expected', [
+    (0, 3, 10),
+    (1, 3, 5),
+    (2, 3, 2),
+    (3, 3, 1),
+    (0, 1, 2),
+    (1, 1, 1),
+])
+def test_calculate_backoff(retrycount, max_retries, expected):
+    assert calculate_backoff(retrycount, max_retries) == expected

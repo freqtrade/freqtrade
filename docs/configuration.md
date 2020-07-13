@@ -275,7 +275,7 @@ the static list of pairs) if we should buy.
 The `order_types` configuration parameter maps actions (`buy`, `sell`, `stoploss`, `emergencysell`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
 
 This allows to buy using limit orders, sell using
-limit-orders, and create stoplosses using using market orders. It also allows to set the
+limit-orders, and create stoplosses using market orders. It also allows to set the
 stoploss "on exchange" which means stoploss order would be placed immediately once
 the buy order is fulfilled.
 If `stoploss_on_exchange` and `trailing_stop` are both set, then the bot will use `stoploss_on_exchange_interval` to check and update the stoploss on exchange periodically.
@@ -592,7 +592,7 @@ Pairlist Handlers define the list of pairs (pairlist) that the bot should trade.
 
 In your configuration, you can use Static Pairlist (defined by the [`StaticPairList`](#static-pair-list) Pairlist Handler) and Dynamic Pairlist (defined by the [`VolumePairList`](#volume-pair-list) Pairlist Handler).
 
-Additionaly, [`PrecisionFilter`](#precisionfilter), [`PriceFilter`](#pricefilter), [`ShuffleFilter`](#shufflefilter) and [`SpreadFilter`](#spreadfilter) act as Pairlist Filters, removing certain pairs and/or moving their positions in the pairlist.
+Additionaly, [`AgeFilter`](#agefilter), [`PrecisionFilter`](#precisionfilter), [`PriceFilter`](#pricefilter), [`ShuffleFilter`](#shufflefilter) and [`SpreadFilter`](#spreadfilter) act as Pairlist Filters, removing certain pairs and/or moving their positions in the pairlist.
 
 If multiple Pairlist Handlers are used, they are chained and a combination of all Pairlist Handlers forms the resulting pairlist the bot uses for trading and backtesting. Pairlist Handlers are executed in the sequence they are configured. You should always configure either `StaticPairList` or `VolumePairList` as the starting Pairlist Handler.
 
@@ -602,6 +602,7 @@ Inactive markets are always removed from the resulting pairlist. Explicitly blac
 
 * [`StaticPairList`](#static-pair-list) (default, if not configured differently)
 * [`VolumePairList`](#volume-pair-list)
+* [`AgeFilter`](#agefilter)
 * [`PrecisionFilter`](#precisionfilter)
 * [`PriceFilter`](#pricefilter)
 * [`ShuffleFilter`](#shufflefilter)
@@ -644,6 +645,16 @@ The `refresh_period` setting allows to define the period (in seconds), at which 
         "refresh_period": 1800,
 }],
 ```
+
+#### AgeFilter
+
+Removes pairs that have been listed on the exchange for less than `min_days_listed` days (defaults to `10`).
+
+When pairs are first listed on an exchange they can suffer huge price drops and volatility
+in the first few days while the pair goes through its price-discovery period. Bots can often
+be caught out buying before the pair has finished dropping in price.
+
+This filter allows freqtrade to ignore pairs until they have been listed for at least `min_days_listed` days.
 
 #### PrecisionFilter
 
@@ -692,6 +703,7 @@ The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, 
         "number_assets": 20,
         "sort_key": "quoteVolume",
     },
+    {"method": "AgeFilter", "min_days_listed": 10},
     {"method": "PrecisionFilter"},
     {"method": "PriceFilter", "low_price_ratio": 0.01},
     {"method": "SpreadFilter", "max_spread_ratio": 0.005},

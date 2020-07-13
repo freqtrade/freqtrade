@@ -163,7 +163,7 @@ def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
     :param value: which value IStrategy.get_signal() must return
     :return: None
     """
-    freqtrade.strategy.get_signal = lambda e, s, t: value
+    freqtrade.strategy.get_signal = lambda e, s, x: value
     freqtrade.exchange.refresh_latest_ohlcv = lambda p: None
 
 
@@ -787,6 +787,7 @@ def limit_buy_order():
         'price': 0.00001099,
         'amount': 90.99181073,
         'filled': 90.99181073,
+        'cost': 0.0009999,
         'remaining': 0.0,
         'status': 'closed'
     }
@@ -1424,7 +1425,7 @@ def trades_for_order():
 
 @pytest.fixture(scope="function")
 def trades_history():
-    return [[1565798399463, '126181329', None, 'buy', 0.019627, 0.04, 0.00078508],
+    return [[1565798389463, '126181329', None, 'buy', 0.019627, 0.04, 0.00078508],
             [1565798399629, '126181330', None, 'buy', 0.019627, 0.244, 0.004788987999999999],
             [1565798399752, '126181331', None, 'sell', 0.019626, 0.011, 0.00021588599999999999],
             [1565798399862, '126181332', None, 'sell', 0.019626, 0.011, 0.00021588599999999999],

@@ -498,8 +498,3 @@ After you run Hyperopt for the desired amount of epochs, you can later list all 
 Once the optimized strategy has been implemented into your strategy, you should backtest this strategy to make sure everything is working as expected.
 
 To achieve same results (number of trades, their durations, profit, etc.) than during Hyperopt, please use same set of arguments `--dmmp`/`--disable-max-market-positions` and `--eps`/`--enable-position-stacking` for Backtesting.
-
-## Next Step
-
-Now you have a perfect bot and want to control it from Telegram. Your
-next step is to learn the [Telegram usage](telegram-usage.md).
