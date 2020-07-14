@@ -210,18 +210,18 @@ Hence, keep in mind that your performance is an integral mix of all different el
 ### Sell reasons table
 
 The 2nd table contains a recap of sell reasons.
-This table can tell you which area needs some additional work (i.e. all `sell_signal` trades are losses, so we should disable the sell-signal or work on improving that).
+This table can tell you which area needs some additional work (e,g. all or many of the `sell_signal` trades are losses, so we should disable the sell-signal or work on improving that).
 
 ### Left open trades table
 
-The 3rd table contains all trades the bot had to `forcesell` at the end of the backtest period to present a full picture.
+The 3rd table contains all trades the bot had to `forcesell` at the end of the backtesting period to present you the full picture.
 This is necessary to simulate realistic behaviour, since the backtest period has to end at some point, while realistically, you could leave the bot running forever.
-These trades are also included in the first table, but are extracted separately for clarity.
+These trades are also included in the first table, but are also shown separately in this table for clarity.
 
 ### Summary metrics
 
 The last element of the backtest report is the summary metrics table.
-It contains some useful key metrics about your strategy.
+It contains some useful key metrics about performance of your strategy on backtesting data.
 
 ```
 =============== SUMMARY METRICS ===============
@@ -250,12 +250,12 @@ It contains some useful key metrics about your strategy.
 - `Total trades`: Identical to the total trades of the backtest output table.
 - `First trade`: First trade entered.
 - `First trade pair`: Which pair was part of the first trade.
-- `Backtesting from` / `Backtesting to`: Backtesting range (usually defined as `--timerange from-to`).
-- `Trades per day`: Total trades / Backtest duration (this will give you information about how many trades to expect from the strategy).
+- `Backtesting from` / `Backtesting to`: Backtesting range (usually defined with the `--timerange` option).
+- `Trades per day`: Total trades divided by the backtesting duration in days (this will give you information about how many trades to expect from the strategy).
 - `Best day` / `Worst day`: Best and worst day based on daily profit.
 - `Avg. Duration Winners` / `Avg. Duration Loser`: Average durations for winning and losing trades.
-- `Max Drawdown`: Maximum drawown experienced. a value of 50% means that from highest to subsequent lowest point, a 50% drop was experiened).
-- `Drawdown Start` / `Drawdown End`: From when to when was this large drawdown (can also be visualized via `plot-dataframe` subcommand).
+- `Max Drawdown`: Maximum drawdown experienced. For example, the value of 50% means that from highest to subsequent lowest point, a 50% drop was experienced).
+- `Drawdown Start` / `Drawdown End`: Start and end datetimes for this largest drawdown (can also be visualized via the `plot-dataframe` subcommand).
 - `Market change`: Change of the market during the backtest period. Calculated as average of all pairs changes from the first to the last candle using the "close" column.
 
 ### Assumptions made by backtesting
