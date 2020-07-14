@@ -157,22 +157,25 @@ A backtesting result will look like that:
 | ADA/BTC  |      1 |           0.89 |           0.89 |       0.00004434 |           0.44 | 6:00:00        |     1 |      0 |       0 |
 | LTC/BTC  |      1 |           0.68 |           0.68 |       0.00003421 |           0.34 | 2:00:00        |     1 |      0 |       0 |
 | TOTAL    |      2 |           0.78 |           1.57 |       0.00007855 |           0.78 | 4:00:00        |     2 |      0 |       0 |
-============ SUMMARY METRICS =============
-| Metric           | Value               |
-|------------------+---------------------|
-| Total trades     | 429                 |
-| First trade      | 2019-01-01 18:30:00 |
-| First trade Pair | EOS/USDT            |
-| Backtesting from | 2019-01-01 00:00:00 |
-| Backtesting to   | 2019-05-01 00:00:00 |
-| Trades per day   | 3.575               |
-|                  |                     |
-| Max Drawdown     | 50.63%              |
-| Drawdown Start   | 2019-02-15 14:10:00 |
-| Drawdown End     | 2019-04-11 18:15:00 |
-| Market change    | -5.88%              |
-==========================================
-
+=============== SUMMARY METRICS ===============
+| Metric                | Value               |
+|-----------------------+---------------------|
+| Backtesting from      | 2019-01-01 00:00:00 |
+| Backtesting to        | 2019-05-01 00:00:00 |
+| Total trades          | 429                 |
+| First trade           | 2019-01-01 18:30:00 |
+| First trade Pair      | EOS/USDT            |
+| Trades per day        | 3.575               |
+| Best day              | 25.27%              |
+| Worst day             | -30.67%             |
+| Avg. Duration Winners | 4:23:00             |
+| Avg. Duration Loser   | 6:55:00             |
+|                       |                     |
+| Max Drawdown          | 50.63%              |
+| Drawdown Start        | 2019-02-15 14:10:00 |
+| Drawdown End          | 2019-04-11 18:15:00 |
+| Market change         | -5.88%              |
+===============================================
 ```
 
 ### Backtesting report table
@@ -227,12 +230,11 @@ It contains some useful key metrics about performance of your strategy on backte
 =============== SUMMARY METRICS ===============
 | Metric                | Value               |
 |-----------------------+---------------------|
-
+| Backtesting from      | 2019-01-01 00:00:00 |
+| Backtesting to        | 2019-05-01 00:00:00 |
 | Total trades          | 429                 |
 | First trade           | 2019-01-01 18:30:00 |
 | First trade Pair      | EOS/USDT            |
-| Backtesting from      | 2019-01-01 00:00:00 |
-| Backtesting to        | 2019-05-01 00:00:00 |
 | Trades per day        | 3.575               |
 | Best day              | 25.27%              |
 | Worst day             | -30.67%             |

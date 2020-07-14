@@ -367,11 +367,11 @@ def text_table_add_metrics(strat_results: Dict) -> str:
     if len(strat_results['trades']) > 0:
         min_trade = min(strat_results['trades'], key=lambda x: x['open_date'])
         metrics = [
+            ('Backtesting from', strat_results['backtest_start'].strftime(DATETIME_PRINT_FORMAT)),
+            ('Backtesting to', strat_results['backtest_end'].strftime(DATETIME_PRINT_FORMAT)),
             ('Total trades', strat_results['total_trades']),
             ('First trade', min_trade['open_date'].strftime(DATETIME_PRINT_FORMAT)),
             ('First trade Pair', min_trade['pair']),
-            ('Backtesting from', strat_results['backtest_start'].strftime(DATETIME_PRINT_FORMAT)),
-            ('Backtesting to', strat_results['backtest_end'].strftime(DATETIME_PRINT_FORMAT)),
             ('Trades per day', strat_results['trades_per_day']),
             ('Best day', f"{round(strat_results['backtest_best_day'] * 100, 2)}%"),
             ('Worst day', f"{round(strat_results['backtest_worst_day'] * 100, 2)}%"),
