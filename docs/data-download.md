@@ -166,6 +166,7 @@ You can get a list of downloaded data using the `list-data` subcommand.
 usage: freqtrade list-data [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                            [--userdir PATH] [--exchange EXCHANGE]
                            [--data-format-ohlcv {json,jsongz}]
+                           [-p PAIRS [PAIRS ...]]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -174,6 +175,9 @@ optional arguments:
   --data-format-ohlcv {json,jsongz}
                         Storage format for downloaded candle (OHLCV) data.
                         (default: `json`).
+  -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
+                        Show profits for only these pairs. Pairs are space-
+                        separated.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -190,7 +194,6 @@ Common arguments:
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
-
 ```
 
 #### Example list-data

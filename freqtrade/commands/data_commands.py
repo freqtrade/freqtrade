@@ -105,10 +105,14 @@ def start_list_data(args: Dict[str, Any]) -> None:
 
     paircombs = dhc.ohlcv_get_available_data(config['datadir'])
 
+    if args['pairs']:
+        paircombs = [comb for comb in paircombs if comb[0] in args['pairs']]
+
     print(f"Found {len(paircombs)} pair / timeframe combinations.")
     groupedpair = defaultdict(list)
     for pair, timeframe in sorted(paircombs, key=lambda x: (x[0], timeframe_to_minutes(x[1]))):
         groupedpair[pair].append(timeframe)
 
     print(tabulate([(pair, ', '.join(timeframes)) for pair, timeframes in groupedpair.items()],
-                   headers=("pairs", "timeframe")))
+                   headers=("Pair", "Timeframe"),
+                   tablefmt='psql', stralign='right'))
