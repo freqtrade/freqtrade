@@ -113,6 +113,7 @@ def start_list_data(args: Dict[str, Any]) -> None:
     for pair, timeframe in sorted(paircombs, key=lambda x: (x[0], timeframe_to_minutes(x[1]))):
         groupedpair[pair].append(timeframe)
 
-    print(tabulate([(pair, ', '.join(timeframes)) for pair, timeframes in groupedpair.items()],
-                   headers=("Pair", "Timeframe"),
-                   tablefmt='psql', stralign='right'))
+    if groupedpair:
+        print(tabulate([(pair, ', '.join(timeframes)) for pair, timeframes in groupedpair.items()],
+                       headers=("Pair", "Timeframe"),
+                       tablefmt='psql', stralign='right'))
