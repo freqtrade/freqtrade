@@ -520,6 +520,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     assert_response(rc)
     assert len(rc.json) == 1
     assert rc.json == [{'amount': 91.07468124,
+                        'amount_requested': 91.07468124,
                         'base_currency': 'BTC',
                         'close_date': None,
                         'close_date_hum': None,
@@ -641,6 +642,7 @@ def test_api_forcebuy(botclient, mocker, fee):
     fbuy_mock = MagicMock(return_value=Trade(
         pair='ETH/ETH',
         amount=1,
+        amount_requested=1,
         exchange='bittrex',
         stake_amount=1,
         open_rate=0.245441,
@@ -657,6 +659,7 @@ def test_api_forcebuy(botclient, mocker, fee):
                      data='{"pair": "ETH/BTC"}')
     assert_response(rc)
     assert rc.json == {'amount': 1,
+                       'amount_requested': 1,
                        'trade_id': None,
                        'close_date': None,
                        'close_date_hum': None,
