@@ -523,7 +523,7 @@ class FreqtradeBot:
                 time_in_force=time_in_force):
             logger.info(f"User requested abortion of buying {pair}")
             return False
-
+        amount = self.exchange.amount_to_precision(pair, amount)
         order = self.exchange.buy(pair=pair, ordertype=order_type,
                                   amount=amount, rate=buy_limit_requested,
                                   time_in_force=time_in_force)
