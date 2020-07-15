@@ -532,6 +532,7 @@ class FreqtradeBot:
 
         # we assume the order is executed at the price requested
         buy_limit_filled_price = buy_limit_requested
+        amount_requested = amount
 
         if order_status == 'expired' or order_status == 'rejected':
             order_tif = self.strategy.order_time_in_force['buy']
@@ -568,6 +569,7 @@ class FreqtradeBot:
             pair=pair,
             stake_amount=stake_amount,
             amount=amount,
+            amount_requested=amount_requested,
             fee_open=fee,
             fee_close=fee,
             open_rate=buy_limit_filled_price,
