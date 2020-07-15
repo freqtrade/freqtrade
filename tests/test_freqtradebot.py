@@ -595,7 +595,7 @@ def test_create_trade_minimal_amount(default_conf, ticker, limit_buy_order,
 
     freqtrade.create_trade('ETH/BTC')
     rate, amount = buy_mock.call_args[1]['rate'], buy_mock.call_args[1]['amount']
-    assert rate * amount >= default_conf['stake_amount']
+    assert rate * amount <= default_conf['stake_amount']
 
 
 def test_create_trade_too_small_stake_amount(default_conf, ticker, limit_buy_order,
@@ -782,7 +782,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order,
     assert trade.open_date is not None
     assert trade.exchange == 'bittrex'
     assert trade.open_rate == 0.00001098
-    assert trade.amount == 91.07468123861567
+    assert trade.amount == 91.07468123
 
     assert log_has(
         'Buy signal found: about create a new trade with stake_amount: 0.001 ...', caplog
@@ -1009,7 +1009,7 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order) -> None:
     call_args = buy_mm.call_args_list[0][1]
     assert call_args['pair'] == pair
     assert call_args['rate'] == bid
-    assert call_args['amount'] == stake_amount / bid
+    assert call_args['amount'] == round(stake_amount / bid, 8)
     buy_rate_mock.reset_mock()
 
     # Should create an open trade with an open order id
@@ -1029,7 +1029,7 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order) -> None:
     call_args = buy_mm.call_args_list[1][1]
     assert call_args['pair'] == pair
     assert call_args['rate'] == fix_price
-    assert call_args['amount'] == stake_amount / fix_price
+    assert call_args['amount'] == round(stake_amount / fix_price, 8)
 
     # In case of closed order
     limit_buy_order['status'] = 'closed'
@@ -1407,7 +1407,7 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
 
     cancel_order_mock.assert_called_once_with(100, 'ETH/BTC')
-    stoploss_order_mock.assert_called_once_with(amount=85.32423208191126,
+    stoploss_order_mock.assert_called_once_with(amount=85.32423208,
                                                 pair='ETH/BTC',
                                                 order_types=freqtrade.strategy.order_types,
                                                 stop_price=0.00002346 * 0.95)
@@ -1595,7 +1595,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
     # stoploss should be set to 1% as trailing is on
     assert trade.stop_loss == 0.00002346 * 0.99
     cancel_order_mock.assert_called_once_with(100, 'NEO/BTC')
-    stoploss_order_mock.assert_called_once_with(amount=2132892.491467577,
+    stoploss_order_mock.assert_called_once_with(amount=2132892.49146757,
                                                 pair='NEO/BTC',
                                                 order_types=freqtrade.strategy.order_types,
                                                 stop_price=0.00002346 * 0.99)
@@ -2577,7 +2577,7 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, mocker) -> N
         'pair': 'ETH/BTC',
         'gain': 'profit',
         'limit': 1.172e-05,
-        'amount': 91.07468123861567,
+        'amount': 91.07468123,
         'order_type': 'limit',
         'open_rate': 1.098e-05,
         'current_rate': 1.173e-05,
@@ -2626,7 +2626,7 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, mocker) 
         'pair': 'ETH/BTC',
         'gain': 'loss',
         'limit': 1.044e-05,
-        'amount': 91.07468123861567,
+        'amount': 91.07468123,
         'order_type': 'limit',
         'open_rate': 1.098e-05,
         'current_rate': 1.043e-05,
@@ -2682,7 +2682,7 @@ def test_execute_sell_down_stoploss_on_exchange_dry_run(default_conf, ticker, fe
         'pair': 'ETH/BTC',
         'gain': 'loss',
         'limit': 1.08801e-05,
-        'amount': 91.07468123861567,
+        'amount': 91.07468123,
         'order_type': 'limit',
         'open_rate': 1.098e-05,
         'current_rate': 1.043e-05,
@@ -2887,7 +2887,7 @@ def test_execute_sell_market_order(default_conf, ticker, fee,
         'pair': 'ETH/BTC',
         'gain': 'profit',
         'limit': 1.172e-05,
-        'amount': 91.07468123861567,
+        'amount': 91.07468123,
         'order_type': 'market',
         'open_rate': 1.098e-05,
         'current_rate': 1.173e-05,

@@ -519,8 +519,8 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     rc = client_get(client, f"{BASE_URI}/status")
     assert_response(rc)
     assert len(rc.json) == 1
-    assert rc.json == [{'amount': 91.07468124,
-                        'amount_requested': 91.07468124,
+    assert rc.json == [{'amount': 91.07468123,
+                        'amount_requested': 91.07468123,
                         'base_currency': 'BTC',
                         'close_date': None,
                         'close_date_hum': None,
@@ -696,7 +696,7 @@ def test_api_forcebuy(botclient, mocker, fee):
                        'min_rate': None,
                        'open_order_id': '123456',
                        'open_rate_requested': None,
-                       'open_trade_price': 0.2460546025,
+                       'open_trade_price': 0.24605460,
                        'sell_reason': None,
                        'sell_order_status': None,
                        'strategy': None,

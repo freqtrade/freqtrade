@@ -276,7 +276,7 @@ class Trade(_DECL_BASE):
             'open_timestamp': int(self.open_date.timestamp() * 1000),
             'open_rate': self.open_rate,
             'open_rate_requested': self.open_rate_requested,
-            'open_trade_price': self.open_trade_price,
+            'open_trade_price': round(self.open_trade_price, 8),
 
             'close_date_hum': (arrow.get(self.close_date).humanize()
                                if self.close_date else None),
