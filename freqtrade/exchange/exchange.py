@@ -389,13 +389,6 @@ class Exchange:
                 f'On exchange stoploss is not supported for {self.name}.'
             )
 
-        # Limit price threshold: As limit price should always be below stop-price
-        # Used for limit stoplosses on exchange
-        limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
-        if limit_price_pct >= 1.0 or limit_price_pct <= 0.0:
-            raise OperationalException(
-                "stoploss_on_exchange_limit_ratio should be < 1.0 and > 0.0")
-
     def validate_order_time_in_force(self, order_time_in_force: Dict) -> None:
         """
         Checks if order time in force configured in strategy/config are supported

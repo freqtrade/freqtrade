@@ -871,6 +871,14 @@ def test_load_config_default_exchange_name(all_conf) -> None:
         validate_config_schema(all_conf)
 
 
+def test_load_config_stoploss_exchange_limit_ratio(all_conf) -> None:
+    all_conf['order_types']['stoploss_on_exchange_limit_ratio'] = 1.15
+
+    with pytest.raises(ValidationError,
+                       match=r"1.15 is greater than the maximum"):
+        validate_config_schema(all_conf)
+
+
 @pytest.mark.parametrize("keys", [("exchange", "sandbox", False),
                                   ("exchange", "key", ""),
                                   ("exchange", "secret", ""),

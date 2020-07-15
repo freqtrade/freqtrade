@@ -746,28 +746,6 @@ def test_validate_order_types(default_conf, mocker):
                        match=r'On exchange stoploss is not supported for .*'):
         Exchange(default_conf)
 
-    default_conf['order_types'] = {
-        'buy': 'limit',
-        'sell': 'limit',
-        'stoploss': 'limit',
-        'stoploss_on_exchange': False,
-        'stoploss_on_exchange_limit_ratio': 1.05
-    }
-    with pytest.raises(OperationalException,
-                       match=r'stoploss_on_exchange_limit_ratio should be < 1.0 and > 0.0'):
-        Exchange(default_conf)
-
-    default_conf['order_types'] = {
-        'buy': 'limit',
-        'sell': 'limit',
-        'stoploss': 'limit',
-        'stoploss_on_exchange': False,
-        'stoploss_on_exchange_limit_ratio': -0.1
-    }
-    with pytest.raises(OperationalException,
-                       match=r'stoploss_on_exchange_limit_ratio should be < 1.0 and > 0.0'):
-        Exchange(default_conf)
-
 
 def test_validate_order_types_not_in_config(default_conf, mocker):
     api_mock = MagicMock()
