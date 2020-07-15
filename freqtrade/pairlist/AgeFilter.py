@@ -5,6 +5,7 @@ import logging
 import arrow
 from typing import Any, Dict
 
+from freqtrade.exceptions import OperationalException
 from freqtrade.misc import plural
 from freqtrade.pairlist.IPairList import IPairList
 
@@ -25,14 +26,11 @@ class AgeFilter(IPairList):
         self._min_days_listed = pairlistconfig.get('min_days_listed', 10)
 
         if self._min_days_listed < 1:
-            self.log_on_refresh(logger.info, "min_days_listed must be >= 1, "
-                                             "ignoring filter")
+            raise OperationalException("AgeFilter requires min_days_listed must be >= 1")
         if self._min_days_listed > exchange.ohlcv_candle_limit:
-            self._min_days_listed = min(self._min_days_listed, exchange.ohlcv_candle_limit)
-            self.log_on_refresh(logger.info, "min_days_listed exceeds "
-                                             "exchange max request size "
-                                             f"({exchange.ohlcv_candle_limit}), using "
-                                             f"min_days_listed={self._min_days_listed}")
+            raise OperationalException("AgeFilter requires min_days_listed must not exceed "
+                                       "exchange max request size "
+                                       f"({exchange.ohlcv_candle_limit})")
         self._enabled = self._min_days_listed >= 1
 
     @property

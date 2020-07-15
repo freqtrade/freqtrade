@@ -543,10 +543,9 @@ def test_agefilter_min_days_listed_too_small(mocker, default_conf, markets, tick
                           get_tickers=tickers
                           )
 
-    get_patched_freqtradebot(mocker, default_conf)
-
-    assert log_has_re(r'min_days_listed must be >= 1, '
-                      r'ignoring filter', caplog)
+    with pytest.raises(OperationalException,
+                       match=r'AgeFilter requires min_days_listed must be >= 1'):
+        get_patched_freqtradebot(mocker, default_conf)
 
 
 def test_agefilter_min_days_listed_too_large(mocker, default_conf, markets, tickers, caplog):
@@ -559,10 +558,10 @@ def test_agefilter_min_days_listed_too_large(mocker, default_conf, markets, tick
                           get_tickers=tickers
                           )
 
-    get_patched_freqtradebot(mocker, default_conf)
-
-    assert log_has_re(r'^min_days_listed exceeds '
-                      r'exchange max request size', caplog)
+    with pytest.raises(OperationalException,
+                       match=r'AgeFilter requires min_days_listed must not exceed '
+                             r'exchange max request size \([0-9]+\)'):
+        get_patched_freqtradebot(mocker, default_conf)
 
 
 def test_agefilter_caching(mocker, markets, whitelist_conf_3, tickers, ohlcv_history_list):
