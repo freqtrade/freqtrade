@@ -24,7 +24,7 @@ from freqtrade.exceptions import (DDosProtection, ExchangeError,
                                   InvalidOrderException, OperationalException,
                                   RetryableOrderError, TemporaryError)
 from freqtrade.exchange.common import BAD_EXCHANGES, retrier, retrier_async
-from freqtrade.misc import deep_merge_dicts, safe_value_fallback
+from freqtrade.misc import deep_merge_dicts, safe_value_fallback2
 
 CcxtModuleType = Any
 
@@ -1139,7 +1139,7 @@ class Exchange:
         if fee_curr in self.get_pair_base_currency(order['symbol']):
             # Base currency - divide by amount
             return round(
-                order['fee']['cost'] / safe_value_fallback(order, order, 'filled', 'amount'), 8)
+                order['fee']['cost'] / safe_value_fallback2(order, order, 'filled', 'amount'), 8)
         elif fee_curr in self.get_pair_quote_currency(order['symbol']):
             # Quote currency - divide by cost
             return round(order['fee']['cost'] / order['cost'], 8) if order['cost'] else None
@@ -1152,7 +1152,7 @@ class Exchange:
                 comb = self.get_valid_pair_combination(fee_curr, self._config['stake_currency'])
                 tick = self.fetch_ticker(comb)
 
-                fee_to_quote_rate = safe_value_fallback(tick, tick, 'last', 'ask')
+                fee_to_quote_rate = safe_value_fallback2(tick, tick, 'last', 'ask')
                 return round((order['fee']['cost'] * fee_to_quote_rate) / order['cost'], 8)
             except ExchangeError:
                 return None

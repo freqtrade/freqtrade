@@ -20,7 +20,7 @@ from freqtrade.edge import Edge
 from freqtrade.exceptions import (DependencyException, ExchangeError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
-from freqtrade.misc import safe_value_fallback
+from freqtrade.misc import safe_value_fallback2
 from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
@@ -984,7 +984,7 @@ class FreqtradeBot:
         logger.info('Buy order %s for %s.', reason, trade)
 
         # Using filled to determine the filled amount
-        filled_amount = safe_value_fallback(corder, order, 'filled', 'filled')
+        filled_amount = safe_value_fallback2(corder, order, 'filled', 'filled')
 
         if isclose(filled_amount, 0.0, abs_tol=constants.MATH_CLOSE_PREC):
             logger.info('Buy order fully cancelled. Removing %s from database.', trade)
