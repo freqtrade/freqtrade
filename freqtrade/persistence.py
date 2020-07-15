@@ -17,6 +17,7 @@ from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from freqtrade.exceptions import OperationalException
+from freqtrade.misc import safe_value_fallback
 
 logger = logging.getLogger(__name__)
 
@@ -376,7 +377,7 @@ class Trade(_DECL_BASE):
         if order_type in ('market', 'limit') and order['side'] == 'buy':
             # Update open rate and actual amount
             self.open_rate = Decimal(order['price'])
-            self.amount = Decimal(order.get('filled', order['amount']))
+            self.amount = Decimal(safe_value_fallback(order, 'filled', 'amount'))
             self.recalc_open_trade_price()
             logger.info('%s_BUY has been fulfilled for %s.', order_type.upper(), self)
             self.open_order_id = None

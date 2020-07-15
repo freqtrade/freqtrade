@@ -1167,7 +1167,6 @@ class Exchange:
         return (order['fee']['cost'],
                 order['fee']['currency'],
                 self.calculate_fee_rate(order))
-        # calculate rate ? (order['fee']['cost'] / (order['amount'] * order['price']))
 
 
 def is_exchange_bad(exchange_name: str) -> bool:

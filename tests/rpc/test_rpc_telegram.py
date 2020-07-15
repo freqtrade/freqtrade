@@ -691,7 +691,7 @@ def test_reload_config_handle(default_conf, update, mocker) -> None:
 
 
 def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
-                          ticker_sell_up, mocker) -> None:
+                                   ticker_sell_up, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     rpc_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
