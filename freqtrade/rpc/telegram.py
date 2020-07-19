@@ -92,6 +92,7 @@ class Telegram(RPC):
             CommandHandler('stop', self._stop),
             CommandHandler('forcesell', self._forcesell),
             CommandHandler('forcebuy', self._forcebuy),
+            CommandHandler('trades', self._trades),
             CommandHandler('performance', self._performance),
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
@@ -493,6 +494,48 @@ class Telegram(RPC):
         price = float(context.args[1]) if len(context.args) > 1 else None
         try:
             self._rpc_forcebuy(pair, price)
+        except RPCException as e:
+            self._send_msg(str(e))
+
+    @authorized_only
+    def _trades(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /trades <n>
+        Returns last n recent trades.
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        stake_cur = self._config['stake_currency']
+        fiat_disp_cur = self._config.get('fiat_display_currency', '')
+        try:
+            nrecent = int(context.args[0])
+        except (TypeError, ValueError, IndexError):
+            nrecent = 10
+        try:
+            trades = self._rpc_trade_history(
+                nrecent
+            )
+            trades_tab = tabulate(
+                [[trade['open_date'],
+                  trade['pair'],
+                  f"{trade['open_rate']}",
+                  f"{trade['stake_amount']}",
+                  trade['close_date'],
+                  f"{trade['close_rate']}",
+                  f"{trade['close_profit_abs']}"] for trade in trades['trades']],
+                headers=[
+                    'Open Date',
+                    'Pair',
+                    'Open rate',
+                    'Stake Amount',
+                    'Close date',
+                    'Close rate',
+                    'Profit',
+                ],
+                tablefmt='simple')
+            message = f'<b>{nrecent} recent trades</b>:\n<pre>{trades_tab}</pre>'
+            self._send_msg(message, parse_mode=ParseMode.HTML)
         except RPCException as e:
             self._send_msg(str(e))
 
