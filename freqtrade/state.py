@@ -12,7 +12,10 @@ class State(Enum):
     """
     RUNNING = 1
     STOPPED = 2
-    RELOAD_CONF = 3
+    RELOAD_CONFIG = 3
+
+    def __str__(self):
+        return f"{self.name.lower()}"
 
 
 class RunMode(Enum):

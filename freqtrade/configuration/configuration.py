@@ -196,6 +196,7 @@ class Configuration:
         if self.args.get('exportfilename'):
             self._args_to_config(config, argname='exportfilename',
                                  logstring='Storing backtest results to {} ...')
+            config['exportfilename'] = Path(config['exportfilename'])
         else:
             config['exportfilename'] = (config['user_data_dir']
                                         / 'backtest_results/backtest-result.json')
@@ -203,9 +204,9 @@ class Configuration:
     def _process_optimize_options(self, config: Dict[str, Any]) -> None:
 
         # This will override the strategy configuration
-        self._args_to_config(config, argname='ticker_interval',
-                             logstring='Parameter -i/--ticker-interval detected ... '
-                             'Using ticker_interval: {} ...')
+        self._args_to_config(config, argname='timeframe',
+                             logstring='Parameter -i/--timeframe detected ... '
+                             'Using timeframe: {} ...')
 
         self._args_to_config(config, argname='position_stacking',
                              logstring='Parameter --enable-position-stacking detected ...')
@@ -241,8 +242,8 @@ class Configuration:
         self._args_to_config(config, argname='strategy_list',
                              logstring='Using strategy list of {} strategies', logfun=len)
 
-        self._args_to_config(config, argname='ticker_interval',
-                             logstring='Overriding ticker interval with Command line argument')
+        self._args_to_config(config, argname='timeframe',
+                             logstring='Overriding timeframe with Command line argument')
 
         self._args_to_config(config, argname='export',
                              logstring='Parameter --export detected: {} ...')
@@ -293,6 +294,9 @@ class Configuration:
 
         self._args_to_config(config, argname='print_json',
                              logstring='Parameter --print-json detected ...')
+
+        self._args_to_config(config, argname='export_csv',
+                             logstring='Parameter --export-csv detected: {}')
 
         self._args_to_config(config, argname='hyperopt_jobs',
                              logstring='Parameter -j/--job-workers detected: {}')
@@ -359,13 +363,20 @@ class Configuration:
         self._args_to_config(config, argname='indicators2',
                              logstring='Using indicators2: {}')
 
+        self._args_to_config(config, argname='trade_ids',
+                             logstring='Filtering on trade_ids: {}')
+
         self._args_to_config(config, argname='plot_limit',
                              logstring='Limiting plot to: {}')
+
         self._args_to_config(config, argname='trade_source',
                              logstring='Using trades from: {}')
 
         self._args_to_config(config, argname='erase',
                              logstring='Erase detected. Deleting existing data.')
+
+        self._args_to_config(config, argname='no_trades',
+                             logstring='Parameter --no-trades detected.')
 
         self._args_to_config(config, argname='timeframes',
                              logstring='timeframes --timeframes: {}')

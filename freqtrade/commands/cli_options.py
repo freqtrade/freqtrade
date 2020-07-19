@@ -110,8 +110,8 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_true',
     ),
     # Optimize common
-    "ticker_interval": Arg(
-        '-i', '--ticker-interval',
+    "timeframe": Arg(
+        '-i', '--timeframe', '--ticker-interval',
         help='Specify ticker interval (`1m`, `5m`, `30m`, `1h`, `1d`).',
     ),
     "timerange": Arg(
@@ -195,8 +195,7 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='INT',
         default=constants.HYPEROPT_EPOCH,
     ),
-    "effort":
-    Arg(
+    "effort": Arg(
         '--effort',
         help=('The higher the number, the longer will be the search if'
               'no epochs are defined (default: %(default)d).'),
@@ -204,28 +203,29 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='FLOAT',
         default=constants.HYPEROPT_EFFORT,
     ),
-    "mode":
-    Arg('--mode',
+    "mode": Arg(
+        '--mode',
         help='Switches hyperopt to use one optimizer per job, use it'
-              'when backtesting iterations are cheap (default: %(default)s).',
+             'when backtesting iterations are cheap (default: %(default)s).',
         metavar='NAME',
         default=constants.HYPEROPT_MODE),
-    "n_points":
-    Arg('--n-points',
+    "n_points": Arg(
+        '--n-points',
         help='Controls how many points to ask to the optimizer '
-              'increase if cpu usage of each core '
-              'appears low (default: %(default)d).',
+             'increase if cpu usage of each core '
+             'appears low (default: %(default)d).',
         type=int,
         metavar='INT',
-        default=constants.HYPEROPT_N_POINTS),
-    "lie_strat":
-    Arg('--lie-strat',
+        default=constants.HYPEROPT_N_POINTS
+        ),
+    "lie_strat": Arg(
+        '--lie-strat',
         help='Sets the strategy that the optimizer uses to lie '
-              'when asking for more than one point, '
-              'no effect if n_point is one (default: %(default)s).',
-        default=constants.HYPEROPT_LIE_STRAT),
-    "spaces":
-    Arg(
+             'when asking for more than one point, '
+             'no effect if n_point is one (default: %(default)s).',
+        default=constants.HYPEROPT_LIE_STRAT
+        ),
+    "spaces": Arg(
         '--spaces',
         help='Specify which parameters to hyperopt. Space-separated list.',
         choices=['all', 'buy', 'sell', 'roi', 'stoploss', 'trailing', 'default'],
@@ -247,9 +247,16 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "print_json": Arg(
         '--print-json',
-        help='Print best result detailization in JSON format.',
+        help='Print output in JSON format.',
         action='store_true',
         default=False,
+    ),
+    "export_csv": Arg(
+        '--export-csv',
+        help='Export to CSV-File.'
+        ' This will disable table print.'
+        ' Example: --export-csv hyperopt.csv',
+        metavar='FILE',
     ),
     "hyperopt_jobs": Arg(
         '-j', '--job-workers',
@@ -378,7 +385,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "dataformat_ohlcv": Arg(
         '--data-format-ohlcv',
-        help='Storage format for downloaded ohlcv data. (default: `%(default)s`).',
+        help='Storage format for downloaded candle (OHLCV) data. (default: `%(default)s`).',
         choices=constants.AVAILABLE_DATAHANDLERS,
         default='json'
     ),
@@ -395,8 +402,8 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "timeframes": Arg(
         '-t', '--timeframes',
-        help=f'Specify which tickers to download. Space-separated list. '
-        f'Default: `1m 5m`.',
+        help='Specify which tickers to download. Space-separated list. '
+        'Default: `1m 5m`.',
         choices=['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h',
                  '6h', '8h', '12h', '1d', '3d', '1w'],
         default=['1m', '5m'],
@@ -410,9 +417,9 @@ AVAILABLE_CLI_OPTIONS = {
     # Templating options
     "template": Arg(
         '--template',
-        help='Use a template which is either `minimal` or '
-        '`full` (containing multiple sample indicators). Default: `%(default)s`.',
-        choices=['full', 'minimal'],
+        help='Use a template which is either `minimal`, '
+        '`full` (containing multiple sample indicators) or `advanced`. Default: `%(default)s`.',
+        choices=['full', 'minimal', 'advanced'],
         default='full',
     ),
     # Plot dataframe
@@ -436,12 +443,22 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='INT',
         default=750,
     ),
+    "no_trades": Arg(
+        '--no-trades',
+        help='Skip using trades from backtesting file and DB.',
+        action='store_true',
+    ),
     "trade_source": Arg(
         '--trade-source',
         help='Specify the source for trades (Can be DB or file (backtest file)) '
         'Default: %(default)s',
         choices=["DB", "file"],
         default="file",
+    ),
+    "trade_ids": Arg(
+        '--trade-ids',
+        help='Specify the list of trade ids.',
+        nargs='+',
     ),
     # hyperopt-list, hyperopt-show
     "hyperopt_list_profitable": Arg(

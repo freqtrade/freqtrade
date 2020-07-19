@@ -50,39 +50,51 @@ class StrategyResolver(IResolver):
         if 'ask_strategy' not in config:
             config['ask_strategy'] = {}
 
+        if hasattr(strategy, 'ticker_interval') and not hasattr(strategy, 'timeframe'):
+            # Assign ticker_interval to timeframe to keep compatibility
+            if 'timeframe' not in config:
+                logger.warning(
+                    "DEPRECATED: Please migrate to using 'timeframe' instead of 'ticker_interval'."
+                    )
+                strategy.timeframe = strategy.ticker_interval
+
         # Set attributes
         # Check if we need to override configuration
-        #             (Attribute name,                    default,     ask_strategy)
-        attributes = [("minimal_roi",                     {"0": 10.0}, False),
-                      ("ticker_interval",                 None,        False),
-                      ("stoploss",                        None,        False),
-                      ("trailing_stop",                   None,        False),
-                      ("trailing_stop_positive",          None,        False),
-                      ("trailing_stop_positive_offset",   0.0,         False),
-                      ("trailing_only_offset_is_reached", None,        False),
-                      ("process_only_new_candles",        None,        False),
-                      ("order_types",                     None,        False),
-                      ("order_time_in_force",             None,        False),
-                      ("stake_currency",                  None,        False),
-                      ("stake_amount",                    None,        False),
-                      ("startup_candle_count",            None,        False),
-                      ("unfilledtimeout",                 None,        False),
-                      ("use_sell_signal",                 True,        True),
-                      ("sell_profit_only",                False,       True),
-                      ("ignore_roi_if_buy_signal",        False,       True),
+        #             (Attribute name,                    default,     subkey)
+        attributes = [("minimal_roi",                     {"0": 10.0}, None),
+                      ("timeframe",                       None,        None),
+                      ("stoploss",                        None,        None),
+                      ("trailing_stop",                   None,        None),
+                      ("trailing_stop_positive",          None,        None),
+                      ("trailing_stop_positive_offset",   0.0,         None),
+                      ("trailing_only_offset_is_reached", None,        None),
+                      ("process_only_new_candles",        None,        None),
+                      ("order_types",                     None,        None),
+                      ("order_time_in_force",             None,        None),
+                      ("stake_currency",                  None,        None),
+                      ("stake_amount",                    None,        None),
+                      ("startup_candle_count",            None,        None),
+                      ("unfilledtimeout",                 None,        None),
+                      ("use_sell_signal",                 True,        'ask_strategy'),
+                      ("sell_profit_only",                False,       'ask_strategy'),
+                      ("ignore_roi_if_buy_signal",        False,       'ask_strategy'),
+                      ("disable_dataframe_checks",        False,       None),
                       ]
-        for attribute, default, ask_strategy in attributes:
-            if ask_strategy:
-                StrategyResolver._override_attribute_helper(strategy, config['ask_strategy'],
+        for attribute, default, subkey in attributes:
+            if subkey:
+                StrategyResolver._override_attribute_helper(strategy, config.get(subkey, {}),
                                                             attribute, default)
             else:
                 StrategyResolver._override_attribute_helper(strategy, config,
                                                             attribute, default)
 
+        # Assign deprecated variable - to not break users code relying on this.
+        strategy.ticker_interval = strategy.timeframe
+
         # Loop this list again to have output combined
-        for attribute, _, exp in attributes:
-            if exp and attribute in config['ask_strategy']:
-                logger.info("Strategy using %s: %s", attribute, config['ask_strategy'][attribute])
+        for attribute, _, subkey in attributes:
+            if subkey and attribute in config[subkey]:
+                logger.info("Strategy using %s: %s", attribute, config[subkey][attribute])
             elif attribute in config:
                 logger.info("Strategy using %s: %s", attribute, config[attribute])
 

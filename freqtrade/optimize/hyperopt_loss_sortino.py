@@ -39,7 +39,7 @@ class SortinoHyperOptLoss(IHyperOptLoss):
         results.loc[total_profit < 0, 'downside_returns'] = results['profit_percent']
         down_stdev = np.std(results['downside_returns'])
 
-        if np.std(total_profit) != 0.0:
+        if down_stdev != 0:
             sortino_ratio = expected_returns_mean / down_stdev * np.sqrt(365)
         else:
             # Define high (negative) sortino ratio to be clear that this is NOT optimal.

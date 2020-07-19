@@ -3,40 +3,45 @@
 This module contains the hyperopt logic
 """
 
-import os
+import io
 import locale
 import logging
+import os
 import random
 import sys
 import warnings
 from collections import OrderedDict, deque
 from math import factorial, log
-from numpy import iinfo, int32
+from multiprocessing import Manager
 from operator import itemgetter
+from os import path
 from pathlib import Path
-from pprint import pprint
-from typing import Any, Dict, List, Optional, Tuple, Set
+from pprint import pformat
+from queue import Queue
+from typing import Any, Dict, List, Optional, Set, Tuple
 
+import progressbar
 import rapidjson
+import tabulate
 from colorama import Fore, Style
 from colorama import init as colorama_init
-from joblib import (Parallel, cpu_count, delayed, dump, load, wrap_non_picklable_objects)
-from joblib import parallel_backend
-from multiprocessing import Manager
-from queue import Queue
-from pandas import DataFrame, json_normalize, isna
-from tabulate import tabulate
+from joblib import (Parallel, cpu_count, delayed, dump, load, parallel_backend,
+                    wrap_non_picklable_objects)
+from numpy import iinfo, int32
+from pandas import DataFrame, isna, json_normalize
 
+# Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
+import freqtrade.optimize.hyperopt_backend as backend
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import plural, round_dict
 from freqtrade.optimize.backtesting import Backtesting
-# Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
-import freqtrade.optimize.hyperopt_backend as backend
 from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F401
-from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F401
-from freqtrade.resolvers.hyperopt_resolver import (HyperOptLossResolver, HyperOptResolver)
+from freqtrade.optimize.hyperopt_loss_interface import \
+    IHyperOptLoss  # noqa: F401
+from freqtrade.resolvers.hyperopt_resolver import (HyperOptLossResolver,
+                                                   HyperOptResolver)
 
 # Suppress scikit-learn FutureWarnings from skopt
 with warnings.catch_warnings():
@@ -49,6 +54,9 @@ with warnings.catch_warnings():
 # from sklearn.ensemble import HistGradientBoostingRegressor
 # from xgboost import XGBoostRegressor
 
+
+progressbar.streams.wrap_stderr()
+progressbar.streams.wrap_stdout()
 logger = logging.getLogger(__name__)
 
 # supported strategies when asking for multiple points to the optimizer
@@ -81,12 +89,12 @@ class Hyperopt:
         self.custom_hyperoptloss = HyperOptLossResolver.load_hyperoptloss(self.config)
         self.calculate_loss = self.custom_hyperoptloss.hyperopt_loss_function
 
-        self.trials_file = (self.config['user_data_dir'] / 'hyperopt_results' /
-                            'hyperopt_results.pickle')
+        self.results_file = (self.config['user_data_dir'] / 'hyperopt_results' /
+                             'hyperopt_results.pickle')
         self.opts_file = (self.config['user_data_dir'] / 'hyperopt_results' /
                           'hyperopt_optimizers.pickle')
-        self.tickerdata_pickle = (self.config['user_data_dir'] / 'hyperopt_results' /
-                                  'hyperopt_tickerdata.pkl')
+        self.data_pickle_file = (self.config['user_data_dir'] / 'hyperopt_results' /
+                                 'hyperopt_tickerdata.pkl')
 
         self.n_jobs = self.config.get('hyperopt_jobs', -1)
         if self.n_jobs < 0:
@@ -115,7 +123,7 @@ class Hyperopt:
         else:
             logger.info("Continuing on previous hyperopt results.")
 
-        self.num_trials_saved = 0
+        self.num_epochs_saved = 0
 
         # evaluations
         self.trials: List = []
@@ -149,6 +157,7 @@ class Hyperopt:
             self.config['ask_strategy']['use_sell_signal'] = True
 
         self.print_all = self.config.get('print_all', False)
+        self.hyperopt_table_header = 0
         self.print_colorized = self.config.get('print_colorized', False)
         self.print_json = self.config.get('print_json', False)
 
@@ -222,7 +231,7 @@ class Hyperopt:
         """
         Remove hyperopt pickle files to restart hyperopt.
         """
-        for f in [self.tickerdata_pickle, self.trials_file, self.opts_file]:
+        for f in [self.data_pickle_file, self.results_file, self.opts_file]:
             p = Path(f)
             if p.is_file():
                 logger.info(f"Removing `{p}`.")
@@ -241,20 +250,18 @@ class Hyperopt:
         # and the values are taken from the list of parameters.
         return {d.name: v for d, v in zip(dimensions, raw_params)}
 
-    def save_trials(self, final: bool = False) -> None:
+    def _save_results(self) -> None:
         """
-        Save hyperopt trials
+        Save hyperopt results to file
         """
-        num_trials = len(self.trials)
-        if num_trials > self.num_trials_saved:
-            logger.debug(f"\nSaving {num_trials} {plural(num_trials, 'epoch')}.")
-            # save_trials(self.trials, trials_path, self.num_trials_saved)
-            dump(self.trials, self.trials_file)
-            self.num_trials_saved = num_trials
+        num_epochs = len(self.epochs)
+        if num_epochs > self.num_epochs_saved:
+            logger.debug(f"Saving {num_epochs} {plural(num_epochs, 'epoch')}.")
+            dump(self.epochs, self.results_file)
+            self.num_epochs_saved = num_epochs
             self.save_opts()
-        if final:
-            logger.info(f"{num_trials} {plural(num_trials, 'epoch')} "
-                        f"saved to '{self.trials_file}'.")
+            logger.debug(f"{self.num_epochs_saved} {plural(self.num_epochs_saved, 'epoch')} "
+                         f"saved to '{self.results_file}'.")
 
     def save_opts(self) -> None:
         """
@@ -286,13 +293,13 @@ class Hyperopt:
         dump(opts, self.opts_file)
 
     @staticmethod
-    def _read_trials(trials_file: Path) -> List:
+    def _read_results(results_file: Path) -> List:
         """
-        Read hyperopt trials file
+        Read hyperopt results from file
         """
-        logger.info("Reading Trials from '%s'", trials_file)
-        trials = load(trials_file)
-        return trials
+        logger.info("Reading epochs from '%s'", results_file)
+        data = load(results_file)
+        return data
 
     def _get_params_details(self, params: Dict) -> Dict:
         """
@@ -352,6 +359,9 @@ class Hyperopt:
             if space in ['buy', 'sell']:
                 result_dict.setdefault('params', {}).update(space_params)
             elif space == 'roi':
+                # TODO: get rid of OrderedDict when support for python 3.6 will be
+                # dropped (dicts keep the order as the language feature)
+
                 # Convert keys in min_roi dict to strings because
                 # rapidjson cannot dump dicts with integer keys...
                 # OrderedDict is used to keep the numeric order of the items
@@ -366,11 +376,24 @@ class Hyperopt:
     def _params_pretty_print(params, space: str, header: str) -> None:
         if space in params:
             space_params = Hyperopt._space_params(params, space, 5)
+            params_result = f"\n# {header}\n"
             if space == 'stoploss':
-                print(header, space_params.get('stoploss'))
+                params_result += f"stoploss = {space_params.get('stoploss')}"
+            elif space == 'roi':
+                # TODO: get rid of OrderedDict when support for python 3.6 will be
+                # dropped (dicts keep the order as the language feature)
+                minimal_roi_result = rapidjson.dumps(
+                    OrderedDict(
+                        (str(k), v) for k, v in space_params.items()
+                    ),
+                    default=str, indent=4, number_mode=rapidjson.NM_NATIVE)
+                params_result += f"minimal_roi = {minimal_roi_result}"
             else:
-                print(header)
-                pprint(space_params, indent=4)
+                params_result += f"{space}_params = {pformat(space_params, indent=4)}"
+                params_result = params_result.replace("}", "\n}").replace("{", "{\n ")
+
+            params_result = params_result.replace("\n", "\n    ")
+            print(params_result)
 
     @staticmethod
     def _space_params(params, space: str, r: int = None) -> Dict:
@@ -387,24 +410,16 @@ class Hyperopt:
         Log results if it is better than any previous evaluation
         """
         is_best = results['is_best']
-        if self.print_all or is_best:
-            self.print_results_explanation(results, self.epochs_limit(), self.print_all,
-                                           self.print_colorized)
 
-    @staticmethod
-    def print_results_explanation(results, total_epochs, highlight_best: bool,
-                                  print_colorized: bool) -> None:
-        """
-        Log results explanation string
-        """
-        explanation_str = Hyperopt._format_explanation_string(results, total_epochs)
-        # Colorize output
-        if print_colorized:
-            if results['total_profit'] > 0:
-                explanation_str = Fore.GREEN + explanation_str
-            if highlight_best and results['is_best']:
-                explanation_str = Style.BRIGHT + explanation_str
-        print(explanation_str)
+        if self.print_all or is_best:
+            print(
+                self.get_result_table(
+                    self.config, results, self.total_epochs,
+                    self.print_all, self.print_colorized,
+                    self.hyperopt_table_header
+                )
+            )
+            self.hyperopt_table_header = 2
 
     @staticmethod
     def _format_explanation_string(results, total_epochs) -> str:
@@ -414,13 +429,15 @@ class Hyperopt:
                 f"Objective: {results['loss']:.5f}")
 
     @staticmethod
-    def print_result_table(config: dict, results: list, total_epochs: int, highlight_best: bool,
-                           print_colorized: bool) -> None:
+    def get_result_table(config: dict, results: list, total_epochs: int, highlight_best: bool,
+                         print_colorized: bool, remove_header: int) -> str:
         """
         Log result table
         """
         if not results:
-            return
+            return ''
+
+        tabulate.PRESERVE_WHITESPACE = True
 
         trials = json_normalize(results, max_level=1)
         trials['Best'] = ''
@@ -431,37 +448,130 @@ class Hyperopt:
         trials.columns = ['Best', 'Epoch', 'Trades', 'Avg profit', 'Total profit',
                           'Profit', 'Avg duration', 'Objective', 'is_initial_point', 'is_best']
         trials['is_profit'] = False
-        trials.loc[trials['is_initial_point'], 'Best'] = '*'
+        trials.loc[trials['is_initial_point'], 'Best'] = '*     '
         trials.loc[trials['is_best'], 'Best'] = 'Best'
-        trials['Objective'] = trials['Objective'].astype(str)
+        trials.loc[trials['is_initial_point'] & trials['is_best'], 'Best'] = '* Best'
         trials.loc[trials['Total profit'] > 0, 'is_profit'] = True
         trials['Trades'] = trials['Trades'].astype(str)
 
         trials['Epoch'] = trials['Epoch'].apply(
-            lambda x: "{}/{}".format(x, total_epochs))
+            lambda x: '{}/{}'.format(str(x).rjust(len(str(total_epochs)), ' '), total_epochs)
+        )
         trials['Avg profit'] = trials['Avg profit'].apply(
-            lambda x: '{:,.2f}%'.format(x) if not isna(x) else x)
-        trials['Profit'] = trials['Profit'].apply(
-            lambda x: '{:,.2f}%'.format(x) if not isna(x) else x)
-        trials['Total profit'] = trials['Total profit'].apply(
-            lambda x: '{: 11.8f} '.format(x) + config['stake_currency'] if not isna(x) else x)
+            lambda x: '{:,.2f}%'.format(x).rjust(7, ' ') if not isna(x) else "--".rjust(7, ' ')
+        )
         trials['Avg duration'] = trials['Avg duration'].apply(
-            lambda x: '{:,.1f}m'.format(x) if not isna(x) else x)
+            lambda x: '{:,.1f} m'.format(x).rjust(7, ' ') if not isna(x) else "--".rjust(7, ' ')
+        )
+        trials['Objective'] = trials['Objective'].apply(
+            lambda x: '{:,.5f}'.format(x).rjust(8, ' ') if x != 100000 else "N/A".rjust(8, ' ')
+        )
+
+        trials['Profit'] = trials.apply(
+            lambda x: '{:,.8f} {} {}'.format(
+                x['Total profit'], config['stake_currency'],
+                '({:,.2f}%)'.format(x['Profit']).rjust(10, ' ')
+            ).rjust(25+len(config['stake_currency']))
+            if x['Total profit'] != 0.0 else '--'.rjust(25+len(config['stake_currency'])),
+            axis=1
+        )
+        trials = trials.drop(columns=['Total profit'])
+
         if print_colorized:
             for i in range(len(trials)):
                 if trials.loc[i]['is_profit']:
-                    for z in range(len(trials.loc[i])-3):
-                        trials.iat[i, z] = "{}{}{}".format(Fore.GREEN,
-                                                           str(trials.loc[i][z]), Fore.RESET)
+                    for j in range(len(trials.loc[i])-3):
+                        trials.iat[i, j] = "{}{}{}".format(Fore.GREEN,
+                                                           str(trials.loc[i][j]), Fore.RESET)
                 if trials.loc[i]['is_best'] and highlight_best:
-                    for z in range(len(trials.loc[i])-3):
-                        trials.iat[i, z] = "{}{}{}".format(Style.BRIGHT,
-                                                           str(trials.loc[i][z]), Style.RESET_ALL)
+                    for j in range(len(trials.loc[i])-3):
+                        trials.iat[i, j] = "{}{}{}".format(Style.BRIGHT,
+                                                           str(trials.loc[i][j]), Style.RESET_ALL)
 
         trials = trials.drop(columns=['is_initial_point', 'is_best', 'is_profit'])
+        if remove_header > 0:
+            table = tabulate.tabulate(
+                trials.to_dict(orient='list'), tablefmt='orgtbl',
+                headers='keys', stralign="right"
+            )
 
-        print(tabulate(trials.to_dict(orient='list'), headers='keys', tablefmt='psql',
-                       stralign="right"))
+            table = table.split("\n", remove_header)[remove_header]
+        elif remove_header < 0:
+            table = tabulate.tabulate(
+                trials.to_dict(orient='list'), tablefmt='psql',
+                headers='keys', stralign="right"
+            )
+            table = "\n".join(table.split("\n")[0:remove_header])
+        else:
+            table = tabulate.tabulate(
+                trials.to_dict(orient='list'), tablefmt='psql',
+                headers='keys', stralign="right"
+            )
+        return table
+
+    @staticmethod
+    def export_csv_file(config: dict, results: list, total_epochs: int, highlight_best: bool,
+                        csv_file: str) -> None:
+        """
+        Log result to csv-file
+        """
+        if not results:
+            return
+
+        # Verification for overwrite
+        if path.isfile(csv_file):
+            logger.error(f"CSV file already exists: {csv_file}")
+            return
+
+        try:
+            io.open(csv_file, 'w+').close()
+        except IOError:
+            logger.error(f"Failed to create CSV file: {csv_file}")
+            return
+
+        trials = json_normalize(results, max_level=1)
+        trials['Best'] = ''
+        trials['Stake currency'] = config['stake_currency']
+
+        base_metrics = ['Best', 'current_epoch', 'results_metrics.trade_count',
+                        'results_metrics.avg_profit', 'results_metrics.total_profit',
+                        'Stake currency', 'results_metrics.profit', 'results_metrics.duration',
+                        'loss', 'is_initial_point', 'is_best']
+        param_metrics = [("params_dict."+param) for param in results[0]['params_dict'].keys()]
+        trials = trials[base_metrics + param_metrics]
+
+        base_columns = ['Best', 'Epoch', 'Trades', 'Avg profit', 'Total profit', 'Stake currency',
+                        'Profit', 'Avg duration', 'Objective', 'is_initial_point', 'is_best']
+        param_columns = list(results[0]['params_dict'].keys())
+        trials.columns = base_columns + param_columns
+
+        trials['is_profit'] = False
+        trials.loc[trials['is_initial_point'], 'Best'] = '*'
+        trials.loc[trials['is_best'], 'Best'] = 'Best'
+        trials.loc[trials['is_initial_point'] & trials['is_best'], 'Best'] = '* Best'
+        trials.loc[trials['Total profit'] > 0, 'is_profit'] = True
+        trials['Epoch'] = trials['Epoch'].astype(str)
+        trials['Trades'] = trials['Trades'].astype(str)
+
+        trials['Total profit'] = trials['Total profit'].apply(
+            lambda x: '{:,.8f}'.format(x) if x != 0.0 else ""
+        )
+        trials['Profit'] = trials['Profit'].apply(
+            lambda x: '{:,.2f}'.format(x) if not isna(x) else ""
+        )
+        trials['Avg profit'] = trials['Avg profit'].apply(
+            lambda x: '{:,.2f}%'.format(x) if not isna(x) else ""
+        )
+        trials['Avg duration'] = trials['Avg duration'].apply(
+            lambda x: '{:,.1f} m'.format(x) if not isna(x) else ""
+        )
+        trials['Objective'] = trials['Objective'].apply(
+            lambda x: '{:,.5f}'.format(x) if x != 100000 else ""
+        )
+
+        trials = trials.drop(columns=['is_initial_point', 'is_best', 'is_profit'])
+        trials.to_csv(csv_file, index=False, header=True, mode='w', encoding='UTF-8')
+        logger.info(f"CSV file created: {csv_file}")
 
     def has_space(self, space: str) -> bool:
         """
@@ -536,7 +646,7 @@ class Hyperopt:
             self.backtesting.strategy.trailing_only_offset_is_reached = \
                 d['trailing_only_offset_is_reached']
 
-        processed = load(self.tickerdata_pickle)
+        processed = load(self.data_pickle_file)
 
         min_date, max_date = get_timerange(processed)
 
@@ -898,7 +1008,7 @@ class Hyperopt:
             self.print_results(v)
             self.trials.append(v)
         # Save results and optimizers after every batch
-        self.save_trials()
+        self._save_results()
         # track new points if in multi mode
         if self.multi:
             self.track_points(trials=self.trials[frame_start:])
@@ -925,19 +1035,20 @@ class Hyperopt:
         return False
 
     @staticmethod
-    def load_previous_results(trials_file: Path) -> List:
+    def load_previous_results(results_file: Path) -> List:
         """
         Load data for epochs from the file if we have one
         """
-        trials: List = []
-        if trials_file.is_file() and trials_file.stat().st_size > 0:
-            trials = Hyperopt._read_trials(trials_file)
-            if trials[0].get('is_best') is None:
+        epochs: List = []
+        if results_file.is_file() and results_file.stat().st_size > 0:
+            epochs = Hyperopt._read_results(results_file)
+            # Detection of some old format, without 'is_best' field saved
+            if epochs[0].get('is_best') is None:
                 raise OperationalException(
                     "The file with Hyperopt results is incompatible with this version "
                     "of Freqtrade and cannot be loaded.")
-            logger.info(f"Loaded {len(trials)} previous evaluations from disk.")
-        return trials
+            logger.info(f"Loaded {len(epochs)} previous evaluations from disk.")
+        return epochs
 
     @staticmethod
     def load_previous_optimizers(opts_file: Path) -> List:
@@ -1204,7 +1315,7 @@ class Hyperopt:
         self.hyperopt_table_header = -1
         data, timerange = self.backtesting.load_bt_data()
 
-        preprocessed = self.backtesting.strategy.tickerdata_to_dataframe(data)
+        preprocessed = self.backtesting.strategy.ohlcvdata_to_dataframe(data)
 
         # Trim startup period from analyzed dataframe
         for pair, df in preprocessed.items():
@@ -1216,12 +1327,13 @@ class Hyperopt:
             'Hyperopting with data from %s up to %s (%s days)..',
             min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
         )
-        dump(preprocessed, self.tickerdata_pickle)
+        dump(preprocessed, self.data_pickle_file)
 
         # We don't need exchange instance anymore while running hyperopt
         self.backtesting.exchange = None  # type: ignore
+        self.backtesting.pairlists = None  # type: ignore
 
-        self.trials = self.load_previous_results(self.trials_file)
+        self.epochs = self.load_previous_results(self.results_file)
         self.setup_epochs()
 
         logger.info(f"Found {cpu_count()} CPU cores. Let's make them scream!")
@@ -1242,11 +1354,13 @@ class Hyperopt:
 
         self.main_loop(jobs_scheduler)
 
-        self.save_trials(final=True)
+        self._save_results()
+        logger.info(f"{self.num_epochs_saved} {plural(self.num_epochs_saved, 'epoch')} "
+                    f"saved to '{self.results_file}'.")
 
-        if self.trials:
-            sorted_trials = sorted(self.trials, key=itemgetter('loss'))
-            results = sorted_trials[0]
+        if self.epochs:
+            sorted_epochs = sorted(self.epochs, key=itemgetter('loss'))
+            results = sorted_epochs[0]
             self.print_epoch_details(results, self.epochs_limit(), self.print_json)
         else:
             # This is printed when Ctrl+C is pressed quickly, before first epochs have

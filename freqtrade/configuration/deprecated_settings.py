@@ -58,35 +58,23 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
     process_deprecated_setting(config, 'ask_strategy', 'ignore_roi_if_buy_signal',
                                'experimental', 'ignore_roi_if_buy_signal')
 
-    if not config.get('pairlists') and not config.get('pairlists'):
-        config['pairlists'] = [{'method': 'StaticPairList'}]
-        logger.warning(
-            "DEPRECATED: "
-            "Pairlists must be defined explicitly in the future."
-            "Defaulting to StaticPairList for now.")
-
-    if config.get('pairlist', {}).get("method") == 'VolumePairList':
-        logger.warning(
-            "DEPRECATED: "
-            f"Using VolumePairList in pairlist is deprecated and must be moved to pairlists. "
-            "Please refer to the docs on configuration details")
-        pl = {'method': 'VolumePairList'}
-        pl.update(config.get('pairlist', {}).get('config'))
-        config['pairlists'].append(pl)
-
-    if config.get('pairlist', {}).get('config', {}).get('precision_filter'):
-        logger.warning(
-            "DEPRECATED: "
-            f"Using precision_filter setting is deprecated and has been replaced by"
-            "PrecisionFilter. Please refer to the docs on configuration details")
-        config['pairlists'].append({'method': 'PrecisionFilter'})
-
     if (config.get('edge', {}).get('enabled', False)
        and 'capital_available_percentage' in config.get('edge', {})):
-        logger.warning(
+        raise OperationalException(
             "DEPRECATED: "
             "Using 'edge.capital_available_percentage' has been deprecated in favor of "
             "'tradable_balance_ratio'. Please migrate your configuration to "
             "'tradable_balance_ratio' and remove 'capital_available_percentage' "
             "from the edge configuration."
         )
+    if 'ticker_interval' in config:
+        logger.warning(
+            "DEPRECATED: "
+            "Please use 'timeframe' instead of 'ticker_interval."
+        )
+        if 'timeframe' in config:
+            raise OperationalException(
+                "Both 'timeframe' and 'ticker_interval' detected."
+                "Please remove 'ticker_interval' from your configuration to continue operating."
+                )
+        config['timeframe'] = config['ticker_interval']

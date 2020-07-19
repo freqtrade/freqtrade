@@ -102,8 +102,8 @@ def start_list_timeframes(args: Dict[str, Any]) -> None:
     Print ticker intervals (timeframes) available on Exchange
     """
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
-    # Do not use ticker_interval set in the config
-    config['ticker_interval'] = None
+    # Do not use timeframe set in the config
+    config['timeframe'] = None
 
     # Init exchange
     exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
@@ -197,3 +197,30 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
                   args.get('list_pairs_print_json', False) or
                   args.get('print_csv', False)):
             print(f"{summary_str}.")
+
+
+def start_show_trades(args: Dict[str, Any]) -> None:
+    """
+    Show trades
+    """
+    from freqtrade.persistence import init, Trade
+    import json
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+
+    if 'db_url' not in config:
+        raise OperationalException("--db-url is required for this command.")
+
+    logger.info(f'Using DB: "{config["db_url"]}"')
+    init(config['db_url'], clean_open_orders=False)
+    tfilter = []
+
+    if config.get('trade_ids'):
+        tfilter.append(Trade.id.in_(config['trade_ids']))
+
+    trades = Trade.get_trades(tfilter).all()
+    logger.info(f"Printing {len(trades)} Trades: ")
+    if config.get('print_json', False):
+        print(json.dumps([trade.to_json() for trade in trades], indent=4))
+    else:
+        for trade in trades:
+            print(trade)

@@ -29,7 +29,7 @@ class DefaultStrategy(IStrategy):
     stoploss = -0.10
 
     # Optimal ticker interval for the strategy
-    ticker_interval = '5m'
+    timeframe = '5m'
 
     # Optional order type mapping
     order_types = {
@@ -68,7 +68,7 @@ class DefaultStrategy(IStrategy):
         Performance Note: For the best performance be frugal on the number of indicators
         you are using. Let uncomment only the indicator you are using in your strategies
         or your hyperopt configuration, otherwise you will waste your memory and CPU usage.
-        :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
+        :param dataframe: Dataframe with data from the exchange
         :param metadata: Additional information, like the currently traded pair
         :return: a Dataframe with all mandatory indicators for the strategies
         """

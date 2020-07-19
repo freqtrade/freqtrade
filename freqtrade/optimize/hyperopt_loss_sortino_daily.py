@@ -59,7 +59,7 @@ class SortinoHyperOptLossDaily(IHyperOptLoss):
         # where P = sum_daily["profit_percent_after_slippage"]
         down_stdev = math.sqrt((total_downside**2).sum() / len(total_downside))
 
-        if (down_stdev != 0.):
+        if down_stdev != 0:
             sortino_ratio = expected_returns_mean / down_stdev * math.sqrt(days_in_year)
         else:
             # Define high (negative) sortino ratio to be clear that this is NOT optimal.

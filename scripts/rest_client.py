@@ -80,18 +80,18 @@ class FtRestClient():
         return self._post("stop")
 
     def stopbuy(self):
-        """Stop buying (but handle sells gracefully). Use `reload_conf` to reset.
+        """Stop buying (but handle sells gracefully). Use `reload_config` to reset.
 
         :return: json object
         """
         return self._post("stopbuy")
 
-    def reload_conf(self):
+    def reload_config(self):
         """Reload configuration.
 
         :return: json object
         """
-        return self._post("reload_conf")
+        return self._post("reload_config")
 
     def balance(self):
         """Get the account balance.
@@ -155,6 +155,14 @@ class FtRestClient():
         :return: json object containing the version
         """
         return self._get("show_config")
+
+    def trades(self, limit=None):
+        """Return trades history.
+
+        :param limit: Limits trades to the X last trades. No limit to get all the trades.
+        :return: json object
+        """
+        return self._get("trades", params={"limit": limit} if limit else 0)
 
     def whitelist(self):
         """Show the current whitelist.

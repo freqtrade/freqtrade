@@ -22,7 +22,7 @@ class AdvancedSampleHyperOpt(IHyperOpt):
     This is a sample hyperopt to inspire you.
     Feel free to customize it.
 
-    More information in https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md
+    More information in the documentation: https://www.freqtrade.io/en/latest/hyperopt/
 
     You should:
     - Rename the class name to some unique name.
@@ -32,8 +32,9 @@ class AdvancedSampleHyperOpt(IHyperOpt):
     You must keep:
     - The prototypes for the methods: populate_indicators, indicator_space, buy_strategy_generator.
 
-    The roi_space, generate_roi_table, stoploss_space methods are no longer required to be
-    copied in every custom hyperopt. However, you may override them if you need the
+    The methods roi_space, generate_roi_table and stoploss_space are not required
+    and are provided by default.
+    However, you may override them if you need the
     'roi' and the 'stoploss' spaces that differ from the defaults offered by Freqtrade.
 
     This sample illustrates how to override these methods.
@@ -91,6 +92,9 @@ class AdvancedSampleHyperOpt(IHyperOpt):
                     conditions.append(qtpylib.crossed_above(
                         dataframe['close'], dataframe['sar']
                     ))
+
+            # Check that volume is not 0
+            conditions.append(dataframe['volume'] > 0)
 
             if conditions:
                 dataframe.loc[
@@ -151,6 +155,9 @@ class AdvancedSampleHyperOpt(IHyperOpt):
                     conditions.append(qtpylib.crossed_above(
                         dataframe['sar'], dataframe['close']
                     ))
+
+            # Check that volume is not 0
+            conditions.append(dataframe['volume'] > 0)
 
             if conditions:
                 dataframe.loc[

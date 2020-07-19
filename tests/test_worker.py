@@ -60,7 +60,7 @@ def test_throttle(mocker, default_conf, caplog) -> None:
 
     assert result == 42
     assert end - start > 0.1
-    assert log_has_re(r"Throttling with 'throttled_func\(\)': sleep for 0\.10 s.*", caplog)
+    assert log_has_re(r"Throttling with 'throttled_func\(\)': sleep for \d\.\d{2} s.*", caplog)
 
     result = worker._throttle(throttled_func, throttle_secs=-1)
     assert result == 42
