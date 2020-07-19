@@ -1139,7 +1139,8 @@ class Hyperopt:
         if not trials:
             if len(self.trials) > 0:
                 if self.config.get('hyperopt_continue_filtered', False):
-                    trials = filter_trials(self.trials, self.config)
+                    raise ValueError()
+                    # trials = filter_trials(self.trials, self.config)
                 else:
                     trials = self.trials
             else:

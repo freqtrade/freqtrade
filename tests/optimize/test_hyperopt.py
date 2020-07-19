@@ -482,6 +482,7 @@ def test_no_log_if_loss_does_not_improve(hyperopt, caplog) -> None:
 def test_save_results_saves_epochs(mocker, hyperopt, testdatadir, caplog) -> None:
     epochs = create_results(mocker, hyperopt, testdatadir)
     mock_dump = mocker.patch('freqtrade.optimize.hyperopt.dump', return_value=None)
+    mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.save_opts')
     results_file = testdatadir / 'optimize' / 'ut_results.pickle'
 
     caplog.set_level(logging.DEBUG)
@@ -808,7 +809,7 @@ def test_clean_hyperopt(mocker, default_conf, caplog):
 
     # once for tickerdata, once for trials, once for optimizers (list)
     assert unlinkmock.call_count == 3
-    assert log_has(f"Removing `{h.tickerdata_pickle}`.", caplog)
+    assert log_has(f"Removing `{h.data_pickle_file}`.", caplog)
 
 
 def test_continue_hyperopt(mocker, default_conf, caplog):
