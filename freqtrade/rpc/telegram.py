@@ -93,6 +93,7 @@ class Telegram(RPC):
             CommandHandler('forcesell', self._forcesell),
             CommandHandler('forcebuy', self._forcebuy),
             CommandHandler('trades', self._trades),
+            CommandHandler('delete', self._delete),
             CommandHandler('performance', self._performance),
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
@@ -494,6 +495,24 @@ class Telegram(RPC):
         price = float(context.args[1]) if len(context.args) > 1 else None
         try:
             self._rpc_forcebuy(pair, price)
+        except RPCException as e:
+            self._send_msg(str(e))
+
+    @authorized_only
+    def _delete(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /delete <id>.
+        Delete the given trade
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+
+        trade_id = context.args[0] if len(context.args) > 0 else None
+        try:
+            msg = self._rpc_delete(trade_id)
+            self._send_msg('Delete Result: `{result}`'.format(**msg))
+
         except RPCException as e:
             self._send_msg(str(e))
 
