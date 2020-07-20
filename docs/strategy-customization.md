@@ -392,9 +392,9 @@ Imagine you've developed a strategy that trades the `5m` timeframe using signals
 
 The strategy might look something like this:
 
-*Scan through the top 10 pairs by volume using the `VolumePairList` every 5 minutes and use a 14 day ATR to buy and sell.*
+*Scan through the top 10 pairs by volume using the `VolumePairList` every 5 minutes and use a 14 day RSI to buy and sell.*
 
-Due to the limited available data, it's very difficult to resample our `5m` candles into daily candles for use in a 14 day ATR. Most exchanges limit us to just 500 candles which effectively gives us around 1.74 daily candles. We need 14 days at least!
+Due to the limited available data, it's very difficult to resample our `5m` candles into daily candles for use in a 14 day RSI. Most exchanges limit us to just 500 candles which effectively gives us around 1.74 daily candles. We need 14 days at least!
 
 Since we can't resample our data we will have to use an informative pair; and since our whitelist will be dynamic we don't know which pair(s) to use.
 
@@ -410,18 +410,49 @@ class SampleStrategy(IStrategy):
 
     def informative_pairs(self):
 
-        # get access to all pairs available in whitelist. 
+        # get access to all pairs available in whitelist.
         pairs = self.dp.current_whitelist()
         # Assign tf to each pair so they can be downloaded and cached for strategy.
         informative_pairs = [(pair, '1d') for pair in pairs]
         return informative_pairs
 
-    def populate_indicators(self, dataframe, metadata):
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+
+        inf_tf = '1d'
         # Get the informative pair
         informative = self.dp.get_pair_dataframe(pair=metadata['pair'], timeframe='1d')
-        # Get the 14 day ATR.
-        atr = ta.ATR(informative, timeperiod=14)
+        # Get the 14 day rsi
+        informative['rsi'] = ta.RSI(informative, timeperiod=14)
+
+        # Rename columns to be unique
+        informative.columns = [f"{col}_{inf_tf}" for col in informative.columns]
+        # Assuming inf_tf = '1d' - then the columns will now be:
+        # date_1d, open_1d, high_1d, low_1d, close_1d, rsi_1d
+
+        # Combine the 2 dataframes
+        # all indicators on the informative sample MUST be calculated before this point
+        dataframe = pd.merge(dataframe, informative, left_on='date', right_on=f'date_{inf_tf}', how='left')
+        # FFill to have the 1d value available in every row throughout the day.
+        # Without this, comparisons would only work once per day.
+        dataframe = dataframe.ffill()
+        # Calculate rsi of the original dataframe (5m timeframe)
+        dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
+
         # Do other stuff
+        # ...
+
+        return dataframe
+
+    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+
+        dataframe.loc[
+            (
+                (qtpylib.crossed_above(dataframe['rsi'], 30)) &  # Signal: RSI crosses above 30
+                (dataframe['rsi_1d'] < 30) &                     # Ensure daily RSI is < 30
+                (dataframe['volume'] > 0)                        # Ensure this candle had volume (important for backtesting)
+            ),
+            'buy'] = 1
+
 ```
 
 #### *get_pair_dataframe(pair, timeframe)*
@@ -460,7 +491,7 @@ if self.dp:
 
 !!! Warning "Warning in hyperopt"
     This option cannot currently be used during hyperopt.
-    
+
 #### *orderbook(pair, maximum)*
 
 ``` python
@@ -493,6 +524,7 @@ if self.dp:
     data returned from the exchange and add appropriate error handling / defaults.
 
 ***
+
 ### Additional data (Wallets)
 
 The strategy provides access to the `Wallets` object. This contains the current balances on the exchange.
@@ -516,6 +548,7 @@ if self.wallets:
 - `get_total(asset)` - total available balance - sum of the 2 above
 
 ***
+
 ### Additional data (Trades)
 
 A history of Trades can be retrieved in the strategy by querying the database.
