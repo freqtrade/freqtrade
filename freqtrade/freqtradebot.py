@@ -598,6 +598,7 @@ class FreqtradeBot:
         Sends rpc notification when a buy occured.
         """
         msg = {
+            'trade_id': trade.id,
             'type': RPCMessageType.BUY_NOTIFICATION,
             'exchange': self.exchange.name.capitalize(),
             'pair': trade.pair,
@@ -621,6 +622,7 @@ class FreqtradeBot:
         current_rate = self.get_buy_rate(trade.pair, False)
 
         msg = {
+            'trade_id': trade.id,
             'type': RPCMessageType.BUY_CANCEL_NOTIFICATION,
             'exchange': self.exchange.name.capitalize(),
             'pair': trade.pair,
@@ -1149,6 +1151,7 @@ class FreqtradeBot:
 
         msg = {
             'type': RPCMessageType.SELL_NOTIFICATION,
+            'trade_id': trade.id,
             'exchange': trade.exchange.capitalize(),
             'pair': trade.pair,
             'gain': gain,
@@ -1191,6 +1194,7 @@ class FreqtradeBot:
 
         msg = {
             'type': RPCMessageType.SELL_CANCEL_NOTIFICATION,
+            'trade_id': trade.id,
             'exchange': trade.exchange.capitalize(),
             'pair': trade.pair,
             'gain': gain,

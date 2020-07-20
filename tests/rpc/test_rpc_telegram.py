@@ -725,6 +725,7 @@ def test_forcesell_handle(default_conf, update, ticker, fee,
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,
+        'trade_id': 1,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'gain': 'profit',
@@ -784,6 +785,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee,
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,
+        'trade_id': 1,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'gain': 'loss',
@@ -832,6 +834,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
     msg = rpc_mock.call_args_list[0][0][0]
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,
+        'trade_id': 1,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'gain': 'loss',
