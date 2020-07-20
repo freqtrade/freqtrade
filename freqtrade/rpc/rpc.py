@@ -536,6 +536,28 @@ class RPC:
             return trade
         else:
             return None
+            
+    def _rpc_delete(self, trade_id: str) -> Dict[str, str]:
+        """
+        Handler for delete <id>.
+        Delete the given trade
+        """
+        def _exec_delete(trade: Trade) -> None:
+            Trade.session.delete(trade)
+            Trade.session.flush()
+
+        with self._freqtrade._sell_lock:
+            trade = Trade.get_trades(
+                trade_filter=[Trade.id == trade_id, ]
+            ).first()
+            if not trade:
+                logger.warning('delete: Invalid argument received')
+                raise RPCException('invalid argument')
+
+            _exec_delete(trade)
+            Trade.session.flush()
+            self._freqtrade.wallets.update()
+            return {'result': f'Deleted trade {trade_id}.'}
 
     def _rpc_performance(self) -> List[Dict[str, Any]]:
         """
