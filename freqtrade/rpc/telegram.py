@@ -506,8 +506,6 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
-        stake_cur = self._config['stake_currency']
-        fiat_disp_cur = self._config.get('fiat_display_currency', '')
         try:
             nrecent = int(context.args[0])
         except (TypeError, ValueError, IndexError):

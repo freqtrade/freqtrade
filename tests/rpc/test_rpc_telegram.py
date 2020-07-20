@@ -60,7 +60,7 @@ def test__init__(default_conf, mocker) -> None:
     assert telegram._config == default_conf
 
 
-def test_init(default_conf, mocker, caplog) -> None:
+def test_telegram_init(default_conf, mocker, caplog) -> None:
     start_polling = MagicMock()
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock(return_value=start_polling))
 
@@ -72,7 +72,7 @@ def test_init(default_conf, mocker, caplog) -> None:
     assert start_polling.start_polling.call_count == 1
 
     message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
-                   "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], "
+                   "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], ['trades'], "
                    "['performance'], ['daily'], ['count'], ['reload_config', 'reload_conf'], "
                    "['show_config', 'show_conf'], ['stopbuy'], ['whitelist'], ['blacklist'], "
                    "['edge'], ['help'], ['version']]")
