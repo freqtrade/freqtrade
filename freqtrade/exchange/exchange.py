@@ -475,6 +475,7 @@ class Exchange:
             "id": order_id,
             'pair': pair,
             'price': rate,
+            'average': rate,
             'amount': _amount,
             'cost': _amount * rate,
             'type': ordertype,

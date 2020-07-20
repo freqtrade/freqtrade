@@ -554,14 +554,14 @@ class FreqtradeBot:
                                )
                 stake_amount = order['cost']
                 amount = order['filled']
-                buy_limit_filled_price = order['price']
+                buy_limit_filled_price = safe_value_fallback(order, 'average', 'price')
                 order_id = None
 
         # in case of FOK the order may be filled immediately and fully
         elif order_status == 'closed':
             stake_amount = order['cost']
             amount = safe_value_fallback(order, 'filled', 'amount')
-            buy_limit_filled_price = order['price']
+            buy_limit_filled_price = safe_value_fallback(order, 'average', 'price')
 
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
