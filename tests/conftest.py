@@ -661,7 +661,8 @@ def shitcoinmarkets(markets):
     Fixture with shitcoin markets - used to test filters in pairlists
     """
     shitmarkets = deepcopy(markets)
-    shitmarkets.update({'HOT/BTC': {
+    shitmarkets.update({
+        'HOT/BTC': {
             'id': 'HOTBTC',
             'symbol': 'HOT/BTC',
             'base': 'HOT',
@@ -766,7 +767,32 @@ def shitcoinmarkets(markets):
             "spot": True,
             "future": False,
             "active": True
-    },
+        },
+        'ADADOUBLE/USDT': {
+            "percentage": True,
+            "tierBased": False,
+            "taker": 0.001,
+            "maker": 0.001,
+            "precision": {
+                "base": 8,
+                "quote": 8,
+                "amount": 2,
+                "price": 4
+            },
+            "limits": {
+            },
+            "id": "ADADOUBLEUSDT",
+            "symbol": "ADADOUBLE/USDT",
+            "base": "ADADOUBLE",
+            "quote": "USDT",
+            "baseId": "ADADOUBLE",
+            "quoteId": "USDT",
+            "info": {},
+            "type": "spot",
+            "spot": True,
+            "future": False,
+            "active": True
+        },
         })
     return shitmarkets
 
@@ -1380,6 +1406,28 @@ def tickers():
             "open": None,
             "close": None,
             "last": None,
+            "previousClose": None,
+            "change": None,
+            "percentage": 2.628,
+            "average": None,
+            "baseVolume": 0.0,
+            "quoteVolume": 0.0,
+            "info": {}
+        },
+        "ADADOUBLE/USDT": {
+            "symbol": "ADADOUBLE/USDT",
+            "timestamp": 1580469388244,
+            "datetime": "2020-01-31T11:16:28.244Z",
+            "high": None,
+            "low": None,
+            "bid": 0.7305,
+            "bidVolume": None,
+            "ask": 0.7342,
+            "askVolume": None,
+            "vwap": None,
+            "open": None,
+            "close": None,
+            "last": 0,
             "previousClose": None,
             "change": None,
             "percentage": 2.628,
