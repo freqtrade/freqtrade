@@ -596,35 +596,35 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_3, tickers, ohlcv_his
      "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below "
      "0.1% or below 0.00000010 or above 1.00000000.'}]",
      None
-    ),
+     ),
     ({"method": "PriceFilter", "low_price_ratio": 0.001, "min_price": 0.00000010},
      "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below 0.1% or below 0.00000010.'}]",
      None
-    ),
+     ),
     ({"method": "PriceFilter", "low_price_ratio": 0.001, "max_price": 1.00010000},
      "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below 0.1% or above 1.00010000.'}]",
      None
-    ),
+     ),
     ({"method": "PriceFilter", "min_price": 0.00002000},
      "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below 0.00002000.'}]",
      None
-    ),
+     ),
     ({"method": "PriceFilter"},
      "[{'PriceFilter': 'PriceFilter - No price filters configured.'}]",
      None
-    ),
+     ),
     ({"method": "PriceFilter", "low_price_ratio": -0.001},
      None,
      "PriceFilter requires low_price_ratio be >= 0"
-    ), # OperationalException expected
+     ),  # OperationalException expected
     ({"method": "PriceFilter", "min_price": -0.00000010},
      None,
      "PriceFilter requires min_price be >= 0"
-    ), # OperationalException expected
+     ),  # OperationalException expected
     ({"method": "PriceFilter", "max_price": -1.00010000},
      None,
      "PriceFilter requires max_price be >= 0"
-    ), # OperationalException expected
+     ),  # OperationalException expected
 ])
 def test_pricefilter_desc(mocker, whitelist_conf, markets, pairlistconfig,
                           desc_expected, exception_expected):
@@ -638,7 +638,7 @@ def test_pricefilter_desc(mocker, whitelist_conf, markets, pairlistconfig,
         freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
         short_desc = str(freqtrade.pairlists.short_desc())
         assert short_desc == desc_expected
-    else: # # OperationalException expected
+    else:  # OperationalException expected
         with pytest.raises(OperationalException,
                            match=exception_expected):
             freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
