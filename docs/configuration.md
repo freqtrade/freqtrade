@@ -669,19 +669,21 @@ The `PriceFilter` allows filtering of pairs by price. Currently the following pr
 * `low_price_ratio`
 
 The `min_price` setting removes pairs where the price is below the specified price. This is useful if you wish to avoid trading very low-priced pairs.
-This option is disabled by default, and will only apply if set to <> 0.
+This option is disabled by default (or set to 0), and will only apply if set to > 0.
 
 The `max_price` setting removes pairs where the price is above the specified price. This is useful if you wish to trade only low-priced pairs.
-This option is disabled by default, and will only apply if set to <> 0.
+This option is disabled by default (or set to 0), and will only apply if set to > 0.
 
 The `low_price_ratio` setting removes pairs where a raise of 1 price unit (pip) is above the `low_price_ratio` ratio.
-This option is disabled by default, and will only apply if set to <> 0.
+This option is disabled by default (or set to 0), and will only apply if set to > 0.
+
+For `PriceFiler` at least one of its `min_price`, `max_price` or `low_price_ratio` settings must be applied.
 
 Calculation example:
 
-Min price precision is 8 decimals. If price is 0.00000011 - one step would be 0.00000012 - which is almost 10% higher than the previous value.
+Min price precision for SHITCOIN/BTC is 8 decimals. If its price is 0.00000011 - one price step above would be 0.00000012, which is ~9% higher than the previous price value. You may filter out this pair by using PriceFilter with `low_price_ratio` set to 0.09 (9%) or with `min_price` set to 0.00000011, correspondingly.
 
-These pairs are dangerous since it may be impossible to place the desired stoploss - and often result in high losses.
+Low priced pairs are dangerous since they are often illiquid and it may also be impossible to place the desired stoploss, which can often result in high losses. Consider using PriceFilter with `low_price_ratio` set to a value which is less than the absolute value of your stoploss (for example, if your stoploss is -5% (-0.05), then the value for `low_price_ratio` can be 0.04 or even 0.02).
 
 #### ShuffleFilter
 
