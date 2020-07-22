@@ -4,6 +4,7 @@ Price pair list filter
 import logging
 from typing import Any, Dict
 
+from freqtrade.exceptions import OperationalException
 from freqtrade.pairlist.IPairList import IPairList
 
 
@@ -18,11 +19,17 @@ class PriceFilter(IPairList):
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
         self._low_price_ratio = pairlistconfig.get('low_price_ratio', 0)
+        if self._low_price_ratio < 0:
+            raise OperationalException("PriceFilter requires low_price_ratio be >= 0")
         self._min_price = pairlistconfig.get('min_price', 0)
+        if self._min_price < 0:
+            raise OperationalException("PriceFilter requires min_price be >= 0")
         self._max_price = pairlistconfig.get('max_price', 0)
-        self._enabled = ((self._low_price_ratio != 0) or
-                         (self._min_price != 0) or
-                         (self._max_price != 0))
+        if self._max_price < 0:
+            raise OperationalException("PriceFilter requires max_price be >= 0")
+        self._enabled = ((self._low_price_ratio > 0) or
+                         (self._min_price > 0) or
+                         (self._max_price > 0))
 
     @property
     def needstickers(self) -> bool:
