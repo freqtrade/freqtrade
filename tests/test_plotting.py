@@ -21,7 +21,7 @@ from freqtrade.plot.plotting import (add_indicators, add_profit,
                                      load_and_plot_trades, plot_profit,
                                      plot_trades, store_plot_file)
 from freqtrade.resolvers import StrategyResolver
-from tests.conftest import get_args, log_has, log_has_re
+from tests.conftest import get_args, log_has, log_has_re, patch_exchange
 
 
 def fig_generating_mock(fig, *args, **kwargs):
@@ -316,6 +316,8 @@ def test_start_plot_dataframe(mocker):
 
 
 def test_load_and_plot_trades(default_conf, mocker, caplog, testdatadir):
+    patch_exchange(mocker)
+
     default_conf['trade_source'] = 'file'
     default_conf["datadir"] = testdatadir
     default_conf['exportfilename'] = testdatadir / "backtest-result_test.json"
