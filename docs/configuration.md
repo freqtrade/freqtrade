@@ -663,6 +663,7 @@ Filters low-value coins which would not allow setting stoplosses.
 #### PriceFilter
 
 The `PriceFilter` allows filtering of pairs by price. Currently the following price filters are supported:
+
 * `min_price`
 * `max_price`
 * `low_price_ratio`
