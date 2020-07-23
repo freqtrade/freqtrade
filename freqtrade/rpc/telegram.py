@@ -5,6 +5,7 @@ This module manage Telegram communication
 """
 import json
 import logging
+import arrow
 from typing import Any, Callable, Dict
 
 from tabulate import tabulate
@@ -506,6 +507,7 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
+        stake_cur = self._config['stake_currency']
         try:
             nrecent = int(context.args[0])
         except (TypeError, ValueError, IndexError):
@@ -515,21 +517,13 @@ class Telegram(RPC):
                 nrecent
             )
             trades_tab = tabulate(
-                [[trade['open_date'],
+                [[arrow.get(trade['open_date']).humanize(),
                   trade['pair'],
-                  f"{trade['open_rate']}",
-                  f"{trade['stake_amount']}",
-                  trade['close_date'],
-                  f"{trade['close_rate']}",
-                  f"{trade['close_profit_abs']}"] for trade in trades['trades']],
+                  f"{(100 * trade['close_profit']):.2f}% ({trade['close_profit_abs']})"] for trade in trades['trades'] if trade['close_profit'] is not None],
                 headers=[
                     'Open Date',
                     'Pair',
-                    'Open rate',
-                    'Stake Amount',
-                    'Close date',
-                    'Close rate',
-                    'Profit',
+                    f'Profit ({stake_cur})',
                 ],
                 tablefmt='simple')
             message = f'<b>{nrecent} recent trades</b>:\n<pre>{trades_tab}</pre>'
