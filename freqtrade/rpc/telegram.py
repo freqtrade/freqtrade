@@ -527,7 +527,8 @@ class Telegram(RPC):
                     f'Profit ({stake_cur})',
                 ],
                 tablefmt='simple')
-            message = f'<b>{nrecent} recent trades</b>:\n<pre>{trades_tab}</pre>'
+            message = (f"<b>{min(trades['trades_count'], nrecent)} recent trades</b>:\n"
+                       + (f"<pre>{trades_tab}</pre>" if trades['trades_count'] > 0 else ''))
             self._send_msg(message, parse_mode=ParseMode.HTML)
         except RPCException as e:
             self._send_msg(str(e))

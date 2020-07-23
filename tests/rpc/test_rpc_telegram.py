@@ -21,8 +21,9 @@ from freqtrade.rpc import RPCMessageType
 from freqtrade.rpc.telegram import Telegram, authorized_only
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType
-from tests.conftest import (get_patched_freqtradebot, log_has, patch_exchange,
-                            patch_get_signal, patch_whitelist)
+from tests.conftest import (create_mock_trades, get_patched_freqtradebot,
+                            log_has, patch_exchange, patch_get_signal,
+                            patch_whitelist)
 
 
 class DummyCls(Telegram):
@@ -1141,6 +1142,36 @@ def test_edge_enabled(edge_conf, update, mocker) -> None:
     assert msg_mock.call_count == 1
     assert '<b>Edge only validated following pairs:</b>\n<pre>' in msg_mock.call_args_list[0][0][0]
     assert 'Pair      Winrate    Expectancy    Stoploss' in msg_mock.call_args_list[0][0][0]
+
+
+def test_telegram_trades(mocker, update, default_conf, fee):
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    telegram = Telegram(freqtradebot)
+    context = MagicMock()
+    context.args = []
+
+    telegram._trades(update=update, context=context)
+    assert "<b>0 recent trades</b>:" in msg_mock.call_args_list[0][0][0]
+    assert "<pre>" not in msg_mock.call_args_list[0][0][0]
+
+    msg_mock.reset_mock()
+    create_mock_trades(fee)
+
+    context = MagicMock()
+    context.args = [5]
+    telegram._trades(update=update, context=context)
+    msg_mock.call_count == 1
+    assert "3 recent trades</b>:" in msg_mock.call_args_list[0][0][0]
+    assert "Profit (" in msg_mock.call_args_list[0][0][0]
+    assert "Open Date" in msg_mock.call_args_list[0][0][0]
+    assert "<pre>" in msg_mock.call_args_list[0][0][0]
 
 
 def test_help_handle(default_conf, update, mocker) -> None:
