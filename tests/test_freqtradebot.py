@@ -4090,7 +4090,7 @@ def test_cancel_all_open_orders(mocker, default_conf, fee, limit_buy_order, limi
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     create_mock_trades(fee)
     trades = Trade.query.all()
-    assert len(trades) == 3
+    assert len(trades) == 4
     freqtrade.cancel_all_open_orders()
     assert buy_mock.call_count == 1
     assert sell_mock.call_count == 1
