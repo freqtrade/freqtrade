@@ -519,7 +519,8 @@ class Telegram(RPC):
             trades_tab = tabulate(
                 [[arrow.get(trade['open_date']).humanize(),
                   trade['pair'],
-                  f"{(100 * trade['close_profit']):.2f}% ({trade['close_profit_abs']})"] for trade in trades['trades'] if trade['close_profit'] is not None],
+                  f"{(100 * trade['close_profit']):.2f}% ({trade['close_profit_abs']})"]
+                  for trade in trades['trades'] if trade['close_profit'] is not None],
                 headers=[
                     'Open Date',
                     'Pair',
