@@ -520,7 +520,7 @@ class Telegram(RPC):
                 [[arrow.get(trade['open_date']).humanize(),
                   trade['pair'],
                   f"{(100 * trade['close_profit']):.2f}% ({trade['close_profit_abs']})"]
-                 for trade in trades['trades'] if trade['close_profit'] is not None],
+                 for trade in trades['trades']],
                 headers=[
                     'Open Date',
                     'Pair',

@@ -1168,7 +1168,7 @@ def test_telegram_trades(mocker, update, default_conf, fee):
     context.args = [5]
     telegram._trades(update=update, context=context)
     msg_mock.call_count == 1
-    assert "3 recent trades</b>:" in msg_mock.call_args_list[0][0][0]
+    assert "2 recent trades</b>:" in msg_mock.call_args_list[0][0][0]
     assert "Profit (" in msg_mock.call_args_list[0][0][0]
     assert "Open Date" in msg_mock.call_args_list[0][0][0]
     assert "<pre>" in msg_mock.call_args_list[0][0][0]
