@@ -765,6 +765,18 @@ def test_hdf5datahandler_trades_store(testdatadir):
     _clean_test_file(file)
 
 
+def test_hdf5datahandler_trades_purge(mocker, testdatadir):
+    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
+    unlinkmock = mocker.patch.object(Path, "unlink", MagicMock())
+    dh = HDF5DataHandler(testdatadir)
+    assert not dh.trades_purge('UNITTEST/NONEXIST')
+    assert unlinkmock.call_count == 0
+
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    assert dh.trades_purge('UNITTEST/NONEXIST')
+    assert unlinkmock.call_count == 1
+
+
 def test_hdf5datahandler_ohlcv_load_and_resave(testdatadir):
     dh = HDF5DataHandler(testdatadir)
     ohlcv = dh.ohlcv_load('UNITTEST/BTC', '5m')
@@ -795,6 +807,18 @@ def test_hdf5datahandler_ohlcv_load_and_resave(testdatadir):
     # Try loading inexisting file
     ohlcv = dh.ohlcv_load('UNITTEST/NONEXIST', '5m')
     assert ohlcv.empty
+
+
+def test_hdf5datahandler_ohlcv_purge(mocker, testdatadir):
+    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
+    unlinkmock = mocker.patch.object(Path, "unlink", MagicMock())
+    dh = HDF5DataHandler(testdatadir)
+    assert not dh.ohlcv_purge('UNITTEST/NONEXIST', '5m')
+    assert unlinkmock.call_count == 0
+
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    assert dh.ohlcv_purge('UNITTEST/NONEXIST', '5m')
+    assert unlinkmock.call_count == 1
 
 
 def test_gethandlerclass():
