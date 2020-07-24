@@ -707,6 +707,12 @@ def test_datahandler_trades_append(datahandler, testdatadir):
         dh.trades_append('UNITTEST/ETH', [])
 
 
+def test_hdf5datahandler_trades_get_pairs(testdatadir):
+    pairs = HDF5DataHandler.trades_get_pairs(testdatadir)
+    # Convert to set to avoid failures due to sorting
+    assert set(pairs) == {'XRP/ETH'}
+
+
 def test_gethandlerclass():
     cl = get_datahandlerclass('json')
     assert cl == JsonDataHandler

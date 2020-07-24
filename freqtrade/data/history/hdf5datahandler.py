@@ -139,7 +139,8 @@ class HDF5DataHandler(IDataHandler):
                      column sequence as in DEFAULT_TRADES_COLUMNS
         """
         key = self._pair_trades_key(pair)
-        ds = pd.HDFStore(self.filename_trades, mode='a', complevel=9, complib='blosc')
+        ds = pd.HDFStore(self._pair_trades_filename(self._datadir, pair),
+                         mode='a', complevel=9, complib='blosc')
         ds.put(key, pd.DataFrame(data, columns=DEFAULT_TRADES_COLUMNS),
                format='table', data_columns=['timestamp'])
         ds.close()
