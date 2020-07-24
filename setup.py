@@ -86,6 +86,7 @@ setup(name='freqtrade',
           'numpy',
           'pandas',
           'tables',
+          'blosc',
       ],
       extras_require={
           'api': api,
