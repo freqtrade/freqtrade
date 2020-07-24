@@ -713,6 +713,41 @@ def test_hdf5datahandler_trades_get_pairs(testdatadir):
     assert set(pairs) == {'XRP/ETH'}
 
 
+def test_hdf5datahandler_trades_load(mocker, testdatadir, caplog):
+    dh = HDF5DataHandler(testdatadir)
+    trades = dh.trades_load('XRP/ETH')
+    assert isinstance(trades, list)
+
+
+def test_hdf5datahandler_trades_store(mocker, testdatadir, caplog):
+    dh = HDF5DataHandler(testdatadir)
+    trades = dh.trades_load('XRP/ETH')
+
+    dh.trades_store('XRP/NEW', trades)
+    file = testdatadir / 'XRP_NEW-trades.h5'
+    assert file.is_file()
+    # Load trades back
+    trades_new = dh.trades_load('XRP/NEW')
+
+    assert len(trades_new) == len(trades)
+    assert trades[0][0] == trades_new[0][0]
+    assert trades[0][1] == trades_new[0][1]
+    # assert trades[0][2] == trades_new[0][2]  # This is nan - so comparison does not make sense
+    assert trades[0][3] == trades_new[0][3]
+    assert trades[0][4] == trades_new[0][4]
+    assert trades[0][5] == trades_new[0][5]
+    assert trades[0][6] == trades_new[0][6]
+    assert trades[-1][0] == trades_new[-1][0]
+    assert trades[-1][1] == trades_new[-1][1]
+    # assert trades[-1][2] == trades_new[-1][2]  # This is nan - so comparison does not make sense
+    assert trades[-1][3] == trades_new[-1][3]
+    assert trades[-1][4] == trades_new[-1][4]
+    assert trades[-1][5] == trades_new[-1][5]
+    assert trades[-1][6] == trades_new[-1][6]
+
+    _clean_test_file(file)
+
+
 def test_gethandlerclass():
     cl = get_datahandlerclass('json')
     assert cl == JsonDataHandler
