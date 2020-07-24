@@ -670,7 +670,7 @@ def test_jsondatahandler_ohlcv_purge(mocker, testdatadir):
     assert unlinkmock.call_count == 1
 
 
-def test_jsondatahandler_trades_load(mocker, testdatadir, caplog):
+def test_jsondatahandler_trades_load(testdatadir, caplog):
     dh = JsonGzDataHandler(testdatadir)
     logmsg = "Old trades format detected - converting"
     dh.trades_load('XRP/ETH')
@@ -713,13 +713,13 @@ def test_hdf5datahandler_trades_get_pairs(testdatadir):
     assert set(pairs) == {'XRP/ETH'}
 
 
-def test_hdf5datahandler_trades_load(mocker, testdatadir, caplog):
+def test_hdf5datahandler_trades_load(testdatadir):
     dh = HDF5DataHandler(testdatadir)
     trades = dh.trades_load('XRP/ETH')
     assert isinstance(trades, list)
 
 
-def test_hdf5datahandler_trades_store(mocker, testdatadir, caplog):
+def test_hdf5datahandler_trades_store(testdatadir):
     dh = HDF5DataHandler(testdatadir)
     trades = dh.trades_load('XRP/ETH')
 
@@ -744,6 +744,26 @@ def test_hdf5datahandler_trades_store(mocker, testdatadir, caplog):
     assert trades[-1][4] == trades_new[-1][4]
     assert trades[-1][5] == trades_new[-1][5]
     assert trades[-1][6] == trades_new[-1][6]
+
+    _clean_test_file(file)
+
+
+def test_hdf5datahandler_ohlcv_load_and_resave(testdatadir):
+    dh = HDF5DataHandler(testdatadir)
+    ohlcv = dh.ohlcv_load('UNITTEST/BTC', '5m')
+    assert isinstance(ohlcv, DataFrame)
+    assert len(ohlcv) > 0
+
+    file = testdatadir / 'UNITTEST_NEW-5m.h5'
+    assert not file.is_file()
+
+    dh.ohlcv_store('UNITTEST/NEW', '5m', ohlcv)
+    assert file.is_file()
+
+    ohlcv1 = dh.ohlcv_load('UNITTEST/NEW', '5m')
+    # Account for the automatically dropped last candle
+    assert len(ohlcv) - 1 == len(ohlcv1)
+    assert ohlcv.iloc[:-1].equals(ohlcv1)
 
     _clean_test_file(file)
 
