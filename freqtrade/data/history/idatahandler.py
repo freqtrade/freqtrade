@@ -238,8 +238,8 @@ def get_datahandlerclass(datatype: str) -> Type[IDataHandler]:
         from .jsondatahandler import JsonGzDataHandler
         return JsonGzDataHandler
     elif datatype == 'hdf5':
-        from .hdf5datahandler import HDF5Handler
-        return HDF5Handler
+        from .hdf5datahandler import HDF5DataHandler
+        return HDF5DataHandler
     else:
         raise ValueError(f"No datahandler for datatype {datatype} available.")
 

@@ -16,7 +16,7 @@ from .idatahandler import IDataHandler, TradeList
 logger = logging.getLogger(__name__)
 
 
-class HDF5Handler(IDataHandler):
+class HDF5DataHandler(IDataHandler):
 
     _columns = DEFAULT_DATAFRAME_COLUMNS
 
