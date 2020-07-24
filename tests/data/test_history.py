@@ -718,6 +718,23 @@ def test_hdf5datahandler_trades_load(testdatadir):
     trades = dh.trades_load('XRP/ETH')
     assert isinstance(trades, list)
 
+    trades1 = dh.trades_load('UNITTEST/NONEXIST')
+    assert trades1 == []
+    # data goes from 2019-10-11 - 2019-10-13
+    timerange = TimeRange.parse_timerange('20191011-20191012')
+
+    trades2 = dh._trades_load('XRP/ETH', timerange)
+    assert len(trades) > len(trades2)
+
+    # unfiltered load has trades before starttime
+    assert len([t for t in trades if t[0] < timerange.startts * 1000]) >= 0
+    # filtered list does not have trades before starttime
+    assert len([t for t in trades2 if t[0] < timerange.startts * 1000]) == 0
+    # unfiltered load has trades after endtime
+    assert len([t for t in trades if t[0] > timerange.stopts * 1000]) > 0
+    # filtered list does not have trades after endtime
+    assert len([t for t in trades2 if t[0] > timerange.stopts * 1000]) == 0
+
 
 def test_hdf5datahandler_trades_store(testdatadir):
     dh = HDF5DataHandler(testdatadir)
@@ -760,12 +777,24 @@ def test_hdf5datahandler_ohlcv_load_and_resave(testdatadir):
     dh.ohlcv_store('UNITTEST/NEW', '5m', ohlcv)
     assert file.is_file()
 
-    ohlcv1 = dh.ohlcv_load('UNITTEST/NEW', '5m')
-    # Account for the automatically dropped last candle
-    assert len(ohlcv) - 1 == len(ohlcv1)
-    assert ohlcv.iloc[:-1].equals(ohlcv1)
+    assert not ohlcv[ohlcv['date'] < '2018-01-15'].empty
+
+    # Data gores from 2018-01-10 - 2018-01-30
+    timerange = TimeRange.parse_timerange('20180115-20180119')
+
+    # Call private function to ensure timerange is filtered in hdf5
+    ohlcv = dh._ohlcv_load('UNITTEST/BTC', '5m', timerange)
+    ohlcv1 = dh._ohlcv_load('UNITTEST/NEW', '5m', timerange)
+    assert len(ohlcv) == len(ohlcv1)
+    assert ohlcv.equals(ohlcv1)
+    assert ohlcv[ohlcv['date'] < '2018-01-15'].empty
+    assert ohlcv[ohlcv['date'] > '2018-01-19'].empty
 
     _clean_test_file(file)
+
+    # Try loading inexisting file
+    ohlcv = dh.ohlcv_load('UNITTEST/NONEXIST', '5m')
+    assert ohlcv.empty
 
 
 def test_gethandlerclass():
