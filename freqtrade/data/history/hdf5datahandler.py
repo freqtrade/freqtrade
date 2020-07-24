@@ -7,7 +7,9 @@ import pandas as pd
 
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS
+from freqtrade.constants import (DEFAULT_DATAFRAME_COLUMNS,
+                                 DEFAULT_TRADES_COLUMNS,
+                                 ListPairsWithTimeframes)
 
 from .idatahandler import IDataHandler, TradeList
 
@@ -17,6 +19,18 @@ logger = logging.getLogger(__name__)
 class HDF5Handler(IDataHandler):
 
     _columns = DEFAULT_DATAFRAME_COLUMNS
+
+    @classmethod
+    def ohlcv_get_available_data(cls, datadir: Path) -> ListPairsWithTimeframes:
+        """
+        Returns a list of all pairs with ohlcv data available in this datadir
+        :param datadir: Directory to search for ohlcv files
+        :return: List of Tuples of (pair, timeframe)
+        """
+        _tmp = [re.search(r'^([a-zA-Z_]+)\-(\d+\S+)(?=.h5)', p.name)
+                for p in datadir.glob("*.h5")]
+        return [(match[1].replace('_', '/'), match[2]) for match in _tmp
+                if match and len(match.groups()) > 1]
 
     @classmethod
     def ohlcv_get_pairs(cls, datadir: Path, timeframe: str) -> List[str]:
@@ -45,7 +59,7 @@ class HDF5Handler(IDataHandler):
         _data = data.copy()
 
         filename = self._pair_data_filename(self._datadir, pair, timeframe)
-        ds = pd.HDFStore(filename, mode='a', complevel=9)
+        ds = pd.HDFStore(filename, mode='a', complevel=9, complib='blosc')
         ds.put(key, _data.loc[:, self._columns], format='table', data_columns=['date'])
 
         ds.close()
