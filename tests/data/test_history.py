@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 
+from freqtrade.data.history.hdf5datahandler import HDF5DataHandler
 import json
 import uuid
 from pathlib import Path
@@ -12,6 +13,7 @@ from pandas import DataFrame
 from pandas.testing import assert_frame_equal
 
 from freqtrade.configuration import TimeRange
+from freqtrade.constants import AVAILABLE_DATAHANDLERS
 from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.data.history.history_utils import (
     _download_pair_history, _download_trades_history,
@@ -682,14 +684,16 @@ def test_jsondatahandler_trades_purge(mocker, testdatadir):
     assert dh.trades_purge('UNITTEST/NONEXIST')
 
 
-def test_jsondatahandler_ohlcv_append(testdatadir):
-    dh = JsonGzDataHandler(testdatadir)
+@pytest.mark.parametrize('datahandler', AVAILABLE_DATAHANDLERS)
+def test_datahandler_ohlcv_append(datahandler, testdatadir, ):
+    dh = get_datahandler(testdatadir, datahandler)
     with pytest.raises(NotImplementedError):
         dh.ohlcv_append('UNITTEST/ETH', '5m', DataFrame())
 
 
-def test_jsondatahandler_trades_append(testdatadir):
-    dh = JsonGzDataHandler(testdatadir)
+@pytest.mark.parametrize('datahandler', AVAILABLE_DATAHANDLERS)
+def test_datahandler_trades_append(datahandler, testdatadir):
+    dh = get_datahandler(testdatadir, datahandler)
     with pytest.raises(NotImplementedError):
         dh.trades_append('UNITTEST/ETH', [])
 
@@ -702,6 +706,9 @@ def test_gethandlerclass():
     assert cl == JsonGzDataHandler
     assert issubclass(cl, IDataHandler)
     assert issubclass(cl, JsonDataHandler)
+    cl = get_datahandlerclass('hdf5')
+    assert cl == HDF5DataHandler
+    assert issubclass(cl, IDataHandler)
     with pytest.raises(ValueError, match=r"No datahandler for .*"):
         get_datahandlerclass('DeadBeef')
 
@@ -713,3 +720,6 @@ def test_get_datahandler(testdatadir):
     assert type(dh) == JsonGzDataHandler
     dh1 = get_datahandler(testdatadir, 'jsongz', dh)
     assert id(dh1) == id(dh)
+
+    dh = get_datahandler(testdatadir, 'hdf5')
+    assert type(dh) == HDF5DataHandler
