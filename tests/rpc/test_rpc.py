@@ -284,12 +284,11 @@ def test_rpc_trade_history(mocker, default_conf, markets, fee):
     assert isinstance(trades['trades'][1], dict)
 
     trades = rpc._rpc_trade_history(0)
-    assert len(trades['trades']) == 3
-    assert trades['trades_count'] == 3
-    # The first trade is for ETH ... sorting is descending
-    assert trades['trades'][-1]['pair'] == 'ETH/BTC'
-    assert trades['trades'][0]['pair'] == 'ETC/BTC'
-    assert trades['trades'][1]['pair'] == 'ETC/BTC'
+    assert len(trades['trades']) == 2
+    assert trades['trades_count'] == 2
+    # The first closed trade is for ETC ... sorting is descending
+    assert trades['trades'][-1]['pair'] == 'ETC/BTC'
+    assert trades['trades'][0]['pair'] == 'XRP/BTC'
 
 
 def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,

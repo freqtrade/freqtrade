@@ -252,9 +252,10 @@ class RPC:
     def _rpc_trade_history(self, limit: int) -> Dict:
         """ Returns the X last trades """
         if limit > 0:
-            trades = Trade.get_trades().order_by(Trade.id.desc()).limit(limit)
+            trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(
+                Trade.id.desc()).limit(limit)
         else:
-            trades = Trade.get_trades().order_by(Trade.id.desc()).all()
+            trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(Trade.id.desc()).all()
 
         output = [trade.to_json() for trade in trades]
 
