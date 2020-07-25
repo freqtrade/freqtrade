@@ -59,6 +59,7 @@ class HDF5DataHandler(IDataHandler):
         _data = data.copy()
 
         filename = self._pair_data_filename(self._datadir, pair, timeframe)
+
         ds = pd.HDFStore(filename, mode='a', complevel=9, complib='blosc')
         ds.put(key, _data.loc[:, self._columns], format='table', data_columns=['date'])
 
@@ -139,6 +140,7 @@ class HDF5DataHandler(IDataHandler):
                      column sequence as in DEFAULT_TRADES_COLUMNS
         """
         key = self._pair_trades_key(pair)
+
         ds = pd.HDFStore(self._pair_trades_filename(self._datadir, pair),
                          mode='a', complevel=9, complib='blosc')
         ds.put(key, pd.DataFrame(data, columns=DEFAULT_TRADES_COLUMNS),
