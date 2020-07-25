@@ -191,11 +191,11 @@ class HDF5DataHandler(IDataHandler):
         return False
 
     @classmethod
-    def _pair_ohlcv_key(cls, pair: str, timeframe: str) -> Path:
+    def _pair_ohlcv_key(cls, pair: str, timeframe: str) -> str:
         return f"{pair}/ohlcv/tf_{timeframe}"
 
     @classmethod
-    def _pair_trades_key(cls, pair: str) -> Path:
+    def _pair_trades_key(cls, pair: str) -> str:
         return f"{pair}/trades"
 
     @classmethod
