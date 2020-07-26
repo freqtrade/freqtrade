@@ -72,6 +72,7 @@ def _generate_result_line(result: DataFrame, max_open_trades: int, first_column:
         'profit_sum': result['profit_percent'].sum(),
         'profit_sum_pct': result['profit_percent'].sum() * 100.0,
         'profit_total_abs': result['profit_abs'].sum(),
+        'profit_total': result['profit_percent'].sum() / max_open_trades,
         'profit_total_pct': result['profit_percent'].sum() * 100.0 / max_open_trades,
         'duration_avg': str(timedelta(
                             minutes=round(result['trade_duration'].mean()))
