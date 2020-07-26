@@ -142,7 +142,7 @@ def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List
                 'profit_sum': profit_sum,
                 'profit_sum_pct': round(profit_sum * 100, 2),
                 'profit_total_abs': result['profit_abs'].sum(),
-                'profit_pct_total': profit_percent_tot,
+                'profit_total_pct': profit_percent_tot,
             }
         )
     return tabular_data
@@ -338,7 +338,7 @@ def text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]], stake_curren
 
     output = [[
         t['sell_reason'], t['trades'], t['wins'], t['draws'], t['losses'],
-        t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'], t['profit_pct_total'],
+        t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'], t['profit_total_pct'],
     ] for t in sell_reason_stats]
     return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
 
