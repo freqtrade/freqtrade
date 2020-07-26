@@ -253,9 +253,9 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
             'left_open_trades': left_open_results,
             'total_trades': len(results),
             'backtest_start': min_date.datetime,
-            'backtest_start_ts': min_date.timestamp,
+            'backtest_start_ts': min_date.timestamp * 1000,
             'backtest_end': max_date.datetime,
-            'backtest_end_ts': max_date.timestamp,
+            'backtest_end_ts': max_date.timestamp * 1000,
             'backtest_days': backtest_days,
 
             'trades_per_day': round(len(results) / backtest_days, 2) if backtest_days > 0 else None,
@@ -272,9 +272,9 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
             strat_stats.update({
                 'max_drawdown': max_drawdown,
                 'drawdown_start': drawdown_start,
-                'drawdown_start_ts': drawdown_start.timestamp(),
+                'drawdown_start_ts': drawdown_start.timestamp() * 1000,
                 'drawdown_end': drawdown_end,
-                'drawdown_end_ts': drawdown_end.timestamp(),
+                'drawdown_end_ts': drawdown_end.timestamp() * 1000,
             })
         except ValueError:
             strat_stats.update({
