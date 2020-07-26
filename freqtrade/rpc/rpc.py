@@ -689,19 +689,19 @@ class RPC:
             _data = _data.iloc[-limit:].copy()
         return self._convert_dataframe_to_dict(pair, _data, last_analyzed)
 
-    def _rpc_analysed_history_full(self, pair: str, timeframe: str,
+    def _rpc_analysed_history_full(self, config: Dict[str, any], pair: str, timeframe: str,
                                    timerange: str) -> Dict[str, Any]:
         timerange = TimeRange.parse_timerange(timerange)
 
         _data = load_data(
-            datadir=self._freqtrade.config.get("datadir"),
+            datadir=config.get("datadir"),
             pairs=[pair],
-            timeframe=self._freqtrade.config.get('timeframe', '5m'),
+            timeframe=timeframe,
             timerange=timerange,
-            data_format=self._freqtrade.config.get('dataformat_ohlcv', 'json'),
+            data_format=config.get('dataformat_ohlcv', 'json'),
         )
         from freqtrade.resolvers.strategy_resolver import StrategyResolver
-        strategy = StrategyResolver.load_strategy(self._freqtrade.config)
+        strategy = StrategyResolver.load_strategy(config)
         df_analyzed = strategy.analyze_ticker(_data[pair], {'pair': pair})
 
         return self._convert_dataframe_to_dict(pair, df_analyzed, arrow.Arrow.utcnow().datetime)

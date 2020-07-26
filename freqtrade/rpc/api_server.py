@@ -1,3 +1,4 @@
+from copy import deepcopy
 import logging
 import threading
 from datetime import date, datetime
@@ -538,14 +539,19 @@ class ApiServer(RPC):
         parameters:
             - pair: Pair
             - timeframe: Timeframe to get data for (should be aligned to strategy.timeframe)
+            - strategy: Strategy to use - Must exist in configured strategy-path!
             - timerange: timerange in the format YYYYMMDD-YYYYMMDD (YYYYMMDD- or (-YYYYMMDD))
                          are als possible. If omitted uses all available data.
         """
         pair = request.args.get("pair")
         timeframe = request.args.get("timeframe")
         timerange = request.args.get("timerange")
-
-        results = self._rpc_analysed_history_full(pair, timeframe, timerange)
+        strategy = request.args.get("strategy")
+        config = deepcopy(self._config)
+        config.update({
+            'strategy': strategy,
+        })
+        results = self._rpc_analysed_history_full(config, pair, timeframe, timerange)
         return self.rest_dump(results)
 
     @require_login
