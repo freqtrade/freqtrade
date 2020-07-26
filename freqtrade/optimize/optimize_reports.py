@@ -208,9 +208,9 @@ def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
         'draw_days': draw_days,
         'losing_days': losing_days,
         'winner_holding_avg': (timedelta(minutes=round(winning_trades['trade_duration'].mean()))
-                               if not winning_trades.empty else '0:00'),
+                               if not winning_trades.empty else timedelta()),
         'loser_holding_avg': (timedelta(minutes=round(losing_trades['trade_duration'].mean()))
-                              if not losing_trades.empty else '0:00'),
+                              if not losing_trades.empty else timedelta()),
     }
 
 
