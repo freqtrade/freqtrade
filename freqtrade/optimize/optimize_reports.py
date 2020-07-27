@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 
 from arrow import Arrow
 from pandas import DataFrame
+from numpy import int64
 from tabulate import tabulate
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
@@ -245,6 +246,9 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
                                                   results=results.loc[results['open_at_end']],
                                                   skip_nan=True)
         daily_stats = generate_daily_stats(results)
+
+        results['open_timestamp'] = results['open_date'].astype(int64) // 1e6
+        results['close_timestamp'] = results['close_date'].astype(int64) // 1e6
 
         backtest_days = (max_date - min_date).days
         strat_stats = {
