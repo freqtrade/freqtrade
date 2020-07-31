@@ -827,6 +827,8 @@ def test_api_pair_candles(botclient, ohlcv_history):
     rc = client_get(client,
                     f"{BASE_URI}/pair_candles?limit={amount}&pair=XRP%2FBTC&timeframe={timeframe}")
     assert_response(rc)
+    assert 'strategy' in rc.json
+    assert rc.json['strategy'] == 'DefaultStrategy'
     assert 'columns' in rc.json
     assert 'data_start_ts' in rc.json
     assert 'data_start' in rc.json

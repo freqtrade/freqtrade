@@ -657,7 +657,8 @@ class RPC:
             raise RPCException('Edge is not enabled.')
         return self._freqtrade.edge.accepted_pairs()
 
-    def _convert_dataframe_to_dict(self, pair: str, dataframe: DataFrame, last_analyzed: datetime):
+    def _convert_dataframe_to_dict(self, strategy: str, pair: str, dataframe: DataFrame,
+                                   last_analyzed: datetime):
 
         dataframe.loc[:, '__date_ts'] = dataframe.loc[:, 'date'].astype(int64) // 1000 // 1000
         # Move open to seperate column when signal for easy plotting
@@ -671,6 +672,7 @@ class RPC:
 
         return {
             'pair': pair,
+            'strategy': strategy,
             'columns': list(dataframe.columns),
             'data': dataframe.values.tolist(),
             'length': len(dataframe),
@@ -687,7 +689,8 @@ class RPC:
         _data, last_analyzed = self._freqtrade.dataprovider.get_analyzed_dataframe(pair, timeframe)
         if limit:
             _data = _data.iloc[-limit:].copy()
-        return self._convert_dataframe_to_dict(pair, _data, last_analyzed)
+        return self._convert_dataframe_to_dict(self._freqtrade.config['strategy'],
+                                               pair, _data, last_analyzed)
 
     def _rpc_analysed_history_full(self, config: Dict[str, any], pair: str, timeframe: str,
                                    timerange: str) -> Dict[str, Any]:
@@ -704,7 +707,8 @@ class RPC:
         strategy = StrategyResolver.load_strategy(config)
         df_analyzed = strategy.analyze_ticker(_data[pair], {'pair': pair})
 
-        return self._convert_dataframe_to_dict(pair, df_analyzed, arrow.Arrow.utcnow().datetime)
+        return self._convert_dataframe_to_dict(strategy.get_strategy_name(), pair, df_analyzed,
+                                               arrow.Arrow.utcnow().datetime)
 
     def _rpc_plot_config(self) -> Dict[str, Any]:
 
