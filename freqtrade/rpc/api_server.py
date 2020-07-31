@@ -1,8 +1,9 @@
-from copy import deepcopy
 import logging
 import threading
+from copy import deepcopy
 from datetime import date, datetime
 from ipaddress import IPv4Address
+from pathlib import Path
 from typing import Any, Callable, Dict
 
 from arrow import Arrow
@@ -16,7 +17,7 @@ from werkzeug.security import safe_str_cmp
 from werkzeug.serving import make_server
 
 from freqtrade.__init__ import __version__
-from freqtrade.constants import DATETIME_PRINT_FORMAT
+from freqtrade.constants import DATETIME_PRINT_FORMAT, USERPATH_STRATEGIES
 from freqtrade.persistence import Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.rpc.rpc import RPC, RPCException
@@ -219,6 +220,9 @@ class ApiServer(RPC):
                               view_func=self._analysed_history, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/plot_config', 'plot_config',
                               view_func=self._plot_config, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/strategies', 'strategies',
+                              view_func=self._list_strategies, methods=['GET'])
+
         # Combined actions and infos
         self.app.add_url_rule(f'{BASE_URI}/blacklist', 'blacklist', view_func=self._blacklist,
                               methods=['GET', 'POST'])
@@ -561,3 +565,14 @@ class ApiServer(RPC):
         Handler for /plot_config.
         """
         return self.rest_dump(self._rpc_plot_config())
+
+    @require_login
+    @rpc_catch_errors
+    def _list_strategies(self):
+        directory = Path(self._config.get(
+            'strategy_path', self._config['user_data_dir'] / USERPATH_STRATEGIES))
+        from freqtrade.resolvers.strategy_resolver import StrategyResolver
+        strategy_objs = StrategyResolver.search_all_objects(directory, False)
+        strategy_objs = sorted(strategy_objs, key=lambda x: x['name'])
+
+        return self.rest_dump([x['name'] for x in strategy_objs])

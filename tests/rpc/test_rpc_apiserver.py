@@ -867,3 +867,12 @@ def test_api_plot_config(botclient):
     assert_response(rc)
     assert rc.json == ftbot.strategy.plot_config
     assert isinstance(rc.json['main_plot'], dict)
+
+
+def test_api_strategies(botclient):
+    ftbot, client = botclient
+
+    rc = client_get(client, f"{BASE_URI}/strategies")
+
+    assert_response(rc)
+    assert rc.json == ['DefaultStrategy', 'TestStrategyLegacy']
