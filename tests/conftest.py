@@ -146,6 +146,7 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     :return: FreqtradeBot
     """
     patch_freqtradebot(mocker, config)
+    config['datadir'] = Path(config['datadir'])
     return FreqtradeBot(config)
 
 

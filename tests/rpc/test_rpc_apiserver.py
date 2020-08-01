@@ -878,3 +878,29 @@ def test_api_strategies(botclient):
 
     assert_response(rc)
     assert rc.json == {'strategies': ['DefaultStrategy', 'TestStrategyLegacy']}
+
+
+def test_list_available_pairs(botclient):
+    ftbot, client = botclient
+
+    rc = client_get(client, f"{BASE_URI}/available_pairs")
+
+    assert_response(rc)
+    assert rc.json['length'] == 12
+    assert isinstance(rc.json['pairs'], list)
+
+    rc = client_get(client, f"{BASE_URI}/available_pairs?timeframe=5m")
+    assert_response(rc)
+    assert rc.json['length'] == 12
+
+    rc = client_get(client, f"{BASE_URI}/available_pairs?stake_currency=ETH")
+    assert_response(rc)
+    assert rc.json['length'] == 1
+    assert rc.json['pairs'] == ['XRP/ETH']
+    assert len(rc.json['pair_interval']) == 2
+
+    rc = client_get(client, f"{BASE_URI}/available_pairs?stake_currency=ETH&timeframe=5m")
+    assert_response(rc)
+    assert rc.json['length'] == 1
+    assert rc.json['pairs'] == ['XRP/ETH']
+    assert len(rc.json['pair_interval']) == 1

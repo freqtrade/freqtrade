@@ -222,6 +222,8 @@ class ApiServer(RPC):
                               view_func=self._plot_config, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/strategies', 'strategies',
                               view_func=self._list_strategies, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/available_pairs', 'pairs',
+                              view_func=self._list_available_pairs, methods=['GET'])
 
         # Combined actions and infos
         self.app.add_url_rule(f'{BASE_URI}/blacklist', 'blacklist', view_func=self._blacklist,
@@ -540,7 +542,7 @@ class ApiServer(RPC):
         Returns the dataframe of a given timerange
         Takes the following get arguments:
         get:
-        parameters:
+          parameters:
             - pair: Pair
             - timeframe: Timeframe to get data for (should be aligned to strategy.timeframe)
             - strategy: Strategy to use - Must exist in configured strategy-path!
@@ -580,3 +582,38 @@ class ApiServer(RPC):
         strategy_objs = sorted(strategy_objs, key=lambda x: x['name'])
 
         return self.rest_dump({'strategies': [x['name'] for x in strategy_objs]})
+
+    @require_login
+    @rpc_catch_errors
+    def _list_available_pairs(self):
+        """
+        Handler for /available_pairs.
+        Returns an object, with pairs, available pair length and pair_interval combinations
+        Takes the following get arguments:
+        get:
+          parameters:
+            - stake_currency: Filter on this stake currency
+            - timeframe: Timeframe to get data for Filter elements to this timeframe
+        """
+        timeframe = request.args.get("timeframe")
+        stake_currency = request.args.get("stake_currency")
+
+        from freqtrade.data.history import get_datahandler
+        dh = get_datahandler(self._config['datadir'], self._config.get('dataformat_ohlcv', None))
+
+        pair_interval = dh.ohlcv_get_available_data(self._config['datadir'])
+
+        if timeframe:
+            pair_interval = [pair for pair in pair_interval if pair[1] == timeframe]
+        if stake_currency:
+            pair_interval = [pair for pair in pair_interval if pair[0].endswith(stake_currency)]
+        pair_interval = sorted(pair_interval, key=lambda x: x[0])
+
+        pairs = list({x[0] for x in pair_interval})
+
+        result = {
+            'length': len(pairs),
+            'pairs': pairs,
+            'pair_interval': pair_interval,
+        }
+        return self.rest_dump(result)
