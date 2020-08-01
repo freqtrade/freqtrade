@@ -93,13 +93,12 @@ class RPC:
     def send_msg(self, msg: Dict[str, str]) -> None:
         """ Sends a message to all registered rpc modules """
 
-    def _rpc_show_config(self) -> Dict[str, Any]:
+    def _rpc_show_config(self, config) -> Dict[str, Any]:
         """
         Return a dict of config options.
         Explicitly does NOT return the full config to avoid leakage of sensitive
         information via rpc.
         """
-        config = self._freqtrade.config
         val = {
             'dry_run': config['dry_run'],
             'stake_currency': config['stake_currency'],
@@ -120,7 +119,7 @@ class RPC:
             'forcebuy_enabled': config.get('forcebuy_enable', False),
             'ask_strategy': config.get('ask_strategy', {}),
             'bid_strategy': config.get('bid_strategy', {}),
-            'state': str(self._freqtrade.state)
+            'state': str(self._freqtrade.state) if self._freqtrade else '',
         }
         return val
 

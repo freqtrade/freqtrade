@@ -328,7 +328,7 @@ class ApiServer(RPC):
         """
         Prints the bot's version
         """
-        return self.rest_dump(self._rpc_show_config())
+        return self.rest_dump(self._rpc_show_config(self._config))
 
     @require_login
     @rpc_catch_errors
