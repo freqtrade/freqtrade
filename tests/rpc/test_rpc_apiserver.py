@@ -877,4 +877,4 @@ def test_api_strategies(botclient):
     rc = client_get(client, f"{BASE_URI}/strategies")
 
     assert_response(rc)
-    assert rc.json == ['DefaultStrategy', 'TestStrategyLegacy']
+    assert rc.json == {'strategies': ['DefaultStrategy', 'TestStrategyLegacy']}

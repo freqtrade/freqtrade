@@ -551,6 +551,10 @@ class ApiServer(RPC):
         timeframe = request.args.get("timeframe")
         timerange = request.args.get("timerange")
         strategy = request.args.get("strategy")
+
+        if not pair or not timeframe or not timerange or not strategy:
+            return self.rest_error("Mandatory parameter missing.")
+
         config = deepcopy(self._config)
         config.update({
             'strategy': strategy,
@@ -575,4 +579,4 @@ class ApiServer(RPC):
         strategy_objs = StrategyResolver.search_all_objects(directory, False)
         strategy_objs = sorted(strategy_objs, key=lambda x: x['name'])
 
-        return self.rest_dump([x['name'] for x in strategy_objs])
+        return self.rest_dump({'strategies': [x['name'] for x in strategy_objs]})
