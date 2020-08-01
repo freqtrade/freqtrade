@@ -1818,7 +1818,7 @@ def test_cancel_order_with_result_error(default_conf, mocker, exchange_name, cap
 
     res = exchange.cancel_order_with_result('1234', 'ETH/BTC', 1541)
     assert isinstance(res, dict)
-    assert log_has("Could not cancel order 1234.", caplog)
+    assert log_has("Could not cancel order 1234 for ETH/BTC.", caplog)
     assert log_has("Could not fetch cancelled order 1234.", caplog)
     assert res['amount'] == 1541
 

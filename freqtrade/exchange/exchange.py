@@ -999,7 +999,7 @@ class Exchange:
             if self.is_cancel_order_result_suitable(corder):
                 return corder
         except InvalidOrderException:
-            logger.warning(f"Could not cancel order {order_id}.")
+            logger.warning(f"Could not cancel order {order_id} for {pair}.")
         try:
             order = self.fetch_order(order_id, pair)
         except InvalidOrderException:
