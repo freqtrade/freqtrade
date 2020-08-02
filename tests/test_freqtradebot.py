@@ -1660,6 +1660,7 @@ def test_exit_positions_exception(mocker, default_conf, limit_buy_order, caplog)
     trade = MagicMock()
     trade.open_order_id = None
     trade.open_fee = 0.001
+    trade.pair = 'ETH/BTC'
     trades = [trade]
 
     # Test raise of DependencyException exception
@@ -1669,7 +1670,7 @@ def test_exit_positions_exception(mocker, default_conf, limit_buy_order, caplog)
     )
     n = freqtrade.exit_positions(trades)
     assert n == 0
-    assert log_has('Unable to sell trade: ', caplog)
+    assert log_has('Unable to sell trade ETH/BTC: ', caplog)
 
 
 def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> None:

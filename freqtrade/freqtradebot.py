@@ -660,7 +660,7 @@ class FreqtradeBot:
                     trades_closed += 1
 
             except DependencyException as exception:
-                logger.warning('Unable to sell trade: %s', exception)
+                logger.warning('Unable to sell trade %s: %s', trade.pair, exception)
 
         # Updating wallets if any trade occured
         if trades_closed:
