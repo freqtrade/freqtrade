@@ -2315,6 +2315,18 @@ def test_calculate_fee_rate(mocker, default_conf, order, expected) -> None:
     (3, 3, 1),
     (0, 1, 2),
     (1, 1, 1),
+    (0, 4, 17),
+    (1, 4, 10),
+    (2, 4, 5),
+    (3, 4, 2),
+    (4, 4, 1),
+    (0, 5, 26),
+    (1, 5, 17),
+    (2, 5, 10),
+    (3, 5, 5),
+    (4, 5, 2),
+    (5, 5, 1),
+
 ])
 def test_calculate_backoff(retrycount, max_retries, expected):
     assert calculate_backoff(retrycount, max_retries) == expected
