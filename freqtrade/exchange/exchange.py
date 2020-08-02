@@ -1008,7 +1008,7 @@ class Exchange:
 
         return order
 
-    @retrier
+    @retrier(retries=5)
     def fetch_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
             try:

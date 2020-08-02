@@ -1896,10 +1896,10 @@ def test_fetch_order(default_conf, mocker, exchange_name):
         assert tm.call_args_list[1][0][0] == 2
         assert tm.call_args_list[2][0][0] == 5
         assert tm.call_args_list[3][0][0] == 10
-    assert api_mock.fetch_order.call_count == API_RETRY_COUNT + 1
+    assert api_mock.fetch_order.call_count == 6
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
-                           'fetch_order', 'fetch_order',
+                           'fetch_order', 'fetch_order', retries=6,
                            order_id='_', pair='TKN/BTC')
 
 
@@ -1932,6 +1932,7 @@ def test_fetch_stoploss_order(default_conf, mocker, exchange_name):
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            'fetch_stoploss_order', 'fetch_order',
+                           retries=6,
                            order_id='_', pair='TKN/BTC')
 
 

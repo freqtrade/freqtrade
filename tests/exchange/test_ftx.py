@@ -154,4 +154,5 @@ def test_fetch_stoploss_order(default_conf, mocker):
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, 'ftx',
                            'fetch_stoploss_order', 'fetch_orders',
+                           retries=6,
                            order_id='_', pair='TKN/BTC')
