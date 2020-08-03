@@ -1726,6 +1726,7 @@ def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_
         amount=amount,
         exchange='binance',
         open_rate=0.245441,
+        open_date=arrow.utcnow().datetime,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_order_id="123456",
@@ -1816,6 +1817,7 @@ def test_update_trade_state_sell(default_conf, trades_for_order, limit_sell_orde
         open_rate=0.245441,
         fee_open=0.0025,
         fee_close=0.0025,
+        open_date=arrow.utcnow().datetime,
         open_order_id="123456",
         is_open=True,
     )
