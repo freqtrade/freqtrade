@@ -252,9 +252,10 @@ class RPC:
     def _rpc_trade_history(self, limit: int) -> Dict:
         """ Returns the X last trades """
         if limit > 0:
-            trades = Trade.get_trades().order_by(Trade.id.desc()).limit(limit)
+            trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(
+                Trade.id.desc()).limit(limit)
         else:
-            trades = Trade.get_trades().order_by(Trade.id.desc()).all()
+            trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(Trade.id.desc()).all()
 
         output = [trade.to_json() for trade in trades]
 
@@ -523,7 +524,7 @@ class RPC:
         # check if valid pair
 
         # check if pair already has an open pair
-        trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair.is_(pair)]).first()
+        trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
         if trade:
             raise RPCException(f'position for {pair} already open - id: {trade.id}')
 
@@ -532,7 +533,7 @@ class RPC:
 
         # execute buy
         if self._freqtrade.execute_buy(pair, stakeamount, price):
-            trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair.is_(pair)]).first()
+            trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
             return trade
         else:
             return None

@@ -56,7 +56,7 @@ class PriceFilter(IPairList):
         :param ticker: ticker dict as returned from ccxt.load_markets()
         :return: True if the pair can stay, false if it should be removed
         """
-        if ticker['last'] is None:
+        if ticker['last'] is None or ticker['last'] == 0:
             self.log_on_refresh(logger.info,
                                 f"Removed {ticker['symbol']} from whitelist, because "
                                 "ticker['last'] is empty (Usually no trade in the last 24h).")
