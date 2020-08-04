@@ -1200,8 +1200,8 @@ def test_telegram_delete_trade(mocker, update, default_conf, fee):
     context.args = [1]
     telegram._delete_trade(update=update, context=context)
     msg_mock.call_count == 1
-    assert "Delete Result" in msg_mock.call_args_list[0][0][0]
     assert "Deleted trade 1." in msg_mock.call_args_list[0][0][0]
+    assert "Please make sure to take care of this asset" in msg_mock.call_args_list[0][0][0]
 
 
 def test_help_handle(default_conf, update, mocker) -> None:

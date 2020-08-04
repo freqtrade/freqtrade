@@ -547,7 +547,10 @@ class Telegram(RPC):
         trade_id = context.args[0] if len(context.args) > 0 else None
         try:
             msg = self._rpc_delete(trade_id)
-            self._send_msg('Delete Result: `{result_msg}`'.format(**msg))
+            self._send_msg((
+                'Delete Result: `{result_msg}`'
+                'Please make sure to take care of this asset on the exchange manually.'
+            ).format(**msg))
 
         except RPCException as e:
             self._send_msg(str(e))

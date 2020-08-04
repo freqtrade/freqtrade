@@ -6,7 +6,7 @@ from abc import abstractmethod
 from datetime import date, datetime, timedelta
 from enum import Enum
 from math import isnan
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import arrow
 from numpy import NAN, mean
@@ -538,7 +538,7 @@ class RPC:
         else:
             return None
 
-    def _rpc_delete(self, trade_id: str) -> Dict[str, str]:
+    def _rpc_delete(self, trade_id: str) -> Dict[str, Union[str, int]]:
         """
         Handler for delete <id>.
         Delete the given trade and close eventually existing open orders.
