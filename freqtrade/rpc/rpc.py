@@ -11,9 +11,9 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 from numpy import NAN, mean
 
-from freqtrade.exceptions import ExchangeError, PricingError
-
-from freqtrade.exchange import timeframe_to_msecs, timeframe_to_minutes
+from freqtrade.exceptions import (ExchangeError, InvalidOrderException,
+                                  PricingError)
+from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -541,24 +541,42 @@ class RPC:
     def _rpc_delete(self, trade_id: str) -> Dict[str, str]:
         """
         Handler for delete <id>.
-        Delete the given trade
+        Delete the given trade and close eventually existing open orders.
         """
-        def _exec_delete(trade: Trade) -> None:
-            Trade.session.delete(trade)
-            Trade.session.flush()
-
         with self._freqtrade._sell_lock:
-            trade = Trade.get_trades(
-                trade_filter=[Trade.id == trade_id, ]
-            ).first()
+            c_count = 0
+            trade = Trade.get_trades(trade_filter=[Trade.id == trade_id]).first()
             if not trade:
-                logger.warning('delete: Invalid argument received')
+                logger.warning('delete trade: Invalid argument received')
                 raise RPCException('invalid argument')
 
-            _exec_delete(trade)
+            # Try cancelling regular order if that exists
+            if trade.open_order_id:
+                try:
+                    self._freqtrade.exchange.cancel_order(trade.open_order_id, trade.pair)
+                    c_count += 1
+                except (ExchangeError, InvalidOrderException):
+                    pass
+
+            # cancel stoploss on exchange ...
+            if (self._freqtrade.strategy.order_types.get('stoploss_on_exchange')
+                    and trade.stoploss_order_id):
+                try:
+                    self._freqtrade.exchange.cancel_stoploss_order(trade.stoploss_order_id,
+                                                                   trade.pair)
+                    c_count += 1
+                except (ExchangeError, InvalidOrderException):
+                    pass
+
+            Trade.session.delete(trade)
             Trade.session.flush()
             self._freqtrade.wallets.update()
-            return {'result_msg': f'Deleted trade {trade_id}.'}
+            return {
+                'result': 'success',
+                'trade_id': trade_id,
+                'result_msg': f'Deleted trade {trade_id}. Closed {c_count} open orders.',
+                'cancel_order_count': c_count,
+            }
 
     def _rpc_performance(self) -> List[Dict[str, Any]]:
         """
