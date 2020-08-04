@@ -56,7 +56,7 @@ def require_login(func: Callable[[Any, Any], Any]):
 
 
 # Type should really be Callable[[ApiServer], Any], but that will create a circular dependency
-def rpc_catch_errors(func: Callable[[Any], Any]):
+def rpc_catch_errors(func: Callable[..., Any]):
 
     def func_wrapper(obj, *args, **kwargs):
 
