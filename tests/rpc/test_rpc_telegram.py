@@ -1177,6 +1177,33 @@ def test_telegram_trades(mocker, update, default_conf, fee):
     assert "<pre>" in msg_mock.call_args_list[0][0][0]
 
 
+def test_telegram_delete_trade(mocker, update, default_conf, fee):
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    telegram = Telegram(freqtradebot)
+    context = MagicMock()
+    context.args = []
+
+    telegram._delete_trade(update=update, context=context)
+    assert "invalid argument" in msg_mock.call_args_list[0][0][0]
+
+    msg_mock.reset_mock()
+    create_mock_trades(fee)
+
+    context = MagicMock()
+    context.args = [1]
+    telegram._delete_trade(update=update, context=context)
+    msg_mock.call_count == 1
+    assert "Delete Result" in msg_mock.call_args_list[0][0][0]
+    assert "Deleted trade 1." in msg_mock.call_args_list[0][0][0]
+
+
 def test_help_handle(default_conf, update, mocker) -> None:
     msg_mock = MagicMock()
     mocker.patch.multiple(

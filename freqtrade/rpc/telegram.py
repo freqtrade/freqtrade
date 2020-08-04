@@ -94,7 +94,7 @@ class Telegram(RPC):
             CommandHandler('forcesell', self._forcesell),
             CommandHandler('forcebuy', self._forcebuy),
             CommandHandler('trades', self._trades),
-            CommandHandler('delete', self._delete),
+            CommandHandler('delete', self._delete_trade),
             CommandHandler('performance', self._performance),
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
@@ -535,7 +535,7 @@ class Telegram(RPC):
             self._send_msg(str(e))
 
     @authorized_only
-    def _delete(self, update: Update, context: CallbackContext) -> None:
+    def _delete_trade(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /delete <id>.
         Delete the given trade
