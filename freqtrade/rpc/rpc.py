@@ -537,7 +537,7 @@ class RPC:
             return trade
         else:
             return None
-            
+
     def _rpc_delete(self, trade_id: str) -> Dict[str, str]:
         """
         Handler for delete <id>.
@@ -558,7 +558,7 @@ class RPC:
             _exec_delete(trade)
             Trade.session.flush()
             self._freqtrade.wallets.update()
-            return {'result': f'Deleted trade {trade_id}.'}
+            return {'result_msg': f'Deleted trade {trade_id}.'}
 
     def _rpc_performance(self) -> List[Dict[str, Any]]:
         """
