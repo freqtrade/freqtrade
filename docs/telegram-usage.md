@@ -57,6 +57,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/status` | | Lists all open trades
 | `/status table` | | List all open trades in a table format. Pending buy orders are marked with an asterisk (*) Pending sell orders are marked with a double asterisk (**)
 | `/trades [limit]` | | List all recently closed trades in a table format.
+| `/delete <trade_id>` | | Delete a specific trade from the Database. Tries to close open orders. Requires manual handling of this trade on the exchange.
 | `/count` | | Displays number of trades used and available
 | `/profit` | | Display a summary of your profit/loss from close trades and some stats about your performance
 | `/forcesell <trade_id>` | | Instantly sells the given trade  (Ignoring `minimum_roi`).

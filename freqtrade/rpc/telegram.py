@@ -548,7 +548,7 @@ class Telegram(RPC):
         try:
             msg = self._rpc_delete(trade_id)
             self._send_msg((
-                'Delete Result: `{result_msg}`'
+                '`{result_msg}`\n'
                 'Please make sure to take care of this asset on the exchange manually.'
             ).format(**msg))
 
