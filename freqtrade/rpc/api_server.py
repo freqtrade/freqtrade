@@ -431,6 +431,10 @@ class ApiServer(RPC):
     def _trades_delete(self, tradeid):
         """
         Handler for DELETE /trades/<tradeid> endpoint.
+        Removes the trade from the database (tries to cancel open orders first!)
+        get:
+          param:
+            tradeid: Numeric trade-id assigned to the trade.
         """
         result = self._rpc_delete(tradeid)
         return self.rest_dump(result)
