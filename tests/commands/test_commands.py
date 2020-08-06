@@ -667,7 +667,7 @@ def test_start_list_hyperopts(mocker, caplog, capsys):
     args = [
         "list-hyperopts",
         "--hyperopt-path",
-        str(Path(__file__).parent.parent / "optimize"),
+        str(Path(__file__).parent.parent / "optimize" / "hyperopts"),
         "-1"
     ]
     pargs = get_args(args)
@@ -683,7 +683,7 @@ def test_start_list_hyperopts(mocker, caplog, capsys):
     args = [
         "list-hyperopts",
         "--hyperopt-path",
-        str(Path(__file__).parent.parent / "optimize"),
+        str(Path(__file__).parent.parent / "optimize" / "hyperopts"),
     ]
     pargs = get_args(args)
     # pargs['config'] = None
@@ -692,7 +692,6 @@ def test_start_list_hyperopts(mocker, caplog, capsys):
     assert "TestHyperoptLegacy" not in captured.out
     assert "legacy_hyperopt.py" not in captured.out
     assert "DefaultHyperOpt" in captured.out
-    assert "test_hyperopt.py" in captured.out
 
 
 def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):

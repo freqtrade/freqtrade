@@ -247,7 +247,7 @@ def test_hyperoptlossresolver_wrongname(default_conf) -> None:
         HyperOptLossResolver.load_hyperoptloss(default_conf)
 
 
-def test_start_not_installed(mocker, default_conf) -> None:
+def test_start_not_installed(mocker, default_conf, import_fails) -> None:
     start_mock = MagicMock()
     patched_configuration_load_config_file(mocker, default_conf)
 
@@ -258,6 +258,8 @@ def test_start_not_installed(mocker, default_conf) -> None:
         'hyperopt',
         '--config', 'config.json',
         '--hyperopt', 'DefaultHyperOpt',
+        '--hyperopt-path',
+        str(Path(__file__).parent / "hyperopts"),
         '--epochs', '5'
     ]
     pargs = get_args(args)
