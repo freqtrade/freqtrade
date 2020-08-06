@@ -46,7 +46,7 @@ secrets.token_hex()
 
 ### Configuration with docker
 
-If you run your bot using docker, you'll need to have the bot listen to incomming connections. The security is then handled by docker.
+If you run your bot using docker, you'll need to have the bot listen to incoming connections. The security is then handled by docker.
 
 ``` json
     "api_server": {

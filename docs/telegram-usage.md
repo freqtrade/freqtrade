@@ -9,7 +9,7 @@ Telegram user id.
 
 Start a chat with the [Telegram BotFather](https://telegram.me/BotFather)
 
-Send the message `/newbot`. 
+Send the message `/newbot`.
 
 *BotFather response:*
 
@@ -115,6 +115,7 @@ For each open trade, the bot will send you the following message.
 ### /status table
 
 Return the status of all open trades in a table format.
+
 ```
    ID  Pair      Since    Profit
 ----  --------  -------  --------
@@ -125,6 +126,7 @@ Return the status of all open trades in a table format.
 ### /count
 
 Return the number of trades used and available.
+
 ```
 current    max
 ---------  -----
@@ -210,7 +212,7 @@ Shows the current whitelist
 
 Shows the current blacklist.
 If Pair is set, then this pair will be added to the pairlist.
-Also supports multiple pairs, seperated by a space.
+Also supports multiple pairs, separated by a space.
 Use `/reload_config` to reset the blacklist.
 
 > Using blacklist `StaticPairList` with 2 pairs  
@@ -218,7 +220,7 @@ Use `/reload_config` to reset the blacklist.
 
 ### /edge
 
-Shows pairs validated by Edge along with their corresponding winrate, expectancy and stoploss values.
+Shows pairs validated by Edge along with their corresponding win-rate, expectancy and stoploss values.
 
 > **Edge only validated following pairs:**
 ```
