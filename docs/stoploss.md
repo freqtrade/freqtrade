@@ -84,7 +84,7 @@ This option can be used with or without `trailing_stop_positive`, but uses `trai
 
 ``` python
     trailing_stop_positive_offset = 0.011
-    trailing_only_offset_is_reached = true
+    trailing_only_offset_is_reached = True
 ```
 
 Simplified example:

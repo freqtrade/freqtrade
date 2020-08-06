@@ -21,8 +21,9 @@ from freqtrade.rpc import RPCMessageType
 from freqtrade.rpc.telegram import Telegram, authorized_only
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType
-from tests.conftest import (get_patched_freqtradebot, log_has, patch_exchange,
-                            patch_get_signal, patch_whitelist)
+from tests.conftest import (create_mock_trades, get_patched_freqtradebot,
+                            log_has, patch_exchange, patch_get_signal,
+                            patch_whitelist)
 
 
 class DummyCls(Telegram):
@@ -60,7 +61,7 @@ def test__init__(default_conf, mocker) -> None:
     assert telegram._config == default_conf
 
 
-def test_init(default_conf, mocker, caplog) -> None:
+def test_telegram_init(default_conf, mocker, caplog) -> None:
     start_polling = MagicMock()
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock(return_value=start_polling))
 
@@ -72,7 +73,7 @@ def test_init(default_conf, mocker, caplog) -> None:
     assert start_polling.start_polling.call_count == 1
 
     message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
-                   "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], "
+                   "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], ['trades'], "
                    "['performance'], ['daily'], ['count'], ['reload_config', 'reload_conf'], "
                    "['show_config', 'show_conf'], ['stopbuy'], ['whitelist'], ['blacklist'], "
                    "['edge'], ['help'], ['version']]")
@@ -725,6 +726,7 @@ def test_forcesell_handle(default_conf, update, ticker, fee,
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,
+        'trade_id': 1,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'gain': 'profit',
@@ -784,6 +786,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee,
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,
+        'trade_id': 1,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'gain': 'loss',
@@ -832,6 +835,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
     msg = rpc_mock.call_args_list[0][0][0]
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,
+        'trade_id': 1,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'gain': 'loss',
@@ -1141,6 +1145,36 @@ def test_edge_enabled(edge_conf, update, mocker) -> None:
     assert msg_mock.call_count == 1
     assert '<b>Edge only validated following pairs:</b>\n<pre>' in msg_mock.call_args_list[0][0][0]
     assert 'Pair      Winrate    Expectancy    Stoploss' in msg_mock.call_args_list[0][0][0]
+
+
+def test_telegram_trades(mocker, update, default_conf, fee):
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    telegram = Telegram(freqtradebot)
+    context = MagicMock()
+    context.args = []
+
+    telegram._trades(update=update, context=context)
+    assert "<b>0 recent trades</b>:" in msg_mock.call_args_list[0][0][0]
+    assert "<pre>" not in msg_mock.call_args_list[0][0][0]
+
+    msg_mock.reset_mock()
+    create_mock_trades(fee)
+
+    context = MagicMock()
+    context.args = [5]
+    telegram._trades(update=update, context=context)
+    msg_mock.call_count == 1
+    assert "2 recent trades</b>:" in msg_mock.call_args_list[0][0][0]
+    assert "Profit (" in msg_mock.call_args_list[0][0][0]
+    assert "Open Date" in msg_mock.call_args_list[0][0][0]
+    assert "<pre>" in msg_mock.call_args_list[0][0][0]
 
 
 def test_help_handle(default_conf, update, mocker) -> None:

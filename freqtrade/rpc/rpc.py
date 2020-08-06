@@ -11,7 +11,9 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 from numpy import NAN, mean
 
-from freqtrade.exceptions import DependencyException, TemporaryError
+from freqtrade.exceptions import ExchangeError, PricingError
+
+from freqtrade.exchange import timeframe_to_msecs, timeframe_to_minutes
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -103,6 +105,8 @@ class RPC:
             'trailing_only_offset_is_reached': config.get('trailing_only_offset_is_reached'),
             'ticker_interval': config['timeframe'],  # DEPRECATED
             'timeframe': config['timeframe'],
+            'timeframe_ms': timeframe_to_msecs(config['timeframe']),
+            'timeframe_min': timeframe_to_minutes(config['timeframe']),
             'exchange': config['exchange']['name'],
             'strategy': config['strategy'],
             'forcebuy_enabled': config.get('forcebuy_enable', False),
@@ -126,11 +130,11 @@ class RPC:
             for trade in trades:
                 order = None
                 if trade.open_order_id:
-                    order = self._freqtrade.exchange.get_order(trade.open_order_id, trade.pair)
+                    order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
                 # calculate profit and send message to user
                 try:
                     current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
-                except DependencyException:
+                except (ExchangeError, PricingError):
                     current_rate = NAN
                 current_profit = trade.calc_profit_ratio(current_rate)
                 current_profit_abs = trade.calc_profit(current_rate)
@@ -174,7 +178,7 @@ class RPC:
                 # calculate profit and send message to user
                 try:
                     current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
-                except DependencyException:
+                except (PricingError, ExchangeError):
                     current_rate = NAN
                 trade_percent = (100 * trade.calc_profit_ratio(current_rate))
                 trade_profit = trade.calc_profit(current_rate)
@@ -248,9 +252,10 @@ class RPC:
     def _rpc_trade_history(self, limit: int) -> Dict:
         """ Returns the X last trades """
         if limit > 0:
-            trades = Trade.get_trades().order_by(Trade.id.desc()).limit(limit)
+            trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(
+                Trade.id.desc()).limit(limit)
         else:
-            trades = Trade.get_trades().order_by(Trade.id.desc()).all()
+            trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(Trade.id.desc()).all()
 
         output = [trade.to_json() for trade in trades]
 
@@ -269,6 +274,8 @@ class RPC:
         profit_closed_coin = []
         profit_closed_ratio = []
         durations = []
+        winning_trades = 0
+        losing_trades = 0
 
         for trade in trades:
             current_rate: float = 0.0
@@ -282,11 +289,15 @@ class RPC:
                 profit_ratio = trade.close_profit
                 profit_closed_coin.append(trade.close_profit_abs)
                 profit_closed_ratio.append(profit_ratio)
+                if trade.close_profit >= 0:
+                    winning_trades += 1
+                else:
+                    losing_trades += 1
             else:
                 # Get current rate
                 try:
                     current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
-                except DependencyException:
+                except (PricingError, ExchangeError):
                     current_rate = NAN
                 profit_ratio = trade.calc_profit_ratio(rate=current_rate)
 
@@ -344,6 +355,8 @@ class RPC:
             'avg_duration': str(timedelta(seconds=sum(durations) / num)).split('.')[0],
             'best_pair': best_pair[0] if best_pair else '',
             'best_rate': round(best_pair[1] * 100, 2) if best_pair else 0,
+            'winning_trades': winning_trades,
+            'losing_trades': losing_trades,
         }
 
     def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> Dict:
@@ -352,7 +365,7 @@ class RPC:
         total = 0.0
         try:
             tickers = self._freqtrade.exchange.get_tickers()
-        except (TemporaryError, DependencyException):
+        except (ExchangeError):
             raise RPCException('Error getting current tickers.')
 
         self._freqtrade.wallets.update(require_update=False)
@@ -373,7 +386,7 @@ class RPC:
                         if pair.startswith(stake_currency):
                             rate = 1.0 / rate
                         est_stake = rate * balance.total
-                except (TemporaryError, DependencyException):
+                except (ExchangeError):
                     logger.warning(f" Could not get rate for pair {coin}.")
                     continue
             total = total + (est_stake or 0)
@@ -442,7 +455,7 @@ class RPC:
         def _exec_forcesell(trade: Trade) -> None:
             # Check if there is there is an open order
             if trade.open_order_id:
-                order = self._freqtrade.exchange.get_order(trade.open_order_id, trade.pair)
+                order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
 
                 # Cancel open LIMIT_BUY orders and close trade
                 if order and order['status'] == 'open' \
@@ -511,7 +524,7 @@ class RPC:
         # check if valid pair
 
         # check if pair already has an open pair
-        trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair.is_(pair)]).first()
+        trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
         if trade:
             raise RPCException(f'position for {pair} already open - id: {trade.id}')
 
@@ -520,7 +533,7 @@ class RPC:
 
         # execute buy
         if self._freqtrade.execute_buy(pair, stakeamount, price):
-            trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair.is_(pair)]).first()
+            trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
             return trade
         else:
             return None

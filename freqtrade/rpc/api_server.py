@@ -17,6 +17,7 @@ from werkzeug.serving import make_server
 
 from freqtrade.__init__ import __version__
 from freqtrade.rpc.rpc import RPC, RPCException
+from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +105,9 @@ class ApiServer(RPC):
 
         # Register application handling
         self.register_rest_rpc_urls()
+
+        if self._config.get('fiat_display_currency', None):
+            self._fiat_converter = CryptoToFiatConverter()
 
         thread = threading.Thread(target=self.run, daemon=True)
         thread.start()

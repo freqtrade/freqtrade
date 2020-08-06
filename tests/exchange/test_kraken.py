@@ -6,8 +6,7 @@ from unittest.mock import MagicMock
 import ccxt
 import pytest
 
-from freqtrade.exceptions import (DependencyException, InvalidOrderException,
-                                  OperationalException, TemporaryError)
+from freqtrade.exceptions import DependencyException, InvalidOrderException
 from tests.conftest import get_patched_exchange
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
@@ -206,15 +205,9 @@ def test_stoploss_order_kraken(default_conf, mocker):
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'kraken')
         exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={})
 
-    with pytest.raises(TemporaryError):
-        api_mock.create_order = MagicMock(side_effect=ccxt.NetworkError("No connection"))
-        exchange = get_patched_exchange(mocker, default_conf, api_mock, 'kraken')
-        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={})
-
-    with pytest.raises(OperationalException, match=r".*DeadBeef.*"):
-        api_mock.create_order = MagicMock(side_effect=ccxt.BaseError("DeadBeef"))
-        exchange = get_patched_exchange(mocker, default_conf, api_mock, 'kraken')
-        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={})
+    ccxt_exceptionhandlers(mocker, default_conf, api_mock, "kraken",
+                           "stoploss", "create_order", retries=1,
+                           pair='ETH/BTC', amount=1, stop_price=220, order_types={})
 
 
 def test_stoploss_order_dry_run_kraken(default_conf, mocker):

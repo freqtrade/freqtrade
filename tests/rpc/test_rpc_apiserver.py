@@ -326,6 +326,8 @@ def test_api_show_config(botclient, mocker):
     assert rc.json['exchange'] == 'bittrex'
     assert rc.json['ticker_interval'] == '5m'
     assert rc.json['timeframe'] == '5m'
+    assert rc.json['timeframe_ms'] == 300000
+    assert rc.json['timeframe_min'] == 5
     assert rc.json['state'] == 'running'
     assert not rc.json['trailing_stop']
     assert 'bid_strategy' in rc.json
@@ -366,12 +368,12 @@ def test_api_trades(botclient, mocker, ticker, fee, markets):
 
     rc = client_get(client, f"{BASE_URI}/trades")
     assert_response(rc)
-    assert len(rc.json['trades']) == 3
-    assert rc.json['trades_count'] == 3
-    rc = client_get(client, f"{BASE_URI}/trades?limit=2")
-    assert_response(rc)
     assert len(rc.json['trades']) == 2
     assert rc.json['trades_count'] == 2
+    rc = client_get(client, f"{BASE_URI}/trades?limit=1")
+    assert_response(rc)
+    assert len(rc.json['trades']) == 1
+    assert rc.json['trades_count'] == 1
 
 
 def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
@@ -431,14 +433,14 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
                        'latest_trade_date': 'just now',
                        'latest_trade_timestamp': ANY,
                        'profit_all_coin': 6.217e-05,
-                       'profit_all_fiat': 0,
+                       'profit_all_fiat': 0.76748865,
                        'profit_all_percent': 6.2,
                        'profit_all_percent_mean': 6.2,
                        'profit_all_ratio_mean': 0.06201058,
                        'profit_all_percent_sum': 6.2,
                        'profit_all_ratio_sum': 0.06201058,
                        'profit_closed_coin': 6.217e-05,
-                       'profit_closed_fiat': 0,
+                       'profit_closed_fiat': 0.76748865,
                        'profit_closed_percent': 6.2,
                        'profit_closed_ratio_mean': 0.06201058,
                        'profit_closed_percent_mean': 6.2,
@@ -446,6 +448,8 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
                        'profit_closed_percent_sum': 6.2,
                        'trade_count': 1,
                        'closed_trade_count': 1,
+                       'winning_trades': 1,
+                       'losing_trades': 0,
                        }
 
 

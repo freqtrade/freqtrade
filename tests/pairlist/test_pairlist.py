@@ -235,7 +235,7 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "bidVolume"}],
      "BTC",  ['HOT/BTC', 'FUEL/BTC', 'XRP/BTC', 'LTC/BTC', 'TKN/BTC']),
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"}],
-     "USDT", ['ETH/USDT', 'NANO/USDT', 'ADAHALF/USDT']),
+     "USDT", ['ETH/USDT', 'NANO/USDT', 'ADAHALF/USDT', 'ADADOUBLE/USDT']),
     # No pair for ETH, VolumePairList
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"}],
      "ETH", []),
@@ -275,11 +275,16 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "PriceFilter", "low_price_ratio": 0.03}],
      "USDT", ['ETH/USDT', 'NANO/USDT']),
-    # Hot is removed by precision_filter, Fuel by low_price_filter.
+    # Hot is removed by precision_filter, Fuel by low_price_ratio, Ripple by min_price.
     ([{"method": "VolumePairList", "number_assets": 6, "sort_key": "quoteVolume"},
       {"method": "PrecisionFilter"},
-      {"method": "PriceFilter", "low_price_ratio": 0.02}],
-     "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC']),
+      {"method": "PriceFilter", "low_price_ratio": 0.02, "min_price": 0.01}],
+     "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC']),
+    # Hot is removed by precision_filter, Fuel by low_price_ratio, Ethereum by max_price.
+    ([{"method": "VolumePairList", "number_assets": 6, "sort_key": "quoteVolume"},
+      {"method": "PrecisionFilter"},
+      {"method": "PriceFilter", "low_price_ratio": 0.02, "max_price": 0.05}],
+     "BTC", ['TKN/BTC', 'LTC/BTC', 'XRP/BTC']),
     # HOT and XRP are removed because below 1250 quoteVolume
     ([{"method": "VolumePairList", "number_assets": 5,
        "sort_key": "quoteVolume", "min_value": 1250}],
@@ -298,11 +303,11 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     # ShuffleFilter
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "ShuffleFilter", "seed": 77}],
-     "USDT", ['ETH/USDT', 'ADAHALF/USDT', 'NANO/USDT']),
+     "USDT", ['ADADOUBLE/USDT', 'ETH/USDT', 'NANO/USDT', 'ADAHALF/USDT']),
     # ShuffleFilter, other seed
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "ShuffleFilter", "seed": 42}],
-     "USDT", ['NANO/USDT', 'ETH/USDT', 'ADAHALF/USDT']),
+     "USDT", ['ADAHALF/USDT', 'NANO/USDT', 'ADADOUBLE/USDT', 'ETH/USDT']),
     # ShuffleFilter, no seed
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "ShuffleFilter"}],
@@ -319,7 +324,7 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
      "BTC", 'filter_at_the_beginning'),  # OperationalException expected
     # PriceFilter after StaticPairList
     ([{"method": "StaticPairList"},
-      {"method": "PriceFilter", "low_price_ratio": 0.02}],
+      {"method": "PriceFilter", "low_price_ratio": 0.02, "min_price": 0.000001, "max_price": 0.1}],
      "BTC", ['ETH/BTC', 'TKN/BTC']),
     # PriceFilter only
     ([{"method": "PriceFilter", "low_price_ratio": 0.02}],
@@ -342,6 +347,9 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "bidVolume"},
       {"method": "StaticPairList"}],
      "BTC", 'static_in_the_middle'),
+    ([{"method": "VolumePairList", "number_assets": 20, "sort_key": "quoteVolume"},
+      {"method": "PriceFilter", "low_price_ratio": 0.02}],
+        "USDT", ['ETH/USDT', 'NANO/USDT']),
 ])
 def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, tickers,
                                       ohlcv_history_list, pairlists, base_currency,
@@ -389,13 +397,17 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
         for pairlist in pairlists:
             if pairlist['method'] == 'AgeFilter' and pairlist['min_days_listed'] and \
                     len(ohlcv_history_list) <= pairlist['min_days_listed']:
-                assert log_has_re(r'^Removed .* from whitelist, because age is less than '
+                assert log_has_re(r'^Removed .* from whitelist, because age .* is less than '
                                   r'.* day.*', caplog)
             if pairlist['method'] == 'PrecisionFilter' and whitelist_result:
                 assert log_has_re(r'^Removed .* from whitelist, because stop price .* '
                                   r'would be <= stop limit.*', caplog)
             if pairlist['method'] == 'PriceFilter' and whitelist_result:
                 assert (log_has_re(r'^Removed .* from whitelist, because 1 unit is .*%$', caplog) or
+                        log_has_re(r'^Removed .* from whitelist, '
+                                   r'because last price < .*%$', caplog) or
+                        log_has_re(r'^Removed .* from whitelist, '
+                                   r'because last price > .*%$', caplog) or
                         log_has_re(r"^Removed .* from whitelist, because ticker\['last'\] "
                                    r"is empty.*", caplog))
             if pairlist['method'] == 'VolumePairList':
@@ -524,6 +536,37 @@ def test_volumepairlist_caching(mocker, markets, whitelist_conf, tickers):
     assert freqtrade.pairlists._pairlist_handlers[0]._last_refresh == lrf
 
 
+def test_agefilter_min_days_listed_too_small(mocker, default_conf, markets, tickers, caplog):
+    default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
+                                 {'method': 'AgeFilter', 'min_days_listed': -1}]
+
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          markets=PropertyMock(return_value=markets),
+                          exchange_has=MagicMock(return_value=True),
+                          get_tickers=tickers
+                          )
+
+    with pytest.raises(OperationalException,
+                       match=r'AgeFilter requires min_days_listed must be >= 1'):
+        get_patched_freqtradebot(mocker, default_conf)
+
+
+def test_agefilter_min_days_listed_too_large(mocker, default_conf, markets, tickers, caplog):
+    default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
+                                 {'method': 'AgeFilter', 'min_days_listed': 99999}]
+
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          markets=PropertyMock(return_value=markets),
+                          exchange_has=MagicMock(return_value=True),
+                          get_tickers=tickers
+                          )
+
+    with pytest.raises(OperationalException,
+                       match=r'AgeFilter requires min_days_listed must not exceed '
+                             r'exchange max request size \([0-9]+\)'):
+        get_patched_freqtradebot(mocker, default_conf)
+
+
 def test_agefilter_caching(mocker, markets, whitelist_conf_3, tickers, ohlcv_history_list):
 
     mocker.patch.multiple('freqtrade.exchange.Exchange',
@@ -545,6 +588,36 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_3, tickers, ohlcv_his
     freqtrade.pairlists.refresh_pairlist()
     # Should not have increased since first call.
     assert freqtrade.exchange.get_historic_ohlcv.call_count == previous_call_count
+
+
+@pytest.mark.parametrize("pairlistconfig,expected", [
+    ({"method": "PriceFilter", "low_price_ratio": 0.001, "min_price": 0.00000010,
+      "max_price": 1.0}, "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below "
+                         "0.1% or below 0.00000010 or above 1.00000000.'}]"
+     ),
+    ({"method": "PriceFilter", "low_price_ratio": 0.001, "min_price": 0.00000010},
+     "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below 0.1% or below 0.00000010.'}]"
+     ),
+    ({"method": "PriceFilter", "low_price_ratio": 0.001, "max_price": 1.00010000},
+     "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below 0.1% or above 1.00010000.'}]"
+     ),
+    ({"method": "PriceFilter", "min_price": 0.00002000},
+     "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below 0.00002000.'}]"
+     ),
+    ({"method": "PriceFilter"},
+     "[{'PriceFilter': 'PriceFilter - No price filters configured.'}]"
+     ),
+])
+def test_pricefilter_desc(mocker, whitelist_conf, markets, pairlistconfig, expected):
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          markets=PropertyMock(return_value=markets),
+                          exchange_has=MagicMock(return_value=True)
+                          )
+    whitelist_conf['pairlists'] = [pairlistconfig]
+
+    freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
+    short_desc = str(freqtrade.pairlists.short_desc())
+    assert short_desc == expected
 
 
 def test_pairlistmanager_no_pairlist(mocker, markets, whitelist_conf, caplog):

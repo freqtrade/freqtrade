@@ -275,7 +275,7 @@ the static list of pairs) if we should buy.
 The `order_types` configuration parameter maps actions (`buy`, `sell`, `stoploss`, `emergencysell`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
 
 This allows to buy using limit orders, sell using
-limit-orders, and create stoplosses using using market orders. It also allows to set the
+limit-orders, and create stoplosses using market orders. It also allows to set the
 stoploss "on exchange" which means stoploss order would be placed immediately once
 the buy order is fulfilled.
 If `stoploss_on_exchange` and `trailing_stop` are both set, then the bot will use `stoploss_on_exchange_interval` to check and update the stoploss on exchange periodically.
@@ -662,16 +662,25 @@ Filters low-value coins which would not allow setting stoplosses.
 
 #### PriceFilter
 
-The `PriceFilter` allows filtering of pairs by price.
+The `PriceFilter` allows filtering of pairs by price. Currently the following price filters are supported:
+* `min_price`
+* `max_price`
+* `low_price_ratio`
 
-Currently, only `low_price_ratio` setting is implemented, where a raise of 1 price unit (pip) is below the `low_price_ratio` ratio.
+The `min_price` setting removes pairs where the price is below the specified price. This is useful if you wish to avoid trading very low-priced pairs.
+This option is disabled by default, and will only apply if set to <> 0.
+
+The `max_price` setting removes pairs where the price is above the specified price. This is useful if you wish to trade only low-priced pairs.
+This option is disabled by default, and will only apply if set to <> 0.
+
+The `low_price_ratio` setting removes pairs where a raise of 1 price unit (pip) is above the `low_price_ratio` ratio.
 This option is disabled by default, and will only apply if set to <> 0.
 
 Calculation example:
 
 Min price precision is 8 decimals. If price is 0.00000011 - one step would be 0.00000012 - which is almost 10% higher than the previous value.
 
-These pairs are dangerous since it may be impossible to place the desired stoploss - and often result in high losses. Here is what the PriceFilters takes over.
+These pairs are dangerous since it may be impossible to place the desired stoploss - and often result in high losses.
 
 #### ShuffleFilter
 
