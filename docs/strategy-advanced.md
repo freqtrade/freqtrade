@@ -199,3 +199,24 @@ class Awesomestrategy(IStrategy):
         return True
 
 ```
+
+## Derived strategies
+
+The strategies can be derived from other strategies. This avoids duplication of your custom strategy code. You can use this technique to override small parts of your main strategy, leaving the rest untouched:
+
+``` python
+class MyAwesomeStrategy(IStrategy):
+    ...
+    stoploss = 0.13
+    trailing_stop = False
+    # All other attributes and methods are here as they
+    # should be in any custom strategy...
+    ...
+
+class MyAwesomeStrategy2(MyAwesomeStrategy):
+    # Override something
+    stoploss = 0.08
+    trailing_stop = True
+```
+
+Both attributes and methods may be overriden, altering behavior of the original strategy in a way you need.
