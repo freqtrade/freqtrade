@@ -24,7 +24,6 @@ from freqtrade.optimize.optimize_reports import (generate_backtest_stats,
 from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
-from freqtrade.state import RunMode
 from freqtrade.strategy.interface import IStrategy, SellCheckTuple, SellType
 
 logger = logging.getLogger(__name__)

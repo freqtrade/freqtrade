@@ -328,9 +328,9 @@ class Awesomestrategy(IStrategy):
 
 ***
 
-### Additional data (informative_pairs)
+## Additional data (informative_pairs)
 
-#### Get data for non-tradeable pairs
+### Get data for non-tradeable pairs
 
 Data for additional, informative pairs (reference pairs) can be beneficial for some strategies.
 OHLCV data for these pairs will be downloaded as part of the regular whitelist refresh process and is available via `DataProvider` just as other pairs (see below).
@@ -346,6 +346,8 @@ def informative_pairs(self):
             ("BTC/TUSD", "15m"),
             ]
 ```
+
+A full sample can be found [in the DataProvider section](#complete-data-provider-sample).
 
 !!! Warning
     As these pairs will be refreshed as part of the regular whitelist refresh, it's best to keep this list short.
