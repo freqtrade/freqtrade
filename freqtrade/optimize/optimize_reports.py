@@ -269,6 +269,7 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
             'stake_amount': config['stake_amount'],
             'stake_currency': config['stake_currency'],
             'max_open_trades': config['max_open_trades'],
+            'timeframe': config['timeframe'],
             **daily_stats,
         }
         result['strategy'][strategy] = strat_stats
