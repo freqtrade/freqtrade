@@ -74,9 +74,9 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
 
     message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
                    "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], ['trades'], "
-                   "['performance'], ['daily'], ['count'], ['reload_config', 'reload_conf'], "
-                   "['show_config', 'show_conf'], ['stopbuy'], ['whitelist'], ['blacklist'], "
-                   "['edge'], ['help'], ['version']]")
+                   "['delete'], ['performance'], ['daily'], ['count'], ['reload_config', "
+                   "'reload_conf'], ['show_config', 'show_conf'], ['stopbuy'], "
+                   "['whitelist'], ['blacklist'], ['edge'], ['help'], ['version']]")
 
     assert log_has(message_str, caplog)
 
@@ -1175,6 +1175,33 @@ def test_telegram_trades(mocker, update, default_conf, fee):
     assert "Profit (" in msg_mock.call_args_list[0][0][0]
     assert "Open Date" in msg_mock.call_args_list[0][0][0]
     assert "<pre>" in msg_mock.call_args_list[0][0][0]
+
+
+def test_telegram_delete_trade(mocker, update, default_conf, fee):
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    telegram = Telegram(freqtradebot)
+    context = MagicMock()
+    context.args = []
+
+    telegram._delete_trade(update=update, context=context)
+    assert "invalid argument" in msg_mock.call_args_list[0][0][0]
+
+    msg_mock.reset_mock()
+    create_mock_trades(fee)
+
+    context = MagicMock()
+    context.args = [1]
+    telegram._delete_trade(update=update, context=context)
+    msg_mock.call_count == 1
+    assert "Deleted trade 1." in msg_mock.call_args_list[0][0][0]
+    assert "Please make sure to take care of this asset" in msg_mock.call_args_list[0][0][0]
 
 
 def test_help_handle(default_conf, update, mocker) -> None:

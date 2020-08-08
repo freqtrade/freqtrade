@@ -46,7 +46,7 @@ secrets.token_hex()
 
 ### Configuration with docker
 
-If you run your bot using docker, you'll need to have the bot listen to incomming connections. The security is then handled by docker.
+If you run your bot using docker, you'll need to have the bot listen to incoming connections. The security is then handled by docker.
 
 ``` json
     "api_server": {
@@ -106,26 +106,29 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 
 ## Available commands
 
-|  Command | Default | Description |
-|----------|---------|-------------|
-| `start` | | Starts the trader
-| `stop` | | Stops the trader
-| `stopbuy` | | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
-| `reload_config` | | Reloads the configuration file
-| `show_config` | | Shows part of the current configuration with relevant settings to operation
-| `status` | | Lists all open trades
-| `count` | | Displays number of trades used and available
-| `profit` | | Display a summary of your profit/loss from close trades and some stats about your performance
-| `forcesell <trade_id>` | | Instantly sells the given trade  (Ignoring `minimum_roi`).
-| `forcesell all` | | Instantly sells all open trades (Ignoring `minimum_roi`).
-| `forcebuy <pair> [rate]` | | Instantly buys the given pair. Rate is optional. (`forcebuy_enable` must be set to True)
-| `performance` | | Show performance of each finished trade grouped by pair
-| `balance` | | Show account balance per currency
-| `daily <n>` | 7 | Shows profit or loss per day, over the last n days
-| `whitelist` | | Show the current whitelist
-| `blacklist [pair]` | | Show the current blacklist, or adds a pair to the blacklist.
-| `edge` | | Show validated pairs by Edge if it is enabled.
-| `version` | | Show version
+|  Command | Description |
+|----------|-------------|
+| `ping` | Simple command testing the API Readiness - requires no authentication.
+| `start` | Starts the trader
+| `stop` | Stops the trader
+| `stopbuy` | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
+| `reload_config` | Reloads the configuration file
+| `trades` | List last trades.
+| `delete_trade <trade_id>` | Remove trade from the database. Tries to close open orders. Requires manual handling of this trade on the exchange.
+| `show_config` | Shows part of the current configuration with relevant settings to operation
+| `status` | Lists all open trades
+| `count` | Displays number of trades used and available
+| `profit` | Display a summary of your profit/loss from close trades and some stats about your performance
+| `forcesell <trade_id>` | Instantly sells the given trade  (Ignoring `minimum_roi`).
+| `forcesell all` | Instantly sells all open trades (Ignoring `minimum_roi`).
+| `forcebuy <pair> [rate]` | Instantly buys the given pair. Rate is optional. (`forcebuy_enable` must be set to True)
+| `performance` | Show performance of each finished trade grouped by pair
+| `balance` | Show account balance per currency
+| `daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7)
+| `whitelist` | Show the current whitelist
+| `blacklist [pair]` | Show the current blacklist, or adds a pair to the blacklist.
+| `edge` | Show validated pairs by Edge if it is enabled.
+| `version` | Show version
 
 Possible commands can be listed from the rest-client script using the `help` command.
 

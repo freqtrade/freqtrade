@@ -94,6 +94,7 @@ class Telegram(RPC):
             CommandHandler('forcesell', self._forcesell),
             CommandHandler('forcebuy', self._forcebuy),
             CommandHandler('trades', self._trades),
+            CommandHandler('delete', self._delete_trade),
             CommandHandler('performance', self._performance),
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
@@ -534,6 +535,27 @@ class Telegram(RPC):
             self._send_msg(str(e))
 
     @authorized_only
+    def _delete_trade(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /delete <id>.
+        Delete the given trade
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+
+        trade_id = context.args[0] if len(context.args) > 0 else None
+        try:
+            msg = self._rpc_delete(trade_id)
+            self._send_msg((
+                '`{result_msg}`\n'
+                'Please make sure to take care of this asset on the exchange manually.'
+            ).format(**msg))
+
+        except RPCException as e:
+            self._send_msg(str(e))
+
+    @authorized_only
     def _performance(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /performance.
@@ -651,6 +673,7 @@ class Telegram(RPC):
                    "*/forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, "
                    "regardless of profit`\n"
                    f"{forcebuy_text if self._config.get('forcebuy_enable', False) else ''}"
+                   "*/delete <trade_id>:* `Instantly delete the given trade in the database`\n"
                    "*/performance:* `Show performance of each finished trade grouped by pair`\n"
                    "*/daily <n>:* `Shows profit or loss per day, over the last n days`\n"
                    "*/count:* `Show number of trades running compared to allowed number of trades`"
