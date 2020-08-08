@@ -47,30 +47,30 @@ Per default, the Telegram bot shows predefined commands. Some commands
 are only available by sending them to the bot. The table below list the
 official commands. You can ask at any moment for help with `/help`.
 
-|  Command | Default | Description |
-|----------|---------|-------------|
-| `/start` | | Starts the trader
-| `/stop` | | Stops the trader
-| `/stopbuy` | | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
-| `/reload_config` | | Reloads the configuration file
-| `/show_config` | | Shows part of the current configuration with relevant settings to operation
-| `/status` | | Lists all open trades
-| `/status table` | | List all open trades in a table format. Pending buy orders are marked with an asterisk (*) Pending sell orders are marked with a double asterisk (**)
-| `/trades [limit]` | | List all recently closed trades in a table format.
-| `/delete <trade_id>` | | Delete a specific trade from the Database. Tries to close open orders. Requires manual handling of this trade on the exchange.
-| `/count` | | Displays number of trades used and available
-| `/profit` | | Display a summary of your profit/loss from close trades and some stats about your performance
-| `/forcesell <trade_id>` | | Instantly sells the given trade  (Ignoring `minimum_roi`).
-| `/forcesell all` | | Instantly sells all open trades (Ignoring `minimum_roi`).
-| `/forcebuy <pair> [rate]` | | Instantly buys the given pair. Rate is optional. (`forcebuy_enable` must be set to True)
-| `/performance` | | Show performance of each finished trade grouped by pair
-| `/balance` | | Show account balance per currency
-| `/daily <n>` | 7 | Shows profit or loss per day, over the last n days
-| `/whitelist` | | Show the current whitelist
-| `/blacklist [pair]` | | Show the current blacklist, or adds a pair to the blacklist.
-| `/edge` | | Show validated pairs by Edge if it is enabled.
-| `/help` | | Show help message
-| `/version` | | Show version
+|  Command | Description |
+|----------|-------------|
+| `/start` | Starts the trader
+| `/stop` | Stops the trader
+| `/stopbuy` | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
+| `/reload_config` | Reloads the configuration file
+| `/show_config` | Shows part of the current configuration with relevant settings to operation
+| `/status` | Lists all open trades
+| `/status table` | List all open trades in a table format. Pending buy orders are marked with an asterisk (*) Pending sell orders are marked with a double asterisk (**)
+| `/trades [limit]` | List all recently closed trades in a table format.
+| `/delete <trade_id>` | Delete a specific trade from the Database. Tries to close open orders. Requires manual handling of this trade on the exchange.
+| `/count` | Displays number of trades used and available
+| `/profit` | Display a summary of your profit/loss from close trades and some stats about your performance
+| `/forcesell <trade_id>` | Instantly sells the given trade  (Ignoring `minimum_roi`).
+| `/forcesell all` | Instantly sells all open trades (Ignoring `minimum_roi`).
+| `/forcebuy <pair> [rate]` | Instantly buys the given pair. Rate is optional. (`forcebuy_enable` must be set to True)
+| `/performance` | Show performance of each finished trade grouped by pair
+| `/balance` | Show account balance per currency
+| `/daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7)
+| `/whitelist` | Show the current whitelist
+| `/blacklist [pair]` | Show the current blacklist, or adds a pair to the blacklist.
+| `/edge` | Show validated pairs by Edge if it is enabled.
+| `/help` | Show help message
+| `/version` | Show version
 
 ## Telegram commands in action
 
