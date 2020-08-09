@@ -714,13 +714,13 @@ def test_validate_order_types(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
     mocker.patch('freqtrade.exchange.Exchange.name', 'Bittrex')
+
     default_conf['order_types'] = {
         'buy': 'limit',
         'sell': 'limit',
         'stoploss': 'market',
         'stoploss_on_exchange': False
     }
-
     Exchange(default_conf)
 
     type(api_mock).has = PropertyMock(return_value={'createMarketOrder': False})
@@ -730,9 +730,8 @@ def test_validate_order_types(default_conf, mocker):
         'buy': 'limit',
         'sell': 'limit',
         'stoploss': 'market',
-        'stoploss_on_exchange': 'false'
+        'stoploss_on_exchange': False
     }
-
     with pytest.raises(OperationalException,
                        match=r'Exchange .* does not support market orders.'):
         Exchange(default_conf)
@@ -743,7 +742,6 @@ def test_validate_order_types(default_conf, mocker):
         'stoploss': 'limit',
         'stoploss_on_exchange': True
     }
-
     with pytest.raises(OperationalException,
                        match=r'On exchange stoploss is not supported for .*'):
         Exchange(default_conf)

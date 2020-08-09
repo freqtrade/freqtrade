@@ -8,7 +8,7 @@ import pytest
 from numpy import isnan
 
 from freqtrade.edge import PairInfo
-from freqtrade.exceptions import ExchangeError, TemporaryError
+from freqtrade.exceptions import ExchangeError, InvalidOrderException, TemporaryError
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -284,12 +284,66 @@ def test_rpc_trade_history(mocker, default_conf, markets, fee):
     assert isinstance(trades['trades'][1], dict)
 
     trades = rpc._rpc_trade_history(0)
-    assert len(trades['trades']) == 3
-    assert trades['trades_count'] == 3
-    # The first trade is for ETH ... sorting is descending
-    assert trades['trades'][-1]['pair'] == 'ETH/BTC'
-    assert trades['trades'][0]['pair'] == 'ETC/BTC'
-    assert trades['trades'][1]['pair'] == 'ETC/BTC'
+    assert len(trades['trades']) == 2
+    assert trades['trades_count'] == 2
+    # The first closed trade is for ETC ... sorting is descending
+    assert trades['trades'][-1]['pair'] == 'ETC/BTC'
+    assert trades['trades'][0]['pair'] == 'XRP/BTC'
+
+
+def test_rpc_delete_trade(mocker, default_conf, fee, markets, caplog):
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
+    stoploss_mock = MagicMock()
+    cancel_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        markets=PropertyMock(return_value=markets),
+        cancel_order=cancel_mock,
+        cancel_stoploss_order=stoploss_mock,
+    )
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    freqtradebot.strategy.order_types['stoploss_on_exchange'] = True
+    create_mock_trades(fee)
+    rpc = RPC(freqtradebot)
+    with pytest.raises(RPCException, match='invalid argument'):
+        rpc._rpc_delete('200')
+
+    create_mock_trades(fee)
+    trades = Trade.query.all()
+    trades[1].stoploss_order_id = '1234'
+    trades[2].stoploss_order_id = '1234'
+    assert len(trades) > 2
+
+    res = rpc._rpc_delete('1')
+    assert isinstance(res, dict)
+    assert res['result'] == 'success'
+    assert res['trade_id'] == '1'
+    assert res['cancel_order_count'] == 1
+    assert cancel_mock.call_count == 1
+    assert stoploss_mock.call_count == 0
+    cancel_mock.reset_mock()
+    stoploss_mock.reset_mock()
+
+    res = rpc._rpc_delete('2')
+    assert isinstance(res, dict)
+    assert cancel_mock.call_count == 1
+    assert stoploss_mock.call_count == 1
+    assert res['cancel_order_count'] == 2
+
+    stoploss_mock = mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order',
+                                 side_effect=InvalidOrderException)
+
+    res = rpc._rpc_delete('3')
+    assert stoploss_mock.call_count == 1
+    stoploss_mock.reset_mock()
+
+    cancel_mock = mocker.patch('freqtrade.exchange.Exchange.cancel_order',
+                               side_effect=InvalidOrderException)
+
+    res = rpc._rpc_delete('4')
+    assert cancel_mock.call_count == 1
+    assert stoploss_mock.call_count == 0
 
 
 def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,

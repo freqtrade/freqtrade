@@ -631,6 +631,20 @@ def test_jsondatahandler_ohlcv_get_pairs(testdatadir):
     assert set(pairs) == {'UNITTEST/BTC'}
 
 
+def test_jsondatahandler_ohlcv_get_available_data(testdatadir):
+    paircombs = JsonDataHandler.ohlcv_get_available_data(testdatadir)
+    # Convert to set to avoid failures due to sorting
+    assert set(paircombs) == {('UNITTEST/BTC', '5m'), ('ETH/BTC', '5m'), ('XLM/BTC', '5m'),
+                              ('TRX/BTC', '5m'), ('LTC/BTC', '5m'), ('XMR/BTC', '5m'),
+                              ('ZEC/BTC', '5m'), ('UNITTEST/BTC', '1m'), ('ADA/BTC', '5m'),
+                              ('ETC/BTC', '5m'), ('NXT/BTC', '5m'), ('DASH/BTC', '5m'),
+                              ('XRP/ETH', '1m'), ('XRP/ETH', '5m'), ('UNITTEST/BTC', '30m'),
+                              ('UNITTEST/BTC', '8m')}
+
+    paircombs = JsonGzDataHandler.ohlcv_get_available_data(testdatadir)
+    assert set(paircombs) == {('UNITTEST/BTC', '8m')}
+
+
 def test_jsondatahandler_trades_get_pairs(testdatadir):
     pairs = JsonGzDataHandler.trades_get_pairs(testdatadir)
     # Convert to set to avoid failures due to sorting

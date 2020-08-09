@@ -159,7 +159,9 @@ CONF_SCHEMA = {
                 'emergencysell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'stoploss': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'stoploss_on_exchange': {'type': 'boolean'},
-                'stoploss_on_exchange_interval': {'type': 'number'}
+                'stoploss_on_exchange_interval': {'type': 'number'},
+                'stoploss_on_exchange_limit_ratio': {'type': 'number', 'minimum': 0.0,
+                                                     'maximum': 1.0}
             },
             'required': ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
         },
@@ -342,4 +344,5 @@ CANCEL_REASON = {
 }
 
 # List of pairs with their timeframes
-ListPairsWithTimeframes = List[Tuple[str, str]]
+PairWithTimeframe = Tuple[str, str]
+ListPairsWithTimeframes = List[PairWithTimeframe]

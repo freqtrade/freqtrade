@@ -110,7 +110,7 @@ def test_load_trades_from_db(default_conf, fee, mocker):
 
     trades = load_trades_from_db(db_url=default_conf['db_url'])
     assert init_mock.call_count == 1
-    assert len(trades) == 3
+    assert len(trades) == 4
     assert isinstance(trades, DataFrame)
     assert "pair" in trades.columns
     assert "open_date" in trades.columns

@@ -18,6 +18,7 @@ from werkzeug.serving import make_server
 from freqtrade.__init__ import __version__
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.rpc.rpc import RPC, RPCException
+from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +57,7 @@ def require_login(func: Callable[[Any, Any], Any]):
 
 
 # Type should really be Callable[[ApiServer], Any], but that will create a circular dependency
-def rpc_catch_errors(func: Callable[[Any], Any]):
+def rpc_catch_errors(func: Callable[..., Any]):
 
     def func_wrapper(obj, *args, **kwargs):
 
@@ -105,6 +106,9 @@ class ApiServer(RPC):
 
         # Register application handling
         self.register_rest_rpc_urls()
+
+        if self._config.get('fiat_display_currency', None):
+            self._fiat_converter = CryptoToFiatConverter()
 
         thread = threading.Thread(target=self.run, daemon=True)
         thread.start()
@@ -197,6 +201,8 @@ class ApiServer(RPC):
                               view_func=self._ping, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/trades', 'trades',
                               view_func=self._trades, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/trades/<int:tradeid>', 'trades_delete',
+                              view_func=self._trades_delete, methods=['DELETE'])
         # Combined actions and infos
         self.app.add_url_rule(f'{BASE_URI}/blacklist', 'blacklist', view_func=self._blacklist,
                               methods=['GET', 'POST'])
@@ -420,6 +426,19 @@ class ApiServer(RPC):
         limit = int(request.args.get('limit', 0))
         results = self._rpc_trade_history(limit)
         return self.rest_dump(results)
+
+    @require_login
+    @rpc_catch_errors
+    def _trades_delete(self, tradeid):
+        """
+        Handler for DELETE /trades/<tradeid> endpoint.
+        Removes the trade from the database (tries to cancel open orders first!)
+        get:
+          param:
+            tradeid: Numeric trade-id assigned to the trade.
+        """
+        result = self._rpc_delete(tradeid)
+        return self.rest_dump(result)
 
     @require_login
     @rpc_catch_errors

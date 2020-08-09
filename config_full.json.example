@@ -66,7 +66,7 @@
         },
         {"method": "AgeFilter", "min_days_listed": 10},
         {"method": "PrecisionFilter"},
-        {"method": "PriceFilter", "low_price_ratio": 0.01},
+        {"method": "PriceFilter", "low_price_ratio": 0.01, "min_price": 0.00000010},
         {"method": "SpreadFilter", "max_spread_ratio": 0.005}
     ],
     "exchange": {

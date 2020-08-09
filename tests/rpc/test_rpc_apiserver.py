@@ -50,6 +50,12 @@ def client_get(client, url):
                                     'Origin': 'http://example.com'})
 
 
+def client_delete(client, url):
+    # Add fake Origin to ensure CORS kicks in
+    return client.delete(url, headers={'Authorization': _basic_auth_str(_TEST_USER, _TEST_PASS),
+                                       'Origin': 'http://example.com'})
+
+
 def assert_response(response, expected_code=200, needs_cors=True):
     assert response.status_code == expected_code
     assert response.content_type == "application/json"
@@ -326,6 +332,8 @@ def test_api_show_config(botclient, mocker):
     assert rc.json['exchange'] == 'bittrex'
     assert rc.json['ticker_interval'] == '5m'
     assert rc.json['timeframe'] == '5m'
+    assert rc.json['timeframe_ms'] == 300000
+    assert rc.json['timeframe_min'] == 5
     assert rc.json['state'] == 'running'
     assert not rc.json['trailing_stop']
     assert 'bid_strategy' in rc.json
@@ -350,7 +358,7 @@ def test_api_daily(botclient, mocker, ticker, fee, markets):
     assert rc.json['data'][0]['date'] == str(datetime.utcnow().date())
 
 
-def test_api_trades(botclient, mocker, ticker, fee, markets):
+def test_api_trades(botclient, mocker, fee, markets):
     ftbot, client = botclient
     patch_get_signal(ftbot, (True, False))
     mocker.patch.multiple(
@@ -366,12 +374,53 @@ def test_api_trades(botclient, mocker, ticker, fee, markets):
 
     rc = client_get(client, f"{BASE_URI}/trades")
     assert_response(rc)
-    assert len(rc.json['trades']) == 3
-    assert rc.json['trades_count'] == 3
-    rc = client_get(client, f"{BASE_URI}/trades?limit=2")
-    assert_response(rc)
     assert len(rc.json['trades']) == 2
     assert rc.json['trades_count'] == 2
+    rc = client_get(client, f"{BASE_URI}/trades?limit=1")
+    assert_response(rc)
+    assert len(rc.json['trades']) == 1
+    assert rc.json['trades_count'] == 1
+
+
+def test_api_delete_trade(botclient, mocker, fee, markets):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, (True, False))
+    stoploss_mock = MagicMock()
+    cancel_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        markets=PropertyMock(return_value=markets),
+        cancel_order=cancel_mock,
+        cancel_stoploss_order=stoploss_mock,
+    )
+    rc = client_delete(client, f"{BASE_URI}/trades/1")
+    # Error - trade won't exist yet.
+    assert_response(rc, 502)
+
+    create_mock_trades(fee)
+    ftbot.strategy.order_types['stoploss_on_exchange'] = True
+    trades = Trade.query.all()
+    trades[1].stoploss_order_id = '1234'
+    assert len(trades) > 2
+
+    rc = client_delete(client, f"{BASE_URI}/trades/1")
+    assert_response(rc)
+    assert rc.json['result_msg'] == 'Deleted trade 1. Closed 1 open orders.'
+    assert len(trades) - 1 == len(Trade.query.all())
+    assert cancel_mock.call_count == 1
+
+    cancel_mock.reset_mock()
+    rc = client_delete(client, f"{BASE_URI}/trades/1")
+    # Trade is gone now.
+    assert_response(rc, 502)
+    assert cancel_mock.call_count == 0
+
+    assert len(trades) - 1 == len(Trade.query.all())
+    rc = client_delete(client, f"{BASE_URI}/trades/2")
+    assert_response(rc)
+    assert rc.json['result_msg'] == 'Deleted trade 2. Closed 2 open orders.'
+    assert len(trades) - 2 == len(Trade.query.all())
+    assert stoploss_mock.call_count == 1
 
 
 def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
@@ -431,14 +480,14 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
                        'latest_trade_date': 'just now',
                        'latest_trade_timestamp': ANY,
                        'profit_all_coin': 6.217e-05,
-                       'profit_all_fiat': 0,
+                       'profit_all_fiat': 0.76748865,
                        'profit_all_percent': 6.2,
                        'profit_all_percent_mean': 6.2,
                        'profit_all_ratio_mean': 0.06201058,
                        'profit_all_percent_sum': 6.2,
                        'profit_all_ratio_sum': 0.06201058,
                        'profit_closed_coin': 6.217e-05,
-                       'profit_closed_fiat': 0,
+                       'profit_closed_fiat': 0.76748865,
                        'profit_closed_percent': 6.2,
                        'profit_closed_ratio_mean': 0.06201058,
                        'profit_closed_percent_mean': 6.2,

@@ -103,7 +103,7 @@ class Backtesting:
         if len(self.pairlists.whitelist) == 0:
             raise OperationalException("No pair in whitelist.")
 
-        if config.get('fee'):
+        if config.get('fee', None) is not None:
             self.fee = config['fee']
         else:
             self.fee = self.exchange.get_fee(symbol=self.pairlists.whitelist[0])

@@ -1,7 +1,7 @@
-FROM python:3.8.3-slim-buster
+FROM python:3.8.5-slim-buster
 
 RUN apt-get update \
-    && apt-get -y install curl build-essential libssl-dev \
+    && apt-get -y install curl build-essential libssl-dev sqlite3 \
     && apt-get clean \
     && pip install --upgrade pip
 

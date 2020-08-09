@@ -7,19 +7,18 @@ import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Dict, NamedTuple, Optional, Tuple
+from typing import Dict, List, NamedTuple, Optional, Tuple
 
 import arrow
 from pandas import DataFrame
 
+from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.exceptions import StrategyError
+from freqtrade.exceptions import StrategyError, OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.persistence import Trade
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
-from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.wallets import Wallets
-
 
 logger = logging.getLogger(__name__)
 
@@ -195,6 +194,63 @@ class IStrategy(ABC):
         """
         return False
 
+    def bot_loop_start(self, **kwargs) -> None:
+        """
+        Called at the start of the bot iteration (one loop).
+        Might be used to perform pair-independent tasks
+        (e.g. gather some remote resource for comparison)
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        """
+        pass
+
+    def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
+                            time_in_force: str, **kwargs) -> bool:
+        """
+        Called right before placing a buy order.
+        Timing for this function is critical, so avoid doing heavy computations or
+        network requests in this method.
+
+        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+        When not implemented by a strategy, returns True (always confirming).
+
+        :param pair: Pair that's about to be bought.
+        :param order_type: Order type (as configured in order_types). usually limit or market.
+        :param amount: Amount in target (quote) currency that's going to be traded.
+        :param rate: Rate that's going to be used when using limit orders
+        :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return bool: When True is returned, then the buy-order is placed on the exchange.
+            False aborts the process
+        """
+        return True
+
+    def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
+                           rate: float, time_in_force: str, sell_reason: str, **kwargs) -> bool:
+        """
+        Called right before placing a regular sell order.
+        Timing for this function is critical, so avoid doing heavy computations or
+        network requests in this method.
+
+        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+        When not implemented by a strategy, returns True (always confirming).
+
+        :param pair: Pair that's about to be sold.
+        :param trade: trade object.
+        :param order_type: Order type (as configured in order_types). usually limit or market.
+        :param amount: Amount in quote currency.
+        :param rate: Rate that's going to be used when using limit orders
+        :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
+        :param sell_reason: Sell reason.
+            Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
+                           'sell_signal', 'force_sell', 'emergency_sell']
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return bool: When True is returned, then the sell-order is placed on the exchange.
+            False aborts the process
+        """
+        return True
+
     def informative_pairs(self) -> ListPairsWithTimeframes:
         """
         Define additional, informative pair/interval combinations to be cached from the exchange.
@@ -207,6 +263,10 @@ class IStrategy(ABC):
                             ]
         """
         return []
+
+###
+# END - Intended to be overridden by strategy
+###
 
     def get_strategy_name(self) -> str:
         """
@@ -277,6 +337,8 @@ class IStrategy(ABC):
             # Defs that only make change on new candle data.
             dataframe = self.analyze_ticker(dataframe, metadata)
             self._last_candle_seen_per_pair[pair] = dataframe.iloc[-1]['date']
+            if self.dp:
+                self.dp._set_cached_df(pair, self.timeframe, dataframe)
         else:
             logger.debug("Skipping TA Analysis for already analyzed candle")
             dataframe['buy'] = 0
@@ -288,13 +350,53 @@ class IStrategy(ABC):
 
         return dataframe
 
+    def analyze_pair(self, pair: str) -> None:
+        """
+        Fetch data for this pair from dataprovider and analyze.
+        Stores the dataframe into the dataprovider.
+        The analyzed dataframe is then accessible via `dp.get_analyzed_dataframe()`.
+        :param pair: Pair to analyze.
+        """
+        if not self.dp:
+            raise OperationalException("DataProvider not found.")
+        dataframe = self.dp.ohlcv(pair, self.timeframe)
+        if not isinstance(dataframe, DataFrame) or dataframe.empty:
+            logger.warning('Empty candle (OHLCV) data for pair %s', pair)
+            return
+
+        try:
+            df_len, df_close, df_date = self.preserve_df(dataframe)
+
+            dataframe = strategy_safe_wrapper(
+                self._analyze_ticker_internal, message=""
+            )(dataframe, {'pair': pair})
+
+            self.assert_df(dataframe, df_len, df_close, df_date)
+        except StrategyError as error:
+            logger.warning(f"Unable to analyze candle (OHLCV) data for pair {pair}: {error}")
+            return
+
+        if dataframe.empty:
+            logger.warning('Empty dataframe for pair %s', pair)
+            return
+
+    def analyze(self, pairs: List[str]) -> None:
+        """
+        Analyze all pairs using analyze_pair().
+        :param pairs: List of pairs to analyze
+        """
+        for pair in pairs:
+            self.analyze_pair(pair)
+
     @staticmethod
     def preserve_df(dataframe: DataFrame) -> Tuple[int, float, datetime]:
         """ keep some data for dataframes """
         return len(dataframe), dataframe["close"].iloc[-1], dataframe["date"].iloc[-1]
 
     def assert_df(self, dataframe: DataFrame, df_len: int, df_close: float, df_date: datetime):
-        """ make sure data is unmodified """
+        """
+        Ensure dataframe (length, last candle) was not modified, and has all elements we need.
+        """
         message = ""
         if df_len != len(dataframe):
             message = "length"
@@ -308,31 +410,17 @@ class IStrategy(ABC):
             else:
                 raise StrategyError(f"Dataframe returned from strategy has mismatching {message}.")
 
-    def get_signal(self, pair: str, interval: str, dataframe: DataFrame) -> Tuple[bool, bool]:
+    def get_signal(self, pair: str, timeframe: str, dataframe: DataFrame) -> Tuple[bool, bool]:
         """
-        Calculates current signal based several technical analysis indicators
+        Calculates current signal based based on the buy / sell columns of the dataframe.
+        Used by Bot to get the signal to buy or sell
         :param pair: pair in format ANT/BTC
-        :param interval: Interval to use (in min)
-        :param dataframe: Dataframe to analyze
+        :param timeframe: timeframe to use
+        :param dataframe: Analyzed dataframe to get signal from.
         :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
         """
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
-            logger.warning('Empty candle (OHLCV) data for pair %s', pair)
-            return False, False
-
-        try:
-            df_len, df_close, df_date = self.preserve_df(dataframe)
-            dataframe = strategy_safe_wrapper(
-                self._analyze_ticker_internal, message=""
-                )(dataframe, {'pair': pair})
-            self.assert_df(dataframe, df_len, df_close, df_date)
-        except StrategyError as error:
-            logger.warning(f"Unable to analyze candle (OHLCV) data for pair {pair}: {error}")
-
-            return False, False
-
-        if dataframe.empty:
-            logger.warning('Empty dataframe for pair %s', pair)
+            logger.warning(f'Empty candle (OHLCV) data for pair {pair}')
             return False, False
 
         latest_date = dataframe['date'].max()
@@ -341,24 +429,18 @@ class IStrategy(ABC):
         latest_date = arrow.get(latest_date)
 
         # Check if dataframe is out of date
-        interval_minutes = timeframe_to_minutes(interval)
+        timeframe_minutes = timeframe_to_minutes(timeframe)
         offset = self.config.get('exchange', {}).get('outdated_offset', 5)
-        if latest_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + offset))):
+        if latest_date < (arrow.utcnow().shift(minutes=-(timeframe_minutes * 2 + offset))):
             logger.warning(
                 'Outdated history for pair %s. Last tick is %s minutes old',
-                pair,
-                (arrow.utcnow() - latest_date).seconds // 60
+                pair, (arrow.utcnow() - latest_date).seconds // 60
             )
             return False, False
 
         (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
-        logger.debug(
-            'trigger: %s (pair=%s) buy=%s sell=%s',
-            latest['date'],
-            pair,
-            str(buy),
-            str(sell)
-        )
+        logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
+                     latest['date'], pair, str(buy), str(sell))
         return buy, sell
 
     def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
@@ -504,7 +586,8 @@ class IStrategy(ABC):
 
     def ohlcvdata_to_dataframe(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
-        Creates a dataframe and populates indicators for given candle (OHLCV) data
+        Populates indicators for given candle (OHLCV) data (for multiple pairs)
+        Does not run advice_buy or advise_sell!
         Used by optimize operations only, not during dry / live runs.
         Using .copy() to get a fresh copy of the dataframe for every strategy run.
         Has positive effects on memory usage for whatever reason - also when

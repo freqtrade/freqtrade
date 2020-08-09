@@ -188,6 +188,11 @@ class Exchange:
         return list((self._api.timeframes or {}).keys())
 
     @property
+    def ohlcv_candle_limit(self) -> int:
+        """exchange ohlcv candle limit"""
+        return int(self._ohlcv_candle_limit)
+
+    @property
     def markets(self) -> Dict:
         """exchange ccxt markets"""
         if not self._api.markets:
@@ -253,8 +258,8 @@ class Exchange:
                 api.urls['api'] = api.urls['test']
                 logger.info("Enabled Sandbox API on %s", name)
             else:
-                logger.warning(name, "No Sandbox URL in CCXT, exiting. "
-                                     "Please check your config.json")
+                logger.warning(
+                    f"No Sandbox URL in CCXT for {name}, exiting. Please check your config.json")
                 raise OperationalException(f'Exchange {name} does not provide a sandbox api')
 
     def _load_async_markets(self, reload: bool = False) -> None:
@@ -520,13 +525,13 @@ class Exchange:
 
         except ccxt.InsufficientFunds as e:
             raise ExchangeError(
-                f'Insufficient funds to create {ordertype} {side} order on market {pair}.'
+                f'Insufficient funds to create {ordertype} {side} order on market {pair}. '
                 f'Tried to {side} amount {amount} at rate {rate}.'
                 f'Message: {e}') from e
         except ccxt.InvalidOrder as e:
             raise ExchangeError(
-                f'Could not create {ordertype} {side} order on market {pair}.'
-                f'Tried to {side} amount {amount} at rate {rate}.'
+                f'Could not create {ordertype} {side} order on market {pair}. '
+                f'Tried to {side} amount {amount} at rate {rate}. '
                 f'Message: {e}') from e
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
