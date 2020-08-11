@@ -18,7 +18,7 @@ from freqtrade.configuration.config_validation import validate_config_schema
 from freqtrade.configuration.deprecated_settings import (
     check_conflicting_settings, process_deprecated_setting,
     process_temporary_deprecated_settings)
-from freqtrade.configuration.load_config import load_config_file
+from freqtrade.configuration.load_config import load_config_file, log_config_error_range
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import _set_loggers, setup_logging
@@ -66,6 +66,30 @@ def test_load_config_file(default_conf, mocker, caplog) -> None:
     assert validated_conf.items() >= default_conf.items()
 
 
+def test_load_config_file_error(default_conf, mocker, caplog) -> None:
+    del default_conf['user_data_dir']
+    filedata = json.dumps(default_conf).replace(
+        '"stake_amount": 0.001,', '"stake_amount": .001,')
+    mocker.patch('freqtrade.configuration.load_config.open', mocker.mock_open(read_data=filedata))
+    mocker.patch.object(Path, "read_text", MagicMock(return_value=filedata))
+
+    with pytest.raises(OperationalException, match=r".*Please verify the following segment.*"):
+        load_config_file('somefile')
+
+
+def test_load_config_file_error_range(default_conf, mocker, caplog) -> None:
+    del default_conf['user_data_dir']
+    filedata = json.dumps(default_conf).replace(
+        '"stake_amount": 0.001,', '"stake_amount": .001,')
+    mocker.patch.object(Path, "read_text", MagicMock(return_value=filedata))
+
+    x = log_config_error_range('somefile', 'Parse error at offset 64: Invalid value.')
+    assert isinstance(x, str)
+    assert (x == '{"max_open_trades": 1, "stake_currency": "BTC", '
+            '"stake_amount": .001, "fiat_display_currency": "USD", '
+            '"timeframe": "5m", "dry_run": true, "cance')
+
+
 def test__args_to_config(caplog):
 
     arg_list = ['trade', '--strategy-path', 'TestTest']
@@ -73,6 +97,7 @@ def test__args_to_config(caplog):
     configuration = Configuration(args)
     config = {}
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
         # No warnings ...
         configuration._args_to_config(config, argname="strategy_path", logstring="DeadBeef")
         assert len(w) == 0
@@ -82,6 +107,7 @@ def test__args_to_config(caplog):
     configuration = Configuration(args)
     config = {}
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
         # Deprecation warnings!
         configuration._args_to_config(config, argname="strategy_path", logstring="DeadBeef",
                                       deprecated_msg="Going away soon!")
@@ -375,8 +401,8 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'datadir' in config
     assert 'user_data_dir' in config
     assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
-    assert 'ticker_interval' in config
-    assert not log_has('Parameter -i/--ticker-interval detected ...', caplog)
+    assert 'timeframe' in config
+    assert not log_has('Parameter -i/--timeframe detected ...', caplog)
 
     assert 'position_stacking' not in config
     assert not log_has('Parameter --enable-position-stacking detected ...', caplog)
@@ -422,8 +448,8 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert log_has('Using user-data directory: {} ...'.format(Path("/tmp/freqtrade")), caplog)
     assert 'user_data_dir' in config
 
-    assert 'ticker_interval' in config
-    assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
+    assert 'timeframe' in config
+    assert log_has('Parameter -i/--timeframe detected ... Using timeframe: 1m ...',
                    caplog)
 
     assert 'position_stacking' in config
@@ -468,8 +494,8 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
-    assert 'ticker_interval' in config
-    assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
+    assert 'timeframe' in config
+    assert log_has('Parameter -i/--timeframe detected ... Using timeframe: 1m ...',
                    caplog)
 
     assert 'strategy_list' in config
@@ -628,12 +654,14 @@ def test_set_loggers() -> None:
     assert logging.getLogger('requests').level is logging.DEBUG
     assert logging.getLogger('ccxt.base.exchange').level is logging.INFO
     assert logging.getLogger('telegram').level is logging.INFO
+    assert logging.getLogger('werkzeug').level is logging.INFO
 
-    _set_loggers(verbosity=3)
+    _set_loggers(verbosity=3, api_verbosity='error')
 
     assert logging.getLogger('requests').level is logging.DEBUG
     assert logging.getLogger('ccxt.base.exchange').level is logging.DEBUG
     assert logging.getLogger('telegram').level is logging.INFO
+    assert logging.getLogger('werkzeug').level is logging.ERROR
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
@@ -843,6 +871,14 @@ def test_load_config_default_exchange_name(all_conf) -> None:
         validate_config_schema(all_conf)
 
 
+def test_load_config_stoploss_exchange_limit_ratio(all_conf) -> None:
+    all_conf['order_types']['stoploss_on_exchange_limit_ratio'] = 1.15
+
+    with pytest.raises(ValidationError,
+                       match=r"1.15 is greater than the maximum"):
+        validate_config_schema(all_conf)
+
+
 @pytest.mark.parametrize("keys", [("exchange", "sandbox", False),
                                   ("exchange", "key", ""),
                                   ("exchange", "secret", ""),
@@ -1015,18 +1051,6 @@ def test_process_temporary_deprecated_settings(mocker, default_conf, setting, ca
     assert default_conf[setting[0]][setting[1]] == setting[5]
 
 
-def test_process_deprecated_setting_pairlists(mocker, default_conf, caplog):
-    patched_configuration_load_config_file(mocker, default_conf)
-    default_conf.update({'pairlist': {
-        'method': 'VolumePairList',
-        'config': {'precision_filter': True}
-    }})
-
-    process_temporary_deprecated_settings(default_conf)
-    assert log_has_re(r'DEPRECATED.*precision_filter.*', caplog)
-    assert log_has_re(r'DEPRECATED.*in pairlist is deprecated and must be moved*', caplog)
-
-
 def test_process_deprecated_setting_edge(mocker, edge_conf, caplog):
     patched_configuration_load_config_file(mocker, edge_conf)
     edge_conf.update({'edge': {
@@ -1034,8 +1058,9 @@ def test_process_deprecated_setting_edge(mocker, edge_conf, caplog):
         'capital_available_percentage': 0.5,
     }})
 
-    process_temporary_deprecated_settings(edge_conf)
-    assert log_has_re(r"DEPRECATED.*Using 'edge.capital_available_percentage'*", caplog)
+    with pytest.raises(OperationalException,
+                       match=r"DEPRECATED.*Using 'edge.capital_available_percentage'*"):
+        process_temporary_deprecated_settings(edge_conf)
 
 
 def test_check_conflicting_settings(mocker, default_conf, caplog):
@@ -1123,3 +1148,25 @@ def test_process_deprecated_setting(mocker, default_conf, caplog):
                                'sectionB', 'deprecated_setting')
     assert not log_has_re('DEPRECATED', caplog)
     assert default_conf['sectionA']['new_setting'] == 'valA'
+
+
+def test_process_deprecated_ticker_interval(mocker, default_conf, caplog):
+    message = "DEPRECATED: Please use 'timeframe' instead of 'ticker_interval."
+    config = deepcopy(default_conf)
+    process_temporary_deprecated_settings(config)
+    assert not log_has(message, caplog)
+
+    del config['timeframe']
+    config['ticker_interval'] = '15m'
+    process_temporary_deprecated_settings(config)
+    assert log_has(message, caplog)
+    assert config['ticker_interval'] == '15m'
+
+    config = deepcopy(default_conf)
+    # Have both timeframe and ticker interval in config
+    # Can also happen when using ticker_interval in configuration, and --timeframe as cli argument
+    config['timeframe'] = '5m'
+    config['ticker_interval'] = '4h'
+    with pytest.raises(OperationalException,
+                       match=r"Both 'timeframe' and 'ticker_interval' detected."):
+        process_temporary_deprecated_settings(config)

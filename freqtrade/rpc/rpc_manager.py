@@ -72,7 +72,7 @@ class RPCManager:
         minimal_roi = config['minimal_roi']
         stoploss = config['stoploss']
         trailing_stop = config['trailing_stop']
-        ticker_interval = config['ticker_interval']
+        timeframe = config['timeframe']
         exchange_name = config['exchange']['name']
         strategy_name = config.get('strategy', '')
         self.send_msg({
@@ -81,7 +81,7 @@ class RPCManager:
                       f'*Stake per trade:* `{stake_amount} {stake_currency}`\n'
                       f'*Minimum ROI:* `{minimal_roi}`\n'
                       f'*{"Trailing " if trailing_stop else ""}Stoploss:* `{stoploss}`\n'
-                      f'*Ticker Interval:* `{ticker_interval}`\n'
+                      f'*Timeframe:* `{timeframe}`\n'
                       f'*Strategy:* `{strategy_name}`'
         })
         self.send_msg({

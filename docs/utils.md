@@ -62,7 +62,7 @@ $ freqtrade new-config --config config_binance.json
 ? Please insert your stake currency: BTC
 ? Please insert your stake amount: 0.05
 ? Please insert max_open_trades (Integer or 'unlimited'): 3
-? Please insert your timeframe (ticker interval): 5m
+? Please insert your desired timeframe (e.g. 5m): 5m
 ? Please insert your display Currency (for reporting): USD
 ? Select exchange  binance
 ? Do you want to enable Telegram?  No
@@ -77,7 +77,7 @@ Results will be located in `user_data/strategies/<strategyclassname>.py`.
 
 ``` output
 usage: freqtrade new-strategy [-h] [--userdir PATH] [-s NAME]
-                              [--template {full,minimal}]
+                              [--template {full,minimal,advanced}]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -86,10 +86,10 @@ optional arguments:
   -s NAME, --strategy NAME
                         Specify strategy class name which will be used by the
                         bot.
-  --template {full,minimal}
-                        Use a template which is either `minimal` or `full`
-                        (containing multiple sample indicators). Default:
-                        `full`.
+  --template {full,minimal,advanced}
+                        Use a template which is either `minimal`, `full`
+                        (containing multiple sample indicators) or `advanced`.
+                        Default: `full`.
 
 ```
 
@@ -105,6 +105,12 @@ With custom user directory
 freqtrade new-strategy --userdir ~/.freqtrade/ --strategy AwesomeStrategy
 ```
 
+Using the advanced template (populates all optional functions and methods)
+
+```bash
+freqtrade new-strategy --strategy AwesomeStrategy --template advanced
+```
+
 ## Create new hyperopt
 
 Creates a new hyperopt from a template similar to SampleHyperopt.
@@ -114,7 +120,7 @@ Results will be located in `user_data/hyperopts/<classname>.py`.
 
 ``` output
 usage: freqtrade new-hyperopt [-h] [--userdir PATH] [--hyperopt NAME]
-                              [--template {full,minimal}]
+                              [--template {full,minimal,advanced}]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -122,10 +128,10 @@ optional arguments:
                         Path to userdata directory.
   --hyperopt NAME       Specify hyperopt class name which will be used by the
                         bot.
-  --template {full,minimal}
-                        Use a template which is either `minimal` or `full`
-                        (containing multiple sample indicators). Default:
-                        `full`.
+  --template {full,minimal,advanced}
+                        Use a template which is either `minimal`, `full`
+                        (containing multiple sample indicators) or `advanced`.
+                        Default: `full`.
 ```
 
 ### Sample usage of new-hyperopt
@@ -518,4 +524,49 @@ Prints JSON data with details for the last best epoch (i.e., the best of all epo
 
 ```
 freqtrade hyperopt-show --best -n -1 --print-json --no-header
+```
+
+## Show trades
+
+Print selected (or all) trades from database to screen.
+
+```
+usage: freqtrade show-trades [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                             [-d PATH] [--userdir PATH] [--db-url PATH]
+                             [--trade-ids TRADE_IDS [TRADE_IDS ...]]
+                             [--print-json]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --db-url PATH         Override trades database URL, this is useful in custom
+                        deployments (default: `sqlite:///tradesv3.sqlite` for
+                        Live Run mode, `sqlite:///tradesv3.dryrun.sqlite` for
+                        Dry Run).
+  --trade-ids TRADE_IDS [TRADE_IDS ...]
+                        Specify the list of trade ids.
+  --print-json          Print output in JSON format.
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+```
+
+### Examples
+
+Print trades with id 2 and 3 as json
+
+``` bash
+freqtrade show-trades --db-url sqlite:///tradesv3.sqlite --trade-ids 2 3 --print-json
 ```

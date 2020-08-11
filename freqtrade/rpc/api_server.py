@@ -2,15 +2,22 @@ import logging
 import threading
 from datetime import date, datetime
 from ipaddress import IPv4Address
-from typing import Dict, Callable, Any
+from typing import Any, Callable, Dict
 
 from arrow import Arrow
 from flask import Flask, jsonify, request
 from flask.json import JSONEncoder
+from flask_cors import CORS
+from flask_jwt_extended import (JWTManager, create_access_token,
+                                create_refresh_token, get_jwt_identity,
+                                jwt_refresh_token_required,
+                                verify_jwt_in_request_optional)
+from werkzeug.security import safe_str_cmp
 from werkzeug.serving import make_server
 
 from freqtrade.__init__ import __version__
 from freqtrade.rpc.rpc import RPC, RPCException
+from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +45,9 @@ class ArrowJSONEncoder(JSONEncoder):
 def require_login(func: Callable[[Any, Any], Any]):
 
     def func_wrapper(obj, *args, **kwargs):
-
+        verify_jwt_in_request_optional()
         auth = request.authorization
-        if auth and obj.check_auth(auth.username, auth.password):
+        if get_jwt_identity() or auth and obj.check_auth(auth.username, auth.password):
             return func(obj, *args, **kwargs)
         else:
             return jsonify({"error": "Unauthorized"}), 401
@@ -49,7 +56,7 @@ def require_login(func: Callable[[Any, Any], Any]):
 
 
 # Type should really be Callable[[ApiServer], Any], but that will create a circular dependency
-def rpc_catch_errors(func: Callable[[Any], Any]):
+def rpc_catch_errors(func: Callable[..., Any]):
 
     def func_wrapper(obj, *args, **kwargs):
 
@@ -70,8 +77,8 @@ class ApiServer(RPC):
     """
 
     def check_auth(self, username, password):
-        return (username == self._config['api_server'].get('username') and
-                password == self._config['api_server'].get('password'))
+        return (safe_str_cmp(username, self._config['api_server'].get('username')) and
+                safe_str_cmp(password, self._config['api_server'].get('password')))
 
     def __init__(self, freqtrade) -> None:
         """
@@ -83,10 +90,24 @@ class ApiServer(RPC):
 
         self._config = freqtrade.config
         self.app = Flask(__name__)
+        self._cors = CORS(self.app,
+                          resources={r"/api/*": {
+                              "supports_credentials": True,
+                              "origins": self._config['api_server'].get('CORS_origins', [])}}
+                          )
+
+        # Setup the Flask-JWT-Extended extension
+        self.app.config['JWT_SECRET_KEY'] = self._config['api_server'].get(
+            'jwt_secret_key', 'super-secret')
+
+        self.jwt = JWTManager(self.app)
         self.app.json_encoder = ArrowJSONEncoder
 
         # Register application handling
         self.register_rest_rpc_urls()
+
+        if self._config.get('fiat_display_currency', None):
+            self._fiat_converter = CryptoToFiatConverter()
 
         thread = threading.Thread(target=self.run, daemon=True)
         thread.start()
@@ -148,13 +169,17 @@ class ApiServer(RPC):
         self.app.register_error_handler(404, self.page_not_found)
 
         # Actions to control the bot
+        self.app.add_url_rule(f'{BASE_URI}/token/login', 'login',
+                              view_func=self._token_login, methods=['POST'])
+        self.app.add_url_rule(f'{BASE_URI}/token/refresh', 'token_refresh',
+                              view_func=self._token_refresh, methods=['POST'])
         self.app.add_url_rule(f'{BASE_URI}/start', 'start',
                               view_func=self._start, methods=['POST'])
         self.app.add_url_rule(f'{BASE_URI}/stop', 'stop', view_func=self._stop, methods=['POST'])
         self.app.add_url_rule(f'{BASE_URI}/stopbuy', 'stopbuy',
                               view_func=self._stopbuy, methods=['POST'])
-        self.app.add_url_rule(f'{BASE_URI}/reload_conf', 'reload_conf',
-                              view_func=self._reload_conf, methods=['POST'])
+        self.app.add_url_rule(f'{BASE_URI}/reload_config', 'reload_config',
+                              view_func=self._reload_config, methods=['POST'])
         # Info commands
         self.app.add_url_rule(f'{BASE_URI}/balance', 'balance',
                               view_func=self._balance, methods=['GET'])
@@ -173,7 +198,10 @@ class ApiServer(RPC):
                               view_func=self._show_config, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/ping', 'ping',
                               view_func=self._ping, methods=['GET'])
-
+        self.app.add_url_rule(f'{BASE_URI}/trades', 'trades',
+                              view_func=self._trades, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/trades/<int:tradeid>', 'trades_delete',
+                              view_func=self._trades_delete, methods=['DELETE'])
         # Combined actions and infos
         self.app.add_url_rule(f'{BASE_URI}/blacklist', 'blacklist', view_func=self._blacklist,
                               methods=['GET', 'POST'])
@@ -197,6 +225,37 @@ class ApiServer(RPC):
             'reason': f"There's no API call for {request.base_url}.",
             'code': 404
         }), 404
+
+    @require_login
+    @rpc_catch_errors
+    def _token_login(self):
+        """
+        Handler for /token/login
+        Returns a JWT token
+        """
+        auth = request.authorization
+        if auth and self.check_auth(auth.username, auth.password):
+            keystuff = {'u': auth.username}
+            ret = {
+                'access_token': create_access_token(identity=keystuff),
+                'refresh_token': create_refresh_token(identity=keystuff),
+            }
+            return self.rest_dump(ret)
+
+        return jsonify({"error": "Unauthorized"}), 401
+
+    @jwt_refresh_token_required
+    @rpc_catch_errors
+    def _token_refresh(self):
+        """
+        Handler for /token/refresh
+        Returns a JWT token based on a JWT refresh token
+        """
+        current_user = get_jwt_identity()
+        new_token = create_access_token(identity=current_user, fresh=False)
+
+        ret = {'access_token': new_token}
+        return self.rest_dump(ret)
 
     @require_login
     @rpc_catch_errors
@@ -253,12 +312,12 @@ class ApiServer(RPC):
 
     @require_login
     @rpc_catch_errors
-    def _reload_conf(self):
+    def _reload_config(self):
         """
-        Handler for /reload_conf.
+        Handler for /reload_config.
         Triggers a config file reload
         """
-        msg = self._rpc_reload_conf()
+        msg = self._rpc_reload_config()
         return self.rest_dump(msg)
 
     @require_login
@@ -309,7 +368,6 @@ class ApiServer(RPC):
         Returns a cumulative profit statistics
         :return: stats
         """
-        logger.info("LocalRPC - Profit Command Called")
 
         stats = self._rpc_trade_statistics(self._config['stake_currency'],
                                            self._config.get('fiat_display_currency')
@@ -326,8 +384,6 @@ class ApiServer(RPC):
         Returns a cumulative performance statistics
         :return: stats
         """
-        logger.info("LocalRPC - performance Command Called")
-
         stats = self._rpc_performance()
 
         return self.rest_dump(stats)
@@ -357,6 +413,31 @@ class ApiServer(RPC):
         results = self._rpc_balance(self._config['stake_currency'],
                                     self._config.get('fiat_display_currency', ''))
         return self.rest_dump(results)
+
+    @require_login
+    @rpc_catch_errors
+    def _trades(self):
+        """
+        Handler for /trades.
+
+        Returns the X last trades in json format
+        """
+        limit = int(request.args.get('limit', 0))
+        results = self._rpc_trade_history(limit)
+        return self.rest_dump(results)
+
+    @require_login
+    @rpc_catch_errors
+    def _trades_delete(self, tradeid):
+        """
+        Handler for DELETE /trades/<tradeid> endpoint.
+        Removes the trade from the database (tries to cancel open orders first!)
+        get:
+          param:
+            tradeid: Numeric trade-id assigned to the trade.
+        """
+        result = self._rpc_delete(tradeid)
+        return self.rest_dump(result)
 
     @require_login
     @rpc_catch_errors

@@ -7,21 +7,20 @@ This module contains the hyperopt logic
 import locale
 import logging
 import random
-import sys
 import warnings
 from math import ceil
 from collections import OrderedDict
 from operator import itemgetter
 from pathlib import Path
-from pprint import pprint
+from pprint import pformat
 from typing import Any, Dict, List, Optional
 
 import rapidjson
 from colorama import Fore, Style
-from colorama import init as colorama_init
 from joblib import (Parallel, cpu_count, delayed, dump, load,
                     wrap_non_picklable_objects)
 from pandas import DataFrame, json_normalize, isna
+import progressbar
 import tabulate
 from os import path
 import io
@@ -43,15 +42,16 @@ with warnings.catch_warnings():
     from skopt import Optimizer
     from skopt.space import Dimension
 
-
+progressbar.streams.wrap_stderr()
+progressbar.streams.wrap_stdout()
 logger = logging.getLogger(__name__)
 
 
 INITIAL_POINTS = 30
 
-# Keep no more than 2*SKOPT_MODELS_MAX_NUM models
-# in the skopt models list
-SKOPT_MODELS_MAX_NUM = 10
+# Keep no more than SKOPT_MODEL_QUEUE_SIZE models
+# in the skopt model queue, to optimize memory consumption
+SKOPT_MODEL_QUEUE_SIZE = 10
 
 MAX_LOSS = 100000  # just a big enough number to be bad result in loss optimization
 
@@ -75,8 +75,8 @@ class Hyperopt:
         self.custom_hyperoptloss = HyperOptLossResolver.load_hyperoptloss(self.config)
         self.calculate_loss = self.custom_hyperoptloss.hyperopt_loss_function
 
-        self.trials_file = (self.config['user_data_dir'] /
-                            'hyperopt_results' / 'hyperopt_results.pickle')
+        self.results_file = (self.config['user_data_dir'] /
+                             'hyperopt_results' / 'hyperopt_results.pickle')
         self.data_pickle_file = (self.config['user_data_dir'] /
                                  'hyperopt_results' / 'hyperopt_tickerdata.pkl')
         self.total_epochs = config.get('epochs', 0)
@@ -88,10 +88,10 @@ class Hyperopt:
         else:
             logger.info("Continuing on previous hyperopt results.")
 
-        self.num_trials_saved = 0
+        self.num_epochs_saved = 0
 
         # Previous evaluations
-        self.trials: List = []
+        self.epochs: List = []
 
         # Populate functions here (hasattr is slow so should not be run during "regular" operations)
         if hasattr(self.custom_hyperopt, 'populate_indicators'):
@@ -132,7 +132,7 @@ class Hyperopt:
         """
         Remove hyperopt pickle files to restart hyperopt.
         """
-        for f in [self.data_pickle_file, self.trials_file]:
+        for f in [self.data_pickle_file, self.results_file]:
             p = Path(f)
             if p.is_file():
                 logger.info(f"Removing `{p}`.")
@@ -151,27 +151,26 @@ class Hyperopt:
         # and the values are taken from the list of parameters.
         return {d.name: v for d, v in zip(dimensions, raw_params)}
 
-    def save_trials(self, final: bool = False) -> None:
+    def _save_results(self) -> None:
         """
-        Save hyperopt trials to file
+        Save hyperopt results to file
         """
-        num_trials = len(self.trials)
-        if num_trials > self.num_trials_saved:
-            logger.debug(f"Saving {num_trials} {plural(num_trials, 'epoch')}.")
-            dump(self.trials, self.trials_file)
-            self.num_trials_saved = num_trials
-        if final:
-            logger.info(f"{num_trials} {plural(num_trials, 'epoch')} "
-                        f"saved to '{self.trials_file}'.")
+        num_epochs = len(self.epochs)
+        if num_epochs > self.num_epochs_saved:
+            logger.debug(f"Saving {num_epochs} {plural(num_epochs, 'epoch')}.")
+            dump(self.epochs, self.results_file)
+            self.num_epochs_saved = num_epochs
+            logger.debug(f"{self.num_epochs_saved} {plural(self.num_epochs_saved, 'epoch')} "
+                         f"saved to '{self.results_file}'.")
 
     @staticmethod
-    def _read_trials(trials_file: Path) -> List:
+    def _read_results(results_file: Path) -> List:
         """
-        Read hyperopt trials file
+        Read hyperopt results from file
         """
-        logger.info("Reading Trials from '%s'", trials_file)
-        trials = load(trials_file)
-        return trials
+        logger.info("Reading epochs from '%s'", results_file)
+        data = load(results_file)
+        return data
 
     def _get_params_details(self, params: Dict) -> Dict:
         """
@@ -231,6 +230,9 @@ class Hyperopt:
             if space in ['buy', 'sell']:
                 result_dict.setdefault('params', {}).update(space_params)
             elif space == 'roi':
+                # TODO: get rid of OrderedDict when support for python 3.6 will be
+                # dropped (dicts keep the order as the language feature)
+
                 # Convert keys in min_roi dict to strings because
                 # rapidjson cannot dump dicts with integer keys...
                 # OrderedDict is used to keep the numeric order of the items
@@ -245,11 +247,24 @@ class Hyperopt:
     def _params_pretty_print(params, space: str, header: str) -> None:
         if space in params:
             space_params = Hyperopt._space_params(params, space, 5)
+            params_result = f"\n# {header}\n"
             if space == 'stoploss':
-                print(header, space_params.get('stoploss'))
+                params_result += f"stoploss = {space_params.get('stoploss')}"
+            elif space == 'roi':
+                # TODO: get rid of OrderedDict when support for python 3.6 will be
+                # dropped (dicts keep the order as the language feature)
+                minimal_roi_result = rapidjson.dumps(
+                    OrderedDict(
+                        (str(k), v) for k, v in space_params.items()
+                    ),
+                    default=str, indent=4, number_mode=rapidjson.NM_NATIVE)
+                params_result += f"minimal_roi = {minimal_roi_result}"
             else:
-                print(header)
-                pprint(space_params, indent=4)
+                params_result += f"{space}_params = {pformat(space_params, indent=4)}"
+                params_result = params_result.replace("}", "\n}").replace("{", "{\n ")
+
+            params_result = params_result.replace("\n", "\n    ")
+            print(params_result)
 
     @staticmethod
     def _space_params(params, space: str, r: int = None) -> Dict:
@@ -266,35 +281,16 @@ class Hyperopt:
         Log results if it is better than any previous evaluation
         """
         is_best = results['is_best']
-        if not self.print_all:
-            # Print '\n' after each 100th epoch to separate dots from the log messages.
-            # Otherwise output is messy on a terminal.
-            print('.', end='' if results['current_epoch'] % 100 != 0 else None)  # type: ignore
-            sys.stdout.flush()
 
         if self.print_all or is_best:
-            if not self.print_all:
-                # Separate the results explanation string from dots
-                print("\n")
-            self.print_result_table(self.config, results, self.total_epochs,
-                                    self.print_all, self.print_colorized,
-                                    self.hyperopt_table_header)
+            print(
+                self.get_result_table(
+                    self.config, results, self.total_epochs,
+                    self.print_all, self.print_colorized,
+                    self.hyperopt_table_header
+                )
+            )
             self.hyperopt_table_header = 2
-
-    @staticmethod
-    def print_results_explanation(results, total_epochs, highlight_best: bool,
-                                  print_colorized: bool) -> None:
-        """
-        Log results explanation string
-        """
-        explanation_str = Hyperopt._format_explanation_string(results, total_epochs)
-        # Colorize output
-        if print_colorized:
-            if results['total_profit'] > 0:
-                explanation_str = Fore.GREEN + explanation_str
-            if highlight_best and results['is_best']:
-                explanation_str = Style.BRIGHT + explanation_str
-        print(explanation_str)
 
     @staticmethod
     def _format_explanation_string(results, total_epochs) -> str:
@@ -304,13 +300,13 @@ class Hyperopt:
                 f"Objective: {results['loss']:.5f}")
 
     @staticmethod
-    def print_result_table(config: dict, results: list, total_epochs: int, highlight_best: bool,
-                           print_colorized: bool, remove_header: int) -> None:
+    def get_result_table(config: dict, results: list, total_epochs: int, highlight_best: bool,
+                         print_colorized: bool, remove_header: int) -> str:
         """
         Log result table
         """
         if not results:
-            return
+            return ''
 
         tabulate.PRESERVE_WHITESPACE = True
 
@@ -323,8 +319,9 @@ class Hyperopt:
         trials.columns = ['Best', 'Epoch', 'Trades', 'Avg profit', 'Total profit',
                           'Profit', 'Avg duration', 'Objective', 'is_initial_point', 'is_best']
         trials['is_profit'] = False
-        trials.loc[trials['is_initial_point'], 'Best'] = '*'
+        trials.loc[trials['is_initial_point'], 'Best'] = '*     '
         trials.loc[trials['is_best'], 'Best'] = 'Best'
+        trials.loc[trials['is_initial_point'] & trials['is_best'], 'Best'] = '* Best'
         trials.loc[trials['Total profit'] > 0, 'is_profit'] = True
         trials['Trades'] = trials['Trades'].astype(str)
 
@@ -381,7 +378,7 @@ class Hyperopt:
                 trials.to_dict(orient='list'), tablefmt='psql',
                 headers='keys', stralign="right"
             )
-        print(table)
+        return table
 
     @staticmethod
     def export_csv_file(config: dict, results: list, total_epochs: int, highlight_best: bool,
@@ -394,27 +391,35 @@ class Hyperopt:
 
         # Verification for overwrite
         if path.isfile(csv_file):
-            logger.error("CSV-File already exists!")
+            logger.error(f"CSV file already exists: {csv_file}")
             return
 
         try:
             io.open(csv_file, 'w+').close()
         except IOError:
-            logger.error("Filed to create CSV-File!")
+            logger.error(f"Failed to create CSV file: {csv_file}")
             return
 
         trials = json_normalize(results, max_level=1)
         trials['Best'] = ''
         trials['Stake currency'] = config['stake_currency']
-        trials = trials[['Best', 'current_epoch', 'results_metrics.trade_count',
-                         'results_metrics.avg_profit', 'results_metrics.total_profit',
-                         'Stake currency', 'results_metrics.profit', 'results_metrics.duration',
-                         'loss', 'is_initial_point', 'is_best']]
-        trials.columns = ['Best', 'Epoch', 'Trades', 'Avg profit', 'Total profit', 'Stake currency',
-                          'Profit', 'Avg duration', 'Objective', 'is_initial_point', 'is_best']
+
+        base_metrics = ['Best', 'current_epoch', 'results_metrics.trade_count',
+                        'results_metrics.avg_profit', 'results_metrics.total_profit',
+                        'Stake currency', 'results_metrics.profit', 'results_metrics.duration',
+                        'loss', 'is_initial_point', 'is_best']
+        param_metrics = [("params_dict."+param) for param in results[0]['params_dict'].keys()]
+        trials = trials[base_metrics + param_metrics]
+
+        base_columns = ['Best', 'Epoch', 'Trades', 'Avg profit', 'Total profit', 'Stake currency',
+                        'Profit', 'Avg duration', 'Objective', 'is_initial_point', 'is_best']
+        param_columns = list(results[0]['params_dict'].keys())
+        trials.columns = base_columns + param_columns
+
         trials['is_profit'] = False
         trials.loc[trials['is_initial_point'], 'Best'] = '*'
         trials.loc[trials['is_best'], 'Best'] = 'Best'
+        trials.loc[trials['is_initial_point'] & trials['is_best'], 'Best'] = '* Best'
         trials.loc[trials['Total profit'] > 0, 'is_profit'] = True
         trials['Epoch'] = trials['Epoch'].astype(str)
         trials['Trades'] = trials['Trades'].astype(str)
@@ -437,7 +442,7 @@ class Hyperopt:
 
         trials = trials.drop(columns=['is_initial_point', 'is_best', 'is_profit'])
         trials.to_csv(csv_file, index=False, header=True, mode='w', encoding='UTF-8')
-        print("CSV-File created!")
+        logger.info(f"CSV file created: {csv_file}")
 
     def has_space(self, space: str) -> bool:
         """
@@ -581,43 +586,28 @@ class Hyperopt:
             n_initial_points=INITIAL_POINTS,
             acq_optimizer_kwargs={'n_jobs': cpu_count},
             random_state=self.random_state,
+            model_queue_size=SKOPT_MODEL_QUEUE_SIZE,
         )
-
-    def fix_optimizer_models_list(self) -> None:
-        """
-        WORKAROUND: Since skopt is not actively supported, this resolves problems with skopt
-        memory usage, see also: https://github.com/scikit-optimize/scikit-optimize/pull/746
-
-        This may cease working when skopt updates if implementation of this intrinsic
-        part changes.
-        """
-        n = len(self.opt.models) - SKOPT_MODELS_MAX_NUM
-        # Keep no more than 2*SKOPT_MODELS_MAX_NUM models in the skopt models list,
-        # remove the old ones. These are actually of no use, the current model
-        # from the estimator is the only one used in the skopt optimizer.
-        # Freqtrade code also does not inspect details of the models.
-        if n >= SKOPT_MODELS_MAX_NUM:
-            logger.debug(f"Fixing skopt models list, removing {n} old items...")
-            del self.opt.models[0:n]
 
     def run_optimizer_parallel(self, parallel, asked, i) -> List:
         return parallel(delayed(
                         wrap_non_picklable_objects(self.generate_optimizer))(v, i) for v in asked)
 
     @staticmethod
-    def load_previous_results(trials_file: Path) -> List:
+    def load_previous_results(results_file: Path) -> List:
         """
         Load data for epochs from the file if we have one
         """
-        trials: List = []
-        if trials_file.is_file() and trials_file.stat().st_size > 0:
-            trials = Hyperopt._read_trials(trials_file)
-            if trials[0].get('is_best') is None:
+        epochs: List = []
+        if results_file.is_file() and results_file.stat().st_size > 0:
+            epochs = Hyperopt._read_results(results_file)
+            # Detection of some old format, without 'is_best' field saved
+            if epochs[0].get('is_best') is None:
                 raise OperationalException(
                     "The file with Hyperopt results is incompatible with this version "
                     "of Freqtrade and cannot be loaded.")
-            logger.info(f"Loaded {len(trials)} previous evaluations from disk.")
-        return trials
+            logger.info(f"Loaded {len(epochs)} previous evaluations from disk.")
+        return epochs
 
     def _set_random_state(self, random_state: Optional[int]) -> int:
         return random_state or random.randint(1, 2**16 - 1)
@@ -643,8 +633,9 @@ class Hyperopt:
 
         # We don't need exchange instance anymore while running hyperopt
         self.backtesting.exchange = None  # type: ignore
+        self.backtesting.pairlists = None  # type: ignore
 
-        self.trials = self.load_previous_results(self.trials_file)
+        self.epochs = self.load_previous_results(self.results_file)
 
         cpus = cpu_count()
         logger.info(f"Found {cpus} CPU cores. Let's make them scream!")
@@ -653,57 +644,85 @@ class Hyperopt:
 
         self.dimensions: List[Dimension] = self.hyperopt_space()
         self.opt = self.get_optimizer(self.dimensions, config_jobs)
-
-        if self.print_colorized:
-            colorama_init(autoreset=True)
-
         try:
             with Parallel(n_jobs=config_jobs) as parallel:
                 jobs = parallel._effective_n_jobs()
                 logger.info(f'Effective number of parallel workers used: {jobs}')
-                EVALS = ceil(self.total_epochs / jobs)
-                for i in range(EVALS):
-                    # Correct the number of epochs to be processed for the last
-                    # iteration (should not exceed self.total_epochs in total)
-                    n_rest = (i + 1) * jobs - self.total_epochs
-                    current_jobs = jobs - n_rest if n_rest > 0 else jobs
 
-                    asked = self.opt.ask(n_points=current_jobs)
-                    f_val = self.run_optimizer_parallel(parallel, asked, i)
-                    self.opt.tell(asked, [v['loss'] for v in f_val])
-                    self.fix_optimizer_models_list()
+                # Define progressbar
+                if self.print_colorized:
+                    widgets = [
+                        ' [Epoch ', progressbar.Counter(), ' of ', str(self.total_epochs),
+                        ' (', progressbar.Percentage(), ')] ',
+                        progressbar.Bar(marker=progressbar.AnimatedMarker(
+                            fill='\N{FULL BLOCK}',
+                            fill_wrap=Fore.GREEN + '{}' + Fore.RESET,
+                            marker_wrap=Style.BRIGHT + '{}' + Style.RESET_ALL,
+                        )),
+                        ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
+                    ]
+                else:
+                    widgets = [
+                        ' [Epoch ', progressbar.Counter(), ' of ', str(self.total_epochs),
+                        ' (', progressbar.Percentage(), ')] ',
+                        progressbar.Bar(marker=progressbar.AnimatedMarker(
+                            fill='\N{FULL BLOCK}',
+                        )),
+                        ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
+                    ]
+                with progressbar.ProgressBar(
+                         max_value=self.total_epochs, redirect_stdout=False, redirect_stderr=False,
+                         widgets=widgets
+                     ) as pbar:
+                    EVALS = ceil(self.total_epochs / jobs)
+                    for i in range(EVALS):
+                        # Correct the number of epochs to be processed for the last
+                        # iteration (should not exceed self.total_epochs in total)
+                        n_rest = (i + 1) * jobs - self.total_epochs
+                        current_jobs = jobs - n_rest if n_rest > 0 else jobs
 
-                    for j, val in enumerate(f_val):
-                        # Use human-friendly indexes here (starting from 1)
-                        current = i * jobs + j + 1
-                        val['current_epoch'] = current
-                        val['is_initial_point'] = current <= INITIAL_POINTS
-                        logger.debug(f"Optimizer epoch evaluated: {val}")
+                        asked = self.opt.ask(n_points=current_jobs)
+                        f_val = self.run_optimizer_parallel(parallel, asked, i)
+                        self.opt.tell(asked, [v['loss'] for v in f_val])
 
-                        is_best = self.is_best_loss(val, self.current_best_loss)
-                        # This value is assigned here and not in the optimization method
-                        # to keep proper order in the list of results. That's because
-                        # evaluations can take different time. Here they are aligned in the
-                        # order they will be shown to the user.
-                        val['is_best'] = is_best
+                        # Calculate progressbar outputs
+                        for j, val in enumerate(f_val):
+                            # Use human-friendly indexes here (starting from 1)
+                            current = i * jobs + j + 1
+                            val['current_epoch'] = current
+                            val['is_initial_point'] = current <= INITIAL_POINTS
 
-                        self.print_results(val)
+                            logger.debug(f"Optimizer epoch evaluated: {val}")
 
-                        if is_best:
-                            self.current_best_loss = val['loss']
-                        self.trials.append(val)
-                        # Save results after each best epoch and every 100 epochs
-                        if is_best or current % 100 == 0:
-                            self.save_trials()
+                            is_best = self.is_best_loss(val, self.current_best_loss)
+                            # This value is assigned here and not in the optimization method
+                            # to keep proper order in the list of results. That's because
+                            # evaluations can take different time. Here they are aligned in the
+                            # order they will be shown to the user.
+                            val['is_best'] = is_best
+                            self.print_results(val)
+
+                            if is_best:
+                                self.current_best_loss = val['loss']
+                            self.epochs.append(val)
+
+                            # Save results after each best epoch and every 100 epochs
+                            if is_best or current % 100 == 0:
+                                self._save_results()
+
+                            pbar.update(current)
+
         except KeyboardInterrupt:
             print('User interrupted..')
 
-        self.save_trials(final=True)
+        self._save_results()
+        logger.info(f"{self.num_epochs_saved} {plural(self.num_epochs_saved, 'epoch')} "
+                    f"saved to '{self.results_file}'.")
 
-        if self.trials:
-            sorted_trials = sorted(self.trials, key=itemgetter('loss'))
-            results = sorted_trials[0]
-            self.print_epoch_details(results, self.total_epochs, self.print_json)
+        if self.epochs:
+            sorted_epochs = sorted(self.epochs, key=itemgetter('loss'))
+            best_epoch = sorted_epochs[0]
+            self.print_epoch_details(best_epoch, self.total_epochs, self.print_json)
         else:
             # This is printed when Ctrl+C is pressed quickly, before first epochs have
             # a chance to be evaluated.

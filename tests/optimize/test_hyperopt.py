@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
 import locale
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List
@@ -56,14 +57,14 @@ def hyperopt_results():
 
 
 # Functions for recurrent object patching
-def create_trials(mocker, hyperopt, testdatadir) -> List[Dict]:
+def create_results(mocker, hyperopt, testdatadir) -> List[Dict]:
     """
-    When creating trials, mock the hyperopt Trials so that *by default*
+    When creating results, mock the hyperopt so that *by default*
       - we don't create any pickle'd files in the filesystem
       - we might have a pickle'd file so make sure that we return
         false when looking for it
     """
-    hyperopt.trials_file = testdatadir / 'optimize/ut_trials.pickle'
+    hyperopt.results_file = testdatadir / 'optimize/ut_results.pickle'
 
     mocker.patch.object(Path, "is_file", MagicMock(return_value=False))
     stat_mock = MagicMock()
@@ -93,7 +94,7 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
-    assert 'ticker_interval' in config
+    assert 'timeframe' in config
     assert not log_has_re('Parameter -i/--ticker-interval detected .*', caplog)
 
     assert 'position_stacking' not in config
@@ -116,7 +117,7 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
         '--config', 'config.json',
         '--hyperopt', 'DefaultHyperOpt',
         '--datadir', '/foo/bar',
-        '--ticker-interval', '1m',
+        '--timeframe', '1m',
         '--timerange', ':100',
         '--enable-position-stacking',
         '--disable-max-market-positions',
@@ -135,8 +136,8 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
     assert config['runmode'] == RunMode.HYPEROPT
 
     assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
-    assert 'ticker_interval' in config
-    assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
+    assert 'timeframe' in config
+    assert log_has('Parameter -i/--timeframe detected ... Using timeframe: 1m ...',
                    caplog)
 
     assert 'position_stacking' in config
@@ -196,7 +197,8 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
                    "Using populate_sell_trend from the strategy.", caplog)
     assert log_has("Hyperopt class does not provide populate_buy_trend() method. "
                    "Using populate_buy_trend from the strategy.", caplog)
-    assert hasattr(x, "ticker_interval")
+    assert hasattr(x, "ticker_interval")  # DEPRECATED
+    assert hasattr(x, "timeframe")
 
 
 def test_hyperoptresolver_wrongname(mocker, default_conf, caplog) -> None:
@@ -477,28 +479,30 @@ def test_no_log_if_loss_does_not_improve(hyperopt, caplog) -> None:
     assert caplog.record_tuples == []
 
 
-def test_save_trials_saves_trials(mocker, hyperopt, testdatadir, caplog) -> None:
-    trials = create_trials(mocker, hyperopt, testdatadir)
+def test_save_results_saves_epochs(mocker, hyperopt, testdatadir, caplog) -> None:
+    epochs = create_results(mocker, hyperopt, testdatadir)
     mock_dump = mocker.patch('freqtrade.optimize.hyperopt.dump', return_value=None)
-    trials_file = testdatadir / 'optimize' / 'ut_trials.pickle'
+    results_file = testdatadir / 'optimize' / 'ut_results.pickle'
 
-    hyperopt.trials = trials
-    hyperopt.save_trials(final=True)
-    assert log_has(f"1 epoch saved to '{trials_file}'.", caplog)
+    caplog.set_level(logging.DEBUG)
+
+    hyperopt.epochs = epochs
+    hyperopt._save_results()
+    assert log_has(f"1 epoch saved to '{results_file}'.", caplog)
     mock_dump.assert_called_once()
 
-    hyperopt.trials = trials + trials
-    hyperopt.save_trials(final=True)
-    assert log_has(f"2 epochs saved to '{trials_file}'.", caplog)
+    hyperopt.epochs = epochs + epochs
+    hyperopt._save_results()
+    assert log_has(f"2 epochs saved to '{results_file}'.", caplog)
 
 
-def test_read_trials_returns_trials_file(mocker, hyperopt, testdatadir, caplog) -> None:
-    trials = create_trials(mocker, hyperopt, testdatadir)
-    mock_load = mocker.patch('freqtrade.optimize.hyperopt.load', return_value=trials)
-    trials_file = testdatadir / 'optimize' / 'ut_trials.pickle'
-    hyperopt_trial = hyperopt._read_trials(trials_file)
-    assert log_has(f"Reading Trials from '{trials_file}'", caplog)
-    assert hyperopt_trial == trials
+def test_read_results_returns_epochs(mocker, hyperopt, testdatadir, caplog) -> None:
+    epochs = create_results(mocker, hyperopt, testdatadir)
+    mock_load = mocker.patch('freqtrade.optimize.hyperopt.load', return_value=epochs)
+    results_file = testdatadir / 'optimize' / 'ut_results.pickle'
+    hyperopt_epochs = hyperopt._read_results(results_file)
+    assert log_has(f"Reading epochs from '{results_file}'", caplog)
+    assert hyperopt_epochs == epochs
     mock_load.assert_called_once()
 
 
@@ -541,7 +545,7 @@ def test_start_calls_optimizer(mocker, default_conf, caplog, capsys) -> None:
     )
     patch_exchange(mocker)
     # Co-test loading timeframe from strategy
-    del default_conf['ticker_interval']
+    del default_conf['timeframe']
     default_conf.update({'config': 'config.json.example',
                          'hyperopt': 'DefaultHyperOpt',
                          'epochs': 1,
@@ -817,7 +821,7 @@ def test_continue_hyperopt(mocker, default_conf, caplog):
     Hyperopt(default_conf)
 
     assert unlinkmock.call_count == 0
-    assert log_has(f"Continuing on previous hyperopt results.", caplog)
+    assert log_has("Continuing on previous hyperopt results.", caplog)
 
 
 def test_print_json_spaces_all(mocker, default_conf, caplog, capsys) -> None:

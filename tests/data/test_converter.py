@@ -5,12 +5,10 @@ from freqtrade.configuration.timerange import TimeRange
 from freqtrade.data.converter import (convert_ohlcv_format,
                                       convert_trades_format,
                                       ohlcv_fill_up_missing_data,
-                                      ohlcv_to_dataframe,
-                                      trim_dataframe)
-from freqtrade.data.history import (get_timerange,
-                                    load_data,
-                                    load_pair_history,
-                                    validate_backtest_data)
+                                      ohlcv_to_dataframe, trades_dict_to_list,
+                                      trades_remove_duplicates, trim_dataframe)
+from freqtrade.data.history import (get_timerange, load_data,
+                                    load_pair_history, validate_backtest_data)
 from tests.conftest import log_has
 from tests.data.test_history import _backup_file, _clean_test_file
 
@@ -197,32 +195,60 @@ def test_trim_dataframe(testdatadir) -> None:
     assert all(data_modify.iloc[0] == data.iloc[25])
 
 
-def test_convert_trades_format(mocker, default_conf, testdatadir):
-    file = testdatadir / "XRP_ETH-trades.json.gz"
-    file_new = testdatadir / "XRP_ETH-trades.json"
-    _backup_file(file, copy_file=True)
-    default_conf['datadir'] = testdatadir
+def test_trades_remove_duplicates(trades_history):
+    trades_history1 = trades_history * 3
+    assert len(trades_history1) == len(trades_history) * 3
+    res = trades_remove_duplicates(trades_history1)
+    assert len(res) == len(trades_history)
+    for i, t in enumerate(res):
+        assert t == trades_history[i]
 
-    assert not file_new.exists()
+
+def test_trades_dict_to_list(fetch_trades_result):
+    res = trades_dict_to_list(fetch_trades_result)
+    assert isinstance(res, list)
+    assert isinstance(res[0], list)
+    for i, t in enumerate(res):
+        assert t[0] == fetch_trades_result[i]['timestamp']
+        assert t[1] == fetch_trades_result[i]['id']
+        assert t[2] == fetch_trades_result[i]['type']
+        assert t[3] == fetch_trades_result[i]['side']
+        assert t[4] == fetch_trades_result[i]['price']
+        assert t[5] == fetch_trades_result[i]['amount']
+        assert t[6] == fetch_trades_result[i]['cost']
+
+
+def test_convert_trades_format(mocker, default_conf, testdatadir):
+    files = [{'old': testdatadir / "XRP_ETH-trades.json.gz",
+              'new': testdatadir / "XRP_ETH-trades.json"},
+             {'old': testdatadir / "XRP_OLD-trades.json.gz",
+              'new': testdatadir / "XRP_OLD-trades.json"},
+             ]
+    for file in files:
+        _backup_file(file['old'], copy_file=True)
+        assert not file['new'].exists()
+
+    default_conf['datadir'] = testdatadir
 
     convert_trades_format(default_conf, convert_from='jsongz',
                           convert_to='json', erase=False)
 
-    assert file_new.exists()
-    assert file.exists()
+    for file in files:
+        assert file['new'].exists()
+        assert file['old'].exists()
 
-    # Remove original file
-    file.unlink()
+        # Remove original file
+        file['old'].unlink()
     # Convert back
     convert_trades_format(default_conf, convert_from='json',
                           convert_to='jsongz', erase=True)
+    for file in files:
+        assert file['old'].exists()
+        assert not file['new'].exists()
 
-    assert file.exists()
-    assert not file_new.exists()
-
-    _clean_test_file(file)
-    if file_new.exists():
-        file_new.unlink()
+        _clean_test_file(file['old'])
+        if file['new'].exists():
+            file['new'].unlink()
 
 
 def test_convert_ohlcv_format(mocker, default_conf, testdatadir):

@@ -15,7 +15,7 @@ from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
                                        load_backtest_data, load_trades,
                                        load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
-from tests.test_persistence import create_mock_trades
+from tests.conftest import create_mock_trades
 
 
 def test_load_backtest_data(testdatadir):
@@ -43,11 +43,11 @@ def test_load_trades_from_db(default_conf, fee, mocker):
 
     trades = load_trades_from_db(db_url=default_conf['db_url'])
     assert init_mock.call_count == 1
-    assert len(trades) == 3
+    assert len(trades) == 4
     assert isinstance(trades, DataFrame)
     assert "pair" in trades.columns
     assert "open_time" in trades.columns
-    assert "profitperc" in trades.columns
+    assert "profit_percent" in trades.columns
 
     for col in BT_DATA_COLUMNS:
         if col not in ['index', 'open_at_end']:
@@ -178,6 +178,10 @@ def test_create_cum_profit1(testdatadir):
     assert cum_profits.iloc[0]['cum_profits'] == 0
     assert cum_profits.iloc[-1]['cum_profits'] == 0.0798005
 
+    with pytest.raises(ValueError, match='Trade dataframe empty.'):
+        create_cum_profit(df.set_index('date'), bt_data[bt_data["pair"] == 'NOTAPAIR'],
+                          "cum_profits", timeframe="5m")
+
 
 def test_calculate_max_drawdown(testdatadir):
     filename = testdatadir / "backtest-result_test.json"
@@ -191,3 +195,28 @@ def test_calculate_max_drawdown(testdatadir):
     assert low == Timestamp('2018-01-30 04:45:00', tz='UTC')
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
         drawdown, h, low = calculate_max_drawdown(DataFrame())
+
+
+def test_calculate_max_drawdown2():
+    values = [0.011580, 0.010048, 0.011340, 0.012161, 0.010416, 0.010009, 0.020024,
+              -0.024662, -0.022350, 0.020496, -0.029859, -0.030511, 0.010041, 0.010872,
+              -0.025782, 0.010400, 0.012374, 0.012467, 0.114741, 0.010303, 0.010088,
+              -0.033961, 0.010680, 0.010886, -0.029274, 0.011178, 0.010693, 0.010711]
+
+    dates = [Arrow(2020, 1, 1).shift(days=i) for i in range(len(values))]
+    df = DataFrame(zip(values, dates), columns=['profit', 'open_time'])
+    # sort by profit and reset index
+    df = df.sort_values('profit').reset_index(drop=True)
+    df1 = df.copy()
+    drawdown, h, low = calculate_max_drawdown(df, date_col='open_time', value_col='profit')
+    # Ensure df has not been altered.
+    assert df.equals(df1)
+
+    assert isinstance(drawdown, float)
+    # High must be before low
+    assert h < low
+    assert drawdown == 0.091755
+
+    df = DataFrame(zip(values[:5], dates[:5]), columns=['profit', 'open_time'])
+    with pytest.raises(ValueError, match='No losing trade, therefore no drawdown.'):
+        calculate_max_drawdown(df, date_col='open_time', value_col='profit')

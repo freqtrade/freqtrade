@@ -134,6 +134,21 @@ def round_dict(d, n):
     return {k: (round(v, n) if isinstance(v, float) else v) for k, v in d.items()}
 
 
+def safe_value_fallback(dict1: dict, dict2: dict, key1: str, key2: str, default_value=None):
+    """
+    Search a value in dict1, return this if it's not None.
+    Fall back to dict2 - return key2 from dict2 if it's not None.
+    Else falls back to None.
+
+    """
+    if key1 in dict1 and dict1[key1] is not None:
+        return dict1[key1]
+    else:
+        if key2 in dict2 and dict2[key2] is not None:
+            return dict2[key2]
+    return default_value
+
+
 def plural(num: float, singular: str, plural: str = None) -> str:
     return singular if (num == 1 or num == -1) else plural or singular + 's'
 
@@ -148,3 +163,15 @@ def render_template(templatefile: str, arguments: dict = {}) -> str:
     )
     template = env.get_template(templatefile)
     return template.render(**arguments)
+
+
+def render_template_with_fallback(templatefile: str, templatefallbackfile: str,
+                                  arguments: dict = {}) -> str:
+    """
+    Use templatefile if possible, otherwise fall back to templatefallbackfile
+    """
+    from jinja2.exceptions import TemplateNotFound
+    try:
+        return render_template(templatefile, arguments)
+    except TemplateNotFound:
+        return render_template(templatefallbackfile, arguments)

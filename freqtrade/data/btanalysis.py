@@ -16,7 +16,7 @@ from freqtrade.persistence import Trade
 logger = logging.getLogger(__name__)
 
 # must align with columns in backtest.py
-BT_DATA_COLUMNS = ["pair", "profitperc", "open_time", "close_time", "index", "duration",
+BT_DATA_COLUMNS = ["pair", "profit_percent", "open_time", "close_time", "index", "duration",
                    "open_rate", "close_rate", "open_at_end", "sell_reason"]
 
 
@@ -99,11 +99,11 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
     trades: pd.DataFrame = pd.DataFrame([], columns=BT_DATA_COLUMNS)
     persistence.init(db_url, clean_open_orders=False)
 
-    columns = ["pair", "open_time", "close_time", "profit", "profitperc",
+    columns = ["pair", "open_time", "close_time", "profit", "profit_percent",
                "open_rate", "close_rate", "amount", "duration", "sell_reason",
                "fee_open", "fee_close", "open_rate_requested", "close_rate_requested",
                "stake_amount", "max_rate", "min_rate", "id", "exchange",
-               "stop_loss", "initial_stop_loss", "strategy", "ticker_interval"]
+               "stop_loss", "initial_stop_loss", "strategy", "timeframe"]
 
     trades = pd.DataFrame([(t.pair,
                             t.open_date.replace(tzinfo=timezone.utc),
@@ -121,7 +121,7 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
                             t.min_rate,
                             t.id, t.exchange,
                             t.stop_loss, t.initial_stop_loss,
-                            t.strategy, t.ticker_interval
+                            t.strategy, t.timeframe
                             )
                            for t in Trade.get_trades().all()],
                           columns=columns)
@@ -151,13 +151,20 @@ def load_trades(source: str, db_url: str, exportfilename: Path,
         return load_backtest_data(exportfilename)
 
 
-def extract_trades_of_period(dataframe: pd.DataFrame, trades: pd.DataFrame) -> pd.DataFrame:
+def extract_trades_of_period(dataframe: pd.DataFrame, trades: pd.DataFrame,
+                             date_index=False) -> pd.DataFrame:
     """
     Compare trades and backtested pair DataFrames to get trades performed on backtested period
     :return: the DataFrame of a trades of period
     """
-    trades = trades.loc[(trades['open_time'] >= dataframe.iloc[0]['date']) &
-                        (trades['close_time'] <= dataframe.iloc[-1]['date'])]
+    if date_index:
+        trades_start = dataframe.index[0]
+        trades_stop = dataframe.index[-1]
+    else:
+        trades_start = dataframe.iloc[0]['date']
+        trades_stop = dataframe.iloc[-1]['date']
+    trades = trades.loc[(trades['open_time'] >= trades_start) &
+                        (trades['close_time'] <= trades_stop)]
     return trades
 
 
@@ -183,15 +190,19 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     """
     Adds a column `col_name` with the cumulative profit for the given trades array.
     :param df: DataFrame with date index
-    :param trades: DataFrame containing trades (requires columns close_time and profitperc)
+    :param trades: DataFrame containing trades (requires columns close_time and profit_percent)
     :param col_name: Column name that will be assigned the results
     :param timeframe: Timeframe used during the operations
     :return: Returns df with one additional column, col_name, containing the cumulative profit.
+    :raise: ValueError if trade-dataframe was found empty.
     """
+    if len(trades) == 0:
+        raise ValueError("Trade dataframe empty.")
     from freqtrade.exchange import timeframe_to_minutes
     timeframe_minutes = timeframe_to_minutes(timeframe)
     # Resample to timeframe to make sure trades match candles
-    _trades_sum = trades.resample(f'{timeframe_minutes}min', on='close_time')[['profitperc']].sum()
+    _trades_sum = trades.resample(f'{timeframe_minutes}min', on='close_time'
+                                  )[['profit_percent']].sum()
     df.loc[:, col_name] = _trades_sum.cumsum()
     # Set first value to 0
     df.loc[df.iloc[0].name, col_name] = 0
@@ -201,25 +212,27 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
 
 
 def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_time',
-                           value_col: str = 'profitperc'
+                           value_col: str = 'profit_percent'
                            ) -> Tuple[float, pd.Timestamp, pd.Timestamp]:
     """
     Calculate max drawdown and the corresponding close dates
-    :param trades: DataFrame containing trades (requires columns close_time and profitperc)
+    :param trades: DataFrame containing trades (requires columns close_time and profit_percent)
     :param date_col: Column in DataFrame to use for dates (defaults to 'close_time')
-    :param value_col: Column in DataFrame to use for values (defaults to 'profitperc')
+    :param value_col: Column in DataFrame to use for values (defaults to 'profit_percent')
     :return: Tuple (float, highdate, lowdate) with absolute max drawdown, high and low time
     :raise: ValueError if trade-dataframe was found empty.
     """
     if len(trades) == 0:
         raise ValueError("Trade dataframe empty.")
-    profit_results = trades.sort_values(date_col)
+    profit_results = trades.sort_values(date_col).reset_index(drop=True)
     max_drawdown_df = pd.DataFrame()
     max_drawdown_df['cumulative'] = profit_results[value_col].cumsum()
     max_drawdown_df['high_value'] = max_drawdown_df['cumulative'].cummax()
     max_drawdown_df['drawdown'] = max_drawdown_df['cumulative'] - max_drawdown_df['high_value']
 
-    high_date = profit_results.loc[max_drawdown_df['high_value'].idxmax(), date_col]
-    low_date = profit_results.loc[max_drawdown_df['drawdown'].idxmin(), date_col]
-
+    idxmin = max_drawdown_df['drawdown'].idxmin()
+    if idxmin == 0:
+        raise ValueError("No losing trade, therefore no drawdown.")
+    high_date = profit_results.loc[max_drawdown_df.iloc[:idxmin]['high_value'].idxmax(), date_col]
+    low_date = profit_results.loc[idxmin, date_col]
     return abs(min(max_drawdown_df['drawdown'])), high_date, low_date

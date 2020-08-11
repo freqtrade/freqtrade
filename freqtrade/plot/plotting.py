@@ -10,9 +10,13 @@ from freqtrade.data.btanalysis import (calculate_max_drawdown,
                                        create_cum_profit,
                                        extract_trades_of_period, load_trades)
 from freqtrade.data.converter import trim_dataframe
+from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
+from freqtrade.exceptions import OperationalException
+from freqtrade.exchange import timeframe_to_prev_date
 from freqtrade.misc import pair_to_filename
-from freqtrade.resolvers import StrategyResolver
+from freqtrade.resolvers import ExchangeResolver, StrategyResolver
+from freqtrade.strategy import IStrategy
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +47,7 @@ def init_plotscript(config):
     data = load_data(
         datadir=config.get("datadir"),
         pairs=pairs,
-        timeframe=config.get('ticker_interval', '5m'),
+        timeframe=config.get('timeframe', '5m'),
         timerange=timerange,
         data_format=config.get('dataformat_ohlcv', 'json'),
     )
@@ -122,7 +126,8 @@ def add_profit(fig, row, data: pd.DataFrame, column: str, name: str) -> make_sub
     return fig
 
 
-def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame) -> make_subplots:
+def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame,
+                     timeframe: str) -> make_subplots:
     """
     Add scatter points indicating max drawdown
     """
@@ -132,12 +137,12 @@ def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame) -> m
         drawdown = go.Scatter(
             x=[highdate, lowdate],
             y=[
-                df_comb.loc[highdate, 'cum_profit'],
-                df_comb.loc[lowdate, 'cum_profit'],
+                df_comb.loc[timeframe_to_prev_date(timeframe, highdate), 'cum_profit'],
+                df_comb.loc[timeframe_to_prev_date(timeframe, lowdate), 'cum_profit'],
             ],
             mode='markers',
-            name=f"Max drawdown {max_drawdown:.2f}%",
-            text=f"Max drawdown {max_drawdown:.2f}%",
+            name=f"Max drawdown {max_drawdown * 100:.2f}%",
+            text=f"Max drawdown {max_drawdown * 100:.2f}%",
             marker=dict(
                 symbol='square-open',
                 size=9,
@@ -159,7 +164,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
     # Trades can be empty
     if trades is not None and len(trades) > 0:
         # Create description for sell summarizing the trade
-        trades['desc'] = trades.apply(lambda row: f"{round(row['profitperc'] * 100, 1)}%, "
+        trades['desc'] = trades.apply(lambda row: f"{round(row['profit_percent'] * 100, 1)}%, "
                                                   f"{row['sell_reason']}, {row['duration']} min",
                                                   axis=1)
         trade_buys = go.Scatter(
@@ -178,9 +183,9 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
         )
 
         trade_sells = go.Scatter(
-            x=trades.loc[trades['profitperc'] > 0, "close_time"],
-            y=trades.loc[trades['profitperc'] > 0, "close_rate"],
-            text=trades.loc[trades['profitperc'] > 0, "desc"],
+            x=trades.loc[trades['profit_percent'] > 0, "close_time"],
+            y=trades.loc[trades['profit_percent'] > 0, "close_rate"],
+            text=trades.loc[trades['profit_percent'] > 0, "desc"],
             mode='markers',
             name='Sell - Profit',
             marker=dict(
@@ -191,9 +196,9 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
             )
         )
         trade_sells_loss = go.Scatter(
-            x=trades.loc[trades['profitperc'] <= 0, "close_time"],
-            y=trades.loc[trades['profitperc'] <= 0, "close_rate"],
-            text=trades.loc[trades['profitperc'] <= 0, "desc"],
+            x=trades.loc[trades['profit_percent'] <= 0, "close_time"],
+            y=trades.loc[trades['profit_percent'] <= 0, "close_rate"],
+            text=trades.loc[trades['profit_percent'] <= 0, "desc"],
             mode='markers',
             name='Sell - Loss',
             marker=dict(
@@ -383,6 +388,9 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
     # Combine close-values for all pairs, rename columns to "pair"
     df_comb = combine_dataframes_with_mean(data, "close")
 
+    # Trim trades to available OHLCV data
+    trades = extract_trades_of_period(df_comb, trades, date_index=True)
+
     # Add combined cumulative profit
     df_comb = create_cum_profit(df_comb, trades, 'cum_profit', timeframe)
 
@@ -405,13 +413,16 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
 
     fig.add_trace(avgclose, 1, 1)
     fig = add_profit(fig, 2, df_comb, 'cum_profit', 'Profit')
-    fig = add_max_drawdown(fig, 2, trades, df_comb)
+    fig = add_max_drawdown(fig, 2, trades, df_comb, timeframe)
 
     for pair in pairs:
         profit_col = f'cum_profit_{pair}'
-        df_comb = create_cum_profit(df_comb, trades[trades['pair'] == pair], profit_col, timeframe)
-
-        fig = add_profit(fig, 3, df_comb, profit_col, f"Profit {pair}")
+        try:
+            df_comb = create_cum_profit(df_comb, trades[trades['pair'] == pair], profit_col,
+                                        timeframe)
+            fig = add_profit(fig, 3, df_comb, profit_col, f"Profit {pair}")
+        except ValueError:
+            pass
 
     return fig
 
@@ -458,6 +469,8 @@ def load_and_plot_trades(config: Dict[str, Any]):
     """
     strategy = StrategyResolver.load_strategy(config)
 
+    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config)
+    IStrategy.dp = DataProvider(config, exchange)
     plot_elements = init_plotscript(config)
     trades = plot_elements['trades']
     pair_counter = 0
@@ -478,7 +491,7 @@ def load_and_plot_trades(config: Dict[str, Any]):
             plot_config=strategy.plot_config if hasattr(strategy, 'plot_config') else {}
         )
 
-        store_plot_file(fig, filename=generate_plot_filename(pair, config['ticker_interval']),
+        store_plot_file(fig, filename=generate_plot_filename(pair, config['timeframe']),
                         directory=config['user_data_dir'] / "plot")
 
     logger.info('End of plotting process. %s plots generated', pair_counter)
@@ -499,10 +512,13 @@ def plot_profit(config: Dict[str, Any]) -> None:
     trades = trades[(trades['pair'].isin(plot_elements["pairs"]))
                     & (~trades['close_time'].isnull())
                     ]
+    if len(trades) == 0:
+        raise OperationalException("No trades found, cannot generate Profit-plot without "
+                                   "trades from either Backtest result or database.")
 
     # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
     fig = generate_profit_graph(plot_elements["pairs"], plot_elements["ohlcv"],
-                                trades, config.get('ticker_interval', '5m'))
+                                trades, config.get('timeframe', '5m'))
     store_plot_file(fig, filename='freqtrade-profit-plot.html',
                     directory=config['user_data_dir'] / "plot", auto_open=True)

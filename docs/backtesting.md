@@ -12,13 +12,17 @@ real data. This is what we call
 [backtesting](https://en.wikipedia.org/wiki/Backtesting).
 
 Backtesting will use the crypto-currencies (pairs) from your config file and load historical candle (OHCLV) data from `user_data/data/<exchange>` by default.
-If no data is available for the exchange / pair / timeframe (ticker interval) combination, backtesting will ask you to download them first using `freqtrade download-data`.
+If no data is available for the exchange / pair / timeframe combination, backtesting will ask you to download them first using `freqtrade download-data`.
 For details on downloading, please refer to the [Data Downloading](data-download.md) section in the documentation.
 
 The result of backtesting will confirm if your bot has better odds of making a profit than a loss.
 
-!!! Tip "Using dynamic pairlists for backtesting"
-    While using dynamic pairlists during backtesting is not possible, a dynamic pairlist using current data can be generated via the [`test-pairlist`](utils.md#test-pairlist) command, and needs to be specified as `"pair_whitelist"` attribute in the configuration.
+!!! Warning "Using dynamic pairlists for backtesting"
+    Using dynamic pairlists is possible, however it relies on the current market conditions - which will not reflect the historic status of the pairlist.
+    Also, when using pairlists other than StaticPairlist, reproducability of backtesting-results cannot be guaranteed.
+    Please read the [pairlists documentation](configuration.md#pairlists) for more information.
+
+    To achieve reproducible results, best generate a pairlist via the [`test-pairlist`](utils.md#test-pairlist) command and use that as static pairlist.
 
 ### Run a backtesting against the currencies listed in your config file
 
@@ -31,7 +35,7 @@ freqtrade backtesting
 #### With 1 min candle (OHLCV) data
 
 ```bash
-freqtrade backtesting --ticker-interval 1m
+freqtrade backtesting --timeframe 1m
 ```
 
 #### Using a different on-disk historical candle (OHLCV) data source
@@ -54,7 +58,7 @@ Where `-s SampleStrategy` refers to the class name within the strategy file `sam
 #### Comparing multiple Strategies
 
 ```bash
-freqtrade backtesting --strategy-list SampleStrategy1 AwesomeStrategy --ticker-interval 5m
+freqtrade backtesting --strategy-list SampleStrategy1 AwesomeStrategy --timeframe 5m
 ```
 
 Where `SampleStrategy1` and `AwesomeStrategy` refer to class names of strategies.
@@ -62,7 +66,7 @@ Where `SampleStrategy1` and `AwesomeStrategy` refer to class names of strategies
 #### Exporting trades to file
 
 ```bash
-freqtrade backtesting --export trades
+freqtrade backtesting --export trades --config config.json --strategy SampleStrategy
 ```
 
 The exported trades can be used for [further analysis](#further-backtest-result-analysis), or can be used by the plotting script `plot_dataframe.py` in the scripts directory.
@@ -198,7 +202,7 @@ Since backtesting lacks some detailed information about what happens within a ca
 
 - Buys happen at open-price
 - Sell signal sells happen at open-price of the following candle
-- Low happens before high for stoploss, protecting capital first.
+- Low happens before high for stoploss, protecting capital first
 - ROI
   - sells are compared to high - but the ROI value is used (e.g. ROI = 2%, high=5% - so the sell will be at 2%)
   - sells are never "below the candle", so a ROI of 2% may result in a sell at 2.4% if low was at 2.4% profit
@@ -208,6 +212,7 @@ Since backtesting lacks some detailed information about what happens within a ca
   - High happens first - adjusting stoploss
   - Low uses the adjusted stoploss (so sells with large high-low difference are backtested correctly)
 - Sell-reason does not explain if a trade was positive or negative, just what triggered the sell (this can look odd if negative ROI values are used)
+- Stoploss (and trailing stoploss) is evaluated before ROI within one candle. So you can often see more trades with the `stoploss` and/or `trailing_stop` sell reason comparing to the results obtained with the same strategy in the Dry Run/Live Trade modes.
 
 Taking these assumptions, backtesting tries to mirror real trading as closely as possible. However, backtesting will **never** replace running a strategy in dry-run mode.
 Also, keep in mind that past results don't guarantee future success.
@@ -223,13 +228,13 @@ You can then load the trades to perform further analysis as shown in our [data a
 
 To compare multiple strategies, a list of Strategies can be provided to backtesting.
 
-This is limited to 1 timeframe (ticker interval) value per run. However, data is only loaded once from disk so if you have multiple
+This is limited to 1 timeframe value per run. However, data is only loaded once from disk so if you have multiple
 strategies you'd like to compare, this will give a nice runtime boost.
 
 All listed Strategies need to be in the same directory.
 
 ``` bash
-freqtrade backtesting --timerange 20180401-20180410 --ticker-interval 5m --strategy-list Strategy001 Strategy002 --export trades
+freqtrade backtesting --timerange 20180401-20180410 --timeframe 5m --strategy-list Strategy001 Strategy002 --export trades
 ```
 
 This will save the results to `user_data/backtest_results/backtest-result-<strategy>.json`, injecting the strategy-name into the target filename.

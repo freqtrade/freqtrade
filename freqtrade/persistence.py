@@ -86,11 +86,15 @@ def check_migrate(engine) -> None:
         logger.debug(f'trying {table_back_name}')
 
     # Check for latest column
-    if not has_column(cols, 'open_trade_price'):
+    if not has_column(cols, 'timeframe'):
         logger.info(f'Running database migration - backup available as {table_back_name}')
 
         fee_open = get_column_def(cols, 'fee_open', 'fee')
+        fee_open_cost = get_column_def(cols, 'fee_open_cost', 'null')
+        fee_open_currency = get_column_def(cols, 'fee_open_currency', 'null')
         fee_close = get_column_def(cols, 'fee_close', 'fee')
+        fee_close_cost = get_column_def(cols, 'fee_close_cost', 'null')
+        fee_close_currency = get_column_def(cols, 'fee_close_currency', 'null')
         open_rate_requested = get_column_def(cols, 'open_rate_requested', 'null')
         close_rate_requested = get_column_def(cols, 'close_rate_requested', 'null')
         stop_loss = get_column_def(cols, 'stop_loss', '0.0')
@@ -103,9 +107,18 @@ def check_migrate(engine) -> None:
         min_rate = get_column_def(cols, 'min_rate', 'null')
         sell_reason = get_column_def(cols, 'sell_reason', 'null')
         strategy = get_column_def(cols, 'strategy', 'null')
-        ticker_interval = get_column_def(cols, 'ticker_interval', 'null')
+        # If ticker-interval existed use that, else null.
+        if has_column(cols, 'ticker_interval'):
+            timeframe = get_column_def(cols, 'timeframe', 'ticker_interval')
+        else:
+            timeframe = get_column_def(cols, 'timeframe', 'null')
+
         open_trade_price = get_column_def(cols, 'open_trade_price',
                                           f'amount * open_rate * (1 + {fee_open})')
+        close_profit_abs = get_column_def(
+            cols, 'close_profit_abs',
+            f"(amount * close_rate * (1 - {fee_close})) - {open_trade_price}")
+        sell_order_status = get_column_def(cols, 'sell_order_status', 'null')
 
         # Schema migration necessary
         engine.execute(f"alter table trades rename to {table_back_name}")
@@ -117,13 +130,15 @@ def check_migrate(engine) -> None:
 
         # Copy data back - following the correct schema
         engine.execute(f"""insert into trades
-                (id, exchange, pair, is_open, fee_open, fee_close, open_rate,
+                (id, exchange, pair, is_open,
+                fee_open, fee_open_cost, fee_open_currency,
+                fee_close, fee_close_cost, fee_open_currency, open_rate,
                 open_rate_requested, close_rate, close_rate_requested, close_profit,
                 stake_amount, amount, open_date, close_date, open_order_id,
                 stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
                 stoploss_order_id, stoploss_last_update,
-                max_rate, min_rate, sell_reason, strategy,
-                ticker_interval, open_trade_price
+                max_rate, min_rate, sell_reason, sell_order_status, strategy,
+                timeframe, open_trade_price, close_profit_abs
                 )
             select id, lower(exchange),
                 case
@@ -133,7 +148,9 @@ def check_migrate(engine) -> None:
                     else pair
                     end
                 pair,
-                is_open, {fee_open} fee_open, {fee_close} fee_close,
+                is_open, {fee_open} fee_open, {fee_open_cost} fee_open_cost,
+                {fee_open_currency} fee_open_currency, {fee_close} fee_close,
+                {fee_close_cost} fee_close_cost, {fee_close_currency} fee_close_currency,
                 open_rate, {open_rate_requested} open_rate_requested, close_rate,
                 {close_rate_requested} close_rate_requested, close_profit,
                 stake_amount, amount, open_date, close_date, open_order_id,
@@ -142,8 +159,9 @@ def check_migrate(engine) -> None:
                 {initial_stop_loss_pct} initial_stop_loss_pct,
                 {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
                 {max_rate} max_rate, {min_rate} min_rate, {sell_reason} sell_reason,
-                {strategy} strategy, {ticker_interval} ticker_interval,
-                {open_trade_price} open_trade_price
+                {sell_order_status} sell_order_status,
+                {strategy} strategy, {timeframe} timeframe,
+                {open_trade_price} open_trade_price, {close_profit_abs} close_profit_abs
                 from {table_back_name}
              """)
 
@@ -182,14 +200,19 @@ class Trade(_DECL_BASE):
     pair = Column(String, nullable=False, index=True)
     is_open = Column(Boolean, nullable=False, default=True, index=True)
     fee_open = Column(Float, nullable=False, default=0.0)
+    fee_open_cost = Column(Float, nullable=True)
+    fee_open_currency = Column(String, nullable=True)
     fee_close = Column(Float, nullable=False, default=0.0)
+    fee_close_cost = Column(Float, nullable=True)
+    fee_close_currency = Column(String, nullable=True)
     open_rate = Column(Float)
     open_rate_requested = Column(Float)
-    # open_trade_price - calcuated via _calc_open_trade_price
+    # open_trade_price - calculated via _calc_open_trade_price
     open_trade_price = Column(Float)
     close_rate = Column(Float)
     close_rate_requested = Column(Float)
     close_profit = Column(Float)
+    close_profit_abs = Column(Float)
     stake_amount = Column(Float, nullable=False)
     amount = Column(Float)
     open_date = Column(DateTime, nullable=False, default=datetime.utcnow)
@@ -212,8 +235,9 @@ class Trade(_DECL_BASE):
     # Lowest price reached
     min_rate = Column(Float, nullable=True)
     sell_reason = Column(String, nullable=True)
+    sell_order_status = Column(String, nullable=True)
     strategy = Column(String, nullable=True)
-    ticker_interval = Column(Integer, nullable=True)
+    timeframe = Column(Integer, nullable=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -229,21 +253,59 @@ class Trade(_DECL_BASE):
         return {
             'trade_id': self.id,
             'pair': self.pair,
+            'is_open': self.is_open,
+            'exchange': self.exchange,
+            'amount': round(self.amount, 8),
+            'stake_amount': round(self.stake_amount, 8),
+            'strategy': self.strategy,
+            'ticker_interval': self.timeframe,  # DEPRECATED
+            'timeframe': self.timeframe,
+
+            'fee_open': self.fee_open,
+            'fee_open_cost': self.fee_open_cost,
+            'fee_open_currency': self.fee_open_currency,
+            'fee_close': self.fee_close,
+            'fee_close_cost': self.fee_close_cost,
+            'fee_close_currency': self.fee_close_currency,
+
             'open_date_hum': arrow.get(self.open_date).humanize(),
             'open_date': self.open_date.strftime("%Y-%m-%d %H:%M:%S"),
+            'open_timestamp': int(self.open_date.timestamp() * 1000),
+            'open_rate': self.open_rate,
+            'open_rate_requested': self.open_rate_requested,
+            'open_trade_price': self.open_trade_price,
+
             'close_date_hum': (arrow.get(self.close_date).humanize()
                                if self.close_date else None),
             'close_date': (self.close_date.strftime("%Y-%m-%d %H:%M:%S")
                            if self.close_date else None),
-            'open_rate': self.open_rate,
+            'close_timestamp': int(self.close_date.timestamp() * 1000) if self.close_date else None,
             'close_rate': self.close_rate,
-            'amount': round(self.amount, 8),
-            'stake_amount': round(self.stake_amount, 8),
-            'stop_loss': self.stop_loss,
+            'close_rate_requested': self.close_rate_requested,
+            'close_profit': self.close_profit,
+            'close_profit_abs': self.close_profit_abs,
+
+            'sell_reason': self.sell_reason,
+            'sell_order_status': self.sell_order_status,
+            'stop_loss': self.stop_loss,  # Deprecated - should not be used
+            'stop_loss_abs': self.stop_loss,
+            'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,
             'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
-            'initial_stop_loss': self.initial_stop_loss,
+            'stoploss_order_id': self.stoploss_order_id,
+            'stoploss_last_update': (self.stoploss_last_update.strftime("%Y-%m-%d %H:%M:%S")
+                                     if self.stoploss_last_update else None),
+            'stoploss_last_update_timestamp': (int(self.stoploss_last_update.timestamp() * 1000)
+                                               if self.stoploss_last_update else None),
+            'initial_stop_loss': self.initial_stop_loss,  # Deprecated - should not be used
+            'initial_stop_loss_abs': self.initial_stop_loss,
+            'initial_stop_loss_ratio': (self.initial_stop_loss_pct
+                                        if self.initial_stop_loss_pct else None),
             'initial_stop_loss_pct': (self.initial_stop_loss_pct * 100
                                       if self.initial_stop_loss_pct else None),
+            'min_rate': self.min_rate,
+            'max_rate': self.max_rate,
+
+            'open_order_id': self.open_order_id,
         }
 
     def adjust_min_max_rates(self, current_price: float) -> None:
@@ -298,7 +360,7 @@ class Trade(_DECL_BASE):
     def update(self, order: Dict) -> None:
         """
         Updates this entity with amount and actual open/close rates.
-        :param order: order retrieved by exchange.get_order()
+        :param order: order retrieved by exchange.fetch_order()
         :return: None
         """
         order_type = order['type']
@@ -311,14 +373,14 @@ class Trade(_DECL_BASE):
         if order_type in ('market', 'limit') and order['side'] == 'buy':
             # Update open rate and actual amount
             self.open_rate = Decimal(order['price'])
-            self.amount = Decimal(order['amount'])
+            self.amount = Decimal(order.get('filled', order['amount']))
             self.recalc_open_trade_price()
             logger.info('%s_BUY has been fulfilled for %s.', order_type.upper(), self)
             self.open_order_id = None
         elif order_type in ('market', 'limit') and order['side'] == 'sell':
             self.close(order['price'])
             logger.info('%s_SELL has been fulfilled for %s.', order_type.upper(), self)
-        elif order_type in ('stop_loss_limit', 'stop-loss'):
+        elif order_type in ('stop_loss_limit', 'stop-loss', 'stop'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
             logger.info('%s is hit for %s.', order_type.upper(), self)
@@ -334,13 +396,44 @@ class Trade(_DECL_BASE):
         """
         self.close_rate = Decimal(rate)
         self.close_profit = self.calc_profit_ratio()
+        self.close_profit_abs = self.calc_profit()
         self.close_date = datetime.utcnow()
         self.is_open = False
+        self.sell_order_status = 'closed'
         self.open_order_id = None
         logger.info(
             'Marking %s as closed as the trade is fulfilled and found no open orders for it.',
             self
         )
+
+    def update_fee(self, fee_cost: float, fee_currency: Optional[str], fee_rate: Optional[float],
+                   side: str) -> None:
+        """
+        Update Fee parameters. Only acts once per side
+        """
+        if side == 'buy' and self.fee_open_currency is None:
+            self.fee_open_cost = fee_cost
+            self.fee_open_currency = fee_currency
+            if fee_rate is not None:
+                self.fee_open = fee_rate
+                # Assume close-fee will fall into the same fee category and take an educated guess
+                self.fee_close = fee_rate
+        elif side == 'sell' and self.fee_close_currency is None:
+            self.fee_close_cost = fee_cost
+            self.fee_close_currency = fee_currency
+            if fee_rate is not None:
+                self.fee_close = fee_rate
+
+    def fee_updated(self, side: str) -> bool:
+        """
+        Verify if this side (buy / sell) has already been updated
+        """
+        if side == 'buy':
+            return self.fee_open_currency is not None
+        elif side == 'sell':
+            return self.fee_close_currency is not None
+        else:
+            return False
 
     def _calc_open_trade_price(self) -> float:
         """
@@ -476,6 +569,7 @@ class Trade(_DECL_BASE):
     def get_best_pair():
         """
         Get best pair with closed trade.
+        :returns: Tuple containing (pair, profit_sum)
         """
         best_pair = Trade.session.query(
             Trade.pair, func.sum(Trade.close_profit).label('profit_sum')
