@@ -183,17 +183,17 @@ def _hyperopt_filter_epochs(epochs: List, filteroptions: dict) -> List:
             if x['results_metrics']['profit'] < filteroptions['filter_max_total_profit']
         ]
     if filteroptions['filter_min_objective'] is not None:
-        trials = [x for x in trials if x['results_metrics']['trade_count'] > 0]
-        # trials = [x for x in trials if x['loss'] != 20]
-        trials = [
-            x for x in trials
+        epochs = [x for x in epochs if x['results_metrics']['trade_count'] > 0]
+        # epochs = [x for x in epochs if x['loss'] != 20]
+        epochs = [
+            x for x in epochs
             if x['loss'] < filteroptions['filter_min_objective']
         ]
     if filteroptions['filter_max_objective'] is not None:
-        trials = [x for x in trials if x['results_metrics']['trade_count'] > 0]
-        # trials = [x for x in trials if x['loss'] != 20]
-        trials = [
-            x for x in trials
+        epochs = [x for x in epochs if x['results_metrics']['trade_count'] > 0]
+        # epochs = [x for x in epochs if x['loss'] != 20]
+        epochs = [
+            x for x in epochs
             if x['loss'] > filteroptions['filter_max_objective']
         ]
 
