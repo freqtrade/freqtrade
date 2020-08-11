@@ -99,11 +99,6 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
         'filter_max_objective': config.get('hyperopt_list_max_objective', None)
     }
 
-    if filteroptions['filter_min_objective'] is not None:
-        filteroptions['filter_min_objective'] = -filteroptions['filter_min_objective']
-    if filteroptions['filter_max_objective'] is not None:
-        filteroptions['filter_max_objective'] = -filteroptions['filter_max_objective']
-
     # Previous evaluations
     epochs = Hyperopt.load_previous_results(results_file)
     total_epochs = len(epochs)
