@@ -1818,7 +1818,7 @@ def test_cancel_order_with_result_error(default_conf, mocker, exchange_name, cap
 
     res = exchange.cancel_order_with_result('1234', 'ETH/BTC', 1541)
     assert isinstance(res, dict)
-    assert log_has("Could not cancel order 1234.", caplog)
+    assert log_has("Could not cancel order 1234 for ETH/BTC.", caplog)
     assert log_has("Could not fetch cancelled order 1234.", caplog)
     assert res['amount'] == 1541
 
@@ -1896,10 +1896,10 @@ def test_fetch_order(default_conf, mocker, exchange_name):
         assert tm.call_args_list[1][0][0] == 2
         assert tm.call_args_list[2][0][0] == 5
         assert tm.call_args_list[3][0][0] == 10
-    assert api_mock.fetch_order.call_count == API_RETRY_COUNT + 1
+    assert api_mock.fetch_order.call_count == 6
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
-                           'fetch_order', 'fetch_order',
+                           'fetch_order', 'fetch_order', retries=6,
                            order_id='_', pair='TKN/BTC')
 
 
@@ -1932,6 +1932,7 @@ def test_fetch_stoploss_order(default_conf, mocker, exchange_name):
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            'fetch_stoploss_order', 'fetch_order',
+                           retries=6,
                            order_id='_', pair='TKN/BTC')
 
 
@@ -2315,6 +2316,18 @@ def test_calculate_fee_rate(mocker, default_conf, order, expected) -> None:
     (3, 3, 1),
     (0, 1, 2),
     (1, 1, 1),
+    (0, 4, 17),
+    (1, 4, 10),
+    (2, 4, 5),
+    (3, 4, 2),
+    (4, 4, 1),
+    (0, 5, 26),
+    (1, 5, 17),
+    (2, 5, 10),
+    (3, 5, 5),
+    (4, 5, 2),
+    (5, 5, 1),
+
 ])
 def test_calculate_backoff(retrycount, max_retries, expected):
     assert calculate_backoff(retrycount, max_retries) == expected

@@ -999,7 +999,7 @@ class Exchange:
             if self.is_cancel_order_result_suitable(corder):
                 return corder
         except InvalidOrderException:
-            logger.warning(f"Could not cancel order {order_id}.")
+            logger.warning(f"Could not cancel order {order_id} for {pair}.")
         try:
             order = self.fetch_order(order_id, pair)
         except InvalidOrderException:
@@ -1008,7 +1008,7 @@ class Exchange:
 
         return order
 
-    @retrier
+    @retrier(retries=5)
     def fetch_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
             try:
@@ -1022,10 +1022,10 @@ class Exchange:
             return self._api.fetch_order(order_id, pair)
         except ccxt.OrderNotFound as e:
             raise RetryableOrderError(
-                f'Order not found (id: {order_id}). Message: {e}') from e
+                f'Order not found (pair: {pair} id: {order_id}). Message: {e}') from e
         except ccxt.InvalidOrder as e:
             raise InvalidOrderException(
-                f'Tried to get an invalid order (id: {order_id}). Message: {e}') from e
+                f'Tried to get an invalid order (pair: {pair} id: {order_id}). Message: {e}') from e
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:

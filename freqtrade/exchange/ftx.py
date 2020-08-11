@@ -78,7 +78,7 @@ class Ftx(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    @retrier
+    @retrier(retries=5)
     def fetch_stoploss_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
             try:
