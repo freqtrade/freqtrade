@@ -107,9 +107,9 @@ def retrier_async(f):
         except TemporaryError as ex:
             logger.warning('%s() returned exception: "%s"', f.__name__, ex)
             if count > 0:
+                logger.warning('retrying %s() still for %s times', f.__name__, count)
                 count -= 1
                 kwargs.update({'count': count})
-                logger.warning('retrying %s() still for %s times', f.__name__, count)
                 if isinstance(ex, DDosProtection):
                     backoff_delay = calculate_backoff(count + 1, API_RETRY_COUNT)
                     logger.debug(f"Applying DDosProtection backoff delay: {backoff_delay}")
@@ -131,9 +131,9 @@ def retrier(_func=None, retries=API_RETRY_COUNT):
             except (TemporaryError, RetryableOrderError) as ex:
                 logger.warning('%s() returned exception: "%s"', f.__name__, ex)
                 if count > 0:
+                    logger.warning('retrying %s() still for %s times', f.__name__, count)
                     count -= 1
                     kwargs.update({'count': count})
-                    logger.warning('retrying %s() still for %s times', f.__name__, count)
                     if isinstance(ex, DDosProtection) or isinstance(ex, RetryableOrderError):
                         # increasing backoff
                         backoff_delay = calculate_backoff(count + 1, retries)
