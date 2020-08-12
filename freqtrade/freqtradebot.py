@@ -553,7 +553,7 @@ class FreqtradeBot:
                                order['filled'], order['amount'], order['remaining']
                                )
                 stake_amount = order['cost']
-                amount = order['filled']
+                amount = safe_value_fallback(order, 'filled', 'amount')
                 buy_limit_filled_price = safe_value_fallback(order, 'average', 'price')
                 order_id = None
 
