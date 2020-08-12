@@ -57,9 +57,7 @@ class Edge:
         if self.config['stake_amount'] != UNLIMITED_STAKE_AMOUNT:
             raise OperationalException('Edge works only with unlimited stake amount')
 
-        # Deprecated capital_available_percentage. Will use tradable_balance_ratio in the future.
-        self._capital_percentage: float = self.edge_config.get(
-            'capital_available_percentage', self.config['tradable_balance_ratio'])
+        self._capital_ratio: float = self.config['tradable_balance_ratio']
         self._allowed_risk: float = self.edge_config.get('allowed_risk')
         self._since_number_of_days: int = self.edge_config.get('calculate_since_number_of_days', 14)
         self._last_updated: int = 0  # Timestamp of pairs last updated time
@@ -100,14 +98,14 @@ class Edge:
                 datadir=self.config['datadir'],
                 pairs=pairs,
                 exchange=self.exchange,
-                timeframe=self.strategy.ticker_interval,
+                timeframe=self.strategy.timeframe,
                 timerange=self._timerange,
             )
 
         data = load_data(
             datadir=self.config['datadir'],
             pairs=pairs,
-            timeframe=self.strategy.ticker_interval,
+            timeframe=self.strategy.timeframe,
             timerange=self._timerange,
             startup_candles=self.strategy.startup_candle_count,
             data_format=self.config.get('dataformat_ohlcv', 'json'),
@@ -157,7 +155,7 @@ class Edge:
     def stake_amount(self, pair: str, free_capital: float,
                      total_capital: float, capital_in_trade: float) -> float:
         stoploss = self.stoploss(pair)
-        available_capital = (total_capital + capital_in_trade) * self._capital_percentage
+        available_capital = (total_capital + capital_in_trade) * self._capital_ratio
         allowed_capital_at_risk = available_capital * self._allowed_risk
         max_position_size = abs(allowed_capital_at_risk / stoploss)
         position_size = min(max_position_size, free_capital)
@@ -283,8 +281,8 @@ class Edge:
         #
         # Removing Pumps
         if self.edge_config.get('remove_pumps', False):
-            results = results.groupby(['pair', 'stoploss']).apply(
-                lambda x: x[x['profit_abs'] < 2 * x['profit_abs'].std() + x['profit_abs'].mean()])
+            results = results[results['profit_abs'] < 2 * results['profit_abs'].std()
+                              + results['profit_abs'].mean()]
         ##########################################################################
 
         # Removing trades having a duration more than X minutes (set in config)

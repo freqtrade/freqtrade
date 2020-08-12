@@ -31,6 +31,7 @@ class TestStrategyLegacy(IStrategy):
     stoploss = -0.10
 
     # Optimal ticker interval for the strategy
+    # Keep the legacy value here to test compatibility
     ticker_interval = '5m'
 
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:

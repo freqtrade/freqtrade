@@ -62,6 +62,9 @@ class FtRestClient():
     def _get(self, apipath, params: dict = None):
         return self._call("GET", apipath, params=params)
 
+    def _delete(self, apipath, params: dict = None):
+        return self._call("DELETE", apipath, params=params)
+
     def _post(self, apipath, params: dict = None, data: dict = None):
         return self._call("POST", apipath, params=params, data=data)
 
@@ -80,18 +83,18 @@ class FtRestClient():
         return self._post("stop")
 
     def stopbuy(self):
-        """Stop buying (but handle sells gracefully). Use `reload_conf` to reset.
+        """Stop buying (but handle sells gracefully). Use `reload_config` to reset.
 
         :return: json object
         """
         return self._post("stopbuy")
 
-    def reload_conf(self):
+    def reload_config(self):
         """Reload configuration.
 
         :return: json object
         """
-        return self._post("reload_conf")
+        return self._post("reload_config")
 
     def balance(self):
         """Get the account balance.
@@ -163,6 +166,15 @@ class FtRestClient():
         :return: json object
         """
         return self._get("trades", params={"limit": limit} if limit else 0)
+
+    def delete_trade(self, trade_id):
+        """Delete trade from the database.
+        Tries to close open orders. Requires manual handling of this asset on the exchange.
+
+        :param trade_id: Deletes the trade with this ID from the database.
+        :return: json object
+        """
+        return self._delete("trades/{}".format(trade_id))
 
     def whitelist(self):
         """Show the current whitelist.

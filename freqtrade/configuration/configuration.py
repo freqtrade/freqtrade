@@ -204,9 +204,9 @@ class Configuration:
     def _process_optimize_options(self, config: Dict[str, Any]) -> None:
 
         # This will override the strategy configuration
-        self._args_to_config(config, argname='ticker_interval',
-                             logstring='Parameter -i/--ticker-interval detected ... '
-                             'Using ticker_interval: {} ...')
+        self._args_to_config(config, argname='timeframe',
+                             logstring='Parameter -i/--timeframe detected ... '
+                             'Using timeframe: {} ...')
 
         self._args_to_config(config, argname='position_stacking',
                              logstring='Parameter --enable-position-stacking detected ...')
@@ -242,8 +242,8 @@ class Configuration:
         self._args_to_config(config, argname='strategy_list',
                              logstring='Using strategy list of {} strategies', logfun=len)
 
-        self._args_to_config(config, argname='ticker_interval',
-                             logstring='Overriding ticker interval with Command line argument')
+        self._args_to_config(config, argname='timeframe',
+                             logstring='Overriding timeframe with Command line argument')
 
         self._args_to_config(config, argname='export',
                              logstring='Parameter --export detected: {} ...')
@@ -333,6 +333,12 @@ class Configuration:
 
         self._args_to_config(config, argname='hyperopt_list_max_total_profit',
                              logstring='Parameter --max-total-profit detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_min_objective',
+                             logstring='Parameter --min-objective detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_max_objective',
+                             logstring='Parameter --max-objective detected: {}')
 
         self._args_to_config(config, argname='hyperopt_list_no_details',
                              logstring='Parameter --no-details detected: {}')

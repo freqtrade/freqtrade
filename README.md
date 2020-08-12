@@ -82,7 +82,8 @@ positional arguments:
     new-hyperopt        Create new hyperopt
     new-strategy        Create new strategy
     download-data       Download backtesting data.
-    convert-data        Convert candle (OHLCV) data from one format to another.
+    convert-data        Convert candle (OHLCV) data from one format to
+                        another.
     convert-trade-data  Convert trade data from one format to another.
     backtesting         Backtesting module.
     edge                Edge module.
@@ -94,7 +95,7 @@ positional arguments:
     list-markets        Print markets on exchange.
     list-pairs          Print pairs on exchange.
     list-strategies     Print available strategies.
-    list-timeframes     Print available ticker intervals (timeframes) for the exchange.
+    list-timeframes     Print available timeframes for the exchange.
     show-trades         Show trades.
     test-pairlist       Test your pairlist configuration.
     plot-dataframe      Plot candles with indicators.

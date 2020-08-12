@@ -51,8 +51,8 @@ class {{ strategy }}(IStrategy):
     # trailing_stop_positive = 0.01
     # trailing_stop_positive_offset = 0.0  # Disabled / not configured
 
-    # Optimal ticker interval for the strategy.
-    ticker_interval = '5m'
+    # Optimal timeframe for the strategy.
+    timeframe = '5m'
 
     # Run "populate_indicators()" only for new candle.
     process_only_new_candles = False

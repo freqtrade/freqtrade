@@ -63,8 +63,8 @@ class SuperDuperHyperOptLoss(IHyperOptLoss):
         * 0.25: Avoiding trade loss
         * 1.0 to total profit, compared to the expected value (`EXPECTED_MAX_PROFIT`) defined above
         """
-        total_profit = results.profit_percent.sum()
-        trade_duration = results.trade_duration.mean()
+        total_profit = results['profit_percent'].sum()
+        trade_duration = results['trade_duration'].mean()
 
         trade_loss = 1 - 0.25 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.8)
         profit_loss = max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)

@@ -14,7 +14,7 @@ class IHyperOptLoss(ABC):
     Interface for freqtrade hyperopt Loss functions.
     Defines the custom loss function (`hyperopt_loss_function()` which is evaluated every epoch.)
     """
-    ticker_interval: str
+    timeframe: str
 
     @staticmethod
     @abstractmethod

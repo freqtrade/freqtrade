@@ -1,6 +1,8 @@
 # Strategy Customization
 
-This page explains where to customize your strategies, and add new indicators.
+This page explains how to customize your strategies, add new indicators and set up trading rules.
+
+Please familiarize yourself with [Freqtrade basics](bot-basics.md) first, which provides overall info on how the bot operates.
 
 ## Install a custom strategy file
 
@@ -139,10 +141,10 @@ By letting the bot know how much history is needed, backtest trades can start at
 
 #### Example
 
-Let's try to backtest 1 month (January 2019) of 5m candles using the an example strategy with EMA100, as above.
+Let's try to backtest 1 month (January 2019) of 5m candles using an example strategy with EMA100, as above.
 
 ``` bash
-freqtrade backtesting --timerange 20190101-20190201 --ticker-interval 5m
+freqtrade backtesting --timerange 20190101-20190201 --timeframe 5m
 ```
 
 Assuming `startup_candle_count` is set to 100, backtesting knows it needs 100 candles to generate valid buy signals. It will load data from `20190101 - (100 * 5m)` - which is ~2019-12-31 15:30:00.
@@ -248,7 +250,7 @@ minimal_roi = {
 
 While technically not completely disabled, this would sell once the trade reaches 10000% Profit.
 
-To use times based on candle duration (ticker_interval or timeframe), the following snippet can be handy.
+To use times based on candle duration (timeframe), the following snippet can be handy.
 This will allow you to change the ticket_interval for the strategy, and ROI times will still be set as candles (e.g. after 3 candles ...)
 
 ``` python
@@ -256,12 +258,12 @@ from freqtrade.exchange import timeframe_to_minutes
 
 class AwesomeStrategy(IStrategy):
 
-    ticker_interval = "1d"
-    ticker_interval_mins = timeframe_to_minutes(ticker_interval)
+    timeframe = "1d"
+    timeframe_mins = timeframe_to_minutes(timeframe)
     minimal_roi = {
         "0": 0.05,                             # 5% for the first 3 candles
-        str(ticker_interval_mins * 3)): 0.02,  # 2% after 3 candles
-        str(ticker_interval_mins * 6)): 0.01,  # 1% After 6 candles
+        str(timeframe_mins * 3)): 0.02,  # 2% after 3 candles
+        str(timeframe_mins * 6)): 0.01,  # 1% After 6 candles
     }
 ```
 
@@ -290,7 +292,7 @@ Common values are `"1m"`, `"5m"`, `"15m"`, `"1h"`, however all values supported 
 
 Please note that the same buy/sell signals may work well with one timeframe, but not with the others.
 
-This setting is accessible within the strategy methods as the `self.ticker_interval` attribute.
+This setting is accessible within the strategy methods as the `self.timeframe` attribute.
 
 ### Metadata dict
 
@@ -366,6 +368,7 @@ Please always check the mode of operation to select the correct method to get da
 - [`available_pairs`](#available_pairs) - Property with tuples listing cached pairs with their intervals (pair, interval).
 - [`current_whitelist()`](#current_whitelist) - Returns a current list of whitelisted pairs. Useful for accessing dynamic whitelists (ie. VolumePairlist)
 - [`get_pair_dataframe(pair, timeframe)`](#get_pair_dataframepair-timeframe) - This is a universal method, which returns either historical data (for backtesting) or cached live data (for the Dry-Run and Live-Run modes).
+- [`get_analyzed_dataframe(pair, timeframe)`](#get_analyzed_dataframepair-timeframe) - Returns the analyzed dataframe (after calling `populate_indicators()`, `populate_buy()`, `populate_sell()`) and the time of the latest analysis.
 - `historic_ohlcv(pair, timeframe)` - Returns historical data stored on disk.
 - `market(pair)` - Returns market data for the pair: fees, limits, precisions, activity flag, etc. See [ccxt documentation](https://github.com/ccxt/ccxt/wiki/Manual#markets) for more details on the Market data structure.
 - `ohlcv(pair, timeframe)` - Currently cached candle (OHLCV) data for the pair, returns DataFrame or empty DataFrame.
@@ -384,13 +387,14 @@ if self.dp:
 ```
 
 #### *current_whitelist()*
+
 Imagine you've developed a strategy that trades the `5m` timeframe using signals generated from a `1d` timeframe on the top 10 volume pairs by volume. 
 
 The strategy might look something like this:
 
-*Scan through the top 10 pairs by volume using the `VolumePairList` every 5 minutes and use a 14 day ATR to buy and sell.*
+*Scan through the top 10 pairs by volume using the `VolumePairList` every 5 minutes and use a 14 day RSI to buy and sell.*
 
-Due to the limited available data, it's very difficult to resample our `5m` candles into daily candles for use in a 14 day ATR. Most exchanges limit us to just 500 candles which effectively gives us around 1.74 daily candles. We need 14 days at least!
+Due to the limited available data, it's very difficult to resample our `5m` candles into daily candles for use in a 14 day RSI. Most exchanges limit us to just 500 candles which effectively gives us around 1.74 daily candles. We need 14 days at least!
 
 Since we can't resample our data we will have to use an informative pair; and since our whitelist will be dynamic we don't know which pair(s) to use.
 
@@ -400,24 +404,55 @@ This is where calling `self.dp.current_whitelist()` comes in handy.
 class SampleStrategy(IStrategy):
     # strategy init stuff...
 
-    ticker_interval = '5m'
+    timeframe = '5m'
 
     # more strategy init stuff..
 
     def informative_pairs(self):
 
-        # get access to all pairs available in whitelist. 
+        # get access to all pairs available in whitelist.
         pairs = self.dp.current_whitelist()
         # Assign tf to each pair so they can be downloaded and cached for strategy.
         informative_pairs = [(pair, '1d') for pair in pairs]
         return informative_pairs
 
-    def populate_indicators(self, dataframe, metadata):
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+
+        inf_tf = '1d'
         # Get the informative pair
         informative = self.dp.get_pair_dataframe(pair=metadata['pair'], timeframe='1d')
-        # Get the 14 day ATR.
-        atr = ta.ATR(informative, timeperiod=14)
+        # Get the 14 day rsi
+        informative['rsi'] = ta.RSI(informative, timeperiod=14)
+
+        # Rename columns to be unique
+        informative.columns = [f"{col}_{inf_tf}" for col in informative.columns]
+        # Assuming inf_tf = '1d' - then the columns will now be:
+        # date_1d, open_1d, high_1d, low_1d, close_1d, rsi_1d
+
+        # Combine the 2 dataframes
+        # all indicators on the informative sample MUST be calculated before this point
+        dataframe = pd.merge(dataframe, informative, left_on='date', right_on=f'date_{inf_tf}', how='left')
+        # FFill to have the 1d value available in every row throughout the day.
+        # Without this, comparisons would only work once per day.
+        dataframe = dataframe.ffill()
+        # Calculate rsi of the original dataframe (5m timeframe)
+        dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
+
         # Do other stuff
+        # ...
+
+        return dataframe
+
+    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+
+        dataframe.loc[
+            (
+                (qtpylib.crossed_above(dataframe['rsi'], 30)) &  # Signal: RSI crosses above 30
+                (dataframe['rsi_1d'] < 30) &                     # Ensure daily RSI is < 30
+                (dataframe['volume'] > 0)                        # Ensure this candle had volume (important for backtesting)
+            ),
+            'buy'] = 1
+
 ```
 
 #### *get_pair_dataframe(pair, timeframe)*
@@ -431,9 +466,28 @@ if self.dp:
 ```
 
 !!! Warning "Warning about backtesting"
-    Be carefull when using dataprovider in backtesting. `historic_ohlcv()` (and `get_pair_dataframe()`
+    Be careful when using dataprovider in backtesting. `historic_ohlcv()` (and `get_pair_dataframe()`
     for the backtesting runmode) provides the full time-range in one go,
     so please be aware of it and make sure to not "look into the future" to avoid surprises when running in dry/live mode).
+
+!!! Warning "Warning in hyperopt"
+    This option cannot currently be used during hyperopt.
+
+#### *get_analyzed_dataframe(pair, timeframe)*
+
+This method is used by freqtrade internally to determine the last signal.
+It can also be used in specific callbacks to get the signal that caused the action (see [Advanced Strategy Documentation](strategy-advanced.md) for more details on available callbacks).
+
+``` python
+# fetch current dataframe
+if self.dp:
+    dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=metadata['pair'],
+                                                             timeframe=self.ticker_interval)
+```
+
+!!! Note "No data available"
+    Returns an empty dataframe if the requested pair was not cached.
+    This should not happen when using whitelisted pairs.
 
 !!! Warning "Warning in hyperopt"
     This option cannot currently be used during hyperopt.
@@ -470,6 +524,7 @@ if self.dp:
     data returned from the exchange and add appropriate error handling / defaults.
 
 ***
+
 ### Additional data (Wallets)
 
 The strategy provides access to the `Wallets` object. This contains the current balances on the exchange.
@@ -493,6 +548,7 @@ if self.wallets:
 - `get_total(asset)` - total available balance - sum of the 2 above
 
 ***
+
 ### Additional data (Trades)
 
 A history of Trades can be retrieved in the strategy by querying the database.
@@ -557,7 +613,7 @@ Locks can also be lifted manually, by calling `self.unlock_pair(pair)`.
 To verify if a pair is currently locked, use `self.is_pair_locked(pair)`.
 
 !!! Note
-    Locked pairs are not persisted, so a restart of the bot, or calling `/reload_conf` will reset locked pairs.
+    Locked pairs are not persisted, so a restart of the bot, or calling `/reload_config` will reset locked pairs.
 
 !!! Warning
     Locking pairs is not functioning during backtesting.

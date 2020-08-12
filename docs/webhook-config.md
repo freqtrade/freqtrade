@@ -47,6 +47,7 @@ Different payloads can be configured for different events. Not all fields are ne
 The fields in `webhook.webhookbuy` are filled when the bot executes a buy. Parameters are filled using string.format.
 Possible parameters are:
 
+* `trade_id`
 * `exchange`
 * `pair`
 * `limit`
@@ -63,6 +64,7 @@ Possible parameters are:
 The fields in `webhook.webhookbuycancel` are filled when the bot cancels a buy order. Parameters are filled using string.format.
 Possible parameters are:
 
+* `trade_id`
 * `exchange`
 * `pair`
 * `limit`
@@ -79,6 +81,7 @@ Possible parameters are:
 The fields in `webhook.webhooksell` are filled when the bot sells a trade. Parameters are filled using string.format.
 Possible parameters are:
 
+* `trade_id`
 * `exchange`
 * `pair`
 * `gain`
@@ -100,6 +103,7 @@ Possible parameters are:
 The fields in `webhook.webhooksellcancel` are filled when the bot cancels a sell order. Parameters are filled using string.format.
 Possible parameters are:
 
+* `trade_id`
 * `exchange`
 * `pair`
 * `gain`

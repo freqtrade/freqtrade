@@ -110,8 +110,8 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_true',
     ),
     # Optimize common
-    "ticker_interval": Arg(
-        '-i', '--ticker-interval',
+    "timeframe": Arg(
+        '-i', '--timeframe', '--ticker-interval',
         help='Specify ticker interval (`1m`, `5m`, `30m`, `1h`, `1d`).',
     ),
     "timerange": Arg(
@@ -455,37 +455,49 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "hyperopt_list_min_avg_time": Arg(
         '--min-avg-time',
-        help='Select epochs on above average time.',
+        help='Select epochs above average time.',
         type=float,
         metavar='FLOAT',
     ),
     "hyperopt_list_max_avg_time": Arg(
         '--max-avg-time',
-        help='Select epochs on under average time.',
+        help='Select epochs below average time.',
         type=float,
         metavar='FLOAT',
     ),
     "hyperopt_list_min_avg_profit": Arg(
         '--min-avg-profit',
-        help='Select epochs on above average profit.',
+        help='Select epochs above average profit.',
         type=float,
         metavar='FLOAT',
     ),
     "hyperopt_list_max_avg_profit": Arg(
         '--max-avg-profit',
-        help='Select epochs on below average profit.',
+        help='Select epochs below average profit.',
         type=float,
         metavar='FLOAT',
     ),
     "hyperopt_list_min_total_profit": Arg(
         '--min-total-profit',
-        help='Select epochs on above total profit.',
+        help='Select epochs above total profit.',
         type=float,
         metavar='FLOAT',
     ),
     "hyperopt_list_max_total_profit": Arg(
         '--max-total-profit',
-        help='Select epochs on below total profit.',
+        help='Select epochs below total profit.',
+        type=float,
+        metavar='FLOAT',
+    ),
+    "hyperopt_list_min_objective": Arg(
+        '--min-objective',
+        help='Select epochs above objective.',
+        type=float,
+        metavar='FLOAT',
+    ),
+    "hyperopt_list_max_objective": Arg(
+        '--max-objective',
+        help='Select epochs below objective.',
         type=float,
         metavar='FLOAT',
     ),

@@ -131,7 +131,7 @@ def test_parse_args_backtesting_custom() -> None:
     assert call_args["verbosity"] == 0
     assert call_args["command"] == 'backtesting'
     assert call_args["func"] is not None
-    assert call_args["ticker_interval"] == '1m'
+    assert call_args["timeframe"] == '1m'
     assert type(call_args["strategy_list"]) is list
     assert len(call_args["strategy_list"]) == 2
 

@@ -68,7 +68,7 @@ class IPairList(ABC):
     def needstickers(self) -> bool:
         """
         Boolean property defining if tickers are necessary.
-        If no Pairlist requries tickers, an empty List is passed
+        If no Pairlist requires tickers, an empty List is passed
         as tickers argument to filter_pairlist
         """
 
@@ -150,6 +150,9 @@ class IPairList(ABC):
         black_listed
         """
         markets = self._exchange.markets
+        if not markets:
+            raise OperationalException(
+                    'Markets not loaded. Make sure that exchange is initialized correctly.')
 
         sanitized_whitelist: List[str] = []
         for pair in pairlist:

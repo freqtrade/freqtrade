@@ -18,7 +18,8 @@ from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
-from freqtrade.optimize.optimize_reports import (show_backtest_results,
+from freqtrade.optimize.optimize_reports import (generate_backtest_stats,
+                                                 show_backtest_results,
                                                  store_backtest_result)
 from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.persistence import Trade
@@ -64,20 +65,6 @@ class Backtesting:
         self.strategylist: List[IStrategy] = []
         self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
 
-        self.pairlists = PairListManager(self.exchange, self.config)
-        if 'VolumePairList' in self.pairlists.name_list:
-            raise OperationalException("VolumePairList not allowed for backtesting.")
-
-        self.pairlists.refresh_pairlist()
-
-        if len(self.pairlists.whitelist) == 0:
-            raise OperationalException("No pair in whitelist.")
-
-        if config.get('fee'):
-            self.fee = config['fee']
-        else:
-            self.fee = self.exchange.get_fee(symbol=self.pairlists.whitelist[0])
-
         if self.config.get('runmode') != RunMode.HYPEROPT:
             self.dataprovider = DataProvider(self.config, self.exchange)
             IStrategy.dp = self.dataprovider
@@ -94,11 +81,30 @@ class Backtesting:
             self.strategylist.append(StrategyResolver.load_strategy(self.config))
             validate_config_consistency(self.config)
 
-        if "ticker_interval" not in self.config:
+        if "timeframe" not in self.config:
             raise OperationalException("Timeframe (ticker interval) needs to be set in either "
-                                       "configuration or as cli argument `--ticker-interval 5m`")
-        self.timeframe = str(self.config.get('ticker_interval'))
+                                       "configuration or as cli argument `--timeframe 5m`")
+        self.timeframe = str(self.config.get('timeframe'))
         self.timeframe_min = timeframe_to_minutes(self.timeframe)
+
+        self.pairlists = PairListManager(self.exchange, self.config)
+        if 'VolumePairList' in self.pairlists.name_list:
+            raise OperationalException("VolumePairList not allowed for backtesting.")
+
+        if len(self.strategylist) > 1 and 'PrecisionFilter' in self.pairlists.name_list:
+            raise OperationalException(
+                "PrecisionFilter not allowed for backtesting multiple strategies."
+            )
+
+        self.pairlists.refresh_pairlist()
+
+        if len(self.pairlists.whitelist) == 0:
+            raise OperationalException("No pair in whitelist.")
+
+        if config.get('fee', None) is not None:
+            self.fee = config['fee']
+        else:
+            self.fee = self.exchange.get_fee(symbol=self.pairlists.whitelist[0])
 
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
@@ -411,4 +417,5 @@ class Backtesting:
         if self.config.get('export', False):
             store_backtest_result(self.config['exportfilename'], all_results)
         # Show backtest results
-        show_backtest_results(self.config, data, all_results)
+        stats = generate_backtest_stats(self.config, data, all_results)
+        show_backtest_results(self.config, stats)

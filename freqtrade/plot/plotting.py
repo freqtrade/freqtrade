@@ -10,11 +10,13 @@ from freqtrade.data.btanalysis import (calculate_max_drawdown,
                                        create_cum_profit,
                                        extract_trades_of_period, load_trades)
 from freqtrade.data.converter import trim_dataframe
+from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_prev_date
 from freqtrade.misc import pair_to_filename
-from freqtrade.resolvers import StrategyResolver
+from freqtrade.resolvers import ExchangeResolver, StrategyResolver
+from freqtrade.strategy import IStrategy
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +47,7 @@ def init_plotscript(config):
     data = load_data(
         datadir=config.get("datadir"),
         pairs=pairs,
-        timeframe=config.get('ticker_interval', '5m'),
+        timeframe=config.get('timeframe', '5m'),
         timerange=timerange,
         data_format=config.get('dataformat_ohlcv', 'json'),
     )
@@ -162,7 +164,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
     # Trades can be empty
     if trades is not None and len(trades) > 0:
         # Create description for sell summarizing the trade
-        trades['desc'] = trades.apply(lambda row: f"{round(row['profitperc'] * 100, 1)}%, "
+        trades['desc'] = trades.apply(lambda row: f"{round(row['profit_percent'] * 100, 1)}%, "
                                                   f"{row['sell_reason']}, {row['duration']} min",
                                                   axis=1)
         trade_buys = go.Scatter(
@@ -181,9 +183,9 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
         )
 
         trade_sells = go.Scatter(
-            x=trades.loc[trades['profitperc'] > 0, "close_time"],
-            y=trades.loc[trades['profitperc'] > 0, "close_rate"],
-            text=trades.loc[trades['profitperc'] > 0, "desc"],
+            x=trades.loc[trades['profit_percent'] > 0, "close_time"],
+            y=trades.loc[trades['profit_percent'] > 0, "close_rate"],
+            text=trades.loc[trades['profit_percent'] > 0, "desc"],
             mode='markers',
             name='Sell - Profit',
             marker=dict(
@@ -194,9 +196,9 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
             )
         )
         trade_sells_loss = go.Scatter(
-            x=trades.loc[trades['profitperc'] <= 0, "close_time"],
-            y=trades.loc[trades['profitperc'] <= 0, "close_rate"],
-            text=trades.loc[trades['profitperc'] <= 0, "desc"],
+            x=trades.loc[trades['profit_percent'] <= 0, "close_time"],
+            y=trades.loc[trades['profit_percent'] <= 0, "close_rate"],
+            text=trades.loc[trades['profit_percent'] <= 0, "desc"],
             mode='markers',
             name='Sell - Loss',
             marker=dict(
@@ -467,6 +469,8 @@ def load_and_plot_trades(config: Dict[str, Any]):
     """
     strategy = StrategyResolver.load_strategy(config)
 
+    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config)
+    IStrategy.dp = DataProvider(config, exchange)
     plot_elements = init_plotscript(config)
     trades = plot_elements['trades']
     pair_counter = 0
@@ -487,7 +491,7 @@ def load_and_plot_trades(config: Dict[str, Any]):
             plot_config=strategy.plot_config if hasattr(strategy, 'plot_config') else {}
         )
 
-        store_plot_file(fig, filename=generate_plot_filename(pair, config['ticker_interval']),
+        store_plot_file(fig, filename=generate_plot_filename(pair, config['timeframe']),
                         directory=config['user_data_dir'] / "plot")
 
     logger.info('End of plotting process. %s plots generated', pair_counter)
@@ -515,6 +519,6 @@ def plot_profit(config: Dict[str, Any]) -> None:
     # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
     fig = generate_profit_graph(plot_elements["pairs"], plot_elements["ohlcv"],
-                                trades, config.get('ticker_interval', '5m'))
+                                trades, config.get('timeframe', '5m'))
     store_plot_file(fig, filename='freqtrade-profit-plot.html',
                     directory=config['user_data_dir'] / "plot", auto_open=True)

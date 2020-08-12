@@ -45,6 +45,20 @@ the tutorial [here|Testing-new-strategies-with-Hyperopt](bot-usage.md#hyperopt-c
 
 You can use the `/forcesell all` command from Telegram.
 
+### I want to run multiple bots on the same machine
+
+Please look at the [advanced setup documentation Page](advanced-setup.md#running-multiple-instances-of-freqtrade).
+
+### I'm getting "Missing data fillup" messages in the log
+
+This message is just a warning that the latest candles had missing candles in them.
+Depending on the exchange, this can indicate that the pair didn't have a trade for the timeframe you are using - and the exchange does only return candles with volume.
+On low volume pairs, this is a rather common occurance.
+
+If this happens for all pairs in the pairlist, this might indicate a recent exchange downtime. Please check your exchange's public channels for details.
+
+Irrespectively of the reason, Freqtrade will fill up these candles with "empty" candles, where open, high, low and close are set to the previous candle close - and volume is empty. In a chart, this will look like a `_` - and is aligned with how exchanges usually represent 0 volume candles.
+
 ### I'm getting the "RESTRICTED_MARKET" message in the log
 
 Currently known to happen for US Bittrex users.  

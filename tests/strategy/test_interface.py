@@ -13,12 +13,14 @@ from freqtrade.exceptions import StrategyError
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
-from tests.conftest import get_patched_exchange, log_has, log_has_re
+from freqtrade.data.dataprovider import DataProvider
+from tests.conftest import log_has, log_has_re
 
 from .strats.default_strategy import DefaultStrategy
 
 # Avoid to reinit the same object again and again
 _STRATEGY = DefaultStrategy(config={})
+_STRATEGY.dp = DataProvider({}, None, None)
 
 
 def test_returns_latest_signal(mocker, default_conf, ohlcv_history):
@@ -29,63 +31,60 @@ def test_returns_latest_signal(mocker, default_conf, ohlcv_history):
     mocked_history['buy'] = 0
     mocked_history.loc[1, 'sell'] = 1
 
-    mocker.patch.object(
-        _STRATEGY, '_analyze_ticker_internal',
-        return_value=mocked_history
-    )
-
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', ohlcv_history) == (False, True)
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (False, True)
     mocked_history.loc[1, 'sell'] = 0
     mocked_history.loc[1, 'buy'] = 1
 
-    mocker.patch.object(
-        _STRATEGY, '_analyze_ticker_internal',
-        return_value=mocked_history
-    )
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', ohlcv_history) == (True, False)
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (True, False)
     mocked_history.loc[1, 'sell'] = 0
     mocked_history.loc[1, 'buy'] = 0
 
-    mocker.patch.object(
-        _STRATEGY, '_analyze_ticker_internal',
-        return_value=mocked_history
-    )
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', ohlcv_history) == (False, False)
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (False, False)
 
 
-def test_get_signal_empty(default_conf, mocker, caplog):
-    assert (False, False) == _STRATEGY.get_signal('foo', default_conf['ticker_interval'],
-                                                  DataFrame())
-    assert log_has('Empty candle (OHLCV) data for pair foo', caplog)
-    caplog.clear()
-
-    assert (False, False) == _STRATEGY.get_signal('bar', default_conf['ticker_interval'],
-                                                  [])
-    assert log_has('Empty candle (OHLCV) data for pair bar', caplog)
-
-
-def test_get_signal_exception_valueerror(default_conf, mocker, caplog, ohlcv_history):
-    caplog.set_level(logging.INFO)
-    mocker.patch.object(
-        _STRATEGY, '_analyze_ticker_internal',
-        side_effect=ValueError('xyz')
-    )
-    assert (False, False) == _STRATEGY.get_signal('foo', default_conf['ticker_interval'],
-                                                  ohlcv_history)
-    assert log_has_re(r'Strategy caused the following exception: xyz.*', caplog)
-
-
-def test_get_signal_empty_dataframe(default_conf, mocker, caplog, ohlcv_history):
-    caplog.set_level(logging.INFO)
+def test_analyze_pair_empty(default_conf, mocker, caplog, ohlcv_history):
+    mocker.patch.object(_STRATEGY.dp, 'ohlcv', return_value=ohlcv_history)
     mocker.patch.object(
         _STRATEGY, '_analyze_ticker_internal',
         return_value=DataFrame([])
     )
     mocker.patch.object(_STRATEGY, 'assert_df')
 
-    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
-                                                  ohlcv_history)
-    assert log_has('Empty dataframe for pair xyz', caplog)
+    _STRATEGY.analyze_pair('ETH/BTC')
+
+    assert log_has('Empty dataframe for pair ETH/BTC', caplog)
+
+
+def test_get_signal_empty(default_conf, mocker, caplog):
+    assert (False, False) == _STRATEGY.get_signal('foo', default_conf['timeframe'], DataFrame())
+    assert log_has('Empty candle (OHLCV) data for pair foo', caplog)
+    caplog.clear()
+
+    assert (False, False) == _STRATEGY.get_signal('bar', default_conf['timeframe'], None)
+    assert log_has('Empty candle (OHLCV) data for pair bar', caplog)
+    caplog.clear()
+
+    assert (False, False) == _STRATEGY.get_signal('baz', default_conf['timeframe'], DataFrame([]))
+    assert log_has('Empty candle (OHLCV) data for pair baz', caplog)
+
+
+def test_get_signal_exception_valueerror(default_conf, mocker, caplog, ohlcv_history):
+    caplog.set_level(logging.INFO)
+    mocker.patch.object(_STRATEGY.dp, 'ohlcv', return_value=ohlcv_history)
+    mocker.patch.object(
+        _STRATEGY, '_analyze_ticker_internal',
+        side_effect=ValueError('xyz')
+    )
+    _STRATEGY.analyze_pair('foo')
+    assert log_has_re(r'Strategy caused the following exception: xyz.*', caplog)
+    caplog.clear()
+
+    mocker.patch.object(
+        _STRATEGY, 'analyze_ticker',
+        side_effect=Exception('invalid ticker history ')
+    )
+    _STRATEGY.analyze_pair('foo')
+    assert log_has_re(r'Strategy caused the following exception: xyz.*', caplog)
 
 
 def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
@@ -99,13 +98,9 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
     mocked_history.loc[1, 'buy'] = 1
 
     caplog.set_level(logging.INFO)
-    mocker.patch.object(
-        _STRATEGY, '_analyze_ticker_internal',
-        return_value=mocked_history
-    )
     mocker.patch.object(_STRATEGY, 'assert_df')
-    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
-                                                  ohlcv_history)
+
+    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['timeframe'], mocked_history)
     assert log_has('Outdated history for pair xyz. Last tick is 16 minutes old', caplog)
 
 
@@ -120,17 +115,18 @@ def test_assert_df_raise(default_conf, mocker, caplog, ohlcv_history):
     mocked_history.loc[1, 'buy'] = 1
 
     caplog.set_level(logging.INFO)
+    mocker.patch.object(_STRATEGY.dp, 'ohlcv', return_value=ohlcv_history)
+    mocker.patch.object(_STRATEGY.dp, 'get_analyzed_dataframe', return_value=(mocked_history, 0))
     mocker.patch.object(
         _STRATEGY, 'assert_df',
         side_effect=StrategyError('Dataframe returned...')
     )
-    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
-                                                  ohlcv_history)
+    _STRATEGY.analyze_pair('xyz')
     assert log_has('Unable to analyze candle (OHLCV) data for pair xyz: Dataframe returned...',
                    caplog)
 
 
-def test_assert_df(default_conf, mocker, ohlcv_history):
+def test_assert_df(default_conf, mocker, ohlcv_history, caplog):
     # Ensure it's running when passed correctly
     _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
                         ohlcv_history.loc[1, 'close'], ohlcv_history.loc[1, 'date'])
@@ -148,14 +144,13 @@ def test_assert_df(default_conf, mocker, ohlcv_history):
         _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
                             ohlcv_history.loc[1, 'close'], ohlcv_history.loc[0, 'date'])
 
-
-def test_get_signal_handles_exceptions(mocker, default_conf):
-    exchange = get_patched_exchange(mocker, default_conf)
-    mocker.patch.object(
-        _STRATEGY, 'analyze_ticker',
-        side_effect=Exception('invalid ticker history ')
-    )
-    assert _STRATEGY.get_signal(exchange, 'ETH/BTC', '5m') == (False, False)
+    _STRATEGY.disable_dataframe_checks = True
+    caplog.clear()
+    _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
+                        ohlcv_history.loc[1, 'close'], ohlcv_history.loc[0, 'date'])
+    assert log_has_re(r"Dataframe returned from strategy.*last date\.", caplog)
+    # reset to avoid problems in other tests due to test leakage
+    _STRATEGY.disable_dataframe_checks = False
 
 
 def test_ohlcvdata_to_dataframe(default_conf, testdatadir) -> None:
@@ -334,6 +329,7 @@ def test__analyze_ticker_internal_skip_analyze(ohlcv_history, mocker, caplog) ->
 
     )
     strategy = DefaultStrategy({})
+    strategy.dp = DataProvider({}, None, None)
     strategy.process_only_new_candles = True
 
     ret = strategy._analyze_ticker_internal(ohlcv_history, {'pair': 'ETH/BTC'})
@@ -392,6 +388,14 @@ def test_is_pair_locked(default_conf):
     assert not strategy.is_pair_locked(pair)
 
 
+def test_is_informative_pairs_callback(default_conf):
+    default_conf.update({'strategy': 'TestStrategyLegacy'})
+    strategy = StrategyResolver.load_strategy(default_conf)
+    # Should return empty
+    # Uses fallback to base implementation
+    assert [] == strategy.informative_pairs()
+
+
 @pytest.mark.parametrize('error', [
     ValueError, KeyError, Exception,
 ])
@@ -410,6 +414,11 @@ def test_strategy_safe_wrapper_error(caplog, error):
 
     assert isinstance(ret, bool)
     assert ret
+
+    caplog.clear()
+    # Test supressing error
+    ret = strategy_safe_wrapper(failing_method, message='DeadBeef', supress_error=True)()
+    assert log_has_re(r'DeadBeef.*', caplog)
 
 
 @pytest.mark.parametrize('value', [

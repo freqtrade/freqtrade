@@ -42,14 +42,14 @@ class HyperOptResolver(IResolver):
                                                 extra_dir=config.get('hyperopt_path'))
 
         if not hasattr(hyperopt, 'populate_indicators'):
-            logger.warning("Hyperopt class does not provide populate_indicators() method. "
-                           "Using populate_indicators from the strategy.")
+            logger.info("Hyperopt class does not provide populate_indicators() method. "
+                        "Using populate_indicators from the strategy.")
         if not hasattr(hyperopt, 'populate_buy_trend'):
-            logger.warning("Hyperopt class does not provide populate_buy_trend() method. "
-                           "Using populate_buy_trend from the strategy.")
+            logger.info("Hyperopt class does not provide populate_buy_trend() method. "
+                        "Using populate_buy_trend from the strategy.")
         if not hasattr(hyperopt, 'populate_sell_trend'):
-            logger.warning("Hyperopt class does not provide populate_sell_trend() method. "
-                           "Using populate_sell_trend from the strategy.")
+            logger.info("Hyperopt class does not provide populate_sell_trend() method. "
+                        "Using populate_sell_trend from the strategy.")
         return hyperopt
 
 
@@ -77,8 +77,9 @@ class HyperOptLossResolver(IResolver):
                                                         config, kwargs={},
                                                         extra_dir=config.get('hyperopt_path'))
 
-        # Assign ticker_interval to be used in hyperopt
-        hyperoptloss.__class__.ticker_interval = str(config['ticker_interval'])
+        # Assign timeframe to be used in hyperopt
+        hyperoptloss.__class__.ticker_interval = str(config['timeframe'])
+        hyperoptloss.__class__.timeframe = str(config['timeframe'])
 
         if not hasattr(hyperoptloss, 'hyperopt_loss_function'):
             raise OperationalException(

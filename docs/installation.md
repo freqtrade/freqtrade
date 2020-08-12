@@ -13,7 +13,7 @@ Click each one for install guide:
 * [Python >= 3.6.x](http://docs.python-guide.org/en/latest/starting/installation/)
 * [pip](https://pip.pypa.io/en/stable/installing/)
 * [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
-* [virtualenv](https://virtualenv.pypa.io/en/stable/installation/) (Recommended)
+* [virtualenv](https://virtualenv.pypa.io/en/stable/installation.html) (Recommended)
 * [TA-Lib](https://mrjbq7.github.io/ta-lib/install.html) (install instructions below)
 
  We also recommend a [Telegram bot](telegram-usage.md#setup-your-telegram-bot), which is optional but recommended.

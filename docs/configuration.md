@@ -47,14 +47,14 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `amend_last_stake_amount` | Use reduced last stake amount if necessary. [More information below](#configuring-amount-per-trade). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `last_stake_amount_min_ratio` | Defines minimum stake amount that has to be left and executed. Applies only to the last stake amount when it's amended to a reduced value (i.e. if `amend_last_stake_amount` is set to `true`). [More information below](#configuring-amount-per-trade). <br>*Defaults to `0.5`.* <br> **Datatype:** Float (as ratio)
 | `amount_reserve_percent` | Reserve some amount in min pair stake amount. The bot will reserve `amount_reserve_percent` + stoploss value when calculating min pair stake amount in order to avoid possible trade refusals. <br>*Defaults to `0.05` (5%).* <br> **Datatype:** Positive Float as ratio.
-| `ticker_interval` | The timeframe (ticker interval) to use (e.g `1m`, `5m`, `15m`, `30m`, `1h` ...). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** String
+| `timeframe` | The timeframe (former ticker interval) to use (e.g `1m`, `5m`, `15m`, `30m`, `1h` ...). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** String
 | `fiat_display_currency` | Fiat currency used to show your profits. [More information below](#what-values-can-be-used-for-fiat_display_currency). <br> **Datatype:** String
 | `dry_run` | **Required.** Define if the bot must be in Dry Run or production mode. <br>*Defaults to `true`.* <br> **Datatype:** Boolean
 | `dry_run_wallet` | Define the starting amount in stake currency for the simulated wallet used by the bot running in the Dry Run mode.<br>*Defaults to `1000`.* <br> **Datatype:** Float
 | `cancel_open_orders_on_exit` | Cancel open orders when the `/stop` RPC command is issued, `Ctrl+C` is pressed or the bot dies unexpectedly. When set to `true`, this allows you to use `/stop` to cancel unfilled and partially filled orders in the event of a market crash. It does not impact open positions. <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `process_only_new_candles` | Enable processing of indicators only when new candles arrive. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*  <br> **Datatype:** Boolean
-| `minimal_roi` | **Required.** Set the threshold in percent the bot will use to sell a trade. [More information below](#understand-minimal_roi). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Dict
-| `stoploss` |  **Required.** Value of the stoploss in percent used by the bot. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy).  <br> **Datatype:** Float (as ratio)
+| `minimal_roi` | **Required.** Set the threshold as ratio the bot will use to sell a trade. [More information below](#understand-minimal_roi). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Dict
+| `stoploss` |  **Required.** Value as ratio of the stoploss used by the bot. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy).  <br> **Datatype:** Float (as ratio)
 | `trailing_stop` | Enables trailing stoploss (based on `stoploss` in either configuration or strategy file). More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Boolean
 | `trailing_stop_positive` | Changes stoploss once profit has been reached. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Float
 | `trailing_stop_positive_offset` | Offset on when to apply `trailing_stop_positive`. Percentage value which should be positive. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `0.0` (no offset).* <br> **Datatype:** Float
@@ -83,7 +83,8 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `exchange.password` | API password to use for the exchange. Only required when you are in production mode and for exchanges that use password for API requests.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
 | `exchange.pair_whitelist` | List of pairs to use by the bot for trading and to check for potential trades during backtesting. Not used by VolumePairList (see [below](#pairlists-and-pairlist-handlers)). <br> **Datatype:** List
 | `exchange.pair_blacklist` | List of pairs the bot must absolutely avoid for trading and backtesting (see [below](#pairlists-and-pairlist-handlers)). <br> **Datatype:** List
-| `exchange.ccxt_config` | Additional CCXT parameters passed to the regular ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> **Datatype:** Dict
+| `exchange.ccxt_config` | Additional CCXT parameters passed to both ccxt instances (sync and async). This is usually the correct place for ccxt configurations. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> **Datatype:** Dict
+| `exchange.ccxt_sync_config` | Additional CCXT parameters passed to the regular (sync) ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> **Datatype:** Dict
 | `exchange.ccxt_async_config` | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> **Datatype:** Dict
 | `exchange.markets_refresh_interval` | The interval in minutes in which markets are reloaded. <br>*Defaults to `60` minutes.* <br> **Datatype:** Positive Integer
 | `edge.*` | Please refer to [edge configuration document](edge.md) for detailed explanation.
@@ -102,11 +103,13 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `api_server.enabled` | Enable usage of API Server. See the [API Server documentation](rest-api.md) for more details. <br> **Datatype:** Boolean
 | `api_server.listen_ip_address` | Bind IP address. See the [API Server documentation](rest-api.md) for more details. <br> **Datatype:** IPv4
 | `api_server.listen_port` | Bind Port. See the [API Server documentation](rest-api.md) for more details. <br>**Datatype:** Integer between 1024 and 65535
+| `api_server.verbosity` | Logging verbosity. `info` will print all RPC Calls, while "error" will only display errors. <br>**Datatype:** Enum, either `info` or `error`. Defaults to `info`.
 | `api_server.username` | Username for API server. See the [API Server documentation](rest-api.md) for more details. <br>**Keep it in secret, do not disclose publicly.**<br> **Datatype:** String
 | `api_server.password` | Password for API server. See the [API Server documentation](rest-api.md) for more details. <br>**Keep it in secret, do not disclose publicly.**<br> **Datatype:** String
 | `db_url` | Declares database URL to use. NOTE: This defaults to `sqlite:///tradesv3.dryrun.sqlite` if `dry_run` is `true`, and to `sqlite:///tradesv3.sqlite` for production instances. <br> **Datatype:** String, SQLAlchemy connect string
 | `initial_state` | Defines the initial application state. More information below. <br>*Defaults to `stopped`.* <br> **Datatype:** Enum, either `stopped` or `running`
 | `forcebuy_enable` | Enables the RPC Commands to force a buy. More information below. <br> **Datatype:** Boolean
+| `disable_dataframe_checks` | Disable checking the OHLCV dataframe returned from the strategy methods for correctness. Only use when intentionally changing the dataframe and understand what you are doing. [Strategy Override](#parameters-in-the-strategy).<br> *Defaults to `False`*. <br> **Datatype:** Boolean
 | `strategy` | **Required** Defines Strategy class to use. Recommended to be set via `--strategy NAME`. <br> **Datatype:** ClassName
 | `strategy_path` | Adds an additional strategy lookup path (must be a directory). <br> **Datatype:** String
 | `internals.process_throttle_secs` | Set the process throttle. Value in second. <br>*Defaults to `5` seconds.* <br> **Datatype:** Positive Integer
@@ -123,7 +126,7 @@ The following parameters can be set in either configuration file or strategy.
 Values set in the configuration file always overwrite values set in the strategy.
 
 * `minimal_roi`
-* `ticker_interval`
+* `timeframe`
 * `stoploss`
 * `trailing_stop`
 * `trailing_stop_positive`
@@ -135,6 +138,7 @@ Values set in the configuration file always overwrite values set in the strategy
 * `stake_currency`
 * `stake_amount`
 * `unfilledtimeout`
+* `disable_dataframe_checks`
 * `use_sell_signal` (ask_strategy)
 * `sell_profit_only` (ask_strategy)
 * `ignore_roi_if_buy_signal` (ask_strategy)
@@ -214,7 +218,7 @@ To allow the bot to trade all the available `stake_currency` in your account (mi
 ### Understand minimal_roi
 
 The `minimal_roi` configuration parameter is a JSON object where the key is a duration
-in minutes and the value is the minimum ROI in percent.
+in minutes and the value is the minimum ROI as ratio.
 See the example below:
 
 ```json
@@ -268,10 +272,10 @@ the static list of pairs) if we should buy.
 
 ### Understand order_types
 
-The `order_types` configuration parameter maps actions (`buy`, `sell`, `stoploss`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
+The `order_types` configuration parameter maps actions (`buy`, `sell`, `stoploss`, `emergencysell`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
 
 This allows to buy using limit orders, sell using
-limit-orders, and create stoplosses using using market orders. It also allows to set the
+limit-orders, and create stoplosses using market orders. It also allows to set the
 stoploss "on exchange" which means stoploss order would be placed immediately once
 the buy order is fulfilled.
 If `stoploss_on_exchange` and `trailing_stop` are both set, then the bot will use `stoploss_on_exchange_interval` to check and update the stoploss on exchange periodically.
@@ -284,8 +288,12 @@ If this is configured, the following 4 values (`buy`, `sell`, `stoploss` and
 `emergencysell` is an optional value, which defaults to `market` and is used when creating stoploss on exchange orders fails.
 The below is the default which is used if this is not configured in either strategy or configuration file.
 
-Since `stoploss_on_exchange` uses limit orders, the exchange needs 2 prices, the stoploss_price and the Limit price.
-`stoploss` defines the stop-price - and limit should be slightly below this. This defaults to 0.99 / 1% (configurable via `stoploss_on_exchange_limit_ratio`).
+Not all Exchanges support `stoploss_on_exchange`. If an exchange supports both limit and market stoploss orders, then the value of `stoploss` will be used to determine the stoploss type.
+
+If `stoploss_on_exchange` uses limit orders, the exchange needs 2 prices, the stoploss_price and the Limit price.
+`stoploss` defines the stop-price - and limit should be slightly below this.
+
+This defaults to 0.99 / 1% (configurable via `stoploss_on_exchange_limit_ratio`).
 Calculation example: we bought the asset at 100$.
 Stop-price is 95$, then limit would be `95 * 0.99 = 94.05$` - so the stoploss will happen between 95$ and 94.05$.
 
@@ -327,7 +335,10 @@ Configuration:
     refer to [the stoploss documentation](stoploss.md).
 
 !!! Note
-    If `stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new order.
+    If `stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new stoploss order.
+
+!!! Warning "Using market orders"
+    Please read the section [Market order pricing](#market-order-pricing) section when using market orders.
 
 !!! Warning "Warning: stoploss_on_exchange failures"
     If stoploss on exchange creation fails for some reason, then an "emergency sell" is initiated. By default, this will sell the asset using a market order. The order-type for the emergency-sell can be changed by setting the `emergencysell` value in the `order_types` dictionary - however this is not advised.
@@ -455,6 +466,9 @@ Prices are always retrieved right before an order is placed, either by querying 
 !!! Note
     Orderbook data used by Freqtrade are the data retrieved from exchange by the ccxt's function `fetch_order_book()`, i.e. are usually data from the L2-aggregated orderbook, while the ticker data are the structures returned by the ccxt's `fetch_ticker()`/`fetch_tickers()` functions. Refer to the ccxt library [documentation](https://github.com/ccxt/ccxt/wiki/Manual#market-data) for more details.
 
+!!! Warning "Using market orders"
+    Please read the section [Market order pricing](#market-order-pricing) section when using market orders.
+
 ### Buy price
 
 #### Check depth of market
@@ -549,13 +563,36 @@ A fixed slot (mirroring `bid_strategy.order_book_top`) can be defined by setting
 
 When not using orderbook (`ask_strategy.use_order_book=False`), the price at the `ask_strategy.price_side` side (defaults to `"ask"`) from the ticker will be used as the sell price.
 
+### Market order pricing
+
+When using market orders, prices should be configured to use the "correct" side of the orderbook to allow realistic pricing detection.
+Assuming both buy and sell are using market orders, a configuration similar to the following might be used
+
+``` jsonc
+  "order_types": {
+    "buy": "market",
+    "sell": "market"
+    // ...
+  },
+  "bid_strategy": {
+    "price_side": "ask",
+    // ...
+  },
+  "ask_strategy":{
+    "price_side": "bid",
+    // ...
+  },
+```
+
+Obviously, if only one side is using limit orders, different pricing combinations can be used.
+
 ## Pairlists and Pairlist Handlers
 
 Pairlist Handlers define the list of pairs (pairlist) that the bot should trade. They are configured in the `pairlists` section of the configuration settings.
 
 In your configuration, you can use Static Pairlist (defined by the [`StaticPairList`](#static-pair-list) Pairlist Handler) and Dynamic Pairlist (defined by the [`VolumePairList`](#volume-pair-list) Pairlist Handler).
 
-Additionaly, [`PrecisionFilter`](#precisionfilter), [`PriceFilter`](#pricefilter), [`ShuffleFilter`](#shufflefilter) and [`SpreadFilter`](#spreadfilter) act as Pairlist Filters, removing certain pairs and/or moving their positions in the pairlist.
+Additionaly, [`AgeFilter`](#agefilter), [`PrecisionFilter`](#precisionfilter), [`PriceFilter`](#pricefilter), [`ShuffleFilter`](#shufflefilter) and [`SpreadFilter`](#spreadfilter) act as Pairlist Filters, removing certain pairs and/or moving their positions in the pairlist.
 
 If multiple Pairlist Handlers are used, they are chained and a combination of all Pairlist Handlers forms the resulting pairlist the bot uses for trading and backtesting. Pairlist Handlers are executed in the sequence they are configured. You should always configure either `StaticPairList` or `VolumePairList` as the starting Pairlist Handler.
 
@@ -565,6 +602,7 @@ Inactive markets are always removed from the resulting pairlist. Explicitly blac
 
 * [`StaticPairList`](#static-pair-list) (default, if not configured differently)
 * [`VolumePairList`](#volume-pair-list)
+* [`AgeFilter`](#agefilter)
 * [`PrecisionFilter`](#precisionfilter)
 * [`PriceFilter`](#pricefilter)
 * [`ShuffleFilter`](#shufflefilter)
@@ -587,7 +625,7 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 
 #### Volume Pair List
 
-`VolumePairList` employs sorting/filtering of pairs by their trading volume. I selects `number_assets` top pairs with sorting based on the `sort_key` (which can only be `quoteVolume`).
+`VolumePairList` employs sorting/filtering of pairs by their trading volume. It selects `number_assets` top pairs with sorting based on the `sort_key` (which can only be `quoteVolume`).
 
 When used in the chain of Pairlist Handlers in a non-leading position (after StaticPairList and other Pairlist Filters), `VolumePairList` considers outputs of previous Pairlist Handlers, adding its sorting/selection of the pairs by the trading volume.
 
@@ -605,8 +643,18 @@ The `refresh_period` setting allows to define the period (in seconds), at which 
         "number_assets": 20,
         "sort_key": "quoteVolume",
         "refresh_period": 1800,
-],
+}],
 ```
+
+#### AgeFilter
+
+Removes pairs that have been listed on the exchange for less than `min_days_listed` days (defaults to `10`).
+
+When pairs are first listed on an exchange they can suffer huge price drops and volatility
+in the first few days while the pair goes through its price-discovery period. Bots can often
+be caught out buying before the pair has finished dropping in price.
+
+This filter allows freqtrade to ignore pairs until they have been listed for at least `min_days_listed` days.
 
 #### PrecisionFilter
 
@@ -614,16 +662,25 @@ Filters low-value coins which would not allow setting stoplosses.
 
 #### PriceFilter
 
-The `PriceFilter` allows filtering of pairs by price.
+The `PriceFilter` allows filtering of pairs by price. Currently the following price filters are supported:
+* `min_price`
+* `max_price`
+* `low_price_ratio`
 
-Currently, only `low_price_ratio` setting is implemented, where a raise of 1 price unit (pip) is below the `low_price_ratio` ratio.
+The `min_price` setting removes pairs where the price is below the specified price. This is useful if you wish to avoid trading very low-priced pairs.
+This option is disabled by default, and will only apply if set to <> 0.
+
+The `max_price` setting removes pairs where the price is above the specified price. This is useful if you wish to trade only low-priced pairs.
+This option is disabled by default, and will only apply if set to <> 0.
+
+The `low_price_ratio` setting removes pairs where a raise of 1 price unit (pip) is above the `low_price_ratio` ratio.
 This option is disabled by default, and will only apply if set to <> 0.
 
 Calculation example:
 
 Min price precision is 8 decimals. If price is 0.00000011 - one step would be 0.00000012 - which is almost 10% higher than the previous value.
 
-These pairs are dangerous since it may be impossible to place the desired stoploss - and often result in high losses. Here is what the PriceFilters takes over.
+These pairs are dangerous since it may be impossible to place the desired stoploss - and often result in high losses.
 
 #### ShuffleFilter
 
@@ -655,6 +712,7 @@ The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, 
         "number_assets": 20,
         "sort_key": "quoteVolume",
     },
+    {"method": "AgeFilter", "min_days_listed": 10},
     {"method": "PrecisionFilter"},
     {"method": "PriceFilter", "low_price_ratio": 0.01},
     {"method": "SpreadFilter", "max_spread_ratio": 0.005},

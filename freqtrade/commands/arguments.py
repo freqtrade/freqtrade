@@ -15,7 +15,7 @@ ARGS_STRATEGY = ["strategy", "strategy_path"]
 
 ARGS_TRADE = ["db_url", "sd_notify", "dry_run"]
 
-ARGS_COMMON_OPTIMIZE = ["ticker_interval", "timerange",
+ARGS_COMMON_OPTIMIZE = ["timeframe", "timerange",
                         "max_open_trades", "stake_amount", "fee"]
 
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
@@ -54,15 +54,17 @@ ARGS_BUILD_HYPEROPT = ["user_data_dir", "hyperopt", "template"]
 ARGS_CONVERT_DATA = ["pairs", "format_from", "format_to", "erase"]
 ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes"]
 
+ARGS_LIST_DATA = ["exchange", "dataformat_ohlcv", "pairs"]
+
 ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "download_trades", "exchange",
                       "timeframes", "erase", "dataformat_ohlcv", "dataformat_trades"]
 
 ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
                        "db_url", "trade_source", "export", "exportfilename",
-                       "timerange", "ticker_interval", "no_trades"]
+                       "timerange", "timeframe", "no_trades"]
 
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
-                    "trade_source", "ticker_interval"]
+                    "trade_source", "timeframe"]
 
 ARGS_SHOW_TRADES = ["db_url", "trade_ids", "print_json"]
 
@@ -71,6 +73,7 @@ ARGS_HYPEROPT_LIST = ["hyperopt_list_best", "hyperopt_list_profitable",
                       "hyperopt_list_min_avg_time", "hyperopt_list_max_avg_time",
                       "hyperopt_list_min_avg_profit", "hyperopt_list_max_avg_profit",
                       "hyperopt_list_min_total_profit", "hyperopt_list_max_total_profit",
+                      "hyperopt_list_min_objective", "hyperopt_list_max_objective",
                       "print_colorized", "print_json", "hyperopt_list_no_details",
                       "export_csv"]
 
@@ -78,7 +81,7 @@ ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperop
                       "print_json", "hyperopt_show_no_header"]
 
 NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list-timeframes",
-                    "list-markets", "list-pairs", "list-strategies",
+                    "list-markets", "list-pairs", "list-strategies", "list-data",
                     "list-hyperopts", "hyperopt-list", "hyperopt-show",
                     "plot-dataframe", "plot-profit", "show-trades"]
 
@@ -159,7 +162,7 @@ class Arguments:
         self._build_args(optionlist=['version'], parser=self.parser)
 
         from freqtrade.commands import (start_create_userdir, start_convert_data,
-                                        start_download_data,
+                                        start_download_data, start_list_data,
                                         start_hyperopt_list, start_hyperopt_show,
                                         start_list_exchanges, start_list_hyperopts,
                                         start_list_markets, start_list_strategies,
@@ -232,6 +235,15 @@ class Arguments:
         )
         convert_trade_data_cmd.set_defaults(func=partial(start_convert_data, ohlcv=False))
         self._build_args(optionlist=ARGS_CONVERT_DATA, parser=convert_trade_data_cmd)
+
+        # Add list-data subcommand
+        list_data_cmd = subparsers.add_parser(
+            'list-data',
+            help='List downloaded data.',
+            parents=[_common_parser],
+        )
+        list_data_cmd.set_defaults(func=start_list_data)
+        self._build_args(optionlist=ARGS_LIST_DATA, parser=list_data_cmd)
 
         # Add backtesting subcommand
         backtesting_cmd = subparsers.add_parser('backtesting', help='Backtesting module.',
@@ -318,7 +330,7 @@ class Arguments:
         # Add list-timeframes subcommand
         list_timeframes_cmd = subparsers.add_parser(
             'list-timeframes',
-            help='Print available ticker intervals (timeframes) for the exchange.',
+            help='Print available timeframes for the exchange.',
             parents=[_common_parser],
         )
         list_timeframes_cmd.set_defaults(func=start_list_timeframes)

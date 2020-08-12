@@ -102,8 +102,8 @@ def start_list_timeframes(args: Dict[str, Any]) -> None:
     Print ticker intervals (timeframes) available on Exchange
     """
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
-    # Do not use ticker_interval set in the config
-    config['ticker_interval'] = None
+    # Do not use timeframe set in the config
+    config['timeframe'] = None
 
     # Init exchange
     exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
