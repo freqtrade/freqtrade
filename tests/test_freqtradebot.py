@@ -1,7 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103
 # pragma pylint: disable=protected-access, too-many-lines, invalid-name, too-many-arguments
 
-from freqtrade.exchange.exchange import Exchange
 import logging
 import time
 from copy import deepcopy
