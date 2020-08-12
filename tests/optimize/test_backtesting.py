@@ -308,6 +308,11 @@ def test_data_with_fee(default_conf, mocker, testdatadir) -> None:
     assert backtesting.fee == 0.1234
     assert fee_mock.call_count == 0
 
+    default_conf['fee'] = 0.0
+    backtesting = Backtesting(default_conf)
+    assert backtesting.fee == 0.0
+    assert fee_mock.call_count == 0
+
 
 def test_data_to_dataframe_bt(default_conf, mocker, testdatadir) -> None:
     patch_exchange(mocker)

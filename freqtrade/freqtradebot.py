@@ -600,6 +600,7 @@ class FreqtradeBot:
         Sends rpc notification when a buy occured.
         """
         msg = {
+            'trade_id': trade.id,
             'type': RPCMessageType.BUY_NOTIFICATION,
             'exchange': self.exchange.name.capitalize(),
             'pair': trade.pair,
@@ -623,6 +624,7 @@ class FreqtradeBot:
         current_rate = self.get_buy_rate(trade.pair, False)
 
         msg = {
+            'trade_id': trade.id,
             'type': RPCMessageType.BUY_CANCEL_NOTIFICATION,
             'exchange': self.exchange.name.capitalize(),
             'pair': trade.pair,
@@ -660,7 +662,7 @@ class FreqtradeBot:
                     trades_closed += 1
 
             except DependencyException as exception:
-                logger.warning('Unable to sell trade: %s', exception)
+                logger.warning('Unable to sell trade %s: %s', trade.pair, exception)
 
         # Updating wallets if any trade occured
         if trades_closed:
@@ -827,10 +829,8 @@ class FreqtradeBot:
             return False
 
         # If buy order is fulfilled but there is no stoploss, we add a stoploss on exchange
-        if (not stoploss_order):
-
+        if not stoploss_order:
             stoploss = self.edge.stoploss(pair=trade.pair) if self.edge else self.strategy.stoploss
-
             stop_price = trade.open_rate * (1 + stoploss)
 
             if self.create_stoploss_order(trade=trade, stop_price=stop_price, rate=stop_price):
@@ -978,6 +978,12 @@ class FreqtradeBot:
             reason = constants.CANCEL_REASON['TIMEOUT']
             corder = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
                                                             trade.amount)
+            # Avoid race condition where the order could not be cancelled coz its already filled.
+            # Simply bailing here is the only safe way - as this order will then be
+            # handled in the next iteration.
+            if corder.get('status') not in ('canceled', 'closed'):
+                logger.warning(f"Order {trade.open_order_id} for {trade.pair} not cancelled.")
+                return False
         else:
             # Order was cancelled already, so we can reuse the existing dict
             corder = order
@@ -1153,6 +1159,7 @@ class FreqtradeBot:
 
         msg = {
             'type': RPCMessageType.SELL_NOTIFICATION,
+            'trade_id': trade.id,
             'exchange': trade.exchange.capitalize(),
             'pair': trade.pair,
             'gain': gain,
@@ -1195,6 +1202,7 @@ class FreqtradeBot:
 
         msg = {
             'type': RPCMessageType.SELL_CANCEL_NOTIFICATION,
+            'trade_id': trade.id,
             'exchange': trade.exchange.capitalize(),
             'pair': trade.pair,
             'gain': gain,

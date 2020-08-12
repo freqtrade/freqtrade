@@ -995,7 +995,7 @@ def test_get_overall_performance(fee):
     create_mock_trades(fee)
     res = Trade.get_overall_performance()
 
-    assert len(res) == 1
+    assert len(res) == 2
     assert 'pair' in res[0]
     assert 'profit' in res[0]
     assert 'count' in res[0]
@@ -1010,5 +1010,5 @@ def test_get_best_pair(fee):
     create_mock_trades(fee)
     res = Trade.get_best_pair()
     assert len(res) == 2
-    assert res[0] == 'ETC/BTC'
-    assert res[1] == 0.005
+    assert res[0] == 'XRP/BTC'
+    assert res[1] == 0.01

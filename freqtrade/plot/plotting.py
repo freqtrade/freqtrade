@@ -10,11 +10,13 @@ from freqtrade.data.btanalysis import (calculate_max_drawdown,
                                        create_cum_profit,
                                        extract_trades_of_period, load_trades)
 from freqtrade.data.converter import trim_dataframe
+from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_prev_date
 from freqtrade.misc import pair_to_filename
-from freqtrade.resolvers import StrategyResolver
+from freqtrade.resolvers import ExchangeResolver, StrategyResolver
+from freqtrade.strategy import IStrategy
 
 logger = logging.getLogger(__name__)
 
@@ -467,6 +469,8 @@ def load_and_plot_trades(config: Dict[str, Any]):
     """
     strategy = StrategyResolver.load_strategy(config)
 
+    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config)
+    IStrategy.dp = DataProvider(config, exchange)
     plot_elements = init_plotscript(config)
     trades = plot_elements['trades']
     pair_counter = 0

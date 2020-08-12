@@ -188,6 +188,11 @@ class Exchange:
         return list((self._api.timeframes or {}).keys())
 
     @property
+    def ohlcv_candle_limit(self) -> int:
+        """exchange ohlcv candle limit"""
+        return int(self._ohlcv_candle_limit)
+
+    @property
     def markets(self) -> Dict:
         """exchange ccxt markets"""
         if not self._api.markets:
@@ -253,8 +258,8 @@ class Exchange:
                 api.urls['api'] = api.urls['test']
                 logger.info("Enabled Sandbox API on %s", name)
             else:
-                logger.warning(name, "No Sandbox URL in CCXT, exiting. "
-                                     "Please check your config.json")
+                logger.warning(
+                    f"No Sandbox URL in CCXT for {name}, exiting. Please check your config.json")
                 raise OperationalException(f'Exchange {name} does not provide a sandbox api')
 
     def _load_async_markets(self, reload: bool = False) -> None:
@@ -521,13 +526,13 @@ class Exchange:
 
         except ccxt.InsufficientFunds as e:
             raise ExchangeError(
-                f'Insufficient funds to create {ordertype} {side} order on market {pair}.'
+                f'Insufficient funds to create {ordertype} {side} order on market {pair}. '
                 f'Tried to {side} amount {amount} at rate {rate}.'
                 f'Message: {e}') from e
         except ccxt.InvalidOrder as e:
             raise ExchangeError(
-                f'Could not create {ordertype} {side} order on market {pair}.'
-                f'Tried to {side} amount {amount} at rate {rate}.'
+                f'Could not create {ordertype} {side} order on market {pair}. '
+                f'Tried to {side} amount {amount} at rate {rate}. '
                 f'Message: {e}') from e
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
@@ -995,7 +1000,7 @@ class Exchange:
             if self.is_cancel_order_result_suitable(corder):
                 return corder
         except InvalidOrderException:
-            logger.warning(f"Could not cancel order {order_id}.")
+            logger.warning(f"Could not cancel order {order_id} for {pair}.")
         try:
             order = self.fetch_order(order_id, pair)
         except InvalidOrderException:
@@ -1004,7 +1009,7 @@ class Exchange:
 
         return order
 
-    @retrier
+    @retrier(retries=5)
     def fetch_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
             try:
@@ -1018,10 +1023,10 @@ class Exchange:
             return self._api.fetch_order(order_id, pair)
         except ccxt.OrderNotFound as e:
             raise RetryableOrderError(
-                f'Order not found (id: {order_id}). Message: {e}') from e
+                f'Order not found (pair: {pair} id: {order_id}). Message: {e}') from e
         except ccxt.InvalidOrder as e:
             raise InvalidOrderException(
-                f'Tried to get an invalid order (id: {order_id}). Message: {e}') from e
+                f'Tried to get an invalid order (pair: {pair} id: {order_id}). Message: {e}') from e
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:

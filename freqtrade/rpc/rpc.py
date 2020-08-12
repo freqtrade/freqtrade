@@ -6,14 +6,14 @@ from abc import abstractmethod
 from datetime import date, datetime, timedelta
 from enum import Enum
 from math import isnan
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import arrow
 from numpy import NAN, mean
 
-from freqtrade.exceptions import ExchangeError, PricingError
-
-from freqtrade.exchange import timeframe_to_msecs, timeframe_to_minutes
+from freqtrade.exceptions import (ExchangeError, InvalidOrderException,
+                                  PricingError)
+from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -252,9 +252,10 @@ class RPC:
     def _rpc_trade_history(self, limit: int) -> Dict:
         """ Returns the X last trades """
         if limit > 0:
-            trades = Trade.get_trades().order_by(Trade.id.desc()).limit(limit)
+            trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(
+                Trade.id.desc()).limit(limit)
         else:
-            trades = Trade.get_trades().order_by(Trade.id.desc()).all()
+            trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(Trade.id.desc()).all()
 
         output = [trade.to_json() for trade in trades]
 
@@ -523,7 +524,7 @@ class RPC:
         # check if valid pair
 
         # check if pair already has an open pair
-        trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair.is_(pair)]).first()
+        trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
         if trade:
             raise RPCException(f'position for {pair} already open - id: {trade.id}')
 
@@ -532,10 +533,50 @@ class RPC:
 
         # execute buy
         if self._freqtrade.execute_buy(pair, stakeamount, price):
-            trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair.is_(pair)]).first()
+            trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
             return trade
         else:
             return None
+
+    def _rpc_delete(self, trade_id: str) -> Dict[str, Union[str, int]]:
+        """
+        Handler for delete <id>.
+        Delete the given trade and close eventually existing open orders.
+        """
+        with self._freqtrade._sell_lock:
+            c_count = 0
+            trade = Trade.get_trades(trade_filter=[Trade.id == trade_id]).first()
+            if not trade:
+                logger.warning('delete trade: Invalid argument received')
+                raise RPCException('invalid argument')
+
+            # Try cancelling regular order if that exists
+            if trade.open_order_id:
+                try:
+                    self._freqtrade.exchange.cancel_order(trade.open_order_id, trade.pair)
+                    c_count += 1
+                except (ExchangeError, InvalidOrderException):
+                    pass
+
+            # cancel stoploss on exchange ...
+            if (self._freqtrade.strategy.order_types.get('stoploss_on_exchange')
+                    and trade.stoploss_order_id):
+                try:
+                    self._freqtrade.exchange.cancel_stoploss_order(trade.stoploss_order_id,
+                                                                   trade.pair)
+                    c_count += 1
+                except (ExchangeError, InvalidOrderException):
+                    pass
+
+            Trade.session.delete(trade)
+            Trade.session.flush()
+            self._freqtrade.wallets.update()
+            return {
+                'result': 'success',
+                'trade_id': trade_id,
+                'result_msg': f'Deleted trade {trade_id}. Closed {c_count} open orders.',
+                'cancel_order_count': c_count,
+            }
 
     def _rpc_performance(self) -> List[Dict[str, Any]]:
         """

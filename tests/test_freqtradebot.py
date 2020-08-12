@@ -1660,6 +1660,7 @@ def test_exit_positions_exception(mocker, default_conf, limit_buy_order, caplog)
     trade = MagicMock()
     trade.open_order_id = None
     trade.open_fee = 0.001
+    trade.pair = 'ETH/BTC'
     trades = [trade]
 
     # Test raise of DependencyException exception
@@ -1669,7 +1670,7 @@ def test_exit_positions_exception(mocker, default_conf, limit_buy_order, caplog)
     )
     n = freqtrade.exit_positions(trades)
     assert n == 0
-    assert log_has('Unable to sell trade: ', caplog)
+    assert log_has('Unable to sell trade ETH/BTC: ', caplog)
 
 
 def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> None:
@@ -1726,6 +1727,7 @@ def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_
         amount=amount,
         exchange='binance',
         open_rate=0.245441,
+        open_date=arrow.utcnow().datetime,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_order_id="123456",
@@ -1816,6 +1818,7 @@ def test_update_trade_state_sell(default_conf, trades_for_order, limit_sell_orde
         open_rate=0.245441,
         fee_open=0.0025,
         fee_close=0.0025,
+        open_date=arrow.utcnow().datetime,
         open_order_id="123456",
         is_open=True,
     )
@@ -2023,11 +2026,16 @@ def test_check_handle_timedout_buy_usercustom(default_conf, ticker, limit_buy_or
 
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock(return_value=limit_buy_order_old)
+    cancel_buy_order = deepcopy(limit_buy_order_old)
+    cancel_buy_order['status'] = 'canceled'
+    cancel_order_wr_mock = MagicMock(return_value=cancel_buy_order)
+
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         fetch_order=MagicMock(return_value=limit_buy_order_old),
+        cancel_order_with_result=cancel_order_wr_mock,
         cancel_order=cancel_order_mock,
         get_fee=fee
     )
@@ -2060,7 +2068,7 @@ def test_check_handle_timedout_buy_usercustom(default_conf, ticker, limit_buy_or
     freqtrade.strategy.check_buy_timeout = MagicMock(return_value=True)
     # Trade should be closed since the function returns true
     freqtrade.check_handle_timedout()
-    assert cancel_order_mock.call_count == 1
+    assert cancel_order_wr_mock.call_count == 1
     assert rpc_mock.call_count == 1
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     nb_trades = len(trades)
@@ -2071,7 +2079,9 @@ def test_check_handle_timedout_buy_usercustom(default_conf, ticker, limit_buy_or
 def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, open_trade,
                                    fee, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
-    cancel_order_mock = MagicMock(return_value=limit_buy_order_old)
+    limit_buy_cancel = deepcopy(limit_buy_order_old)
+    limit_buy_cancel['status'] = 'canceled'
+    cancel_order_mock = MagicMock(return_value=limit_buy_cancel)
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -2259,7 +2269,10 @@ def test_check_handle_cancelled_sell(default_conf, ticker, limit_sell_order_old,
 def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old_partial,
                                        open_trade, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
-    cancel_order_mock = MagicMock(return_value=limit_buy_order_old_partial)
+    limit_buy_canceled = deepcopy(limit_buy_order_old_partial)
+    limit_buy_canceled['status'] = 'canceled'
+
+    cancel_order_mock = MagicMock(return_value=limit_buy_canceled)
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -2392,7 +2405,11 @@ def test_check_handle_timedout_exception(default_conf, ticker, open_trade, mocke
 def test_handle_cancel_buy(mocker, caplog, default_conf, limit_buy_order) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    cancel_order_mock = MagicMock(return_value=limit_buy_order)
+    cancel_buy_order = deepcopy(limit_buy_order)
+    cancel_buy_order['status'] = 'canceled'
+    del cancel_buy_order['filled']
+
+    cancel_order_mock = MagicMock(return_value=cancel_buy_order)
     mocker.patch('freqtrade.exchange.Exchange.cancel_order_with_result', cancel_order_mock)
 
     freqtrade = FreqtradeBot(default_conf)
@@ -2412,9 +2429,12 @@ def test_handle_cancel_buy(mocker, caplog, default_conf, limit_buy_order) -> Non
     assert not freqtrade.handle_cancel_buy(trade, limit_buy_order, reason)
     assert cancel_order_mock.call_count == 1
 
-    limit_buy_order['filled'] = 2
-    mocker.patch('freqtrade.exchange.Exchange.cancel_order', side_effect=InvalidOrderException)
+    # Order remained open for some reason (cancel failed)
+    cancel_buy_order['status'] = 'open'
+    cancel_order_mock = MagicMock(return_value=cancel_buy_order)
+    mocker.patch('freqtrade.exchange.Exchange.cancel_order_with_result', cancel_order_mock)
     assert not freqtrade.handle_cancel_buy(trade, limit_buy_order, reason)
+    assert log_has_re(r"Order .* for .* not cancelled.", caplog)
 
 
 @pytest.mark.parametrize("limit_buy_order_canceled_empty", ['binance', 'ftx', 'kraken', 'bittrex'],
@@ -2572,6 +2592,7 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, mocker) -> N
     assert rpc_mock.call_count == 1
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
+        'trade_id': 1,
         'type': RPCMessageType.SELL_NOTIFICATION,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
@@ -2622,6 +2643,7 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, mocker) 
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,
+        'trade_id': 1,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'gain': 'loss',
@@ -2678,6 +2700,7 @@ def test_execute_sell_down_stoploss_on_exchange_dry_run(default_conf, ticker, fe
 
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,
+        'trade_id': 1,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'gain': 'loss',
@@ -2883,6 +2906,7 @@ def test_execute_sell_market_order(default_conf, ticker, fee,
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,
+        'trade_id': 1,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'gain': 'profit',
@@ -4090,7 +4114,7 @@ def test_cancel_all_open_orders(mocker, default_conf, fee, limit_buy_order, limi
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     create_mock_trades(fee)
     trades = Trade.query.all()
-    assert len(trades) == 3
+    assert len(trades) == 4
     freqtrade.cancel_all_open_orders()
     assert buy_mock.call_count == 1
     assert sell_mock.call_count == 1
