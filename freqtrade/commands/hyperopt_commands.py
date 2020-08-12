@@ -140,6 +140,10 @@ def hyperopt_filter_epochs(epochs: List, filteroptions: dict) -> List:
 
     epochs = _hyperopt_filter_epochs_objective(epochs, filteroptions)
 
+    logger.info(f"{len(epochs)} " +
+                ("best " if filteroptions['only_best'] else "") +
+                ("profitable " if filteroptions['only_profitable'] else "") +
+                "epochs found.")
     return epochs
 
 
@@ -209,22 +213,11 @@ def _hyperopt_filter_epochs_objective(epochs: List, filteroptions: dict) -> List
 
     if filteroptions['filter_min_objective'] is not None:
         epochs = [x for x in epochs if x['results_metrics']['trade_count'] > 0]
-        # epochs = [x for x in epochs if x['loss'] != 20]
-        epochs = [
-            x for x in epochs
-            if x['loss'] < filteroptions['filter_min_objective']
-        ]
+
+        epochs = [x for x in epochs if x['loss'] < filteroptions['filter_min_objective']]
     if filteroptions['filter_max_objective'] is not None:
         epochs = [x for x in epochs if x['results_metrics']['trade_count'] > 0]
-        # epochs = [x for x in epochs if x['loss'] != 20]
-        epochs = [
-            x for x in epochs
-            if x['loss'] > filteroptions['filter_max_objective']
-        ]
 
-    logger.info(f"{len(epochs)} " +
-                ("best " if filteroptions['only_best'] else "") +
-                ("profitable " if filteroptions['only_profitable'] else "") +
-                "epochs found.")
+        epochs = [x for x in epochs if x['loss'] > filteroptions['filter_max_objective']]
 
     return epochs
