@@ -2,11 +2,13 @@
 
 This page explains how to use Edge Positioning module in your bot in order to enter into a trade only if the trade has a reasonable win rate and risk reward ratio, and consequently adjust your position size and stoploss.
 
-!!! Warning
+  !!! Warning
     Edge positioning is not compatible with dynamic (volume-based) whitelist.
 
-!!! Note
-    Edge does not consider anything else than buy/sell/stoploss signals. So trailing stoploss, ROI, and everything else are ignored in its calculation.
+  !!! Note
+ 1. Edge does not consider anything other than *its own* buy/sell/stoploss signals. It ignores the stoploss, trailing stoploss, and ROI settings in the strategy configuration file.
+
+ 2. Therefore, it is important to understand that Edge can improve the performance of some trading strategies but *decrease* the performance of others.
 
 ## Introduction
 
@@ -89,7 +91,7 @@ You can also use this value to evaluate the effectiveness of modifications to th
 
 ## How does it work?
 
-If enabled in config, Edge will go through historical data with a range of stoplosses in order to find buy and sell/stoploss signals. It then calculates win rate and expectancy over *N* trades for each stoploss. Here is an example:
+Edge combines dynamic stoploss, dynamic positions, and whitelist generation into one isolated module which is then applied to the trading strategy. If enabled in config, Edge will go through historical data with a range of stoplosses in order to find buy and sell/stoploss signals. It then calculates win rate and expectancy over *N* trades for each stoploss. Here is an example:
 
 | Pair   |      Stoploss      |  Win Rate | Risk Reward Ratio | Expectancy |
 |----------|:-------------:|-------------:|------------------:|-----------:|
@@ -185,6 +187,10 @@ An example of its output:
 | SNM/BTC   |      -0.03 |       0.71 |                1.06 |                   0.42 |         0.45 |                       17 |                       38 |
 | APPC/BTC  |      -0.02 |       0.44 |                2.28 |                   1.27 |         0.44 |                       25 |                       43 |
 | NEBL/BTC  |      -0.03 |       0.63 |                1.29 |                   0.58 |         0.44 |                       19 |                       59 |
+
+Edge produced the above table by comparing ``calculate_since_number_of_days`` to ``minimum_expectancy`` to find ``min_trade_number``. Historical information based on the config file. The time frame Edge uses for its comparisons can be further limited by using the ``--timeframe`` switch.
+
+In live and dry-run modes, after the ``process_throttle_secs`` has passed, Edge will again process ``calculate_since_number_of_days`` against ``minimum_expectancy`` to find ``min_trade_number``. If no ``min_trade_number`` is found, the bot will return "whitelist empty". Depending on the trade strategy being deployed, "whitelist empty" may be return much of the time---or *all* of the time. The use of Edge may also cause trading to occur in bursts, though this is rare.
 
 ### Update cached pairs with the latest data
 
