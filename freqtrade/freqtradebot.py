@@ -919,7 +919,7 @@ class FreqtradeBot:
                 if not trade.open_order_id:
                     continue
                 order = self.exchange.fetch_order(trade.open_order_id, trade.pair)
-            except (ExchangeError, InvalidOrderException):
+            except (ExchangeError):
                 logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
                 continue
 
@@ -952,7 +952,7 @@ class FreqtradeBot:
         for trade in Trade.get_open_order_trades():
             try:
                 order = self.exchange.fetch_order(trade.open_order_id, trade.pair)
-            except (DependencyException, InvalidOrderException):
+            except (ExchangeError):
                 logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
                 continue
 

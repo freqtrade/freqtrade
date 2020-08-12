@@ -85,6 +85,35 @@ docker-compose exec freqtrade_develop /bin/bash
 
 ![image](https://user-images.githubusercontent.com/419355/65456522-ba671a80-de06-11e9-9598-df9ca0d8dcac.png)
 
+## ErrorHandling
+
+Freqtrade Exceptions all inherit from `FreqtradeException`.
+This general class of error should however not be used directly, instead, multiple specialized sub-Exceptions exist.
+
+Below is an outline of exception inheritance hierarchy:
+
+```
++ FreqtradeException
+|
++---+ OperationalException
+|
++---+ DependencyException
+|   |
+|   +---+ PricingError
+|   |
+|   +---+ ExchangeError
+|       |
+|       +---+ TemporaryError
+|       |
+|       +---+ DDosProtection
+|       |
+|       +---+ InvalidOrderException
+|           |
+|           +---+ RetryableOrderError
+|
++---+ StrategyError
+```
+
 ## Modules
 
 ### Dynamic Pairlist

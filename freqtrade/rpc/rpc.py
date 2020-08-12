@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import arrow
 from numpy import NAN, mean
 
-from freqtrade.exceptions import (ExchangeError, InvalidOrderException,
+from freqtrade.exceptions import (ExchangeError,
                                   PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.misc import shorten_date
@@ -555,7 +555,7 @@ class RPC:
                 try:
                     self._freqtrade.exchange.cancel_order(trade.open_order_id, trade.pair)
                     c_count += 1
-                except (ExchangeError, InvalidOrderException):
+                except (ExchangeError):
                     pass
 
             # cancel stoploss on exchange ...
@@ -565,7 +565,7 @@ class RPC:
                     self._freqtrade.exchange.cancel_stoploss_order(trade.stoploss_order_id,
                                                                    trade.pair)
                     c_count += 1
-                except (ExchangeError, InvalidOrderException):
+                except (ExchangeError):
                     pass
 
             Trade.session.delete(trade)
