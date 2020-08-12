@@ -974,7 +974,7 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    # Assign method to fetch_stoploss_order to allow easy overriding in other classes
+    # Assign method to cancel_stoploss_order to allow easy overriding in other classes
     cancel_stoploss_order = cancel_order
 
     def is_cancel_order_result_suitable(self, corder) -> bool:
@@ -1040,10 +1040,10 @@ class Exchange:
     @retrier
     def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:
         """
-        get order book level 2 from exchange
-
-        Notes:
-        20180619: bittrex doesnt support limits -.-
+        Get L2 order book from exchange.
+        Can be limited to a certain amount (if supported).
+        Returns a dict in the format
+        {'asks': [price, volume], 'bids': [price, volume]}
         """
         try:
 
