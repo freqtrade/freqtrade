@@ -768,7 +768,7 @@ class FreqtradeBot:
         logger.debug('Found no sell signal for %s.', trade)
         return False
 
-    def create_stoploss_order(self, trade: Trade, stop_price: float, rate: float) -> bool:
+    def create_stoploss_order(self, trade: Trade, stop_price: float) -> bool:
         """
         Abstracts creating stoploss orders from the logic.
         Handles errors and updates the trade database object.
@@ -831,14 +831,13 @@ class FreqtradeBot:
             stoploss = self.edge.stoploss(pair=trade.pair) if self.edge else self.strategy.stoploss
             stop_price = trade.open_rate * (1 + stoploss)
 
-            if self.create_stoploss_order(trade=trade, stop_price=stop_price, rate=stop_price):
+            if self.create_stoploss_order(trade=trade, stop_price=stop_price):
                 trade.stoploss_last_update = datetime.now()
                 return False
 
         # If stoploss order is canceled for some reason we add it
         if stoploss_order and stoploss_order['status'] in ('canceled', 'cancelled'):
-            if self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss,
-                                          rate=trade.stop_loss):
+            if self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss):
                 return False
             else:
                 trade.stoploss_order_id = None
@@ -875,8 +874,7 @@ class FreqtradeBot:
                                      f"for pair {trade.pair}")
 
                 # Create new stoploss order
-                if not self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss,
-                                                  rate=trade.stop_loss):
+                if not self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss):
                     logger.warning(f"Could not create trailing stoploss order "
                                    f"for pair {trade.pair}.")
 

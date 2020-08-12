@@ -1301,7 +1301,7 @@ def test_create_stoploss_order_invalid_order(mocker, default_conf, caplog, fee,
     freqtrade.enter_positions()
     trade = Trade.query.first()
     caplog.clear()
-    freqtrade.create_stoploss_order(trade, 200, 199)
+    freqtrade.create_stoploss_order(trade, 200)
     assert trade.stoploss_order_id is None
     assert trade.sell_reason == SellType.EMERGENCY_SELL.value
     assert log_has("Unable to place a stoploss order on exchange. ", caplog)
