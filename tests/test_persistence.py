@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 
 from freqtrade import constants
 from freqtrade.exceptions import OperationalException
-from freqtrade.persistence import Trade, clean_dry_run_db, init
+from freqtrade.persistence import Trade, Order, clean_dry_run_db, init
 from tests.conftest import log_has, create_mock_trades
 
 
@@ -421,9 +421,9 @@ def test_migrate_old(mocker, default_conf, fee):
                                 PRIMARY KEY (id),
                                 CHECK (is_open IN (0, 1))
                                 );"""
-    insert_table_old = """INSERT INTO trades (exchange, pair, is_open, fee,
+    insert_table_old = """INSERT INTO trades (exchange, pair, is_open, open_order_id, fee,
                           open_rate, stake_amount, amount, open_date)
-                          VALUES ('BITTREX', 'BTC_ETC', 1, {fee},
+                          VALUES ('BITTREX', 'BTC_ETC', 1, '123123', {fee},
                           0.00258580, {stake}, {amount},
                           '2017-11-28 12:44:24.000000')
                           """.format(fee=fee.return_value,
@@ -481,6 +481,12 @@ def test_migrate_old(mocker, default_conf, fee):
     assert pytest.approx(trade.close_profit_abs) == trade.calc_profit()
     assert trade.sell_order_status is None
 
+    # Should've created one order
+    assert len(Order.query.all()) == 1
+    order = Order.query.first()
+    assert order.order_id == '123123'
+    assert order.ft_order_side == 'buy'
+
 
 def test_migrate_new(mocker, default_conf, fee, caplog):
     """
@@ -509,16 +515,19 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
                                 sell_reason VARCHAR,
                                 strategy VARCHAR,
                                 ticker_interval INTEGER,
+                                stoploss_order_id VARCHAR,
                                 PRIMARY KEY (id),
                                 CHECK (is_open IN (0, 1))
                                 );"""
     insert_table_old = """INSERT INTO trades (exchange, pair, is_open, fee,
                           open_rate, stake_amount, amount, open_date,
-                          stop_loss, initial_stop_loss, max_rate, ticker_interval)
+                          stop_loss, initial_stop_loss, max_rate, ticker_interval,
+                          open_order_id, stoploss_order_id)
                           VALUES ('binance', 'ETC/BTC', 1, {fee},
                           0.00258580, {stake}, {amount},
                           '2019-11-28 12:44:24.000000',
-                          0.0, 0.0, 0.0, '5m')
+                          0.0, 0.0, 0.0, '5m',
+                          'buy_order', 'stop_order_id222')
                           """.format(fee=fee.return_value,
                                      stake=default_conf.get("stake_amount"),
                                      amount=amount
@@ -558,13 +567,22 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.sell_reason is None
     assert trade.strategy is None
     assert trade.timeframe == '5m'
-    assert trade.stoploss_order_id is None
+    assert trade.stoploss_order_id == 'stop_order_id222'
     assert trade.stoploss_last_update is None
     assert log_has("trying trades_bak1", caplog)
     assert log_has("trying trades_bak2", caplog)
-    assert log_has("Running database migration - backup available as trades_bak2", caplog)
+    assert log_has("Running database migration for trades - backup: trades_bak2", caplog)
     assert trade.open_trade_price == trade._calc_open_trade_price()
     assert trade.close_profit_abs is None
+
+    assert log_has("Moving open orders to Orders table.", caplog)
+    orders = Order.query.all()
+    assert len(orders) == 2
+    assert orders[0].order_id == 'buy_order'
+    assert orders[0].ft_order_side == 'buy'
+
+    assert orders[1].order_id == 'stop_order_id222'
+    assert orders[1].ft_order_side == 'stoploss'
 
 
 def test_migrate_mid_state(mocker, default_conf, fee, caplog):
@@ -626,7 +644,7 @@ def test_migrate_mid_state(mocker, default_conf, fee, caplog):
     assert trade.initial_stop_loss == 0.0
     assert trade.open_trade_price == trade._calc_open_trade_price()
     assert log_has("trying trades_bak0", caplog)
-    assert log_has("Running database migration - backup available as trades_bak0", caplog)
+    assert log_has("Running database migration for trades - backup: trades_bak0", caplog)
 
 
 def test_adjust_stop_loss(fee):

@@ -7,8 +7,8 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 import arrow
-from sqlalchemy import (Boolean, Column, DateTime, Float, Integer, String, ForeignKey,
-                        create_engine, desc, func)
+from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
+                        String, create_engine, desc, func, inspect)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Query, relationship
@@ -61,9 +61,9 @@ def init(db_url: str, clean_open_orders: bool = False) -> None:
     # Copy session attributes to order object too
     Order.session = Trade.session
     Order.query = Order.session.query_property()
-
+    previous_tables = inspect(engine).get_table_names()
     _DECL_BASE.metadata.create_all(engine)
-    check_migrate(engine, decl_base=_DECL_BASE)
+    check_migrate(engine, decl_base=_DECL_BASE, previous_tables=previous_tables)
 
     # Clean dry_run DB if the db is not in-memory
     if clean_open_orders and db_url != 'sqlite://':
@@ -117,7 +117,7 @@ class Order(_DECL_BASE):
     filled = Column(Float, nullable=True)
     remaining = Column(Float, nullable=True)
     cost = Column(Float, nullable=True)
-    order_date = Column(DateTime, nullable=False, default=datetime.utcnow)
+    order_date = Column(DateTime, nullable=True, default=datetime.utcnow)
     order_filled_date = Column(DateTime, nullable=True)
     order_update_date = Column(DateTime, nullable=True)
 
