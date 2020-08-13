@@ -827,6 +827,7 @@ def limit_buy_order():
         'side': 'buy',
         'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
+        'timestamp': arrow.utcnow().timestamp,
         'price': 0.00001099,
         'amount': 90.99181073,
         'filled': 90.99181073,

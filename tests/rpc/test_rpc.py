@@ -817,7 +817,8 @@ def test_rpc_count(mocker, default_conf, ticker, fee) -> None:
 def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order) -> None:
     default_conf['forcebuy_enable'] = True
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
-    buy_mm = MagicMock(return_value={'id': limit_buy_order['id']})
+    limit_buy_order['status'] = 'open'
+    buy_mm = MagicMock(return_value=limit_buy_order)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
