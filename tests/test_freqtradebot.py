@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, C0103
 # pragma pylint: disable=protected-access, too-many-lines, invalid-name, too-many-arguments
 
+from freqtrade.persistence.models import Order
 import logging
 import time
 from copy import deepcopy
@@ -1252,7 +1253,7 @@ def test_handle_sle_cancel_cant_recreate(mocker, default_conf, fee, caplog,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         sell=MagicMock(return_value={'id': limit_sell_order['id']}),
         get_fee=fee,
-        fetch_stoploss_order=MagicMock(return_value={'status': 'canceled'}),
+        fetch_stoploss_order=MagicMock(return_value={'status': 'canceled', 'id': 100}),
         stoploss=MagicMock(side_effect=ExchangeError()),
     )
     freqtrade = FreqtradeBot(default_conf)
@@ -1794,7 +1795,8 @@ def test_update_trade_state_orderexception(mocker, default_conf, caplog) -> None
     assert log_has(f'Unable to fetch order {trade.open_order_id}: ', caplog)
 
 
-def test_update_trade_state_sell(default_conf, trades_for_order, limit_sell_order, mocker):
+def test_update_trade_state_sell(default_conf, trades_for_order, limit_sell_order_open,
+                                 limit_sell_order, mocker):
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     # fetch_order should not be called!!
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', MagicMock(side_effect=ValueError))
@@ -1817,11 +1819,16 @@ def test_update_trade_state_sell(default_conf, trades_for_order, limit_sell_orde
         open_order_id="123456",
         is_open=True,
     )
+    order = Order.parse_from_ccxt_object(limit_sell_order_open, 'sell')
+    trade.orders.append(order)
+    assert order.status == 'open'
     freqtrade.update_trade_state(trade, limit_sell_order)
     assert trade.amount == limit_sell_order['amount']
     # Wallet needs to be updated after closing a limit-sell order to reenable buying
     assert wallet_mock.call_count == 1
     assert not trade.is_open
+    # Order is updated by update_trade_state
+    assert order.status == 'closed'
 
 
 def test_handle_trade(default_conf, limit_buy_order, limit_sell_order_open, limit_sell_order,

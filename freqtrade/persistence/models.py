@@ -151,9 +151,12 @@ class Order(_DECL_BASE):
         """
         """
         filtered_orders = [o for o in orders if o.order_id == order['id']]
-        oobj = filtered_orders[0] if filtered_orders else None
-        oobj.update_from_ccxt_object(order)
-        oobj.order_update_date = datetime.now()
+        if filtered_orders:
+            oobj = filtered_orders[0]
+            oobj.update_from_ccxt_object(order)
+            oobj.order_update_date = datetime.now()
+        else:
+            logger.warning(f"Did not find order for {order['id']}.")
 
     @staticmethod
     def parse_from_ccxt_object(order: Dict[str, Any], side: str) -> 'Order':
