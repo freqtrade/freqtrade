@@ -1396,7 +1396,7 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee,
     }))
 
     cancel_order_mock = MagicMock()
-    stoploss_order_mock = MagicMock()
+    stoploss_order_mock = MagicMock(return_value={'id': 13434334})
     mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order', cancel_order_mock)
     mocker.patch('freqtrade.exchange.Exchange.stoploss', stoploss_order_mock)
 
