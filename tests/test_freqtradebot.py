@@ -192,6 +192,7 @@ def test_check_available_stake_amount(default_conf, ticker, mocker, fee, limit_b
     for i in range(0, max_open):
 
         if expected[i] is not None:
+            limit_buy_order_open['id'] = str(i)
             result = freqtrade.get_trade_stake_amount('ETH/BTC')
             assert pytest.approx(result) == expected[i]
             freqtrade.execute_buy('ETH/BTC', result)
@@ -740,6 +741,8 @@ def test_create_trades_preopen(default_conf, ticker, fee, mocker, limit_buy_orde
     freqtrade.execute_buy('NEO/BTC', default_conf['stake_amount'])
 
     assert len(Trade.get_open_trades()) == 2
+    # Change order_id for new orders
+    limit_buy_order_open['id'] = '123444'
 
     # Create 2 new trades using create_trades
     assert freqtrade.create_trade('ETH/BTC')
@@ -997,6 +1000,7 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
     assert freqtrade.strategy.confirm_trade_entry.call_count == 1
     buy_rate_mock.reset_mock()
 
+    limit_buy_order_open['id'] = '22'
     freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=True)
     assert freqtrade.execute_buy(pair, stake_amount)
     assert buy_rate_mock.call_count == 1
@@ -1012,9 +1016,10 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
     trade = Trade.query.first()
     assert trade
     assert trade.is_open is True
-    assert trade.open_order_id == limit_buy_order['id']
+    assert trade.open_order_id == '22'
 
     # Test calling with price
+    limit_buy_order_open['id'] = '33'
     fix_price = 0.06
     assert freqtrade.execute_buy(pair, stake_amount, fix_price)
     # Make sure get_buy_rate wasn't called again
@@ -1030,6 +1035,8 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
     limit_buy_order['status'] = 'closed'
     limit_buy_order['price'] = 10
     limit_buy_order['cost'] = 100
+    limit_buy_order['id'] = '444'
+
     mocker.patch('freqtrade.exchange.Exchange.buy', MagicMock(return_value=limit_buy_order))
     assert freqtrade.execute_buy(pair, stake_amount)
     trade = Trade.query.all()[2]
@@ -1045,6 +1052,7 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
     limit_buy_order['remaining'] = 10.00
     limit_buy_order['price'] = 0.5
     limit_buy_order['cost'] = 40.495905365
+    limit_buy_order['id'] = '555'
     mocker.patch('freqtrade.exchange.Exchange.buy', MagicMock(return_value=limit_buy_order))
     assert freqtrade.execute_buy(pair, stake_amount)
     trade = Trade.query.all()[3]
@@ -1060,6 +1068,7 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
     limit_buy_order['remaining'] = 90.99181073
     limit_buy_order['price'] = 0.5
     limit_buy_order['cost'] = 0.0
+    limit_buy_order['id'] = '66'
     mocker.patch('freqtrade.exchange.Exchange.buy', MagicMock(return_value=limit_buy_order))
     assert not freqtrade.execute_buy(pair, stake_amount)
 
@@ -1087,9 +1096,11 @@ def test_execute_buy_confirm_error(mocker, default_conf, fee, limit_buy_order) -
     freqtrade.strategy.confirm_trade_entry = MagicMock(side_effect=ValueError)
     assert freqtrade.execute_buy(pair, stake_amount)
 
+    limit_buy_order['id'] = '222'
     freqtrade.strategy.confirm_trade_entry = MagicMock(side_effect=Exception)
     assert freqtrade.execute_buy(pair, stake_amount)
 
+    limit_buy_order['id'] = '2223'
     freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=True)
     assert freqtrade.execute_buy(pair, stake_amount)
 
@@ -1315,6 +1326,7 @@ def test_create_stoploss_order_invalid_order(mocker, default_conf, caplog, fee,
     assert rpc_mock.call_args_list[1][0][0]['order_type'] == 'market'
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee,
                                               limit_buy_order, limit_sell_order) -> None:
     # When trailing stoploss is set
@@ -1819,7 +1831,7 @@ def test_update_trade_state_sell(default_conf, trades_for_order, limit_sell_orde
         open_order_id="123456",
         is_open=True,
     )
-    order = Order.parse_from_ccxt_object(limit_sell_order_open, 'sell')
+    order = Order.parse_from_ccxt_object(limit_sell_order_open, 'LTC/ETH', 'sell')
     trade.orders.append(order)
     assert order.status == 'open'
     freqtrade.update_trade_state(trade, limit_sell_order)
