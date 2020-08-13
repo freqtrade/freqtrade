@@ -2,7 +2,7 @@
 
 ## Beginner Tips & Tricks
 
-#1 When you work with your strategy & hyperopt file you should use a real programmer software like Pycharm. If you by accident moved some code and freqtrade says error and you cant find the place where you moved something, or you cant find line 180 where you messed something up. Then a program like Pycharm shows you where line 180 is in your strategy file so you can fix the problem, or Pycharm shows you with some color marking that "here is a line of code that does not belong here" and you found your error in no time! This will save you many hours of problemsolving when working with the bot. Pycharm also got a usefull "Debug" feature that can tell you exactly what command on that line is making the error :) 
+* When you work with your strategy & hyperopt file you should use a proper code editor like vscode or Pycharm. A good code editor will provide syntax highlighting as well as line numbers, making it easy to find syntax errors (most likely, pointed out by Freqtrade during startup).
 
 ## Freqtrade common issues
 
