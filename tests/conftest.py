@@ -820,7 +820,7 @@ def markets_empty():
 
 
 @pytest.fixture(scope='function')
-def limit_buy_order():
+def limit_buy_order_open():
     return {
         'id': 'mocked_limit_buy',
         'type': 'limit',
@@ -830,11 +830,20 @@ def limit_buy_order():
         'timestamp': arrow.utcnow().timestamp,
         'price': 0.00001099,
         'amount': 90.99181073,
-        'filled': 90.99181073,
+        'filled': 0.0,
         'cost': 0.0009999,
-        'remaining': 0.0,
-        'status': 'closed'
+        'remaining': 90.99181073,
+        'status': 'open'
     }
+
+
+@pytest.fixture(scope='function')
+def limit_buy_order(limit_buy_order_open):
+    order = deepcopy(limit_buy_order_open)
+    order['status'] = 'closed'
+    order['filled'] = order['amount']
+    order['remaining'] = 0.0
+    return order
 
 
 @pytest.fixture(scope='function')
@@ -1019,19 +1028,29 @@ def limit_buy_order_canceled_empty(request):
 
 
 @pytest.fixture
-def limit_sell_order():
+def limit_sell_order_open():
     return {
         'id': 'mocked_limit_sell',
         'type': 'limit',
         'side': 'sell',
         'pair': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
+        'timestamp': arrow.utcnow().timestamp,
         'price': 0.00001173,
         'amount': 90.99181073,
-        'filled': 90.99181073,
-        'remaining': 0.0,
-        'status': 'closed'
+        'filled': 0.0,
+        'remaining': 90.99181073,
+        'status': 'open'
     }
+
+
+@pytest.fixture
+def limit_sell_order(limit_sell_order_open):
+    order = deepcopy(limit_sell_order_open)
+    order['remaining'] = 0.0
+    order['filled'] = order['amount']
+    order['status'] = 'closed'
+    return order
 
 
 @pytest.fixture
