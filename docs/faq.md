@@ -19,11 +19,11 @@ This could have the following reasons:
 
 ### I have waited 5 minutes, why hasn't the bot made any trades yet?!
 
-#1 Depending on the buy strategy, the amount of whitelisted coins, the
+* Depending on the buy strategy, the amount of whitelisted coins, the
 situation of the market etc, it can take up to hours to find good entry
 position for a trade. Be patient!
 
-#2 Or it may because you made an human error? Like writing --dry-run when you wanted to trade live?. Maybe an error with the exchange API? Or something else. You will have to do the hard work of finding out the root cause of the problem :) 
+* Or it may because of a configuration error? Best check the logs, it's usually telling you if the bot is simply not getting buy signals (only heartbeat messages), or if there is something wrong (errors / exceptions in the log).
 
 ### I have made 12 trades already, why is my total profit negative?!
 
@@ -135,7 +135,9 @@ to find a great result (unless if you are very lucky), so you probably
 have to run it for 10.000 or more. But it will take an eternity to
 compute.
 
-We recommend you to run between 500-1000 epochs over and over untill you hit at least 10.000 epocs in total. You can best judge by looking at the results - if the bot keep discovering more profitable strategies or not. 
+Since hyperopt uses Bayesian search, running for too many epochs may not produce greater results.
+
+It's therefore recommended to run between 500-1000 epochs over and over until you hit at least 10.000 epocs in total (or are satisfied with the result). You can best judge by looking at the results - if the bot keeps discovering better strategies, it's best to keep on going. 
 
 ```bash
 freqtrade hyperopt -e 1000
@@ -147,11 +149,11 @@ or if you want intermediate result to see
 for i in {1..100}; do freqtrade hyperopt -e 1000; done
 ```
 
-### Why does it take so long time to run hyperopt?
+### Why does it take a long time to run hyperopt?
 
-#1 Discovering a great strategy with Hyperopt takes time. Study www.freqtrade.io, the Freqtrade Github page, join the Freqtrade Discord - or something totally else. While you patiently wait for the most advanced, public known, crypto bot, in the world, to hand you a possible golden strategy specially designed just for you =) 
+* Discovering a great strategy with Hyperopt takes time. Study www.freqtrade.io, the Freqtrade Documentation page, join the Freqtrade [Slack community](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE) - or the Freqtrade [discord community](https://discord.gg/X89cVG). While you patiently wait for the most advanced, free crypto bot in the world, to hand you a possible golden strategy specially designed just for you.
 
-#2 If you wonder why it can take from 20 minutes to days to do 1000 epocs here are some answers:
+* If you wonder why it can take from 20 minutes to days to do 1000 epocs here are some answers:
 
 This answer was written during the release 0.15.1, when we had:
 
@@ -163,10 +165,14 @@ The following calculation is still very rough and not very precise
 but it will give the idea. With only these triggers and guards there is
 already 8\*10^9\*10 evaluations. A roughly total of 80 billion evals.
 Did you run 100 000 evals? Congrats, you've done roughly 1 / 100 000 th
-of the search space. If we assume that the bot never test the same strategy more than once.
+of the search space, assuming that the bot never tests the same parameters more than once.
 
-#3 The time it takes to run 1000 hyperopt epocs depends on things like: The cpu, harddisk, ram, motherboard, indicator settings, indicator count, amount of coins that hyperopt test strategies on, trade count - can be 650 trades in a year or 10.0000 trades depending on if the strategy aims for a high profit rarely or a low profit many many many times. Example: 4% profit 650 times vs 0,3% profit a trade 10.000 times in a year. If we assume you set the --timerange to 365 days. 
-Example: freqtrade --config config_mcd_1.json --strategy mcd_1 --hyperopt mcd_hyperopt_1 -e 1000 --timerange 20190601-20200601 
+* The time it takes to run 1000 hyperopt epocs depends on things like: The available cpu, harddisk, ram, timeframe, timerange, indicator settings, indicator count, amount of coins that hyperopt test strategies on and the resulting trade count - which can be 650 trades in a year or 10.0000 trades depending if the strategy aims for big profits by trading rarely or for many low profit trades. 
+
+Example: 4% profit 650 times vs 0,3% profit a trade 10.000 times in a year. If we assume you set the --timerange to 365 days. 
+
+Example: 
+`freqtrade --config config.json --strategy SampleStrategy --hyperopt SampleHyperopt -e 1000 --timerange 20190601-20200601`
 
 ## Edge module
 
