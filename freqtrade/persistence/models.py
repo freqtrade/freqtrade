@@ -109,6 +109,8 @@ class Order(_DECL_BASE):
     id = Column(Integer, primary_key=True)
     ft_trade_id = Column(Integer, ForeignKey('trades.id'), index=True)
 
+    trade = relationship("Trade", back_populates="orders")
+
     ft_order_side = Column(String, nullable=False)
     ft_pair = Column(String, nullable=False)
     ft_is_open = Column(Boolean, nullable=False, default=True, index=True)
@@ -179,7 +181,7 @@ class Order(_DECL_BASE):
         return o
 
     @staticmethod
-    def get_open_orders():
+    def get_open_orders() -> List['Order']:
         """
         """
         return Order.query.filter(Order.ft_is_open.is_(True)).all()

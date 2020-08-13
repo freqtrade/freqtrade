@@ -134,6 +134,8 @@ class FreqtradeBot:
             # Adjust stoploss if it was changed
             Trade.stoploss_reinitialization(self.strategy.stoploss)
 
+        self.update_open_orders()
+
     def process(self) -> None:
         """
         Queries the persistence layer for open trades and handles them,
@@ -235,11 +237,13 @@ class FreqtradeBot:
         logger.info(f"Updating {len(orders)} open orders.")
         for order in orders:
             try:
-                if order.ft_order_side == 'stoposs':
+                if order.ft_order_side == 'stoploss':
                     fo = self.exchange.fetch_stoploss_order(order.order_id, order.ft_pair)
                 else:
                     fo = self.exchange.fetch_order(order.order_id, order.ft_pair)
-                order.update_from_ccxt_object(fo)
+
+                self.update_trade_state(order.trade, fo, sl_order=order.ft_order_side == 'stoploss')
+
             except ExchangeError:
                 logger.warning(f"Error updating {order.order_id}")
 
