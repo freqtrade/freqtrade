@@ -159,6 +159,7 @@ class Order(_DECL_BASE):
     @staticmethod
     def update_orders(orders: List['Order'], order: Dict[str, Any]):
         """
+        Get all non-closed orders - useful when trying to batch-update orders
         """
         filtered_orders = [o for o in orders if o.order_id == order['id']]
         if filtered_orders:
@@ -176,6 +177,12 @@ class Order(_DECL_BASE):
 
         o.update_from_ccxt_object(order)
         return o
+
+    @staticmethod
+    def get_open_orders():
+        """
+        """
+        return Order.query.filter(Order.ft_is_open.is_(True)).all()
 
 
 class Trade(_DECL_BASE):
