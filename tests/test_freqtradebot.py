@@ -1194,6 +1194,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     assert trade
 
     stoploss_order_hit = MagicMock(return_value={
+        'id': 100,
         'status': 'closed',
         'type': 'stop_loss_limit',
         'price': 3,

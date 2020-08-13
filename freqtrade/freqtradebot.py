@@ -817,6 +817,9 @@ class FreqtradeBot:
         except InvalidOrderException as exception:
             logger.warning('Unable to fetch stoploss order: %s', exception)
 
+        if stoploss_order:
+            trade.update_order(stoploss_order)
+
         # We check if stoploss order is fulfilled
         if stoploss_order and stoploss_order['status'] in ('closed', 'triggered'):
             trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
@@ -1260,7 +1263,7 @@ class FreqtradeBot:
         except InvalidOrderException as exception:
             logger.warning('Unable to fetch order %s: %s', order_id, exception)
             return False
-        Order.update_order(order)
+        trade.update_order(order)
         # Try update amount (binance-fix)
         try:
             new_amount = self.get_real_amount(trade, order, order_amount)

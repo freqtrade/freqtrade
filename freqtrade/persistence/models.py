@@ -107,7 +107,7 @@ class Order(_DECL_BASE):
 
     ft_order_side = Column(String, nullable=False)
 
-    order_id = Column(String, nullable=False, unique=True, index=True)
+    order_id = Column(String, nullable=False, index=True)
     status = Column(String, nullable=True)
     symbol = Column(String, nullable=True)
     order_type = Column(String, nullable=True)
@@ -144,13 +144,14 @@ class Order(_DECL_BASE):
         self.remaining = order.get('remaining', self.remaining)
         self.cost = order.get('cost', self.cost)
         if 'timestamp' in order and order['timestamp'] is not None:
-            self.order_date = datetime.fromtimestamp(order['timestamp'])
+            self.order_date = datetime.fromtimestamp(order['timestamp'] / 1000)
 
     @staticmethod
-    def update_order(order: Dict[str, Any]):
+    def update_orders(orders: List['Order'], order: Dict[str, Any]):
         """
         """
-        oobj = Order.query.filter(Order.order_id == order['id']).first()
+        filtered_orders = [o for o in orders if o.order_id == order['id']]
+        oobj = filtered_orders[0] if filtered_orders else None
         oobj.update_from_ccxt_object(order)
         oobj.order_update_date = datetime.now()
 
@@ -416,6 +417,9 @@ class Trade(_DECL_BASE):
             return self.fee_close_currency is not None
         else:
             return False
+
+    def update_order(self, order: Dict) -> None:
+        Order.update_orders(self.orders, order)
 
     def _calc_open_trade_price(self) -> float:
         """

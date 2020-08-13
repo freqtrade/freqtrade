@@ -807,7 +807,7 @@ def test_dry_run_order(default_conf, mocker, side, exchange_name):
     assert f'dry_run_{side}_' in order["id"]
     assert order["side"] == side
     assert order["type"] == "limit"
-    assert order["pair"] == "ETH/BTC"
+    assert order["symbol"] == "ETH/BTC"
 
 
 @pytest.mark.parametrize("side", [
