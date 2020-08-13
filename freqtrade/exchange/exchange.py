@@ -8,7 +8,6 @@ import logging
 from copy import deepcopy
 from datetime import datetime, timezone
 from math import ceil
-from random import randint
 from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
@@ -474,11 +473,11 @@ class Exchange:
 
     def dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                       rate: float, params: Dict = {}) -> Dict[str, Any]:
-        order_id = f'dry_run_{side}_{randint(0, 10**6)}'
+        order_id = f'dry_run_{side}_{datetime.now().timestamp()}'
         _amount = self.amount_to_precision(pair, amount)
         dry_order = {
-            "id": order_id,
-            'pair': pair,
+            'id': order_id,
+            'symbol': pair,
             'price': rate,
             'average': rate,
             'amount': _amount,

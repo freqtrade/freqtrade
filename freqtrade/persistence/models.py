@@ -58,6 +58,10 @@ def init(db_url: str, clean_open_orders: bool = False) -> None:
     # We should use the scoped_session object - not a seperately initialized version
     Trade.session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
     Trade.query = Trade.session.query_property()
+    # Copy session attributes to order object too
+    Order.session = Trade.session
+    Order.query = Order.session.query_property()
+
     _DECL_BASE.metadata.create_all(engine)
     check_migrate(engine, decl_base=_DECL_BASE)
 
@@ -103,7 +107,7 @@ class Order(_DECL_BASE):
 
     ft_order_side = Column(String, nullable=False)
 
-    order_id = Column(String, nullable=False, index=True)
+    order_id = Column(String, nullable=False, unique=True, index=True)
     status = Column(String, nullable=True)
     symbol = Column(String, nullable=True)
     order_type = Column(String, nullable=True)
@@ -115,6 +119,12 @@ class Order(_DECL_BASE):
     cost = Column(Float, nullable=True)
     order_date = Column(DateTime, nullable=False, default=datetime.utcnow)
     order_filled_date = Column(DateTime, nullable=True)
+    order_update_date = Column(DateTime, nullable=True)
+
+    def __repr__(self):
+
+        return (f'Order(id={self.id}, order_id={self.order_id}, trade_id={self.trade_id}, '
+                f'side={self.side}, status={self.status})')
 
     def update_from_ccxt_object(self, order):
         """
@@ -137,6 +147,14 @@ class Order(_DECL_BASE):
             self.order_date = datetime.fromtimestamp(order['timestamp'])
 
     @staticmethod
+    def update_order(order: Dict[str, Any]):
+        """
+        """
+        oobj = Order.query.filter(Order.order_id == order['id']).first()
+        oobj.update_from_ccxt_object(order)
+        oobj.order_update_date = datetime.now()
+
+    @staticmethod
     def parse_from_ccxt_object(order: Dict[str, Any], side: str) -> 'Order':
         """
         Parse an order from a ccxt object and return a new order Object.
@@ -145,11 +163,6 @@ class Order(_DECL_BASE):
 
         o.update_from_ccxt_object(order)
         return o
-
-    def __repr__(self):
-
-        return (f'Order(id={self.id}, trade_id={self.trade_id}, side={self.side}, '
-                f'status={self.status})')
 
 
 class Trade(_DECL_BASE):
