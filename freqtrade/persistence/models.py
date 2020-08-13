@@ -104,13 +104,14 @@ class Order(_DECL_BASE):
     __tablename__ = 'orders'
     # Uniqueness should be ensured over pair, order_id
     # its likely that order_id is unique per Pair on some exchanges.
-    __table_args__ = (UniqueConstraint('ft_pair', 'order_id'),)
+    __table_args__ = (UniqueConstraint('ft_pair', 'order_id', name="_order_pair_order_id"),)
 
     id = Column(Integer, primary_key=True)
-    trade_id = Column(Integer, ForeignKey('trades.id'), index=True)
+    ft_trade_id = Column(Integer, ForeignKey('trades.id'), index=True)
 
     ft_order_side = Column(String, nullable=False)
     ft_pair = Column(String, nullable=False)
+    ft_is_open = Column(Boolean, nullable=False, default=True, index=True)
 
     order_id = Column(String, nullable=False, index=True)
     status = Column(String, nullable=True)
@@ -128,7 +129,7 @@ class Order(_DECL_BASE):
 
     def __repr__(self):
 
-        return (f'Order(id={self.id}, order_id={self.order_id}, trade_id={self.trade_id}, '
+        return (f'Order(id={self.id}, order_id={self.order_id}, trade_id={self.ft_trade_id}, '
                 f'side={self.side}, status={self.status})')
 
     def update_from_ccxt_object(self, order):
@@ -151,6 +152,10 @@ class Order(_DECL_BASE):
         if 'timestamp' in order and order['timestamp'] is not None:
             self.order_date = datetime.fromtimestamp(order['timestamp'] / 1000)
 
+        if self.status in ('closed', 'canceled', 'cancelled'):
+            self.ft_is_open = False
+        self.order_update_date = datetime.now()
+
     @staticmethod
     def update_orders(orders: List['Order'], order: Dict[str, Any]):
         """
@@ -159,7 +164,6 @@ class Order(_DECL_BASE):
         if filtered_orders:
             oobj = filtered_orders[0]
             oobj.update_from_ccxt_object(order)
-            oobj.order_update_date = datetime.now()
         else:
             logger.warning(f"Did not find order for {order['id']}.")
 

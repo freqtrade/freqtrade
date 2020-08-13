@@ -108,14 +108,15 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
 
 def migrate_open_orders_to_trades(engine):
     engine.execute("""
-    insert into orders (trade_id, ft_pair, order_id, ft_order_side)
-    select id trade_id, pair ft_pair, open_order_id,
+    insert into orders (ft_trade_id, ft_pair, order_id, ft_order_side, ft_is_open)
+    select id ft_trade_id, pair ft_pair, open_order_id,
         case when close_rate_requested is null then 'buy'
-        else 'sell' end ft_order_side
+        else 'sell' end ft_order_side, true ft_is_open
     from trades
     where open_order_id is not null
     union all
-    select id trade_id, pair ft_pair, stoploss_order_id order_id, 'stoploss' ft_order_side
+    select id ft_trade_id, pair ft_pair, stoploss_order_id order_id,
+        'stoploss' ft_order_side, true ft_is_open
     from trades
     where stoploss_order_id is not null
     """)
