@@ -22,7 +22,7 @@ from freqtrade.exceptions import (DependencyException, ExchangeError,
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.pairlist.pairlistmanager import PairListManager
-from freqtrade.persistence import Trade
+from freqtrade.persistence import Order, Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
@@ -527,6 +527,7 @@ class FreqtradeBot:
         order = self.exchange.buy(pair=pair, ordertype=order_type,
                                   amount=amount, rate=buy_limit_requested,
                                   time_in_force=time_in_force)
+        order_obj = Order.parse_from_ccxt_object(order, pair)
         order_id = order['id']
         order_status = order.get('status', None)
 
@@ -580,6 +581,7 @@ class FreqtradeBot:
             strategy=self.strategy.get_strategy_name(),
             timeframe=timeframe_to_minutes(self.config['timeframe'])
         )
+        trade.orders.append(order_obj)
 
         # Update fees if order is closed
         if order_status == 'closed':
@@ -781,6 +783,9 @@ class FreqtradeBot:
             stoploss_order = self.exchange.stoploss(pair=trade.pair, amount=trade.amount,
                                                     stop_price=stop_price,
                                                     order_types=self.strategy.order_types)
+
+            order_obj = Order.parse_from_ccxt_object(stoploss_order, trade.pair)
+            trade.orders.append(order_obj)
             trade.stoploss_order_id = str(stoploss_order['id'])
             return True
         except InvalidOrderException as e:
@@ -1123,11 +1128,14 @@ class FreqtradeBot:
             return False
 
         # Execute sell and update trade record
-        order = self.exchange.sell(pair=str(trade.pair),
+        order = self.exchange.sell(pair=trade.pair,
                                    ordertype=order_type,
                                    amount=amount, rate=limit,
                                    time_in_force=time_in_force
                                    )
+
+        order_obj = Order.parse_from_ccxt_object(order, trade.pair)
+        trade.orders.append(order_obj)
 
         trade.open_order_id = order['id']
         trade.close_rate_requested = limit

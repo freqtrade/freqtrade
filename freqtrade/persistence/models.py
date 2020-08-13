@@ -7,11 +7,11 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 import arrow
-from sqlalchemy import (Boolean, Column, DateTime, Float, Integer, String,
+from sqlalchemy import (Boolean, Column, DateTime, Float, Integer, String, ForeignKey,
                         create_engine, desc, func)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, relationship
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -85,13 +85,71 @@ def clean_dry_run_db() -> None:
             trade.open_order_id = None
 
 
+class Order(_DECL_BASE):
+    """
+    Order database model
+    Keeps a record of all orders placed on the exchange
+
+    One to many relationship with Trades:
+      - One trade can have many orders
+      - One Order can only be associated with one Trade
+
+    Mirrors CCXT Order structure
+    """
+    __tablename__ = 'orders'
+
+    id = Column(Integer, primary_key=True)
+    trade_id = Column(Integer, ForeignKey('trades.id'), index=True)
+
+    order_id = Column(String, nullable=False, index=True)
+    status = Column(String, nullable=False)
+    symbol = Column(String, nullable=False)
+    order_type = Column(String, nullable=False)
+    side = Column(String, nullable=False)
+    price = Column(Float, nullable=False)
+    amount = Column(Float, nullable=False)
+    filled = Column(Float, nullable=True)
+    remaining = Column(Float, nullable=True)
+    cost = Column(Float, nullable=True)
+    order_date = Column(DateTime, nullable=False, default=datetime.utcnow)
+    order_filled_date = Column(DateTime, nullable=True)
+
+    @staticmethod
+    def parse_from_ccxt_object(order, pair) -> 'Order':
+        """
+        Parse an order from a ccxt object and return a new order Object.
+        """
+        o = Order(order_id=str(order['id']))
+
+        o.status = order['status']
+        o.symbol = order.get('symbol', pair)
+        o.order_type = order['type']
+        o.side = order['side']
+        o.price = order['price']
+        o.amount = order['amount']
+        o.filled = order.get('filled')
+        o.remaining = order.get('remaining')
+        o.cost = order.get('cost')
+        o.order_date = datetime.fromtimestamp(order['timestamp'])
+        return o
+
+    def __repr__(self):
+
+        return (f'Order(id={self.id}, trade_id={self.trade_id}, side={self.side}, '
+                f'status={self.status})')
+
+
 class Trade(_DECL_BASE):
     """
-    Class used to define a trade structure
+    Trade database model.
+    Also handles updating and querying trades
     """
     __tablename__ = 'trades'
 
     id = Column(Integer, primary_key=True)
+
+    orders = relationship("Order", order_by="Order.id")
+
     exchange = Column(String, nullable=False)
     pair = Column(String, nullable=False, index=True)
     is_open = Column(Boolean, nullable=False, default=True, index=True)
