@@ -5,6 +5,9 @@ from sqlalchemy import inspect
 
 logger = logging.getLogger(__name__)
 
+def get_table_names_for_table(inspector, tabletype):
+    return [t for t in inspector.get_table_names() if t.startswith(tabletype)]
+
 
 def has_column(columns: List, searchname: str) -> bool:
     return len(list(filter(lambda x: x["name"] == searchname, columns))) == 1
@@ -21,7 +24,7 @@ def check_migrate(engine, decl_base) -> None:
     inspector = inspect(engine)
 
     cols = inspector.get_columns('trades')
-    tabs = inspector.get_table_names()
+    tabs = get_table_names_for_table(inspector, 'trades')
     table_back_name = 'trades_bak'
     for i, table_back_name in enumerate(tabs):
         table_back_name = f'trades_bak{i}'
