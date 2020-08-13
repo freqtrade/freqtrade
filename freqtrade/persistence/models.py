@@ -101,36 +101,49 @@ class Order(_DECL_BASE):
     id = Column(Integer, primary_key=True)
     trade_id = Column(Integer, ForeignKey('trades.id'), index=True)
 
+    ft_order_side = Column(String, nullable=False)
+
     order_id = Column(String, nullable=False, index=True)
-    status = Column(String, nullable=False)
-    symbol = Column(String, nullable=False)
-    order_type = Column(String, nullable=False)
-    side = Column(String, nullable=False)
-    price = Column(Float, nullable=False)
-    amount = Column(Float, nullable=False)
+    status = Column(String, nullable=True)
+    symbol = Column(String, nullable=True)
+    order_type = Column(String, nullable=True)
+    side = Column(String, nullable=True)
+    price = Column(Float, nullable=True)
+    amount = Column(Float, nullable=True)
     filled = Column(Float, nullable=True)
     remaining = Column(Float, nullable=True)
     cost = Column(Float, nullable=True)
     order_date = Column(DateTime, nullable=False, default=datetime.utcnow)
     order_filled_date = Column(DateTime, nullable=True)
 
+    def update_from_ccxt_object(self, order):
+        """
+        Update Order from ccxt response
+        Only updates if fields are available from ccxt -
+        """
+        if self.order_id != str(order['id']):
+            return OperationalException("Order-id's don't match")
+
+        self.status = order.get('status', self.status)
+        self.symbol = order.get('symbol', self.symbol)
+        self.order_type = order.get('type', self.order_type)
+        self.side = order.get('side', self.side)
+        self.price = order.get('price', self.price)
+        self.amount = order.get('amount', self.amount)
+        self.filled = order.get('filled', self.filled)
+        self.remaining = order.get('remaining', self.remaining)
+        self.cost = order.get('cost', self.cost)
+        if 'timestamp' in order and order['timestamp'] is not None:
+            self.order_date = datetime.fromtimestamp(order['timestamp'])
+
     @staticmethod
-    def parse_from_ccxt_object(order, pair) -> 'Order':
+    def parse_from_ccxt_object(order: Dict[str, Any], side: str) -> 'Order':
         """
         Parse an order from a ccxt object and return a new order Object.
         """
-        o = Order(order_id=str(order['id']))
+        o = Order(order_id=str(order['id']), ft_order_side=side)
 
-        o.status = order['status']
-        o.symbol = order.get('symbol', pair)
-        o.order_type = order['type']
-        o.side = order['side']
-        o.price = order['price']
-        o.amount = order['amount']
-        o.filled = order.get('filled')
-        o.remaining = order.get('remaining')
-        o.cost = order.get('cost')
-        o.order_date = datetime.fromtimestamp(order['timestamp'])
+        o.update_from_ccxt_object(order)
         return o
 
     def __repr__(self):

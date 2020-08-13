@@ -1313,7 +1313,7 @@ def test_create_stoploss_order_invalid_order(mocker, default_conf, caplog, fee,
     assert rpc_mock.call_args_list[1][0][0]['order_type'] == 'market'
 
 
-def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
+def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee,
                                               limit_buy_order, limit_sell_order) -> None:
     # When trailing stoploss is set
     stoploss = MagicMock(return_value={'id': 13434334})
@@ -1823,7 +1823,8 @@ def test_update_trade_state_sell(default_conf, trades_for_order, limit_sell_orde
     assert not trade.is_open
 
 
-def test_handle_trade(default_conf, limit_buy_order, limit_sell_order_open, limit_sell_order, fee, mocker) -> None:
+def test_handle_trade(default_conf, limit_buy_order, limit_sell_order_open, limit_sell_order,
+                      fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -1863,7 +1864,8 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order_open, limi
     assert trade.close_date is not None
 
 
-def test_handle_overlapping_signals(default_conf, ticker, limit_buy_order_open, fee, mocker) -> None:
+def test_handle_overlapping_signals(default_conf, ticker, limit_buy_order_open,
+                                    fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
