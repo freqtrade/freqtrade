@@ -183,7 +183,7 @@ class Trade(_DECL_BASE):
 
     id = Column(Integer, primary_key=True)
 
-    orders = relationship("Order", order_by="Order.id")
+    orders = relationship("Order", order_by="Order.id", cascade="all, delete-orphan")
 
     exchange = Column(String, nullable=False)
     pair = Column(String, nullable=False, index=True)
