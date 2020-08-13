@@ -527,7 +527,7 @@ class FreqtradeBot:
         order = self.exchange.buy(pair=pair, ordertype=order_type,
                                   amount=amount, rate=buy_limit_requested,
                                   time_in_force=time_in_force)
-        order_obj = Order.parse_from_ccxt_object(order, 'buy')
+        order_obj = Order.parse_from_ccxt_object(order, pair, 'buy')
         order_id = order['id']
         order_status = order.get('status', None)
 
@@ -784,7 +784,7 @@ class FreqtradeBot:
                                                     stop_price=stop_price,
                                                     order_types=self.strategy.order_types)
 
-            order_obj = Order.parse_from_ccxt_object(stoploss_order, 'stoploss')
+            order_obj = Order.parse_from_ccxt_object(stoploss_order, trade.pair, 'stoploss')
             trade.orders.append(order_obj)
             trade.stoploss_order_id = str(stoploss_order['id'])
             return True
@@ -1137,7 +1137,7 @@ class FreqtradeBot:
                                    time_in_force=time_in_force
                                    )
 
-        order_obj = Order.parse_from_ccxt_object(order, 'sell')
+        order_obj = Order.parse_from_ccxt_object(order, trade.pair, 'sell')
         trade.orders.append(order_obj)
 
         trade.open_order_id = order['id']

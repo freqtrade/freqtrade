@@ -15,6 +15,7 @@ from sqlalchemy.orm import Query, relationship
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import StaticPool
+from sqlalchemy.sql.schema import UniqueConstraint
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import safe_value_fallback
@@ -101,11 +102,15 @@ class Order(_DECL_BASE):
     Mirrors CCXT Order structure
     """
     __tablename__ = 'orders'
+    # Uniqueness should be ensured over pair, order_id
+    # its likely that order_id is unique per Pair on some exchanges.
+    __table_args__ = (UniqueConstraint('ft_pair', 'order_id'),)
 
     id = Column(Integer, primary_key=True)
     trade_id = Column(Integer, ForeignKey('trades.id'), index=True)
 
     ft_order_side = Column(String, nullable=False)
+    ft_pair = Column(String, nullable=False)
 
     order_id = Column(String, nullable=False, index=True)
     status = Column(String, nullable=True)
@@ -159,11 +164,11 @@ class Order(_DECL_BASE):
             logger.warning(f"Did not find order for {order['id']}.")
 
     @staticmethod
-    def parse_from_ccxt_object(order: Dict[str, Any], side: str) -> 'Order':
+    def parse_from_ccxt_object(order: Dict[str, Any], pair: str, side: str) -> 'Order':
         """
         Parse an order from a ccxt object and return a new order Object.
         """
-        o = Order(order_id=str(order['id']), ft_order_side=side)
+        o = Order(order_id=str(order['id']), ft_order_side=side, ft_pair=pair)
 
         o.update_from_ccxt_object(order)
         return o
