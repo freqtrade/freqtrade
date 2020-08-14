@@ -1301,7 +1301,7 @@ def test_create_stoploss_order_invalid_order(mocker, default_conf, caplog, fee,
     freqtrade.enter_positions()
     trade = Trade.query.first()
     caplog.clear()
-    freqtrade.create_stoploss_order(trade, 200, 199)
+    freqtrade.create_stoploss_order(trade, 200)
     assert trade.stoploss_order_id is None
     assert trade.sell_reason == SellType.EMERGENCY_SELL.value
     assert log_has("Unable to place a stoploss order on exchange. ", caplog)
@@ -4107,7 +4107,7 @@ def test_sync_wallet_dry_run(mocker, default_conf, ticker, fee, limit_buy_order,
 def test_cancel_all_open_orders(mocker, default_conf, fee, limit_buy_order, limit_sell_order):
     default_conf['cancel_open_orders_on_exit'] = True
     mocker.patch('freqtrade.exchange.Exchange.fetch_order',
-                 side_effect=[DependencyException(), limit_sell_order, limit_buy_order])
+                 side_effect=[ExchangeError(), limit_sell_order, limit_buy_order])
     buy_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_cancel_buy')
     sell_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_cancel_sell')
 
