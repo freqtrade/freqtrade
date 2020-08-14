@@ -312,11 +312,16 @@ class Hyperopt:
 
         trials = json_normalize(results, max_level=1)
         trials['Best'] = ''
+        if 'results_metrics.winsdrawslosses' not in trials.columns:
+            # Ensure compatibility with older versions of hyperopt results
+            trials['results_metrics.winsdrawslosses'] = 'N/A'
+
         trials = trials[['Best', 'current_epoch', 'results_metrics.trade_count',
+                         'results_metrics.winsdrawslosses',
                          'results_metrics.avg_profit', 'results_metrics.total_profit',
                          'results_metrics.profit', 'results_metrics.duration',
                          'loss', 'is_initial_point', 'is_best']]
-        trials.columns = ['Best', 'Epoch', 'Trades', 'Avg profit', 'Total profit',
+        trials.columns = ['Best', 'Epoch', 'Trades', 'W/D/L', 'Avg profit', 'Total profit',
                           'Profit', 'Avg duration', 'Objective', 'is_initial_point', 'is_best']
         trials['is_profit'] = False
         trials.loc[trials['is_initial_point'], 'Best'] = '*     '
@@ -558,11 +563,15 @@ class Hyperopt:
         }
 
     def _calculate_results_metrics(self, backtesting_results: DataFrame) -> Dict:
+        wins = len(backtesting_results[backtesting_results.profit_percent > 0])
+        draws = len(backtesting_results[backtesting_results.profit_percent == 0])
+        losses = len(backtesting_results[backtesting_results.profit_percent < 0])
         return {
             'trade_count': len(backtesting_results.index),
-            'wins': len(backtesting_results[backtesting_results.profit_percent > 0]),
-            'draws': len(backtesting_results[backtesting_results.profit_percent == 0]),
-            'losses': len(backtesting_results[backtesting_results.profit_percent < 0]),
+            'wins': wins,
+            'draws': draws,
+            'losses': losses,
+            'winsdrawslosses': f"{wins}/{draws}/{losses}",
             'avg_profit': backtesting_results.profit_percent.mean() * 100.0,
             'median_profit': backtesting_results.profit_percent.median() * 100.0,
             'total_profit': backtesting_results.profit_abs.sum(),
