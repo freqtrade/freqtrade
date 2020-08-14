@@ -188,7 +188,7 @@ An example of its output:
 | APPC/BTC  |      -0.02 |       0.44 |                2.28 |                   1.27 |         0.44 |                       25 |                       43 |
 | NEBL/BTC  |      -0.03 |       0.63 |                1.29 |                   0.58 |         0.44 |                       19 |                       59 |
 
-Edge produced the above table by comparing ``calculate_since_number_of_days`` to ``minimum_expectancy`` to find ``min_trade_number``. Historical information based on the config file. The time frame Edge uses for its comparisons can be further limited by using the ``--timeframe`` switch.
+Edge produced the above table by comparing `calculate_since_number_of_days` to `minimum_expectancy` to find `min_trade_number` historical information based on the config file. The timerange Edge uses for its comparisons can be further limited by using the `--timerange` switch.
 
 In live and dry-run modes, after the `process_throttle_secs` has passed, Edge will again process `calculate_since_number_of_days` against `minimum_expectancy` to find `min_trade_number`. If no `min_trade_number` is found, the bot will return "whitelist empty". Depending on the trade strategy being deployed, "whitelist empty" may be return much of the time - or *all* of the time. The use of Edge may also cause trading to occur in bursts, though this is rare.
 
