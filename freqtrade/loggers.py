@@ -48,6 +48,7 @@ def setup_logging_pre() -> None:
     logging.basicConfig(
         level=logging.INFO,
         format=LOGFORMAT,
+        handlers=[logging.StreamHandler(sys.stderr)]
     )
 
 
@@ -60,8 +61,6 @@ def setup_logging(config: Dict[str, Any]) -> None:
     logging.root.addHandler(bufferHandler)
 
     logfile = config.get('logfile')
-
-    logging.root.addHandler(logging.StreamHandler(sys.stderr))
 
     if logfile:
         s = logfile.split(':')
