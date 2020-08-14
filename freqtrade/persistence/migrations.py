@@ -111,12 +111,12 @@ def migrate_open_orders_to_trades(engine):
         insert into orders (ft_trade_id, ft_pair, order_id, ft_order_side, ft_is_open)
         select id ft_trade_id, pair ft_pair, open_order_id,
             case when close_rate_requested is null then 'buy'
-            else 'sell' end ft_order_side, true ft_is_open
+            else 'sell' end ft_order_side, 1 ft_is_open
         from trades
         where open_order_id is not null
         union all
         select id ft_trade_id, pair ft_pair, stoploss_order_id order_id,
-            'stoploss' ft_order_side, true ft_is_open
+            'stoploss' ft_order_side, 1 ft_is_open
         from trades
         where stoploss_order_id is not null
         """)
