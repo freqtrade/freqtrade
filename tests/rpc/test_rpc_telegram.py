@@ -16,6 +16,7 @@ from telegram.error import NetworkError
 from freqtrade import __version__
 from freqtrade.edge import PairInfo
 from freqtrade.freqtradebot import FreqtradeBot
+from freqtrade.loggers import setup_logging
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.rpc.telegram import Telegram, authorized_only
@@ -1105,6 +1106,26 @@ def test_blacklist_static(default_conf, update, mocker) -> None:
     assert ("Blacklist contains 3 pairs\n`DOGE/BTC, HOT/BTC, ETH/BTC`"
             in msg_mock.call_args_list[1][0][0])
     assert freqtradebot.pairlists.blacklist == ["DOGE/BTC", "HOT/BTC", "ETH/BTC"]
+
+
+def test_telegram_logs(default_conf, update, mocker) -> None:
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+    setup_logging(default_conf)
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+
+    telegram = Telegram(freqtradebot)
+    context = MagicMock()
+    context.args = []
+    telegram._logs(update=update, context=context)
+    assert msg_mock.call_count == 1
+    assert "freqtrade.rpc.telegram" in msg_mock.call_args_list[0][0][0]
+    assert "freqtrade.resolvers.iresolver" in msg_mock.call_args_list[0][0][0]
 
 
 def test_edge_disabled(default_conf, update, mocker) -> None:

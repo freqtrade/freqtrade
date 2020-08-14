@@ -639,12 +639,13 @@ class RPC:
             buffer = bufferHandler.buffer[-limit:]
         else:
             buffer = bufferHandler.buffer
-        records = [[r.asctime, r.created, r.name, r.levelname, r.message] for r in buffer]
+        records = [[datetime.fromtimestamp(r.created), r.created, r.name, r.levelname, r.message]
+                   for r in buffer]
 
         return {'log_count': len(records), 'logs': records}
 
     def _rpc_get_logs_as_string(self, limit: Optional[int]) -> Dict[str, List]:
-        """Returns the last X logs"""
+        """Returns the last X logs as formatted string (Using the default log format)"""
         if limit:
             buffer = bufferHandler.buffer[-limit:]
         else:

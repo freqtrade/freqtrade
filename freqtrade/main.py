@@ -3,7 +3,6 @@
 Main Freqtrade bot script.
 Read the documentation to know what cli arguments you need.
 """
-# flake8: noqa E402
 import logging
 import sys
 from typing import Any, List
