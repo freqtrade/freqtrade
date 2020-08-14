@@ -17,7 +17,7 @@ from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.exceptions import (DependencyException, ExchangeError,
+from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
@@ -243,6 +243,36 @@ class FreqtradeBot:
                     fo = self.exchange.fetch_order(order.order_id, order.ft_pair)
 
                 self.update_trade_state(order.trade, fo, sl_order=order.ft_order_side == 'stoploss')
+
+            except ExchangeError:
+                logger.warning(f"Error updating {order.order_id}")
+
+    def refind_lost_order(self, trade):
+        """
+        Try refinding a lost trade.
+        Only used when InsufficientFunds appears on sell orders (stoploss or sell).
+        Tries to walk the stored orders and sell them off eventually.
+        """
+        logger.info(f"Trying to refind lost order for {trade}")
+        for order in trade.orders:
+            logger.info(f"Trying to refind {order}")
+            fo = None
+            try:
+                if order.ft_order_side == 'stoploss':
+                    fo = self.exchange.fetch_stoploss_order(order.order_id, order.ft_pair)
+                    if fo and fo['status'] == 'open':
+                        # Assume this as the open stoploss order
+                        trade.stoploss_order_id = order.order_id
+                elif order.ft_order_side == 'sell':
+                    fo = self.exchange.fetch_order(order.order_id, order.ft_pair)
+                    if fo and fo['status'] == 'open':
+                        # Assume this as the open order
+                        trade.open_order_id = order.order_id
+                else:
+                    # No action for buy orders ...
+                    continue
+                if fo:
+                    self.update_trade_state(trade, fo, sl_order=order.ft_order_side == 'stoploss')
 
             except ExchangeError:
                 logger.warning(f"Error updating {order.order_id}")
@@ -808,6 +838,11 @@ class FreqtradeBot:
             trade.orders.append(order_obj)
             trade.stoploss_order_id = str(stoploss_order['id'])
             return True
+        except InsufficientFundsError as e:
+            logger.warning(f"Unable to place stoploss order {e}.")
+            # Try refinding stoploss order
+            self.refind_lost_order(trade)
+
         except InvalidOrderException as e:
             trade.stoploss_order_id = None
             logger.error(f'Unable to place a stoploss order on exchange. {e}')
@@ -1150,12 +1185,18 @@ class FreqtradeBot:
             logger.info(f"User requested abortion of selling {trade.pair}")
             return False
 
-        # Execute sell and update trade record
-        order = self.exchange.sell(pair=trade.pair,
-                                   ordertype=order_type,
-                                   amount=amount, rate=limit,
-                                   time_in_force=time_in_force
-                                   )
+        try:
+            # Execute sell and update trade record
+            order = self.exchange.sell(pair=trade.pair,
+                                       ordertype=order_type,
+                                       amount=amount, rate=limit,
+                                       time_in_force=time_in_force
+                                       )
+        except InsufficientFundsError as e:
+            logger.warning(f"Unable to place order {e}.")
+            # Try refinding "lost" orders
+            self.refind_lost_order(trade)
+            return False
 
         order_obj = Order.parse_from_ccxt_object(order, trade.pair, 'sell')
         trade.orders.append(order_obj)
