@@ -159,6 +159,14 @@ class FtRestClient():
         """
         return self._get("show_config")
 
+    def logs(self, limit=None):
+        """Show latest logs.
+
+        :param limit: Limits log messages to the last <limit> logs. No limit to get all the trades.
+        :return: json object
+        """
+        return self._get("logs", params={"limit": limit} if limit else 0)
+
     def trades(self, limit=None):
         """Return trades history.
 

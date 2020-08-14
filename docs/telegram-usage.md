@@ -54,6 +54,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/stopbuy` | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
 | `/reload_config` | Reloads the configuration file
 | `/show_config` | Shows part of the current configuration with relevant settings to operation
+| `/logs [limit]` | Show last log messages.
 | `/status` | Lists all open trades
 | `/status table` | List all open trades in a table format. Pending buy orders are marked with an asterisk (*) Pending sell orders are marked with a double asterisk (**)
 | `/trades [limit]` | List all recently closed trades in a table format.
