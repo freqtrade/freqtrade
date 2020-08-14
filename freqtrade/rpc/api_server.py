@@ -186,6 +186,7 @@ class ApiServer(RPC):
         self.app.add_url_rule(f'{BASE_URI}/count', 'count', view_func=self._count, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/daily', 'daily', view_func=self._daily, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/edge', 'edge', view_func=self._edge, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/logs', 'log', view_func=self._get_logs, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/profit', 'profit',
                               view_func=self._profit, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/performance', 'performance',
@@ -347,6 +348,18 @@ class ApiServer(RPC):
                                        )
 
         return self.rest_dump(stats)
+
+    @require_login
+    @rpc_catch_errors
+    def _get_logs(self):
+        """
+        Returns latest logs
+         get:
+          param:
+            limit: Only get a certain number of records
+        """
+        limit = int(request.args.get('limit', 0)) or None
+        return self.rest_dump(self._rpc_get_logs(limit))
 
     @require_login
     @rpc_catch_errors

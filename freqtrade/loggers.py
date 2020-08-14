@@ -1,7 +1,7 @@
 import logging
 import queue
 from logging import Formatter
-from logging.handlers import RotatingFileHandler, SysLogHandler
+from logging.handlers import RotatingFileHandler, SysLogHandler, BufferingHandler
 from typing import Any, Dict
 
 from freqtrade.exceptions import OperationalException
@@ -9,6 +9,10 @@ from freqtrade.exceptions import OperationalException
 logger = logging.getLogger(__name__)
 log_queue = queue.Queue(-1)
 LOGFORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
+# Initialize bufferhandler - will be used for /log endpoints
+bufferHandler = BufferingHandler(1000)
+bufferHandler.setFormatter(Formatter(LOGFORMAT))
 
 
 def _set_loggers(verbosity: int = 0, api_verbosity: str = 'info') -> None:
@@ -51,6 +55,7 @@ def setup_logging(config: Dict[str, Any]) -> None:
     """
     # Log level
     verbosity = config['verbosity']
+    logging.root.addHandler(bufferHandler)
 
     logfile = config.get('logfile')
     if logfile:

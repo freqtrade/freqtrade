@@ -11,9 +11,9 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import arrow
 from numpy import NAN, mean
 
-from freqtrade.exceptions import (ExchangeError,
-                                  PricingError)
+from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
+from freqtrade.loggers import bufferHandler
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -632,6 +632,24 @@ class RPC:
                'errors': errors,
                }
         return res
+
+    def _rpc_get_logs(self, limit: Optional[int]) -> Dict[str, List]:
+        """Returns the last X logs"""
+        if limit:
+            buffer = bufferHandler.buffer[-limit:]
+        else:
+            buffer = bufferHandler.buffer
+        records = [[r.asctime, r.created, r.name, r.levelname, r.message] for r in buffer]
+
+        return {'log_count': len(records), 'logs': records}
+
+    def _rpc_get_logs_as_string(self, limit: Optional[int]) -> Dict[str, List]:
+        """Returns the last X logs"""
+        if limit:
+            buffer = bufferHandler.buffer[-limit:]
+        else:
+            buffer = bufferHandler.buffer
+        return [bufferHandler.format(r) for r in buffer]
 
     def _rpc_edge(self) -> List[Dict[str, Any]]:
         """ Returns information related to Edge """
