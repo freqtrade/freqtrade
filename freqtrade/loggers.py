@@ -92,7 +92,7 @@ def setup_logging(config: Dict[str, Any]) -> None:
             logging.root.addHandler(handler)
         else:
             handler = RotatingFileHandler(logfile,
-                                          maxBytes=1024 * 1024,  # 1Mb
+                                          maxBytes=1024 * 1024 * 10,  # 10Mb
                                           backupCount=10)
             handler.setFormatter(Formatter(LOGFORMAT))
             logging.root.addHandler(handler)
