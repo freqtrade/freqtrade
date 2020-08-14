@@ -20,6 +20,7 @@ from pandas import DataFrame
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.exceptions import (DDosProtection, ExchangeError,
+                                  InsufficientFundsError,
                                   InvalidOrderException, OperationalException,
                                   RetryableOrderError, TemporaryError)
 from freqtrade.exchange.common import BAD_EXCHANGES, retrier, retrier_async
@@ -525,7 +526,7 @@ class Exchange:
                                           amount, rate_for_order, params)
 
         except ccxt.InsufficientFunds as e:
-            raise ExchangeError(
+            raise InsufficientFundsError(
                 f'Insufficient funds to create {ordertype} {side} order on market {pair}. '
                 f'Tried to {side} amount {amount} at rate {rate}.'
                 f'Message: {e}') from e
