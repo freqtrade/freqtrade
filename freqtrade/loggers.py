@@ -1,7 +1,9 @@
 import logging
 import queue
+import sys
 from logging import Formatter
-from logging.handlers import RotatingFileHandler, SysLogHandler, BufferingHandler
+from logging.handlers import (BufferingHandler, RotatingFileHandler,
+                              SysLogHandler)
 from typing import Any, Dict
 
 from freqtrade.exceptions import OperationalException
@@ -58,6 +60,9 @@ def setup_logging(config: Dict[str, Any]) -> None:
     logging.root.addHandler(bufferHandler)
 
     logfile = config.get('logfile')
+
+    logging.root.addHandler(logging.StreamHandler(sys.stderr))
+
     if logfile:
         s = logfile.split(':')
         if s[0] == 'syslog':
