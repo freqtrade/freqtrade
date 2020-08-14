@@ -5,10 +5,9 @@ This page explains how to use Edge Positioning module in your bot in order to en
   !!! Warning
     Edge positioning is not compatible with dynamic (volume-based) whitelist.
 
-  !!! Note
- 1. Edge does not consider anything other than *its own* buy/sell/stoploss signals. It ignores the stoploss, trailing stoploss, and ROI settings in the strategy configuration file.
-
- 2. Therefore, it is important to understand that Edge can improve the performance of some trading strategies but *decrease* the performance of others.
+!!! Note
+    Edge does not consider anything other than *its own* buy/sell/stoploss signals. It ignores the stoploss, trailing stoploss, and ROI settings in the strategy configuration file.
+    Therefore, it is important to understand that Edge can improve the performance of some trading strategies but *decrease* the performance of others.
 
 ## Introduction
 
