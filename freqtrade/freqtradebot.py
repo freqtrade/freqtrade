@@ -841,7 +841,8 @@ class FreqtradeBot:
         except InsufficientFundsError as e:
             logger.warning(f"Unable to place stoploss order {e}.")
             # Try refinding stoploss order
-            self.refind_lost_order(trade)
+            # TODO: Currently disabled to allow testing without this first
+            # self.refind_lost_order(trade)
 
         except InvalidOrderException as e:
             trade.stoploss_order_id = None
@@ -933,7 +934,8 @@ class FreqtradeBot:
                 logger.info('Trailing stoploss: cancelling current stoploss on exchange (id:{%s}) '
                             'in order to add another one ...', order['id'])
                 try:
-                    self.exchange.cancel_stoploss_order(order['id'], trade.pair)
+                    co = self.exchange.cancel_stoploss_order(order['id'], trade.pair)
+                    trade.update_order(co)
                 except InvalidOrderException:
                     logger.exception(f"Could not cancel stoploss order {order['id']} "
                                      f"for pair {trade.pair}")
@@ -1195,7 +1197,8 @@ class FreqtradeBot:
         except InsufficientFundsError as e:
             logger.warning(f"Unable to place order {e}.")
             # Try refinding "lost" orders
-            self.refind_lost_order(trade)
+            # TODO: Currently disabled to allow testing without this first
+            # self.refind_lost_order(trade)
             return False
 
         order_obj = Order.parse_from_ccxt_object(order, trade.pair, 'sell')
