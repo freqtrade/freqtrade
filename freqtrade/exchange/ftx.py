@@ -4,8 +4,7 @@ from typing import Dict
 
 import ccxt
 
-from freqtrade.exceptions import (DDosProtection, ExchangeError,
-                                  InsufficientFundsError,
+from freqtrade.exceptions import (DDosProtection, InsufficientFundsError,
                                   InvalidOrderException, OperationalException,
                                   TemporaryError)
 from freqtrade.exchange import Exchange
