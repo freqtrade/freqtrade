@@ -1127,6 +1127,21 @@ def test_telegram_logs(default_conf, update, mocker) -> None:
     assert "freqtrade.rpc.telegram" in msg_mock.call_args_list[0][0][0]
     assert "freqtrade.resolvers.iresolver" in msg_mock.call_args_list[0][0][0]
 
+    msg_mock.reset_mock()
+    context.args = ["1"]
+    telegram._logs(update=update, context=context)
+    assert msg_mock.call_count == 1
+
+    msg_mock.reset_mock()
+    # Test with changed MaxMessageLength
+    mocker.patch('freqtrade.rpc.telegram.MAX_TELEGRAM_MESSAGE_LENGTH', 200)
+    context = MagicMock()
+    context.args = []
+    telegram._logs(update=update, context=context)
+    # Called at least 3 times. Exact times will change with unrelated changes to setup messages
+    # Therefore we don't test for this explicitly.
+    assert msg_mock.call_count > 3
+
 
 def test_edge_disabled(default_conf, update, mocker) -> None:
     msg_mock = MagicMock()

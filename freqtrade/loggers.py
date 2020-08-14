@@ -1,5 +1,4 @@
 import logging
-import queue
 import sys
 from logging import Formatter
 from logging.handlers import (BufferingHandler, RotatingFileHandler,
@@ -9,7 +8,6 @@ from typing import Any, Dict
 from freqtrade.exceptions import OperationalException
 
 logger = logging.getLogger(__name__)
-log_queue = queue.Queue(-1)
 LOGFORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
 # Initialize bufferhandler - will be used for /log endpoints
@@ -41,9 +39,10 @@ def _set_loggers(verbosity: int = 0, api_verbosity: str = 'info') -> None:
 
 def setup_logging_pre() -> None:
     """
-    Setup early logging.
-    This uses a queuehandler, which delays logging.
-    # TODO: How does QueueHandler work if no listenerhandler is attached??
+    Early setup for logging.
+    Uses INFO loglevel and only the Streamhandler.
+    Early messages (before proper logging setup) will therefore only be available
+    after the proper logging setup.
     """
     logging.basicConfig(
         level=logging.INFO,
