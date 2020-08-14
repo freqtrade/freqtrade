@@ -1,14 +1,17 @@
 """
 Functions to convert data from one format to another
 """
+import itertools
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict
+from operator import itemgetter
+from typing import Any, Dict, List
 
 import pandas as pd
 from pandas import DataFrame, to_datetime
 
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
+from freqtrade.constants import (DEFAULT_DATAFRAME_COLUMNS,
+                                 DEFAULT_TRADES_COLUMNS)
 
 logger = logging.getLogger(__name__)
 
@@ -154,7 +157,27 @@ def order_book_to_dataframe(bids: list, asks: list) -> DataFrame:
     return frame
 
 
-def trades_to_ohlcv(trades: list, timeframe: str) -> DataFrame:
+def trades_remove_duplicates(trades: List[List]) -> List[List]:
+    """
+    Removes duplicates from the trades list.
+    Uses itertools.groupby to avoid converting to pandas.
+    Tests show it as being pretty efficient on lists of 4M Lists.
+    :param trades: List of Lists with constants.DEFAULT_TRADES_COLUMNS as columns
+    :return: same format as above, but with duplicates removed
+    """
+    return [i for i, _ in itertools.groupby(sorted(trades, key=itemgetter(0)))]
+
+
+def trades_dict_to_list(trades: List[Dict]) -> List[List]:
+    """
+    Convert fetch_trades result into a List (to be more memory efficient).
+    :param trades: List of trades, as returned by ccxt.fetch_trades.
+    :return: List of Lists, with constants.DEFAULT_TRADES_COLUMNS as columns
+    """
+    return [[t[col] for col in DEFAULT_TRADES_COLUMNS] for t in trades]
+
+
+def trades_to_ohlcv(trades: List, timeframe: str) -> DataFrame:
     """
     Converts trades list to OHLCV list
     TODO: This should get a dedicated test
@@ -164,16 +187,17 @@ def trades_to_ohlcv(trades: list, timeframe: str) -> DataFrame:
     """
     from freqtrade.exchange import timeframe_to_minutes
     timeframe_minutes = timeframe_to_minutes(timeframe)
-    df = pd.DataFrame(trades)
-    df['datetime'] = pd.to_datetime(df['datetime'])
-    df = df.set_index('datetime')
+    df = pd.DataFrame(trades, columns=DEFAULT_TRADES_COLUMNS)
+    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms',
+                                     utc=True,)
+    df = df.set_index('timestamp')
 
     df_new = df['price'].resample(f'{timeframe_minutes}min').ohlc()
     df_new['volume'] = df['amount'].resample(f'{timeframe_minutes}min').sum()
     df_new['date'] = df_new.index
     # Drop 0 volume rows
     df_new = df_new.dropna()
-    return df_new[DEFAULT_DATAFRAME_COLUMNS]
+    return df_new.loc[:, DEFAULT_DATAFRAME_COLUMNS]
 
 
 def convert_trades_format(config: Dict[str, Any], convert_from: str, convert_to: str, erase: bool):
@@ -212,12 +236,12 @@ def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: 
     from freqtrade.data.history.idatahandler import get_datahandler
     src = get_datahandler(config['datadir'], convert_from)
     trg = get_datahandler(config['datadir'], convert_to)
-    timeframes = config.get('timeframes', [config.get('ticker_interval')])
+    timeframes = config.get('timeframes', [config.get('timeframe')])
     logger.info(f"Converting candle (OHLCV) for timeframe {timeframes}")
 
     if 'pairs' not in config:
         config['pairs'] = []
-        # Check timeframes or fall back to ticker_interval.
+        # Check timeframes or fall back to timeframe.
         for timeframe in timeframes:
             config['pairs'].extend(src.ohlcv_get_pairs(config['datadir'],
                                                        timeframe))

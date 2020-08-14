@@ -92,13 +92,13 @@ docker-compose exec freqtrade_develop /bin/bash
 You have a great idea for a new pair selection algorithm you would like to try out? Great.
 Hopefully you also want to contribute this back upstream.
 
-Whatever your motivations are - This should get you off the ground in trying to develop a new Pairlist provider.
+Whatever your motivations are - This should get you off the ground in trying to develop a new Pairlist Handler.
 
-First of all, have a look at the [VolumePairList](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/pairlist/VolumePairList.py) provider, and best copy this file with a name of your new Pairlist Provider.
+First of all, have a look at the [VolumePairList](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/pairlist/VolumePairList.py) Handler, and best copy this file with a name of your new Pairlist Handler.
 
-This is a simple provider, which however serves as a good example on how to start developing.
+This is a simple Handler, which however serves as a good example on how to start developing.
 
-Next, modify the classname of the provider (ideally align this with the Filename).
+Next, modify the classname of the Handler (ideally align this with the module filename).
 
 The base-class provides an instance of the exchange (`self._exchange`) the pairlist manager (`self._pairlistmanager`), as well as the main configuration (`self._config`), the pairlist dedicated configuration (`self._pairlistconfig`) and the absolute position within the list of pairlists.
 
@@ -114,27 +114,43 @@ Now, let's step through the methods which require actions:
 
 #### Pairlist configuration
 
-Configuration for PairListProvider is done in the bot configuration file in the element `"pairlist"`.
-This Pairlist-object may contain configurations with additional configurations for the configured pairlist.
-By convention, `"number_assets"` is used to specify the maximum number of pairs to keep in the whitelist. Please follow this to ensure a consistent user experience.
+Configuration for the chain of Pairlist Handlers is done in the bot configuration file in the element `"pairlists"`, an array of configuration parameters for each Pairlist Handlers in the chain.
 
-Additional elements can be configured as needed. `VolumePairList` uses `"sort_key"` to specify the sorting value - however feel free to specify whatever is necessary for your great algorithm to be successfull and dynamic.
+By convention, `"number_assets"` is used to specify the maximum number of pairs to keep in the pairlist. Please follow this to ensure a consistent user experience.
+
+Additional parameters can be configured as needed. For instance, `VolumePairList` uses `"sort_key"` to specify the sorting value - however feel free to specify whatever is necessary for your great algorithm to be successfull and dynamic.
 
 #### short_desc
 
 Returns a description used for Telegram messages.
-This should contain the name of the Provider, as well as a short description containing the number of assets. Please follow the format `"PairlistName - top/bottom X pairs"`.
+
+This should contain the name of the Pairlist Handler, as well as a short description containing the number of assets. Please follow the format `"PairlistName - top/bottom X pairs"`.
+
+#### gen_pairlist
+
+Override this method if the Pairlist Handler can be used as the leading Pairlist Handler in the chain, defining the initial pairlist which is then handled by all Pairlist Handlers in the chain. Examples are `StaticPairList` and `VolumePairList`.
+
+This is called with each iteration of the bot (only if the Pairlist Handler is at the first location) - so consider implementing caching for compute/network heavy calculations.
+
+It must return the resulting pairlist (which may then be passed into the chain of Pairlist Handlers).
+
+Validations are optional, the parent class exposes a `_verify_blacklist(pairlist)` and `_whitelist_for_active_markets(pairlist)` to do default filtering. Use this if you limit your result to a certain number of pairs - so the endresult is not shorter than expected.
 
 #### filter_pairlist
 
-Override this method and run all calculations needed in this method.
+This method is called for each Pairlist Handler in the chain by the pairlist manager.
+
 This is called with each iteration of the bot - so consider implementing caching for compute/network heavy calculations.
 
 It get's passed a pairlist (which can be the result of previous pairlists) as well as `tickers`, a pre-fetched version of `get_tickers()`.
 
-It must return the resulting pairlist (which may then be passed into the next pairlist filter).
+The default implementation in the base class simply calls the `_validate_pair()` method for each pair in the pairlist, but you may override it. So you should either implement the `_validate_pair()` in your Pairlist Handler or override `filter_pairlist()` to do something else.
+
+If overridden, it must return the resulting pairlist (which may then be passed into the next Pairlist Handler in the chain).
 
 Validations are optional, the parent class exposes a `_verify_blacklist(pairlist)` and `_whitelist_for_active_markets(pairlist)` to do default filters. Use this if you limit your result to a certain number of pairs - so the endresult is not shorter than expected.
+
+In `VolumePairList`, this implements different methods of sorting, does early validation so only the expected number of pairs is returned.
 
 ##### sample
 
@@ -144,11 +160,6 @@ Validations are optional, the parent class exposes a `_verify_blacklist(pairlist
         pairs = self._calculate_pairlist(pairlist, tickers)
         return pairs
 ```
-
-#### _gen_pair_whitelist
-
-This is a simple method used by `VolumePairList` - however serves as a good example.
-In VolumePairList, this implements different methods of sorting, does early validation so only the expected number of pairs is returned.
 
 ## Implement a new Exchange (WIP)
 

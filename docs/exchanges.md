@@ -30,6 +30,15 @@ Binance has been split into 3, and users must use the correct ccxt exchange ID f
 The Kraken API does only provide 720 historic candles, which is sufficient for Freqtrade dry-run and live trade modes, but is a problem for backtesting.
 To download data for the Kraken exchange, using `--dl-trades` is mandatory, otherwise the bot will download the same 720 candles over and over, and you'll not have enough backtest data.
 
+Due to the heavy rate-limiting applied by Kraken, the following configuration section should be used to download data:
+
+``` json
+    "ccxt_async_config": {
+        "enableRateLimit": true,
+        "rateLimit": 3100
+    },
+```
+
 ## Bittrex
 
 ### Order types
@@ -61,6 +70,30 @@ _ = ct.load_markets()
 res = [ f"{x['MarketCurrency']}/{x['BaseCurrency']}" for x in ct.publicGetMarkets()['result'] if x['IsRestricted']]
 print(res)
 ```
+
+## FTX
+
+!!! Tip "Stoploss on Exchange"
+    FTX supports `stoploss_on_exchange` and can use both stop-loss-market and stop-loss-limit orders. It provides great advantages, so we recommend to benefit from it.
+    You can use either `"limit"` or `"market"` in the `order_types.stoploss` configuration setting to decide.
+
+
+### Using subaccounts
+
+To use subaccounts with FTX, you need to edit the configuration and add the following:
+
+``` json
+"exchange": {
+    "ccxt_config": {
+        "headers": {
+            "FTX-SUBACCOUNT": "name"
+        }
+    },
+}
+```
+
+!!! Note
+    Older versions of freqtrade may require this key to be added to `"ccxt_async_config"` as well.
 
 ## All exchanges
 

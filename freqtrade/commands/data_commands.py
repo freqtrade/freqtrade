@@ -1,5 +1,6 @@
 import logging
 import sys
+from collections import defaultdict
 from typing import Any, Dict, List
 
 import arrow
@@ -11,6 +12,7 @@ from freqtrade.data.history import (convert_trades_to_ohlcv,
                                     refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
 from freqtrade.exceptions import OperationalException
+from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
 
@@ -88,3 +90,30 @@ def start_convert_data(args: Dict[str, Any], ohlcv: bool = True) -> None:
         convert_trades_format(config,
                               convert_from=args['format_from'], convert_to=args['format_to'],
                               erase=args['erase'])
+
+
+def start_list_data(args: Dict[str, Any]) -> None:
+    """
+    List available backtest data
+    """
+
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+
+    from freqtrade.data.history.idatahandler import get_datahandler
+    from tabulate import tabulate
+    dhc = get_datahandler(config['datadir'], config['dataformat_ohlcv'])
+
+    paircombs = dhc.ohlcv_get_available_data(config['datadir'])
+
+    if args['pairs']:
+        paircombs = [comb for comb in paircombs if comb[0] in args['pairs']]
+
+    print(f"Found {len(paircombs)} pair / timeframe combinations.")
+    groupedpair = defaultdict(list)
+    for pair, timeframe in sorted(paircombs, key=lambda x: (x[0], timeframe_to_minutes(x[1]))):
+        groupedpair[pair].append(timeframe)
+
+    if groupedpair:
+        print(tabulate([(pair, ', '.join(timeframes)) for pair, timeframes in groupedpair.items()],
+                       headers=("Pair", "Timeframe"),
+                       tablefmt='psql', stralign='right'))

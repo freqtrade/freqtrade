@@ -16,12 +16,12 @@ if readme_file.is_file():
     readme_long = (Path(__file__).parent / "README.md").read_text()
 
 # Requirements used for submodules
-api = ['flask']
+api = ['flask', 'flask-jwt-extended', 'flask-cors']
 plot = ['plotly>=4.0']
 hyperopt = [
     'scipy',
     'scikit-learn',
-    'scikit-optimize',
+    'scikit-optimize>=0.7.0',
     'filelock',
     'joblib',
     'progressbar2',
@@ -63,7 +63,7 @@ setup(name='freqtrade',
       tests_require=['pytest', 'pytest-asyncio', 'pytest-cov', 'pytest-mock', ],
       install_requires=[
           # from requirements-common.txt
-          'ccxt>=1.18.1080',
+          'ccxt>=1.24.96',
           'SQLAlchemy',
           'python-telegram-bot',
           'arrow',

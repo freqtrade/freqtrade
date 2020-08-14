@@ -8,7 +8,8 @@
     "amend_last_stake_amount": false,
     "last_stake_amount_min_ratio": 0.5,
     "dry_run": false,
-    "ticker_interval": "5m",
+    "cancel_open_orders_on_exit": false,
+    "timeframe": "5m",
     "trailing_stop": false,
     "trailing_stop_positive": 0.005,
     "trailing_stop_positive_offset": 0.0051,
@@ -63,8 +64,9 @@
             "sort_key": "quoteVolume",
             "refresh_period": 1800
         },
+        {"method": "AgeFilter", "min_days_listed": 10},
         {"method": "PrecisionFilter"},
-        {"method": "PriceFilter", "low_price_ratio": 0.01},
+        {"method": "PriceFilter", "low_price_ratio": 0.01, "min_price": 0.00000010},
         {"method": "SpreadFilter", "max_spread_ratio": 0.005}
     ],
     "exchange": {
@@ -120,6 +122,9 @@
         "enabled": false,
         "listen_ip_address": "127.0.0.1",
         "listen_port": 8080,
+        "verbosity": "info",
+        "jwt_secret_key": "somethingrandom",
+        "CORS_origins": [],
         "username": "freqtrader",
         "password": "SuperSecurePassword"
     },
@@ -130,6 +135,7 @@
         "process_throttle_secs": 5,
         "heartbeat_interval": 60
     },
+    "disable_dataframe_checks": false,
     "strategy": "DefaultStrategy",
     "strategy_path": "user_data/strategies/",
     "dataformat_ohlcv": "json",

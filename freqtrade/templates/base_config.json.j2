@@ -4,8 +4,9 @@
     "stake_amount": {{ stake_amount }},
     "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "{{ fiat_display_currency }}",
-    "ticker_interval": "{{ ticker_interval }}",
+    "timeframe": "{{ timeframe }}",
     "dry_run": {{ dry_run | lower }},
+    "cancel_open_orders_on_exit": false,
     "unfilledtimeout": {
         "buy": 10,
         "sell": 30
@@ -51,6 +52,16 @@
         "enabled": {{ telegram | lower }},
         "token": "{{ telegram_token }}",
         "chat_id": "{{ telegram_chat_id }}"
+    },
+    "api_server": {
+        "enabled": false,
+        "listen_ip_address": "127.0.0.1",
+        "listen_port": 8080,
+        "verbosity": "info",
+        "jwt_secret_key": "somethingrandom",
+        "CORS_origins": [],
+        "username": "",
+        "password": ""
     },
     "initial_state": "running",
     "forcebuy_enable": false,

@@ -68,40 +68,43 @@ For any other type of installation please refer to [Installation doc](https://ww
 ### Bot commands
 
 ```
-usage: freqtrade [-h] [-v] [--logfile FILE] [--version] [-c PATH] [-d PATH]
-                 [-s NAME] [--strategy-path PATH] [--dynamic-whitelist [INT]]
-                 [--db-url PATH] [--sd-notify]
-                 {backtesting,edge,hyperopt} ...
+usage: freqtrade [-h] [-V]
+                 {trade,create-userdir,new-config,new-hyperopt,new-strategy,download-data,convert-data,convert-trade-data,backtesting,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-hyperopts,list-markets,list-pairs,list-strategies,list-timeframes,show-trades,test-pairlist,plot-dataframe,plot-profit}
+                 ...
 
 Free, open source crypto trading bot
 
 positional arguments:
-  {backtesting,edge,hyperopt}
+  {trade,create-userdir,new-config,new-hyperopt,new-strategy,download-data,convert-data,convert-trade-data,backtesting,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-hyperopts,list-markets,list-pairs,list-strategies,list-timeframes,show-trades,test-pairlist,plot-dataframe,plot-profit}
+    trade               Trade module.
+    create-userdir      Create user-data directory.
+    new-config          Create new config
+    new-hyperopt        Create new hyperopt
+    new-strategy        Create new strategy
+    download-data       Download backtesting data.
+    convert-data        Convert candle (OHLCV) data from one format to
+                        another.
+    convert-trade-data  Convert trade data from one format to another.
     backtesting         Backtesting module.
     edge                Edge module.
     hyperopt            Hyperopt module.
+    hyperopt-list       List Hyperopt results
+    hyperopt-show       Show details of Hyperopt results
+    list-exchanges      Print available exchanges.
+    list-hyperopts      Print available hyperopt classes.
+    list-markets        Print markets on exchange.
+    list-pairs          Print pairs on exchange.
+    list-strategies     Print available strategies.
+    list-timeframes     Print available timeframes for the exchange.
+    show-trades         Show trades.
+    test-pairlist       Test your pairlist configuration.
+    plot-dataframe      Plot candles with indicators.
+    plot-profit         Generate plot showing profits.
 
 optional arguments:
   -h, --help            show this help message and exit
-  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified
-  --version             show program's version number and exit
-  -c PATH, --config PATH
-                        Specify configuration file (default: None). Multiple
-                        --config options may be used.
-  -d PATH, --datadir PATH
-                        Path to backtest data.
-  -s NAME, --strategy NAME
-                        Specify strategy class name (default:
-                        DefaultStrategy).
-  --strategy-path PATH  Specify additional strategy lookup path.
-  --dynamic-whitelist [INT]
-                        Dynamically generate and update whitelist based on 24h
-                        BaseVolume (default: 20). DEPRECATED.
-  --db-url PATH         Override trades database URL, this is useful if
-                        dry_run is enabled or in custom deployments (default:
-                        None).
-  --sd-notify           Notify systemd service manager.
+  -V, --version         show program's version number and exit
+
 ```
 
 ### Telegram RPC commands

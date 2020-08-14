@@ -42,14 +42,6 @@ if [ "${TAG}" = "develop" ]; then
     docker tag freqtrade:$TAG ${IMAGE_NAME}:latest
 fi
 
-# Login
-docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-
-if [ $? -ne 0 ]; then
-    echo "failed login"
-    return 1
-fi
-
 # Show all available images
 docker images
 

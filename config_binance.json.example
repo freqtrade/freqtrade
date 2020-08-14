@@ -4,8 +4,9 @@
     "stake_amount": 0.05,
     "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "USD",
-    "ticker_interval": "5m",
+    "timeframe": "5m",
     "dry_run": true,
+    "cancel_open_orders_on_exit": false,
     "trailing_stop": false,
     "unfilledtimeout": {
         "buy": 10,
@@ -79,6 +80,16 @@
         "enabled": false,
         "token": "your_telegram_token",
         "chat_id": "your_telegram_chat_id"
+    },
+    "api_server": {
+        "enabled": false,
+        "listen_ip_address": "127.0.0.1",
+        "listen_port": 8080,
+        "verbosity": "info",
+        "jwt_secret_key": "somethingrandom",
+        "CORS_origins": [],
+        "username": "",
+        "password": ""
     },
     "initial_state": "running",
     "forcebuy_enable": false,

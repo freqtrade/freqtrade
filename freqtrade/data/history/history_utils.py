@@ -9,10 +9,13 @@ from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
-from freqtrade.data.converter import ohlcv_to_dataframe, trades_to_ohlcv
+from freqtrade.data.converter import (ohlcv_to_dataframe,
+                                      trades_remove_duplicates,
+                                      trades_to_ohlcv)
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
+from freqtrade.misc import format_ms_time
 
 logger = logging.getLogger(__name__)
 
@@ -257,27 +260,45 @@ def _download_trades_history(exchange: Exchange,
     """
     try:
 
-        since = timerange.startts * 1000 if timerange and timerange.starttype == 'date' else None
+        since = timerange.startts * 1000 if \
+            (timerange and timerange.starttype == 'date') else int(arrow.utcnow().shift(
+                days=-30).float_timestamp) * 1000
 
         trades = data_handler.trades_load(pair)
 
-        from_id = trades[-1]['id'] if trades else None
+        # TradesList columns are defined in constants.DEFAULT_TRADES_COLUMNS
+        # DEFAULT_TRADES_COLUMNS: 0 -> timestamp
+        # DEFAULT_TRADES_COLUMNS: 1 -> id
 
-        logger.debug("Current Start: %s", trades[0]['datetime'] if trades else 'None')
-        logger.debug("Current End: %s", trades[-1]['datetime'] if trades else 'None')
+        if trades and since < trades[0][0]:
+            # since is before the first trade
+            logger.info(f"Start earlier than available data. Redownloading trades for {pair}...")
+            trades = []
+
+        from_id = trades[-1][1] if trades else None
+        if trades and since < trades[-1][0]:
+            # Reset since to the last available point
+            # - 5 seconds (to ensure we're getting all trades)
+            since = trades[-1][0] - (5 * 1000)
+            logger.info(f"Using last trade date -5s - Downloading trades for {pair} "
+                        f"since: {format_ms_time(since)}.")
+
+        logger.debug(f"Current Start: {format_ms_time(trades[0][0]) if trades else 'None'}")
+        logger.debug(f"Current End: {format_ms_time(trades[-1][0]) if trades else 'None'}")
+        logger.info(f"Current Amount of trades: {len(trades)}")
 
         # Default since_ms to 30 days if nothing is given
         new_trades = exchange.get_historic_trades(pair=pair,
-                                                  since=since if since else
-                                                  int(arrow.utcnow().shift(
-                                                      days=-30).float_timestamp) * 1000,
+                                                  since=since,
                                                   from_id=from_id,
                                                   )
         trades.extend(new_trades[1])
+        # Remove duplicates to make sure we're not storing data we don't need
+        trades = trades_remove_duplicates(trades)
         data_handler.trades_store(pair, data=trades)
 
-        logger.debug("New Start: %s", trades[0]['datetime'])
-        logger.debug("New End: %s", trades[-1]['datetime'])
+        logger.debug(f"New Start: {format_ms_time(trades[0][0])}")
+        logger.debug(f"New End: {format_ms_time(trades[-1][0])}")
         logger.info(f"New Amount of trades: {len(trades)}")
         return True
 
