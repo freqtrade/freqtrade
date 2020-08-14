@@ -744,7 +744,7 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     }
     response_expected = {
         'loss': 1.9840569076926293,
-        'results_explanation': ('     1 trades.      1 wins.      0 draws.      0 losses. '
+        'results_explanation': ('     1 trades. 1/0/0 Wins/Draws/Losses. '
                                 'Avg profit   2.31%. Median profit   2.31%. Total profit  '
                                 '0.00023300 BTC (   2.31\N{GREEK CAPITAL LETTER SIGMA}%). '
                                 'Avg duration 100.0 min.'

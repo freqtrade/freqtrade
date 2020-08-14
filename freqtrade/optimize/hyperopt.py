@@ -585,9 +585,8 @@ class Hyperopt:
         """
         stake_cur = self.config['stake_currency']
         return (f"{results_metrics['trade_count']:6d} trades. "
-                f"{results_metrics['wins']:6d} wins. "
-                f"{results_metrics['draws']:6d} draws. "
-                f"{results_metrics['losses']:6d} losses. "
+                f"{results_metrics['wins']}/{results_metrics['draws']}"
+                f"/{results_metrics['losses']} Wins/Draws/Losses. "
                 f"Avg profit {results_metrics['avg_profit']: 6.2f}%. "
                 f"Median profit {results_metrics['median_profit']: 6.2f}%. "
                 f"Total profit {results_metrics['total_profit']: 11.8f} {stake_cur} "
