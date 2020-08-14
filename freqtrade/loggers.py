@@ -1,9 +1,8 @@
 import logging
 import queue
-import sys
 from logging import Formatter
-from logging.handlers import RotatingFileHandler, SysLogHandler, QueueHandler, QueueListener
-from typing import Any, Dict, List
+from logging.handlers import RotatingFileHandler, SysLogHandler
+from typing import Any, Dict
 
 from freqtrade.exceptions import OperationalException
 
@@ -40,17 +39,10 @@ def setup_logging_pre() -> None:
     This uses a queuehandler, which delays logging.
     # TODO: How does QueueHandler work if no listenerhandler is attached??
     """
-    logging.root.setLevel(logging.INFO)
-    fmt = logging.Formatter(LOGFORMAT)
-
-    queue_handler = QueueHandler(log_queue)
-    queue_handler.setFormatter(fmt)
-    logger.root.addHandler(queue_handler)
-
-    # Add streamhandler here to capture Errors before QueueListener is started
-    sth = logging.StreamHandler(sys.stderr)
-    sth.setFormatter(fmt)
-    logger.root.addHandler(sth)
+    logging.basicConfig(
+        level=logging.INFO,
+        format=LOGFORMAT,
+    )
 
 
 def setup_logging(config: Dict[str, Any]) -> None:
@@ -59,9 +51,6 @@ def setup_logging(config: Dict[str, Any]) -> None:
     """
     # Log level
     verbosity = config['verbosity']
-
-    # Log to stderr
-    log_handlers: List[logging.Handler] = []
 
     logfile = config.get('logfile')
     if logfile:
@@ -78,7 +67,7 @@ def setup_logging(config: Dict[str, Any]) -> None:
             # to perform reduction of repeating messages if this is set in the
             # syslog config. The messages should be equal for this.
             handler.setFormatter(Formatter('%(name)s - %(levelname)s - %(message)s'))
-            log_handlers.append(handler)
+            logging.root.addHandler(handler)
         elif s[0] == 'journald':
             try:
                 from systemd.journal import JournaldLogHandler
@@ -90,16 +79,15 @@ def setup_logging(config: Dict[str, Any]) -> None:
             # to perform reduction of repeating messages if this is set in the
             # syslog config. The messages should be equal for this.
             handler.setFormatter(Formatter('%(name)s - %(levelname)s - %(message)s'))
-            log_handlers.append(handler)
+            logging.root.addHandler(handler)
         else:
-            log_handlers.append(RotatingFileHandler(logfile,
-                                                    maxBytes=1024 * 1024,  # 1Mb
-                                                    backupCount=10))
+            handler = RotatingFileHandler(logfile,
+                                          maxBytes=1024 * 1024,  # 1Mb
+                                          backupCount=10)
+            handler.setFormatter(Formatter(LOGFORMAT))
+            logging.root.addHandler(handler)
 
-    listener = QueueListener(log_queue, *log_handlers)
-
-    # logging.root.setFormatter(logging.Formatter(LOGFORMAT))
     logging.root.setLevel(logging.INFO if verbosity < 1 else logging.DEBUG)
-    listener.start()
     _set_loggers(verbosity, config.get('api_server', {}).get('verbosity', 'info'))
+
     logger.info('Verbosity set to %s', verbosity)
