@@ -88,7 +88,7 @@ docker-compose exec freqtrade_develop /bin/bash
 ## ErrorHandling
 
 Freqtrade Exceptions all inherit from `FreqtradeException`.
-This general class of error should however not be used directly, instead, multiple specialized sub-Exceptions exist.
+This general class of error should however not be used directly. Instead, multiple specialized sub-Exceptions exist.
 
 Below is an outline of exception inheritance hierarchy:
 
