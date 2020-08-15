@@ -683,7 +683,8 @@ Calculation example:
 
 Min price precision for SHITCOIN/BTC is 8 decimals. If its price is 0.00000011 - one price step above would be 0.00000012, which is ~9% higher than the previous price value. You may filter out this pair by using PriceFilter with `low_price_ratio` set to 0.09 (9%) or with `min_price` set to 0.00000011, correspondingly.
 
-Low priced pairs are dangerous since they are often illiquid and it may also be impossible to place the desired stoploss, which can often result in high losses. Consider using PriceFilter with `low_price_ratio` set to a value which is less than the absolute value of your stoploss (for example, if your stoploss is -5% (-0.05), then the value for `low_price_ratio` can be 0.04 or even 0.02).
+!!! Warning "Low priced pairs"
+    Low priced pairs with high "1 pip movements" are dangerous since they are often illiquid and it may also be impossible to place the desired stoploss, which can often result in high losses since price needs to be rounded to the next tradable price - so instead of having a stoploss of -5%, you could end up with a stoploss of -9% simply due to price rounding.
 
 #### ShuffleFilter
 
