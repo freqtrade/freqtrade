@@ -12,6 +12,7 @@ from tabulate import tabulate
 from telegram import ParseMode, ReplyKeyboardMarkup, Update
 from telegram.error import NetworkError, TelegramError
 from telegram.ext import CallbackContext, CommandHandler, Updater
+from telegram.utils.helpers import escape_markdown
 
 from freqtrade.__init__ import __version__
 from freqtrade.rpc import RPC, RPCException, RPCMessageType
@@ -651,20 +652,22 @@ class Telegram(RPC):
                 limit = 10
             logs = self._rpc_get_logs(limit)['logs']
             msgs = ''
-            msg_template = "*{}* {}: {} - `{}`"
+            msg_template = "*{}* {}: {} \\- `{}`"
             for logrec in logs:
-                msg = msg_template.format(logrec[0], logrec[2], logrec[3], logrec[4])
-
+                msg = msg_template.format(escape_markdown(logrec[0], version=2),
+                                          escape_markdown(logrec[2], version=2),
+                                          escape_markdown(logrec[3], version=2),
+                                          escape_markdown(logrec[4], version=2))
                 if len(msgs + msg) + 10 >= MAX_TELEGRAM_MESSAGE_LENGTH:
                     # Send message immediately if it would become too long
-                    self._send_msg(msgs, parse_mode=ParseMode.MARKDOWN)
+                    self._send_msg(msgs, parse_mode=ParseMode.MARKDOWN_V2)
                     msgs = msg + '\n'
                 else:
                     # Append message to messages to send
                     msgs += msg + '\n'
 
             if msgs:
-                self._send_msg(msgs, parse_mode=ParseMode.MARKDOWN)
+                self._send_msg(msgs, parse_mode=ParseMode.MARKDOWN_V2)
         except RPCException as e:
             self._send_msg(str(e))
 

@@ -640,7 +640,8 @@ class RPC:
         else:
             buffer = bufferHandler.buffer
         records = [[datetime.fromtimestamp(r.created).strftime("%Y-%m-%d %H:%M:%S"),
-                   r.created, r.name, r.levelname, r.message]
+                   r.created, r.name, r.levelname,
+                   r.message + ('\n' + r.exc_text if r.exc_text else '')]
                    for r in buffer]
 
         return {'log_count': len(records), 'logs': records}
