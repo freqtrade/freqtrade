@@ -1,6 +1,6 @@
 """ FTX exchange subclass """
 import logging
-from typing import Dict
+from typing import Any, Dict
 
 import ccxt
 
@@ -19,6 +19,16 @@ class Ftx(Exchange):
         "stoploss_on_exchange": True,
         "ohlcv_candle_limit": 1500,
     }
+
+    def market_is_tradable(self, market: Dict[str, Any]) -> bool:
+        """
+        Check if the market symbol is tradable by Freqtrade.
+        Default checks + check if pair is spot pair (no futures trading yet).
+        """
+        parent_check = super().market_is_tradable(market)
+
+        return (parent_check and
+                market.get('spot', False) is True)
 
     def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
         """
@@ -78,7 +88,7 @@ class Ftx(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    @retrier
+    @retrier(retries=5)
     def fetch_stoploss_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
             try:

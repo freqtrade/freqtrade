@@ -50,6 +50,12 @@ def client_get(client, url):
                                     'Origin': 'http://example.com'})
 
 
+def client_delete(client, url):
+    # Add fake Origin to ensure CORS kicks in
+    return client.delete(url, headers={'Authorization': _basic_auth_str(_TEST_USER, _TEST_PASS),
+                                       'Origin': 'http://example.com'})
+
+
 def assert_response(response, expected_code=200, needs_cors=True):
     assert response.status_code == expected_code
     assert response.content_type == "application/json"
@@ -352,7 +358,7 @@ def test_api_daily(botclient, mocker, ticker, fee, markets):
     assert rc.json['data'][0]['date'] == str(datetime.utcnow().date())
 
 
-def test_api_trades(botclient, mocker, ticker, fee, markets):
+def test_api_trades(botclient, mocker, fee, markets):
     ftbot, client = botclient
     patch_get_signal(ftbot, (True, False))
     mocker.patch.multiple(
@@ -368,12 +374,53 @@ def test_api_trades(botclient, mocker, ticker, fee, markets):
 
     rc = client_get(client, f"{BASE_URI}/trades")
     assert_response(rc)
-    assert len(rc.json['trades']) == 3
-    assert rc.json['trades_count'] == 3
-    rc = client_get(client, f"{BASE_URI}/trades?limit=2")
-    assert_response(rc)
     assert len(rc.json['trades']) == 2
     assert rc.json['trades_count'] == 2
+    rc = client_get(client, f"{BASE_URI}/trades?limit=1")
+    assert_response(rc)
+    assert len(rc.json['trades']) == 1
+    assert rc.json['trades_count'] == 1
+
+
+def test_api_delete_trade(botclient, mocker, fee, markets):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, (True, False))
+    stoploss_mock = MagicMock()
+    cancel_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        markets=PropertyMock(return_value=markets),
+        cancel_order=cancel_mock,
+        cancel_stoploss_order=stoploss_mock,
+    )
+    rc = client_delete(client, f"{BASE_URI}/trades/1")
+    # Error - trade won't exist yet.
+    assert_response(rc, 502)
+
+    create_mock_trades(fee)
+    ftbot.strategy.order_types['stoploss_on_exchange'] = True
+    trades = Trade.query.all()
+    trades[1].stoploss_order_id = '1234'
+    assert len(trades) > 2
+
+    rc = client_delete(client, f"{BASE_URI}/trades/1")
+    assert_response(rc)
+    assert rc.json['result_msg'] == 'Deleted trade 1. Closed 1 open orders.'
+    assert len(trades) - 1 == len(Trade.query.all())
+    assert cancel_mock.call_count == 1
+
+    cancel_mock.reset_mock()
+    rc = client_delete(client, f"{BASE_URI}/trades/1")
+    # Trade is gone now.
+    assert_response(rc, 502)
+    assert cancel_mock.call_count == 0
+
+    assert len(trades) - 1 == len(Trade.query.all())
+    rc = client_delete(client, f"{BASE_URI}/trades/2")
+    assert_response(rc)
+    assert rc.json['result_msg'] == 'Deleted trade 2. Closed 2 open orders.'
+    assert len(trades) - 2 == len(Trade.query.all())
+    assert stoploss_mock.call_count == 1
 
 
 def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
@@ -519,7 +566,8 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     rc = client_get(client, f"{BASE_URI}/status")
     assert_response(rc)
     assert len(rc.json) == 1
-    assert rc.json == [{'amount': 91.07468124,
+    assert rc.json == [{'amount': 91.07468123,
+                        'amount_requested': 91.07468123,
                         'base_currency': 'BTC',
                         'close_date': None,
                         'close_date_hum': None,
@@ -641,6 +689,7 @@ def test_api_forcebuy(botclient, mocker, fee):
     fbuy_mock = MagicMock(return_value=Trade(
         pair='ETH/ETH',
         amount=1,
+        amount_requested=1,
         exchange='bittrex',
         stake_amount=1,
         open_rate=0.245441,
@@ -657,6 +706,7 @@ def test_api_forcebuy(botclient, mocker, fee):
                      data='{"pair": "ETH/BTC"}')
     assert_response(rc)
     assert rc.json == {'amount': 1,
+                       'amount_requested': 1,
                        'trade_id': None,
                        'close_date': None,
                        'close_date_hum': None,
@@ -693,7 +743,7 @@ def test_api_forcebuy(botclient, mocker, fee):
                        'min_rate': None,
                        'open_order_id': '123456',
                        'open_rate_requested': None,
-                       'open_trade_price': 0.2460546025,
+                       'open_trade_price': 0.24605460,
                        'sell_reason': None,
                        'sell_order_status': None,
                        'strategy': None,

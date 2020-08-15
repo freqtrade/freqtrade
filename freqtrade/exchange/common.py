@@ -107,12 +107,12 @@ def retrier_async(f):
         except TemporaryError as ex:
             logger.warning('%s() returned exception: "%s"', f.__name__, ex)
             if count > 0:
+                logger.warning('retrying %s() still for %s times', f.__name__, count)
                 count -= 1
                 kwargs.update({'count': count})
-                logger.warning('retrying %s() still for %s times', f.__name__, count)
                 if isinstance(ex, DDosProtection):
                     backoff_delay = calculate_backoff(count + 1, API_RETRY_COUNT)
-                    logger.debug(f"Applying DDosProtection backoff delay: {backoff_delay}")
+                    logger.info(f"Applying DDosProtection backoff delay: {backoff_delay}")
                     await asyncio.sleep(backoff_delay)
                 return await wrapper(*args, **kwargs)
             else:
@@ -131,13 +131,13 @@ def retrier(_func=None, retries=API_RETRY_COUNT):
             except (TemporaryError, RetryableOrderError) as ex:
                 logger.warning('%s() returned exception: "%s"', f.__name__, ex)
                 if count > 0:
+                    logger.warning('retrying %s() still for %s times', f.__name__, count)
                     count -= 1
                     kwargs.update({'count': count})
-                    logger.warning('retrying %s() still for %s times', f.__name__, count)
                     if isinstance(ex, DDosProtection) or isinstance(ex, RetryableOrderError):
                         # increasing backoff
                         backoff_delay = calculate_backoff(count + 1, retries)
-                        logger.debug(f"Applying DDosProtection backoff delay: {backoff_delay}")
+                        logger.info(f"Applying DDosProtection backoff delay: {backoff_delay}")
                         time.sleep(backoff_delay)
                     return wrapper(*args, **kwargs)
                 else:

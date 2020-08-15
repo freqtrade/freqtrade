@@ -176,6 +176,7 @@ def create_mock_trades(fee):
         pair='ETH/BTC',
         stake_amount=0.001,
         amount=123.0,
+        amount_requested=123.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_rate=0.123,
@@ -188,6 +189,7 @@ def create_mock_trades(fee):
         pair='ETC/BTC',
         stake_amount=0.001,
         amount=123.0,
+        amount_requested=123.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_rate=0.123,
@@ -199,11 +201,26 @@ def create_mock_trades(fee):
     )
     Trade.session.add(trade)
 
+    trade = Trade(
+        pair='XRP/BTC',
+        stake_amount=0.001,
+        amount=123.0,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_rate=0.05,
+        close_rate=0.06,
+        close_profit=0.01,
+        exchange='bittrex',
+        is_open=False,
+    )
+    Trade.session.add(trade)
+
     # Simulate prod entry
     trade = Trade(
         pair='ETC/BTC',
         stake_amount=0.001,
         amount=123.0,
+        amount_requested=124.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_rate=0.123,

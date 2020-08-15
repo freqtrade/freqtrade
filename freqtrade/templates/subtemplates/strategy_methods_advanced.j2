@@ -34,7 +34,7 @@ def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: f
     """
     return True
 
-def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
+def confirm_trade_exit(self, pair: str, trade: 'Trade', order_type: str, amount: float,
                        rate: float, time_in_force: str, sell_reason: str, **kwargs) -> bool:
     """
     Called right before placing a regular sell order.

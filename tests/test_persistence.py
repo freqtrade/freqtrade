@@ -457,6 +457,7 @@ def test_migrate_old(mocker, default_conf, fee):
     assert trade.close_rate_requested is None
     assert trade.is_open == 1
     assert trade.amount == amount
+    assert trade.amount_requested == amount
     assert trade.stake_amount == default_conf.get("stake_amount")
     assert trade.pair == "ETC/BTC"
     assert trade.exchange == "bittrex"
@@ -546,6 +547,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.close_rate_requested is None
     assert trade.is_open == 1
     assert trade.amount == amount
+    assert trade.amount_requested == amount
     assert trade.stake_amount == default_conf.get("stake_amount")
     assert trade.pair == "ETC/BTC"
     assert trade.exchange == "binance"
@@ -725,6 +727,7 @@ def test_to_json(default_conf, fee):
         pair='ETH/BTC',
         stake_amount=0.001,
         amount=123.0,
+        amount_requested=123.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_date=arrow.utcnow().shift(hours=-2).datetime,
@@ -757,6 +760,7 @@ def test_to_json(default_conf, fee):
                       'close_rate': None,
                       'close_rate_requested': None,
                       'amount': 123.0,
+                      'amount_requested': 123.0,
                       'stake_amount': 0.001,
                       'close_profit': None,
                       'close_profit_abs': None,
@@ -786,6 +790,7 @@ def test_to_json(default_conf, fee):
         pair='XRP/BTC',
         stake_amount=0.001,
         amount=100.0,
+        amount_requested=101.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_date=arrow.utcnow().shift(hours=-2).datetime,
@@ -808,6 +813,7 @@ def test_to_json(default_conf, fee):
                       'open_rate': 0.123,
                       'close_rate': 0.125,
                       'amount': 100.0,
+                      'amount_requested': 101.0,
                       'stake_amount': 0.001,
                       'stop_loss': None,
                       'stop_loss_abs': None,
@@ -989,7 +995,7 @@ def test_get_overall_performance(fee):
     create_mock_trades(fee)
     res = Trade.get_overall_performance()
 
-    assert len(res) == 1
+    assert len(res) == 2
     assert 'pair' in res[0]
     assert 'profit' in res[0]
     assert 'count' in res[0]
@@ -1004,5 +1010,5 @@ def test_get_best_pair(fee):
     create_mock_trades(fee)
     res = Trade.get_best_pair()
     assert len(res) == 2
-    assert res[0] == 'ETC/BTC'
-    assert res[1] == 0.005
+    assert res[0] == 'XRP/BTC'
+    assert res[1] == 0.01

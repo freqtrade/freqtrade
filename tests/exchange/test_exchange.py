@@ -11,11 +11,12 @@ import ccxt
 import pytest
 from pandas import DataFrame
 
-from freqtrade.exceptions import (DependencyException, InvalidOrderException, DDosProtection,
-                                  OperationalException, TemporaryError)
+from freqtrade.exceptions import (DDosProtection, DependencyException,
+                                  InvalidOrderException, OperationalException,
+                                  TemporaryError)
 from freqtrade.exchange import Binance, Exchange, Kraken
 from freqtrade.exchange.common import API_RETRY_COUNT, calculate_backoff
-from freqtrade.exchange.exchange import (market_is_active, symbol_is_pair,
+from freqtrade.exchange.exchange import (market_is_active,
                                          timeframe_to_minutes,
                                          timeframe_to_msecs,
                                          timeframe_to_next_date,
@@ -1818,7 +1819,7 @@ def test_cancel_order_with_result_error(default_conf, mocker, exchange_name, cap
 
     res = exchange.cancel_order_with_result('1234', 'ETH/BTC', 1541)
     assert isinstance(res, dict)
-    assert log_has("Could not cancel order 1234.", caplog)
+    assert log_has("Could not cancel order 1234 for ETH/BTC.", caplog)
     assert log_has("Could not fetch cancelled order 1234.", caplog)
     assert res['amount'] == 1541
 
@@ -1896,10 +1897,10 @@ def test_fetch_order(default_conf, mocker, exchange_name):
         assert tm.call_args_list[1][0][0] == 2
         assert tm.call_args_list[2][0][0] == 5
         assert tm.call_args_list[3][0][0] == 10
-    assert api_mock.fetch_order.call_count == API_RETRY_COUNT + 1
+    assert api_mock.fetch_order.call_count == 6
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
-                           'fetch_order', 'fetch_order',
+                           'fetch_order', 'fetch_order', retries=6,
                            order_id='_', pair='TKN/BTC')
 
 
@@ -1932,6 +1933,7 @@ def test_fetch_stoploss_order(default_conf, mocker, exchange_name):
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            'fetch_stoploss_order', 'fetch_order',
+                           retries=6,
                            order_id='_', pair='TKN/BTC')
 
 
@@ -2217,25 +2219,42 @@ def test_timeframe_to_next_date():
     assert timeframe_to_next_date("5m") > date
 
 
-@pytest.mark.parametrize("market_symbol,base_currency,quote_currency,expected_result", [
-    ("BTC/USDT", None, None, True),
-    ("USDT/BTC", None, None, True),
-    ("BTCUSDT", None, None, False),
-    ("BTC/USDT", None, "USDT", True),
-    ("USDT/BTC", None, "USDT", False),
-    ("BTCUSDT", None, "USDT", False),
-    ("BTC/USDT", "BTC", None, True),
-    ("USDT/BTC", "BTC", None, False),
-    ("BTCUSDT", "BTC", None, False),
-    ("BTC/USDT", "BTC", "USDT", True),
-    ("BTC/USDT", "USDT", "BTC", False),
-    ("BTC/USDT", "BTC", "USD", False),
-    ("BTCUSDT", "BTC", "USDT", False),
-    ("BTC/", None, None, False),
-    ("/USDT", None, None, False),
+@pytest.mark.parametrize("market_symbol,base,quote,exchange,add_dict,expected_result", [
+    ("BTC/USDT", 'BTC', 'USDT', "binance", {}, True),
+    ("USDT/BTC", 'USDT', 'BTC', "binance", {}, True),
+    ("USDT/BTC", 'BTC', 'USDT', "binance", {}, False),  # Reversed currencies
+    ("BTCUSDT", 'BTC', 'USDT', "binance", {}, False),  # No seperating /
+    ("BTCUSDT", None, "USDT", "binance", {}, False),  #
+    ("USDT/BTC", "BTC", None, "binance", {}, False),
+    ("BTCUSDT", "BTC", None, "binance", {}, False),
+    ("BTC/USDT", "BTC", "USDT", "binance", {}, True),
+    ("BTC/USDT", "USDT", "BTC", "binance", {}, False),  # reversed currencies
+    ("BTC/USDT", "BTC", "USD", "binance", {}, False),  # Wrong quote currency
+    ("BTC/", "BTC", 'UNK', "binance", {}, False),
+    ("/USDT", 'UNK', 'USDT', "binance", {}, False),
+    ("BTC/EUR", 'BTC', 'EUR', "kraken", {"darkpool": False}, True),
+    ("EUR/BTC", 'EUR', 'BTC', "kraken", {"darkpool": False}, True),
+    ("EUR/BTC", 'BTC', 'EUR', "kraken", {"darkpool": False}, False),  # Reversed currencies
+    ("BTC/EUR", 'BTC', 'USD', "kraken", {"darkpool": False}, False),  # wrong quote currency
+    ("BTC/EUR", 'BTC', 'EUR', "kraken", {"darkpool": True}, False),  # no darkpools
+    ("BTC/EUR.d", 'BTC', 'EUR', "kraken", {"darkpool": True}, False),  # no darkpools
+    ("BTC/USD", 'BTC', 'USD', "ftx", {'spot': True}, True),
+    ("USD/BTC", 'USD', 'BTC', "ftx", {'spot': True}, True),
+    ("BTC/USD", 'BTC', 'USDT', "ftx", {'spot': True}, False),  # Wrong quote currency
+    ("BTC/USD", 'USD', 'BTC', "ftx", {'spot': True}, False),  # Reversed currencies
+    ("BTC/USD", 'BTC', 'USD', "ftx", {'spot': False}, False),  # Can only trade spot markets
+    ("BTC-PERP", 'BTC', 'USD', "ftx", {'spot': False}, False),  # Can only trade spot markets
 ])
-def test_symbol_is_pair(market_symbol, base_currency, quote_currency, expected_result) -> None:
-    assert symbol_is_pair(market_symbol, base_currency, quote_currency) == expected_result
+def test_market_is_tradable(mocker, default_conf, market_symbol, base,
+                            quote, add_dict, exchange, expected_result) -> None:
+    ex = get_patched_exchange(mocker, default_conf, id=exchange)
+    market = {
+        'symbol': market_symbol,
+        'base': base,
+        'quote': quote,
+        **(add_dict),
+    }
+    assert ex.market_is_tradable(market) == expected_result
 
 
 @pytest.mark.parametrize("market,expected_result", [
@@ -2315,6 +2334,18 @@ def test_calculate_fee_rate(mocker, default_conf, order, expected) -> None:
     (3, 3, 1),
     (0, 1, 2),
     (1, 1, 1),
+    (0, 4, 17),
+    (1, 4, 10),
+    (2, 4, 5),
+    (3, 4, 2),
+    (4, 4, 1),
+    (0, 5, 26),
+    (1, 5, 17),
+    (2, 5, 10),
+    (3, 5, 5),
+    (4, 5, 2),
+    (5, 5, 1),
+
 ])
 def test_calculate_backoff(retrycount, max_retries, expected):
     assert calculate_backoff(retrycount, max_retries) == expected
