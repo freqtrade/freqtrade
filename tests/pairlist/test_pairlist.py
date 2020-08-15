@@ -549,7 +549,7 @@ def test_agefilter_min_days_listed_too_small(mocker, default_conf, markets, tick
                           )
 
     with pytest.raises(OperationalException,
-                       match=r'AgeFilter requires min_days_listed be >= 1'):
+                       match=r'AgeFilter requires min_days_listed to be >= 1'):
         get_patched_freqtradebot(mocker, default_conf)
 
 
@@ -564,7 +564,7 @@ def test_agefilter_min_days_listed_too_large(mocker, default_conf, markets, tick
                           )
 
     with pytest.raises(OperationalException,
-                       match=r'AgeFilter requires min_days_listed be not exceeding '
+                       match=r'AgeFilter requires min_days_listed to not exceed '
                              r'exchange max request size \([0-9]+\)'):
         get_patched_freqtradebot(mocker, default_conf)
 
@@ -617,15 +617,15 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_3, tickers, ohlcv_his
      ),
     ({"method": "PriceFilter", "low_price_ratio": -0.001},
      None,
-     "PriceFilter requires low_price_ratio be >= 0"
+     "PriceFilter requires low_price_ratio to be >= 0"
      ),  # OperationalException expected
     ({"method": "PriceFilter", "min_price": -0.00000010},
      None,
-     "PriceFilter requires min_price be >= 0"
+     "PriceFilter requires min_price to be >= 0"
      ),  # OperationalException expected
     ({"method": "PriceFilter", "max_price": -1.00010000},
      None,
-     "PriceFilter requires max_price be >= 0"
+     "PriceFilter requires max_price to be >= 0"
      ),  # OperationalException expected
 ])
 def test_pricefilter_desc(mocker, whitelist_conf, markets, pairlistconfig,
