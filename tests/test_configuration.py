@@ -729,7 +729,10 @@ def test_set_logfile(default_conf, mocker):
     assert validated_conf['logfile'] == "test_file.log"
     f = Path("test_file.log")
     assert f.is_file()
-    f.unlink()
+    try:
+        f.unlink()
+    except Exception:
+        pass
 
 
 def test_load_config_warn_forcebuy(default_conf, mocker, caplog) -> None:
