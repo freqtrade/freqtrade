@@ -639,18 +639,11 @@ class RPC:
             buffer = bufferHandler.buffer[-limit:]
         else:
             buffer = bufferHandler.buffer
-        records = [[datetime.fromtimestamp(r.created), r.created, r.name, r.levelname, r.message]
+        records = [[datetime.fromtimestamp(r.created).strftime("%Y-%m-%d %H:%M:%S"),
+                   r.created, r.name, r.levelname, r.message]
                    for r in buffer]
 
         return {'log_count': len(records), 'logs': records}
-
-    def _rpc_get_logs_as_string(self, limit: Optional[int]) -> List[str]:
-        """Returns the last X logs as formatted string (Using the default log format)"""
-        if limit:
-            buffer = bufferHandler.buffer[-limit:]
-        else:
-            buffer = bufferHandler.buffer
-        return [bufferHandler.format(r) for r in buffer]
 
     def _rpc_edge(self) -> List[Dict[str, Any]]:
         """ Returns information related to Edge """

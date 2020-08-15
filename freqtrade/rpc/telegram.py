@@ -649,20 +649,22 @@ class Telegram(RPC):
                 limit = int(context.args[0])
             except (TypeError, ValueError, IndexError):
                 limit = 10
-            logs = self._rpc_get_logs_as_string(limit)
-            msg = ''
-            message_container = "<pre>{}</pre>"
+            logs = self._rpc_get_logs(limit)['logs']
+            msgs = ''
+            msg_template = "*{}* {}: {} - `{}`"
             for logrec in logs:
-                if len(msg + logrec) + 10 >= MAX_TELEGRAM_MESSAGE_LENGTH:
+                msg = msg_template.format(logrec[0], logrec[2], logrec[3], logrec[4])
+
+                if len(msgs + msg) + 10 >= MAX_TELEGRAM_MESSAGE_LENGTH:
                     # Send message immediately if it would become too long
-                    self._send_msg(message_container.format(msg), parse_mode=ParseMode.HTML)
-                    msg = logrec + '\n'
+                    self._send_msg(msgs, parse_mode=ParseMode.MARKDOWN)
+                    msgs = msg + '\n'
                 else:
                     # Append message to messages to send
-                    msg += logrec + '\n'
+                    msgs += msg + '\n'
 
-            if msg:
-                self._send_msg(message_container.format(msg), parse_mode=ParseMode.HTML)
+            if msgs:
+                self._send_msg(msgs, parse_mode=ParseMode.MARKDOWN)
         except RPCException as e:
             self._send_msg(str(e))
 
