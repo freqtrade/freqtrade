@@ -669,13 +669,13 @@ The `PriceFilter` allows filtering of pairs by price. Currently the following pr
 * `low_price_ratio`
 
 The `min_price` setting removes pairs where the price is below the specified price. This is useful if you wish to avoid trading very low-priced pairs.
-This option is disabled by default (or set to 0), and will only apply if set to > 0.
+This option is disabled by default, and will only apply if set to > 0.
 
 The `max_price` setting removes pairs where the price is above the specified price. This is useful if you wish to trade only low-priced pairs.
-This option is disabled by default (or set to 0), and will only apply if set to > 0.
+This option is disabled by default, and will only apply if set to > 0.
 
 The `low_price_ratio` setting removes pairs where a raise of 1 price unit (pip) is above the `low_price_ratio` ratio.
-This option is disabled by default (or set to 0), and will only apply if set to > 0.
+This option is disabled by default, and will only apply if set to > 0.
 
 For `PriceFiler` at least one of its `min_price`, `max_price` or `low_price_ratio` settings must be applied.
 
