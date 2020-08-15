@@ -633,7 +633,7 @@ class RPC:
                }
         return res
 
-    def _rpc_get_logs(self, limit: Optional[int]) -> Dict[str, List]:
+    def _rpc_get_logs(self, limit: Optional[int]) -> Dict[str, Any]:
         """Returns the last X logs"""
         if limit:
             buffer = bufferHandler.buffer[-limit:]
@@ -644,7 +644,7 @@ class RPC:
 
         return {'log_count': len(records), 'logs': records}
 
-    def _rpc_get_logs_as_string(self, limit: Optional[int]) -> Dict[str, List]:
+    def _rpc_get_logs_as_string(self, limit: Optional[int]) -> List[str]:
         """Returns the last X logs as formatted string (Using the default log format)"""
         if limit:
             buffer = bufferHandler.buffer[-limit:]

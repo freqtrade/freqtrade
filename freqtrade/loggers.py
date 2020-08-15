@@ -82,18 +82,18 @@ def setup_logging(config: Dict[str, Any]) -> None:
             except ImportError:
                 raise OperationalException("You need the systemd python package be installed in "
                                            "order to use logging to journald.")
-            handler = JournaldLogHandler()
+            handler_jd = JournaldLogHandler()
             # No datetime field for logging into journald, to allow syslog
             # to perform reduction of repeating messages if this is set in the
             # syslog config. The messages should be equal for this.
-            handler.setFormatter(Formatter('%(name)s - %(levelname)s - %(message)s'))
-            logging.root.addHandler(handler)
+            handler_jd.setFormatter(Formatter('%(name)s - %(levelname)s - %(message)s'))
+            logging.root.addHandler(handler_jd)
         else:
-            handler = RotatingFileHandler(logfile,
-                                          maxBytes=1024 * 1024 * 10,  # 10Mb
-                                          backupCount=10)
-            handler.setFormatter(Formatter(LOGFORMAT))
-            logging.root.addHandler(handler)
+            handler_rf = RotatingFileHandler(logfile,
+                                             maxBytes=1024 * 1024 * 10,  # 10Mb
+                                             backupCount=10)
+            handler_rf.setFormatter(Formatter(LOGFORMAT))
+            logging.root.addHandler(handler_rf)
 
     logging.root.setLevel(logging.INFO if verbosity < 1 else logging.DEBUG)
     _set_loggers(verbosity, config.get('api_server', {}).get('verbosity', 'info'))
