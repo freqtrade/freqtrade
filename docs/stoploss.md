@@ -115,7 +115,7 @@ For example, simplified math:
 The 0.02 would translate to a -2% stop loss.
 Before this, `stoploss` is used for the trailing stoploss.
 
-### Trailing stop loss only once the trade has reached a certain offset.
+### Trailing stop loss only once the trade has reached a certain offset
 
 It is also possible to use a static stoploss until the offset is reached, and then trail the trade to take profits once the market turns.
 
