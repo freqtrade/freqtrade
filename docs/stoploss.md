@@ -85,8 +85,8 @@ For example, simplified math:
 * the stop loss is defined at -10%
 * the stop loss would get triggered once the asset drops below 90$
 * assuming the asset now increases to 102$
-* the stop loss will now be -10% of 102$ = 91,8$
-* now the asset drops in value to 101$, the stop loss will still be 91,8$ and would trigger at 91,8$.
+* the stop loss will now be -10% of 102$ = 91.8$
+* now the asset drops in value to 101$, the stop loss will still be 91.8$ and would trigger at 91,8$.
 
 In summary: The stoploss will be adjusted to be always be 2% of the highest observed price.
 
