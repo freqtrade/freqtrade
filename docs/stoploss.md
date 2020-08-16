@@ -92,7 +92,7 @@ In summary: The stoploss will be adjusted to be always be 2% of the highest obse
 
 ### Trailing stop loss, custom positive loss
 
-It is also possible to have a default stop loss, when you are in the red with your buy (buy - fee), but once you hit possitive result the system will utilize a new stop loss, which can have a different value.
+It is also possible to have a default stop loss, when you are in the red with your buy (buy - fee), but once you hit positive result the system will utilize a new stop loss, which can have a different value.
 For example your default stop loss is -10%, but once you have more than 0% profit (example 0.1%) a different trailing stoploss will be used.
 
 Both values require `trailing_stop` to be set to true and `trailing_stop_positive` with a value.
