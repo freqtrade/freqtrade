@@ -663,24 +663,28 @@ Filters low-value coins which would not allow setting stoplosses.
 #### PriceFilter
 
 The `PriceFilter` allows filtering of pairs by price. Currently the following price filters are supported:
+
 * `min_price`
 * `max_price`
 * `low_price_ratio`
 
 The `min_price` setting removes pairs where the price is below the specified price. This is useful if you wish to avoid trading very low-priced pairs.
-This option is disabled by default, and will only apply if set to <> 0.
+This option is disabled by default, and will only apply if set to > 0.
 
 The `max_price` setting removes pairs where the price is above the specified price. This is useful if you wish to trade only low-priced pairs.
-This option is disabled by default, and will only apply if set to <> 0.
+This option is disabled by default, and will only apply if set to > 0.
 
 The `low_price_ratio` setting removes pairs where a raise of 1 price unit (pip) is above the `low_price_ratio` ratio.
-This option is disabled by default, and will only apply if set to <> 0.
+This option is disabled by default, and will only apply if set to > 0.
+
+For `PriceFiler` at least one of its `min_price`, `max_price` or `low_price_ratio` settings must be applied.
 
 Calculation example:
 
-Min price precision is 8 decimals. If price is 0.00000011 - one step would be 0.00000012 - which is almost 10% higher than the previous value.
+Min price precision for SHITCOIN/BTC is 8 decimals. If its price is 0.00000011 - one price step above would be 0.00000012, which is ~9% higher than the previous price value. You may filter out this pair by using PriceFilter with `low_price_ratio` set to 0.09 (9%) or with `min_price` set to 0.00000011, correspondingly.
 
-These pairs are dangerous since it may be impossible to place the desired stoploss - and often result in high losses.
+!!! Warning "Low priced pairs"
+    Low priced pairs with high "1 pip movements" are dangerous since they are often illiquid and it may also be impossible to place the desired stoploss, which can often result in high losses since price needs to be rounded to the next tradable price - so instead of having a stoploss of -5%, you could end up with a stoploss of -9% simply due to price rounding.
 
 #### ShuffleFilter
 
