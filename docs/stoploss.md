@@ -97,7 +97,7 @@ It is also possible to have a default stop loss, when you are in the red with yo
 For example, your default stop loss is -10%, but once you have more than 0% profit (example 0.1%) a different trailing stoploss will be used.
 
 !!! Note
-    If you want the stoploss to only be changed when you break even of making a profit (what most users want) please refere to next section with [offset enabled](#Trailing-stop-loss-only-once-the-trade-has-reached-a-certain-offset).
+    If you want the stoploss to only be changed when you break even of making a profit (what most users want) please refer to next section with [offset enabled](#Trailing-stop-loss-only-once-the-trade-has-reached-a-certain-offset).
 
 Both values require `trailing_stop` to be set to true and `trailing_stop_positive` with a value.
 
