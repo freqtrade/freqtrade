@@ -16,13 +16,14 @@ Those stoploss modes can be *on exchange* or *off exchange*. If the stoploss is 
 In case of stoploss on exchange there is another parameter called `stoploss_on_exchange_interval`. This configures the interval in seconds at which the bot will check the stoploss and update it if necessary.
 
 For example, assuming the stoploss is on exchange, and trailing stoploss is enabled, and the market is going up, then the bot automatically cancels the previous stoploss order and puts a new one with a stop value higher than the previous stoploss order.
-The bot cannot do this every 5 seconds (at each iteration), otherwise it would get banned by the exchange.
+The bot cannot do these every 5 seconds (at each iteration), otherwise it would get banned by the exchange.
 So this parameter will tell the bot how often it should update the stoploss order. The default value is 60 (1 minute).
 This same logic will reapply a stoploss order on the exchange should you cancel it accidentally.
 
 !!! Note
     Stoploss on exchange is only supported for Binance (stop-loss-limit), Kraken (stop-loss-market) and FTX (stop limit and stop-market) as of now.  
-    Do not set too low stoploss value if using stop loss on exhange!
+    <ins>Do not set too low stoploss value if using stop loss on exhange!</ins>  
+*   If set to low/tight then you have greater risk of missing fill on the order and stoploss will not work
 
 Stop loss on exchange is controlled with this value (default False):
 
@@ -88,12 +89,15 @@ For example, simplified math:
 * the stop loss will now be -10% of 102$ = 91.8$
 * now the asset drops in value to 101$, the stop loss will still be 91.8$ and would trigger at 91,8$.
 
-In summary: The stoploss will be adjusted to be always be 2% of the highest observed price.
+In summary: The stoploss will be adjusted to be always be -10% of the highest observed price.
 
 ### Trailing stop loss, custom positive loss
 
 It is also possible to have a default stop loss, when you are in the red with your buy (buy - fee), but once you hit positive result the system will utilize a new stop loss, which can have a different value.
-For example your default stop loss is -10%, but once you have more than 0% profit (example 0.1%) a different trailing stoploss will be used.
+For example, your default stop loss is -10%, but once you have more than 0% profit (example 0.1%) a different trailing stoploss will be used.
+
+!!! Note
+    If you want the stoploss to only be changed when you break even of making a profit (what most users want) please refere to next section with [offset enabled](#Trailing-stop-loss-only-once-the-trade-has-reached-a-certain-offset).
 
 Both values require `trailing_stop` to be set to true and `trailing_stop_positive` with a value.
 
@@ -109,7 +113,7 @@ For example, simplified math:
 * the stop loss is defined at -10%
 * the stop loss would get triggered once the asset drops below 90$
 * assuming the asset now increases to 102$
-* the stop loss will now be -2% of 102$ = 99.96$
+* the stop loss will now be -2% of 102$ = 99.96$ (99.96$ stop loss will be locked in and will follow asset price increasements with -2%)
 * now the asset drops in value to 101$, the stop loss will still be 99.96$ and would trigger at 99.96$
 
 The 0.02 would translate to a -2% stop loss.
