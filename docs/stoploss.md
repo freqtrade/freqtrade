@@ -109,8 +109,8 @@ For example, simplified math:
 * the stop loss is defined at -10%
 * the stop loss would get triggered once the asset drops below 90$
 * assuming the asset now increases to 102$
-* the stop loss will now be -2% of 102$ = 99,96$
-* now the asset drops in value to 101$, the stop loss will still be 99,96$ and would trigger at 99,96$
+* the stop loss will now be -2% of 102$ = 99.96$
+* now the asset drops in value to 101$, the stop loss will still be 99.96$ and would trigger at 99.96$
 
 The 0.02 would translate to a -2% stop loss.
 Before this, `stoploss` is used for the trailing stoploss.
