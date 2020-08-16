@@ -63,7 +63,7 @@ Example of stop loss:
 For example, simplified math:
 * the bot buys an asset at a price of 100$
 * the stop loss is defined at -10%
-* the stop loss would get triggered once the asset dropps below 90$
+* the stop loss would get triggered once the asset drops below 90$
 
 ### Trailing Stop Loss
 
