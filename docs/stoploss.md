@@ -37,7 +37,9 @@ order_types = {
     'buy': 'limit',
     'sell': 'limit',
     'stoploss': 'market',
-    'stoploss_on_exchange': True
+    'stoploss_on_exchange': True,
+    'stoploss_on_exchange_interval': 60,
+    'stoploss_on_exchange_limit_ratio': 0.99
 }
 ```
 
