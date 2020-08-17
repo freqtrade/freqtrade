@@ -24,7 +24,6 @@ from freqtrade.optimize.optimize_reports import (generate_backtest_stats,
 from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
-from freqtrade.state import RunMode
 from freqtrade.strategy.interface import IStrategy, SellCheckTuple, SellType
 
 logger = logging.getLogger(__name__)
@@ -65,9 +64,8 @@ class Backtesting:
         self.strategylist: List[IStrategy] = []
         self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
 
-        if self.config.get('runmode') != RunMode.HYPEROPT:
-            self.dataprovider = DataProvider(self.config, self.exchange)
-            IStrategy.dp = self.dataprovider
+        dataprovider = DataProvider(self.config, self.exchange)
+        IStrategy.dp = dataprovider
 
         if self.config.get('strategy_list', None):
             for strat in list(self.config['strategy_list']):

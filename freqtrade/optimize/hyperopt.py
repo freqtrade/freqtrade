@@ -4,26 +4,26 @@
 This module contains the hyperopt logic
 """
 
+import io
 import locale
 import logging
 import random
 import warnings
-from math import ceil
 from collections import OrderedDict
+from math import ceil
 from operator import itemgetter
+from os import path
 from pathlib import Path
 from pprint import pformat
 from typing import Any, Dict, List, Optional
 
+import progressbar
 import rapidjson
+import tabulate
 from colorama import Fore, Style
 from joblib import (Parallel, cpu_count, delayed, dump, load,
                     wrap_non_picklable_objects)
-from pandas import DataFrame, json_normalize, isna
-import progressbar
-import tabulate
-from os import path
-import io
+from pandas import DataFrame, isna, json_normalize
 
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.history import get_timerange
@@ -35,6 +35,7 @@ from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F401
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F401
 from freqtrade.resolvers.hyperopt_resolver import (HyperOptLossResolver,
                                                    HyperOptResolver)
+from freqtrade.strategy import IStrategy
 
 # Suppress scikit-learn FutureWarnings from skopt
 with warnings.catch_warnings():
@@ -650,6 +651,8 @@ class Hyperopt:
         # We don't need exchange instance anymore while running hyperopt
         self.backtesting.exchange = None  # type: ignore
         self.backtesting.pairlists = None  # type: ignore
+        self.backtesting.strategy.dp = None  # type: ignore
+        IStrategy.dp = None  # type: ignore
 
         self.epochs = self.load_previous_results(self.results_file)
 
