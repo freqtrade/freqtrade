@@ -49,7 +49,7 @@ Stop-price is 95$, then limit would be `95 * 0.99 = 94.05$` - so the stoploss wi
 
 !!! Note
     Stoploss on exchange is only supported for Binance (stop-loss-limit), Kraken (stop-loss-market) and FTX (stop limit and stop-market) as of now.  
-    <ins>Do not set too low stoploss value if using stop loss on exhange!</ins>  
+    <ins>Do not set too low stoploss value if using stop loss on exchange!</ins>  
 *   If set to low/tight then you have greater risk of missing fill on the order and stoploss will not work
 
 
