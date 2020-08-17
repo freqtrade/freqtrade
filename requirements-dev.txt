@@ -3,7 +3,7 @@
 -r requirements-plot.txt
 -r requirements-hyperopt.txt
 
-coveralls==2.1.1
+coveralls==2.1.2
 flake8==3.8.3
 flake8-type-annotations==0.1.0
 flake8-tidy-imports==4.1.0
