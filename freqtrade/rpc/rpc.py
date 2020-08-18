@@ -224,22 +224,20 @@ class RPC:
             ]).order_by(Trade.close_date).all()
             curdayprofit = sum(trade.close_profit_abs for trade in trades)
             profit_days[profitday] = {
-                'amount': f'{curdayprofit:.8f}',
+                'amount': curdayprofit,
                 'trades': len(trades)
             }
 
         data = [
             {
                 'date': key,
-                'abs_profit': f'{float(value["amount"]):.8f}',
-                'fiat_value': '{value:.3f}'.format(
-                    value=self._fiat_converter.convert_amount(
+                'abs_profit': value["amount"],
+                'fiat_value': self._fiat_converter.convert_amount(
                         value['amount'],
                         stake_currency,
                         fiat_display_currency
                     ) if self._fiat_converter else 0,
-                ),
-                'trade_count': f'{value["trades"]}',
+                'trade_count': value["trades"],
             }
             for key, value in profit_days.items()
         ]
