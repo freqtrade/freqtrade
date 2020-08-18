@@ -16,7 +16,13 @@ logger = logging.getLogger(__name__)
 
 
 def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> None:
-
+    """
+    Stores backtest results
+    :param recordfilename: Path object, which can either be a filename or a directory.
+        Filenames will be appended with a timestamp right before the suffix
+        while for diectories, <directory>/backtest-result-<datetime>.json will be used as filename
+    :param stats: Dataframe containing the backtesting statistics
+    """
     if recordfilename.is_dir():
         filename = (recordfilename /
                     f'backtest-result-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.json')
