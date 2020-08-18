@@ -219,7 +219,7 @@ This table can tell you which area needs some additional work (e.g. all or many 
 ### Left open trades table
 
 The 3rd table contains all trades the bot had to `forcesell` at the end of the backtesting period to present you the full picture.
-This is necessary to simulate realistic behaviour, since the backtest period has to end at some point, while realistically, you could leave the bot running forever.
+This is necessary to simulate realistic behavior, since the backtest period has to end at some point, while realistically, you could leave the bot running forever.
 These trades are also included in the first table, but are also shown separately in this table for clarity.
 
 ### Summary metrics
@@ -236,6 +236,7 @@ It contains some useful key metrics about performance of your strategy on backte
 | Total trades          | 429                 |
 | First trade           | 2019-01-01 18:30:00 |
 | First trade Pair      | EOS/USDT            |
+| Total Profit %        | 152.41%             |
 | Trades per day        | 3.575               |
 | Best day              | 25.27%              |
 | Worst day             | -30.67%             |
@@ -254,11 +255,12 @@ It contains some useful key metrics about performance of your strategy on backte
 - `First trade`: First trade entered.
 - `First trade pair`: Which pair was part of the first trade.
 - `Backtesting from` / `Backtesting to`: Backtesting range (usually defined with the `--timerange` option).
+- `Total Profit %`: Total profit per stake amount. Aligned to the TOTAL column of the first table.
 - `Trades per day`: Total trades divided by the backtesting duration in days (this will give you information about how many trades to expect from the strategy).
 - `Best day` / `Worst day`: Best and worst day based on daily profit.
 - `Avg. Duration Winners` / `Avg. Duration Loser`: Average durations for winning and losing trades.
 - `Max Drawdown`: Maximum drawdown experienced. For example, the value of 50% means that from highest to subsequent lowest point, a 50% drop was experienced).
-- `Drawdown Start` / `Drawdown End`: Start and end datetimes for this largest drawdown (can also be visualized via the `plot-dataframe` subcommand).
+- `Drawdown Start` / `Drawdown End`: Start and end datetimes for this largest drawdown (can also be visualized via the `plot-dataframe` sub-command).
 - `Market change`: Change of the market during the backtest period. Calculated as average of all pairs changes from the first to the last candle using the "close" column.
 
 ### Assumptions made by backtesting
