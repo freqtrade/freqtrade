@@ -213,7 +213,7 @@ Hence, keep in mind that your performance is an integral mix of all different el
 ### Sell reasons table
 
 The 2nd table contains a recap of sell reasons.
-This table can tell you which area needs some additional work (e,g. all or many of the `sell_signal` trades are losses, so we should disable the sell-signal or work on improving that).
+This table can tell you which area needs some additional work (e.g. all or many of the `sell_signal` trades are losses, so you should work on improving the sell signal, or consider disabling it).
 
 ### Left open trades table
 
