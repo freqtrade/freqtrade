@@ -179,7 +179,7 @@ def load_trades_from_db(db_url: str, strategy: Optional[str] = None) -> pd.DataF
 
     filters = []
     if strategy:
-        filters = Trade.strategy == strategy
+        filters.append(Trade.strategy == strategy)
 
     trades = pd.DataFrame([(t.pair,
                             t.open_date.replace(tzinfo=timezone.utc),

@@ -146,6 +146,25 @@ def test_generate_backtest_stats(default_conf, testdatadir):
     filename1.unlink()
 
 
+def test_store_backtest_stats(testdatadir, mocker):
+
+    dump_mock = mocker.patch('freqtrade.optimize.optimize_reports.file_dump_json')
+
+    store_backtest_stats(testdatadir, {})
+
+    assert dump_mock.call_count == 2
+    assert isinstance(dump_mock.call_args_list[0][0][0], Path)
+    assert str(dump_mock.call_args_list[0][0][0]).startswith(str(testdatadir/'backtest-result'))
+
+    dump_mock.reset_mock()
+    filename = testdatadir / 'testresult.json'
+    store_backtest_stats(filename, {})
+    assert dump_mock.call_count == 2
+    assert isinstance(dump_mock.call_args_list[0][0][0], Path)
+    # result will be testdatadir / testresult-<timestamp>.json
+    assert str(dump_mock.call_args_list[0][0][0]).startswith(str(testdatadir / 'testresult'))
+
+
 def test_generate_pair_metrics(default_conf, mocker):
 
     results = pd.DataFrame(
