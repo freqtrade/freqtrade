@@ -165,6 +165,7 @@ A backtesting result will look like that:
 | Total trades          | 429                 |
 | First trade           | 2019-01-01 18:30:00 |
 | First trade Pair      | EOS/USDT            |
+| Total Profit %        | 152.41%             |
 | Trades per day        | 3.575               |
 | Best day              | 25.27%              |
 | Worst day             | -30.67%             |
