@@ -22,13 +22,17 @@ These modes can be configured with these values:
     'stoploss_on_exchange_limit_ratio': 0.99
 ```
 
-### stoploss_on_exchange
+### stoploss_on_exchange and stoploss_on_exchange_limit_ratio
 Enable or Disable stop loss on exchange.
 If the stoploss is *on exchange* it means a stoploss limit order is placed on the exchange immediately after buy order happens successfully. This will protect you against sudden crashes in market as the order will be in the queue immediately and if market goes down then the order has more chance of being fulfilled.
 
 If `stoploss_on_exchange` uses limit orders, the exchange needs 2 prices, the stoploss_price and the Limit price.
 `stoploss` defines the stop-price - and limit should be slightly below this.  
 If an exchange supports both limit and market stoploss orders, then the value of `stoploss` will be used to determine the stoploss type.
+
+If `stoploss_on_exchange` fails to fill we can use `stoploss_on_exchange_limit_ratio` that defaults to 0.99 / 1% to perform an [emergency sell](#emergencysell).
+Calculation example: we bought the asset at 100$.
+Stop-price is 95$, then limit would be `95 * 0.99 = 94.05$` - so the stoploss(emergency sell) will happen between 95$ and 94.05$.
 
 For example, assuming the stoploss is on exchange, and trailing stoploss is enabled, and the market is going up, then the bot automatically cancels the previous stoploss order and puts a new one with a stop value higher than the previous stoploss order.
 
@@ -38,14 +42,9 @@ The bot cannot do these every 5 seconds (at each iteration), otherwise it would 
 So this parameter will tell the bot how often it should update the stoploss order. The default value is 60 (1 minute).
 This same logic will reapply a stoploss order on the exchange should you cancel it accidentally.
 
-### emergencysell and stoploss_on_exchange_limit_ratio
+### emergencysell
 `emergencysell` is an optional value, which defaults to `market` and is used when creating stop loss on exchange orders fails.
 The below is the default which is used if this is not configured in either strategy or configuration file.
-
-This defaults to 0.99 / 1% (configurable via `stoploss_on_exchange_limit_ratio`).
-Calculation example: we bought the asset at 100$.
-Stop-price is 95$, then limit would be `95 * 0.99 = 94.05$` - so the stoploss will happen between 95$ and 94.05$.
-
 
 !!! Note
     Stoploss on exchange is only supported for Binance (stop-loss-limit), Kraken (stop-loss-market) and FTX (stop limit and stop-market) as of now.  
