@@ -395,5 +395,5 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     for c, trade in enumerate(data.trades):
         res = results.iloc[c]
         assert res.sell_reason == trade.sell_reason
-        assert res.open_time == _get_frame_time_from_offset(trade.open_tick)
-        assert res.close_time == _get_frame_time_from_offset(trade.close_tick)
+        assert res.open_date == _get_frame_time_from_offset(trade.open_tick)
+        assert res.close_date == _get_frame_time_from_offset(trade.close_tick)

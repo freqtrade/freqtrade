@@ -25,6 +25,7 @@ from joblib import (Parallel, cpu_count, delayed, dump, load,
                     wrap_non_picklable_objects)
 from pandas import DataFrame, isna, json_normalize
 
+from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import OperationalException
@@ -642,10 +643,10 @@ class Hyperopt:
             preprocessed[pair] = trim_dataframe(df, timerange)
         min_date, max_date = get_timerange(data)
 
-        logger.info(
-            'Hyperopting with data from %s up to %s (%s days)..',
-            min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
-        )
+        logger.info(f'Hyperopting with data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
+                    f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
+                    f'({(max_date - min_date).days} days)..')
+
         dump(preprocessed, self.data_pickle_file)
 
         # We don't need exchange instance anymore while running hyperopt
