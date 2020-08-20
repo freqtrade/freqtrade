@@ -31,6 +31,7 @@ def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> N
             recordfilename.parent,
             f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
             ).with_suffix(recordfilename.suffix)
+    print(stats)
     file_dump_json(filename, stats)
 
     latest_filename = Path.joinpath(filename.parent, LAST_BT_RESULT_FN)
@@ -185,6 +186,16 @@ def generate_edge_table(results: dict) -> str:
 
 
 def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
+    if len(results) == 0:
+        return {
+            'backtest_best_day': 0,
+            'backtest_worst_day': 0,
+            'winning_days': 0,
+            'draw_days': 0,
+            'losing_days': 0,
+            'winner_holding_avg': timedelta(),
+            'loser_holding_avg': timedelta(),
+        }
     daily_profit = results.resample('1d', on='close_date')['profit_percent'].sum()
     worst = min(daily_profit)
     best = max(daily_profit)
@@ -249,7 +260,7 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
             'sell_reason_summary': sell_reason_stats,
             'left_open_trades': left_open_results,
             'total_trades': len(results),
-            'profit_mean': results['profit_percent'].mean(),
+            'profit_mean': results['profit_percent'].mean() if len(results) > 0 else 0,
             'profit_total': results['profit_percent'].sum(),
             'profit_total_abs': results['profit_abs'].sum(),
             'backtest_start': min_date.datetime,
@@ -258,7 +269,7 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
             'backtest_end_ts': max_date.timestamp * 1000,
             'backtest_days': backtest_days,
 
-            'trades_per_day': round(len(results) / backtest_days, 2) if backtest_days > 0 else None,
+            'trades_per_day': round(len(results) / backtest_days, 2) if backtest_days > 0 else 0,
             'market_change': market_change,
             'pairlist': list(btdata.keys()),
             'stake_amount': config['stake_amount'],
