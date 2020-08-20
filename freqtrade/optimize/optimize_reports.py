@@ -31,7 +31,6 @@ def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> N
             recordfilename.parent,
             f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
             ).with_suffix(recordfilename.suffix)
-    print(stats)
     file_dump_json(filename, stats)
 
     latest_filename = Path.joinpath(filename.parent, LAST_BT_RESULT_FN)
