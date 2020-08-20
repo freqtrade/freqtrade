@@ -366,8 +366,8 @@ All methods return `None` in case of failure (do not raise an exception).
 Please always check the mode of operation to select the correct method to get data (samples see below).
 
 !!! Warning "Hyperopt"
-    Dataprovider is available during hyperopt, however it can only be used in `populate_indicators()`.
-    It is not available in `populate_buy()` and `populate_sell()` methods.
+    Dataprovider is available during hyperopt, however it can only be used in `populate_indicators()` within a strategy.
+    It is not available in `populate_buy()` and `populate_sell()` methods, nor in `populate_indicators()`, if this method located in the hyperopt file.
 
 ### Possible options for DataProvider
 
