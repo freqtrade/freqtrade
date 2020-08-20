@@ -204,6 +204,14 @@ def test_generate_daily_stats(testdatadir):
     assert res['winner_holding_avg'] == timedelta(seconds=1440)
     assert res['loser_holding_avg'] == timedelta(days=1, seconds=21420)
 
+    # Select empty dataframe!
+    res = generate_daily_stats(bt_data.loc[bt_data['open_date'] == '2000-01-01', :])
+    assert isinstance(res, dict)
+    assert round(res['backtest_best_day'], 4) == 0.0
+    assert res['winning_days'] == 0
+    assert res['draw_days'] == 0
+    assert res['losing_days'] == 0
+
 
 def test_text_table_sell_reason(default_conf):
 
