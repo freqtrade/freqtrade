@@ -12,7 +12,6 @@ import warnings
 from collections import OrderedDict
 from math import ceil
 from operator import itemgetter
-from os import path
 from pathlib import Path
 from pprint import pformat
 from typing import Any, Dict, List, Optional
