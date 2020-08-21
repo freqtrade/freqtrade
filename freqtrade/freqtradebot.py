@@ -1312,6 +1312,11 @@ class FreqtradeBot:
         """
         Checks trades with open orders and updates the amount if necessary
         Handles closing both buy and sell orders.
+        :param trade: Trade object of the trade we're analyzing
+        :param order_id: Order-id of the order we're analyzing
+        :param action_order: Already aquired order object
+        :param order_amount: Order-amount - only used in case of partially cancelled buy order
+            TODO: Investigate if this is really needed, or covered by getting filled in here again.
         :return: True if order has been cancelled without being filled partially, False otherwise
         """
         if not order_id:
