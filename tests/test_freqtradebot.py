@@ -1057,7 +1057,7 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
     assert freqtrade.execute_buy(pair, stake_amount)
     trade = Trade.query.all()[3]
     assert trade
-    assert trade.open_order_id is None
+    assert trade.open_order_id == '555'
     assert trade.open_rate == 0.5
     assert trade.stake_amount == 40.495905365
 
