@@ -134,6 +134,8 @@ class FreqtradeBot:
             # Adjust stoploss if it was changed
             Trade.stoploss_reinitialization(self.strategy.stoploss)
 
+        # Only update open orders on startup
+        # This will update the database after the initial migration
         self.update_open_orders()
 
     def process(self) -> None:
