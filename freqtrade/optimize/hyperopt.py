@@ -21,6 +21,7 @@ import progressbar
 import rapidjson
 import tabulate
 from colorama import Fore, Style
+from colorama import init as colorama_init
 from joblib import (Parallel, cpu_count, delayed, dump, load,
                     wrap_non_picklable_objects)
 from pandas import DataFrame, isna, json_normalize
@@ -33,7 +34,8 @@ from freqtrade.misc import plural, round_dict
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
 from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F401
-from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F401
+from freqtrade.optimize.hyperopt_loss_interface import \
+    IHyperOptLoss  # noqa: F401
 from freqtrade.resolvers.hyperopt_resolver import (HyperOptLossResolver,
                                                    HyperOptResolver)
 from freqtrade.strategy import IStrategy
@@ -397,7 +399,7 @@ class Hyperopt:
             return
 
         # Verification for overwrite
-        if path.isfile(csv_file):
+        if Path(csv_file).is_file():
             logger.error(f"CSV file already exists: {csv_file}")
             return
 
@@ -664,6 +666,10 @@ class Hyperopt:
 
         self.dimensions: List[Dimension] = self.hyperopt_space()
         self.opt = self.get_optimizer(self.dimensions, config_jobs)
+
+        if self.print_colorized:
+            colorama_init(autoreset=True)
+
         try:
             with Parallel(n_jobs=config_jobs) as parallel:
                 jobs = parallel._effective_n_jobs()
