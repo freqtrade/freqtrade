@@ -1215,7 +1215,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     })
     mocker.patch('freqtrade.exchange.Exchange.fetch_stoploss_order', stoploss_order_hit)
     assert freqtrade.handle_stoploss_on_exchange(trade) is True
-    assert log_has('STOP_LOSS_LIMIT is hit for {}.'.format(trade), caplog)
+    assert log_has_re(r'STOP_LOSS_LIMIT is hit for Trade\(id=1, .*\)\.', caplog)
     assert trade.stoploss_order_id is None
     assert trade.is_open is False
 
