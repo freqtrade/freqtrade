@@ -254,6 +254,8 @@ class FreqtradeBot:
         Try refinding a lost trade.
         Only used when InsufficientFunds appears on sell orders (stoploss or sell).
         Tries to walk the stored orders and sell them off eventually.
+
+        TODO: maybe remove this method again.
         """
         logger.info(f"Trying to refind lost order for {trade}")
         for order in trade.orders:
@@ -1407,7 +1409,7 @@ class FreqtradeBot:
         """
         fee-detection fallback to Trades. Parses result of fetch_my_trades to get correct fee.
         """
-        trades = self.exchange.get_trades_for_order(trade.open_order_id, trade.pair,
+        trades = self.exchange.get_trades_for_order(order['id'], trade.pair,
                                                     trade.open_date)
 
         if len(trades) == 0:
