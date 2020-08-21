@@ -1699,7 +1699,7 @@ def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> No
         amount=11,
     )
     # Add datetime explicitly since sqlalchemy defaults apply only once written to database
-    freqtrade.update_trade_state(trade)
+    freqtrade.update_trade_state(trade, '123')
     # Test amount not modified by fee-logic
     assert not log_has_re(r'Applying fee to .*', caplog)
     assert trade.open_order_id is None
@@ -1709,14 +1709,14 @@ def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> No
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', return_value=90.81)
     assert trade.amount != 90.81
     # test amount modified by fee-logic
-    freqtrade.update_trade_state(trade)
+    freqtrade.update_trade_state(trade, '123')
     assert trade.amount == 90.81
     assert trade.open_order_id is None
 
     trade.is_open = True
     trade.open_order_id = None
     # Assert we call handle_trade() if trade is feasible for execution
-    freqtrade.update_trade_state(trade)
+    freqtrade.update_trade_state(trade, '123')
 
     assert log_has_re('Found open order for.*', caplog)
 
@@ -1741,7 +1741,7 @@ def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_
         open_order_id="123456",
         is_open=True,
     )
-    freqtrade.update_trade_state(trade, limit_buy_order)
+    freqtrade.update_trade_state(trade, '123456', limit_buy_order)
     assert trade.amount != amount
     assert trade.amount == limit_buy_order['amount']
 
@@ -1763,11 +1763,11 @@ def test_update_trade_state_withorderdict_rounding_fee(default_conf, trades_for_
         open_rate=0.245441,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_order_id="123456",
+        open_order_id='123456',
         is_open=True,
         open_date=arrow.utcnow().datetime,
     )
-    freqtrade.update_trade_state(trade, limit_buy_order)
+    freqtrade.update_trade_state(trade, '123456', limit_buy_order)
     assert trade.amount != amount
     assert trade.amount == limit_buy_order['amount']
     assert log_has_re(r'Applying fee on amount for .*', caplog)
@@ -1787,7 +1787,7 @@ def test_update_trade_state_exception(mocker, default_conf,
         'freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
         side_effect=DependencyException()
     )
-    freqtrade.update_trade_state(trade)
+    freqtrade.update_trade_state(trade, trade.open_order_id)
     assert log_has('Could not update trade amount: ', caplog)
 
 
@@ -1802,7 +1802,7 @@ def test_update_trade_state_orderexception(mocker, default_conf, caplog) -> None
 
     # Test raise of OperationalException exception
     grm_mock = mocker.patch("freqtrade.freqtradebot.FreqtradeBot.get_real_amount", MagicMock())
-    freqtrade.update_trade_state(trade)
+    freqtrade.update_trade_state(trade, trade.open_order_id)
     assert grm_mock.call_count == 0
     assert log_has(f'Unable to fetch order {trade.open_order_id}: ', caplog)
 
@@ -1834,7 +1834,7 @@ def test_update_trade_state_sell(default_conf, trades_for_order, limit_sell_orde
     order = Order.parse_from_ccxt_object(limit_sell_order_open, 'LTC/ETH', 'sell')
     trade.orders.append(order)
     assert order.status == 'open'
-    freqtrade.update_trade_state(trade, limit_sell_order)
+    freqtrade.update_trade_state(trade, trade.open_order_id, limit_sell_order)
     assert trade.amount == limit_sell_order['amount']
     # Wallet needs to be updated after closing a limit-sell order to reenable buying
     assert wallet_mock.call_count == 1

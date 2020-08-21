@@ -242,7 +242,7 @@ class FreqtradeBot:
                 else:
                     fo = self.exchange.fetch_order(order.order_id, order.ft_pair)
 
-                self.update_trade_state(order.trade, fo, sl_order=order.ft_order_side == 'stoploss')
+                self.update_trade_state(order.trade, order.order_id, fo)
 
             except ExchangeError:
                 logger.warning(f"Error updating {order.order_id}")
@@ -272,7 +272,7 @@ class FreqtradeBot:
                     # No action for buy orders ...
                     continue
                 if fo:
-                    self.update_trade_state(trade, fo, sl_order=order.ft_order_side == 'stoploss')
+                    self.update_trade_state(trade, order.order_id, fo)
 
             except ExchangeError:
                 logger.warning(f"Error updating {order.order_id}")
@@ -634,7 +634,7 @@ class FreqtradeBot:
 
         # Update fees if order is closed
         if order_status == 'closed':
-            self.update_trade_state(trade, order)
+            self.update_trade_state(trade, order_id, order)
 
         Trade.session.add(trade)
         Trade.session.flush()
@@ -878,7 +878,7 @@ class FreqtradeBot:
         # We check if stoploss order is fulfilled
         if stoploss_order and stoploss_order['status'] in ('closed', 'triggered'):
             trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
-            self.update_trade_state(trade, stoploss_order, sl_order=True)
+            self.update_trade_state(trade, trade.stoploss_order_id, stoploss_order)
             # Lock pair for one candle to prevent immediate rebuys
             self.strategy.lock_pair(trade.pair,
                                     timeframe_to_next_date(self.config['timeframe']))
@@ -989,7 +989,7 @@ class FreqtradeBot:
                 logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
                 continue
 
-            fully_cancelled = self.update_trade_state(trade, order)
+            fully_cancelled = self.update_trade_state(trade, trade.open_order_id, order)
 
             if (order['side'] == 'buy' and (order['status'] == 'open' or fully_cancelled) and (
                     fully_cancelled
@@ -1070,7 +1070,7 @@ class FreqtradeBot:
             # we need to fall back to the values from order if corder does not contain these keys.
             trade.amount = filled_amount
             trade.stake_amount = trade.amount * trade.open_rate
-            self.update_trade_state(trade, corder, trade.amount)
+            self.update_trade_state(trade, trade.open_order_id, corder, trade.amount)
 
             trade.open_order_id = None
             logger.info('Partial buy order timeout for %s.', trade)
@@ -1208,7 +1208,7 @@ class FreqtradeBot:
         trade.sell_reason = sell_reason.value
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') == 'closed':
-            self.update_trade_state(trade, order)
+            self.update_trade_state(trade, trade.open_order_id, order)
         Trade.session.flush()
 
         # Lock pair for one candle to prevent immediate rebuys
@@ -1305,20 +1305,17 @@ class FreqtradeBot:
 # Common update trade state methods
 #
 
-    def update_trade_state(self, trade: Trade, action_order: dict = None,
-                           order_amount: float = None, sl_order: bool = False) -> bool:
+    def update_trade_state(self, trade: Trade, order_id: str, action_order: dict = None,
+                           order_amount: float = None) -> bool:
         """
         Checks trades with open orders and updates the amount if necessary
         Handles closing both buy and sell orders.
         :return: True if order has been cancelled without being filled partially, False otherwise
         """
-        # Get order details for actual price per unit
-        if trade.open_order_id:
-            order_id = trade.open_order_id
-        elif trade.stoploss_order_id and sl_order:
-            order_id = trade.stoploss_order_id
-        else:
-            return False
+        if not order_id:
+            logger.warning(f'Orderid for trade {trade} is empty.')
+            False
+
         # Update trade with order values
         logger.info('Found open order for %s', trade)
         try:
