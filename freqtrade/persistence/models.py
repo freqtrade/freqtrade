@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 
 import arrow
 from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
-                        String, create_engine, desc, func, inspect, or_)
+                        String, create_engine, desc, func, inspect)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Query, relationship
@@ -553,6 +553,16 @@ class Trade(_DECL_BASE):
         Returns all open trades
         """
         return Trade.get_trades(Trade.open_order_id.isnot(None)).all()
+
+    @staticmethod
+    def get_open_trades_without_assigned_fees():
+        """
+        Returns all open trades which don't have open fees set correctly
+        """
+        return Trade.get_trades([Trade.fee_open_currency.is_(None),
+                                 Trade.orders.any(),
+                                 Trade.is_open.is_(True),
+                                 ]).all()
 
     @staticmethod
     def get_sold_trades_without_assigned_fees():

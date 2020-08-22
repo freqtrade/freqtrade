@@ -267,10 +267,20 @@ class FreqtradeBot:
                 if order:
                     logger.info(f"Updating sell-fee on trade {trade} for order {order.order_id}.")
                     self.update_trade_state(trade, order.order_id,
-                                            order.ft_order_side == 'stoploss')
+                                            stoploss_order=order.ft_order_side == 'stoploss')
+
+        trades: List[Trade] = Trade.get_open_trades_without_assigned_fees()
+        for trade in trades:
+            if trade.is_open and not trade.fee_updated('buy'):
+                order = trade.select_order('buy', 'closed')
+                if order:
+                    logger.info(f"Updating buy-fee on trade {trade} for order {order.order_id}.")
+                    self.update_trade_state(trade, order.order_id)
 
     def handle_insufficient_funds(self, trade: Trade):
         """
+        Determine if we ever opened a sell order for this trade.
+        If not, try update buy fees - otherwise "refind" the open order we obviously lost.
         """
         sell_order = trade.select_order('sell', None)
         if sell_order:
@@ -278,11 +288,10 @@ class FreqtradeBot:
         else:
             self.reupdate_buy_order_fees(trade)
 
-        # See if we ever opened a sell order for this
-        # If not, try update buy fees
-
     def reupdate_buy_order_fees(self, trade: Trade):
         """
+        Get buy order from database, and try to reupdate.
+        Handles trades where the initial fee-update did not work.
         """
         logger.info(f"Trying to reupdate buy fees for {trade}")
         order = trade.select_order('buy', 'closed')
@@ -295,8 +304,6 @@ class FreqtradeBot:
         Try refinding a lost trade.
         Only used when InsufficientFunds appears on sell orders (stoploss or sell).
         Tries to walk the stored orders and sell them off eventually.
-
-        TODO: maybe remove this method again.
         """
         logger.info(f"Trying to refind lost order for {trade}")
         for order in trade.orders:
@@ -318,7 +325,7 @@ class FreqtradeBot:
                     continue
                 if fo:
                     self.update_trade_state(trade, order.order_id, fo,
-                                            order.ft_order_side == 'stoploss')
+                                            stoploss_order=order.ft_order_side == 'stoploss')
 
             except ExchangeError:
                 logger.warning(f"Error updating {order.order_id}")
