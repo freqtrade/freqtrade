@@ -23,7 +23,8 @@ from freqtrade.exceptions import (DDosProtection, ExchangeError,
                                   InsufficientFundsError,
                                   InvalidOrderException, OperationalException,
                                   RetryableOrderError, TemporaryError)
-from freqtrade.exchange.common import BAD_EXCHANGES, retrier, retrier_async
+from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT,
+                                       BAD_EXCHANGES, retrier, retrier_async)
 from freqtrade.misc import deep_merge_dicts, safe_value_fallback2
 
 CcxtModuleType = Any
@@ -1010,7 +1011,7 @@ class Exchange:
 
         return order
 
-    @retrier(retries=5)
+    @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
     def fetch_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
             try:

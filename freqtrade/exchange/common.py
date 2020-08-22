@@ -9,7 +9,11 @@ from freqtrade.exceptions import (DDosProtection, RetryableOrderError,
 logger = logging.getLogger(__name__)
 
 
+# Maximum default retry count.
+# Functions are always called RETRY_COUNT + 1 times (for the original call)
 API_RETRY_COUNT = 4
+API_FETCH_ORDER_RETRY_COUNT = 3
+
 BAD_EXCHANGES = {
     "bitmex": "Various reasons.",
     "bitstamp": "Does not provide history. "

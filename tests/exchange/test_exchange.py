@@ -1,5 +1,3 @@
-# pragma pylint: disable=missing-docstring, C0103, bad-continuation, global-statement
-# pragma pylint: disable=protected-access
 import copy
 import logging
 from datetime import datetime, timezone
@@ -11,10 +9,12 @@ import ccxt
 import pytest
 from pandas import DataFrame
 
-from freqtrade.exceptions import (DependencyException, InvalidOrderException, DDosProtection,
-                                  OperationalException, TemporaryError)
+from freqtrade.exceptions import (DDosProtection, DependencyException,
+                                  InvalidOrderException, OperationalException,
+                                  TemporaryError)
 from freqtrade.exchange import Binance, Exchange, Kraken
-from freqtrade.exchange.common import API_RETRY_COUNT, calculate_backoff
+from freqtrade.exchange.common import (API_RETRY_COUNT, API_FETCH_ORDER_RETRY_COUNT,
+                                       calculate_backoff)
 from freqtrade.exchange.exchange import (market_is_active, symbol_is_pair,
                                          timeframe_to_minutes,
                                          timeframe_to_msecs,
@@ -1894,12 +1894,14 @@ def test_fetch_order(default_conf, mocker, exchange_name):
         # Ensure backoff is called
         assert tm.call_args_list[0][0][0] == 1
         assert tm.call_args_list[1][0][0] == 2
-        assert tm.call_args_list[2][0][0] == 5
-        assert tm.call_args_list[3][0][0] == 10
-    assert api_mock.fetch_order.call_count == 6
+        if API_FETCH_ORDER_RETRY_COUNT > 2:
+            assert tm.call_args_list[2][0][0] == 5
+        if API_FETCH_ORDER_RETRY_COUNT > 3:
+            assert tm.call_args_list[3][0][0] == 10
+    assert api_mock.fetch_order.call_count == API_FETCH_ORDER_RETRY_COUNT + 1
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
-                           'fetch_order', 'fetch_order', retries=6,
+                           'fetch_order', 'fetch_order', retries=API_FETCH_ORDER_RETRY_COUNT + 1,
                            order_id='_', pair='TKN/BTC')
 
 
@@ -1932,7 +1934,7 @@ def test_fetch_stoploss_order(default_conf, mocker, exchange_name):
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            'fetch_stoploss_order', 'fetch_order',
-                           retries=6,
+                           retries=API_FETCH_ORDER_RETRY_COUNT + 1,
                            order_id='_', pair='TKN/BTC')
 
 
