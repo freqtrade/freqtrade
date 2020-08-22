@@ -138,6 +138,7 @@ class FreqtradeBot:
         # This will update the database after the initial migration
         self.update_open_orders()
 
+        # TODO: remove next call once testing is done - this is called on every iteration.
         self.update_closed_trades_without_assigned_fees()
 
     def process(self) -> None:
@@ -244,10 +245,8 @@ class FreqtradeBot:
         logger.info(f"Updating {len(orders)} open orders.")
         for order in orders:
             try:
-                if order.ft_order_side == 'stoploss':
-                    fo = self.exchange.fetch_stoploss_order(order.order_id, order.ft_pair)
-                else:
-                    fo = self.exchange.fetch_order(order.order_id, order.ft_pair)
+                fo = self.exchange.fetch_order_or_stoploss_order(order.order_id, order.ft_pair,
+                                                                 order.ft_order_side == 'stoploss')
 
                 self.update_trade_state(order.trade, order.order_id, fo)
 
@@ -257,7 +256,7 @@ class FreqtradeBot:
     def update_closed_trades_without_assigned_fees(self):
         """
         Update closed trades without close fees assigned.
-        Only works when Orders are in the database, otherwise the last orderid is unknown.
+        Only acts when Orders are in the database, otherwise the last orderid is unknown.
         """
         trades: List[Trade] = Trade.get_sold_trades_without_assigned_fees()
         for trade in trades:
@@ -267,7 +266,8 @@ class FreqtradeBot:
                 order = trade.select_order('sell', 'closed')
                 if order:
                     logger.info(f"Updating sell-fee on trade {trade} for order {order.order_id}.")
-                    self.update_trade_state(trade, order.order_id)
+                    self.update_trade_state(trade, order.order_id,
+                                            order.ft_order_side == 'stoploss')
 
     def refind_lost_order(self, trade):
         """
@@ -282,13 +282,13 @@ class FreqtradeBot:
             logger.info(f"Trying to refind {order}")
             fo = None
             try:
+                fo = self.exchange.fetch_order_or_stoploss_order(order.order_id, order.ft_pair,
+                                                                 order.ft_order_side == 'stoploss')
                 if order.ft_order_side == 'stoploss':
-                    fo = self.exchange.fetch_stoploss_order(order.order_id, order.ft_pair)
                     if fo and fo['status'] == 'open':
                         # Assume this as the open stoploss order
                         trade.stoploss_order_id = order.order_id
                 elif order.ft_order_side == 'sell':
-                    fo = self.exchange.fetch_order(order.order_id, order.ft_pair)
                     if fo and fo['status'] == 'open':
                         # Assume this as the open order
                         trade.open_order_id = order.order_id
@@ -296,7 +296,8 @@ class FreqtradeBot:
                     # No action for buy orders ...
                     continue
                 if fo:
-                    self.update_trade_state(trade, order.order_id, fo)
+                    self.update_trade_state(trade, order.order_id, fo,
+                                            order.ft_order_side == 'stoploss')
 
             except ExchangeError:
                 logger.warning(f"Error updating {order.order_id}")
@@ -902,7 +903,8 @@ class FreqtradeBot:
         # We check if stoploss order is fulfilled
         if stoploss_order and stoploss_order['status'] in ('closed', 'triggered'):
             trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
-            self.update_trade_state(trade, trade.stoploss_order_id, stoploss_order)
+            self.update_trade_state(trade, trade.stoploss_order_id, stoploss_order,
+                                    stoploss_order=True)
             # Lock pair for one candle to prevent immediate rebuys
             self.strategy.lock_pair(trade.pair,
                                     timeframe_to_next_date(self.config['timeframe']))
@@ -1330,7 +1332,7 @@ class FreqtradeBot:
 #
 
     def update_trade_state(self, trade: Trade, order_id: str, action_order: dict = None,
-                           order_amount: float = None) -> bool:
+                           order_amount: float = None, stoploss_order: bool = False) -> bool:
         """
         Checks trades with open orders and updates the amount if necessary
         Handles closing both buy and sell orders.
@@ -1348,7 +1350,9 @@ class FreqtradeBot:
         # Update trade with order values
         logger.info('Found open order for %s', trade)
         try:
-            order = action_order or self.exchange.fetch_order(order_id, trade.pair)
+            order = action_order or self.exchange.fetch_order_or_stoploss_order(order_id,
+                                                                                trade.pair,
+                                                                                stoploss_order)
         except InvalidOrderException as exception:
             logger.warning('Unable to fetch order %s: %s', order_id, exception)
             return False
