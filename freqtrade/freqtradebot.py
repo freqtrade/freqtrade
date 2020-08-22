@@ -138,6 +138,8 @@ class FreqtradeBot:
         # This will update the database after the initial migration
         self.update_open_orders()
 
+        self.update_closed_trades_without_assigned_fees()
+
     def process(self) -> None:
         """
         Queries the persistence layer for open trades and handles them,
@@ -147,6 +149,8 @@ class FreqtradeBot:
 
         # Check whether markets have to be reloaded and reload them when it's needed
         self.exchange.reload_markets()
+
+        self.update_closed_trades_without_assigned_fees()
 
         # Query trades from persistence layer
         trades = Trade.get_open_trades()
@@ -233,7 +237,8 @@ class FreqtradeBot:
 
     def update_open_orders(self):
         """
-        Updates open orders based on order list kept in the database
+        Updates open orders based on order list kept in the database.
+        Mainly updates the state of orders - but may also close trades
         """
         orders = Order.get_open_orders()
         logger.info(f"Updating {len(orders)} open orders.")
@@ -248,6 +253,21 @@ class FreqtradeBot:
 
             except ExchangeError:
                 logger.warning(f"Error updating {order.order_id}")
+
+    def update_closed_trades_without_assigned_fees(self):
+        """
+        Update closed trades without close fees assigned.
+        Only works when Orders are in the database, otherwise the last orderid is unknown.
+        """
+        trades: List[Trade] = Trade.get_sold_trades_without_assigned_fees()
+        for trade in trades:
+
+            if not trade.is_open and not trade.fee_updated('sell'):
+                # Get sell fee
+                order = trade.select_order('sell', 'closed')
+                if order:
+                    logger.info(f"Updating sell-fee on trade {trade} for order {order.order_id}.")
+                    self.update_trade_state(trade, order.order_id)
 
     def refind_lost_order(self, trade):
         """

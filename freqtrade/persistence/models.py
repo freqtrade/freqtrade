@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 
 import arrow
 from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
-                        String, create_engine, desc, func, inspect)
+                        String, create_engine, desc, func, inspect, or_)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Query, relationship
@@ -508,6 +508,17 @@ class Trade(_DECL_BASE):
         profit_ratio = (close_trade_price / self.open_trade_price) - 1
         return float(f"{profit_ratio:.8f}")
 
+    def select_order(self, order_side: str, status: str):
+        """
+        Returns latest order for this orderside and status
+        Returns None if nothing is found
+        """
+        orders = [o for o in self.orders if o.side == order_side and o.status == status]
+        if len(orders) > 0:
+            return orders[-1]
+        else:
+            return None
+
     @staticmethod
     def get_trades(trade_filter=None) -> Query:
         """
@@ -538,6 +549,17 @@ class Trade(_DECL_BASE):
         Returns all open trades
         """
         return Trade.get_trades(Trade.open_order_id.isnot(None)).all()
+
+    @staticmethod
+    def get_sold_trades_without_assigned_fees():
+        """
+        Returns all closed trades which don't have fees set correctly
+        """
+        return Trade.get_trades([Trade.fee_close_currency.is_(None),
+                                 Trade.id == 100,
+                                 Trade.orders.any(),
+                                 Trade.is_open.is_(False),
+                                 ]).all()
 
     @staticmethod
     def total_open_trades_stakes() -> float:
