@@ -138,9 +138,6 @@ class FreqtradeBot:
         # This will update the database after the initial migration
         self.update_open_orders()
 
-        # TODO: remove next call once testing is done - this is called on every iteration.
-        self.update_closed_trades_without_assigned_fees()
-
     def process(self) -> None:
         """
         Queries the persistence layer for open trades and handles them,
