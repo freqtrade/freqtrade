@@ -2,7 +2,7 @@
 This module contains the class to persist trades into SQLite
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
@@ -152,11 +152,13 @@ class Order(_DECL_BASE):
         self.remaining = order.get('remaining', self.remaining)
         self.cost = order.get('cost', self.cost)
         if 'timestamp' in order and order['timestamp'] is not None:
-            self.order_date = datetime.fromtimestamp(order['timestamp'] / 1000)
+            self.order_date = datetime.fromtimestamp(order['timestamp'] / 1000, tz=timezone.utc)
 
         if self.status in ('closed', 'canceled', 'cancelled'):
             self.ft_is_open = False
-        self.order_update_date = datetime.now()
+            if order.get('filled', 0) > 0:
+                self.order_filled_date = arrow.utcnow().datetime
+        self.order_update_date = arrow.utcnow().datetime
 
     @staticmethod
     def update_orders(orders: List['Order'], order: Dict[str, Any]):
