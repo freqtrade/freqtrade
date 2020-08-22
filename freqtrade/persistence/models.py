@@ -510,12 +510,14 @@ class Trade(_DECL_BASE):
         profit_ratio = (close_trade_price / self.open_trade_price) - 1
         return float(f"{profit_ratio:.8f}")
 
-    def select_order(self, order_side: str, status: str):
+    def select_order(self, order_side: str, status: Optional[str]):
         """
         Returns latest order for this orderside and status
         Returns None if nothing is found
         """
-        orders = [o for o in self.orders if o.side == order_side and o.status == status]
+        orders = [o for o in self.orders if o.side == order_side]
+        if status:
+            orders = [o for o in orders if o.status == status]
         if len(orders) > 0:
             return orders[-1]
         else:
@@ -558,7 +560,6 @@ class Trade(_DECL_BASE):
         Returns all closed trades which don't have fees set correctly
         """
         return Trade.get_trades([Trade.fee_close_currency.is_(None),
-                                 Trade.id == 100,
                                  Trade.orders.any(),
                                  Trade.is_open.is_(False),
                                  ]).all()

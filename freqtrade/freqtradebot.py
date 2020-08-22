@@ -269,6 +269,27 @@ class FreqtradeBot:
                     self.update_trade_state(trade, order.order_id,
                                             order.ft_order_side == 'stoploss')
 
+    def handle_insufficient_funds(self, trade: Trade):
+        """
+        """
+        sell_order = trade.select_order('sell', None)
+        if sell_order:
+            self.refind_lost_order(trade)
+        else:
+            self.reupdate_buy_order_fees(trade)
+
+        # See if we ever opened a sell order for this
+        # If not, try update buy fees
+
+    def reupdate_buy_order_fees(self, trade: Trade):
+        """
+        """
+        logger.info(f"Trying to reupdate buy fees for {trade}")
+        order = trade.select_order('buy', 'closed')
+        if order:
+            logger.info(f"Updating buy-fee on trade {trade} for order {order.order_id}.")
+            self.update_trade_state(trade, order.order_id)
+
     def refind_lost_order(self, trade):
         """
         Try refinding a lost trade.
@@ -864,9 +885,8 @@ class FreqtradeBot:
             return True
         except InsufficientFundsError as e:
             logger.warning(f"Unable to place stoploss order {e}.")
-            # Try refinding stoploss order
-            # TODO: Currently disabled to allow testing without this first
-            # self.refind_lost_order(trade)
+            # Try to figure out what went wrong
+            self.handle_insufficient_funds(trade)
 
         except InvalidOrderException as e:
             trade.stoploss_order_id = None
@@ -1221,9 +1241,8 @@ class FreqtradeBot:
                                        )
         except InsufficientFundsError as e:
             logger.warning(f"Unable to place order {e}.")
-            # Try refinding "lost" orders
-            # TODO: Currently disabled to allow testing without this first
-            # self.refind_lost_order(trade)
+            # Try to figure out what went wrong
+            self.handle_insufficient_funds(trade)
             return False
 
         order_obj = Order.parse_from_ccxt_object(order, trade.pair, 'sell')
