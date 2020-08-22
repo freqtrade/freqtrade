@@ -1936,6 +1936,31 @@ def test_fetch_stoploss_order(default_conf, mocker, exchange_name):
                            order_id='_', pair='TKN/BTC')
 
 
+def test_fetch_order_or_stoploss_order(default_conf, mocker):
+    exchange = get_patched_exchange(mocker, default_conf, id='binance')
+    fetch_order_mock = MagicMock()
+    fetch_stoploss_order_mock = MagicMock()
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          fetch_order=fetch_order_mock,
+                          fetch_stoploss_order=fetch_stoploss_order_mock,
+                          )
+
+    exchange.fetch_order_or_stoploss_order('1234', 'ETH/BTC', False)
+    assert fetch_order_mock.call_count == 1
+    assert fetch_order_mock.call_args_list[0][0][0] == '1234'
+    assert fetch_order_mock.call_args_list[0][0][1] == 'ETH/BTC'
+    assert fetch_stoploss_order_mock.call_count == 0
+
+    fetch_order_mock.reset_mock()
+    fetch_stoploss_order_mock.reset_mock()
+
+    exchange.fetch_order_or_stoploss_order('1234', 'ETH/BTC', True)
+    assert fetch_order_mock.call_count == 0
+    assert fetch_stoploss_order_mock.call_count == 1
+    assert fetch_stoploss_order_mock.call_args_list[0][0][0] == '1234'
+    assert fetch_stoploss_order_mock.call_args_list[0][0][1] == 'ETH/BTC'
+
+
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_name(default_conf, mocker, exchange_name):
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
