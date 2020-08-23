@@ -6,8 +6,8 @@ For example, value `-0.10` will cause immediate sell if the profit dips below -1
 Most of the strategy files already include the optimal `stoploss` value.
 
 !!! Info
-*   All stoploss properties mentioned in this file can be set in the Strategy, or in the configuration.  
-*   <ins>Configuration values will override the strategy values.</ins>
+    All stoploss properties mentioned in this file can be set in the Strategy, or in the configuration.  
+    <ins>Configuration values will override the strategy values.</ins>
 
 ## Stop Loss On-Exchange/Freqtrade
 
@@ -23,9 +23,9 @@ These modes can be configured with these values:
 ```
 
 !!! Note
-*   Stoploss on exchange is only supported for Binance (stop-loss-limit), Kraken (stop-loss-market) and FTX (stop limit and stop-market) as of now.  
-*   <ins>Do not set too low stoploss value if using stop loss on exchange!</ins>  
-*   If set to low/tight then you have greater risk of missing fill on the order and stoploss will not work
+    Stoploss on exchange is only supported for Binance (stop-loss-limit), Kraken (stop-loss-market) and FTX (stop limit and stop-market) as of now.  
+    <ins>Do not set too low stoploss value if using stop loss on exchange!</ins>  
+    If set to low/tight then you have greater risk of missing fill on the order and stoploss will not work
 
 ### stoploss_on_exchange and stoploss_on_exchange_limit_ratio
 Enable or Disable stop loss on exchange.
@@ -117,7 +117,7 @@ It is also possible to have a default stop loss, when you are in the red with yo
 For example, your default stop loss is -10%, but once you have more than 0% profit (example 0.1%) a different trailing stoploss will be used.
 
 !!! Note
-*   If you want the stoploss to only be changed when you break even of making a profit (what most users want) please refer to next section with [offset enabled](#Trailing-stop-loss-only-once-the-trade-has-reached-a-certain-offset).
+    If you want the stoploss to only be changed when you break even of making a profit (what most users want) please refer to next section with [offset enabled](#Trailing-stop-loss-only-once-the-trade-has-reached-a-certain-offset).
 
 Both values require `trailing_stop` to be set to true and `trailing_stop_positive` with a value.
 
@@ -172,7 +172,7 @@ For example, simplified math:
 * now the asset drops in value to 101$, the stop loss will still be 100.94$ and would trigger at 100.94$
 
 !!! Tip
-*   Make sure to have this value (`trailing_stop_positive_offset`) lower than minimal ROI, otherwise minimal ROI will apply first and sell the trade.
+    Make sure to have this value (`trailing_stop_positive_offset`) lower than minimal ROI, otherwise minimal ROI will apply first and sell the trade.
 
 ## Changing stoploss on open trades
 
