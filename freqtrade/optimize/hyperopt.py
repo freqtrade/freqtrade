@@ -4,27 +4,28 @@
 This module contains the hyperopt logic
 """
 
+import io
 import locale
 import logging
 import random
 import warnings
-from math import ceil
 from collections import OrderedDict
+from math import ceil
 from operator import itemgetter
 from pathlib import Path
 from pprint import pformat
 from typing import Any, Dict, List, Optional
 
+import progressbar
 import rapidjson
+import tabulate
 from colorama import Fore, Style
+from colorama import init as colorama_init
 from joblib import (Parallel, cpu_count, delayed, dump, load,
                     wrap_non_picklable_objects)
-from pandas import DataFrame, json_normalize, isna
-import progressbar
-import tabulate
-from os import path
-import io
+from pandas import DataFrame, isna, json_normalize
 
+from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import OperationalException
@@ -32,9 +33,11 @@ from freqtrade.misc import plural, round_dict
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
 from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F401
-from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F401
+from freqtrade.optimize.hyperopt_loss_interface import \
+    IHyperOptLoss  # noqa: F401
 from freqtrade.resolvers.hyperopt_resolver import (HyperOptLossResolver,
                                                    HyperOptResolver)
+from freqtrade.strategy import IStrategy
 
 # Suppress scikit-learn FutureWarnings from skopt
 with warnings.catch_warnings():
@@ -395,7 +398,7 @@ class Hyperopt:
             return
 
         # Verification for overwrite
-        if path.isfile(csv_file):
+        if Path(csv_file).is_file():
             logger.error(f"CSV file already exists: {csv_file}")
             return
 
@@ -641,15 +644,17 @@ class Hyperopt:
             preprocessed[pair] = trim_dataframe(df, timerange)
         min_date, max_date = get_timerange(data)
 
-        logger.info(
-            'Hyperopting with data from %s up to %s (%s days)..',
-            min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
-        )
+        logger.info(f'Hyperopting with data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
+                    f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
+                    f'({(max_date - min_date).days} days)..')
+
         dump(preprocessed, self.data_pickle_file)
 
         # We don't need exchange instance anymore while running hyperopt
         self.backtesting.exchange = None  # type: ignore
         self.backtesting.pairlists = None  # type: ignore
+        self.backtesting.strategy.dp = None  # type: ignore
+        IStrategy.dp = None  # type: ignore
 
         self.epochs = self.load_previous_results(self.results_file)
 
@@ -660,6 +665,10 @@ class Hyperopt:
 
         self.dimensions: List[Dimension] = self.hyperopt_space()
         self.opt = self.get_optimizer(self.dimensions, config_jobs)
+
+        if self.print_colorized:
+            colorama_init(autoreset=True)
+
         try:
             with Parallel(n_jobs=config_jobs) as parallel:
                 jobs = parallel._effective_n_jobs()

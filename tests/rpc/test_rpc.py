@@ -255,11 +255,11 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
     assert days['fiat_display_currency'] == default_conf['fiat_display_currency']
     for day in days['data']:
         # [datetime.date(2018, 1, 11), '0.00000000 BTC', '0.000 USD']
-        assert (day['abs_profit'] == '0.00000000' or
-                day['abs_profit'] == '0.00006217')
+        assert (day['abs_profit'] == 0.0 or
+                day['abs_profit'] == 0.00006217)
 
-        assert (day['fiat_value'] == '0.000' or
-                day['fiat_value'] == '0.767')
+        assert (day['fiat_value'] == 0.0 or
+                day['fiat_value'] == 0.76748865)
     # ensure first day is current date
     assert str(days['data'][0]['date']) == str(datetime.utcnow().date())
 

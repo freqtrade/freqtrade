@@ -16,6 +16,7 @@ from werkzeug.security import safe_str_cmp
 from werkzeug.serving import make_server
 
 from freqtrade.__init__ import __version__
+from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.rpc.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 
@@ -32,7 +33,7 @@ class ArrowJSONEncoder(JSONEncoder):
             elif isinstance(obj, date):
                 return obj.strftime("%Y-%m-%d")
             elif isinstance(obj, datetime):
-                return obj.strftime("%Y-%m-%d %H:%M:%S")
+                return obj.strftime(DATETIME_PRINT_FORMAT)
             iterable = iter(obj)
         except TypeError:
             pass

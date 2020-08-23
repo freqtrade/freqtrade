@@ -199,7 +199,7 @@ class Configuration:
             config['exportfilename'] = Path(config['exportfilename'])
         else:
             config['exportfilename'] = (config['user_data_dir']
-                                        / 'backtest_results/backtest-result.json')
+                                        / 'backtest_results')
 
     def _process_optimize_options(self, config: Dict[str, Any]) -> None:
 

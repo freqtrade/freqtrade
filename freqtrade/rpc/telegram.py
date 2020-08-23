@@ -305,8 +305,8 @@ class Telegram(RPC):
             )
             stats_tab = tabulate(
                 [[day['date'],
-                  f"{day['abs_profit']} {stats['stake_currency']}",
-                  f"{day['fiat_value']} {stats['fiat_display_currency']}",
+                  f"{day['abs_profit']:.8f} {stats['stake_currency']}",
+                  f"{day['fiat_value']:.3f} {stats['fiat_display_currency']}",
                   f"{day['trade_count']} trades"] for day in stats['data']],
                 headers=[
                     'Day',
