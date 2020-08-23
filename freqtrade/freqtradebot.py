@@ -306,6 +306,9 @@ class FreqtradeBot:
         for order in trade.orders:
             logger.info(f"Trying to refind {order}")
             fo = None
+            if order.ft_order_side == 'buy':
+                # Skip buy side - this is handled by reupdate_buy_order_fees
+                continue
             try:
                 fo = self.exchange.fetch_order_or_stoploss_order(order.order_id, order.ft_pair,
                                                                  order.ft_order_side == 'stoploss')
@@ -321,6 +324,7 @@ class FreqtradeBot:
                     # No action for buy orders ...
                     continue
                 if fo:
+                    logger.info(f"Found {order} for trade {trade}.jj")
                     self.update_trade_state(trade, order.order_id, fo,
                                             stoploss_order=order.ft_order_side == 'stoploss')
 
