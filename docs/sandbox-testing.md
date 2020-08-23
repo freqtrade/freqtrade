@@ -3,7 +3,7 @@
 Some exchanges provide sandboxes or testbeds for risk-free testing, while running the bot against a real exchange.
 With some configuration, freqtrade (in combination with ccxt) provides access to these.
 
-This document is a light overview of configuring Freqtrade to be used with sandboxes.
+This document is an overview to configure Freqtrade to be used with sandboxes.
 This can be useful to developers and trader alike.
 
 ## Exchanges known to have a sandbox / testnet
@@ -22,14 +22,14 @@ This can be useful to developers and trader alike.
 
 ## Configure a Sandbox account
 
-When testing your API connectivity, make sure to use the following URLs.
+When testing your API connectivity, make sure to use the appropriate sandbox / testnet URL.
 
 In general, you should follow these steps to enable an exchange's sandbox:
 
-- Figure out if an exchange has a sandbox (most likely by using google or the exchange's support documents)
-- Create a sandbox account (often the sandbox-account requires separate registration)
-- [Add some test assets to account](#add-test-funds)
-- Create API keys
+* Figure out if an exchange has a sandbox (most likely by using google or the exchange's support documents)
+* Create a sandbox account (often the sandbox-account requires separate registration)
+* [Add some test assets to account](#add-test-funds)
+* Create API keys
 
 ### Add test funds
 
@@ -37,7 +37,7 @@ Usually, sandbox exchanges allow depositing funds directly via web-interface.
 You should make sure to have a realistic amount of funds available to your test-account, so results are representable of your real account funds.
 
 !!! Warning
-    Test exchanges will NEVER require your real credit card or banking details!
+    Test exchanges will **NEVER** require your real credit card or banking details!
 
 ## Configure freqtrade to use a exchange's sandbox
 
@@ -46,8 +46,8 @@ You should make sure to have a realistic amount of funds available to your test-
 Freqtrade makes use of CCXT which in turn provides a list of URLs to Freqtrade.
 These include `['test']` and `['api']`.
 
-- `[Test]` if available will point to an Exchanges sandbox.
-- `[Api]` normally used, and resolves to live API target on the exchange.
+* `[Test]` if available will point to an Exchanges sandbox.
+* `[Api]` normally used, and resolves to live API target on the exchange.
 
 To make use of sandbox / test add "sandbox": true, to your config.json
 
@@ -68,9 +68,9 @@ To make use of sandbox / test add "sandbox": true, to your config.json
 
 Also the following information:
 
-- api-key (created for the sandbox webpage)
-- api-secret (noted earlier)
-- password (the passphrase - noted earlier)
+* api-key (created for the sandbox webpage)
+* api-secret (noted earlier)
+* password (the passphrase - noted earlier)
 
 !!! Tip "Different data directory"
     We also recommend to set `datadir` to something identifying downloaded data as sandbox data, to avoid having sandbox data mixed with data from the real exchange.
