@@ -951,6 +951,7 @@ def test_process_informative_pairs_added(default_conf, ticker, mocker) -> None:
 ])
 def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
                       last, last_ab, expected) -> None:
+    caplog.set_level(logging.DEBUG)
     default_conf['bid_strategy']['ask_last_balance'] = last_ab
     default_conf['bid_strategy']['price_side'] = side
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
@@ -3989,6 +3990,8 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order_open, limit_buy_o
     ('ask', 0.006, 1.0, 0.006),
 ])
 def test_get_sell_rate(default_conf, mocker, caplog, side, bid, ask, expected) -> None:
+    caplog.set_level(logging.DEBUG)
+
     default_conf['ask_strategy']['price_side'] = side
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', return_value={'ask': ask, 'bid': bid})
     pair = "ETH/BTC"
@@ -4010,6 +4013,7 @@ def test_get_sell_rate(default_conf, mocker, caplog, side, bid, ask, expected) -
     ('ask', 0.043949),  # Value from order_book_l2 fiture - asks side
 ])
 def test_get_sell_rate_orderbook(default_conf, mocker, caplog, side, expected, order_book_l2):
+    caplog.set_level(logging.DEBUG)
     # Test orderbook mode
     default_conf['ask_strategy']['price_side'] = side
     default_conf['ask_strategy']['use_order_book'] = True
