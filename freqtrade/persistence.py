@@ -2,7 +2,7 @@
 This module contains the class to persist trades into SQLite
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
@@ -274,7 +274,7 @@ class Trade(_DECL_BASE):
 
             'open_date_hum': arrow.get(self.open_date).humanize(),
             'open_date': self.open_date.strftime("%Y-%m-%d %H:%M:%S"),
-            'open_timestamp': int(self.open_date.timestamp() * 1000),
+            'open_timestamp': int(self.open_date.replace(tzinfo=timezone.utc).timestamp() * 1000),
             'open_rate': self.open_rate,
             'open_rate_requested': self.open_rate_requested,
             'open_trade_price': round(self.open_trade_price, 8),
@@ -283,7 +283,8 @@ class Trade(_DECL_BASE):
                                if self.close_date else None),
             'close_date': (self.close_date.strftime("%Y-%m-%d %H:%M:%S")
                            if self.close_date else None),
-            'close_timestamp': int(self.close_date.timestamp() * 1000) if self.close_date else None,
+            'close_timestamp': int(self.close_date.replace(
+                tzinfo=timezone.utc).timestamp() * 1000) if self.close_date else None,
             'close_rate': self.close_rate,
             'close_rate_requested': self.close_rate_requested,
             'close_profit': self.close_profit,
@@ -298,8 +299,8 @@ class Trade(_DECL_BASE):
             'stoploss_order_id': self.stoploss_order_id,
             'stoploss_last_update': (self.stoploss_last_update.strftime("%Y-%m-%d %H:%M:%S")
                                      if self.stoploss_last_update else None),
-            'stoploss_last_update_timestamp': (int(self.stoploss_last_update.timestamp() * 1000)
-                                               if self.stoploss_last_update else None),
+            'stoploss_last_update_timestamp': int(self.stoploss_last_update.replace(
+                tzinfo=timezone.utc).timestamp() * 1000) if self.stoploss_last_update else None,
             'initial_stop_loss': self.initial_stop_loss,  # Deprecated - should not be used
             'initial_stop_loss_abs': self.initial_stop_loss,
             'initial_stop_loss_ratio': (self.initial_stop_loss_pct
