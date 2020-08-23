@@ -275,7 +275,7 @@ class FreqtradeBot:
             rate = self._buy_rate_cache.get(pair)
             # Check if cache has been invalidated
             if rate:
-                logger.info(f"Using cached buy rate for {pair}.")
+                logger.debug(f"Using cached buy rate for {pair}.")
                 return rate
 
         bid_strategy = self.config.get('bid_strategy', {})
@@ -693,7 +693,7 @@ class FreqtradeBot:
             rate = self._sell_rate_cache.get(pair)
             # Check if cache has been invalidated
             if rate:
-                logger.info(f"Using cached sell rate for {pair}.")
+                logger.debug(f"Using cached sell rate for {pair}.")
                 return rate
 
         ask_strategy = self.config.get('ask_strategy', {})
