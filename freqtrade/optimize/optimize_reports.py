@@ -273,7 +273,8 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
             'pairlist': list(btdata.keys()),
             'stake_amount': config['stake_amount'],
             'stake_currency': config['stake_currency'],
-            'max_open_trades': config['max_open_trades'],
+            'max_open_trades': (config['max_open_trades']
+                                if config['max_open_trades'] != float('inf') else -1),
             'timeframe': config['timeframe'],
             **daily_stats,
         }
