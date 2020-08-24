@@ -988,8 +988,8 @@ class FreqtradeBot:
             update_beat = self.strategy.order_types.get('stoploss_on_exchange_interval', 60)
             if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() >= update_beat:
                 # cancelling the current stoploss on exchange first
-                logger.info('Trailing stoploss: cancelling current stoploss on exchange (id:{%s}) '
-                            'in order to add another one ...', order['id'])
+                logger.info(f"Cancelling current stoploss on exchange for pair {trade.pair} "
+                            f"(orderid:{order['id']}) in order to add another one ...")
                 try:
                     co = self.exchange.cancel_stoploss_order(order['id'], trade.pair)
                     trade.update_order(co)
