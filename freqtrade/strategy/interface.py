@@ -301,6 +301,11 @@ class IStrategy(ABC):
     def is_pair_locked(self, pair: str, candle_date: datetime = None) -> bool:
         """
         Checks if a pair is currently locked
+        The 2nd, optional parameter ensures that locks are applied until the new candle arrives,
+        and not stop at 14:00:00 - while the next candle arrives at 14:00:02 leaving a gap
+        of 2 seconds for a buy to happen on an old signal.
+        :param: pair: "Pair to check"
+        :param candle_date: Date of the last candle. Optional, defaults to current date
         """
         if pair not in self._pair_locked_until:
             return False
