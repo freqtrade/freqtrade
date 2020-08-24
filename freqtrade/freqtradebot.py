@@ -306,6 +306,10 @@ class FreqtradeBot:
         for order in trade.orders:
             logger.info(f"Trying to refind {order}")
             fo = None
+            if not order.ft_is_open:
+                # TODO: Does this need to be info level?
+                logger.info(f"Order {order} is no longer open.")
+                continue
             if order.ft_order_side == 'buy':
                 # Skip buy side - this is handled by reupdate_buy_order_fees
                 continue
