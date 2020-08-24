@@ -16,7 +16,9 @@ from werkzeug.security import safe_str_cmp
 from werkzeug.serving import make_server
 
 from freqtrade.__init__ import __version__
+from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.rpc.rpc import RPC, RPCException
+from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +33,7 @@ class ArrowJSONEncoder(JSONEncoder):
             elif isinstance(obj, date):
                 return obj.strftime("%Y-%m-%d")
             elif isinstance(obj, datetime):
-                return obj.strftime("%Y-%m-%d %H:%M:%S")
+                return obj.strftime(DATETIME_PRINT_FORMAT)
             iterable = iter(obj)
         except TypeError:
             pass
@@ -55,7 +57,7 @@ def require_login(func: Callable[[Any, Any], Any]):
 
 
 # Type should really be Callable[[ApiServer], Any], but that will create a circular dependency
-def rpc_catch_errors(func: Callable[[Any], Any]):
+def rpc_catch_errors(func: Callable[..., Any]):
 
     def func_wrapper(obj, *args, **kwargs):
 
@@ -89,7 +91,11 @@ class ApiServer(RPC):
 
         self._config = freqtrade.config
         self.app = Flask(__name__)
-        self._cors = CORS(self.app, resources={r"/api/*": {"origins": "*"}})
+        self._cors = CORS(self.app,
+                          resources={r"/api/*": {
+                              "supports_credentials": True,
+                              "origins": self._config['api_server'].get('CORS_origins', [])}}
+                          )
 
         # Setup the Flask-JWT-Extended extension
         self.app.config['JWT_SECRET_KEY'] = self._config['api_server'].get(
@@ -100,6 +106,9 @@ class ApiServer(RPC):
 
         # Register application handling
         self.register_rest_rpc_urls()
+
+        if self._config.get('fiat_display_currency', None):
+            self._fiat_converter = CryptoToFiatConverter()
 
         thread = threading.Thread(target=self.run, daemon=True)
         thread.start()
@@ -170,8 +179,8 @@ class ApiServer(RPC):
         self.app.add_url_rule(f'{BASE_URI}/stop', 'stop', view_func=self._stop, methods=['POST'])
         self.app.add_url_rule(f'{BASE_URI}/stopbuy', 'stopbuy',
                               view_func=self._stopbuy, methods=['POST'])
-        self.app.add_url_rule(f'{BASE_URI}/reload_conf', 'reload_conf',
-                              view_func=self._reload_conf, methods=['POST'])
+        self.app.add_url_rule(f'{BASE_URI}/reload_config', 'reload_config',
+                              view_func=self._reload_config, methods=['POST'])
         # Info commands
         self.app.add_url_rule(f'{BASE_URI}/balance', 'balance',
                               view_func=self._balance, methods=['GET'])
@@ -192,6 +201,8 @@ class ApiServer(RPC):
                               view_func=self._ping, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/trades', 'trades',
                               view_func=self._trades, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/trades/<int:tradeid>', 'trades_delete',
+                              view_func=self._trades_delete, methods=['DELETE'])
         # Combined actions and infos
         self.app.add_url_rule(f'{BASE_URI}/blacklist', 'blacklist', view_func=self._blacklist,
                               methods=['GET', 'POST'])
@@ -302,12 +313,12 @@ class ApiServer(RPC):
 
     @require_login
     @rpc_catch_errors
-    def _reload_conf(self):
+    def _reload_config(self):
         """
-        Handler for /reload_conf.
+        Handler for /reload_config.
         Triggers a config file reload
         """
-        msg = self._rpc_reload_conf()
+        msg = self._rpc_reload_config()
         return self.rest_dump(msg)
 
     @require_login
@@ -358,7 +369,6 @@ class ApiServer(RPC):
         Returns a cumulative profit statistics
         :return: stats
         """
-        logger.info("LocalRPC - Profit Command Called")
 
         stats = self._rpc_trade_statistics(self._config['stake_currency'],
                                            self._config.get('fiat_display_currency')
@@ -375,8 +385,6 @@ class ApiServer(RPC):
         Returns a cumulative performance statistics
         :return: stats
         """
-        logger.info("LocalRPC - performance Command Called")
-
         stats = self._rpc_performance()
 
         return self.rest_dump(stats)
@@ -418,6 +426,19 @@ class ApiServer(RPC):
         limit = int(request.args.get('limit', 0))
         results = self._rpc_trade_history(limit)
         return self.rest_dump(results)
+
+    @require_login
+    @rpc_catch_errors
+    def _trades_delete(self, tradeid):
+        """
+        Handler for DELETE /trades/<tradeid> endpoint.
+        Removes the trade from the database (tries to cancel open orders first!)
+        get:
+          param:
+            tradeid: Numeric trade-id assigned to the trade.
+        """
+        result = self._rpc_delete(tradeid)
+        return self.rest_dump(result)
 
     @require_login
     @rpc_catch_errors

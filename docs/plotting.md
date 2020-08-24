@@ -31,7 +31,7 @@ usage: freqtrade plot-dataframe [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                 [--plot-limit INT] [--db-url PATH]
                                 [--trade-source {DB,file}] [--export EXPORT]
                                 [--export-filename PATH]
-                                [--timerange TIMERANGE] [-i TICKER_INTERVAL]
+                                [--timerange TIMERANGE] [-i TIMEFRAME]
                                 [--no-trades]
 
 optional arguments:
@@ -65,7 +65,7 @@ optional arguments:
                         _today.json`
   --timerange TIMERANGE
                         Specify what timerange of data to use.
-  -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
+  -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
                         Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
                         `1d`).
   --no-trades           Skip using trades from backtesting file and DB.
@@ -224,10 +224,11 @@ Possible options for the `freqtrade plot-profit` subcommand:
 
 ```
 usage: freqtrade plot-profit [-h] [-v] [--logfile FILE] [-V] [-c PATH]
-                             [-d PATH] [--userdir PATH] [-p PAIRS [PAIRS ...]]
+                             [-d PATH] [--userdir PATH] [-s NAME]
+                             [--strategy-path PATH] [-p PAIRS [PAIRS ...]]
                              [--timerange TIMERANGE] [--export EXPORT]
                              [--export-filename PATH] [--db-url PATH]
-                             [--trade-source {DB,file}] [-i TICKER_INTERVAL]
+                             [--trade-source {DB,file}] [-i TIMEFRAME]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -250,7 +251,7 @@ optional arguments:
   --trade-source {DB,file}
                         Specify the source for trades (Can be DB or file
                         (backtest file)) Default: file
-  -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
+  -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
                         Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
                         `1d`).
 
@@ -261,14 +262,20 @@ Common arguments:
                         details.
   -V, --version         show program's version number and exit
   -c PATH, --config PATH
-                        Specify configuration file (default: `config.json`).
-                        Multiple --config options may be used. Can be set to
-                        `-` to read config from stdin.
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
   -d PATH, --datadir PATH
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
 
+Strategy arguments:
+  -s NAME, --strategy NAME
+                        Specify strategy class name which will be used by the
+                        bot.
+  --strategy-path PATH  Specify additional strategy lookup path.
 ```
 
 The `-p/--pairs`  argument, can be used to limit the pairs that are considered for this calculation.
@@ -278,7 +285,7 @@ Examples:
 Use custom backtest-export file
 
 ``` bash
-freqtrade plot-profit  -p LTC/BTC --export-filename user_data/backtest_results/backtest-result-Strategy005.json
+freqtrade plot-profit  -p LTC/BTC --export-filename user_data/backtest_results/backtest-result.json
 ```
 
 Use custom database

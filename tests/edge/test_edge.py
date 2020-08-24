@@ -27,7 +27,7 @@ from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
 ####################################################################
 
 tests_start_time = arrow.get(2018, 10, 3)
-ticker_interval_in_minute = 60
+timeframe_in_minute = 60
 _ohlc = {'date': 0, 'buy': 1, 'open': 2, 'high': 3, 'low': 4, 'close': 5, 'sell': 6, 'volume': 7}
 
 # Helpers for this test file
@@ -49,7 +49,7 @@ def _build_dataframe(buy_ohlc_sell_matrice):
             'date': tests_start_time.shift(
                 minutes=(
                     ohlc[0] *
-                    ticker_interval_in_minute)).timestamp *
+                    timeframe_in_minute)).timestamp *
             1000,
             'buy': ohlc[1],
             'open': ohlc[2],
@@ -70,7 +70,7 @@ def _build_dataframe(buy_ohlc_sell_matrice):
 
 def _time_on_candle(number):
     return np.datetime64(tests_start_time.shift(
-        minutes=(number * ticker_interval_in_minute)).timestamp * 1000, 'ms')
+        minutes=(number * timeframe_in_minute)).timestamp * 1000, 'ms')
 
 
 # End helper functions
@@ -163,8 +163,8 @@ def test_edge_results(edge_conf, mocker, caplog, data) -> None:
     for c, trade in enumerate(data.trades):
         res = results.iloc[c]
         assert res.exit_type == trade.sell_reason
-        assert res.open_time == _get_frame_time_from_offset(trade.open_tick).replace(tzinfo=None)
-        assert res.close_time == _get_frame_time_from_offset(trade.close_tick).replace(tzinfo=None)
+        assert res.open_date == _get_frame_time_from_offset(trade.open_tick).replace(tzinfo=None)
+        assert res.close_date == _get_frame_time_from_offset(trade.close_tick).replace(tzinfo=None)
 
 
 def test_adjust(mocker, edge_conf):
@@ -262,7 +262,7 @@ def mocked_load_data(datadir, pairs=[], timeframe='0m',
 
     NEOBTC = [
         [
-            tests_start_time.shift(minutes=(x * ticker_interval_in_minute)).timestamp * 1000,
+            tests_start_time.shift(minutes=(x * timeframe_in_minute)).timestamp * 1000,
             math.sin(x * hz) / 1000 + base,
             math.sin(x * hz) / 1000 + base + 0.0001,
             math.sin(x * hz) / 1000 + base - 0.0001,
@@ -274,7 +274,7 @@ def mocked_load_data(datadir, pairs=[], timeframe='0m',
     base = 0.002
     LTCBTC = [
         [
-            tests_start_time.shift(minutes=(x * ticker_interval_in_minute)).timestamp * 1000,
+            tests_start_time.shift(minutes=(x * timeframe_in_minute)).timestamp * 1000,
             math.sin(x * hz) / 1000 + base,
             math.sin(x * hz) / 1000 + base + 0.0001,
             math.sin(x * hz) / 1000 + base - 0.0001,
@@ -354,10 +354,8 @@ def test_process_expectancy(mocker, edge_conf, fee, risk_reward_ratio, expectanc
          'stoploss': -0.9,
          'profit_percent': '',
          'profit_abs': '',
-         'open_time': np.datetime64('2018-10-03T00:05:00.000000000'),
-         'close_time': np.datetime64('2018-10-03T00:10:00.000000000'),
-         'open_index': 1,
-         'close_index': 1,
+         'open_date': np.datetime64('2018-10-03T00:05:00.000000000'),
+         'close_date': np.datetime64('2018-10-03T00:10:00.000000000'),
          'trade_duration': '',
          'open_rate': 17,
          'close_rate': 17,
@@ -367,10 +365,8 @@ def test_process_expectancy(mocker, edge_conf, fee, risk_reward_ratio, expectanc
          'stoploss': -0.9,
          'profit_percent': '',
          'profit_abs': '',
-         'open_time': np.datetime64('2018-10-03T00:20:00.000000000'),
-         'close_time': np.datetime64('2018-10-03T00:25:00.000000000'),
-         'open_index': 4,
-         'close_index': 4,
+         'open_date': np.datetime64('2018-10-03T00:20:00.000000000'),
+         'close_date': np.datetime64('2018-10-03T00:25:00.000000000'),
          'trade_duration': '',
          'open_rate': 20,
          'close_rate': 20,
@@ -380,10 +376,8 @@ def test_process_expectancy(mocker, edge_conf, fee, risk_reward_ratio, expectanc
          'stoploss': -0.9,
          'profit_percent': '',
          'profit_abs': '',
-         'open_time': np.datetime64('2018-10-03T00:30:00.000000000'),
-         'close_time': np.datetime64('2018-10-03T00:40:00.000000000'),
-         'open_index': 6,
-         'close_index': 7,
+         'open_date': np.datetime64('2018-10-03T00:30:00.000000000'),
+         'close_date': np.datetime64('2018-10-03T00:40:00.000000000'),
          'trade_duration': '',
          'open_rate': 26,
          'close_rate': 34,
@@ -409,3 +403,98 @@ def test_process_expectancy(mocker, edge_conf, fee, risk_reward_ratio, expectanc
     final = edge._process_expectancy(trades_df)
     assert len(final) == 0
     assert isinstance(final, dict)
+
+
+def test_process_expectancy_remove_pumps(mocker, edge_conf, fee,):
+    edge_conf['edge']['min_trade_number'] = 2
+    edge_conf['edge']['remove_pumps'] = True
+    freqtrade = get_patched_freqtradebot(mocker, edge_conf)
+
+    freqtrade.exchange.get_fee = fee
+    edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
+
+    trades = [
+        {'pair': 'TEST/BTC',
+         'stoploss': -0.9,
+         'profit_percent': '',
+         'profit_abs': '',
+         'open_date': np.datetime64('2018-10-03T00:05:00.000000000'),
+         'close_date': np.datetime64('2018-10-03T00:10:00.000000000'),
+         'open_index': 1,
+         'close_index': 1,
+         'trade_duration': '',
+         'open_rate': 17,
+         'close_rate': 15,
+         'exit_type': 'sell_signal'},
+
+        {'pair': 'TEST/BTC',
+         'stoploss': -0.9,
+         'profit_percent': '',
+         'profit_abs': '',
+         'open_date': np.datetime64('2018-10-03T00:20:00.000000000'),
+         'close_date': np.datetime64('2018-10-03T00:25:00.000000000'),
+         'open_index': 4,
+         'close_index': 4,
+         'trade_duration': '',
+         'open_rate': 20,
+         'close_rate': 10,
+         'exit_type': 'sell_signal'},
+        {'pair': 'TEST/BTC',
+         'stoploss': -0.9,
+         'profit_percent': '',
+         'profit_abs': '',
+         'open_date': np.datetime64('2018-10-03T00:20:00.000000000'),
+         'close_date': np.datetime64('2018-10-03T00:25:00.000000000'),
+         'open_index': 4,
+         'close_index': 4,
+         'trade_duration': '',
+         'open_rate': 20,
+         'close_rate': 10,
+         'exit_type': 'sell_signal'},
+        {'pair': 'TEST/BTC',
+         'stoploss': -0.9,
+         'profit_percent': '',
+         'profit_abs': '',
+         'open_date': np.datetime64('2018-10-03T00:20:00.000000000'),
+         'close_date': np.datetime64('2018-10-03T00:25:00.000000000'),
+         'open_index': 4,
+         'close_index': 4,
+         'trade_duration': '',
+         'open_rate': 20,
+         'close_rate': 10,
+         'exit_type': 'sell_signal'},
+        {'pair': 'TEST/BTC',
+         'stoploss': -0.9,
+         'profit_percent': '',
+         'profit_abs': '',
+         'open_date': np.datetime64('2018-10-03T00:20:00.000000000'),
+         'close_date': np.datetime64('2018-10-03T00:25:00.000000000'),
+         'open_index': 4,
+         'close_index': 4,
+         'trade_duration': '',
+         'open_rate': 20,
+         'close_rate': 10,
+         'exit_type': 'sell_signal'},
+
+        {'pair': 'TEST/BTC',
+         'stoploss': -0.9,
+         'profit_percent': '',
+         'profit_abs': '',
+         'open_date': np.datetime64('2018-10-03T00:30:00.000000000'),
+         'close_date': np.datetime64('2018-10-03T00:40:00.000000000'),
+         'open_index': 6,
+         'close_index': 7,
+         'trade_duration': '',
+         'open_rate': 26,
+         'close_rate': 134,
+         'exit_type': 'sell_signal'}
+    ]
+
+    trades_df = DataFrame(trades)
+    trades_df = edge._fill_calculable_fields(trades_df)
+    final = edge._process_expectancy(trades_df)
+
+    assert 'TEST/BTC' in final
+    assert final['TEST/BTC'].stoploss == -0.9
+    assert final['TEST/BTC'].nb_trades == len(trades_df) - 1
+    assert round(final['TEST/BTC'].winrate, 10) == 0.0

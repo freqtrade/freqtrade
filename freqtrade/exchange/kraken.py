@@ -1,11 +1,12 @@
 """ Kraken exchange subclass """
 import logging
-from typing import Dict
+from typing import Any, Dict
 
 import ccxt
 
-from freqtrade.exceptions import (DependencyException, InvalidOrderException,
-                                  OperationalException, TemporaryError)
+from freqtrade.exceptions import (DDosProtection, ExchangeError,
+                                  InvalidOrderException, OperationalException,
+                                  TemporaryError)
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
 
@@ -20,6 +21,16 @@ class Kraken(Exchange):
         "trades_pagination": "id",
         "trades_pagination_arg": "since",
     }
+
+    def market_is_tradable(self, market: Dict[str, Any]) -> bool:
+        """
+        Check if the market symbol is tradable by Freqtrade.
+        Default checks + check if pair is darkpool pair.
+        """
+        parent_check = super().market_is_tradable(market)
+
+        return (parent_check and
+                market.get('darkpool', False) is False)
 
     @retrier
     def get_balances(self) -> dict:
@@ -45,6 +56,8 @@ class Kraken(Exchange):
                 balances[bal]['free'] = balances[bal]['total'] - balances[bal]['used']
 
             return balances
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not get balance due to {e.__class__.__name__}. Message: {e}') from e
@@ -58,6 +71,7 @@ class Kraken(Exchange):
         """
         return order['type'] == 'stop-loss' and stop_loss > float(order['price'])
 
+    @retrier(retries=0)
     def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
         """
         Creates a stoploss market order.
@@ -84,8 +98,8 @@ class Kraken(Exchange):
                         'stop price: %s.', pair, stop_price)
             return order
         except ccxt.InsufficientFunds as e:
-            raise DependencyException(
-                f'Insufficient funds to create {ordertype} sell order on market {pair}.'
+            raise ExchangeError(
+                f'Insufficient funds to create {ordertype} sell order on market {pair}. '
                 f'Tried to create stoploss with amount {amount} at stoploss {stop_price}. '
                 f'Message: {e}') from e
         except ccxt.InvalidOrder as e:
@@ -93,6 +107,8 @@ class Kraken(Exchange):
                 f'Could not create {ordertype} sell order on market {pair}. '
                 f'Tried to create stoploss with amount {amount} at stoploss {stop_price}. '
                 f'Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not place sell order due to {e.__class__.__name__}. Message: {e}') from e

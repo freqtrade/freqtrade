@@ -6,7 +6,8 @@ This page explains how to use Edge Positioning module in your bot in order to en
     Edge positioning is not compatible with dynamic (volume-based) whitelist.
 
 !!! Note
-    Edge does not consider anything else than buy/sell/stoploss signals. So trailing stoploss, ROI, and everything else are ignored in its calculation.
+    Edge does not consider anything other than *its own* buy/sell/stoploss signals. It ignores the stoploss, trailing stoploss, and ROI settings in the strategy configuration file.
+    Therefore, it is important to understand that Edge can improve the performance of some trading strategies but *decrease* the performance of others.
 
 ## Introduction
 
@@ -89,7 +90,7 @@ You can also use this value to evaluate the effectiveness of modifications to th
 
 ## How does it work?
 
-If enabled in config, Edge will go through historical data with a range of stoplosses in order to find buy and sell/stoploss signals. It then calculates win rate and expectancy over *N* trades for each stoploss. Here is an example:
+Edge combines dynamic stoploss, dynamic positions, and whitelist generation into one isolated module which is then applied to the trading strategy. If enabled in config, Edge will go through historical data with a range of stoplosses in order to find buy and sell/stoploss signals. It then calculates win rate and expectancy over *N* trades for each stoploss. Here is an example:
 
 | Pair   |      Stoploss      |  Win Rate | Risk Reward Ratio | Expectancy |
 |----------|:-------------:|-------------:|------------------:|-----------:|
@@ -148,7 +149,6 @@ Edge module has following configuration options:
 | `enabled` | If true, then Edge will run periodically. <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `process_throttle_secs` | How often should Edge run in seconds. <br>*Defaults to `3600` (once per hour).* <br> **Datatype:** Integer
 | `calculate_since_number_of_days` | Number of days of data against which Edge calculates Win Rate, Risk Reward and Expectancy. <br> **Note** that it downloads historical data so increasing this number would lead to slowing down the bot. <br>*Defaults to `7`.* <br> **Datatype:** Integer
-| `capital_available_percentage` | **DEPRECATED - [replaced with `tradable_balance_ratio`](configuration.md#Available balance)** This is the percentage of the total capital on exchange in stake currency. <br>As an example if you have 10 ETH available in your wallet on the exchange and this value is 0.5 (which is 50%), then the bot will use a maximum amount of 5 ETH for trading and considers it as available capital. <br>*Defaults to `0.5`.* <br> **Datatype:** Float
 | `allowed_risk` | Ratio of allowed risk per trade. <br>*Defaults to `0.01` (1%)).* <br> **Datatype:** Float
 | `stoploss_range_min` | Minimum stoploss. <br>*Defaults to `-0.01`.* <br> **Datatype:** Float
 | `stoploss_range_max` | Maximum stoploss. <br>*Defaults to `-0.10`.* <br> **Datatype:** Float
@@ -156,7 +156,7 @@ Edge module has following configuration options:
 | `minimum_winrate` | It filters out pairs which don't have at least minimum_winrate. <br>This comes handy if you want to be conservative and don't comprise win rate in favour of risk reward ratio. <br>*Defaults to `0.60`.* <br> **Datatype:** Float
 | `minimum_expectancy` | It filters out pairs which have the expectancy lower than this number. <br>Having an expectancy of 0.20 means if you put 10$ on a trade you expect a 12$ return. <br>*Defaults to `0.20`.* <br> **Datatype:** Float
 | `min_trade_number` | When calculating *W*, *R* and *E* (expectancy) against historical data, you always want to have a minimum number of trades. The more this number is the more Edge is reliable. <br>Having a win rate of 100% on a single trade doesn't mean anything at all. But having a win rate of 70% over past 100 trades means clearly something. <br>*Defaults to `10` (it is highly recommended not to decrease this number).* <br> **Datatype:** Integer
-| `max_trade_duration_minute` | Edge will filter out trades with long duration. If a trade is profitable after 1 month, it is hard to evaluate the strategy based on it. But if most of trades are profitable and they have maximum duration of 30 minutes, then it is clearly a good sign.<br>**NOTICE:** While configuring this value, you should take into consideration your timeframe (ticker interval). As an example filtering out trades having duration less than one day for a strategy which has 4h interval does not make sense. Default value is set assuming your strategy interval is relatively small (1m or 5m, etc.).<br>*Defaults to `1440` (one day).* <br> **Datatype:** Integer
+| `max_trade_duration_minute` | Edge will filter out trades with long duration. If a trade is profitable after 1 month, it is hard to evaluate the strategy based on it. But if most of trades are profitable and they have maximum duration of 30 minutes, then it is clearly a good sign.<br>**NOTICE:** While configuring this value, you should take into consideration your timeframe. As an example filtering out trades having duration less than one day for a strategy which has 4h interval does not make sense. Default value is set assuming your strategy interval is relatively small (1m or 5m, etc.).<br>*Defaults to `1440` (one day).* <br> **Datatype:** Integer
 | `remove_pumps` | Edge will remove sudden pumps in a given market while going through historical data. However, given that pumps happen very often in crypto markets, we recommend you keep this off.<br>*Defaults to `false`.* <br> **Datatype:** Boolean
 
 ## Running Edge independently
@@ -186,6 +186,12 @@ An example of its output:
 | SNM/BTC   |      -0.03 |       0.71 |                1.06 |                   0.42 |         0.45 |                       17 |                       38 |
 | APPC/BTC  |      -0.02 |       0.44 |                2.28 |                   1.27 |         0.44 |                       25 |                       43 |
 | NEBL/BTC  |      -0.03 |       0.63 |                1.29 |                   0.58 |         0.44 |                       19 |                       59 |
+
+Edge produced the above table by comparing `calculate_since_number_of_days` to `minimum_expectancy` to find `min_trade_number` historical information based on the config file. The timerange Edge uses for its comparisons can be further limited by using the `--timerange` switch.
+
+In live and dry-run modes, after the `process_throttle_secs` has passed, Edge will again process `calculate_since_number_of_days` against `minimum_expectancy` to find `min_trade_number`. If no `min_trade_number` is found, the bot will return "whitelist empty". Depending on the trade strategy being deployed, "whitelist empty" may be return much of the time - or *all* of the time. The use of Edge may also cause trading to occur in bursts, though this is rare.
+
+If you encounter "whitelist empty" a lot, condsider tuning `calculate_since_number_of_days`, `minimum_expectancy`  and `min_trade_number` to align to the trading frequency of your strategy.
 
 ### Update cached pairs with the latest data
 

@@ -62,7 +62,7 @@ $ freqtrade new-config --config config_binance.json
 ? Please insert your stake currency: BTC
 ? Please insert your stake amount: 0.05
 ? Please insert max_open_trades (Integer or 'unlimited'): 3
-? Please insert your timeframe (ticker interval): 5m
+? Please insert your desired timeframe (e.g. 5m): 5m
 ? Please insert your display Currency (for reporting): USD
 ? Select exchange  binance
 ? Do you want to enable Telegram?  No
@@ -432,9 +432,9 @@ usage: freqtrade hyperopt-list [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [--max-trades INT] [--min-avg-time FLOAT]
                                [--max-avg-time FLOAT] [--min-avg-profit FLOAT]
                                [--max-avg-profit FLOAT]
-                               [--min-total-profit FLOAT]
-                               [--max-total-profit FLOAT] [--no-color]
-                               [--print-json] [--no-details]
+                               [--min-total-profit FLOAT] [--max-total-profit FLOAT]
+                               [--min-objective FLOAT] [--max-objective FLOAT]
+                               [--no-color] [--print-json] [--no-details]
                                [--export-csv FILE]
 
 optional arguments:
@@ -453,6 +453,10 @@ optional arguments:
                         Select epochs on above total profit.
   --max-total-profit FLOAT
                         Select epochs on below total profit.
+  --min-objective FLOAT
+                        Select epochs on above objective (- is added by default).
+  --max-objective FLOAT
+                        Select epochs on below objective (- is added by default).
   --no-color            Disable colorization of hyperopt results. May be
                         useful if you are redirecting output to a file.
   --print-json          Print best result detailization in JSON format.

@@ -1,17 +1,17 @@
 # requirements without requirements installable via conda
 # mainly used for Raspberry pi installs
-ccxt==1.27.91
-SQLAlchemy==1.3.17
-python-telegram-bot==12.7
-arrow==0.15.6
-cachetools==4.1.0
-requests==2.23.0
-urllib3==1.25.9
+ccxt==1.33.18
+SQLAlchemy==1.3.18
+python-telegram-bot==12.8
+arrow==0.15.8
+cachetools==4.1.1
+requests==2.24.0
+urllib3==1.25.10
 wrapt==1.12.1
 jsonschema==3.2.0
 TA-Lib==0.4.18
 tabulate==0.8.7
-pycoingecko==1.2.0
+pycoingecko==1.3.0
 jinja2==2.11.2
 
 # find first, C search in arrays
@@ -32,4 +32,4 @@ flask-cors==3.0.8
 colorama==0.4.3
 # Building config files interactively
 questionary==1.5.2
-prompt-toolkit==3.0.5
+prompt-toolkit==3.0.6

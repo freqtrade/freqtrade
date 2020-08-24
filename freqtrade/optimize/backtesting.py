@@ -13,17 +13,18 @@ from pandas import DataFrame
 
 from freqtrade.configuration import (TimeRange, remove_credentials,
                                      validate_config_consistency)
+from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data import history
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
-from freqtrade.optimize.optimize_reports import (show_backtest_results,
-                                                 store_backtest_result)
+from freqtrade.optimize.optimize_reports import (generate_backtest_stats,
+                                                 show_backtest_results,
+                                                 store_backtest_stats)
 from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
-from freqtrade.state import RunMode
 from freqtrade.strategy.interface import IStrategy, SellCheckTuple, SellType
 
 logger = logging.getLogger(__name__)
@@ -36,14 +37,15 @@ class BacktestResult(NamedTuple):
     pair: str
     profit_percent: float
     profit_abs: float
-    open_time: datetime
-    close_time: datetime
-    open_index: int
-    close_index: int
+    open_date: datetime
+    open_rate: float
+    open_fee: float
+    close_date: datetime
+    close_rate: float
+    close_fee: float
+    amount: float
     trade_duration: float
     open_at_end: bool
-    open_rate: float
-    close_rate: float
     sell_reason: SellType
 
 
@@ -64,23 +66,8 @@ class Backtesting:
         self.strategylist: List[IStrategy] = []
         self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
 
-        self.pairlists = PairListManager(self.exchange, self.config)
-        if 'VolumePairList' in self.pairlists.name_list:
-            raise OperationalException("VolumePairList not allowed for backtesting.")
-
-        self.pairlists.refresh_pairlist()
-
-        if len(self.pairlists.whitelist) == 0:
-            raise OperationalException("No pair in whitelist.")
-
-        if config.get('fee'):
-            self.fee = config['fee']
-        else:
-            self.fee = self.exchange.get_fee(symbol=self.pairlists.whitelist[0])
-
-        if self.config.get('runmode') != RunMode.HYPEROPT:
-            self.dataprovider = DataProvider(self.config, self.exchange)
-            IStrategy.dp = self.dataprovider
+        dataprovider = DataProvider(self.config, self.exchange)
+        IStrategy.dp = dataprovider
 
         if self.config.get('strategy_list', None):
             for strat in list(self.config['strategy_list']):
@@ -94,11 +81,30 @@ class Backtesting:
             self.strategylist.append(StrategyResolver.load_strategy(self.config))
             validate_config_consistency(self.config)
 
-        if "ticker_interval" not in self.config:
+        if "timeframe" not in self.config:
             raise OperationalException("Timeframe (ticker interval) needs to be set in either "
-                                       "configuration or as cli argument `--ticker-interval 5m`")
-        self.timeframe = str(self.config.get('ticker_interval'))
+                                       "configuration or as cli argument `--timeframe 5m`")
+        self.timeframe = str(self.config.get('timeframe'))
         self.timeframe_min = timeframe_to_minutes(self.timeframe)
+
+        self.pairlists = PairListManager(self.exchange, self.config)
+        if 'VolumePairList' in self.pairlists.name_list:
+            raise OperationalException("VolumePairList not allowed for backtesting.")
+
+        if len(self.strategylist) > 1 and 'PrecisionFilter' in self.pairlists.name_list:
+            raise OperationalException(
+                "PrecisionFilter not allowed for backtesting multiple strategies."
+            )
+
+        self.pairlists.refresh_pairlist()
+
+        if len(self.pairlists.whitelist) == 0:
+            raise OperationalException("No pair in whitelist.")
+
+        if config.get('fee', None) is not None:
+            self.fee = config['fee']
+        else:
+            self.fee = self.exchange.get_fee(symbol=self.pairlists.whitelist[0])
 
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
@@ -131,10 +137,10 @@ class Backtesting:
 
         min_date, max_date = history.get_timerange(data)
 
-        logger.info(
-            'Loading data from %s up to %s (%s days)..',
-            min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
-        )
+        logger.info(f'Loading data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
+                    f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
+                    f'({(max_date - min_date).days} days)..')
+
         # Adjust startts forward if not enough data is available
         timerange.adjust_start_if_necessary(timeframe_to_seconds(self.timeframe),
                                             self.required_startup, min_date)
@@ -219,7 +225,7 @@ class Backtesting:
             open_rate=buy_row.open,
             open_date=buy_row.date,
             stake_amount=stake_amount,
-            amount=stake_amount / buy_row.open,
+            amount=round(stake_amount / buy_row.open, 8),
             fee_open=self.fee,
             fee_close=self.fee,
             is_open=True,
@@ -240,14 +246,15 @@ class Backtesting:
                 return BacktestResult(pair=pair,
                                       profit_percent=trade.calc_profit_ratio(rate=closerate),
                                       profit_abs=trade.calc_profit(rate=closerate),
-                                      open_time=buy_row.date,
-                                      close_time=sell_row.date,
-                                      trade_duration=trade_dur,
-                                      open_index=buy_row.Index,
-                                      close_index=sell_row.Index,
-                                      open_at_end=False,
+                                      open_date=buy_row.date,
                                       open_rate=buy_row.open,
+                                      open_fee=self.fee,
+                                      close_date=sell_row.date,
                                       close_rate=closerate,
+                                      close_fee=self.fee,
+                                      amount=trade.amount,
+                                      trade_duration=trade_dur,
+                                      open_at_end=False,
                                       sell_reason=sell.sell_type
                                       )
         if partial_ohlcv:
@@ -256,15 +263,16 @@ class Backtesting:
             bt_res = BacktestResult(pair=pair,
                                     profit_percent=trade.calc_profit_ratio(rate=sell_row.open),
                                     profit_abs=trade.calc_profit(rate=sell_row.open),
-                                    open_time=buy_row.date,
-                                    close_time=sell_row.date,
+                                    open_date=buy_row.date,
+                                    open_rate=buy_row.open,
+                                    open_fee=self.fee,
+                                    close_date=sell_row.date,
+                                    close_rate=sell_row.open,
+                                    close_fee=self.fee,
+                                    amount=trade.amount,
                                     trade_duration=int((
                                         sell_row.date - buy_row.date).total_seconds() // 60),
-                                    open_index=buy_row.Index,
-                                    close_index=sell_row.Index,
                                     open_at_end=True,
-                                    open_rate=buy_row.open,
-                                    close_rate=sell_row.open,
                                     sell_reason=SellType.FORCE_SELL
                                     )
             logger.debug(f"{pair} - Force selling still open trade, "
@@ -350,8 +358,8 @@ class Backtesting:
 
                 if trade_entry:
                     logger.debug(f"{pair} - Locking pair till "
-                                 f"close_time={trade_entry.close_time}")
-                    lock_pair_until[pair] = trade_entry.close_time
+                                 f"close_date={trade_entry.close_date}")
+                    lock_pair_until[pair] = trade_entry.close_date
                     trades.append(trade_entry)
                 else:
                     # Set lock_pair_until to end of testing period if trade could not be closed
@@ -394,10 +402,9 @@ class Backtesting:
                 preprocessed[pair] = trim_dataframe(df, timerange)
             min_date, max_date = history.get_timerange(preprocessed)
 
-            logger.info(
-                'Backtesting with data from %s up to %s (%s days)..',
-                min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
-            )
+            logger.info(f'Backtesting with data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
+                        f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
+                        f'({(max_date - min_date).days} days)..')
             # Execute backtest and print results
             all_results[self.strategy.get_strategy_name()] = self.backtest(
                 processed=preprocessed,
@@ -408,7 +415,10 @@ class Backtesting:
                 position_stacking=position_stacking,
             )
 
+        stats = generate_backtest_stats(self.config, data, all_results,
+                                        min_date=min_date, max_date=max_date)
         if self.config.get('export', False):
-            store_backtest_result(self.config['exportfilename'], all_results)
+            store_backtest_stats(self.config['exportfilename'], stats)
+
         # Show backtest results
-        show_backtest_results(self.config, data, all_results)
+        show_backtest_results(self.config, stats)

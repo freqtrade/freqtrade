@@ -13,6 +13,15 @@ Feel free to use a visual Database editor like SqliteBrowser if you feel more co
 sudo apt-get install sqlite3
 ```
 
+### Using sqlite3 via docker-compose
+
+The freqtrade docker image does contain sqlite3, so you can edit the database without having to install anything on the host system.
+
+``` bash
+docker-compose exec freqtrade /bin/bash
+sqlite3 <databasefile>.sqlite
+```
+
 ## Open the DB
 
 ```bash
@@ -70,7 +79,7 @@ CREATE TABLE trades
     min_rate FLOAT,
     sell_reason VARCHAR,
     strategy VARCHAR,
-    ticker_interval INTEGER,
+    timeframe INTEGER,
     PRIMARY KEY (id),
     CHECK (is_open IN (0, 1))
 );
@@ -100,8 +109,8 @@ UPDATE trades
 SET is_open=0,
   close_date=<close_date>,
   close_rate=<close_rate>,
-  close_profit=close_rate/open_rate-1,
-  close_profit_abs = (amount * <close_rate> * (1 - fee_close) - (amount * open_rate * 1 - fee_open),
+  close_profit = close_rate / open_rate - 1,
+  close_profit_abs = (amount * <close_rate> * (1 - fee_close) - (amount * (open_rate * (1 - fee_open)))),
   sell_reason=<sell_reason>
 WHERE id=<trade_ID_to_update>;
 ```
@@ -111,24 +120,39 @@ WHERE id=<trade_ID_to_update>;
 ```sql
 UPDATE trades
 SET is_open=0,
-  close_date='2017-12-20 03:08:45.103418',
+  close_date='2020-06-20 03:08:45.103418',
   close_rate=0.19638016,
   close_profit=0.0496,
-  close_profit_abs = (amount * 0.19638016 * (1 - fee_close) - (amount * open_rate * 1 - fee_open)
+  close_profit_abs = (amount * 0.19638016 * (1 - fee_close) - (amount * (open_rate * (1 - fee_open)))),
   sell_reason='force_sell'  
 WHERE id=31;
 ```
 
-## Insert manually a new trade
+## Manually insert a new trade
 
 ```sql
 INSERT INTO trades (exchange, pair, is_open, fee_open, fee_close, open_rate, stake_amount, amount, open_date)
-VALUES ('bittrex', 'ETH/BTC', 1, 0.0025, 0.0025, <open_rate>, <stake_amount>, <amount>, '<datetime>')
+VALUES ('binance', 'ETH/BTC', 1, 0.0025, 0.0025, <open_rate>, <stake_amount>, <amount>, '<datetime>')
 ```
 
-##### Example:
+### Insert trade example
 
 ```sql
 INSERT INTO trades (exchange, pair, is_open, fee_open, fee_close, open_rate, stake_amount, amount, open_date)
-VALUES ('bittrex', 'ETH/BTC', 1, 0.0025, 0.0025, 0.00258580, 0.002, 0.7715262081, '2017-11-28 12:44:24.000000')
+VALUES ('binance', 'ETH/BTC', 1, 0.0025, 0.0025, 0.00258580, 0.002, 0.7715262081, '2020-06-28 12:44:24.000000')
 ```
+
+## Remove trade from the database
+
+Maybe you'd like to remove a trade from the database, because something went wrong.
+
+```sql
+DELETE FROM trades WHERE id = <tradeid>;
+```
+
+```sql
+DELETE FROM trades WHERE id = 31;
+```
+
+!!! Warning
+    This will remove this trade from the database. Please make sure you got the correct id and **NEVER** run this query without the `where` clause.

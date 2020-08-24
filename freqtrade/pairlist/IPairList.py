@@ -3,10 +3,12 @@ PairList Handler base class
 """
 import logging
 from abc import ABC, abstractmethod, abstractproperty
+from copy import deepcopy
 from typing import Any, Dict, List
 
 from cachetools import TTLCache, cached
 
+from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import market_is_active
 
 
@@ -25,6 +27,8 @@ class IPairList(ABC):
         :param pairlistconfig: Configuration for this Pairlist Handler - can be empty.
         :param pairlist_pos: Position of the Pairlist Handler in the chain
         """
+        self._enabled = True
+
         self._exchange = exchange
         self._pairlistmanager = pairlistmanager
         self._config = config
@@ -64,7 +68,7 @@ class IPairList(ABC):
     def needstickers(self) -> bool:
         """
         Boolean property defining if tickers are necessary.
-        If no Pairlist requries tickers, an empty List is passed
+        If no Pairlist requires tickers, an empty List is passed
         as tickers argument to filter_pairlist
         """
 
@@ -75,16 +79,59 @@ class IPairList(ABC):
         -> Please overwrite in subclasses
         """
 
-    @abstractmethod
+    def _validate_pair(self, ticker) -> bool:
+        """
+        Check one pair against Pairlist Handler's specific conditions.
+
+        Either implement it in the Pairlist Handler or override the generic
+        filter_pairlist() method.
+
+        :param ticker: ticker dict as returned from ccxt.load_markets()
+        :return: True if the pair can stay, false if it should be removed
+        """
+        raise NotImplementedError()
+
+    def gen_pairlist(self, cached_pairlist: List[str], tickers: Dict) -> List[str]:
+        """
+        Generate the pairlist.
+
+        This method is called once by the pairlistmanager in the refresh_pairlist()
+        method to supply the starting pairlist for the chain of the Pairlist Handlers.
+        Pairlist Filters (those Pairlist Handlers that cannot be used at the first
+        position in the chain) shall not override this base implementation --
+        it will raise the exception if a Pairlist Handler is used at the first
+        position in the chain.
+
+        :param cached_pairlist: Previously generated pairlist (cached)
+        :param tickers: Tickers (from exchange.get_tickers()).
+        :return: List of pairs
+        """
+        raise OperationalException("This Pairlist Handler should not be used "
+                                   "at the first position in the list of Pairlist Handlers.")
+
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
         Filters and sorts pairlist and returns the whitelist again.
+
         Called on each bot iteration - please use internal caching if necessary
-        -> Please overwrite in subclasses
+        This generic implementation calls self._validate_pair() for each pair
+        in the pairlist.
+
+        Some Pairlist Handlers override this generic implementation and employ
+        own filtration.
+
         :param pairlist: pairlist to filter or sort
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
+        if self._enabled:
+            # Copy list since we're modifying this list
+            for p in deepcopy(pairlist):
+                # Filter out assets
+                if not self._validate_pair(tickers[p]):
+                    pairlist.remove(p)
+
+        return pairlist
 
     def verify_blacklist(self, pairlist: List[str], logmethod) -> List[str]:
         """
@@ -103,6 +150,9 @@ class IPairList(ABC):
         black_listed
         """
         markets = self._exchange.markets
+        if not markets:
+            raise OperationalException(
+                    'Markets not loaded. Make sure that exchange is initialized correctly.')
 
         sanitized_whitelist: List[str] = []
         for pair in pairlist:
@@ -110,6 +160,11 @@ class IPairList(ABC):
             if pair not in markets:
                 logger.warning(f"Pair {pair} is not compatible with exchange "
                                f"{self._exchange.name}. Removing it from whitelist..")
+                continue
+
+            if not self._exchange.market_is_tradable(markets[pair]):
+                logger.warning(f"Pair {pair} is not tradable with Freqtrade."
+                               "Removing it from whitelist..")
                 continue
 
             if self._exchange.get_pair_quote_currency(pair) != self._config['stake_currency']:

@@ -3,7 +3,7 @@ Shuffle pair list filter
 """
 import logging
 import random
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from freqtrade.pairlist.IPairList import IPairList
 
@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 class ShuffleFilter(IPairList):
 
-    def __init__(self, exchange, pairlistmanager, config, pairlistconfig: dict,
+    def __init__(self, exchange, pairlistmanager,
+                 config: Dict[str, Any], pairlistconfig: Dict[str, Any],
                  pairlist_pos: int) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
@@ -24,7 +25,7 @@ class ShuffleFilter(IPairList):
     def needstickers(self) -> bool:
         """
         Boolean property defining if tickers are necessary.
-        If no Pairlist requries tickers, an empty List is passed
+        If no Pairlist requires tickers, an empty List is passed
         as tickers argument to filter_pairlist
         """
         return False

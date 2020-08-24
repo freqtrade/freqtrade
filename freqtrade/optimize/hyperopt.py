@@ -4,27 +4,28 @@
 This module contains the hyperopt logic
 """
 
+import io
 import locale
 import logging
 import random
 import warnings
-from math import ceil
 from collections import OrderedDict
+from math import ceil
 from operator import itemgetter
 from pathlib import Path
-from pprint import pprint
+from pprint import pformat
 from typing import Any, Dict, List, Optional
 
+import progressbar
 import rapidjson
+import tabulate
 from colorama import Fore, Style
+from colorama import init as colorama_init
 from joblib import (Parallel, cpu_count, delayed, dump, load,
                     wrap_non_picklable_objects)
-from pandas import DataFrame, json_normalize, isna
-import progressbar
-import tabulate
-from os import path
-import io
+from pandas import DataFrame, isna, json_normalize
 
+from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import OperationalException
@@ -32,9 +33,11 @@ from freqtrade.misc import plural, round_dict
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
 from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F401
-from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F401
+from freqtrade.optimize.hyperopt_loss_interface import \
+    IHyperOptLoss  # noqa: F401
 from freqtrade.resolvers.hyperopt_resolver import (HyperOptLossResolver,
                                                    HyperOptResolver)
+from freqtrade.strategy import IStrategy
 
 # Suppress scikit-learn FutureWarnings from skopt
 with warnings.catch_warnings():
@@ -230,6 +233,9 @@ class Hyperopt:
             if space in ['buy', 'sell']:
                 result_dict.setdefault('params', {}).update(space_params)
             elif space == 'roi':
+                # TODO: get rid of OrderedDict when support for python 3.6 will be
+                # dropped (dicts keep the order as the language feature)
+
                 # Convert keys in min_roi dict to strings because
                 # rapidjson cannot dump dicts with integer keys...
                 # OrderedDict is used to keep the numeric order of the items
@@ -244,11 +250,24 @@ class Hyperopt:
     def _params_pretty_print(params, space: str, header: str) -> None:
         if space in params:
             space_params = Hyperopt._space_params(params, space, 5)
+            params_result = f"\n# {header}\n"
             if space == 'stoploss':
-                print(header, space_params.get('stoploss'))
+                params_result += f"stoploss = {space_params.get('stoploss')}"
+            elif space == 'roi':
+                # TODO: get rid of OrderedDict when support for python 3.6 will be
+                # dropped (dicts keep the order as the language feature)
+                minimal_roi_result = rapidjson.dumps(
+                    OrderedDict(
+                        (str(k), v) for k, v in space_params.items()
+                    ),
+                    default=str, indent=4, number_mode=rapidjson.NM_NATIVE)
+                params_result += f"minimal_roi = {minimal_roi_result}"
             else:
-                print(header)
-                pprint(space_params, indent=4)
+                params_result += f"{space}_params = {pformat(space_params, indent=4)}"
+                params_result = params_result.replace("}", "\n}").replace("{", "{\n ")
+
+            params_result = params_result.replace("\n", "\n    ")
+            print(params_result)
 
     @staticmethod
     def _space_params(params, space: str, r: int = None) -> Dict:
@@ -296,11 +315,16 @@ class Hyperopt:
 
         trials = json_normalize(results, max_level=1)
         trials['Best'] = ''
+        if 'results_metrics.winsdrawslosses' not in trials.columns:
+            # Ensure compatibility with older versions of hyperopt results
+            trials['results_metrics.winsdrawslosses'] = 'N/A'
+
         trials = trials[['Best', 'current_epoch', 'results_metrics.trade_count',
+                         'results_metrics.winsdrawslosses',
                          'results_metrics.avg_profit', 'results_metrics.total_profit',
                          'results_metrics.profit', 'results_metrics.duration',
                          'loss', 'is_initial_point', 'is_best']]
-        trials.columns = ['Best', 'Epoch', 'Trades', 'Avg profit', 'Total profit',
+        trials.columns = ['Best', 'Epoch', 'Trades', 'W/D/L', 'Avg profit', 'Total profit',
                           'Profit', 'Avg duration', 'Objective', 'is_initial_point', 'is_best']
         trials['is_profit'] = False
         trials.loc[trials['is_initial_point'], 'Best'] = '*     '
@@ -374,7 +398,7 @@ class Hyperopt:
             return
 
         # Verification for overwrite
-        if path.isfile(csv_file):
+        if Path(csv_file).is_file():
             logger.error(f"CSV file already exists: {csv_file}")
             return
 
@@ -542,9 +566,17 @@ class Hyperopt:
         }
 
     def _calculate_results_metrics(self, backtesting_results: DataFrame) -> Dict:
+        wins = len(backtesting_results[backtesting_results.profit_percent > 0])
+        draws = len(backtesting_results[backtesting_results.profit_percent == 0])
+        losses = len(backtesting_results[backtesting_results.profit_percent < 0])
         return {
             'trade_count': len(backtesting_results.index),
+            'wins': wins,
+            'draws': draws,
+            'losses': losses,
+            'winsdrawslosses': f"{wins}/{draws}/{losses}",
             'avg_profit': backtesting_results.profit_percent.mean() * 100.0,
+            'median_profit': backtesting_results.profit_percent.median() * 100.0,
             'total_profit': backtesting_results.profit_abs.sum(),
             'profit': backtesting_results.profit_percent.sum() * 100.0,
             'duration': backtesting_results.trade_duration.mean(),
@@ -556,7 +588,10 @@ class Hyperopt:
         """
         stake_cur = self.config['stake_currency']
         return (f"{results_metrics['trade_count']:6d} trades. "
+                f"{results_metrics['wins']}/{results_metrics['draws']}"
+                f"/{results_metrics['losses']} Wins/Draws/Losses. "
                 f"Avg profit {results_metrics['avg_profit']: 6.2f}%. "
+                f"Median profit {results_metrics['median_profit']: 6.2f}%. "
                 f"Total profit {results_metrics['total_profit']: 11.8f} {stake_cur} "
                 f"({results_metrics['profit']: 7.2f}\N{GREEK CAPITAL LETTER SIGMA}%). "
                 f"Avg duration {results_metrics['duration']:5.1f} min."
@@ -609,15 +644,17 @@ class Hyperopt:
             preprocessed[pair] = trim_dataframe(df, timerange)
         min_date, max_date = get_timerange(data)
 
-        logger.info(
-            'Hyperopting with data from %s up to %s (%s days)..',
-            min_date.isoformat(), max_date.isoformat(), (max_date - min_date).days
-        )
+        logger.info(f'Hyperopting with data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
+                    f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
+                    f'({(max_date - min_date).days} days)..')
+
         dump(preprocessed, self.data_pickle_file)
 
         # We don't need exchange instance anymore while running hyperopt
         self.backtesting.exchange = None  # type: ignore
         self.backtesting.pairlists = None  # type: ignore
+        self.backtesting.strategy.dp = None  # type: ignore
+        IStrategy.dp = None  # type: ignore
 
         self.epochs = self.load_previous_results(self.results_file)
 
@@ -628,6 +665,10 @@ class Hyperopt:
 
         self.dimensions: List[Dimension] = self.hyperopt_space()
         self.opt = self.get_optimizer(self.dimensions, config_jobs)
+
+        if self.print_colorized:
+            colorama_init(autoreset=True)
+
         try:
             with Parallel(n_jobs=config_jobs) as parallel:
                 jobs = parallel._effective_n_jobs()

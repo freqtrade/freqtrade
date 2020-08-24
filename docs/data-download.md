@@ -109,7 +109,7 @@ The following command will convert all candle (OHLCV) data available in `~/.freq
 It'll also remove original json data files (`--erase` parameter).
 
 ``` bash
-freqtrade convert-data --format-from json --format-to jsongz --data-dir ~/.freqtrade/data/binance -t 5m 15m --erase
+freqtrade convert-data --format-from json --format-to jsongz --datadir ~/.freqtrade/data/binance -t 5m 15m --erase
 ```
 
 #### Subcommand convert-trade data
@@ -155,7 +155,59 @@ The following command will convert all available trade-data in `~/.freqtrade/dat
 It'll also remove original jsongz data files (`--erase` parameter).
 
 ``` bash
-freqtrade convert-trade-data --format-from jsongz --format-to json --data-dir ~/.freqtrade/data/kraken --erase
+freqtrade convert-trade-data --format-from jsongz --format-to json --datadir ~/.freqtrade/data/kraken --erase
+```
+
+### Subcommand list-data
+
+You can get a list of downloaded data using the `list-data` subcommand.
+
+```
+usage: freqtrade list-data [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
+                           [--userdir PATH] [--exchange EXCHANGE]
+                           [--data-format-ohlcv {json,jsongz}]
+                           [-p PAIRS [PAIRS ...]]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
+                        config is provided.
+  --data-format-ohlcv {json,jsongz}
+                        Storage format for downloaded candle (OHLCV) data.
+                        (default: `json`).
+  -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
+                        Show profits for only these pairs. Pairs are space-
+                        separated.
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+```
+
+#### Example list-data
+
+```bash
+> freqtrade list-data --userdir ~/.freqtrade/user_data/
+
+Found 33 pair / timeframe combinations.
+pairs       timeframe
+----------  -----------------------------------------
+ADA/BTC     5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d
+ADA/ETH     5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d
+ETH/BTC     5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d
+ETH/USDT    5m, 15m, 30m, 1h, 2h, 4h
 ```
 
 ### Pairs file
