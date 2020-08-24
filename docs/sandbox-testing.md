@@ -91,3 +91,27 @@ Sandbox exchange instances often have very low volume, which can cause some prob
 
 Since Sandboxes often have low volume, candles can be quite old and show no volume.
 To disable the error "Outdated history for pair ...", best increase the parameter `"outdated_offset"` to a number that seems realistic for the sandbox you're using.
+
+### Unfilled orders
+
+Sandboxes often have very low volumes - which means that many trades can go unfilled, or can go unfilled for a very long time.
+
+To mitigate this, you can try to match the first order on the opposite orderbook side using the following configuration:
+
+``` jsonc
+  "order_types": {
+    "buy": "limit",
+    "sell": "limit"
+    // ...
+  },
+  "bid_strategy": {
+    "price_side": "ask",
+    // ...
+  },
+  "ask_strategy":{
+    "price_side": "bid",
+    // ...
+  },
+  ```
+
+  The configuration is similar to the suggested configuration for market orders - however by using limit-orders you can avoid moving the price too much, and you can set the worst price you might get.
