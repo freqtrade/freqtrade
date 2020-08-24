@@ -2,7 +2,6 @@
 IStrategy interface
 This module defines the interface to apply for strategies
 """
-from freqtrade.exchange.exchange import timeframe_to_next_date
 import logging
 import warnings
 from abc import ABC, abstractmethod
@@ -15,8 +14,9 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.exceptions import StrategyError, OperationalException
+from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.persistence import Trade
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
@@ -310,10 +310,7 @@ class IStrategy(ABC):
             # Locking should happen until a new candle arrives
             lock_time = timeframe_to_next_date(self.timeframe, candle_date)
             # lock_time = candle_date + timedelta(minutes=timeframe_to_minutes(self.timeframe))
-            res = self._pair_locked_until[pair] > lock_time
-            logger.debug(f"pair time = {lock_time} - pair_lock = {self._pair_locked_until[pair]} "
-                         f"- res: {res}")
-            return res
+            return self._pair_locked_until[pair] > lock_time
 
     def analyze_ticker(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
