@@ -657,19 +657,21 @@ class RPC:
         return self._freqtrade.edge.accepted_pairs()
 
     def _convert_dataframe_to_dict(self, strategy: str, pair: str, dataframe: DataFrame,
-                                   last_analyzed: datetime):
+                                   last_analyzed: datetime) -> Dict[str, Any]:
+        has_content = len(dataframe) != 0
+        if has_content:
 
-        dataframe.loc[:, '__date_ts'] = dataframe.loc[:, 'date'].astype(int64) // 1000 // 1000
-        # Move open to seperate column when signal for easy plotting
-        if 'buy' in dataframe.columns:
-            buy_mask = (dataframe['buy'] == 1)
-            dataframe.loc[buy_mask, '_buy_signal_open'] = dataframe.loc[buy_mask, 'open']
-        if 'sell' in dataframe.columns:
-            sell_mask = (dataframe['sell'] == 1)
-            dataframe.loc[sell_mask, '_sell_signal_open'] = dataframe.loc[sell_mask, 'open']
-        dataframe = dataframe.replace({NAN: None})
+            dataframe.loc[:, '__date_ts'] = dataframe.loc[:, 'date'].astype(int64) // 1000 // 1000
+            # Move open to seperate column when signal for easy plotting
+            if 'buy' in dataframe.columns:
+                buy_mask = (dataframe['buy'] == 1)
+                dataframe.loc[buy_mask, '_buy_signal_open'] = dataframe.loc[buy_mask, 'open']
+            if 'sell' in dataframe.columns:
+                sell_mask = (dataframe['sell'] == 1)
+                dataframe.loc[sell_mask, '_sell_signal_open'] = dataframe.loc[sell_mask, 'open']
+            dataframe = dataframe.replace({NAN: None})
 
-        return {
+        res = {
             'pair': pair,
             'strategy': strategy,
             'columns': list(dataframe.columns),
@@ -677,17 +679,27 @@ class RPC:
             'length': len(dataframe),
             'last_analyzed': last_analyzed,
             'last_analyzed_ts': int(last_analyzed.timestamp()),
-            'data_start': str(dataframe.iloc[0]['date']),
-            'data_start_ts': int(dataframe.iloc[0]['__date_ts']),
-            'data_stop': str(dataframe.iloc[-1]['date']),
-            'data_stop_ts': int(dataframe.iloc[-1]['__date_ts']),
+            'data_start': '',
+            'data_start_ts': 0,
+            'data_stop': '',
+            'data_stop_ts': 0,
         }
+        if has_content:
+            res.update({
+                'data_start': str(dataframe.iloc[0]['date']),
+                'data_start_ts': int(dataframe.iloc[0]['__date_ts']),
+                'data_stop': str(dataframe.iloc[-1]['date']),
+                'data_stop_ts': int(dataframe.iloc[-1]['__date_ts']),
+            })
+        return res
 
     def _analysed_dataframe(self, pair: str, timeframe: str, limit: int) -> Dict[str, Any]:
 
-        _data, last_analyzed = self._freqtrade.dataprovider.get_analyzed_dataframe(pair, timeframe)
+        _data, last_analyzed = self._freqtrade.dataprovider.get_analyzed_dataframe(
+            pair, timeframe)
+        _data = _data.copy()
         if limit:
-            _data = _data.iloc[-limit:].copy()
+            _data = _data.iloc[-limit:]
         return self._convert_dataframe_to_dict(self._freqtrade.config['strategy'],
                                                pair, _data, last_analyzed)
 

@@ -817,6 +817,16 @@ def test_api_pair_candles(botclient, ohlcv_history):
     ftbot, client = botclient
     timeframe = '5m'
     amount = 2
+
+    rc = client_get(client,
+                    f"{BASE_URI}/pair_candles?limit={amount}&pair=XRP%2FBTC&timeframe={timeframe}")
+    assert_response(rc)
+    assert 'columns' in rc.json
+    assert 'data_start_ts' in rc.json
+    assert 'data_start' in rc.json
+    assert 'data_stop' in rc.json
+    assert 'data_stop_ts' in rc.json
+    assert len(rc.json['data']) == 0
     ohlcv_history['sma'] = ohlcv_history['close'].rolling(2).mean()
     ohlcv_history['buy'] = 0
     ohlcv_history.iloc[1]['buy'] = 1
