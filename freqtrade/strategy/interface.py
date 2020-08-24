@@ -306,6 +306,7 @@ class IStrategy(ABC):
         of 2 seconds for a buy to happen on an old signal.
         :param: pair: "Pair to check"
         :param candle_date: Date of the last candle. Optional, defaults to current date
+        :returns: locking state of the pair in question.
         """
         if pair not in self._pair_locked_until:
             return False
