@@ -2,6 +2,7 @@
 IStrategy interface
 This module defines the interface to apply for strategies
 """
+from freqtrade.exchange.exchange import timeframe_to_next_date
 import logging
 import warnings
 from abc import ABC, abstractmethod
@@ -297,13 +298,22 @@ class IStrategy(ABC):
         if pair in self._pair_locked_until:
             del self._pair_locked_until[pair]
 
-    def is_pair_locked(self, pair: str) -> bool:
+    def is_pair_locked(self, pair: str, candle_date: datetime = None) -> bool:
         """
         Checks if a pair is currently locked
         """
         if pair not in self._pair_locked_until:
             return False
-        return self._pair_locked_until[pair] >= datetime.now(timezone.utc)
+        if not candle_date:
+            return self._pair_locked_until[pair] >= datetime.now(timezone.utc)
+        else:
+            # Locking should happen until a new candle arrives
+            lock_time = timeframe_to_next_date(self.timeframe, candle_date)
+            # lock_time = candle_date + timedelta(minutes=timeframe_to_minutes(self.timeframe))
+            res = self._pair_locked_until[pair] > lock_time
+            logger.debug(f"pair time = {lock_time} - pair_lock = {self._pair_locked_until[pair]} "
+                         f"- res: {res}")
+            return res
 
     def analyze_ticker(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
@@ -436,12 +446,6 @@ class IStrategy(ABC):
                 'Outdated history for pair %s. Last tick is %s minutes old',
                 pair, int((arrow.utcnow() - latest_date).total_seconds() // 60)
             )
-            return False, False
-
-        # Check if dataframe has new candle
-        if (arrow.utcnow() - latest_date).total_seconds() // 60 >= timeframe_minutes:
-            logger.warning('Old candle for pair %s. Last candle is %s minutes old',
-                           pair, int((arrow.utcnow() - latest_date).total_seconds() // 60))
             return False, False
 
         (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
