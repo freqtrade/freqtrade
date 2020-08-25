@@ -14,8 +14,9 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.exceptions import StrategyError, OperationalException
+from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.persistence import Trade
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
@@ -297,13 +298,25 @@ class IStrategy(ABC):
         if pair in self._pair_locked_until:
             del self._pair_locked_until[pair]
 
-    def is_pair_locked(self, pair: str) -> bool:
+    def is_pair_locked(self, pair: str, candle_date: datetime = None) -> bool:
         """
         Checks if a pair is currently locked
+        The 2nd, optional parameter ensures that locks are applied until the new candle arrives,
+        and not stop at 14:00:00 - while the next candle arrives at 14:00:02 leaving a gap
+        of 2 seconds for a buy to happen on an old signal.
+        :param: pair: "Pair to check"
+        :param candle_date: Date of the last candle. Optional, defaults to current date
+        :returns: locking state of the pair in question.
         """
         if pair not in self._pair_locked_until:
             return False
-        return self._pair_locked_until[pair] >= datetime.now(timezone.utc)
+        if not candle_date:
+            return self._pair_locked_until[pair] >= datetime.now(timezone.utc)
+        else:
+            # Locking should happen until a new candle arrives
+            lock_time = timeframe_to_next_date(self.timeframe, candle_date)
+            # lock_time = candle_date + timedelta(minutes=timeframe_to_minutes(self.timeframe))
+            return self._pair_locked_until[pair] > lock_time
 
     def analyze_ticker(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
@@ -434,7 +447,7 @@ class IStrategy(ABC):
         if latest_date < (arrow.utcnow().shift(minutes=-(timeframe_minutes * 2 + offset))):
             logger.warning(
                 'Outdated history for pair %s. Last tick is %s minutes old',
-                pair, (arrow.utcnow() - latest_date).seconds // 60
+                pair, int((arrow.utcnow() - latest_date).total_seconds() // 60)
             )
             return False, False
 
