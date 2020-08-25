@@ -158,6 +158,7 @@ class RPC:
                     current_profit_abs=current_profit_abs,
                     stoploss_current_dist=stoploss_current_dist,
                     stoploss_current_dist_ratio=round(stoploss_current_dist_ratio, 8),
+                    stoploss_current_dist_pct=round(stoploss_current_dist_ratio * 100, 2),
                     stoploss_entry_dist=stoploss_entry_dist,
                     stoploss_entry_dist_ratio=round(stoploss_entry_dist_ratio, 8),
                     open_order='({} {} rem={:.8f})'.format(

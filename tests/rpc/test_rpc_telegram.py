@@ -145,7 +145,7 @@ def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
     assert log_has('Exception occurred within Telegram module', caplog)
 
 
-def test_status(default_conf, update, mocker, fee, ticker,) -> None:
+def test_telegram_status(default_conf, update, mocker, fee, ticker,) -> None:
     update.message.chat.id = "123"
     default_conf['telegram']['enabled'] = False
     default_conf['telegram']['chat_id'] = "123"
@@ -175,6 +175,8 @@ def test_status(default_conf, update, mocker, fee, ticker,) -> None:
             'stop_loss': 1.099e-05,
             'sell_order_status': None,
             'initial_stop_loss_pct': -0.05,
+            'stoploss_current_dist': 1e-08,
+            'stoploss_current_dist_pct': -0.02,
             'stop_loss_pct': -0.01,
             'open_order': '(limit buy rem=0.00000000)'
         }]),

@@ -600,6 +600,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
                         'initial_stop_loss_ratio': -0.1,
                         'stoploss_current_dist': -1.1080000000000002e-06,
                         'stoploss_current_dist_ratio': -0.10081893,
+                        'stoploss_current_dist_pct': -10.08,
                         'stoploss_entry_dist': -0.00010475,
                         'stoploss_entry_dist_ratio': -0.10448878,
                         'trade_id': 1,
