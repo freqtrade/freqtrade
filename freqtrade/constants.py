@@ -341,6 +341,7 @@ CANCEL_REASON = {
     "PARTIALLY_FILLED": "partially filled - keeping order open",
     "ALL_CANCELLED": "cancelled (all unfilled and partially filled open orders cancelled)",
     "CANCELLED_ON_EXCHANGE": "cancelled on exchange",
+    "FORCE_SELL": "forcesold",
 }
 
 # List of pairs with their timeframes

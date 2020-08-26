@@ -974,7 +974,8 @@ class FreqtradeBot:
 
         # Cancelled orders may have the status of 'canceled' or 'closed'
         if order['status'] not in ('canceled', 'closed'):
-            reason = constants.CANCEL_REASON['TIMEOUT']
+            # TODO: this reason will overwrite the input in all cases
+            # reason = constants.CANCEL_REASON['TIMEOUT']
             corder = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
                                                             trade.amount)
             # Avoid race condition where the order could not be cancelled coz its already filled.
