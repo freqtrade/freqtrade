@@ -149,7 +149,7 @@ class Telegram(RPC):
 
         elif msg['type'] == RPCMessageType.BUY_CANCEL_NOTIFICATION:
             message = ("\N{WARNING SIGN} *{exchange}:* "
-                       "Cancelling Open Buy Order for {pair}".format(**msg))
+                       "Cancelling open buy Order for {pair}. Reason: {reason}.".format(**msg))
 
         elif msg['type'] == RPCMessageType.SELL_NOTIFICATION:
             msg['amount'] = round(msg['amount'], 8)

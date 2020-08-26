@@ -14,6 +14,7 @@ from telegram import Chat, Message, Update
 from telegram.error import NetworkError
 
 from freqtrade import __version__
+from freqtrade.constants import CANCEL_REASON
 from freqtrade.edge import PairInfo
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
@@ -1310,9 +1311,10 @@ def test_send_msg_buy_cancel_notification(default_conf, mocker) -> None:
         'type': RPCMessageType.BUY_CANCEL_NOTIFICATION,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
+        'reason': CANCEL_REASON['TIMEOUT']
     })
-    assert msg_mock.call_args[0][0] \
-        == ('\N{WARNING SIGN} *Bittrex:* Cancelling Open Buy Order for ETH/BTC')
+    assert (msg_mock.call_args[0][0] == '\N{WARNING SIGN} *Bittrex:* '
+    'Cancelling open buy Order for ETH/BTC. Reason: cancelled due to timeout.')
 
 
 def test_send_msg_sell_notification(default_conf, mocker) -> None:
