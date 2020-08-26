@@ -725,7 +725,7 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
     context.args = ["1"]
     telegram._forcesell(update=update, context=context)
 
-    assert rpc_mock.call_count == 4
+    assert rpc_mock.call_count == 3
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,
@@ -784,7 +784,7 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
     context.args = ["1"]
     telegram._forcesell(update=update, context=context)
 
-    assert rpc_mock.call_count == 4
+    assert rpc_mock.call_count == 3
 
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
@@ -836,8 +836,8 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
 
     # Called for all trades 3 times
     # cancel notification (wtf??), sell notification, buy_cancel
-    assert rpc_mock.call_count == 12
-    msg = rpc_mock.call_args_list[2][0][0]
+    assert rpc_mock.call_count == 8
+    msg = rpc_mock.call_args_list[1][0][0]
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,
         'trade_id': 1,
@@ -1314,7 +1314,7 @@ def test_send_msg_buy_cancel_notification(default_conf, mocker) -> None:
         'reason': CANCEL_REASON['TIMEOUT']
     })
     assert (msg_mock.call_args[0][0] == '\N{WARNING SIGN} *Bittrex:* '
-    'Cancelling open buy Order for ETH/BTC. Reason: cancelled due to timeout.')
+            'Cancelling open buy Order for ETH/BTC. Reason: cancelled due to timeout.')
 
 
 def test_send_msg_sell_notification(default_conf, mocker) -> None:
