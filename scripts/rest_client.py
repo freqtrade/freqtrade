@@ -276,11 +276,11 @@ def main(args):
         print_commands()
         sys.exit()
 
-    config = load_config(args["config"])
-    url = config.get("api_server", {}).get("server_url", "127.0.0.1")
-    port = config.get("api_server", {}).get("listen_port", "8080")
-    username = config.get("api_server", {}).get("username")
-    password = config.get("api_server", {}).get("password")
+    config = load_config(args['config'])
+    url = config.get('api_server', {}).get('server_url', '127.0.0.1')
+    port = config.get('api_server', {}).get('listen_port', '8080')
+    username = config.get('api_server', {}).get('username')
+    password = config.get('api_server', {}).get('password')
 
     server_url = f"http://{url}:{port}"
     client = FtRestClient(server_url, username, password)

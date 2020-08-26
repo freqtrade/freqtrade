@@ -362,22 +362,22 @@ def test_start_plot_profit(mocker):
 def test_start_plot_profit_error(mocker):
 
     args = [
-        "plot-profit",
-        "--pairs", "ETH/BTC"
+        'plot-profit',
+        '--pairs', 'ETH/BTC'
     ]
     argsp = get_args(args)
     # Make sure we use no config. Details: #2241
     # not resetting config causes random failures if config.json exists
-    argsp["config"] = []
+    argsp['config'] = []
     with pytest.raises(OperationalException):
         start_plot_profit(argsp)
 
 
 def test_plot_profit(default_conf, mocker, testdatadir, caplog):
     default_conf['trade_source'] = 'file'
-    default_conf["datadir"] = testdatadir
-    default_conf['exportfilename'] = testdatadir / "backtest-result_test_nofile.json"
-    default_conf['pairs'] = ["ETH/BTC", "LTC/BTC"]
+    default_conf['datadir'] = testdatadir
+    default_conf['exportfilename'] = testdatadir / 'backtest-result_test_nofile.json'
+    default_conf['pairs'] = ['ETH/BTC', 'LTC/BTC']
 
     profit_mock = MagicMock()
     store_mock = MagicMock()

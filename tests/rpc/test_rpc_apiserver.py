@@ -87,20 +87,20 @@ def test_api_unauthorized(botclient):
     assert rc.json == {'error': 'Unauthorized'}
 
     # Change only username
-    ftbot.config['api_server']['username'] = "Ftrader"
+    ftbot.config['api_server']['username'] = 'Ftrader'
     rc = client_get(client, f"{BASE_URI}/version")
     assert_response(rc, 401)
     assert rc.json == {'error': 'Unauthorized'}
 
     # Change only password
     ftbot.config['api_server']['username'] = _TEST_USER
-    ftbot.config['api_server']['password'] = "WrongPassword"
+    ftbot.config['api_server']['password'] = 'WrongPassword'
     rc = client_get(client, f"{BASE_URI}/version")
     assert_response(rc, 401)
     assert rc.json == {'error': 'Unauthorized'}
 
-    ftbot.config['api_server']['username'] = "Ftrader"
-    ftbot.config['api_server']['password'] = "WrongPassword"
+    ftbot.config['api_server']['username'] = 'Ftrader'
+    ftbot.config['api_server']['password'] = 'WrongPassword'
 
     rc = client_get(client, f"{BASE_URI}/version")
     assert_response(rc, 401)
@@ -677,7 +677,7 @@ def test_api_forcebuy(botclient, mocker, fee):
     assert rc.json == {"error": "Error querying _forcebuy: Forcebuy not enabled."}
 
     # enable forcebuy
-    ftbot.config["forcebuy_enable"] = True
+    ftbot.config['forcebuy_enable'] = True
 
     fbuy_mock = MagicMock(return_value=None)
     mocker.patch("freqtrade.rpc.RPC._rpc_forcebuy", fbuy_mock)

@@ -38,15 +38,15 @@ def init_plotscript(config):
     """
 
     if "pairs" in config:
-        pairs = config["pairs"]
+        pairs = config['pairs']
     else:
-        pairs = config["exchange"]["pair_whitelist"]
+        pairs = config['exchange']['pair_whitelist']
 
     # Set timerange to use
-    timerange = TimeRange.parse_timerange(config.get("timerange"))
+    timerange = TimeRange.parse_timerange(config.get('timerange'))
 
     data = load_data(
-        datadir=config.get("datadir"),
+        datadir=config.get('datadir'),
         pairs=pairs,
         timeframe=config.get('timeframe', '5m'),
         timerange=timerange,
@@ -67,7 +67,7 @@ def init_plotscript(config):
         db_url=config.get('db_url'),
         exportfilename=filename,
         no_trades=no_trades,
-        strategy=config.get("strategy"),
+        strategy=config.get('strategy'),
     )
     trades = trim_dataframe(trades, timerange, 'open_date')
 
@@ -491,13 +491,13 @@ def load_and_plot_trades(config: Dict[str, Any]):
             pair=pair,
             data=df_analyzed,
             trades=trades_pair,
-            indicators1=config.get("indicators1", []),
-            indicators2=config.get("indicators2", []),
+            indicators1=config.get('indicators1', []),
+            indicators2=config.get('indicators2', []),
             plot_config=strategy.plot_config if hasattr(strategy, 'plot_config') else {}
         )
 
         store_plot_file(fig, filename=generate_plot_filename(pair, config['timeframe']),
-                        directory=config['user_data_dir'] / "plot")
+                        directory=config['user_data_dir'] / 'plot')
 
     logger.info('End of plotting process. %s plots generated', pair_counter)
 
@@ -514,7 +514,7 @@ def plot_profit(config: Dict[str, Any]) -> None:
     # Filter trades to relevant pairs
     # Remove open pairs - we don't know the profit yet so can't calculate profit for these.
     # Also, If only one open pair is left, then the profit-generation would fail.
-    trades = trades[(trades['pair'].isin(plot_elements["pairs"]))
+    trades = trades[(trades['pair'].isin(plot_elements['pairs']))
                     & (~trades['close_date'].isnull())
                     ]
     if len(trades) == 0:
@@ -523,7 +523,7 @@ def plot_profit(config: Dict[str, Any]) -> None:
 
     # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
-    fig = generate_profit_graph(plot_elements["pairs"], plot_elements["ohlcv"],
+    fig = generate_profit_graph(plot_elements['pairs'], plot_elements['ohlcv'],
                                 trades, config.get('timeframe', '5m'))
     store_plot_file(fig, filename='freqtrade-profit-plot.html',
-                    directory=config['user_data_dir'] / "plot", auto_open=True)
+                    directory=config['user_data_dir'] / 'plot', auto_open=True)
