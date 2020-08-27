@@ -644,10 +644,10 @@ class RPC:
                    r.message + ('\n' + r.exc_text if r.exc_text else '')]
                    for r in buffer]
 
-        # Logs format:
+        # Log format:
         # [logtime-formatted, logepoch, logger-name, loglevel, message \n + exception]
         # e.g. ["2020-08-27 11:35:01", 1598520901097.9397,
-        # "freqtrade.worker", "INFO", "Starting worker develop"]
+        #       "freqtrade.worker", "INFO", "Starting worker develop"]
 
         return {'log_count': len(records), 'logs': records}
 
