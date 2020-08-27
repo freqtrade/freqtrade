@@ -21,7 +21,7 @@ from freqtrade.configuration.deprecated_settings import (
 from freqtrade.configuration.load_config import load_config_file, log_config_error_range
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.exceptions import OperationalException
-from freqtrade.loggers import _set_loggers, setup_logging
+from freqtrade.loggers import _set_loggers, setup_logging, setup_logging_pre
 from freqtrade.state import RunMode
 from tests.conftest import (log_has, log_has_re,
                             patched_configuration_load_config_file)
@@ -674,10 +674,12 @@ def test_set_loggers_syslog(mocker):
               'logfile': 'syslog:/dev/log',
               }
 
+    setup_logging_pre()
     setup_logging(config)
-    assert len(logger.handlers) == 2
+    assert len(logger.handlers) == 3
     assert [x for x in logger.handlers if type(x) == logging.handlers.SysLogHandler]
     assert [x for x in logger.handlers if type(x) == logging.StreamHandler]
+    assert [x for x in logger.handlers if type(x) == logging.handlers.BufferingHandler]
     # reset handlers to not break pytest
     logger.handlers = orig_handlers
 
@@ -727,7 +729,10 @@ def test_set_logfile(default_conf, mocker):
     assert validated_conf['logfile'] == "test_file.log"
     f = Path("test_file.log")
     assert f.is_file()
-    f.unlink()
+    try:
+        f.unlink()
+    except Exception:
+        pass
 
 
 def test_load_config_warn_forcebuy(default_conf, mocker, caplog) -> None:
