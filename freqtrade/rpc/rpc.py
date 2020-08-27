@@ -640,9 +640,14 @@ class RPC:
         else:
             buffer = bufferHandler.buffer
         records = [[datetime.fromtimestamp(r.created).strftime("%Y-%m-%d %H:%M:%S"),
-                   r.created, r.name, r.levelname,
+                   r.created * 1000, r.name, r.levelname,
                    r.message + ('\n' + r.exc_text if r.exc_text else '')]
                    for r in buffer]
+
+        # Logs format:
+        # [logtime-formatted, logepoch, logger-name, loglevel, message \n + exception]
+        # e.g. ["2020-08-27 11:35:01", 1598520901097.9397,
+        # "freqtrade.worker", "INFO", "Starting worker develop"]
 
         return {'log_count': len(records), 'logs': records}
 
