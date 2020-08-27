@@ -41,13 +41,14 @@ def setup_logging_pre() -> None:
     """
     Early setup for logging.
     Uses INFO loglevel and only the Streamhandler.
-    Early messages (before proper logging setup) will therefore only be available
-    after the proper logging setup.
+    Early messages (before proper logging setup) will therefore only be sent to additional
+    logging handlers after the real initialization, because we don't know which
+    ones the user desires beforehand.
     """
     logging.basicConfig(
         level=logging.INFO,
         format=LOGFORMAT,
-        handlers=[logging.StreamHandler(sys.stderr)]
+        handlers=[logging.StreamHandler(sys.stderr), bufferHandler]
     )
 
 
