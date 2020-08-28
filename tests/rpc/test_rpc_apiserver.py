@@ -10,10 +10,12 @@ from flask import Flask
 from requests.auth import _basic_auth_str
 
 from freqtrade.__init__ import __version__
+from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.persistence import Trade
 from freqtrade.rpc.api_server import BASE_URI, ApiServer
 from freqtrade.state import State
-from tests.conftest import get_patched_freqtradebot, log_has, patch_get_signal, create_mock_trades
+from tests.conftest import (create_mock_trades, get_patched_freqtradebot,
+                            log_has, patch_get_signal)
 
 _TEST_USER = "FreqTrader"
 _TEST_PASS = "SuperSecurePassword1!"
@@ -21,6 +23,9 @@ _TEST_PASS = "SuperSecurePassword1!"
 
 @pytest.fixture
 def botclient(default_conf, mocker):
+    setup_logging_pre()
+    setup_logging(default_conf)
+
     default_conf.update({"api_server": {"enabled": True,
                                         "listen_ip_address": "127.0.0.1",
                                         "listen_port": 8080,
@@ -421,6 +426,34 @@ def test_api_delete_trade(botclient, mocker, fee, markets):
     assert rc.json['result_msg'] == 'Deleted trade 2. Closed 2 open orders.'
     assert len(trades) - 2 == len(Trade.query.all())
     assert stoploss_mock.call_count == 1
+
+
+def test_api_logs(botclient):
+    ftbot, client = botclient
+    rc = client_get(client, f"{BASE_URI}/logs")
+    assert_response(rc)
+    assert len(rc.json) == 2
+    assert 'logs' in rc.json
+    # Using a fixed comparison here would make this test fail!
+    assert rc.json['log_count'] > 10
+    assert len(rc.json['logs']) == rc.json['log_count']
+
+    assert isinstance(rc.json['logs'][0], list)
+    # date
+    assert isinstance(rc.json['logs'][0][0], str)
+    # created_timestamp
+    assert isinstance(rc.json['logs'][0][1], float)
+    assert isinstance(rc.json['logs'][0][2], str)
+    assert isinstance(rc.json['logs'][0][3], str)
+    assert isinstance(rc.json['logs'][0][4], str)
+
+    rc = client_get(client, f"{BASE_URI}/logs?limit=5")
+    assert_response(rc)
+    assert len(rc.json) == 2
+    assert 'logs' in rc.json
+    # Using a fixed comparison here would make this test fail!
+    assert rc.json['log_count'] == 5
+    assert len(rc.json['logs']) == rc.json['log_count']
 
 
 def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):

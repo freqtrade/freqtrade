@@ -17,6 +17,7 @@ from freqtrade import __version__
 from freqtrade.constants import CANCEL_REASON
 from freqtrade.edge import PairInfo
 from freqtrade.freqtradebot import FreqtradeBot
+from freqtrade.loggers import setup_logging
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.rpc.telegram import Telegram, authorized_only
@@ -77,7 +78,7 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
                    "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], ['trades'], "
                    "['delete'], ['performance'], ['daily'], ['count'], ['reload_config', "
                    "'reload_conf'], ['show_config', 'show_conf'], ['stopbuy'], "
-                   "['whitelist'], ['blacklist'], ['edge'], ['help'], ['version']]")
+                   "['whitelist'], ['blacklist'], ['logs'], ['edge'], ['help'], ['version']]")
 
     assert log_has(message_str, caplog)
 
@@ -1110,6 +1111,41 @@ def test_blacklist_static(default_conf, update, mocker) -> None:
     assert ("Blacklist contains 3 pairs\n`DOGE/BTC, HOT/BTC, ETH/BTC`"
             in msg_mock.call_args_list[1][0][0])
     assert freqtradebot.pairlists.blacklist == ["DOGE/BTC", "HOT/BTC", "ETH/BTC"]
+
+
+def test_telegram_logs(default_conf, update, mocker) -> None:
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+    setup_logging(default_conf)
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+
+    telegram = Telegram(freqtradebot)
+    context = MagicMock()
+    context.args = []
+    telegram._logs(update=update, context=context)
+    assert msg_mock.call_count == 1
+    assert "freqtrade\\.rpc\\.telegram" in msg_mock.call_args_list[0][0][0]
+    assert "freqtrade\\.resolvers\\.iresolver" in msg_mock.call_args_list[0][0][0]
+
+    msg_mock.reset_mock()
+    context.args = ["1"]
+    telegram._logs(update=update, context=context)
+    assert msg_mock.call_count == 1
+
+    msg_mock.reset_mock()
+    # Test with changed MaxMessageLength
+    mocker.patch('freqtrade.rpc.telegram.MAX_TELEGRAM_MESSAGE_LENGTH', 200)
+    context = MagicMock()
+    context.args = []
+    telegram._logs(update=update, context=context)
+    # Called at least 3 times. Exact times will change with unrelated changes to setup messages
+    # Therefore we don't test for this explicitly.
+    assert msg_mock.call_count > 3
 
 
 def test_edge_disabled(default_conf, update, mocker) -> None:
