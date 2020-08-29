@@ -1127,7 +1127,6 @@ def test_telegram_logs(default_conf, update, mocker) -> None:
     telegram._logs(update=update, context=context)
     assert msg_mock.call_count == 1
     assert "freqtrade\\.rpc\\.telegram" in msg_mock.call_args_list[0][0][0]
-    assert "freqtrade\\.resolvers\\.iresolver" in msg_mock.call_args_list[0][0][0]
 
     msg_mock.reset_mock()
     context.args = ["1"]
