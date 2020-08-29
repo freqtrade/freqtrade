@@ -835,8 +835,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
     context.args = ["all"]
     telegram._forcesell(update=update, context=context)
 
-    # Called for all trades 3 times
-    # cancel notification (wtf??), sell notification, buy_cancel
+    # Called for each trade 3 times
     assert rpc_mock.call_count == 8
     msg = rpc_mock.call_args_list[1][0][0]
     assert {
