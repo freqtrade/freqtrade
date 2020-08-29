@@ -1761,6 +1761,14 @@ def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     assert exchange.cancel_order(order_id='123', pair='TKN/BTC') == {}
     assert exchange.cancel_stoploss_order(order_id='123', pair='TKN/BTC') == {}
 
+    order = exchange.buy('ETH/BTC', 'limit', 5, 0.55, 'gtc')
+
+    cancel_order = exchange.cancel_order(order_id=order['id'], pair='ETH/BTC')
+    assert order['id'] == cancel_order['id']
+    assert order['amount'] == cancel_order['amount']
+    assert order['pair'] == cancel_order['pair']
+    assert cancel_order['status'] == 'canceled'
+
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 @pytest.mark.parametrize("order,result", [
