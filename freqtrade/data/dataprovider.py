@@ -39,6 +39,12 @@ class DataProvider:
         """
         self.__cached_pairs[(pair, timeframe)] = (dataframe, Arrow.utcnow().datetime)
 
+    def add_pairlisthandler(self, pairlists) -> None:
+        """
+        Allow adding pairlisthandler after initialization
+        """
+        self._pairlists = pairlists
+
     def refresh(self,
                 pairlist: ListPairsWithTimeframes,
                 helping_pairs: ListPairsWithTimeframes = None) -> None:
