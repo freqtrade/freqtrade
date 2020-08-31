@@ -37,13 +37,9 @@ Freqtrade is a crypto-currency algorithmic trading software developed in python 
 
 ## Requirements
 
-### Up to date clock
-
-The clock on the system running the bot must be accurate, synchronized to a NTP server frequently enough to avoid problems with communication to the exchanges.
-
 ### Hardware requirements
 
-To run this bot we recommend you a cloud instance with a minimum of:
+To run this bot we recommend you a linux cloud instance with a minimum of:
 
 - 2GB RAM
 - 1GB disk space
