@@ -20,7 +20,7 @@ from freqtrade.edge import Edge
 from freqtrade.exceptions import (DependencyException, ExchangeError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
-from freqtrade.misc import safe_value_fallback
+from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
@@ -275,7 +275,7 @@ class FreqtradeBot:
             rate = self._buy_rate_cache.get(pair)
             # Check if cache has been invalidated
             if rate:
-                logger.info(f"Using cached buy rate for {pair}.")
+                logger.debug(f"Using cached buy rate for {pair}.")
                 return rate
 
         bid_strategy = self.config.get('bid_strategy', {})
@@ -433,7 +433,9 @@ class FreqtradeBot:
         """
         logger.debug(f"create_trade for pair {pair}")
 
-        if self.strategy.is_pair_locked(pair):
+        analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(pair, self.strategy.timeframe)
+        if self.strategy.is_pair_locked(
+                pair, analyzed_df.iloc[-1]['date'] if len(analyzed_df) > 0 else None):
             logger.info(f"Pair {pair} is currently locked.")
             return False
 
@@ -444,7 +446,6 @@ class FreqtradeBot:
             return False
 
         # running get_signal on historical data fetched
-        analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(pair, self.strategy.timeframe)
         (buy, sell) = self.strategy.get_signal(pair, self.strategy.timeframe, analyzed_df)
 
         if buy and not sell:
@@ -523,7 +524,7 @@ class FreqtradeBot:
                 time_in_force=time_in_force):
             logger.info(f"User requested abortion of buying {pair}")
             return False
-
+        amount = self.exchange.amount_to_precision(pair, amount)
         order = self.exchange.buy(pair=pair, ordertype=order_type,
                                   amount=amount, rate=buy_limit_requested,
                                   time_in_force=time_in_force)
@@ -532,6 +533,7 @@ class FreqtradeBot:
 
         # we assume the order is executed at the price requested
         buy_limit_filled_price = buy_limit_requested
+        amount_requested = amount
 
         if order_status == 'expired' or order_status == 'rejected':
             order_tif = self.strategy.order_time_in_force['buy']
@@ -552,15 +554,15 @@ class FreqtradeBot:
                                order['filled'], order['amount'], order['remaining']
                                )
                 stake_amount = order['cost']
-                amount = order['amount']
-                buy_limit_filled_price = order['price']
+                amount = safe_value_fallback(order, 'filled', 'amount')
+                buy_limit_filled_price = safe_value_fallback(order, 'average', 'price')
                 order_id = None
 
         # in case of FOK the order may be filled immediately and fully
         elif order_status == 'closed':
             stake_amount = order['cost']
-            amount = order['amount']
-            buy_limit_filled_price = order['price']
+            amount = safe_value_fallback(order, 'filled', 'amount')
+            buy_limit_filled_price = safe_value_fallback(order, 'average', 'price')
 
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
@@ -568,6 +570,7 @@ class FreqtradeBot:
             pair=pair,
             stake_amount=stake_amount,
             amount=amount,
+            amount_requested=amount_requested,
             fee_open=fee,
             fee_close=fee,
             open_rate=buy_limit_filled_price,
@@ -660,7 +663,7 @@ class FreqtradeBot:
                     trades_closed += 1
 
             except DependencyException as exception:
-                logger.warning('Unable to sell trade: %s', exception)
+                logger.warning('Unable to sell trade %s: %s', trade.pair, exception)
 
         # Updating wallets if any trade occured
         if trades_closed:
@@ -691,7 +694,7 @@ class FreqtradeBot:
             rate = self._sell_rate_cache.get(pair)
             # Check if cache has been invalidated
             if rate:
-                logger.info(f"Using cached sell rate for {pair}.")
+                logger.debug(f"Using cached sell rate for {pair}.")
                 return rate
 
         ask_strategy = self.config.get('ask_strategy', {})
@@ -768,7 +771,7 @@ class FreqtradeBot:
         logger.debug('Found no sell signal for %s.', trade)
         return False
 
-    def create_stoploss_order(self, trade: Trade, stop_price: float, rate: float) -> bool:
+    def create_stoploss_order(self, trade: Trade, stop_price: float) -> bool:
         """
         Abstracts creating stoploss orders from the logic.
         Handles errors and updates the trade database object.
@@ -831,14 +834,13 @@ class FreqtradeBot:
             stoploss = self.edge.stoploss(pair=trade.pair) if self.edge else self.strategy.stoploss
             stop_price = trade.open_rate * (1 + stoploss)
 
-            if self.create_stoploss_order(trade=trade, stop_price=stop_price, rate=stop_price):
+            if self.create_stoploss_order(trade=trade, stop_price=stop_price):
                 trade.stoploss_last_update = datetime.now()
                 return False
 
         # If stoploss order is canceled for some reason we add it
         if stoploss_order and stoploss_order['status'] in ('canceled', 'cancelled'):
-            if self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss,
-                                          rate=trade.stop_loss):
+            if self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss):
                 return False
             else:
                 trade.stoploss_order_id = None
@@ -875,8 +877,7 @@ class FreqtradeBot:
                                      f"for pair {trade.pair}")
 
                 # Create new stoploss order
-                if not self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss,
-                                                  rate=trade.stop_loss):
+                if not self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss):
                     logger.warning(f"Could not create trailing stoploss order "
                                    f"for pair {trade.pair}.")
 
@@ -921,7 +922,7 @@ class FreqtradeBot:
                 if not trade.open_order_id:
                     continue
                 order = self.exchange.fetch_order(trade.open_order_id, trade.pair)
-            except (ExchangeError, InvalidOrderException):
+            except (ExchangeError):
                 logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
                 continue
 
@@ -954,7 +955,7 @@ class FreqtradeBot:
         for trade in Trade.get_open_order_trades():
             try:
                 order = self.exchange.fetch_order(trade.open_order_id, trade.pair)
-            except (DependencyException, InvalidOrderException):
+            except (ExchangeError):
                 logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
                 continue
 
@@ -976,6 +977,12 @@ class FreqtradeBot:
             reason = constants.CANCEL_REASON['TIMEOUT']
             corder = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
                                                             trade.amount)
+            # Avoid race condition where the order could not be cancelled coz its already filled.
+            # Simply bailing here is the only safe way - as this order will then be
+            # handled in the next iteration.
+            if corder.get('status') not in ('canceled', 'closed'):
+                logger.warning(f"Order {trade.open_order_id} for {trade.pair} not cancelled.")
+                return False
         else:
             # Order was cancelled already, so we can reuse the existing dict
             corder = order
@@ -984,7 +991,7 @@ class FreqtradeBot:
         logger.info('Buy order %s for %s.', reason, trade)
 
         # Using filled to determine the filled amount
-        filled_amount = safe_value_fallback(corder, order, 'filled', 'filled')
+        filled_amount = safe_value_fallback2(corder, order, 'filled', 'filled')
 
         if isclose(filled_amount, 0.0, abs_tol=constants.MATH_CLOSE_PREC):
             logger.info('Buy order fully cancelled. Removing %s from database.', trade)
@@ -1249,7 +1256,8 @@ class FreqtradeBot:
         # Try update amount (binance-fix)
         try:
             new_amount = self.get_real_amount(trade, order, order_amount)
-            if not isclose(order['amount'], new_amount, abs_tol=constants.MATH_CLOSE_PREC):
+            if not isclose(safe_value_fallback(order, 'filled', 'amount'), new_amount,
+                           abs_tol=constants.MATH_CLOSE_PREC):
                 order['amount'] = new_amount
                 order.pop('filled', None)
                 trade.recalc_open_trade_price()
@@ -1295,7 +1303,7 @@ class FreqtradeBot:
         """
         # Init variables
         if order_amount is None:
-            order_amount = order['amount']
+            order_amount = safe_value_fallback(order, 'filled', 'amount')
         # Only run for closed orders
         if trade.fee_updated(order.get('side', '')) or order['status'] == 'open':
             return order_amount

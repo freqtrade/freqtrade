@@ -8,7 +8,8 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data.btanalysis import (calculate_max_drawdown,
                                        combine_dataframes_with_mean,
                                        create_cum_profit,
-                                       extract_trades_of_period, load_trades)
+                                       extract_trades_of_period,
+                                       load_trades)
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
@@ -37,15 +38,15 @@ def init_plotscript(config):
     """
 
     if "pairs" in config:
-        pairs = config["pairs"]
+        pairs = config['pairs']
     else:
-        pairs = config["exchange"]["pair_whitelist"]
+        pairs = config['exchange']['pair_whitelist']
 
     # Set timerange to use
-    timerange = TimeRange.parse_timerange(config.get("timerange"))
+    timerange = TimeRange.parse_timerange(config.get('timerange'))
 
     data = load_data(
-        datadir=config.get("datadir"),
+        datadir=config.get('datadir'),
         pairs=pairs,
         timeframe=config.get('timeframe', '5m'),
         timerange=timerange,
@@ -53,19 +54,22 @@ def init_plotscript(config):
     )
 
     no_trades = False
+    filename = config.get('exportfilename')
     if config.get('no_trades', False):
         no_trades = True
-    elif not config['exportfilename'].is_file() and config['trade_source'] == 'file':
-        logger.warning("Backtest file is missing skipping trades.")
-        no_trades = True
+    elif config['trade_source'] == 'file':
+        if not filename.is_dir() and not filename.is_file():
+            logger.warning("Backtest file is missing skipping trades.")
+            no_trades = True
 
     trades = load_trades(
         config['trade_source'],
         db_url=config.get('db_url'),
-        exportfilename=config.get('exportfilename'),
-        no_trades=no_trades
+        exportfilename=filename,
+        no_trades=no_trades,
+        strategy=config.get('strategy'),
     )
-    trades = trim_dataframe(trades, timerange, 'open_time')
+    trades = trim_dataframe(trades, timerange, 'open_date')
 
     return {"ohlcv": data,
             "trades": trades,
@@ -165,10 +169,11 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
     if trades is not None and len(trades) > 0:
         # Create description for sell summarizing the trade
         trades['desc'] = trades.apply(lambda row: f"{round(row['profit_percent'] * 100, 1)}%, "
-                                                  f"{row['sell_reason']}, {row['duration']} min",
+                                                  f"{row['sell_reason']}, "
+                                                  f"{row['trade_duration']} min",
                                                   axis=1)
         trade_buys = go.Scatter(
-            x=trades["open_time"],
+            x=trades["open_date"],
             y=trades["open_rate"],
             mode='markers',
             name='Trade buy',
@@ -183,7 +188,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
         )
 
         trade_sells = go.Scatter(
-            x=trades.loc[trades['profit_percent'] > 0, "close_time"],
+            x=trades.loc[trades['profit_percent'] > 0, "close_date"],
             y=trades.loc[trades['profit_percent'] > 0, "close_rate"],
             text=trades.loc[trades['profit_percent'] > 0, "desc"],
             mode='markers',
@@ -196,7 +201,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
             )
         )
         trade_sells_loss = go.Scatter(
-            x=trades.loc[trades['profit_percent'] <= 0, "close_time"],
+            x=trades.loc[trades['profit_percent'] <= 0, "close_date"],
             y=trades.loc[trades['profit_percent'] <= 0, "close_rate"],
             text=trades.loc[trades['profit_percent'] <= 0, "desc"],
             mode='markers',
@@ -486,13 +491,13 @@ def load_and_plot_trades(config: Dict[str, Any]):
             pair=pair,
             data=df_analyzed,
             trades=trades_pair,
-            indicators1=config.get("indicators1", []),
-            indicators2=config.get("indicators2", []),
+            indicators1=config.get('indicators1', []),
+            indicators2=config.get('indicators2', []),
             plot_config=strategy.plot_config if hasattr(strategy, 'plot_config') else {}
         )
 
         store_plot_file(fig, filename=generate_plot_filename(pair, config['timeframe']),
-                        directory=config['user_data_dir'] / "plot")
+                        directory=config['user_data_dir'] / 'plot')
 
     logger.info('End of plotting process. %s plots generated', pair_counter)
 
@@ -509,8 +514,8 @@ def plot_profit(config: Dict[str, Any]) -> None:
     # Filter trades to relevant pairs
     # Remove open pairs - we don't know the profit yet so can't calculate profit for these.
     # Also, If only one open pair is left, then the profit-generation would fail.
-    trades = trades[(trades['pair'].isin(plot_elements["pairs"]))
-                    & (~trades['close_time'].isnull())
+    trades = trades[(trades['pair'].isin(plot_elements['pairs']))
+                    & (~trades['close_date'].isnull())
                     ]
     if len(trades) == 0:
         raise OperationalException("No trades found, cannot generate Profit-plot without "
@@ -518,7 +523,7 @@ def plot_profit(config: Dict[str, Any]) -> None:
 
     # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
-    fig = generate_profit_graph(plot_elements["pairs"], plot_elements["ohlcv"],
+    fig = generate_profit_graph(plot_elements['pairs'], plot_elements['ohlcv'],
                                 trades, config.get('timeframe', '5m'))
     store_plot_file(fig, filename='freqtrade-profit-plot.html',
-                    directory=config['user_data_dir'] / "plot", auto_open=True)
+                    directory=config['user_data_dir'] / 'plot', auto_open=True)

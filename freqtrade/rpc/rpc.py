@@ -6,14 +6,14 @@ from abc import abstractmethod
 from datetime import date, datetime, timedelta
 from enum import Enum
 from math import isnan
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import arrow
 from numpy import NAN, mean
 
 from freqtrade.exceptions import ExchangeError, PricingError
-
-from freqtrade.exchange import timeframe_to_msecs, timeframe_to_minutes
+from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
+from freqtrade.loggers import bufferHandler
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -158,6 +158,7 @@ class RPC:
                     current_profit_abs=current_profit_abs,
                     stoploss_current_dist=stoploss_current_dist,
                     stoploss_current_dist_ratio=round(stoploss_current_dist_ratio, 8),
+                    stoploss_current_dist_pct=round(stoploss_current_dist_ratio * 100, 2),
                     stoploss_entry_dist=stoploss_entry_dist,
                     stoploss_entry_dist_ratio=round(stoploss_entry_dist_ratio, 8),
                     open_order='({} {} rem={:.8f})'.format(
@@ -224,22 +225,20 @@ class RPC:
             ]).order_by(Trade.close_date).all()
             curdayprofit = sum(trade.close_profit_abs for trade in trades)
             profit_days[profitday] = {
-                'amount': f'{curdayprofit:.8f}',
+                'amount': curdayprofit,
                 'trades': len(trades)
             }
 
         data = [
             {
                 'date': key,
-                'abs_profit': f'{float(value["amount"]):.8f}',
-                'fiat_value': '{value:.3f}'.format(
-                    value=self._fiat_converter.convert_amount(
+                'abs_profit': value["amount"],
+                'fiat_value': self._fiat_converter.convert_amount(
                         value['amount'],
                         stake_currency,
                         fiat_display_currency
                     ) if self._fiat_converter else 0,
-                ),
-                'trade_count': f'{value["trades"]}',
+                'trade_count': value["trades"],
             }
             for key, value in profit_days.items()
         ]
@@ -538,6 +537,46 @@ class RPC:
         else:
             return None
 
+    def _rpc_delete(self, trade_id: str) -> Dict[str, Union[str, int]]:
+        """
+        Handler for delete <id>.
+        Delete the given trade and close eventually existing open orders.
+        """
+        with self._freqtrade._sell_lock:
+            c_count = 0
+            trade = Trade.get_trades(trade_filter=[Trade.id == trade_id]).first()
+            if not trade:
+                logger.warning('delete trade: Invalid argument received')
+                raise RPCException('invalid argument')
+
+            # Try cancelling regular order if that exists
+            if trade.open_order_id:
+                try:
+                    self._freqtrade.exchange.cancel_order(trade.open_order_id, trade.pair)
+                    c_count += 1
+                except (ExchangeError):
+                    pass
+
+            # cancel stoploss on exchange ...
+            if (self._freqtrade.strategy.order_types.get('stoploss_on_exchange')
+                    and trade.stoploss_order_id):
+                try:
+                    self._freqtrade.exchange.cancel_stoploss_order(trade.stoploss_order_id,
+                                                                   trade.pair)
+                    c_count += 1
+                except (ExchangeError):
+                    pass
+
+            Trade.session.delete(trade)
+            Trade.session.flush()
+            self._freqtrade.wallets.update()
+            return {
+                'result': 'success',
+                'trade_id': trade_id,
+                'result_msg': f'Deleted trade {trade_id}. Closed {c_count} open orders.',
+                'cancel_order_count': c_count,
+            }
+
     def _rpc_performance(self) -> List[Dict[str, Any]]:
         """
         Handler for performance.
@@ -592,6 +631,24 @@ class RPC:
                'errors': errors,
                }
         return res
+
+    def _rpc_get_logs(self, limit: Optional[int]) -> Dict[str, Any]:
+        """Returns the last X logs"""
+        if limit:
+            buffer = bufferHandler.buffer[-limit:]
+        else:
+            buffer = bufferHandler.buffer
+        records = [[datetime.fromtimestamp(r.created).strftime("%Y-%m-%d %H:%M:%S"),
+                   r.created * 1000, r.name, r.levelname,
+                   r.message + ('\n' + r.exc_text if r.exc_text else '')]
+                   for r in buffer]
+
+        # Log format:
+        # [logtime-formatted, logepoch, logger-name, loglevel, message \n + exception]
+        # e.g. ["2020-08-27 11:35:01", 1598520901097.9397,
+        #       "freqtrade.worker", "INFO", "Starting worker develop"]
+
+        return {'log_count': len(records), 'logs': records}
 
     def _rpc_edge(self) -> List[Dict[str, Any]]:
         """ Returns information related to Edge """

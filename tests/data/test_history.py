@@ -36,7 +36,7 @@ def _backup_file(file: Path, copy_file: bool = False) -> None:
     """
     Backup existing file to avoid deleting the user file
     :param file: complete path to the file
-    :param touch_file: create an empty file in replacement
+    :param copy_file: keep file in place too.
     :return: None
     """
     file_swp = str(file) + '.swp'

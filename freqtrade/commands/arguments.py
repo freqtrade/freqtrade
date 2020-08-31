@@ -73,6 +73,7 @@ ARGS_HYPEROPT_LIST = ["hyperopt_list_best", "hyperopt_list_profitable",
                       "hyperopt_list_min_avg_time", "hyperopt_list_max_avg_time",
                       "hyperopt_list_min_avg_profit", "hyperopt_list_max_avg_profit",
                       "hyperopt_list_min_total_profit", "hyperopt_list_max_total_profit",
+                      "hyperopt_list_min_objective", "hyperopt_list_max_objective",
                       "print_colorized", "print_json", "hyperopt_list_no_details",
                       "export_csv"]
 
@@ -365,7 +366,7 @@ class Arguments:
         plot_profit_cmd = subparsers.add_parser(
             'plot-profit',
             help='Generate plot showing profits.',
-            parents=[_common_parser],
+            parents=[_common_parser, _strategy_parser],
         )
         plot_profit_cmd.set_defaults(func=start_plot_profit)
         self._build_args(optionlist=ARGS_PLOT_PROFIT, parser=plot_profit_cmd)

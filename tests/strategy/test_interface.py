@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, C0103
 
 import logging
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
 import arrow
@@ -8,12 +9,12 @@ import pytest
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
+from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
 from freqtrade.exceptions import StrategyError
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
-from freqtrade.data.dataprovider import DataProvider
 from tests.conftest import log_has, log_has_re
 
 from .strats.default_strategy import DefaultStrategy
@@ -261,14 +262,14 @@ def test_min_roi_reached3(default_conf, fee) -> None:
     strategy = StrategyResolver.load_strategy(default_conf)
     strategy.minimal_roi = min_roi
     trade = Trade(
-            pair='ETH/BTC',
-            stake_amount=0.001,
-            amount=5,
-            open_date=arrow.utcnow().shift(hours=-1).datetime,
-            fee_open=fee.return_value,
-            fee_close=fee.return_value,
-            exchange='bittrex',
-            open_rate=1,
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        amount=5,
+        open_date=arrow.utcnow().shift(hours=-1).datetime,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='bittrex',
+        open_rate=1,
     )
 
     assert not strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-56).datetime)
@@ -386,6 +387,31 @@ def test_is_pair_locked(default_conf):
     pair = 'ETH/BTC'
     strategy.unlock_pair(pair)
     assert not strategy.is_pair_locked(pair)
+
+    pair = 'BTC/USDT'
+    # Lock until 14:30
+    lock_time = datetime(2020, 5, 1, 14, 30, 0, tzinfo=timezone.utc)
+    strategy.lock_pair(pair, lock_time)
+    # Lock is in the past ...
+    assert not strategy.is_pair_locked(pair)
+    # latest candle is from 14:20, lock goes to 14:30
+    assert strategy.is_pair_locked(pair, lock_time + timedelta(minutes=-10))
+    assert strategy.is_pair_locked(pair, lock_time + timedelta(minutes=-50))
+
+    # latest candle is from 14:25 (lock should be lifted)
+    # Since this is the "new candle" available at 14:30
+    assert not strategy.is_pair_locked(pair, lock_time + timedelta(minutes=-4))
+
+    # Should not be locked after time expired
+    assert not strategy.is_pair_locked(pair, lock_time + timedelta(minutes=10))
+
+    # Change timeframe to 15m
+    strategy.timeframe = '15m'
+    # Candle from 14:14 - lock goes until 14:30
+    assert strategy.is_pair_locked(pair, lock_time + timedelta(minutes=-16))
+    assert strategy.is_pair_locked(pair, lock_time + timedelta(minutes=-15, seconds=-2))
+    # Candle from 14:15 - lock goes until 14:30
+    assert not strategy.is_pair_locked(pair, lock_time + timedelta(minutes=-15))
 
 
 def test_is_informative_pairs_callback(default_conf):

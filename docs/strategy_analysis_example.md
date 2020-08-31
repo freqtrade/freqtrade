@@ -85,10 +85,44 @@ Analyze a trades dataframe (also used below for plotting)
 
 
 ```python
-from freqtrade.data.btanalysis import load_backtest_data
+from freqtrade.data.btanalysis import load_backtest_data, load_backtest_stats
 
-# Load backtest results
-trades = load_backtest_data(config["user_data_dir"] / "backtest_results/backtest-result.json")
+# if backtest_dir points to a directory, it'll automatically load the last backtest file.
+backtest_dir = config["user_data_dir"] / "backtest_results"
+# backtest_dir can also point to a specific file 
+# backtest_dir = config["user_data_dir"] / "backtest_results/backtest-result-2020-07-01_20-04-22.json"
+```
+
+
+```python
+# You can get the full backtest statistics by using the following command.
+# This contains all information used to generate the backtest result.
+stats = load_backtest_stats(backtest_dir)
+
+strategy = 'SampleStrategy'
+# All statistics are available per strategy, so if `--strategy-list` was used during backtest, this will be reflected here as well.
+# Example usages:
+print(stats['strategy'][strategy]['results_per_pair'])
+# Get pairlist used for this backtest
+print(stats['strategy'][strategy]['pairlist'])
+# Get market change (average change of all pairs from start to end of the backtest period)
+print(stats['strategy'][strategy]['market_change'])
+# Maximum drawdown ()
+print(stats['strategy'][strategy]['max_drawdown'])
+# Maximum drawdown start and end
+print(stats['strategy'][strategy]['drawdown_start'])
+print(stats['strategy'][strategy]['drawdown_end'])
+
+
+# Get strategy comparison (only relevant if multiple strategies were compared)
+print(stats['strategy_comparison'])
+
+```
+
+
+```python
+# Load backtested trades as dataframe
+trades = load_backtest_data(backtest_dir)
 
 # Show value-counts per pair
 trades.groupby("pair")["sell_reason"].value_counts()

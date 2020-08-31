@@ -62,6 +62,9 @@ class FtRestClient():
     def _get(self, apipath, params: dict = None):
         return self._call("GET", apipath, params=params)
 
+    def _delete(self, apipath, params: dict = None):
+        return self._call("DELETE", apipath, params=params)
+
     def _post(self, apipath, params: dict = None, data: dict = None):
         return self._call("POST", apipath, params=params, data=data)
 
@@ -156,6 +159,14 @@ class FtRestClient():
         """
         return self._get("show_config")
 
+    def logs(self, limit=None):
+        """Show latest logs.
+
+        :param limit: Limits log messages to the last <limit> logs. No limit to get all the trades.
+        :return: json object
+        """
+        return self._get("logs", params={"limit": limit} if limit else 0)
+
     def trades(self, limit=None):
         """Return trades history.
 
@@ -163,6 +174,15 @@ class FtRestClient():
         :return: json object
         """
         return self._get("trades", params={"limit": limit} if limit else 0)
+
+    def delete_trade(self, trade_id):
+        """Delete trade from the database.
+        Tries to close open orders. Requires manual handling of this asset on the exchange.
+
+        :param trade_id: Deletes the trade with this ID from the database.
+        :return: json object
+        """
+        return self._delete("trades/{}".format(trade_id))
 
     def whitelist(self):
         """Show the current whitelist.
@@ -264,11 +284,11 @@ def main(args):
         print_commands()
         sys.exit()
 
-    config = load_config(args["config"])
-    url = config.get("api_server", {}).get("server_url", "127.0.0.1")
-    port = config.get("api_server", {}).get("listen_port", "8080")
-    username = config.get("api_server", {}).get("username")
-    password = config.get("api_server", {}).get("password")
+    config = load_config(args['config'])
+    url = config.get('api_server', {}).get('server_url', '127.0.0.1')
+    port = config.get('api_server', {}).get('listen_port', '8080')
+    username = config.get('api_server', {}).get('username')
+    password = config.get('api_server', {}).get('password')
 
     server_url = f"http://{url}:{port}"
     client = FtRestClient(server_url, username, password)

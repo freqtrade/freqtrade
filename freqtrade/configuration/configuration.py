@@ -54,7 +54,7 @@ class Configuration:
         :param files: List of file paths
         :return: configuration dictionary
         """
-        c = Configuration({"config": files}, RunMode.OTHER)
+        c = Configuration({'config': files}, RunMode.OTHER)
         return c.get_config()
 
     def load_from_files(self, files: List[str]) -> Dict[str, Any]:
@@ -123,10 +123,10 @@ class Configuration:
         the -v/--verbose, --logfile options
         """
         # Log level
-        config.update({'verbosity': self.args.get("verbosity", 0)})
+        config.update({'verbosity': self.args.get('verbosity', 0)})
 
-        if 'logfile' in self.args and self.args["logfile"]:
-            config.update({'logfile': self.args["logfile"]})
+        if 'logfile' in self.args and self.args['logfile']:
+            config.update({'logfile': self.args['logfile']})
 
         setup_logging(config)
 
@@ -149,22 +149,22 @@ class Configuration:
     def _process_common_options(self, config: Dict[str, Any]) -> None:
 
         # Set strategy if not specified in config and or if it's non default
-        if self.args.get("strategy") or not config.get('strategy'):
-            config.update({'strategy': self.args.get("strategy")})
+        if self.args.get('strategy') or not config.get('strategy'):
+            config.update({'strategy': self.args.get('strategy')})
 
         self._args_to_config(config, argname='strategy_path',
                              logstring='Using additional Strategy lookup path: {}')
 
-        if ('db_url' in self.args and self.args["db_url"] and
-                self.args["db_url"] != constants.DEFAULT_DB_PROD_URL):
-            config.update({'db_url': self.args["db_url"]})
+        if ('db_url' in self.args and self.args['db_url'] and
+                self.args['db_url'] != constants.DEFAULT_DB_PROD_URL):
+            config.update({'db_url': self.args['db_url']})
             logger.info('Parameter --db-url detected ...')
 
         if config.get('forcebuy_enable', False):
             logger.warning('`forcebuy` RPC message enabled.')
 
         # Support for sd_notify
-        if 'sd_notify' in self.args and self.args["sd_notify"]:
+        if 'sd_notify' in self.args and self.args['sd_notify']:
             config['internals'].update({'sd_notify': True})
 
     def _process_datadir_options(self, config: Dict[str, Any]) -> None:
@@ -173,24 +173,24 @@ class Configuration:
         --user-data, --datadir
         """
         # Check exchange parameter here - otherwise `datadir` might be wrong.
-        if "exchange" in self.args and self.args["exchange"]:
-            config['exchange']['name'] = self.args["exchange"]
+        if 'exchange' in self.args and self.args['exchange']:
+            config['exchange']['name'] = self.args['exchange']
             logger.info(f"Using exchange {config['exchange']['name']}")
 
         if 'pair_whitelist' not in config['exchange']:
             config['exchange']['pair_whitelist'] = []
 
-        if 'user_data_dir' in self.args and self.args["user_data_dir"]:
-            config.update({'user_data_dir': self.args["user_data_dir"]})
+        if 'user_data_dir' in self.args and self.args['user_data_dir']:
+            config.update({'user_data_dir': self.args['user_data_dir']})
         elif 'user_data_dir' not in config:
             # Default to cwd/user_data (legacy option ...)
-            config.update({'user_data_dir': str(Path.cwd() / "user_data")})
+            config.update({'user_data_dir': str(Path.cwd() / 'user_data')})
 
         # reset to user_data_dir so this contains the absolute path.
         config['user_data_dir'] = create_userdata_dir(config['user_data_dir'], create_dir=False)
         logger.info('Using user-data directory: %s ...', config['user_data_dir'])
 
-        config.update({'datadir': create_datadir(config, self.args.get("datadir", None))})
+        config.update({'datadir': create_datadir(config, self.args.get('datadir', None))})
         logger.info('Using data directory: %s ...', config.get('datadir'))
 
         if self.args.get('exportfilename'):
@@ -199,7 +199,7 @@ class Configuration:
             config['exportfilename'] = Path(config['exportfilename'])
         else:
             config['exportfilename'] = (config['user_data_dir']
-                                        / 'backtest_results/backtest-result.json')
+                                        / 'backtest_results')
 
     def _process_optimize_options(self, config: Dict[str, Any]) -> None:
 
@@ -219,8 +219,8 @@ class Configuration:
             config.update({'use_max_market_positions': False})
             logger.info('Parameter --disable-max-market-positions detected ...')
             logger.info('max_open_trades set to unlimited ...')
-        elif 'max_open_trades' in self.args and self.args["max_open_trades"]:
-            config.update({'max_open_trades': self.args["max_open_trades"]})
+        elif 'max_open_trades' in self.args and self.args['max_open_trades']:
+            config.update({'max_open_trades': self.args['max_open_trades']})
             logger.info('Parameter --max-open-trades detected, '
                         'overriding max_open_trades to: %s ...', config.get('max_open_trades'))
         elif config['runmode'] in NON_UTIL_MODES:
@@ -334,6 +334,12 @@ class Configuration:
         self._args_to_config(config, argname='hyperopt_list_max_total_profit',
                              logstring='Parameter --max-total-profit detected: {}')
 
+        self._args_to_config(config, argname='hyperopt_list_min_objective',
+                             logstring='Parameter --min-objective detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_list_max_objective',
+                             logstring='Parameter --max-objective detected: {}')
+
         self._args_to_config(config, argname='hyperopt_list_no_details',
                              logstring='Parameter --no-details detected: {}')
 
@@ -441,12 +447,12 @@ class Configuration:
                 config['pairs'].sort()
             return
 
-        if "config" in self.args and self.args["config"]:
+        if 'config' in self.args and self.args['config']:
             logger.info("Using pairlist from configuration.")
             config['pairs'] = config.get('exchange', {}).get('pair_whitelist')
         else:
             # Fall back to /dl_path/pairs.json
-            pairs_file = config['datadir'] / "pairs.json"
+            pairs_file = config['datadir'] / 'pairs.json'
             if pairs_file.exists():
                 with pairs_file.open('r') as f:
                     config['pairs'] = json_load(f)

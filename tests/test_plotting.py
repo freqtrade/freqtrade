@@ -267,7 +267,7 @@ def test_generate_profit_graph(testdatadir):
     trades = load_backtest_data(filename)
     timerange = TimeRange.parse_timerange("20180110-20180112")
     pairs = ["TRX/BTC", "XLM/BTC"]
-    trades = trades[trades['close_time'] < pd.Timestamp('2018-01-12', tz='UTC')]
+    trades = trades[trades['close_date'] < pd.Timestamp('2018-01-12', tz='UTC')]
 
     data = history.load_data(datadir=testdatadir,
                              pairs=pairs,
@@ -362,22 +362,22 @@ def test_start_plot_profit(mocker):
 def test_start_plot_profit_error(mocker):
 
     args = [
-        "plot-profit",
-        "--pairs", "ETH/BTC"
+        'plot-profit',
+        '--pairs', 'ETH/BTC'
     ]
     argsp = get_args(args)
     # Make sure we use no config. Details: #2241
     # not resetting config causes random failures if config.json exists
-    argsp["config"] = []
+    argsp['config'] = []
     with pytest.raises(OperationalException):
         start_plot_profit(argsp)
 
 
 def test_plot_profit(default_conf, mocker, testdatadir, caplog):
     default_conf['trade_source'] = 'file'
-    default_conf["datadir"] = testdatadir
-    default_conf['exportfilename'] = testdatadir / "backtest-result_test_nofile.json"
-    default_conf['pairs'] = ["ETH/BTC", "LTC/BTC"]
+    default_conf['datadir'] = testdatadir
+    default_conf['exportfilename'] = testdatadir / 'backtest-result_test_nofile.json'
+    default_conf['pairs'] = ['ETH/BTC', 'LTC/BTC']
 
     profit_mock = MagicMock()
     store_mock = MagicMock()
