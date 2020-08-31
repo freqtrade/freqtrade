@@ -32,4 +32,4 @@ flask-cors==3.0.8
 colorama==0.4.3
 # Building config files interactively
 questionary==1.5.2
-prompt-toolkit==3.0.6
+prompt-toolkit==3.0.7
