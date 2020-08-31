@@ -1,6 +1,5 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 
-from freqtrade.data.history.hdf5datahandler import HDF5DataHandler
 import json
 import uuid
 from pathlib import Path
@@ -15,6 +14,7 @@ from pandas.testing import assert_frame_equal
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import AVAILABLE_DATAHANDLERS
 from freqtrade.data.converter import ohlcv_to_dataframe
+from freqtrade.data.history.hdf5datahandler import HDF5DataHandler
 from freqtrade.data.history.history_utils import (
     _download_pair_history, _download_trades_history,
     _load_cached_data_for_updating, convert_trades_to_ohlcv, get_timerange,
