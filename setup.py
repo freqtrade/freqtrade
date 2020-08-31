@@ -85,6 +85,8 @@ setup(name='freqtrade',
           # from requirements.txt
           'numpy',
           'pandas',
+          'tables',
+          'blosc',
       ],
       extras_require={
           'api': api,
