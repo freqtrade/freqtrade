@@ -86,8 +86,8 @@ class Exchange:
 
         # Deep merge ft_has with default ft_has options
         self._ft_has = deep_merge_dicts(self._ft_has, deepcopy(self._ft_has_default))
-        if exchange_config.get("_ft_has_params"):
-            self._ft_has = deep_merge_dicts(exchange_config.get("_ft_has_params"),
+        if exchange_config.get('_ft_has_params'):
+            self._ft_has = deep_merge_dicts(exchange_config.get('_ft_has_params'),
                                             self._ft_has)
             logger.info("Overriding exchange._ft_has with config params, result: %s", self._ft_has)
 

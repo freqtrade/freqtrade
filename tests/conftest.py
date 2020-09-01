@@ -78,7 +78,7 @@ def patch_exchange(mocker, api_mock=None, id='bittrex', mock_markets=True) -> No
 def get_patched_exchange(mocker, config, api_mock=None, id='bittrex',
                          mock_markets=True) -> Exchange:
     patch_exchange(mocker, api_mock, id, mock_markets)
-    config["exchange"]["name"] = id
+    config['exchange']['name'] = id
     try:
         exchange = ExchangeResolver.load_exchange(id, config)
     except ImportError:

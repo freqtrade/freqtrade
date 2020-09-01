@@ -16,6 +16,7 @@ from telegram.error import NetworkError
 from freqtrade import __version__
 from freqtrade.edge import PairInfo
 from freqtrade.freqtradebot import FreqtradeBot
+from freqtrade.loggers import setup_logging
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.rpc.telegram import Telegram, authorized_only
@@ -76,7 +77,7 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
                    "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], ['trades'], "
                    "['delete'], ['performance'], ['daily'], ['count'], ['reload_config', "
                    "'reload_conf'], ['show_config', 'show_conf'], ['stopbuy'], "
-                   "['whitelist'], ['blacklist'], ['edge'], ['help'], ['version']]")
+                   "['whitelist'], ['blacklist'], ['logs'], ['edge'], ['help'], ['version']]")
 
     assert log_has(message_str, caplog)
 
@@ -145,7 +146,7 @@ def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
     assert log_has('Exception occurred within Telegram module', caplog)
 
 
-def test_status(default_conf, update, mocker, fee, ticker,) -> None:
+def test_telegram_status(default_conf, update, mocker, fee, ticker,) -> None:
     update.message.chat.id = "123"
     default_conf['telegram']['enabled'] = False
     default_conf['telegram']['chat_id'] = "123"
@@ -175,6 +176,8 @@ def test_status(default_conf, update, mocker, fee, ticker,) -> None:
             'stop_loss': 1.099e-05,
             'sell_order_status': None,
             'initial_stop_loss_pct': -0.05,
+            'stoploss_current_dist': 1e-08,
+            'stoploss_current_dist_pct': -0.02,
             'stop_loss_pct': -0.01,
             'open_order': '(limit buy rem=0.00000000)'
         }]),
@@ -1103,6 +1106,40 @@ def test_blacklist_static(default_conf, update, mocker) -> None:
     assert ("Blacklist contains 3 pairs\n`DOGE/BTC, HOT/BTC, ETH/BTC`"
             in msg_mock.call_args_list[1][0][0])
     assert freqtradebot.pairlists.blacklist == ["DOGE/BTC", "HOT/BTC", "ETH/BTC"]
+
+
+def test_telegram_logs(default_conf, update, mocker) -> None:
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+    setup_logging(default_conf)
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+
+    telegram = Telegram(freqtradebot)
+    context = MagicMock()
+    context.args = []
+    telegram._logs(update=update, context=context)
+    assert msg_mock.call_count == 1
+    assert "freqtrade\\.rpc\\.telegram" in msg_mock.call_args_list[0][0][0]
+
+    msg_mock.reset_mock()
+    context.args = ["1"]
+    telegram._logs(update=update, context=context)
+    assert msg_mock.call_count == 1
+
+    msg_mock.reset_mock()
+    # Test with changed MaxMessageLength
+    mocker.patch('freqtrade.rpc.telegram.MAX_TELEGRAM_MESSAGE_LENGTH', 200)
+    context = MagicMock()
+    context.args = []
+    telegram._logs(update=update, context=context)
+    # Called at least 3 times. Exact times will change with unrelated changes to setup messages
+    # Therefore we don't test for this explicitly.
+    assert msg_mock.call_count > 3
 
 
 def test_edge_disabled(default_conf, update, mocker) -> None:

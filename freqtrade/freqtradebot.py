@@ -541,7 +541,9 @@ class FreqtradeBot:
         """
         logger.debug(f"create_trade for pair {pair}")
 
-        if self.strategy.is_pair_locked(pair):
+        analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(pair, self.strategy.timeframe)
+        if self.strategy.is_pair_locked(
+                pair, analyzed_df.iloc[-1]['date'] if len(analyzed_df) > 0 else None):
             logger.info(f"Pair {pair} is currently locked.")
             return False
 
@@ -552,7 +554,6 @@ class FreqtradeBot:
             return False
 
         # running get_signal on historical data fetched
-        analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(pair, self.strategy.timeframe)
         (buy, sell) = self.strategy.get_signal(pair, self.strategy.timeframe, analyzed_df)
 
         if buy and not sell:
@@ -955,7 +956,7 @@ class FreqtradeBot:
             stop_price = trade.open_rate * (1 + stoploss)
 
             if self.create_stoploss_order(trade=trade, stop_price=stop_price):
-                trade.stoploss_last_update = datetime.now()
+                trade.stoploss_last_update = datetime.utcnow()
                 return False
 
         # If stoploss order is canceled for some reason we add it

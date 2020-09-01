@@ -208,7 +208,7 @@ def load_trades_from_db(db_url: str, strategy: Optional[str] = None) -> pd.DataF
 def load_trades(source: str, db_url: str, exportfilename: Path,
                 no_trades: bool = False, strategy: Optional[str] = None) -> pd.DataFrame:
     """
-    Based on configuration option "trade_source":
+    Based on configuration option 'trade_source':
     * loads data from DB (using `db_url`)
     * loads data from backtestfile (using `exportfilename`)
     :param source: "DB" or "file" - specify source to load from

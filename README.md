@@ -123,7 +123,6 @@ Telegram is not mandatory. However, this is a great way to control your bot. Mor
 - `/help`: Show help message
 - `/version`: Show version
 
-
 ## Development branches
 
 The project is currently setup in two main branches:

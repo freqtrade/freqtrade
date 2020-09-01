@@ -116,6 +116,7 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `trades` | List last trades.
 | `delete_trade <trade_id>` | Remove trade from the database. Tries to close open orders. Requires manual handling of this trade on the exchange.
 | `show_config` | Shows part of the current configuration with relevant settings to operation
+| `logs` | Shows last log messages
 | `status` | Lists all open trades
 | `count` | Displays number of trades used and available
 | `profit` | Display a summary of your profit/loss from close trades and some stats about your performance
@@ -138,78 +139,83 @@ python3 scripts/rest_client.py help
 
 ``` output
 Possible commands:
+
 balance
-        Get the account balance
-        :returns: json object
+	Get the account balance.
 
 blacklist
-        Show the current blacklist
+	Show the current blacklist.
+
         :param add: List of coins to add (example: "BNB/BTC")
-        :returns: json object
 
 count
-        Returns the amount of open trades
-        :returns: json object
+	Return the amount of open trades.
 
 daily
-        Returns the amount of open trades
-        :returns: json object
+	Return the amount of open trades.
+
+delete_trade
+	Delete trade from the database.
+        Tries to close open orders. Requires manual handling of this asset on the exchange.
+
+        :param trade_id: Deletes the trade with this ID from the database.
 
 edge
-        Returns information about edge
-        :returns: json object
+	Return information about edge.
 
 forcebuy
-        Buy an asset
+	Buy an asset.
+
         :param pair: Pair to buy (ETH/BTC)
         :param price: Optional - price to buy
-        :returns: json object of the trade
 
 forcesell
-        Force-sell a trade
+	Force-sell a trade.
+
         :param tradeid: Id of the trade (can be received via status command)
-        :returns: json object
+
+logs
+	Show latest logs.
+
+        :param limit: Limits log messages to the last <limit> logs. No limit to get all the trades.
 
 performance
-        Returns the performance of the different coins
-        :returns: json object
+	Return the performance of the different coins.
 
 profit
-        Returns the profit summary
-        :returns: json object
+	Return the profit summary.
 
 reload_config
-        Reload configuration
-        :returns: json object
+	Reload configuration.
 
 show_config
+	
         Returns part of the configuration, relevant for trading operations.
-        :return: json object containing the version
 
 start
-        Start the bot if it's in stopped state.
-        :returns: json object
+	Start the bot if it's in the stopped state.
 
 status
-        Get the status of open trades
-        :returns: json object
+	Get the status of open trades.
 
 stop
-        Stop the bot. Use start to restart
-        :returns: json object
+	Stop the bot. Use `start` to restart.
 
 stopbuy
-        Stop buying (but handle sells gracefully).
-        use reload_config to reset
-        :returns: json object
+	Stop buying (but handle sells gracefully). Use `reload_config` to reset.
+
+trades
+	Return trades history.
+
+        :param limit: Limits trades to the X last trades. No limit to get all the trades.
 
 version
-        Returns the version of the bot
-        :returns: json object containing the version
+	Return the version of the bot.
 
 whitelist
-        Show the current whitelist
-        :returns: json object
+	Show the current whitelist.
+
+
 ```
 
 ## Advanced API usage using JWT tokens

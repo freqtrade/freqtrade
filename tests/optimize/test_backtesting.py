@@ -359,6 +359,7 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     ]
     for line in exists:
         assert log_has(line, caplog)
+    assert backtesting.strategy.dp._pairlists is not None
 
 
 def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) -> None:

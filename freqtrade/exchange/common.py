@@ -20,6 +20,7 @@ BAD_EXCHANGES = {
                 "Details in https://github.com/freqtrade/freqtrade/issues/1983",
     "hitbtc": "This API cannot be used with Freqtrade. "
               "Use `hitbtc2` exchange id to access this exchange.",
+    "phemex": "Does not provide history. ",
     **dict.fromkeys([
         'adara',
         'anxpro',

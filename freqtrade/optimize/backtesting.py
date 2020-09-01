@@ -96,6 +96,7 @@ class Backtesting:
                 "PrecisionFilter not allowed for backtesting multiple strategies."
             )
 
+        dataprovider.add_pairlisthandler(self.pairlists)
         self.pairlists.refresh_pairlist()
 
         if len(self.pairlists.whitelist) == 0:
