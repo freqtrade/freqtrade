@@ -334,6 +334,9 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "SpreadFilter", "max_spread_ratio": 0.005}],
      "BTC", 'filter_at_the_beginning'),  # OperationalException expected
     # Static Pairlist after VolumePairList, on a non-first position
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
+      {"method": "StaticPairList"}],
+        "BTC", 'static_in_the_middle'),
     ([{"method": "VolumePairList", "number_assets": 20, "sort_key": "quoteVolume"},
       {"method": "PriceFilter", "low_price_ratio": 0.02}],
         "USDT", ['ETH/USDT', 'NANO/USDT']),
