@@ -835,7 +835,7 @@ class FreqtradeBot:
             stop_price = trade.open_rate * (1 + stoploss)
 
             if self.create_stoploss_order(trade=trade, stop_price=stop_price):
-                trade.stoploss_last_update = datetime.now()
+                trade.stoploss_last_update = datetime.utcnow()
                 return False
 
         # If stoploss order is canceled for some reason we add it
