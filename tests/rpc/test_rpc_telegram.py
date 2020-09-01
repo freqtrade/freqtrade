@@ -14,6 +14,7 @@ from telegram import Chat, Message, Update
 from telegram.error import NetworkError
 
 from freqtrade import __version__
+from freqtrade.constants import CANCEL_REASON
 from freqtrade.edge import PairInfo
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.loggers import setup_logging
@@ -725,7 +726,7 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
     context.args = ["1"]
     telegram._forcesell(update=update, context=context)
 
-    assert rpc_mock.call_count == 2
+    assert rpc_mock.call_count == 3
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,
@@ -784,7 +785,7 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
     context.args = ["1"]
     telegram._forcesell(update=update, context=context)
 
-    assert rpc_mock.call_count == 2
+    assert rpc_mock.call_count == 3
 
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
@@ -834,8 +835,9 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
     context.args = ["all"]
     telegram._forcesell(update=update, context=context)
 
-    assert rpc_mock.call_count == 4
-    msg = rpc_mock.call_args_list[0][0][0]
+    # Called for each trade 3 times
+    assert rpc_mock.call_count == 8
+    msg = rpc_mock.call_args_list[1][0][0]
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,
         'trade_id': 1,
@@ -1343,9 +1345,10 @@ def test_send_msg_buy_cancel_notification(default_conf, mocker) -> None:
         'type': RPCMessageType.BUY_CANCEL_NOTIFICATION,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
+        'reason': CANCEL_REASON['TIMEOUT']
     })
-    assert msg_mock.call_args[0][0] \
-        == ('\N{WARNING SIGN} *Bittrex:* Cancelling Open Buy Order for ETH/BTC')
+    assert (msg_mock.call_args[0][0] == '\N{WARNING SIGN} *Bittrex:* '
+            'Cancelling open buy Order for ETH/BTC. Reason: cancelled due to timeout.')
 
 
 def test_send_msg_sell_notification(default_conf, mocker) -> None:
