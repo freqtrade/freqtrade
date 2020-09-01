@@ -32,4 +32,4 @@ The old section of configuration parameters (`"pairlist"`) has been deprecated i
 
 ### deprecation of bidVolume and askVolume from volume-pairlist
 
-Since only quoteVolume can be compared between assets, the other options (bidVolume, askVolume) have been deprecated in 2020.4.
+Since only quoteVolume can be compared between assets, the other options (bidVolume, askVolume) have been deprecated in 2020.4, and have been removed in 2020.9.
