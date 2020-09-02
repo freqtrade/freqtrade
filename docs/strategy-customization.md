@@ -483,6 +483,10 @@ if self.dp:
 ### Complete Data-provider sample
 
 ```python
+from freqtrade.strategy import IStrategy, timeframe_to_minutes
+from pandas import DataFrame
+import pandas as pd
+
 class SampleStrategy(IStrategy):
     # strategy init stuff...
 
@@ -518,9 +522,15 @@ class SampleStrategy(IStrategy):
         # Assuming inf_tf = '1d' - then the columns will now be:
         # date_1d, open_1d, high_1d, low_1d, close_1d, rsi_1d
 
+        # Shift date by 1 Frequency unit
+        # This is necessary since the data is always the "open date"
+        # and a 15m candle starting at 12:15 should not know the close of the 1h candle from 12:00 to 13:00
+        minutes = timeframe_to_minutes(inf_tf)
+        informative['date_merge'] = informative["date"] + pd.to_timedelta(minutes, 'm')
+
         # Combine the 2 dataframes
         # all indicators on the informative sample MUST be calculated before this point
-        dataframe = pd.merge(dataframe, informative, left_on='date', right_on=f'date_{inf_tf}', how='left')
+        dataframe = pd.merge(dataframe, informative, left_on='date', right_on=f'date_merge_{inf_tf}', how='left')
         # FFill to have the 1d value available in every row throughout the day.
         # Without this, comparisons would only work once per day.
         dataframe = dataframe.ffill()
