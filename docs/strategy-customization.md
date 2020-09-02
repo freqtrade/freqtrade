@@ -522,7 +522,7 @@ class SampleStrategy(IStrategy):
         # Assuming inf_tf = '1d' - then the columns will now be:
         # date_1d, open_1d, high_1d, low_1d, close_1d, rsi_1d
 
-        # Shift date by 1 Frequency unit
+        # Shift date by 1 candle
         # This is necessary since the data is always the "open date"
         # and a 15m candle starting at 12:15 should not know the close of the 1h candle from 12:00 to 13:00
         minutes = timeframe_to_minutes(inf_tf)
