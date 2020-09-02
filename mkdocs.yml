@@ -39,13 +39,19 @@ theme:
     accent: 'tear'
 extra_css:
   - 'stylesheets/ft.extra.css'
+extra_javascript:
+  - javascripts/config.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 markdown_extensions:
     - admonition
+    - footnotes
     - codehilite:
         guess_lang: false
     - toc:
         permalink: true
-    - pymdownx.arithmatex
+    - pymdownx.arithmatex:
+        generic: true
     - pymdownx.caret
     - pymdownx.critic
     - pymdownx.details
