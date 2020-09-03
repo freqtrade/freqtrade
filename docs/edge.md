@@ -149,7 +149,7 @@ Edge combines dynamic stoploss, dynamic positions, and whitelist generation into
 | XZC/ETH  |  -0.03        |   0.52       |1.359670           | 0.228      |
 | XZC/ETH  |  -0.04        |   0.51       |1.234539           | 0.117      |
 
-The goal here is to find the best stoploss for the strategy in order to have the maximum expectancy. In the above example stoploss at $3% $leads to the maximum expectancy according to historical data.
+The goal here is to find the best stoploss for the strategy in order to have the maximum expectancy. In the above example stoploss at $3%$ leads to the maximum expectancy according to historical data.
 
 Edge module then forces stoploss value it evaluated to your strategy dynamically.
 
