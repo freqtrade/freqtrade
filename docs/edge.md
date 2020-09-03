@@ -97,7 +97,7 @@ $$ R = \frac{\text{potential_profit}}{\text{potential_loss}} $$
     \end{aligned}$<br>
     What it effectivelly means is that the strategy have the potential to make $0.33 for each $1 invested. 
 
-On a long horizonte, that is, on many trades, we can calculate the risk reward by dividing the strategy' average profit on winning trades by the strategy' average loss on losing trades. We can calculate the average profit, $\mu_{win}$, as follows:
+On a long horizon, that is, on many trades, we can calculate the risk reward by dividing the strategy' average profit on winning trades by the strategy' average loss on losing trades. We can calculate the average profit, $\mu_{win}$, as follows:
 
 $$ \text{average_profit} = \mu_{win} = \frac{\text{sum_of_profits}}{\text{count_winning_trades}} = \frac{\sum^{o \in T_{win}} o}{|T_{win}|} $$
 
