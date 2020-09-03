@@ -82,7 +82,7 @@ Risk Reward Ratio (*R*) is a formula used to measure the expected gains of a giv
 $$ R = \frac{\text{potential_profit}}{\text{potential_loss}} $$
 
 ??? Example "Worked example of $R$ calculation"
-    Let's say that you think that the price of *stonecoin* today is $10.0. You believe that, because they will start mining stonecoin it will go up to $15.0 tomorrow. There is the risk that the stone is too hard, and the GPUs can't mine it, so the price might go to $0 tomorrow. You are planning to invest $100.<br>
+    Let's say that you think that the price of *stonecoin* today is $10.0. You believe that, because they will start mining stonecoin, it will go up to $15.0 tomorrow. There is the risk that the stone is too hard, and the GPUs can't mine it, so the price might go to $0 tomorrow. You are planning to invest $100.<br>
     Your potential profit is calculated as:<br>
     $\begin{aligned} 
         \text{potential_profit} &= (\text{potential_price} - \text{cost_per_unit}) * \frac{\text{investment}}{\text{cost_per_unit}} \\
