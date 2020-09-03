@@ -26,7 +26,7 @@ We raise the following question[^1]:
     a) A trade with 80% of chance of losing $100 and 20% chance of winning $200<br/>
     b) A trade with 100% of chance of losing $30
 
-??? Info "Answer"
+???+ Info "Answer"
     The expected value of *a)* is smaller than the expected value of *b)*.<br/>
     Hence, *b*) represents a smaller loss in the long run.<br/>
     However, the answer is: *it depends*
@@ -63,14 +63,14 @@ $$ T_{lose} = \{o \in O | o \leq 0\} $$
 
 The win rate $W$ is the proportion of winning trades with respect to all the trades made by a strategy. We use the following function to compute the win rate:
 
-$$W = \frac{\sum^{o \in T_{win}} o}{N}$$
+$$W = \frac{|T_{win}|}{N}$$
 
 Where $W$ is the win rate, $N$ is the number of trades and, $T_{win}$ is the set of all trades where the strategy made money.
 
 Similarly, we can compute the rate of losing trades:
 
 $$ 
-    L = \frac{\sum^{o \in T_{lose}} o}{N} 
+    L = \frac{|T_{lose}|}{N} 
 $$
 
 Where $L$ is the lose rate, $N$ is the amount of trades made and, $T_{lose}$ is the set of all trades where the strategy lost money. Note that the above formula is the same as calculating $L = 1 – W$ or $W = 1 – L$
@@ -81,7 +81,7 @@ Risk Reward Ratio ($R$) is a formula used to measure the expected gains of a giv
 
 $$ R = \frac{\text{potential_profit}}{\text{potential_loss}} $$
 
-??? Example "Worked example of $R$ calculation"
+???+ Example "Worked example of $R$ calculation"
     Let's say that you think that the price of *stonecoin* today is $10.0. You believe that, because they will start mining stonecoin, it will go up to $15.0 tomorrow. There is the risk that the stone is too hard, and the GPUs can't mine it, so the price might go to $0 tomorrow. You are planning to invest $100.<br>
     Your potential profit is calculated as:<br>
     $\begin{aligned} 
@@ -110,7 +110,7 @@ Finally, we can calculate the Risk Reward ratio, $R$, as follows:
 $$ R = \frac{\text{average_profit}}{\text{average_loss}} = \frac{\mu_{win}}{\mu_{lose}}\\ $$
 
 
-??? Example "Worked example of $R$ calculation using mean profit/loss"
+???+ Example "Worked example of $R$ calculation using mean profit/loss"
     Let's say the strategy that we are using makes an average win $\mu_{win} = 2.06$ and an average loss $\mu_{loss} = 4.11$.<br>
     We calculate the risk reward ratio as follows:<br>
     $R = \frac{\mu_{win}}{\mu_{loss}} = \frac{2.06}{4.11} = 0.5012...$
