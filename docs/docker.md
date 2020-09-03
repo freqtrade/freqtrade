@@ -60,7 +60,7 @@ Create a new directory and place the [docker-compose file](https://github.com/fr
     ```
 
     !!! Note "Change your docker Image"
-        You should change the docker image in your config file for your Raspeberry build to work properly.
+        You should change the docker image in your config file for your Raspberry build to work properly.
         ``` bash
         image: freqtradeorg/freqtrade:master_pi
         # image: freqtradeorg/freqtrade:develop_pi
@@ -71,6 +71,8 @@ The last 2 steps in the snippet create the directory with `user_data`, as well a
 
 !!! Question "How to edit the bot configuration?"
     You can edit the configuration at any time, which is available as `user_data/config.json` (within the directory `ft_userdata`) when using the above configuration.
+
+    You can also change the both Strategy and commands by editing the `docker-compose.yml` file.
 
 #### Adding a custom strategy
 
