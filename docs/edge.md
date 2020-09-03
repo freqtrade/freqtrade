@@ -129,7 +129,7 @@ $$E = R * W - L$$
 
 The expectancy worked out in the example above means that, on average, this strategy' trades will return 1.68 times the size of its losses. Said another way, the strategy makes $1.68 for every $1 it loses, on average. 
 
-You canThis is important for two reasons: First, it may seem obvious, but you know right away that you have a positive return. Second, you now have a number you can compare to other candidate systems to make decisions about which ones you employ.
+This is important for two reasons: First, it may seem obvious, but you know right away that you have a positive return. Second, you now have a number you can compare to other candidate systems to make decisions about which ones you employ.
 
 It is important to remember that any system with an expectancy greater than 0 is profitable using past data. The key is finding one that will be profitable in the future.
 
