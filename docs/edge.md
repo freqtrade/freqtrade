@@ -135,7 +135,8 @@ It is important to remember that any system with an expectancy greater than 0 is
 
 You can also use this value to evaluate the effectiveness of modifications to this system.
 
-**NOTICE:** It's important to keep in mind that Edge is testing your expectancy using historical data, there's no guarantee that you will have a similar edge in the future. It's still vital to do this testing in order to build confidence in your methodology but be wary of "curve-fitting" your approach to the historical data as things are unlikely to play out the exact same way for future trades.
+!!! Note
+    It's important to keep in mind that Edge is testing your expectancy using historical data, there's no guarantee that you will have a similar edge in the future. It's still vital to do this testing in order to build confidence in your methodology but be wary of "curve-fitting" your approach to the historical data as things are unlikely to play out the exact same way for future trades.
 
 ## How does it work?
 
