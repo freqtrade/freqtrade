@@ -224,7 +224,8 @@ class RPC:
                 Trade.close_date >= profitday,
                 Trade.close_date < (profitday + timedelta(days=1))
             ]).order_by(Trade.close_date).all()
-            curdayprofit = sum(trade.close_profit_abs for trade in trades)
+            curdayprofit = sum(
+                trade.close_profit_abs for trade in trades if trade.close_profit_abs is not None)
             profit_days[profitday] = {
                 'amount': curdayprofit,
                 'trades': len(trades)
