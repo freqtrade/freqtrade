@@ -1,8 +1,13 @@
 site_name: Freqtrade
 nav:
     - Home: index.md
-    - Installation Docker: docker.md
-    - Installation: installation.md
+    - Installation Docker: 
+        - Quickstart: docker.md
+        - Freqtrade with Docker Compose (Advanced): docker_compose.md
+        - Freqtrade without docker-compose: without_docker_compose.md
+    - Installation: 
+        - Linux/MacOS/Raspberry: installation.md
+        - Windows: windows_installation.md
     - Freqtrade Basics: bot-basics.md
     - Configuration: configuration.md
     - Strategy Customization: strategy-customization.md
@@ -59,6 +64,7 @@ markdown_extensions:
     - pymdownx.magiclink
     - pymdownx.mark
     - pymdownx.smartsymbols
+    - pymdownx.tabbed
     - pymdownx.superfences
     - pymdownx.tasklist:
         custom_checkbox: true
