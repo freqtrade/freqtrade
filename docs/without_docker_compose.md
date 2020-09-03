@@ -63,7 +63,7 @@ cp -n config.json.example config.json
     ```
 
 
-!!! Warning Database File Path
+!!! Warning "Database File Path"
     Make sure to use the path to the correct database file when starting the bot in Docker.
 
 ### Build your own Docker image
@@ -82,7 +82,7 @@ If you are developing using Docker, use `Dockerfile.develop` to build a dev Dock
 docker build -f Dockerfile.develop -t freqtrade-dev .
 ```
 
-!!! Warning Include your config file manually
+!!! Warning "Include your config file manually"
     For security reasons, your configuration file will not be included in the image, you will need to bind mount it. It is also advised to bind mount an SQLite database file (see [5. Run a restartable docker image](#run-a-restartable-docker-image)") to keep it between  updates.
 
 #### Verify the Docker image
@@ -124,7 +124,7 @@ If you would like to change the timezone use the following commands:
     docker run --rm -e TZ=`ls -la /etc/localtime | cut -d/ -f8-9` -v `pwd`/config.json:/freqtrade/config.json -it freqtrade
     ```
 
-!!! Note MacOS Issues
+!!! Note "MacOS Issues"
     The OSX Docker versions after 17.09.1 have a known issue whereby `/etc/localtime` cannot be shared causing Docker to not start.<br>
     A work-around for this is to start with the MacOS command above
     More information on this docker issue and work-around can be read [here](https://github.com/docker/for-mac/issues/2396).
