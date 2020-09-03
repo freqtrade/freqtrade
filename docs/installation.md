@@ -38,7 +38,7 @@ This can be achieved with the following commands:
 ```bash
 git clone https://github.com/freqtrade/freqtrade.git
 cd freqtrade
-git checkout master  # Optional, see (1)
+# git checkout master  # Optional, see (1)
 ./setup.sh --install
 ```
 
@@ -79,18 +79,7 @@ This option will hard reset your branch (only if you are on either `master` or `
 
 DEPRECATED - use `freqtrade new-config -c config.json` instead.
 
-### MacOS installation error
 
-Newer versions of MacOS may have installation failed with errors like `error: command 'g++' failed with exit status 1`.
-
-This error will require explicit installation of the SDK Headers, which are not installed by default in this version of MacOS.
-For MacOS 10.14, this can be accomplished with the below command.
-
-``` bash
-open /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg
-```
-
-If this file is inexistant, then you're probably on a different version of MacOS, so you may need to consult the internet for specific resolution details.
 
 
 ------
@@ -131,16 +120,6 @@ OS Specific steps are listed first, the [Common](#common) section below is neces
     !!! Note
         The above does not install hyperopt dependencies. To install these, please use `python3 -m pip install -e .[hyperopt]`.
         We do not advise to run hyperopt on a Raspberry Pi, since this is a very resource-heavy operation, which should be done on powerful machine.
-
-=== "Anaconda"
-    Freqtrade can also be installed using Anaconda (or Miniconda).
-
-    !!! Note
-        This requires the [ta-lib](#1-install-ta-lib) C-library to be installed first. See below.
-    
-    ``` bash
-    conda env create -f environment.yml
-    ```
 
 ### Common
 
@@ -229,6 +208,33 @@ On Linux, as an optional post-installation task, you may wish to setup the bot t
 
 ------
 
+### Anaconda
+
+Freqtrade can also be installed using Anaconda (or Miniconda).
+
+!!! Note
+    This requires the [ta-lib](#1-install-ta-lib) C-library to be installed first. See below.
+
+``` bash
+conda env create -f environment.yml
+```
+
+-----
+
 Now you have an environment ready, the next step is
 [Bot Configuration](configuration.md).
 
+-----
+
+### MacOS installation error
+
+Newer versions of MacOS may have installation failed with errors like `error: command 'g++' failed with exit status 1`.
+
+This error will require explicit installation of the SDK Headers, which are not installed by default in this version of MacOS.
+For MacOS 10.14, this can be accomplished with the below command.
+
+``` bash
+open /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg
+```
+
+If this file is inexistant, then you're probably on a different version of MacOS, so you may need to consult the internet for specific resolution details.
