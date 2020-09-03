@@ -105,7 +105,7 @@ Similarly, we can calculate the average loss, $\mu_{lose}$, as follows:
 
 $$ \text{average_loss} = \mu_{lose} = \frac{\text{sum_of_losses}}{\text{count_losing_trades}} = \frac{\sum^{o \in T_{lose}} o}{|T_{lose}|} $$
 
-Finally, we can calculate the Risk Reward ratio as follows:
+Finally, we can calculate the Risk Reward ratio, $R$, as follows:
 
 $$ R = \frac{\text{average_profit}}{\text{average_loss}} = \frac{\mu_{win}}{\mu_{lose}}\\ $$
 
