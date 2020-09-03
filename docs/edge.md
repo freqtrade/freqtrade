@@ -77,7 +77,7 @@ Where $L$ is the lose rate, $N$ is the amount of trades made and, $T_{lose}$ is 
 
 ### Risk Reward Ratio
 
-Risk Reward Ratio (*R*) is a formula used to measure the expected gains of a given investment against the risk of loss. It is basically what you potentially win divided by what you potentially lose. Formally:
+Risk Reward Ratio ($R$) is a formula used to measure the expected gains of a given investment against the risk of loss. It is basically what you potentially win divided by what you potentially lose. Formally:
 
 $$ R = \frac{\text{potential_profit}}{\text{potential_loss}} $$
 
