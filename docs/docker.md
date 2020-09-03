@@ -104,13 +104,13 @@ The database will be at: `user_data/tradesv3.sqlite`
 
 To update freqtrade when using `docker-compose` is as simple as running the following 2 commands:
 
-=== "Docker Compose"
-    ``` bash
-    # Download the latest image
-    docker-compose pull
-    # Restart the image
-    docker-compose up -d
-    ```
+
+``` bash
+# Download the latest image
+docker-compose pull
+# Restart the image
+docker-compose up -d
+```
 
 This will first pull the latest image, and will then restart the container with the just pulled version.
 
