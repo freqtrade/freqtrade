@@ -13,7 +13,7 @@ The `Edge Positioning` module uses probability to calculate your win rate and ri
 
 Trading strategies are not perfect. They are frameworks that are susceptible to the market and its indicators. Because the market is not at all predictable, sometimes a strategy will win and sometimes the same strategy will lose.
 
-To obtain an edge in the market, a strategy has to make more money than it loses. Marking money in trading is not only about *how often* the strategy makes or loses money. 
+To obtain an edge in the market, a strategy has to make more money than it loses. Making money in trading is not only about *how often* the strategy makes or loses money. 
 
 !!! tip "It doesn't matter how often, but how much!"
     A bad strategy might make 1 penny in *ten* transactions but lose 1 dollar in *one* transaction. If one only checks the number of winning trades, it would be misleading to think that the strategy is actually making a profit.
