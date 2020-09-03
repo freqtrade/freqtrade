@@ -44,7 +44,7 @@ Edge positioning tries to answer the hard questions about risk/reward and positi
 Let's call $o$ the return of a single transaction $o$ where $o \in \mathbb{R}$. The collection $O = \{o_1, o_2, ..., o_N\}$ is the set of all returns of transactions made during a trading session. We say that $N$ is the cardinality of $O$, or, in lay terms, it is the number of transactions made in a trading session.
 
 !!! Example
-    In a session where a strategy made three transactions we can say that $O = \{3.5, -1, 15\}$. That means that $N = 3$ and $o_1 = 3.5$, $o_2 = -1$, $o = 15$.
+    In a session where a strategy made three transactions we can say that $O = \{3.5, -1, 15\}$. That means that $N = 3$ and $o_1 = 3.5$, $o_2 = -1$, $o_3 = 15$.
 
 A winning trade is a trade where a strategy *made* money. Making money means that the strategy closed the position in a value that returned a profit, after all deducted fees. Formally, a winning trade will have a return $o_i > 0$. Similarly, a losing trade will have a return $o_j \leq 0$. With that, we can discover the set of all winning trades, $T_{win}$, as follows:
 
