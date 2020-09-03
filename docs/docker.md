@@ -47,7 +47,7 @@ Create a new directory and place the [docker-compose file](https://github.com/fr
     mkdir ft_userdata
     cd ft_userdata/
     # Download the docker-compose file from the repository
-    curl https://raw.githubusercontent.com/freqtrade/freqtrade/master_pi/docker-compose.yml -o docker-compose.yml
+    curl https://raw.githubusercontent.com/freqtrade/freqtrade/master/docker-compose.yml -o docker-compose.yml
 
     # Pull the freqtrade image
     docker-compose pull
@@ -58,6 +58,13 @@ Create a new directory and place the [docker-compose file](https://github.com/fr
     # Create configuration - Requires answering interactive questions
     docker-compose run --rm freqtrade new-config --config user_data/config.json
     ```
+
+    !!! Note "Change your docker Image"
+        You should change the docker image in your config file for your Raspeberry build to work properly.
+        ``` bash
+        image: freqtradeorg/freqtrade:master_pi
+        # image: freqtradeorg/freqtrade:develop_pi
+        ```
 
 The above snippet creates a new directory called `ft_userdata`, downloads the latest compose file and pulls the freqtrade image.
 The last 2 steps in the snippet create the directory with `user_data`, as well as (interactively) the default configuration based on your selections.
