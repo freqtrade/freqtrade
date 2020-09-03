@@ -1,11 +1,9 @@
 site_name: Freqtrade
 nav:
     - Home: index.md
-    - Installation Docker: 
-        - Quickstart: docker.md
-        - Freqtrade with Docker Compose (Advanced): docker_compose.md
-        - Freqtrade without docker-compose: without_docker_compose.md
+    - Quickstart with Docker: docker.md
     - Installation: 
+        - Freqtrade without docker-compose: without_docker_compose.md
         - Linux/MacOS/Raspberry: installation.md
         - Windows: windows_installation.md
     - Freqtrade Basics: bot-basics.md
