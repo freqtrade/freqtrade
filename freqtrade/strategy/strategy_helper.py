@@ -3,7 +3,7 @@ from freqtrade.exchange import timeframe_to_minutes
 
 
 def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
-                           timeframe_inf: str, ffill: bool = True) -> pd.DataFrame:
+                           timeframe: str, timeframe_inf: str, ffill: bool = True) -> pd.DataFrame:
     """
     Correctly merge informative samples to the original dataframe, avoiding lookahead bias.
 
@@ -20,13 +20,18 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
 
     :param dataframe: Original dataframe
     :param informative: Informative pair, most likely loaded via dp.get_pair_dataframe
+    :param timeframe: Timeframe of the original pair sample.
     :param timeframe_inf: Timeframe of the informative pair sample.
     :param ffill: Forwardfill missing values - optional but usually required
     """
     # Rename columns to be unique
 
-    minutes = timeframe_to_minutes(timeframe_inf)
-    informative['date_merge'] = informative["date"] + pd.to_timedelta(minutes, 'm')
+    minutes_inf = timeframe_to_minutes(timeframe_inf)
+    if timeframe == timeframe_inf:
+        # No need to forwardshift if the timeframes are identical
+        informative['date_merge'] = informative["date"]
+    else:
+        informative['date_merge'] = informative["date"] + pd.to_timedelta(minutes_inf, 'm')
 
     informative.columns = [f"{col}_{timeframe_inf}" for col in informative.columns]
 

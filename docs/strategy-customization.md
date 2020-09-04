@@ -518,10 +518,10 @@ class SampleStrategy(IStrategy):
 
         # Use the helper function merge_informative_pair to safely merge the pair
         # Automatically renames the columns and merges a shorter timeframe dataframe and a longer timeframe informative pair
-        # FFill to have the 1d value available in every row throughout the day.
-        # Without this, comparisons would only work once per day.
+        # use ffill to have the 1d value available in every row throughout the day.
+        # Without this, comparisons between columns of the original and the informative pair would only work once per day.
         # Full documentation of this method, see below
-        dataframe = merge_informative_pair(dataframe, informative_pairs, inf_tf,   ffill=True)
+        dataframe = merge_informative_pair(dataframe, informative_pairs, self.timeframe, inf_tf, ffill=True)
 
         # Calculate rsi of the original dataframe (5m timeframe)
         dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
@@ -589,6 +589,7 @@ All columns of the informative dataframe will be available on the returning data
     # This is necessary since the data is always the "open date"
     # and a 15m candle starting at 12:15 should not know the close of the 1h candle from 12:00 to 13:00
     minutes = timeframe_to_minutes(inf_tf)
+    # Only do this if the timeframes are different:
     informative['date_merge'] = informative["date"] + pd.to_timedelta(minutes, 'm')
 
     # Combine the 2 dataframes
