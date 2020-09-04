@@ -2,8 +2,8 @@ import pandas as pd
 from freqtrade.exchange import timeframe_to_minutes
 
 
-def merge_informative_pairs(dataframe: pd.DataFrame, informative: pd.DataFrame,
-                            timeframe_inf: str, ffill: bool = True) -> pd.DataFrame:
+def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
+                           timeframe_inf: str, ffill: bool = True) -> pd.DataFrame:
     """
     Correctly merge informative samples to the original dataframe, avoiding lookahead bias.
 
@@ -14,6 +14,9 @@ def merge_informative_pairs(dataframe: pd.DataFrame, informative: pd.DataFrame,
     Moves the date of the informative pair by 1 time interval forward.
     This way, the 14:00 1h candle is merged to 15:00 15m candle, since the 14:00 1h candle is the
     last candle that's closed at 15:00, 15:15, 15:30 or 15:45.
+
+    Assuming inf_tf = '1d' - then the resulting columns will be:
+    date_1d, open_1d, high_1d, low_1d, close_1d, rsi_1d
 
     :param dataframe: Original dataframe
     :param informative: Informative pair, most likely loaded via dp.get_pair_dataframe

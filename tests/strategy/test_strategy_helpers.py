@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from freqtrade.strategy import merge_informative_pairs, timeframe_to_minutes
+from freqtrade.strategy import merge_informative_pair, timeframe_to_minutes
 
 
 def generate_test_data(timeframe: str, size: int):
@@ -24,11 +24,11 @@ def generate_test_data(timeframe: str, size: int):
     return df
 
 
-def test_merge_informative_pairs():
+def test_merge_informative_pair():
     data = generate_test_data('15m', 40)
     informative = generate_test_data('1h', 40)
 
-    result = merge_informative_pairs(data, informative, '1h', ffill=True)
+    result = merge_informative_pair(data, informative, '1h', ffill=True)
     assert isinstance(result, pd.DataFrame)
     assert len(result) == len(data)
     assert 'date' in result.columns
