@@ -24,7 +24,6 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
     :param timeframe_inf: Timeframe of the informative pair sample.
     :param ffill: Forwardfill missing values - optional but usually required
     """
-    # Rename columns to be unique
 
     minutes_inf = timeframe_to_minutes(timeframe_inf)
     if timeframe == timeframe_inf:
@@ -33,6 +32,7 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
     else:
         informative['date_merge'] = informative["date"] + pd.to_timedelta(minutes_inf, 'm')
 
+    # Rename columns to be unique
     informative.columns = [f"{col}_{timeframe_inf}" for col in informative.columns]
 
     # Combine the 2 dataframes
