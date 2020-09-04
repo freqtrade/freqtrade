@@ -24,7 +24,7 @@ ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
                        'AgeFilter', 'PrecisionFilter', 'PriceFilter',
                        'ShuffleFilter', 'SpreadFilter']
-AVAILABLE_DATAHANDLERS = ['json', 'jsongz']
+AVAILABLE_DATAHANDLERS = ['json', 'jsongz', 'hdf5']
 DRY_RUN_WALLET = 1000
 DATETIME_PRINT_FORMAT = '%Y-%m-%d %H:%M:%S'
 MATH_CLOSE_PREC = 1e-14  # Precision used for float comparisons
@@ -338,9 +338,12 @@ SCHEMA_MINIMAL_REQUIRED = [
 
 CANCEL_REASON = {
     "TIMEOUT": "cancelled due to timeout",
-    "PARTIALLY_FILLED": "partially filled - keeping order open",
+    "PARTIALLY_FILLED_KEEP_OPEN": "partially filled - keeping order open",
+    "PARTIALLY_FILLED": "partially filled",
+    "FULLY_CANCELLED": "fully cancelled",
     "ALL_CANCELLED": "cancelled (all unfilled and partially filled open orders cancelled)",
     "CANCELLED_ON_EXCHANGE": "cancelled on exchange",
+    "FORCE_SELL": "forcesold",
 }
 
 # List of pairs with their timeframes

@@ -618,7 +618,7 @@ class FreqtradeBot:
         # Send the message
         self.rpc.send_msg(msg)
 
-    def _notify_buy_cancel(self, trade: Trade, order_type: str) -> None:
+    def _notify_buy_cancel(self, trade: Trade, order_type: str, reason: str) -> None:
         """
         Sends rpc notification when a buy cancel occured.
         """
@@ -637,6 +637,7 @@ class FreqtradeBot:
             'amount': trade.amount,
             'open_date': trade.open_date,
             'current_rate': current_rate,
+            'reason': reason,
         }
 
         # Send the message
@@ -835,7 +836,7 @@ class FreqtradeBot:
             stop_price = trade.open_rate * (1 + stoploss)
 
             if self.create_stoploss_order(trade=trade, stop_price=stop_price):
-                trade.stoploss_last_update = datetime.now()
+                trade.stoploss_last_update = datetime.utcnow()
                 return False
 
         # If stoploss order is canceled for some reason we add it
@@ -974,7 +975,6 @@ class FreqtradeBot:
 
         # Cancelled orders may have the status of 'canceled' or 'closed'
         if order['status'] not in ('canceled', 'closed'):
-            reason = constants.CANCEL_REASON['TIMEOUT']
             corder = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
                                                             trade.amount)
             # Avoid race condition where the order could not be cancelled coz its already filled.
@@ -992,13 +992,13 @@ class FreqtradeBot:
 
         # Using filled to determine the filled amount
         filled_amount = safe_value_fallback2(corder, order, 'filled', 'filled')
-
         if isclose(filled_amount, 0.0, abs_tol=constants.MATH_CLOSE_PREC):
             logger.info('Buy order fully cancelled. Removing %s from database.', trade)
             # if trade is not partially completed, just delete the trade
             Trade.session.delete(trade)
             Trade.session.flush()
             was_trade_fully_canceled = True
+            reason += f", {constants.CANCEL_REASON['FULLY_CANCELLED']}"
         else:
             # if trade is partially complete, edit the stake details for the trade
             # and close the order
@@ -1011,13 +1011,11 @@ class FreqtradeBot:
 
             trade.open_order_id = None
             logger.info('Partial buy order timeout for %s.', trade)
-            self.rpc.send_msg({
-                'type': RPCMessageType.STATUS_NOTIFICATION,
-                'status': f'Remaining buy order for {trade.pair} cancelled due to timeout'
-            })
+            reason += f", {constants.CANCEL_REASON['PARTIALLY_FILLED']}"
 
         self.wallets.update()
-        self._notify_buy_cancel(trade, order_type=self.strategy.order_types['buy'])
+        self._notify_buy_cancel(trade, order_type=self.strategy.order_types['buy'],
+                                reason=reason)
         return was_trade_fully_canceled
 
     def handle_cancel_sell(self, trade: Trade, order: Dict, reason: str) -> str:
@@ -1048,7 +1046,7 @@ class FreqtradeBot:
             trade.open_order_id = None
         else:
             # TODO: figure out how to handle partially complete sell orders
-            reason = constants.CANCEL_REASON['PARTIALLY_FILLED']
+            reason = constants.CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
 
         self.wallets.update()
         self._notify_sell_cancel(

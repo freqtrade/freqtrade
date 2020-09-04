@@ -14,7 +14,7 @@ from freqtrade.pairlist.IPairList import IPairList
 logger = logging.getLogger(__name__)
 
 
-SORT_VALUES = ['askVolume', 'bidVolume', 'quoteVolume']
+SORT_VALUES = ['quoteVolume']
 
 
 class VolumePairList(IPairList):
@@ -44,11 +44,6 @@ class VolumePairList(IPairList):
         if not self._validate_keys(self._sort_key):
             raise OperationalException(
                 f'key {self._sort_key} not in {SORT_VALUES}')
-
-        if self._sort_key != 'quoteVolume':
-            logger.warning(
-                "DEPRECATED: using any key other than quoteVolume for VolumePairList is deprecated."
-                )
 
     @property
     def needstickers(self) -> bool:

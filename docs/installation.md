@@ -18,6 +18,9 @@ Click each one for install guide:
 
  We also recommend a [Telegram bot](telegram-usage.md#setup-your-telegram-bot), which is optional but recommended.
 
+!!! Warning "Up-to-date clock"
+    The clock on the system running the bot must be accurate, synchronized to a NTP server frequently enough to avoid problems with communication to the exchanges.
+
 ## Quick start
 
 Freqtrade provides the Linux/MacOS Easy Installation script to install all dependencies and help you configure the bot.
