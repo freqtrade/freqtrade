@@ -220,11 +220,7 @@ conda env create -f environment.yml
 ```
 
 -----
-
-Now you have an environment ready, the next step is
-[Bot Configuration](configuration.md).
-
------
+## Troubleshooting 
 
 ### MacOS installation error
 
@@ -237,4 +233,9 @@ For MacOS 10.14, this can be accomplished with the below command.
 open /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg
 ```
 
-If this file is inexistant, then you're probably on a different version of MacOS, so you may need to consult the internet for specific resolution details.
+If this file is inexistent, then you're probably on a different version of MacOS, so you may need to consult the internet for specific resolution details.
+
+-----
+
+Now you have an environment ready, the next step is
+[Bot Configuration](configuration.md).
