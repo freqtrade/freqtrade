@@ -1,8 +1,11 @@
 site_name: Freqtrade
 nav:
     - Home: index.md
-    - Installation Docker: docker.md
-    - Installation: installation.md
+    - Quickstart with Docker: docker_quickstart.md
+    - Installation:
+        - Docker without docker-compose: docker.md
+        - Linux/MacOS/Raspberry: installation.md
+        - Windows: windows_installation.md
     - Freqtrade Basics: bot-basics.md
     - Configuration: configuration.md
     - Strategy Customization: strategy-customization.md
@@ -39,13 +42,19 @@ theme:
     accent: 'tear'
 extra_css:
   - 'stylesheets/ft.extra.css'
+extra_javascript:
+  - javascripts/config.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 markdown_extensions:
     - admonition
+    - footnotes
     - codehilite:
         guess_lang: false
     - toc:
         permalink: true
-    - pymdownx.arithmatex
+    - pymdownx.arithmatex:
+        generic: true
     - pymdownx.caret
     - pymdownx.critic
     - pymdownx.details
@@ -53,6 +62,7 @@ markdown_extensions:
     - pymdownx.magiclink
     - pymdownx.mark
     - pymdownx.smartsymbols
+    - pymdownx.tabbed
     - pymdownx.superfences
     - pymdownx.tasklist:
         custom_checkbox: true
