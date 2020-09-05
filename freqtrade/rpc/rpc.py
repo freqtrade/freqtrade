@@ -436,7 +436,7 @@ class RPC:
     def _rpc_reload_config(self) -> Dict[str, str]:
         """ Handler for reload_config. """
         self._freqtrade.state = State.RELOAD_CONFIG
-        return {'status': 'reloading config ...'}
+        return {'status': 'Reloading config ...'}
 
     def _rpc_stopbuy(self) -> Dict[str, str]:
         """

@@ -692,7 +692,7 @@ def test_reload_config_handle(default_conf, update, mocker) -> None:
     telegram._reload_config(update=update, context=MagicMock())
     assert freqtradebot.state == State.RELOAD_CONFIG
     assert msg_mock.call_count == 1
-    assert 'reloading config' in msg_mock.call_args_list[0][0][0]
+    assert 'Reloading config' in msg_mock.call_args_list[0][0][0]
 
 
 def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
