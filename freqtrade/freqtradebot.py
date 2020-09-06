@@ -247,8 +247,8 @@ class FreqtradeBot:
 
                 self.update_trade_state(order.trade, order.order_id, fo)
 
-            except ExchangeError:
-                logger.warning(f"Error updating {order.order_id}")
+            except ExchangeError as e:
+                logger.warning(f"Error updating Order {order.order_id} due to {e}")
 
     def update_closed_trades_without_assigned_fees(self):
         """

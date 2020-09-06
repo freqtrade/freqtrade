@@ -4216,7 +4216,7 @@ def test_cancel_all_open_orders(mocker, default_conf, fee, limit_buy_order, limi
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_check_for_open_trades(mocker, default_conf, fee, limit_buy_order, limit_sell_order):
+def test_check_for_open_trades(mocker, default_conf, fee):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     freqtrade.check_for_open_trades()
@@ -4229,3 +4229,30 @@ def test_check_for_open_trades(mocker, default_conf, fee, limit_buy_order, limit
     freqtrade.check_for_open_trades()
     assert freqtrade.rpc.send_msg.call_count == 1
     assert 'Handle these trades manually' in freqtrade.rpc.send_msg.call_args[0][0]['status']
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_update_open_orders(mocker, default_conf, fee, caplog):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    create_mock_trades(fee)
+
+    freqtrade.update_open_orders()
+    assert log_has_re(r"Error updating Order .*", caplog)
+    caplog.clear()
+
+    assert len(Order.get_open_orders()) == 1
+
+    matching_buy_order = {
+        'id': 'prod_buy_12345',
+        'symbol': 'ETC/BTC',
+        'status': 'closed',
+        'side': 'buy',
+        'type': 'limit',
+        'price': 0.123,
+        'amount': 123.0,
+        'filled': 123.0,
+        'remaining': 0.0,
+    }
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=matching_buy_order)
+    freqtrade.update_open_orders()
+    assert len(Order.get_open_orders()) == 0
