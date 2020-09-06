@@ -1765,7 +1765,7 @@ def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     cancel_order = exchange.cancel_order(order_id=order['id'], pair='ETH/BTC')
     assert order['id'] == cancel_order['id']
     assert order['amount'] == cancel_order['amount']
-    assert order['pair'] == cancel_order['pair']
+    assert order['symbol'] == cancel_order['symbol']
     assert cancel_order['status'] == 'canceled'
 
 

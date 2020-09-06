@@ -716,11 +716,13 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     mocker.patch(
         'freqtrade.exchange.Exchange.fetch_order',
         side_effect=[{
+            'id': '1234',
             'status': 'open',
             'type': 'limit',
             'side': 'buy',
             'filled': filled_amount
         }, {
+            'id': '1234',
             'status': 'closed',
             'type': 'limit',
             'side': 'buy',
