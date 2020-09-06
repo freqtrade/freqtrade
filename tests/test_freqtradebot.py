@@ -13,7 +13,7 @@ import pytest
 
 from freqtrade.constants import (CANCEL_REASON, MATH_CLOSE_PREC,
                                  UNLIMITED_STAKE_AMOUNT)
-from freqtrade.exceptions import (DependencyException, ExchangeError,
+from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException,
                                   PricingError, TemporaryError)
 from freqtrade.freqtradebot import FreqtradeBot
@@ -1325,6 +1325,44 @@ def test_create_stoploss_order_invalid_order(mocker, default_conf, caplog, fee,
     assert rpc_mock.call_count == 2
     assert rpc_mock.call_args_list[1][0][0]['sell_reason'] == SellType.EMERGENCY_SELL.value
     assert rpc_mock.call_args_list[1][0][0]['order_type'] == 'market'
+
+
+def test_create_stoploss_order_insufficient_funds(mocker, default_conf, caplog, fee,
+                                                  limit_buy_order_open, limit_sell_order):
+    sell_mock = MagicMock(return_value={'id': limit_sell_order['id']})
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+
+    mock_insuf = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_insufficient_funds')
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=MagicMock(return_value={
+            'bid': 0.00001172,
+            'ask': 0.00001173,
+            'last': 0.00001172
+        }),
+        buy=MagicMock(return_value=limit_buy_order_open),
+        sell=sell_mock,
+        get_fee=fee,
+        fetch_order=MagicMock(return_value={'status': 'canceled'}),
+        stoploss=MagicMock(side_effect=InsufficientFundsError()),
+    )
+    patch_get_signal(freqtrade)
+    freqtrade.strategy.order_types['stoploss_on_exchange'] = True
+
+    freqtrade.enter_positions()
+    trade = Trade.query.first()
+    caplog.clear()
+    freqtrade.create_stoploss_order(trade, 200)
+    # stoploss_orderid was empty before
+    assert trade.stoploss_order_id is None
+    assert mock_insuf.call_count == 1
+    mock_insuf.reset_mock()
+
+    trade.stoploss_order_id = 'stoploss_orderid'
+    freqtrade.create_stoploss_order(trade, 200)
+    # No change to stoploss-orderid
+    assert trade.stoploss_order_id == 'stoploss_orderid'
+    assert mock_insuf.call_count == 1
 
 
 @pytest.mark.usefixtures("init_persistence")
