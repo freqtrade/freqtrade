@@ -10,6 +10,15 @@ Documentation is available at [https://freqtrade.io](https://www.freqtrade.io/) 
 
 Special fields for the documentation (like Note boxes, ...) can be found [here](https://squidfunk.github.io/mkdocs-material/extensions/admonition/).
 
+To test the documentation locally use the following commands.
+
+``` bash
+pip install -r docs/requirements-docs.txt
+mkdocs serve
+```
+
+This will spin up a local server (usually on port 8000) so you can see if everything looks as you'd like it to.
+
 ## Developer setup
 
 To configure a development environment, best use the `setup.sh` script and answer "y" when asked "Do you want to install dependencies for dev [y/N]? ".

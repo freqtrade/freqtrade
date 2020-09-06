@@ -975,7 +975,12 @@ class Exchange:
     @retrier
     def cancel_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
-            return {}
+            order = self._dry_run_open_orders.get(order_id)
+            if order:
+                order.update({'status': 'canceled', 'filled': 0.0, 'remaining': order['amount']})
+                return order
+            else:
+                return {}
 
         try:
             return self._api.cancel_order(order_id, pair)

@@ -266,7 +266,7 @@ def test_api_reloadconf(botclient):
 
     rc = client_post(client, f"{BASE_URI}/reload_config")
     assert_response(rc)
-    assert rc.json == {'status': 'reloading config ...'}
+    assert rc.json == {'status': 'Reloading config ...'}
     assert ftbot.state == State.RELOAD_CONFIG
 
 

@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import arrow
 from numpy import NAN, mean
 
+from freqtrade.constants import CANCEL_REASON
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
@@ -223,7 +224,8 @@ class RPC:
                 Trade.close_date >= profitday,
                 Trade.close_date < (profitday + timedelta(days=1))
             ]).order_by(Trade.close_date).all()
-            curdayprofit = sum(trade.close_profit_abs for trade in trades)
+            curdayprofit = sum(
+                trade.close_profit_abs for trade in trades if trade.close_profit_abs is not None)
             profit_days[profitday] = {
                 'amount': curdayprofit,
                 'trades': len(trades)
@@ -434,7 +436,7 @@ class RPC:
     def _rpc_reload_config(self) -> Dict[str, str]:
         """ Handler for reload_config. """
         self._freqtrade.state = State.RELOAD_CONFIG
-        return {'status': 'reloading config ...'}
+        return {'status': 'Reloading config ...'}
 
     def _rpc_stopbuy(self) -> Dict[str, str]:
         """
@@ -453,29 +455,22 @@ class RPC:
         """
         def _exec_forcesell(trade: Trade) -> None:
             # Check if there is there is an open order
+            fully_canceled = False
             if trade.open_order_id:
                 order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
 
-                # Cancel open LIMIT_BUY orders and close trade
-                if order and order['status'] == 'open' \
-                        and order['type'] == 'limit' \
-                        and order['side'] == 'buy':
-                    self._freqtrade.exchange.cancel_order(trade.open_order_id, trade.pair)
-                    trade.close(order.get('price') or trade.open_rate)
-                    # Do the best effort, if we don't know 'filled' amount, don't try selling
-                    if order['filled'] is None:
-                        return
-                    trade.amount = order['filled']
+                if order['side'] == 'buy':
+                    fully_canceled = self._freqtrade.handle_cancel_buy(
+                        trade, order, CANCEL_REASON['FORCE_SELL'])
 
-                # Ignore trades with an attached LIMIT_SELL order
-                if order and order['status'] == 'open' \
-                        and order['type'] == 'limit' \
-                        and order['side'] == 'sell':
-                    return
+                if order['side'] == 'sell':
+                    # Cancel order - so it is placed anew with a fresh price.
+                    self._freqtrade.handle_cancel_sell(trade, order, CANCEL_REASON['FORCE_SELL'])
 
-            # Get current rate and execute sell
-            current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
-            self._freqtrade.execute_sell(trade, current_rate, SellType.FORCE_SELL)
+            if not fully_canceled:
+                # Get current rate and execute sell
+                current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
+                self._freqtrade.execute_sell(trade, current_rate, SellType.FORCE_SELL)
         # ---- EOF def _exec_forcesell ----
 
         if self._freqtrade.state != State.RUNNING:
