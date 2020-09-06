@@ -1737,6 +1737,8 @@ def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> No
         open_date=arrow.utcnow().datetime,
         amount=11,
     )
+    assert not freqtrade.update_trade_state(trade, None)
+    assert log_has_re(r'Orderid for trade .* is empty.', caplog)
     # Add datetime explicitly since sqlalchemy defaults apply only once written to database
     freqtrade.update_trade_state(trade, '123')
     # Test amount not modified by fee-logic

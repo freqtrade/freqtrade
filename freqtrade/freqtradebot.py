@@ -1376,7 +1376,7 @@ class FreqtradeBot:
         """
         if not order_id:
             logger.warning(f'Orderid for trade {trade} is empty.')
-            False
+            return False
 
         # Update trade with order values
         logger.info('Found open order for %s', trade)
