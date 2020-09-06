@@ -313,7 +313,6 @@ def test_rpc_delete_trade(mocker, default_conf, fee, markets, caplog):
     with pytest.raises(RPCException, match='invalid argument'):
         rpc._rpc_delete('200')
 
-    create_mock_trades(fee)
     trades = Trade.query.all()
     trades[1].stoploss_order_id = '1234'
     trades[2].stoploss_order_id = '1234'

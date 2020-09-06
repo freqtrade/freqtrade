@@ -446,6 +446,14 @@ class Trade(_DECL_BASE):
     def update_order(self, order: Dict) -> None:
         Order.update_orders(self.orders, order)
 
+    def delete(self) -> None:
+
+        for order in self.orders:
+            Order.session.delete(order)
+
+        Trade.session.delete(self)
+        Trade.session.flush()
+
     def _calc_open_trade_price(self) -> float:
         """
         Calculate the open_rate including open_fee.

@@ -1118,8 +1118,7 @@ class FreqtradeBot:
         if isclose(filled_amount, 0.0, abs_tol=constants.MATH_CLOSE_PREC):
             logger.info('Buy order fully cancelled. Removing %s from database.', trade)
             # if trade is not partially completed, just delete the trade
-            Trade.session.delete(trade)
-            Trade.session.flush()
+            trade.delete()
             was_trade_fully_canceled = True
         else:
             # if trade is partially complete, edit the stake details for the trade

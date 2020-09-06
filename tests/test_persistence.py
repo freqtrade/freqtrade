@@ -1074,6 +1074,3 @@ def test_update_order_from_ccxt():
     assert o.remaining == 0.0
     assert not o.ft_is_open
     assert o.order_filled_date is not None
-
-
-
