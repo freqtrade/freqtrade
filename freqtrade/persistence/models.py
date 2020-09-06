@@ -154,6 +154,7 @@ class Order(_DECL_BASE):
         if 'timestamp' in order and order['timestamp'] is not None:
             self.order_date = datetime.fromtimestamp(order['timestamp'] / 1000, tz=timezone.utc)
 
+        self.ft_is_open = True
         if self.status in ('closed', 'canceled', 'cancelled'):
             self.ft_is_open = False
             if order.get('filled', 0) > 0:

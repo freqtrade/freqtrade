@@ -1030,3 +1030,50 @@ def test_get_best_pair(fee):
     assert len(res) == 2
     assert res[0] == 'XRP/BTC'
     assert res[1] == 0.01
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_update_order_from_ccxt():
+    # Most basic order return (only has orderid)
+    o = Order.parse_from_ccxt_object({'id': '1234'}, 'ETH/BTC', 'buy')
+    assert isinstance(o, Order)
+    assert o.ft_pair == 'ETH/BTC'
+    assert o.ft_order_side == 'buy'
+    assert o.order_id == '1234'
+    assert o.ft_is_open
+    ccxt_order = {
+        'id': '1234',
+        'side': 'buy',
+        'symbol': 'ETH/BTC',
+        'type': 'limit',
+        'price': 1234.5,
+        'amount':  20.0,
+        'filled': 9,
+        'remaining': 11,
+        'status': 'open',
+        'timestamp': 1599394315123
+    }
+    o = Order.parse_from_ccxt_object(ccxt_order, 'ETH/BTC', 'buy')
+    assert isinstance(o, Order)
+    assert o.ft_pair == 'ETH/BTC'
+    assert o.ft_order_side == 'buy'
+    assert o.order_id == '1234'
+    assert o.order_type == 'limit'
+    assert o.price == 1234.5
+    assert o.filled == 9
+    assert o.remaining == 11
+    assert o.order_date is not None
+    assert o.ft_is_open
+    assert o.order_filled_date is None
+
+    # Order has been closed
+    ccxt_order.update({'filled': 20.0, 'remaining': 0.0, 'status': 'closed'})
+    o.update_from_ccxt_object(ccxt_order)
+
+    assert o.filled == 20.0
+    assert o.remaining == 0.0
+    assert not o.ft_is_open
+    assert o.order_filled_date is not None
+
+
+
