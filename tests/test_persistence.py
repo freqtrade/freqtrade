@@ -7,9 +7,9 @@ import pytest
 from sqlalchemy import create_engine
 
 from freqtrade import constants
-from freqtrade.exceptions import OperationalException
-from freqtrade.persistence import Trade, Order, clean_dry_run_db, init
-from tests.conftest import log_has, create_mock_trades
+from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.persistence import Order, Trade, clean_dry_run_db, init
+from tests.conftest import create_mock_trades, log_has
 
 
 def test_init_create_session(default_conf):
@@ -1074,3 +1074,7 @@ def test_update_order_from_ccxt():
     assert o.remaining == 0.0
     assert not o.ft_is_open
     assert o.order_filled_date is not None
+
+    ccxt_order.update({'id': 'somethingelse'})
+    with pytest.raises(DependencyException, match=r"Order-id's don't match"):
+        o.update_from_ccxt_object(ccxt_order)

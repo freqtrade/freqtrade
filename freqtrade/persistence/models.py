@@ -17,7 +17,7 @@ from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql.schema import UniqueConstraint
 
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.migrations import check_migrate
 
@@ -140,7 +140,7 @@ class Order(_DECL_BASE):
         Only updates if fields are available from ccxt -
         """
         if self.order_id != str(order['id']):
-            return OperationalException("Order-id's don't match")
+            raise DependencyException("Order-id's don't match")
 
         self.status = order.get('status', self.status)
         self.symbol = order.get('symbol', self.symbol)
