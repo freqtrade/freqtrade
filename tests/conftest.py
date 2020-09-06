@@ -1,4 +1,5 @@
 # pragma pylint: disable=missing-docstring
+from freqtrade.persistence.models import Order
 import json
 import logging
 import re
@@ -184,6 +185,17 @@ def create_mock_trades(fee):
         open_order_id='dry_run_buy_12345',
         strategy='DefaultStrategy',
     )
+    o = Order.parse_from_ccxt_object({
+        'id': '1234',
+        'symbol': 'ETH/BTC',
+        'status': 'closed',
+        'side': 'buy',
+        'price': 0.123,
+        'amount': 123.0,
+        'filled': 123.0,
+        'remaining': 0.0,
+    }, 'ETH/BTC', 'buy')
+    trade.orders.append(o)
     Trade.session.add(trade)
 
     trade = Trade(
@@ -201,6 +213,28 @@ def create_mock_trades(fee):
         open_order_id='dry_run_sell_12345',
         strategy='DefaultStrategy',
     )
+    o = Order.parse_from_ccxt_object({
+        'id': '1235',
+        'symbol': 'ETC/BTC',
+        'status': 'closed',
+        'side': 'buy',
+        'price': 0.123,
+        'amount': 123.0,
+        'filled': 123.0,
+        'remaining': 0.0,
+    }, 'ETH/BTC', 'buy')
+    trade.orders.append(o)
+    o = Order.parse_from_ccxt_object({
+        'id': '12366',
+        'symbol': 'ETC/BTC',
+        'status': 'closed',
+        'side': 'sell',
+        'price': 0.128,
+        'amount': 123.0,
+        'filled': 123.0,
+        'remaining': 0.0,
+    }, 'ETH/BTC', 'sell')
+    trade.orders.append(o)
     Trade.session.add(trade)
 
     trade = Trade(
@@ -215,6 +249,28 @@ def create_mock_trades(fee):
         exchange='bittrex',
         is_open=False,
     )
+    o = Order.parse_from_ccxt_object({
+        'id': '41231a12a',
+        'symbol': 'XRP/BTC',
+        'status': 'closed',
+        'side': 'buy',
+        'price': 0.05,
+        'amount': 123.0,
+        'filled': 123.0,
+        'remaining': 0.0,
+    }, 'ETH/BTC', 'buy')
+    trade.orders.append(o)
+    o = Order.parse_from_ccxt_object({
+        'id': '41231a666a',
+        'symbol': 'XRP/BTC',
+        'status': 'closed',
+        'side': 'stop_loss',
+        'price': 0.06,
+        'amount': 123.0,
+        'filled': 123.0,
+        'remaining': 0.0,
+    }, 'ETH/BTC', 'sell')
+    trade.orders.append(o)
     Trade.session.add(trade)
 
     # Simulate prod entry
@@ -230,6 +286,17 @@ def create_mock_trades(fee):
         open_order_id='prod_buy_12345',
         strategy='DefaultStrategy',
     )
+    o = Order.parse_from_ccxt_object({
+        'id': 'prod_buy_12345',
+        'symbol': 'ETC/BTC',
+        'status': 'open',
+        'side': 'buy',
+        'price': 0.123,
+        'amount': 123.0,
+        'filled': 123.0,
+        'remaining': 0.0,
+    }, 'ETH/BTC', 'buy')
+    trade.orders.append(o)
     Trade.session.add(trade)
 
 
