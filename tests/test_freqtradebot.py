@@ -2981,6 +2981,35 @@ def test_execute_sell_market_order(default_conf, ticker, fee,
     } == last_msg
 
 
+def test_execute_sell_insufficient_funds_error(default_conf, ticker, fee,
+                                               ticker_sell_up, mocker) -> None:
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    mock_insuf = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_insufficient_funds')
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker,
+        get_fee=fee,
+        sell=MagicMock(side_effect=InsufficientFundsError())
+    )
+    patch_get_signal(freqtrade)
+
+    # Create some test data
+    freqtrade.enter_positions()
+
+    trade = Trade.query.first()
+    assert trade
+
+    # Increase the price and sell it
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker_sell_up
+    )
+
+    assert not freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'],
+                                      sell_reason=SellType.ROI)
+    assert mock_insuf.call_count == 1
+
+
 def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, limit_buy_order_open,
                                         fee, mocker) -> None:
     patch_RPCManager(mocker)
