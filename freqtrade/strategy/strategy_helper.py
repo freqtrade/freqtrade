@@ -26,7 +26,8 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
     """
 
     minutes_inf = timeframe_to_minutes(timeframe_inf)
-    if timeframe == timeframe_inf:
+    minutes = timeframe_to_minutes(timeframe)
+    if minutes >= minutes_inf:
         # No need to forwardshift if the timeframes are identical
         informative['date_merge'] = informative["date"]
     else:

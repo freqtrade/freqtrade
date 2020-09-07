@@ -521,7 +521,7 @@ class SampleStrategy(IStrategy):
         # use ffill to have the 1d value available in every row throughout the day.
         # Without this, comparisons between columns of the original and the informative pair would only work once per day.
         # Full documentation of this method, see below
-        dataframe = merge_informative_pair(dataframe, informative_pairs, self.timeframe, inf_tf, ffill=True)
+        dataframe = merge_informative_pair(dataframe, informative, self.timeframe, inf_tf, ffill=True)
 
         # Calculate rsi of the original dataframe (5m timeframe)
         dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
@@ -600,6 +600,10 @@ All columns of the informative dataframe will be available on the returning data
     dataframe = dataframe.ffill()
 
     ```
+
+!!! Warning "Informative timeframe < timeframe"
+    Using informative timeframes smaller than the dataframe timeframe is not recommended with this method, as it will not use any of the additional information this would provide.
+    To use the more detailed information properly, more advanced methods should be applied (which are out of scope for freqtrade documentation, as it'll depend on the respective need).
 
 ***
 
