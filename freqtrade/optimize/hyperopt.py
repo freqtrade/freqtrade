@@ -574,7 +574,7 @@ class Hyperopt:
             'wins': wins,
             'draws': draws,
             'losses': losses,
-            'winsdrawslosses': f"{wins}/{draws}/{losses}",
+            'winsdrawslosses': f"{wins:04}/{draws:04}/{losses:04}",
             'avg_profit': backtesting_results.profit_percent.mean() * 100.0,
             'median_profit': backtesting_results.profit_percent.median() * 100.0,
             'total_profit': backtesting_results.profit_abs.sum(),
