@@ -1,5 +1,3 @@
-import pytest
-
 from freqtrade.persistence.models import Order, Trade
 
 

@@ -27,7 +27,9 @@ from tests.conftest import (create_mock_trades, get_patched_freqtradebot,
                             get_patched_worker, log_has, log_has_re,
                             patch_edge, patch_exchange, patch_get_signal,
                             patch_wallet, patch_whitelist)
-from tests.conftest_trades import mock_order_1, mock_order_2, mock_order_2_sell, mock_order_3, mock_order_3_sell, mock_order_4
+from tests.conftest_trades import (mock_order_1, mock_order_2,
+                                   mock_order_2_sell, mock_order_3,
+                                   mock_order_3_sell, mock_order_4)
 
 
 def patch_RPCManager(mocker) -> MagicMock:
