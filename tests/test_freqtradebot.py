@@ -27,7 +27,7 @@ from tests.conftest import (create_mock_trades, get_patched_freqtradebot,
                             get_patched_worker, log_has, log_has_re,
                             patch_edge, patch_exchange, patch_get_signal,
                             patch_wallet, patch_whitelist)
-from tests.conftest_trades import mock_order_4
+from tests.conftest_trades import mock_order_1, mock_order_2, mock_order_2_sell, mock_order_3, mock_order_3_sell, mock_order_4
 
 
 def patch_RPCManager(mocker) -> MagicMock:
@@ -4250,3 +4250,52 @@ def test_update_open_orders(mocker, default_conf, fee, caplog):
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=matching_buy_order)
     freqtrade.update_open_orders()
     assert len(Order.get_open_orders()) == 0
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_update_closed_trades_without_assigned_fees(mocker, default_conf, fee):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+
+    def patch_with_fee(order):
+        order.update({'fee': {'cost': 0.1, 'rate': 0.2,
+                      'currency': order['symbol'].split('/')[0]}})
+        return order
+
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order_or_stoploss_order',
+                 side_effect=[
+                     patch_with_fee(mock_order_2_sell()),
+                     patch_with_fee(mock_order_3_sell()),
+                     patch_with_fee(mock_order_1()),
+                     patch_with_fee(mock_order_2()),
+                     patch_with_fee(mock_order_3()),
+                     patch_with_fee(mock_order_4()),
+                 ]
+                 )
+
+    create_mock_trades(fee)
+    trades = Trade.get_trades().all()
+    assert len(trades) == 4
+    for trade in trades:
+        assert trade.fee_open_cost is None
+        assert trade.fee_open_currency is None
+        assert trade.fee_close_cost is None
+        assert trade.fee_close_currency is None
+
+    freqtrade.update_closed_trades_without_assigned_fees()
+
+    # trades = Trade.get_trades().all()
+    assert len(trades) == 4
+
+    for trade in trades:
+        if trade.is_open:
+            # Exclude Trade 4 - as the order is still open.
+            if trade.select_order('buy', 'closed'):
+                assert trade.fee_open_cost is not None
+                assert trade.fee_open_currency is not None
+            else:
+                assert trade.fee_open_cost is None
+                assert trade.fee_open_currency is None
+
+        else:
+            assert trade.fee_close_cost is not None
+            assert trade.fee_close_currency is not None
