@@ -520,7 +520,7 @@ class Trade(_DECL_BASE):
         profit_ratio = (close_trade_price / self.open_trade_price) - 1
         return float(f"{profit_ratio:.8f}")
 
-    def select_order(self, order_side: str, status: Optional[str]):
+    def select_order(self, order_side: str, status: Optional[str]) -> Optional[Order]:
         """
         Returns latest order for this orderside and status
         Returns None if nothing is found
