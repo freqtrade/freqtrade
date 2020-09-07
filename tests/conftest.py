@@ -170,7 +170,7 @@ def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
 
 
 @pytest.fixture(scope='function')
-def mock_trades(fee):
+def mock_trades(init_persistence, fee):
     return create_mock_trades(fee)
 
 

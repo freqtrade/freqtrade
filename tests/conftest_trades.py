@@ -3,6 +3,20 @@ import pytest
 from freqtrade.persistence.models import Order, Trade
 
 
+def mock_order_1():
+    return {
+        'id': '1234',
+        'symbol': 'ETH/BTC',
+        'status': 'closed',
+        'side': 'buy',
+        'type': 'limit',
+        'price': 0.123,
+        'amount': 123.0,
+        'filled': 123.0,
+        'remaining': 0.0,
+    }
+
+
 def mock_trade_1(fee):
     trade = Trade(
         pair='ETH/BTC',
@@ -16,18 +30,37 @@ def mock_trade_1(fee):
         open_order_id='dry_run_buy_12345',
         strategy='DefaultStrategy',
     )
-    o = Order.parse_from_ccxt_object({
-        'id': '1234',
-        'symbol': 'ETH/BTC',
+    o = Order.parse_from_ccxt_object(mock_order_1(), 'ETH/BTC', 'buy')
+    trade.orders.append(o)
+    return trade
+
+
+def mock_order_2():
+    return {
+        'id': '1235',
+        'symbol': 'ETC/BTC',
         'status': 'closed',
         'side': 'buy',
+        'type': 'limit',
         'price': 0.123,
         'amount': 123.0,
         'filled': 123.0,
         'remaining': 0.0,
-    }, 'ETH/BTC', 'buy')
-    trade.orders.append(o)
-    return trade
+    }
+
+
+def mock_order_2_sell():
+    return {
+        'id': '12366',
+        'symbol': 'ETC/BTC',
+        'status': 'closed',
+        'side': 'sell',
+        'type': 'limit',
+        'price': 0.128,
+        'amount': 123.0,
+        'filled': 123.0,
+        'remaining': 0.0,
+    }
 
 
 def mock_trade_2(fee):
@@ -49,29 +82,39 @@ def mock_trade_2(fee):
         open_order_id='dry_run_sell_12345',
         strategy='DefaultStrategy',
     )
-    o = Order.parse_from_ccxt_object({
-        'id': '1235',
-        'symbol': 'ETC/BTC',
-        'status': 'closed',
-        'side': 'buy',
-        'price': 0.123,
-        'amount': 123.0,
-        'filled': 123.0,
-        'remaining': 0.0,
-    }, 'ETH/BTC', 'buy')
+    o = Order.parse_from_ccxt_object(mock_order_2(), 'ETH/BTC', 'buy')
     trade.orders.append(o)
-    o = Order.parse_from_ccxt_object({
-        'id': '12366',
-        'symbol': 'ETC/BTC',
-        'status': 'closed',
-        'side': 'sell',
-        'price': 0.128,
-        'amount': 123.0,
-        'filled': 123.0,
-        'remaining': 0.0,
-    }, 'ETH/BTC', 'sell')
+    o = Order.parse_from_ccxt_object(mock_order_2_sell(), 'ETH/BTC', 'sell')
     trade.orders.append(o)
     return trade
+
+
+def mock_order_3():
+    return {
+        'id': '41231a12a',
+        'symbol': 'XRP/BTC',
+        'status': 'closed',
+        'side': 'buy',
+        'type': 'limit',
+        'price': 0.05,
+        'amount': 123.0,
+        'filled': 123.0,
+        'remaining': 0.0,
+    }
+
+
+def mock_order_3_sell():
+    return {
+        'id': '41231a666a',
+        'symbol': 'XRP/BTC',
+        'status': 'closed',
+        'side': 'stop_loss',
+        'type': 'limit',
+        'price': 0.06,
+        'amount': 123.0,
+        'filled': 123.0,
+        'remaining': 0.0,
+    }
 
 
 def mock_trade_3(fee):
@@ -90,29 +133,25 @@ def mock_trade_3(fee):
         exchange='bittrex',
         is_open=False,
     )
-    o = Order.parse_from_ccxt_object({
-        'id': '41231a12a',
-        'symbol': 'XRP/BTC',
-        'status': 'closed',
-        'side': 'buy',
-        'price': 0.05,
-        'amount': 123.0,
-        'filled': 123.0,
-        'remaining': 0.0,
-    }, 'ETH/BTC', 'buy')
+    o = Order.parse_from_ccxt_object(mock_order_3(), 'ETH/BTC', 'buy')
     trade.orders.append(o)
-    o = Order.parse_from_ccxt_object({
-        'id': '41231a666a',
-        'symbol': 'XRP/BTC',
-        'status': 'closed',
-        'side': 'stop_loss',
-        'price': 0.06,
-        'amount': 123.0,
-        'filled': 123.0,
-        'remaining': 0.0,
-    }, 'ETH/BTC', 'sell')
+    o = Order.parse_from_ccxt_object(mock_order_3_sell(), 'ETH/BTC', 'sell')
     trade.orders.append(o)
     return trade
+
+
+def mock_order_4():
+    return {
+        'id': 'prod_buy_12345',
+        'symbol': 'ETC/BTC',
+        'status': 'open',
+        'side': 'buy',
+        'type': 'limit',
+        'price': 0.123,
+        'amount': 123.0,
+        'filled': 0.0,
+        'remaining': 123.0,
+    }
 
 
 def mock_trade_4(fee):
@@ -131,17 +170,9 @@ def mock_trade_4(fee):
         open_order_id='prod_buy_12345',
         strategy='DefaultStrategy',
     )
-    o = Order.parse_from_ccxt_object({
-        'id': 'prod_buy_12345',
-        'symbol': 'ETC/BTC',
-        'status': 'open',
-        'side': 'buy',
-        'price': 0.123,
-        'amount': 123.0,
-        'filled': 123.0,
-        'remaining': 0.0,
-    }, 'ETH/BTC', 'buy')
+    o = Order.parse_from_ccxt_object(mock_order_4(), 'ETH/BTC', 'buy')
     trade.orders.append(o)
+    return trade
 
 
 def create_mock_trades(fee):
