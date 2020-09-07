@@ -173,21 +173,3 @@ def mock_trade_4(fee):
     o = Order.parse_from_ccxt_object(mock_order_4(), 'ETH/BTC', 'buy')
     trade.orders.append(o)
     return trade
-
-
-def create_mock_trades(fee):
-    """
-    Create some fake trades ...
-    """
-    # Simulate dry_run entries
-    trade = mock_trade_1(fee)
-    Trade.session.add(trade)
-
-    trade = mock_trade_2(fee)
-    Trade.session.add(trade)
-
-    trade = mock_trade_3(fee)
-    Trade.session.add(trade)
-
-    trade = mock_trade_4(fee)
-    Trade.session.add(trade)

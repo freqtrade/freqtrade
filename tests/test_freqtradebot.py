@@ -1,7 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103
 # pragma pylint: disable=protected-access, too-many-lines, invalid-name, too-many-arguments
 
-from freqtrade.persistence.models import Order
 import logging
 import time
 from copy import deepcopy
@@ -13,11 +12,13 @@ import pytest
 
 from freqtrade.constants import (CANCEL_REASON, MATH_CLOSE_PREC,
                                  UNLIMITED_STAKE_AMOUNT)
-from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
+from freqtrade.exceptions import (DependencyException, ExchangeError,
+                                  InsufficientFundsError,
                                   InvalidOrderException, OperationalException,
                                   PricingError, TemporaryError)
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
+from freqtrade.persistence.models import Order
 from freqtrade.rpc import RPCMessageType
 from freqtrade.state import RunMode, State
 from freqtrade.strategy.interface import SellCheckTuple, SellType
@@ -26,6 +27,7 @@ from tests.conftest import (create_mock_trades, get_patched_freqtradebot,
                             get_patched_worker, log_has, log_has_re,
                             patch_edge, patch_exchange, patch_get_signal,
                             patch_wallet, patch_whitelist)
+from tests.conftest_trades import mock_order_4
 
 
 def patch_RPCManager(mocker) -> MagicMock:
@@ -4241,18 +4243,10 @@ def test_update_open_orders(mocker, default_conf, fee, caplog):
     caplog.clear()
 
     assert len(Order.get_open_orders()) == 1
-
-    matching_buy_order = {
-        'id': 'prod_buy_12345',
-        'symbol': 'ETC/BTC',
+    matching_buy_order = mock_order_4()
+    matching_buy_order.update({
         'status': 'closed',
-        'side': 'buy',
-        'type': 'limit',
-        'price': 0.123,
-        'amount': 123.0,
-        'filled': 123.0,
-        'remaining': 0.0,
-    }
+    })
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=matching_buy_order)
     freqtrade.update_open_orders()
     assert len(Order.get_open_orders()) == 0

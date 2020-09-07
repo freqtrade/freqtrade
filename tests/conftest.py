@@ -1,6 +1,4 @@
 # pragma pylint: disable=missing-docstring
-from tests.conftest_trades import create_mock_trades
-from freqtrade.persistence.models import Order
 import json
 import logging
 import re
@@ -24,6 +22,8 @@ from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
+from tests.conftest_trades import (mock_trade_1, mock_trade_2, mock_trade_3,
+                                   mock_trade_4)
 
 logging.getLogger('').setLevel(logging.INFO)
 
@@ -169,9 +169,22 @@ def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
     freqtrade.exchange.refresh_latest_ohlcv = lambda p: None
 
 
-@pytest.fixture(scope='function')
-def mock_trades(init_persistence, fee):
-    return create_mock_trades(fee)
+def create_mock_trades(fee):
+    """
+    Create some fake trades ...
+    """
+    # Simulate dry_run entries
+    trade = mock_trade_1(fee)
+    Trade.session.add(trade)
+
+    trade = mock_trade_2(fee)
+    Trade.session.add(trade)
+
+    trade = mock_trade_3(fee)
+    Trade.session.add(trade)
+
+    trade = mock_trade_4(fee)
+    Trade.session.add(trade)
 
 
 @pytest.fixture(autouse=True)
