@@ -4,7 +4,7 @@
 # Required for hyperopt
 scipy==1.5.2
 scikit-learn==0.23.1
-scikit-optimize==0.7.4
+scikit-optimize==0.8.1
 filelock==3.0.12
 joblib==0.16.0
 progressbar2==3.52.1
