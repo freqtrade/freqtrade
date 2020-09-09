@@ -23,7 +23,7 @@ from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
 from tests.conftest_trades import (mock_trade_1, mock_trade_2, mock_trade_3,
-                                   mock_trade_4)
+                                   mock_trade_4, mock_trade_5)
 
 logging.getLogger('').setLevel(logging.INFO)
 
@@ -184,6 +184,9 @@ def create_mock_trades(fee):
     Trade.session.add(trade)
 
     trade = mock_trade_4(fee)
+    Trade.session.add(trade)
+
+    trade = mock_trade_5(fee)
     Trade.session.add(trade)
 
 

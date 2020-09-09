@@ -172,3 +172,54 @@ def mock_trade_4(fee):
     o = Order.parse_from_ccxt_object(mock_order_4(), 'ETH/BTC', 'buy')
     trade.orders.append(o)
     return trade
+
+
+def mock_order_5():
+    return {
+        'id': 'prod_buy_3455',
+        'symbol': 'XRP/BTC',
+        'status': 'closed',
+        'side': 'buy',
+        'type': 'limit',
+        'price': 0.123,
+        'amount': 123.0,
+        'filled': 123.0,
+        'remaining': 0.0,
+    }
+
+
+def mock_order_5_stoploss():
+    return {
+        'id': 'prod_stoploss_3455',
+        'symbol': 'XRP/BTC',
+        'status': 'open',
+        'side': 'sell',
+        'type': 'stop_loss_limit',
+        'price': 0.123,
+        'amount': 123.0,
+        'filled': 0.0,
+        'remaining': 123.0,
+    }
+
+
+def mock_trade_5(fee):
+    """
+    Simulate prod entry with stoploss
+    """
+    trade = Trade(
+        pair='XRP/BTC',
+        stake_amount=0.001,
+        amount=123.0,
+        amount_requested=124.0,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_rate=0.123,
+        exchange='bittrex',
+        strategy='SampleStrategy',
+        stoploss_order_id='prod_stoploss_3455'
+    )
+    o = Order.parse_from_ccxt_object(mock_order_5(), 'ETH/BTC', 'buy')
+    trade.orders.append(o)
+    o = Order.parse_from_ccxt_object(mock_order_5_stoploss(), 'ETH/BTC', 'sell')
+    trade.orders.append(o)
+    return trade

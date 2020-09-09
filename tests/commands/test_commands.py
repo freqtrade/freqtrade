@@ -1116,7 +1116,7 @@ def test_show_trades(mocker, fee, capsys, caplog):
     pargs = get_args(args)
     pargs['config'] = None
     start_show_trades(pargs)
-    assert log_has("Printing 4 Trades: ", caplog)
+    assert log_has("Printing 5 Trades: ", caplog)
     captured = capsys.readouterr()
     assert "Trade(id=1" in captured.out
     assert "Trade(id=2" in captured.out
