@@ -333,7 +333,7 @@ class FreqtradeBot:
                                             stoploss_order=order.ft_order_side == 'stoploss')
 
             except ExchangeError:
-                logger.warning(f"Error updating {order.order_id}")
+                logger.warning(f"Error updating {order.order_id}.")
 
 #
 # BUY / enter positions / open trades logic and methods
