@@ -4315,7 +4315,7 @@ def test_reupdate_buy_order_fees(mocker, default_conf, fee, caplog):
     assert log_has_re(r"Trying to reupdate buy fees for .*", caplog)
     assert mock_uts.call_count == 1
     assert mock_uts.call_args_list[0][0][0] == trades[0]
-    assert mock_uts.call_args_list[0][0][1] == '1234'
+    assert mock_uts.call_args_list[0][0][1] == mock_order_1()['id']
     assert log_has_re(r"Updating buy-fee on trade .* for order .*\.", caplog)
     mock_uts.reset_mock()
     caplog.clear()
@@ -4338,3 +4338,65 @@ def test_reupdate_buy_order_fees(mocker, default_conf, fee, caplog):
     assert log_has_re(r"Trying to reupdate buy fees for .*", caplog)
     assert mock_uts.call_count == 0
     assert not log_has_re(r"Updating buy-fee on trade .* for order .*\.", caplog)
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_handle_insufficient_funds(mocker, default_conf, fee):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    mock_rlo = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.refind_lost_order')
+    mock_bof = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.reupdate_buy_order_fees')
+    create_mock_trades(fee)
+    trades = Trade.get_trades().all()
+
+    # Trade 0 has only a open buy order, no closed order
+    freqtrade.handle_insufficient_funds(trades[0])
+    assert mock_rlo.call_count == 0
+    assert mock_bof.call_count == 1
+
+    mock_rlo.reset_mock()
+    mock_bof.reset_mock()
+
+    # Trade 1 has closed buy and sell orders
+    freqtrade.handle_insufficient_funds(trades[1])
+    assert mock_rlo.call_count == 1
+    assert mock_bof.call_count == 0
+
+    mock_rlo.reset_mock()
+    mock_bof.reset_mock()
+
+    # Trade 2 has closed buy and sell orders
+    freqtrade.handle_insufficient_funds(trades[2])
+    assert mock_rlo.call_count == 1
+    assert mock_bof.call_count == 0
+
+    mock_rlo.reset_mock()
+    mock_bof.reset_mock()
+
+    # Trade 3 has an opne buy order
+    freqtrade.handle_insufficient_funds(trades[3])
+    assert mock_rlo.call_count == 0
+    assert mock_bof.call_count == 1
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_refind_lost_order(mocker, default_conf, fee, caplog):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    mock_rlo = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.refind_lost_order')
+    mock_bof = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.reupdate_buy_order_fees')
+
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order_or_stoploss_order',
+                 side_effect=[
+                    mock_order_2_sell(),
+                    mock_order_3_sell(),
+                    mock_order_1(),
+                    mock_order_2(),
+                    mock_order_3(),
+                    mock_order_4(),
+                 ])
+
+    create_mock_trades(fee)
+    trades = Trade.get_trades().all()
+
+    # freqtrade.refind_lost_order(trades[0])
+
+    # TODO: Implement test here.
