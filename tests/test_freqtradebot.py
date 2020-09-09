@@ -4301,3 +4301,40 @@ def test_update_closed_trades_without_assigned_fees(mocker, default_conf, fee):
         else:
             assert trade.fee_close_cost is not None
             assert trade.fee_close_currency is not None
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_reupdate_buy_order_fees(mocker, default_conf, fee, caplog):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    mock_uts = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.update_trade_state')
+
+    create_mock_trades(fee)
+    trades = Trade.get_trades().all()
+
+    freqtrade.reupdate_buy_order_fees(trades[0])
+    assert log_has_re(r"Trying to reupdate buy fees for .*", caplog)
+    assert mock_uts.call_count == 1
+    assert mock_uts.call_args_list[0][0][0] == trades[0]
+    assert mock_uts.call_args_list[0][0][1] == '1234'
+    assert log_has_re(r"Updating buy-fee on trade .* for order .*\.", caplog)
+    mock_uts.reset_mock()
+    caplog.clear()
+
+    # Test with trade without orders
+    trade = Trade(
+        pair='XRP/ETH',
+        stake_amount=0.001,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_date=arrow.utcnow().datetime,
+        is_open=True,
+        amount=20,
+        open_rate=0.01,
+        exchange='bittrex',
+    )
+    Trade.session.add(trade)
+
+    freqtrade.reupdate_buy_order_fees(trade)
+    assert log_has_re(r"Trying to reupdate buy fees for .*", caplog)
+    assert mock_uts.call_count == 0
+    assert not log_has_re(r"Updating buy-fee on trade .* for order .*\.", caplog)
