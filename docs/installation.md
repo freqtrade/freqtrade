@@ -63,7 +63,7 @@ With this option, the script will install the bot and most dependencies:
 You will need to have git and python3.6+ installed beforehand for this to work.
 
 * Mandatory software as: `ta-lib`
-* Setup your virtualenv under `.env/`
+* Setup your virtualenv: `source .env/bin/activate`
 
 This option is a combination of installation tasks, `--reset` and `--config`.
 
