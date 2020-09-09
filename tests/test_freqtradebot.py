@@ -4418,9 +4418,10 @@ def test_refind_lost_order(mocker, default_conf, fee, caplog):
     assert mock_fo.call_count == 1
     assert mock_uts.call_count == 1
 
+    caplog.clear()
+
     # Test error case
     mock_fo = mocker.patch('freqtrade.exchange.Exchange.fetch_order_or_stoploss_order',
                            side_effect=ExchangeError())
     freqtrade.refind_lost_order(trades[4])
-    caplog.clear()
     assert log_has(f"Error updating {order['id']}.", caplog)
