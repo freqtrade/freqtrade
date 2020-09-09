@@ -580,10 +580,6 @@ All columns of the informative dataframe will be available on the returning data
     A custom implementation for this is possible, and can be done as follows:
 
     ``` python
-    # Rename columns to be unique
-    informative.columns = [f"{col}_{inf_tf}" for col in informative.columns]
-    # Assuming inf_tf = '1d' - then the columns will now be:
-    # date_1d, open_1d, high_1d, low_1d, close_1d, rsi_1d
 
     # Shift date by 1 candle
     # This is necessary since the data is always the "open date"
@@ -591,6 +587,11 @@ All columns of the informative dataframe will be available on the returning data
     minutes = timeframe_to_minutes(inf_tf)
     # Only do this if the timeframes are different:
     informative['date_merge'] = informative["date"] + pd.to_timedelta(minutes, 'm')
+
+    # Rename columns to be unique
+    informative.columns = [f"{col}_{inf_tf}" for col in informative.columns]
+    # Assuming inf_tf = '1d' - then the columns will now be:
+    # date_1d, open_1d, high_1d, low_1d, close_1d, rsi_1d
 
     # Combine the 2 dataframes
     # all indicators on the informative sample MUST be calculated before this point
