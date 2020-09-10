@@ -324,9 +324,6 @@ class FreqtradeBot:
                     if fo and fo['status'] == 'open':
                         # Assume this as the open order
                         trade.open_order_id = order.order_id
-                else:
-                    # No action for buy orders ...
-                    continue
                 if fo:
                     logger.info(f"Found {order} for trade {trade}.jj")
                     self.update_trade_state(trade, order.order_id, fo,
