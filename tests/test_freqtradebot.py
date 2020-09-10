@@ -27,7 +27,7 @@ from tests.conftest import (create_mock_trades, get_patched_freqtradebot,
                             get_patched_worker, log_has, log_has_re,
                             patch_edge, patch_exchange, patch_get_signal,
                             patch_wallet, patch_whitelist)
-from tests.conftest_trades import (mock_order_1, mock_order_2,
+from tests.conftest_trades import (MOCK_TRADE_COUNT, mock_order_1, mock_order_2,
                                    mock_order_2_sell, mock_order_3,
                                    mock_order_3_sell, mock_order_4, mock_order_5_stoploss)
 
@@ -4206,17 +4206,17 @@ def test_sync_wallet_dry_run(mocker, default_conf, ticker, fee, limit_buy_order_
 def test_cancel_all_open_orders(mocker, default_conf, fee, limit_buy_order, limit_sell_order):
     default_conf['cancel_open_orders_on_exit'] = True
     mocker.patch('freqtrade.exchange.Exchange.fetch_order',
-                 side_effect=[ExchangeError(), limit_sell_order, limit_buy_order])
+                 side_effect=[ExchangeError(), limit_sell_order, limit_buy_order, limit_sell_order, ])
     buy_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_cancel_buy')
     sell_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_cancel_sell')
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     create_mock_trades(fee)
     trades = Trade.query.all()
-    assert len(trades) == 5
+    assert len(trades) == MOCK_TRADE_COUNT
     freqtrade.cancel_all_open_orders()
     assert buy_mock.call_count == 1
-    assert sell_mock.call_count == 1
+    assert sell_mock.call_count == 2
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -4244,15 +4244,15 @@ def test_update_open_orders(mocker, default_conf, fee, caplog):
     assert log_has_re(r"Error updating Order .*", caplog)
     caplog.clear()
 
-    assert len(Order.get_open_orders()) == 2
+    assert len(Order.get_open_orders()) == 3
     matching_buy_order = mock_order_4()
     matching_buy_order.update({
         'status': 'closed',
     })
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=matching_buy_order)
     freqtrade.update_open_orders()
-    # Only stoploss order is kept open
-    assert len(Order.get_open_orders()) == 1
+    # Only stoploss and sell orders are kept open
+    assert len(Order.get_open_orders()) == 2
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -4277,7 +4277,7 @@ def test_update_closed_trades_without_assigned_fees(mocker, default_conf, fee):
 
     create_mock_trades(fee)
     trades = Trade.get_trades().all()
-    assert len(trades) == 5
+    assert len(trades) == MOCK_TRADE_COUNT
     for trade in trades:
         assert trade.fee_open_cost is None
         assert trade.fee_open_currency is None
@@ -4287,7 +4287,7 @@ def test_update_closed_trades_without_assigned_fees(mocker, default_conf, fee):
     freqtrade.update_closed_trades_without_assigned_fees()
 
     trades = Trade.get_trades().all()
-    assert len(trades) == 5
+    assert len(trades) == MOCK_TRADE_COUNT
 
     for trade in trades:
         if trade.is_open:

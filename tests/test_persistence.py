@@ -731,10 +731,10 @@ def test_adjust_min_max_rates(fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_get_open(default_conf, fee):
+def test_get_open(fee):
 
     create_mock_trades(fee)
-    assert len(Trade.get_open_trades()) == 3
+    assert len(Trade.get_open_trades()) == 4
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -1004,7 +1004,7 @@ def test_total_open_trades_stakes(fee):
     assert res == 0
     create_mock_trades(fee)
     res = Trade.total_open_trades_stakes()
-    assert res == 0.003
+    assert res == 0.004
 
 
 @pytest.mark.usefixtures("init_persistence")

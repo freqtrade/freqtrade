@@ -20,6 +20,7 @@ from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
 from freqtrade.data.history import load_data, load_pair_history
 from freqtrade.optimize.backtesting import BacktestResult
 from tests.conftest import create_mock_trades
+from tests.conftest_trades import MOCK_TRADE_COUNT
 
 
 def test_get_latest_backtest_filename(testdatadir, mocker):
@@ -110,7 +111,7 @@ def test_load_trades_from_db(default_conf, fee, mocker):
 
     trades = load_trades_from_db(db_url=default_conf['db_url'])
     assert init_mock.call_count == 1
-    assert len(trades) == 5
+    assert len(trades) == MOCK_TRADE_COUNT
     assert isinstance(trades, DataFrame)
     assert "pair" in trades.columns
     assert "open_date" in trades.columns

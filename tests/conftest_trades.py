@@ -1,6 +1,9 @@
 from freqtrade.persistence.models import Order, Trade
 
 
+MOCK_TRADE_COUNT = 6
+
+
 def mock_order_1():
     return {
         'id': '1234',
@@ -80,9 +83,9 @@ def mock_trade_2(fee):
         open_order_id='dry_run_sell_12345',
         strategy='DefaultStrategy',
     )
-    o = Order.parse_from_ccxt_object(mock_order_2(), 'ETH/BTC', 'buy')
+    o = Order.parse_from_ccxt_object(mock_order_2(), 'ETC/BTC', 'buy')
     trade.orders.append(o)
-    o = Order.parse_from_ccxt_object(mock_order_2_sell(), 'ETH/BTC', 'sell')
+    o = Order.parse_from_ccxt_object(mock_order_2_sell(), 'ETC/BTC', 'sell')
     trade.orders.append(o)
     return trade
 
@@ -132,9 +135,9 @@ def mock_trade_3(fee):
         exchange='bittrex',
         is_open=False,
     )
-    o = Order.parse_from_ccxt_object(mock_order_3(), 'ETH/BTC', 'buy')
+    o = Order.parse_from_ccxt_object(mock_order_3(), 'XRP/BTC', 'buy')
     trade.orders.append(o)
-    o = Order.parse_from_ccxt_object(mock_order_3_sell(), 'ETH/BTC', 'sell')
+    o = Order.parse_from_ccxt_object(mock_order_3_sell(), 'XRP/BTC', 'sell')
     trade.orders.append(o)
     return trade
 
@@ -169,7 +172,7 @@ def mock_trade_4(fee):
         open_order_id='prod_buy_12345',
         strategy='DefaultStrategy',
     )
-    o = Order.parse_from_ccxt_object(mock_order_4(), 'ETH/BTC', 'buy')
+    o = Order.parse_from_ccxt_object(mock_order_4(), 'ETC/BTC', 'buy')
     trade.orders.append(o)
     return trade
 
@@ -218,8 +221,59 @@ def mock_trade_5(fee):
         strategy='SampleStrategy',
         stoploss_order_id='prod_stoploss_3455'
     )
-    o = Order.parse_from_ccxt_object(mock_order_5(), 'ETH/BTC', 'buy')
+    o = Order.parse_from_ccxt_object(mock_order_5(), 'XRP/BTC', 'buy')
     trade.orders.append(o)
-    o = Order.parse_from_ccxt_object(mock_order_5_stoploss(), 'ETH/BTC', 'stoploss')
+    o = Order.parse_from_ccxt_object(mock_order_5_stoploss(), 'XRP/BTC', 'stoploss')
+    trade.orders.append(o)
+    return trade
+
+
+def mock_order_6():
+    return {
+        'id': 'prod_buy_6',
+        'symbol': 'LTC/BTC',
+        'status': 'closed',
+        'side': 'buy',
+        'type': 'limit',
+        'price': 0.15,
+        'amount': 2.0,
+        'filled': 2.0,
+        'remaining': 0.0,
+    }
+
+
+def mock_order_6_sell():
+    return {
+        'id': 'prod_sell_6',
+        'symbol': 'LTC/BTC',
+        'status': 'open',
+        'side': 'sell',
+        'type': 'limit',
+        'price': 0.20,
+        'amount': 2.0,
+        'filled': 0.0,
+        'remaining': 2.0,
+    }
+
+
+def mock_trade_6(fee):
+    """
+    Simulate prod entry with open sell order
+    """
+    trade = Trade(
+        pair='LTC/BTC',
+        stake_amount=0.001,
+        amount=2.0,
+        amount_requested=2.0,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_rate=0.15,
+        exchange='bittrex',
+        strategy='SampleStrategy',
+        open_order_id="prod_sell_6",
+    )
+    o = Order.parse_from_ccxt_object(mock_order_6(), 'LTC/BTC', 'buy')
+    trade.orders.append(o)
+    o = Order.parse_from_ccxt_object(mock_order_6_sell(), 'LTC/BTC', 'stoploss')
     trade.orders.append(o)
     return trade
