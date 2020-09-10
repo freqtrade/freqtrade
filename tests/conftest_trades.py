@@ -274,6 +274,6 @@ def mock_trade_6(fee):
     )
     o = Order.parse_from_ccxt_object(mock_order_6(), 'LTC/BTC', 'buy')
     trade.orders.append(o)
-    o = Order.parse_from_ccxt_object(mock_order_6_sell(), 'LTC/BTC', 'stoploss')
+    o = Order.parse_from_ccxt_object(mock_order_6_sell(), 'LTC/BTC', 'sell')
     trade.orders.append(o)
     return trade

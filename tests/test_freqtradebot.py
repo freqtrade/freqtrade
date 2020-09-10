@@ -29,7 +29,7 @@ from tests.conftest import (create_mock_trades, get_patched_freqtradebot,
                             patch_wallet, patch_whitelist)
 from tests.conftest_trades import (MOCK_TRADE_COUNT, mock_order_1, mock_order_2,
                                    mock_order_2_sell, mock_order_3,
-                                   mock_order_3_sell, mock_order_4, mock_order_5_stoploss)
+                                   mock_order_3_sell, mock_order_4, mock_order_5_stoploss, mock_order_6_sell)
 
 
 def patch_RPCManager(mocker) -> MagicMock:
@@ -4384,7 +4384,12 @@ def test_refind_lost_order(mocker, default_conf, fee, caplog):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mock_uts = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.update_trade_state')
 
-    mock_fo = mocker.patch('freqtrade.exchange.Exchange.fetch_order_or_stoploss_order')
+    mock_fo = mocker.patch('freqtrade.exchange.Exchange.fetch_order_or_stoploss_order',
+                           return_value={'status': 'open'})
+
+    def reset_open_orders(trade):
+        trade.open_order_id = None
+        trade.stoploss_order_id = None
 
     create_mock_trades(fee)
     trades = Trade.get_trades().all()
@@ -4392,36 +4397,81 @@ def test_refind_lost_order(mocker, default_conf, fee, caplog):
     caplog.clear()
 
     # No open order
-    freqtrade.refind_lost_order(trades[0])
+    trade = trades[0]
+    reset_open_orders(trade)
+    assert trade.open_order_id is None
+    assert trade.stoploss_order_id is None
+
+    freqtrade.refind_lost_order(trade)
     order = mock_order_1()
     assert log_has_re(r"Order Order(.*order_id=" + order['id'] + ".*) is no longer open.", caplog)
     assert mock_fo.call_count == 0
     assert mock_uts.call_count == 0
+    # No change to orderid - as update_trade_state is mocked
+    assert trade.open_order_id is None
+    assert trade.stoploss_order_id is None
 
     caplog.clear()
     mock_fo.reset_mock()
 
     # Open buy order
-    freqtrade.refind_lost_order(trades[3])
+    trade = trades[3]
+    reset_open_orders(trade)
+    assert trade.open_order_id is None
+    assert trade.stoploss_order_id is None
+
+    freqtrade.refind_lost_order(trade)
     order = mock_order_4()
     assert log_has_re(r"Trying to refind Order\(.*", caplog)
     assert mock_fo.call_count == 0
     assert mock_uts.call_count == 0
+    # No change to orderid - as update_trade_state is mocked
+    assert trade.open_order_id is None
+    assert trade.stoploss_order_id is None
 
     caplog.clear()
     mock_fo.reset_mock()
 
     # Open stoploss order
-    freqtrade.refind_lost_order(trades[4])
+    trade = trades[4]
+    reset_open_orders(trade)
+    assert trade.open_order_id is None
+    assert trade.stoploss_order_id is None
+
+    freqtrade.refind_lost_order(trade)
     order = mock_order_5_stoploss()
     assert log_has_re(r"Trying to refind Order\(.*", caplog)
     assert mock_fo.call_count == 1
     assert mock_uts.call_count == 1
+    # stoploss_order_id is "refound" and added to the trade
+    assert trade.open_order_id is None
+    assert trade.stoploss_order_id is not None
+
+    caplog.clear()
+    mock_fo.reset_mock()
+    mock_uts.reset_mock()
+
+    # Open sell order
+    trade = trades[5]
+    reset_open_orders(trade)
+    assert trade.open_order_id is None
+    assert trade.stoploss_order_id is None
+
+    freqtrade.refind_lost_order(trade)
+    order = mock_order_6_sell()
+    assert log_has_re(r"Trying to refind Order\(.*", caplog)
+    assert mock_fo.call_count == 1
+    assert mock_uts.call_count == 1
+    # sell-orderid is "refound" and added to the trade
+    assert trade.open_order_id == order['id']
+    assert trade.stoploss_order_id is None
 
     caplog.clear()
 
     # Test error case
     mock_fo = mocker.patch('freqtrade.exchange.Exchange.fetch_order_or_stoploss_order',
                            side_effect=ExchangeError())
+    order = mock_order_5_stoploss()
+
     freqtrade.refind_lost_order(trades[4])
     assert log_has(f"Error updating {order['id']}.", caplog)
