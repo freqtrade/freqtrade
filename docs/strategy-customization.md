@@ -483,7 +483,7 @@ if self.dp:
 ### Complete Data-provider sample
 
 ```python
-from freqtrade.strategy import IStrategy, merge_informative_pairs
+from freqtrade.strategy import IStrategy, merge_informative_pair
 from pandas import DataFrame
 
 class SampleStrategy(IStrategy):
