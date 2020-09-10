@@ -27,9 +27,11 @@ from tests.conftest import (create_mock_trades, get_patched_freqtradebot,
                             get_patched_worker, log_has, log_has_re,
                             patch_edge, patch_exchange, patch_get_signal,
                             patch_wallet, patch_whitelist)
-from tests.conftest_trades import (MOCK_TRADE_COUNT, mock_order_1, mock_order_2,
-                                   mock_order_2_sell, mock_order_3,
-                                   mock_order_3_sell, mock_order_4, mock_order_5_stoploss, mock_order_6_sell)
+from tests.conftest_trades import (MOCK_TRADE_COUNT, mock_order_1,
+                                   mock_order_2, mock_order_2_sell,
+                                   mock_order_3, mock_order_3_sell,
+                                   mock_order_4, mock_order_5_stoploss,
+                                   mock_order_6_sell)
 
 
 def patch_RPCManager(mocker) -> MagicMock:
@@ -4206,7 +4208,8 @@ def test_sync_wallet_dry_run(mocker, default_conf, ticker, fee, limit_buy_order_
 def test_cancel_all_open_orders(mocker, default_conf, fee, limit_buy_order, limit_sell_order):
     default_conf['cancel_open_orders_on_exit'] = True
     mocker.patch('freqtrade.exchange.Exchange.fetch_order',
-                 side_effect=[ExchangeError(), limit_sell_order, limit_buy_order, limit_sell_order, ])
+                 side_effect=[
+                     ExchangeError(), limit_sell_order, limit_buy_order, limit_sell_order])
     buy_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_cancel_buy')
     sell_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_cancel_sell')
 
