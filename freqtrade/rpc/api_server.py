@@ -214,6 +214,7 @@ class ApiServer(RPC):
                               view_func=self._trades, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/trades/<int:tradeid>', 'trades_delete',
                               view_func=self._trades_delete, methods=['DELETE'])
+
         self.app.add_url_rule(f'{BASE_URI}/pair_candles', 'pair_candles',
                               view_func=self._analysed_candles, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/pair_history', 'pair_history',
@@ -518,7 +519,7 @@ class ApiServer(RPC):
     @rpc_catch_errors
     def _analysed_candles(self):
         """
-        Handler for /pair_history.
+        Handler for /pair_candles.
         Returns the dataframe the bot is using during live/dry operations.
         Takes the following get arguments:
         get:
