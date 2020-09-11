@@ -522,8 +522,10 @@ class Trade(_DECL_BASE):
 
     def select_order(self, order_side: str, status: Optional[str]) -> Optional[Order]:
         """
-        Returns latest order for this orderside and status
-        Returns None if nothing is found
+        Finds latest order for this orderside and status
+        :param order_side: Side of the order (either 'buy' or 'sell')
+        :param status: Optionally filter on open / closed orders
+        :return: latest Order object if it exists, else None
         """
         orders = [o for o in self.orders if o.side == order_side]
         if status:
