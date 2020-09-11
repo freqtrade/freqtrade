@@ -435,7 +435,7 @@ def test_api_logs(botclient):
     assert len(rc.json) == 2
     assert 'logs' in rc.json
     # Using a fixed comparison here would make this test fail!
-    assert rc.json['log_count'] > 10
+    assert rc.json['log_count'] > 1
     assert len(rc.json['logs']) == rc.json['log_count']
 
     assert isinstance(rc.json['logs'][0], list)
