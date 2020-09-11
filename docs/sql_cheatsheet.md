@@ -46,7 +46,7 @@ sqlite3
 ### Trade table structure
 
 ```sql
-CREATE TABLE trades
+CREATE TABLE trades(
     id INTEGER NOT NULL,
     exchange VARCHAR NOT NULL,
     pair VARCHAR NOT NULL,
