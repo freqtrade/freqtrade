@@ -47,6 +47,7 @@ sqlite3
 
 ```sql
 CREATE TABLE trades
+(
     id INTEGER NOT NULL,
     exchange VARCHAR NOT NULL,
     pair VARCHAR NOT NULL,
