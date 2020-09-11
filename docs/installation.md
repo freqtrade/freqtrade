@@ -63,7 +63,7 @@ With this option, the script will install the bot and most dependencies:
 You will need to have git and python3.6+ installed beforehand for this to work.
 
 * Mandatory software as: `ta-lib`
-* Setup your virtualenv: `source .env/bin/activate`
+* Setup your virtualenv under `.env/`
 
 This option is a combination of installation tasks, `--reset` and `--config`.
 
@@ -78,6 +78,12 @@ This option will hard reset your branch (only if you are on either `master` or `
 ** --config **
 
 DEPRECATED - use `freqtrade new-config -c config.json` instead.
+
+** Setup your virtual environment **
+
+Each time you open a new terminal, you must run `source .env/bin/activate`
+
+
 
 ------
 
