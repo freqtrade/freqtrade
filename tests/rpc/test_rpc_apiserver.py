@@ -876,6 +876,52 @@ def test_api_pair_candles(botclient, ohlcv_history):
              ])
 
 
+def test_api_pair_history(botclient, ohlcv_history):
+    ftbot, client = botclient
+    timeframe = '5m'
+
+    # No pair
+    rc = client_get(client,
+                    f"{BASE_URI}/pair_history?timeframe={timeframe}"
+                    "&timerange=20180111-20180112&strategy=DefaultStrategy")
+    assert_response(rc, 400)
+
+    # No Timeframe
+    rc = client_get(client,
+                    f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC"
+                    "&timerange=20180111-20180112&strategy=DefaultStrategy")
+    assert_response(rc, 400)
+
+    # No timerange
+    rc = client_get(client,
+                    f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
+                    "&strategy=DefaultStrategy")
+    assert_response(rc, 400)
+
+    # No strategy
+    rc = client_get(client,
+                    f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
+                    "&timerange=20180111-20180112")
+    assert_response(rc, 400)
+
+    # Working
+    rc = client_get(client,
+                    f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
+                    "&timerange=20180111-20180112&strategy=DefaultStrategy")
+    assert_response(rc, 200)
+    assert rc.json['length'] == 289
+    assert len(rc.json['data']) == rc.json['length']
+    assert 'columns' in rc.json
+    assert 'data' in rc.json
+    assert rc.json['pair'] == 'UNITTEST/BTC'
+    assert rc.json['strategy'] == 'DefaultStrategy'
+    assert rc.json['data_start'] == '2018-01-11 00:00:00+00:00'
+    assert rc.json['data_start_ts'] == 1515628800000
+    assert rc.json['data_stop'] == '2018-01-12 00:00:00+00:00'
+    assert rc.json['data_stop_ts'] == 1515715200000
+
+
+
 def test_api_plot_config(botclient):
     ftbot, client = botclient
 
