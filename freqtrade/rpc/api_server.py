@@ -166,8 +166,8 @@ class ApiServer(RPC):
         """ Helper function to jsonify object for a webserver """
         return jsonify(return_value)
 
-    def rest_error(self, error_msg):
-        return jsonify({"error": error_msg}), 502
+    def rest_error(self, error_msg, error_code=502):
+        return jsonify({"error": error_msg}), error_code
 
     def register_rest_rpc_urls(self):
         """
@@ -531,6 +531,8 @@ class ApiServer(RPC):
         pair = request.args.get("pair")
         timeframe = request.args.get("timeframe")
         limit = request.args.get("limit", type=int)
+        if not pair or not timeframe:
+            return self.rest_error("Mandatory parameter missing.", 400)
 
         results = self._analysed_dataframe(pair, timeframe, limit)
         return self.rest_dump(results)
@@ -556,7 +558,7 @@ class ApiServer(RPC):
         strategy = request.args.get("strategy")
 
         if not pair or not timeframe or not timerange or not strategy:
-            return self.rest_error("Mandatory parameter missing.")
+            return self.rest_error("Mandatory parameter missing.", 400)
 
         config = deepcopy(self._config)
         config.update({

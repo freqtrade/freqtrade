@@ -818,6 +818,16 @@ def test_api_pair_candles(botclient, ohlcv_history):
     timeframe = '5m'
     amount = 2
 
+    # No pair
+    rc = client_get(client,
+                    f"{BASE_URI}/pair_candles?limit={amount}&timeframe={timeframe}")
+    assert_response(rc, 400)
+
+    # No timeframe
+    rc = client_get(client,
+                    f"{BASE_URI}/pair_candles?pair=XRP%2FBTC")
+    assert_response(rc, 400)
+
     rc = client_get(client,
                     f"{BASE_URI}/pair_candles?limit={amount}&pair=XRP%2FBTC&timeframe={timeframe}")
     assert_response(rc)

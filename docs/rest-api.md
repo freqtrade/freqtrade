@@ -145,6 +145,12 @@ python3 scripts/rest_client.py help
 ``` output
 Possible commands:
 
+available_pairs
+	Return available pair (backtest data) based on timeframe / stake_currency selection
+
+        :param timeframe: Only pairs with this timeframe available.
+        :param stake_currency: Only pairs that include this timeframe
+
 balance
 	Get the account balance.
 
@@ -184,8 +190,26 @@ logs
 
         :param limit: Limits log messages to the last <limit> logs. No limit to get all the trades.
 
+pair_candles
+	Return live dataframe for <pair><timeframe>.
+
+        :param pair: Pair to get data for
+        :param timeframe: Only pairs with this timeframe available.
+        :param limit: Limit result to the last n candles.
+
+pair_history
+	Return historic, analyzed dataframe
+
+        :param pair: Pair to get data for
+        :param timeframe: Only pairs with this timeframe available.
+        :param strategy: Strategy to analyze and get values for
+        :param timerange: Timerange to get data for (same format than --timerange endpoints)
+
 performance
 	Return the performance of the different coins.
+
+plot_config
+	Return plot configuration if the strategy defines one.
 
 profit
 	Return the profit summary.
@@ -209,6 +233,9 @@ stop
 stopbuy
 	Stop buying (but handle sells gracefully). Use `reload_config` to reset.
 
+strategies
+	Lists available strategies
+
 trades
 	Return trades history.
 
@@ -219,7 +246,6 @@ version
 
 whitelist
 	Show the current whitelist.
-
 
 ```
 
