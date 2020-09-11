@@ -4295,7 +4295,7 @@ def test_update_closed_trades_without_assigned_fees(mocker, default_conf, fee):
     for trade in trades:
         if trade.is_open:
             # Exclude Trade 4 - as the order is still open.
-            if trade.select_order('buy', 'closed'):
+            if trade.select_order('buy', False):
                 assert trade.fee_open_cost is not None
                 assert trade.fee_open_currency is not None
             else:

@@ -260,7 +260,7 @@ class FreqtradeBot:
 
             if not trade.is_open and not trade.fee_updated('sell'):
                 # Get sell fee
-                order = trade.select_order('sell', 'closed')
+                order = trade.select_order('sell', False)
                 if order:
                     logger.info(f"Updating sell-fee on trade {trade} for order {order.order_id}.")
                     self.update_trade_state(trade, order.order_id,
@@ -269,7 +269,7 @@ class FreqtradeBot:
         trades: List[Trade] = Trade.get_open_trades_without_assigned_fees()
         for trade in trades:
             if trade.is_open and not trade.fee_updated('buy'):
-                order = trade.select_order('buy', 'closed')
+                order = trade.select_order('buy', False)
                 if order:
                     logger.info(f"Updating buy-fee on trade {trade} for order {order.order_id}.")
                     self.update_trade_state(trade, order.order_id)
@@ -291,7 +291,7 @@ class FreqtradeBot:
         Handles trades where the initial fee-update did not work.
         """
         logger.info(f"Trying to reupdate buy fees for {trade}")
-        order = trade.select_order('buy', 'closed')
+        order = trade.select_order('buy', False)
         if order:
             logger.info(f"Updating buy-fee on trade {trade} for order {order.order_id}.")
             self.update_trade_state(trade, order.order_id)

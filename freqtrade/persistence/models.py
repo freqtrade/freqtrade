@@ -520,16 +520,16 @@ class Trade(_DECL_BASE):
         profit_ratio = (close_trade_price / self.open_trade_price) - 1
         return float(f"{profit_ratio:.8f}")
 
-    def select_order(self, order_side: str, status: Optional[str]) -> Optional[Order]:
+    def select_order(self, order_side: str, is_open: Optional[bool]) -> Optional[Order]:
         """
         Finds latest order for this orderside and status
         :param order_side: Side of the order (either 'buy' or 'sell')
-        :param status: Optionally filter on open / closed orders
+        :param is_open: Only search for open orders?
         :return: latest Order object if it exists, else None
         """
         orders = [o for o in self.orders if o.side == order_side]
-        if status:
-            orders = [o for o in orders if o.status == status]
+        if is_open is not None:
+            orders = [o for o in orders if o.ft_is_open == is_open]
         if len(orders) > 0:
             return orders[-1]
         else:

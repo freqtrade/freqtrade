@@ -1078,3 +1078,48 @@ def test_update_order_from_ccxt():
     ccxt_order.update({'id': 'somethingelse'})
     with pytest.raises(DependencyException, match=r"Order-id's don't match"):
         o.update_from_ccxt_object(ccxt_order)
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_select_order(fee):
+    create_mock_trades(fee)
+
+    trades = Trade.get_trades().all()
+
+    # Open buy order, no sell order
+    order = trades[0].select_order('buy', True)
+    assert order is None
+    order = trades[0].select_order('buy', False)
+    assert order is not None
+    order = trades[0].select_order('sell', None)
+    assert order is None
+
+    # closed buy order, and open sell order
+    order = trades[1].select_order('buy', True)
+    assert order is None
+    order = trades[1].select_order('buy', False)
+    assert order is not None
+    order = trades[1].select_order('buy', None)
+    assert order is not None
+    order = trades[1].select_order('sell', True)
+    assert order is None
+    order = trades[1].select_order('sell', False)
+    assert order is not None
+
+    # Has open buy order
+    order = trades[3].select_order('buy', True)
+    assert order is not None
+    order = trades[3].select_order('buy', False)
+    assert order is None
+
+    # Open sell order
+    order = trades[4].select_order('buy', True)
+    assert order is None
+    order = trades[4].select_order('buy', False)
+    assert order is not None
+
+    order = trades[4].select_order('sell', True)
+    assert order is not None
+    assert order.ft_order_side == 'stoploss'
+    order = trades[4].select_order('sell', False)
+    assert order is None
