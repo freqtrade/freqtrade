@@ -471,6 +471,7 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
     assert rc.json == {"error": "Error querying _edge: Edge is not enabled."}
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, limit_sell_order):
     ftbot, client = botclient
     patch_get_signal(ftbot, (True, False))
@@ -498,6 +499,7 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
     assert rc.json['best_pair'] == ''
     assert rc.json['best_rate'] == 0
 
+    trade = Trade.query.first()
     trade.update(limit_sell_order)
 
     trade.close_date = datetime.utcnow()

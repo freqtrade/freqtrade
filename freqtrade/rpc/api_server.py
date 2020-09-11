@@ -17,8 +17,9 @@ from werkzeug.serving import make_server
 
 from freqtrade.__init__ import __version__
 from freqtrade.constants import DATETIME_PRINT_FORMAT
-from freqtrade.rpc.rpc import RPC, RPCException
+from freqtrade.persistence import Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
+from freqtrade.rpc.rpc import RPC, RPCException
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +71,11 @@ def rpc_catch_errors(func: Callable[..., Any]):
     return func_wrapper
 
 
+def shutdown_session(exception=None):
+    # Remove scoped session
+    Trade.session.remove()
+
+
 class ApiServer(RPC):
     """
     This class runs api server and provides rpc.rpc functionality to it
@@ -103,6 +109,8 @@ class ApiServer(RPC):
 
         self.jwt = JWTManager(self.app)
         self.app.json_encoder = ArrowJSONEncoder
+
+        self.app.teardown_appcontext(shutdown_session)
 
         # Register application handling
         self.register_rest_rpc_urls()
