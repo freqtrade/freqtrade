@@ -29,7 +29,14 @@ class PricingError(DependencyException):
     """
 
 
-class InvalidOrderException(FreqtradeException):
+class ExchangeError(DependencyException):
+    """
+    Error raised out of the exchange.
+    Has multiple Errors to determine the appropriate error.
+    """
+
+
+class InvalidOrderException(ExchangeError):
     """
     This is returned when the order is not valid. Example:
     If stoploss on exchange order is hit, then trying to cancel the order
@@ -41,13 +48,6 @@ class RetryableOrderError(InvalidOrderException):
     """
     This is returned when the order is not found.
     This Error will be repeated with increasing backof (in line with DDosError).
-    """
-
-
-class ExchangeError(DependencyException):
-    """
-    Error raised out of the exchange.
-    Has multiple Errors to determine the appropriate error.
     """
 
 

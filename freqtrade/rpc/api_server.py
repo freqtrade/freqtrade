@@ -16,8 +16,10 @@ from werkzeug.security import safe_str_cmp
 from werkzeug.serving import make_server
 
 from freqtrade.__init__ import __version__
-from freqtrade.rpc.rpc import RPC, RPCException
+from freqtrade.constants import DATETIME_PRINT_FORMAT
+from freqtrade.persistence import Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
+from freqtrade.rpc.rpc import RPC, RPCException
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +34,7 @@ class ArrowJSONEncoder(JSONEncoder):
             elif isinstance(obj, date):
                 return obj.strftime("%Y-%m-%d")
             elif isinstance(obj, datetime):
-                return obj.strftime("%Y-%m-%d %H:%M:%S")
+                return obj.strftime(DATETIME_PRINT_FORMAT)
             iterable = iter(obj)
         except TypeError:
             pass
@@ -69,6 +71,11 @@ def rpc_catch_errors(func: Callable[..., Any]):
     return func_wrapper
 
 
+def shutdown_session(exception=None):
+    # Remove scoped session
+    Trade.session.remove()
+
+
 class ApiServer(RPC):
     """
     This class runs api server and provides rpc.rpc functionality to it
@@ -102,6 +109,8 @@ class ApiServer(RPC):
 
         self.jwt = JWTManager(self.app)
         self.app.json_encoder = ArrowJSONEncoder
+
+        self.app.teardown_appcontext(shutdown_session)
 
         # Register application handling
         self.register_rest_rpc_urls()
@@ -186,6 +195,7 @@ class ApiServer(RPC):
         self.app.add_url_rule(f'{BASE_URI}/count', 'count', view_func=self._count, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/daily', 'daily', view_func=self._daily, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/edge', 'edge', view_func=self._edge, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/logs', 'log', view_func=self._get_logs, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/profit', 'profit',
                               view_func=self._profit, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/performance', 'performance',
@@ -347,6 +357,18 @@ class ApiServer(RPC):
                                        )
 
         return self.rest_dump(stats)
+
+    @require_login
+    @rpc_catch_errors
+    def _get_logs(self):
+        """
+        Returns latest logs
+         get:
+          param:
+            limit: Only get a certain number of records
+        """
+        limit = int(request.args.get('limit', 0)) or None
+        return self.rest_dump(self._rpc_get_logs(limit))
 
     @require_login
     @rpc_catch_errors

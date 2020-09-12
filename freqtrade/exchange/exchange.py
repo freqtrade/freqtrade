@@ -24,7 +24,7 @@ from freqtrade.exceptions import (DDosProtection, ExchangeError,
                                   InvalidOrderException, OperationalException,
                                   RetryableOrderError, TemporaryError)
 from freqtrade.exchange.common import BAD_EXCHANGES, retrier, retrier_async
-from freqtrade.misc import deep_merge_dicts, safe_value_fallback
+from freqtrade.misc import deep_merge_dicts, safe_value_fallback2
 
 CcxtModuleType = Any
 
@@ -85,8 +85,8 @@ class Exchange:
 
         # Deep merge ft_has with default ft_has options
         self._ft_has = deep_merge_dicts(self._ft_has, deepcopy(self._ft_has_default))
-        if exchange_config.get("_ft_has_params"):
-            self._ft_has = deep_merge_dicts(exchange_config.get("_ft_has_params"),
+        if exchange_config.get('_ft_has_params'):
+            self._ft_has = deep_merge_dicts(exchange_config.get('_ft_has_params'),
                                             self._ft_has)
             logger.info("Overriding exchange._ft_has with config params, result: %s", self._ft_has)
 
@@ -222,7 +222,7 @@ class Exchange:
         if quote_currencies:
             markets = {k: v for k, v in markets.items() if v['quote'] in quote_currencies}
         if pairs_only:
-            markets = {k: v for k, v in markets.items() if symbol_is_pair(v['symbol'])}
+            markets = {k: v for k, v in markets.items() if self.market_is_tradable(v)}
         if active_only:
             markets = {k: v for k, v in markets.items() if market_is_active(v)}
         return markets
@@ -245,6 +245,19 @@ class Exchange:
         Return a pair's quote currency
         """
         return self.markets.get(pair, {}).get('base', '')
+
+    def market_is_tradable(self, market: Dict[str, Any]) -> bool:
+        """
+        Check if the market symbol is tradable by Freqtrade.
+        By default, checks if it's splittable by `/` and both sides correspond to base / quote
+        """
+        symbol_parts = market['symbol'].split('/')
+        return (len(symbol_parts) == 2 and
+                len(symbol_parts[0]) > 0 and
+                len(symbol_parts[1]) > 0 and
+                symbol_parts[0] == market.get('base') and
+                symbol_parts[1] == market.get('quote')
+                )
 
     def klines(self, pair_interval: Tuple[str, str], copy: bool = True) -> DataFrame:
         if pair_interval in self._klines:
@@ -480,6 +493,7 @@ class Exchange:
             "id": order_id,
             'pair': pair,
             'price': rate,
+            'average': rate,
             'amount': _amount,
             'cost': _amount * rate,
             'type': ordertype,
@@ -959,7 +973,12 @@ class Exchange:
     @retrier
     def cancel_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
-            return {}
+            order = self._dry_run_open_orders.get(order_id)
+            if order:
+                order.update({'status': 'canceled', 'filled': 0.0, 'remaining': order['amount']})
+                return order
+            else:
+                return {}
 
         try:
             return self._api.cancel_order(order_id, pair)
@@ -974,7 +993,7 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    # Assign method to fetch_stoploss_order to allow easy overriding in other classes
+    # Assign method to cancel_stoploss_order to allow easy overriding in other classes
     cancel_stoploss_order = cancel_order
 
     def is_cancel_order_result_suitable(self, corder) -> bool:
@@ -1040,10 +1059,10 @@ class Exchange:
     @retrier
     def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:
         """
-        get order book level 2 from exchange
-
-        Notes:
-        20180619: bittrex doesnt support limits -.-
+        Get L2 order book from exchange.
+        Can be limited to a certain amount (if supported).
+        Returns a dict in the format
+        {'asks': [price, volume], 'bids': [price, volume]}
         """
         try:
 
@@ -1144,7 +1163,7 @@ class Exchange:
         if fee_curr in self.get_pair_base_currency(order['symbol']):
             # Base currency - divide by amount
             return round(
-                order['fee']['cost'] / safe_value_fallback(order, order, 'filled', 'amount'), 8)
+                order['fee']['cost'] / safe_value_fallback2(order, order, 'filled', 'amount'), 8)
         elif fee_curr in self.get_pair_quote_currency(order['symbol']):
             # Quote currency - divide by cost
             return round(order['fee']['cost'] / order['cost'], 8) if order['cost'] else None
@@ -1157,7 +1176,7 @@ class Exchange:
                 comb = self.get_valid_pair_combination(fee_curr, self._config['stake_currency'])
                 tick = self.fetch_ticker(comb)
 
-                fee_to_quote_rate = safe_value_fallback(tick, tick, 'last', 'ask')
+                fee_to_quote_rate = safe_value_fallback2(tick, tick, 'last', 'ask')
                 return round((order['fee']['cost'] * fee_to_quote_rate) / order['cost'], 8)
             except ExchangeError:
                 return None
@@ -1172,7 +1191,6 @@ class Exchange:
         return (order['fee']['cost'],
                 order['fee']['currency'],
                 self.calculate_fee_rate(order))
-        # calculate rate ? (order['fee']['cost'] / (order['amount'] * order['price']))
 
 
 def is_exchange_bad(exchange_name: str) -> bool:
@@ -1256,20 +1274,6 @@ def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
     new_timestamp = ccxt.Exchange.round_timeframe(timeframe, date.timestamp() * 1000,
                                                   ROUND_UP) // 1000
     return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
-
-
-def symbol_is_pair(market_symbol: str, base_currency: str = None,
-                   quote_currency: str = None) -> bool:
-    """
-    Check if the market symbol is a pair, i.e. that its symbol consists of the base currency and the
-    quote currency separated by '/' character. If base_currency and/or quote_currency is passed,
-    it also checks that the symbol contains appropriate base and/or quote currency part before
-    and after the separating character correspondingly.
-    """
-    symbol_parts = market_symbol.split('/')
-    return (len(symbol_parts) == 2 and
-            (symbol_parts[0] == base_currency if base_currency else len(symbol_parts[0]) > 0) and
-            (symbol_parts[1] == quote_currency if quote_currency else len(symbol_parts[1]) > 0))
 
 
 def market_is_active(market: Dict) -> bool:

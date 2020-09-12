@@ -23,7 +23,7 @@ class HyperOptResolver(IResolver):
     object_type = IHyperOpt
     object_type_str = "Hyperopt"
     user_subdir = USERPATH_HYPEROPTS
-    initial_search_path = Path(__file__).parent.parent.joinpath('optimize').resolve()
+    initial_search_path = None
 
     @staticmethod
     def load_hyperopt(config: Dict) -> IHyperOpt:

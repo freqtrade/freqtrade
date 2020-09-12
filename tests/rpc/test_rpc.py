@@ -79,7 +79,8 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'open_rate': 1.098e-05,
         'close_rate': None,
         'current_rate': 1.099e-05,
-        'amount': 91.07468124,
+        'amount': 91.07468123,
+        'amount_requested': 91.07468123,
         'stake_amount': 0.001,
         'close_profit': None,
         'close_profit_pct': None,
@@ -100,6 +101,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'initial_stop_loss_ratio': -0.1,
         'stoploss_current_dist': -1.1080000000000002e-06,
         'stoploss_current_dist_ratio': -0.10081893,
+        'stoploss_current_dist_pct': -10.08,
         'stoploss_entry_dist': -0.00010475,
         'stoploss_entry_dist_ratio': -0.10448878,
         'open_order': None,
@@ -142,7 +144,8 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'open_rate': 1.098e-05,
         'close_rate': None,
         'current_rate': ANY,
-        'amount': 91.07468124,
+        'amount': 91.07468123,
+        'amount_requested': 91.07468123,
         'stake_amount': 0.001,
         'close_profit': None,
         'close_profit_pct': None,
@@ -163,6 +166,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'initial_stop_loss_ratio': -0.1,
         'stoploss_current_dist': ANY,
         'stoploss_current_dist_ratio': ANY,
+        'stoploss_current_dist_pct': ANY,
         'stoploss_entry_dist': -0.00010475,
         'stoploss_entry_dist_ratio': -0.10448878,
         'open_order': None,
@@ -253,11 +257,11 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
     assert days['fiat_display_currency'] == default_conf['fiat_display_currency']
     for day in days['data']:
         # [datetime.date(2018, 1, 11), '0.00000000 BTC', '0.000 USD']
-        assert (day['abs_profit'] == '0.00000000' or
-                day['abs_profit'] == '0.00006217')
+        assert (day['abs_profit'] == 0.0 or
+                day['abs_profit'] == 0.00006217)
 
-        assert (day['fiat_value'] == '0.000' or
-                day['fiat_value'] == '0.767')
+        assert (day['fiat_value'] == 0.0 or
+                day['fiat_value'] == 0.76748865)
     # ensure first day is current date
     assert str(days['data'][0]['date']) == str(datetime.utcnow().date())
 
@@ -665,7 +669,8 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
             return_value={
                 'status': 'closed',
                 'type': 'limit',
-                'side': 'buy'
+                'side': 'buy',
+                'filled': 0.0,
             }
         ),
         get_fee=fee,
@@ -691,6 +696,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     msg = rpc._rpc_forcesell('all')
     assert msg == {'result': 'Created sell orders for all open trades.'}
 
+    freqtradebot.enter_positions()
     msg = rpc._rpc_forcesell('1')
     assert msg == {'result': 'Created sell order for trade 1.'}
 
@@ -703,17 +709,24 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
 
     freqtradebot.state = State.RUNNING
     assert cancel_order_mock.call_count == 0
+    freqtradebot.enter_positions()
     # make an limit-buy open trade
     trade = Trade.query.filter(Trade.id == '1').first()
     filled_amount = trade.amount / 2
+    # Fetch order - it's open first, and closed after cancel_order is called.
     mocker.patch(
         'freqtrade.exchange.Exchange.fetch_order',
-        return_value={
+        side_effect=[{
             'status': 'open',
             'type': 'limit',
             'side': 'buy',
             'filled': filled_amount
-        }
+        }, {
+            'status': 'closed',
+            'type': 'limit',
+            'side': 'buy',
+            'filled': filled_amount
+        }]
     )
     # check that the trade is called, which is done by ensuring exchange.cancel_order is called
     # and trade amount is updated
@@ -721,6 +734,16 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     assert cancel_order_mock.call_count == 1
     assert trade.amount == filled_amount
 
+    mocker.patch(
+        'freqtrade.exchange.Exchange.fetch_order',
+        return_value={
+            'status': 'open',
+            'type': 'limit',
+            'side': 'buy',
+            'filled': filled_amount
+        })
+
+    freqtradebot.config['max_open_trades'] = 3
     freqtradebot.enter_positions()
     trade = Trade.query.filter(Trade.id == '2').first()
     amount = trade.amount
@@ -740,20 +763,22 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     assert cancel_order_mock.call_count == 2
     assert trade.amount == amount
 
-    freqtradebot.enter_positions()
     # make an limit-sell open trade
     mocker.patch(
         'freqtrade.exchange.Exchange.fetch_order',
         return_value={
             'status': 'open',
             'type': 'limit',
-            'side': 'sell'
+            'side': 'sell',
+            'amount': amount,
+            'remaining': amount,
+            'filled': 0.0
         }
     )
     msg = rpc._rpc_forcesell('3')
     assert msg == {'result': 'Created sell order for trade 3.'}
     # status quo, no exchange calls
-    assert cancel_order_mock.call_count == 2
+    assert cancel_order_mock.call_count == 3
 
 
 def test_performance_handle(default_conf, ticker, limit_buy_order, fee,

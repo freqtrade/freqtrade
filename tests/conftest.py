@@ -78,7 +78,7 @@ def patch_exchange(mocker, api_mock=None, id='bittrex', mock_markets=True) -> No
 def get_patched_exchange(mocker, config, api_mock=None, id='bittrex',
                          mock_markets=True) -> Exchange:
     patch_exchange(mocker, api_mock, id, mock_markets)
-    config["exchange"]["name"] = id
+    config['exchange']['name'] = id
     try:
         exchange = ExchangeResolver.load_exchange(id, config)
     except ImportError:
@@ -176,11 +176,13 @@ def create_mock_trades(fee):
         pair='ETH/BTC',
         stake_amount=0.001,
         amount=123.0,
+        amount_requested=123.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_rate=0.123,
         exchange='bittrex',
-        open_order_id='dry_run_buy_12345'
+        open_order_id='dry_run_buy_12345',
+        strategy='DefaultStrategy',
     )
     Trade.session.add(trade)
 
@@ -188,6 +190,7 @@ def create_mock_trades(fee):
         pair='ETC/BTC',
         stake_amount=0.001,
         amount=123.0,
+        amount_requested=123.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_rate=0.123,
@@ -195,7 +198,8 @@ def create_mock_trades(fee):
         close_profit=0.005,
         exchange='bittrex',
         is_open=False,
-        open_order_id='dry_run_sell_12345'
+        open_order_id='dry_run_sell_12345',
+        strategy='DefaultStrategy',
     )
     Trade.session.add(trade)
 
@@ -218,11 +222,13 @@ def create_mock_trades(fee):
         pair='ETC/BTC',
         stake_amount=0.001,
         amount=123.0,
+        amount_requested=124.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_rate=0.123,
         exchange='bittrex',
-        open_order_id='prod_buy_12345'
+        open_order_id='prod_buy_12345',
+        strategy='DefaultStrategy',
     )
     Trade.session.add(trade)
 

@@ -44,19 +44,19 @@ def test_parse_args_backtesting(mocker) -> None:
 
 
 def test_main_start_hyperopt(mocker) -> None:
-    mocker.patch.object(Path, "is_file", MagicMock(side_effect=[False, True]))
+    mocker.patch.object(Path, 'is_file', MagicMock(side_effect=[False, True]))
     hyperopt_mock = mocker.patch('freqtrade.commands.start_hyperopt', MagicMock())
-    hyperopt_mock.__name__ = PropertyMock("start_hyperopt")
+    hyperopt_mock.__name__ = PropertyMock('start_hyperopt')
     # it's sys.exit(0) at the end of hyperopt
     with pytest.raises(SystemExit):
         main(['hyperopt'])
     assert hyperopt_mock.call_count == 1
     call_args = hyperopt_mock.call_args[0][0]
-    assert call_args["config"] == ['config.json']
-    assert call_args["verbosity"] == 0
-    assert call_args["command"] == 'hyperopt'
-    assert call_args["func"] is not None
-    assert callable(call_args["func"])
+    assert call_args['config'] == ['config.json']
+    assert call_args['verbosity'] == 0
+    assert call_args['command'] == 'hyperopt'
+    assert call_args['func'] is not None
+    assert callable(call_args['func'])
 
 
 def test_main_fatal_exception(mocker, default_conf, caplog) -> None:

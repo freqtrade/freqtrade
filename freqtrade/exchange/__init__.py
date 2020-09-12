@@ -12,8 +12,7 @@ from freqtrade.exchange.exchange import (timeframe_to_seconds,
                                          timeframe_to_msecs,
                                          timeframe_to_next_date,
                                          timeframe_to_prev_date)
-from freqtrade.exchange.exchange import (market_is_active,
-                                         symbol_is_pair)
+from freqtrade.exchange.exchange import (market_is_active)
 from freqtrade.exchange.kraken import Kraken
 from freqtrade.exchange.binance import Binance
 from freqtrade.exchange.bibox import Bibox

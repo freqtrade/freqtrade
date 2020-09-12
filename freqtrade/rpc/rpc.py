@@ -11,9 +11,10 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import arrow
 from numpy import NAN, mean
 
-from freqtrade.exceptions import (ExchangeError, InvalidOrderException,
-                                  PricingError)
+from freqtrade.constants import CANCEL_REASON
+from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
+from freqtrade.loggers import bufferHandler
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -158,6 +159,7 @@ class RPC:
                     current_profit_abs=current_profit_abs,
                     stoploss_current_dist=stoploss_current_dist,
                     stoploss_current_dist_ratio=round(stoploss_current_dist_ratio, 8),
+                    stoploss_current_dist_pct=round(stoploss_current_dist_ratio * 100, 2),
                     stoploss_entry_dist=stoploss_entry_dist,
                     stoploss_entry_dist_ratio=round(stoploss_entry_dist_ratio, 8),
                     open_order='({} {} rem={:.8f})'.format(
@@ -222,24 +224,23 @@ class RPC:
                 Trade.close_date >= profitday,
                 Trade.close_date < (profitday + timedelta(days=1))
             ]).order_by(Trade.close_date).all()
-            curdayprofit = sum(trade.close_profit_abs for trade in trades)
+            curdayprofit = sum(
+                trade.close_profit_abs for trade in trades if trade.close_profit_abs is not None)
             profit_days[profitday] = {
-                'amount': f'{curdayprofit:.8f}',
+                'amount': curdayprofit,
                 'trades': len(trades)
             }
 
         data = [
             {
                 'date': key,
-                'abs_profit': f'{float(value["amount"]):.8f}',
-                'fiat_value': '{value:.3f}'.format(
-                    value=self._fiat_converter.convert_amount(
+                'abs_profit': value["amount"],
+                'fiat_value': self._fiat_converter.convert_amount(
                         value['amount'],
                         stake_currency,
                         fiat_display_currency
                     ) if self._fiat_converter else 0,
-                ),
-                'trade_count': f'{value["trades"]}',
+                'trade_count': value["trades"],
             }
             for key, value in profit_days.items()
         ]
@@ -435,7 +436,7 @@ class RPC:
     def _rpc_reload_config(self) -> Dict[str, str]:
         """ Handler for reload_config. """
         self._freqtrade.state = State.RELOAD_CONFIG
-        return {'status': 'reloading config ...'}
+        return {'status': 'Reloading config ...'}
 
     def _rpc_stopbuy(self) -> Dict[str, str]:
         """
@@ -454,29 +455,22 @@ class RPC:
         """
         def _exec_forcesell(trade: Trade) -> None:
             # Check if there is there is an open order
+            fully_canceled = False
             if trade.open_order_id:
                 order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
 
-                # Cancel open LIMIT_BUY orders and close trade
-                if order and order['status'] == 'open' \
-                        and order['type'] == 'limit' \
-                        and order['side'] == 'buy':
-                    self._freqtrade.exchange.cancel_order(trade.open_order_id, trade.pair)
-                    trade.close(order.get('price') or trade.open_rate)
-                    # Do the best effort, if we don't know 'filled' amount, don't try selling
-                    if order['filled'] is None:
-                        return
-                    trade.amount = order['filled']
+                if order['side'] == 'buy':
+                    fully_canceled = self._freqtrade.handle_cancel_buy(
+                        trade, order, CANCEL_REASON['FORCE_SELL'])
 
-                # Ignore trades with an attached LIMIT_SELL order
-                if order and order['status'] == 'open' \
-                        and order['type'] == 'limit' \
-                        and order['side'] == 'sell':
-                    return
+                if order['side'] == 'sell':
+                    # Cancel order - so it is placed anew with a fresh price.
+                    self._freqtrade.handle_cancel_sell(trade, order, CANCEL_REASON['FORCE_SELL'])
 
-            # Get current rate and execute sell
-            current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
-            self._freqtrade.execute_sell(trade, current_rate, SellType.FORCE_SELL)
+            if not fully_canceled:
+                # Get current rate and execute sell
+                current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
+                self._freqtrade.execute_sell(trade, current_rate, SellType.FORCE_SELL)
         # ---- EOF def _exec_forcesell ----
 
         if self._freqtrade.state != State.RUNNING:
@@ -555,7 +549,7 @@ class RPC:
                 try:
                     self._freqtrade.exchange.cancel_order(trade.open_order_id, trade.pair)
                     c_count += 1
-                except (ExchangeError, InvalidOrderException):
+                except (ExchangeError):
                     pass
 
             # cancel stoploss on exchange ...
@@ -565,7 +559,7 @@ class RPC:
                     self._freqtrade.exchange.cancel_stoploss_order(trade.stoploss_order_id,
                                                                    trade.pair)
                     c_count += 1
-                except (ExchangeError, InvalidOrderException):
+                except (ExchangeError):
                     pass
 
             Trade.session.delete(trade)
@@ -632,6 +626,24 @@ class RPC:
                'errors': errors,
                }
         return res
+
+    def _rpc_get_logs(self, limit: Optional[int]) -> Dict[str, Any]:
+        """Returns the last X logs"""
+        if limit:
+            buffer = bufferHandler.buffer[-limit:]
+        else:
+            buffer = bufferHandler.buffer
+        records = [[datetime.fromtimestamp(r.created).strftime("%Y-%m-%d %H:%M:%S"),
+                   r.created * 1000, r.name, r.levelname,
+                   r.message + ('\n' + r.exc_text if r.exc_text else '')]
+                   for r in buffer]
+
+        # Log format:
+        # [logtime-formatted, logepoch, logger-name, loglevel, message \n + exception]
+        # e.g. ["2020-08-27 11:35:01", 1598520901097.9397,
+        #       "freqtrade.worker", "INFO", "Starting worker develop"]
+
+        return {'log_count': len(records), 'logs': records}
 
     def _rpc_edge(self) -> List[Dict[str, Any]]:
         """ Returns information related to Edge """

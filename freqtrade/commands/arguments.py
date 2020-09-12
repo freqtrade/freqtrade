@@ -15,7 +15,7 @@ ARGS_STRATEGY = ["strategy", "strategy_path"]
 
 ARGS_TRADE = ["db_url", "sd_notify", "dry_run"]
 
-ARGS_COMMON_OPTIMIZE = ["timeframe", "timerange",
+ARGS_COMMON_OPTIMIZE = ["timeframe", "timerange", "dataformat_ohlcv",
                         "max_open_trades", "stake_amount", "fee"]
 
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
@@ -366,7 +366,7 @@ class Arguments:
         plot_profit_cmd = subparsers.add_parser(
             'plot-profit',
             help='Generate plot showing profits.',
-            parents=[_common_parser],
+            parents=[_common_parser, _strategy_parser],
         )
         plot_profit_cmd.set_defaults(func=start_plot_profit)
         self._build_args(optionlist=ARGS_PLOT_PROFIT, parser=plot_profit_cmd)

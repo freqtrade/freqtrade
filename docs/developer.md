@@ -10,6 +10,15 @@ Documentation is available at [https://freqtrade.io](https://www.freqtrade.io/) 
 
 Special fields for the documentation (like Note boxes, ...) can be found [here](https://squidfunk.github.io/mkdocs-material/extensions/admonition/).
 
+To test the documentation locally use the following commands.
+
+``` bash
+pip install -r docs/requirements-docs.txt
+mkdocs serve
+```
+
+This will spin up a local server (usually on port 8000) so you can see if everything looks as you'd like it to.
+
 ## Developer setup
 
 To configure a development environment, best use the `setup.sh` script and answer "y" when asked "Do you want to install dependencies for dev [y/N]? ".
@@ -52,6 +61,7 @@ The fastest and easiest way to start up is to use docker-compose.develop which g
 * [docker-compose](https://docs.docker.com/compose/install/)
 
 #### Starting the bot
+
 ##### Use the develop dockerfile
 
 ``` bash
@@ -74,7 +84,7 @@ docker-compose up
 docker-compose build
 ```
 
-##### Execing (effectively SSH into the container)
+##### Executing (effectively SSH into the container)
 
 The `exec` command requires that the container already be running, if you want to start it
 that can be effected by `docker-compose up` or `docker-compose run freqtrade_develop`
@@ -84,6 +94,35 @@ docker-compose exec freqtrade_develop /bin/bash
 ```
 
 ![image](https://user-images.githubusercontent.com/419355/65456522-ba671a80-de06-11e9-9598-df9ca0d8dcac.png)
+
+## ErrorHandling
+
+Freqtrade Exceptions all inherit from `FreqtradeException`.
+This general class of error should however not be used directly. Instead, multiple specialized sub-Exceptions exist.
+
+Below is an outline of exception inheritance hierarchy:
+
+```
++ FreqtradeException
+|
++---+ OperationalException
+|
++---+ DependencyException
+|   |
+|   +---+ PricingError
+|   |
+|   +---+ ExchangeError
+|       |
+|       +---+ TemporaryError
+|       |
+|       +---+ DDosProtection
+|       |
+|       +---+ InvalidOrderException
+|           |
+|           +---+ RetryableOrderError
+|
++---+ StrategyError
+```
 
 ## Modules
 
@@ -98,7 +137,7 @@ First of all, have a look at the [VolumePairList](https://github.com/freqtrade/f
 
 This is a simple Handler, which however serves as a good example on how to start developing.
 
-Next, modify the classname of the Handler (ideally align this with the module filename).
+Next, modify the class-name of the Handler (ideally align this with the module filename).
 
 The base-class provides an instance of the exchange (`self._exchange`) the pairlist manager (`self._pairlistmanager`), as well as the main configuration (`self._config`), the pairlist dedicated configuration (`self._pairlistconfig`) and the absolute position within the list of pairlists.
 
@@ -118,7 +157,7 @@ Configuration for the chain of Pairlist Handlers is done in the bot configuratio
 
 By convention, `"number_assets"` is used to specify the maximum number of pairs to keep in the pairlist. Please follow this to ensure a consistent user experience.
 
-Additional parameters can be configured as needed. For instance, `VolumePairList` uses `"sort_key"` to specify the sorting value - however feel free to specify whatever is necessary for your great algorithm to be successfull and dynamic.
+Additional parameters can be configured as needed. For instance, `VolumePairList` uses `"sort_key"` to specify the sorting value - however feel free to specify whatever is necessary for your great algorithm to be successful and dynamic.
 
 #### short_desc
 
@@ -134,7 +173,7 @@ This is called with each iteration of the bot (only if the Pairlist Handler is a
 
 It must return the resulting pairlist (which may then be passed into the chain of Pairlist Handlers).
 
-Validations are optional, the parent class exposes a `_verify_blacklist(pairlist)` and `_whitelist_for_active_markets(pairlist)` to do default filtering. Use this if you limit your result to a certain number of pairs - so the endresult is not shorter than expected.
+Validations are optional, the parent class exposes a `_verify_blacklist(pairlist)` and `_whitelist_for_active_markets(pairlist)` to do default filtering. Use this if you limit your result to a certain number of pairs - so the end-result is not shorter than expected.
 
 #### filter_pairlist
 
@@ -142,13 +181,13 @@ This method is called for each Pairlist Handler in the chain by the pairlist man
 
 This is called with each iteration of the bot - so consider implementing caching for compute/network heavy calculations.
 
-It get's passed a pairlist (which can be the result of previous pairlists) as well as `tickers`, a pre-fetched version of `get_tickers()`.
+It gets passed a pairlist (which can be the result of previous pairlists) as well as `tickers`, a pre-fetched version of `get_tickers()`.
 
 The default implementation in the base class simply calls the `_validate_pair()` method for each pair in the pairlist, but you may override it. So you should either implement the `_validate_pair()` in your Pairlist Handler or override `filter_pairlist()` to do something else.
 
 If overridden, it must return the resulting pairlist (which may then be passed into the next Pairlist Handler in the chain).
 
-Validations are optional, the parent class exposes a `_verify_blacklist(pairlist)` and `_whitelist_for_active_markets(pairlist)` to do default filters. Use this if you limit your result to a certain number of pairs - so the endresult is not shorter than expected.
+Validations are optional, the parent class exposes a `_verify_blacklist(pairlist)` and `_whitelist_for_active_markets(pairlist)` to do default filters. Use this if you limit your result to a certain number of pairs - so the end result is not shorter than expected.
 
 In `VolumePairList`, this implements different methods of sorting, does early validation so only the expected number of pairs is returned.
 
@@ -172,7 +211,7 @@ Most exchanges supported by CCXT should work out of the box.
 
 Check if the new exchange supports Stoploss on Exchange orders through their API.
 
-Since CCXT does not provide unification for Stoploss On Exchange yet, we'll need to implement the exchange-specific parameters ourselfs. Best look at `binance.py` for an example implementation of this. You'll need to dig through the documentation of the Exchange's API on how exactly this can be done. [CCXT Issues](https://github.com/ccxt/ccxt/issues) may also provide great help, since others may have implemented something similar for their projects.
+Since CCXT does not provide unification for Stoploss On Exchange yet, we'll need to implement the exchange-specific parameters ourselves. Best look at `binance.py` for an example implementation of this. You'll need to dig through the documentation of the Exchange's API on how exactly this can be done. [CCXT Issues](https://github.com/ccxt/ccxt/issues) may also provide great help, since others may have implemented something similar for their projects.
 
 ### Incomplete candles
 
@@ -245,6 +284,7 @@ git checkout -b new_release <commitid>
 
 Determine if crucial bugfixes have been made between this commit and the current state, and eventually cherry-pick these.
 
+* Merge the release branch (master) into this branch.
 * Edit `freqtrade/__init__.py` and add the version matching the current date (for example `2019.7` for July 2019). Minor versions can be `2019.7.1` should we need to do a second release that month. Version numbers must follow allowed versions from PEP0440 to avoid failures pushing to pypi.
 * Commit this part
 * push that branch to the remote and create a PR against the master branch
@@ -252,14 +292,14 @@ Determine if crucial bugfixes have been made between this commit and the current
 ### Create changelog from git commits
 
 !!! Note
-    Make sure that the master branch is uptodate!
+    Make sure that the master branch is up-to-date!
 
 ``` bash
 # Needs to be done before merging / pulling that branch.
 git log --oneline --no-decorate --no-merges master..new_release
 ```
 
-To keep the release-log short, best wrap the full git changelog into a collapsible details secction.
+To keep the release-log short, best wrap the full git changelog into a collapsible details section.
 
 ```markdown
 <details>
@@ -282,6 +322,9 @@ Once the PR against master is merged (best right after merging):
 ## Releases
 
 ### pypi
+
+!!! Note
+    This process is now automated as part of Github Actions.
 
 To create a pypi release, please run the following commands:
 

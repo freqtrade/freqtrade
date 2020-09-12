@@ -1,5 +1,3 @@
-
-
 import talib.abstract as ta
 import pandas as pd
 

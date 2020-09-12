@@ -354,11 +354,12 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     exists = [
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
-        'Backtesting with data from 2017-11-14T21:17:00+00:00 '
-        'up to 2017-11-14T22:59:00+00:00 (0 days)..'
+        'Backtesting with data from 2017-11-14 21:17:00 '
+        'up to 2017-11-14 22:59:00 (0 days)..'
     ]
     for line in exists:
         assert log_has(line, caplog)
+    assert backtesting.strategy.dp._pairlists is not None
 
 
 def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) -> None:
@@ -464,28 +465,29 @@ def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
         {'pair': [pair, pair],
          'profit_percent': [0.0, 0.0],
          'profit_abs': [0.0, 0.0],
-         'open_time': pd.to_datetime([Arrow(2018, 1, 29, 18, 40, 0).datetime,
+         'open_date': pd.to_datetime([Arrow(2018, 1, 29, 18, 40, 0).datetime,
                                       Arrow(2018, 1, 30, 3, 30, 0).datetime], utc=True
                                      ),
-         'close_time': pd.to_datetime([Arrow(2018, 1, 29, 22, 35, 0).datetime,
+         'open_rate': [0.104445, 0.10302485],
+         'open_fee': [0.0025, 0.0025],
+         'close_date': pd.to_datetime([Arrow(2018, 1, 29, 22, 35, 0).datetime,
                                        Arrow(2018, 1, 30, 4, 10, 0).datetime], utc=True),
-         'open_index': [78, 184],
-         'close_index': [125, 192],
+         'close_rate': [0.104969, 0.103541],
+         'close_fee': [0.0025, 0.0025],
+         'amount': [0.00957442, 0.0097064],
          'trade_duration': [235, 40],
          'open_at_end': [False, False],
-         'open_rate': [0.104445, 0.10302485],
-         'close_rate': [0.104969, 0.103541],
          'sell_reason': [SellType.ROI, SellType.ROI]
          })
     pd.testing.assert_frame_equal(results, expected)
     data_pair = processed[pair]
     for _, t in results.iterrows():
-        ln = data_pair.loc[data_pair["date"] == t["open_time"]]
+        ln = data_pair.loc[data_pair["date"] == t["open_date"]]
         # Check open trade rate alignes to open rate
         assert ln is not None
         assert round(ln.iloc[0]["open"], 6) == round(t["open_rate"], 6)
         # check close trade rate alignes to close rate or is between high and low
-        ln = data_pair.loc[data_pair["date"] == t["close_time"]]
+        ln = data_pair.loc[data_pair["date"] == t["close_date"]]
         assert (round(ln.iloc[0]["open"], 6) == round(t["close_rate"], 6) or
                 round(ln.iloc[0]["low"], 6) < round(
                 t["close_rate"], 6) < round(ln.iloc[0]["high"], 6))
@@ -677,10 +679,10 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
         f'Using data directory: {testdatadir} ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
-        'Loading data from 2017-11-14T20:57:00+00:00 '
-        'up to 2017-11-14T22:58:00+00:00 (0 days)..',
-        'Backtesting with data from 2017-11-14T21:17:00+00:00 '
-        'up to 2017-11-14T22:58:00+00:00 (0 days)..',
+        'Loading data from 2017-11-14 20:57:00 '
+        'up to 2017-11-14 22:58:00 (0 days)..',
+        'Backtesting with data from 2017-11-14 21:17:00 '
+        'up to 2017-11-14 22:58:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...'
     ]
 
@@ -707,6 +709,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
                           generate_pair_metrics=MagicMock(),
                           generate_sell_reason_stats=sell_reason_mock,
                           generate_strategy_metrics=strat_summary,
+                          generate_daily_stats=MagicMock(),
                           )
     patched_configuration_load_config_file(mocker, default_conf)
 
@@ -740,10 +743,10 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         f'Using data directory: {testdatadir} ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
-        'Loading data from 2017-11-14T20:57:00+00:00 '
-        'up to 2017-11-14T22:58:00+00:00 (0 days)..',
-        'Backtesting with data from 2017-11-14T21:17:00+00:00 '
-        'up to 2017-11-14T22:58:00+00:00 (0 days)..',
+        'Loading data from 2017-11-14 20:57:00 '
+        'up to 2017-11-14 22:58:00 (0 days)..',
+        'Backtesting with data from 2017-11-14 21:17:00 '
+        'up to 2017-11-14 22:58:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...',
         'Running backtesting for Strategy DefaultStrategy',
         'Running backtesting for Strategy TestStrategyLegacy',
@@ -761,13 +764,11 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
         pd.DataFrame({'pair': ['XRP/BTC', 'LTC/BTC'],
                       'profit_percent': [0.0, 0.0],
                       'profit_abs': [0.0, 0.0],
-                      'open_time': pd.to_datetime(['2018-01-29 18:40:00',
+                      'open_date': pd.to_datetime(['2018-01-29 18:40:00',
                                                    '2018-01-30 03:30:00', ], utc=True
                                                   ),
-                      'close_time': pd.to_datetime(['2018-01-29 20:45:00',
+                      'close_date': pd.to_datetime(['2018-01-29 20:45:00',
                                                     '2018-01-30 05:35:00', ], utc=True),
-                      'open_index': [78, 184],
-                      'close_index': [125, 192],
                       'trade_duration': [235, 40],
                       'open_at_end': [False, False],
                       'open_rate': [0.104445, 0.10302485],
@@ -777,15 +778,13 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
         pd.DataFrame({'pair': ['XRP/BTC', 'LTC/BTC', 'ETH/BTC'],
                       'profit_percent': [0.03, 0.01, 0.1],
                       'profit_abs': [0.01, 0.02, 0.2],
-                      'open_time': pd.to_datetime(['2018-01-29 18:40:00',
+                      'open_date': pd.to_datetime(['2018-01-29 18:40:00',
                                                    '2018-01-30 03:30:00',
                                                    '2018-01-30 05:30:00'], utc=True
                                                   ),
-                      'close_time': pd.to_datetime(['2018-01-29 20:45:00',
+                      'close_date': pd.to_datetime(['2018-01-29 20:45:00',
                                                     '2018-01-30 05:35:00',
                                                     '2018-01-30 08:30:00'], utc=True),
-                      'open_index': [78, 184, 185],
-                      'close_index': [125, 224, 205],
                       'trade_duration': [47, 40, 20],
                       'open_at_end': [False, False, False],
                       'open_rate': [0.104445, 0.10302485, 0.122541],
@@ -823,10 +822,10 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
         f'Using data directory: {testdatadir} ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
-        'Loading data from 2017-11-14T20:57:00+00:00 '
-        'up to 2017-11-14T22:58:00+00:00 (0 days)..',
-        'Backtesting with data from 2017-11-14T21:17:00+00:00 '
-        'up to 2017-11-14T22:58:00+00:00 (0 days)..',
+        'Loading data from 2017-11-14 20:57:00 '
+        'up to 2017-11-14 22:58:00 (0 days)..',
+        'Backtesting with data from 2017-11-14 21:17:00 '
+        'up to 2017-11-14 22:58:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...',
         'Running backtesting for Strategy DefaultStrategy',
         'Running backtesting for Strategy TestStrategyLegacy',

@@ -157,16 +157,31 @@ A backtesting result will look like that:
 | ADA/BTC  |      1 |           0.89 |           0.89 |       0.00004434 |           0.44 | 6:00:00        |     1 |      0 |       0 |
 | LTC/BTC  |      1 |           0.68 |           0.68 |       0.00003421 |           0.34 | 2:00:00        |     1 |      0 |       0 |
 | TOTAL    |      2 |           0.78 |           1.57 |       0.00007855 |           0.78 | 4:00:00        |     2 |      0 |       0 |
+=============== SUMMARY METRICS ===============
+| Metric                | Value               |
+|-----------------------+---------------------|
+| Backtesting from      | 2019-01-01 00:00:00 |
+| Backtesting to        | 2019-05-01 00:00:00 |
+| Total trades          | 429                 |
+| First trade           | 2019-01-01 18:30:00 |
+| First trade Pair      | EOS/USDT            |
+| Total Profit %        | 152.41%             |
+| Trades per day        | 3.575               |
+| Best day              | 25.27%              |
+| Worst day             | -30.67%             |
+| Avg. Duration Winners | 4:23:00             |
+| Avg. Duration Loser   | 6:55:00             |
+|                       |                     |
+| Max Drawdown          | 50.63%              |
+| Drawdown Start        | 2019-02-15 14:10:00 |
+| Drawdown End          | 2019-04-11 18:15:00 |
+| Market change         | -5.88%              |
+===============================================
 ```
 
+### Backtesting report table
+
 The 1st table contains all trades the bot made, including "left open trades".
-
-The 2nd table contains a recap of sell reasons.
-This table can tell you which area needs some additional work (i.e. all `sell_signal` trades are losses, so we should disable the sell-signal or work on improving that).
-
-The 3rd table contains all trades the bot had to `forcesell` at the end of the backtest period to present a full picture.
-This is necessary to simulate realistic behaviour, since the backtest period has to end at some point, while realistically, you could leave the bot running forever.
-These trades are also included in the first table, but are extracted separately for clarity.
 
 The last line will give you the overall performance of your strategy,
 here:
@@ -195,6 +210,58 @@ For example, if your `minimal_roi` is only `"0":  0.01` you cannot expect the bo
 On the other hand, if you set a too high `minimal_roi` like `"0":  0.55`
 (55%), there is almost no chance that the bot will ever reach this profit.
 Hence, keep in mind that your performance is an integral mix of all different elements of the strategy, your configuration, and the crypto-currency pairs you have set up.
+
+### Sell reasons table
+
+The 2nd table contains a recap of sell reasons.
+This table can tell you which area needs some additional work (e.g. all or many of the `sell_signal` trades are losses, so you should work on improving the sell signal, or consider disabling it).
+
+### Left open trades table
+
+The 3rd table contains all trades the bot had to `forcesell` at the end of the backtesting period to present you the full picture.
+This is necessary to simulate realistic behavior, since the backtest period has to end at some point, while realistically, you could leave the bot running forever.
+These trades are also included in the first table, but are also shown separately in this table for clarity.
+
+### Summary metrics
+
+The last element of the backtest report is the summary metrics table.
+It contains some useful key metrics about performance of your strategy on backtesting data.
+
+```
+=============== SUMMARY METRICS ===============
+| Metric                | Value               |
+|-----------------------+---------------------|
+| Backtesting from      | 2019-01-01 00:00:00 |
+| Backtesting to        | 2019-05-01 00:00:00 |
+| Total trades          | 429                 |
+| First trade           | 2019-01-01 18:30:00 |
+| First trade Pair      | EOS/USDT            |
+| Total Profit %        | 152.41%             |
+| Trades per day        | 3.575               |
+| Best day              | 25.27%              |
+| Worst day             | -30.67%             |
+| Avg. Duration Winners | 4:23:00             |
+| Avg. Duration Loser   | 6:55:00             |
+|                       |                     |
+| Max Drawdown          | 50.63%              |
+| Drawdown Start        | 2019-02-15 14:10:00 |
+| Drawdown End          | 2019-04-11 18:15:00 |
+| Market change         | -5.88%              |
+===============================================
+
+```
+
+- `Total trades`: Identical to the total trades of the backtest output table.
+- `First trade`: First trade entered.
+- `First trade pair`: Which pair was part of the first trade.
+- `Backtesting from` / `Backtesting to`: Backtesting range (usually defined with the `--timerange` option).
+- `Total Profit %`: Total profit per stake amount. Aligned to the TOTAL column of the first table.
+- `Trades per day`: Total trades divided by the backtesting duration in days (this will give you information about how many trades to expect from the strategy).
+- `Best day` / `Worst day`: Best and worst day based on daily profit.
+- `Avg. Duration Winners` / `Avg. Duration Loser`: Average durations for winning and losing trades.
+- `Max Drawdown`: Maximum drawdown experienced. For example, the value of 50% means that from highest to subsequent lowest point, a 50% drop was experienced).
+- `Drawdown Start` / `Drawdown End`: Start and end datetimes for this largest drawdown (can also be visualized via the `plot-dataframe` sub-command).
+- `Market change`: Change of the market during the backtest period. Calculated as average of all pairs changes from the first to the last candle using the "close" column.
 
 ### Assumptions made by backtesting
 
