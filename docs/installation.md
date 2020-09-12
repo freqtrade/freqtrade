@@ -82,8 +82,9 @@ This option will hard reset your branch (only if you are on either `master` or `
 
 DEPRECATED - use `freqtrade new-config -c config.json` instead.
 
+### Activate your virtual environment
 
-
+Each time you open a new terminal, you must run `source .env/bin/activate`.
 
 ------
 
