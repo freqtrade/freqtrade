@@ -897,9 +897,7 @@ class FreqtradeBot:
         except InsufficientFundsError as e:
             logger.warning(f"Unable to place stoploss order {e}.")
             # Try to figure out what went wrong
-            # TODO: test without refinding order logic
-            # TODO: Also reenable the test test_create_stoploss_order_insufficient_funds
-            # self.handle_insufficient_funds(trade)
+            self.handle_insufficient_funds(trade)
 
         except InvalidOrderException as e:
             trade.stoploss_order_id = None
