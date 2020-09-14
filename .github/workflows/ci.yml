@@ -7,8 +7,8 @@ on:
       - develop
       - github_actions_tests
     tags:
-    release:
-      types: [published]
+  release:
+    types: [published]
   pull_request:
   schedule:
     - cron:  '0 5 * * 4'
@@ -226,7 +226,7 @@ jobs:
 
     - name: Extract branch name
       shell: bash
-      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF##*/})"
       id: extract_branch
 
     - name: Build distribution
