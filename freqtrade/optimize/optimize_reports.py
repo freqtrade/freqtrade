@@ -122,7 +122,7 @@ def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List
 
         profit_mean = result['profit_percent'].mean()
         profit_sum = result["profit_percent"].sum()
-        profit_percent_tot = round(result['profit_percent'].sum() * 100.0 / max_open_trades, 2)
+        profit_percent_tot = result['profit_percent'].sum() / max_open_trades
 
         tabular_data.append(
             {
@@ -136,7 +136,8 @@ def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List
                 'profit_sum': profit_sum,
                 'profit_sum_pct': round(profit_sum * 100, 2),
                 'profit_total_abs': result['profit_abs'].sum(),
-                'profit_total_pct': profit_percent_tot,
+                'profit_total': profit_percent_tot,
+                'profit_total_pct': round(profit_percent_tot * 100, 2),
             }
         )
     return tabular_data
