@@ -921,7 +921,6 @@ def test_api_pair_history(botclient, ohlcv_history):
     assert rc.json['data_stop_ts'] == 1515715200000
 
 
-
 def test_api_plot_config(botclient):
     ftbot, client = botclient
 

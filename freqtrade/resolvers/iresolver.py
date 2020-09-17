@@ -51,7 +51,8 @@ class IResolver:
         :param object_name: Class name of the object
         :param enum_failed: If True, will return None for modules which fail.
             Otherwise, failing modules are skipped.
-        :return: generator containing matching objects
+        :return: generator containing tuple of matching objects
+             Tuple format: [Object, source]
         """
 
         # Generate spec based on absolute path
@@ -67,7 +68,8 @@ class IResolver:
                 return iter([None])
 
         valid_objects_gen = (
-            (obj, inspect.getsource(module)) for name, obj in inspect.getmembers(
+            (obj, inspect.getsource(module)) for
+            name, obj in inspect.getmembers(
                 module, inspect.isclass) if ((object_name is None or object_name == name)
                                              and issubclass(obj, cls.object_type)
                                              and obj is not cls.object_type)
@@ -75,7 +77,7 @@ class IResolver:
         return valid_objects_gen
 
     @classmethod
-    def _search_object(cls, directory: Path, object_name: str
+    def _search_object(cls, directory: Path, object_name: str, add_source: bool = False
                        ) -> Union[Tuple[Any, Path], Tuple[None, None]]:
         """
         Search for the objectname in the given directory
@@ -94,12 +96,14 @@ class IResolver:
             obj = next(cls._get_valid_object(module_path, object_name), None)
 
             if obj:
-                obj[0].__code__ = obj[1]
+                obj[0].__file__ = str(entry)
+                if add_source:
+                    obj[0].__code__ = obj[1]
                 return (obj[0], module_path)
         return (None, None)
 
     @classmethod
-    def _load_object(cls, paths: List[Path], object_name: str,
+    def _load_object(cls, paths: List[Path], object_name: str, add_source: bool = False,
                      kwargs: dict = {}) -> Optional[Any]:
         """
         Try to load object from path list.
@@ -108,7 +112,8 @@ class IResolver:
         for _path in paths:
             try:
                 (module, module_path) = cls._search_object(directory=_path,
-                                                           object_name=object_name)
+                                                           object_name=object_name,
+                                                           add_source=add_source)
                 if module:
                     logger.info(
                         f"Using resolved {cls.object_type.__name__.lower()[1:]} {object_name} "
