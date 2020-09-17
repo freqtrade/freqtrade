@@ -1,3 +1,4 @@
+from freqtrade.exceptions import OperationalException
 import logging
 import threading
 from copy import deepcopy
@@ -599,7 +600,11 @@ class ApiServer(RPC):
         """
         config = deepcopy(self._config)
         from freqtrade.resolvers.strategy_resolver import StrategyResolver
-        strategy_obj = StrategyResolver._load_strategy(strategy, config, None)
+        try:
+            strategy_obj = StrategyResolver._load_strategy(strategy, config,
+                                                           extra_dir=config.get('strategy_path'))
+        except OperationalException:
+            return self.rest_error("Strategy not found.", 404)
 
         return self.rest_dump({
             'strategy': strategy_obj.get_strategy_name(),

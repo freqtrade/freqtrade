@@ -3,6 +3,7 @@ Unit test file for rpc/api_server.py
 """
 
 from datetime import datetime
+from pathlib import Path
 from unittest.mock import ANY, MagicMock, PropertyMock
 
 import pytest
@@ -943,6 +944,21 @@ def test_api_strategies(botclient):
 
     assert_response(rc)
     assert rc.json == {'strategies': ['DefaultStrategy', 'TestStrategyLegacy']}
+
+
+def test_api_strategy(botclient):
+    ftbot, client = botclient
+
+    rc = client_get(client, f"{BASE_URI}/strategy/DefaultStrategy")
+
+    assert_response(rc)
+    assert rc.json['strategy'] == 'DefaultStrategy'
+
+    data = (Path(__file__).parents[1] / "strategy/strats/default_strategy.py").read_text()
+    assert rc.json['code'] == data
+
+    rc = client_get(client, f"{BASE_URI}/strategy/NoStrat")
+    assert_response(rc, 404)
 
 
 def test_list_available_pairs(botclient):

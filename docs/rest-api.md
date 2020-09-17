@@ -133,6 +133,7 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `pair_history` | Returns an analyzed dataframe for a given timerange, analyzed by a given strategy. **Alpha**
 | `plot_config` | Get plot config from the strategy (or nothing if not configured). **Alpha**
 | `strategies` | List strategies in strategy directory. **Alpha**
+| `strategy <strategy>` | Get specific Strategy content. **Alpha**
 | `available_pairs` | List available backtest data. **Alpha**
 | `version` | Show version
 
@@ -238,6 +239,11 @@ stopbuy
 
 strategies
 	Lists available strategies
+
+strategy
+	Get strategy details
+
+        :param strategy: Strategy class name
 
 trades
 	Return trades history.

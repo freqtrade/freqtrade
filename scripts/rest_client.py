@@ -231,6 +231,14 @@ class FtRestClient():
         """
         return self._get("strategies")
 
+    def strategy(self, strategy):
+        """Get strategy details
+
+        :param strategy: Strategy class name
+        :return: json object
+        """
+        return self._get(f"strategy/{strategy}")
+
     def plot_config(self):
         """Return plot configuration if the strategy defines one.
 
