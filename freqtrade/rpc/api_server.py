@@ -223,6 +223,8 @@ class ApiServer(RPC):
                               view_func=self._plot_config, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/strategies', 'strategies',
                               view_func=self._list_strategies, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/strategy/<string:strategy>', 'strategy',
+                              view_func=self._get_strategy, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/available_pairs', 'pairs',
                               view_func=self._list_available_pairs, methods=['GET'])
 
@@ -585,6 +587,24 @@ class ApiServer(RPC):
         strategy_objs = sorted(strategy_objs, key=lambda x: x['name'])
 
         return self.rest_dump({'strategies': [x['name'] for x in strategy_objs]})
+
+    @require_login
+    @rpc_catch_errors
+    def _get_strategy(self, strategy: str):
+        """
+        Get a single strategy
+        get:
+          parameters:
+            - strategy: Only get this strategy
+        """
+        config = deepcopy(self._config)
+        from freqtrade.resolvers.strategy_resolver import StrategyResolver
+        strategy_obj = StrategyResolver._load_strategy(strategy, config, None)
+
+        return self.rest_dump({
+            'strategy': strategy_obj.get_strategy_name(),
+            'code': strategy_obj.__code__,
+         })
 
     @require_login
     @rpc_catch_errors
