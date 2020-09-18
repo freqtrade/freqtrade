@@ -152,6 +152,10 @@ class Backtesting:
         self.strategy.order_types['stoploss_on_exchange'] = False
 
     def load_bt_data(self) -> Tuple[Dict[str, DataFrame], TimeRange]:
+        """
+        Loads backtest data and returns the data combined with the timerange
+        as tuple.
+        """
         timerange = TimeRange.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
 
