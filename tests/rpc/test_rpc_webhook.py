@@ -150,7 +150,7 @@ def test_send_msg(default_conf, mocker):
             default_conf["webhook"]["webhooksellcancel"]["value3"].format(**msg))
     for msgtype in [RPCMessageType.STATUS_NOTIFICATION,
                     RPCMessageType.WARNING_NOTIFICATION,
-                    RPCMessageType.CUSTOM_NOTIFICATION]:
+                    RPCMessageType.STARTUP_NOTIFICATION]:
         # Test notification
         msg = {
             'type': msgtype,

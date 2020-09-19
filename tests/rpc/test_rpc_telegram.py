@@ -1485,7 +1485,7 @@ def test_warning_notification(default_conf, mocker) -> None:
     assert msg_mock.call_args[0][0] == '\N{WARNING SIGN} *Warning:* `message`'
 
 
-def test_custom_notification(default_conf, mocker) -> None:
+def test_startup_notification(default_conf, mocker) -> None:
     msg_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
@@ -1495,7 +1495,7 @@ def test_custom_notification(default_conf, mocker) -> None:
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     telegram = Telegram(freqtradebot)
     telegram.send_msg({
-        'type': RPCMessageType.CUSTOM_NOTIFICATION,
+        'type': RPCMessageType.STARTUP_NOTIFICATION,
         'status': '*Custom:* `Hello World`'
     })
     assert msg_mock.call_args[0][0] == '*Custom:* `Hello World`'
