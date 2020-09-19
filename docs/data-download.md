@@ -20,13 +20,12 @@ You can use a relative timerange (`--days 20`) or an absolute starting point (`-
 usage: freqtrade download-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [-d PATH] [--userdir PATH]
                                [-p PAIRS [PAIRS ...]] [--pairs-file FILE]
-                               [--days INT] [--dl-trades]
-                               [--exchange EXCHANGE]
+                               [--days INT] [--timerange TIMERANGE]
+                               [--dl-trades] [--exchange EXCHANGE]
                                [-t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} ...]]
                                [--erase]
                                [--data-format-ohlcv {json,jsongz,hdf5}]
                                [--data-format-trades {json,jsongz,hdf5}]
-                               [--timerange TIMERANGE]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -35,6 +34,8 @@ optional arguments:
                         separated.
   --pairs-file FILE     File containing a list of pairs to download.
   --days INT            Download data for given number of days.
+  --timerange TIMERANGE
+                        Specify what timerange of data to use.
   --dl-trades           Download trades instead of OHLCV data. The bot will
                         resample trades to the desired timeframe as specified
                         as --timeframes/-t.
@@ -51,8 +52,6 @@ optional arguments:
   --data-format-trades {json,jsongz,hdf5}
                         Storage format for downloaded trades data. (default:
                         `jsongz`).
-  --timerange TIMERANGE
-                        Specify what timerange of data to use.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
