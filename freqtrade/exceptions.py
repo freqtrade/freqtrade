@@ -51,6 +51,13 @@ class RetryableOrderError(InvalidOrderException):
     """
 
 
+class InsufficientFundsError(InvalidOrderException):
+    """
+    This error is used when there are not enough funds available on the exchange
+    to create an order.
+    """
+
+
 class TemporaryError(ExchangeError):
     """
     Temporary network or exchange related error.

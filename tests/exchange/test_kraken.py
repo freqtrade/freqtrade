@@ -1,5 +1,3 @@
-# pragma pylint: disable=missing-docstring, C0103, bad-continuation, global-statement
-# pragma pylint: disable=protected-access
 from random import randint
 from unittest.mock import MagicMock
 

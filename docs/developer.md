@@ -120,6 +120,8 @@ Below is an outline of exception inheritance hierarchy:
 |       +---+ InvalidOrderException
 |           |
 |           +---+ RetryableOrderError
+|           |
+|           +---+ InsufficientFundsError
 |
 +---+ StrategyError
 ```

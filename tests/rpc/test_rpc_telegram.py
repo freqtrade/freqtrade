@@ -253,7 +253,6 @@ def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
-        buy=MagicMock(return_value={'id': 'mocked_order_id'}),
         get_fee=fee,
     )
     msg_mock = MagicMock()
@@ -1007,7 +1006,6 @@ def test_count_handle(default_conf, update, ticker, fee, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
-        buy=MagicMock(return_value={'id': 'mocked_order_id'}),
         get_fee=fee,
     )
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)

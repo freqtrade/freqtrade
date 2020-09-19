@@ -7,9 +7,9 @@ import pytest
 from sqlalchemy import create_engine
 
 from freqtrade import constants
-from freqtrade.exceptions import OperationalException
-from freqtrade.persistence import Trade, clean_dry_run_db, init
-from tests.conftest import log_has, create_mock_trades
+from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.persistence import Order, Trade, clean_dry_run_db, init
+from tests.conftest import create_mock_trades, log_has, log_has_re
 
 
 def test_init_create_session(default_conf):
@@ -22,7 +22,7 @@ def test_init_create_session(default_conf):
 def test_init_custom_db_url(default_conf, mocker):
     # Update path to a value other than default, but still in-memory
     default_conf.update({'db_url': 'sqlite:///tmp/freqtrade2_test.sqlite'})
-    create_engine_mock = mocker.patch('freqtrade.persistence.create_engine', MagicMock())
+    create_engine_mock = mocker.patch('freqtrade.persistence.models.create_engine', MagicMock())
 
     init(default_conf['db_url'], default_conf['dry_run'])
     assert create_engine_mock.call_count == 1
@@ -40,7 +40,7 @@ def test_init_prod_db(default_conf, mocker):
     default_conf.update({'dry_run': False})
     default_conf.update({'db_url': constants.DEFAULT_DB_PROD_URL})
 
-    create_engine_mock = mocker.patch('freqtrade.persistence.create_engine', MagicMock())
+    create_engine_mock = mocker.patch('freqtrade.persistence.models.create_engine', MagicMock())
 
     init(default_conf['db_url'], default_conf['dry_run'])
     assert create_engine_mock.call_count == 1
@@ -51,7 +51,7 @@ def test_init_dryrun_db(default_conf, mocker):
     default_conf.update({'dry_run': True})
     default_conf.update({'db_url': constants.DEFAULT_DB_DRYRUN_URL})
 
-    create_engine_mock = mocker.patch('freqtrade.persistence.create_engine', MagicMock())
+    create_engine_mock = mocker.patch('freqtrade.persistence.models.create_engine', MagicMock())
 
     init(default_conf['db_url'], default_conf['dry_run'])
     assert create_engine_mock.call_count == 1
@@ -93,6 +93,8 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order, fee, caplog):
         stake_amount=0.001,
         open_rate=0.01,
         amount=5,
+        is_open=True,
+        open_date=arrow.utcnow().datetime,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='bittrex',
@@ -107,9 +109,9 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order, fee, caplog):
     assert trade.open_rate == 0.00001099
     assert trade.close_profit is None
     assert trade.close_date is None
-    assert log_has("LIMIT_BUY has been fulfilled for Trade(id=2, "
-                   "pair=ETH/BTC, amount=90.99181073, open_rate=0.00001099, open_since=closed).",
-                   caplog)
+    assert log_has_re(r"LIMIT_BUY has been fulfilled for Trade\(id=2, "
+                      r"pair=ETH/BTC, amount=90.99181073, open_rate=0.00001099, open_since=.*\).",
+                      caplog)
 
     caplog.clear()
     trade.open_order_id = 'something'
@@ -118,9 +120,9 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order, fee, caplog):
     assert trade.close_rate == 0.00001173
     assert trade.close_profit == 0.06201058
     assert trade.close_date is not None
-    assert log_has("LIMIT_SELL has been fulfilled for Trade(id=2, "
-                   "pair=ETH/BTC, amount=90.99181073, open_rate=0.00001099, open_since=closed).",
-                   caplog)
+    assert log_has_re(r"LIMIT_SELL has been fulfilled for Trade\(id=2, "
+                      r"pair=ETH/BTC, amount=90.99181073, open_rate=0.00001099, open_since=.*\).",
+                      caplog)
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -131,8 +133,10 @@ def test_update_market_order(market_buy_order, market_sell_order, fee, caplog):
         stake_amount=0.001,
         amount=5,
         open_rate=0.01,
+        is_open=True,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
+        open_date=arrow.utcnow().datetime,
         exchange='bittrex',
     )
 
@@ -142,20 +146,21 @@ def test_update_market_order(market_buy_order, market_sell_order, fee, caplog):
     assert trade.open_rate == 0.00004099
     assert trade.close_profit is None
     assert trade.close_date is None
-    assert log_has("MARKET_BUY has been fulfilled for Trade(id=1, "
-                   "pair=ETH/BTC, amount=91.99181073, open_rate=0.00004099, open_since=closed).",
-                   caplog)
+    assert log_has_re(r"MARKET_BUY has been fulfilled for Trade\(id=1, "
+                      r"pair=ETH/BTC, amount=91.99181073, open_rate=0.00004099, open_since=.*\).",
+                      caplog)
 
     caplog.clear()
+    trade.is_open = True
     trade.open_order_id = 'something'
     trade.update(market_sell_order)
     assert trade.open_order_id is None
     assert trade.close_rate == 0.00004173
     assert trade.close_profit == 0.01297561
     assert trade.close_date is not None
-    assert log_has("MARKET_SELL has been fulfilled for Trade(id=1, "
-                   "pair=ETH/BTC, amount=91.99181073, open_rate=0.00004099, open_since=closed).",
-                   caplog)
+    assert log_has_re(r"MARKET_SELL has been fulfilled for Trade\(id=1, "
+                      r"pair=ETH/BTC, amount=91.99181073, open_rate=0.00004099, open_since=.*\).",
+                      caplog)
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -182,6 +187,36 @@ def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order, fee):
 
     # Profit in percent
     assert trade.calc_profit_ratio() == 0.06201058
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_trade_close(limit_buy_order, limit_sell_order, fee):
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        open_rate=0.01,
+        amount=5,
+        is_open=True,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_date=arrow.Arrow(2020, 2, 1, 15, 5, 1).datetime,
+        exchange='bittrex',
+    )
+    assert trade.close_profit is None
+    assert trade.close_date is None
+    assert trade.is_open is True
+    trade.close(0.02)
+    assert trade.is_open is False
+    assert trade.close_profit == 0.99002494
+    assert trade.close_date is not None
+
+    new_date = arrow.Arrow(2020, 2, 2, 15, 6, 1).datetime,
+    assert trade.close_date != new_date
+    # Close should NOT update close_date if the trade has been closed already
+    assert trade.is_open is False
+    trade.close_date = new_date
+    trade.close(0.02)
+    assert trade.close_date == new_date
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -421,9 +456,9 @@ def test_migrate_old(mocker, default_conf, fee):
                                 PRIMARY KEY (id),
                                 CHECK (is_open IN (0, 1))
                                 );"""
-    insert_table_old = """INSERT INTO trades (exchange, pair, is_open, fee,
+    insert_table_old = """INSERT INTO trades (exchange, pair, is_open, open_order_id, fee,
                           open_rate, stake_amount, amount, open_date)
-                          VALUES ('BITTREX', 'BTC_ETC', 1, {fee},
+                          VALUES ('BITTREX', 'BTC_ETC', 1, '123123', {fee},
                           0.00258580, {stake}, {amount},
                           '2017-11-28 12:44:24.000000')
                           """.format(fee=fee.return_value,
@@ -440,7 +475,7 @@ def test_migrate_old(mocker, default_conf, fee):
                                      amount=amount
                                      )
     engine = create_engine('sqlite://')
-    mocker.patch('freqtrade.persistence.create_engine', lambda *args, **kwargs: engine)
+    mocker.patch('freqtrade.persistence.models.create_engine', lambda *args, **kwargs: engine)
 
     # Create table using the old format
     engine.execute(create_table_old)
@@ -481,6 +516,12 @@ def test_migrate_old(mocker, default_conf, fee):
     assert pytest.approx(trade.close_profit_abs) == trade.calc_profit()
     assert trade.sell_order_status is None
 
+    # Should've created one order
+    assert len(Order.query.all()) == 1
+    order = Order.query.first()
+    assert order.order_id == '123123'
+    assert order.ft_order_side == 'buy'
+
 
 def test_migrate_new(mocker, default_conf, fee, caplog):
     """
@@ -509,22 +550,25 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
                                 sell_reason VARCHAR,
                                 strategy VARCHAR,
                                 ticker_interval INTEGER,
+                                stoploss_order_id VARCHAR,
                                 PRIMARY KEY (id),
                                 CHECK (is_open IN (0, 1))
                                 );"""
     insert_table_old = """INSERT INTO trades (exchange, pair, is_open, fee,
                           open_rate, stake_amount, amount, open_date,
-                          stop_loss, initial_stop_loss, max_rate, ticker_interval)
+                          stop_loss, initial_stop_loss, max_rate, ticker_interval,
+                          open_order_id, stoploss_order_id)
                           VALUES ('binance', 'ETC/BTC', 1, {fee},
                           0.00258580, {stake}, {amount},
                           '2019-11-28 12:44:24.000000',
-                          0.0, 0.0, 0.0, '5m')
+                          0.0, 0.0, 0.0, '5m',
+                          'buy_order', 'stop_order_id222')
                           """.format(fee=fee.return_value,
                                      stake=default_conf.get("stake_amount"),
                                      amount=amount
                                      )
     engine = create_engine('sqlite://')
-    mocker.patch('freqtrade.persistence.create_engine', lambda *args, **kwargs: engine)
+    mocker.patch('freqtrade.persistence.models.create_engine', lambda *args, **kwargs: engine)
 
     # Create table using the old format
     engine.execute(create_table_old)
@@ -558,13 +602,22 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.sell_reason is None
     assert trade.strategy is None
     assert trade.timeframe == '5m'
-    assert trade.stoploss_order_id is None
+    assert trade.stoploss_order_id == 'stop_order_id222'
     assert trade.stoploss_last_update is None
     assert log_has("trying trades_bak1", caplog)
     assert log_has("trying trades_bak2", caplog)
-    assert log_has("Running database migration - backup available as trades_bak2", caplog)
+    assert log_has("Running database migration for trades - backup: trades_bak2", caplog)
     assert trade.open_trade_price == trade._calc_open_trade_price()
     assert trade.close_profit_abs is None
+
+    assert log_has("Moving open orders to Orders table.", caplog)
+    orders = Order.query.all()
+    assert len(orders) == 2
+    assert orders[0].order_id == 'buy_order'
+    assert orders[0].ft_order_side == 'buy'
+
+    assert orders[1].order_id == 'stop_order_id222'
+    assert orders[1].ft_order_side == 'stoploss'
 
 
 def test_migrate_mid_state(mocker, default_conf, fee, caplog):
@@ -601,7 +654,7 @@ def test_migrate_mid_state(mocker, default_conf, fee, caplog):
                                      amount=amount
                                      )
     engine = create_engine('sqlite://')
-    mocker.patch('freqtrade.persistence.create_engine', lambda *args, **kwargs: engine)
+    mocker.patch('freqtrade.persistence.models.create_engine', lambda *args, **kwargs: engine)
 
     # Create table using the old format
     engine.execute(create_table_old)
@@ -626,7 +679,7 @@ def test_migrate_mid_state(mocker, default_conf, fee, caplog):
     assert trade.initial_stop_loss == 0.0
     assert trade.open_trade_price == trade._calc_open_trade_price()
     assert log_has("trying trades_bak0", caplog)
-    assert log_has("Running database migration - backup available as trades_bak0", caplog)
+    assert log_has("Running database migration for trades - backup: trades_bak0", caplog)
 
 
 def test_adjust_stop_loss(fee):
@@ -713,10 +766,10 @@ def test_adjust_min_max_rates(fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_get_open(default_conf, fee):
+def test_get_open(fee):
 
     create_mock_trades(fee)
-    assert len(Trade.get_open_trades()) == 2
+    assert len(Trade.get_open_trades()) == 4
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -986,7 +1039,7 @@ def test_total_open_trades_stakes(fee):
     assert res == 0
     create_mock_trades(fee)
     res = Trade.total_open_trades_stakes()
-    assert res == 0.002
+    assert res == 0.004
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -1012,3 +1065,96 @@ def test_get_best_pair(fee):
     assert len(res) == 2
     assert res[0] == 'XRP/BTC'
     assert res[1] == 0.01
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_update_order_from_ccxt():
+    # Most basic order return (only has orderid)
+    o = Order.parse_from_ccxt_object({'id': '1234'}, 'ETH/BTC', 'buy')
+    assert isinstance(o, Order)
+    assert o.ft_pair == 'ETH/BTC'
+    assert o.ft_order_side == 'buy'
+    assert o.order_id == '1234'
+    assert o.ft_is_open
+    ccxt_order = {
+        'id': '1234',
+        'side': 'buy',
+        'symbol': 'ETH/BTC',
+        'type': 'limit',
+        'price': 1234.5,
+        'amount':  20.0,
+        'filled': 9,
+        'remaining': 11,
+        'status': 'open',
+        'timestamp': 1599394315123
+    }
+    o = Order.parse_from_ccxt_object(ccxt_order, 'ETH/BTC', 'buy')
+    assert isinstance(o, Order)
+    assert o.ft_pair == 'ETH/BTC'
+    assert o.ft_order_side == 'buy'
+    assert o.order_id == '1234'
+    assert o.order_type == 'limit'
+    assert o.price == 1234.5
+    assert o.filled == 9
+    assert o.remaining == 11
+    assert o.order_date is not None
+    assert o.ft_is_open
+    assert o.order_filled_date is None
+
+    # Order has been closed
+    ccxt_order.update({'filled': 20.0, 'remaining': 0.0, 'status': 'closed'})
+    o.update_from_ccxt_object(ccxt_order)
+
+    assert o.filled == 20.0
+    assert o.remaining == 0.0
+    assert not o.ft_is_open
+    assert o.order_filled_date is not None
+
+    ccxt_order.update({'id': 'somethingelse'})
+    with pytest.raises(DependencyException, match=r"Order-id's don't match"):
+        o.update_from_ccxt_object(ccxt_order)
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_select_order(fee):
+    create_mock_trades(fee)
+
+    trades = Trade.get_trades().all()
+
+    # Open buy order, no sell order
+    order = trades[0].select_order('buy', True)
+    assert order is None
+    order = trades[0].select_order('buy', False)
+    assert order is not None
+    order = trades[0].select_order('sell', None)
+    assert order is None
+
+    # closed buy order, and open sell order
+    order = trades[1].select_order('buy', True)
+    assert order is None
+    order = trades[1].select_order('buy', False)
+    assert order is not None
+    order = trades[1].select_order('buy', None)
+    assert order is not None
+    order = trades[1].select_order('sell', True)
+    assert order is None
+    order = trades[1].select_order('sell', False)
+    assert order is not None
+
+    # Has open buy order
+    order = trades[3].select_order('buy', True)
+    assert order is not None
+    order = trades[3].select_order('buy', False)
+    assert order is None
+
+    # Open sell order
+    order = trades[4].select_order('buy', True)
+    assert order is None
+    order = trades[4].select_order('buy', False)
+    assert order is not None
+
+    order = trades[4].select_order('sell', True)
+    assert order is not None
+    assert order.ft_order_side == 'stoploss'
+    order = trades[4].select_order('sell', False)
+    assert order is None

@@ -4,7 +4,7 @@ from typing import Dict
 
 import ccxt
 
-from freqtrade.exceptions import (DDosProtection, ExchangeError,
+from freqtrade.exceptions import (DDosProtection, InsufficientFundsError,
                                   InvalidOrderException, OperationalException,
                                   TemporaryError)
 from freqtrade.exchange import Exchange
@@ -80,7 +80,7 @@ class Binance(Exchange):
                         'stop price: %s. limit: %s', pair, stop_price, rate)
             return order
         except ccxt.InsufficientFunds as e:
-            raise ExchangeError(
+            raise InsufficientFundsError(
                 f'Insufficient funds to create {ordertype} sell order on market {pair}. '
                 f'Tried to sell amount {amount} at rate {rate}. '
                 f'Message: {e}') from e

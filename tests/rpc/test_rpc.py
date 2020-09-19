@@ -313,7 +313,6 @@ def test_rpc_delete_trade(mocker, default_conf, fee, markets, caplog):
     with pytest.raises(RPCException, match='invalid argument'):
         rpc._rpc_delete('200')
 
-    create_mock_trades(fee)
     trades = Trade.query.all()
     trades[1].stoploss_order_id = '1234'
     trades[2].stoploss_order_id = '1234'
@@ -717,11 +716,13 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     mocker.patch(
         'freqtrade.exchange.Exchange.fetch_order',
         side_effect=[{
+            'id': '1234',
             'status': 'open',
             'type': 'limit',
             'side': 'buy',
             'filled': filled_amount
         }, {
+            'id': '1234',
             'status': 'closed',
             'type': 'limit',
             'side': 'buy',
@@ -837,10 +838,10 @@ def test_rpc_count(mocker, default_conf, ticker, fee) -> None:
     assert counts["current"] == 1
 
 
-def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order) -> None:
+def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order_open) -> None:
     default_conf['forcebuy_enable'] = True
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
-    buy_mm = MagicMock(return_value={'id': limit_buy_order['id']})
+    buy_mm = MagicMock(return_value=limit_buy_order_open)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),

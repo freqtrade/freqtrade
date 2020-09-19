@@ -18,6 +18,7 @@ from freqtrade.state import RunMode
 from tests.conftest import (create_mock_trades, get_args, log_has, log_has_re,
                             patch_exchange,
                             patched_configuration_load_config_file)
+from tests.conftest_trades import MOCK_TRADE_COUNT
 
 
 def test_setup_utils_configuration():
@@ -1116,7 +1117,7 @@ def test_show_trades(mocker, fee, capsys, caplog):
     pargs = get_args(args)
     pargs['config'] = None
     start_show_trades(pargs)
-    assert log_has("Printing 4 Trades: ", caplog)
+    assert log_has(f"Printing {MOCK_TRADE_COUNT} Trades: ", caplog)
     captured = capsys.readouterr()
     assert "Trade(id=1" in captured.out
     assert "Trade(id=2" in captured.out

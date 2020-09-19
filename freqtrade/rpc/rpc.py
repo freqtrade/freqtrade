@@ -562,8 +562,7 @@ class RPC:
                 except (ExchangeError):
                     pass
 
-            Trade.session.delete(trade)
-            Trade.session.flush()
+            trade.delete()
             self._freqtrade.wallets.update()
             return {
                 'result': 'success',
