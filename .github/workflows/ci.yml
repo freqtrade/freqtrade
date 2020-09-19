@@ -5,8 +5,6 @@ on:
     branches:
       - master
       - develop
-      - github_actions_tests
-      - db_keep_orders
     tags:
     release:
       types: [published]
