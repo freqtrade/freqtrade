@@ -190,6 +190,36 @@ def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order, fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
+def test_trade_close(limit_buy_order, limit_sell_order, fee):
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        open_rate=0.01,
+        amount=5,
+        is_open=True,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_date=arrow.Arrow(2020, 2, 1, 15, 5, 1).datetime,
+        exchange='bittrex',
+    )
+    assert trade.close_profit is None
+    assert trade.close_date is None
+    assert trade.is_open is True
+    trade.close(0.02)
+    assert trade.is_open is False
+    assert trade.close_profit == 0.99002494
+    assert trade.close_date is not None
+
+    new_date = arrow.Arrow(2020, 2, 2, 15, 6, 1).datetime,
+    assert trade.close_date != new_date
+    # Close should NOT update close_date if the trade has been closed already
+    assert trade.is_open is False
+    trade.close_date = new_date
+    trade.close(0.02)
+    assert trade.close_date == new_date
+
+
+@pytest.mark.usefixtures("init_persistence")
 def test_calc_close_trade_price_exception(limit_buy_order, fee):
     trade = Trade(
         pair='ETH/BTC',
