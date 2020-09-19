@@ -307,8 +307,7 @@ class FreqtradeBot:
             logger.info(f"Trying to refind {order}")
             fo = None
             if not order.ft_is_open:
-                # TODO: Does this need to be info level?
-                logger.info(f"Order {order} is no longer open.")
+                logger.debug(f"Order {order} is no longer open.")
                 continue
             if order.ft_order_side == 'buy':
                 # Skip buy side - this is handled by reupdate_buy_order_fees
@@ -1125,7 +1124,7 @@ class FreqtradeBot:
             # we need to fall back to the values from order if corder does not contain these keys.
             trade.amount = filled_amount
             trade.stake_amount = trade.amount * trade.open_rate
-            self.update_trade_state(trade, trade.open_order_id, corder, trade.amount)
+            self.update_trade_state(trade, trade.open_order_id, corder)
 
             trade.open_order_id = None
             logger.info('Partial buy order timeout for %s.', trade)
@@ -1357,16 +1356,14 @@ class FreqtradeBot:
 # Common update trade state methods
 #
 
-    def update_trade_state(self, trade: Trade, order_id: str, action_order: dict = None,
-                           order_amount: float = None, stoploss_order: bool = False) -> bool:
+    def update_trade_state(self, trade: Trade, order_id: str, action_order: Dict[str, Any] = None,
+                           stoploss_order: bool = False) -> bool:
         """
         Checks trades with open orders and updates the amount if necessary
         Handles closing both buy and sell orders.
         :param trade: Trade object of the trade we're analyzing
         :param order_id: Order-id of the order we're analyzing
         :param action_order: Already aquired order object
-        :param order_amount: Order-amount - only used in case of partially cancelled buy order
-            TODO: Investigate if this is really needed, or covered by getting filled in here again.
         :return: True if order has been cancelled without being filled partially, False otherwise
         """
         if not order_id:
@@ -1387,7 +1384,7 @@ class FreqtradeBot:
 
         # Try update amount (binance-fix)
         try:
-            new_amount = self.get_real_amount(trade, order, order_amount)
+            new_amount = self.get_real_amount(trade, order)
             if not isclose(safe_value_fallback(order, 'filled', 'amount'), new_amount,
                            abs_tol=constants.MATH_CLOSE_PREC):
                 order['amount'] = new_amount
@@ -1425,7 +1422,7 @@ class FreqtradeBot:
             return real_amount
         return amount
 
-    def get_real_amount(self, trade: Trade, order: Dict, order_amount: float = None) -> float:
+    def get_real_amount(self, trade: Trade, order: Dict) -> float:
         """
         Detect and update trade fee.
         Calls trade.update_fee() uppon correct detection.
@@ -1434,8 +1431,7 @@ class FreqtradeBot:
         :return: identical (or new) amount for the trade
         """
         # Init variables
-        if order_amount is None:
-            order_amount = safe_value_fallback(order, 'filled', 'amount')
+        order_amount = safe_value_fallback(order, 'filled', 'amount')
         # Only run for closed orders
         if trade.fee_updated(order.get('side', '')) or order['status'] == 'open':
             return order_amount
