@@ -4384,6 +4384,7 @@ def test_handle_insufficient_funds(mocker, default_conf, fee):
 
 @pytest.mark.usefixtures("init_persistence")
 def test_refind_lost_order(mocker, default_conf, fee, caplog):
+    caplog.set_level(logging.DEBUG)
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mock_uts = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.update_trade_state')
 
