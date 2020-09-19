@@ -39,6 +39,8 @@ USERPATH_HYPEROPTS = 'hyperopts'
 USERPATH_STRATEGIES = 'strategies'
 USERPATH_NOTEBOOKS = 'notebooks'
 
+TELEGRAM_SETTING_OPTIONS = ['on', 'off', 'silent']
+
 # Soure files with destination directories within user-directory
 USER_DATA_FILES = {
     'sample_strategy.py': USERPATH_STRATEGIES,
@@ -201,6 +203,18 @@ CONF_SCHEMA = {
                 'enabled': {'type': 'boolean'},
                 'token': {'type': 'string'},
                 'chat_id': {'type': 'string'},
+                'notification_settings': {
+                    'type': 'object',
+                    'properties': {
+                        'status': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'warning': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'startup': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'buy': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'sell': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'buy_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'sell_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS}
+                    }
+                }
             },
             'required': ['enabled', 'token', 'chat_id']
         },

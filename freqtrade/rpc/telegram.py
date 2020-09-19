@@ -132,6 +132,13 @@ class Telegram(RPC):
     def send_msg(self, msg: Dict[str, Any]) -> None:
         """ Send a message to telegram channel """
 
+        noti = self._config['telegram'].get('notification_settings', {}
+                                            ).get(msg['type'].value, 'on')
+        if noti == 'off':
+            logger.info(f"Notification {msg['type']} not sent.")
+            # Notification disabled
+            return
+
         if msg['type'] == RPCMessageType.BUY_NOTIFICATION:
             if self._fiat_converter:
                 msg['stake_amount_fiat'] = self._fiat_converter.convert_amount(
@@ -196,7 +203,7 @@ class Telegram(RPC):
         else:
             raise NotImplementedError('Unknown message type: {}'.format(msg['type']))
 
-        self._send_msg(message)
+        self._send_msg(message, disable_notification=(noti == 'silent'))
 
     def _get_sell_emoji(self, msg):
         """
@@ -773,7 +780,8 @@ class Telegram(RPC):
             f"*Current state:* `{val['state']}`"
         )
 
-    def _send_msg(self, msg: str, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
+    def _send_msg(self, msg: str, parse_mode: ParseMode = ParseMode.MARKDOWN,
+                  disable_notification: bool = False) -> None:
         """
         Send given markdown message
         :param msg: message
@@ -794,7 +802,8 @@ class Telegram(RPC):
                     self._config['telegram']['chat_id'],
                     text=msg,
                     parse_mode=parse_mode,
-                    reply_markup=reply_markup
+                    reply_markup=reply_markup,
+                    disable_notification=disable_notification,
                 )
             except NetworkError as network_err:
                 # Sometimes the telegram server resets the current connection,
@@ -807,7 +816,8 @@ class Telegram(RPC):
                     self._config['telegram']['chat_id'],
                     text=msg,
                     parse_mode=parse_mode,
-                    reply_markup=reply_markup
+                    reply_markup=reply_markup,
+                    disable_notification=disable_notification,
                 )
         except TelegramError as telegram_err:
             logger.warning(
