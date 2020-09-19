@@ -2,6 +2,7 @@ import re
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 
+import arrow
 import pytest
 
 from freqtrade.commands import (start_convert_data, start_create_userdir,
@@ -551,6 +552,50 @@ def test_download_data_keyboardInterrupt(mocker, caplog, markets):
         start_download_data(get_args(args))
 
     assert dl_mock.call_count == 1
+
+
+def test_download_data_timerange(mocker, caplog, markets):
+    dl_mock = mocker.patch('freqtrade.commands.data_commands.refresh_backtest_ohlcv_data',
+                           MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
+    patch_exchange(mocker)
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets)
+    )
+    args = [
+        "download-data",
+        "--exchange", "binance",
+        "--pairs", "ETH/BTC", "XRP/BTC",
+        "--days", "20",
+        "--timerange", "20200101-"
+    ]
+    with pytest.raises(OperationalException,
+                       match=r"--days and --timerange are mutually.*"):
+        start_download_data(get_args(args))
+    assert dl_mock.call_count == 0
+
+    args = [
+        "download-data",
+        "--exchange", "binance",
+        "--pairs", "ETH/BTC", "XRP/BTC",
+        "--days", "20",
+    ]
+    start_download_data(get_args(args))
+    assert dl_mock.call_count == 1
+    # 20days ago
+    days_ago = arrow.get(arrow.utcnow().shift(days=-20).date()).timestamp
+    assert dl_mock.call_args_list[0][1]['timerange'].startts == days_ago
+
+    dl_mock.reset_mock()
+    args = [
+        "download-data",
+        "--exchange", "binance",
+        "--pairs", "ETH/BTC", "XRP/BTC",
+        "--timerange", "20200101-"
+    ]
+    start_download_data(get_args(args))
+    assert dl_mock.call_count == 1
+
+    assert dl_mock.call_args_list[0][1]['timerange'].startts == arrow.Arrow(2020, 1, 1).timestamp
 
 
 def test_download_data_no_markets(mocker, caplog):
