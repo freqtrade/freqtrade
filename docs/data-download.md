@@ -290,7 +290,7 @@ This will download historical candle (OHLCV) data for all the currency pairs you
 - To change the exchange used to download the historical data from, please use a different configuration file (you'll probably need to adjust rate limits etc.)
 - To use `pairs.json` from some other directory, use `--pairs-file some_other_dir/pairs.json`.
 - To download historical candle (OHLCV) data for only 10 days, use `--days 10` (defaults to 30 days).
-- To download historical candle (OHLCV) data from a fixed starting point, use `--timerange 20200101-` - which will download all data from January 1st, 2020.
+- To download historical candle (OHLCV) data from a fixed starting point, use `--timerange 20200101-` - which will download all data from January 1st, 2020. Eventually set end dates are ignored.
 - Use `--timeframes` to specify what timeframe download the historical candle (OHLCV) data for. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute data.
 - To use exchange, timeframe and list of pairs as defined in your configuration file, use the `-c/--config` option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine `-c/--config` with most other options.
 
