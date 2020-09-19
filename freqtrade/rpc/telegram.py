@@ -133,7 +133,7 @@ class Telegram(RPC):
         """ Send a message to telegram channel """
 
         noti = self._config['telegram'].get('notification_settings', {}
-                                            ).get(msg['type'], 'on')
+                                            ).get(str(msg['type']), 'on')
         if noti == 'off':
             logger.info(f"Notification '{msg['type']}' not sent.")
             # Notification disabled
