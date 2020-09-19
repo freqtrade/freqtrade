@@ -383,15 +383,18 @@ class Trade(_DECL_BASE):
             self.open_rate = Decimal(safe_value_fallback(order, 'average', 'price'))
             self.amount = Decimal(safe_value_fallback(order, 'filled', 'amount'))
             self.recalc_open_trade_price()
-            logger.info(f'{order_type.upper()}_BUY has been fulfilled for {self}.')
+            if self.is_open:
+                logger.info(f'{order_type.upper()}_BUY has been fulfilled for {self}.')
             self.open_order_id = None
         elif order_type in ('market', 'limit') and order['side'] == 'sell':
+            if self.is_open:
+                logger.info(f'{order_type.upper()}_SELL has been fulfilled for {self}.')
             self.close(safe_value_fallback(order, 'average', 'price'))
-            logger.info(f'{order_type.upper()}_SELL has been fulfilled for {self}.')
         elif order_type in ('stop_loss_limit', 'stop-loss', 'stop'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
-            logger.info(f'{order_type.upper()} is hit for {self}.')
+            if self.is_open:
+                logger.info(f'{order_type.upper()} is hit for {self}.')
             self.close(order['average'])
         else:
             raise ValueError(f'Unknown order type: {order_type}')
@@ -405,7 +408,7 @@ class Trade(_DECL_BASE):
         self.close_rate = Decimal(rate)
         self.close_profit = self.calc_profit_ratio()
         self.close_profit_abs = self.calc_profit()
-        self.close_date = datetime.utcnow()
+        self.close_date = self.close_date or datetime.utcnow()
         self.is_open = False
         self.sell_order_status = 'closed'
         self.open_order_id = None
