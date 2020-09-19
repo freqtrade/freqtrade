@@ -127,7 +127,7 @@ def test_send_msg_webhook_CustomMessagetype(mocker, default_conf, caplog) -> Non
     rpc_manager.send_msg({'type': RPCMessageType.STARTUP_NOTIFICATION,
                           'status': 'TestMessage'})
     assert log_has(
-        "Message type RPCMessageType.STARTUP_NOTIFICATION not implemented by handler webhook.",
+        "Message type 'startup' not implemented by handler webhook.",
         caplog)
 
 

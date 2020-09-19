@@ -174,7 +174,7 @@ def test_exception_send_msg(default_conf, mocker, caplog):
 
     webhook = Webhook(get_patched_freqtradebot(mocker, default_conf))
     webhook.send_msg({'type': RPCMessageType.BUY_NOTIFICATION})
-    assert log_has(f"Message type {RPCMessageType.BUY_NOTIFICATION} not configured for webhooks",
+    assert log_has(f"Message type '{RPCMessageType.BUY_NOTIFICATION}' not configured for webhooks",
                    caplog)
 
     default_conf["webhook"] = get_webhook_dict()

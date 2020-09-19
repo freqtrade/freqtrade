@@ -36,6 +36,9 @@ class RPCMessageType(Enum):
     def __repr__(self):
         return self.value
 
+    def __str__(self):
+        return self.value
+
 
 class RPCException(Exception):
     """

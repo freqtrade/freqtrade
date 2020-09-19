@@ -1299,16 +1299,14 @@ def test_show_config_handle(default_conf, update, mocker) -> None:
     assert '*Initial Stoploss:* `-0.1`' in msg_mock.call_args_list[0][0][0]
 
 
-def test_send_msg_buy_notification(default_conf, mocker) -> None:
+def test_send_msg_buy_notification(default_conf, mocker, caplog) -> None:
     msg_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
         _send_msg=msg_mock
     )
-    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    telegram = Telegram(freqtradebot)
-    telegram.send_msg({
+    msg = {
         'type': RPCMessageType.BUY_NOTIFICATION,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
@@ -1321,13 +1319,31 @@ def test_send_msg_buy_notification(default_conf, mocker) -> None:
         'current_rate': 1.099e-05,
         'amount': 1333.3333333333335,
         'open_date': arrow.utcnow().shift(hours=-1)
-    })
+    }
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    telegram = Telegram(freqtradebot)
+    telegram.send_msg(msg)
     assert msg_mock.call_args[0][0] \
         == '\N{LARGE BLUE CIRCLE} *Bittrex:* Buying ETH/BTC\n' \
            '*Amount:* `1333.33333333`\n' \
            '*Open Rate:* `0.00001099`\n' \
            '*Current Rate:* `0.00001099`\n' \
            '*Total:* `(0.001000 BTC, 12.345 USD)`'
+
+    freqtradebot.config['telegram']['notification_settings'] = {'buy': 'off'}
+    caplog.clear()
+    msg_mock.reset_mock()
+    telegram.send_msg(msg)
+    msg_mock.call_count == 0
+    log_has("Notification 'buy' not sent.", caplog)
+
+    freqtradebot.config['telegram']['notification_settings'] = {'buy': 'silent'}
+    caplog.clear()
+    msg_mock.reset_mock()
+
+    telegram.send_msg(msg)
+    msg_mock.call_count == 1
+    msg_mock.call_args_list[0][1]['disable_notification'] is True
 
 
 def test_send_msg_buy_cancel_notification(default_conf, mocker) -> None:

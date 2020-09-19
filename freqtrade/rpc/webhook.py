@@ -54,7 +54,7 @@ class Webhook(RPC):
             else:
                 raise NotImplementedError('Unknown message type: {}'.format(msg['type']))
             if not valuedict:
-                logger.info("Message type %s not configured for webhooks", msg['type'])
+                logger.info("Message type '%s' not configured for webhooks", msg['type'])
                 return
 
             payload = {key: value.format(**msg) for (key, value) in valuedict.items()}

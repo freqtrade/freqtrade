@@ -59,7 +59,7 @@ class RPCManager:
             try:
                 mod.send_msg(msg)
             except NotImplementedError:
-                logger.error(f"Message type {msg['type']} not implemented by handler {mod.name}.")
+                logger.error(f"Message type '{msg['type']}' not implemented by handler {mod.name}.")
 
     def startup_messages(self, config: Dict[str, Any], pairlist) -> None:
         if config['dry_run']:
