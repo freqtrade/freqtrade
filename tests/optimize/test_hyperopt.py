@@ -813,7 +813,7 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
                             'draws': 0,
                             'duration': 100.0,
                             'losses': 0,
-                            'winsdrawslosses': '0001/0000/0000',
+                            'winsdrawslosses': '   1    0    0',
                             'median_profit': 2.3117,
                             'profit': 2.3117,
                             'total_profit': 0.000233,

@@ -324,8 +324,9 @@ class Hyperopt:
                          'results_metrics.avg_profit', 'results_metrics.total_profit',
                          'results_metrics.profit', 'results_metrics.duration',
                          'loss', 'is_initial_point', 'is_best']]
-        trials.columns = ['Best', 'Epoch', 'Trades', 'W/D/L', 'Avg profit', 'Total profit',
-                          'Profit', 'Avg duration', 'Objective', 'is_initial_point', 'is_best']
+        trials.columns = ['Best', 'Epoch', 'Trades', ' Win Draw Loss', 'Avg profit',
+                          'Total profit', 'Profit', 'Avg duration', 'Objective',
+                          'is_initial_point', 'is_best']
         trials['is_profit'] = False
         trials.loc[trials['is_initial_point'], 'Best'] = '*     '
         trials.loc[trials['is_best'], 'Best'] = 'Best'
@@ -574,7 +575,7 @@ class Hyperopt:
             'wins': wins,
             'draws': draws,
             'losses': losses,
-            'winsdrawslosses': f"{wins:04}/{draws:04}/{losses:04}",
+            'winsdrawslosses': f"{wins:>4} {draws:>4} {losses:>4}",
             'avg_profit': backtesting_results.profit_percent.mean() * 100.0,
             'median_profit': backtesting_results.profit_percent.median() * 100.0,
             'total_profit': backtesting_results.profit_abs.sum(),
