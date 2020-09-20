@@ -1,4 +1,5 @@
-FROM freqtradeorg/freqtrade:develop
+ARG sourceimage=develop
+FROM freqtradeorg/freqtrade:${sourceimage}
 
 # Install dependencies
 COPY requirements-plot.txt /freqtrade/
