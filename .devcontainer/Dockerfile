@@ -5,7 +5,7 @@ COPY requirements-dev.txt /freqtrade/
 RUN apt-get update \
     && apt-get -y install git sudo vim \
     && apt-get clean \
-    && pip install numpy --no-cache-dir \
+    && pip install autopep8--no-cache-dir \
     # Install ALL dependencies
     && pip install -r requirements-dev.txt --no-cache-dir \
     # Install documentation dependencies (to enable mkdocs)
