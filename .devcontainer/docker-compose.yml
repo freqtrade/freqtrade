@@ -4,13 +4,16 @@ services:
   ft_vscode:
     build:
       context: ..
-      dockerfile: "Dockerfile.develop"
+      dockerfile: ".devcontainer/Dockerfile"
     volumes:
       - ..:/freqtrade:cached
       - freqtrade-vscode-server:/home/ftuser/.vscode-server
       - freqtrade-bashhistory:/home/ftuser/commandhistory
-
+    # Expose API port
+    ports:
+      - "127.0.0.1:8080:8080"
     command: /bin/sh -c "while sleep 1000; do :; done"
+
 
 volumes:
   freqtrade-vscode-server:
