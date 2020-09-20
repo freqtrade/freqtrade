@@ -160,3 +160,21 @@ You'll then also need to modify the `docker-compose.yml` file and uncomment the 
 ```
 
 You can then run `docker-compose build` to build the docker image, and run it using the commands described above.
+
+## Data analayis using docker compose
+
+Freqtrade provides a docker-compose file which starts up a jupyter lab server.
+You can run this server using the following command:
+
+``` bash
+docker-compose -f docker/docker-compose-jupyter.yml up
+```
+
+This will create a dockercontainer running jupyter lab, which will be accessible using `https://127.0.0.1:8888/lab`.
+Please use the link that's printed in the console after startup for simplified login.
+
+Since part of this image is built on your machine, it is recommended to rebuild the image from time to time to keep freqtrade (and dependencies) uptodate.
+
+``` bash
+docker-compose -f docker/docker-compose-jupyter.yml build --no-cache
+```
