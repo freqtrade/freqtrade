@@ -294,7 +294,7 @@ Determine if crucial bugfixes have been made between this commit and the current
 ### Create changelog from git commits
 
 !!! Note
-    Make sure that the release branch is up-to-date!
+    Make sure that the `stable` branch is up-to-date!
 
 ``` bash
 # Needs to be done before merging / pulling that branch.
