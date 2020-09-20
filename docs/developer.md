@@ -263,13 +263,13 @@ jupyter nbconvert --ClearOutputPreprocessor.enabled=True --to markdown freqtrade
 This documents some decisions taken for the CI Pipeline.
 
 * CI runs on all OS variants, Linux (ubuntu), macOS and Windows.
-* Docker images are build for the branches `master` and `develop`.
-* Raspberry PI Docker images are postfixed with `_pi` - so tags will be `:master_pi` and `develop_pi`.
+* Docker images are build for the branches `stable` and `develop`.
+* Raspberry PI Docker images are postfixed with `_pi` - so tags will be `:stable_pi` and `develop_pi`.
 * Docker images contain a file, `/freqtrade/freqtrade_commit` containing the commit this image is based of.
 * Full docker image rebuilds are run once a week via schedule.
 * Deployments run on ubuntu.
 * ta-lib binaries are contained in the build_helpers directory to avoid fails related to external unavailability.
-* All tests must pass for a PR to be merged to `master` or `develop`.
+* All tests must pass for a PR to be merged to `stable` or `develop`.
 
 ## Creating a release
 
@@ -286,19 +286,19 @@ git checkout -b new_release <commitid>
 
 Determine if crucial bugfixes have been made between this commit and the current state, and eventually cherry-pick these.
 
-* Merge the release branch (master) into this branch.
+* Merge the release branch (stable) into this branch.
 * Edit `freqtrade/__init__.py` and add the version matching the current date (for example `2019.7` for July 2019). Minor versions can be `2019.7.1` should we need to do a second release that month. Version numbers must follow allowed versions from PEP0440 to avoid failures pushing to pypi.
 * Commit this part
-* push that branch to the remote and create a PR against the master branch
+* push that branch to the remote and create a PR against the stable branch
 
 ### Create changelog from git commits
 
 !!! Note
-    Make sure that the master branch is up-to-date!
+    Make sure that the release branch is up-to-date!
 
 ``` bash
 # Needs to be done before merging / pulling that branch.
-git log --oneline --no-decorate --no-merges master..new_release
+git log --oneline --no-decorate --no-merges stable..new_release
 ```
 
 To keep the release-log short, best wrap the full git changelog into a collapsible details section.
@@ -314,11 +314,11 @@ To keep the release-log short, best wrap the full git changelog into a collapsib
 
 ### Create github release / tag
 
-Once the PR against master is merged (best right after merging):
+Once the PR against stable is merged (best right after merging):
 
 * Use the button "Draft a new release" in the Github UI (subsection releases).
 * Use the version-number specified as tag.
-* Use "master" as reference (this step comes after the above PR is merged).
+* Use "stable" as reference (this step comes after the above PR is merged).
 * Use the above changelog as release comment (as codeblock)
 
 ## Releases
