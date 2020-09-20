@@ -21,10 +21,23 @@ This will spin up a local server (usually on port 8000) so you can see if everyt
 
 ## Developer setup
 
-To configure a development environment, best use the `setup.sh` script and answer "y" when asked "Do you want to install dependencies for dev [y/N]? ".
-Alternatively (if your system is not supported by the setup.sh script), follow the manual installation process and run `pip3 install -e .[all]`.
+To configure a development environment, you can either use the provided [DevContainer](#devcontainer-setup), or use the `setup.sh` script and answer "y" when asked "Do you want to install dependencies for dev [y/N]? ".
+Alternatively (e.g. if your system is not supported by the setup.sh script), follow the manual installation process and run `pip3 install -e .[all]`.
 
 This will install all required tools for development, including `pytest`, `flake8`, `mypy`, and `coveralls`.
+
+### Devcontainer setup
+
+The fastest and easiest way to get started is to use [VSCode](https://code.visualstudio.com/) with the Remote container extension.
+This gives developers the ability to start the bot with all required dependencies *without* needing to install any freqtrade specific dependencies on your local machine.
+
+#### Devcontainer dependencies
+
+* [VSCode](https://code.visualstudio.com/)
+* [docker](https://docs.docker.com/install/)
+* [Remote container extension documentation](https://code.visualstudio.com/docs/remote)
+
+For more information about the [Remote container extension](https://code.visualstudio.com/docs/remote), best consult the documentation.
 
 ### Tests
 
@@ -49,19 +62,6 @@ def test_method_to_test(caplog):
     assert log_has_re(r"This dynamic event happened and produced \d+", caplog)
 
 ```
-
-### Devcontainer setup
-
-The fastest and easiest way to get started is to use [VSCode](https://code.visualstudio.com/) with the Remote container extension.
-This gives developers the ability to start the bot with all required dependencies *without* needing to install any freqtrade specific dependencies on your local machine.
-
-#### Install
-
-* [VSCode](https://code.visualstudio.com/)
-* [docker](https://docs.docker.com/install/)
-* [Remote container extension documentation](https://code.visualstudio.com/docs/remote)
-
-For more information about the [Remote container extension](https://code.visualstudio.com/docs/remote), best consult the documentation.
 
 ## ErrorHandling
 
