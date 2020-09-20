@@ -1,10 +1,17 @@
 ---
 version: '3'
 services:
-  freqtrade_develop:
+  ft_vscode:
     build:
       context: ..
       dockerfile: "Dockerfile.develop"
     volumes:
       - ..:/freqtrade:cached
+      - freqtrade-vscode-server:/home/ftuser/.vscode-server
+      - freqtrade-bashhistory:/home/ftuser/commandhistory
+
     command: /bin/sh -c "while sleep 1000; do :; done"
+
+volumes:
+  freqtrade-vscode-server:
+  freqtrade-bashhistory:
