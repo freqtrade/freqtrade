@@ -1,0 +1,10 @@
+---
+version: '3'
+services:
+  freqtrade_develop:
+    build:
+      context: ..
+      dockerfile: "Dockerfile.develop"
+    volumes:
+      - ..:/freqtrade:cached
+    command: /bin/sh -c "while sleep 1000; do :; done"
