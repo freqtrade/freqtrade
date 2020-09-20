@@ -71,6 +71,11 @@ Common arguments:
 
 ```
 
+!!! Note "Startup period"
+    `download-data` is a strategy-independent command. The idea is to download a big chunk of data once, and then iteratively increase the amount of data stored.
+
+    For that reason, `download-data` does not care about the "startup-period" defined in a strategy. It's up to the user to download additional days if the backtest should start at a specific point in time (while respecting startup period).
+
 ### Data format
 
 Freqtrade currently supports 3 data-formats for both OHLCV and trades data:
