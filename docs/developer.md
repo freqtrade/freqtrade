@@ -232,6 +232,7 @@ This documents some decisions taken for the CI Pipeline.
 
 * CI runs on all OS variants, Linux (ubuntu), macOS and Windows.
 * Docker images are build for the branches `master` and `develop`.
+* Docker images containing Plot dependencies are also available as `master_plot` and `develop_plot`.
 * Raspberry PI Docker images are postfixed with `_pi` - so tags will be `:master_pi` and `develop_pi`.
 * Docker images contain a file, `/freqtrade/freqtrade_commit` containing the commit this image is based of.
 * Full docker image rebuilds are run once a week via schedule.

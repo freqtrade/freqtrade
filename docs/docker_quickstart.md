@@ -161,6 +161,17 @@ You'll then also need to modify the `docker-compose.yml` file and uncomment the 
 
 You can then run `docker-compose build` to build the docker image, and run it using the commands described above.
 
+## Plotting with docker-compose
+
+Commands `freqtrade plot-profit` and `freqtrade plot-dataframe` ([Documentation](plotting.md)) are available by changing the image to `*_plot` in your docker-compose.yml file.
+You can then use these commands as follows:
+
+``` bash
+docker-compose run --rm freqtrade plot-dataframe --strategy AwesomeStrategy -p BTC/ETH --timerange=20180801-20180805
+```
+
+The output will be stored in the `user_data/plot` directory, and can be opened with any modern browser.
+
 ## Data analayis using docker compose
 
 Freqtrade provides a docker-compose file which starts up a jupyter lab server.
