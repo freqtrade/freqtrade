@@ -70,16 +70,16 @@ cp -n config.json.example config.json
 
 Best start by pulling the official docker image from dockerhub as explained [here](#download-the-official-docker-image) to speed up building.
 
-To add additional libraries to your docker image, best check out [Dockerfile.technical](https://github.com/freqtrade/freqtrade/blob/develop/Dockerfile.technical) which adds the [technical](https://github.com/freqtrade/technical) module to the image.
+To add additional libraries to your docker image, best check out [Dockerfile.technical](https://github.com/freqtrade/freqtrade/blob/develop/docker/Dockerfile.technical) which adds the [technical](https://github.com/freqtrade/technical) module to the image.
 
 ```bash
-docker build -t freqtrade -f Dockerfile.technical .
+docker build -t freqtrade -f docker/Dockerfile.technical .
 ```
 
-If you are developing using Docker, use `Dockerfile.develop` to build a dev Docker image, which will also set up develop dependencies:
+If you are developing using Docker, use `docker/Dockerfile.develop` to build a dev Docker image, which will also set up develop dependencies:
 
 ```bash
-docker build -f Dockerfile.develop -t freqtrade-dev .
+docker build -f docker/Dockerfile.develop -t freqtrade-dev .
 ```
 
 !!! Warning "Include your config file manually"
