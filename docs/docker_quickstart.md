@@ -178,7 +178,7 @@ Freqtrade provides a docker-compose file which starts up a jupyter lab server.
 You can run this server using the following command:
 
 ``` bash
-docker-compose -f docker/docker-compose-jupyter.yml up
+docker-compose --rm -f docker/docker-compose-jupyter.yml up
 ```
 
 This will create a dockercontainer running jupyter lab, which will be accessible using `https://127.0.0.1:8888/lab`.

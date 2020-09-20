@@ -1,7 +1,7 @@
 ---
 version: '3'
 services:
-  freqtrade:
+  ft_jupyterlab:
     build:
       context: ..
       dockerfile: docker/Dockerfile.jupyter
