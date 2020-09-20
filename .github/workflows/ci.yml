@@ -5,7 +5,6 @@ on:
     branches:
       - master
       - develop
-      - add_devcontainer
     tags:
   release:
     types: [published]
