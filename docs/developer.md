@@ -21,10 +21,23 @@ This will spin up a local server (usually on port 8000) so you can see if everyt
 
 ## Developer setup
 
-To configure a development environment, best use the `setup.sh` script and answer "y" when asked "Do you want to install dependencies for dev [y/N]? ".
-Alternatively (if your system is not supported by the setup.sh script), follow the manual installation process and run `pip3 install -e .[all]`.
+To configure a development environment, you can either use the provided [DevContainer](#devcontainer-setup), or use the `setup.sh` script and answer "y" when asked "Do you want to install dependencies for dev [y/N]? ".
+Alternatively (e.g. if your system is not supported by the setup.sh script), follow the manual installation process and run `pip3 install -e .[all]`.
 
 This will install all required tools for development, including `pytest`, `flake8`, `mypy`, and `coveralls`.
+
+### Devcontainer setup
+
+The fastest and easiest way to get started is to use [VSCode](https://code.visualstudio.com/) with the Remote container extension.
+This gives developers the ability to start the bot with all required dependencies *without* needing to install any freqtrade specific dependencies on your local machine.
+
+#### Devcontainer dependencies
+
+* [VSCode](https://code.visualstudio.com/)
+* [docker](https://docs.docker.com/install/)
+* [Remote container extension documentation](https://code.visualstudio.com/docs/remote)
+
+For more information about the [Remote container extension](https://code.visualstudio.com/docs/remote), best consult the documentation.
 
 ### Tests
 
@@ -49,51 +62,6 @@ def test_method_to_test(caplog):
     assert log_has_re(r"This dynamic event happened and produced \d+", caplog)
 
 ```
-
-### Local docker usage
-
-The fastest and easiest way to start up is to use docker-compose.develop which gives developers the ability to start the bot up with all the required dependencies, *without* needing to install any freqtrade specific dependencies on your local machine.
-
-#### Install
-
-* [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
-* [docker](https://docs.docker.com/install/)
-* [docker-compose](https://docs.docker.com/compose/install/)
-
-#### Starting the bot
-
-##### Use the develop dockerfile
-
-``` bash
-rm docker-compose.yml && mv docker-compose.develop.yml docker-compose.yml
-```
-
-#### Docker Compose
-
-##### Starting
-
-``` bash
-docker-compose up
-```
-
-![Docker compose up](https://user-images.githubusercontent.com/419355/65456322-47f63a80-de06-11e9-90c6-3c74d1bad0b8.png)
-
-##### Rebuilding
-
-``` bash
-docker-compose build
-```
-
-##### Executing (effectively SSH into the container)
-
-The `exec` command requires that the container already be running, if you want to start it
-that can be effected by `docker-compose up` or `docker-compose run freqtrade_develop`
-
-``` bash
-docker-compose exec freqtrade_develop /bin/bash
-```
-
-![image](https://user-images.githubusercontent.com/419355/65456522-ba671a80-de06-11e9-9598-df9ca0d8dcac.png)
 
 ## ErrorHandling
 
@@ -264,6 +232,7 @@ This documents some decisions taken for the CI Pipeline.
 
 * CI runs on all OS variants, Linux (ubuntu), macOS and Windows.
 * Docker images are build for the branches `master` and `develop`.
+* Docker images containing Plot dependencies are also available as `master_plot` and `develop_plot`.
 * Raspberry PI Docker images are postfixed with `_pi` - so tags will be `:master_pi` and `develop_pi`.
 * Docker images contain a file, `/freqtrade/freqtrade_commit` containing the commit this image is based of.
 * Full docker image rebuilds are run once a week via schedule.

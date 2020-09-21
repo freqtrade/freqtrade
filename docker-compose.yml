@@ -4,6 +4,8 @@ services:
   freqtrade:
     image: freqtradeorg/freqtrade:master
     # image: freqtradeorg/freqtrade:develop
+    # Use plotting image
+    # image: freqtradeorg/freqtrade:develop_plot
     # Build step - only needed when additional dependencies are needed
     # build:
     #   context: .
