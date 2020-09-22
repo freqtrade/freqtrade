@@ -44,7 +44,7 @@ Get your "Id", you will use it for the config parameter `chat_id`.
 ## Control telegram noise
 
 Freqtrade provides means to control the verbosity of your telegram bot.
-Each setting has the follwoing possible values:
+Each setting has the following possible values:
 
 * `on` - Messages will be sent, and user will be notified.
 * `silent` - Message will be sent, Notification will be without sound / vibration.
