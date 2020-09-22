@@ -108,6 +108,7 @@ class Telegram(RPC):
             CommandHandler('edge', self._edge),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
+            CommandHandler('stats', self._stats),
         ]
         for handle in handles:
             self._updater.dispatcher.add_handler(handle)
@@ -737,6 +738,19 @@ class Telegram(RPC):
         :return: None
         """
         self._send_msg('*Version:* `{}`'.format(__version__))
+
+    @authorized_only
+    def _stats(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /stats
+        https://github.com/freqtrade/freqtrade/issues/3783
+        Show stats of recent trades
+        :param update: message update
+        :return: None
+        """
+        # TODO: self._send_msg(...)
+        trades = self._rpc_trade_history(-1)
+        
 
     @authorized_only
     def _show_config(self, update: Update, context: CallbackContext) -> None:
