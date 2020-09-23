@@ -27,13 +27,16 @@ logger = logging.getLogger(__name__)
 class RPCMessageType(Enum):
     STATUS_NOTIFICATION = 'status'
     WARNING_NOTIFICATION = 'warning'
-    CUSTOM_NOTIFICATION = 'custom'
+    STARTUP_NOTIFICATION = 'startup'
     BUY_NOTIFICATION = 'buy'
     BUY_CANCEL_NOTIFICATION = 'buy_cancel'
     SELL_NOTIFICATION = 'sell'
     SELL_CANCEL_NOTIFICATION = 'sell_cancel'
 
     def __repr__(self):
+        return self.value
+
+    def __str__(self):
         return self.value
 
 

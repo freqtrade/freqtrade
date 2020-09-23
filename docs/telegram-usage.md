@@ -41,6 +41,34 @@ Talk to the [userinfobot](https://telegram.me/userinfobot)
 
 Get your "Id", you will use it for the config parameter `chat_id`.
 
+## Control telegram noise
+
+Freqtrade provides means to control the verbosity of your telegram bot.
+Each setting has the following possible values:
+
+* `on` - Messages will be sent, and user will be notified.
+* `silent` - Message will be sent, Notification will be without sound / vibration.
+* `off` - Skip sending a message-type all together.
+
+Example configuration showing the different settings:
+
+``` json
+"telegram": {
+      "enabled": true,
+      "token": "your_telegram_token",
+      "chat_id": "your_telegram_chat_id",
+      "notification_settings": {
+         "status": "silent",
+         "warning": "on",
+         "startup": "off",
+         "buy": "silent",
+         "sell": "on",
+         "buy_cancel": "silent",
+         "sell_cancel": "on"
+      }
+   },
+```
+
 ## Telegram commands
 
 Per default, the Telegram bot shows predefined commands. Some commands
