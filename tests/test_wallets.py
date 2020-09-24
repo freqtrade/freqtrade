@@ -19,12 +19,17 @@ def test_sync_wallet_at_boot(mocker, default_conf):
                 "used": 0.0,
                 "total": 0.260739
             },
+            "USDT": {
+                "free": 20,
+                "used": 20,
+                "total": 40
+            },
         })
     )
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
-    assert len(freqtrade.wallets._wallets) == 2
+    assert len(freqtrade.wallets._wallets) == 3
     assert freqtrade.wallets._wallets['BNT'].free == 1.0
     assert freqtrade.wallets._wallets['BNT'].used == 2.0
     assert freqtrade.wallets._wallets['BNT'].total == 3.0
@@ -32,6 +37,7 @@ def test_sync_wallet_at_boot(mocker, default_conf):
     assert freqtrade.wallets._wallets['GAS'].used == 0.0
     assert freqtrade.wallets._wallets['GAS'].total == 0.260739
     assert freqtrade.wallets.get_free('BNT') == 1.0
+    assert 'USDT' in freqtrade.wallets._wallets
     assert freqtrade.wallets._last_wallet_refresh > 0
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -51,6 +57,7 @@ def test_sync_wallet_at_boot(mocker, default_conf):
 
     freqtrade.wallets.update()
 
+    # USDT is missing from the 2nd result - so should not be in this either.
     assert len(freqtrade.wallets._wallets) == 2
     assert freqtrade.wallets._wallets['BNT'].free == 1.2
     assert freqtrade.wallets._wallets['BNT'].used == 1.9
