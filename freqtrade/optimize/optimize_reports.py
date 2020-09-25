@@ -277,6 +277,16 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
             'max_open_trades': (config['max_open_trades']
                                 if config['max_open_trades'] != float('inf') else -1),
             'timeframe': config['timeframe'],
+            # Parameters relevant for backtesting
+            'stoploss': config['stoploss'],
+            'trailing_stop': config.get('trailing_stop', False),
+            'trailing_stop_positive': config.get('trailing_stop_positive'),
+            'trailing_stop_positive_offset': config.get('trailing_stop_positive_offset', 0.0),
+            'trailing_only_offset_is_reached': config.get('trailing_only_offset_is_reached', False),
+            'minimal_roi': config['minimal_roi'],
+            'use_sell_signal': config['ask_strategy']['use_sell_signal'],
+            'sell_profit_only': config['ask_strategy']['sell_profit_only'],
+            'ignore_roi_if_buy_signal': config['ask_strategy']['ignore_roi_if_buy_signal'],
             **daily_stats,
         }
         result['strategy'][strategy] = strat_stats

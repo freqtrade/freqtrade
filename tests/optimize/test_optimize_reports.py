@@ -5,7 +5,6 @@ from pathlib import Path
 import pandas as pd
 import pytest
 from arrow import Arrow
-
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.data import history
@@ -22,6 +21,7 @@ from freqtrade.optimize.optimize_reports import (generate_backtest_stats,
                                                  text_table_bt_results,
                                                  text_table_sell_reason,
                                                  text_table_strategy)
+from freqtrade.resolvers.strategy_resolver import StrategyResolver
 from freqtrade.strategy.interface import SellType
 from tests.data.test_history import _backup_file, _clean_test_file
 
@@ -57,6 +57,9 @@ def test_text_table_bt_results(default_conf, mocker):
 
 
 def test_generate_backtest_stats(default_conf, testdatadir):
+    default_conf.update({'strategy': 'DefaultStrategy'})
+    StrategyResolver.load_strategy(default_conf)
+
     results = {'DefStrat': pd.DataFrame({"pair": ["UNITTEST/BTC", "UNITTEST/BTC",
                                                   "UNITTEST/BTC", "UNITTEST/BTC"],
                                          "profit_percent": [0.003312, 0.010801, 0.013803, 0.002780],
