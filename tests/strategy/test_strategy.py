@@ -55,8 +55,8 @@ def test_load_strategy(default_conf, result):
                          'strategy_path': str(Path(__file__).parents[2] / 'freqtrade/templates')
                          })
     strategy = StrategyResolver.load_strategy(default_conf)
-    assert isinstance(strategy.__code__, str)
-    assert 'class SampleStrategy' in strategy.__code__
+    assert isinstance(strategy.__source__, str)
+    assert 'class SampleStrategy' in strategy.__source__
     assert isinstance(strategy.__file__, str)
     assert 'rsi' in strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 

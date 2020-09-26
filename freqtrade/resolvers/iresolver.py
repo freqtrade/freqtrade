@@ -98,7 +98,7 @@ class IResolver:
             if obj:
                 obj[0].__file__ = str(entry)
                 if add_source:
-                    obj[0].__code__ = obj[1]
+                    obj[0].__source__ = obj[1]
                 return (obj[0], module_path)
         return (None, None)
 

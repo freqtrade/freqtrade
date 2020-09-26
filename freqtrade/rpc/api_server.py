@@ -608,7 +608,7 @@ class ApiServer(RPC):
 
         return self.rest_dump({
             'strategy': strategy_obj.get_strategy_name(),
-            'code': strategy_obj.__code__,
+            'code': strategy_obj.__source__,
          })
 
     @require_login
