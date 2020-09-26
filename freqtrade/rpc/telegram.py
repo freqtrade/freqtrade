@@ -749,9 +749,40 @@ class Telegram(RPC):
         :return: None
         """
         # TODO: self._send_msg(...)
-        trades = self._rpc_trade_history(-1)
-        
+        def trade_win_loss(trade):
+            if trade['profit_abs'] > 0:
+                return 'Wins'
+            elif trade['profit_abs'] < 0:
+                return 'Losses'
+            else:
+                return 'Draws'
 
+        trades = self._rpc_trade_history(-1)
+        trades_closed = [trade for trade in trades if not trade['is_open']]
+
+        # Sell reason
+        sell_reasons = {}
+        for trade in trades_closed:
+            if trade['sell_reason'] in sell_reasons:
+                sell_reasons[trade['sell_reason']][trade_win_loss(trade)] += 1
+            else:
+            win_loss_count = {'Wins': 0, 'Losses': 0, 'Draws': 0}
+            win_loss_count[trade_win_loss(trade)] += 1
+            sell_reasons[trade['sell_reason']] = win_loss_count
+        sell_reason_msg = [
+            '| Sell Reason | Sells | Wins | Draws | Losses |',
+            '|-------------|------:|-----:|------:|-------:|'
+        ]
+        # | Sell Reason | Sells | Wins | Draws | Losses |
+        # |-------------|------:|-----:|------:|-------:|
+        # | test        |     1 |    2 |     3 |      4 |
+        for reason, count in sell_reasons.items():
+            msg = f'| `{reason}` | `{sum(count.values())}` | `{count['Wins']}` | `{count['Draws']}` | `{count['Losses']}` |'
+            sell_reason_msg.append(msg)
+
+        # TODO: Duration
+
+        
     @authorized_only
     def _show_config(self, update: Update, context: CallbackContext) -> None:
         """
