@@ -26,7 +26,7 @@ from freqtrade.strategy.interface import SellType
 from tests.data.test_history import _backup_file, _clean_test_file
 
 
-def test_text_table_bt_results(default_conf, mocker):
+def test_text_table_bt_results():
 
     results = pd.DataFrame(
         {
@@ -174,7 +174,7 @@ def test_store_backtest_stats(testdatadir, mocker):
     assert str(dump_mock.call_args_list[0][0][0]).startswith(str(testdatadir / 'testresult'))
 
 
-def test_generate_pair_metrics(default_conf, mocker):
+def test_generate_pair_metrics():
 
     results = pd.DataFrame(
         {
@@ -222,7 +222,7 @@ def test_generate_daily_stats(testdatadir):
     assert res['losing_days'] == 0
 
 
-def test_text_table_sell_reason(default_conf):
+def test_text_table_sell_reason():
 
     results = pd.DataFrame(
         {
@@ -254,7 +254,7 @@ def test_text_table_sell_reason(default_conf):
                                   stake_currency='BTC') == result_str
 
 
-def test_generate_sell_reason_stats(default_conf):
+def test_generate_sell_reason_stats():
 
     results = pd.DataFrame(
         {
@@ -333,7 +333,7 @@ def test_text_table_strategy(default_conf):
     assert text_table_strategy(strategy_results, 'BTC') == result_str
 
 
-def test_generate_edge_table(edge_conf, mocker):
+def test_generate_edge_table():
 
     results = {}
     results['ETH/BTC'] = PairInfo(-0.01, 0.60, 2, 1, 3, 10, 60)

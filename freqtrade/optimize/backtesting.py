@@ -423,8 +423,8 @@ class Backtesting:
                 'config': self.strategy.config,
             }
 
-        stats = generate_backtest_stats(data, all_results,
-                                        min_date=min_date, max_date=max_date)
+        stats = generate_backtest_stats(data, all_results, min_date=min_date, max_date=max_date)
+
         if self.config.get('export', False):
             store_backtest_stats(self.config['exportfilename'], stats)
 
