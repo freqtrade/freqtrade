@@ -843,6 +843,8 @@ def test_clean_hyperopt(mocker, hyperopt_conf, caplog):
 
 def test_print_json_spaces_all(mocker, hyperopt_conf, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
+    mocker.patch('freqtrade.optimize.hyperopt.file_dump_json')
+
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
