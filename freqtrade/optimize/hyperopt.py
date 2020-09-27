@@ -10,6 +10,7 @@ import logging
 import random
 import warnings
 from collections import OrderedDict
+from datetime import datetime
 from math import ceil
 from operator import itemgetter
 from pathlib import Path
@@ -25,16 +26,15 @@ from joblib import (Parallel, cpu_count, delayed, dump, load,
                     wrap_non_picklable_objects)
 from pandas import DataFrame, isna, json_normalize
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT
+from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import plural, round_dict
+from freqtrade.misc import file_dump_json, plural, round_dict
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
 from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F401
-from freqtrade.optimize.hyperopt_loss_interface import \
-    IHyperOptLoss  # noqa: F401
+from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F401
 from freqtrade.resolvers.hyperopt_resolver import (HyperOptLossResolver,
                                                    HyperOptResolver)
 from freqtrade.strategy import IStrategy
@@ -77,9 +77,9 @@ class Hyperopt:
 
         self.custom_hyperoptloss = HyperOptLossResolver.load_hyperoptloss(self.config)
         self.calculate_loss = self.custom_hyperoptloss.hyperopt_loss_function
-
+        time_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.results_file = (self.config['user_data_dir'] /
-                             'hyperopt_results' / 'hyperopt_results.pickle')
+                             'hyperopt_results' / f'hyperopt_results_{time_now}.pickle')
         self.data_pickle_file = (self.config['user_data_dir'] /
                                  'hyperopt_results' / 'hyperopt_tickerdata.pkl')
         self.total_epochs = config.get('epochs', 0)
@@ -162,6 +162,9 @@ class Hyperopt:
             self.num_epochs_saved = num_epochs
             logger.debug(f"{self.num_epochs_saved} {plural(self.num_epochs_saved, 'epoch')} "
                          f"saved to '{self.results_file}'.")
+            # Store hyperopt filename
+            latest_filename = Path.joinpath(self.results_file.parent, LAST_BT_RESULT_FN)
+            file_dump_json(latest_filename, {'latest_hyperopt': str(self.results_file.name)})
 
     @staticmethod
     def _read_results(results_file: Path) -> List:
