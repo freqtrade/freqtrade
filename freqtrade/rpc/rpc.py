@@ -659,15 +659,19 @@ class RPC:
     def _convert_dataframe_to_dict(self, strategy: str, pair: str, timeframe: str,
                                    dataframe: DataFrame, last_analyzed: datetime) -> Dict[str, Any]:
         has_content = len(dataframe) != 0
+        buy_signals = 0
+        sell_signals = 0
         if has_content:
 
             dataframe.loc[:, '__date_ts'] = dataframe.loc[:, 'date'].astype(int64) // 1000 // 1000
             # Move open to seperate column when signal for easy plotting
             if 'buy' in dataframe.columns:
                 buy_mask = (dataframe['buy'] == 1)
+                buy_signals = int(buy_mask.sum())
                 dataframe.loc[buy_mask, '_buy_signal_open'] = dataframe.loc[buy_mask, 'open']
             if 'sell' in dataframe.columns:
                 sell_mask = (dataframe['sell'] == 1)
+                sell_signals = int(sell_mask.sum())
                 dataframe.loc[sell_mask, '_sell_signal_open'] = dataframe.loc[sell_mask, 'open']
             dataframe = dataframe.replace({NAN: None})
 
@@ -679,6 +683,8 @@ class RPC:
             'columns': list(dataframe.columns),
             'data': dataframe.values.tolist(),
             'length': len(dataframe),
+            'buy_signals': buy_signals,
+            'sell_signals': sell_signals,
             'last_analyzed': last_analyzed,
             'last_analyzed_ts': int(last_analyzed.timestamp()),
             'data_start': '',
