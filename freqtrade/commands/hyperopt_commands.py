@@ -86,7 +86,6 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
         config['user_data_dir'] / 'hyperopt_results',
         config.get('hyperoptexportfilename'))
 
-
     n = config.get('hyperopt_show_index', -1)
 
     filteroptions = {

@@ -91,7 +91,8 @@ def get_latest_hyperopt_file(directory: Union[Path, str], predef_filename: str =
         * `directory/.last_result.json` does not exist
         * `directory/.last_result.json` has the wrong content
     """
-
+    if isinstance(directory, str):
+        directory = Path(directory)
     if predef_filename:
         return directory / predef_filename
     return directory / get_latest_hyperopt_filename(directory)
