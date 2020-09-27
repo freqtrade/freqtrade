@@ -240,7 +240,8 @@ running at least several thousand evaluations.
 The `--spaces all` option determines that all possible parameters should be optimized. Possibilities are listed below.
 
 !!! Note
-    By default, hyperopt will erase previous results and start from scratch.
+    Hyperopt will store hyperopt results with the timestamp of the hyperopt start time.
+    Reading commands (`hyperopt-list`, `hyperopt-show`) can use `--hyperopt-filename <filename>` to read and display older hyperopt results.
 
 ### Execute Hyperopt with different historical data source
 
