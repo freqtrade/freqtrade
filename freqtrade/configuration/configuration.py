@@ -263,6 +263,9 @@ class Configuration:
         self._args_to_config(config, argname='hyperopt_path',
                              logstring='Using additional Hyperopt lookup path: {}')
 
+        self._args_to_config(config, argname='hyperoptexportfilename',
+                             logstring='Using hyperopt file: {}')
+
         self._args_to_config(config, argname='epochs',
                              logstring='Parameter --epochs detected ... '
                              'Will run Hyperopt with for {} epochs ...'

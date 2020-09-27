@@ -75,10 +75,10 @@ ARGS_HYPEROPT_LIST = ["hyperopt_list_best", "hyperopt_list_profitable",
                       "hyperopt_list_min_total_profit", "hyperopt_list_max_total_profit",
                       "hyperopt_list_min_objective", "hyperopt_list_max_objective",
                       "print_colorized", "print_json", "hyperopt_list_no_details",
-                      "export_csv"]
+                      "hyperoptexportfilename", "export_csv"]
 
 ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperopt_show_index",
-                      "print_json", "hyperopt_show_no_header"]
+                      "print_json", "hyperoptexportfilename", "hyperopt_show_no_header"]
 
 NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list-timeframes",
                     "list-markets", "list-pairs", "list-strategies", "list-data",

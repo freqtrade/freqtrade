@@ -263,6 +263,12 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='NAME',
         default=constants.DEFAULT_HYPEROPT_LOSS,
     ),
+    "hyperoptexportfilename": Arg(
+        '--hyperopt-filename',
+        help='Hyperopt result filename.'
+        'Example: `--hyperopt-filename=hyperopt_results_2020-09-27_16-20-48.pickle`',
+        metavar='PATH',
+    ),
     # List exchanges
     "print_one_column": Arg(
         '-1', '--one-column',

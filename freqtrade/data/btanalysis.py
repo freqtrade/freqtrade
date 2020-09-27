@@ -81,7 +81,7 @@ def get_latest_hyperopt_filename(directory: Union[Path, str]) -> str:
         return 'hyperopt_results.pickle'
 
 
-def get_latest_hyperopt_file(directory: Union[Path, str]) -> Path:
+def get_latest_hyperopt_file(directory: Union[Path, str], predef_filename: str = None) -> Path:
     """
     Get latest hyperopt export based on '.last_result.json'.
     :param directory: Directory to search for last result
@@ -91,6 +91,9 @@ def get_latest_hyperopt_file(directory: Union[Path, str]) -> Path:
         * `directory/.last_result.json` does not exist
         * `directory/.last_result.json` has the wrong content
     """
+
+    if predef_filename:
+        return directory / predef_filename
     return directory / get_latest_hyperopt_filename(directory)
 
 

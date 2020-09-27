@@ -41,7 +41,9 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
         'filter_max_objective': config.get('hyperopt_list_max_objective', None),
     }
 
-    results_file = get_latest_hyperopt_file(config['user_data_dir'] / 'hyperopt_results')
+    results_file = get_latest_hyperopt_file(
+        config['user_data_dir'] / 'hyperopt_results',
+        config.get('hyperoptexportfilename'))
 
     # Previous evaluations
     epochs = Hyperopt.load_previous_results(results_file)
@@ -80,7 +82,10 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
 
     print_json = config.get('print_json', False)
     no_header = config.get('hyperopt_show_no_header', False)
-    results_file = get_latest_hyperopt_file(config['user_data_dir'] / 'hyperopt_results')
+    results_file = get_latest_hyperopt_file(
+        config['user_data_dir'] / 'hyperopt_results',
+        config.get('hyperoptexportfilename'))
+
 
     n = config.get('hyperopt_show_index', -1)
 
