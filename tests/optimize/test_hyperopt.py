@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from copy import deepcopy
 from typing import Dict, List
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
@@ -81,14 +81,14 @@ def create_results(mocker, hyperopt, testdatadir) -> List[Dict]:
 
     mocker.patch.object(Path, "is_file", MagicMock(return_value=False))
     stat_mock = MagicMock()
-    stat_mock.st_size = PropertyMock(return_value=1)
-    mocker.patch.object(Path, "stat", MagicMock(return_value=False))
+    stat_mock.st_size = 1
+    mocker.patch.object(Path, "stat", MagicMock(return_value=stat_mock))
 
     mocker.patch.object(Path, "unlink", MagicMock(return_value=True))
     mocker.patch('freqtrade.optimize.hyperopt.dump', return_value=None)
     mocker.patch('freqtrade.optimize.hyperopt.file_dump_json')
 
-    return [{'loss': 1, 'result': 'foo', 'params': {}}]
+    return [{'loss': 1, 'result': 'foo', 'params': {}, 'is_best': True}]
 
 
 def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, caplog) -> None:
@@ -522,6 +522,28 @@ def test_read_results_returns_epochs(mocker, hyperopt, testdatadir, caplog) -> N
     assert log_has(f"Reading epochs from '{results_file}'", caplog)
     assert hyperopt_epochs == epochs
     mock_load.assert_called_once()
+
+
+def test_load_previous_results(mocker, hyperopt, testdatadir, caplog) -> None:
+    epochs = create_results(mocker, hyperopt, testdatadir)
+    mock_load = mocker.patch('freqtrade.optimize.hyperopt.load', return_value=epochs)
+    mocker.patch.object(Path, 'is_file', MagicMock(return_value=True))
+    statmock = MagicMock()
+    statmock.st_size = 5
+    # mocker.patch.object(Path, 'stat', MagicMock(return_value=statmock))
+
+    results_file = testdatadir / 'optimize' / 'ut_results.pickle'
+
+    hyperopt_epochs = hyperopt.load_previous_results(results_file)
+
+    assert hyperopt_epochs == epochs
+    mock_load.assert_called_once()
+
+    del epochs[0]['is_best']
+    mock_load = mocker.patch('freqtrade.optimize.hyperopt.load', return_value=epochs)
+
+    with pytest.raises(OperationalException):
+        hyperopt.load_previous_results(results_file)
 
 
 def test_roi_table_generation(hyperopt) -> None:

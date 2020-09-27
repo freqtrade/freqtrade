@@ -51,6 +51,9 @@ def test_get_latest_hyperopt_file(testdatadir, mocker):
     res = get_latest_hyperopt_file(testdatadir.parent)
     assert res == testdatadir.parent / "hyperopt_results.pickle"
 
+    res = get_latest_hyperopt_file(str(testdatadir.parent))
+    assert res == testdatadir.parent / "hyperopt_results.pickle"
+
 
 def test_load_backtest_data_old_format(testdatadir):
 
