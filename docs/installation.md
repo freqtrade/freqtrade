@@ -31,7 +31,7 @@ Freqtrade provides the Linux/MacOS Easy Installation script to install all depen
 The easiest way to install and run Freqtrade is to clone the bot Github repository and then run the Easy Installation script, if it's available for your platform.
 
 !!! Note "Version considerations"
-    When cloning the repository the default working branch has the name `develop`. This branch contains all last features (can be considered as relatively stable, thanks to automated tests). The `master` branch contains the code of the last release (done usually once per month on an approximately one week old snapshot of the `develop` branch to prevent packaging bugs, so potentially it's more stable).
+    When cloning the repository the default working branch has the name `develop`. This branch contains all last features (can be considered as relatively stable, thanks to automated tests). The `stable` branch contains the code of the last release (done usually once per month on an approximately one week old snapshot of the `develop` branch to prevent packaging bugs, so potentially it's more stable).
 
 !!! Note
     Python3.6 or higher and the corresponding `pip` are assumed to be available. The install-script will warn you and stop if that's not the case. `git` is also needed to clone the Freqtrade repository.
@@ -41,11 +41,11 @@ This can be achieved with the following commands:
 ```bash
 git clone https://github.com/freqtrade/freqtrade.git
 cd freqtrade
-# git checkout master  # Optional, see (1)
+# git checkout stable  # Optional, see (1)
 ./setup.sh --install
 ```
 
-(1) This command switches the cloned repository to the use of the `master` branch. It's not needed if you wish to stay on the `develop` branch. You may later switch between branches at any time with the `git checkout master`/`git checkout develop` commands.
+(1) This command switches the cloned repository to the use of the `stable` branch. It's not needed if you wish to stay on the `develop` branch. You may later switch between branches at any time with the `git checkout stable`/`git checkout develop` commands.
 
 ## Easy Installation Script (Linux/MacOS)
 
@@ -56,7 +56,7 @@ $ ./setup.sh
 usage:
 	-i,--install    Install freqtrade from scratch
 	-u,--update     Command git pull to update.
-	-r,--reset      Hard reset your develop/master branch.
+	-r,--reset      Hard reset your develop/stable branch.
 	-c,--config     Easy config generator (Will override your existing file).
 ```
 
@@ -76,7 +76,7 @@ This option will pull the last version of your current branch and update your vi
 
 ** --reset **
 
-This option will hard reset your branch (only if you are on either `master` or `develop`) and recreate your virtualenv.
+This option will hard reset your branch (only if you are on either `stable` or `develop`) and recreate your virtualenv.
 
 ** --config **
 
@@ -174,7 +174,7 @@ Clone the git repository:
 ```bash
 git clone https://github.com/freqtrade/freqtrade.git
 cd freqtrade
-git checkout master
+git checkout stable
 ```
 
 #### 4. Install python dependencies

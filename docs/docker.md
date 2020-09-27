@@ -10,9 +10,9 @@ Pull the image from docker hub.
 Branches / tags available can be checked out on [Dockerhub tags page](https://hub.docker.com/r/freqtradeorg/freqtrade/tags/).
 
 ```bash
-docker pull freqtradeorg/freqtrade:master
+docker pull freqtradeorg/freqtrade:stable
 # Optionally tag the repository so the run-commands remain shorter
-docker tag freqtradeorg/freqtrade:master freqtrade
+docker tag freqtradeorg/freqtrade:stable freqtrade
 ```
 
 To update the image, simply run the above commands again and restart your running container.
@@ -20,7 +20,7 @@ To update the image, simply run the above commands again and restart your runnin
 Should you require additional libraries, please [build the image yourself](#build-your-own-docker-image).
 
 !!! Note "Docker image update frequency"
-    The official docker images with tags `master`, `develop` and `latest` are automatically rebuild once a week to keep the base image uptodate.
+    The official docker images with tags `stable`, `develop` and `latest` are automatically rebuild once a week to keep the base image up-to-date.
     In addition to that, every merge to `develop` will trigger a rebuild for `develop` and `latest`.
 
 ### Prepare the configuration files

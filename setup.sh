@@ -120,13 +120,13 @@ function update() {
     updateenv
 }
 
-# Reset Develop or Master branch
+# Reset Develop or Stable branch
 function reset() {
     echo "----------------------------"
     echo "Reseting branch and virtual env"
     echo "----------------------------"
 
-    if [ "1" == $(git branch -vv |grep -cE "\* develop|\* master") ]
+    if [ "1" == $(git branch -vv |grep -cE "\* develop|\* stable") ]
     then
 
         read -p "Reset git branch? (This will remove all changes you made!) [y/N]? "
@@ -138,14 +138,14 @@ function reset() {
             then
                 echo "- Hard resetting of 'develop' branch."
                 git reset --hard origin/develop
-            elif [ "1" == $(git branch -vv |grep -c "* master") ]
+            elif [ "1" == $(git branch -vv |grep -c "* stable") ]
             then
-                echo "- Hard resetting of 'master' branch."
-                git reset --hard origin/master
+                echo "- Hard resetting of 'stable' branch."
+                git reset --hard origin/stable
             fi
         fi
     else
-        echo "Reset ignored because you are not on 'master' or 'develop'."
+        echo "Reset ignored because you are not on 'stable' or 'develop'."
     fi
 
     if [ -d ".env" ]; then
@@ -270,7 +270,7 @@ function help() {
     echo "usage:"
     echo "	-i,--install    Install freqtrade from scratch"
     echo "	-u,--update     Command git pull to update."
-    echo "	-r,--reset      Hard reset your develop/master branch."
+    echo "	-r,--reset      Hard reset your develop/stable branch."
     echo "	-c,--config     Easy config generator (Will override your existing file)."
     echo "	-p,--plot       Install dependencies for Plotting scripts."
 }
