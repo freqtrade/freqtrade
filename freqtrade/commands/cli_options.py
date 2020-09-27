@@ -252,13 +252,6 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='INT',
         default=1,
     ),
-    "hyperopt_continue": Arg(
-        "--continue",
-        help="Continue hyperopt from previous runs. "
-        "By default, temporary files will be removed and hyperopt will start from scratch.",
-        default=False,
-        action='store_true',
-    ),
     "hyperopt_loss": Arg(
         '--hyperopt-loss',
         help='Specify the class name of the hyperopt loss function class (IHyperOptLoss). '

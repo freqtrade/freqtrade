@@ -86,10 +86,7 @@ class Hyperopt:
 
         self.current_best_loss = 100
 
-        if not self.config.get('hyperopt_continue'):
-            self.clean_hyperopt()
-        else:
-            logger.info("Continuing on previous hyperopt results.")
+        self.clean_hyperopt()
 
         self.num_epochs_saved = 0
 

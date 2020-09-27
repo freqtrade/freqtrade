@@ -839,17 +839,6 @@ def test_clean_hyperopt(mocker, hyperopt_conf, caplog):
     assert log_has(f"Removing `{h.data_pickle_file}`.", caplog)
 
 
-def test_continue_hyperopt(mocker, hyperopt_conf, caplog):
-    patch_exchange(mocker)
-    hyperopt_conf.update({'hyperopt_continue': True})
-    mocker.patch("freqtrade.optimize.hyperopt.Path.is_file", MagicMock(return_value=True))
-    unlinkmock = mocker.patch("freqtrade.optimize.hyperopt.Path.unlink", MagicMock())
-    Hyperopt(hyperopt_conf)
-
-    assert unlinkmock.call_count == 0
-    assert log_has("Continuing on previous hyperopt results.", caplog)
-
-
 def test_print_json_spaces_all(mocker, hyperopt_conf, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
