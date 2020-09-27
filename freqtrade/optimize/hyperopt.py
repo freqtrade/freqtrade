@@ -657,8 +657,6 @@ class Hyperopt:
         self.backtesting.strategy.dp = None  # type: ignore
         IStrategy.dp = None  # type: ignore
 
-        self.epochs = self.load_previous_results(self.results_file)
-
         cpus = cpu_count()
         logger.info(f"Found {cpus} CPU cores. Let's make them scream!")
         config_jobs = self.config.get('hyperopt_jobs', -1)

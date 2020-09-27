@@ -497,6 +497,7 @@ def test_no_log_if_loss_does_not_improve(hyperopt, caplog) -> None:
 def test_save_results_saves_epochs(mocker, hyperopt, testdatadir, caplog) -> None:
     epochs = create_results(mocker, hyperopt, testdatadir)
     mock_dump = mocker.patch('freqtrade.optimize.hyperopt.dump', return_value=None)
+    mock_dump_json = mocker.patch('freqtrade.optimize.hyperopt.file_dump_json', return_value=None)
     results_file = testdatadir / 'optimize' / 'ut_results.pickle'
 
     caplog.set_level(logging.DEBUG)
@@ -505,6 +506,7 @@ def test_save_results_saves_epochs(mocker, hyperopt, testdatadir, caplog) -> Non
     hyperopt._save_results()
     assert log_has(f"1 epoch saved to '{results_file}'.", caplog)
     mock_dump.assert_called_once()
+    mock_dump_json.assert_called_once()
 
     hyperopt.epochs = epochs + epochs
     hyperopt._save_results()
