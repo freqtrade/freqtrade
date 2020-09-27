@@ -86,6 +86,7 @@ def create_results(mocker, hyperopt, testdatadir) -> List[Dict]:
 
     mocker.patch.object(Path, "unlink", MagicMock(return_value=True))
     mocker.patch('freqtrade.optimize.hyperopt.dump', return_value=None)
+    mocker.patch('freqtrade.optimize.hyperopt.file_dump_json')
 
     return [{'loss': 1, 'result': 'foo', 'params': {}}]
 
@@ -538,6 +539,8 @@ def test_roi_table_generation(hyperopt) -> None:
 
 def test_start_calls_optimizer(mocker, hyperopt_conf, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
+    mocker.patch('freqtrade.optimize.hyperopt.file_dump_json')
+
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
@@ -900,6 +903,7 @@ def test_print_json_spaces_all(mocker, hyperopt_conf, capsys) -> None:
 
 def test_print_json_spaces_default(mocker, hyperopt_conf, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
+    mocker.patch('freqtrade.optimize.hyperopt.file_dump_json')
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
@@ -947,6 +951,7 @@ def test_print_json_spaces_default(mocker, hyperopt_conf, capsys) -> None:
 
 def test_print_json_spaces_roi_stoploss(mocker, hyperopt_conf, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
+    mocker.patch('freqtrade.optimize.hyperopt.file_dump_json')
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
@@ -993,6 +998,7 @@ def test_print_json_spaces_roi_stoploss(mocker, hyperopt_conf, capsys) -> None:
 
 def test_simplified_interface_roi_stoploss(mocker, hyperopt_conf, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
+    mocker.patch('freqtrade.optimize.hyperopt.file_dump_json')
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
@@ -1045,6 +1051,7 @@ def test_simplified_interface_roi_stoploss(mocker, hyperopt_conf, capsys) -> Non
 
 def test_simplified_interface_all_failed(mocker, hyperopt_conf) -> None:
     mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
+    mocker.patch('freqtrade.optimize.hyperopt.file_dump_json')
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
@@ -1071,6 +1078,7 @@ def test_simplified_interface_all_failed(mocker, hyperopt_conf) -> None:
 
 def test_simplified_interface_buy(mocker, hyperopt_conf, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
+    mocker.patch('freqtrade.optimize.hyperopt.file_dump_json')
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
@@ -1123,6 +1131,7 @@ def test_simplified_interface_buy(mocker, hyperopt_conf, capsys) -> None:
 
 def test_simplified_interface_sell(mocker, hyperopt_conf, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
+    mocker.patch('freqtrade.optimize.hyperopt.file_dump_json')
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
@@ -1181,6 +1190,7 @@ def test_simplified_interface_sell(mocker, hyperopt_conf, capsys) -> None:
 ])
 def test_simplified_interface_failed(mocker, hyperopt_conf, method, space) -> None:
     mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
+    mocker.patch('freqtrade.optimize.hyperopt.file_dump_json')
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
