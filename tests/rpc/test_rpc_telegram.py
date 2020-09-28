@@ -1138,9 +1138,9 @@ def test_telegram_logs(default_conf, update, mocker) -> None:
     context = MagicMock()
     context.args = []
     telegram._logs(update=update, context=context)
-    # Called at least 3 times. Exact times will change with unrelated changes to setup messages
+    # Called at least 2 times. Exact times will change with unrelated changes to setup messages
     # Therefore we don't test for this explicitly.
-    assert msg_mock.call_count > 3
+    assert msg_mock.call_count >= 2
 
 
 def test_edge_disabled(default_conf, update, mocker) -> None:

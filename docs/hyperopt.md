@@ -102,7 +102,7 @@ There you have two different types of indicators: 1. `guards` and 2. `triggers`.
 1. Guards are conditions like "never buy if ADX < 10", or never buy if current price is over EMA10.
 2. Triggers are ones that actually trigger buy in specific moment, like "buy when EMA5 crosses over EMA10" or "buy when close price touches lower Bollinger band".
 
-Hyperoptimization will, for each eval round, pick one trigger and possibly
+Hyper-optimization will, for each epoch round, pick one trigger and possibly
 multiple guards. The constructed strategy will be something like
 "*buy exactly when close price touches lower Bollinger band, BUT only if
 ADX > 10*".
@@ -229,7 +229,7 @@ Because hyperopt tries a lot of combinations to find the best parameters it will
 We strongly recommend to use `screen` or `tmux` to prevent any connection loss.
 
 ```bash
-freqtrade hyperopt --config config.json --hyperopt <hyperoptname> -e 500 --spaces all
+freqtrade hyperopt --config config.json --hyperopt <hyperoptname> --strategy <strategyname> -e 500 --spaces all
 ```
 
 Use `<hyperoptname>` as the name of the custom hyperopt used.
@@ -240,10 +240,8 @@ running at least several thousand evaluations.
 The `--spaces all` option determines that all possible parameters should be optimized. Possibilities are listed below.
 
 !!! Note
-    By default, hyperopt will erase previous results and start from scratch. Continuation can be archived by using `--continue`.
-
-!!! Warning
-    When switching parameters or changing configuration options, make sure to not use the argument `--continue` so temporary results can be removed.
+    Hyperopt will store hyperopt results with the timestamp of the hyperopt start time.
+    Reading commands (`hyperopt-list`, `hyperopt-show`) can use `--hyperopt-filename <filename>` to read and display older hyperopt results.
 
 ### Execute Hyperopt with different historical data source
 
@@ -253,11 +251,11 @@ uses data from directory `user_data/data`.
 
 ### Running Hyperopt with Smaller Testset
 
-Use the `--timerange` argument to change how much of the testset you want to use.
+Use the `--timerange` argument to change how much of the test-set you want to use.
 For example, to use one month of data, pass the following parameter to the hyperopt call:
 
 ```bash
-freqtrade hyperopt --timerange 20180401-20180501
+freqtrade hyperopt --hyperopt <hyperoptname> --strategy <strategyname> --timerange 20180401-20180501
 ```
 
 ### Running Hyperopt using methods from a strategy
@@ -318,7 +316,7 @@ The initial state for generation of these random values (random state) is contro
 
 If you have not set this value explicitly in the command line options, Hyperopt seeds the random state with some random value for you. The random state value for each Hyperopt run is shown in the log, so you can copy and paste it into the `--random-state` command line option to repeat the set of the initial random epochs used.
 
-If you have not changed anything in the command line options, configuration, timerange, Strategy and Hyperopt classes, historical data and the Loss Function -- you should obtain same hyperoptimization results with same random state value used.
+If you have not changed anything in the command line options, configuration, timerange, Strategy and Hyperopt classes, historical data and the Loss Function -- you should obtain same hyper-optimization results with same random state value used.
 
 ## Understand the Hyperopt Result
 
@@ -371,7 +369,7 @@ By default, hyperopt prints colorized results -- epochs with positive profit are
 You can use the `--print-all` command line option if you would like to see all results in the hyperopt output, not only the best ones. When `--print-all` is used, current best results are also colorized by default -- they are printed in bold (bright) style. This can also be switched off with the `--no-color` command line option.
 
 !!! Note "Windows and color output"
-    Windows does not support color-output nativly, therefore it is automatically disabled. To have color-output for hyperopt running under windows, please consider using WSL.
+    Windows does not support color-output natively, therefore it is automatically disabled. To have color-output for hyperopt running under windows, please consider using WSL.
 
 ### Understand Hyperopt ROI results
 
@@ -494,7 +492,7 @@ Override the `trailing_space()` method and define the desired range in it if you
 
 ## Show details of Hyperopt results
 
-After you run Hyperopt for the desired amount of epochs, you can later list all results for analysis, select only best or profitable once, and show the details for any of the epochs previously evaluated. This can be done with the `hyperopt-list` and `hyperopt-show` subcommands. The usage of these subcommands is described in the [Utils](utils.md#list-hyperopt-results) chapter.
+After you run Hyperopt for the desired amount of epochs, you can later list all results for analysis, select only best or profitable once, and show the details for any of the epochs previously evaluated. This can be done with the `hyperopt-list` and `hyperopt-show` sub-commands. The usage of these sub-commands is described in the [Utils](utils.md#list-hyperopt-results) chapter.
 
 ## Validate backtesting results
 

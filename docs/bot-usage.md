@@ -303,7 +303,7 @@ usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                           [--spaces {all,buy,sell,roi,stoploss,trailing,default} [{all,buy,sell,roi,stoploss,trailing,default} ...]]
                           [--dmmp] [--print-all] [--no-color] [--print-json]
                           [-j JOBS] [--random-state INT] [--min-trades INT]
-                          [--continue] [--hyperopt-loss NAME]
+                          [--hyperopt-loss NAME]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -349,9 +349,6 @@ optional arguments:
                         reproducible hyperopt results.
   --min-trades INT      Set minimal desired number of trades for evaluations
                         in the hyperopt optimization path (default: 1).
-  --continue            Continue hyperopt from previous runs. By default,
-                        temporary files will be removed and hyperopt will
-                        start from scratch.
   --hyperopt-loss NAME  Specify the class name of the hyperopt loss function
                         class (IHyperOptLoss). Different functions can
                         generate completely different results, since the
