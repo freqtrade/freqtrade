@@ -236,7 +236,7 @@ jobs:
 
     - name: Publish to PyPI (Test)
       uses: pypa/gh-action-pypi-publish@master
-      if: (steps.extract_branch.outputs.branch == 'stable' || github.event_name == 'release')
+      if: (github.event_name == 'release')
       with:
         user: __token__
         password: ${{ secrets.pypi_test_password }}
@@ -244,7 +244,7 @@ jobs:
 
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@master
-      if: (steps.extract_branch.outputs.branch == 'stable' || github.event_name == 'release')
+      if: (github.event_name == 'release')
       with:
         user: __token__
         password: ${{ secrets.pypi_password }}
