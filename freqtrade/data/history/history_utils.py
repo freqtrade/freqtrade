@@ -9,7 +9,8 @@ from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
-from freqtrade.data.converter import (ohlcv_to_dataframe,
+from freqtrade.data.converter import (clean_ohlcv_dataframe,
+                                      ohlcv_to_dataframe,
                                       trades_remove_duplicates,
                                       trades_to_ohlcv)
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
@@ -135,7 +136,6 @@ def _load_cached_data_for_updating(pair: str, timeframe: str, timerange: Optiona
     start = None
     if timerange:
         if timerange.starttype == 'date':
-            # TODO: convert to date for conversion
             start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
 
     # Intentionally don't pass timerange in - since we need to load the full dataset.
@@ -202,7 +202,10 @@ def _download_pair_history(datadir: Path,
         if data.empty:
             data = new_dataframe
         else:
-            data = data.append(new_dataframe)
+            # Run cleaning again to ensure there were no duplicate candles
+            # Especially between existing and new data.
+            data = clean_ohlcv_dataframe(data.append(new_dataframe), timeframe, pair,
+                                         fill_missing=False, drop_incomplete=False)
 
         logger.debug("New  Start: %s",
                      f"{data.iloc[0]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')

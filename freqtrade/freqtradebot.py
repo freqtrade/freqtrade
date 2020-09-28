@@ -17,12 +17,12 @@ from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.exceptions import (DependencyException, ExchangeError,
+from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.pairlist.pairlistmanager import PairListManager
-from freqtrade.persistence import Trade
+from freqtrade.persistence import Order, Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
@@ -134,6 +134,10 @@ class FreqtradeBot:
             # Adjust stoploss if it was changed
             Trade.stoploss_reinitialization(self.strategy.stoploss)
 
+        # Only update open orders on startup
+        # This will update the database after the initial migration
+        self.update_open_orders()
+
     def process(self) -> None:
         """
         Queries the persistence layer for open trades and handles them,
@@ -143,6 +147,8 @@ class FreqtradeBot:
 
         # Check whether markets have to be reloaded and reload them when it's needed
         self.exchange.reload_markets()
+
+        self.update_closed_trades_without_assigned_fees()
 
         # Query trades from persistence layer
         trades = Trade.get_open_trades()
@@ -226,6 +232,104 @@ class FreqtradeBot:
         """
         open_trades = len(Trade.get_open_trades())
         return max(0, self.config['max_open_trades'] - open_trades)
+
+    def update_open_orders(self):
+        """
+        Updates open orders based on order list kept in the database.
+        Mainly updates the state of orders - but may also close trades
+        """
+        orders = Order.get_open_orders()
+        logger.info(f"Updating {len(orders)} open orders.")
+        for order in orders:
+            try:
+                fo = self.exchange.fetch_order_or_stoploss_order(order.order_id, order.ft_pair,
+                                                                 order.ft_order_side == 'stoploss')
+
+                self.update_trade_state(order.trade, order.order_id, fo)
+
+            except ExchangeError as e:
+                logger.warning(f"Error updating Order {order.order_id} due to {e}")
+
+    def update_closed_trades_without_assigned_fees(self):
+        """
+        Update closed trades without close fees assigned.
+        Only acts when Orders are in the database, otherwise the last orderid is unknown.
+        """
+        trades: List[Trade] = Trade.get_sold_trades_without_assigned_fees()
+        for trade in trades:
+
+            if not trade.is_open and not trade.fee_updated('sell'):
+                # Get sell fee
+                order = trade.select_order('sell', False)
+                if order:
+                    logger.info(f"Updating sell-fee on trade {trade} for order {order.order_id}.")
+                    self.update_trade_state(trade, order.order_id,
+                                            stoploss_order=order.ft_order_side == 'stoploss')
+
+        trades: List[Trade] = Trade.get_open_trades_without_assigned_fees()
+        for trade in trades:
+            if trade.is_open and not trade.fee_updated('buy'):
+                order = trade.select_order('buy', False)
+                if order:
+                    logger.info(f"Updating buy-fee on trade {trade} for order {order.order_id}.")
+                    self.update_trade_state(trade, order.order_id)
+
+    def handle_insufficient_funds(self, trade: Trade):
+        """
+        Determine if we ever opened a sell order for this trade.
+        If not, try update buy fees - otherwise "refind" the open order we obviously lost.
+        """
+        sell_order = trade.select_order('sell', None)
+        if sell_order:
+            self.refind_lost_order(trade)
+        else:
+            self.reupdate_buy_order_fees(trade)
+
+    def reupdate_buy_order_fees(self, trade: Trade):
+        """
+        Get buy order from database, and try to reupdate.
+        Handles trades where the initial fee-update did not work.
+        """
+        logger.info(f"Trying to reupdate buy fees for {trade}")
+        order = trade.select_order('buy', False)
+        if order:
+            logger.info(f"Updating buy-fee on trade {trade} for order {order.order_id}.")
+            self.update_trade_state(trade, order.order_id)
+
+    def refind_lost_order(self, trade):
+        """
+        Try refinding a lost trade.
+        Only used when InsufficientFunds appears on sell orders (stoploss or sell).
+        Tries to walk the stored orders and sell them off eventually.
+        """
+        logger.info(f"Trying to refind lost order for {trade}")
+        for order in trade.orders:
+            logger.info(f"Trying to refind {order}")
+            fo = None
+            if not order.ft_is_open:
+                logger.debug(f"Order {order} is no longer open.")
+                continue
+            if order.ft_order_side == 'buy':
+                # Skip buy side - this is handled by reupdate_buy_order_fees
+                continue
+            try:
+                fo = self.exchange.fetch_order_or_stoploss_order(order.order_id, order.ft_pair,
+                                                                 order.ft_order_side == 'stoploss')
+                if order.ft_order_side == 'stoploss':
+                    if fo and fo['status'] == 'open':
+                        # Assume this as the open stoploss order
+                        trade.stoploss_order_id = order.order_id
+                elif order.ft_order_side == 'sell':
+                    if fo and fo['status'] == 'open':
+                        # Assume this as the open order
+                        trade.open_order_id = order.order_id
+                if fo:
+                    logger.info(f"Found {order} for trade {trade}.jj")
+                    self.update_trade_state(trade, order.order_id, fo,
+                                            stoploss_order=order.ft_order_side == 'stoploss')
+
+            except ExchangeError:
+                logger.warning(f"Error updating {order.order_id}.")
 
 #
 # BUY / enter positions / open trades logic and methods
@@ -528,6 +632,7 @@ class FreqtradeBot:
         order = self.exchange.buy(pair=pair, ordertype=order_type,
                                   amount=amount, rate=buy_limit_requested,
                                   time_in_force=time_in_force)
+        order_obj = Order.parse_from_ccxt_object(order, pair, 'buy')
         order_id = order['id']
         order_status = order.get('status', None)
 
@@ -556,7 +661,6 @@ class FreqtradeBot:
                 stake_amount = order['cost']
                 amount = safe_value_fallback(order, 'filled', 'amount')
                 buy_limit_filled_price = safe_value_fallback(order, 'average', 'price')
-                order_id = None
 
         # in case of FOK the order may be filled immediately and fully
         elif order_status == 'closed':
@@ -581,10 +685,11 @@ class FreqtradeBot:
             strategy=self.strategy.get_strategy_name(),
             timeframe=timeframe_to_minutes(self.config['timeframe'])
         )
+        trade.orders.append(order_obj)
 
         # Update fees if order is closed
         if order_status == 'closed':
-            self.update_trade_state(trade, order)
+            self.update_trade_state(trade, order_id, order)
 
         Trade.session.add(trade)
         Trade.session.flush()
@@ -618,7 +723,7 @@ class FreqtradeBot:
         # Send the message
         self.rpc.send_msg(msg)
 
-    def _notify_buy_cancel(self, trade: Trade, order_type: str) -> None:
+    def _notify_buy_cancel(self, trade: Trade, order_type: str, reason: str) -> None:
         """
         Sends rpc notification when a buy cancel occured.
         """
@@ -637,6 +742,7 @@ class FreqtradeBot:
             'amount': trade.amount,
             'open_date': trade.open_date,
             'current_rate': current_rate,
+            'reason': reason,
         }
 
         # Send the message
@@ -782,8 +888,16 @@ class FreqtradeBot:
             stoploss_order = self.exchange.stoploss(pair=trade.pair, amount=trade.amount,
                                                     stop_price=stop_price,
                                                     order_types=self.strategy.order_types)
+
+            order_obj = Order.parse_from_ccxt_object(stoploss_order, trade.pair, 'stoploss')
+            trade.orders.append(order_obj)
             trade.stoploss_order_id = str(stoploss_order['id'])
             return True
+        except InsufficientFundsError as e:
+            logger.warning(f"Unable to place stoploss order {e}.")
+            # Try to figure out what went wrong
+            self.handle_insufficient_funds(trade)
+
         except InvalidOrderException as e:
             trade.stoploss_order_id = None
             logger.error(f'Unable to place a stoploss order on exchange. {e}')
@@ -813,10 +927,14 @@ class FreqtradeBot:
         except InvalidOrderException as exception:
             logger.warning('Unable to fetch stoploss order: %s', exception)
 
+        if stoploss_order:
+            trade.update_order(stoploss_order)
+
         # We check if stoploss order is fulfilled
         if stoploss_order and stoploss_order['status'] in ('closed', 'triggered'):
             trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
-            self.update_trade_state(trade, stoploss_order, sl_order=True)
+            self.update_trade_state(trade, trade.stoploss_order_id, stoploss_order,
+                                    stoploss_order=True)
             # Lock pair for one candle to prevent immediate rebuys
             self.strategy.lock_pair(trade.pair,
                                     timeframe_to_next_date(self.config['timeframe']))
@@ -835,7 +953,7 @@ class FreqtradeBot:
             stop_price = trade.open_rate * (1 + stoploss)
 
             if self.create_stoploss_order(trade=trade, stop_price=stop_price):
-                trade.stoploss_last_update = datetime.now()
+                trade.stoploss_last_update = datetime.utcnow()
                 return False
 
         # If stoploss order is canceled for some reason we add it
@@ -868,10 +986,11 @@ class FreqtradeBot:
             update_beat = self.strategy.order_types.get('stoploss_on_exchange_interval', 60)
             if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() >= update_beat:
                 # cancelling the current stoploss on exchange first
-                logger.info('Trailing stoploss: cancelling current stoploss on exchange (id:{%s}) '
-                            'in order to add another one ...', order['id'])
+                logger.info(f"Cancelling current stoploss on exchange for pair {trade.pair} "
+                            f"(orderid:{order['id']}) in order to add another one ...")
                 try:
-                    self.exchange.cancel_stoploss_order(order['id'], trade.pair)
+                    co = self.exchange.cancel_stoploss_order(order['id'], trade.pair)
+                    trade.update_order(co)
                 except InvalidOrderException:
                     logger.exception(f"Could not cancel stoploss order {order['id']} "
                                      f"for pair {trade.pair}")
@@ -926,7 +1045,7 @@ class FreqtradeBot:
                 logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
                 continue
 
-            fully_cancelled = self.update_trade_state(trade, order)
+            fully_cancelled = self.update_trade_state(trade, trade.open_order_id, order)
 
             if (order['side'] == 'buy' and (order['status'] == 'open' or fully_cancelled) and (
                     fully_cancelled
@@ -974,7 +1093,6 @@ class FreqtradeBot:
 
         # Cancelled orders may have the status of 'canceled' or 'closed'
         if order['status'] not in ('canceled', 'closed'):
-            reason = constants.CANCEL_REASON['TIMEOUT']
             corder = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
                                                             trade.amount)
             # Avoid race condition where the order could not be cancelled coz its already filled.
@@ -992,13 +1110,12 @@ class FreqtradeBot:
 
         # Using filled to determine the filled amount
         filled_amount = safe_value_fallback2(corder, order, 'filled', 'filled')
-
         if isclose(filled_amount, 0.0, abs_tol=constants.MATH_CLOSE_PREC):
             logger.info('Buy order fully cancelled. Removing %s from database.', trade)
             # if trade is not partially completed, just delete the trade
-            Trade.session.delete(trade)
-            Trade.session.flush()
+            trade.delete()
             was_trade_fully_canceled = True
+            reason += f", {constants.CANCEL_REASON['FULLY_CANCELLED']}"
         else:
             # if trade is partially complete, edit the stake details for the trade
             # and close the order
@@ -1007,17 +1124,15 @@ class FreqtradeBot:
             # we need to fall back to the values from order if corder does not contain these keys.
             trade.amount = filled_amount
             trade.stake_amount = trade.amount * trade.open_rate
-            self.update_trade_state(trade, corder, trade.amount)
+            self.update_trade_state(trade, trade.open_order_id, corder)
 
             trade.open_order_id = None
             logger.info('Partial buy order timeout for %s.', trade)
-            self.rpc.send_msg({
-                'type': RPCMessageType.STATUS_NOTIFICATION,
-                'status': f'Remaining buy order for {trade.pair} cancelled due to timeout'
-            })
+            reason += f", {constants.CANCEL_REASON['PARTIALLY_FILLED']}"
 
         self.wallets.update()
-        self._notify_buy_cancel(trade, order_type=self.strategy.order_types['buy'])
+        self._notify_buy_cancel(trade, order_type=self.strategy.order_types['buy'],
+                                reason=reason)
         return was_trade_fully_canceled
 
     def handle_cancel_sell(self, trade: Trade, order: Dict, reason: str) -> str:
@@ -1048,7 +1163,7 @@ class FreqtradeBot:
             trade.open_order_id = None
         else:
             # TODO: figure out how to handle partially complete sell orders
-            reason = constants.CANCEL_REASON['PARTIALLY_FILLED']
+            reason = constants.CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
 
         self.wallets.update()
         self._notify_sell_cancel(
@@ -1123,19 +1238,28 @@ class FreqtradeBot:
             logger.info(f"User requested abortion of selling {trade.pair}")
             return False
 
-        # Execute sell and update trade record
-        order = self.exchange.sell(pair=str(trade.pair),
-                                   ordertype=order_type,
-                                   amount=amount, rate=limit,
-                                   time_in_force=time_in_force
-                                   )
+        try:
+            # Execute sell and update trade record
+            order = self.exchange.sell(pair=trade.pair,
+                                       ordertype=order_type,
+                                       amount=amount, rate=limit,
+                                       time_in_force=time_in_force
+                                       )
+        except InsufficientFundsError as e:
+            logger.warning(f"Unable to place order {e}.")
+            # Try to figure out what went wrong
+            self.handle_insufficient_funds(trade)
+            return False
+
+        order_obj = Order.parse_from_ccxt_object(order, trade.pair, 'sell')
+        trade.orders.append(order_obj)
 
         trade.open_order_id = order['id']
         trade.close_rate_requested = limit
         trade.sell_reason = sell_reason.value
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') == 'closed':
-            self.update_trade_state(trade, order)
+            self.update_trade_state(trade, trade.open_order_id, order)
         Trade.session.flush()
 
         # Lock pair for one candle to prevent immediate rebuys
@@ -1232,30 +1356,35 @@ class FreqtradeBot:
 # Common update trade state methods
 #
 
-    def update_trade_state(self, trade: Trade, action_order: dict = None,
-                           order_amount: float = None, sl_order: bool = False) -> bool:
+    def update_trade_state(self, trade: Trade, order_id: str, action_order: Dict[str, Any] = None,
+                           stoploss_order: bool = False) -> bool:
         """
         Checks trades with open orders and updates the amount if necessary
         Handles closing both buy and sell orders.
+        :param trade: Trade object of the trade we're analyzing
+        :param order_id: Order-id of the order we're analyzing
+        :param action_order: Already aquired order object
         :return: True if order has been cancelled without being filled partially, False otherwise
         """
-        # Get order details for actual price per unit
-        if trade.open_order_id:
-            order_id = trade.open_order_id
-        elif trade.stoploss_order_id and sl_order:
-            order_id = trade.stoploss_order_id
-        else:
+        if not order_id:
+            logger.warning(f'Orderid for trade {trade} is empty.')
             return False
+
         # Update trade with order values
         logger.info('Found open order for %s', trade)
         try:
-            order = action_order or self.exchange.fetch_order(order_id, trade.pair)
+            order = action_order or self.exchange.fetch_order_or_stoploss_order(order_id,
+                                                                                trade.pair,
+                                                                                stoploss_order)
         except InvalidOrderException as exception:
             logger.warning('Unable to fetch order %s: %s', order_id, exception)
             return False
+
+        trade.update_order(order)
+
         # Try update amount (binance-fix)
         try:
-            new_amount = self.get_real_amount(trade, order, order_amount)
+            new_amount = self.get_real_amount(trade, order)
             if not isclose(safe_value_fallback(order, 'filled', 'amount'), new_amount,
                            abs_tol=constants.MATH_CLOSE_PREC):
                 order['amount'] = new_amount
@@ -1293,7 +1422,7 @@ class FreqtradeBot:
             return real_amount
         return amount
 
-    def get_real_amount(self, trade: Trade, order: Dict, order_amount: float = None) -> float:
+    def get_real_amount(self, trade: Trade, order: Dict) -> float:
         """
         Detect and update trade fee.
         Calls trade.update_fee() uppon correct detection.
@@ -1302,8 +1431,7 @@ class FreqtradeBot:
         :return: identical (or new) amount for the trade
         """
         # Init variables
-        if order_amount is None:
-            order_amount = safe_value_fallback(order, 'filled', 'amount')
+        order_amount = safe_value_fallback(order, 'filled', 'amount')
         # Only run for closed orders
         if trade.fee_updated(order.get('side', '')) or order['status'] == 'open':
             return order_amount
@@ -1327,7 +1455,7 @@ class FreqtradeBot:
         """
         fee-detection fallback to Trades. Parses result of fetch_my_trades to get correct fee.
         """
-        trades = self.exchange.get_trades_for_order(trade.open_order_id, trade.pair,
+        trades = self.exchange.get_trades_for_order(order['id'], trade.pair,
                                                     trade.open_date)
 
         if len(trades) == 0:

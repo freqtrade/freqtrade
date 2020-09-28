@@ -8,7 +8,7 @@
 <!-- Place this tag where you want the button to render. -->
 <a class="github-button" href="https://github.com/freqtrade/freqtrade/fork" data-icon="octicon-repo-forked" data-size="large" aria-label="Fork freqtrade/freqtrade on GitHub">Fork</a>
 <!-- Place this tag where you want the button to render. -->
-<a class="github-button" href="https://github.com/freqtrade/freqtrade/archive/master.zip" data-icon="octicon-cloud-download" data-size="large" aria-label="Download freqtrade/freqtrade on GitHub">Download</a>
+<a class="github-button" href="https://github.com/freqtrade/freqtrade/archive/stable.zip" data-icon="octicon-cloud-download" data-size="large" aria-label="Download freqtrade/freqtrade on GitHub">Download</a>
 <!-- Place this tag where you want the button to render. -->
 <a class="github-button" href="https://github.com/freqtrade" data-size="large" aria-label="Follow @freqtrade on GitHub">Follow @freqtrade</a>
 
@@ -37,13 +37,9 @@ Freqtrade is a crypto-currency algorithmic trading software developed in python 
 
 ## Requirements
 
-### Up to date clock
-
-The clock on the system running the bot must be accurate, synchronized to a NTP server frequently enough to avoid problems with communication to the exchanges.
-
 ### Hardware requirements
 
-To run this bot we recommend you a cloud instance with a minimum of:
+To run this bot we recommend you a linux cloud instance with a minimum of:
 
 - 2GB RAM
 - 1GB disk space

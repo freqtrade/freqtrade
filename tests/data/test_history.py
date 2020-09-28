@@ -12,7 +12,9 @@ from pandas import DataFrame
 from pandas.testing import assert_frame_equal
 
 from freqtrade.configuration import TimeRange
+from freqtrade.constants import AVAILABLE_DATAHANDLERS
 from freqtrade.data.converter import ohlcv_to_dataframe
+from freqtrade.data.history.hdf5datahandler import HDF5DataHandler
 from freqtrade.data.history.history_utils import (
     _download_pair_history, _download_trades_history,
     _load_cached_data_for_updating, convert_trades_to_ohlcv, get_timerange,
@@ -620,7 +622,7 @@ def test_convert_trades_to_ohlcv(mocker, default_conf, testdatadir, caplog):
     _clean_test_file(file5)
 
 
-def test_jsondatahandler_ohlcv_get_pairs(testdatadir):
+def test_datahandler_ohlcv_get_pairs(testdatadir):
     pairs = JsonDataHandler.ohlcv_get_pairs(testdatadir, '5m')
     # Convert to set to avoid failures due to sorting
     assert set(pairs) == {'UNITTEST/BTC', 'XLM/BTC', 'ETH/BTC', 'TRX/BTC', 'LTC/BTC',
@@ -630,8 +632,11 @@ def test_jsondatahandler_ohlcv_get_pairs(testdatadir):
     pairs = JsonGzDataHandler.ohlcv_get_pairs(testdatadir, '8m')
     assert set(pairs) == {'UNITTEST/BTC'}
 
+    pairs = HDF5DataHandler.ohlcv_get_pairs(testdatadir, '5m')
+    assert set(pairs) == {'UNITTEST/BTC'}
 
-def test_jsondatahandler_ohlcv_get_available_data(testdatadir):
+
+def test_datahandler_ohlcv_get_available_data(testdatadir):
     paircombs = JsonDataHandler.ohlcv_get_available_data(testdatadir)
     # Convert to set to avoid failures due to sorting
     assert set(paircombs) == {('UNITTEST/BTC', '5m'), ('ETH/BTC', '5m'), ('XLM/BTC', '5m'),
@@ -643,6 +648,8 @@ def test_jsondatahandler_ohlcv_get_available_data(testdatadir):
 
     paircombs = JsonGzDataHandler.ohlcv_get_available_data(testdatadir)
     assert set(paircombs) == {('UNITTEST/BTC', '8m')}
+    paircombs = HDF5DataHandler.ohlcv_get_available_data(testdatadir)
+    assert set(paircombs) == {('UNITTEST/BTC', '5m')}
 
 
 def test_jsondatahandler_trades_get_pairs(testdatadir):
@@ -653,15 +660,17 @@ def test_jsondatahandler_trades_get_pairs(testdatadir):
 
 def test_jsondatahandler_ohlcv_purge(mocker, testdatadir):
     mocker.patch.object(Path, "exists", MagicMock(return_value=False))
-    mocker.patch.object(Path, "unlink", MagicMock())
+    unlinkmock = mocker.patch.object(Path, "unlink", MagicMock())
     dh = JsonGzDataHandler(testdatadir)
     assert not dh.ohlcv_purge('UNITTEST/NONEXIST', '5m')
+    assert unlinkmock.call_count == 0
 
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
     assert dh.ohlcv_purge('UNITTEST/NONEXIST', '5m')
+    assert unlinkmock.call_count == 1
 
 
-def test_jsondatahandler_trades_load(mocker, testdatadir, caplog):
+def test_jsondatahandler_trades_load(testdatadir, caplog):
     dh = JsonGzDataHandler(testdatadir)
     logmsg = "Old trades format detected - converting"
     dh.trades_load('XRP/ETH')
@@ -674,24 +683,142 @@ def test_jsondatahandler_trades_load(mocker, testdatadir, caplog):
 
 def test_jsondatahandler_trades_purge(mocker, testdatadir):
     mocker.patch.object(Path, "exists", MagicMock(return_value=False))
-    mocker.patch.object(Path, "unlink", MagicMock())
+    unlinkmock = mocker.patch.object(Path, "unlink", MagicMock())
     dh = JsonGzDataHandler(testdatadir)
     assert not dh.trades_purge('UNITTEST/NONEXIST')
+    assert unlinkmock.call_count == 0
 
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
     assert dh.trades_purge('UNITTEST/NONEXIST')
+    assert unlinkmock.call_count == 1
 
 
-def test_jsondatahandler_ohlcv_append(testdatadir):
-    dh = JsonGzDataHandler(testdatadir)
+@pytest.mark.parametrize('datahandler', AVAILABLE_DATAHANDLERS)
+def test_datahandler_ohlcv_append(datahandler, testdatadir, ):
+    dh = get_datahandler(testdatadir, datahandler)
     with pytest.raises(NotImplementedError):
         dh.ohlcv_append('UNITTEST/ETH', '5m', DataFrame())
 
 
-def test_jsondatahandler_trades_append(testdatadir):
-    dh = JsonGzDataHandler(testdatadir)
+@pytest.mark.parametrize('datahandler', AVAILABLE_DATAHANDLERS)
+def test_datahandler_trades_append(datahandler, testdatadir):
+    dh = get_datahandler(testdatadir, datahandler)
     with pytest.raises(NotImplementedError):
         dh.trades_append('UNITTEST/ETH', [])
+
+
+def test_hdf5datahandler_trades_get_pairs(testdatadir):
+    pairs = HDF5DataHandler.trades_get_pairs(testdatadir)
+    # Convert to set to avoid failures due to sorting
+    assert set(pairs) == {'XRP/ETH'}
+
+
+def test_hdf5datahandler_trades_load(testdatadir):
+    dh = HDF5DataHandler(testdatadir)
+    trades = dh.trades_load('XRP/ETH')
+    assert isinstance(trades, list)
+
+    trades1 = dh.trades_load('UNITTEST/NONEXIST')
+    assert trades1 == []
+    # data goes from 2019-10-11 - 2019-10-13
+    timerange = TimeRange.parse_timerange('20191011-20191012')
+
+    trades2 = dh._trades_load('XRP/ETH', timerange)
+    assert len(trades) > len(trades2)
+
+    # unfiltered load has trades before starttime
+    assert len([t for t in trades if t[0] < timerange.startts * 1000]) >= 0
+    # filtered list does not have trades before starttime
+    assert len([t for t in trades2 if t[0] < timerange.startts * 1000]) == 0
+    # unfiltered load has trades after endtime
+    assert len([t for t in trades if t[0] > timerange.stopts * 1000]) > 0
+    # filtered list does not have trades after endtime
+    assert len([t for t in trades2 if t[0] > timerange.stopts * 1000]) == 0
+
+
+def test_hdf5datahandler_trades_store(testdatadir):
+    dh = HDF5DataHandler(testdatadir)
+    trades = dh.trades_load('XRP/ETH')
+
+    dh.trades_store('XRP/NEW', trades)
+    file = testdatadir / 'XRP_NEW-trades.h5'
+    assert file.is_file()
+    # Load trades back
+    trades_new = dh.trades_load('XRP/NEW')
+
+    assert len(trades_new) == len(trades)
+    assert trades[0][0] == trades_new[0][0]
+    assert trades[0][1] == trades_new[0][1]
+    # assert trades[0][2] == trades_new[0][2]  # This is nan - so comparison does not make sense
+    assert trades[0][3] == trades_new[0][3]
+    assert trades[0][4] == trades_new[0][4]
+    assert trades[0][5] == trades_new[0][5]
+    assert trades[0][6] == trades_new[0][6]
+    assert trades[-1][0] == trades_new[-1][0]
+    assert trades[-1][1] == trades_new[-1][1]
+    # assert trades[-1][2] == trades_new[-1][2]  # This is nan - so comparison does not make sense
+    assert trades[-1][3] == trades_new[-1][3]
+    assert trades[-1][4] == trades_new[-1][4]
+    assert trades[-1][5] == trades_new[-1][5]
+    assert trades[-1][6] == trades_new[-1][6]
+
+    _clean_test_file(file)
+
+
+def test_hdf5datahandler_trades_purge(mocker, testdatadir):
+    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
+    unlinkmock = mocker.patch.object(Path, "unlink", MagicMock())
+    dh = HDF5DataHandler(testdatadir)
+    assert not dh.trades_purge('UNITTEST/NONEXIST')
+    assert unlinkmock.call_count == 0
+
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    assert dh.trades_purge('UNITTEST/NONEXIST')
+    assert unlinkmock.call_count == 1
+
+
+def test_hdf5datahandler_ohlcv_load_and_resave(testdatadir):
+    dh = HDF5DataHandler(testdatadir)
+    ohlcv = dh.ohlcv_load('UNITTEST/BTC', '5m')
+    assert isinstance(ohlcv, DataFrame)
+    assert len(ohlcv) > 0
+
+    file = testdatadir / 'UNITTEST_NEW-5m.h5'
+    assert not file.is_file()
+
+    dh.ohlcv_store('UNITTEST/NEW', '5m', ohlcv)
+    assert file.is_file()
+
+    assert not ohlcv[ohlcv['date'] < '2018-01-15'].empty
+
+    # Data gores from 2018-01-10 - 2018-01-30
+    timerange = TimeRange.parse_timerange('20180115-20180119')
+
+    # Call private function to ensure timerange is filtered in hdf5
+    ohlcv = dh._ohlcv_load('UNITTEST/BTC', '5m', timerange)
+    ohlcv1 = dh._ohlcv_load('UNITTEST/NEW', '5m', timerange)
+    assert len(ohlcv) == len(ohlcv1)
+    assert ohlcv.equals(ohlcv1)
+    assert ohlcv[ohlcv['date'] < '2018-01-15'].empty
+    assert ohlcv[ohlcv['date'] > '2018-01-19'].empty
+
+    _clean_test_file(file)
+
+    # Try loading inexisting file
+    ohlcv = dh.ohlcv_load('UNITTEST/NONEXIST', '5m')
+    assert ohlcv.empty
+
+
+def test_hdf5datahandler_ohlcv_purge(mocker, testdatadir):
+    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
+    unlinkmock = mocker.patch.object(Path, "unlink", MagicMock())
+    dh = HDF5DataHandler(testdatadir)
+    assert not dh.ohlcv_purge('UNITTEST/NONEXIST', '5m')
+    assert unlinkmock.call_count == 0
+
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    assert dh.ohlcv_purge('UNITTEST/NONEXIST', '5m')
+    assert unlinkmock.call_count == 1
 
 
 def test_gethandlerclass():
@@ -702,6 +829,9 @@ def test_gethandlerclass():
     assert cl == JsonGzDataHandler
     assert issubclass(cl, IDataHandler)
     assert issubclass(cl, JsonDataHandler)
+    cl = get_datahandlerclass('hdf5')
+    assert cl == HDF5DataHandler
+    assert issubclass(cl, IDataHandler)
     with pytest.raises(ValueError, match=r"No datahandler for .*"):
         get_datahandlerclass('DeadBeef')
 
@@ -713,3 +843,6 @@ def test_get_datahandler(testdatadir):
     assert type(dh) == JsonGzDataHandler
     dh1 = get_datahandler(testdatadir, 'jsongz', dh)
     assert id(dh1) == id(dh)
+
+    dh = get_datahandler(testdatadir, 'hdf5')
+    assert type(dh) == HDF5DataHandler

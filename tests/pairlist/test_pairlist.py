@@ -231,9 +231,6 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     # VolumePairList only
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"}],
      "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC', 'HOT/BTC']),
-    # Different sorting depending on quote or bid volume
-    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "bidVolume"}],
-     "BTC",  ['HOT/BTC', 'FUEL/BTC', 'XRP/BTC', 'LTC/BTC', 'TKN/BTC']),
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"}],
      "USDT", ['ETH/USDT', 'NANO/USDT', 'ADAHALF/USDT', 'ADADOUBLE/USDT']),
     # No pair for ETH, VolumePairList
@@ -263,10 +260,6 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "PrecisionFilter"}],
      "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC']),
-    # Precisionfilter bid
-    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "bidVolume"},
-      {"method": "PrecisionFilter"}],
-     "BTC", ['FUEL/BTC', 'XRP/BTC', 'LTC/BTC', 'TKN/BTC']),
     # PriceFilter and VolumePairList
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "PriceFilter", "low_price_ratio": 0.03}],
@@ -293,9 +286,6 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "StaticPairList"}],
      "BTC", ['ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
     # Static Pairlist before VolumePairList - sorting changes
-    ([{"method": "StaticPairList"},
-      {"method": "VolumePairList", "number_assets": 5, "sort_key": "bidVolume"}],
-     "BTC", ['HOT/BTC', 'TKN/BTC', 'ETH/BTC']),
     # SpreadFilter
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "SpreadFilter", "max_spread_ratio": 0.005}],
@@ -344,9 +334,9 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "SpreadFilter", "max_spread_ratio": 0.005}],
      "BTC", 'filter_at_the_beginning'),  # OperationalException expected
     # Static Pairlist after VolumePairList, on a non-first position
-    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "bidVolume"},
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "StaticPairList"}],
-     "BTC", 'static_in_the_middle'),
+        "BTC", 'static_in_the_middle'),
     ([{"method": "VolumePairList", "number_assets": 20, "sort_key": "quoteVolume"},
       {"method": "PriceFilter", "low_price_ratio": 0.02}],
         "USDT", ['ETH/USDT', 'NANO/USDT']),

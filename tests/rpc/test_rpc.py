@@ -313,7 +313,6 @@ def test_rpc_delete_trade(mocker, default_conf, fee, markets, caplog):
     with pytest.raises(RPCException, match='invalid argument'):
         rpc._rpc_delete('200')
 
-    create_mock_trades(fee)
     trades = Trade.query.all()
     trades[1].stoploss_order_id = '1234'
     trades[2].stoploss_order_id = '1234'
@@ -669,7 +668,8 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
             return_value={
                 'status': 'closed',
                 'type': 'limit',
-                'side': 'buy'
+                'side': 'buy',
+                'filled': 0.0,
             }
         ),
         get_fee=fee,
@@ -695,6 +695,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     msg = rpc._rpc_forcesell('all')
     assert msg == {'result': 'Created sell orders for all open trades.'}
 
+    freqtradebot.enter_positions()
     msg = rpc._rpc_forcesell('1')
     assert msg == {'result': 'Created sell order for trade 1.'}
 
@@ -707,17 +708,26 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
 
     freqtradebot.state = State.RUNNING
     assert cancel_order_mock.call_count == 0
+    freqtradebot.enter_positions()
     # make an limit-buy open trade
     trade = Trade.query.filter(Trade.id == '1').first()
     filled_amount = trade.amount / 2
+    # Fetch order - it's open first, and closed after cancel_order is called.
     mocker.patch(
         'freqtrade.exchange.Exchange.fetch_order',
-        return_value={
+        side_effect=[{
+            'id': '1234',
             'status': 'open',
             'type': 'limit',
             'side': 'buy',
             'filled': filled_amount
-        }
+        }, {
+            'id': '1234',
+            'status': 'closed',
+            'type': 'limit',
+            'side': 'buy',
+            'filled': filled_amount
+        }]
     )
     # check that the trade is called, which is done by ensuring exchange.cancel_order is called
     # and trade amount is updated
@@ -725,6 +735,16 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     assert cancel_order_mock.call_count == 1
     assert trade.amount == filled_amount
 
+    mocker.patch(
+        'freqtrade.exchange.Exchange.fetch_order',
+        return_value={
+            'status': 'open',
+            'type': 'limit',
+            'side': 'buy',
+            'filled': filled_amount
+        })
+
+    freqtradebot.config['max_open_trades'] = 3
     freqtradebot.enter_positions()
     trade = Trade.query.filter(Trade.id == '2').first()
     amount = trade.amount
@@ -744,20 +764,22 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     assert cancel_order_mock.call_count == 2
     assert trade.amount == amount
 
-    freqtradebot.enter_positions()
     # make an limit-sell open trade
     mocker.patch(
         'freqtrade.exchange.Exchange.fetch_order',
         return_value={
             'status': 'open',
             'type': 'limit',
-            'side': 'sell'
+            'side': 'sell',
+            'amount': amount,
+            'remaining': amount,
+            'filled': 0.0
         }
     )
     msg = rpc._rpc_forcesell('3')
     assert msg == {'result': 'Created sell order for trade 3.'}
     # status quo, no exchange calls
-    assert cancel_order_mock.call_count == 2
+    assert cancel_order_mock.call_count == 3
 
 
 def test_performance_handle(default_conf, ticker, limit_buy_order, fee,
@@ -816,10 +838,10 @@ def test_rpc_count(mocker, default_conf, ticker, fee) -> None:
     assert counts["current"] == 1
 
 
-def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order) -> None:
+def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order_open) -> None:
     default_conf['forcebuy_enable'] = True
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
-    buy_mm = MagicMock(return_value={'id': limit_buy_order['id']})
+    buy_mm = MagicMock(return_value=limit_buy_order_open)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),

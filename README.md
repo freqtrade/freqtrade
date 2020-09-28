@@ -127,8 +127,8 @@ Telegram is not mandatory. However, this is a great way to control your bot. Mor
 
 The project is currently setup in two main branches:
 
-- `develop` - This branch has often new features, but might also cause breaking changes.
-- `master` - This branch contains the latest stable release. The bot 'should' be stable on this branch, and is generally well tested.
+- `develop` - This branch has often new features, but might also contain breaking changes. We try hard to keep this branch as stable as possible.
+- `stable` - This branch contains the latest stable release. This branch is generally well tested.
 - `feat/*` - These are feature branches, which are being worked on heavily. Please don't use these unless you want to test a specific feature.
 
 ## Support
@@ -171,11 +171,11 @@ Issues labeled [good first issue](https://github.com/freqtrade/freqtrade/labels/
 
 **Note** before starting any major new feature work, *please open an issue describing what you are planning to do* or talk to us on [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE). This will ensure that interested parties can give valuable feedback on the feature, and let others know that you are working on it.
 
-**Important:** Always create your PR against the `develop` branch, not `master`.
+**Important:** Always create your PR against the `develop` branch, not `stable`.
 
 ## Requirements
 
-### Uptodate clock
+### Up-to-date clock
 
 The clock must be accurate, syncronized to a NTP server very frequently to avoid problems with communication to the exchanges.
 

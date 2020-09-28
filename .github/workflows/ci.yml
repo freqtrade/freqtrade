@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - master
+      - stable
       - develop
-      - github_actions_tests
     tags:
-    release:
-      types: [published]
+  release:
+    types: [published]
   pull_request:
   schedule:
     - cron:  '0 5 * * 4'
@@ -194,7 +194,7 @@ jobs:
     steps:
     - name: Cleanup previous runs on this branch
       uses: rokroskar/workflow-run-cleanup-action@v0.2.2
-      if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master' && github.repository == 'freqtrade/freqtrade'"
+      if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/stable' && github.repository == 'freqtrade/freqtrade'"
       env:
         GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
@@ -226,7 +226,7 @@ jobs:
 
     - name: Extract branch name
       shell: bash
-      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF##*/})"
       id: extract_branch
 
     - name: Build distribution
@@ -236,7 +236,7 @@ jobs:
 
     - name: Publish to PyPI (Test)
       uses: pypa/gh-action-pypi-publish@master
-      if: (steps.extract_branch.outputs.branch == 'master' || github.event_name == 'release')
+      if: (steps.extract_branch.outputs.branch == 'stable' || github.event_name == 'release')
       with:
         user: __token__
         password: ${{ secrets.pypi_test_password }}
@@ -244,7 +244,7 @@ jobs:
 
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@master
-      if: (steps.extract_branch.outputs.branch == 'master' || github.event_name == 'release')
+      if: (steps.extract_branch.outputs.branch == 'stable' || github.event_name == 'release')
       with:
         user: __token__
         password: ${{ secrets.pypi_password }}

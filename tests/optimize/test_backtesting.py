@@ -14,7 +14,7 @@ from freqtrade.commands.optimize_commands import (setup_optimize_configuration,
                                                   start_backtesting)
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
-from freqtrade.data.btanalysis import evaluate_result_multi
+from freqtrade.data.btanalysis import BT_DATA_COLUMNS, evaluate_result_multi
 from freqtrade.data.converter import clean_ohlcv_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange
@@ -359,6 +359,7 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     ]
     for line in exists:
         assert log_has(line, caplog)
+    assert backtesting.strategy.dp._pairlists is not None
 
 
 def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) -> None:
@@ -693,7 +694,7 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
 def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
 
     patch_exchange(mocker)
-    backtestmock = MagicMock()
+    backtestmock = MagicMock(return_value=pd.DataFrame(columns=BT_DATA_COLUMNS + ['profit_abs']))
     mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)

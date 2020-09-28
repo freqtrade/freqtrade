@@ -96,6 +96,7 @@ class Backtesting:
                 "PrecisionFilter not allowed for backtesting multiple strategies."
             )
 
+        dataprovider.add_pairlisthandler(self.pairlists)
         self.pairlists.refresh_pairlist()
 
         if len(self.pairlists.whitelist) == 0:
@@ -379,12 +380,6 @@ class Backtesting:
         logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
         logger.info('Using stake_amount: %s ...', self.config['stake_amount'])
 
-        # Use max_open_trades in backtesting, except --disable-max-market-positions is set
-        if self.config.get('use_max_market_positions', True):
-            max_open_trades = self.config['max_open_trades']
-        else:
-            logger.info('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
-            max_open_trades = 0
         position_stacking = self.config.get('position_stacking', False)
 
         data, timerange = self.load_bt_data()
@@ -393,6 +388,15 @@ class Backtesting:
         for strat in self.strategylist:
             logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
             self._set_strategy(strat)
+
+            # Use max_open_trades in backtesting, except --disable-max-market-positions is set
+            if self.config.get('use_max_market_positions', True):
+                # Must come from strategy config, as the strategy may modify this setting.
+                max_open_trades = self.strategy.config['max_open_trades']
+            else:
+                logger.info(
+                    'Ignoring max_open_trades (--disable-max-market-positions was used) ...')
+                max_open_trades = 0
 
             # need to reprocess data every time to populate signals
             preprocessed = self.strategy.ohlcvdata_to_dataframe(data)
@@ -406,7 +410,7 @@ class Backtesting:
                         f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
                         f'({(max_date - min_date).days} days)..')
             # Execute backtest and print results
-            all_results[self.strategy.get_strategy_name()] = self.backtest(
+            results = self.backtest(
                 processed=preprocessed,
                 stake_amount=self.config['stake_amount'],
                 start_date=min_date,
@@ -414,9 +418,13 @@ class Backtesting:
                 max_open_trades=max_open_trades,
                 position_stacking=position_stacking,
             )
+            all_results[self.strategy.get_strategy_name()] = {
+                'results': results,
+                'config': self.strategy.config,
+            }
 
-        stats = generate_backtest_stats(self.config, data, all_results,
-                                        min_date=min_date, max_date=max_date)
+        stats = generate_backtest_stats(data, all_results, min_date=min_date, max_date=max_date)
+
         if self.config.get('export', False):
             store_backtest_stats(self.config['exportfilename'], stats)
 

@@ -24,7 +24,7 @@ ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
                        'AgeFilter', 'PrecisionFilter', 'PriceFilter',
                        'ShuffleFilter', 'SpreadFilter']
-AVAILABLE_DATAHANDLERS = ['json', 'jsongz']
+AVAILABLE_DATAHANDLERS = ['json', 'jsongz', 'hdf5']
 DRY_RUN_WALLET = 1000
 DATETIME_PRINT_FORMAT = '%Y-%m-%d %H:%M:%S'
 MATH_CLOSE_PREC = 1e-14  # Precision used for float comparisons
@@ -38,6 +38,8 @@ LAST_BT_RESULT_FN = '.last_result.json'
 USERPATH_HYPEROPTS = 'hyperopts'
 USERPATH_STRATEGIES = 'strategies'
 USERPATH_NOTEBOOKS = 'notebooks'
+
+TELEGRAM_SETTING_OPTIONS = ['on', 'off', 'silent']
 
 # Soure files with destination directories within user-directory
 USER_DATA_FILES = {
@@ -201,6 +203,18 @@ CONF_SCHEMA = {
                 'enabled': {'type': 'boolean'},
                 'token': {'type': 'string'},
                 'chat_id': {'type': 'string'},
+                'notification_settings': {
+                    'type': 'object',
+                    'properties': {
+                        'status': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'warning': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'startup': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'buy': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'sell': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'buy_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'sell_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS}
+                    }
+                }
             },
             'required': ['enabled', 'token', 'chat_id']
         },
@@ -338,9 +352,12 @@ SCHEMA_MINIMAL_REQUIRED = [
 
 CANCEL_REASON = {
     "TIMEOUT": "cancelled due to timeout",
-    "PARTIALLY_FILLED": "partially filled - keeping order open",
+    "PARTIALLY_FILLED_KEEP_OPEN": "partially filled - keeping order open",
+    "PARTIALLY_FILLED": "partially filled",
+    "FULLY_CANCELLED": "fully cancelled",
     "ALL_CANCELLED": "cancelled (all unfilled and partially filled open orders cancelled)",
     "CANCELLED_ON_EXCHANGE": "cancelled on exchange",
+    "FORCE_SELL": "forcesold",
 }
 
 # List of pairs with their timeframes

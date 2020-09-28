@@ -62,7 +62,7 @@ setup(name='freqtrade',
       setup_requires=['pytest-runner', 'numpy'],
       tests_require=['pytest', 'pytest-asyncio', 'pytest-cov', 'pytest-mock', ],
       install_requires=[
-          # from requirements-common.txt
+          # from requirements.txt
           'ccxt>=1.24.96',
           'SQLAlchemy',
           'python-telegram-bot',
@@ -82,9 +82,10 @@ setup(name='freqtrade',
           'jinja2',
           'questionary',
           'prompt-toolkit',
-          # from requirements.txt
           'numpy',
           'pandas',
+          'tables',
+          'blosc',
       ],
       extras_require={
           'api': api,

@@ -375,7 +375,7 @@ Freqtrade is based on [CCXT library](https://github.com/ccxt/ccxt) that supports
 exchange markets and trading APIs. The complete up-to-date list can be found in the
 [CCXT repo homepage](https://github.com/ccxt/ccxt/tree/master/python).
  However, the bot was tested by the development team with only Bittrex, Binance and Kraken,
- so the these are the only officially supported exhanges:
+ so the these are the only officially supported exchanges:
 
 - [Bittrex](https://bittrex.com/): "bittrex"
 - [Binance](https://www.binance.com/): "binance"

@@ -59,7 +59,7 @@ class RPCManager:
             try:
                 mod.send_msg(msg)
             except NotImplementedError:
-                logger.error(f"Message type {msg['type']} not implemented by handler {mod.name}.")
+                logger.error(f"Message type '{msg['type']}' not implemented by handler {mod.name}.")
 
     def startup_messages(self, config: Dict[str, Any], pairlist) -> None:
         if config['dry_run']:
@@ -76,7 +76,7 @@ class RPCManager:
         exchange_name = config['exchange']['name']
         strategy_name = config.get('strategy', '')
         self.send_msg({
-            'type': RPCMessageType.CUSTOM_NOTIFICATION,
+            'type': RPCMessageType.STARTUP_NOTIFICATION,
             'status': f'*Exchange:* `{exchange_name}`\n'
                       f'*Stake per trade:* `{stake_amount} {stake_currency}`\n'
                       f'*Minimum ROI:* `{minimal_roi}`\n'
@@ -85,7 +85,7 @@ class RPCManager:
                       f'*Strategy:* `{strategy_name}`'
         })
         self.send_msg({
-            'type': RPCMessageType.STATUS_NOTIFICATION,
+            'type': RPCMessageType.STARTUP_NOTIFICATION,
             'status': f'Searching for {stake_currency} pairs to buy and sell '
                       f'based on {pairlist.short_desc()}'
         })

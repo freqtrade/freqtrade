@@ -483,6 +483,9 @@ if self.dp:
 ### Complete Data-provider sample
 
 ```python
+from freqtrade.strategy import IStrategy, merge_informative_pair
+from pandas import DataFrame
+
 class SampleStrategy(IStrategy):
     # strategy init stuff...
 
@@ -513,17 +516,12 @@ class SampleStrategy(IStrategy):
         # Get the 14 day rsi
         informative['rsi'] = ta.RSI(informative, timeperiod=14)
 
-        # Rename columns to be unique
-        informative.columns = [f"{col}_{inf_tf}" for col in informative.columns]
-        # Assuming inf_tf = '1d' - then the columns will now be:
-        # date_1d, open_1d, high_1d, low_1d, close_1d, rsi_1d
-
-        # Combine the 2 dataframes
-        # all indicators on the informative sample MUST be calculated before this point
-        dataframe = pd.merge(dataframe, informative, left_on='date', right_on=f'date_{inf_tf}', how='left')
-        # FFill to have the 1d value available in every row throughout the day.
-        # Without this, comparisons would only work once per day.
-        dataframe = dataframe.ffill()
+        # Use the helper function merge_informative_pair to safely merge the pair
+        # Automatically renames the columns and merges a shorter timeframe dataframe and a longer timeframe informative pair
+        # use ffill to have the 1d value available in every row throughout the day.
+        # Without this, comparisons between columns of the original and the informative pair would only work once per day.
+        # Full documentation of this method, see below
+        dataframe = merge_informative_pair(dataframe, informative, self.timeframe, inf_tf, ffill=True)
 
         # Calculate rsi of the original dataframe (5m timeframe)
         dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
@@ -544,6 +542,69 @@ class SampleStrategy(IStrategy):
             'buy'] = 1
 
 ```
+
+***
+
+## Helper functions
+
+### *merge_informative_pair()*
+
+This method helps you merge an informative pair to a regular dataframe without lookahead bias.
+It's there to help you merge the dataframe in a safe and consistent way.
+
+Options:
+
+- Rename the columns for you to create unique columns
+- Merge the dataframe without lookahead bias
+- Forward-fill (optional)
+
+All columns of the informative dataframe will be available on the returning dataframe in a renamed fashion:
+
+!!! Example "Column renaming"
+    Assuming `inf_tf = '1d'` the resulting columns will be:
+
+    ``` python
+    'date', 'open', 'high', 'low', 'close', 'rsi'                     # from the original dataframe
+    'date_1d', 'open_1d', 'high_1d', 'low_1d', 'close_1d', 'rsi_1d'   # from the informative dataframe
+    ```
+
+??? Example "Column renaming - 1h"
+    Assuming `inf_tf = '1h'` the resulting columns will be:
+
+    ``` python
+    'date', 'open', 'high', 'low', 'close', 'rsi'                     # from the original dataframe
+    'date_1h', 'open_1h', 'high_1h', 'low_1h', 'close_1h', 'rsi_1h'   # from the informative dataframe 
+    ```
+
+??? Example "Custom implementation"
+    A custom implementation for this is possible, and can be done as follows:
+
+    ``` python
+
+    # Shift date by 1 candle
+    # This is necessary since the data is always the "open date"
+    # and a 15m candle starting at 12:15 should not know the close of the 1h candle from 12:00 to 13:00
+    minutes = timeframe_to_minutes(inf_tf)
+    # Only do this if the timeframes are different:
+    informative['date_merge'] = informative["date"] + pd.to_timedelta(minutes, 'm')
+
+    # Rename columns to be unique
+    informative.columns = [f"{col}_{inf_tf}" for col in informative.columns]
+    # Assuming inf_tf = '1d' - then the columns will now be:
+    # date_1d, open_1d, high_1d, low_1d, close_1d, rsi_1d
+
+    # Combine the 2 dataframes
+    # all indicators on the informative sample MUST be calculated before this point
+    dataframe = pd.merge(dataframe, informative, left_on='date', right_on=f'date_merge_{inf_tf}', how='left')
+    # FFill to have the 1d value available in every row throughout the day.
+    # Without this, comparisons would only work once per day.
+    dataframe = dataframe.ffill()
+
+    ```
+
+!!! Warning "Informative timeframe < timeframe"
+    Using informative timeframes smaller than the dataframe timeframe is not recommended with this method, as it will not use any of the additional information this would provide.
+    To use the more detailed information properly, more advanced methods should be applied (which are out of scope for freqtrade documentation, as it'll depend on the respective need).
 
 ***
 
