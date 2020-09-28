@@ -65,6 +65,14 @@ Guide for installing them is [here](http://flake8.pycqa.org/en/latest/user/using
 mypy freqtrade
 ```
 
+### 4. Ensure all imports are correct
+
+#### Run isort
+
+``` bash
+isort .
+```
+
 ## (Core)-Committer Guide
 
 ### Process: Pull Requests
