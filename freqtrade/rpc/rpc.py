@@ -21,6 +21,7 @@ from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType
 
+
 logger = logging.getLogger(__name__)
 
 

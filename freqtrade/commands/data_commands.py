@@ -6,15 +6,14 @@ from typing import Any, Dict, List
 import arrow
 
 from freqtrade.configuration import TimeRange, setup_utils_configuration
-from freqtrade.data.converter import (convert_ohlcv_format,
-                                      convert_trades_format)
-from freqtrade.data.history import (convert_trades_to_ohlcv,
-                                    refresh_backtest_ohlcv_data,
+from freqtrade.data.converter import convert_ohlcv_format, convert_trades_format
+from freqtrade.data.history import (convert_trades_to_ohlcv, refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
+
 
 logger = logging.getLogger(__name__)
 
@@ -105,8 +104,9 @@ def start_list_data(args: Dict[str, Any]) -> None:
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
-    from freqtrade.data.history.idatahandler import get_datahandler
     from tabulate import tabulate
+
+    from freqtrade.data.history.idatahandler import get_datahandler
     dhc = get_datahandler(config['datadir'], config['dataformat_ohlcv'])
 
     paircombs = dhc.ohlcv_get_available_data(config['datadir'])

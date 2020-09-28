@@ -5,9 +5,9 @@ This module manage Telegram communication
 """
 import json
 import logging
-import arrow
 from typing import Any, Callable, Dict
 
+import arrow
 from tabulate import tabulate
 from telegram import ParseMode, ReplyKeyboardMarkup, Update
 from telegram.error import NetworkError, TelegramError
@@ -17,6 +17,7 @@ from telegram.utils.helpers import escape_markdown
 from freqtrade.__init__ import __version__
 from freqtrade.rpc import RPC, RPCException, RPCMessageType
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
+
 
 logger = logging.getLogger(__name__)
 

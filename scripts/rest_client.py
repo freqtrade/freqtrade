@@ -10,8 +10,8 @@ so it can be used as a standalone script.
 import argparse
 import inspect
 import json
-import re
 import logging
+import re
 import sys
 from pathlib import Path
 from urllib.parse import urlencode, urlparse, urlunparse
@@ -19,6 +19,7 @@ from urllib.parse import urlencode, urlparse, urlunparse
 import rapidjson
 import requests
 from requests.exceptions import ConnectionError
+
 
 logging.basicConfig(
     level=logging.INFO,

@@ -3,6 +3,7 @@ from typing import List
 
 from sqlalchemy import inspect
 
+
 logger = logging.getLogger(__name__)
 
 

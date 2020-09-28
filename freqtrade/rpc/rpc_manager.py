@@ -6,6 +6,7 @@ from typing import Any, Dict, List
 
 from freqtrade.rpc import RPC, RPCMessageType
 
+
 logger = logging.getLogger(__name__)
 
 

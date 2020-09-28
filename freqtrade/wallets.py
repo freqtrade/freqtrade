@@ -10,6 +10,7 @@ import arrow
 from freqtrade.exchange import Exchange
 from freqtrade.persistence import Trade
 
+
 logger = logging.getLogger(__name__)
 
 

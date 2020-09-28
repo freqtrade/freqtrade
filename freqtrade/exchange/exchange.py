@@ -13,19 +13,19 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 import ccxt
 import ccxt.async_support as ccxt_async
-from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE,
-                                            TRUNCATE, decimal_to_precision)
+from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE,
+                                            decimal_to_precision)
 from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
-from freqtrade.exceptions import (DDosProtection, ExchangeError,
-                                  InsufficientFundsError,
-                                  InvalidOrderException, OperationalException,
-                                  RetryableOrderError, TemporaryError)
-from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT,
-                                       BAD_EXCHANGES, retrier, retrier_async)
+from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
+                                  InvalidOrderException, OperationalException, RetryableOrderError,
+                                  TemporaryError)
+from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGES, retrier,
+                                       retrier_async)
 from freqtrade.misc import deep_merge_dicts, safe_value_fallback2
+
 
 CcxtModuleType = Any
 

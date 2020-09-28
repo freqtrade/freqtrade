@@ -12,6 +12,7 @@ from typing.io import IO
 import numpy as np
 import rapidjson
 
+
 logger = logging.getLogger(__name__)
 
 

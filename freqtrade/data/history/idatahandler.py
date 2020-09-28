@@ -14,9 +14,9 @@ from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import ListPairsWithTimeframes
-from freqtrade.data.converter import (clean_ohlcv_dataframe,
-                                      trades_remove_duplicates, trim_dataframe)
+from freqtrade.data.converter import clean_ohlcv_dataframe, trades_remove_duplicates, trim_dataframe
 from freqtrade.exchange import timeframe_to_seconds
+
 
 logger = logging.getLogger(__name__)
 

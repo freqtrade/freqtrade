@@ -10,8 +10,8 @@ from typing import Any, Dict, List
 import pandas as pd
 from pandas import DataFrame, to_datetime
 
-from freqtrade.constants import (DEFAULT_DATAFRAME_COLUMNS,
-                                 DEFAULT_TRADES_COLUMNS)
+from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS
+
 
 logger = logging.getLogger(__name__)
 

@@ -13,6 +13,7 @@ from freqtrade.optimize.hyperopt_interface import IHyperOpt
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss
 from freqtrade.resolvers import IResolver
 
+
 logger = logging.getLogger(__name__)
 
 

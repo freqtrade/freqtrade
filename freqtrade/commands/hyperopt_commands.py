@@ -8,6 +8,7 @@ from freqtrade.configuration import setup_utils_configuration
 from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
 
+
 logger = logging.getLogger(__name__)
 
 

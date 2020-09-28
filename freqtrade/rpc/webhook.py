@@ -2,9 +2,9 @@
 This module manages webhook communication
 """
 import logging
-from typing import Any,  Dict
+from typing import Any, Dict
 
-from requests import post, RequestException
+from requests import RequestException, post
 
 from freqtrade.rpc import RPC, RPCMessageType
 

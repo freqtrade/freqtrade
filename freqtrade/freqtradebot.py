@@ -30,6 +30,7 @@ from freqtrade.strategy.interface import IStrategy, SellType
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
+
 logger = logging.getLogger(__name__)
 
 

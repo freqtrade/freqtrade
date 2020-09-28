@@ -2,8 +2,9 @@
 Minimum age (days listed) pair list filter
 """
 import logging
-import arrow
 from typing import Any, Dict
+
+import arrow
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import plural

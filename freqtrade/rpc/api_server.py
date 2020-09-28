@@ -8,9 +8,8 @@ from arrow import Arrow
 from flask import Flask, jsonify, request
 from flask.json import JSONEncoder
 from flask_cors import CORS
-from flask_jwt_extended import (JWTManager, create_access_token,
-                                create_refresh_token, get_jwt_identity,
-                                jwt_refresh_token_required,
+from flask_jwt_extended import (JWTManager, create_access_token, create_refresh_token,
+                                get_jwt_identity, jwt_refresh_token_required,
                                 verify_jwt_in_request_optional)
 from werkzeug.security import safe_str_cmp
 from werkzeug.serving import make_server
@@ -20,6 +19,7 @@ from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.persistence import Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.rpc.rpc import RPC, RPCException
+
 
 logger = logging.getLogger(__name__)
 

@@ -13,6 +13,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import round_dict
 
+
 logger = logging.getLogger(__name__)
 
 
