@@ -252,13 +252,6 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='INT',
         default=1,
     ),
-    "hyperopt_continue": Arg(
-        "--continue",
-        help="Continue hyperopt from previous runs. "
-        "By default, temporary files will be removed and hyperopt will start from scratch.",
-        default=False,
-        action='store_true',
-    ),
     "hyperopt_loss": Arg(
         '--hyperopt-loss',
         help='Specify the class name of the hyperopt loss function class (IHyperOptLoss). '
@@ -269,6 +262,12 @@ AVAILABLE_CLI_OPTIONS = {
         '(default: `%(default)s`).',
         metavar='NAME',
         default=constants.DEFAULT_HYPEROPT_LOSS,
+    ),
+    "hyperoptexportfilename": Arg(
+        '--hyperopt-filename',
+        help='Hyperopt result filename.'
+        'Example: `--hyperopt-filename=hyperopt_results_2020-09-27_16-20-48.pickle`',
+        metavar='FILENAME',
     ),
     # List exchanges
     "print_one_column": Arg(

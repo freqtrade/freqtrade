@@ -15,6 +15,7 @@ from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
                                        create_cum_profit,
                                        extract_trades_of_period,
                                        get_latest_backtest_filename,
+                                       get_latest_hyperopt_file,
                                        load_backtest_data, load_trades,
                                        load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
@@ -41,6 +42,17 @@ def test_get_latest_backtest_filename(testdatadir, mocker):
 
     with pytest.raises(ValueError, match=r"Invalid '.last_result.json' format."):
         get_latest_backtest_filename(testdatadir)
+
+
+def test_get_latest_hyperopt_file(testdatadir, mocker):
+    res = get_latest_hyperopt_file(testdatadir / 'does_not_exist', 'testfile.pickle')
+    assert res == testdatadir / 'does_not_exist/testfile.pickle'
+
+    res = get_latest_hyperopt_file(testdatadir.parent)
+    assert res == testdatadir.parent / "hyperopt_results.pickle"
+
+    res = get_latest_hyperopt_file(str(testdatadir.parent))
+    assert res == testdatadir.parent / "hyperopt_results.pickle"
 
 
 def test_load_backtest_data_old_format(testdatadir):
