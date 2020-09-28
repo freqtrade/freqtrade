@@ -229,7 +229,7 @@ Because hyperopt tries a lot of combinations to find the best parameters it will
 We strongly recommend to use `screen` or `tmux` to prevent any connection loss.
 
 ```bash
-freqtrade hyperopt --config config.json --hyperopt <hyperoptname> -e 500 --spaces all
+freqtrade hyperopt --config config.json --hyperopt <hyperoptname> --strategy <strategyname> -e 500 --spaces all
 ```
 
 Use `<hyperoptname>` as the name of the custom hyperopt used.
@@ -255,7 +255,7 @@ Use the `--timerange` argument to change how much of the test-set you want to us
 For example, to use one month of data, pass the following parameter to the hyperopt call:
 
 ```bash
-freqtrade hyperopt --timerange 20180401-20180501
+freqtrade hyperopt --hyperopt <hyperoptname> --strategy <strategyname> --timerange 20180401-20180501
 ```
 
 ### Running Hyperopt using methods from a strategy
