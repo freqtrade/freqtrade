@@ -15,20 +15,19 @@ from freqtrade.configuration import TimeRange
 from freqtrade.constants import AVAILABLE_DATAHANDLERS
 from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.data.history.hdf5datahandler import HDF5DataHandler
-from freqtrade.data.history.history_utils import (
-    _download_pair_history, _download_trades_history,
-    _load_cached_data_for_updating, convert_trades_to_ohlcv, get_timerange,
-    load_data, load_pair_history, refresh_backtest_ohlcv_data,
-    refresh_backtest_trades_data, refresh_data, validate_backtest_data)
-from freqtrade.data.history.idatahandler import (IDataHandler, get_datahandler,
-                                                 get_datahandlerclass)
-from freqtrade.data.history.jsondatahandler import (JsonDataHandler,
-                                                    JsonGzDataHandler)
+from freqtrade.data.history.history_utils import (_download_pair_history, _download_trades_history,
+                                                  _load_cached_data_for_updating,
+                                                  convert_trades_to_ohlcv, get_timerange, load_data,
+                                                  load_pair_history, refresh_backtest_ohlcv_data,
+                                                  refresh_backtest_trades_data, refresh_data,
+                                                  validate_backtest_data)
+from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler, get_datahandlerclass
+from freqtrade.data.history.jsondatahandler import JsonDataHandler, JsonGzDataHandler
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.resolvers import StrategyResolver
-from tests.conftest import (get_patched_exchange, log_has, log_has_re,
-                            patch_exchange)
+from tests.conftest import get_patched_exchange, log_has, log_has_re, patch_exchange
+
 
 # Change this if modifying UNITTEST/BTC testdatafile
 _BTC_UNITTEST_LENGTH = 13681

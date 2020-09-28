@@ -10,13 +10,14 @@ import numpy as np
 import pytest
 from pandas import DataFrame, to_datetime
 
-from freqtrade.exceptions import OperationalException
 from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import Edge, PairInfo
+from freqtrade.exceptions import OperationalException
 from freqtrade.strategy.interface import SellType
 from tests.conftest import get_patched_freqtradebot, log_has
 from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
                             _get_frame_time_from_offset)
+
 
 # Cases to be tested:
 # 1) Open trade should be removed from the end

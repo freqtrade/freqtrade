@@ -1,11 +1,11 @@
 # pragma pylint: disable=missing-docstring
 
 from copy import deepcopy
+from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
-from pathlib import Path
 from freqtrade.commands import Arguments
 from freqtrade.exceptions import FreqtradeException, OperationalException
 from freqtrade.freqtradebot import FreqtradeBot

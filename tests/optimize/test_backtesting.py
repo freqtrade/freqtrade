@@ -10,8 +10,7 @@ import pytest
 from arrow import Arrow
 
 from freqtrade import constants
-from freqtrade.commands.optimize_commands import (setup_optimize_configuration,
-                                                  start_backtesting)
+from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_backtesting
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import BT_DATA_COLUMNS, evaluate_result_multi
@@ -25,6 +24,7 @@ from freqtrade.state import RunMode
 from freqtrade.strategy.interface import SellType
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
+
 
 ORDER_TYPES = [
     {

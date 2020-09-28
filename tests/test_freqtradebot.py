@@ -10,12 +10,10 @@ from unittest.mock import ANY, MagicMock, PropertyMock
 import arrow
 import pytest
 
-from freqtrade.constants import (CANCEL_REASON, MATH_CLOSE_PREC,
-                                 UNLIMITED_STAKE_AMOUNT)
-from freqtrade.exceptions import (DependencyException, ExchangeError,
-                                  InsufficientFundsError,
-                                  InvalidOrderException, OperationalException,
-                                  PricingError, TemporaryError)
+from freqtrade.constants import CANCEL_REASON, MATH_CLOSE_PREC, UNLIMITED_STAKE_AMOUNT
+from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
+                                  InvalidOrderException, OperationalException, PricingError,
+                                  TemporaryError)
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.persistence.models import Order
@@ -23,15 +21,12 @@ from freqtrade.rpc import RPCMessageType
 from freqtrade.state import RunMode, State
 from freqtrade.strategy.interface import SellCheckTuple, SellType
 from freqtrade.worker import Worker
-from tests.conftest import (create_mock_trades, get_patched_freqtradebot,
-                            get_patched_worker, log_has, log_has_re,
-                            patch_edge, patch_exchange, patch_get_signal,
+from tests.conftest import (create_mock_trades, get_patched_freqtradebot, get_patched_worker,
+                            log_has, log_has_re, patch_edge, patch_exchange, patch_get_signal,
                             patch_wallet, patch_whitelist)
-from tests.conftest_trades import (MOCK_TRADE_COUNT, mock_order_1,
-                                   mock_order_2, mock_order_2_sell,
-                                   mock_order_3, mock_order_3_sell,
-                                   mock_order_4, mock_order_5_stoploss,
-                                   mock_order_6_sell)
+from tests.conftest_trades import (MOCK_TRADE_COUNT, mock_order_1, mock_order_2, mock_order_2_sell,
+                                   mock_order_3, mock_order_3_sell, mock_order_4,
+                                   mock_order_5_stoploss, mock_order_6_sell)
 
 
 def patch_RPCManager(mocker) -> MagicMock:

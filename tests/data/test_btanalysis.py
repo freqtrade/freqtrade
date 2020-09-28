@@ -7,16 +7,11 @@ from pandas import DataFrame, DateOffset, Timestamp, to_datetime
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import LAST_BT_RESULT_FN
-from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
-                                       analyze_trade_parallelism,
-                                       calculate_market_change,
-                                       calculate_max_drawdown,
-                                       combine_dataframes_with_mean,
-                                       create_cum_profit,
-                                       extract_trades_of_period,
-                                       get_latest_backtest_filename,
-                                       load_backtest_data, load_trades,
-                                       load_trades_from_db)
+from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, analyze_trade_parallelism,
+                                       calculate_market_change, calculate_max_drawdown,
+                                       combine_dataframes_with_mean, create_cum_profit,
+                                       extract_trades_of_period, get_latest_backtest_filename,
+                                       load_backtest_data, load_trades, load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
 from freqtrade.optimize.backtesting import BacktestResult
 from tests.conftest import create_mock_trades

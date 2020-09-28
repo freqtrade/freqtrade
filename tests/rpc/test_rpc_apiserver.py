@@ -14,8 +14,8 @@ from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.persistence import Trade
 from freqtrade.rpc.api_server import BASE_URI, ApiServer
 from freqtrade.state import State
-from tests.conftest import (create_mock_trades, get_patched_freqtradebot,
-                            log_has, patch_get_signal)
+from tests.conftest import create_mock_trades, get_patched_freqtradebot, log_has, patch_get_signal
+
 
 _TEST_USER = "FreqTrader"
 _TEST_PASS = "SuperSecurePassword1!"

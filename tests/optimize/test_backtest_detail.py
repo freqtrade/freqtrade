@@ -11,6 +11,7 @@ from tests.conftest import patch_exchange
 from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
                             _get_frame_time_from_offset, tests_timeframe)
 
+
 # Test 0: Sell with signal sell in candle 3
 # Test with Stop-loss at 1%
 tc0 = BTContainer(data=[

@@ -8,6 +8,7 @@ from freqtrade.exceptions import DependencyException, InvalidOrderException
 from tests.conftest import get_patched_exchange
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
+
 STOPLOSS_ORDERTYPE = 'stop-loss'
 
 
