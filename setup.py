@@ -1,5 +1,7 @@
 from sys import version_info
+
 from setuptools import setup
+
 
 if version_info.major == 3 and version_info.minor < 6 or \
         version_info.major < 3:
@@ -7,6 +9,7 @@ if version_info.major == 3 and version_info.minor < 6 or \
     exit(1)
 
 from pathlib import Path  # noqa: E402
+
 from freqtrade import __version__  # noqa: E402
 
 
