@@ -17,7 +17,12 @@ else
     docker pull ${IMAGE_NAME}:${TAG}
     docker build --cache-from ${IMAGE_NAME}:${TAG} -t freqtrade:${TAG} .
 fi
+# Tag image for upload and next build step
+docker tag freqtrade:$TAG ${IMAGE_NAME}:$TAG
+
 docker build --cache-from freqtrade:${TAG} --build-arg sourceimage=${TAG} -t freqtrade:${TAG_PLOT} -f docker/Dockerfile.plot .
+
+docker tag freqtrade:$TAG_PLOT ${IMAGE_NAME}:$TAG_PLOT
 
 if [ $? -ne 0 ]; then
     echo "failed building image"
@@ -32,9 +37,6 @@ if [ $? -ne 0 ]; then
     return 1
 fi
 
-# Tag image for upload
-docker tag freqtrade:$TAG ${IMAGE_NAME}:$TAG
-docker tag freqtrade:$TAG_PLOT ${IMAGE_NAME}:$TAG_PLOT
 if [ $? -ne 0 ]; then
     echo "failed tagging image"
     return 1
