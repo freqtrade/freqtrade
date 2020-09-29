@@ -2,17 +2,18 @@
 Helpers when analyzing backtest data
 """
 import logging
+from datetime import timezone
 from pathlib import Path
-from typing import Dict, Union, Tuple, Any, Optional
+from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from datetime import timezone
 
 from freqtrade import persistence
 from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.misc import json_load
 from freqtrade.persistence import Trade
+
 
 logger = logging.getLogger(__name__)
 

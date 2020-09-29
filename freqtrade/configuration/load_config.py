@@ -11,6 +11,7 @@ import rapidjson
 
 from freqtrade.exceptions import OperationalException
 
+
 logger = logging.getLogger(__name__)
 
 

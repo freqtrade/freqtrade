@@ -19,6 +19,7 @@ from tests.conftest import log_has, log_has_re
 
 from .strats.default_strategy import DefaultStrategy
 
+
 # Avoid to reinit the same object again and again
 _STRATEGY = DefaultStrategy(config={})
 _STRATEGY.dp = DataProvider({}, None, None)

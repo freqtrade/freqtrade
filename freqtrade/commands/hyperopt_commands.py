@@ -5,9 +5,10 @@ from typing import Any, Dict, List
 from colorama import init as colorama_init
 
 from freqtrade.configuration import setup_utils_configuration
+from freqtrade.data.btanalysis import get_latest_hyperopt_file
 from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
-from freqtrade.data.btanalysis import get_latest_hyperopt_file
+
 
 logger = logging.getLogger(__name__)
 

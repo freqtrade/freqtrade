@@ -9,6 +9,7 @@ from pathlib import Path
 from freqtrade.pairlist.IPairList import IPairList
 from freqtrade.resolvers import IResolver
 
+
 logger = logging.getLogger(__name__)
 
 

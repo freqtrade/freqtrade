@@ -9,20 +9,17 @@ import ccxt
 import pytest
 from pandas import DataFrame
 
-from freqtrade.exceptions import (DDosProtection, DependencyException,
-                                  InvalidOrderException, OperationalException,
-                                  TemporaryError)
+from freqtrade.exceptions import (DDosProtection, DependencyException, InvalidOrderException,
+                                  OperationalException, TemporaryError)
 from freqtrade.exchange import Binance, Exchange, Kraken
-from freqtrade.exchange.common import (API_RETRY_COUNT, API_FETCH_ORDER_RETRY_COUNT,
+from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, API_RETRY_COUNT,
                                        calculate_backoff)
-from freqtrade.exchange.exchange import (market_is_active,
-                                         timeframe_to_minutes,
-                                         timeframe_to_msecs,
-                                         timeframe_to_next_date,
-                                         timeframe_to_prev_date,
+from freqtrade.exchange.exchange import (market_is_active, timeframe_to_minutes, timeframe_to_msecs,
+                                         timeframe_to_next_date, timeframe_to_prev_date,
                                          timeframe_to_seconds)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import get_patched_exchange, log_has, log_has_re
+
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
 EXCHANGES = ['bittrex', 'binance', 'kraken', 'ftx']

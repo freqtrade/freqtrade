@@ -5,9 +5,11 @@ from typing import Any, Dict
 from questionary import Separator, prompt
 
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
-from freqtrade.exchange import available_exchanges, MAP_EXCHANGE_CHILDCLASS
-from freqtrade.misc import render_template
 from freqtrade.exceptions import OperationalException
+from freqtrade.exchange import MAP_EXCHANGE_CHILDCLASS, available_exchanges
+from freqtrade.misc import render_template
+
+
 logger = logging.getLogger(__name__)
 
 

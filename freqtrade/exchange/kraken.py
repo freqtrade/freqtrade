@@ -4,11 +4,11 @@ from typing import Any, Dict
 
 import ccxt
 
-from freqtrade.exceptions import (DDosProtection, InsufficientFundsError,
-                                  InvalidOrderException, OperationalException,
-                                  TemporaryError)
+from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
+                                  OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
+
 
 logger = logging.getLogger(__name__)
 

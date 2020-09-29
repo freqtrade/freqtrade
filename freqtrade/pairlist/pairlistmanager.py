@@ -7,10 +7,10 @@ from typing import Dict, List
 
 from cachetools import TTLCache, cached
 
+from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
 from freqtrade.pairlist.IPairList import IPairList
 from freqtrade.resolvers import PairListResolver
-from freqtrade.constants import ListPairsWithTimeframes
 
 
 logger = logging.getLogger(__name__)

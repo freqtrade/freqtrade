@@ -23,9 +23,8 @@ from freqtrade.rpc import RPCMessageType
 from freqtrade.rpc.telegram import Telegram, authorized_only
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType
-from tests.conftest import (create_mock_trades, get_patched_freqtradebot,
-                            log_has, patch_exchange, patch_get_signal,
-                            patch_whitelist)
+from tests.conftest import (create_mock_trades, get_patched_freqtradebot, log_has, patch_exchange,
+                            patch_get_signal, patch_whitelist)
 
 
 class DummyCls(Telegram):

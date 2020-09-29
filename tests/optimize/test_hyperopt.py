@@ -1,9 +1,9 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
 import locale
 import logging
+from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
-from copy import deepcopy
 from typing import Dict, List
 from unittest.mock import MagicMock
 
@@ -13,14 +13,12 @@ from arrow import Arrow
 from filelock import Timeout
 
 from freqtrade import constants
-from freqtrade.commands.optimize_commands import (setup_optimize_configuration,
-                                                  start_hyperopt)
+from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_hyperopt
 from freqtrade.data.history import load_data
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.optimize.default_hyperopt_loss import DefaultHyperOptLoss
 from freqtrade.optimize.hyperopt import Hyperopt
-from freqtrade.resolvers.hyperopt_resolver import (HyperOptLossResolver,
-                                                   HyperOptResolver)
+from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver, HyperOptResolver
 from freqtrade.state import RunMode
 from freqtrade.strategy.interface import SellType
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,

@@ -7,8 +7,8 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 import arrow
-from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
-                        String, create_engine, desc, func, inspect)
+from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer, String,
+                        create_engine, desc, func, inspect)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Query, relationship
@@ -20,6 +20,7 @@ from sqlalchemy.sql.schema import UniqueConstraint
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.migrations import check_migrate
+
 
 logger = logging.getLogger(__name__)
 

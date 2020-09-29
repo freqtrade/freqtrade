@@ -11,6 +11,7 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, Union
 
 from freqtrade.exceptions import OperationalException
 
+
 logger = logging.getLogger(__name__)
 
 

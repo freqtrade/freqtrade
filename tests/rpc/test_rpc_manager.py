@@ -1,10 +1,10 @@
 # pragma pylint: disable=missing-docstring, C0103
-import time
 import logging
+import time
 from unittest.mock import MagicMock
 
-from freqtrade.rpc import RPCMessageType, RPCManager
-from tests.conftest import log_has, get_patched_freqtradebot
+from freqtrade.rpc import RPCManager, RPCMessageType
+from tests.conftest import get_patched_freqtradebot, log_has
 
 
 def test__init__(mocker, default_conf) -> None:

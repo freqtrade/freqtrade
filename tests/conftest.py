@@ -22,8 +22,9 @@ from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
-from tests.conftest_trades import (mock_trade_1, mock_trade_2, mock_trade_3,
-                                   mock_trade_4, mock_trade_5, mock_trade_6)
+from tests.conftest_trades import (mock_trade_1, mock_trade_2, mock_trade_3, mock_trade_4,
+                                   mock_trade_5, mock_trade_6)
+
 
 logging.getLogger('').setLevel(logging.INFO)
 

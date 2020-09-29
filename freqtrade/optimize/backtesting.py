@@ -11,21 +11,20 @@ from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 import arrow
 from pandas import DataFrame
 
-from freqtrade.configuration import (TimeRange, remove_credentials,
-                                     validate_config_consistency)
+from freqtrade.configuration import TimeRange, remove_credentials, validate_config_consistency
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data import history
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
-from freqtrade.optimize.optimize_reports import (generate_backtest_stats,
-                                                 show_backtest_results,
+from freqtrade.optimize.optimize_reports import (generate_backtest_stats, show_backtest_results,
                                                  store_backtest_stats)
 from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy.interface import IStrategy, SellCheckTuple, SellType
+
 
 logger = logging.getLogger(__name__)
 

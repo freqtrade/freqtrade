@@ -1,5 +1,5 @@
-import talib.abstract as ta
 import pandas as pd
+import talib.abstract as ta
 
 
 def test_talib_bollingerbands_near_zero_values():

@@ -94,6 +94,10 @@ jobs:
       run: |
         flake8
 
+    - name: Sort imports (isort)
+      run: |
+        isort --check .
+
     - name: Mypy
       run: |
         mypy freqtrade scripts

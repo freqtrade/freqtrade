@@ -7,9 +7,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from freqtrade.data.converter import ohlcv_to_dataframe
-from freqtrade.misc import (datesarray_to_datetimearray, file_dump_json,
-                            file_load_json, format_ms_time, pair_to_filename,
-                            plural, render_template,
+from freqtrade.misc import (datesarray_to_datetimearray, file_dump_json, file_load_json,
+                            format_ms_time, pair_to_filename, plural, render_template,
                             render_template_with_fallback, safe_value_fallback,
                             safe_value_fallback2, shorten_date)
 
