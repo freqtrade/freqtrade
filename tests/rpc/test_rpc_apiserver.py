@@ -840,7 +840,7 @@ def test_api_pair_candles(botclient, ohlcv_history):
     assert len(rc.json['data']) == 0
     ohlcv_history['sma'] = ohlcv_history['close'].rolling(2).mean()
     ohlcv_history['buy'] = 0
-    ohlcv_history.iloc[1]['buy'] = 1
+    ohlcv_history.loc[1, 'buy'] = 1
     ohlcv_history['sell'] = 0
 
     ftbot.dataprovider._set_cached_df("XRP/BTC", timeframe, ohlcv_history)
@@ -873,7 +873,7 @@ def test_api_pair_candles(botclient, ohlcv_history):
             [['2017-11-26 08:50:00', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
               None, 0, 0, 1511686200000, None, None],
              ['2017-11-26 08:55:00', 8.88e-05, 8.942e-05, 8.88e-05,
-                 8.893e-05, 0.05874751, 8.886500000000001e-05, 0, 0, 1511686500000, None, None]
+                 8.893e-05, 0.05874751, 8.886500000000001e-05, 1, 0, 1511686500000, 8.88e-05, None]
              ])
 
 

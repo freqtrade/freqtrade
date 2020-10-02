@@ -123,6 +123,8 @@ class IStrategy(ABC):
     # and wallets - access to the current balance.
     dp: Optional[DataProvider] = None
     wallets: Optional[Wallets] = None
+    # container variable for strategy source code
+    __source__: str = ''
 
     # Definition of plot_config. See plotting documentation for more details.
     plot_config: Dict = {}

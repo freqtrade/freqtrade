@@ -711,15 +711,15 @@ class RPC:
         return self._convert_dataframe_to_dict(self._freqtrade.config['strategy'],
                                                pair, timeframe, _data, last_analyzed)
 
-    def _rpc_analysed_history_full(self, config: Dict[str, any], pair: str, timeframe: str,
+    def _rpc_analysed_history_full(self, config, pair: str, timeframe: str,
                                    timerange: str) -> Dict[str, Any]:
-        timerange = TimeRange.parse_timerange(timerange)
+        timerange_parsed = TimeRange.parse_timerange(timerange)
 
         _data = load_data(
             datadir=config.get("datadir"),
             pairs=[pair],
             timeframe=timeframe,
-            timerange=timerange,
+            timerange=timerange_parsed,
             data_format=config.get('dataformat_ohlcv', 'json'),
         )
         from freqtrade.resolvers.strategy_resolver import StrategyResolver
