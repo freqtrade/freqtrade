@@ -1,4 +1,3 @@
-from freqtrade.exceptions import OperationalException
 import logging
 import threading
 from copy import deepcopy
@@ -19,6 +18,7 @@ from werkzeug.serving import make_server
 
 from freqtrade.__init__ import __version__
 from freqtrade.constants import DATETIME_PRINT_FORMAT, USERPATH_STRATEGIES
+from freqtrade.exceptions import OperationalException
 from freqtrade.persistence import Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.rpc.rpc import RPC, RPCException
