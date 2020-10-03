@@ -163,7 +163,8 @@ class Hyperopt:
                          f"saved to '{self.results_file}'.")
             # Store hyperopt filename
             latest_filename = Path.joinpath(self.results_file.parent, LAST_BT_RESULT_FN)
-            file_dump_json(latest_filename, {'latest_hyperopt': str(self.results_file.name)})
+            file_dump_json(latest_filename, {'latest_hyperopt': str(self.results_file.name)},
+                           log=False)
 
     @staticmethod
     def _read_results(results_file: Path) -> List:
