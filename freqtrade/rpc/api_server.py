@@ -163,10 +163,6 @@ class ApiServer(RPC):
         """
         pass
 
-    def rest_dump(self, return_value):
-        """ Helper function to jsonify object for a webserver """
-        return jsonify(return_value)
-
     def rest_error(self, error_msg, error_code=502):
         return jsonify({"error": error_msg}), error_code
 
@@ -244,7 +240,7 @@ class ApiServer(RPC):
         """
         Return "404 not found", 404.
         """
-        return self.rest_dump({
+        return jsonify({
             'status': 'error',
             'reason': f"There's no API call for {request.base_url}.",
             'code': 404
@@ -264,7 +260,7 @@ class ApiServer(RPC):
                 'access_token': create_access_token(identity=keystuff),
                 'refresh_token': create_refresh_token(identity=keystuff),
             }
-            return self.rest_dump(ret)
+            return jsonify(ret)
 
         return jsonify({"error": "Unauthorized"}), 401
 
@@ -279,7 +275,7 @@ class ApiServer(RPC):
         new_token = create_access_token(identity=current_user, fresh=False)
 
         ret = {'access_token': new_token}
-        return self.rest_dump(ret)
+        return jsonify(ret)
 
     @require_login
     @rpc_catch_errors
@@ -289,7 +285,7 @@ class ApiServer(RPC):
         Starts TradeThread in bot if stopped.
         """
         msg = self._rpc_start()
-        return self.rest_dump(msg)
+        return jsonify(msg)
 
     @require_login
     @rpc_catch_errors
@@ -299,7 +295,7 @@ class ApiServer(RPC):
         Stops TradeThread in bot if running
         """
         msg = self._rpc_stop()
-        return self.rest_dump(msg)
+        return jsonify(msg)
 
     @require_login
     @rpc_catch_errors
@@ -309,14 +305,14 @@ class ApiServer(RPC):
         Sets max_open_trades to 0 and gracefully sells all open trades
         """
         msg = self._rpc_stopbuy()
-        return self.rest_dump(msg)
+        return jsonify(msg)
 
     @rpc_catch_errors
     def _ping(self):
         """
         simple ping version
         """
-        return self.rest_dump({"status": "pong"})
+        return jsonify({"status": "pong"})
 
     @require_login
     @rpc_catch_errors
@@ -324,7 +320,7 @@ class ApiServer(RPC):
         """
         Prints the bot's version
         """
-        return self.rest_dump({"version": __version__})
+        return jsonify({"version": __version__})
 
     @require_login
     @rpc_catch_errors
@@ -332,7 +328,7 @@ class ApiServer(RPC):
         """
         Prints the bot's version
         """
-        return self.rest_dump(self._rpc_show_config(self._config))
+        return jsonify(self._rpc_show_config(self._config))
 
     @require_login
     @rpc_catch_errors
@@ -342,7 +338,7 @@ class ApiServer(RPC):
         Triggers a config file reload
         """
         msg = self._rpc_reload_config()
-        return self.rest_dump(msg)
+        return jsonify(msg)
 
     @require_login
     @rpc_catch_errors
@@ -352,7 +348,7 @@ class ApiServer(RPC):
         Returns the number of trades running
         """
         msg = self._rpc_count()
-        return self.rest_dump(msg)
+        return jsonify(msg)
 
     @require_login
     @rpc_catch_errors
@@ -370,7 +366,7 @@ class ApiServer(RPC):
                                        self._config.get('fiat_display_currency', '')
                                        )
 
-        return self.rest_dump(stats)
+        return jsonify(stats)
 
     @require_login
     @rpc_catch_errors
@@ -382,7 +378,7 @@ class ApiServer(RPC):
             limit: Only get a certain number of records
         """
         limit = int(request.args.get('limit', 0)) or None
-        return self.rest_dump(self._rpc_get_logs(limit))
+        return jsonify(self._rpc_get_logs(limit))
 
     @require_login
     @rpc_catch_errors
@@ -393,7 +389,7 @@ class ApiServer(RPC):
         """
         stats = self._rpc_edge()
 
-        return self.rest_dump(stats)
+        return jsonify(stats)
 
     @require_login
     @rpc_catch_errors
@@ -409,7 +405,7 @@ class ApiServer(RPC):
                                            self._config.get('fiat_display_currency')
                                            )
 
-        return self.rest_dump(stats)
+        return jsonify(stats)
 
     @require_login
     @rpc_catch_errors
@@ -422,7 +418,7 @@ class ApiServer(RPC):
         """
         stats = self._rpc_performance()
 
-        return self.rest_dump(stats)
+        return jsonify(stats)
 
     @require_login
     @rpc_catch_errors
@@ -434,9 +430,9 @@ class ApiServer(RPC):
         """
         try:
             results = self._rpc_trade_status()
-            return self.rest_dump(results)
+            return jsonify(results)
         except RPCException:
-            return self.rest_dump([])
+            return jsonify([])
 
     @require_login
     @rpc_catch_errors
@@ -448,7 +444,7 @@ class ApiServer(RPC):
         """
         results = self._rpc_balance(self._config['stake_currency'],
                                     self._config.get('fiat_display_currency', ''))
-        return self.rest_dump(results)
+        return jsonify(results)
 
     @require_login
     @rpc_catch_errors
@@ -460,7 +456,7 @@ class ApiServer(RPC):
         """
         limit = int(request.args.get('limit', 0))
         results = self._rpc_trade_history(limit)
-        return self.rest_dump(results)
+        return jsonify(results)
 
     @require_login
     @rpc_catch_errors
@@ -473,7 +469,7 @@ class ApiServer(RPC):
             tradeid: Numeric trade-id assigned to the trade.
         """
         result = self._rpc_delete(tradeid)
-        return self.rest_dump(result)
+        return jsonify(result)
 
     @require_login
     @rpc_catch_errors
@@ -482,7 +478,7 @@ class ApiServer(RPC):
         Handler for /whitelist.
         """
         results = self._rpc_whitelist()
-        return self.rest_dump(results)
+        return jsonify(results)
 
     @require_login
     @rpc_catch_errors
@@ -492,7 +488,7 @@ class ApiServer(RPC):
         """
         add = request.json.get("blacklist", None) if request.method == 'POST' else None
         results = self._rpc_blacklist(add)
-        return self.rest_dump(results)
+        return jsonify(results)
 
     @require_login
     @rpc_catch_errors
@@ -504,9 +500,9 @@ class ApiServer(RPC):
         price = request.json.get("price", None)
         trade = self._rpc_forcebuy(asset, price)
         if trade:
-            return self.rest_dump(trade.to_json())
+            return jsonify(trade.to_json())
         else:
-            return self.rest_dump({"status": f"Error buying pair {asset}."})
+            return jsonify({"status": f"Error buying pair {asset}."})
 
     @require_login
     @rpc_catch_errors
@@ -516,7 +512,7 @@ class ApiServer(RPC):
         """
         tradeid = request.json.get("tradeid")
         results = self._rpc_forcesell(tradeid)
-        return self.rest_dump(results)
+        return jsonify(results)
 
     @require_login
     @rpc_catch_errors
@@ -538,7 +534,7 @@ class ApiServer(RPC):
             return self.rest_error("Mandatory parameter missing.", 400)
 
         results = self._rpc_analysed_dataframe(pair, timeframe, limit)
-        return self.rest_dump(results)
+        return jsonify(results)
 
     @require_login
     @rpc_catch_errors
@@ -568,7 +564,7 @@ class ApiServer(RPC):
             'strategy': strategy,
         })
         results = self._rpc_analysed_history_full(config, pair, timeframe, timerange)
-        return self.rest_dump(results)
+        return jsonify(results)
 
     @require_login
     @rpc_catch_errors
@@ -576,7 +572,7 @@ class ApiServer(RPC):
         """
         Handler for /plot_config.
         """
-        return self.rest_dump(self._rpc_plot_config())
+        return jsonify(self._rpc_plot_config())
 
     @require_login
     @rpc_catch_errors
@@ -587,7 +583,7 @@ class ApiServer(RPC):
         strategy_objs = StrategyResolver.search_all_objects(directory, False)
         strategy_objs = sorted(strategy_objs, key=lambda x: x['name'])
 
-        return self.rest_dump({'strategies': [x['name'] for x in strategy_objs]})
+        return jsonify({'strategies': [x['name'] for x in strategy_objs]})
 
     @require_login
     @rpc_catch_errors
@@ -606,7 +602,7 @@ class ApiServer(RPC):
         except OperationalException:
             return self.rest_error("Strategy not found.", 404)
 
-        return self.rest_dump({
+        return jsonify({
             'strategy': strategy_obj.get_strategy_name(),
             'code': strategy_obj.__source__,
          })
@@ -644,4 +640,4 @@ class ApiServer(RPC):
             'pairs': pairs,
             'pair_interval': pair_interval,
         }
-        return self.rest_dump(result)
+        return jsonify(result)
