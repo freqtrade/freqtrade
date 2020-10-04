@@ -755,7 +755,7 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
-        val = self._rpc_show_config()
+        val = self._rpc_show_config(self._freqtrade.config)
         if val['trailing_stop']:
             sl_info = (
                 f"*Initial Stoploss:* `{val['stoploss']}`\n"

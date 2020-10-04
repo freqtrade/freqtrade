@@ -174,7 +174,9 @@ class StrategyResolver(IResolver):
 
         strategy = StrategyResolver._load_object(paths=abs_paths,
                                                  object_name=strategy_name,
-                                                 kwargs={'config': config})
+                                                 add_source=True,
+                                                 kwargs={'config': config},
+                                                 )
         if strategy:
             strategy._populate_fun_len = len(getfullargspec(strategy.populate_indicators).args)
             strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)

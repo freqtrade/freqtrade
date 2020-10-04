@@ -9,9 +9,12 @@ from math import isnan
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import arrow
-from numpy import NAN, mean
+from numpy import NAN, int64, mean
+from pandas import DataFrame
 
+from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import CANCEL_REASON
+from freqtrade.data.history import load_data
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
@@ -90,13 +93,12 @@ class RPC:
     def send_msg(self, msg: Dict[str, str]) -> None:
         """ Sends a message to all registered rpc modules """
 
-    def _rpc_show_config(self) -> Dict[str, Any]:
+    def _rpc_show_config(self, config) -> Dict[str, Any]:
         """
         Return a dict of config options.
         Explicitly does NOT return the full config to avoid leakage of sensitive
         information via rpc.
         """
-        config = self._freqtrade.config
         val = {
             'dry_run': config['dry_run'],
             'stake_currency': config['stake_currency'],
@@ -117,7 +119,7 @@ class RPC:
             'forcebuy_enabled': config.get('forcebuy_enable', False),
             'ask_strategy': config.get('ask_strategy', {}),
             'bid_strategy': config.get('bid_strategy', {}),
-            'state': str(self._freqtrade.state)
+            'state': str(self._freqtrade.state) if self._freqtrade else '',
         }
         return val
 
@@ -653,3 +655,80 @@ class RPC:
         if not self._freqtrade.edge:
             raise RPCException('Edge is not enabled.')
         return self._freqtrade.edge.accepted_pairs()
+
+    def _convert_dataframe_to_dict(self, strategy: str, pair: str, timeframe: str,
+                                   dataframe: DataFrame, last_analyzed: datetime) -> Dict[str, Any]:
+        has_content = len(dataframe) != 0
+        buy_signals = 0
+        sell_signals = 0
+        if has_content:
+
+            dataframe.loc[:, '__date_ts'] = dataframe.loc[:, 'date'].astype(int64) // 1000 // 1000
+            # Move open to seperate column when signal for easy plotting
+            if 'buy' in dataframe.columns:
+                buy_mask = (dataframe['buy'] == 1)
+                buy_signals = int(buy_mask.sum())
+                dataframe.loc[buy_mask, '_buy_signal_open'] = dataframe.loc[buy_mask, 'open']
+            if 'sell' in dataframe.columns:
+                sell_mask = (dataframe['sell'] == 1)
+                sell_signals = int(sell_mask.sum())
+                dataframe.loc[sell_mask, '_sell_signal_open'] = dataframe.loc[sell_mask, 'open']
+            dataframe = dataframe.replace({NAN: None})
+
+        res = {
+            'pair': pair,
+            'timeframe': timeframe,
+            'timeframe_ms': timeframe_to_msecs(timeframe),
+            'strategy': strategy,
+            'columns': list(dataframe.columns),
+            'data': dataframe.values.tolist(),
+            'length': len(dataframe),
+            'buy_signals': buy_signals,
+            'sell_signals': sell_signals,
+            'last_analyzed': last_analyzed,
+            'last_analyzed_ts': int(last_analyzed.timestamp()),
+            'data_start': '',
+            'data_start_ts': 0,
+            'data_stop': '',
+            'data_stop_ts': 0,
+        }
+        if has_content:
+            res.update({
+                'data_start': str(dataframe.iloc[0]['date']),
+                'data_start_ts': int(dataframe.iloc[0]['__date_ts']),
+                'data_stop': str(dataframe.iloc[-1]['date']),
+                'data_stop_ts': int(dataframe.iloc[-1]['__date_ts']),
+            })
+        return res
+
+    def _rpc_analysed_dataframe(self, pair: str, timeframe: str, limit: int) -> Dict[str, Any]:
+
+        _data, last_analyzed = self._freqtrade.dataprovider.get_analyzed_dataframe(
+            pair, timeframe)
+        _data = _data.copy()
+        if limit:
+            _data = _data.iloc[-limit:]
+        return self._convert_dataframe_to_dict(self._freqtrade.config['strategy'],
+                                               pair, timeframe, _data, last_analyzed)
+
+    def _rpc_analysed_history_full(self, config, pair: str, timeframe: str,
+                                   timerange: str) -> Dict[str, Any]:
+        timerange_parsed = TimeRange.parse_timerange(timerange)
+
+        _data = load_data(
+            datadir=config.get("datadir"),
+            pairs=[pair],
+            timeframe=timeframe,
+            timerange=timerange_parsed,
+            data_format=config.get('dataformat_ohlcv', 'json'),
+        )
+        from freqtrade.resolvers.strategy_resolver import StrategyResolver
+        strategy = StrategyResolver.load_strategy(config)
+        df_analyzed = strategy.analyze_ticker(_data[pair], {'pair': pair})
+
+        return self._convert_dataframe_to_dict(strategy.get_strategy_name(), pair, timeframe,
+                                               df_analyzed, arrow.Arrow.utcnow().datetime)
+
+    def _rpc_plot_config(self) -> Dict[str, Any]:
+
+        return self._freqtrade.strategy.plot_config

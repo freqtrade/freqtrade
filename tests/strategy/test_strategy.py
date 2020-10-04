@@ -18,13 +18,15 @@ def test_search_strategy():
 
     s, _ = StrategyResolver._search_object(
         directory=default_location,
-        object_name='DefaultStrategy'
+        object_name='DefaultStrategy',
+        add_source=True,
     )
     assert issubclass(s, IStrategy)
 
     s, _ = StrategyResolver._search_object(
         directory=default_location,
-        object_name='NotFoundStrategy'
+        object_name='NotFoundStrategy',
+        add_source=True,
     )
     assert s is None
 
@@ -53,6 +55,9 @@ def test_load_strategy(default_conf, result):
                          'strategy_path': str(Path(__file__).parents[2] / 'freqtrade/templates')
                          })
     strategy = StrategyResolver.load_strategy(default_conf)
+    assert isinstance(strategy.__source__, str)
+    assert 'class SampleStrategy' in strategy.__source__
+    assert isinstance(strategy.__file__, str)
     assert 'rsi' in strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 
 
