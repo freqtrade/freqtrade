@@ -172,7 +172,7 @@ class ApiServer(RPC):
 
     def register_rest_rpc_urls(self):
         """
-        Registers flask app URLs that are calls to functonality in rpc.rpc.
+        Registers flask app URLs that are calls to functionality in rpc.rpc.
 
         First two arguments passed are /URL and 'Label'
         Label can be used as a shortcut when refactoring
@@ -314,7 +314,7 @@ class ApiServer(RPC):
     @rpc_catch_errors
     def _ping(self):
         """
-        simple poing version
+        simple ping version
         """
         return self.rest_dump({"status": "pong"})
 
@@ -537,7 +537,7 @@ class ApiServer(RPC):
         if not pair or not timeframe:
             return self.rest_error("Mandatory parameter missing.", 400)
 
-        results = self._analysed_dataframe(pair, timeframe, limit)
+        results = self._rpc_analysed_dataframe(pair, timeframe, limit)
         return self.rest_dump(results)
 
     @require_login

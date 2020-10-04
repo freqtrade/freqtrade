@@ -77,7 +77,7 @@ class IResolver:
         return valid_objects_gen
 
     @classmethod
-    def _search_object(cls, directory: Path, object_name: str, add_source: bool = False
+    def _search_object(cls, directory: Path, *, object_name: str, add_source: bool = False
                        ) -> Union[Tuple[Any, Path], Tuple[None, None]]:
         """
         Search for the objectname in the given directory
@@ -103,7 +103,7 @@ class IResolver:
         return (None, None)
 
     @classmethod
-    def _load_object(cls, paths: List[Path], object_name: str, add_source: bool = False,
+    def _load_object(cls, paths: List[Path], *, object_name: str, add_source: bool = False,
                      kwargs: dict = {}) -> Optional[Any]:
         """
         Try to load object from path list.
@@ -125,7 +125,7 @@ class IResolver:
         return None
 
     @classmethod
-    def load_object(cls, object_name: str, config: dict, kwargs: dict,
+    def load_object(cls, object_name: str, config: dict, *, kwargs: dict,
                     extra_dir: Optional[str] = None) -> Any:
         """
         Search and loads the specified object as configured in hte child class.
