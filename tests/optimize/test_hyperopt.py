@@ -230,6 +230,13 @@ def test_hyperoptresolver_noname(default_conf):
         HyperOptResolver.load_hyperopt(default_conf)
 
 
+def test_hyperoptlossresolver_noname(default_conf):
+    with pytest.raises(OperationalException,
+                       match="No Hyperopt loss set. Please use `--hyperopt-loss` to specify "
+                             "the Hyperopt-Loss class to use."):
+        HyperOptLossResolver.load_hyperoptloss(default_conf)
+
+
 def test_hyperoptlossresolver(mocker, default_conf) -> None:
 
     hl = DefaultHyperOptLoss

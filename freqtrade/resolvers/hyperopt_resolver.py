@@ -82,8 +82,4 @@ class HyperOptLossResolver(IResolver):
         hyperoptloss.__class__.ticker_interval = str(config['timeframe'])
         hyperoptloss.__class__.timeframe = str(config['timeframe'])
 
-        if not hasattr(hyperoptloss, 'hyperopt_loss_function'):
-            raise OperationalException(
-                f"Found HyperoptLoss class {hyperoptloss_name} does not "
-                "implement `hyperopt_loss_function`.")
         return hyperoptloss
