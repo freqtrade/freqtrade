@@ -34,5 +34,5 @@ flask-cors==3.0.9
 # Support for colorized terminal output
 colorama==0.4.3
 # Building config files interactively
-questionary==1.5.2
+questionary==1.6.0
 prompt-toolkit==3.0.7
