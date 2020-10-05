@@ -33,6 +33,7 @@ def hyperopt_conf(default_conf):
     hyperconf = deepcopy(default_conf)
     hyperconf.update({
                          'hyperopt': 'DefaultHyperOpt',
+                         'hyperopt_loss': 'DefaultHyperOptLoss',
                          'hyperopt_path': str(Path(__file__).parent / 'hyperopts'),
                          'epochs': 1,
                          'timerange': None,
@@ -236,6 +237,7 @@ def test_hyperoptlossresolver(mocker, default_conf) -> None:
         'freqtrade.resolvers.hyperopt_resolver.HyperOptLossResolver.load_object',
         MagicMock(return_value=hl)
     )
+    default_conf.update({'hyperopt_loss': 'DefaultHyperoptLoss'})
     x = HyperOptLossResolver.load_hyperoptloss(default_conf)
     assert hasattr(x, "hyperopt_loss_function")
 
@@ -278,6 +280,7 @@ def test_start(mocker, hyperopt_conf, caplog) -> None:
         'hyperopt',
         '--config', 'config.json',
         '--hyperopt', 'DefaultHyperOpt',
+        '--hyperopt-loss', 'DefaultHyperOptLoss',
         '--epochs', '5'
     ]
     pargs = get_args(args)
@@ -301,6 +304,7 @@ def test_start_no_data(mocker, hyperopt_conf) -> None:
         'hyperopt',
         '--config', 'config.json',
         '--hyperopt', 'DefaultHyperOpt',
+        '--hyperopt-loss', 'DefaultHyperOptLoss',
         '--epochs', '5'
     ]
     pargs = get_args(args)
@@ -318,6 +322,7 @@ def test_start_filelock(mocker, hyperopt_conf, caplog) -> None:
         'hyperopt',
         '--config', 'config.json',
         '--hyperopt', 'DefaultHyperOpt',
+        '--hyperopt-loss', 'DefaultHyperOptLoss',
         '--epochs', '5'
     ]
     pargs = get_args(args)
@@ -325,8 +330,8 @@ def test_start_filelock(mocker, hyperopt_conf, caplog) -> None:
     assert log_has("Another running instance of freqtrade Hyperopt detected.", caplog)
 
 
-def test_loss_calculation_prefer_correct_trade_count(default_conf, hyperopt_results) -> None:
-    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
+def test_loss_calculation_prefer_correct_trade_count(hyperopt_conf, hyperopt_results) -> None:
+    hl = HyperOptLossResolver.load_hyperoptloss(hyperopt_conf)
     correct = hl.hyperopt_loss_function(hyperopt_results, 600,
                                         datetime(2019, 1, 1), datetime(2019, 5, 1))
     over = hl.hyperopt_loss_function(hyperopt_results, 600 + 100,
@@ -337,11 +342,11 @@ def test_loss_calculation_prefer_correct_trade_count(default_conf, hyperopt_resu
     assert under > correct
 
 
-def test_loss_calculation_prefer_shorter_trades(default_conf, hyperopt_results) -> None:
+def test_loss_calculation_prefer_shorter_trades(hyperopt_conf, hyperopt_results) -> None:
     resultsb = hyperopt_results.copy()
     resultsb.loc[1, 'trade_duration'] = 20
 
-    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
+    hl = HyperOptLossResolver.load_hyperoptloss(hyperopt_conf)
     longer = hl.hyperopt_loss_function(hyperopt_results, 100,
                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
     shorter = hl.hyperopt_loss_function(resultsb, 100,
@@ -349,13 +354,13 @@ def test_loss_calculation_prefer_shorter_trades(default_conf, hyperopt_results) 
     assert shorter < longer
 
 
-def test_loss_calculation_has_limited_profit(default_conf, hyperopt_results) -> None:
+def test_loss_calculation_has_limited_profit(hyperopt_conf, hyperopt_results) -> None:
     results_over = hyperopt_results.copy()
     results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
     results_under = hyperopt_results.copy()
     results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
 
-    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
+    hl = HyperOptLossResolver.load_hyperoptloss(hyperopt_conf)
     correct = hl.hyperopt_loss_function(hyperopt_results, 600,
                                         datetime(2019, 1, 1), datetime(2019, 5, 1))
     over = hl.hyperopt_loss_function(results_over, 600,
