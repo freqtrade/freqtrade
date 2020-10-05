@@ -262,6 +262,11 @@ class Hyperopt:
                     ),
                     default=str, indent=4, number_mode=rapidjson.NM_NATIVE)
                 params_result += f"minimal_roi = {minimal_roi_result}"
+            elif space == 'trailing':
+
+                for k, v in space_params.items():
+                    params_result += f'{k} = {v}\n'
+
             else:
                 params_result += f"{space}_params = {pformat(space_params, indent=4)}"
                 params_result = params_result.replace("}", "\n}").replace("{", "{\n ")

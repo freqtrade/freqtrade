@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
 import locale
 import logging
+import re
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
@@ -1230,3 +1231,39 @@ def test_simplified_interface_failed(mocker, hyperopt_conf, method, space) -> No
 
     with pytest.raises(OperationalException, match=f"The '{space}' space is included into *"):
         hyperopt.start()
+
+
+def test_print_epoch_details(capsys):
+    test_result = {
+        'params_details': {
+            'trailing': {
+                'trailing_stop': True,
+                'trailing_stop_positive': 0.02,
+                'trailing_stop_positive_offset': 0.04,
+                'trailing_only_offset_is_reached': True
+            },
+            'roi': {
+                0: 0.18,
+                90: 0.14,
+                225: 0.05,
+                430: 0},
+        },
+        'results_explanation': 'foo result',
+        'is_initial_point': False,
+        'total_profit': 0,
+        'current_epoch': 2,  # This starts from 1 (in a human-friendly manner)
+        'is_best': True
+    }
+
+    Hyperopt.print_epoch_details(test_result, 5, False, no_header=True)
+    captured = capsys.readouterr()
+    assert '# Trailing stop:' in captured.out
+    # re.match(r"Pairs for .*", captured.out)
+    assert re.search(r'^\s+trailing_stop = True$', captured.out, re.MULTILINE)
+    assert re.search(r'^\s+trailing_stop_positive = 0.02$', captured.out, re.MULTILINE)
+    assert re.search(r'^\s+trailing_stop_positive_offset = 0.04$', captured.out, re.MULTILINE)
+    assert re.search(r'^\s+trailing_only_offset_is_reached = True$', captured.out, re.MULTILINE)
+
+    assert '# ROI table:' in captured.out
+    assert re.search(r'^\s+minimal_roi = \{$', captured.out, re.MULTILINE)
+    assert re.search(r'^\s+\"90\"\:\s0.14,\s*$', captured.out, re.MULTILINE)
