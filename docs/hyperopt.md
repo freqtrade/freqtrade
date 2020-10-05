@@ -80,7 +80,7 @@ Rarely you may also need to override:
     # Have a working strategy at hand.
     freqtrade new-hyperopt --hyperopt EmptyHyperopt
 
-    freqtrade hyperopt --hyperopt EmptyHyperopt --spaces roi stoploss trailing --strategy MyWorkingStrategy --config config.json -e 100
+    freqtrade hyperopt --hyperopt EmptyHyperopt --hyperopt-loss SharpeHyperOptLossDaily --spaces roi stoploss trailing --strategy MyWorkingStrategy --config config.json -e 100
     ```
 
 ### 1. Install a Custom Hyperopt File
@@ -205,14 +205,12 @@ add it to the `populate_indicators()` method in your custom hyperopt file.
 
 Each hyperparameter tuning requires a target. This is usually defined as a loss function (sometimes also called objective function), which should decrease for more desirable results, and increase for bad results.
 
-By default, Freqtrade uses a loss function, which has been with freqtrade since the beginning and optimizes mostly for short trade duration and avoiding losses.
-
-A different loss function can be specified by using the `--hyperopt-loss <Class-name>` argument.
+A loss function must be specified via the `--hyperopt-loss <Class-name>` argument (or optionally via the configuration under the `"hyperopt_loss"` key).
 This class should be in its own file within the `user_data/hyperopts/` directory.
 
 Currently, the following loss functions are builtin:
 
-* `DefaultHyperOptLoss` (default legacy Freqtrade hyperoptimization loss function)
+* `DefaultHyperOptLoss` (default legacy Freqtrade hyperoptimization loss function) - Mostly for short trade duration and avoiding losses.
 * `OnlyProfitHyperOptLoss` (which takes only amount of profit into consideration)
 * `SharpeHyperOptLoss` (optimizes Sharpe Ratio calculated on trade returns relative to standard deviation)
 * `SharpeHyperOptLossDaily` (optimizes Sharpe Ratio calculated on **daily** trade returns relative to standard deviation)
@@ -229,7 +227,7 @@ Because hyperopt tries a lot of combinations to find the best parameters it will
 We strongly recommend to use `screen` or `tmux` to prevent any connection loss.
 
 ```bash
-freqtrade hyperopt --config config.json --hyperopt <hyperoptname> --strategy <strategyname> -e 500 --spaces all
+freqtrade hyperopt --config config.json --hyperopt <hyperoptname> --hyperopt-loss <hyperoptlossname> --strategy <strategyname> -e 500 --spaces all
 ```
 
 Use `<hyperoptname>` as the name of the custom hyperopt used.
@@ -263,7 +261,7 @@ freqtrade hyperopt --hyperopt <hyperoptname> --strategy <strategyname> --timeran
 Hyperopt can reuse `populate_indicators`, `populate_buy_trend`, `populate_sell_trend` from your strategy, assuming these methods are **not** in your custom hyperopt file, and a strategy is provided.
 
 ```bash
-freqtrade hyperopt --strategy SampleStrategy --hyperopt SampleHyperopt
+freqtrade hyperopt --hyperopt SampleHyperopt --hyperopt-loss SharpeHyperOptLossDaily --strategy SampleStrategy
 ```
 
 ### Running Hyperopt with Smaller Search Space

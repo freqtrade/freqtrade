@@ -258,10 +258,8 @@ AVAILABLE_CLI_OPTIONS = {
         'Different functions can generate completely different results, '
         'since the target for optimization is different. Built-in Hyperopt-loss-functions are: '
         'DefaultHyperOptLoss, OnlyProfitHyperOptLoss, SharpeHyperOptLoss, SharpeHyperOptLossDaily, '
-        'SortinoHyperOptLoss, SortinoHyperOptLossDaily.'
-        '(default: `%(default)s`).',
+        'SortinoHyperOptLoss, SortinoHyperOptLossDaily.',
         metavar='NAME',
-        default=constants.DEFAULT_HYPEROPT_LOSS,
     ),
     "hyperoptexportfilename": Arg(
         '--hyperopt-filename',
