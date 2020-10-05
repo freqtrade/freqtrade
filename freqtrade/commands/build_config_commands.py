@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from questionary import Separator, prompt
 
@@ -48,7 +48,7 @@ def ask_user_config() -> Dict[str, Any]:
     Interactive questions built using https://github.com/tmbo/questionary
     :returns: Dict with keys to put into template
     """
-    questions = [
+    questions: List[Dict[str, Any]] = [
         {
             "type": "confirm",
             "name": "dry_run",
