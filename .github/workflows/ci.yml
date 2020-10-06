@@ -19,7 +19,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-18.04, macos-latest ]
+        os: [ ubuntu-18.04, ubuntu-20.04, macos-latest ]
         python-version: [3.7, 3.8]
 
     steps:
@@ -70,7 +70,7 @@ jobs:
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc
 
     - name: Coveralls
-      if: (startsWith(matrix.os, 'ubuntu') && matrix.python-version == '3.8')
+      if: (startsWith(matrix.os, 'ubuntu-20') && matrix.python-version == '3.8')
       env:
         # Coveralls token. Not used as secret due to github not providing secrets to forked repositories
         COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
@@ -176,7 +176,7 @@ jobs:
         url: ${{ secrets.SLACK_WEBHOOK }}
 
   docs_check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
 
@@ -194,7 +194,7 @@ jobs:
         url: ${{ secrets.SLACK_WEBHOOK }}
 
   cleanup-prior-runs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - name: Cleanup previous runs on this branch
       uses: rokroskar/workflow-run-cleanup-action@v0.2.2
@@ -205,7 +205,7 @@ jobs:
   # Notify on slack only once - when CI completes (and after deploy) in case it's successfull
   notify-complete:
     needs: [ build, build_windows, docs_check ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - name: Slack Notification
       uses: homoluctus/slatify@v1.8.0
@@ -218,7 +218,7 @@ jobs:
 
   deploy:
     needs: [ build, build_windows, docs_check ]
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
     steps:
     - uses: actions/checkout@v2
