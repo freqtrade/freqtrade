@@ -356,8 +356,7 @@ optional arguments:
                         Hyperopt-loss-functions are: DefaultHyperOptLoss,
                         OnlyProfitHyperOptLoss, SharpeHyperOptLoss,
                         SharpeHyperOptLossDaily, SortinoHyperOptLoss,
-                        SortinoHyperOptLossDaily.(default:
-                        `DefaultHyperOptLoss`).
+                        SortinoHyperOptLossDaily.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

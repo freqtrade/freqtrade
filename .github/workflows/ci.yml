@@ -88,7 +88,7 @@ jobs:
       run: |
         cp config.json.example config.json
         freqtrade create-userdir --userdir user_data
-        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --print-all
+        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
     - name: Flake8
       run: |
@@ -154,7 +154,7 @@ jobs:
       run: |
         cp config.json.example config.json
         freqtrade create-userdir --userdir user_data
-        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --print-all
+        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
     - name: Flake8
       run: |
