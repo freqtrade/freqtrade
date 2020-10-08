@@ -239,6 +239,37 @@ class Backtesting:
                                   open_at_end=False,
                                   sell_reason=sell.sell_type
                                   )
+        return None
+
+    def handle_left_open(self, open_trades: Dict[str, List],
+                         data: Dict[str, DataFrame]) -> List[BacktestResult]:
+        """
+        Handling of left open trades at the end of backtesting
+        """
+        trades = []
+        for pair in open_trades.keys():
+            if len(open_trades[pair]) > 0:
+                for trade in open_trades[pair]:
+                    sell_row = data[pair][-1]
+                    trade_entry = BacktestResult(pair=trade.pair,
+                                                 profit_percent=trade.calc_profit_ratio(
+                                                     rate=sell_row.open),
+                                                 profit_abs=trade.calc_profit(rate=sell_row.open),
+                                                 open_date=trade.open_date,
+                                                 open_rate=trade.open_rate,
+                                                 open_fee=self.fee,
+                                                 close_date=sell_row.date,
+                                                 close_rate=sell_row.open,
+                                                 close_fee=self.fee,
+                                                 amount=trade.amount,
+                                                 trade_duration=int((
+                                                     sell_row.date - trade.open_date
+                                                 ).total_seconds() // 60),
+                                                 open_at_end=True,
+                                                 sell_reason=SellType.FORCE_SELL
+                                                 )
+                    trades.append(trade_entry)
+        return trades
 
     def backtest(self, processed: Dict, stake_amount: float,
                  start_date: arrow.Arrow, end_date: arrow.Arrow,
@@ -338,30 +369,7 @@ class Backtesting:
             # Move time one configured time_interval ahead.
             tmp += timedelta(minutes=self.timeframe_min)
 
-        # Handle trades that were left open
-        for pair in open_trades.keys():
-            if len(open_trades[pair]) == 0:
-                continue
-            else:
-                for trade in open_trades[pair]:
-                    sell_row = data[pair][-1]
-                    trade_entry = BacktestResult(pair=trade.pair,
-                                                 profit_percent=trade.calc_profit_ratio(
-                                                     rate=sell_row.open),
-                                                 profit_abs=trade.calc_profit(rate=sell_row.open),
-                                                 open_date=trade.open_date,
-                                                 open_rate=trade.open_rate,
-                                                 open_fee=self.fee,
-                                                 close_date=sell_row.date,
-                                                 close_rate=sell_row.open,
-                                                 close_fee=self.fee,
-                                                 amount=trade.amount,
-                                                 trade_duration=int((
-                                                     sell_row.date - trade.open_date).total_seconds() // 60),
-                                                 open_at_end=True,
-                                                 sell_reason=SellType.FORCE_SELL
-                                                 )
-                    trades.append(trade_entry)
+        trades += self.handle_left_open(open_trades, data=data)
 
         return DataFrame.from_records(trades, columns=BacktestResult._fields)
 
