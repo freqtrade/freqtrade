@@ -93,11 +93,11 @@ $$ R = \frac{\text{potential_profit}}{\text{potential_loss}} $$
     \end{aligned}$
 
     Since the price might go to $0, the $100 dollars invested could turn into 0.
-    
+
     We do however use a stoploss of 15% - so in the worst case, we'll sell 15% below entry price (or at 8.5).
 
     $\begin{aligned}
-        \text{risk} &= (\text{entry_price} - \text{stoploss}) * \text{investment} \\
+        \text{potential_loss} &= (\text{entry_price} - \text{stoploss}) * \text{investment} \\
                                 &= (10 - (10 * (1 - 0.15))) * 100\\
                                 &= 150
     \end{aligned}$
