@@ -82,14 +82,14 @@ Risk Reward Ratio ($R$) is a formula used to measure the expected gains of a giv
 $$ R = \frac{\text{potential_profit}}{\text{potential_loss}} $$
 
 ???+ Example "Worked example of $R$ calculation"
-    Let's say that you think that the price of *stonecoin* today is $10.0. You believe that, because they will start mining stonecoin, it will go up to $15.0 tomorrow. There is the risk that the stone is too hard, and the GPUs can't mine it, so the price might go to $0 tomorrow. You are planning to invest $100.
+    Let's say that you think that the price of *stonecoin* today is $10.0. You believe that, because they will start mining stonecoin, it will go up to $15.0 tomorrow. There is the risk that the stone is too hard, and the GPUs can't mine it, so the price might go to $0 tomorrow. You are planning to invest $100, which will give you 10 shares (100 / 10).
 
     Your potential profit is calculated as:
 
     $\begin{aligned} 
-        \text{potential_profit} &= (\text{potential_price} - \text{entry_price}) * \text{investment} \\
-                                &= (15 - 10) * 100\\
-                                &= 500
+        \text{potential_profit} &= (\text{potential_price} - \text{entry_price}) * \frac{\text{investment}}{\text{entry_price}} \\
+                                &= (15 - 10) * (100 / 10) \\
+                                &= 50
     \end{aligned}$
 
     Since the price might go to $0, the $100 dollars invested could turn into 0.
@@ -97,15 +97,16 @@ $$ R = \frac{\text{potential_profit}}{\text{potential_loss}} $$
     We do however use a stoploss of 15% - so in the worst case, we'll sell 15% below entry price (or at 8.5$).
 
     $\begin{aligned}
-        \text{potential_loss} &= (\text{entry_price} - \text{stoploss}) * \text{investment} \\
-                                &= (10 - 8.5) * 100\\
-                                &= 150
+        \text{potential_loss} &= (\text{entry_price} - \text{stoploss}) * \frac{\text{investment}}{\text{entry_price}} \\
+                                &= (10 - 8.5) * (100 / 10)\\
+                                &= 15
     \end{aligned}$
 
-    We can compute the Risk Reward Ratio as follows:<br>
+    We can compute the Risk Reward Ratio as follows:
+
     $\begin{aligned}
         R   &= \frac{\text{potential_profit}}{\text{potential_loss}}\\
-            &= \frac{500}{150}\\
+            &= \frac{50}{15}\\
             &= 3.33
     \end{aligned}$<br>
     What it effectively means is that the strategy have the potential to make 3.33$ for each $1 invested.
