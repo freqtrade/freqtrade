@@ -221,7 +221,6 @@ class Backtesting:
         sell = self.strategy.should_sell(trade, sell_row.open, sell_row.date, sell_row.buy,
                                          sell_row.sell, low=sell_row.low, high=sell_row.high)
         if sell.sell_flag:
-            logger.debug(f"Fund sell signal {sell.sell_flag}")
             trade_dur = int((sell_row.date - trade.open_date).total_seconds() // 60)
             closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
 
@@ -354,8 +353,6 @@ class Backtesting:
                     open_trades[pair].append(trade)
 
                 for trade in open_trades[pair]:
-                    # logger.debug(f"{pair} - Checking for sells for {trade} at {row.date}")
-
                     # since indexes has been incremented before, we need to go one step back to
                     # also check the buying candle for sell conditions.
                     trade_entry = self._get_sell_trade_entry(trade, row)
