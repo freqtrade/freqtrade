@@ -94,11 +94,11 @@ $$ R = \frac{\text{potential_profit}}{\text{potential_loss}} $$
 
     Since the price might go to $0, the $100 dollars invested could turn into 0.
 
-    We do however use a stoploss of 15% - so in the worst case, we'll sell 15% below entry price (or at 8.5).
+    We do however use a stoploss of 15% - so in the worst case, we'll sell 15% below entry price (or at 8.5$).
 
     $\begin{aligned}
         \text{potential_loss} &= (\text{entry_price} - \text{stoploss}) * \text{investment} \\
-                                &= (10 - (10 * (1 - 0.15))) * 100\\
+                                &= (10 - 8.5) * 100\\
                                 &= 150
     \end{aligned}$
 
@@ -108,7 +108,7 @@ $$ R = \frac{\text{potential_profit}}{\text{potential_loss}} $$
             &= \frac{500}{150}\\
             &= 3.33
     \end{aligned}$<br>
-    What it effectively means is that the strategy have the potential to make 3$ for each $1 invested.
+    What it effectively means is that the strategy have the potential to make 3.33$ for each $1 invested.
 
 On a long horizon, that is, on many trades, we can calculate the risk reward by dividing the strategy' average profit on winning trades by the strategy' average loss on losing trades. We can calculate the average profit, $\mu_{win}$, as follows:
 
