@@ -184,6 +184,11 @@ jobs:
       run: |
         ./tests/test_docs.sh
 
+    - name: Documentation build
+      run: |
+        pip install -r docs/requirements-docs.txt
+        mkdocs build
+
     - name: Slack Notification
       uses: homoluctus/slatify@v1.8.0
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
