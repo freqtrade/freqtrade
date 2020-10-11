@@ -350,6 +350,7 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     default_conf['timerange'] = '-1510694220'
 
     backtesting = Backtesting(default_conf)
+    backtesting.strategy.bot_loop_start = MagicMock()
     backtesting.start()
     # check the logs, that will contain the backtest result
     exists = [
@@ -359,6 +360,7 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     for line in exists:
         assert log_has(line, caplog)
     assert backtesting.strategy.dp._pairlists is not None
+    assert backtesting.strategy.bot_loop_start.call_count == 1
 
 
 def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) -> None:

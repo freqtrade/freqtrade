@@ -26,6 +26,7 @@ from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy.interface import IStrategy, SellCheckTuple, SellType
+from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 
 
 logger = logging.getLogger(__name__)
@@ -433,6 +434,8 @@ class Backtesting:
     def backtest_one_strategy(self, strat: IStrategy, data: Dict[str, Any], timerange: TimeRange):
         logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
         self._set_strategy(strat)
+
+        strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)()
 
         # Use max_open_trades in backtesting, except --disable-max-market-positions is set
         if self.config.get('use_max_market_positions', True):
