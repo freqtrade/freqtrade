@@ -58,8 +58,8 @@ class FreqtradeBot:
         # Cache values for 1800 to avoid frequent polling of the exchange for prices
         # Caching only applies to RPC methods, so prices for open trades are still
         # refreshed once every iteration.
-        self._sell_rate_cache = TTLCache(maxsize=100, ttl=1800)
-        self._buy_rate_cache = TTLCache(maxsize=100, ttl=1800)
+        self._sell_rate_cache: TTLCache = TTLCache(maxsize=100, ttl=1800)
+        self._buy_rate_cache: TTLCache = TTLCache(maxsize=100, ttl=1800)
 
         self.strategy: IStrategy = StrategyResolver.load_strategy(self.config)
 

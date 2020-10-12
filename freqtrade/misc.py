@@ -56,8 +56,8 @@ def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = 
         if log:
             logger.info(f'dumping json to "{filename}"')
 
-        with gzip.open(filename, 'w') as fp:
-            rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
+        with gzip.open(filename, 'w') as fpz:
+            rapidjson.dump(data, fpz, default=str, number_mode=rapidjson.NM_NATIVE)
     else:
         if log:
             logger.info(f'dumping json to "{filename}"')
