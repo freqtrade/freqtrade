@@ -323,7 +323,7 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
     start = arrow.get('2018-01-01T00:00:00')
     end = arrow.get('2018-01-11T00:00:00')
     data = load_data(testdatadir, '5m', ['UNITTEST/BTC'], startup_candles=20,
-                     timerange=TimeRange('date', 'date', start.timestamp, end.timestamp))
+                     timerange=TimeRange('date', 'date', start.int_timestamp, end.int_timestamp))
     assert log_has(
         'Using indicator startup period: 20 ...', caplog
     )
@@ -339,7 +339,7 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
     start = arrow.get('2018-01-10T00:00:00')
     end = arrow.get('2018-02-20T00:00:00')
     data = load_data(datadir=testdatadir, timeframe='5m', pairs=['UNITTEST/BTC'],
-                     timerange=TimeRange('date', 'date', start.timestamp, end.timestamp))
+                     timerange=TimeRange('date', 'date', start.int_timestamp, end.int_timestamp))
     # timedifference in 5 minutes
     td = ((end - start).total_seconds() // 60 // 5) + 1
     assert td != len(data['UNITTEST/BTC'])

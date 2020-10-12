@@ -87,7 +87,7 @@ class Edge:
         heartbeat = self.edge_config.get('process_throttle_secs')
 
         if (self._last_updated > 0) and (
-                self._last_updated + heartbeat > arrow.utcnow().timestamp):
+                self._last_updated + heartbeat > arrow.utcnow().int_timestamp):
             return False
 
         data: Dict[str, Any] = {}
@@ -146,7 +146,7 @@ class Edge:
         # Fill missing, calculable columns, profit, duration , abs etc.
         trades_df = self._fill_calculable_fields(DataFrame(trades))
         self._cached_pairs = self._process_expectancy(trades_df)
-        self._last_updated = arrow.utcnow().timestamp
+        self._last_updated = arrow.utcnow().int_timestamp
 
         return True
 
