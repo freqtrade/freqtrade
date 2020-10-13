@@ -1072,12 +1072,12 @@ class Exchange:
     @staticmethod
     def get_next_limit_in_list(limit: int, limit_range: Optional[List[int]]):
         """
-        Get next greater limit
+        Get next greater value in the list.
+        Used by fetch_l2_order_book if the api only supports a limited range
         """
         if not limit_range:
             return limit
-
-        return min(list(filter(lambda x: limit <= x, limit_range)))
+        return min([x for x in limit_range if limit <= x])
 
     @retrier
     def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:

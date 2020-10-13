@@ -132,7 +132,7 @@ def test_orderbook(mocker, default_conf, order_book_l2):
     res = dp.orderbook('ETH/BTC', 5)
     assert order_book_l2.call_count == 1
     assert order_book_l2.call_args_list[0][0][0] == 'ETH/BTC'
-    assert order_book_l2.call_args_list[0][0][1] == 5
+    assert order_book_l2.call_args_list[0][0][1] >= 5
 
     assert type(res) is dict
     assert 'bids' in res
