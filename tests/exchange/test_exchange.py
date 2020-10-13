@@ -1458,7 +1458,9 @@ def test_get_next_limit_in_list():
     assert Exchange.get_next_limit_in_list(21, limit_range) == 50
     assert Exchange.get_next_limit_in_list(51, limit_range) == 100
     assert Exchange.get_next_limit_in_list(1000, limit_range) == 1000
-    # assert Exchange.get_next_limit_in_list(1001, limit_range) == 1001
+    # Going over the limit ...
+    assert Exchange.get_next_limit_in_list(1001, limit_range) == 1000
+    assert Exchange.get_next_limit_in_list(2000, limit_range) == 1000
 
     assert Exchange.get_next_limit_in_list(21, None) == 21
     assert Exchange.get_next_limit_in_list(100, None) == 100

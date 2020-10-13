@@ -1077,7 +1077,7 @@ class Exchange:
         """
         if not limit_range:
             return limit
-        return min([x for x in limit_range if limit <= x])
+        return min([x for x in limit_range if limit <= x] + [max(limit_range)])
 
     @retrier
     def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:
