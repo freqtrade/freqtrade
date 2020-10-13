@@ -7,7 +7,7 @@
     "amount_reserve_percent": 0.05,
     "amend_last_stake_amount": false,
     "last_stake_amount_min_ratio": 0.5,
-    "dry_run": false,
+    "dry_run": true,
     "cancel_open_orders_on_exit": false,
     "timeframe": "5m",
     "trailing_stop": false,
