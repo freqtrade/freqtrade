@@ -53,7 +53,7 @@ class Exchange:
         "ohlcv_partial_candle": True,
         "trades_pagination": "time",  # Possible are "time" or "id"
         "trades_pagination_arg": "since",
-
+        "l2_limit_range": None,
     }
     _ft_has: Dict = {}
 
@@ -1069,6 +1069,16 @@ class Exchange:
             return self.fetch_stoploss_order(order_id, pair)
         return self.fetch_order(order_id, pair)
 
+    @staticmethod
+    def get_next_limit_in_list(limit: int, limit_range: Optional[List[int]]):
+        """
+        Get next greater limit
+        """
+        if not limit_range:
+            return limit
+
+        return min(list(filter(lambda x: limit <= x, limit_range)))
+
     @retrier
     def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:
         """
@@ -1077,9 +1087,10 @@ class Exchange:
         Returns a dict in the format
         {'asks': [price, volume], 'bids': [price, volume]}
         """
+        limit1 = self.get_next_limit_in_list(limit, self._ft_has['l2_limit_range'])
         try:
 
-            return self._api.fetch_l2_order_book(pair, limit)
+            return self._api.fetch_l2_order_book(pair, limit1)
         except ccxt.NotSupported as e:
             raise OperationalException(
                 f'Exchange {self._api.name} does not support fetching order book.'
