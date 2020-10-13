@@ -34,7 +34,7 @@ flask-jwt-extended==3.24.1
 flask-cors==3.0.9
 
 # Support for colorized terminal output
-colorama==0.4.3
+colorama==0.4.4
 # Building config files interactively
 questionary==1.6.0
 prompt-toolkit==3.0.7
