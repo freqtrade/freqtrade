@@ -119,6 +119,9 @@ The base-class provides an instance of the exchange (`self._exchange`) the pairl
         self._pairlist_pos = pairlist_pos
 ```
 
+!!! Note
+    You'll need to register your pairlist in `constants.py` under the variable `AVAILABLE_PAIRLISTS` - otherwise it will not be selectable.
+
 Now, let's step through the methods which require actions:
 
 #### Pairlist configuration
