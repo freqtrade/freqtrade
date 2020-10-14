@@ -26,7 +26,7 @@ class IProtection(ABC):
         """
 
     @abstractmethod
-    def stop_trade_enters_global(self, date_now: datetime) -> bool:
+    def global_stop(self, date_now: datetime) -> bool:
         """
         Stops trading (position entering) for all pairs
         This must evaluate to true for the whole period of the "cooldown period".

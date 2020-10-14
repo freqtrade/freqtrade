@@ -23,6 +23,7 @@ from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.persistence import Order, PairLocks, Trade, cleanup_db, init_db
+from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
@@ -77,6 +78,8 @@ class FreqtradeBot:
         self.pairlists = PairListManager(self.exchange, self.config)
 
         self.dataprovider = DataProvider(self.config, self.exchange, self.pairlists)
+
+        self.protections = ProtectionManager(self.config)
 
         # Attach Dataprovider to Strategy baseclass
         IStrategy.dp = self.dataprovider
@@ -178,7 +181,7 @@ class FreqtradeBot:
             self.exit_positions(trades)
 
         # Then looking for buy opportunities
-        if self.get_free_open_trades():
+        if self.get_free_open_trades() and not self.protections.global_stop():
             self.enter_positions()
 
         Trade.session.flush()

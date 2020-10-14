@@ -7,7 +7,7 @@ from typing import Dict, List
 from freqtrade.exceptions import OperationalException
 from freqtrade.plugins.protections import IProtection
 from freqtrade.resolvers import ProtectionResolver
-
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +18,7 @@ class ProtectionManager():
         self._config = config
 
         self._protection_handlers: List[IProtection] = []
-        self._tickers_needed = False
-        for protection_handler_config in self._config.get('protections', None):
+        for protection_handler_config in self._config.get('protections', []):
             if 'method' not in protection_handler_config:
                 logger.warning(f"No method found in {protection_handler_config}, ignoring.")
                 continue
@@ -28,11 +27,10 @@ class ProtectionManager():
                 config=config,
                 protection_config=protection_handler_config,
             )
-            self._tickers_needed |= protection_handler.needstickers
             self._protection_handlers.append(protection_handler)
 
         if not self._protection_handlers:
-            raise OperationalException("No protection Handlers defined")
+            logger.info("No protection Handlers defined.")
 
     @property
     def name_list(self) -> List[str]:
@@ -45,4 +43,14 @@ class ProtectionManager():
         """
         List of short_desc for each Pairlist Handler
         """
-        return [{p.name: p.short_desc()} for p in self._pairlist_handlers]
+        return [{p.name: p.short_desc()} for p in self._protection_handlers]
+
+    def global_stop(self) -> bool:
+        now = datetime.utcnow()
+        for protection_handler in self._protection_handlers:
+            result = protection_handler.global_stop(now)
+
+            # Early stopping - first positive result stops the application
+            if result:
+                return True
+        return False
