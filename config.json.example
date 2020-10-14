@@ -5,15 +5,15 @@
     "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "USD",
     "timeframe": "5m",
-    "dry_run": false,
+    "dry_run": true,
     "cancel_open_orders_on_exit": false,
     "unfilledtimeout": {
         "buy": 10,
         "sell": 30
     },
     "bid_strategy": {
-        "ask_last_balance": 0.0,
         "use_order_book": false,
+        "ask_last_balance": 0.0,
         "order_book_top": 1,
         "check_depth_of_market": {
             "enabled": false,

@@ -20,19 +20,8 @@ class Binance(Exchange):
         "order_time_in_force": ['gtc', 'fok', 'ioc'],
         "trades_pagination": "id",
         "trades_pagination_arg": "fromId",
+        "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
     }
-
-    def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:
-        """
-        get order book level 2 from exchange
-
-        20180619: binance support limits but only on specific range
-        """
-        limit_range = [5, 10, 20, 50, 100, 500, 1000]
-        # get next-higher step in the limit_range list
-        limit = min(list(filter(lambda x: limit <= x, limit_range)))
-
-        return super().fetch_l2_order_book(pair, limit)
 
     def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
         """

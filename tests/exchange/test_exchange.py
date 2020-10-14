@@ -11,7 +11,7 @@ from pandas import DataFrame
 
 from freqtrade.exceptions import (DDosProtection, DependencyException, InvalidOrderException,
                                   OperationalException, TemporaryError)
-from freqtrade.exchange import Binance, Exchange, Kraken
+from freqtrade.exchange import Binance, Bittrex, Exchange, Kraken
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, API_RETRY_COUNT,
                                        calculate_backoff)
 from freqtrade.exchange.exchange import (market_is_active, timeframe_to_minutes, timeframe_to_msecs,
@@ -148,9 +148,17 @@ def test_exchange_resolver(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
-    exchange = ExchangeResolver.load_exchange('Bittrex', default_conf)
+
+    exchange = ExchangeResolver.load_exchange('huobi', default_conf)
     assert isinstance(exchange, Exchange)
     assert log_has_re(r"No .* specific subclass found. Using the generic class instead.", caplog)
+    caplog.clear()
+
+    exchange = ExchangeResolver.load_exchange('Bittrex', default_conf)
+    assert isinstance(exchange, Exchange)
+    assert isinstance(exchange, Bittrex)
+    assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
+                          caplog)
     caplog.clear()
 
     exchange = ExchangeResolver.load_exchange('kraken', default_conf)
@@ -1438,6 +1446,27 @@ def test_refresh_latest_ohlcv_inv_result(default_conf, mocker, caplog):
     assert log_has("Async code raised an exception: TypeError", caplog)
 
 
+def test_get_next_limit_in_list():
+    limit_range = [5, 10, 20, 50, 100, 500, 1000]
+    assert Exchange.get_next_limit_in_list(1, limit_range) == 5
+    assert Exchange.get_next_limit_in_list(5, limit_range) == 5
+    assert Exchange.get_next_limit_in_list(6, limit_range) == 10
+    assert Exchange.get_next_limit_in_list(9, limit_range) == 10
+    assert Exchange.get_next_limit_in_list(10, limit_range) == 10
+    assert Exchange.get_next_limit_in_list(11, limit_range) == 20
+    assert Exchange.get_next_limit_in_list(19, limit_range) == 20
+    assert Exchange.get_next_limit_in_list(21, limit_range) == 50
+    assert Exchange.get_next_limit_in_list(51, limit_range) == 100
+    assert Exchange.get_next_limit_in_list(1000, limit_range) == 1000
+    # Going over the limit ...
+    assert Exchange.get_next_limit_in_list(1001, limit_range) == 1000
+    assert Exchange.get_next_limit_in_list(2000, limit_range) == 1000
+
+    assert Exchange.get_next_limit_in_list(21, None) == 21
+    assert Exchange.get_next_limit_in_list(100, None) == 100
+    assert Exchange.get_next_limit_in_list(1000, None) == 1000
+
+
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_fetch_l2_order_book(default_conf, mocker, order_book_l2, exchange_name):
     default_conf['exchange']['name'] = exchange_name
@@ -1450,6 +1479,19 @@ def test_fetch_l2_order_book(default_conf, mocker, order_book_l2, exchange_name)
     assert 'asks' in order_book
     assert len(order_book['bids']) == 10
     assert len(order_book['asks']) == 10
+    assert api_mock.fetch_l2_order_book.call_args_list[0][0][0] == 'ETH/BTC'
+
+    for val in [1, 5, 10, 12, 20, 50, 100]:
+        api_mock.fetch_l2_order_book.reset_mock()
+
+        order_book = exchange.fetch_l2_order_book(pair='ETH/BTC', limit=val)
+        assert api_mock.fetch_l2_order_book.call_args_list[0][0][0] == 'ETH/BTC'
+        # Not all exchanges support all limits for orderbook
+        if not exchange._ft_has['l2_limit_range'] or val in exchange._ft_has['l2_limit_range']:
+            assert api_mock.fetch_l2_order_book.call_args_list[0][0][1] == val
+        else:
+            next_limit = exchange.get_next_limit_in_list(val, exchange._ft_has['l2_limit_range'])
+            assert api_mock.fetch_l2_order_book.call_args_list[0][0][1] == next_limit
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
