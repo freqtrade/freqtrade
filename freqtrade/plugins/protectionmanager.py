@@ -14,8 +14,7 @@ logger = logging.getLogger(__name__)
 
 class ProtectionManager():
 
-    def __init__(self, exchange, config: dict) -> None:
-        self._exchange = exchange
+    def __init__(self, config: dict) -> None:
         self._config = config
 
         self._protection_handlers: List[IProtection] = []
@@ -26,8 +25,6 @@ class ProtectionManager():
                 continue
             protection_handler = ProtectionResolver.load_protection(
                 protection_handler_config['method'],
-                exchange=exchange,
-                protectionmanager=self,
                 config=config,
                 protection_config=protection_handler_config,
             )

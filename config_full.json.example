@@ -75,6 +75,13 @@
             "refresh_period": 1440
         }
     ],
+    "protections": [
+        {
+            "method": "StoplossGuard",
+            "lookback_period": 60,
+            "trade_limit": 4
+        }
+    ],
     "exchange": {
         "name": "bittrex",
         "sandbox": false,
