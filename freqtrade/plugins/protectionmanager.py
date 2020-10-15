@@ -2,12 +2,13 @@
 Protection manager class
 """
 import logging
+from datetime import datetime
 from typing import Dict, List
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.plugins.protections import IProtection
 from freqtrade.resolvers import ProtectionResolver
-from datetime import datetime
+
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,7 @@ class ProtectionManager():
 
     def global_stop(self) -> bool:
         now = datetime.utcnow()
+
         for protection_handler in self._protection_handlers:
             result = protection_handler.global_stop(now)
 

@@ -3,7 +3,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict
 
-from sqlalchemy import or_, and_
+from sqlalchemy import and_, or_
 
 from freqtrade.persistence import Trade
 from freqtrade.plugins.protections import IProtection
@@ -42,7 +42,9 @@ class StoplossGuard(IProtection):
             filters.append(Trade.pair == pair)
         trades = Trade.get_trades(filters).all()
 
-        if len(trades) > self.trade_limit:
+        if len(trades) > self._trade_limit:
+            self.log_on_refresh(logger.info, f"Trading stopped due to {self._trade_limit} "
+                                f"stoplosses within {self._lookback_period} minutes.")
             return True
 
         return False

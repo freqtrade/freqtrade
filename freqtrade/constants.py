@@ -193,7 +193,16 @@ CONF_SCHEMA = {
                 'type': 'object',
                 'properties': {
                     'method': {'type': 'string', 'enum': AVAILABLE_PAIRLISTS},
-                    'config': {'type': 'object'}
+                },
+                'required': ['method'],
+            }
+        },
+        'protections': {
+            'type': 'array',
+            'items': {
+                'type': 'object',
+                'properties': {
+                    'method': {'type': 'string', 'enum': AVAILABLE_PROTECTIONS},
                 },
                 'required': ['method'],
             }

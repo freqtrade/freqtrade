@@ -4,15 +4,18 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any, Dict
 
+from freqtrade.mixins import LoggingMixin
+
 
 logger = logging.getLogger(__name__)
 
 
-class IProtection(ABC):
+class IProtection(LoggingMixin, ABC):
 
     def __init__(self, config: Dict[str, Any], protection_config: Dict[str, Any]) -> None:
         self._config = config
         self._protection_config = protection_config
+        LoggingMixin.__init__(self, logger)
 
     @property
     def name(self) -> str:
