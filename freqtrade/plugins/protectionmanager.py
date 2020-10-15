@@ -2,10 +2,10 @@
 Protection manager class
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List
 
-from freqtrade.exceptions import OperationalException
+from freqtrade.persistence import PairLocks
 from freqtrade.plugins.protections import IProtection
 from freqtrade.resolvers import ProtectionResolver
 
@@ -47,12 +47,13 @@ class ProtectionManager():
         return [{p.name: p.short_desc()} for p in self._protection_handlers]
 
     def global_stop(self) -> bool:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         for protection_handler in self._protection_handlers:
-            result = protection_handler.global_stop(now)
+            result, until, reason = protection_handler.global_stop(now)
 
-            # Early stopping - first positive result stops the application
-            if result:
+            # Early stopping - first positive result blocks further trades
+            if result and until:
+                PairLocks.lock_pair('*', until, reason)
                 return True
         return False

@@ -1,11 +1,10 @@
-from freqtrade.strategy.interface import SellType
-from unittest.mock import MagicMock, PropertyMock
 import random
-import pytest
 from datetime import datetime, timedelta
 
-from freqtrade.constants import AVAILABLE_PROTECTIONS
+import pytest
+
 from freqtrade.persistence import Trade
+from freqtrade.strategy.interface import SellType
 from tests.conftest import get_patched_freqtradebot, log_has_re
 
 
@@ -77,3 +76,20 @@ def test_stoploss_guard(mocker, default_conf, fee, caplog):
 
     assert freqtrade.protections.global_stop()
     assert log_has_re(message, caplog)
+
+
+@pytest.mark.parametrize("protectionconf,desc_expected,exception_expected", [
+    ({"method": "StoplossGuard", "lookback_period": 60, "trade_limit": 2},
+     "[{'StoplossGuard': 'StoplossGuard - Frequent Stoploss Guard, "
+     "2 stoplosses within 60 minutes.'}]",
+     None
+     ),
+])
+def test_protection_manager_desc(mocker, default_conf, protectionconf,
+                                 desc_expected, exception_expected):
+
+    default_conf['protections'] = [protectionconf]
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+
+    short_desc = str(freqtrade.protections.short_desc())
+    assert short_desc == desc_expected

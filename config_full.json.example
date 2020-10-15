@@ -79,7 +79,8 @@
         {
             "method": "StoplossGuard",
             "lookback_period": 60,
-            "trade_limit": 4
+            "trade_limit": 4,
+            "stopduration": 60
         }
     ],
     "exchange": {

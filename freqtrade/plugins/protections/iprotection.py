@@ -2,12 +2,14 @@
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Tuple
 
 from freqtrade.mixins import LoggingMixin
 
 
 logger = logging.getLogger(__name__)
+
+ProtectionReturn = Tuple[bool, Optional[datetime], Optional[str]]
 
 
 class IProtection(LoggingMixin, ABC):
@@ -29,7 +31,7 @@ class IProtection(LoggingMixin, ABC):
         """
 
     @abstractmethod
-    def global_stop(self, date_now: datetime) -> bool:
+    def global_stop(self, date_now: datetime) -> ProtectionReturn:
         """
         Stops trading (position entering) for all pairs
         This must evaluate to true for the whole period of the "cooldown period".

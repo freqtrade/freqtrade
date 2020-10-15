@@ -1,12 +1,12 @@
 
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from sqlalchemy import and_, or_
 
 from freqtrade.persistence import Trade
-from freqtrade.plugins.protections import IProtection
+from freqtrade.plugins.protections import IProtection, ProtectionReturn
 from freqtrade.strategy.interface import SellType
 
 
@@ -17,16 +17,26 @@ class StoplossGuard(IProtection):
 
     def __init__(self, config: Dict[str, Any], protection_config: Dict[str, Any]) -> None:
         super().__init__(config, protection_config)
+
         self._lookback_period = protection_config.get('lookback_period', 60)
         self._trade_limit = protection_config.get('trade_limit', 10)
+        self._stopduration = protection_config.get('stopduration', 60)
+
+    def _reason(self) -> str:
+        """
+        LockReason to use
+        """
+        return (f'{self._trade_limit} stoplosses in {self._lookback_period} min, '
+                f'locking for {self._stopduration} min.')
 
     def short_desc(self) -> str:
         """
         Short method description - used for startup-messages
         """
-        return f"{self.name} - Frequent Stoploss Guard"
+        return (f"{self.name} - Frequent Stoploss Guard, {self._trade_limit} stoplosses "
+                f"within {self._lookback_period} minutes.")
 
-    def _stoploss_guard(self, date_now: datetime, pair: str = None) -> bool:
+    def _stoploss_guard(self, date_now: datetime, pair: str = None) -> ProtectionReturn:
         """
         Evaluate recent trades
         """
@@ -45,13 +55,16 @@ class StoplossGuard(IProtection):
         if len(trades) > self._trade_limit:
             self.log_on_refresh(logger.info, f"Trading stopped due to {self._trade_limit} "
                                 f"stoplosses within {self._lookback_period} minutes.")
-            return True
+            until = date_now + timedelta(minutes=self._stopduration)
+            return True, until, self._reason()
 
-        return False
+        return False, None, None
 
-    def global_stop(self, date_now: datetime) -> bool:
+    def global_stop(self, date_now: datetime) -> ProtectionReturn:
         """
         Stops trading (position entering) for all pairs
         This must evaluate to true for the whole period of the "cooldown period".
+        :return: Tuple of [bool, until, reason].
+            If true, all pairs will be locked with <reason> until <until>
         """
         return self._stoploss_guard(date_now, pair=None)
