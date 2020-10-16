@@ -563,7 +563,7 @@ class ApiServer(RPC):
         config.update({
             'strategy': strategy,
         })
-        results = self._rpc_analysed_history_full(config, pair, timeframe, timerange)
+        results = RPC._rpc_analysed_history_full(config, pair, timeframe, timerange)
         return jsonify(results)
 
     @require_login
