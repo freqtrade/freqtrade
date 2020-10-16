@@ -29,7 +29,7 @@ _DECL_BASE: Any = declarative_base()
 _SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
 
 
-def init(db_url: str, clean_open_orders: bool = False) -> None:
+def init_db(db_url: str, clean_open_orders: bool = False) -> None:
     """
     Initializes this module with the given config,
     registers all known command handlers
@@ -72,7 +72,7 @@ def init(db_url: str, clean_open_orders: bool = False) -> None:
         clean_dry_run_db()
 
 
-def cleanup() -> None:
+def cleanup_db() -> None:
     """
     Flushes all pending operations to disk.
     :return: None
@@ -399,7 +399,7 @@ class Trade(_DECL_BASE):
             self.close(order['average'])
         else:
             raise ValueError(f'Unknown order type: {order_type}')
-        cleanup()
+        cleanup_db()
 
     def close(self, rate: float) -> None:
         """
