@@ -706,8 +706,7 @@ class PairLock(_DECL_BASE):
         if not now:
             now = datetime.now(timezone.utc)
 
-        filters = [func.datetime(PairLock.lock_time) <= now,
-                   func.datetime(PairLock.lock_end_time) >= now,
+        filters = [func.datetime(PairLock.lock_end_time) >= now,
                    # Only active locks
                    PairLock.active.is_(True), ]
         if pair:
@@ -742,7 +741,6 @@ class PairLock(_DECL_BASE):
 
         return PairLock.query.filter(
             PairLock.pair == pair,
-            func.datetime(PairLock.lock_time) <= now,
             func.datetime(PairLock.lock_end_time) >= now,
             # Only active locks
             PairLock.active.is_(True),
