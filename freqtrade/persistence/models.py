@@ -281,7 +281,7 @@ class Trade(_DECL_BASE):
             'fee_close_currency': self.fee_close_currency,
 
             'open_date_hum': arrow.get(self.open_date).humanize(),
-            'open_date': self.open_date.strftime("%Y-%m-%d %H:%M:%S"),
+            'open_date': self.open_date.strftime(DATETIME_PRINT_FORMAT),
             'open_timestamp': int(self.open_date.replace(tzinfo=timezone.utc).timestamp() * 1000),
             'open_rate': self.open_rate,
             'open_rate_requested': self.open_rate_requested,
@@ -289,7 +289,7 @@ class Trade(_DECL_BASE):
 
             'close_date_hum': (arrow.get(self.close_date).humanize()
                                if self.close_date else None),
-            'close_date': (self.close_date.strftime("%Y-%m-%d %H:%M:%S")
+            'close_date': (self.close_date.strftime(DATETIME_PRINT_FORMAT)
                            if self.close_date else None),
             'close_timestamp': int(self.close_date.replace(
                 tzinfo=timezone.utc).timestamp() * 1000) if self.close_date else None,
@@ -305,7 +305,7 @@ class Trade(_DECL_BASE):
             'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,
             'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
             'stoploss_order_id': self.stoploss_order_id,
-            'stoploss_last_update': (self.stoploss_last_update.strftime("%Y-%m-%d %H:%M:%S")
+            'stoploss_last_update': (self.stoploss_last_update.strftime(DATETIME_PRINT_FORMAT)
                                      if self.stoploss_last_update else None),
             'stoploss_last_update_timestamp': int(self.stoploss_last_update.replace(
                 tzinfo=timezone.utc).timestamp() * 1000) if self.stoploss_last_update else None,
@@ -749,9 +749,9 @@ class PairLock(_DECL_BASE):
     def to_json(self) -> Dict[str, Any]:
         return {
             'pair': self.pair,
-            'lock_time': self.lock_time.strftime("%Y-%m-%d %H:%M:%S"),
+            'lock_time': self.lock_time.strftime(DATETIME_PRINT_FORMAT),
             'lock_timestamp': int(self.lock_time.replace(tzinfo=timezone.utc).timestamp() * 1000),
-            'lock_end_time': self.lock_end_time.strftime("%Y-%m-%d %H:%M:%S"),
+            'lock_end_time': self.lock_end_time.strftime(DATETIME_PRINT_FORMAT),
             'lock_end_timestamp': int(self.lock_end_time.replace(tzinfo=timezone.utc
                                                                  ).timestamp() * 1000),
             'reason': self.reason,

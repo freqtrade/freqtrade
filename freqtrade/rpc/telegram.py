@@ -102,7 +102,6 @@ class Telegram(RPC):
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
             CommandHandler('locks', self._locks),
-
             CommandHandler(['reload_config', 'reload_conf'], self._reload_config),
             CommandHandler(['show_config', 'show_conf'], self._show_config),
             CommandHandler('stopbuy', self._stopbuy),
@@ -624,7 +623,7 @@ class Telegram(RPC):
             locks = self._rpc_locks()
             message = tabulate([[
                 lock['pair'],
-                lock['lock_end_time'].strftime(DATETIME_PRINT_FORMAT),
+                lock['lock_end_time'],
                 lock['reason']] for lock in locks['locks']],
                 headers=['Pair', 'Until', 'Reason'],
                 tablefmt='simple')
