@@ -19,7 +19,7 @@ from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
 from freqtrade.misc import shorten_date
-from freqtrade.persistence import Trade
+from freqtrade.persistence import PairLock, Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType
@@ -597,6 +597,17 @@ class RPC:
             'current': len(trades),
             'max': float(self._freqtrade.config['max_open_trades']),
             'total_stake': sum((trade.open_rate * trade.amount) for trade in trades)
+        }
+
+    def _rpc_locks(self) -> Dict[str, Any]:
+        """ Returns the  current locks"""
+        if self._freqtrade.state != State.RUNNING:
+            raise RPCException('trader is not running')
+
+        locks = PairLock.get_pair_locks(None)
+        return {
+            'lock_count': len(locks),
+            'locks': [lock.to_json() for lock in locks]
         }
 
     def _rpc_whitelist(self) -> Dict:

@@ -15,6 +15,7 @@ from telegram.ext import CallbackContext, CommandHandler, Updater
 from telegram.utils.helpers import escape_markdown
 
 from freqtrade.__init__ import __version__
+from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.rpc import RPC, RPCException, RPCMessageType
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 
@@ -100,6 +101,8 @@ class Telegram(RPC):
             CommandHandler('performance', self._performance),
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
+            CommandHandler('locks', self._locks),
+
             CommandHandler(['reload_config', 'reload_conf'], self._reload_config),
             CommandHandler(['show_config', 'show_conf'], self._show_config),
             CommandHandler('stopbuy', self._stopbuy),
@@ -609,6 +612,29 @@ class Telegram(RPC):
             self._send_msg(str(e))
 
     @authorized_only
+    def _locks(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /locks.
+        Returns the number of trades running
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        try:
+            locks = self._rpc_locks()
+            message = tabulate([[
+                lock['pair'],
+                lock['lock_end_time'].strftime(DATETIME_PRINT_FORMAT),
+                lock['reason']] for lock in locks['locks']],
+                headers=['Pair', 'Until', 'Reason'],
+                tablefmt='simple')
+            message = "<pre>{}</pre>".format(message)
+            logger.debug(message)
+            self._send_msg(message, parse_mode=ParseMode.HTML)
+        except RPCException as e:
+            self._send_msg(str(e))
+
+    @authorized_only
     def _whitelist(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /whitelist
@@ -720,6 +746,7 @@ class Telegram(RPC):
                    "*/performance:* `Show performance of each finished trade grouped by pair`\n"
                    "*/daily <n>:* `Shows profit or loss per day, over the last n days`\n"
                    "*/count:* `Show number of trades running compared to allowed number of trades`"
+                   "*/locks:* `Show currently locked pairs`"
                    "\n"
                    "*/balance:* `Show account balance per currency`\n"
                    "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n"

@@ -1175,9 +1175,15 @@ def test_PairLock(default_conf):
     # XRP/BTC should not be locked now
     pair = 'XRP/BTC'
     assert not PairLock.is_pair_locked(pair)
-
     # Unlocking a pair that's not locked should not raise an error
     PairLock.unlock_pair(pair)
+
+    PairLock.lock_pair(pair, arrow.utcnow().shift(minutes=4).datetime)
+    assert PairLock.is_pair_locked(pair)
+
+    # Get both locks from above
+    locks = PairLock.get_pair_locks(None)
+    assert len(locks) == 2
 
     # Unlock original pair
     pair = 'ETH/BTC'

@@ -2,6 +2,7 @@
 # pragma pylint: disable=protected-access, unused-argument, invalid-name
 # pragma pylint: disable=too-many-lines, too-many-arguments
 
+from freqtrade.persistence.models import PairLock
 import re
 from datetime import datetime
 from random import choice, randint
@@ -75,8 +76,8 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
 
     message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
                    "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], ['trades'], "
-                   "['delete'], ['performance'], ['daily'], ['count'], ['reload_config', "
-                   "'reload_conf'], ['show_config', 'show_conf'], ['stopbuy'], "
+                   "['delete'], ['performance'], ['daily'], ['count'], ['locks'], "
+                   "['reload_config', 'reload_conf'], ['show_config', 'show_conf'], ['stopbuy'], "
                    "['whitelist'], ['blacklist'], ['logs'], ['edge'], ['help'], ['version']]")
 
     assert log_has(message_str, caplog)
@@ -1022,6 +1023,43 @@ def test_count_handle(default_conf, update, ticker, fee, mocker) -> None:
             default_conf['stake_amount']
         )
     assert msg in msg_mock.call_args_list[0][0][0]
+
+
+def test_telegram_lock_handle(default_conf, update, ticker, fee, mocker) -> None:
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker,
+        get_fee=fee,
+    )
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    patch_get_signal(freqtradebot, (True, False))
+    telegram = Telegram(freqtradebot)
+
+    freqtradebot.state = State.STOPPED
+    telegram._locks(update=update, context=MagicMock())
+    assert msg_mock.call_count == 1
+    assert 'not running' in msg_mock.call_args_list[0][0][0]
+    msg_mock.reset_mock()
+    freqtradebot.state = State.RUNNING
+
+    PairLock.lock_pair('ETH/BTC', arrow.utcnow().shift(minutes=4).datetime, 'randreason')
+    PairLock.lock_pair('XRP/BTC', arrow.utcnow().shift(minutes=20).datetime, 'deadbeef')
+
+    telegram._locks(update=update, context=MagicMock())
+
+    assert 'Pair' in msg_mock.call_args_list[0][0][0]
+    assert 'Until' in msg_mock.call_args_list[0][0][0]
+    assert 'Reason\n' in msg_mock.call_args_list[0][0][0]
+    assert 'ETH/BTC' in msg_mock.call_args_list[0][0][0]
+    assert 'XRP/BTC' in msg_mock.call_args_list[0][0][0]
+    assert 'deadbeef' in msg_mock.call_args_list[0][0][0]
+    assert 'randreason' in msg_mock.call_args_list[0][0][0]
 
 
 def test_whitelist_static(default_conf, update, mocker) -> None:

@@ -668,14 +668,14 @@ class PairLock(_DECL_BASE):
 
     id = Column(Integer, primary_key=True)
 
-    pair = Column(String, nullable=False)
+    pair = Column(String, nullable=False, index=True)
     reason = Column(String, nullable=True)
     # Time the pair was locked (start time)
     lock_time = Column(DateTime, nullable=False)
     # Time until the pair is locked (end time)
     lock_end_time = Column(DateTime, nullable=False)
 
-    active = Column(Boolean, nullable=False, default=True)
+    active = Column(Boolean, nullable=False, default=True, index=True)
 
     def __repr__(self):
         lock_time = self.lock_time.strftime(DATETIME_PRINT_FORMAT)
@@ -696,21 +696,24 @@ class PairLock(_DECL_BASE):
         PairLock.session.flush()
 
     @staticmethod
-    def get_pair_locks(pair: str, now: Optional[datetime] = None) -> List['PairLock']:
+    def get_pair_locks(pair: Optional[str], now: Optional[datetime] = None) -> List['PairLock']:
         """
         Get all locks for this pair
-        :param pair: Pair to check for
-        :param now: Datetime object (generated via datetime.utcnow()). defaults to datetime.utcnow()
+        :param pair: Pair to check for. Returns all current locks if pair is empty
+        :param now: Datetime object (generated via datetime.now(timezone.utc)).
+                    defaults to datetime.utcnow()
         """
         if not now:
             now = datetime.now(timezone.utc)
 
+        filters = [func.datetime(PairLock.lock_time) <= now,
+                   func.datetime(PairLock.lock_end_time) >= now,
+                   # Only active locks
+                   PairLock.active.is_(True), ]
+        if pair:
+            filters.append(PairLock.pair == pair)
         return PairLock.query.filter(
-            PairLock.pair == pair,
-            func.datetime(PairLock.lock_time) <= now,
-            func.datetime(PairLock.lock_end_time) >= now,
-            # Only active locks
-            PairLock.active.is_(True),
+            *filters
         ).all()
 
     @staticmethod
@@ -731,7 +734,8 @@ class PairLock(_DECL_BASE):
     def is_pair_locked(pair: str, now: Optional[datetime] = None) -> bool:
         """
         :param pair: Pair to check for
-        :param now: Datetime object (generated via datetime.utcnow()). defaults to datetime.utcnow()
+        :param now: Datetime object (generated via datetime.now(timezone.utc)).
+            defaults to datetime.utcnow()
         """
         if not now:
             now = datetime.now(timezone.utc)
@@ -743,3 +747,12 @@ class PairLock(_DECL_BASE):
             # Only active locks
             PairLock.active.is_(True),
         ).scalar() is not None
+
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            'pair': self.pair,
+            'lock_time': self.lock_time,
+            'lock_end_time': self.lock_end_time,
+            'reason': self.reason,
+            'active': self.active,
+        }
