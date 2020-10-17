@@ -111,6 +111,13 @@ class FtRestClient():
         """
         return self._get("count")
 
+    def locks(self):
+        """Return current locks
+
+        :return: json object
+        """
+        return self._get("locks")
+
     def daily(self, days=None):
         """Return the amount of open trades.
 

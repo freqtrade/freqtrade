@@ -192,6 +192,7 @@ class ApiServer(RPC):
         self.app.add_url_rule(f'{BASE_URI}/balance', 'balance',
                               view_func=self._balance, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/count', 'count', view_func=self._count, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/locks', 'locks', view_func=self._locks, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/daily', 'daily', view_func=self._daily, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/edge', 'edge', view_func=self._edge, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/logs', 'log', view_func=self._get_logs, methods=['GET'])
@@ -349,6 +350,15 @@ class ApiServer(RPC):
         """
         msg = self._rpc_count()
         return jsonify(msg)
+
+    @require_login
+    @rpc_catch_errors
+    def _locks(self):
+        """
+        Handler for /locks.
+        Returns the number of trades running
+        """
+        return jsonify(self._rpc_locks())
 
     @require_login
     @rpc_catch_errors

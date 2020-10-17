@@ -751,8 +751,11 @@ class PairLock(_DECL_BASE):
     def to_json(self) -> Dict[str, Any]:
         return {
             'pair': self.pair,
-            'lock_time': self.lock_time,
-            'lock_end_time': self.lock_end_time,
+            'lock_time': self.lock_time.strftime("%Y-%m-%d %H:%M:%S"),
+            'lock_timestamp': int(self.lock_time.replace(tzinfo=timezone.utc).timestamp() * 1000),
+            'lock_end_time': self.lock_end_time.strftime("%Y-%m-%d %H:%M:%S"),
+            'lock_end_timestamp': int(self.lock_end_time.replace(tzinfo=timezone.utc
+                                                                 ).timestamp() * 1000),
             'reason': self.reason,
             'active': self.active,
         }
