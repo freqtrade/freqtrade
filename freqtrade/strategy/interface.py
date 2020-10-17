@@ -287,15 +287,7 @@ class IStrategy(ABC):
         :param until: datetime in UTC until the pair should be blocked from opening new trades.
                 Needs to be timezone aware `datetime.now(timezone.utc)`
         """
-        lock = PairLock(
-            pair=pair,
-            lock_time=datetime.now(timezone.utc),
-            lock_end_time=until,
-            reason=reason,
-            active=True
-        )
-        PairLock.session.add(lock)
-        PairLock.session.flush()
+        PairLock.lock_pair(pair, until, reason)
 
     def unlock_pair(self, pair: str) -> None:
         """

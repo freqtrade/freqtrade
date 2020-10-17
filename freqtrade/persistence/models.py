@@ -678,10 +678,22 @@ class PairLock(_DECL_BASE):
     active = Column(Boolean, nullable=False, default=True)
 
     def __repr__(self):
-        lock_time = self.open_date.strftime(DATETIME_PRINT_FORMAT)
-        lock_end_time = self.open_date.strftime(DATETIME_PRINT_FORMAT)
+        lock_time = self.lock_time.strftime(DATETIME_PRINT_FORMAT)
+        lock_end_time = self.lock_end_time.strftime(DATETIME_PRINT_FORMAT)
         return (f'PairLock(id={self.id}, pair={self.pair}, lock_time={lock_time}, '
                 f'lock_end_time={lock_end_time})')
+
+    @staticmethod
+    def lock_pair(pair: str, until: datetime, reason: str = None) -> None:
+        lock = PairLock(
+            pair=pair,
+            lock_time=datetime.now(timezone.utc),
+            lock_end_time=until,
+            reason=reason,
+            active=True
+        )
+        PairLock.session.add(lock)
+        PairLock.session.flush()
 
     @staticmethod
     def get_pair_locks(pair: str, now: Optional[datetime] = None) -> List['PairLock']:
