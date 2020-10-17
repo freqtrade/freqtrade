@@ -15,7 +15,7 @@ from freqtrade.exceptions import (DependencyException, ExchangeError, Insufficie
                                   InvalidOrderException, OperationalException, PricingError,
                                   TemporaryError)
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.persistence import Order, Trade
+from freqtrade.persistence import Order, PairLock, Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.state import RunMode, State
 from freqtrade.strategy.interface import SellCheckTuple, SellType
@@ -2799,6 +2799,7 @@ def test_execute_sell_sloe_cancel_exception(mocker, default_conf, ticker, fee, c
 
     trade = Trade.query.first()
     Trade.session = MagicMock()
+    PairLock.session = MagicMock()
 
     freqtrade.config['dry_run'] = False
     trade.stoploss_order_id = "abcd"
@@ -3249,7 +3250,6 @@ def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down, mocker, caplo
     freqtrade.execute_sell(trade=trade, limit=ticker_sell_down()['bid'],
                            sell_reason=SellType.STOP_LOSS)
     trade.close(ticker_sell_down()['bid'])
-    assert trade.pair in freqtrade.strategy._pair_locked_until
     assert freqtrade.strategy.is_pair_locked(trade.pair)
 
     # reinit - should buy other pair.

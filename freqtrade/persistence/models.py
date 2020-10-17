@@ -64,6 +64,9 @@ def init_db(db_url: str, clean_open_orders: bool = False) -> None:
     # Copy session attributes to order object too
     Order.session = Trade.session
     Order.query = Order.session.query_property()
+    PairLock.session = Trade.session
+    PairLock.query = PairLock.session.query_property()
+
     previous_tables = inspect(engine).get_table_names()
     _DECL_BASE.metadata.create_all(engine)
     check_migrate(engine, decl_base=_DECL_BASE, previous_tables=previous_tables)
@@ -655,3 +658,76 @@ class Trade(_DECL_BASE):
                 trade.stop_loss = None
                 trade.adjust_stop_loss(trade.open_rate, desired_stoploss)
                 logger.info(f"New stoploss: {trade.stop_loss}.")
+
+
+class PairLock(_DECL_BASE):
+    """
+    Pair Locks database model.
+    """
+    __tablename__ = 'pair_lock'
+
+    id = Column(Integer, primary_key=True)
+
+    pair = Column(String, nullable=False)
+    reason = Column(String, nullable=True)
+    # Time the pair was locked (start time)
+    lock_time = Column(DateTime, nullable=False)
+    # Time until the pair is locked (end time)
+    lock_end_time = Column(DateTime, nullable=False)
+
+    active = Column(Boolean, nullable=False, default=True)
+
+    def __repr__(self):
+        lock_time = self.open_date.strftime(DATETIME_PRINT_FORMAT)
+        lock_end_time = self.open_date.strftime(DATETIME_PRINT_FORMAT)
+        return (f'PairLock(id={self.id}, pair={self.pair}, lock_time={lock_time}, '
+                f'lock_end_time={lock_end_time})')
+
+    @staticmethod
+    def get_pair_locks(pair: str, now: Optional[datetime] = None) -> List['PairLock']:
+        """
+        Get all locks for this pair
+        :param pair: Pair to check for
+        :param now: Datetime object (generated via datetime.utcnow()). defaults to datetime.utcnow()
+        """
+        if not now:
+            now = datetime.now(timezone.utc)
+
+        return PairLock.query.filter(
+            PairLock.pair == pair,
+            func.datetime(PairLock.lock_time) <= now,
+            func.datetime(PairLock.lock_end_time) >= now,
+            # Only active locks
+            PairLock.active.is_(True),
+        ).all()
+
+    @staticmethod
+    def unlock_pair(pair: str, now: Optional[datetime] = None) -> None:
+        """
+        Release all locks for this pair.
+        """
+        if not now:
+            now = datetime.now(timezone.utc)
+
+        logger.info(f"Releasing all locks for {pair}.")
+        locks = PairLock.get_pair_locks(pair, now)
+        for lock in locks:
+            lock.active = False
+        PairLock.session.flush()
+
+    @staticmethod
+    def is_pair_locked(pair: str, now: Optional[datetime] = None) -> bool:
+        """
+        :param pair: Pair to check for
+        :param now: Datetime object (generated via datetime.utcnow()). defaults to datetime.utcnow()
+        """
+        if not now:
+            now = datetime.now(timezone.utc)
+
+        return PairLock.query.filter(
+            PairLock.pair == pair,
+            func.datetime(PairLock.lock_time) <= now,
+            func.datetime(PairLock.lock_end_time) >= now,
+            # Only active locks
+            PairLock.active.is_(True),
+        ).scalar() is not None
