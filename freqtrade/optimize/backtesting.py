@@ -28,6 +28,15 @@ from freqtrade.strategy.interface import IStrategy, SellCheckTuple, SellType
 
 logger = logging.getLogger(__name__)
 
+# Indexes for backtest tuples
+DATE_IDX = 0
+BUY_IDX = 1
+OPEN_IDX = 2
+CLOSE_IDX = 3
+SELL_IDX = 4
+LOW_IDX = 5
+HIGH_IDX = 6
+
 
 class BacktestResult(NamedTuple):
     """
@@ -115,7 +124,7 @@ class Backtesting:
         """
         Load strategy into backtesting
         """
-        self.strategy = strategy
+        self.strategy: IStrategy = strategy
         # Set stoploss_on_exchange to false for backtesting,
         # since a "perfect" stoploss-sell is assumed anyway
         # And the regular "stoploss" function would not apply to that case
@@ -147,12 +156,14 @@ class Backtesting:
 
         return data, timerange
 
-    def _get_ohlcv_as_lists(self, processed: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
+    def _get_ohlcv_as_lists(self, processed: Dict[str, DataFrame]) -> Dict[str, Tuple]:
         """
         Helper function to convert a processed dataframes into lists for performance reasons.
 
         Used by backtest() - so keep this optimized for performance.
         """
+        # Every change to this headers list must evaluate further usages of the resulting tuple
+        # and eventually change the constants for indexes at the top
         headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
         data: Dict = {}
         # Create dict with data
@@ -172,10 +183,10 @@ class Backtesting:
 
             # Convert from Pandas to list for performance reasons
             # (Looping Pandas is slow.)
-            data[pair] = [x for x in df_analyzed.itertuples(index=False)]
+            data[pair] = [x for x in df_analyzed.itertuples(index=False, name=None)]
         return data
 
-    def _get_close_rate(self, sell_row, trade: Trade, sell: SellCheckTuple,
+    def _get_close_rate(self, sell_row: Tuple, trade: Trade, sell: SellCheckTuple,
                         trade_dur: int) -> float:
         """
         Get close rate for backtesting result
@@ -186,12 +197,12 @@ class Backtesting:
             return trade.stop_loss
         elif sell.sell_type == (SellType.ROI):
             roi_entry, roi = self.strategy.min_roi_reached_entry(trade_dur)
-            if roi is not None:
+            if roi is not None and roi_entry is not None:
                 if roi == -1 and roi_entry % self.timeframe_min == 0:
                     # When forceselling with ROI=-1, the roi time will always be equal to trade_dur.
                     # If that entry is a multiple of the timeframe (so on candle open)
                     # - we'll use open instead of close
-                    return sell_row.open
+                    return sell_row[OPEN_IDX]
 
                 # - (Expected abs profit + open_rate + open_fee) / (fee_close -1)
                 close_rate = - (trade.open_rate * roi + trade.open_rate *
@@ -199,31 +210,29 @@ class Backtesting:
 
                 if (trade_dur > 0 and trade_dur == roi_entry
                         and roi_entry % self.timeframe_min == 0
-                        and sell_row.open > close_rate):
+                        and sell_row[OPEN_IDX] > close_rate):
                     # new ROI entry came into effect.
                     # use Open rate if open_rate > calculated sell rate
-                    return sell_row.open
+                    return sell_row[OPEN_IDX]
 
                 # Use the maximum between close_rate and low as we
                 # cannot sell outside of a candle.
                 # Applies when a new ROI setting comes in place and the whole candle is above that.
-                return max(close_rate, sell_row.low)
+                return max(close_rate, sell_row[LOW_IDX])
 
             else:
                 # This should not be reached...
-                return sell_row.open
+                return sell_row[OPEN_IDX]
         else:
-            return sell_row.open
+            return sell_row[OPEN_IDX]
 
-    def _get_sell_trade_entry(self, trade: Trade, sell_row) -> Optional[BacktestResult]:
-        """
-        sell_row is a named tuple with attributes for date, buy, open, close, sell, low, high.
-        """
+    def _get_sell_trade_entry(self, trade: Trade, sell_row: Tuple) -> Optional[BacktestResult]:
 
-        sell = self.strategy.should_sell(trade, sell_row.open, sell_row.date, sell_row.buy,
-                                         sell_row.sell, low=sell_row.low, high=sell_row.high)
+        sell = self.strategy.should_sell(trade, sell_row[OPEN_IDX], sell_row[DATE_IDX],
+                                         sell_row[BUY_IDX], sell_row[SELL_IDX],
+                                         low=sell_row[LOW_IDX], high=sell_row[HIGH_IDX])
         if sell.sell_flag:
-            trade_dur = int((sell_row.date - trade.open_date).total_seconds() // 60)
+            trade_dur = int((sell_row[DATE_IDX] - trade.open_date).total_seconds() // 60)
             closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
 
             return BacktestResult(pair=trade.pair,
@@ -232,7 +241,7 @@ class Backtesting:
                                   open_date=trade.open_date,
                                   open_rate=trade.open_rate,
                                   open_fee=self.fee,
-                                  close_date=sell_row.date,
+                                  close_date=sell_row[DATE_IDX],
                                   close_rate=closerate,
                                   close_fee=self.fee,
                                   amount=trade.amount,
@@ -242,8 +251,8 @@ class Backtesting:
                                   )
         return None
 
-    def handle_left_open(self, open_trades: Dict[str, List],
-                         data: Dict[str, DataFrame]) -> List[BacktestResult]:
+    def handle_left_open(self, open_trades: Dict[str, List[Trade]],
+                         data: Dict[str, List[Tuple]]) -> List[BacktestResult]:
         """
         Handling of left open trades at the end of backtesting
         """
@@ -254,17 +263,17 @@ class Backtesting:
                     sell_row = data[pair][-1]
                     trade_entry = BacktestResult(pair=trade.pair,
                                                  profit_percent=trade.calc_profit_ratio(
-                                                     rate=sell_row.open),
-                                                 profit_abs=trade.calc_profit(rate=sell_row.open),
+                                                     rate=sell_row[OPEN_IDX]),
+                                                 profit_abs=trade.calc_profit(sell_row[OPEN_IDX]),
                                                  open_date=trade.open_date,
                                                  open_rate=trade.open_rate,
                                                  open_fee=self.fee,
-                                                 close_date=sell_row.date,
-                                                 close_rate=sell_row.open,
+                                                 close_date=sell_row[DATE_IDX],
+                                                 close_rate=sell_row[OPEN_IDX],
                                                  close_fee=self.fee,
                                                  amount=trade.amount,
                                                  trade_duration=int((
-                                                     sell_row.date - trade.open_date
+                                                     sell_row[DATE_IDX] - trade.open_date
                                                  ).total_seconds() // 60),
                                                  open_at_end=True,
                                                  sell_reason=SellType.FORCE_SELL
@@ -323,7 +332,7 @@ class Backtesting:
                     continue
 
                 # Waits until the time-counter reaches the start of the data for this pair.
-                if row.date > tmp:
+                if row[DATE_IDX] > tmp:
                     continue
                 indexes[pair] += 1
 
@@ -333,14 +342,14 @@ class Backtesting:
                 if ((position_stacking or len(open_trades[pair]) == 0)
                         and max_open_trades > 0 and open_trade_count_start < max_open_trades
                         and tmp != end_date
-                        and row.buy == 1 and row.sell != 1):
+                        and row[BUY_IDX] == 1 and row[SELL_IDX] != 1):
                     # Enter trade
                     trade = Trade(
                         pair=pair,
-                        open_rate=row.open,
-                        open_date=row.date,
+                        open_rate=row[OPEN_IDX],
+                        open_date=row[DATE_IDX],
                         stake_amount=stake_amount,
-                        amount=round(stake_amount / row.open, 8),
+                        amount=round(stake_amount / row[OPEN_IDX], 8),
                         fee_open=self.fee,
                         fee_close=self.fee,
                         is_open=True,
