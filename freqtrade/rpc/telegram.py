@@ -6,7 +6,7 @@ This module manage Telegram communication
 import json
 import logging
 import arrow
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, List
 
 from tabulate import tabulate
 from telegram import ParseMode, ReplyKeyboardMarkup, Update
@@ -780,7 +780,7 @@ class Telegram(RPC):
             )
 
         # Duration
-        dur = {'Wins': [], 'Draws': [], 'Losses': []}
+        dur: Dict[str, List[int]] = {'Wins': [], 'Draws': [], 'Losses': []}
         for trade in trades_closed:
             if trade['close_date'] is not None and trade['open_date'] is not None:
                 trade_dur = arrow.get(trade['close_date']) - arrow.get(trade['open_date'])
