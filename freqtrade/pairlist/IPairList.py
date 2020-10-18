@@ -36,7 +36,7 @@ class IPairList(ABC):
         self._pairlist_pos = pairlist_pos
         self.refresh_period = self._pairlistconfig.get('refresh_period', 1800)
         self._last_refresh = 0
-        self._log_cache = TTLCache(maxsize=1024, ttl=self.refresh_period)
+        self._log_cache: TTLCache = TTLCache(maxsize=1024, ttl=self.refresh_period)
 
     @property
     def name(self) -> str:

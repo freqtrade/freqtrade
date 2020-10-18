@@ -656,8 +656,9 @@ class RPC:
             raise RPCException('Edge is not enabled.')
         return self._freqtrade.edge.accepted_pairs()
 
-    def _convert_dataframe_to_dict(self, strategy: str, pair: str, timeframe: str,
-                                   dataframe: DataFrame, last_analyzed: datetime) -> Dict[str, Any]:
+    @staticmethod
+    def _convert_dataframe_to_dict(strategy: str, pair: str, timeframe: str, dataframe: DataFrame,
+                                   last_analyzed: datetime) -> Dict[str, Any]:
         has_content = len(dataframe) != 0
         buy_signals = 0
         sell_signals = 0
@@ -711,7 +712,8 @@ class RPC:
         return self._convert_dataframe_to_dict(self._freqtrade.config['strategy'],
                                                pair, timeframe, _data, last_analyzed)
 
-    def _rpc_analysed_history_full(self, config, pair: str, timeframe: str,
+    @staticmethod
+    def _rpc_analysed_history_full(config, pair: str, timeframe: str,
                                    timerange: str) -> Dict[str, Any]:
         timerange_parsed = TimeRange.parse_timerange(timerange)
 
@@ -726,8 +728,8 @@ class RPC:
         strategy = StrategyResolver.load_strategy(config)
         df_analyzed = strategy.analyze_ticker(_data[pair], {'pair': pair})
 
-        return self._convert_dataframe_to_dict(strategy.get_strategy_name(), pair, timeframe,
-                                               df_analyzed, arrow.Arrow.utcnow().datetime)
+        return RPC._convert_dataframe_to_dict(strategy.get_strategy_name(), pair, timeframe,
+                                              df_analyzed, arrow.Arrow.utcnow().datetime)
 
     def _rpc_plot_config(self) -> Dict[str, Any]:
 

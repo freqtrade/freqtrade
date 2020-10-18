@@ -17,7 +17,7 @@ from freqtrade import constants
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_hyperopt
 from freqtrade.data.history import load_data
 from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.optimize.default_hyperopt_loss import DefaultHyperOptLoss
+from freqtrade.optimize.default_hyperopt_loss import ShortTradeDurHyperOptLoss
 from freqtrade.optimize.hyperopt import Hyperopt
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver, HyperOptResolver
 from freqtrade.state import RunMode
@@ -33,7 +33,7 @@ def hyperopt_conf(default_conf):
     hyperconf = deepcopy(default_conf)
     hyperconf.update({
                          'hyperopt': 'DefaultHyperOpt',
-                         'hyperopt_loss': 'DefaultHyperOptLoss',
+                         'hyperopt_loss': 'ShortTradeDurHyperOptLoss',
                          'hyperopt_path': str(Path(__file__).parent / 'hyperopts'),
                          'epochs': 1,
                          'timerange': None,
@@ -239,12 +239,12 @@ def test_hyperoptlossresolver_noname(default_conf):
 
 def test_hyperoptlossresolver(mocker, default_conf) -> None:
 
-    hl = DefaultHyperOptLoss
+    hl = ShortTradeDurHyperOptLoss
     mocker.patch(
         'freqtrade.resolvers.hyperopt_resolver.HyperOptLossResolver.load_object',
         MagicMock(return_value=hl)
     )
-    default_conf.update({'hyperopt_loss': 'DefaultHyperoptLoss'})
+    default_conf.update({'hyperopt_loss': 'SharpeHyperOptLossDaily'})
     x = HyperOptLossResolver.load_hyperoptloss(default_conf)
     assert hasattr(x, "hyperopt_loss_function")
 
@@ -287,7 +287,7 @@ def test_start(mocker, hyperopt_conf, caplog) -> None:
         'hyperopt',
         '--config', 'config.json',
         '--hyperopt', 'DefaultHyperOpt',
-        '--hyperopt-loss', 'DefaultHyperOptLoss',
+        '--hyperopt-loss', 'SharpeHyperOptLossDaily',
         '--epochs', '5'
     ]
     pargs = get_args(args)
@@ -311,7 +311,7 @@ def test_start_no_data(mocker, hyperopt_conf) -> None:
         'hyperopt',
         '--config', 'config.json',
         '--hyperopt', 'DefaultHyperOpt',
-        '--hyperopt-loss', 'DefaultHyperOptLoss',
+        '--hyperopt-loss', 'SharpeHyperOptLossDaily',
         '--epochs', '5'
     ]
     pargs = get_args(args)
@@ -329,7 +329,7 @@ def test_start_filelock(mocker, hyperopt_conf, caplog) -> None:
         'hyperopt',
         '--config', 'config.json',
         '--hyperopt', 'DefaultHyperOpt',
-        '--hyperopt-loss', 'DefaultHyperOptLoss',
+        '--hyperopt-loss', 'SharpeHyperOptLossDaily',
         '--epochs', '5'
     ]
     pargs = get_args(args)
@@ -384,7 +384,7 @@ def test_sharpe_loss_prefers_higher_profits(default_conf, hyperopt_results) -> N
     results_under = hyperopt_results.copy()
     results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
 
-    default_conf.update({'hyperopt_loss': 'SharpeHyperOptLoss'})
+    default_conf.update({'hyperopt_loss': 'SharpeHyperOptLossDaily'})
     hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
     correct = hl.hyperopt_loss_function(hyperopt_results, len(hyperopt_results),
                                         datetime(2019, 1, 1), datetime(2019, 5, 1))

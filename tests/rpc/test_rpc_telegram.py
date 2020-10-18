@@ -82,7 +82,7 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
     assert log_has(message_str, caplog)
 
 
-def test_cleanup(default_conf, mocker) -> None:
+def test_cleanup(default_conf, mocker, ) -> None:
     updater_mock = MagicMock()
     updater_mock.stop = MagicMock()
     mocker.patch('freqtrade.rpc.telegram.Updater', updater_mock)
@@ -92,12 +92,8 @@ def test_cleanup(default_conf, mocker) -> None:
     assert telegram._updater.stop.call_count == 1
 
 
-def test_authorized_only(default_conf, mocker, caplog) -> None:
+def test_authorized_only(default_conf, mocker, caplog, update) -> None:
     patch_exchange(mocker)
-
-    chat = Chat(0, 0)
-    update = Update(randint(1, 100))
-    update.message = Message(randint(1, 100), 0, datetime.utcnow(), chat)
 
     default_conf['telegram']['enabled'] = False
     bot = FreqtradeBot(default_conf)
@@ -114,7 +110,7 @@ def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
     patch_exchange(mocker)
     chat = Chat(0xdeadbeef, 0)
     update = Update(randint(1, 100))
-    update.message = Message(randint(1, 100), 0, datetime.utcnow(), chat)
+    update.message = Message(randint(1, 100), datetime.utcnow(), chat)
 
     default_conf['telegram']['enabled'] = False
     bot = FreqtradeBot(default_conf)
@@ -127,11 +123,8 @@ def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
     assert not log_has('Exception occurred within Telegram module', caplog)
 
 
-def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
+def test_authorized_only_exception(default_conf, mocker, caplog, update) -> None:
     patch_exchange(mocker)
-
-    update = Update(randint(1, 100))
-    update.message = Message(randint(1, 100), 0, datetime.utcnow(), Chat(0, 0))
 
     default_conf['telegram']['enabled'] = False
 
@@ -146,7 +139,7 @@ def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
     assert log_has('Exception occurred within Telegram module', caplog)
 
 
-def test_telegram_status(default_conf, update, mocker, fee, ticker,) -> None:
+def test_telegram_status(default_conf, update, mocker) -> None:
     update.message.chat.id = "123"
     default_conf['telegram']['enabled'] = False
     default_conf['telegram']['chat_id'] = "123"

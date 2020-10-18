@@ -221,7 +221,7 @@ This class should be in its own file within the `user_data/hyperopts/` directory
 
 Currently, the following loss functions are builtin:
 
-* `DefaultHyperOptLoss` (default legacy Freqtrade hyperoptimization loss function) - Mostly for short trade duration and avoiding losses.
+* `ShortTradeDurHyperOptLoss` (default legacy Freqtrade hyperoptimization loss function) - Mostly for short trade duration and avoiding losses.
 * `OnlyProfitHyperOptLoss` (which takes only amount of profit into consideration)
 * `SharpeHyperOptLoss` (optimizes Sharpe Ratio calculated on trade returns relative to standard deviation)
 * `SharpeHyperOptLossDaily` (optimizes Sharpe Ratio calculated on **daily** trade returns relative to standard deviation)

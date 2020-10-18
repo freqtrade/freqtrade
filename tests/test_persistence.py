@@ -8,13 +8,13 @@ from sqlalchemy import create_engine
 
 from freqtrade import constants
 from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.persistence import Order, Trade, clean_dry_run_db, init
+from freqtrade.persistence import Order, Trade, clean_dry_run_db, init_db
 from tests.conftest import create_mock_trades, log_has, log_has_re
 
 
 def test_init_create_session(default_conf):
     # Check if init create a session
-    init(default_conf['db_url'], default_conf['dry_run'])
+    init_db(default_conf['db_url'], default_conf['dry_run'])
     assert hasattr(Trade, 'session')
     assert 'scoped_session' in type(Trade.session).__name__
 
@@ -24,7 +24,7 @@ def test_init_custom_db_url(default_conf, mocker):
     default_conf.update({'db_url': 'sqlite:///tmp/freqtrade2_test.sqlite'})
     create_engine_mock = mocker.patch('freqtrade.persistence.models.create_engine', MagicMock())
 
-    init(default_conf['db_url'], default_conf['dry_run'])
+    init_db(default_conf['db_url'], default_conf['dry_run'])
     assert create_engine_mock.call_count == 1
     assert create_engine_mock.mock_calls[0][1][0] == 'sqlite:///tmp/freqtrade2_test.sqlite'
 
@@ -33,7 +33,7 @@ def test_init_invalid_db_url(default_conf):
     # Update path to a value other than default, but still in-memory
     default_conf.update({'db_url': 'unknown:///some.url'})
     with pytest.raises(OperationalException, match=r'.*no valid database URL*'):
-        init(default_conf['db_url'], default_conf['dry_run'])
+        init_db(default_conf['db_url'], default_conf['dry_run'])
 
 
 def test_init_prod_db(default_conf, mocker):
@@ -42,7 +42,7 @@ def test_init_prod_db(default_conf, mocker):
 
     create_engine_mock = mocker.patch('freqtrade.persistence.models.create_engine', MagicMock())
 
-    init(default_conf['db_url'], default_conf['dry_run'])
+    init_db(default_conf['db_url'], default_conf['dry_run'])
     assert create_engine_mock.call_count == 1
     assert create_engine_mock.mock_calls[0][1][0] == 'sqlite:///tradesv3.sqlite'
 
@@ -53,7 +53,7 @@ def test_init_dryrun_db(default_conf, mocker):
 
     create_engine_mock = mocker.patch('freqtrade.persistence.models.create_engine', MagicMock())
 
-    init(default_conf['db_url'], default_conf['dry_run'])
+    init_db(default_conf['db_url'], default_conf['dry_run'])
     assert create_engine_mock.call_count == 1
     assert create_engine_mock.mock_calls[0][1][0] == 'sqlite:///tradesv3.dryrun.sqlite'
 
@@ -482,7 +482,7 @@ def test_migrate_old(mocker, default_conf, fee):
     engine.execute(insert_table_old)
     engine.execute(insert_table_old2)
     # Run init to test migration
-    init(default_conf['db_url'], default_conf['dry_run'])
+    init_db(default_conf['db_url'], default_conf['dry_run'])
 
     assert len(Trade.query.filter(Trade.id == 1).all()) == 1
     trade = Trade.query.filter(Trade.id == 1).first()
@@ -581,7 +581,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
 
     engine.execute("create table trades_bak1 as select * from trades")
     # Run init to test migration
-    init(default_conf['db_url'], default_conf['dry_run'])
+    init_db(default_conf['db_url'], default_conf['dry_run'])
 
     assert len(Trade.query.filter(Trade.id == 1).all()) == 1
     trade = Trade.query.filter(Trade.id == 1).first()
@@ -661,7 +661,7 @@ def test_migrate_mid_state(mocker, default_conf, fee, caplog):
     engine.execute(insert_table_old)
 
     # Run init to test migration
-    init(default_conf['db_url'], default_conf['dry_run'])
+    init_db(default_conf['db_url'], default_conf['dry_run'])
 
     assert len(Trade.query.filter(Trade.id == 1).all()) == 1
     trade = Trade.query.filter(Trade.id == 1).first()
@@ -904,7 +904,7 @@ def test_to_json(default_conf, fee):
 
 
 def test_stoploss_reinitialization(default_conf, fee):
-    init(default_conf['db_url'])
+    init_db(default_conf['db_url'])
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,

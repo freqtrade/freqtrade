@@ -1149,7 +1149,7 @@ def test_start_list_data(testdatadir, capsys):
 
 @pytest.mark.usefixtures("init_persistence")
 def test_show_trades(mocker, fee, capsys, caplog):
-    mocker.patch("freqtrade.persistence.init")
+    mocker.patch("freqtrade.persistence.init_db")
     create_mock_trades(fee)
     args = [
         "show-trades",

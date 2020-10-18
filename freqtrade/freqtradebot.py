@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional
 import arrow
 from cachetools import TTLCache
 
-from freqtrade import __version__, constants, persistence
+from freqtrade import __version__, constants
 from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
@@ -22,7 +22,7 @@ from freqtrade.exceptions import (DependencyException, ExchangeError, Insufficie
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.pairlist.pairlistmanager import PairListManager
-from freqtrade.persistence import Order, Trade
+from freqtrade.persistence import Order, Trade, cleanup_db, init_db
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
@@ -58,8 +58,8 @@ class FreqtradeBot:
         # Cache values for 1800 to avoid frequent polling of the exchange for prices
         # Caching only applies to RPC methods, so prices for open trades are still
         # refreshed once every iteration.
-        self._sell_rate_cache = TTLCache(maxsize=100, ttl=1800)
-        self._buy_rate_cache = TTLCache(maxsize=100, ttl=1800)
+        self._sell_rate_cache: TTLCache = TTLCache(maxsize=100, ttl=1800)
+        self._buy_rate_cache: TTLCache = TTLCache(maxsize=100, ttl=1800)
 
         self.strategy: IStrategy = StrategyResolver.load_strategy(self.config)
 
@@ -68,7 +68,7 @@ class FreqtradeBot:
 
         self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
 
-        persistence.init(self.config.get('db_url', None), clean_open_orders=self.config['dry_run'])
+        init_db(self.config.get('db_url', None), clean_open_orders=self.config['dry_run'])
 
         self.wallets = Wallets(self.config, self.exchange)
 
@@ -123,7 +123,7 @@ class FreqtradeBot:
         self.check_for_open_trades()
 
         self.rpc.cleanup()
-        persistence.cleanup()
+        cleanup_db()
 
     def startup(self) -> None:
         """

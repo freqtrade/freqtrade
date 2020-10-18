@@ -312,12 +312,17 @@ The name of the variable can be chosen at will, but should be prefixed with `cus
 class Awesomestrategy(IStrategy):
     # Create custom dictionary
     cust_info = {}
+
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # Check if the entry already exists
+        if not metadata["pair"] in self._cust_info:
+            # Create empty entry for this pair
+            self._cust_info[metadata["pair"]] = {}
+
         if "crosstime" in self.cust_info[metadata["pair"]:
-            self.cust_info[metadata["pair"]["crosstime"] += 1
+            self.cust_info[metadata["pair"]]["crosstime"] += 1
         else:
-            self.cust_info[metadata["pair"]["crosstime"] = 1
+            self.cust_info[metadata["pair"]]["crosstime"] = 1
 ```
 
 !!! Warning

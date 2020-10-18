@@ -1,5 +1,5 @@
 """
-DefaultHyperOptLoss
+ShortTradeDurHyperOptLoss
 This module defines the default HyperoptLoss class which is being used for
 Hyperoptimization.
 """
@@ -26,7 +26,7 @@ EXPECTED_MAX_PROFIT = 3.0
 MAX_ACCEPTED_TRADE_DURATION = 300
 
 
-class DefaultHyperOptLoss(IHyperOptLoss):
+class ShortTradeDurHyperOptLoss(IHyperOptLoss):
     """
     Defines the default loss function for hyperopt
     """
@@ -50,3 +50,7 @@ class DefaultHyperOptLoss(IHyperOptLoss):
         duration_loss = 0.4 * min(trade_duration / MAX_ACCEPTED_TRADE_DURATION, 1)
         result = trade_loss + profit_loss + duration_loss
         return result
+
+
+# Create an alias for This to allow the legacy Method to work as well.
+DefaultHyperOptLoss = ShortTradeDurHyperOptLoss
