@@ -147,7 +147,7 @@ class Backtesting:
 
         return data, timerange
 
-    def _get_ohlcv_as_lists(self, processed: Dict) -> Dict[str, DataFrame]:
+    def _get_ohlcv_as_lists(self, processed: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
         Helper function to convert a processed dataframes into lists for performance reasons.
 
@@ -215,7 +215,10 @@ class Backtesting:
         else:
             return sell_row.open
 
-    def _get_sell_trade_entry(self, trade: Trade, sell_row: DataFrame) -> Optional[BacktestResult]:
+    def _get_sell_trade_entry(self, trade: Trade, sell_row) -> Optional[BacktestResult]:
+        """
+        sell_row is a named tuple with attributes for date, buy, open, close, sell, low, high.
+        """
 
         sell = self.strategy.should_sell(trade, sell_row.open, sell_row.date, sell_row.buy,
                                          sell_row.sell, low=sell_row.low, high=sell_row.high)
@@ -322,7 +325,6 @@ class Backtesting:
                 # Waits until the time-counter reaches the start of the data for this pair.
                 if row.date > tmp:
                     continue
-
                 indexes[pair] += 1
 
                 # without positionstacking, we can only have one open trade per pair.
