@@ -1194,9 +1194,6 @@ def test_PairLock(default_conf):
     # Lock until 14:30
     lock_time = datetime(2020, 5, 1, 14, 30, 0, tzinfo=timezone.utc)
     PairLock.lock_pair(pair, lock_time)
-    # Lock is in the past, so we must fake the lock
-    lock = PairLock.query.filter(PairLock.pair == pair).first()
-    lock.lock_time = lock_time - timedelta(hours=2)
 
     assert not PairLock.is_pair_locked(pair)
     assert PairLock.is_pair_locked(pair, lock_time + timedelta(minutes=-10))

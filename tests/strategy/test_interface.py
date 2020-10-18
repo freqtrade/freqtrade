@@ -388,9 +388,6 @@ def test_is_pair_locked(default_conf):
     # Lock until 14:30
     lock_time = datetime(2020, 5, 1, 14, 30, 0, tzinfo=timezone.utc)
     strategy.lock_pair(pair, lock_time)
-    # Lock is in the past, so we must fake the lock
-    lock = PairLock.query.filter(PairLock.pair == pair).first()
-    lock.lock_time = lock_time - timedelta(hours=2)
 
     assert not strategy.is_pair_locked(pair)
     # latest candle is from 14:20, lock goes to 14:30
