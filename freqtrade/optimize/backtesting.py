@@ -9,7 +9,6 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
-import arrow
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange, remove_credentials, validate_config_consistency
@@ -173,7 +172,7 @@ class Backtesting:
 
             # Convert from Pandas to list for performance reasons
             # (Looping Pandas is slow.)
-            data[pair] = [x for x in df_analyzed.itertuples()]
+            data[pair] = [x for x in df_analyzed.itertuples(index=False)]
         return data
 
     def _get_close_rate(self, sell_row, trade: Trade, sell: SellCheckTuple,
@@ -271,7 +270,7 @@ class Backtesting:
         return trades
 
     def backtest(self, processed: Dict, stake_amount: float,
-                 start_date: arrow.Arrow, end_date: arrow.Arrow,
+                 start_date: datetime, end_date: datetime,
                  max_open_trades: int = 0, position_stacking: bool = False) -> DataFrame:
         """
         Implement backtesting functionality
@@ -321,7 +320,7 @@ class Backtesting:
                     continue
 
                 # Waits until the time-counter reaches the start of the data for this pair.
-                if row.date > tmp.datetime:
+                if row.date > tmp:
                     continue
 
                 indexes[pair] += 1
@@ -413,8 +412,8 @@ class Backtesting:
             results = self.backtest(
                 processed=preprocessed,
                 stake_amount=self.config['stake_amount'],
-                start_date=min_date,
-                end_date=max_date,
+                start_date=min_date.datetime,
+                end_date=max_date.datetime,
                 max_open_trades=max_open_trades,
                 position_stacking=position_stacking,
             )
