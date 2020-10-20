@@ -140,6 +140,10 @@ information about the bot, we encourage you to join our slack channel.
 
 - [Click here to join Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE).
 
+To those interested to check out the newly created discord channel. Click [here](https://discord.gg/MA9v74M)
+
+P.S. currently since discord channel is relatively new, answers to questions might be slightly delayed as currently the user base quite small.
+
 ### [Bugs / Issues](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue)
 
 If you discover a bug in the bot, please

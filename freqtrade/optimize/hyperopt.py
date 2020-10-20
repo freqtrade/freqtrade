@@ -94,14 +94,14 @@ class Hyperopt:
 
         # Populate functions here (hasattr is slow so should not be run during "regular" operations)
         if hasattr(self.custom_hyperopt, 'populate_indicators'):
-            self.backtesting.strategy.advise_indicators = \
-                self.custom_hyperopt.populate_indicators  # type: ignore
+            self.backtesting.strategy.advise_indicators = (  # type: ignore
+                self.custom_hyperopt.populate_indicators)  # type: ignore
         if hasattr(self.custom_hyperopt, 'populate_buy_trend'):
-            self.backtesting.strategy.advise_buy = \
-                self.custom_hyperopt.populate_buy_trend  # type: ignore
+            self.backtesting.strategy.advise_buy = (  # type: ignore
+                self.custom_hyperopt.populate_buy_trend)  # type: ignore
         if hasattr(self.custom_hyperopt, 'populate_sell_trend'):
-            self.backtesting.strategy.advise_sell = \
-                self.custom_hyperopt.populate_sell_trend  # type: ignore
+            self.backtesting.strategy.advise_sell = (  # type: ignore
+                self.custom_hyperopt.populate_sell_trend)  # type: ignore
 
         # Use max_open_trades for hyperopt as well, except --disable-max-market-positions is set
         if self.config.get('use_max_market_positions', True):
@@ -508,16 +508,16 @@ class Hyperopt:
         params_details = self._get_params_details(params_dict)
 
         if self.has_space('roi'):
-            self.backtesting.strategy.minimal_roi = \
-                self.custom_hyperopt.generate_roi_table(params_dict)
+            self.backtesting.strategy.minimal_roi = (  # type: ignore
+                self.custom_hyperopt.generate_roi_table(params_dict))
 
         if self.has_space('buy'):
-            self.backtesting.strategy.advise_buy = \
-                self.custom_hyperopt.buy_strategy_generator(params_dict)
+            self.backtesting.strategy.advise_buy = (  # type: ignore
+                self.custom_hyperopt.buy_strategy_generator(params_dict))
 
         if self.has_space('sell'):
-            self.backtesting.strategy.advise_sell = \
-                self.custom_hyperopt.sell_strategy_generator(params_dict)
+            self.backtesting.strategy.advise_sell = (  # type: ignore
+                self.custom_hyperopt.sell_strategy_generator(params_dict))
 
         if self.has_space('stoploss'):
             self.backtesting.strategy.stoploss = params_dict['stoploss']
@@ -538,8 +538,8 @@ class Hyperopt:
         backtesting_results = self.backtesting.backtest(
             processed=processed,
             stake_amount=self.config['stake_amount'],
-            start_date=min_date,
-            end_date=max_date,
+            start_date=min_date.datetime,
+            end_date=max_date.datetime,
             max_open_trades=self.max_open_trades,
             position_stacking=self.position_stacking,
         )

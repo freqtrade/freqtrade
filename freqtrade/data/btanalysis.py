@@ -9,10 +9,9 @@ from typing import Any, Dict, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 
-from freqtrade import persistence
 from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.misc import json_load
-from freqtrade.persistence import Trade
+from freqtrade.persistence import Trade, init_db
 
 
 logger = logging.getLogger(__name__)
@@ -218,7 +217,7 @@ def load_trades_from_db(db_url: str, strategy: Optional[str] = None) -> pd.DataF
                      Can also serve as protection to load the correct result.
     :return: Dataframe containing Trades
     """
-    persistence.init(db_url, clean_open_orders=False)
+    init_db(db_url, clean_open_orders=False)
 
     columns = ["pair", "open_date", "close_date", "profit", "profit_percent",
                "open_rate", "close_rate", "amount", "trade_duration", "sell_reason",

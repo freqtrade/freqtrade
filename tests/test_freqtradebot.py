@@ -15,8 +15,7 @@ from freqtrade.exceptions import (DependencyException, ExchangeError, Insufficie
                                   InvalidOrderException, OperationalException, PricingError,
                                   TemporaryError)
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.persistence import Trade
-from freqtrade.persistence.models import Order
+from freqtrade.persistence import Order, Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.state import RunMode, State
 from freqtrade.strategy.interface import SellCheckTuple, SellType
@@ -66,7 +65,7 @@ def test_process_stopped(mocker, default_conf) -> None:
 
 
 def test_bot_cleanup(mocker, default_conf, caplog) -> None:
-    mock_cleanup = mocker.patch('freqtrade.persistence.cleanup')
+    mock_cleanup = mocker.patch('freqtrade.freqtradebot.cleanup_db')
     coo_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.cancel_all_open_orders')
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     freqtrade.cleanup()
