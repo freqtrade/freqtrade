@@ -356,7 +356,7 @@ class ApiServer(RPC):
     def _locks(self):
         """
         Handler for /locks.
-        Returns the number of trades running
+        Returns the currently active locks.
         """
         return jsonify(self._rpc_locks())
 

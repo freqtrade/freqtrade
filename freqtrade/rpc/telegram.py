@@ -15,7 +15,6 @@ from telegram.ext import CallbackContext, CommandHandler, Updater
 from telegram.utils.helpers import escape_markdown
 
 from freqtrade.__init__ import __version__
-from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.rpc import RPC, RPCException, RPCMessageType
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 
@@ -614,10 +613,7 @@ class Telegram(RPC):
     def _locks(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /locks.
-        Returns the number of trades running
-        :param bot: telegram bot
-        :param update: message update
-        :return: None
+        Returns the currently active locks
         """
         try:
             locks = self._rpc_locks()

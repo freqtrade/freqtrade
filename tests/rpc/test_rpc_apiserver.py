@@ -4,7 +4,6 @@ Unit test file for rpc/api_server.py
 
 from datetime import datetime, timedelta
 from pathlib import Path
-from time import sleep
 from unittest.mock import ANY, MagicMock, PropertyMock
 
 import pytest
