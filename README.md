@@ -55,9 +55,8 @@ Please find the complete documentation on our [website](https://www.freqtrade.io
 Freqtrade provides a Linux/macOS script to install all dependencies and help you to configure the bot.
 
 ```bash
-git clone git@github.com:freqtrade/freqtrade.git
+git clone -b develop https://github.com/freqtrade/freqtrade.git 
 cd freqtrade
-git checkout develop
 ./setup.sh --install
 ```
 
