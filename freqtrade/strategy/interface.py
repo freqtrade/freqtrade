@@ -286,6 +286,7 @@ class IStrategy(ABC):
         :param pair: Pair to lock
         :param until: datetime in UTC until the pair should be blocked from opening new trades.
                 Needs to be timezone aware `datetime.now(timezone.utc)`
+        :param reason: Optional string explaining why the pair was locked.
         """
         PairLock.lock_pair(pair, until, reason)
 

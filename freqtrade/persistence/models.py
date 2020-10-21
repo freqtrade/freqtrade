@@ -719,6 +719,9 @@ class PairLock(_DECL_BASE):
     def unlock_pair(pair: str, now: Optional[datetime] = None) -> None:
         """
         Release all locks for this pair.
+        :param pair: Pair to unlock
+        :param now: Datetime object (generated via datetime.now(timezone.utc)).
+            defaults to datetime.utcnow()
         """
         if not now:
             now = datetime.now(timezone.utc)
