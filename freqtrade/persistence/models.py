@@ -664,7 +664,7 @@ class PairLock(_DECL_BASE):
     """
     Pair Locks database model.
     """
-    __tablename__ = 'pair_lock'
+    __tablename__ = 'pairlocks'
 
     id = Column(Integer, primary_key=True)
 
@@ -673,7 +673,7 @@ class PairLock(_DECL_BASE):
     # Time the pair was locked (start time)
     lock_time = Column(DateTime, nullable=False)
     # Time until the pair is locked (end time)
-    lock_end_time = Column(DateTime, nullable=False)
+    lock_end_time = Column(DateTime, nullable=False, index=True)
 
     active = Column(Boolean, nullable=False, default=True, index=True)
 
