@@ -109,24 +109,25 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 |  Command | Description |
 |----------|-------------|
 | `ping` | Simple command testing the API Readiness - requires no authentication.
-| `start` | Starts the trader
-| `stop` | Stops the trader
+| `start` | Starts the trader.
+| `stop` | Stops the trader.
 | `stopbuy` | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
-| `reload_config` | Reloads the configuration file
+| `reload_config` | Reloads the configuration file.
 | `trades` | List last trades.
 | `delete_trade <trade_id>` | Remove trade from the database. Tries to close open orders. Requires manual handling of this trade on the exchange.
-| `show_config` | Shows part of the current configuration with relevant settings to operation
-| `logs` | Shows last log messages
-| `status` | Lists all open trades
-| `count` | Displays number of trades used and available
-| `profit` | Display a summary of your profit/loss from close trades and some stats about your performance
+| `show_config` | Shows part of the current configuration with relevant settings to operation.
+| `logs` | Shows last log messages.
+| `status` | Lists all open trades.
+| `count` | Displays number of trades used and available.
+| `locks` | Displays currently locked pairs.
+| `profit` | Display a summary of your profit/loss from close trades and some stats about your performance.
 | `forcesell <trade_id>` | Instantly sells the given trade  (Ignoring `minimum_roi`).
 | `forcesell all` | Instantly sells all open trades (Ignoring `minimum_roi`).
 | `forcebuy <pair> [rate]` | Instantly buys the given pair. Rate is optional. (`forcebuy_enable` must be set to True)
-| `performance` | Show performance of each finished trade grouped by pair
-| `balance` | Show account balance per currency
-| `daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7)
-| `whitelist` | Show the current whitelist
+| `performance` | Show performance of each finished trade grouped by pair.
+| `balance` | Show account balance per currency.
+| `daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7).
+| `whitelist` | Show the current whitelist.
 | `blacklist [pair]` | Show the current blacklist, or adds a pair to the blacklist.
 | `edge` | Show validated pairs by Edge if it is enabled.
 | `pair_candles` | Returns dataframe for a pair / timeframe combination while the bot is running. **Alpha**
@@ -135,7 +136,7 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `strategies` | List strategies in strategy directory. **Alpha**
 | `strategy <strategy>` | Get specific Strategy content. **Alpha**
 | `available_pairs` | List available backtest data. **Alpha**
-| `version` | Show version
+| `version` | Show version.
 
 !!! Warning "Alpha status"
     Endpoints labeled with *Alpha status* above may change at any time without notice.

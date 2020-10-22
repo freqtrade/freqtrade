@@ -100,6 +100,7 @@ class Telegram(RPC):
             CommandHandler('performance', self._performance),
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
+            CommandHandler('locks', self._locks),
             CommandHandler(['reload_config', 'reload_conf'], self._reload_config),
             CommandHandler(['show_config', 'show_conf'], self._show_config),
             CommandHandler('stopbuy', self._stopbuy),
@@ -609,6 +610,26 @@ class Telegram(RPC):
             self._send_msg(str(e))
 
     @authorized_only
+    def _locks(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /locks.
+        Returns the currently active locks
+        """
+        try:
+            locks = self._rpc_locks()
+            message = tabulate([[
+                lock['pair'],
+                lock['lock_end_time'],
+                lock['reason']] for lock in locks['locks']],
+                headers=['Pair', 'Until', 'Reason'],
+                tablefmt='simple')
+            message = "<pre>{}</pre>".format(message)
+            logger.debug(message)
+            self._send_msg(message, parse_mode=ParseMode.HTML)
+        except RPCException as e:
+            self._send_msg(str(e))
+
+    @authorized_only
     def _whitelist(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /whitelist
@@ -719,8 +740,8 @@ class Telegram(RPC):
                    "*/delete <trade_id>:* `Instantly delete the given trade in the database`\n"
                    "*/performance:* `Show performance of each finished trade grouped by pair`\n"
                    "*/daily <n>:* `Shows profit or loss per day, over the last n days`\n"
-                   "*/count:* `Show number of trades running compared to allowed number of trades`"
-                   "\n"
+                   "*/count:* `Show number of active trades compared to allowed number of trades`\n"
+                   "*/locks:* `Show currently locked pairs`\n"
                    "*/balance:* `Show account balance per currency`\n"
                    "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n"
                    "*/reload_config:* `Reload configuration file` \n"

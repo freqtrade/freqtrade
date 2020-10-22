@@ -17,7 +17,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.exchange.exchange import timeframe_to_next_date
-from freqtrade.persistence import Trade
+from freqtrade.persistence import PairLock, Trade
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
@@ -133,7 +133,6 @@ class IStrategy(ABC):
         self.config = config
         # Dict to determine if analysis is necessary
         self._last_candle_seen_per_pair: Dict[str, datetime] = {}
-        self._pair_locked_until: Dict[str, datetime] = {}
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -278,7 +277,7 @@ class IStrategy(ABC):
         """
         return self.__class__.__name__
 
-    def lock_pair(self, pair: str, until: datetime) -> None:
+    def lock_pair(self, pair: str, until: datetime, reason: str = None) -> None:
         """
         Locks pair until a given timestamp happens.
         Locked pairs are not analyzed, and are prevented from opening new trades.
@@ -287,9 +286,9 @@ class IStrategy(ABC):
         :param pair: Pair to lock
         :param until: datetime in UTC until the pair should be blocked from opening new trades.
                 Needs to be timezone aware `datetime.now(timezone.utc)`
+        :param reason: Optional string explaining why the pair was locked.
         """
-        if pair not in self._pair_locked_until or self._pair_locked_until[pair] < until:
-            self._pair_locked_until[pair] = until
+        PairLock.lock_pair(pair, until, reason)
 
     def unlock_pair(self, pair: str) -> None:
         """
@@ -298,8 +297,7 @@ class IStrategy(ABC):
         manually from within the strategy, to allow an easy way to unlock pairs.
         :param pair: Unlock pair to allow trading again
         """
-        if pair in self._pair_locked_until:
-            del self._pair_locked_until[pair]
+        PairLock.unlock_pair(pair, datetime.now(timezone.utc))
 
     def is_pair_locked(self, pair: str, candle_date: datetime = None) -> bool:
         """
@@ -311,15 +309,13 @@ class IStrategy(ABC):
         :param candle_date: Date of the last candle. Optional, defaults to current date
         :returns: locking state of the pair in question.
         """
-        if pair not in self._pair_locked_until:
-            return False
+
         if not candle_date:
-            return self._pair_locked_until[pair] >= datetime.now(timezone.utc)
+            # Simple call ...
+            return PairLock.is_pair_locked(pair, candle_date)
         else:
-            # Locking should happen until a new candle arrives
             lock_time = timeframe_to_next_date(self.timeframe, candle_date)
-            # lock_time = candle_date + timedelta(minutes=timeframe_to_minutes(self.timeframe))
-            return self._pair_locked_until[pair] > lock_time
+            return PairLock.is_pair_locked(pair, lock_time)
 
     def analyze_ticker(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """

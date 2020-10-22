@@ -2,7 +2,7 @@
 Unit test file for rpc/api_server.py
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import ANY, MagicMock, PropertyMock
 
@@ -12,7 +12,7 @@ from requests.auth import _basic_auth_str
 
 from freqtrade.__init__ import __version__
 from freqtrade.loggers import setup_logging, setup_logging_pre
-from freqtrade.persistence import Trade
+from freqtrade.persistence import PairLock, Trade
 from freqtrade.rpc.api_server import BASE_URI, ApiServer
 from freqtrade.state import State
 from tests.conftest import create_mock_trades, get_patched_freqtradebot, log_has, patch_get_signal
@@ -326,6 +326,30 @@ def test_api_count(botclient, mocker, ticker, fee, markets):
     assert_response(rc)
     assert rc.json["current"] == 1.0
     assert rc.json["max"] == 1.0
+
+
+def test_api_locks(botclient):
+    ftbot, client = botclient
+
+    rc = client_get(client, f"{BASE_URI}/locks")
+    assert_response(rc)
+
+    assert 'locks' in rc.json
+
+    assert rc.json['lock_count'] == 0
+    assert rc.json['lock_count'] == len(rc.json['locks'])
+
+    PairLock.lock_pair('ETH/BTC', datetime.utcnow() + timedelta(minutes=4), 'randreason')
+    PairLock.lock_pair('XRP/BTC', datetime.utcnow() + timedelta(minutes=20), 'deadbeef')
+
+    rc = client_get(client, f"{BASE_URI}/locks")
+    assert_response(rc)
+
+    assert rc.json['lock_count'] == 2
+    assert rc.json['lock_count'] == len(rc.json['locks'])
+    assert 'ETH/BTC' in (rc.json['locks'][0]['pair'], rc.json['locks'][1]['pair'])
+    assert 'randreason' in (rc.json['locks'][0]['reason'], rc.json['locks'][1]['reason'])
+    assert 'deadbeef' in (rc.json['locks'][0]['reason'], rc.json['locks'][1]['reason'])
 
 
 def test_api_show_config(botclient, mocker):

@@ -13,13 +13,13 @@ from numpy import NAN, int64, mean
 from pandas import DataFrame
 
 from freqtrade.configuration.timerange import TimeRange
-from freqtrade.constants import CANCEL_REASON
+from freqtrade.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT
 from freqtrade.data.history import load_data
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
 from freqtrade.misc import shorten_date
-from freqtrade.persistence import Trade
+from freqtrade.persistence import PairLock, Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType
@@ -599,6 +599,17 @@ class RPC:
             'total_stake': sum((trade.open_rate * trade.amount) for trade in trades)
         }
 
+    def _rpc_locks(self) -> Dict[str, Any]:
+        """ Returns the  current locks"""
+        if self._freqtrade.state != State.RUNNING:
+            raise RPCException('trader is not running')
+
+        locks = PairLock.get_pair_locks(None)
+        return {
+            'lock_count': len(locks),
+            'locks': [lock.to_json() for lock in locks]
+        }
+
     def _rpc_whitelist(self) -> Dict:
         """ Returns the currently active whitelist"""
         res = {'method': self._freqtrade.pairlists.name_list,
@@ -638,7 +649,7 @@ class RPC:
             buffer = bufferHandler.buffer[-limit:]
         else:
             buffer = bufferHandler.buffer
-        records = [[datetime.fromtimestamp(r.created).strftime("%Y-%m-%d %H:%M:%S"),
+        records = [[datetime.fromtimestamp(r.created).strftime(DATETIME_PRINT_FORMAT),
                    r.created * 1000, r.name, r.levelname,
                    r.message + ('\n' + r.exc_text if r.exc_text else '')]
                    for r in buffer]
