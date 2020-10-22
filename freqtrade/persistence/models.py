@@ -747,7 +747,7 @@ class PairLock(_DECL_BASE):
             func.datetime(PairLock.lock_end_time) >= now,
             # Only active locks
             PairLock.active.is_(True),
-        ).scalar() is not None
+        ).first() is not None
 
     def to_json(self) -> Dict[str, Any]:
         return {
