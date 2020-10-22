@@ -12,6 +12,7 @@ from typing.io import IO
 import numpy as np
 import rapidjson
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -41,7 +42,7 @@ def datesarray_to_datetimearray(dates: np.ndarray) -> np.ndarray:
     return dates.dt.to_pydatetime()
 
 
-def file_dump_json(filename: Path, data: Any, is_zip: bool = False) -> None:
+def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = True) -> None:
     """
     Dump JSON data into a file
     :param filename: file to create
@@ -52,12 +53,14 @@ def file_dump_json(filename: Path, data: Any, is_zip: bool = False) -> None:
     if is_zip:
         if filename.suffix != '.gz':
             filename = filename.with_suffix('.gz')
-        logger.info(f'dumping json to "{filename}"')
+        if log:
+            logger.info(f'dumping json to "{filename}"')
 
-        with gzip.open(filename, 'w') as fp:
-            rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
+        with gzip.open(filename, 'w') as fpz:
+            rapidjson.dump(data, fpz, default=str, number_mode=rapidjson.NM_NATIVE)
     else:
-        logger.info(f'dumping json to "{filename}"')
+        if log:
+            logger.info(f'dumping json to "{filename}"')
         with open(filename, 'w') as fp:
             rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
 

@@ -9,14 +9,13 @@ from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
-from freqtrade.data.converter import (clean_ohlcv_dataframe,
-                                      ohlcv_to_dataframe,
-                                      trades_remove_duplicates,
-                                      trades_to_ohlcv)
+from freqtrade.data.converter import (clean_ohlcv_dataframe, ohlcv_to_dataframe,
+                                      trades_remove_duplicates, trades_to_ohlcv)
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.misc import format_ms_time
+
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +135,6 @@ def _load_cached_data_for_updating(pair: str, timeframe: str, timerange: Optiona
     start = None
     if timerange:
         if timerange.starttype == 'date':
-            # TODO: convert to date for conversion
             start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
 
     # Intentionally don't pass timerange in - since we need to load the full dataset.

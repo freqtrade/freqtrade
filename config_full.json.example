@@ -7,7 +7,7 @@
     "amount_reserve_percent": 0.05,
     "amend_last_stake_amount": false,
     "last_stake_amount_min_ratio": 0.5,
-    "dry_run": false,
+    "dry_run": true,
     "cancel_open_orders_on_exit": false,
     "timeframe": "5m",
     "trailing_stop": false,
@@ -116,7 +116,16 @@
     "telegram": {
         "enabled": true,
         "token": "your_telegram_token",
-        "chat_id": "your_telegram_chat_id"
+        "chat_id": "your_telegram_chat_id",
+        "notification_settings": {
+            "status": "on",
+            "warning": "on",
+            "startup": "on",
+            "buy": "on",
+            "sell": "on",
+            "buy_cancel": "on",
+            "sell_cancel": "on"
+        }
     },
     "api_server": {
         "enabled": false,

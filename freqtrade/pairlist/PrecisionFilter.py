@@ -4,8 +4,9 @@ Precision pair list filter
 import logging
 from typing import Any, Dict
 
-from freqtrade.pairlist.IPairList import IPairList
 from freqtrade.exceptions import OperationalException
+from freqtrade.pairlist.IPairList import IPairList
+
 
 logger = logging.getLogger(__name__)
 

@@ -8,9 +8,11 @@ If no additional parameter is specified, freqtrade will download data for `"1m"`
 Exchange and pairs will come from `config.json` (if specified using `-c/--config`).
 Otherwise `--exchange` becomes mandatory.
 
+You can use a relative timerange (`--days 20`) or an absolute starting point (`--timerange 20200101`). For incremental downloads, the relative approach should be used.
+
 !!! Tip "Tip: Updating existing data"
     If you already have backtesting data available in your data-directory and would like to refresh this data up to today, use `--days xx` with a number slightly higher than the missing number of days. Freqtrade will keep the available data and only download the missing data.
-    Be carefull though: If the number is too small (which would result in a few missing days), the whole dataset will be removed and only xx days will be downloaded.
+    Be careful though: If the number is too small (which would result in a few missing days), the whole dataset will be removed and only xx days will be downloaded.
 
 ### Usage
 
@@ -18,9 +20,9 @@ Otherwise `--exchange` becomes mandatory.
 usage: freqtrade download-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [-d PATH] [--userdir PATH]
                                [-p PAIRS [PAIRS ...]] [--pairs-file FILE]
-                               [--days INT] [--dl-trades]
-                               [--exchange EXCHANGE]
-                               [-t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} ...]]
+                               [--days INT] [--timerange TIMERANGE]
+                               [--dl-trades] [--exchange EXCHANGE]
+                               [-t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]]
                                [--erase]
                                [--data-format-ohlcv {json,jsongz,hdf5}]
                                [--data-format-trades {json,jsongz,hdf5}]
@@ -32,12 +34,14 @@ optional arguments:
                         separated.
   --pairs-file FILE     File containing a list of pairs to download.
   --days INT            Download data for given number of days.
+  --timerange TIMERANGE
+                        Specify what timerange of data to use.
   --dl-trades           Download trades instead of OHLCV data. The bot will
                         resample trades to the desired timeframe as specified
                         as --timeframes/-t.
   --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
                         config is provided.
-  -t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} ...], --timeframes {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} ...]
+  -t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...], --timeframes {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]
                         Specify which tickers to download. Space-separated
                         list. Default: `1m 5m`.
   --erase               Clean all existing data for the selected
@@ -66,6 +70,11 @@ Common arguments:
                         Path to userdata directory.
 
 ```
+
+!!! Note "Startup period"
+    `download-data` is a strategy-independent command. The idea is to download a big chunk of data once, and then iteratively increase the amount of data stored.
+
+    For that reason, `download-data` does not care about the "startup-period" defined in a strategy. It's up to the user to download additional days if the backtest should start at a specific point in time (while respecting startup period).
 
 ### Data format
 
@@ -100,7 +109,7 @@ usage: freqtrade convert-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                               [-p PAIRS [PAIRS ...]] --format-from
                               {json,jsongz,hdf5} --format-to
                               {json,jsongz,hdf5} [--erase]
-                              [-t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} ...]]
+                              [-t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -113,7 +122,7 @@ optional arguments:
                         Destination format for data conversion.
   --erase               Clean all existing data for the selected
                         exchange/pairs/timeframes.
-  -t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} ...], --timeframes {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w} ...]
+  -t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...], --timeframes {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]
                         Specify which tickers to download. Space-separated
                         list. Default: `1m 5m`.
 
@@ -286,6 +295,7 @@ This will download historical candle (OHLCV) data for all the currency pairs you
 - To change the exchange used to download the historical data from, please use a different configuration file (you'll probably need to adjust rate limits etc.)
 - To use `pairs.json` from some other directory, use `--pairs-file some_other_dir/pairs.json`.
 - To download historical candle (OHLCV) data for only 10 days, use `--days 10` (defaults to 30 days).
+- To download historical candle (OHLCV) data from a fixed starting point, use `--timerange 20200101-` - which will download all data from January 1st, 2020. Eventually set end dates are ignored.
 - Use `--timeframes` to specify what timeframe download the historical candle (OHLCV) data for. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute data.
 - To use exchange, timeframe and list of pairs as defined in your configuration file, use the `-c/--config` option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine `-c/--config` with most other options.
 

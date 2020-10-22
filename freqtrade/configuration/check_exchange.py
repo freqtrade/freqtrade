@@ -2,10 +2,10 @@ import logging
 from typing import Any, Dict
 
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import (available_exchanges, get_exchange_bad_reason,
-                                is_exchange_bad, is_exchange_known_ccxt,
-                                is_exchange_officially_supported)
+from freqtrade.exchange import (available_exchanges, get_exchange_bad_reason, is_exchange_bad,
+                                is_exchange_known_ccxt, is_exchange_officially_supported)
 from freqtrade.state import RunMode
+
 
 logger = logging.getLogger(__name__)
 

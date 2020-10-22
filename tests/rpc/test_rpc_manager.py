@@ -1,10 +1,10 @@
 # pragma pylint: disable=missing-docstring, C0103
-import time
 import logging
+import time
 from unittest.mock import MagicMock
 
-from freqtrade.rpc import RPCMessageType, RPCManager
-from tests.conftest import log_has, get_patched_freqtradebot
+from freqtrade.rpc import RPCManager, RPCMessageType
+from tests.conftest import get_patched_freqtradebot, log_has
 
 
 def test__init__(mocker, default_conf) -> None:
@@ -124,10 +124,10 @@ def test_send_msg_webhook_CustomMessagetype(mocker, default_conf, caplog) -> Non
     rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
 
     assert 'webhook' in [mod.name for mod in rpc_manager.registered_modules]
-    rpc_manager.send_msg({'type': RPCMessageType.CUSTOM_NOTIFICATION,
+    rpc_manager.send_msg({'type': RPCMessageType.STARTUP_NOTIFICATION,
                           'status': 'TestMessage'})
     assert log_has(
-        "Message type RPCMessageType.CUSTOM_NOTIFICATION not implemented by handler webhook.",
+        "Message type 'startup' not implemented by handler webhook.",
         caplog)
 
 

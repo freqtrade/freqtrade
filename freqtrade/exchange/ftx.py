@@ -4,11 +4,11 @@ from typing import Any, Dict
 
 import ccxt
 
-from freqtrade.exceptions import (DDosProtection, ExchangeError,
-                                  InvalidOrderException, OperationalException,
-                                  TemporaryError)
+from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
+                                  OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
-from freqtrade.exchange.common import retrier
+from freqtrade.exchange.common import API_FETCH_ORDER_RETRY_COUNT, retrier
+
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ class Ftx(Exchange):
                         'stop price: %s.', pair, stop_price)
             return order
         except ccxt.InsufficientFunds as e:
-            raise ExchangeError(
+            raise InsufficientFundsError(
                 f'Insufficient funds to create {ordertype} sell order on market {pair}. '
                 f'Tried to create stoploss with amount {amount} at stoploss {stop_price}. '
                 f'Message: {e}') from e
@@ -88,7 +88,7 @@ class Ftx(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    @retrier(retries=5)
+    @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
     def fetch_stoploss_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
             try:

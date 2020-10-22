@@ -8,23 +8,24 @@ import logging
 from copy import deepcopy
 from datetime import datetime, timezone
 from math import ceil
-from random import randint
 from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
 import ccxt
 import ccxt.async_support as ccxt_async
-from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE,
-                                            TRUNCATE, decimal_to_precision)
+from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE,
+                                            decimal_to_precision)
 from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
-from freqtrade.exceptions import (DDosProtection, ExchangeError,
-                                  InvalidOrderException, OperationalException,
-                                  RetryableOrderError, TemporaryError)
-from freqtrade.exchange.common import BAD_EXCHANGES, retrier, retrier_async
+from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
+                                  InvalidOrderException, OperationalException, RetryableOrderError,
+                                  TemporaryError)
+from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGES, retrier,
+                                       retrier_async)
 from freqtrade.misc import deep_merge_dicts, safe_value_fallback2
+
 
 CcxtModuleType = Any
 
@@ -52,7 +53,7 @@ class Exchange:
         "ohlcv_partial_candle": True,
         "trades_pagination": "time",  # Possible are "time" or "id"
         "trades_pagination_arg": "since",
-
+        "l2_limit_range": None,
     }
     _ft_has: Dict = {}
 
@@ -487,11 +488,11 @@ class Exchange:
 
     def dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                       rate: float, params: Dict = {}) -> Dict[str, Any]:
-        order_id = f'dry_run_{side}_{randint(0, 10**6)}'
+        order_id = f'dry_run_{side}_{datetime.now().timestamp()}'
         _amount = self.amount_to_precision(pair, amount)
         dry_order = {
-            "id": order_id,
-            'pair': pair,
+            'id': order_id,
+            'symbol': pair,
             'price': rate,
             'average': rate,
             'amount': _amount,
@@ -500,6 +501,7 @@ class Exchange:
             'side': side,
             'remaining': _amount,
             'datetime': arrow.utcnow().isoformat(),
+            'timestamp': int(arrow.utcnow().timestamp * 1000),
             'status': "closed" if ordertype == "market" else "open",
             'fee': None,
             'info': {}
@@ -538,7 +540,7 @@ class Exchange:
                                           amount, rate_for_order, params)
 
         except ccxt.InsufficientFunds as e:
-            raise ExchangeError(
+            raise InsufficientFundsError(
                 f'Insufficient funds to create {ordertype} {side} order on market {pair}. '
                 f'Tried to {side} amount {amount} at rate {rate}.'
                 f'Message: {e}') from e
@@ -1027,7 +1029,7 @@ class Exchange:
 
         return order
 
-    @retrier(retries=5)
+    @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
     def fetch_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
             try:
@@ -1056,6 +1058,27 @@ class Exchange:
     # Assign method to fetch_stoploss_order to allow easy overriding in other classes
     fetch_stoploss_order = fetch_order
 
+    def fetch_order_or_stoploss_order(self, order_id: str, pair: str,
+                                      stoploss_order: bool = False) -> Dict:
+        """
+        Simple wrapper calling either fetch_order or fetch_stoploss_order depending on
+        the stoploss_order parameter
+        :param stoploss_order: If true, uses fetch_stoploss_order, otherwise fetch_order.
+        """
+        if stoploss_order:
+            return self.fetch_stoploss_order(order_id, pair)
+        return self.fetch_order(order_id, pair)
+
+    @staticmethod
+    def get_next_limit_in_list(limit: int, limit_range: Optional[List[int]]):
+        """
+        Get next greater value in the list.
+        Used by fetch_l2_order_book if the api only supports a limited range
+        """
+        if not limit_range:
+            return limit
+        return min([x for x in limit_range if limit <= x] + [max(limit_range)])
+
     @retrier
     def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:
         """
@@ -1064,9 +1087,10 @@ class Exchange:
         Returns a dict in the format
         {'asks': [price, volume], 'bids': [price, volume]}
         """
+        limit1 = self.get_next_limit_in_list(limit, self._ft_has['l2_limit_range'])
         try:
 
-            return self._api.fetch_l2_order_book(pair, limit)
+            return self._api.fetch_l2_order_book(pair, limit1)
         except ccxt.NotSupported as e:
             raise OperationalException(
                 f'Exchange {self._api.name} does not support fetching order book.'

@@ -312,12 +312,17 @@ The name of the variable can be chosen at will, but should be prefixed with `cus
 class Awesomestrategy(IStrategy):
     # Create custom dictionary
     cust_info = {}
+
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # Check if the entry already exists
+        if not metadata["pair"] in self._cust_info:
+            # Create empty entry for this pair
+            self._cust_info[metadata["pair"]] = {}
+
         if "crosstime" in self.cust_info[metadata["pair"]:
-            self.cust_info[metadata["pair"]["crosstime"] += 1
+            self.cust_info[metadata["pair"]]["crosstime"] += 1
         else:
-            self.cust_info[metadata["pair"]["crosstime"] = 1
+            self.cust_info[metadata["pair"]]["crosstime"] = 1
 ```
 
 !!! Warning
@@ -688,15 +693,15 @@ Locked pairs will show the message `Pair <pair> is currently locked.`.
 
 Sometimes it may be desired to lock a pair after certain events happen (e.g. multiple losing trades in a row).
 
-Freqtrade has an easy method to do this from within the strategy, by calling `self.lock_pair(pair, until)`.
-`until` must be a datetime object in the future, after which trading will be reenabled for that pair.
+Freqtrade has an easy method to do this from within the strategy, by calling `self.lock_pair(pair, until, [reason])`.
+`until` must be a datetime object in the future, after which trading will be re-enabled for that pair, while `reason` is an optional string detailing why the pair was locked.
 
 Locks can also be lifted manually, by calling `self.unlock_pair(pair)`.
 
 To verify if a pair is currently locked, use `self.is_pair_locked(pair)`.
 
 !!! Note
-    Locked pairs are not persisted, so a restart of the bot, or calling `/reload_config` will reset locked pairs.
+    Locked pairs will always be rounded up to the next candle. So assuming a `5m` timeframe, a lock with `until` set to 10:18 will lock the pair until the candle from 10:15-10:20 will be finished.
 
 !!! Warning
     Locking pairs is not functioning during backtesting.

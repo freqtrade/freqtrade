@@ -5,11 +5,8 @@ from typing import Any, Dict, List
 import pandas as pd
 
 from freqtrade.configuration import TimeRange
-from freqtrade.data.btanalysis import (calculate_max_drawdown,
-                                       combine_dataframes_with_mean,
-                                       create_cum_profit,
-                                       extract_trades_of_period,
-                                       load_trades)
+from freqtrade.data.btanalysis import (calculate_max_drawdown, combine_dataframes_with_mean,
+                                       create_cum_profit, extract_trades_of_period, load_trades)
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
@@ -19,13 +16,14 @@ from freqtrade.misc import pair_to_filename
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy import IStrategy
 
+
 logger = logging.getLogger(__name__)
 
 
 try:
-    from plotly.subplots import make_subplots
-    from plotly.offline import plot
     import plotly.graph_objects as go
+    from plotly.offline import plot
+    from plotly.subplots import make_subplots
 except ImportError:
     logger.exception("Module plotly not found \n Please install using `pip3 install plotly`")
     exit(1)

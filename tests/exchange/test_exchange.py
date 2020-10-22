@@ -1,5 +1,3 @@
-# pragma pylint: disable=missing-docstring, C0103, bad-continuation, global-statement
-# pragma pylint: disable=protected-access
 import copy
 import logging
 from datetime import datetime, timezone
@@ -11,19 +9,17 @@ import ccxt
 import pytest
 from pandas import DataFrame
 
-from freqtrade.exceptions import (DDosProtection, DependencyException,
-                                  InvalidOrderException, OperationalException,
-                                  TemporaryError)
-from freqtrade.exchange import Binance, Exchange, Kraken
-from freqtrade.exchange.common import API_RETRY_COUNT, calculate_backoff
-from freqtrade.exchange.exchange import (market_is_active,
-                                         timeframe_to_minutes,
-                                         timeframe_to_msecs,
-                                         timeframe_to_next_date,
-                                         timeframe_to_prev_date,
+from freqtrade.exceptions import (DDosProtection, DependencyException, InvalidOrderException,
+                                  OperationalException, TemporaryError)
+from freqtrade.exchange import Binance, Bittrex, Exchange, Kraken
+from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, API_RETRY_COUNT,
+                                       calculate_backoff)
+from freqtrade.exchange.exchange import (market_is_active, timeframe_to_minutes, timeframe_to_msecs,
+                                         timeframe_to_next_date, timeframe_to_prev_date,
                                          timeframe_to_seconds)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import get_patched_exchange, log_has, log_has_re
+
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
 EXCHANGES = ['bittrex', 'binance', 'kraken', 'ftx']
@@ -152,9 +148,17 @@ def test_exchange_resolver(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
-    exchange = ExchangeResolver.load_exchange('Bittrex', default_conf)
+
+    exchange = ExchangeResolver.load_exchange('huobi', default_conf)
     assert isinstance(exchange, Exchange)
     assert log_has_re(r"No .* specific subclass found. Using the generic class instead.", caplog)
+    caplog.clear()
+
+    exchange = ExchangeResolver.load_exchange('Bittrex', default_conf)
+    assert isinstance(exchange, Exchange)
+    assert isinstance(exchange, Bittrex)
+    assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
+                          caplog)
     caplog.clear()
 
     exchange = ExchangeResolver.load_exchange('kraken', default_conf)
@@ -808,7 +812,7 @@ def test_dry_run_order(default_conf, mocker, side, exchange_name):
     assert f'dry_run_{side}_' in order["id"]
     assert order["side"] == side
     assert order["type"] == "limit"
-    assert order["pair"] == "ETH/BTC"
+    assert order["symbol"] == "ETH/BTC"
 
 
 @pytest.mark.parametrize("side", [
@@ -1442,6 +1446,27 @@ def test_refresh_latest_ohlcv_inv_result(default_conf, mocker, caplog):
     assert log_has("Async code raised an exception: TypeError", caplog)
 
 
+def test_get_next_limit_in_list():
+    limit_range = [5, 10, 20, 50, 100, 500, 1000]
+    assert Exchange.get_next_limit_in_list(1, limit_range) == 5
+    assert Exchange.get_next_limit_in_list(5, limit_range) == 5
+    assert Exchange.get_next_limit_in_list(6, limit_range) == 10
+    assert Exchange.get_next_limit_in_list(9, limit_range) == 10
+    assert Exchange.get_next_limit_in_list(10, limit_range) == 10
+    assert Exchange.get_next_limit_in_list(11, limit_range) == 20
+    assert Exchange.get_next_limit_in_list(19, limit_range) == 20
+    assert Exchange.get_next_limit_in_list(21, limit_range) == 50
+    assert Exchange.get_next_limit_in_list(51, limit_range) == 100
+    assert Exchange.get_next_limit_in_list(1000, limit_range) == 1000
+    # Going over the limit ...
+    assert Exchange.get_next_limit_in_list(1001, limit_range) == 1000
+    assert Exchange.get_next_limit_in_list(2000, limit_range) == 1000
+
+    assert Exchange.get_next_limit_in_list(21, None) == 21
+    assert Exchange.get_next_limit_in_list(100, None) == 100
+    assert Exchange.get_next_limit_in_list(1000, None) == 1000
+
+
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_fetch_l2_order_book(default_conf, mocker, order_book_l2, exchange_name):
     default_conf['exchange']['name'] = exchange_name
@@ -1454,6 +1479,19 @@ def test_fetch_l2_order_book(default_conf, mocker, order_book_l2, exchange_name)
     assert 'asks' in order_book
     assert len(order_book['bids']) == 10
     assert len(order_book['asks']) == 10
+    assert api_mock.fetch_l2_order_book.call_args_list[0][0][0] == 'ETH/BTC'
+
+    for val in [1, 5, 10, 12, 20, 50, 100]:
+        api_mock.fetch_l2_order_book.reset_mock()
+
+        order_book = exchange.fetch_l2_order_book(pair='ETH/BTC', limit=val)
+        assert api_mock.fetch_l2_order_book.call_args_list[0][0][0] == 'ETH/BTC'
+        # Not all exchanges support all limits for orderbook
+        if not exchange._ft_has['l2_limit_range'] or val in exchange._ft_has['l2_limit_range']:
+            assert api_mock.fetch_l2_order_book.call_args_list[0][0][1] == val
+        else:
+            next_limit = exchange.get_next_limit_in_list(val, exchange._ft_has['l2_limit_range'])
+            assert api_mock.fetch_l2_order_book.call_args_list[0][0][1] == next_limit
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
@@ -1766,7 +1804,7 @@ def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     cancel_order = exchange.cancel_order(order_id=order['id'], pair='ETH/BTC')
     assert order['id'] == cancel_order['id']
     assert order['amount'] == cancel_order['amount']
-    assert order['pair'] == cancel_order['pair']
+    assert order['symbol'] == cancel_order['symbol']
     assert cancel_order['status'] == 'canceled'
 
 
@@ -1903,12 +1941,14 @@ def test_fetch_order(default_conf, mocker, exchange_name):
         # Ensure backoff is called
         assert tm.call_args_list[0][0][0] == 1
         assert tm.call_args_list[1][0][0] == 2
-        assert tm.call_args_list[2][0][0] == 5
-        assert tm.call_args_list[3][0][0] == 10
-    assert api_mock.fetch_order.call_count == 6
+        if API_FETCH_ORDER_RETRY_COUNT > 2:
+            assert tm.call_args_list[2][0][0] == 5
+        if API_FETCH_ORDER_RETRY_COUNT > 3:
+            assert tm.call_args_list[3][0][0] == 10
+    assert api_mock.fetch_order.call_count == API_FETCH_ORDER_RETRY_COUNT + 1
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
-                           'fetch_order', 'fetch_order', retries=6,
+                           'fetch_order', 'fetch_order', retries=API_FETCH_ORDER_RETRY_COUNT + 1,
                            order_id='_', pair='TKN/BTC')
 
 
@@ -1941,8 +1981,33 @@ def test_fetch_stoploss_order(default_conf, mocker, exchange_name):
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            'fetch_stoploss_order', 'fetch_order',
-                           retries=6,
+                           retries=API_FETCH_ORDER_RETRY_COUNT + 1,
                            order_id='_', pair='TKN/BTC')
+
+
+def test_fetch_order_or_stoploss_order(default_conf, mocker):
+    exchange = get_patched_exchange(mocker, default_conf, id='binance')
+    fetch_order_mock = MagicMock()
+    fetch_stoploss_order_mock = MagicMock()
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          fetch_order=fetch_order_mock,
+                          fetch_stoploss_order=fetch_stoploss_order_mock,
+                          )
+
+    exchange.fetch_order_or_stoploss_order('1234', 'ETH/BTC', False)
+    assert fetch_order_mock.call_count == 1
+    assert fetch_order_mock.call_args_list[0][0][0] == '1234'
+    assert fetch_order_mock.call_args_list[0][0][1] == 'ETH/BTC'
+    assert fetch_stoploss_order_mock.call_count == 0
+
+    fetch_order_mock.reset_mock()
+    fetch_stoploss_order_mock.reset_mock()
+
+    exchange.fetch_order_or_stoploss_order('1234', 'ETH/BTC', True)
+    assert fetch_order_mock.call_count == 0
+    assert fetch_stoploss_order_mock.call_count == 1
+    assert fetch_stoploss_order_mock.call_args_list[0][0][0] == '1234'
+    assert fetch_stoploss_order_mock.call_args_list[0][0][1] == 'ETH/BTC'
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)

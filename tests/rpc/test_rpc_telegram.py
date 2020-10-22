@@ -18,14 +18,13 @@ from freqtrade.constants import CANCEL_REASON
 from freqtrade.edge import PairInfo
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.loggers import setup_logging
-from freqtrade.persistence import Trade
+from freqtrade.persistence import PairLock, Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.rpc.telegram import Telegram, authorized_only
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType
-from tests.conftest import (create_mock_trades, get_patched_freqtradebot,
-                            log_has, patch_exchange, patch_get_signal,
-                            patch_whitelist)
+from tests.conftest import (create_mock_trades, get_patched_freqtradebot, log_has, patch_exchange,
+                            patch_get_signal, patch_whitelist)
 
 
 class DummyCls(Telegram):
@@ -76,15 +75,15 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
 
     message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
                    "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], ['trades'], "
-                   "['delete'], ['performance'], ['daily'], ['count'], ['reload_config', "
-                   "'reload_conf'], ['show_config', 'show_conf'], ['stopbuy'], "
+                   "['delete'], ['performance'], ['daily'], ['count'], ['locks'], "
+                   "['reload_config', 'reload_conf'], ['show_config', 'show_conf'], ['stopbuy'], "
                    "['whitelist'], ['blacklist'], ['logs'], ['edge'], ['help'], ['version'], "
                    "['stats']]")
 
     assert log_has(message_str, caplog)
 
 
-def test_cleanup(default_conf, mocker) -> None:
+def test_cleanup(default_conf, mocker, ) -> None:
     updater_mock = MagicMock()
     updater_mock.stop = MagicMock()
     mocker.patch('freqtrade.rpc.telegram.Updater', updater_mock)
@@ -94,12 +93,8 @@ def test_cleanup(default_conf, mocker) -> None:
     assert telegram._updater.stop.call_count == 1
 
 
-def test_authorized_only(default_conf, mocker, caplog) -> None:
+def test_authorized_only(default_conf, mocker, caplog, update) -> None:
     patch_exchange(mocker)
-
-    chat = Chat(0, 0)
-    update = Update(randint(1, 100))
-    update.message = Message(randint(1, 100), 0, datetime.utcnow(), chat)
 
     default_conf['telegram']['enabled'] = False
     bot = FreqtradeBot(default_conf)
@@ -116,7 +111,7 @@ def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
     patch_exchange(mocker)
     chat = Chat(0xdeadbeef, 0)
     update = Update(randint(1, 100))
-    update.message = Message(randint(1, 100), 0, datetime.utcnow(), chat)
+    update.message = Message(randint(1, 100), datetime.utcnow(), chat)
 
     default_conf['telegram']['enabled'] = False
     bot = FreqtradeBot(default_conf)
@@ -129,11 +124,8 @@ def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
     assert not log_has('Exception occurred within Telegram module', caplog)
 
 
-def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
+def test_authorized_only_exception(default_conf, mocker, caplog, update) -> None:
     patch_exchange(mocker)
-
-    update = Update(randint(1, 100))
-    update.message = Message(randint(1, 100), 0, datetime.utcnow(), Chat(0, 0))
 
     default_conf['telegram']['enabled'] = False
 
@@ -148,7 +140,7 @@ def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
     assert log_has('Exception occurred within Telegram module', caplog)
 
 
-def test_telegram_status(default_conf, update, mocker, fee, ticker,) -> None:
+def test_telegram_status(default_conf, update, mocker) -> None:
     update.message.chat.id = "123"
     default_conf['telegram']['enabled'] = False
     default_conf['telegram']['chat_id'] = "123"
@@ -254,7 +246,6 @@ def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
-        buy=MagicMock(return_value={'id': 'mocked_order_id'}),
         get_fee=fee,
     )
     msg_mock = MagicMock()
@@ -1008,7 +999,6 @@ def test_count_handle(default_conf, update, ticker, fee, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
-        buy=MagicMock(return_value={'id': 'mocked_order_id'}),
         get_fee=fee,
     )
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
@@ -1033,6 +1023,43 @@ def test_count_handle(default_conf, update, ticker, fee, mocker) -> None:
             default_conf['stake_amount']
         )
     assert msg in msg_mock.call_args_list[0][0][0]
+
+
+def test_telegram_lock_handle(default_conf, update, ticker, fee, mocker) -> None:
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker,
+        get_fee=fee,
+    )
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    patch_get_signal(freqtradebot, (True, False))
+    telegram = Telegram(freqtradebot)
+
+    freqtradebot.state = State.STOPPED
+    telegram._locks(update=update, context=MagicMock())
+    assert msg_mock.call_count == 1
+    assert 'not running' in msg_mock.call_args_list[0][0][0]
+    msg_mock.reset_mock()
+    freqtradebot.state = State.RUNNING
+
+    PairLock.lock_pair('ETH/BTC', arrow.utcnow().shift(minutes=4).datetime, 'randreason')
+    PairLock.lock_pair('XRP/BTC', arrow.utcnow().shift(minutes=20).datetime, 'deadbeef')
+
+    telegram._locks(update=update, context=MagicMock())
+
+    assert 'Pair' in msg_mock.call_args_list[0][0][0]
+    assert 'Until' in msg_mock.call_args_list[0][0][0]
+    assert 'Reason\n' in msg_mock.call_args_list[0][0][0]
+    assert 'ETH/BTC' in msg_mock.call_args_list[0][0][0]
+    assert 'XRP/BTC' in msg_mock.call_args_list[0][0][0]
+    assert 'deadbeef' in msg_mock.call_args_list[0][0][0]
+    assert 'randreason' in msg_mock.call_args_list[0][0][0]
 
 
 def test_whitelist_static(default_conf, update, mocker) -> None:
@@ -1142,9 +1169,9 @@ def test_telegram_logs(default_conf, update, mocker) -> None:
     context = MagicMock()
     context.args = []
     telegram._logs(update=update, context=context)
-    # Called at least 3 times. Exact times will change with unrelated changes to setup messages
+    # Called at least 2 times. Exact times will change with unrelated changes to setup messages
     # Therefore we don't test for this explicitly.
-    assert msg_mock.call_count > 3
+    assert msg_mock.call_count >= 2
 
 
 def test_edge_disabled(default_conf, update, mocker) -> None:
@@ -1302,16 +1329,14 @@ def test_show_config_handle(default_conf, update, mocker) -> None:
     assert '*Initial Stoploss:* `-0.1`' in msg_mock.call_args_list[0][0][0]
 
 
-def test_send_msg_buy_notification(default_conf, mocker) -> None:
+def test_send_msg_buy_notification(default_conf, mocker, caplog) -> None:
     msg_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
         _send_msg=msg_mock
     )
-    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    telegram = Telegram(freqtradebot)
-    telegram.send_msg({
+    msg = {
         'type': RPCMessageType.BUY_NOTIFICATION,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
@@ -1324,13 +1349,31 @@ def test_send_msg_buy_notification(default_conf, mocker) -> None:
         'current_rate': 1.099e-05,
         'amount': 1333.3333333333335,
         'open_date': arrow.utcnow().shift(hours=-1)
-    })
+    }
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    telegram = Telegram(freqtradebot)
+    telegram.send_msg(msg)
     assert msg_mock.call_args[0][0] \
         == '\N{LARGE BLUE CIRCLE} *Bittrex:* Buying ETH/BTC\n' \
            '*Amount:* `1333.33333333`\n' \
            '*Open Rate:* `0.00001099`\n' \
            '*Current Rate:* `0.00001099`\n' \
            '*Total:* `(0.001000 BTC, 12.345 USD)`'
+
+    freqtradebot.config['telegram']['notification_settings'] = {'buy': 'off'}
+    caplog.clear()
+    msg_mock.reset_mock()
+    telegram.send_msg(msg)
+    msg_mock.call_count == 0
+    log_has("Notification 'buy' not sent.", caplog)
+
+    freqtradebot.config['telegram']['notification_settings'] = {'buy': 'silent'}
+    caplog.clear()
+    msg_mock.reset_mock()
+
+    telegram.send_msg(msg)
+    msg_mock.call_count == 1
+    msg_mock.call_args_list[0][1]['disable_notification'] is True
 
 
 def test_send_msg_buy_cancel_notification(default_conf, mocker) -> None:
@@ -1488,7 +1531,7 @@ def test_warning_notification(default_conf, mocker) -> None:
     assert msg_mock.call_args[0][0] == '\N{WARNING SIGN} *Warning:* `message`'
 
 
-def test_custom_notification(default_conf, mocker) -> None:
+def test_startup_notification(default_conf, mocker) -> None:
     msg_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
@@ -1498,7 +1541,7 @@ def test_custom_notification(default_conf, mocker) -> None:
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     telegram = Telegram(freqtradebot)
     telegram.send_msg({
-        'type': RPCMessageType.CUSTOM_NOTIFICATION,
+        'type': RPCMessageType.STARTUP_NOTIFICATION,
         'status': '*Custom:* `Hello World`'
     })
     assert msg_mock.call_args[0][0] == '*Custom:* `Hello World`'

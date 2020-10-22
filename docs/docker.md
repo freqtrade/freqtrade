@@ -10,9 +10,9 @@ Pull the image from docker hub.
 Branches / tags available can be checked out on [Dockerhub tags page](https://hub.docker.com/r/freqtradeorg/freqtrade/tags/).
 
 ```bash
-docker pull freqtradeorg/freqtrade:master
+docker pull freqtradeorg/freqtrade:stable
 # Optionally tag the repository so the run-commands remain shorter
-docker tag freqtradeorg/freqtrade:master freqtrade
+docker tag freqtradeorg/freqtrade:stable freqtrade
 ```
 
 To update the image, simply run the above commands again and restart your running container.
@@ -20,7 +20,7 @@ To update the image, simply run the above commands again and restart your runnin
 Should you require additional libraries, please [build the image yourself](#build-your-own-docker-image).
 
 !!! Note "Docker image update frequency"
-    The official docker images with tags `master`, `develop` and `latest` are automatically rebuild once a week to keep the base image uptodate.
+    The official docker images with tags `stable`, `develop` and `latest` are automatically rebuild once a week to keep the base image up-to-date.
     In addition to that, every merge to `develop` will trigger a rebuild for `develop` and `latest`.
 
 ### Prepare the configuration files
@@ -70,16 +70,16 @@ cp -n config.json.example config.json
 
 Best start by pulling the official docker image from dockerhub as explained [here](#download-the-official-docker-image) to speed up building.
 
-To add additional libraries to your docker image, best check out [Dockerfile.technical](https://github.com/freqtrade/freqtrade/blob/develop/Dockerfile.technical) which adds the [technical](https://github.com/freqtrade/technical) module to the image.
+To add additional libraries to your docker image, best check out [Dockerfile.technical](https://github.com/freqtrade/freqtrade/blob/develop/docker/Dockerfile.technical) which adds the [technical](https://github.com/freqtrade/technical) module to the image.
 
 ```bash
-docker build -t freqtrade -f Dockerfile.technical .
+docker build -t freqtrade -f docker/Dockerfile.technical .
 ```
 
-If you are developing using Docker, use `Dockerfile.develop` to build a dev Docker image, which will also set up develop dependencies:
+If you are developing using Docker, use `docker/Dockerfile.develop` to build a dev Docker image, which will also set up develop dependencies:
 
 ```bash
-docker build -f Dockerfile.develop -t freqtrade-dev .
+docker build -f docker/Dockerfile.develop -t freqtrade-dev .
 ```
 
 !!! Warning "Include your config file manually"

@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - master
+      - stable
       - develop
-      - github_actions_tests
     tags:
   release:
     types: [published]
@@ -19,14 +19,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-18.04, macos-latest ]
+        os: [ ubuntu-18.04, ubuntu-20.04, macos-latest ]
         python-version: [3.7, 3.8]
 
     steps:
     - uses: actions/checkout@v2
 
     - name: Set up Python
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -70,7 +70,7 @@ jobs:
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc
 
     - name: Coveralls
-      if: (startsWith(matrix.os, 'ubuntu') && matrix.python-version == '3.8')
+      if: (startsWith(matrix.os, 'ubuntu-20') && matrix.python-version == '3.8')
       env:
         # Coveralls token. Not used as secret due to github not providing secrets to forked repositories
         COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
@@ -88,11 +88,15 @@ jobs:
       run: |
         cp config.json.example config.json
         freqtrade create-userdir --userdir user_data
-        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --print-all
+        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
     - name: Flake8
       run: |
         flake8
+
+    - name: Sort imports (isort)
+      run: |
+        isort --check .
 
     - name: Mypy
       run: |
@@ -121,7 +125,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Set up Python
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -150,7 +154,7 @@ jobs:
       run: |
         cp config.json.example config.json
         freqtrade create-userdir --userdir user_data
-        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --print-all
+        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
     - name: Flake8
       run: |
@@ -172,13 +176,24 @@ jobs:
         url: ${{ secrets.SLACK_WEBHOOK }}
 
   docs_check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
 
     - name: Documentation syntax
       run: |
         ./tests/test_docs.sh
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+
+    - name: Documentation build
+      run: |
+        pip install -r docs/requirements-docs.txt
+        pip install mkdocs
+        mkdocs build
 
     - name: Slack Notification
       uses: homoluctus/slatify@v1.8.0
@@ -190,18 +205,18 @@ jobs:
         url: ${{ secrets.SLACK_WEBHOOK }}
 
   cleanup-prior-runs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - name: Cleanup previous runs on this branch
       uses: rokroskar/workflow-run-cleanup-action@v0.2.2
-      if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master' && github.repository == 'freqtrade/freqtrade'"
+      if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/stable' && github.repository == 'freqtrade/freqtrade'"
       env:
         GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
   # Notify on slack only once - when CI completes (and after deploy) in case it's successfull
   notify-complete:
     needs: [ build, build_windows, docs_check ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - name: Slack Notification
       uses: homoluctus/slatify@v1.8.0
@@ -214,13 +229,13 @@ jobs:
 
   deploy:
     needs: [ build, build_windows, docs_check ]
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
     steps:
     - uses: actions/checkout@v2
 
     - name: Set up Python
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: 3.8
 
@@ -236,7 +251,7 @@ jobs:
 
     - name: Publish to PyPI (Test)
       uses: pypa/gh-action-pypi-publish@master
-      if: (steps.extract_branch.outputs.branch == 'master' || github.event_name == 'release')
+      if: (github.event_name == 'release')
       with:
         user: __token__
         password: ${{ secrets.pypi_test_password }}
@@ -244,7 +259,7 @@ jobs:
 
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@master
-      if: (steps.extract_branch.outputs.branch == 'master' || github.event_name == 'release')
+      if: (github.event_name == 'release')
       with:
         user: __token__
         password: ${{ secrets.pypi_password }}

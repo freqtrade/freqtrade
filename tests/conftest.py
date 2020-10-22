@@ -13,15 +13,18 @@ import numpy as np
 import pytest
 from telegram import Chat, Message, Update
 
-from freqtrade import constants, persistence
+from freqtrade import constants
 from freqtrade.commands import Arguments
 from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.persistence import Trade
+from freqtrade.persistence import Trade, init_db
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
+from tests.conftest_trades import (mock_trade_1, mock_trade_2, mock_trade_3, mock_trade_4,
+                                   mock_trade_5, mock_trade_6)
+
 
 logging.getLogger('').setLevel(logging.INFO)
 
@@ -128,7 +131,7 @@ def patch_freqtradebot(mocker, config) -> None:
     :return: None
     """
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
-    persistence.init(config['db_url'])
+    init_db(config['db_url'])
     patch_exchange(mocker)
     mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
@@ -143,6 +146,7 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     :return: FreqtradeBot
     """
     patch_freqtradebot(mocker, config)
+    config['datadir'] = Path(config['datadir'])
     return FreqtradeBot(config)
 
 
@@ -172,64 +176,22 @@ def create_mock_trades(fee):
     Create some fake trades ...
     """
     # Simulate dry_run entries
-    trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        amount=123.0,
-        amount_requested=123.0,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        open_rate=0.123,
-        exchange='bittrex',
-        open_order_id='dry_run_buy_12345',
-        strategy='DefaultStrategy',
-    )
+    trade = mock_trade_1(fee)
     Trade.session.add(trade)
 
-    trade = Trade(
-        pair='ETC/BTC',
-        stake_amount=0.001,
-        amount=123.0,
-        amount_requested=123.0,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        open_rate=0.123,
-        close_rate=0.128,
-        close_profit=0.005,
-        exchange='bittrex',
-        is_open=False,
-        open_order_id='dry_run_sell_12345',
-        strategy='DefaultStrategy',
-    )
+    trade = mock_trade_2(fee)
     Trade.session.add(trade)
 
-    trade = Trade(
-        pair='XRP/BTC',
-        stake_amount=0.001,
-        amount=123.0,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        open_rate=0.05,
-        close_rate=0.06,
-        close_profit=0.01,
-        exchange='bittrex',
-        is_open=False,
-    )
+    trade = mock_trade_3(fee)
     Trade.session.add(trade)
 
-    # Simulate prod entry
-    trade = Trade(
-        pair='ETC/BTC',
-        stake_amount=0.001,
-        amount=123.0,
-        amount_requested=124.0,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        open_rate=0.123,
-        exchange='bittrex',
-        open_order_id='prod_buy_12345',
-        strategy='DefaultStrategy',
-    )
+    trade = mock_trade_4(fee)
+    Trade.session.add(trade)
+
+    trade = mock_trade_5(fee)
+    Trade.session.add(trade)
+
+    trade = mock_trade_6(fee)
     Trade.session.add(trade)
 
 
@@ -257,7 +219,7 @@ def patch_coingekko(mocker) -> None:
 
 @pytest.fixture(scope='function')
 def init_persistence(default_conf):
-    persistence.init(default_conf['db_url'], default_conf['dry_run'])
+    init_db(default_conf['db_url'], default_conf['dry_run'])
 
 
 @pytest.fixture(scope="function")
@@ -335,7 +297,7 @@ def default_conf(testdatadir):
 @pytest.fixture
 def update():
     _update = Update(0)
-    _update.message = Message(0, 0, datetime.utcnow(), Chat(0, 0))
+    _update.message = Message(0, datetime.utcnow(), Chat(0, 0))
     return _update
 
 
@@ -823,20 +785,30 @@ def markets_empty():
 
 
 @pytest.fixture(scope='function')
-def limit_buy_order():
+def limit_buy_order_open():
     return {
         'id': 'mocked_limit_buy',
         'type': 'limit',
         'side': 'buy',
         'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
+        'timestamp': arrow.utcnow().timestamp,
         'price': 0.00001099,
         'amount': 90.99181073,
-        'filled': 90.99181073,
+        'filled': 0.0,
         'cost': 0.0009999,
-        'remaining': 0.0,
-        'status': 'closed'
+        'remaining': 90.99181073,
+        'status': 'open'
     }
+
+
+@pytest.fixture(scope='function')
+def limit_buy_order(limit_buy_order_open):
+    order = deepcopy(limit_buy_order_open)
+    order['status'] = 'closed'
+    order['filled'] = order['amount']
+    order['remaining'] = 0.0
+    return order
 
 
 @pytest.fixture(scope='function')
@@ -1021,19 +993,29 @@ def limit_buy_order_canceled_empty(request):
 
 
 @pytest.fixture
-def limit_sell_order():
+def limit_sell_order_open():
     return {
         'id': 'mocked_limit_sell',
         'type': 'limit',
         'side': 'sell',
         'pair': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
+        'timestamp': arrow.utcnow().timestamp,
         'price': 0.00001173,
         'amount': 90.99181073,
-        'filled': 90.99181073,
-        'remaining': 0.0,
-        'status': 'closed'
+        'filled': 0.0,
+        'remaining': 90.99181073,
+        'status': 'open'
     }
+
+
+@pytest.fixture
+def limit_sell_order(limit_sell_order_open):
+    order = deepcopy(limit_sell_order_open)
+    order['remaining'] = 0.0
+    order['filled'] = order['amount']
+    order['status'] = 'closed'
+    return order
 
 
 @pytest.fixture

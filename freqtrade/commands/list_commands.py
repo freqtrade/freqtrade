@@ -5,19 +5,19 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List
 
-from colorama import init as colorama_init
-from colorama import Fore, Style
 import rapidjson
+from colorama import Fore, Style
+from colorama import init as colorama_init
 from tabulate import tabulate
 
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGIES
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import (available_exchanges, ccxt_exchanges,
-                                market_is_active)
+from freqtrade.exchange import available_exchanges, ccxt_exchanges, market_is_active
 from freqtrade.misc import plural
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
+
 
 logger = logging.getLogger(__name__)
 
@@ -203,15 +203,16 @@ def start_show_trades(args: Dict[str, Any]) -> None:
     """
     Show trades
     """
-    from freqtrade.persistence import init, Trade
     import json
+
+    from freqtrade.persistence import Trade, init_db
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     if 'db_url' not in config:
         raise OperationalException("--db-url is required for this command.")
 
     logger.info(f'Using DB: "{config["db_url"]}"')
-    init(config['db_url'], clean_open_orders=False)
+    init_db(config['db_url'], clean_open_orders=False)
     tfilter = []
 
     if config.get('trade_ids'):

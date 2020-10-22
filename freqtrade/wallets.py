@@ -2,12 +2,14 @@
 """ Wallet """
 
 import logging
+from copy import deepcopy
 from typing import Any, Dict, NamedTuple
 
 import arrow
 
 from freqtrade.exchange import Exchange
 from freqtrade.persistence import Trade
+
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +95,10 @@ class Wallets:
                 balances[currency].get('used', None),
                 balances[currency].get('total', None)
             )
+        # Remove currencies no longer in get_balances output
+        for currency in deepcopy(self._wallets):
+            if currency not in balances:
+                del self._wallets[currency]
 
     def update(self, require_update: bool = True) -> None:
         """

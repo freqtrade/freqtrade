@@ -7,6 +7,7 @@ import logging
 import sys
 from typing import Any, List
 
+
 # check min. python version
 if sys.version_info < (3, 6):
     sys.exit("Freqtrade requires Python version >= 3.6")

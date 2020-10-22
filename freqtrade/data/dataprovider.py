@@ -17,6 +17,7 @@ from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.state import RunMode
 
+
 logger = logging.getLogger(__name__)
 
 

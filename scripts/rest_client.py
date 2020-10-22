@@ -10,8 +10,8 @@ so it can be used as a standalone script.
 import argparse
 import inspect
 import json
-import re
 import logging
+import re
 import sys
 from pathlib import Path
 from urllib.parse import urlencode, urlparse, urlunparse
@@ -19,6 +19,7 @@ from urllib.parse import urlencode, urlparse, urlunparse
 import rapidjson
 import requests
 from requests.exceptions import ConnectionError
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -109,6 +110,13 @@ class FtRestClient():
         :return: json object
         """
         return self._get("count")
+
+    def locks(self):
+        """Return current locks
+
+        :return: json object
+        """
+        return self._get("locks")
 
     def daily(self, days=None):
         """Return the amount of open trades.
@@ -222,6 +230,70 @@ class FtRestClient():
         """
 
         return self._post("forcesell", data={"tradeid": tradeid})
+
+    def strategies(self):
+        """Lists available strategies
+
+        :return: json object
+        """
+        return self._get("strategies")
+
+    def strategy(self, strategy):
+        """Get strategy details
+
+        :param strategy: Strategy class name
+        :return: json object
+        """
+        return self._get(f"strategy/{strategy}")
+
+    def plot_config(self):
+        """Return plot configuration if the strategy defines one.
+
+        :return: json object
+        """
+        return self._get("plot_config")
+
+    def available_pairs(self, timeframe=None, stake_currency=None):
+        """Return available pair (backtest data) based on timeframe / stake_currency selection
+
+        :param timeframe: Only pairs with this timeframe available.
+        :param stake_currency: Only pairs that include this timeframe
+        :return: json object
+        """
+        return self._get("available_pairs", params={
+            "stake_currency": stake_currency if timeframe else '',
+            "timeframe": timeframe if timeframe else '',
+        })
+
+    def pair_candles(self, pair, timeframe, limit=None):
+        """Return live dataframe for <pair><timeframe>.
+
+        :param pair: Pair to get data for
+        :param timeframe: Only pairs with this timeframe available.
+        :param limit: Limit result to the last n candles.
+        :return: json object
+        """
+        return self._get("available_pairs", params={
+            "pair": pair,
+            "timeframe": timeframe,
+            "limit": limit,
+        })
+
+    def pair_history(self, pair, timeframe, strategy, timerange=None):
+        """Return historic, analyzed dataframe
+
+        :param pair: Pair to get data for
+        :param timeframe: Only pairs with this timeframe available.
+        :param strategy: Strategy to analyze and get values for
+        :param timerange: Timerange to get data for (same format than --timerange endpoints)
+        :return: json object
+        """
+        return self._get("pair_history", params={
+            "pair": pair,
+            "timeframe": timeframe,
+            "strategy": strategy,
+            "timerange": timerange if timerange else '',
+        })
 
 
 def add_arguments():

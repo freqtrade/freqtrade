@@ -3,9 +3,10 @@ This module loads custom exchanges
 """
 import logging
 
-from freqtrade.exchange import Exchange, MAP_EXCHANGE_CHILDCLASS
 import freqtrade.exchange as exchanges
+from freqtrade.exchange import MAP_EXCHANGE_CHILDCLASS, Exchange
 from freqtrade.resolvers import IResolver
+
 
 logger = logging.getLogger(__name__)
 

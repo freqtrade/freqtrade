@@ -7,17 +7,21 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 import arrow
-from sqlalchemy import (Boolean, Column, DateTime, Float, Integer, String,
+from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer, String,
                         create_engine, desc, func, inspect)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, relationship
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import StaticPool
+from sqlalchemy.sql.schema import UniqueConstraint
 
-from freqtrade.exceptions import OperationalException
+from freqtrade.constants import DATETIME_PRINT_FORMAT
+from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.misc import safe_value_fallback
+from freqtrade.persistence.migrations import check_migrate
+
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +30,7 @@ _DECL_BASE: Any = declarative_base()
 _SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
 
 
-def init(db_url: str, clean_open_orders: bool = False) -> None:
+def init_db(db_url: str, clean_open_orders: bool = False) -> None:
     """
     Initializes this module with the given config,
     registers all known command handlers
@@ -57,122 +61,22 @@ def init(db_url: str, clean_open_orders: bool = False) -> None:
     # We should use the scoped_session object - not a seperately initialized version
     Trade.session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
     Trade.query = Trade.session.query_property()
+    # Copy session attributes to order object too
+    Order.session = Trade.session
+    Order.query = Order.session.query_property()
+    PairLock.session = Trade.session
+    PairLock.query = PairLock.session.query_property()
+
+    previous_tables = inspect(engine).get_table_names()
     _DECL_BASE.metadata.create_all(engine)
-    check_migrate(engine)
+    check_migrate(engine, decl_base=_DECL_BASE, previous_tables=previous_tables)
 
     # Clean dry_run DB if the db is not in-memory
     if clean_open_orders and db_url != 'sqlite://':
         clean_dry_run_db()
 
 
-def has_column(columns: List, searchname: str) -> bool:
-    return len(list(filter(lambda x: x["name"] == searchname, columns))) == 1
-
-
-def get_column_def(columns: List, column: str, default: str) -> str:
-    return default if not has_column(columns, column) else column
-
-
-def check_migrate(engine) -> None:
-    """
-    Checks if migration is necessary and migrates if necessary
-    """
-    inspector = inspect(engine)
-
-    cols = inspector.get_columns('trades')
-    tabs = inspector.get_table_names()
-    table_back_name = 'trades_bak'
-    for i, table_back_name in enumerate(tabs):
-        table_back_name = f'trades_bak{i}'
-        logger.debug(f'trying {table_back_name}')
-
-    # Check for latest column
-    if not has_column(cols, 'amount_requested'):
-        logger.info(f'Running database migration - backup available as {table_back_name}')
-
-        fee_open = get_column_def(cols, 'fee_open', 'fee')
-        fee_open_cost = get_column_def(cols, 'fee_open_cost', 'null')
-        fee_open_currency = get_column_def(cols, 'fee_open_currency', 'null')
-        fee_close = get_column_def(cols, 'fee_close', 'fee')
-        fee_close_cost = get_column_def(cols, 'fee_close_cost', 'null')
-        fee_close_currency = get_column_def(cols, 'fee_close_currency', 'null')
-        open_rate_requested = get_column_def(cols, 'open_rate_requested', 'null')
-        close_rate_requested = get_column_def(cols, 'close_rate_requested', 'null')
-        stop_loss = get_column_def(cols, 'stop_loss', '0.0')
-        stop_loss_pct = get_column_def(cols, 'stop_loss_pct', 'null')
-        initial_stop_loss = get_column_def(cols, 'initial_stop_loss', '0.0')
-        initial_stop_loss_pct = get_column_def(cols, 'initial_stop_loss_pct', 'null')
-        stoploss_order_id = get_column_def(cols, 'stoploss_order_id', 'null')
-        stoploss_last_update = get_column_def(cols, 'stoploss_last_update', 'null')
-        max_rate = get_column_def(cols, 'max_rate', '0.0')
-        min_rate = get_column_def(cols, 'min_rate', 'null')
-        sell_reason = get_column_def(cols, 'sell_reason', 'null')
-        strategy = get_column_def(cols, 'strategy', 'null')
-        # If ticker-interval existed use that, else null.
-        if has_column(cols, 'ticker_interval'):
-            timeframe = get_column_def(cols, 'timeframe', 'ticker_interval')
-        else:
-            timeframe = get_column_def(cols, 'timeframe', 'null')
-
-        open_trade_price = get_column_def(cols, 'open_trade_price',
-                                          f'amount * open_rate * (1 + {fee_open})')
-        close_profit_abs = get_column_def(
-            cols, 'close_profit_abs',
-            f"(amount * close_rate * (1 - {fee_close})) - {open_trade_price}")
-        sell_order_status = get_column_def(cols, 'sell_order_status', 'null')
-        amount_requested = get_column_def(cols, 'amount_requested', 'amount')
-
-        # Schema migration necessary
-        engine.execute(f"alter table trades rename to {table_back_name}")
-        # drop indexes on backup table
-        for index in inspector.get_indexes(table_back_name):
-            engine.execute(f"drop index {index['name']}")
-        # let SQLAlchemy create the schema as required
-        _DECL_BASE.metadata.create_all(engine)
-
-        # Copy data back - following the correct schema
-        engine.execute(f"""insert into trades
-                (id, exchange, pair, is_open,
-                fee_open, fee_open_cost, fee_open_currency,
-                fee_close, fee_close_cost, fee_open_currency, open_rate,
-                open_rate_requested, close_rate, close_rate_requested, close_profit,
-                stake_amount, amount, amount_requested, open_date, close_date, open_order_id,
-                stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
-                stoploss_order_id, stoploss_last_update,
-                max_rate, min_rate, sell_reason, sell_order_status, strategy,
-                timeframe, open_trade_price, close_profit_abs
-                )
-            select id, lower(exchange),
-                case
-                    when instr(pair, '_') != 0 then
-                    substr(pair,    instr(pair, '_') + 1) || '/' ||
-                    substr(pair, 1, instr(pair, '_') - 1)
-                    else pair
-                    end
-                pair,
-                is_open, {fee_open} fee_open, {fee_open_cost} fee_open_cost,
-                {fee_open_currency} fee_open_currency, {fee_close} fee_close,
-                {fee_close_cost} fee_close_cost, {fee_close_currency} fee_close_currency,
-                open_rate, {open_rate_requested} open_rate_requested, close_rate,
-                {close_rate_requested} close_rate_requested, close_profit,
-                stake_amount, amount, {amount_requested}, open_date, close_date, open_order_id,
-                {stop_loss} stop_loss, {stop_loss_pct} stop_loss_pct,
-                {initial_stop_loss} initial_stop_loss,
-                {initial_stop_loss_pct} initial_stop_loss_pct,
-                {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
-                {max_rate} max_rate, {min_rate} min_rate, {sell_reason} sell_reason,
-                {sell_order_status} sell_order_status,
-                {strategy} strategy, {timeframe} timeframe,
-                {open_trade_price} open_trade_price, {close_profit_abs} close_profit_abs
-                from {table_back_name}
-             """)
-
-        # Reread columns - the above recreated the table!
-        inspector = inspect(engine)
-        cols = inspector.get_columns('trades')
-
-
-def cleanup() -> None:
+def cleanup_db() -> None:
     """
     Flushes all pending operations to disk.
     :return: None
@@ -191,13 +95,117 @@ def clean_dry_run_db() -> None:
             trade.open_order_id = None
 
 
+class Order(_DECL_BASE):
+    """
+    Order database model
+    Keeps a record of all orders placed on the exchange
+
+    One to many relationship with Trades:
+      - One trade can have many orders
+      - One Order can only be associated with one Trade
+
+    Mirrors CCXT Order structure
+    """
+    __tablename__ = 'orders'
+    # Uniqueness should be ensured over pair, order_id
+    # its likely that order_id is unique per Pair on some exchanges.
+    __table_args__ = (UniqueConstraint('ft_pair', 'order_id', name="_order_pair_order_id"),)
+
+    id = Column(Integer, primary_key=True)
+    ft_trade_id = Column(Integer, ForeignKey('trades.id'), index=True)
+
+    trade = relationship("Trade", back_populates="orders")
+
+    ft_order_side = Column(String, nullable=False)
+    ft_pair = Column(String, nullable=False)
+    ft_is_open = Column(Boolean, nullable=False, default=True, index=True)
+
+    order_id = Column(String, nullable=False, index=True)
+    status = Column(String, nullable=True)
+    symbol = Column(String, nullable=True)
+    order_type = Column(String, nullable=True)
+    side = Column(String, nullable=True)
+    price = Column(Float, nullable=True)
+    amount = Column(Float, nullable=True)
+    filled = Column(Float, nullable=True)
+    remaining = Column(Float, nullable=True)
+    cost = Column(Float, nullable=True)
+    order_date = Column(DateTime, nullable=True, default=datetime.utcnow)
+    order_filled_date = Column(DateTime, nullable=True)
+    order_update_date = Column(DateTime, nullable=True)
+
+    def __repr__(self):
+
+        return (f'Order(id={self.id}, order_id={self.order_id}, trade_id={self.ft_trade_id}, '
+                f'side={self.side}, order_type={self.order_type}, status={self.status})')
+
+    def update_from_ccxt_object(self, order):
+        """
+        Update Order from ccxt response
+        Only updates if fields are available from ccxt -
+        """
+        if self.order_id != str(order['id']):
+            raise DependencyException("Order-id's don't match")
+
+        self.status = order.get('status', self.status)
+        self.symbol = order.get('symbol', self.symbol)
+        self.order_type = order.get('type', self.order_type)
+        self.side = order.get('side', self.side)
+        self.price = order.get('price', self.price)
+        self.amount = order.get('amount', self.amount)
+        self.filled = order.get('filled', self.filled)
+        self.remaining = order.get('remaining', self.remaining)
+        self.cost = order.get('cost', self.cost)
+        if 'timestamp' in order and order['timestamp'] is not None:
+            self.order_date = datetime.fromtimestamp(order['timestamp'] / 1000, tz=timezone.utc)
+
+        self.ft_is_open = True
+        if self.status in ('closed', 'canceled', 'cancelled'):
+            self.ft_is_open = False
+            if order.get('filled', 0) > 0:
+                self.order_filled_date = arrow.utcnow().datetime
+        self.order_update_date = arrow.utcnow().datetime
+
+    @staticmethod
+    def update_orders(orders: List['Order'], order: Dict[str, Any]):
+        """
+        Get all non-closed orders - useful when trying to batch-update orders
+        """
+        filtered_orders = [o for o in orders if o.order_id == order.get('id')]
+        if filtered_orders:
+            oobj = filtered_orders[0]
+            oobj.update_from_ccxt_object(order)
+        else:
+            logger.warning(f"Did not find order for {order}.")
+
+    @staticmethod
+    def parse_from_ccxt_object(order: Dict[str, Any], pair: str, side: str) -> 'Order':
+        """
+        Parse an order from a ccxt object and return a new order Object.
+        """
+        o = Order(order_id=str(order['id']), ft_order_side=side, ft_pair=pair)
+
+        o.update_from_ccxt_object(order)
+        return o
+
+    @staticmethod
+    def get_open_orders() -> List['Order']:
+        """
+        """
+        return Order.query.filter(Order.ft_is_open.is_(True)).all()
+
+
 class Trade(_DECL_BASE):
     """
-    Class used to define a trade structure
+    Trade database model.
+    Also handles updating and querying trades
     """
     __tablename__ = 'trades'
 
     id = Column(Integer, primary_key=True)
+
+    orders = relationship("Order", order_by="Order.id", cascade="all, delete-orphan")
+
     exchange = Column(String, nullable=False)
     pair = Column(String, nullable=False, index=True)
     is_open = Column(Boolean, nullable=False, default=True, index=True)
@@ -247,7 +255,7 @@ class Trade(_DECL_BASE):
         self.recalc_open_trade_price()
 
     def __repr__(self):
-        open_since = self.open_date.strftime('%Y-%m-%d %H:%M:%S') if self.is_open else 'closed'
+        open_since = self.open_date.strftime(DATETIME_PRINT_FORMAT) if self.is_open else 'closed'
 
         return (f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
                 f'open_rate={self.open_rate:.8f}, open_since={open_since})')
@@ -273,7 +281,7 @@ class Trade(_DECL_BASE):
             'fee_close_currency': self.fee_close_currency,
 
             'open_date_hum': arrow.get(self.open_date).humanize(),
-            'open_date': self.open_date.strftime("%Y-%m-%d %H:%M:%S"),
+            'open_date': self.open_date.strftime(DATETIME_PRINT_FORMAT),
             'open_timestamp': int(self.open_date.replace(tzinfo=timezone.utc).timestamp() * 1000),
             'open_rate': self.open_rate,
             'open_rate_requested': self.open_rate_requested,
@@ -281,7 +289,7 @@ class Trade(_DECL_BASE):
 
             'close_date_hum': (arrow.get(self.close_date).humanize()
                                if self.close_date else None),
-            'close_date': (self.close_date.strftime("%Y-%m-%d %H:%M:%S")
+            'close_date': (self.close_date.strftime(DATETIME_PRINT_FORMAT)
                            if self.close_date else None),
             'close_timestamp': int(self.close_date.replace(
                 tzinfo=timezone.utc).timestamp() * 1000) if self.close_date else None,
@@ -297,7 +305,7 @@ class Trade(_DECL_BASE):
             'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,
             'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
             'stoploss_order_id': self.stoploss_order_id,
-            'stoploss_last_update': (self.stoploss_last_update.strftime("%Y-%m-%d %H:%M:%S")
+            'stoploss_last_update': (self.stoploss_last_update.strftime(DATETIME_PRINT_FORMAT)
                                      if self.stoploss_last_update else None),
             'stoploss_last_update_timestamp': int(self.stoploss_last_update.replace(
                 tzinfo=timezone.utc).timestamp() * 1000) if self.stoploss_last_update else None,
@@ -380,19 +388,22 @@ class Trade(_DECL_BASE):
             self.open_rate = Decimal(safe_value_fallback(order, 'average', 'price'))
             self.amount = Decimal(safe_value_fallback(order, 'filled', 'amount'))
             self.recalc_open_trade_price()
-            logger.info('%s_BUY has been fulfilled for %s.', order_type.upper(), self)
+            if self.is_open:
+                logger.info(f'{order_type.upper()}_BUY has been fulfilled for {self}.')
             self.open_order_id = None
         elif order_type in ('market', 'limit') and order['side'] == 'sell':
+            if self.is_open:
+                logger.info(f'{order_type.upper()}_SELL has been fulfilled for {self}.')
             self.close(safe_value_fallback(order, 'average', 'price'))
-            logger.info('%s_SELL has been fulfilled for %s.', order_type.upper(), self)
         elif order_type in ('stop_loss_limit', 'stop-loss', 'stop'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
-            logger.info('%s is hit for %s.', order_type.upper(), self)
+            if self.is_open:
+                logger.info(f'{order_type.upper()} is hit for {self}.')
             self.close(order['average'])
         else:
             raise ValueError(f'Unknown order type: {order_type}')
-        cleanup()
+        cleanup_db()
 
     def close(self, rate: float) -> None:
         """
@@ -402,7 +413,7 @@ class Trade(_DECL_BASE):
         self.close_rate = Decimal(rate)
         self.close_profit = self.calc_profit_ratio()
         self.close_profit_abs = self.calc_profit()
-        self.close_date = datetime.utcnow()
+        self.close_date = self.close_date or datetime.utcnow()
         self.is_open = False
         self.sell_order_status = 'closed'
         self.open_order_id = None
@@ -439,6 +450,17 @@ class Trade(_DECL_BASE):
             return self.fee_close_currency is not None
         else:
             return False
+
+    def update_order(self, order: Dict) -> None:
+        Order.update_orders(self.orders, order)
+
+    def delete(self) -> None:
+
+        for order in self.orders:
+            Order.session.delete(order)
+
+        Trade.session.delete(self)
+        Trade.session.flush()
 
     def _calc_open_trade_price(self) -> float:
         """
@@ -506,6 +528,21 @@ class Trade(_DECL_BASE):
         profit_ratio = (close_trade_price / self.open_trade_price) - 1
         return float(f"{profit_ratio:.8f}")
 
+    def select_order(self, order_side: str, is_open: Optional[bool]) -> Optional[Order]:
+        """
+        Finds latest order for this orderside and status
+        :param order_side: Side of the order (either 'buy' or 'sell')
+        :param is_open: Only search for open orders?
+        :return: latest Order object if it exists, else None
+        """
+        orders = [o for o in self.orders if o.side == order_side]
+        if is_open is not None:
+            orders = [o for o in orders if o.ft_is_open == is_open]
+        if len(orders) > 0:
+            return orders[-1]
+        else:
+            return None
+
     @staticmethod
     def get_trades(trade_filter=None) -> Query:
         """
@@ -536,6 +573,26 @@ class Trade(_DECL_BASE):
         Returns all open trades
         """
         return Trade.get_trades(Trade.open_order_id.isnot(None)).all()
+
+    @staticmethod
+    def get_open_trades_without_assigned_fees():
+        """
+        Returns all open trades which don't have open fees set correctly
+        """
+        return Trade.get_trades([Trade.fee_open_currency.is_(None),
+                                 Trade.orders.any(),
+                                 Trade.is_open.is_(True),
+                                 ]).all()
+
+    @staticmethod
+    def get_sold_trades_without_assigned_fees():
+        """
+        Returns all closed trades which don't have fees set correctly
+        """
+        return Trade.get_trades([Trade.fee_close_currency.is_(None),
+                                 Trade.orders.any(),
+                                 Trade.is_open.is_(False),
+                                 ]).all()
 
     @staticmethod
     def total_open_trades_stakes() -> float:
@@ -601,3 +658,105 @@ class Trade(_DECL_BASE):
                 trade.stop_loss = None
                 trade.adjust_stop_loss(trade.open_rate, desired_stoploss)
                 logger.info(f"New stoploss: {trade.stop_loss}.")
+
+
+class PairLock(_DECL_BASE):
+    """
+    Pair Locks database model.
+    """
+    __tablename__ = 'pairlocks'
+
+    id = Column(Integer, primary_key=True)
+
+    pair = Column(String, nullable=False, index=True)
+    reason = Column(String, nullable=True)
+    # Time the pair was locked (start time)
+    lock_time = Column(DateTime, nullable=False)
+    # Time until the pair is locked (end time)
+    lock_end_time = Column(DateTime, nullable=False, index=True)
+
+    active = Column(Boolean, nullable=False, default=True, index=True)
+
+    def __repr__(self):
+        lock_time = self.lock_time.strftime(DATETIME_PRINT_FORMAT)
+        lock_end_time = self.lock_end_time.strftime(DATETIME_PRINT_FORMAT)
+        return (f'PairLock(id={self.id}, pair={self.pair}, lock_time={lock_time}, '
+                f'lock_end_time={lock_end_time})')
+
+    @staticmethod
+    def lock_pair(pair: str, until: datetime, reason: str = None) -> None:
+        lock = PairLock(
+            pair=pair,
+            lock_time=datetime.now(timezone.utc),
+            lock_end_time=until,
+            reason=reason,
+            active=True
+        )
+        PairLock.session.add(lock)
+        PairLock.session.flush()
+
+    @staticmethod
+    def get_pair_locks(pair: Optional[str], now: Optional[datetime] = None) -> List['PairLock']:
+        """
+        Get all locks for this pair
+        :param pair: Pair to check for. Returns all current locks if pair is empty
+        :param now: Datetime object (generated via datetime.now(timezone.utc)).
+                    defaults to datetime.utcnow()
+        """
+        if not now:
+            now = datetime.now(timezone.utc)
+
+        filters = [func.datetime(PairLock.lock_end_time) >= now,
+                   # Only active locks
+                   PairLock.active.is_(True), ]
+        if pair:
+            filters.append(PairLock.pair == pair)
+        return PairLock.query.filter(
+            *filters
+        ).all()
+
+    @staticmethod
+    def unlock_pair(pair: str, now: Optional[datetime] = None) -> None:
+        """
+        Release all locks for this pair.
+        :param pair: Pair to unlock
+        :param now: Datetime object (generated via datetime.now(timezone.utc)).
+            defaults to datetime.utcnow()
+        """
+        if not now:
+            now = datetime.now(timezone.utc)
+
+        logger.info(f"Releasing all locks for {pair}.")
+        locks = PairLock.get_pair_locks(pair, now)
+        for lock in locks:
+            lock.active = False
+        PairLock.session.flush()
+
+    @staticmethod
+    def is_pair_locked(pair: str, now: Optional[datetime] = None) -> bool:
+        """
+        :param pair: Pair to check for
+        :param now: Datetime object (generated via datetime.now(timezone.utc)).
+            defaults to datetime.utcnow()
+        """
+        if not now:
+            now = datetime.now(timezone.utc)
+
+        return PairLock.query.filter(
+            PairLock.pair == pair,
+            func.datetime(PairLock.lock_end_time) >= now,
+            # Only active locks
+            PairLock.active.is_(True),
+        ).scalar() is not None
+
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            'pair': self.pair,
+            'lock_time': self.lock_time.strftime(DATETIME_PRINT_FORMAT),
+            'lock_timestamp': int(self.lock_time.replace(tzinfo=timezone.utc).timestamp() * 1000),
+            'lock_end_time': self.lock_end_time.strftime(DATETIME_PRINT_FORMAT),
+            'lock_end_timestamp': int(self.lock_end_time.replace(tzinfo=timezone.utc
+                                                                 ).timestamp() * 1000),
+            'reason': self.reason,
+            'active': self.active,
+        }

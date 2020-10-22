@@ -1,16 +1,17 @@
 import logging
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 from arrow import Arrow
-from pandas import DataFrame
 from numpy import int64
+from pandas import DataFrame
 from tabulate import tabulate
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
-from freqtrade.data.btanalysis import calculate_max_drawdown, calculate_market_change
+from freqtrade.data.btanalysis import calculate_market_change, calculate_max_drawdown
 from freqtrade.misc import file_dump_json
+
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +123,7 @@ def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List
 
         profit_mean = result['profit_percent'].mean()
         profit_sum = result["profit_percent"].sum()
-        profit_percent_tot = round(result['profit_percent'].sum() * 100.0 / max_open_trades, 2)
+        profit_percent_tot = result['profit_percent'].sum() / max_open_trades
 
         tabular_data.append(
             {
@@ -136,25 +137,25 @@ def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List
                 'profit_sum': profit_sum,
                 'profit_sum_pct': round(profit_sum * 100, 2),
                 'profit_total_abs': result['profit_abs'].sum(),
-                'profit_total_pct': profit_percent_tot,
+                'profit_total': profit_percent_tot,
+                'profit_total_pct': round(profit_percent_tot * 100, 2),
             }
         )
     return tabular_data
 
 
-def generate_strategy_metrics(stake_currency: str, max_open_trades: int,
-                              all_results: Dict) -> List[Dict]:
+def generate_strategy_metrics(all_results: Dict) -> List[Dict]:
     """
     Generate summary per strategy
-    :param stake_currency: stake-currency - used to correctly name headers
-    :param max_open_trades: Maximum allowed open trades used for backtest
     :param all_results: Dict of <Strategyname: BacktestResult> containing results for all strategies
     :return: List of Dicts containing the metrics per Strategy
     """
 
     tabular_data = []
     for strategy, results in all_results.items():
-        tabular_data.append(_generate_result_line(results, max_open_trades, strategy))
+        tabular_data.append(_generate_result_line(
+            results['results'], results['config']['max_open_trades'], strategy)
+            )
     return tabular_data
 
 
@@ -218,25 +219,29 @@ def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
     }
 
 
-def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
-                            all_results: Dict[str, DataFrame],
+def generate_backtest_stats(btdata: Dict[str, DataFrame],
+                            all_results: Dict[str, Dict[str, Union[DataFrame, Dict]]],
                             min_date: Arrow, max_date: Arrow
                             ) -> Dict[str, Any]:
     """
-    :param config: Configuration object used for backtest
     :param btdata: Backtest data
-    :param all_results: backtest result - dictionary with { Strategy: results}.
+    :param all_results: backtest result - dictionary in the form:
+                     { Strategy: {'results: results, 'config: config}}.
     :param min_date: Backtest start date
     :param max_date: Backtest end date
     :return:
     Dictionary containing results per strategy and a stratgy summary.
     """
-    stake_currency = config['stake_currency']
-    max_open_trades = config['max_open_trades']
     result: Dict[str, Any] = {'strategy': {}}
     market_change = calculate_market_change(btdata, 'close')
 
-    for strategy, results in all_results.items():
+    for strategy, content in all_results.items():
+        results: Dict[str, DataFrame] = content['results']
+        if not isinstance(results, DataFrame):
+            continue
+        config = content['config']
+        max_open_trades = config['max_open_trades']
+        stake_currency = config['stake_currency']
 
         pair_results = generate_pair_metrics(btdata, stake_currency=stake_currency,
                                              max_open_trades=max_open_trades,
@@ -276,6 +281,16 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
             'max_open_trades': (config['max_open_trades']
                                 if config['max_open_trades'] != float('inf') else -1),
             'timeframe': config['timeframe'],
+            # Parameters relevant for backtesting
+            'stoploss': config['stoploss'],
+            'trailing_stop': config.get('trailing_stop', False),
+            'trailing_stop_positive': config.get('trailing_stop_positive'),
+            'trailing_stop_positive_offset': config.get('trailing_stop_positive_offset', 0.0),
+            'trailing_only_offset_is_reached': config.get('trailing_only_offset_is_reached', False),
+            'minimal_roi': config['minimal_roi'],
+            'use_sell_signal': config['ask_strategy']['use_sell_signal'],
+            'sell_profit_only': config['ask_strategy']['sell_profit_only'],
+            'ignore_roi_if_buy_signal': config['ask_strategy']['ignore_roi_if_buy_signal'],
             **daily_stats,
         }
         result['strategy'][strategy] = strat_stats
@@ -299,9 +314,7 @@ def generate_backtest_stats(config: Dict, btdata: Dict[str, DataFrame],
                 'drawdown_end_ts': 0,
             })
 
-    strategy_results = generate_strategy_metrics(stake_currency=stake_currency,
-                                                 max_open_trades=max_open_trades,
-                                                 all_results=all_results)
+    strategy_results = generate_strategy_metrics(all_results=all_results)
 
     result['strategy_comparison'] = strategy_results
 

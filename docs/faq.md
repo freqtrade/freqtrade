@@ -89,7 +89,7 @@ Same fix should be done in the configuration file, if order types are defined in
 
 ### How do I search the bot logs for something?
 
-By default, the bot writes its log into stderr stream. This is implemented this way so that you can easily separate the bot's diagnostics messages from Backtesting, Edge and Hyperopt results, output from other various Freqtrade utility subcommands, as well as from the output of your custom `print()`'s you may have inserted into your strategy. So if you need to search the log messages with the grep utility, you need to redirect stderr to stdout and disregard stdout.
+By default, the bot writes its log into stderr stream. This is implemented this way so that you can easily separate the bot's diagnostics messages from Backtesting, Edge and Hyperopt results, output from other various Freqtrade utility sub-commands, as well as from the output of your custom `print()`'s you may have inserted into your strategy. So if you need to search the log messages with the grep utility, you need to redirect stderr to stdout and disregard stdout.
 
 * In unix shells, this normally can be done as simple as:
 ```shell
@@ -114,7 +114,7 @@ and then grep it as:
 ```shell
 $ cat /path/to/mylogfile.log | grep 'something'
 ```
-or even on the fly, as the bot works and the logfile grows:
+or even on the fly, as the bot works and the log file grows:
 ```shell
 $ tail -f /path/to/mylogfile.log | grep 'something'
 ```
@@ -137,23 +137,17 @@ compute.
 
 Since hyperopt uses Bayesian search, running for too many epochs may not produce greater results.
 
-It's therefore recommended to run between 500-1000 epochs over and over until you hit at least 10.000 epocs in total (or are satisfied with the result). You can best judge by looking at the results - if the bot keeps discovering better strategies, it's best to keep on going. 
+It's therefore recommended to run between 500-1000 epochs over and over until you hit at least 10.000 epochs in total (or are satisfied with the result). You can best judge by looking at the results - if the bot keeps discovering better strategies, it's best to keep on going.
 
 ```bash
-freqtrade hyperopt -e 1000
-```
-
-or if you want intermediate result to see
-
-```bash
-for i in {1..100}; do freqtrade hyperopt -e 1000; done
+freqtrade hyperopt --hyperop SampleHyperopt --hyperopt-loss SharpeHyperOptLossDaily --strategy SampleStrategy -e 1000
 ```
 
 ### Why does it take a long time to run hyperopt?
 
 * Discovering a great strategy with Hyperopt takes time. Study www.freqtrade.io, the Freqtrade Documentation page, join the Freqtrade [Slack community](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE) - or the Freqtrade [discord community](https://discord.gg/X89cVG). While you patiently wait for the most advanced, free crypto bot in the world, to hand you a possible golden strategy specially designed just for you.
 
-* If you wonder why it can take from 20 minutes to days to do 1000 epocs here are some answers:
+* If you wonder why it can take from 20 minutes to days to do 1000 epochs here are some answers:
 
 This answer was written during the release 0.15.1, when we had:
 
@@ -167,7 +161,7 @@ already 8\*10^9\*10 evaluations. A roughly total of 80 billion evals.
 Did you run 100 000 evals? Congrats, you've done roughly 1 / 100 000 th
 of the search space, assuming that the bot never tests the same parameters more than once.
 
-* The time it takes to run 1000 hyperopt epocs depends on things like: The available cpu, harddisk, ram, timeframe, timerange, indicator settings, indicator count, amount of coins that hyperopt test strategies on and the resulting trade count - which can be 650 trades in a year or 10.0000 trades depending if the strategy aims for big profits by trading rarely or for many low profit trades. 
+* The time it takes to run 1000 hyperopt epochs depends on things like: The available cpu, hard-disk, ram, timeframe, timerange, indicator settings, indicator count, amount of coins that hyperopt test strategies on and the resulting trade count - which can be 650 trades in a year or 10.0000 trades depending if the strategy aims for big profits by trading rarely or for many low profit trades. 
 
 Example: 4% profit 650 times vs 0,3% profit a trade 10.000 times in a year. If we assume you set the --timerange to 365 days. 
 
@@ -180,7 +174,7 @@ Example:
 
 The Edge module is mostly a result of brainstorming of [@mishaker](https://github.com/mishaker) and [@creslinux](https://github.com/creslinux) freqtrade team members.
 
-You can find further info on expectancy, winrate, risk management and position size in the following sources:
+You can find further info on expectancy, win rate, risk management and position size in the following sources:
 
 - https://www.tradeciety.com/ultimate-math-guide-for-traders/
 - http://www.vantharp.com/tharp-concepts/expectancy.asp

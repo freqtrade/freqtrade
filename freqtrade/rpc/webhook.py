@@ -2,9 +2,9 @@
 This module manages webhook communication
 """
 import logging
-from typing import Any,  Dict
+from typing import Any, Dict
 
-from requests import post, RequestException
+from requests import RequestException, post
 
 from freqtrade.rpc import RPC, RPCMessageType
 
@@ -48,13 +48,13 @@ class Webhook(RPC):
             elif msg['type'] == RPCMessageType.SELL_CANCEL_NOTIFICATION:
                 valuedict = self._config['webhook'].get('webhooksellcancel', None)
             elif msg['type'] in (RPCMessageType.STATUS_NOTIFICATION,
-                                 RPCMessageType.CUSTOM_NOTIFICATION,
+                                 RPCMessageType.STARTUP_NOTIFICATION,
                                  RPCMessageType.WARNING_NOTIFICATION):
                 valuedict = self._config['webhook'].get('webhookstatus', None)
             else:
                 raise NotImplementedError('Unknown message type: {}'.format(msg['type']))
             if not valuedict:
-                logger.info("Message type %s not configured for webhooks", msg['type'])
+                logger.info("Message type '%s' not configured for webhooks", msg['type'])
                 return
 
             payload = {key: value.format(**msg) for (key, value) in valuedict.items()}

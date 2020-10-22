@@ -2,9 +2,9 @@
 -r requirements.txt
 
 # Required for hyperopt
-scipy==1.5.2
+scipy==1.5.3
 scikit-learn==0.23.2
 scikit-optimize==0.8.1
 filelock==3.0.12
-joblib==0.16.0
+joblib==0.17.0
 progressbar2==3.53.1

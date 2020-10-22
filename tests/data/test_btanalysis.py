@@ -7,19 +7,16 @@ from pandas import DataFrame, DateOffset, Timestamp, to_datetime
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import LAST_BT_RESULT_FN
-from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
-                                       analyze_trade_parallelism,
-                                       calculate_market_change,
-                                       calculate_max_drawdown,
-                                       combine_dataframes_with_mean,
-                                       create_cum_profit,
-                                       extract_trades_of_period,
-                                       get_latest_backtest_filename,
-                                       load_backtest_data, load_trades,
+from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, analyze_trade_parallelism,
+                                       calculate_market_change, calculate_max_drawdown,
+                                       combine_dataframes_with_mean, create_cum_profit,
+                                       extract_trades_of_period, get_latest_backtest_filename,
+                                       get_latest_hyperopt_file, load_backtest_data, load_trades,
                                        load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
 from freqtrade.optimize.backtesting import BacktestResult
 from tests.conftest import create_mock_trades
+from tests.conftest_trades import MOCK_TRADE_COUNT
 
 
 def test_get_latest_backtest_filename(testdatadir, mocker):
@@ -40,6 +37,17 @@ def test_get_latest_backtest_filename(testdatadir, mocker):
 
     with pytest.raises(ValueError, match=r"Invalid '.last_result.json' format."):
         get_latest_backtest_filename(testdatadir)
+
+
+def test_get_latest_hyperopt_file(testdatadir, mocker):
+    res = get_latest_hyperopt_file(testdatadir / 'does_not_exist', 'testfile.pickle')
+    assert res == testdatadir / 'does_not_exist/testfile.pickle'
+
+    res = get_latest_hyperopt_file(testdatadir.parent)
+    assert res == testdatadir.parent / "hyperopt_results.pickle"
+
+    res = get_latest_hyperopt_file(str(testdatadir.parent))
+    assert res == testdatadir.parent / "hyperopt_results.pickle"
 
 
 def test_load_backtest_data_old_format(testdatadir):
@@ -106,11 +114,11 @@ def test_load_trades_from_db(default_conf, fee, mocker):
 
     create_mock_trades(fee)
     # remove init so it does not init again
-    init_mock = mocker.patch('freqtrade.persistence.init', MagicMock())
+    init_mock = mocker.patch('freqtrade.data.btanalysis.init_db', MagicMock())
 
     trades = load_trades_from_db(db_url=default_conf['db_url'])
     assert init_mock.call_count == 1
-    assert len(trades) == 4
+    assert len(trades) == MOCK_TRADE_COUNT
     assert isinstance(trades, DataFrame)
     assert "pair" in trades.columns
     assert "open_date" in trades.columns

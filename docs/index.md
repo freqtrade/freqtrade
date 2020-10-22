@@ -8,7 +8,7 @@
 <!-- Place this tag where you want the button to render. -->
 <a class="github-button" href="https://github.com/freqtrade/freqtrade/fork" data-icon="octicon-repo-forked" data-size="large" aria-label="Fork freqtrade/freqtrade on GitHub">Fork</a>
 <!-- Place this tag where you want the button to render. -->
-<a class="github-button" href="https://github.com/freqtrade/freqtrade/archive/master.zip" data-icon="octicon-cloud-download" data-size="large" aria-label="Download freqtrade/freqtrade on GitHub">Download</a>
+<a class="github-button" href="https://github.com/freqtrade/freqtrade/archive/stable.zip" data-icon="octicon-cloud-download" data-size="large" aria-label="Download freqtrade/freqtrade on GitHub">Download</a>
 <!-- Place this tag where you want the button to render. -->
 <a class="github-button" href="https://github.com/freqtrade" data-size="large" aria-label="Follow @freqtrade on GitHub">Follow @freqtrade</a>
 
@@ -59,11 +59,17 @@ Alternatively
 
 ## Support
 
-### Help / Slack
+### Help / Slack / Discord
+
 For any questions not covered by the documentation or for further information about the bot, we encourage you to join our passionate  Slack community.
 
 Click [here](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE) to join the Freqtrade Slack channel.
 
+Alternatively, check out the newly created [discord server](https://discord.gg/MA9v74M).
+
+!!! Note
+    Since the discord server is relatively new, answers to questions might be slightly delayed as currently the user base quite small.
+
 ## Ready to try?
 
-Begin by reading our installation guide [for docker](docker.md), or for [installation without docker](installation.md).
+Begin by reading our installation guide [for docker](docker.md) (recommended), or for [installation without docker](installation.md).

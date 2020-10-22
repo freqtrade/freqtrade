@@ -15,6 +15,7 @@ from freqtrade.exceptions import OperationalException, TemporaryError
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.state import State
 
+
 logger = logging.getLogger(__name__)
 
 

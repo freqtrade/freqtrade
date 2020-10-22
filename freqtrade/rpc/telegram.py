@@ -5,9 +5,9 @@ This module manage Telegram communication
 """
 import json
 import logging
-import arrow
 from typing import Any, Callable, Dict, List
 
+import arrow
 from tabulate import tabulate
 from telegram import ParseMode, ReplyKeyboardMarkup, Update
 from telegram.error import NetworkError, TelegramError
@@ -17,6 +17,7 @@ from telegram.utils.helpers import escape_markdown
 from freqtrade.__init__ import __version__
 from freqtrade.rpc import RPC, RPCException, RPCMessageType
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
+
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +100,7 @@ class Telegram(RPC):
             CommandHandler('performance', self._performance),
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
+            CommandHandler('locks', self._locks),
             CommandHandler(['reload_config', 'reload_conf'], self._reload_config),
             CommandHandler(['show_config', 'show_conf'], self._show_config),
             CommandHandler('stopbuy', self._stopbuy),
@@ -132,6 +134,13 @@ class Telegram(RPC):
 
     def send_msg(self, msg: Dict[str, Any]) -> None:
         """ Send a message to telegram channel """
+
+        noti = self._config['telegram'].get('notification_settings', {}
+                                            ).get(str(msg['type']), 'on')
+        if noti == 'off':
+            logger.info(f"Notification '{msg['type']}' not sent.")
+            # Notification disabled
+            return
 
         if msg['type'] == RPCMessageType.BUY_NOTIFICATION:
             if self._fiat_converter:
@@ -191,13 +200,13 @@ class Telegram(RPC):
         elif msg['type'] == RPCMessageType.WARNING_NOTIFICATION:
             message = '\N{WARNING SIGN} *Warning:* `{status}`'.format(**msg)
 
-        elif msg['type'] == RPCMessageType.CUSTOM_NOTIFICATION:
+        elif msg['type'] == RPCMessageType.STARTUP_NOTIFICATION:
             message = '{status}'.format(**msg)
 
         else:
             raise NotImplementedError('Unknown message type: {}'.format(msg['type']))
 
-        self._send_msg(message)
+        self._send_msg(message, disable_notification=(noti == 'silent'))
 
     def _get_sell_emoji(self, msg):
         """
@@ -602,6 +611,26 @@ class Telegram(RPC):
             self._send_msg(str(e))
 
     @authorized_only
+    def _locks(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /locks.
+        Returns the currently active locks
+        """
+        try:
+            locks = self._rpc_locks()
+            message = tabulate([[
+                lock['pair'],
+                lock['lock_end_time'],
+                lock['reason']] for lock in locks['locks']],
+                headers=['Pair', 'Until', 'Reason'],
+                tablefmt='simple')
+            message = "<pre>{}</pre>".format(message)
+            logger.debug(message)
+            self._send_msg(message, parse_mode=ParseMode.HTML)
+        except RPCException as e:
+            self._send_msg(str(e))
+
+    @authorized_only
     def _whitelist(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /whitelist
@@ -712,8 +741,8 @@ class Telegram(RPC):
                    "*/delete <trade_id>:* `Instantly delete the given trade in the database`\n"
                    "*/performance:* `Show performance of each finished trade grouped by pair`\n"
                    "*/daily <n>:* `Shows profit or loss per day, over the last n days`\n"
-                   "*/count:* `Show number of trades running compared to allowed number of trades`"
-                   "\n"
+                   "*/count:* `Show number of active trades compared to allowed number of trades`\n"
+                   "*/locks:* `Show currently locked pairs`\n"
                    "*/balance:* `Show account balance per currency`\n"
                    "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n"
                    "*/reload_config:* `Reload configuration file` \n"
@@ -804,7 +833,7 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
-        val = self._rpc_show_config()
+        val = self._rpc_show_config(self._freqtrade.config)
         if val['trailing_stop']:
             sl_info = (
                 f"*Initial Stoploss:* `{val['stoploss']}`\n"
@@ -830,7 +859,8 @@ class Telegram(RPC):
             f"*Current state:* `{val['state']}`"
         )
 
-    def _send_msg(self, msg: str, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
+    def _send_msg(self, msg: str, parse_mode: ParseMode = ParseMode.MARKDOWN,
+                  disable_notification: bool = False) -> None:
         """
         Send given markdown message
         :param msg: message
@@ -851,7 +881,8 @@ class Telegram(RPC):
                     self._config['telegram']['chat_id'],
                     text=msg,
                     parse_mode=parse_mode,
-                    reply_markup=reply_markup
+                    reply_markup=reply_markup,
+                    disable_notification=disable_notification,
                 )
             except NetworkError as network_err:
                 # Sometimes the telegram server resets the current connection,
@@ -864,7 +895,8 @@ class Telegram(RPC):
                     self._config['telegram']['chat_id'],
                     text=msg,
                     parse_mode=parse_mode,
-                    reply_markup=reply_markup
+                    reply_markup=reply_markup,
+                    disable_notification=disable_notification,
                 )
         except TelegramError as telegram_err:
             logger.warning(

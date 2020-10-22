@@ -1,5 +1,3 @@
-# pragma pylint: disable=missing-docstring, C0103, bad-continuation, global-statement
-# pragma pylint: disable=protected-access
 from random import randint
 from unittest.mock import MagicMock
 
@@ -7,9 +5,11 @@ import ccxt
 import pytest
 
 from freqtrade.exceptions import DependencyException, InvalidOrderException
+from freqtrade.exchange.common import API_FETCH_ORDER_RETRY_COUNT
 from tests.conftest import get_patched_exchange
 
 from .test_exchange import ccxt_exceptionhandlers
+
 
 STOPLOSS_ORDERTYPE = 'stop'
 
@@ -154,5 +154,5 @@ def test_fetch_stoploss_order(default_conf, mocker):
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, 'ftx',
                            'fetch_stoploss_order', 'fetch_orders',
-                           retries=6,
+                           retries=API_FETCH_ORDER_RETRY_COUNT + 1,
                            order_id='_', pair='TKN/BTC')

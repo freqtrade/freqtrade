@@ -29,7 +29,7 @@ Create a new directory and place the [docker-compose file](https://github.com/fr
     mkdir ft_userdata
     cd ft_userdata/
     # Download the docker-compose file from the repository
-    curl https://raw.githubusercontent.com/freqtrade/freqtrade/master/docker-compose.yml -o docker-compose.yml
+    curl https://raw.githubusercontent.com/freqtrade/freqtrade/stable/docker-compose.yml -o docker-compose.yml
 
     # Pull the freqtrade image
     docker-compose pull
@@ -46,7 +46,7 @@ Create a new directory and place the [docker-compose file](https://github.com/fr
     mkdir ft_userdata
     cd ft_userdata/
     # Download the docker-compose file from the repository
-    curl https://raw.githubusercontent.com/freqtrade/freqtrade/master/docker-compose.yml -o docker-compose.yml
+    curl https://raw.githubusercontent.com/freqtrade/freqtrade/stable/docker-compose.yml -o docker-compose.yml
 
     # Pull the freqtrade image
     docker-compose pull
@@ -61,7 +61,7 @@ Create a new directory and place the [docker-compose file](https://github.com/fr
     !!! Note "Change your docker Image"
         You have to change the docker image in the docker-compose file for your Raspberry build to work properly.
         ``` yml
-        image: freqtradeorg/freqtrade:master_pi
+        image: freqtradeorg/freqtrade:stable_pi
         # image: freqtradeorg/freqtrade:develop_pi
         ```
 
@@ -148,7 +148,7 @@ Head over to the [Backtesting Documentation](backtesting.md) to learn more.
 ### Additional dependencies with docker-compose
 
 If your strategy requires dependencies not included in the default image (like [technical](https://github.com/freqtrade/technical)) - it will be necessary to build the image on your host.
-For this, please create a Dockerfile containing installation steps for the additional dependencies (have a look at [Dockerfile.technical](https://github.com/freqtrade/freqtrade/blob/develop/Dockerfile.technical) for an example).
+For this, please create a Dockerfile containing installation steps for the additional dependencies (have a look at [docker/Dockerfile.technical](https://github.com/freqtrade/freqtrade/blob/develop/docker/Dockerfile.technical) for an example).
 
 You'll then also need to modify the `docker-compose.yml` file and uncomment the build step, as well as rename the image to avoid naming collisions.
 
@@ -160,3 +160,32 @@ You'll then also need to modify the `docker-compose.yml` file and uncomment the 
 ```
 
 You can then run `docker-compose build` to build the docker image, and run it using the commands described above.
+
+## Plotting with docker-compose
+
+Commands `freqtrade plot-profit` and `freqtrade plot-dataframe` ([Documentation](plotting.md)) are available by changing the image to `*_plot` in your docker-compose.yml file.
+You can then use these commands as follows:
+
+``` bash
+docker-compose run --rm freqtrade plot-dataframe --strategy AwesomeStrategy -p BTC/ETH --timerange=20180801-20180805
+```
+
+The output will be stored in the `user_data/plot` directory, and can be opened with any modern browser.
+
+## Data analayis using docker compose
+
+Freqtrade provides a docker-compose file which starts up a jupyter lab server.
+You can run this server using the following command:
+
+``` bash
+docker-compose --rm -f docker/docker-compose-jupyter.yml up
+```
+
+This will create a dockercontainer running jupyter lab, which will be accessible using `https://127.0.0.1:8888/lab`.
+Please use the link that's printed in the console after startup for simplified login.
+
+Since part of this image is built on your machine, it is recommended to rebuild the image from time to time to keep freqtrade (and dependencies) uptodate.
+
+``` bash
+docker-compose -f docker/docker-compose-jupyter.yml build --no-cache
+```

@@ -9,10 +9,11 @@ import utils_find_1st as utf1st
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import UNLIMITED_STAKE_AMOUNT, DATETIME_PRINT_FORMAT
-from freqtrade.exceptions import OperationalException
+from freqtrade.constants import DATETIME_PRINT_FORMAT, UNLIMITED_STAKE_AMOUNT
 from freqtrade.data.history import get_timerange, load_data, refresh_data
+from freqtrade.exceptions import OperationalException
 from freqtrade.strategy.interface import SellType
+
 
 logger = logging.getLogger(__name__)
 
@@ -309,8 +310,10 @@ class Edge:
 
         # Calculating number of losing trades, average win and average loss
         df['nb_loss_trades'] = df['nb_trades'] - df['nb_win_trades']
-        df['average_win'] = df['profit_sum'] / df['nb_win_trades']
-        df['average_loss'] = df['loss_sum'] / df['nb_loss_trades']
+        df['average_win'] = np.where(df['nb_win_trades'] == 0, 0.0,
+                                     df['profit_sum'] / df['nb_win_trades'])
+        df['average_loss'] = np.where(df['nb_loss_trades'] == 0, 0.0,
+                                      df['loss_sum'] / df['nb_loss_trades'])
 
         # Win rate = number of profitable trades / number of trades
         df['winrate'] = df['nb_win_trades'] / df['nb_trades']

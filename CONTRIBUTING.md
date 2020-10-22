@@ -8,8 +8,9 @@ Issues labeled [good first issue](https://github.com/freqtrade/freqtrade/labels/
 
 Few pointers for contributions:
 
-- Create your PR against the `develop` branch, not `master`.
-- New features need to contain unit tests and must be PEP8 conformant (max-line-length = 100).
+- Create your PR against the `develop` branch, not `stable`.
+- New features need to contain unit tests, must conform to PEP8 (max-line-length = 100) and should be documented with the introduction PR.
+- PR's can be declared as `[WIP]` - which signify Work in Progress Pull Requests (which are not finished).
 
 If you are unsure, discuss the feature on our [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE)
 or in a [issue](https://github.com/freqtrade/freqtrade/issues) before a PR.
@@ -18,7 +19,7 @@ or in a [issue](https://github.com/freqtrade/freqtrade/issues) before a PR.
 
 Best start by reading the [documentation](https://www.freqtrade.io/) to get a feel for what is possible with the bot, or head straight to the [Developer-documentation](https://www.freqtrade.io/en/latest/developer/) (WIP) which should help you getting started.
 
-## Before sending the PR:
+## Before sending the PR
 
 ### 1. Run unit tests
 
@@ -62,6 +63,14 @@ Guide for installing them is [here](http://flake8.pycqa.org/en/latest/user/using
 
 ``` bash
 mypy freqtrade
+```
+
+### 4. Ensure all imports are correct
+
+#### Run isort
+
+``` bash
+isort .
 ```
 
 ## (Core)-Committer Guide
@@ -114,6 +123,6 @@ Contributors may be given commit privileges. Preference will be given to those w
 1. Access to resources for cross-platform development and testing.
 1. Time to devote to the project regularly.
 
-Being a Committer does not grant write permission on `develop` or `master` for security reasons (Users trust Freqtrade with their Exchange API keys).
+Being a Committer does not grant write permission on `develop` or `stable` for security reasons (Users trust Freqtrade with their Exchange API keys).
 
 After being Committer for some time, a Committer may be named Core Committer and given full repository access.

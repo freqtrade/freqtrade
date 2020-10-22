@@ -1,11 +1,11 @@
 # pragma pylint: disable=missing-docstring
 
 from copy import deepcopy
+from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
-from pathlib import Path
 from freqtrade.commands import Arguments
 from freqtrade.exceptions import FreqtradeException, OperationalException
 from freqtrade.freqtradebot import FreqtradeBot
@@ -65,7 +65,7 @@ def test_main_fatal_exception(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.worker.Worker._worker', MagicMock(side_effect=Exception))
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
-    mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
+    mocker.patch('freqtrade.freqtradebot.init_db', MagicMock())
 
     args = ['trade', '-c', 'config.json.example']
 
@@ -83,7 +83,7 @@ def test_main_keyboard_interrupt(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.wallets.Wallets.update', MagicMock())
-    mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
+    mocker.patch('freqtrade.freqtradebot.init_db', MagicMock())
 
     args = ['trade', '-c', 'config.json.example']
 
@@ -104,7 +104,7 @@ def test_main_operational_exception(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.wallets.Wallets.update', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
-    mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
+    mocker.patch('freqtrade.freqtradebot.init_db', MagicMock())
 
     args = ['trade', '-c', 'config.json.example']
 
@@ -155,7 +155,7 @@ def test_main_reload_config(mocker, default_conf, caplog) -> None:
     reconfigure_mock = mocker.patch('freqtrade.worker.Worker._reconfigure', MagicMock())
 
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
-    mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
+    mocker.patch('freqtrade.freqtradebot.init_db', MagicMock())
 
     args = Arguments(['trade', '-c', 'config.json.example']).get_parsed_arg()
     worker = Worker(args=args, config=default_conf)
@@ -178,7 +178,7 @@ def test_reconfigure(mocker, default_conf) -> None:
     mocker.patch('freqtrade.wallets.Wallets.update', MagicMock())
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
-    mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
+    mocker.patch('freqtrade.freqtradebot.init_db', MagicMock())
 
     args = Arguments(['trade', '-c', 'config.json.example']).get_parsed_arg()
     worker = Worker(args=args, config=default_conf)

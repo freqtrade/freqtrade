@@ -7,6 +7,7 @@ from freqtrade.configuration import setup_utils_configuration
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
 
+
 logger = logging.getLogger(__name__)
 
 

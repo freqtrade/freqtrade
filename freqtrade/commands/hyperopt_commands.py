@@ -5,8 +5,10 @@ from typing import Any, Dict, List
 from colorama import init as colorama_init
 
 from freqtrade.configuration import setup_utils_configuration
+from freqtrade.data.btanalysis import get_latest_hyperopt_file
 from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
+
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +42,9 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
         'filter_max_objective': config.get('hyperopt_list_max_objective', None),
     }
 
-    results_file = (config['user_data_dir'] /
-                    'hyperopt_results' / 'hyperopt_results.pickle')
+    results_file = get_latest_hyperopt_file(
+        config['user_data_dir'] / 'hyperopt_results',
+        config.get('hyperoptexportfilename'))
 
     # Previous evaluations
     epochs = Hyperopt.load_previous_results(results_file)
@@ -80,8 +83,10 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
 
     print_json = config.get('print_json', False)
     no_header = config.get('hyperopt_show_no_header', False)
-    results_file = (config['user_data_dir'] /
-                    'hyperopt_results' / 'hyperopt_results.pickle')
+    results_file = get_latest_hyperopt_file(
+        config['user_data_dir'] / 'hyperopt_results',
+        config.get('hyperoptexportfilename'))
+
     n = config.get('hyperopt_show_index', -1)
 
     filteroptions = {

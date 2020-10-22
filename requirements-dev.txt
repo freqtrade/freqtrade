@@ -4,15 +4,16 @@
 -r requirements-hyperopt.txt
 
 coveralls==2.1.2
-flake8==3.8.3
+flake8==3.8.4
 flake8-type-annotations==0.1.0
 flake8-tidy-imports==4.1.0
-mypy==0.782
-pytest==6.0.2
+mypy==0.790
+pytest==6.1.1
 pytest-asyncio==0.14.0
 pytest-cov==2.10.1
 pytest-mock==3.3.1
 pytest-random-order==1.0.4
+isort==5.6.4
 
 # Convert jupyter notebooks to markdown documents
-nbconvert==6.0.2
+nbconvert==6.0.7
