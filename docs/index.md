@@ -59,15 +59,17 @@ Alternatively
 
 ## Support
 
-### Help / Slack
+### Help / Slack / Discord
+
 For any questions not covered by the documentation or for further information about the bot, we encourage you to join our passionate  Slack community.
 
 Click [here](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE) to join the Freqtrade Slack channel.
 
-To those interested to check out the newly created discord channel. Click [here](https://discord.gg/MA9v74M)
+Alternatively, check out the newly created [discord server](https://discord.gg/MA9v74M).
 
-P.S. currently since discord channel is relatively new, answers to questions might be slightly delayed as currently the user base quite small.
+!!! Note
+    Since the discord server is relatively new, answers to questions might be slightly delayed as currently the user base quite small.
 
 ## Ready to try?
 
-Begin by reading our installation guide [for docker](docker.md), or for [installation without docker](installation.md).
+Begin by reading our installation guide [for docker](docker.md) (recommended), or for [installation without docker](installation.md).
