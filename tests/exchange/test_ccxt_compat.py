@@ -99,6 +99,10 @@ class TestCCXTExchange():
                 assert len(l2['asks']) == next_limit
                 assert len(l2['asks']) == next_limit
 
+    def test_fetch_ohlcv(self, exchange):
+        # TODO: Implement me
+        pass
+
     def test_ccxt_get_fee(self, exchange):
         exchange, exchangename = exchange
         pair = EXCHANGES[exchangename]['pair']
