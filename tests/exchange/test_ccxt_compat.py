@@ -98,3 +98,12 @@ class TestCCXTExchange():
                 next_limit = exchange.get_next_limit_in_list(val, exchange._ft_has['l2_limit_range'])
                 assert len(l2['asks']) == next_limit
                 assert len(l2['asks']) == next_limit
+
+    def test_ccxt_get_fee(self, exchange):
+        exchange, exchangename = exchange
+        pair = EXCHANGES[exchangename]['pair']
+
+        assert exchange.get_fee(pair, 'limit', 'buy') > 0 < 1
+        assert exchange.get_fee(pair, 'limit', 'sell') > 0 < 1
+        assert exchange.get_fee(pair, 'market', 'buy') > 0 < 1
+        assert exchange.get_fee(pair, 'market', 'sell') > 0 < 1
