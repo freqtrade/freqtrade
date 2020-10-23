@@ -687,6 +687,9 @@ class Exchange:
     async def _async_get_historic_ohlcv(self, pair: str,
                                         timeframe: str,
                                         since_ms: int) -> List:
+        """
+        Download historic ohlcv
+        """
 
         one_call = timeframe_to_msecs(timeframe) * self._ohlcv_candle_limit
         logger.debug(
@@ -702,9 +705,14 @@ class Exchange:
 
         # Combine gathered results
         data: List = []
-        for p, timeframe, res in results:
+        for res in results:
+            if isinstance(res, Exception):
+                logger.warning("Async code raised an exception: %s", res.__class__.__name__)
+                continue
+            # Deconstruct tuple if it's not an exception
+            p, _, new_data = res
             if p == pair:
-                data.extend(res)
+                data.extend(new_data)
         # Sort data again after extending the result - above calls return in "async order"
         data = sorted(data, key=lambda x: x[0])
         logger.info("Downloaded data for %s with length %s.", pair, len(data))
@@ -741,9 +749,8 @@ class Exchange:
             if isinstance(res, Exception):
                 logger.warning("Async code raised an exception: %s", res.__class__.__name__)
                 continue
-            pair = res[0]
-            timeframe = res[1]
-            ticks = res[2]
+            # Deconstruct tuple (has 3 elements)
+            pair, timeframe, ticks = res
             # keeping last candle time as last refreshed time of the pair
             if ticks:
                 self._pairs_last_refresh_time[(pair, timeframe)] = ticks[-1][0] // 1000
