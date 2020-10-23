@@ -223,7 +223,11 @@ def init_persistence(default_conf):
 
 
 @pytest.fixture(scope="function")
-def default_conf(testdatadir):
+def default_conf():
+    return get_default_conf()
+
+
+def get_default_conf(testdatadir):
     """ Returns validated configuration suitable for most tests """
     configuration = {
         "max_open_trades": 1,
