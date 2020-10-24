@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from freqtrade.persistence import Trade
+from freqtrade.persistence import PairLocks, Trade
 from freqtrade.strategy.interface import SellType
 from tests.conftest import get_patched_freqtradebot, log_has_re
 
@@ -76,12 +76,53 @@ def test_stoploss_guard(mocker, default_conf, fee, caplog):
 
     assert freqtrade.protections.global_stop()
     assert log_has_re(message, caplog)
+    assert PairLocks.is_global_lock()
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_CooldownPeriod(mocker, default_conf, fee, caplog):
+    default_conf['protections'] = [{
+        "method": "CooldownPeriod",
+        "stopduration": 60,
+    }]
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    message = r"Trading stopped due to .*"
+    assert not freqtrade.protections.global_stop()
+    assert not freqtrade.protections.stop_per_pair('XRP/BTC')
+
+    assert not log_has_re(message, caplog)
+    caplog.clear()
+
+    Trade.session.add(generate_mock_trade(
+        'XRP/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        min_ago_open=200, min_ago_close=30,
+    ))
+
+    assert not freqtrade.protections.global_stop()
+    assert freqtrade.protections.stop_per_pair('XRP/BTC')
+    assert PairLocks.is_pair_locked('XRP/BTC')
+    assert not PairLocks.is_global_lock()
+
+    Trade.session.add(generate_mock_trade(
+        'ETH/BTC', fee.return_value, False, sell_reason=SellType.ROI.value,
+        min_ago_open=205, min_ago_close=35,
+    ))
+
+    assert not freqtrade.protections.global_stop()
+    assert not PairLocks.is_pair_locked('ETH/BTC')
+    assert freqtrade.protections.stop_per_pair('ETH/BTC')
+    assert PairLocks.is_pair_locked('ETH/BTC')
+    assert not PairLocks.is_global_lock()
 
 
 @pytest.mark.parametrize("protectionconf,desc_expected,exception_expected", [
     ({"method": "StoplossGuard", "lookback_period": 60, "trade_limit": 2},
      "[{'StoplossGuard': 'StoplossGuard - Frequent Stoploss Guard, "
      "2 stoplosses within 60 minutes.'}]",
+     None
+     ),
+    ({"method": "CooldownPeriod", "stopduration": 60},
+     "[{'CooldownPeriod': 'CooldownPeriod - Cooldown period of 60 min.'}]",
      None
      ),
 ])

@@ -1,8 +1,7 @@
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict
-
 
 from freqtrade.persistence import Trade
 from freqtrade.plugins.protections import IProtection, ProtectionReturn
@@ -28,7 +27,7 @@ class CooldownPeriod(IProtection):
         """
         Short method description - used for startup-messages
         """
-        return (f"{self.name} - Cooldown period.")
+        return (f"{self.name} - Cooldown period of {self._stopduration} min.")
 
     def _cooldown_period(self, pair: str, date_now: datetime, ) -> ProtectionReturn:
         """
@@ -43,7 +42,8 @@ class CooldownPeriod(IProtection):
         trade = Trade.get_trades(filters).first()
         if trade:
             self.log_on_refresh(logger.info, f"Cooldown for {pair} for {self._stopduration}.")
-            until = trade.close_date + timedelta(minutes=self._stopduration)
+            until = trade.close_date.replace(
+                tzinfo=timezone.utc) + timedelta(minutes=self._stopduration)
             return True, until, self._reason()
 
         return False, None, None
