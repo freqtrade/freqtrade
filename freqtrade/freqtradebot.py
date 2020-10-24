@@ -180,8 +180,10 @@ class FreqtradeBot:
             # First process current opened trades (positions)
             self.exit_positions(trades)
 
+        # Evaluate if protections should apply
+        self.protections.global_stop()
         # Then looking for buy opportunities
-        if self.get_free_open_trades() and not self.protections.global_stop():
+        if self.get_free_open_trades():
             self.enter_positions()
 
         Trade.session.flush()
@@ -361,6 +363,9 @@ class FreqtradeBot:
             logger.info("No currency pair in active pair whitelist, "
                         "but checking to sell open trades.")
             return trades_created
+        if PairLocks.is_global_lock():
+            logger.info("Global pairlock active. Not creating new trades.")
+            return trades_created
         # Create entity and execute trade for each pair from whitelist
         for pair in whitelist:
             try:
@@ -369,8 +374,7 @@ class FreqtradeBot:
                 logger.warning('Unable to create trade for %s: %s', pair, exception)
 
         if not trades_created:
-            logger.debug("Found no buy signals for whitelisted currencies. "
-                         "Trying again...")
+            logger.debug("Found no buy signals for whitelisted currencies. Trying again...")
 
         return trades_created
 

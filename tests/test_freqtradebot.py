@@ -15,7 +15,7 @@ from freqtrade.exceptions import (DependencyException, ExchangeError, Insufficie
                                   InvalidOrderException, OperationalException, PricingError,
                                   TemporaryError)
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.persistence import Order, Trade
+from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.rpc import RPCMessageType
 from freqtrade.state import RunMode, State
@@ -676,6 +676,32 @@ def test_enter_positions_no_pairs_in_whitelist(default_conf, ticker, limit_buy_o
     n = freqtrade.enter_positions()
     assert n == 0
     assert log_has("Active pair whitelist is empty.", caplog)
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_enter_positions_global_pairlock(default_conf, ticker, limit_buy_order, fee,
+                                         mocker, caplog) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker,
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
+    )
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+    n = freqtrade.enter_positions()
+    message = "Global pairlock active. Not creating new trades."
+    n = freqtrade.enter_positions()
+    # 0 trades, but it's not because of pairlock.
+    assert n == 0
+    assert not log_has(message, caplog)
+
+    PairLocks.lock_pair('*', arrow.utcnow().shift(minutes=20).datetime, 'Just because')
+    n = freqtrade.enter_positions()
+    assert n == 0
+    assert log_has(message, caplog)
 
 
 def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
