@@ -27,7 +27,7 @@ AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
                        'AgeFilter', 'PerformanceFilter', 'PrecisionFilter',
                        'PriceFilter', 'RangeStabilityFilter', 'ShuffleFilter',
                        'SpreadFilter']
-AVAILABLE_PROTECTIONS = ['StoplossGuard']
+AVAILABLE_PROTECTIONS = ['StoplossGuard', 'CooldownPeriod']
 AVAILABLE_DATAHANDLERS = ['json', 'jsongz', 'hdf5']
 DRY_RUN_WALLET = 1000
 DATETIME_PRINT_FORMAT = '%Y-%m-%d %H:%M:%S'

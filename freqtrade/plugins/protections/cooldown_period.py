@@ -3,59 +3,47 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict
 
-from sqlalchemy import and_, or_
 
 from freqtrade.persistence import Trade
 from freqtrade.plugins.protections import IProtection, ProtectionReturn
-from freqtrade.strategy.interface import SellType
 
 
 logger = logging.getLogger(__name__)
 
 
-class StoplossGuard(IProtection):
+class CooldownPeriod(IProtection):
 
     def __init__(self, config: Dict[str, Any], protection_config: Dict[str, Any]) -> None:
         super().__init__(config, protection_config)
 
-        self._lookback_period = protection_config.get('lookback_period', 60)
-        self._trade_limit = protection_config.get('trade_limit', 10)
         self._stopduration = protection_config.get('stopduration', 60)
 
     def _reason(self) -> str:
         """
         LockReason to use
         """
-        return (f'{self._trade_limit} stoplosses in {self._lookback_period} min, '
-                f'locking for {self._stopduration} min.')
+        return (f'Cooldown period for {self._stopduration} min.')
 
     def short_desc(self) -> str:
         """
         Short method description - used for startup-messages
         """
-        return (f"{self.name} - Frequent Stoploss Guard, {self._trade_limit} stoplosses "
-                f"within {self._lookback_period} minutes.")
+        return (f"{self.name} - Cooldown period.")
 
-    def _stoploss_guard(self, date_now: datetime, pair: str = None) -> ProtectionReturn:
+    def _cooldown_period(self, pair: str, date_now: datetime, ) -> ProtectionReturn:
         """
-        Evaluate recent trades
+        Get last trade for this pair
         """
-        look_back_until = date_now - timedelta(minutes=self._lookback_period)
+        look_back_until = date_now - timedelta(minutes=self._stopduration)
         filters = [
             Trade.is_open.is_(False),
             Trade.close_date > look_back_until,
-            or_(Trade.sell_reason == SellType.STOP_LOSS.value,
-                and_(Trade.sell_reason == SellType.TRAILING_STOP_LOSS.value,
-                     Trade.close_profit < 0))
+            Trade.pair == pair,
         ]
-        if pair:
-            filters.append(Trade.pair == pair)
-        trades = Trade.get_trades(filters).all()
-
-        if len(trades) > self._trade_limit:
-            self.log_on_refresh(logger.info, f"Trading stopped due to {self._trade_limit} "
-                                f"stoplosses within {self._lookback_period} minutes.")
-            until = date_now + timedelta(minutes=self._stopduration)
+        trade = Trade.get_trades(filters).first()
+        if trade:
+            self.log_on_refresh(logger.info, f"Cooldown for {pair} for {self._stopduration}.")
+            until = trade.close_date + timedelta(minutes=self._stopduration)
             return True, until, self._reason()
 
         return False, None, None
@@ -67,7 +55,8 @@ class StoplossGuard(IProtection):
         :return: Tuple of [bool, until, reason].
             If true, all pairs will be locked with <reason> until <until>
         """
-        return self._stoploss_guard(date_now, pair=None)
+        # Not implemented for cooldown period.
+        return False, None, None
 
     def stop_per_pair(self, pair: str, date_now: datetime) -> ProtectionReturn:
         """
@@ -76,4 +65,4 @@ class StoplossGuard(IProtection):
         :return: Tuple of [bool, until, reason].
             If true, this pair will be locked with <reason> until <until>
         """
-        return False, None, None
+        return self._cooldown_period(pair, date_now)

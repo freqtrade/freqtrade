@@ -81,6 +81,10 @@
             "lookback_period": 60,
             "trade_limit": 4,
             "stopduration": 60
+        },
+        {
+            "method": "CooldownPeriod",
+            "stopduration": 20
         }
     ],
     "exchange": {

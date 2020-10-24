@@ -36,3 +36,12 @@ class IProtection(LoggingMixin, ABC):
         Stops trading (position entering) for all pairs
         This must evaluate to true for the whole period of the "cooldown period".
         """
+
+    @abstractmethod
+    def stop_per_pair(self, pair: str, date_now: datetime) -> ProtectionReturn:
+        """
+        Stops trading (position entering) for this pair
+        This must evaluate to true for the whole period of the "cooldown period".
+        :return: Tuple of [bool, until, reason].
+            If true, this pair will be locked with <reason> until <until>
+        """

@@ -57,3 +57,12 @@ class ProtectionManager():
                 PairLocks.lock_pair('*', until, reason)
                 return True
         return False
+
+    def stop_per_pair(self, pair) -> bool:
+        now = datetime.now(timezone.utc)
+        for protection_handler in self._protection_handlers:
+            result, until, reason = protection_handler.stop_per_pair(pair, now)
+            if result and until:
+                PairLocks.lock_pair(pair, until, reason)
+                return True
+        return False
