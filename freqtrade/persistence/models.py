@@ -688,7 +688,7 @@ class PairLock(_DECL_BASE):
     @staticmethod
     def query_pair_locks(pair: Optional[str], now: datetime) -> Query:
         """
-        Get all locks for this pair
+        Get all currently active locks for this pair
         :param pair: Pair to check for. Returns all current locks if pair is empty
         :param now: Datetime object (generated via datetime.now(timezone.utc)).
         """
