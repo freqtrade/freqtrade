@@ -298,7 +298,7 @@ class Backtesting:
         :param position_stacking: do we allow position stacking?
         :return: DataFrame with trades (results of backtesting)
         """
-        logger.debug(f"Run backtest, stake_amount: {stake_amount}, "
+        logger.debug(f"Run backtest, "
                      f"start_date: {start_date}, end_date: {end_date}, "
                      f"max_open_trades: {max_open_trades}, position_stacking: {position_stacking}"
                      )
