@@ -1415,6 +1415,7 @@ class FreqtradeBot:
 
         # Updating wallets when order is closed
         if not trade.is_open:
+            self.protections.stop_per_pair(trade.pair)
             self.wallets.update()
         return False
 
