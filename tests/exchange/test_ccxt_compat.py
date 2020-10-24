@@ -3,7 +3,6 @@ Tests in this file do NOT mock network calls, so they are expected to be fluky a
 
 However, these tests should give a good idea to determine if a new exchange is
 suitable to run with freqtrade.
-
 """
 
 import pytest
@@ -16,19 +15,23 @@ from tests.conftest import get_default_conf
 EXCHANGES = {
     'bittrex': {
         'pair': 'BTC/USDT',
-        'hasQuoteVolume': False
+        'hasQuoteVolume': False,
+        'timeframe': '5m',
     },
     'binance': {
         'pair': 'BTC/USDT',
-        'hasQuoteVolume': True
+        'hasQuoteVolume': True,
+        'timeframe': '5m',
     },
     'kraken': {
         'pair': 'BTC/USDT',
-        'hasQuoteVolume': True
+        'hasQuoteVolume': True,
+        'timeframe': '5m',
     },
     'ftx': {
         'pair': 'BTC/USDT',
-        'hasQuoteVolume': True
+        'hasQuoteVolume': True,
+        'timeframe': '5m',
     }
 }
 
@@ -100,8 +103,13 @@ class TestCCXTExchange():
                 assert len(l2['asks']) == next_limit
 
     def test_fetch_ohlcv(self, exchange):
-        # TODO: Implement me
-        pass
+        exchange, exchangename = exchange
+        pair = EXCHANGES[exchangename]['pair']
+        timeframe = EXCHANGES[exchangename]['timeframe']
+        pair_tf = (pair, timeframe)
+        ohlcv = exchange.refresh_latest_ohlcv([pair_tf])
+        assert isinstance(ohlcv, list)
+        assert len(exchange.klines(pair_tf)) > 200
 
     def test_ccxt_get_fee(self, exchange):
         exchange, exchangename = exchange
