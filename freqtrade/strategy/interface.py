@@ -436,13 +436,13 @@ class IStrategy(ABC):
         :param pair: pair in format ANT/BTC
         :param timeframe: timeframe to use
         :param dataframe: Analyzed dataframe to get signal from.
-        :return: (Buy, Sell, Date) A tuple indicating buy/sell signal for the latest date
+        :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
         """
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning(f'Empty candle (OHLCV) data for pair {pair}')
             return False, False
 
-        latest_date: datetime = dataframe['date'].max()
+        latest_date = dataframe['date'].max()
         latest = dataframe.loc[dataframe['date'] == latest_date].iloc[-1]
         # Explicitly convert to arrow object to ensure the below comparison does not fail
         latest_date = arrow.get(latest_date)
@@ -459,7 +459,7 @@ class IStrategy(ABC):
 
         (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
         logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
-                    latest['date'], pair, str(buy), str(sell))
+                     latest['date'], pair, str(buy), str(sell))
         return buy, sell
 
     def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,

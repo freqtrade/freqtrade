@@ -433,7 +433,8 @@ class FreqtradeBot:
                 Trade.total_open_trades_stakes()
             )
         else:
-            stake_amount = self.strategy.get_stake_amount(pair)
+            stake_amount = strategy_safe_wrapper(self.strategy.get_stake_amount,
+                                                 default_retval=0)(pair)
             if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
                 stake_amount = self._calculate_unlimited_stake_amount()
 
