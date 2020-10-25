@@ -345,23 +345,23 @@ class FreqtradeBot:
         whitelist = copy.deepcopy(self.active_pair_whitelist)
         if not whitelist:
             logger.info("Active pair whitelist is empty.")
-        else:
-            # Remove pairs for currently opened trades from the whitelist
-            for trade in Trade.get_open_trades():
-                if trade.pair in whitelist:
-                    whitelist.remove(trade.pair)
-                    logger.debug('Ignoring %s in pair whitelist', trade.pair)
+            return trades_created
+        # Remove pairs for currently opened trades from the whitelist
+        for trade in Trade.get_open_trades():
+            if trade.pair in whitelist:
+                whitelist.remove(trade.pair)
+                logger.debug('Ignoring %s in pair whitelist', trade.pair)
 
-            if not whitelist:
-                logger.info("No currency pair in active pair whitelist, "
-                            "but checking to sell open trades.")
-            else:
-                # Create entity and execute trade for each pair from whitelist
-                for pair in whitelist:
-                    try:
-                        trades_created += self.create_trade(pair)
-                    except DependencyException as exception:
-                        logger.warning('Unable to create trade for %s: %s', pair, exception)
+        if not whitelist:
+            logger.info("No currency pair in active pair whitelist, "
+                        "but checking to sell open trades.")
+            return trades_created
+        # Create entity and execute trade for each pair from whitelist
+        for pair in whitelist:
+            try:
+                trades_created += self.create_trade(pair)
+            except DependencyException as exception:
+                logger.warning('Unable to create trade for %s: %s', pair, exception)
 
                 if not trades_created:
                     logger.debug("Found no buy signals for whitelisted currencies. "

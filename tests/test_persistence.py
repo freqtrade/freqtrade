@@ -1,6 +1,5 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
-from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
 import arrow
@@ -9,7 +8,7 @@ from sqlalchemy import create_engine
 
 from freqtrade import constants
 from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.persistence import Order, PairLock, Trade, clean_dry_run_db, init_db
+from freqtrade.persistence import Order, Trade, clean_dry_run_db, init_db
 from tests.conftest import create_mock_trades, log_has, log_has_re
 
 
@@ -1159,49 +1158,3 @@ def test_select_order(fee):
     assert order.ft_order_side == 'stoploss'
     order = trades[4].select_order('sell', False)
     assert order is None
-
-
-@pytest.mark.usefixtures("init_persistence")
-def test_PairLock(default_conf):
-    # No lock should be present
-    assert len(PairLock.query.all()) == 0
-
-    pair = 'ETH/BTC'
-    assert not PairLock.is_pair_locked(pair)
-    PairLock.lock_pair(pair, arrow.utcnow().shift(minutes=4).datetime)
-    # ETH/BTC locked for 4 minutes
-    assert PairLock.is_pair_locked(pair)
-
-    # XRP/BTC should not be locked now
-    pair = 'XRP/BTC'
-    assert not PairLock.is_pair_locked(pair)
-    # Unlocking a pair that's not locked should not raise an error
-    PairLock.unlock_pair(pair)
-
-    PairLock.lock_pair(pair, arrow.utcnow().shift(minutes=4).datetime)
-    assert PairLock.is_pair_locked(pair)
-
-    # Get both locks from above
-    locks = PairLock.get_pair_locks(None)
-    assert len(locks) == 2
-
-    # Unlock original pair
-    pair = 'ETH/BTC'
-    PairLock.unlock_pair(pair)
-    assert not PairLock.is_pair_locked(pair)
-
-    pair = 'BTC/USDT'
-    # Lock until 14:30
-    lock_time = datetime(2020, 5, 1, 14, 30, 0, tzinfo=timezone.utc)
-    PairLock.lock_pair(pair, lock_time)
-
-    assert not PairLock.is_pair_locked(pair)
-    assert PairLock.is_pair_locked(pair, lock_time + timedelta(minutes=-10))
-    assert PairLock.is_pair_locked(pair, lock_time + timedelta(minutes=-50))
-
-    # Should not be locked after time expired
-    assert not PairLock.is_pair_locked(pair, lock_time + timedelta(minutes=10))
-
-    locks = PairLock.get_pair_locks(pair, lock_time + timedelta(minutes=-2))
-    assert len(locks) == 1
-    assert 'PairLock' in str(locks[0])

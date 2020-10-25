@@ -17,7 +17,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.exchange.exchange import timeframe_to_next_date
-from freqtrade.persistence import PairLock, Trade
+from freqtrade.persistence import PairLocks, Trade
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
@@ -288,7 +288,7 @@ class IStrategy(ABC):
                 Needs to be timezone aware `datetime.now(timezone.utc)`
         :param reason: Optional string explaining why the pair was locked.
         """
-        PairLock.lock_pair(pair, until, reason)
+        PairLocks.lock_pair(pair, until, reason)
 
     def unlock_pair(self, pair: str) -> None:
         """
@@ -297,7 +297,7 @@ class IStrategy(ABC):
         manually from within the strategy, to allow an easy way to unlock pairs.
         :param pair: Unlock pair to allow trading again
         """
-        PairLock.unlock_pair(pair, datetime.now(timezone.utc))
+        PairLocks.unlock_pair(pair, datetime.now(timezone.utc))
 
     def is_pair_locked(self, pair: str, candle_date: datetime = None) -> bool:
         """
@@ -312,10 +312,10 @@ class IStrategy(ABC):
 
         if not candle_date:
             # Simple call ...
-            return PairLock.is_pair_locked(pair, candle_date)
+            return PairLocks.is_pair_locked(pair, candle_date)
         else:
             lock_time = timeframe_to_next_date(self.timeframe, candle_date)
-            return PairLock.is_pair_locked(pair, lock_time)
+            return PairLocks.is_pair_locked(pair, lock_time)
 
     def analyze_ticker(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """

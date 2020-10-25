@@ -11,7 +11,7 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
 from freqtrade.exceptions import StrategyError
-from freqtrade.persistence import PairLock, Trade
+from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import log_has, log_has_re
@@ -364,7 +364,7 @@ def test_is_pair_locked(default_conf):
     default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
     # No lock should be present
-    assert len(PairLock.query.all()) == 0
+    assert len(PairLocks.get_pair_locks(None)) == 0
 
     pair = 'ETH/BTC'
     assert not strategy.is_pair_locked(pair)

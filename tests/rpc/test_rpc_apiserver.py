@@ -12,7 +12,7 @@ from requests.auth import _basic_auth_str
 
 from freqtrade.__init__ import __version__
 from freqtrade.loggers import setup_logging, setup_logging_pre
-from freqtrade.persistence import PairLock, Trade
+from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc.api_server import BASE_URI, ApiServer
 from freqtrade.state import State
 from tests.conftest import create_mock_trades, get_patched_freqtradebot, log_has, patch_get_signal
@@ -339,8 +339,8 @@ def test_api_locks(botclient):
     assert rc.json['lock_count'] == 0
     assert rc.json['lock_count'] == len(rc.json['locks'])
 
-    PairLock.lock_pair('ETH/BTC', datetime.utcnow() + timedelta(minutes=4), 'randreason')
-    PairLock.lock_pair('XRP/BTC', datetime.utcnow() + timedelta(minutes=20), 'deadbeef')
+    PairLocks.lock_pair('ETH/BTC', datetime.utcnow() + timedelta(minutes=4), 'randreason')
+    PairLocks.lock_pair('XRP/BTC', datetime.utcnow() + timedelta(minutes=20), 'deadbeef')
 
     rc = client_get(client, f"{BASE_URI}/locks")
     assert_response(rc)
