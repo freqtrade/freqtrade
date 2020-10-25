@@ -537,7 +537,6 @@ class Hyperopt:
 
         backtesting_results = self.backtesting.backtest(
             processed=processed,
-            stake_amount=self.config['stake_amount'],
             start_date=min_date.datetime,
             end_date=max_date.datetime,
             max_open_trades=self.max_open_trades,
