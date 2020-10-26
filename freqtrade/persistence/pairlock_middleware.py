@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from freqtrade.persistence.models import PairLock
+from freqtrade.exchange import timeframe_to_next_date
 
 
 logger = logging.getLogger(__name__)
@@ -19,12 +20,14 @@ class PairLocks():
     use_db = True
     locks: List[PairLock] = []
 
+    timeframe: str = ''
+
     @staticmethod
     def lock_pair(pair: str, until: datetime, reason: str = None) -> None:
         lock = PairLock(
             pair=pair,
             lock_time=datetime.now(timezone.utc),
-            lock_end_time=until,
+            lock_end_time=timeframe_to_next_date(PairLocks.timeframe, until),
             reason=reason,
             active=True
         )
@@ -49,7 +52,7 @@ class PairLocks():
             return PairLock.query_pair_locks(pair, now).all()
         else:
             locks = [lock for lock in PairLocks.locks if (
-                lock.lock_end_time > now
+                lock.lock_end_time >= now
                 and lock.active is True
                 and (pair is None or lock.pair == pair)
             )]

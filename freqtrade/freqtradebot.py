@@ -4,7 +4,7 @@ Freqtrade is the main module of this bot. It contains the class Freqtrade()
 import copy
 import logging
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 from math import isclose
 from threading import Lock
 from typing import Any, Dict, List, Optional
@@ -19,10 +19,10 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
-from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
+from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.pairlist.pairlistmanager import PairListManager
-from freqtrade.persistence import Order, Trade, cleanup_db, init_db
+from freqtrade.persistence import Order, Trade, cleanup_db, init_db, PairLocks
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
@@ -71,6 +71,8 @@ class FreqtradeBot:
         init_db(self.config.get('db_url', None), clean_open_orders=self.config['dry_run'])
 
         self.wallets = Wallets(self.config, self.exchange)
+
+        PairLocks.timeframe = self.config['timeframe']
 
         self.pairlists = PairListManager(self.exchange, self.config)
 
@@ -363,9 +365,9 @@ class FreqtradeBot:
             except DependencyException as exception:
                 logger.warning('Unable to create trade for %s: %s', pair, exception)
 
-                if not trades_created:
-                    logger.debug("Found no buy signals for whitelisted currencies. "
-                                 "Trying again...")
+        if not trades_created:
+            logger.debug("Found no buy signals for whitelisted currencies. "
+                         "Trying again...")
 
         return trades_created
 
@@ -937,7 +939,7 @@ class FreqtradeBot:
             self.update_trade_state(trade, trade.stoploss_order_id, stoploss_order,
                                     stoploss_order=True)
             # Lock pair for one candle to prevent immediate rebuys
-            self.strategy.lock_pair(trade.pair, timeframe_to_next_date(self.config['timeframe']),
+            self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
                                     reason='Auto lock')
             self._notify_sell(trade, "stoploss")
             return True
@@ -1264,7 +1266,7 @@ class FreqtradeBot:
         Trade.session.flush()
 
         # Lock pair for one candle to prevent immediate rebuys
-        self.strategy.lock_pair(trade.pair, timeframe_to_next_date(self.config['timeframe']),
+        self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
                                 reason='Auto lock')
 
         self._notify_sell(trade, order_type)

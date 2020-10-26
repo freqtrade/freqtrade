@@ -388,7 +388,8 @@ def test_is_pair_locked(default_conf):
     pair = 'BTC/USDT'
     # Lock until 14:30
     lock_time = datetime(2020, 5, 1, 14, 30, 0, tzinfo=timezone.utc)
-    strategy.lock_pair(pair, lock_time)
+    # Subtract 2 seconds, as locking rounds up to the next candle.
+    strategy.lock_pair(pair, lock_time - timedelta(seconds=2))
 
     assert not strategy.is_pair_locked(pair)
     # latest candle is from 14:20, lock goes to 14:30
