@@ -2,7 +2,6 @@ numpy==1.19.2
 pandas==1.1.3
 
 ccxt==1.36.85
-multidict==4.7.6
 aiohttp==3.7.1
 SQLAlchemy==1.3.20
 python-telegram-bot==13.0
