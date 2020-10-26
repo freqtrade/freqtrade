@@ -362,13 +362,14 @@ def test__analyze_ticker_internal_skip_analyze(ohlcv_history, mocker, caplog) ->
 @pytest.mark.usefixtures("init_persistence")
 def test_is_pair_locked(default_conf):
     default_conf.update({'strategy': 'DefaultStrategy'})
+    PairLocks.timeframe = default_conf['timeframe']
     strategy = StrategyResolver.load_strategy(default_conf)
     # No lock should be present
     assert len(PairLocks.get_pair_locks(None)) == 0
 
     pair = 'ETH/BTC'
     assert not strategy.is_pair_locked(pair)
-    strategy.lock_pair(pair, arrow.utcnow().shift(minutes=4).datetime)
+    strategy.lock_pair(pair, arrow.now(timezone.utc).shift(minutes=4).datetime)
     # ETH/BTC locked for 4 minutes
     assert strategy.is_pair_locked(pair)
 

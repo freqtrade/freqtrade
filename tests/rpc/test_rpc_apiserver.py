@@ -2,7 +2,7 @@
 Unit test file for rpc/api_server.py
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import ANY, MagicMock, PropertyMock
 
@@ -339,8 +339,8 @@ def test_api_locks(botclient):
     assert rc.json['lock_count'] == 0
     assert rc.json['lock_count'] == len(rc.json['locks'])
 
-    PairLocks.lock_pair('ETH/BTC', datetime.utcnow() + timedelta(minutes=4), 'randreason')
-    PairLocks.lock_pair('XRP/BTC', datetime.utcnow() + timedelta(minutes=20), 'deadbeef')
+    PairLocks.lock_pair('ETH/BTC', datetime.now(timezone.utc) + timedelta(minutes=4), 'randreason')
+    PairLocks.lock_pair('XRP/BTC', datetime.now(timezone.utc) + timedelta(minutes=20), 'deadbeef')
 
     rc = client_get(client, f"{BASE_URI}/locks")
     assert_response(rc)
