@@ -1,11 +1,9 @@
-
-
 import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from freqtrade.persistence.models import PairLock
 from freqtrade.exchange import timeframe_to_next_date
+from freqtrade.persistence.models import PairLock
 
 
 logger = logging.getLogger(__name__)
@@ -13,8 +11,9 @@ logger = logging.getLogger(__name__)
 
 class PairLocks():
     """
-    Pairlocks intermediate class
-
+    Pairlocks middleware class
+    Abstracts the database layer away so it becomes optional - which will be necessary to support
+    backtesting and hyperopt in the future.
     """
 
     use_db = True
@@ -43,7 +42,7 @@ class PairLocks():
         Get all currently active locks for this pair
         :param pair: Pair to check for. Returns all current locks if pair is empty
         :param now: Datetime object (generated via datetime.now(timezone.utc)).
-                    defaults to datetime.utcnow()
+                    defaults to datetime.now(timezone.utc)
         """
         if not now:
             now = datetime.now(timezone.utc)

@@ -22,7 +22,7 @@ from freqtrade.exceptions import (DependencyException, ExchangeError, Insufficie
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.pairlist.pairlistmanager import PairListManager
-from freqtrade.persistence import Order, Trade, cleanup_db, init_db, PairLocks
+from freqtrade.persistence import Order, PairLocks, Trade, cleanup_db, init_db
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
