@@ -1,6 +1,6 @@
 import copy
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from random import randint
 from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
@@ -2299,6 +2299,9 @@ def test_timeframe_to_next_date():
 
     date = datetime.now(tz=timezone.utc)
     assert timeframe_to_next_date("5m") > date
+
+    date = datetime(2019, 8, 12, 13, 30, 0, tzinfo=timezone.utc)
+    assert timeframe_to_next_date("5m", date) == date + timedelta(minutes=5)
 
 
 @pytest.mark.parametrize("market_symbol,base,quote,exchange,add_dict,expected_result", [

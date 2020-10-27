@@ -684,70 +684,21 @@ class PairLock(_DECL_BASE):
                 f'lock_end_time={lock_end_time})')
 
     @staticmethod
-    def lock_pair(pair: str, until: datetime, reason: str = None) -> None:
-        lock = PairLock(
-            pair=pair,
-            lock_time=datetime.now(timezone.utc),
-            lock_end_time=until,
-            reason=reason,
-            active=True
-        )
-        PairLock.session.add(lock)
-        PairLock.session.flush()
-
-    @staticmethod
-    def get_pair_locks(pair: Optional[str], now: Optional[datetime] = None) -> List['PairLock']:
+    def query_pair_locks(pair: Optional[str], now: datetime) -> Query:
         """
         Get all locks for this pair
         :param pair: Pair to check for. Returns all current locks if pair is empty
         :param now: Datetime object (generated via datetime.now(timezone.utc)).
-                    defaults to datetime.utcnow()
         """
-        if not now:
-            now = datetime.now(timezone.utc)
 
-        filters = [func.datetime(PairLock.lock_end_time) >= now,
+        filters = [PairLock.lock_end_time > now,
                    # Only active locks
                    PairLock.active.is_(True), ]
         if pair:
             filters.append(PairLock.pair == pair)
         return PairLock.query.filter(
             *filters
-        ).all()
-
-    @staticmethod
-    def unlock_pair(pair: str, now: Optional[datetime] = None) -> None:
-        """
-        Release all locks for this pair.
-        :param pair: Pair to unlock
-        :param now: Datetime object (generated via datetime.now(timezone.utc)).
-            defaults to datetime.utcnow()
-        """
-        if not now:
-            now = datetime.now(timezone.utc)
-
-        logger.info(f"Releasing all locks for {pair}.")
-        locks = PairLock.get_pair_locks(pair, now)
-        for lock in locks:
-            lock.active = False
-        PairLock.session.flush()
-
-    @staticmethod
-    def is_pair_locked(pair: str, now: Optional[datetime] = None) -> bool:
-        """
-        :param pair: Pair to check for
-        :param now: Datetime object (generated via datetime.now(timezone.utc)).
-            defaults to datetime.utcnow()
-        """
-        if not now:
-            now = datetime.now(timezone.utc)
-
-        return PairLock.query.filter(
-            PairLock.pair == pair,
-            func.datetime(PairLock.lock_end_time) >= now,
-            # Only active locks
-            PairLock.active.is_(True),
-        ).first() is not None
+        )
 
     def to_json(self) -> Dict[str, Any]:
         return {

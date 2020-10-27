@@ -19,7 +19,7 @@ from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
 from freqtrade.misc import shorten_date
-from freqtrade.persistence import PairLock, Trade
+from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType
@@ -604,7 +604,7 @@ class RPC:
         if self._freqtrade.state != State.RUNNING:
             raise RPCException('trader is not running')
 
-        locks = PairLock.get_pair_locks(None)
+        locks = PairLocks.get_pair_locks(None)
         return {
             'lock_count': len(locks),
             'locks': [lock.to_json() for lock in locks]

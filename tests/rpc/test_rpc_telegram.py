@@ -18,7 +18,7 @@ from freqtrade.constants import CANCEL_REASON
 from freqtrade.edge import PairInfo
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.loggers import setup_logging
-from freqtrade.persistence import PairLock, Trade
+from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.rpc.telegram import Telegram, authorized_only
 from freqtrade.state import State
@@ -1047,8 +1047,8 @@ def test_telegram_lock_handle(default_conf, update, ticker, fee, mocker) -> None
     msg_mock.reset_mock()
     freqtradebot.state = State.RUNNING
 
-    PairLock.lock_pair('ETH/BTC', arrow.utcnow().shift(minutes=4).datetime, 'randreason')
-    PairLock.lock_pair('XRP/BTC', arrow.utcnow().shift(minutes=20).datetime, 'deadbeef')
+    PairLocks.lock_pair('ETH/BTC', arrow.utcnow().shift(minutes=4).datetime, 'randreason')
+    PairLocks.lock_pair('XRP/BTC', arrow.utcnow().shift(minutes=20).datetime, 'deadbeef')
 
     telegram._locks(update=update, context=MagicMock())
 

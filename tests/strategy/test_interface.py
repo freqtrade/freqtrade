@@ -11,7 +11,7 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
 from freqtrade.exceptions import StrategyError
-from freqtrade.persistence import PairLock, Trade
+from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import log_has, log_has_re
@@ -362,13 +362,14 @@ def test__analyze_ticker_internal_skip_analyze(ohlcv_history, mocker, caplog) ->
 @pytest.mark.usefixtures("init_persistence")
 def test_is_pair_locked(default_conf):
     default_conf.update({'strategy': 'DefaultStrategy'})
+    PairLocks.timeframe = default_conf['timeframe']
     strategy = StrategyResolver.load_strategy(default_conf)
     # No lock should be present
-    assert len(PairLock.query.all()) == 0
+    assert len(PairLocks.get_pair_locks(None)) == 0
 
     pair = 'ETH/BTC'
     assert not strategy.is_pair_locked(pair)
-    strategy.lock_pair(pair, arrow.utcnow().shift(minutes=4).datetime)
+    strategy.lock_pair(pair, arrow.now(timezone.utc).shift(minutes=4).datetime)
     # ETH/BTC locked for 4 minutes
     assert strategy.is_pair_locked(pair)
 
@@ -387,7 +388,8 @@ def test_is_pair_locked(default_conf):
     pair = 'BTC/USDT'
     # Lock until 14:30
     lock_time = datetime(2020, 5, 1, 14, 30, 0, tzinfo=timezone.utc)
-    strategy.lock_pair(pair, lock_time)
+    # Subtract 2 seconds, as locking rounds up to the next candle.
+    strategy.lock_pair(pair, lock_time - timedelta(seconds=2))
 
     assert not strategy.is_pair_locked(pair)
     # latest candle is from 14:20, lock goes to 14:30
