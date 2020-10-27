@@ -10,6 +10,7 @@ from freqtrade.persistence.models import PairLock
 @pytest.mark.parametrize('use_db', (False, True))
 @pytest.mark.usefixtures("init_persistence")
 def test_PairLocks(use_db):
+    PairLocks.timeframe = '5m'
     # No lock should be present
     if use_db:
         assert len(PairLock.query.all()) == 0
