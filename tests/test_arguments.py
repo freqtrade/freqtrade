@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from freqtrade.commands import Arguments
-from freqtrade.commands.cli_options import check_int_positive
+from freqtrade.commands.cli_options import check_int_nonzero, check_int_positive
 
 
 # Parse common command-line-arguments. Used for all tools
@@ -257,3 +257,23 @@ def test_check_int_positive() -> None:
 
     with pytest.raises(argparse.ArgumentTypeError):
         check_int_positive('DeadBeef')
+
+
+def test_check_int_nonzero() -> None:
+    assert check_int_nonzero('3') == 3
+    assert check_int_nonzero('1') == 1
+    assert check_int_nonzero('100') == 100
+
+    assert check_int_nonzero('-2') == -2
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        check_int_nonzero('0')
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        check_int_nonzero(0)
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        check_int_nonzero('3.5')
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        check_int_nonzero('DeadBeef')
