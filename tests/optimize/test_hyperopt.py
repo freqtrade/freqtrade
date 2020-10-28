@@ -2,7 +2,6 @@
 import locale
 import logging
 import re
-from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List
@@ -17,56 +16,13 @@ from freqtrade import constants
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_hyperopt
 from freqtrade.data.history import load_data
 from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.optimize.default_hyperopt_loss import ShortTradeDurHyperOptLoss
 from freqtrade.optimize.hyperopt import Hyperopt
-from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver, HyperOptResolver
+from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
 from freqtrade.state import RunMode
-from freqtrade.strategy.interface import SellType
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 
 from .hyperopts.default_hyperopt import DefaultHyperOpt
-
-
-@pytest.fixture(scope='function')
-def hyperopt_conf(default_conf):
-    hyperconf = deepcopy(default_conf)
-    hyperconf.update({
-                         'hyperopt': 'DefaultHyperOpt',
-                         'hyperopt_loss': 'ShortTradeDurHyperOptLoss',
-                         'hyperopt_path': str(Path(__file__).parent / 'hyperopts'),
-                         'epochs': 1,
-                         'timerange': None,
-                         'spaces': ['default'],
-                         'hyperopt_jobs': 1,
-                         })
-    return hyperconf
-
-
-@pytest.fixture(scope='function')
-def hyperopt(hyperopt_conf, mocker):
-
-    patch_exchange(mocker)
-    return Hyperopt(hyperopt_conf)
-
-
-@pytest.fixture(scope='function')
-def hyperopt_results():
-    return pd.DataFrame(
-        {
-            'pair': ['ETH/BTC', 'ETH/BTC', 'ETH/BTC'],
-            'profit_percent': [-0.1, 0.2, 0.3],
-            'profit_abs': [-0.2, 0.4, 0.6],
-            'trade_duration': [10, 30, 10],
-            'sell_reason': [SellType.STOP_LOSS, SellType.ROI, SellType.ROI],
-            'close_date':
-            [
-                datetime(2019, 1, 1, 9, 26, 3, 478039),
-                datetime(2019, 2, 1, 9, 26, 3, 478039),
-                datetime(2019, 3, 1, 9, 26, 3, 478039)
-            ]
-        }
-    )
 
 
 # Functions for recurrent object patching
@@ -230,32 +186,6 @@ def test_hyperoptresolver_noname(default_conf):
         HyperOptResolver.load_hyperopt(default_conf)
 
 
-def test_hyperoptlossresolver_noname(default_conf):
-    with pytest.raises(OperationalException,
-                       match="No Hyperopt loss set. Please use `--hyperopt-loss` to specify "
-                             "the Hyperopt-Loss class to use."):
-        HyperOptLossResolver.load_hyperoptloss(default_conf)
-
-
-def test_hyperoptlossresolver(mocker, default_conf) -> None:
-
-    hl = ShortTradeDurHyperOptLoss
-    mocker.patch(
-        'freqtrade.resolvers.hyperopt_resolver.HyperOptLossResolver.load_object',
-        MagicMock(return_value=hl)
-    )
-    default_conf.update({'hyperopt_loss': 'SharpeHyperOptLossDaily'})
-    x = HyperOptLossResolver.load_hyperoptloss(default_conf)
-    assert hasattr(x, "hyperopt_loss_function")
-
-
-def test_hyperoptlossresolver_wrongname(default_conf) -> None:
-    default_conf.update({'hyperopt_loss': "NonExistingLossClass"})
-
-    with pytest.raises(OperationalException, match=r'Impossible to load HyperoptLoss.*'):
-        HyperOptLossResolver.load_hyperoptloss(default_conf)
-
-
 def test_start_not_installed(mocker, default_conf, import_fails) -> None:
     start_mock = MagicMock()
     patched_configuration_load_config_file(mocker, default_conf)
@@ -269,7 +199,8 @@ def test_start_not_installed(mocker, default_conf, import_fails) -> None:
         '--hyperopt', 'DefaultHyperOpt',
         '--hyperopt-path',
         str(Path(__file__).parent / "hyperopts"),
-        '--epochs', '5'
+        '--epochs', '5',
+        '--hyperopt-loss', 'SharpeHyperOptLossDaily',
     ]
     pargs = get_args(args)
 
@@ -335,137 +266,6 @@ def test_start_filelock(mocker, hyperopt_conf, caplog) -> None:
     pargs = get_args(args)
     start_hyperopt(pargs)
     assert log_has("Another running instance of freqtrade Hyperopt detected.", caplog)
-
-
-def test_loss_calculation_prefer_correct_trade_count(hyperopt_conf, hyperopt_results) -> None:
-    hl = HyperOptLossResolver.load_hyperoptloss(hyperopt_conf)
-    correct = hl.hyperopt_loss_function(hyperopt_results, 600,
-                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
-    over = hl.hyperopt_loss_function(hyperopt_results, 600 + 100,
-                                     datetime(2019, 1, 1), datetime(2019, 5, 1))
-    under = hl.hyperopt_loss_function(hyperopt_results, 600 - 100,
-                                      datetime(2019, 1, 1), datetime(2019, 5, 1))
-    assert over > correct
-    assert under > correct
-
-
-def test_loss_calculation_prefer_shorter_trades(hyperopt_conf, hyperopt_results) -> None:
-    resultsb = hyperopt_results.copy()
-    resultsb.loc[1, 'trade_duration'] = 20
-
-    hl = HyperOptLossResolver.load_hyperoptloss(hyperopt_conf)
-    longer = hl.hyperopt_loss_function(hyperopt_results, 100,
-                                       datetime(2019, 1, 1), datetime(2019, 5, 1))
-    shorter = hl.hyperopt_loss_function(resultsb, 100,
-                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
-    assert shorter < longer
-
-
-def test_loss_calculation_has_limited_profit(hyperopt_conf, hyperopt_results) -> None:
-    results_over = hyperopt_results.copy()
-    results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
-    results_under = hyperopt_results.copy()
-    results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
-
-    hl = HyperOptLossResolver.load_hyperoptloss(hyperopt_conf)
-    correct = hl.hyperopt_loss_function(hyperopt_results, 600,
-                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
-    over = hl.hyperopt_loss_function(results_over, 600,
-                                     datetime(2019, 1, 1), datetime(2019, 5, 1))
-    under = hl.hyperopt_loss_function(results_under, 600,
-                                      datetime(2019, 1, 1), datetime(2019, 5, 1))
-    assert over < correct
-    assert under > correct
-
-
-def test_sharpe_loss_prefers_higher_profits(default_conf, hyperopt_results) -> None:
-    results_over = hyperopt_results.copy()
-    results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
-    results_under = hyperopt_results.copy()
-    results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
-
-    default_conf.update({'hyperopt_loss': 'SharpeHyperOptLossDaily'})
-    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
-    correct = hl.hyperopt_loss_function(hyperopt_results, len(hyperopt_results),
-                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
-    over = hl.hyperopt_loss_function(results_over, len(hyperopt_results),
-                                     datetime(2019, 1, 1), datetime(2019, 5, 1))
-    under = hl.hyperopt_loss_function(results_under, len(hyperopt_results),
-                                      datetime(2019, 1, 1), datetime(2019, 5, 1))
-    assert over < correct
-    assert under > correct
-
-
-def test_sharpe_loss_daily_prefers_higher_profits(default_conf, hyperopt_results) -> None:
-    results_over = hyperopt_results.copy()
-    results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
-    results_under = hyperopt_results.copy()
-    results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
-
-    default_conf.update({'hyperopt_loss': 'SharpeHyperOptLossDaily'})
-    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
-    correct = hl.hyperopt_loss_function(hyperopt_results, len(hyperopt_results),
-                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
-    over = hl.hyperopt_loss_function(results_over, len(hyperopt_results),
-                                     datetime(2019, 1, 1), datetime(2019, 5, 1))
-    under = hl.hyperopt_loss_function(results_under, len(hyperopt_results),
-                                      datetime(2019, 1, 1), datetime(2019, 5, 1))
-    assert over < correct
-    assert under > correct
-
-
-def test_sortino_loss_prefers_higher_profits(default_conf, hyperopt_results) -> None:
-    results_over = hyperopt_results.copy()
-    results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
-    results_under = hyperopt_results.copy()
-    results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
-
-    default_conf.update({'hyperopt_loss': 'SortinoHyperOptLoss'})
-    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
-    correct = hl.hyperopt_loss_function(hyperopt_results, len(hyperopt_results),
-                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
-    over = hl.hyperopt_loss_function(results_over, len(hyperopt_results),
-                                     datetime(2019, 1, 1), datetime(2019, 5, 1))
-    under = hl.hyperopt_loss_function(results_under, len(hyperopt_results),
-                                      datetime(2019, 1, 1), datetime(2019, 5, 1))
-    assert over < correct
-    assert under > correct
-
-
-def test_sortino_loss_daily_prefers_higher_profits(default_conf, hyperopt_results) -> None:
-    results_over = hyperopt_results.copy()
-    results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
-    results_under = hyperopt_results.copy()
-    results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
-
-    default_conf.update({'hyperopt_loss': 'SortinoHyperOptLossDaily'})
-    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
-    correct = hl.hyperopt_loss_function(hyperopt_results, len(hyperopt_results),
-                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
-    over = hl.hyperopt_loss_function(results_over, len(hyperopt_results),
-                                     datetime(2019, 1, 1), datetime(2019, 5, 1))
-    under = hl.hyperopt_loss_function(results_under, len(hyperopt_results),
-                                      datetime(2019, 1, 1), datetime(2019, 5, 1))
-    assert over < correct
-    assert under > correct
-
-
-def test_onlyprofit_loss_prefers_higher_profits(default_conf, hyperopt_results) -> None:
-    results_over = hyperopt_results.copy()
-    results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
-    results_under = hyperopt_results.copy()
-    results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
-
-    default_conf.update({'hyperopt_loss': 'OnlyProfitHyperOptLoss'})
-    hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
-    correct = hl.hyperopt_loss_function(hyperopt_results, len(hyperopt_results),
-                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
-    over = hl.hyperopt_loss_function(results_over, len(hyperopt_results),
-                                     datetime(2019, 1, 1), datetime(2019, 5, 1))
-    under = hl.hyperopt_loss_function(results_under, len(hyperopt_results),
-                                      datetime(2019, 1, 1), datetime(2019, 5, 1))
-    assert over < correct
-    assert under > correct
 
 
 def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
