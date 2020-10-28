@@ -250,6 +250,9 @@ def test_check_int_positive() -> None:
         check_int_positive('0')
 
     with pytest.raises(argparse.ArgumentTypeError):
+        check_int_positive(0)
+
+    with pytest.raises(argparse.ArgumentTypeError):
         check_int_positive('3.5')
 
     with pytest.raises(argparse.ArgumentTypeError):
