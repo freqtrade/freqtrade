@@ -17,10 +17,9 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.exchange.exchange import timeframe_to_next_date
-from freqtrade.persistence import PairLocks, Trade
+from freqtrade.persistence import Trade
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
-
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +30,8 @@ class SignalType(Enum):
     """
     BUY = "buy"
     SELL = "sell"
+    PARTIAL_BUY = "partial_buy"
+    PARTIAL_SELL = "partial_sell"
 
 
 class SellType(Enum):
@@ -42,6 +43,7 @@ class SellType(Enum):
     STOPLOSS_ON_EXCHANGE = "stoploss_on_exchange"
     TRAILING_STOP_LOSS = "trailing_stop_loss"
     SELL_SIGNAL = "sell_signal"
+    PARTIAL_SELL_SIGNAL = "partial_sell_signal"
     FORCE_SELL = "force_sell"
     EMERGENCY_SELL = "emergency_sell"
     NONE = ""
@@ -57,6 +59,13 @@ class SellCheckTuple(NamedTuple):
     """
     sell_flag: bool
     sell_type: SellType
+
+class PartialTradeTuple(NamedTuple):
+    """
+        NamedTuple for partial trade  + amount
+    """
+    flag: bool
+    amount: float
 
 
 class IStrategy(ABC):
@@ -101,6 +110,8 @@ class IStrategy(ABC):
         'stoploss': 'limit',
         'stoploss_on_exchange': False,
         'stoploss_on_exchange_interval': 60,
+        'partial_buy': 'limit',
+        'partial_sell': 'limit',
     }
 
     # Optional time in force
@@ -123,8 +134,6 @@ class IStrategy(ABC):
     # and wallets - access to the current balance.
     dp: Optional[DataProvider] = None
     wallets: Optional[Wallets] = None
-    # container variable for strategy source code
-    __source__: str = ''
 
     # Definition of plot_config. See plotting documentation for more details.
     plot_config: Dict = {}
@@ -133,6 +142,7 @@ class IStrategy(ABC):
         self.config = config
         # Dict to determine if analysis is necessary
         self._last_candle_seen_per_pair: Dict[str, datetime] = {}
+        self._pair_locked_until: Dict[str, datetime] = {}
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -277,7 +287,7 @@ class IStrategy(ABC):
         """
         return self.__class__.__name__
 
-    def lock_pair(self, pair: str, until: datetime, reason: str = None) -> None:
+    def lock_pair(self, pair: str, until: datetime) -> None:
         """
         Locks pair until a given timestamp happens.
         Locked pairs are not analyzed, and are prevented from opening new trades.
@@ -286,9 +296,9 @@ class IStrategy(ABC):
         :param pair: Pair to lock
         :param until: datetime in UTC until the pair should be blocked from opening new trades.
                 Needs to be timezone aware `datetime.now(timezone.utc)`
-        :param reason: Optional string explaining why the pair was locked.
         """
-        PairLocks.lock_pair(pair, until, reason)
+        if pair not in self._pair_locked_until or self._pair_locked_until[pair] < until:
+            self._pair_locked_until[pair] = until
 
     def unlock_pair(self, pair: str) -> None:
         """
@@ -297,7 +307,8 @@ class IStrategy(ABC):
         manually from within the strategy, to allow an easy way to unlock pairs.
         :param pair: Unlock pair to allow trading again
         """
-        PairLocks.unlock_pair(pair, datetime.now(timezone.utc))
+        if pair in self._pair_locked_until:
+            del self._pair_locked_until[pair]
 
     def is_pair_locked(self, pair: str, candle_date: datetime = None) -> bool:
         """
@@ -309,13 +320,15 @@ class IStrategy(ABC):
         :param candle_date: Date of the last candle. Optional, defaults to current date
         :returns: locking state of the pair in question.
         """
-
+        if pair not in self._pair_locked_until:
+            return False
         if not candle_date:
-            # Simple call ...
-            return PairLocks.is_pair_locked(pair, candle_date)
+            return self._pair_locked_until[pair] >= datetime.now(timezone.utc)
         else:
+            # Locking should happen until a new candle arrives
             lock_time = timeframe_to_next_date(self.timeframe, candle_date)
-            return PairLocks.is_pair_locked(pair, lock_time)
+            # lock_time = candle_date + timedelta(minutes=timeframe_to_minutes(self.timeframe))
+            return self._pair_locked_until[pair] > lock_time
 
     def analyze_ticker(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
@@ -422,18 +435,19 @@ class IStrategy(ABC):
             else:
                 raise StrategyError(f"Dataframe returned from strategy has mismatching {message}.")
 
-    def get_signal(self, pair: str, timeframe: str, dataframe: DataFrame) -> Tuple[bool, bool]:
+    def get_signal(self, pair: str, timeframe: str, dataframe: DataFrame) \
+            -> Tuple[bool, bool, PartialTradeTuple, PartialTradeTuple]:
         """
-        Calculates current signal based based on the buy / sell columns of the dataframe.
+        Calculates current signal based based on the buy / sell / partial_buy / partial_sell  columns of the dataframe.
         Used by Bot to get the signal to buy or sell
         :param pair: pair in format ANT/BTC
         :param timeframe: timeframe to use
         :param dataframe: Analyzed dataframe to get signal from.
-        :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
+        :return: (Buy, Sell,partial_buy, partial_sell) A bool-tuple indicating buy/sell signal
         """
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning(f'Empty candle (OHLCV) data for pair {pair}')
-            return False, False
+            return False, False, PartialTradeTuple(False,0), PartialTradeTuple(False,0)
 
         latest_date = dataframe['date'].max()
         latest = dataframe.loc[dataframe['date'] == latest_date].iloc[-1]
@@ -448,19 +462,22 @@ class IStrategy(ABC):
                 'Outdated history for pair %s. Last tick is %s minutes old',
                 pair, int((arrow.utcnow() - latest_date).total_seconds() // 60)
             )
-            return False, False
+            return False, False, PartialTradeTuple(False,0), PartialTradeTuple(False,0)
 
-        (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
-        logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
-                     latest['date'], pair, str(buy), str(sell))
-        return buy, sell
+        (buy, sell, partial_buy, partial_sell) = \
+            latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1,\
+            latest[SignalType.PARTIAL_BUY] == 1, latest[SignalType.PARTIAL_SELL == 1]
+        logger.debug('trigger: %s (pair=%s) buy=%s sell=%s partial_buy = %s partial_sell = %s',
+                     latest['date'], pair, str(buy), str(sell), str(partial_buy), str(partial_sell))
+        return buy, sell, partial_buy, partial_sell
 
     def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
-                    sell: bool, low: float = None, high: float = None,
-                    force_stoploss: float = 0) -> SellCheckTuple:
+                    sell: bool, partial_buy: PartialTradeTuple, partial_sell: PartialTradeTuple,
+                    low: float = None, high: float = None, force_stoploss: float = 0) -> SellCheckTuple:
         """
         This function evaluates if one of the conditions required to trigger a sell
         has been reached, which can either be a stop-loss, ROI or sell-signal.
+        Modified to support partial trades
         :param low: Only used during backtesting to simulate stoploss
         :param high: Only used during backtesting, to simulate ROI
         :param force_stoploss: Externally provided stoploss
@@ -509,6 +526,11 @@ class IStrategy(ABC):
             logger.debug(f"{trade.pair} - Sell signal received. sell_flag=True, "
                          f"sell_type=SellType.SELL_SIGNAL")
             return SellCheckTuple(sell_flag=True, sell_type=SellType.SELL_SIGNAL)
+
+        if partial_sell.flag and not partial_buy.flag and not buy and config_ask_strategy.get('use_sell_signal', True):
+            logger.debug(f"{trade.pair} - Partial Sell signal received. partial_sell_flag=True, "
+                         f"sell_type=SellType.PARTIAL_SELL_SIGNAL")
+            return SellCheckTuple(sell_flag=True, sell_type=SellType.PARTIAL_SELL_SIGNAL)
 
         # This one is noisy, commented out...
         # logger.debug(f"{trade.pair} - No sell signal. sell_flag=False")

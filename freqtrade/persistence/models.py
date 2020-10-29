@@ -7,8 +7,8 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 import arrow
-from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer, String,
-                        create_engine, desc, func, inspect)
+from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
+                        String, create_engine, desc, func, inspect)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Query, relationship
@@ -17,20 +17,17 @@ from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql.schema import UniqueConstraint
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.migrations import check_migrate
 
-
 logger = logging.getLogger(__name__)
-
 
 _DECL_BASE: Any = declarative_base()
 _SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
 
 
-def init_db(db_url: str, clean_open_orders: bool = False) -> None:
+def init(db_url: str, clean_open_orders: bool = False) -> None:
     """
     Initializes this module with the given config,
     registers all known command handlers
@@ -64,9 +61,6 @@ def init_db(db_url: str, clean_open_orders: bool = False) -> None:
     # Copy session attributes to order object too
     Order.session = Trade.session
     Order.query = Order.session.query_property()
-    PairLock.session = Trade.session
-    PairLock.query = PairLock.session.query_property()
-
     previous_tables = inspect(engine).get_table_names()
     _DECL_BASE.metadata.create_all(engine)
     check_migrate(engine, decl_base=_DECL_BASE, previous_tables=previous_tables)
@@ -76,7 +70,7 @@ def init_db(db_url: str, clean_open_orders: bool = False) -> None:
         clean_dry_run_db()
 
 
-def cleanup_db() -> None:
+def cleanup() -> None:
     """
     Flushes all pending operations to disk.
     :return: None
@@ -130,6 +124,8 @@ class Order(_DECL_BASE):
     filled = Column(Float, nullable=True)
     remaining = Column(Float, nullable=True)
     cost = Column(Float, nullable=True)
+    fee = Column(Float, nullable=True)  # OSM
+    fee_cost = Column(Float, nullable=True)  # OSM
     order_date = Column(DateTime, nullable=True, default=datetime.utcnow)
     order_filled_date = Column(DateTime, nullable=True)
     order_update_date = Column(DateTime, nullable=True)
@@ -156,6 +152,7 @@ class Order(_DECL_BASE):
         self.filled = order.get('filled', self.filled)
         self.remaining = order.get('remaining', self.remaining)
         self.cost = order.get('cost', self.cost)
+        self.fee = order.get('fee', self.fee)
         if 'timestamp' in order and order['timestamp'] is not None:
             self.order_date = datetime.fromtimestamp(order['timestamp'] / 1000, tz=timezone.utc)
 
@@ -171,12 +168,12 @@ class Order(_DECL_BASE):
         """
         Get all non-closed orders - useful when trying to batch-update orders
         """
-        filtered_orders = [o for o in orders if o.order_id == order.get('id')]
+        filtered_orders = [o for o in orders if o.order_id == order['id']]
         if filtered_orders:
             oobj = filtered_orders[0]
             oobj.update_from_ccxt_object(order)
         else:
-            logger.warning(f"Did not find order for {order}.")
+            logger.warning(f"Did not find order for {order['id']}.")
 
     @staticmethod
     def parse_from_ccxt_object(order: Dict[str, Any], pair: str, side: str) -> 'Order':
@@ -255,7 +252,7 @@ class Trade(_DECL_BASE):
         self.recalc_open_trade_price()
 
     def __repr__(self):
-        open_since = self.open_date.strftime(DATETIME_PRINT_FORMAT) if self.is_open else 'closed'
+        open_since = self.open_date.strftime('%Y-%m-%d %H:%M:%S') if self.is_open else 'closed'
 
         return (f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
                 f'open_rate={self.open_rate:.8f}, open_since={open_since})')
@@ -281,7 +278,7 @@ class Trade(_DECL_BASE):
             'fee_close_currency': self.fee_close_currency,
 
             'open_date_hum': arrow.get(self.open_date).humanize(),
-            'open_date': self.open_date.strftime(DATETIME_PRINT_FORMAT),
+            'open_date': self.open_date.strftime("%Y-%m-%d %H:%M:%S"),
             'open_timestamp': int(self.open_date.replace(tzinfo=timezone.utc).timestamp() * 1000),
             'open_rate': self.open_rate,
             'open_rate_requested': self.open_rate_requested,
@@ -289,7 +286,7 @@ class Trade(_DECL_BASE):
 
             'close_date_hum': (arrow.get(self.close_date).humanize()
                                if self.close_date else None),
-            'close_date': (self.close_date.strftime(DATETIME_PRINT_FORMAT)
+            'close_date': (self.close_date.strftime("%Y-%m-%d %H:%M:%S")
                            if self.close_date else None),
             'close_timestamp': int(self.close_date.replace(
                 tzinfo=timezone.utc).timestamp() * 1000) if self.close_date else None,
@@ -305,7 +302,7 @@ class Trade(_DECL_BASE):
             'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,
             'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
             'stoploss_order_id': self.stoploss_order_id,
-            'stoploss_last_update': (self.stoploss_last_update.strftime(DATETIME_PRINT_FORMAT)
+            'stoploss_last_update': (self.stoploss_last_update.strftime("%Y-%m-%d %H:%M:%S")
                                      if self.stoploss_last_update else None),
             'stoploss_last_update_timestamp': int(self.stoploss_last_update.replace(
                 tzinfo=timezone.utc).timestamp() * 1000) if self.stoploss_last_update else None,
@@ -382,6 +379,10 @@ class Trade(_DECL_BASE):
             return
 
         logger.info('Updating trade (id=%s) ...', self.id)
+        # to be able to partially buy or sell
+        if order['amount'] < self.amount:
+            self.partial_update(order)
+            return
 
         if order_type in ('market', 'limit') and order['side'] == 'buy':
             # Update open rate and actual amount
@@ -403,7 +404,45 @@ class Trade(_DECL_BASE):
             self.close(order['average'])
         else:
             raise ValueError(f'Unknown order type: {order_type}')
-        cleanup_db()
+        cleanup()
+
+    def partial_update(self, order: Dict) -> None:
+        """
+                Updates this entity with amount and actual open/close rates,
+                modified to support multiple orders keeping the trade opened
+                :param order: order retrieved by exchange.fetch_order()
+                :return: None
+
+                """
+        order_type = order['type']
+
+        if order_type in ('market', 'limit') and order['side'] == 'buy':
+            # Update open rate and actual amount
+            self.open_rate = self.average_open_rate(order['filled'],
+                                                    safe_value_fallback(order, 'average', 'price'),
+                                                    self.amount, self.open_rate)
+            self.amount = Decimal(self.amount or 0) + Decimal(order['filled'])
+            self.decrease_wallet(self, Decimal(order['filled']), self.open_rate)
+            if self.is_open and order['filled'] != 0:
+                logger.info(f'{order_type.upper()}_Partial BUY has been fulfilled for {self}.')
+                self.open_order_id = None
+
+        elif order_type in ('market', 'limit') and order['side'] == 'sell':
+            self.amount = (Decimal(self.amount or 0) - Decimal(order['filled']))
+            if self.is_open and order['filled'] != 0:
+                logger.info(f'{order_type.upper()}_Partial SELL has been fulfilled for {self}.')
+                self.partial_close(self, safe_value_fallback(order, 'average', 'price'))
+                self.increase_wallet(self, Decimal(order['filled']), order['price'])
+
+        elif order_type in ('stop_loss_limit', 'stop-loss', 'stop'):
+            self.stoploss_order_id = None
+            self.close_rate_requested = self.stop_loss
+            if self.is_open:
+                logger.info(f'{order_type.upper()} is hit for {self}.')
+            self.close(order['average'])
+        else:
+            raise ValueError(f'Unknown order type: {order_type}')
+        cleanup()
 
     def close(self, rate: float) -> None:
         """
@@ -419,6 +458,17 @@ class Trade(_DECL_BASE):
         self.open_order_id = None
         logger.info(
             'Marking %s as closed as the trade is fulfilled and found no open orders for it.',
+            self
+        )
+
+    def partial_close(self, rate: float) -> None:
+        """     modified close() to keep trade opened
+        """
+        self.is_open = True
+        self.sell_order_status = 'closed'
+        self.open_order_id = None
+        logger.info(
+            'Updated  position %s,',
             self
         )
 
@@ -499,6 +549,8 @@ class Trade(_DECL_BASE):
                     fee: Optional[float] = None) -> float:
         """
         Calculate the absolute profit in stake currency between Close and Open trade
+        Modified to stop using open_tride_price and use open_rate instead,
+        which be actualized if partial buys.
         :param fee: fee to use on the close rate (optional).
             If rate is not set self.fee will be used
         :param rate: close rate to compare with (optional).
@@ -509,13 +561,15 @@ class Trade(_DECL_BASE):
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
-        profit = close_trade_price - self.open_trade_price
+        profit = close_trade_price - self.open_rate * self.amount
         return float(f"{profit:.8f}")
 
     def calc_profit_ratio(self, rate: Optional[float] = None,
                           fee: Optional[float] = None) -> float:
         """
         Calculates the profit as ratio (including fee).
+        Modified to stop using open_tride_price and use open_rate instead,
+        which be actualized if partial buys.
         :param rate: rate to compare with (optional).
             If rate is not set self.close_rate will be used
         :param fee: fee to use on the close rate (optional).
@@ -525,7 +579,7 @@ class Trade(_DECL_BASE):
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
-        profit_ratio = (close_trade_price / self.open_trade_price) - 1
+        profit_ratio = (close_trade_price / (self.open_rate * self.amount)) - 1
         return float(f"{profit_ratio:.8f}")
 
     def select_order(self, order_side: str, is_open: Optional[bool]) -> Optional[Order]:
@@ -542,6 +596,32 @@ class Trade(_DECL_BASE):
             return orders[-1]
         else:
             return None
+
+    def average_open_rate(self, order_amount, order_price, trade_amount, trade_open_rate):
+        """
+                Calculates average entry price when increase an open position with a partial buy
+                :param order_amount: Amount in base coin to buy
+                :param order_price: rate at the time of order buy
+                :trade_amount: Actual amount of the open position. (befor adding new order amount)
+                :trade_open_rate: Actual open price of position.
+                :return: New open rate modified with the order data.
+        """
+        #((order['amount'] * order['price']) + (self.amount * trade.open_rate)) / (order['amount'] + trade.amount)
+        return ((order_amount * order_price) + (trade_amount * trade_open_rate)) / (order_amount + trade_amount)
+
+    def increase_wallet(self, amount: float, rate: float) -> None:
+
+        sell_trade = Decimal(amount) * Decimal(rate)
+        fees = sell_trade * Decimal(self.fee_close)
+        close_trade_price = float(sell_trade - fees)
+        self.stake_amount = Decimal(self.stake_amount or 0) + Decimal(close_trade_price)
+
+    def decrease_wallet(self, amount: float, rate: float) -> None:
+
+        buy_trade = Decimal(amount * rate)
+        fees = buy_trade * Decimal(self.fee_open)
+        open_trade_price = float(buy_trade + fees)
+        self.stake_amount = Decimal(self.stake_amount or 0) - Decimal(open_trade_price)
 
     @staticmethod
     def get_trades(trade_filter=None) -> Query:
@@ -600,8 +680,8 @@ class Trade(_DECL_BASE):
         Calculates total invested amount in open trades
         in stake currency
         """
-        total_open_stake_amount = Trade.session.query(func.sum(Trade.stake_amount))\
-            .filter(Trade.is_open.is_(True))\
+        total_open_stake_amount = Trade.session.query(func.sum(Trade.stake_amount)) \
+            .filter(Trade.is_open.is_(True)) \
             .scalar()
         return total_open_stake_amount or 0
 
@@ -614,7 +694,7 @@ class Trade(_DECL_BASE):
             Trade.pair,
             func.sum(Trade.close_profit).label('profit_sum'),
             func.count(Trade.pair).label('count')
-        ).filter(Trade.is_open.is_(False))\
+        ).filter(Trade.is_open.is_(False)) \
             .group_by(Trade.pair) \
             .order_by(desc('profit_sum')) \
             .all()
@@ -650,7 +730,7 @@ class Trade(_DECL_BASE):
 
             # skip case if trailing-stop changed the stoploss already.
             if (trade.stop_loss == trade.initial_stop_loss
-               and trade.initial_stop_loss_pct != desired_stoploss):
+                    and trade.initial_stop_loss_pct != desired_stoploss):
                 # Stoploss value got changed
 
                 logger.info(f"Stoploss for {trade} needs adjustment...")
@@ -658,56 +738,3 @@ class Trade(_DECL_BASE):
                 trade.stop_loss = None
                 trade.adjust_stop_loss(trade.open_rate, desired_stoploss)
                 logger.info(f"New stoploss: {trade.stop_loss}.")
-
-
-class PairLock(_DECL_BASE):
-    """
-    Pair Locks database model.
-    """
-    __tablename__ = 'pairlocks'
-
-    id = Column(Integer, primary_key=True)
-
-    pair = Column(String, nullable=False, index=True)
-    reason = Column(String, nullable=True)
-    # Time the pair was locked (start time)
-    lock_time = Column(DateTime, nullable=False)
-    # Time until the pair is locked (end time)
-    lock_end_time = Column(DateTime, nullable=False, index=True)
-
-    active = Column(Boolean, nullable=False, default=True, index=True)
-
-    def __repr__(self):
-        lock_time = self.lock_time.strftime(DATETIME_PRINT_FORMAT)
-        lock_end_time = self.lock_end_time.strftime(DATETIME_PRINT_FORMAT)
-        return (f'PairLock(id={self.id}, pair={self.pair}, lock_time={lock_time}, '
-                f'lock_end_time={lock_end_time})')
-
-    @staticmethod
-    def query_pair_locks(pair: Optional[str], now: datetime) -> Query:
-        """
-        Get all locks for this pair
-        :param pair: Pair to check for. Returns all current locks if pair is empty
-        :param now: Datetime object (generated via datetime.now(timezone.utc)).
-        """
-
-        filters = [PairLock.lock_end_time > now,
-                   # Only active locks
-                   PairLock.active.is_(True), ]
-        if pair:
-            filters.append(PairLock.pair == pair)
-        return PairLock.query.filter(
-            *filters
-        )
-
-    def to_json(self) -> Dict[str, Any]:
-        return {
-            'pair': self.pair,
-            'lock_time': self.lock_time.strftime(DATETIME_PRINT_FORMAT),
-            'lock_timestamp': int(self.lock_time.replace(tzinfo=timezone.utc).timestamp() * 1000),
-            'lock_end_time': self.lock_end_time.strftime(DATETIME_PRINT_FORMAT),
-            'lock_end_timestamp': int(self.lock_end_time.replace(tzinfo=timezone.utc
-                                                                 ).timestamp() * 1000),
-            'reason': self.reason,
-            'active': self.active,
-        }
