@@ -435,6 +435,16 @@ def test_list_markets(mocker, markets, capsys):
     assert re.search(r"^BLK/BTC$", captured.out, re.MULTILINE)
     assert re.search(r"^LTC/USD$", captured.out, re.MULTILINE)
 
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(side_effect=ValueError))
+    # Test --one-column
+    args = [
+        "list-markets",
+        '--config', 'config.json.example',
+        "--one-column"
+    ]
+    with pytest.raises(OperationalException, match=r"Cannot get markets.*"):
+        start_list_markets(get_args(args), False)
+
 
 def test_create_datadir_failed(caplog):
 
@@ -707,6 +717,7 @@ def test_start_list_strategies(mocker, caplog, capsys):
         "list-strategies",
         "--strategy-path",
         str(Path(__file__).parent.parent / "strategy" / "strats"),
+        '--no-color',
     ]
     pargs = get_args(args)
     # pargs['config'] = None
