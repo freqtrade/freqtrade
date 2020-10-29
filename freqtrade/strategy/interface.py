@@ -17,7 +17,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.exchange.exchange import timeframe_to_next_date
-from freqtrade.persistence import Trade
+from freqtrade.persistence import PairLocks, Trade
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
@@ -287,7 +287,7 @@ class IStrategy(ABC):
         """
         return self.__class__.__name__
 
-    def lock_pair(self, pair: str, until: datetime) -> None:
+    def lock_pair(self, pair: str, until: datetime, reason: str = None) -> None:
         """
         Locks pair until a given timestamp happens.
         Locked pairs are not analyzed, and are prevented from opening new trades.
@@ -297,8 +297,8 @@ class IStrategy(ABC):
         :param until: datetime in UTC until the pair should be blocked from opening new trades.
                 Needs to be timezone aware `datetime.now(timezone.utc)`
         """
-        if pair not in self._pair_locked_until or self._pair_locked_until[pair] < until:
-            self._pair_locked_until[pair] = until
+        PairLocks.lock_pair(pair, until, reason)
+
 
     def unlock_pair(self, pair: str) -> None:
         """
@@ -307,8 +307,7 @@ class IStrategy(ABC):
         manually from within the strategy, to allow an easy way to unlock pairs.
         :param pair: Unlock pair to allow trading again
         """
-        if pair in self._pair_locked_until:
-            del self._pair_locked_until[pair]
+        PairLocks.unlock_pair(pair, datetime.now(timezone.utc))
 
     def is_pair_locked(self, pair: str, candle_date: datetime = None) -> bool:
         """
@@ -368,6 +367,8 @@ class IStrategy(ABC):
             logger.debug("Skipping TA Analysis for already analyzed candle")
             dataframe['buy'] = 0
             dataframe['sell'] = 0
+            dataframe['partial_buy'] = PartialTradeTuple(0, 0)
+            dataframe['partial_sell'] = PartialTradeTuple(0, 0)
 
         # Other Defs in strategy that want to be called every loop here
         # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
@@ -464,9 +465,16 @@ class IStrategy(ABC):
             )
             return False, False, PartialTradeTuple(False,0), PartialTradeTuple(False,0)
 
+        # Check if partials are set in strategy and set to 0 if not
+        if latest.partial_buy and latest.partial_sell:
+            if type(latest.partial_buy) is not PartialTradeTuple:
+              latest.partial_buy = PartialTradeTuple(0, 0)
+            if type(latest.partial_sell) is not PartialTradeTuple:
+                latest.partial_sell = PartialTradeTuple(0, 0)
+
         (buy, sell, partial_buy, partial_sell) = \
             latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1,\
-            latest[SignalType.PARTIAL_BUY] == 1, latest[SignalType.PARTIAL_SELL == 1]
+            latest[SignalType.PARTIAL_BUY.value], latest[SignalType.PARTIAL_SELL.value]
         logger.debug('trigger: %s (pair=%s) buy=%s sell=%s partial_buy = %s partial_sell = %s',
                      latest['date'], pair, str(buy), str(sell), str(partial_buy), str(partial_sell))
         return buy, sell, partial_buy, partial_sell

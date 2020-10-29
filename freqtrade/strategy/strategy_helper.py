@@ -47,3 +47,4 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
         dataframe = dataframe.ffill()
 
     return dataframe
+

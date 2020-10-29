@@ -27,7 +27,7 @@ _DECL_BASE: Any = declarative_base()
 _SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
 
 
-def init(db_url: str, clean_open_orders: bool = False) -> None:
+def init_db(db_url: str, clean_open_orders: bool = False) -> None:
     """
     Initializes this module with the given config,
     registers all known command handlers
@@ -70,7 +70,7 @@ def init(db_url: str, clean_open_orders: bool = False) -> None:
         clean_dry_run_db()
 
 
-def cleanup() -> None:
+def cleanup_db() -> None:
     """
     Flushes all pending operations to disk.
     :return: None
@@ -404,7 +404,7 @@ class Trade(_DECL_BASE):
             self.close(order['average'])
         else:
             raise ValueError(f'Unknown order type: {order_type}')
-        cleanup()
+        cleanup_db()
 
     def partial_update(self, order: Dict) -> None:
         """
@@ -442,7 +442,7 @@ class Trade(_DECL_BASE):
             self.close(order['average'])
         else:
             raise ValueError(f'Unknown order type: {order_type}')
-        cleanup()
+        cleanup_db()
 
     def close(self, rate: float) -> None:
         """
@@ -738,3 +738,56 @@ class Trade(_DECL_BASE):
                 trade.stop_loss = None
                 trade.adjust_stop_loss(trade.open_rate, desired_stoploss)
                 logger.info(f"New stoploss: {trade.stop_loss}.")
+
+
+class PairLock(_DECL_BASE):
+    """
+    Pair Locks database model.
+    """
+    __tablename__ = 'pairlocks'
+
+    id = Column(Integer, primary_key=True)
+
+    pair = Column(String, nullable=False, index=True)
+    reason = Column(String, nullable=True)
+    # Time the pair was locked (start time)
+    lock_time = Column(DateTime, nullable=False)
+    # Time until the pair is locked (end time)
+    lock_end_time = Column(DateTime, nullable=False, index=True)
+
+    active = Column(Boolean, nullable=False, default=True, index=True)
+
+    def __repr__(self):
+        lock_time = self.lock_time.strftime('%Y-%m-%d %H:%M:%S')
+        lock_end_time = self.lock_end_time.strftime('%Y-%m-%d %H:%M:%S')
+        return (f'PairLock(id={self.id}, pair={self.pair}, lock_time={lock_time}, '
+                f'lock_end_time={lock_end_time})')
+
+    @staticmethod
+    def query_pair_locks(pair: Optional[str], now: datetime) -> Query:
+        """
+        Get all locks for this pair
+        :param pair: Pair to check for. Returns all current locks if pair is empty
+        :param now: Datetime object (generated via datetime.now(timezone.utc)).
+        """
+
+        filters = [PairLock.lock_end_time > now,
+                   # Only active locks
+                   PairLock.active.is_(True), ]
+        if pair:
+            filters.append(PairLock.pair == pair)
+        return PairLock.query.filter(
+            *filters
+        )
+
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            'pair': self.pair,
+            'lock_time': self.lock_time.strftime('%Y-%m-%d %H:%M:%S'),
+            'lock_timestamp': int(self.lock_time.replace(tzinfo=timezone.utc).timestamp() * 1000),
+            'lock_end_time': self.lock_end_time.strftime('%Y-%m-%d %H:%M:%S'),
+            'lock_end_timestamp': int(self.lock_end_time.replace(tzinfo=timezone.utc
+                                                                 ).timestamp() * 1000),
+            'reason': self.reason,
+            'active': self.active,
+        }

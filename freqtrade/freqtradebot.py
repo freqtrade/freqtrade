@@ -4,7 +4,7 @@ Freqtrade is the main module of this bot. It contains the class Freqtrade()
 import copy
 import logging
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 from math import isclose
 from threading import Lock
 from typing import Any, Dict, List, Optional
@@ -22,7 +22,7 @@ from freqtrade.exceptions import (DependencyException, ExchangeError, Insufficie
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.pairlist.pairlistmanager import PairListManager
-from freqtrade.persistence import Order, Trade
+from freqtrade.persistence import Order, PairLocks, Trade, cleanup_db, init_db
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
@@ -57,8 +57,8 @@ class FreqtradeBot:
         # Cache values for 1800 to avoid frequent polling of the exchange for prices
         # Caching only applies to RPC methods, so prices for open trades are still
         # refreshed once every iteration.
-        self._sell_rate_cache = TTLCache(maxsize=100, ttl=1800)
-        self._buy_rate_cache = TTLCache(maxsize=100, ttl=1800)
+        self._sell_rate_cache: TTLCache = TTLCache(maxsize=100, ttl=1800)
+        self._buy_rate_cache: TTLCache = TTLCache(maxsize=100, ttl=1800)
 
         self.strategy: IStrategy = StrategyResolver.load_strategy(self.config)
 
@@ -67,7 +67,7 @@ class FreqtradeBot:
 
         self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
 
-        persistence.init(self.config.get('db_url', None), clean_open_orders=self.config['dry_run'])
+        init_db(self.config.get('db_url', None), clean_open_orders=self.config['dry_run'])
 
         self.wallets = Wallets(self.config, self.exchange)
 
@@ -122,7 +122,7 @@ class FreqtradeBot:
         self.check_for_open_trades()
 
         self.rpc.cleanup()
-        persistence.cleanup()
+        cleanup_db()
 
     def startup(self) -> None:
         """
@@ -734,7 +734,7 @@ class FreqtradeBot:
             return False
 
         amount = stake_amount / buy_limit_requested
-        order_type = self.strategy.order_types['buy']
+        order_type = self.strategy.order_types['partial_buy']
 
         if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=amount, rate=buy_limit_requested,
@@ -801,10 +801,10 @@ class FreqtradeBot:
                 open_rate=buy_limit_filled_price,
                 open_rate_requested=buy_limit_requested,
                 open_date=datetime.utcnow(),
-                exchange=_bot.exchange.id,
+                exchange=self.exchange.id,
                 open_order_id=order_id,
-                strategy=_bot.strategy.get_strategy_name(),
-                timeframe=timeframe_to_minutes(_bot.config['timeframe'])
+                strategy=self.strategy.get_strategy_name(),
+                timeframe=timeframe_to_minutes(self.config['timeframe'])
             )
             trade.orders.append(order_obj)
             # Update fees if order is closed
@@ -1062,8 +1062,8 @@ class FreqtradeBot:
             self.update_trade_state(trade, trade.stoploss_order_id, stoploss_order,
                                     stoploss_order=True)
             # Lock pair for one candle to prevent immediate rebuys
-            self.strategy.lock_pair(trade.pair,
-                                    timeframe_to_next_date(self.config['timeframe']))
+            self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
+                                    reason='Auto lock')
             self._notify_sell(trade, "stoploss")
             return True
 
