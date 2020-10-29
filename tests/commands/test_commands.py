@@ -476,6 +476,12 @@ def test_start_new_strategy(mocker, caplog):
     assert "CoolNewStrategy" in wt_mock.call_args_list[0][0][0]
     assert log_has_re("Writing strategy to .*", caplog)
 
+    mocker.patch('freqtrade.commands.deploy_commands.setup_utils_configuration')
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    with pytest.raises(OperationalException,
+                       match=r".* already exists. Please choose another Strategy Name\."):
+        start_new_strategy(get_args(args))
+
 
 def test_start_new_strategy_DefaultStrat(mocker, caplog):
     args = [
@@ -511,6 +517,12 @@ def test_start_new_hyperopt(mocker, caplog):
     assert wt_mock.call_count == 1
     assert "CoolNewhyperopt" in wt_mock.call_args_list[0][0][0]
     assert log_has_re("Writing hyperopt to .*", caplog)
+
+    mocker.patch('freqtrade.commands.deploy_commands.setup_utils_configuration')
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    with pytest.raises(OperationalException,
+                       match=r".* already exists. Please choose another Hyperopt Name\."):
+        start_new_hyperopt(get_args(args))
 
 
 def test_start_new_hyperopt_DefaultHyperopt(mocker, caplog):
