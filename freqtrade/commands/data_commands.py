@@ -35,6 +35,9 @@ def start_download_data(args: Dict[str, Any]) -> None:
     if 'timerange' in config:
         timerange = timerange.parse_timerange(config['timerange'])
 
+    # Remove stake-currency to skip checks which are not relevant for datadownload
+    config['stake_currency'] = ''
+
     if 'pairs' not in config:
         raise OperationalException(
             "Downloading data requires a list of pairs. "

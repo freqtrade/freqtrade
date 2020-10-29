@@ -133,7 +133,7 @@ def start_new_hyperopt(args: Dict[str, Any]) -> None:
 
         if new_path.exists():
             raise OperationalException(f"`{new_path}` already exists. "
-                                       "Please choose another Strategy Name.")
+                                       "Please choose another Hyperopt Name.")
         deploy_new_hyperopt(args['hyperopt'], new_path, args['template'])
     else:
         raise OperationalException("`new-hyperopt` requires --hyperopt to be set.")
