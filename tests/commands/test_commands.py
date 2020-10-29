@@ -792,6 +792,25 @@ def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
     assert re.match(r"Pairs for .*", captured.out)
     assert re.match("['ETH/BTC', 'TKN/BTC', 'BLK/BTC', 'LTC/BTC', 'XRP/BTC']", captured.out)
 
+    args = [
+        'test-pairlist',
+        '-c', 'config.json.example',
+        '--one-column',
+    ]
+    start_test_pairlist(get_args(args))
+    captured = capsys.readouterr()
+    assert re.match(r"ETH/BTC\nTKN/BTC\nBLK/BTC\nLTC/BTC\nXRP/BTC\n", captured.out)
+
+    args = [
+        'test-pairlist',
+        '-c', 'config.json.example',
+        '--print-json',
+    ]
+    start_test_pairlist(get_args(args))
+    captured = capsys.readouterr()
+    assert re.match(r'Pairs for BTC: \n\["ETH/BTC","TKN/BTC","BLK/BTC","LTC/BTC","XRP/BTC"\]\n',
+                    captured.out)
+
 
 def test_hyperopt_list(mocker, capsys, caplog, hyperopt_results):
     mocker.patch(
