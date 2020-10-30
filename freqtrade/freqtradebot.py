@@ -22,7 +22,7 @@ from freqtrade.exceptions import (DependencyException, ExchangeError, Insufficie
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.pairlist.pairlistmanager import PairListManager
-from freqtrade.persistence import Order, PairLocks, Trade, cleanup_db, init_db
+from freqtrade.persistence import Order,Trade, cleanup_db, init_db
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
@@ -1062,8 +1062,8 @@ class FreqtradeBot:
             self.update_trade_state(trade, trade.stoploss_order_id, stoploss_order,
                                     stoploss_order=True)
             # Lock pair for one candle to prevent immediate rebuys
-            self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
-                                    reason='Auto lock')
+            self.strategy.lock_pair(trade.pair,
+                                    timeframe_to_next_date(self.config['timeframe']))
             self._notify_sell(trade, "stoploss")
             return True
 
