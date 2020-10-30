@@ -26,7 +26,7 @@ from freqtrade.persistence import Order, Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
-from freqtrade.strategy.interface import IStrategy, SellType
+from freqtrade.strategy.interface import IStrategy, SellType, PartialTradeTuple
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
@@ -345,11 +345,11 @@ class FreqtradeBot:
         if not whitelist:
             logger.info("Active pair whitelist is empty.")
         else:
-            # Remove pairs for currently opened trades from the whitelist
+            '''# Remove pairs for currently opened trades from the whitelist
             for trade in Trade.get_open_trades():
                 if trade.pair in whitelist:
                     whitelist.remove(trade.pair)
-                    logger.debug('Ignoring %s in pair whitelist', trade.pair)
+                    logger.debug('Ignoring %s in pair whitelist', trade.pair)'''
 
             if not whitelist:
                 logger.info("No currency pair in active pair whitelist, "
@@ -550,9 +550,9 @@ class FreqtradeBot:
             return False
 
         # running get_signal on historical data fetched
-        (buy, sell) = self.strategy.get_signal(pair, self.strategy.timeframe, analyzed_df)
+        (buy, sell, partial_buy, partial_sell) = self.strategy.get_signal(pair, self.strategy.timeframe, analyzed_df)
 
-        if buy and not sell:
+        if buy or partial_buy.flag and not sell and not partial_sell.flag:
             stake_amount = self.get_trade_stake_amount(pair)
             if not stake_amount:
                 logger.debug(f"Stake amount is 0, ignoring possible trade for {pair}.")
@@ -565,13 +565,21 @@ class FreqtradeBot:
             if ((bid_check_dom.get('enabled', False)) and
                     (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
                 if self._check_depth_of_market_buy(pair, bid_check_dom):
-                    logger.info(f'Executing Buy for {pair}.')
-                    return self.execute_buy(pair, stake_amount)
+                    if partial_buy.flag:
+                        logger.info(f'Executing Partial Buy for {pair}.')
+                        return self.execute_partial_buy(pair, partial_buy.amount)
+                    else:
+                        logger.info(f'Executing Buy for {pair}.')
+                        return self.execute_buy(pair, stake_amount)
                 else:
                     return False
 
-            logger.info(f'Executing Buy for {pair}')
-            return self.execute_buy(pair, stake_amount)
+            if partial_buy.flag:
+                logger.info(f'Executing Partial Buy for {pair}')
+                return self.execute_partial_buy(pair, partial_buy.amount)
+            else:
+                logger.info(f'Executing Buy for {pair}')
+                return self.execute_buy(pair, stake_amount)
         else:
             return False
 
@@ -692,6 +700,122 @@ class FreqtradeBot:
             self.update_trade_state(trade, order_id, order)
 
         Trade.session.add(trade)
+        Trade.session.flush()
+
+        # Updating wallets
+        self.wallets.update()
+
+        self._notify_buy(trade, order_type)
+
+        return True
+
+    def execute_partial_buy(self, pair: str, stake_amount: float, price: Optional[float] = None) -> bool:
+        """
+        Executes a limit buy for the given pair
+        :param pair: pair for which we want to create a LIMIT_BUY
+        :return: True if a buy order is created, false if it fails.
+        """
+        time_in_force = self.strategy.order_time_in_force['buy']
+
+        if price:
+            buy_limit_requested = price
+        else:
+            # Calculate price
+            buy_limit_requested = self.get_buy_rate(pair, True)
+
+        #  in case you try to buy more than available
+        #stake_amount = self._safe_buy_amount(pair, stake_amount)
+        min_stake_amount = self._get_min_pair_stake_amount(pair, buy_limit_requested)
+        if min_stake_amount is not None and min_stake_amount > stake_amount:
+            logger.warning(
+                f"Can't open a new trade for {pair}: stake amount "
+                f"is too small ({stake_amount} < {min_stake_amount})"
+            )
+            return False
+
+        amount = stake_amount / buy_limit_requested
+        order_type = self.strategy.order_types['buy']
+
+        if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
+                pair=pair, order_type=order_type, amount=amount, rate=buy_limit_requested,
+                time_in_force=time_in_force):
+            logger.info(f"User requested abortion of buying {pair}")
+            return False
+
+        amount = self.exchange.amount_to_precision(pair, amount)
+        order = self.exchange.buy(pair=pair, ordertype=order_type,
+                                  amount=amount, rate=buy_limit_requested,
+                                  time_in_force=time_in_force)
+        order_obj = Order.parse_from_ccxt_object(order, pair, 'buy')
+        order_id = order['id']
+        order_status = order.get('status', None)
+
+        # we assume the order is executed at the price requested
+        buy_limit_filled_price = buy_limit_requested
+        amount_requested = amount
+
+        if order_status == 'expired' or order_status == 'rejected':
+            order_tif = self.strategy.order_time_in_force['buy']
+
+            # return false if the order is not filled
+            if float(order['filled']) == 0:
+                logger.warning('Buy %s order with time in force %s for %s is %s by %s.'
+                               ' zero amount is fulfilled.',
+                               order_tif, order_type, pair, order_status, self.exchange.name)
+                return False
+            else:
+                # the order is partially fulfilled
+                # in case of IOC orders we can check immediately
+                # if the order is fulfilled fully or partially
+                logger.warning('Buy %s order with time in force %s for %s is %s by %s.'
+                               ' %s amount fulfilled out of %s (%s remaining which is canceled).',
+                               order_tif, order_type, pair, order_status, self.exchange.name,
+                               order['filled'], order['amount'], order['remaining']
+                               )
+                stake_amount = order['cost']
+                amount = safe_value_fallback(order, 'filled', 'amount')
+                buy_limit_filled_price = safe_value_fallback(order, 'average', 'price')
+
+        # in case of FOK the order may be filled immediately and fully
+        elif order_status == 'closed':
+            stake_amount = order['cost']
+            amount = safe_value_fallback(order, 'filled', 'amount')
+            buy_limit_filled_price = safe_value_fallback(order, 'average', 'price')
+
+        # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
+        fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
+        order['fee'] = fee
+
+
+        for trade in Trade.get_open_trades():
+            if trade.pair == pair:
+                break
+        if len(Trade.get_open_trades()) == 0:
+            trade = Trade(
+                pair=pair,
+                stake_amount=stake_amount,
+                amount=amount,
+                amount_requested=amount_requested,
+                fee_open=fee,
+                fee_close=fee,
+                open_rate=buy_limit_filled_price,
+                open_rate_requested=buy_limit_requested,
+                open_date=datetime.utcnow(),
+                exchange=_bot.exchange.id,
+                open_order_id=order_id,
+                strategy=_bot.strategy.get_strategy_name(),
+                timeframe=timeframe_to_minutes(_bot.config['timeframe'])
+            )
+            trade.orders.append(order_obj)
+            # Update fees if order is closed
+            if order_status == 'closed':
+                self.update_trade_state(trade, order_id, order)
+            Trade.session.add(trade)
+        else:
+            trade.open_order_id = order_id
+            trade.orders.append(order_obj)
+            self.update_trade_state(trade, order_id, order)
+
         Trade.session.flush()
 
         # Updating wallets
@@ -831,7 +955,8 @@ class FreqtradeBot:
 
         logger.debug('Handling %s ...', trade)
 
-        (buy, sell) = (False, False)
+        (buy, sell, partial_buy, partial_sell) = (False, False,  PartialTradeTuple(flag=False, amount=0),
+                                                  PartialTradeTuple(flag=False, amount=0))
 
         config_ask_strategy = self.config.get('ask_strategy', {})
 
@@ -840,7 +965,8 @@ class FreqtradeBot:
             analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
                                                                       self.strategy.timeframe)
 
-            (buy, sell) = self.strategy.get_signal(trade.pair, self.strategy.timeframe, analyzed_df)
+            (buy, sell, partial_buy, partial_sell) = self.strategy.get_signal(trade.pair,
+                                                                            self.strategy.timeframe, analyzed_df)
 
         if config_ask_strategy.get('use_order_book', False):
             order_book_min = config_ask_strategy.get('order_book_min', 1)
@@ -865,13 +991,13 @@ class FreqtradeBot:
                 # resulting in outdated RPC messages
                 self._sell_rate_cache[trade.pair] = sell_rate
 
-                if self._check_and_execute_sell(trade, sell_rate, buy, sell):
+                if self._check_and_execute_sell(trade, sell_rate, buy, sell, partial_buy, partial_sell):
                     return True
 
         else:
             logger.debug('checking sell')
             sell_rate = self.get_sell_rate(trade.pair, True)
-            if self._check_and_execute_sell(trade, sell_rate, buy, sell):
+            if self._check_and_execute_sell(trade, sell_rate, buy, sell, partial_buy, partial_sell):
                 return True
 
         logger.debug('Found no sell signal for %s.', trade)
@@ -1001,18 +1127,23 @@ class FreqtradeBot:
                                    f"for pair {trade.pair}.")
 
     def _check_and_execute_sell(self, trade: Trade, sell_rate: float,
-                                buy: bool, sell: bool) -> bool:
+                                buy: bool, sell: bool, partial_buy: PartialTradeTuple,
+                                partial_sell: PartialTradeTuple) -> bool:
         """
         Check and execute sell
         """
         should_sell = self.strategy.should_sell(
-            trade, sell_rate, datetime.utcnow(), buy, sell,
+            trade, sell_rate, datetime.utcnow(), buy, sell, partial_buy, partial_sell,
             force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
         )
 
         if should_sell.sell_flag:
-            logger.info(f'Executing Sell for {trade.pair}. Reason: {should_sell.sell_type}')
-            self.execute_sell(trade, sell_rate, should_sell.sell_type)
+            if should_sell.sell_type == SellType.PARTIAL_SELL_SIGNAL:
+                logger.info(f'Executing Partial Sell for {trade.pair}. Reason: {should_sell.sell_type}')
+                self.execute_partial_sell(trade, partial_sell.amount, sell_rate, should_sell.sell_type)
+            else:
+                logger.info(f'Executing Sell for {trade.pair}. Reason: {should_sell.sell_type}')
+                self.execute_sell(trade, sell_rate, should_sell.sell_type)
             return True
         return False
 
@@ -1269,6 +1400,78 @@ class FreqtradeBot:
 
         return True
 
+    def execute_partial_sell(self, trade: Trade, amount: float, limit: float, sell_reason: SellType) -> bool:
+        """
+        Executes a limit sell for the given trade and limit
+        :param trade: Trade instance
+        :param limit: limit rate for the sell order
+        :param sellreason: Reason the sell was triggered
+        :return: True if it succeeds (supported) False (not supported)
+        :OSM metodo modificado para aceptar ventas parciales
+        """
+        #TODO: Add a custom partial sell notification call
+        sell_type = 'sell'
+
+        # First cancelling stoploss on exchange ...
+        if self.strategy.order_types.get('stoploss_on_exchange') and trade.stoploss_order_id:
+            try:
+                self.exchange.cancel_stoploss_order(trade.stoploss_order_id, trade.pair)
+            except InvalidOrderException:
+                logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
+
+        order_type = self.strategy.order_types[sell_type]
+        if sell_reason == SellType.EMERGENCY_SELL:
+            # Emergency sells (default to market!)
+            order_type = self.strategy.order_types.get("emergencysell", "market")
+
+        if amount > trade.amount:
+            amount = trade.amount
+        amount = self._safe_sell_amount(trade.pair, amount)
+        time_in_force = self.strategy.order_time_in_force['sell']
+
+        if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
+                pair=trade.pair, trade=trade, order_type=order_type, amount=amount, rate=limit,
+                time_in_force=time_in_force,
+                sell_reason=sell_reason.value):
+            logger.info(f"User requested abortion of selling {trade.pair}")
+            return False
+
+        try:
+            # Execute sell and update trade record
+            order = self.exchange.sell(pair=trade.pair,
+                                       ordertype=order_type,
+                                       amount=amount, rate=limit,
+                                       time_in_force=time_in_force
+                                       )
+        except InsufficientFundsError as e:
+            logger.warning(f"Unable to place order {e}.")
+            # Try to figure out what went wrong
+            self.handle_insufficient_funds(trade)
+            return False
+
+        order_obj = Order.parse_from_ccxt_object(order, trade.pair, 'sell')
+
+        trade.orders.append(order_obj)
+
+        trade.open_order_id = order['id']
+        trade.close_rate_requested = limit
+        trade.sell_reason = sell_reason.value
+        # In case of market sell orders the order can be closed immediately
+        if order.get('status', 'unknown') == 'closed':
+            self.update_trade_state(trade, trade.open_order_id, order)
+            # force trade to contine opened, if amount >= trade amount close trade
+            if amount < trade.amount:
+                trade.is_open = True
+
+        Trade.session.flush()
+
+        #Lock pair for one candle to prevent immediate rebuys
+        self.strategy.lock_pair(trade.pair, timeframe_to_next_date(self.config['timeframe']))
+
+        self._notify_sell(trade, order_type)
+
+        return True
+
     def _notify_sell(self, trade: Trade, order_type: str) -> None:
         """
         Sends rpc notification when a sell occured.
@@ -1389,7 +1592,7 @@ class FreqtradeBot:
                            abs_tol=constants.MATH_CLOSE_PREC):
                 order['amount'] = new_amount
                 order.pop('filled', None)
-                trade.recalc_open_trade_price()
+
         except DependencyException as exception:
             logger.warning("Could not update trade amount: %s", exception)
 
@@ -1400,7 +1603,7 @@ class FreqtradeBot:
         trade.update(order)
 
         # Updating wallets when order is closed
-        if not trade.is_open:
+        if order['status'] == 'closed':
             self.wallets.update()
         return False
 

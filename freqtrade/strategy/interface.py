@@ -30,6 +30,8 @@ class SignalType(Enum):
     """
     BUY = "buy"
     SELL = "sell"
+    PARTIAL_BUY = "partial_buy"
+    PARTIAL_SELL = "partial_sell"
 
 
 class SellType(Enum):
@@ -41,6 +43,7 @@ class SellType(Enum):
     STOPLOSS_ON_EXCHANGE = "stoploss_on_exchange"
     TRAILING_STOP_LOSS = "trailing_stop_loss"
     SELL_SIGNAL = "sell_signal"
+    PARTIAL_SELL_SIGNAL = "partial_sell_signal"
     FORCE_SELL = "force_sell"
     EMERGENCY_SELL = "emergency_sell"
     NONE = ""
@@ -56,6 +59,13 @@ class SellCheckTuple(NamedTuple):
     """
     sell_flag: bool
     sell_type: SellType
+
+class PartialTradeTuple(NamedTuple):
+    """
+        NamedTuple for partial trade  + amount
+    """
+    flag: bool
+    amount: float
 
 
 class IStrategy(ABC):
@@ -100,6 +110,8 @@ class IStrategy(ABC):
         'stoploss': 'limit',
         'stoploss_on_exchange': False,
         'stoploss_on_exchange_interval': 60,
+        'partial_buy': 'limit',
+        'partial_sell': 'limit',
     }
 
     # Optional time in force
@@ -423,18 +435,19 @@ class IStrategy(ABC):
             else:
                 raise StrategyError(f"Dataframe returned from strategy has mismatching {message}.")
 
-    def get_signal(self, pair: str, timeframe: str, dataframe: DataFrame) -> Tuple[bool, bool]:
+    def get_signal(self, pair: str, timeframe: str, dataframe: DataFrame) \
+            -> Tuple[bool, bool, PartialTradeTuple, PartialTradeTuple]:
         """
-        Calculates current signal based based on the buy / sell columns of the dataframe.
+        Calculates current signal based based on the buy / sell / partial_buy / partial_sell  columns of the dataframe.
         Used by Bot to get the signal to buy or sell
         :param pair: pair in format ANT/BTC
         :param timeframe: timeframe to use
         :param dataframe: Analyzed dataframe to get signal from.
-        :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
+        :return: (Buy, Sell,partial_buy, partial_sell) A bool-tuple indicating buy/sell signal
         """
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning(f'Empty candle (OHLCV) data for pair {pair}')
-            return False, False
+            return False, False, PartialTradeTuple(False,0), PartialTradeTuple(False,0)
 
         latest_date = dataframe['date'].max()
         latest = dataframe.loc[dataframe['date'] == latest_date].iloc[-1]
@@ -449,19 +462,22 @@ class IStrategy(ABC):
                 'Outdated history for pair %s. Last tick is %s minutes old',
                 pair, int((arrow.utcnow() - latest_date).total_seconds() // 60)
             )
-            return False, False
+            return False, False, PartialTradeTuple(False,0), PartialTradeTuple(False,0)
 
-        (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
-        logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
-                     latest['date'], pair, str(buy), str(sell))
-        return buy, sell
+        (buy, sell, partial_buy, partial_sell) = \
+            latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1,\
+            latest[SignalType.PARTIAL_BUY] == 1, latest[SignalType.PARTIAL_SELL == 1]
+        logger.debug('trigger: %s (pair=%s) buy=%s sell=%s partial_buy = %s partial_sell = %s',
+                     latest['date'], pair, str(buy), str(sell), str(partial_buy), str(partial_sell))
+        return buy, sell, partial_buy, partial_sell
 
     def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
-                    sell: bool, low: float = None, high: float = None,
-                    force_stoploss: float = 0) -> SellCheckTuple:
+                    sell: bool, partial_buy: PartialTradeTuple, partial_sell: PartialTradeTuple,
+                    low: float = None, high: float = None, force_stoploss: float = 0) -> SellCheckTuple:
         """
         This function evaluates if one of the conditions required to trigger a sell
         has been reached, which can either be a stop-loss, ROI or sell-signal.
+        Modified to support partial trades
         :param low: Only used during backtesting to simulate stoploss
         :param high: Only used during backtesting, to simulate ROI
         :param force_stoploss: Externally provided stoploss
@@ -510,6 +526,11 @@ class IStrategy(ABC):
             logger.debug(f"{trade.pair} - Sell signal received. sell_flag=True, "
                          f"sell_type=SellType.SELL_SIGNAL")
             return SellCheckTuple(sell_flag=True, sell_type=SellType.SELL_SIGNAL)
+
+        if partial_sell.flag and not partial_buy.flag and not buy and config_ask_strategy.get('use_sell_signal', True):
+            logger.debug(f"{trade.pair} - Partial Sell signal received. partial_sell_flag=True, "
+                         f"sell_type=SellType.PARTIAL_SELL_SIGNAL")
+            return SellCheckTuple(sell_flag=True, sell_type=SellType.PARTIAL_SELL_SIGNAL)
 
         # This one is noisy, commented out...
         # logger.debug(f"{trade.pair} - No sell signal. sell_flag=False")

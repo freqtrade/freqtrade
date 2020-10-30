@@ -125,6 +125,8 @@ class Order(_DECL_BASE):
     filled = Column(Float, nullable=True)
     remaining = Column(Float, nullable=True)
     cost = Column(Float, nullable=True)
+    fee = Column(Float, nullable=True)  # OSM
+    fee_cost = Column(Float, nullable=True)  # OSM
     order_date = Column(DateTime, nullable=True, default=datetime.utcnow)
     order_filled_date = Column(DateTime, nullable=True)
     order_update_date = Column(DateTime, nullable=True)
@@ -151,6 +153,7 @@ class Order(_DECL_BASE):
         self.filled = order.get('filled', self.filled)
         self.remaining = order.get('remaining', self.remaining)
         self.cost = order.get('cost', self.cost)
+        self.fee = order.get('fee', self.fee)
         if 'timestamp' in order and order['timestamp'] is not None:
             self.order_date = datetime.fromtimestamp(order['timestamp'] / 1000, tz=timezone.utc)
 
@@ -377,6 +380,10 @@ class Trade(_DECL_BASE):
             return
 
         logger.info('Updating trade (id=%s) ...', self.id)
+        # to be able to partially buy or sell
+        if order['amount'] < self.amount:
+            self.partial_update(order)
+            return
 
         if order_type in ('market', 'limit') and order['side'] == 'buy':
             # Update open rate and actual amount
@@ -390,6 +397,44 @@ class Trade(_DECL_BASE):
             if self.is_open:
                 logger.info(f'{order_type.upper()}_SELL has been fulfilled for {self}.')
             self.close(safe_value_fallback(order, 'average', 'price'))
+        elif order_type in ('stop_loss_limit', 'stop-loss', 'stop'):
+            self.stoploss_order_id = None
+            self.close_rate_requested = self.stop_loss
+            if self.is_open:
+                logger.info(f'{order_type.upper()} is hit for {self}.')
+            self.close(order['average'])
+        else:
+            raise ValueError(f'Unknown order type: {order_type}')
+        cleanup()
+
+    def partial_update(self, order: Dict) -> None:
+        """
+                Updates this entity with amount and actual open/close rates,
+                modified to support multiple orders keeping the trade opened
+                :param order: order retrieved by exchange.fetch_order()
+                :return: None
+
+                """
+        order_type = order['type']
+
+        if order_type in ('market', 'limit') and order['side'] == 'buy':
+            # Update open rate and actual amount
+            self.open_rate = self.average_open_rate(order['filled'],
+                                                    safe_value_fallback(order, 'average', 'price'),
+                                                    self.amount, self.open_rate)
+            self.amount = Decimal(self.amount or 0) + Decimal(order['filled'])
+            self.decrease_wallet(self, Decimal(order['filled']), self.open_rate)
+            if self.is_open and order['filled'] != 0:
+                logger.info(f'{order_type.upper()}_Partial BUY has been fulfilled for {self}.')
+                self.open_order_id = None
+
+        elif order_type in ('market', 'limit') and order['side'] == 'sell':
+            self.amount = (Decimal(self.amount or 0) - Decimal(order['filled']))
+            if self.is_open and order['filled'] != 0:
+                logger.info(f'{order_type.upper()}_Partial SELL has been fulfilled for {self}.')
+                self.partial_close(self, safe_value_fallback(order, 'average', 'price'))
+                self.increase_wallet(self, Decimal(order['filled']), order['price'])
+
         elif order_type in ('stop_loss_limit', 'stop-loss', 'stop'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
@@ -414,6 +459,17 @@ class Trade(_DECL_BASE):
         self.open_order_id = None
         logger.info(
             'Marking %s as closed as the trade is fulfilled and found no open orders for it.',
+            self
+        )
+
+    def partial_close(self, rate: float) -> None:
+        """     modified close() to keep trade opened
+        """
+        self.is_open = True
+        self.sell_order_status = 'closed'
+        self.open_order_id = None
+        logger.info(
+            'Updated  position %s,',
             self
         )
 
@@ -494,6 +550,8 @@ class Trade(_DECL_BASE):
                     fee: Optional[float] = None) -> float:
         """
         Calculate the absolute profit in stake currency between Close and Open trade
+        Modified to stop using open_tride_price and use open_rate instead,
+        which be actualized if partial buys.
         :param fee: fee to use on the close rate (optional).
             If rate is not set self.fee will be used
         :param rate: close rate to compare with (optional).
@@ -504,13 +562,15 @@ class Trade(_DECL_BASE):
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
-        profit = close_trade_price - self.open_trade_price
+        profit = close_trade_price - self.open_rate * self.amount
         return float(f"{profit:.8f}")
 
     def calc_profit_ratio(self, rate: Optional[float] = None,
                           fee: Optional[float] = None) -> float:
         """
         Calculates the profit as ratio (including fee).
+        Modified to stop using open_tride_price and use open_rate instead,
+        which be actualized if partial buys.
         :param rate: rate to compare with (optional).
             If rate is not set self.close_rate will be used
         :param fee: fee to use on the close rate (optional).
@@ -520,7 +580,7 @@ class Trade(_DECL_BASE):
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
-        profit_ratio = (close_trade_price / self.open_trade_price) - 1
+        profit_ratio = (close_trade_price / (self.open_rate * self.amount)) - 1
         return float(f"{profit_ratio:.8f}")
 
     def select_order(self, order_side: str, is_open: Optional[bool]) -> Optional[Order]:
@@ -537,6 +597,32 @@ class Trade(_DECL_BASE):
             return orders[-1]
         else:
             return None
+
+    def average_open_rate(self, order_amount, order_price, trade_amount, trade_open_rate):
+        """
+                Calculates average entry price when increase an open position with a partial buy
+                :param order_amount: Amount in base coin to buy
+                :param order_price: rate at the time of order buy
+                :trade_amount: Actual amount of the open position. (befor adding new order amount)
+                :trade_open_rate: Actual open price of position.
+                :return: New open rate modified with the order data.
+        """
+        #((order['amount'] * order['price']) + (self.amount * trade.open_rate)) / (order['amount'] + trade.amount)
+        return ((order_amount * order_price) + (trade_amount * trade_open_rate)) / (order_amount + trade_amount)
+
+    def increase_wallet(self, amount: float, rate: float) -> None:
+
+        sell_trade = Decimal(amount) * Decimal(rate)
+        fees = sell_trade * Decimal(self.fee_close)
+        close_trade_price = float(sell_trade - fees)
+        self.stake_amount = Decimal(self.stake_amount or 0) + Decimal(close_trade_price)
+
+    def decrease_wallet(self, amount: float, rate: float) -> None:
+
+        buy_trade = Decimal(amount * rate)
+        fees = buy_trade * Decimal(self.fee_open)
+        open_trade_price = float(buy_trade + fees)
+        self.stake_amount = Decimal(self.stake_amount or 0) - Decimal(open_trade_price)
 
     @staticmethod
     def get_trades(trade_filter=None) -> Query:
