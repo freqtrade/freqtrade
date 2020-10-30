@@ -7,8 +7,8 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 import arrow
-from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
-                        String, create_engine, desc, func, inspect)
+from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer, String,
+                        create_engine, desc, func, inspect)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Query, relationship
@@ -17,6 +17,7 @@ from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql.schema import UniqueConstraint
 
+from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.migrations import check_migrate
@@ -61,6 +62,9 @@ def init_db(db_url: str, clean_open_orders: bool = False) -> None:
     # Copy session attributes to order object too
     Order.session = Trade.session
     Order.query = Order.session.query_property()
+    PairLock.session = Trade.session
+    PairLock.query = PairLock.session.query_property()
+
     previous_tables = inspect(engine).get_table_names()
     _DECL_BASE.metadata.create_all(engine)
     check_migrate(engine, decl_base=_DECL_BASE, previous_tables=previous_tables)
@@ -124,8 +128,7 @@ class Order(_DECL_BASE):
     filled = Column(Float, nullable=True)
     remaining = Column(Float, nullable=True)
     cost = Column(Float, nullable=True)
-    fee = Column(Float, nullable=True)  # OSM
-    fee_cost = Column(Float, nullable=True)  # OSM
+    fee = Column(Float, nullable=True)
     order_date = Column(DateTime, nullable=True, default=datetime.utcnow)
     order_filled_date = Column(DateTime, nullable=True)
     order_update_date = Column(DateTime, nullable=True)
@@ -168,12 +171,12 @@ class Order(_DECL_BASE):
         """
         Get all non-closed orders - useful when trying to batch-update orders
         """
-        filtered_orders = [o for o in orders if o.order_id == order['id']]
+        filtered_orders = [o for o in orders if o.order_id == order.get('id')]
         if filtered_orders:
             oobj = filtered_orders[0]
             oobj.update_from_ccxt_object(order)
         else:
-            logger.warning(f"Did not find order for {order['id']}.")
+            logger.warning(f"Did not find order for {order}.")
 
     @staticmethod
     def parse_from_ccxt_object(order: Dict[str, Any], pair: str, side: str) -> 'Order':
@@ -252,7 +255,7 @@ class Trade(_DECL_BASE):
         self.recalc_open_trade_price()
 
     def __repr__(self):
-        open_since = self.open_date.strftime('%Y-%m-%d %H:%M:%S') if self.is_open else 'closed'
+        open_since = self.open_date.strftime(DATETIME_PRINT_FORMAT) if self.is_open else 'closed'
 
         return (f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
                 f'open_rate={self.open_rate:.8f}, open_since={open_since})')
@@ -278,7 +281,7 @@ class Trade(_DECL_BASE):
             'fee_close_currency': self.fee_close_currency,
 
             'open_date_hum': arrow.get(self.open_date).humanize(),
-            'open_date': self.open_date.strftime("%Y-%m-%d %H:%M:%S"),
+            'open_date': self.open_date.strftime(DATETIME_PRINT_FORMAT),
             'open_timestamp': int(self.open_date.replace(tzinfo=timezone.utc).timestamp() * 1000),
             'open_rate': self.open_rate,
             'open_rate_requested': self.open_rate_requested,
@@ -286,7 +289,7 @@ class Trade(_DECL_BASE):
 
             'close_date_hum': (arrow.get(self.close_date).humanize()
                                if self.close_date else None),
-            'close_date': (self.close_date.strftime("%Y-%m-%d %H:%M:%S")
+            'close_date': (self.close_date.strftime(DATETIME_PRINT_FORMAT)
                            if self.close_date else None),
             'close_timestamp': int(self.close_date.replace(
                 tzinfo=timezone.utc).timestamp() * 1000) if self.close_date else None,
@@ -302,7 +305,7 @@ class Trade(_DECL_BASE):
             'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,
             'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
             'stoploss_order_id': self.stoploss_order_id,
-            'stoploss_last_update': (self.stoploss_last_update.strftime("%Y-%m-%d %H:%M:%S")
+            'stoploss_last_update': (self.stoploss_last_update.strftime(DATETIME_PRINT_FORMAT)
                                      if self.stoploss_last_update else None),
             'stoploss_last_update_timestamp': int(self.stoploss_last_update.replace(
                 tzinfo=timezone.utc).timestamp() * 1000) if self.stoploss_last_update else None,
@@ -444,6 +447,44 @@ class Trade(_DECL_BASE):
             raise ValueError(f'Unknown order type: {order_type}')
         cleanup_db()
 
+    def partial_update(self, order: Dict) -> None:
+        """
+                Updates this entity with amount and actual open/close rates,
+                modified to support multiple orders keeping the trade opened
+                :param order: order retrieved by exchange.fetch_order()
+                :return: None
+
+                """
+        order_type = order['type']
+
+        if order_type in ('market', 'limit') and order['side'] == 'buy':
+            # Update open rate and actual amount
+            self.open_rate = self.average_open_rate(order['filled'],
+                                                    safe_value_fallback(order, 'average', 'price'),
+                                                    self.amount, self.open_rate)
+            self.amount = Decimal(self.amount or 0) + Decimal(order['filled'])
+            self.decrease_wallet(self, Decimal(order['filled']), self.open_rate)
+            if self.is_open and order['filled'] != 0:
+                logger.info(f'{order_type.upper()}_Partial BUY has been fulfilled for {self}.')
+                self.open_order_id = None
+
+        elif order_type in ('market', 'limit') and order['side'] == 'sell':
+            self.amount = (Decimal(self.amount or 0) - Decimal(order['filled']))
+            if self.is_open and order['filled'] != 0:
+                logger.info(f'{order_type.upper()}_Partial SELL has been fulfilled for {self}.')
+                self.partial_close(self, safe_value_fallback(order, 'average', 'price'))
+                self.increase_wallet(self, Decimal(order['filled']), order['price'])
+
+        elif order_type in ('stop_loss_limit', 'stop-loss', 'stop'):
+            self.stoploss_order_id = None
+            self.close_rate_requested = self.stop_loss
+            if self.is_open:
+                logger.info(f'{order_type.upper()} is hit for {self}.')
+            self.close(order['average'])
+        else:
+            raise ValueError(f'Unknown order type: {order_type}')
+        cleanup_db()
+
     def close(self, rate: float) -> None:
         """
         Sets close_rate to the given rate, calculates total profit
@@ -468,7 +509,7 @@ class Trade(_DECL_BASE):
         self.sell_order_status = 'closed'
         self.open_order_id = None
         logger.info(
-            'Updated  position %s,',
+            'Updated position %s,',
             self
         )
 
@@ -606,7 +647,6 @@ class Trade(_DECL_BASE):
                 :trade_open_rate: Actual open price of position.
                 :return: New open rate modified with the order data.
         """
-        #((order['amount'] * order['price']) + (self.amount * trade.open_rate)) / (order['amount'] + trade.amount)
         return ((order_amount * order_price) + (trade_amount * trade_open_rate)) / (order_amount + trade_amount)
 
     def increase_wallet(self, amount: float, rate: float) -> None:
@@ -758,8 +798,8 @@ class PairLock(_DECL_BASE):
     active = Column(Boolean, nullable=False, default=True, index=True)
 
     def __repr__(self):
-        lock_time = self.lock_time.strftime('%Y-%m-%d %H:%M:%S')
-        lock_end_time = self.lock_end_time.strftime('%Y-%m-%d %H:%M:%S')
+        lock_time = self.lock_time.strftime(DATETIME_PRINT_FORMAT)
+        lock_end_time = self.lock_end_time.strftime(DATETIME_PRINT_FORMAT)
         return (f'PairLock(id={self.id}, pair={self.pair}, lock_time={lock_time}, '
                 f'lock_end_time={lock_end_time})')
 
@@ -783,9 +823,9 @@ class PairLock(_DECL_BASE):
     def to_json(self) -> Dict[str, Any]:
         return {
             'pair': self.pair,
-            'lock_time': self.lock_time.strftime('%Y-%m-%d %H:%M:%S'),
+            'lock_time': self.lock_time.strftime(DATETIME_PRINT_FORMAT),
             'lock_timestamp': int(self.lock_time.replace(tzinfo=timezone.utc).timestamp() * 1000),
-            'lock_end_time': self.lock_end_time.strftime('%Y-%m-%d %H:%M:%S'),
+            'lock_end_time': self.lock_end_time.strftime(DATETIME_PRINT_FORMAT),
             'lock_end_timestamp': int(self.lock_end_time.replace(tzinfo=timezone.utc
                                                                  ).timestamp() * 1000),
             'reason': self.reason,
