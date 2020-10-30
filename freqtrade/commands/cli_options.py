@@ -4,6 +4,7 @@ Definition of cli arguments used in arguments.py
 from argparse import ArgumentTypeError
 
 from freqtrade import __version__, constants
+from freqtrade.constants import HYPEROPT_LOSS_BUILTIN
 
 
 def check_int_positive(value: str) -> int:
@@ -252,23 +253,19 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='INT',
         default=1,
     ),
-    "hyperopt_continue": Arg(
-        "--continue",
-        help="Continue hyperopt from previous runs. "
-        "By default, temporary files will be removed and hyperopt will start from scratch.",
-        default=False,
-        action='store_true',
-    ),
     "hyperopt_loss": Arg(
         '--hyperopt-loss',
         help='Specify the class name of the hyperopt loss function class (IHyperOptLoss). '
         'Different functions can generate completely different results, '
         'since the target for optimization is different. Built-in Hyperopt-loss-functions are: '
-        'DefaultHyperOptLoss, OnlyProfitHyperOptLoss, SharpeHyperOptLoss, SharpeHyperOptLossDaily, '
-        'SortinoHyperOptLoss, SortinoHyperOptLossDaily.'
-        '(default: `%(default)s`).',
+        f'{", ".join(HYPEROPT_LOSS_BUILTIN)}',
         metavar='NAME',
-        default=constants.DEFAULT_HYPEROPT_LOSS,
+    ),
+    "hyperoptexportfilename": Arg(
+        '--hyperopt-filename',
+        help='Hyperopt result filename.'
+        'Example: `--hyperopt-filename=hyperopt_results_2020-09-27_16-20-48.pickle`',
+        metavar='FILENAME',
     ),
     # List exchanges
     "print_one_column": Arg(

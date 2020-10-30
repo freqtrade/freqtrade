@@ -10,13 +10,14 @@ import numpy as np
 import pytest
 from pandas import DataFrame, to_datetime
 
-from freqtrade.exceptions import OperationalException
 from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import Edge, PairInfo
+from freqtrade.exceptions import OperationalException
 from freqtrade.strategy.interface import SellType
 from tests.conftest import get_patched_freqtradebot, log_has
 from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
                             _get_frame_time_from_offset)
+
 
 # Cases to be tested:
 # 1) Open trade should be removed from the end
@@ -498,3 +499,61 @@ def test_process_expectancy_remove_pumps(mocker, edge_conf, fee,):
     assert final['TEST/BTC'].stoploss == -0.9
     assert final['TEST/BTC'].nb_trades == len(trades_df) - 1
     assert round(final['TEST/BTC'].winrate, 10) == 0.0
+
+
+def test_process_expectancy_only_wins(mocker, edge_conf, fee,):
+    edge_conf['edge']['min_trade_number'] = 2
+    freqtrade = get_patched_freqtradebot(mocker, edge_conf)
+
+    freqtrade.exchange.get_fee = fee
+    edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
+
+    trades = [
+        {'pair': 'TEST/BTC',
+         'stoploss': -0.9,
+         'profit_percent': '',
+         'profit_abs': '',
+         'open_date': np.datetime64('2018-10-03T00:05:00.000000000'),
+         'close_date': np.datetime64('2018-10-03T00:10:00.000000000'),
+         'open_index': 1,
+         'close_index': 1,
+         'trade_duration': '',
+         'open_rate': 15,
+         'close_rate': 17,
+         'exit_type': 'sell_signal'},
+        {'pair': 'TEST/BTC',
+         'stoploss': -0.9,
+         'profit_percent': '',
+         'profit_abs': '',
+         'open_date': np.datetime64('2018-10-03T00:20:00.000000000'),
+         'close_date': np.datetime64('2018-10-03T00:25:00.000000000'),
+         'open_index': 4,
+         'close_index': 4,
+         'trade_duration': '',
+         'open_rate': 10,
+         'close_rate': 20,
+         'exit_type': 'sell_signal'},
+        {'pair': 'TEST/BTC',
+         'stoploss': -0.9,
+         'profit_percent': '',
+         'profit_abs': '',
+         'open_date': np.datetime64('2018-10-03T00:30:00.000000000'),
+         'close_date': np.datetime64('2018-10-03T00:40:00.000000000'),
+         'open_index': 6,
+         'close_index': 7,
+         'trade_duration': '',
+         'open_rate': 26,
+         'close_rate': 134,
+         'exit_type': 'sell_signal'}
+    ]
+
+    trades_df = DataFrame(trades)
+    trades_df = edge._fill_calculable_fields(trades_df)
+    final = edge._process_expectancy(trades_df)
+
+    assert 'TEST/BTC' in final
+    assert final['TEST/BTC'].stoploss == -0.9
+    assert final['TEST/BTC'].nb_trades == len(trades_df)
+    assert round(final['TEST/BTC'].winrate, 10) == 1.0
+    assert round(final['TEST/BTC'].risk_reward_ratio, 10) == float('inf')
+    assert round(final['TEST/BTC'].expectancy, 10) == float('inf')

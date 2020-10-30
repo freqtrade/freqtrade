@@ -96,7 +96,7 @@ Below is an outline of exception inheritance hierarchy:
 
 ## Modules
 
-### Dynamic Pairlist
+### Pairlists
 
 You have a great idea for a new pair selection algorithm you would like to try out? Great.
 Hopefully you also want to contribute this back upstream.

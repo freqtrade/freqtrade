@@ -2,17 +2,17 @@
 Helpers when analyzing backtest data
 """
 import logging
+from datetime import timezone
 from pathlib import Path
-from typing import Dict, Union, Tuple, Any, Optional
+from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from datetime import timezone
 
-from freqtrade import persistence
 from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.misc import json_load
-from freqtrade.persistence import Trade
+from freqtrade.persistence import Trade, init_db
+
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +21,11 @@ BT_DATA_COLUMNS = ["pair", "profit_percent", "open_date", "close_date", "index",
                    "open_rate", "close_rate", "open_at_end", "sell_reason"]
 
 
-def get_latest_backtest_filename(directory: Union[Path, str]) -> str:
+def get_latest_optimize_filename(directory: Union[Path, str], variant: str) -> str:
     """
     Get latest backtest export based on '.last_result.json'.
     :param directory: Directory to search for last result
+    :param variant: 'backtest' or 'hyperopt' - the method to return
     :return: string containing the filename of the latest backtest result
     :raises: ValueError in the following cases:
         * Directory does not exist
@@ -44,10 +45,57 @@ def get_latest_backtest_filename(directory: Union[Path, str]) -> str:
     with filename.open() as file:
         data = json_load(file)
 
-    if 'latest_backtest' not in data:
+    if f'latest_{variant}' not in data:
         raise ValueError(f"Invalid '{LAST_BT_RESULT_FN}' format.")
 
-    return data['latest_backtest']
+    return data[f'latest_{variant}']
+
+
+def get_latest_backtest_filename(directory: Union[Path, str]) -> str:
+    """
+    Get latest backtest export based on '.last_result.json'.
+    :param directory: Directory to search for last result
+    :return: string containing the filename of the latest backtest result
+    :raises: ValueError in the following cases:
+        * Directory does not exist
+        * `directory/.last_result.json` does not exist
+        * `directory/.last_result.json` has the wrong content
+    """
+    return get_latest_optimize_filename(directory, 'backtest')
+
+
+def get_latest_hyperopt_filename(directory: Union[Path, str]) -> str:
+    """
+    Get latest hyperopt export based on '.last_result.json'.
+    :param directory: Directory to search for last result
+    :return: string containing the filename of the latest hyperopt result
+    :raises: ValueError in the following cases:
+        * Directory does not exist
+        * `directory/.last_result.json` does not exist
+        * `directory/.last_result.json` has the wrong content
+    """
+    try:
+        return get_latest_optimize_filename(directory, 'hyperopt')
+    except ValueError:
+        # Return default (legacy) pickle filename
+        return 'hyperopt_results.pickle'
+
+
+def get_latest_hyperopt_file(directory: Union[Path, str], predef_filename: str = None) -> Path:
+    """
+    Get latest hyperopt export based on '.last_result.json'.
+    :param directory: Directory to search for last result
+    :return: string containing the filename of the latest hyperopt result
+    :raises: ValueError in the following cases:
+        * Directory does not exist
+        * `directory/.last_result.json` does not exist
+        * `directory/.last_result.json` has the wrong content
+    """
+    if isinstance(directory, str):
+        directory = Path(directory)
+    if predef_filename:
+        return directory / predef_filename
+    return directory / get_latest_hyperopt_filename(directory)
 
 
 def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
@@ -169,7 +217,7 @@ def load_trades_from_db(db_url: str, strategy: Optional[str] = None) -> pd.DataF
                      Can also serve as protection to load the correct result.
     :return: Dataframe containing Trades
     """
-    persistence.init(db_url, clean_open_orders=False)
+    init_db(db_url, clean_open_orders=False)
 
     columns = ["pair", "open_date", "close_date", "profit", "profit_percent",
                "open_rate", "close_rate", "amount", "trade_duration", "sell_reason",

@@ -1,5 +1,5 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from freqtrade.strategy import merge_informative_pair, timeframe_to_minutes
 

@@ -6,6 +6,7 @@ from pandas import DataFrame
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.strategy.interface import SellType
 
+
 tests_start_time = arrow.get(2018, 10, 3)
 tests_timeframe = '1h'
 

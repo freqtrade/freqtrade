@@ -37,12 +37,20 @@ pip install -r requirements-hyperopt.txt
 Before we start digging into Hyperopt, we recommend you to take a look at
 the sample hyperopt file located in [user_data/hyperopts/](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt.py).
 
-Configuring hyperopt is similar to writing your own strategy, and many tasks will be similar and a lot of code can be copied across from the strategy.
+Configuring hyperopt is similar to writing your own strategy, and many tasks will be similar.
 
-The simplest way to get started is to use `freqtrade new-hyperopt --hyperopt AwesomeHyperopt`.
-This will create a new hyperopt file from a template, which will be located under `user_data/hyperopts/AwesomeHyperopt.py`.
+!!! Tip "About this page"
+    For this page, we will be using a fictional strategy called `AwesomeStrategy` - which will be optimized using the `AwesomeHyperopt` class.
 
-### Checklist on all tasks / possibilities in hyperopt
+The simplest way to get started is to use the following, command, which will create a new hyperopt file from a template, which will be located under `user_data/hyperopts/AwesomeHyperopt.py`.
+
+``` bash
+freqtrade new-hyperopt --hyperopt AwesomeHyperopt
+```
+
+### Hyperopt checklist
+
+Checklist on all tasks / possibilities in hyperopt
 
 Depending on the space you want to optimize, only some of the below are required:
 
@@ -54,17 +62,15 @@ Depending on the space you want to optimize, only some of the below are required
 !!! Note
     `populate_indicators` needs to create all indicators any of thee spaces may use, otherwise hyperopt will not work.
 
-Optional - can also be loaded from a strategy:
+Optional in hyperopt - can also be loaded from a strategy (recommended):
 
 * copy `populate_indicators` from your strategy - otherwise default-strategy will be used
 * copy `populate_buy_trend` from your strategy - otherwise default-strategy will be used
 * copy `populate_sell_trend` from your strategy - otherwise default-strategy will be used
 
 !!! Note
-    Assuming the optional methods are not in your hyperopt file, please use `--strategy AweSomeStrategy` which contains these methods so hyperopt can use these methods instead.
-
-!!! Note
     You always have to provide a strategy to Hyperopt, even if your custom Hyperopt class contains all methods.
+    Assuming the optional methods are not in your hyperopt file, please use `--strategy AweSomeStrategy` which contains these methods so hyperopt can use these methods instead.
 
 Rarely you may also need to override:
 
@@ -80,17 +86,20 @@ Rarely you may also need to override:
     # Have a working strategy at hand.
     freqtrade new-hyperopt --hyperopt EmptyHyperopt
 
-    freqtrade hyperopt --hyperopt EmptyHyperopt --spaces roi stoploss trailing --strategy MyWorkingStrategy --config config.json -e 100
+    freqtrade hyperopt --hyperopt EmptyHyperopt --hyperopt-loss SharpeHyperOptLossDaily --spaces roi stoploss trailing --strategy MyWorkingStrategy --config config.json -e 100
     ```
 
-### 1. Install a Custom Hyperopt File
+### Create a Custom Hyperopt File
 
-Put your hyperopt file into the directory `user_data/hyperopts`.
+Let assume you want a hyperopt file `AwesomeHyperopt.py`:  
 
-Let assume you want a hyperopt file `awesome_hyperopt.py`:  
-Copy the file `user_data/hyperopts/sample_hyperopt.py` into `user_data/hyperopts/awesome_hyperopt.py`
+``` bash
+freqtrade new-hyperopt --hyperopt AwesomeHyperopt
+```
 
-### 2. Configure your Guards and Triggers
+This command will create a new hyperopt file from a template, allowing you to get started quickly.
+
+### Configure your Guards and Triggers
 
 There are two places you need to change in your hyperopt file to add a new buy hyperopt for testing:
 
@@ -102,14 +111,16 @@ There you have two different types of indicators: 1. `guards` and 2. `triggers`.
 1. Guards are conditions like "never buy if ADX < 10", or never buy if current price is over EMA10.
 2. Triggers are ones that actually trigger buy in specific moment, like "buy when EMA5 crosses over EMA10" or "buy when close price touches lower Bollinger band".
 
-Hyperoptimization will, for each eval round, pick one trigger and possibly
-multiple guards. The constructed strategy will be something like
-"*buy exactly when close price touches lower Bollinger band, BUT only if
+!!! Hint "Guards and Triggers"
+    Technically, there is no difference between Guards and Triggers.  
+    However, this guide will make this distinction to make it clear that signals should not be "sticking".
+    Sticking signals are signals that are active for multiple candles. This can lead into buying a signal late (right before the signal disappears - which means that the chance of success is a lot lower than right at the beginning).
+
+Hyper-optimization will, for each epoch round, pick one trigger and possibly
+multiple guards. The constructed strategy will be something like "*buy exactly when close price touches lower Bollinger band, BUT only if
 ADX > 10*".
 
-If you have updated the buy strategy, i.e. changed the contents of
-`populate_buy_trend()` method, you have to update the `guards` and
-`triggers` your hyperopt must use correspondingly.
+If you have updated the buy strategy, i.e. changed the contents of `populate_buy_trend()` method, you have to update the `guards` and `triggers` your hyperopt must use correspondingly.
 
 #### Sell optimization
 
@@ -126,7 +137,7 @@ To avoid naming collisions in the search-space, please prefix all sell-spaces wi
 
 The Strategy class exposes the timeframe value as the `self.timeframe` attribute.
 The same value is available as class-attribute `HyperoptName.timeframe`.
-In the case of the linked sample-value this would be `SampleHyperOpt.timeframe`.
+In the case of the linked sample-value this would be `AwesomeHyperopt.timeframe`.
 
 ## Solving a Mystery
 
@@ -154,7 +165,7 @@ We will start by defining a search space:
 
 Above definition says: I have five parameters I want you to randomly combine
 to find the best combination. Two of them are integer values (`adx-value`
-and `rsi-value`) and I want you test in the range of values 20 to 40.
+and `rsi-value`) and I want you test in the range of values 20 to 40.  
 Then we have three category variables. First two are either `True` or `False`.
 We use these to either enable or disable the ADX and RSI guards. The last
 one we call `trigger` and use it to decide which buy trigger we want to use.
@@ -192,27 +203,25 @@ So let's write the buy strategy using these values:
         return populate_buy_trend
 ```
 
-Hyperopting will now call this `populate_buy_trend` as many times you ask it (`epochs`)
-with different value combinations. It will then use the given historical data and make
-buys based on the buy signals generated with the above function and based on the results
-it will end with telling you which parameter combination produced the best profits.
+Hyperopt will now call `populate_buy_trend()` many times (`epochs`) with different value combinations.  
+It will use the given historical data and make buys based on the buy signals generated with the above function.  
+Based on the results, hyperopt will tell you which parameter combination produced the best results (based on the configured [loss function](#loss-functions)).
 
-The above setup expects to find ADX, RSI and Bollinger Bands in the populated indicators.
-When you want to test an indicator that isn't used by the bot currently, remember to
-add it to the `populate_indicators()` method in your custom hyperopt file.
+!!! Note
+    The above setup expects to find ADX, RSI and Bollinger Bands in the populated indicators.
+    When you want to test an indicator that isn't used by the bot currently, remember to
+    add it to the `populate_indicators()` method in your strategy or hyperopt file.
 
 ## Loss-functions
 
 Each hyperparameter tuning requires a target. This is usually defined as a loss function (sometimes also called objective function), which should decrease for more desirable results, and increase for bad results.
 
-By default, Freqtrade uses a loss function, which has been with freqtrade since the beginning and optimizes mostly for short trade duration and avoiding losses.
-
-A different loss function can be specified by using the `--hyperopt-loss <Class-name>` argument.
+A loss function must be specified via the `--hyperopt-loss <Class-name>` argument (or optionally via the configuration under the `"hyperopt_loss"` key).
 This class should be in its own file within the `user_data/hyperopts/` directory.
 
 Currently, the following loss functions are builtin:
 
-* `DefaultHyperOptLoss` (default legacy Freqtrade hyperoptimization loss function)
+* `ShortTradeDurHyperOptLoss` (default legacy Freqtrade hyperoptimization loss function) - Mostly for short trade duration and avoiding losses.
 * `OnlyProfitHyperOptLoss` (which takes only amount of profit into consideration)
 * `SharpeHyperOptLoss` (optimizes Sharpe Ratio calculated on trade returns relative to standard deviation)
 * `SharpeHyperOptLossDaily` (optimizes Sharpe Ratio calculated on **daily** trade returns relative to standard deviation)
@@ -229,21 +238,20 @@ Because hyperopt tries a lot of combinations to find the best parameters it will
 We strongly recommend to use `screen` or `tmux` to prevent any connection loss.
 
 ```bash
-freqtrade hyperopt --config config.json --hyperopt <hyperoptname> -e 500 --spaces all
+freqtrade hyperopt --config config.json --hyperopt <hyperoptname> --hyperopt-loss <hyperoptlossname> --strategy <strategyname> -e 500 --spaces all
 ```
 
 Use `<hyperoptname>` as the name of the custom hyperopt used.
 
-The `-e` option will set how many evaluations hyperopt will do. We recommend
-running at least several thousand evaluations.
+The `-e` option will set how many evaluations hyperopt will do. Since hyperopt uses Bayesian search, running too many epochs at once may not produce greater results. Experience has shown that best results are usually not improving much after 500-1000 epochs.  
+Doing multiple runs (executions) with a few 1000 epochs and different random state will most likely produce different results.
 
 The `--spaces all` option determines that all possible parameters should be optimized. Possibilities are listed below.
 
 !!! Note
-    By default, hyperopt will erase previous results and start from scratch. Continuation can be archived by using `--continue`.
-
-!!! Warning
-    When switching parameters or changing configuration options, make sure to not use the argument `--continue` so temporary results can be removed.
+    Hyperopt will store hyperopt results with the timestamp of the hyperopt start time.
+    Reading commands (`hyperopt-list`, `hyperopt-show`) can use `--hyperopt-filename <filename>` to read and display older hyperopt results.
+    You can find a list of filenames with `ls -l user_data/hyperopt_results/`.
 
 ### Execute Hyperopt with different historical data source
 
@@ -251,13 +259,13 @@ If you would like to hyperopt parameters using an alternate historical data set 
 you have on-disk, use the `--datadir PATH` option. By default, hyperopt
 uses data from directory `user_data/data`.
 
-### Running Hyperopt with Smaller Testset
+### Running Hyperopt with a smaller test-set
 
-Use the `--timerange` argument to change how much of the testset you want to use.
+Use the `--timerange` argument to change how much of the test-set you want to use.
 For example, to use one month of data, pass the following parameter to the hyperopt call:
 
 ```bash
-freqtrade hyperopt --timerange 20180401-20180501
+freqtrade hyperopt --hyperopt <hyperoptname> --strategy <strategyname> --timerange 20180401-20180501
 ```
 
 ### Running Hyperopt using methods from a strategy
@@ -265,16 +273,15 @@ freqtrade hyperopt --timerange 20180401-20180501
 Hyperopt can reuse `populate_indicators`, `populate_buy_trend`, `populate_sell_trend` from your strategy, assuming these methods are **not** in your custom hyperopt file, and a strategy is provided.
 
 ```bash
-freqtrade hyperopt --strategy SampleStrategy --hyperopt SampleHyperopt
+freqtrade hyperopt --hyperopt AwesomeHyperopt --hyperopt-loss SharpeHyperOptLossDaily --strategy AwesomeStrategy
 ```
 
 ### Running Hyperopt with Smaller Search Space
 
 Use the `--spaces` option to limit the search space used by hyperopt.
-Letting Hyperopt optimize everything is a huuuuge search space. Often it
-might make more sense to start by just searching for initial buy algorithm.
-Or maybe you just want to optimize your stoploss or roi table for that awesome
-new buy strategy you have.
+Letting Hyperopt optimize everything is a huuuuge search space. 
+Often it might make more sense to start by just searching for initial buy algorithm.
+Or maybe you just want to optimize your stoploss or roi table for that awesome new buy strategy you have.
 
 Legal values are:
 
@@ -318,7 +325,7 @@ The initial state for generation of these random values (random state) is contro
 
 If you have not set this value explicitly in the command line options, Hyperopt seeds the random state with some random value for you. The random state value for each Hyperopt run is shown in the log, so you can copy and paste it into the `--random-state` command line option to repeat the set of the initial random epochs used.
 
-If you have not changed anything in the command line options, configuration, timerange, Strategy and Hyperopt classes, historical data and the Loss Function -- you should obtain same hyperoptimization results with same random state value used.
+If you have not changed anything in the command line options, configuration, timerange, Strategy and Hyperopt classes, historical data and the Loss Function -- you should obtain same hyper-optimization results with same random state value used.
 
 ## Understand the Hyperopt Result
 
@@ -371,7 +378,7 @@ By default, hyperopt prints colorized results -- epochs with positive profit are
 You can use the `--print-all` command line option if you would like to see all results in the hyperopt output, not only the best ones. When `--print-all` is used, current best results are also colorized by default -- they are printed in bold (bright) style. This can also be switched off with the `--no-color` command line option.
 
 !!! Note "Windows and color output"
-    Windows does not support color-output nativly, therefore it is automatically disabled. To have color-output for hyperopt running under windows, please consider using WSL.
+    Windows does not support color-output natively, therefore it is automatically disabled. To have color-output for hyperopt running under windows, please consider using WSL.
 
 ### Understand Hyperopt ROI results
 
@@ -419,7 +426,9 @@ These ranges should be sufficient in most cases. The minutes in the steps (ROI d
 
 If you have the `generate_roi_table()` and `roi_space()` methods in your custom hyperopt file, remove them in order to utilize these adaptive ROI tables and the ROI hyperoptimization space generated by Freqtrade by default.
 
-Override the `roi_space()` method if you need components of the ROI tables to vary in other ranges. Override the `generate_roi_table()` and `roi_space()` methods and implement your own custom approach for generation of the ROI tables during hyperoptimization if you need a different structure of the ROI tables or other amount of rows (steps). A sample for these methods can be found in [user_data/hyperopts/sample_hyperopt_advanced.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt_advanced.py).
+Override the `roi_space()` method if you need components of the ROI tables to vary in other ranges. Override the `generate_roi_table()` and `roi_space()` methods and implement your own custom approach for generation of the ROI tables during hyperoptimization if you need a different structure of the ROI tables or other amount of rows (steps). 
+
+A sample for these methods can be found in [sample_hyperopt_advanced.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt_advanced.py).
 
 ### Understand Hyperopt Stoploss results
 
@@ -441,7 +450,7 @@ Stoploss: -0.27996
 
 In order to use this best stoploss value found by Hyperopt in backtesting and for live trades/dry-run, copy-paste it as the value of the `stoploss` attribute of your custom strategy:
 
-```
+``` python
     # Optimal stoploss designed for the strategy
     # This attribute will be overridden if the config file contains "stoploss"
     stoploss = -0.27996
@@ -475,7 +484,7 @@ Trailing stop:
 
 In order to use these best trailing stop parameters found by Hyperopt in backtesting and for live trades/dry-run, copy-paste them as the values of the corresponding attributes of your custom strategy:
 
-```
+``` python
     # Trailing stop
     # These attributes will be overridden if the config file contains corresponding values.
     trailing_stop = True
@@ -494,10 +503,14 @@ Override the `trailing_space()` method and define the desired range in it if you
 
 ## Show details of Hyperopt results
 
-After you run Hyperopt for the desired amount of epochs, you can later list all results for analysis, select only best or profitable once, and show the details for any of the epochs previously evaluated. This can be done with the `hyperopt-list` and `hyperopt-show` subcommands. The usage of these subcommands is described in the [Utils](utils.md#list-hyperopt-results) chapter.
+After you run Hyperopt for the desired amount of epochs, you can later list all results for analysis, select only best or profitable once, and show the details for any of the epochs previously evaluated. This can be done with the `hyperopt-list` and `hyperopt-show` sub-commands. The usage of these sub-commands is described in the [Utils](utils.md#list-hyperopt-results) chapter.
 
 ## Validate backtesting results
 
 Once the optimized strategy has been implemented into your strategy, you should backtest this strategy to make sure everything is working as expected.
 
-To achieve same results (number of trades, their durations, profit, etc.) than during Hyperopt, please use same set of arguments `--dmmp`/`--disable-max-market-positions` and `--eps`/`--enable-position-stacking` for Backtesting.
+To achieve same results (number of trades, their durations, profit, etc.) than during Hyperopt, please use same configuration and parameters (timerange, timeframe, ...) used for hyperopt `--dmmp`/`--disable-max-market-positions` and `--eps`/`--enable-position-stacking` for Backtesting.
+
+Should results don't match, please double-check to make sure you transferred all conditions correctly.
+Pay special care to the stoploss (and trailing stoploss) parameters, as these are often set in configuration files, which override changes to the strategy.
+You should also carefully review the log of your backtest to ensure that there were no parameters inadvertently set by the configuration (like `stoploss` or `trailing_stop`).

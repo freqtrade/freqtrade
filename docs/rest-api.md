@@ -104,32 +104,42 @@ By default, the script assumes `127.0.0.1` (localhost) and port `8080` to be use
 python3 scripts/rest_client.py --config rest_config.json <command> [optional parameters]
 ```
 
-## Available commands
+## Available endpoints
 
 |  Command | Description |
 |----------|-------------|
 | `ping` | Simple command testing the API Readiness - requires no authentication.
-| `start` | Starts the trader
-| `stop` | Stops the trader
+| `start` | Starts the trader.
+| `stop` | Stops the trader.
 | `stopbuy` | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
-| `reload_config` | Reloads the configuration file
+| `reload_config` | Reloads the configuration file.
 | `trades` | List last trades.
 | `delete_trade <trade_id>` | Remove trade from the database. Tries to close open orders. Requires manual handling of this trade on the exchange.
-| `show_config` | Shows part of the current configuration with relevant settings to operation
-| `logs` | Shows last log messages
-| `status` | Lists all open trades
-| `count` | Displays number of trades used and available
-| `profit` | Display a summary of your profit/loss from close trades and some stats about your performance
+| `show_config` | Shows part of the current configuration with relevant settings to operation.
+| `logs` | Shows last log messages.
+| `status` | Lists all open trades.
+| `count` | Displays number of trades used and available.
+| `locks` | Displays currently locked pairs.
+| `profit` | Display a summary of your profit/loss from close trades and some stats about your performance.
 | `forcesell <trade_id>` | Instantly sells the given trade  (Ignoring `minimum_roi`).
 | `forcesell all` | Instantly sells all open trades (Ignoring `minimum_roi`).
 | `forcebuy <pair> [rate]` | Instantly buys the given pair. Rate is optional. (`forcebuy_enable` must be set to True)
-| `performance` | Show performance of each finished trade grouped by pair
-| `balance` | Show account balance per currency
-| `daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7)
-| `whitelist` | Show the current whitelist
+| `performance` | Show performance of each finished trade grouped by pair.
+| `balance` | Show account balance per currency.
+| `daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7).
+| `whitelist` | Show the current whitelist.
 | `blacklist [pair]` | Show the current blacklist, or adds a pair to the blacklist.
 | `edge` | Show validated pairs by Edge if it is enabled.
-| `version` | Show version
+| `pair_candles` | Returns dataframe for a pair / timeframe combination while the bot is running. **Alpha**
+| `pair_history` | Returns an analyzed dataframe for a given timerange, analyzed by a given strategy. **Alpha**
+| `plot_config` | Get plot config from the strategy (or nothing if not configured). **Alpha**
+| `strategies` | List strategies in strategy directory. **Alpha**
+| `strategy <strategy>` | Get specific Strategy content. **Alpha**
+| `available_pairs` | List available backtest data. **Alpha**
+| `version` | Show version.
+
+!!! Warning "Alpha status"
+    Endpoints labeled with *Alpha status* above may change at any time without notice.
 
 Possible commands can be listed from the rest-client script using the `help` command.
 
@@ -139,6 +149,12 @@ python3 scripts/rest_client.py help
 
 ``` output
 Possible commands:
+
+available_pairs
+	Return available pair (backtest data) based on timeframe / stake_currency selection
+
+        :param timeframe: Only pairs with this timeframe available.
+        :param stake_currency: Only pairs that include this timeframe
 
 balance
 	Get the account balance.
@@ -179,8 +195,26 @@ logs
 
         :param limit: Limits log messages to the last <limit> logs. No limit to get all the trades.
 
+pair_candles
+	Return live dataframe for <pair><timeframe>.
+
+        :param pair: Pair to get data for
+        :param timeframe: Only pairs with this timeframe available.
+        :param limit: Limit result to the last n candles.
+
+pair_history
+	Return historic, analyzed dataframe
+
+        :param pair: Pair to get data for
+        :param timeframe: Only pairs with this timeframe available.
+        :param strategy: Strategy to analyze and get values for
+        :param timerange: Timerange to get data for (same format than --timerange endpoints)
+
 performance
 	Return the performance of the different coins.
+
+plot_config
+	Return plot configuration if the strategy defines one.
 
 profit
 	Return the profit summary.
@@ -204,6 +238,14 @@ stop
 stopbuy
 	Stop buying (but handle sells gracefully). Use `reload_config` to reset.
 
+strategies
+	Lists available strategies
+
+strategy
+	Get strategy details
+
+        :param strategy: Strategy class name
+
 trades
 	Return trades history.
 
@@ -214,7 +256,6 @@ version
 
 whitelist
 	Show the current whitelist.
-
 
 ```
 

@@ -10,6 +10,7 @@ from tests.conftest import get_patched_exchange
 
 from .test_exchange import ccxt_exceptionhandlers
 
+
 STOPLOSS_ORDERTYPE = 'stop'
 
 

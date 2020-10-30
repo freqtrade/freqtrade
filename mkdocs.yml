@@ -55,16 +55,16 @@ markdown_extensions:
         permalink: true
     - pymdownx.arithmatex:
         generic: true
-    - pymdownx.caret
-    - pymdownx.critic
     - pymdownx.details
     - pymdownx.inlinehilite
     - pymdownx.magiclink
-    - pymdownx.mark
+    - pymdownx.pathconverter
     - pymdownx.smartsymbols
+    - pymdownx.snippets:
+        base_path: docs
+        check_paths: true
     - pymdownx.tabbed
     - pymdownx.superfences
     - pymdownx.tasklist:
         custom_checkbox: true
-    - pymdownx.tilde
     - mdx_truly_sane_lists

@@ -74,6 +74,10 @@ def test_sync_wallet_at_boot(mocker, default_conf):
     freqtrade.wallets.update()
     assert update_mock.call_count == 1
 
+    assert freqtrade.wallets.get_free('NOCURRENCY') == 0
+    assert freqtrade.wallets.get_used('NOCURRENCY') == 0
+    assert freqtrade.wallets.get_total('NOCURRENCY') == 0
+
 
 def test_sync_wallet_missing_data(mocker, default_conf):
     default_conf['dry_run'] = False

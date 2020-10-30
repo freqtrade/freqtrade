@@ -2,13 +2,11 @@
 import logging
 
 from freqtrade.configuration.timerange import TimeRange
-from freqtrade.data.converter import (convert_ohlcv_format,
-                                      convert_trades_format,
-                                      ohlcv_fill_up_missing_data,
-                                      ohlcv_to_dataframe, trades_dict_to_list,
-                                      trades_remove_duplicates, trim_dataframe)
-from freqtrade.data.history import (get_timerange, load_data,
-                                    load_pair_history, validate_backtest_data)
+from freqtrade.data.converter import (convert_ohlcv_format, convert_trades_format,
+                                      ohlcv_fill_up_missing_data, ohlcv_to_dataframe,
+                                      trades_dict_to_list, trades_remove_duplicates, trim_dataframe)
+from freqtrade.data.history import (get_timerange, load_data, load_pair_history,
+                                    validate_backtest_data)
 from tests.conftest import log_has
 from tests.data.test_history import _backup_file, _clean_test_file
 

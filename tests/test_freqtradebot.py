@@ -10,28 +10,23 @@ from unittest.mock import ANY, MagicMock, PropertyMock
 import arrow
 import pytest
 
-from freqtrade.constants import (CANCEL_REASON, MATH_CLOSE_PREC,
-                                 UNLIMITED_STAKE_AMOUNT)
-from freqtrade.exceptions import (DependencyException, ExchangeError,
-                                  InsufficientFundsError,
-                                  InvalidOrderException, OperationalException,
-                                  PricingError, TemporaryError)
+from freqtrade.constants import CANCEL_REASON, MATH_CLOSE_PREC, UNLIMITED_STAKE_AMOUNT
+from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
+                                  InvalidOrderException, OperationalException, PricingError,
+                                  TemporaryError)
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.persistence import Trade
-from freqtrade.persistence.models import Order
+from freqtrade.persistence import Order, Trade
+from freqtrade.persistence.models import PairLock
 from freqtrade.rpc import RPCMessageType
 from freqtrade.state import RunMode, State
 from freqtrade.strategy.interface import SellCheckTuple, SellType
 from freqtrade.worker import Worker
-from tests.conftest import (create_mock_trades, get_patched_freqtradebot,
-                            get_patched_worker, log_has, log_has_re,
-                            patch_edge, patch_exchange, patch_get_signal,
+from tests.conftest import (create_mock_trades, get_patched_freqtradebot, get_patched_worker,
+                            log_has, log_has_re, patch_edge, patch_exchange, patch_get_signal,
                             patch_wallet, patch_whitelist)
-from tests.conftest_trades import (MOCK_TRADE_COUNT, mock_order_1,
-                                   mock_order_2, mock_order_2_sell,
-                                   mock_order_3, mock_order_3_sell,
-                                   mock_order_4, mock_order_5_stoploss,
-                                   mock_order_6_sell)
+from tests.conftest_trades import (MOCK_TRADE_COUNT, mock_order_1, mock_order_2, mock_order_2_sell,
+                                   mock_order_3, mock_order_3_sell, mock_order_4,
+                                   mock_order_5_stoploss, mock_order_6_sell)
 
 
 def patch_RPCManager(mocker) -> MagicMock:
@@ -71,7 +66,7 @@ def test_process_stopped(mocker, default_conf) -> None:
 
 
 def test_bot_cleanup(mocker, default_conf, caplog) -> None:
-    mock_cleanup = mocker.patch('freqtrade.persistence.cleanup')
+    mock_cleanup = mocker.patch('freqtrade.freqtradebot.cleanup_db')
     coo_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.cancel_all_open_orders')
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     freqtrade.cleanup()
@@ -2805,6 +2800,7 @@ def test_execute_sell_sloe_cancel_exception(mocker, default_conf, ticker, fee, c
 
     trade = Trade.query.first()
     Trade.session = MagicMock()
+    PairLock.session = MagicMock()
 
     freqtrade.config['dry_run'] = False
     trade.stoploss_order_id = "abcd"
@@ -3255,7 +3251,6 @@ def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down, mocker, caplo
     freqtrade.execute_sell(trade=trade, limit=ticker_sell_down()['bid'],
                            sell_reason=SellType.STOP_LOSS)
     trade.close(ticker_sell_down()['bid'])
-    assert trade.pair in freqtrade.strategy._pair_locked_until
     assert freqtrade.strategy.is_pair_locked(trade.pair)
 
     # reinit - should buy other pair.

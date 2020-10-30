@@ -3,8 +3,8 @@ import logging
 import time
 from functools import wraps
 
-from freqtrade.exceptions import (DDosProtection, RetryableOrderError,
-                                  TemporaryError)
+from freqtrade.exceptions import DDosProtection, RetryableOrderError, TemporaryError
+
 
 logger = logging.getLogger(__name__)
 

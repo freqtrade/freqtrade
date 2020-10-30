@@ -27,12 +27,11 @@
         "use_sell_signal": true,
         "sell_profit_only": false,
         "ignore_roi_if_buy_signal": false
-
     },
     "exchange": {
         "name": "kraken",
-        "key": "",
-        "secret": "",
+        "key": "your_exchange_key",
+        "secret": "your_exchange_key",
         "ccxt_config": {"enableRateLimit": true},
         "ccxt_async_config": {
             "enableRateLimit": true,

@@ -1,40 +1,43 @@
 import logging
 import threading
+from copy import deepcopy
 from datetime import date, datetime
 from ipaddress import IPv4Address
+from pathlib import Path
 from typing import Any, Callable, Dict
 
 from arrow import Arrow
 from flask import Flask, jsonify, request
 from flask.json import JSONEncoder
 from flask_cors import CORS
-from flask_jwt_extended import (JWTManager, create_access_token,
-                                create_refresh_token, get_jwt_identity,
-                                jwt_refresh_token_required,
+from flask_jwt_extended import (JWTManager, create_access_token, create_refresh_token,
+                                get_jwt_identity, jwt_refresh_token_required,
                                 verify_jwt_in_request_optional)
 from werkzeug.security import safe_str_cmp
 from werkzeug.serving import make_server
 
 from freqtrade.__init__ import __version__
-from freqtrade.constants import DATETIME_PRINT_FORMAT
+from freqtrade.constants import DATETIME_PRINT_FORMAT, USERPATH_STRATEGIES
+from freqtrade.exceptions import OperationalException
 from freqtrade.persistence import Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.rpc.rpc import RPC, RPCException
+
 
 logger = logging.getLogger(__name__)
 
 BASE_URI = "/api/v1"
 
 
-class ArrowJSONEncoder(JSONEncoder):
+class FTJSONEncoder(JSONEncoder):
     def default(self, obj):
         try:
             if isinstance(obj, Arrow):
                 return obj.for_json()
-            elif isinstance(obj, date):
-                return obj.strftime("%Y-%m-%d")
             elif isinstance(obj, datetime):
                 return obj.strftime(DATETIME_PRINT_FORMAT)
+            elif isinstance(obj, date):
+                return obj.strftime("%Y-%m-%d")
             iterable = iter(obj)
         except TypeError:
             pass
@@ -108,7 +111,7 @@ class ApiServer(RPC):
             'jwt_secret_key', 'super-secret')
 
         self.jwt = JWTManager(self.app)
-        self.app.json_encoder = ArrowJSONEncoder
+        self.app.json_encoder = FTJSONEncoder
 
         self.app.teardown_appcontext(shutdown_session)
 
@@ -160,16 +163,12 @@ class ApiServer(RPC):
         """
         pass
 
-    def rest_dump(self, return_value):
-        """ Helper function to jsonify object for a webserver """
-        return jsonify(return_value)
-
-    def rest_error(self, error_msg):
-        return jsonify({"error": error_msg}), 502
+    def rest_error(self, error_msg, error_code=502):
+        return jsonify({"error": error_msg}), error_code
 
     def register_rest_rpc_urls(self):
         """
-        Registers flask app URLs that are calls to functonality in rpc.rpc.
+        Registers flask app URLs that are calls to functionality in rpc.rpc.
 
         First two arguments passed are /URL and 'Label'
         Label can be used as a shortcut when refactoring
@@ -193,6 +192,7 @@ class ApiServer(RPC):
         self.app.add_url_rule(f'{BASE_URI}/balance', 'balance',
                               view_func=self._balance, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/count', 'count', view_func=self._count, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/locks', 'locks', view_func=self._locks, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/daily', 'daily', view_func=self._daily, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/edge', 'edge', view_func=self._edge, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/logs', 'log', view_func=self._get_logs, methods=['GET'])
@@ -212,6 +212,20 @@ class ApiServer(RPC):
                               view_func=self._trades, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/trades/<int:tradeid>', 'trades_delete',
                               view_func=self._trades_delete, methods=['DELETE'])
+
+        self.app.add_url_rule(f'{BASE_URI}/pair_candles', 'pair_candles',
+                              view_func=self._analysed_candles, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/pair_history', 'pair_history',
+                              view_func=self._analysed_history, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/plot_config', 'plot_config',
+                              view_func=self._plot_config, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/strategies', 'strategies',
+                              view_func=self._list_strategies, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/strategy/<string:strategy>', 'strategy',
+                              view_func=self._get_strategy, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/available_pairs', 'pairs',
+                              view_func=self._list_available_pairs, methods=['GET'])
+
         # Combined actions and infos
         self.app.add_url_rule(f'{BASE_URI}/blacklist', 'blacklist', view_func=self._blacklist,
                               methods=['GET', 'POST'])
@@ -227,7 +241,7 @@ class ApiServer(RPC):
         """
         Return "404 not found", 404.
         """
-        return self.rest_dump({
+        return jsonify({
             'status': 'error',
             'reason': f"There's no API call for {request.base_url}.",
             'code': 404
@@ -247,7 +261,7 @@ class ApiServer(RPC):
                 'access_token': create_access_token(identity=keystuff),
                 'refresh_token': create_refresh_token(identity=keystuff),
             }
-            return self.rest_dump(ret)
+            return jsonify(ret)
 
         return jsonify({"error": "Unauthorized"}), 401
 
@@ -262,7 +276,7 @@ class ApiServer(RPC):
         new_token = create_access_token(identity=current_user, fresh=False)
 
         ret = {'access_token': new_token}
-        return self.rest_dump(ret)
+        return jsonify(ret)
 
     @require_login
     @rpc_catch_errors
@@ -272,7 +286,7 @@ class ApiServer(RPC):
         Starts TradeThread in bot if stopped.
         """
         msg = self._rpc_start()
-        return self.rest_dump(msg)
+        return jsonify(msg)
 
     @require_login
     @rpc_catch_errors
@@ -282,7 +296,7 @@ class ApiServer(RPC):
         Stops TradeThread in bot if running
         """
         msg = self._rpc_stop()
-        return self.rest_dump(msg)
+        return jsonify(msg)
 
     @require_login
     @rpc_catch_errors
@@ -292,14 +306,14 @@ class ApiServer(RPC):
         Sets max_open_trades to 0 and gracefully sells all open trades
         """
         msg = self._rpc_stopbuy()
-        return self.rest_dump(msg)
+        return jsonify(msg)
 
     @rpc_catch_errors
     def _ping(self):
         """
-        simple poing version
+        simple ping version
         """
-        return self.rest_dump({"status": "pong"})
+        return jsonify({"status": "pong"})
 
     @require_login
     @rpc_catch_errors
@@ -307,7 +321,7 @@ class ApiServer(RPC):
         """
         Prints the bot's version
         """
-        return self.rest_dump({"version": __version__})
+        return jsonify({"version": __version__})
 
     @require_login
     @rpc_catch_errors
@@ -315,7 +329,7 @@ class ApiServer(RPC):
         """
         Prints the bot's version
         """
-        return self.rest_dump(self._rpc_show_config())
+        return jsonify(self._rpc_show_config(self._config))
 
     @require_login
     @rpc_catch_errors
@@ -325,7 +339,7 @@ class ApiServer(RPC):
         Triggers a config file reload
         """
         msg = self._rpc_reload_config()
-        return self.rest_dump(msg)
+        return jsonify(msg)
 
     @require_login
     @rpc_catch_errors
@@ -335,7 +349,16 @@ class ApiServer(RPC):
         Returns the number of trades running
         """
         msg = self._rpc_count()
-        return self.rest_dump(msg)
+        return jsonify(msg)
+
+    @require_login
+    @rpc_catch_errors
+    def _locks(self):
+        """
+        Handler for /locks.
+        Returns the currently active locks.
+        """
+        return jsonify(self._rpc_locks())
 
     @require_login
     @rpc_catch_errors
@@ -353,7 +376,7 @@ class ApiServer(RPC):
                                        self._config.get('fiat_display_currency', '')
                                        )
 
-        return self.rest_dump(stats)
+        return jsonify(stats)
 
     @require_login
     @rpc_catch_errors
@@ -365,7 +388,7 @@ class ApiServer(RPC):
             limit: Only get a certain number of records
         """
         limit = int(request.args.get('limit', 0)) or None
-        return self.rest_dump(self._rpc_get_logs(limit))
+        return jsonify(self._rpc_get_logs(limit))
 
     @require_login
     @rpc_catch_errors
@@ -376,7 +399,7 @@ class ApiServer(RPC):
         """
         stats = self._rpc_edge()
 
-        return self.rest_dump(stats)
+        return jsonify(stats)
 
     @require_login
     @rpc_catch_errors
@@ -392,7 +415,7 @@ class ApiServer(RPC):
                                            self._config.get('fiat_display_currency')
                                            )
 
-        return self.rest_dump(stats)
+        return jsonify(stats)
 
     @require_login
     @rpc_catch_errors
@@ -405,7 +428,7 @@ class ApiServer(RPC):
         """
         stats = self._rpc_performance()
 
-        return self.rest_dump(stats)
+        return jsonify(stats)
 
     @require_login
     @rpc_catch_errors
@@ -417,9 +440,9 @@ class ApiServer(RPC):
         """
         try:
             results = self._rpc_trade_status()
-            return self.rest_dump(results)
+            return jsonify(results)
         except RPCException:
-            return self.rest_dump([])
+            return jsonify([])
 
     @require_login
     @rpc_catch_errors
@@ -431,7 +454,7 @@ class ApiServer(RPC):
         """
         results = self._rpc_balance(self._config['stake_currency'],
                                     self._config.get('fiat_display_currency', ''))
-        return self.rest_dump(results)
+        return jsonify(results)
 
     @require_login
     @rpc_catch_errors
@@ -443,7 +466,7 @@ class ApiServer(RPC):
         """
         limit = int(request.args.get('limit', 0))
         results = self._rpc_trade_history(limit)
-        return self.rest_dump(results)
+        return jsonify(results)
 
     @require_login
     @rpc_catch_errors
@@ -456,7 +479,7 @@ class ApiServer(RPC):
             tradeid: Numeric trade-id assigned to the trade.
         """
         result = self._rpc_delete(tradeid)
-        return self.rest_dump(result)
+        return jsonify(result)
 
     @require_login
     @rpc_catch_errors
@@ -465,7 +488,7 @@ class ApiServer(RPC):
         Handler for /whitelist.
         """
         results = self._rpc_whitelist()
-        return self.rest_dump(results)
+        return jsonify(results)
 
     @require_login
     @rpc_catch_errors
@@ -475,7 +498,7 @@ class ApiServer(RPC):
         """
         add = request.json.get("blacklist", None) if request.method == 'POST' else None
         results = self._rpc_blacklist(add)
-        return self.rest_dump(results)
+        return jsonify(results)
 
     @require_login
     @rpc_catch_errors
@@ -487,9 +510,9 @@ class ApiServer(RPC):
         price = request.json.get("price", None)
         trade = self._rpc_forcebuy(asset, price)
         if trade:
-            return self.rest_dump(trade.to_json())
+            return jsonify(trade.to_json())
         else:
-            return self.rest_dump({"status": f"Error buying pair {asset}."})
+            return jsonify({"status": f"Error buying pair {asset}."})
 
     @require_login
     @rpc_catch_errors
@@ -499,4 +522,132 @@ class ApiServer(RPC):
         """
         tradeid = request.json.get("tradeid")
         results = self._rpc_forcesell(tradeid)
-        return self.rest_dump(results)
+        return jsonify(results)
+
+    @require_login
+    @rpc_catch_errors
+    def _analysed_candles(self):
+        """
+        Handler for /pair_candles.
+        Returns the dataframe the bot is using during live/dry operations.
+        Takes the following get arguments:
+        get:
+          parameters:
+            - pair: Pair
+            - timeframe: Timeframe to get data for (should be aligned to strategy.timeframe)
+            - limit: Limit return length to the latest X candles
+        """
+        pair = request.args.get("pair")
+        timeframe = request.args.get("timeframe")
+        limit = request.args.get("limit", type=int)
+        if not pair or not timeframe:
+            return self.rest_error("Mandatory parameter missing.", 400)
+
+        results = self._rpc_analysed_dataframe(pair, timeframe, limit)
+        return jsonify(results)
+
+    @require_login
+    @rpc_catch_errors
+    def _analysed_history(self):
+        """
+        Handler for /pair_history.
+        Returns the dataframe of a given timerange
+        Takes the following get arguments:
+        get:
+          parameters:
+            - pair: Pair
+            - timeframe: Timeframe to get data for (should be aligned to strategy.timeframe)
+            - strategy: Strategy to use - Must exist in configured strategy-path!
+            - timerange: timerange in the format YYYYMMDD-YYYYMMDD (YYYYMMDD- or (-YYYYMMDD))
+                         are als possible. If omitted uses all available data.
+        """
+        pair = request.args.get("pair")
+        timeframe = request.args.get("timeframe")
+        timerange = request.args.get("timerange")
+        strategy = request.args.get("strategy")
+
+        if not pair or not timeframe or not timerange or not strategy:
+            return self.rest_error("Mandatory parameter missing.", 400)
+
+        config = deepcopy(self._config)
+        config.update({
+            'strategy': strategy,
+        })
+        results = RPC._rpc_analysed_history_full(config, pair, timeframe, timerange)
+        return jsonify(results)
+
+    @require_login
+    @rpc_catch_errors
+    def _plot_config(self):
+        """
+        Handler for /plot_config.
+        """
+        return jsonify(self._rpc_plot_config())
+
+    @require_login
+    @rpc_catch_errors
+    def _list_strategies(self):
+        directory = Path(self._config.get(
+            'strategy_path', self._config['user_data_dir'] / USERPATH_STRATEGIES))
+        from freqtrade.resolvers.strategy_resolver import StrategyResolver
+        strategy_objs = StrategyResolver.search_all_objects(directory, False)
+        strategy_objs = sorted(strategy_objs, key=lambda x: x['name'])
+
+        return jsonify({'strategies': [x['name'] for x in strategy_objs]})
+
+    @require_login
+    @rpc_catch_errors
+    def _get_strategy(self, strategy: str):
+        """
+        Get a single strategy
+        get:
+          parameters:
+            - strategy: Only get this strategy
+        """
+        config = deepcopy(self._config)
+        from freqtrade.resolvers.strategy_resolver import StrategyResolver
+        try:
+            strategy_obj = StrategyResolver._load_strategy(strategy, config,
+                                                           extra_dir=config.get('strategy_path'))
+        except OperationalException:
+            return self.rest_error("Strategy not found.", 404)
+
+        return jsonify({
+            'strategy': strategy_obj.get_strategy_name(),
+            'code': strategy_obj.__source__,
+         })
+
+    @require_login
+    @rpc_catch_errors
+    def _list_available_pairs(self):
+        """
+        Handler for /available_pairs.
+        Returns an object, with pairs, available pair length and pair_interval combinations
+        Takes the following get arguments:
+        get:
+          parameters:
+            - stake_currency: Filter on this stake currency
+            - timeframe: Timeframe to get data for Filter elements to this timeframe
+        """
+        timeframe = request.args.get("timeframe")
+        stake_currency = request.args.get("stake_currency")
+
+        from freqtrade.data.history import get_datahandler
+        dh = get_datahandler(self._config['datadir'], self._config.get('dataformat_ohlcv', None))
+
+        pair_interval = dh.ohlcv_get_available_data(self._config['datadir'])
+
+        if timeframe:
+            pair_interval = [pair for pair in pair_interval if pair[1] == timeframe]
+        if stake_currency:
+            pair_interval = [pair for pair in pair_interval if pair[0].endswith(stake_currency)]
+        pair_interval = sorted(pair_interval, key=lambda x: x[0])
+
+        pairs = list({x[0] for x in pair_interval})
+
+        result = {
+            'length': len(pairs),
+            'pairs': pairs,
+            'pair_interval': pair_interval,
+        }
+        return jsonify(result)

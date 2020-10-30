@@ -5,19 +5,16 @@ from unittest.mock import MagicMock, PropertyMock
 import arrow
 import pytest
 
-from freqtrade.commands import (start_convert_data, start_create_userdir,
-                                start_download_data, start_hyperopt_list,
-                                start_hyperopt_show, start_list_data,
-                                start_list_exchanges, start_list_hyperopts,
-                                start_list_markets, start_list_strategies,
-                                start_list_timeframes, start_new_hyperopt,
-                                start_new_strategy, start_show_trades,
-                                start_test_pairlist, start_trading)
+from freqtrade.commands import (start_convert_data, start_create_userdir, start_download_data,
+                                start_hyperopt_list, start_hyperopt_show, start_list_data,
+                                start_list_exchanges, start_list_hyperopts, start_list_markets,
+                                start_list_strategies, start_list_timeframes, start_new_hyperopt,
+                                start_new_strategy, start_show_trades, start_test_pairlist,
+                                start_trading)
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
-from tests.conftest import (create_mock_trades, get_args, log_has, log_has_re,
-                            patch_exchange,
+from tests.conftest import (create_mock_trades, get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 from tests.conftest_trades import MOCK_TRADE_COUNT
 
@@ -438,6 +435,16 @@ def test_list_markets(mocker, markets, capsys):
     assert re.search(r"^BLK/BTC$", captured.out, re.MULTILINE)
     assert re.search(r"^LTC/USD$", captured.out, re.MULTILINE)
 
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(side_effect=ValueError))
+    # Test --one-column
+    args = [
+        "list-markets",
+        '--config', 'config.json.example',
+        "--one-column"
+    ]
+    with pytest.raises(OperationalException, match=r"Cannot get markets.*"):
+        start_list_markets(get_args(args), False)
+
 
 def test_create_datadir_failed(caplog):
 
@@ -479,6 +486,12 @@ def test_start_new_strategy(mocker, caplog):
     assert "CoolNewStrategy" in wt_mock.call_args_list[0][0][0]
     assert log_has_re("Writing strategy to .*", caplog)
 
+    mocker.patch('freqtrade.commands.deploy_commands.setup_utils_configuration')
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    with pytest.raises(OperationalException,
+                       match=r".* already exists. Please choose another Strategy Name\."):
+        start_new_strategy(get_args(args))
+
 
 def test_start_new_strategy_DefaultStrat(mocker, caplog):
     args = [
@@ -514,6 +527,12 @@ def test_start_new_hyperopt(mocker, caplog):
     assert wt_mock.call_count == 1
     assert "CoolNewhyperopt" in wt_mock.call_args_list[0][0][0]
     assert log_has_re("Writing hyperopt to .*", caplog)
+
+    mocker.patch('freqtrade.commands.deploy_commands.setup_utils_configuration')
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    with pytest.raises(OperationalException,
+                       match=r".* already exists. Please choose another Hyperopt Name\."):
+        start_new_hyperopt(get_args(args))
 
 
 def test_start_new_hyperopt_DefaultHyperopt(mocker, caplog):
@@ -698,6 +717,7 @@ def test_start_list_strategies(mocker, caplog, capsys):
         "list-strategies",
         "--strategy-path",
         str(Path(__file__).parent.parent / "strategy" / "strats"),
+        '--no-color',
     ]
     pargs = get_args(args)
     # pargs['config'] = None
@@ -771,6 +791,25 @@ def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
     captured = capsys.readouterr()
     assert re.match(r"Pairs for .*", captured.out)
     assert re.match("['ETH/BTC', 'TKN/BTC', 'BLK/BTC', 'LTC/BTC', 'XRP/BTC']", captured.out)
+
+    args = [
+        'test-pairlist',
+        '-c', 'config.json.example',
+        '--one-column',
+    ]
+    start_test_pairlist(get_args(args))
+    captured = capsys.readouterr()
+    assert re.match(r"ETH/BTC\nTKN/BTC\nBLK/BTC\nLTC/BTC\nXRP/BTC\n", captured.out)
+
+    args = [
+        'test-pairlist',
+        '-c', 'config.json.example',
+        '--print-json',
+    ]
+    start_test_pairlist(get_args(args))
+    captured = capsys.readouterr()
+    assert re.match(r'Pairs for BTC: \n\["ETH/BTC","TKN/BTC","BLK/BTC","LTC/BTC","XRP/BTC"\]\n',
+                    captured.out)
 
 
 def test_hyperopt_list(mocker, capsys, caplog, hyperopt_results):
@@ -1152,7 +1191,7 @@ def test_start_list_data(testdatadir, capsys):
 
 @pytest.mark.usefixtures("init_persistence")
 def test_show_trades(mocker, fee, capsys, caplog):
-    mocker.patch("freqtrade.persistence.init")
+    mocker.patch("freqtrade.persistence.init_db")
     create_mock_trades(fee)
     args = [
         "show-trades",

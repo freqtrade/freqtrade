@@ -423,7 +423,7 @@ freqtrade test-pairlist --config config.json --quote USDT BTC
 
 ## List Hyperopt results
 
-You can list the hyperoptimization epochs the Hyperopt module evaluated previously with the `hyperopt-list` subcommand.
+You can list the hyperoptimization epochs the Hyperopt module evaluated previously with the `hyperopt-list` sub-command.
 
 ```
 usage: freqtrade hyperopt-list [-h] [-v] [--logfile FILE] [-V] [-c PATH]
@@ -432,10 +432,11 @@ usage: freqtrade hyperopt-list [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [--max-trades INT] [--min-avg-time FLOAT]
                                [--max-avg-time FLOAT] [--min-avg-profit FLOAT]
                                [--max-avg-profit FLOAT]
-                               [--min-total-profit FLOAT] [--max-total-profit FLOAT]
+                               [--min-total-profit FLOAT]
+                               [--max-total-profit FLOAT]
                                [--min-objective FLOAT] [--max-objective FLOAT]
                                [--no-color] [--print-json] [--no-details]
-                               [--export-csv FILE]
+                               [--hyperopt-filename PATH] [--export-csv FILE]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -443,24 +444,27 @@ optional arguments:
   --profitable          Select only profitable epochs.
   --min-trades INT      Select epochs with more than INT trades.
   --max-trades INT      Select epochs with less than INT trades.
-  --min-avg-time FLOAT  Select epochs on above average time.
-  --max-avg-time FLOAT  Select epochs on under average time.
+  --min-avg-time FLOAT  Select epochs above average time.
+  --max-avg-time FLOAT  Select epochs below average time.
   --min-avg-profit FLOAT
-                        Select epochs on above average profit.
+                        Select epochs above average profit.
   --max-avg-profit FLOAT
-                        Select epochs on below average profit.
+                        Select epochs below average profit.
   --min-total-profit FLOAT
-                        Select epochs on above total profit.
+                        Select epochs above total profit.
   --max-total-profit FLOAT
-                        Select epochs on below total profit.
+                        Select epochs below total profit.
   --min-objective FLOAT
-                        Select epochs on above objective (- is added by default).
+                        Select epochs above objective.
   --max-objective FLOAT
-                        Select epochs on below objective (- is added by default).
+                        Select epochs below objective.
   --no-color            Disable colorization of hyperopt results. May be
                         useful if you are redirecting output to a file.
-  --print-json          Print best result detailization in JSON format.
+  --print-json          Print output in JSON format.
   --no-details          Do not print best epoch details.
+  --hyperopt-filename FILENAME
+                        Hyperopt result filename.Example: `--hyperopt-
+                        filename=hyperopt_results_2020-09-27_16-20-48.pickle`
   --export-csv FILE     Export to CSV-File. This will disable table print.
                         Example: --export-csv hyperopt.csv
 
@@ -480,7 +484,11 @@ Common arguments:
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
 ```
- 
+
+!!! Note
+    `hyperopt-list` will automatically use the latest available hyperopt results file.
+    You can override this using the `--hyperopt-filename` argument, and specify another, available filename (without path!).
+
 ### Examples
 
 List all results, print details of the best result at the end:
@@ -501,16 +509,40 @@ You can show the details of any hyperoptimization epoch previously evaluated by 
 usage: freqtrade hyperopt-show [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [-d PATH] [--userdir PATH] [--best]
                                [--profitable] [-n INT] [--print-json]
-                               [--no-header]
+                               [--hyperopt-filename PATH] [--no-header]
 
 optional arguments:
   -h, --help            show this help message and exit
   --best                Select only best epochs.
   --profitable          Select only profitable epochs.
   -n INT, --index INT   Specify the index of the epoch to print details for.
-  --print-json          Print best result detailization in JSON format.
+  --print-json          Print output in JSON format.
+  --hyperopt-filename FILENAME
+                        Hyperopt result filename.Example: `--hyperopt-
+                        filename=hyperopt_results_2020-09-27_16-20-48.pickle`
   --no-header           Do not print epoch details header.
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+
 ```
+
+!!! Note
+    `hyperopt-show` will automatically use the latest available hyperopt results file.
+    You can override this using the `--hyperopt-filename` argument, and specify another, available filename (without path!).
 
 ### Examples
 

@@ -7,8 +7,8 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 import arrow
-from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
-                        String, create_engine, desc, func, inspect)
+from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer, String,
+                        create_engine, desc, func, inspect)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Query, relationship
@@ -17,9 +17,11 @@ from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql.schema import UniqueConstraint
 
+from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.migrations import check_migrate
+
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +30,7 @@ _DECL_BASE: Any = declarative_base()
 _SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
 
 
-def init(db_url: str, clean_open_orders: bool = False) -> None:
+def init_db(db_url: str, clean_open_orders: bool = False) -> None:
     """
     Initializes this module with the given config,
     registers all known command handlers
@@ -62,6 +64,9 @@ def init(db_url: str, clean_open_orders: bool = False) -> None:
     # Copy session attributes to order object too
     Order.session = Trade.session
     Order.query = Order.session.query_property()
+    PairLock.session = Trade.session
+    PairLock.query = PairLock.session.query_property()
+
     previous_tables = inspect(engine).get_table_names()
     _DECL_BASE.metadata.create_all(engine)
     check_migrate(engine, decl_base=_DECL_BASE, previous_tables=previous_tables)
@@ -71,7 +76,7 @@ def init(db_url: str, clean_open_orders: bool = False) -> None:
         clean_dry_run_db()
 
 
-def cleanup() -> None:
+def cleanup_db() -> None:
     """
     Flushes all pending operations to disk.
     :return: None
@@ -166,12 +171,12 @@ class Order(_DECL_BASE):
         """
         Get all non-closed orders - useful when trying to batch-update orders
         """
-        filtered_orders = [o for o in orders if o.order_id == order['id']]
+        filtered_orders = [o for o in orders if o.order_id == order.get('id')]
         if filtered_orders:
             oobj = filtered_orders[0]
             oobj.update_from_ccxt_object(order)
         else:
-            logger.warning(f"Did not find order for {order['id']}.")
+            logger.warning(f"Did not find order for {order}.")
 
     @staticmethod
     def parse_from_ccxt_object(order: Dict[str, Any], pair: str, side: str) -> 'Order':
@@ -250,7 +255,7 @@ class Trade(_DECL_BASE):
         self.recalc_open_trade_price()
 
     def __repr__(self):
-        open_since = self.open_date.strftime('%Y-%m-%d %H:%M:%S') if self.is_open else 'closed'
+        open_since = self.open_date.strftime(DATETIME_PRINT_FORMAT) if self.is_open else 'closed'
 
         return (f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
                 f'open_rate={self.open_rate:.8f}, open_since={open_since})')
@@ -276,7 +281,7 @@ class Trade(_DECL_BASE):
             'fee_close_currency': self.fee_close_currency,
 
             'open_date_hum': arrow.get(self.open_date).humanize(),
-            'open_date': self.open_date.strftime("%Y-%m-%d %H:%M:%S"),
+            'open_date': self.open_date.strftime(DATETIME_PRINT_FORMAT),
             'open_timestamp': int(self.open_date.replace(tzinfo=timezone.utc).timestamp() * 1000),
             'open_rate': self.open_rate,
             'open_rate_requested': self.open_rate_requested,
@@ -284,7 +289,7 @@ class Trade(_DECL_BASE):
 
             'close_date_hum': (arrow.get(self.close_date).humanize()
                                if self.close_date else None),
-            'close_date': (self.close_date.strftime("%Y-%m-%d %H:%M:%S")
+            'close_date': (self.close_date.strftime(DATETIME_PRINT_FORMAT)
                            if self.close_date else None),
             'close_timestamp': int(self.close_date.replace(
                 tzinfo=timezone.utc).timestamp() * 1000) if self.close_date else None,
@@ -300,7 +305,7 @@ class Trade(_DECL_BASE):
             'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,
             'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
             'stoploss_order_id': self.stoploss_order_id,
-            'stoploss_last_update': (self.stoploss_last_update.strftime("%Y-%m-%d %H:%M:%S")
+            'stoploss_last_update': (self.stoploss_last_update.strftime(DATETIME_PRINT_FORMAT)
                                      if self.stoploss_last_update else None),
             'stoploss_last_update_timestamp': int(self.stoploss_last_update.replace(
                 tzinfo=timezone.utc).timestamp() * 1000) if self.stoploss_last_update else None,
@@ -398,7 +403,7 @@ class Trade(_DECL_BASE):
             self.close(order['average'])
         else:
             raise ValueError(f'Unknown order type: {order_type}')
-        cleanup()
+        cleanup_db()
 
     def close(self, rate: float) -> None:
         """
@@ -653,3 +658,56 @@ class Trade(_DECL_BASE):
                 trade.stop_loss = None
                 trade.adjust_stop_loss(trade.open_rate, desired_stoploss)
                 logger.info(f"New stoploss: {trade.stop_loss}.")
+
+
+class PairLock(_DECL_BASE):
+    """
+    Pair Locks database model.
+    """
+    __tablename__ = 'pairlocks'
+
+    id = Column(Integer, primary_key=True)
+
+    pair = Column(String, nullable=False, index=True)
+    reason = Column(String, nullable=True)
+    # Time the pair was locked (start time)
+    lock_time = Column(DateTime, nullable=False)
+    # Time until the pair is locked (end time)
+    lock_end_time = Column(DateTime, nullable=False, index=True)
+
+    active = Column(Boolean, nullable=False, default=True, index=True)
+
+    def __repr__(self):
+        lock_time = self.lock_time.strftime(DATETIME_PRINT_FORMAT)
+        lock_end_time = self.lock_end_time.strftime(DATETIME_PRINT_FORMAT)
+        return (f'PairLock(id={self.id}, pair={self.pair}, lock_time={lock_time}, '
+                f'lock_end_time={lock_end_time})')
+
+    @staticmethod
+    def query_pair_locks(pair: Optional[str], now: datetime) -> Query:
+        """
+        Get all locks for this pair
+        :param pair: Pair to check for. Returns all current locks if pair is empty
+        :param now: Datetime object (generated via datetime.now(timezone.utc)).
+        """
+
+        filters = [PairLock.lock_end_time > now,
+                   # Only active locks
+                   PairLock.active.is_(True), ]
+        if pair:
+            filters.append(PairLock.pair == pair)
+        return PairLock.query.filter(
+            *filters
+        )
+
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            'pair': self.pair,
+            'lock_time': self.lock_time.strftime(DATETIME_PRINT_FORMAT),
+            'lock_timestamp': int(self.lock_time.replace(tzinfo=timezone.utc).timestamp() * 1000),
+            'lock_end_time': self.lock_end_time.strftime(DATETIME_PRINT_FORMAT),
+            'lock_end_timestamp': int(self.lock_end_time.replace(tzinfo=timezone.utc
+                                                                 ).timestamp() * 1000),
+            'reason': self.reason,
+            'active': self.active,
+        }

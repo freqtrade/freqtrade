@@ -13,19 +13,19 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 import ccxt
 import ccxt.async_support as ccxt_async
-from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE,
-                                            TRUNCATE, decimal_to_precision)
+from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE,
+                                            decimal_to_precision)
 from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
-from freqtrade.exceptions import (DDosProtection, ExchangeError,
-                                  InsufficientFundsError,
-                                  InvalidOrderException, OperationalException,
-                                  RetryableOrderError, TemporaryError)
-from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT,
-                                       BAD_EXCHANGES, retrier, retrier_async)
+from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
+                                  InvalidOrderException, OperationalException, RetryableOrderError,
+                                  TemporaryError)
+from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGES, retrier,
+                                       retrier_async)
 from freqtrade.misc import deep_merge_dicts, safe_value_fallback2
+
 
 CcxtModuleType = Any
 
@@ -53,7 +53,7 @@ class Exchange:
         "ohlcv_partial_candle": True,
         "trades_pagination": "time",  # Possible are "time" or "id"
         "trades_pagination_arg": "since",
-
+        "l2_limit_range": None,
     }
     _ft_has: Dict = {}
 
@@ -687,6 +687,9 @@ class Exchange:
     async def _async_get_historic_ohlcv(self, pair: str,
                                         timeframe: str,
                                         since_ms: int) -> List:
+        """
+        Download historic ohlcv
+        """
 
         one_call = timeframe_to_msecs(timeframe) * self._ohlcv_candle_limit
         logger.debug(
@@ -702,9 +705,14 @@ class Exchange:
 
         # Combine gathered results
         data: List = []
-        for p, timeframe, res in results:
+        for res in results:
+            if isinstance(res, Exception):
+                logger.warning("Async code raised an exception: %s", res.__class__.__name__)
+                continue
+            # Deconstruct tuple if it's not an exception
+            p, _, new_data = res
             if p == pair:
-                data.extend(res)
+                data.extend(new_data)
         # Sort data again after extending the result - above calls return in "async order"
         data = sorted(data, key=lambda x: x[0])
         logger.info("Downloaded data for %s with length %s.", pair, len(data))
@@ -741,9 +749,8 @@ class Exchange:
             if isinstance(res, Exception):
                 logger.warning("Async code raised an exception: %s", res.__class__.__name__)
                 continue
-            pair = res[0]
-            timeframe = res[1]
-            ticks = res[2]
+            # Deconstruct tuple (has 3 elements)
+            pair, timeframe, ticks = res
             # keeping last candle time as last refreshed time of the pair
             if ticks:
                 self._pairs_last_refresh_time[(pair, timeframe)] = ticks[-1][0] // 1000
@@ -1069,6 +1076,16 @@ class Exchange:
             return self.fetch_stoploss_order(order_id, pair)
         return self.fetch_order(order_id, pair)
 
+    @staticmethod
+    def get_next_limit_in_list(limit: int, limit_range: Optional[List[int]]):
+        """
+        Get next greater value in the list.
+        Used by fetch_l2_order_book if the api only supports a limited range
+        """
+        if not limit_range:
+            return limit
+        return min([x for x in limit_range if limit <= x] + [max(limit_range)])
+
     @retrier
     def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:
         """
@@ -1077,9 +1094,10 @@ class Exchange:
         Returns a dict in the format
         {'asks': [price, volume], 'bids': [price, volume]}
         """
+        limit1 = self.get_next_limit_in_list(limit, self._ft_has['l2_limit_range'])
         try:
 
-            return self._api.fetch_l2_order_book(pair, limit)
+            return self._api.fetch_l2_order_book(pair, limit1)
         except ccxt.NotSupported as e:
             raise OperationalException(
                 f'Exchange {self._api.name} does not support fetching order book.'
