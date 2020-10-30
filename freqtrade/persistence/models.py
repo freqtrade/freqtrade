@@ -447,43 +447,6 @@ class Trade(_DECL_BASE):
             raise ValueError(f'Unknown order type: {order_type}')
         cleanup_db()
 
-    def partial_update(self, order: Dict) -> None:
-        """
-                Updates this entity with amount and actual open/close rates,
-                modified to support multiple orders keeping the trade opened
-                :param order: order retrieved by exchange.fetch_order()
-                :return: None
-
-                """
-        order_type = order['type']
-
-        if order_type in ('market', 'limit') and order['side'] == 'buy':
-            # Update open rate and actual amount
-            self.open_rate = self.average_open_rate(order['filled'],
-                                                    safe_value_fallback(order, 'average', 'price'),
-                                                    self.amount, self.open_rate)
-            self.amount = Decimal(self.amount or 0) + Decimal(order['filled'])
-            self.decrease_wallet(self, Decimal(order['filled']), self.open_rate)
-            if self.is_open and order['filled'] != 0:
-                logger.info(f'{order_type.upper()}_Partial BUY has been fulfilled for {self}.')
-                self.open_order_id = None
-
-        elif order_type in ('market', 'limit') and order['side'] == 'sell':
-            self.amount = (Decimal(self.amount or 0) - Decimal(order['filled']))
-            if self.is_open and order['filled'] != 0:
-                logger.info(f'{order_type.upper()}_Partial SELL has been fulfilled for {self}.')
-                self.partial_close(self, safe_value_fallback(order, 'average', 'price'))
-                self.increase_wallet(self, Decimal(order['filled']), order['price'])
-
-        elif order_type in ('stop_loss_limit', 'stop-loss', 'stop'):
-            self.stoploss_order_id = None
-            self.close_rate_requested = self.stop_loss
-            if self.is_open:
-                logger.info(f'{order_type.upper()} is hit for {self}.')
-            self.close(order['average'])
-        else:
-            raise ValueError(f'Unknown order type: {order_type}')
-        cleanup_db()
 
     def close(self, rate: float) -> None:
         """
