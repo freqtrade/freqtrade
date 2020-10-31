@@ -88,7 +88,8 @@ class DataProvider:
         """
         return load_pair_history(pair=pair,
                                  timeframe=timeframe or self._config['timeframe'],
-                                 datadir=self._config['datadir']
+                                 datadir=self._config['datadir'],
+                                 data_format=self._config.get('dataformat_ohlcv', 'json')
                                  )
 
     def get_pair_dataframe(self, pair: str, timeframe: str = None) -> DataFrame:
