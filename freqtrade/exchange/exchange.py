@@ -291,7 +291,7 @@ class Exchange:
         try:
             self._api.load_markets()
             self._load_async_markets()
-            self._last_markets_refresh = arrow.utcnow().timestamp
+            self._last_markets_refresh = arrow.utcnow().int_timestamp
         except ccxt.BaseError as e:
             logger.warning('Unable to initialize markets. Reason: %s', e)
 
@@ -300,14 +300,14 @@ class Exchange:
         # Check whether markets have to be reloaded
         if (self._last_markets_refresh > 0) and (
                 self._last_markets_refresh + self.markets_refresh_interval
-                > arrow.utcnow().timestamp):
+                > arrow.utcnow().int_timestamp):
             return None
         logger.debug("Performing scheduled market reload..")
         try:
             self._api.load_markets(reload=True)
             # Also reload async markets to avoid issues with newly listed pairs
             self._load_async_markets(reload=True)
-            self._last_markets_refresh = arrow.utcnow().timestamp
+            self._last_markets_refresh = arrow.utcnow().int_timestamp
         except ccxt.BaseError:
             logger.exception("Could not reload markets.")
 
@@ -501,7 +501,7 @@ class Exchange:
             'side': side,
             'remaining': _amount,
             'datetime': arrow.utcnow().isoformat(),
-            'timestamp': int(arrow.utcnow().timestamp * 1000),
+            'timestamp': int(arrow.utcnow().int_timestamp * 1000),
             'status': "closed" if ordertype == "market" else "open",
             'fee': None,
             'info': {}
@@ -699,7 +699,7 @@ class Exchange:
         )
         input_coroutines = [self._async_get_candle_history(
             pair, timeframe, since) for since in
-            range(since_ms, arrow.utcnow().timestamp * 1000, one_call)]
+            range(since_ms, arrow.utcnow().int_timestamp * 1000, one_call)]
 
         results = await asyncio.gather(*input_coroutines, return_exceptions=True)
 
@@ -766,7 +766,7 @@ class Exchange:
         interval_in_sec = timeframe_to_seconds(timeframe)
 
         return not ((self._pairs_last_refresh_time.get((pair, timeframe), 0)
-                     + interval_in_sec) >= arrow.utcnow().timestamp)
+                     + interval_in_sec) >= arrow.utcnow().int_timestamp)
 
     @retrier_async
     async def _async_get_candle_history(self, pair: str, timeframe: str,
