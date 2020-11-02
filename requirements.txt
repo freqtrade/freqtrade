@@ -1,5 +1,5 @@
 numpy==1.19.3
-pandas==1.1.3
+pandas==1.1.4
 
 ccxt==1.36.85
 aiohttp==3.7.1
