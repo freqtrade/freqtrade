@@ -251,14 +251,14 @@ class Telegram(RPC):
                      if r['close_profit_pct'] is not None else ""),
                     "*Current Profit:* `{current_profit_pct:.2f}%`",
                 ]
-                if (r['stop_loss'] != r['initial_stop_loss']
+                if (r['stop_loss_abs'] != r['initial_stop_loss_abs']
                         and r['initial_stop_loss_pct'] is not None):
                     # Adding initial stoploss only if it is different from stoploss
                     lines.append("*Initial Stoploss:* `{initial_stop_loss:.8f}` "
                                  "`({initial_stop_loss_pct:.2f}%)`")
 
                 # Adding stoploss and stoploss percentage only if it is not None
-                lines.append("*Stoploss:* `{stop_loss:.8f}` " +
+                lines.append("*Stoploss:* `{stop_loss_abs:.8f}` " +
                              ("`({stop_loss_pct:.2f}%)`" if r['stop_loss_pct'] else ""))
                 lines.append("*Stoploss distance:* `{stoploss_current_dist:.8f}` "
                              "`({stoploss_current_dist_pct:.2f}%)`")

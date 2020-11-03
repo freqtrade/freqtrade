@@ -110,7 +110,6 @@ class RPC:
             'trailing_stop_positive': config.get('trailing_stop_positive'),
             'trailing_stop_positive_offset': config.get('trailing_stop_positive_offset'),
             'trailing_only_offset_is_reached': config.get('trailing_only_offset_is_reached'),
-            'ticker_interval': config['timeframe'],  # DEPRECATED
             'timeframe': config['timeframe'],
             'timeframe_ms': timeframe_to_msecs(config['timeframe']),
             'timeframe_min': timeframe_to_minutes(config['timeframe']),

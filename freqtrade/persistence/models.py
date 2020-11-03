@@ -270,7 +270,6 @@ class Trade(_DECL_BASE):
             'amount_requested': round(self.amount_requested, 8) if self.amount_requested else None,
             'stake_amount': round(self.stake_amount, 8),
             'strategy': self.strategy,
-            'ticker_interval': self.timeframe,  # DEPRECATED
             'timeframe': self.timeframe,
 
             'fee_open': self.fee_open,
@@ -305,7 +304,6 @@ class Trade(_DECL_BASE):
 
             'sell_reason': self.sell_reason,
             'sell_order_status': self.sell_order_status,
-            'stop_loss': self.stop_loss,  # Deprecated - should not be used
             'stop_loss_abs': self.stop_loss,
             'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,
             'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
@@ -314,7 +312,6 @@ class Trade(_DECL_BASE):
                                      if self.stoploss_last_update else None),
             'stoploss_last_update_timestamp': int(self.stoploss_last_update.replace(
                 tzinfo=timezone.utc).timestamp() * 1000) if self.stoploss_last_update else None,
-            'initial_stop_loss': self.initial_stop_loss,  # Deprecated - should not be used
             'initial_stop_loss_abs': self.initial_stop_loss,
             'initial_stop_loss_ratio': (self.initial_stop_loss_pct
                                         if self.initial_stop_loss_pct else None),
