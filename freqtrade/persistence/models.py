@@ -295,8 +295,13 @@ class Trade(_DECL_BASE):
                 tzinfo=timezone.utc).timestamp() * 1000) if self.close_date else None,
             'close_rate': self.close_rate,
             'close_rate_requested': self.close_rate_requested,
-            'close_profit': self.close_profit,
-            'close_profit_abs': self.close_profit_abs,
+            'close_profit': self.close_profit,  # Deprecated
+            'close_profit_pct': round(self.close_profit * 100, 2) if self.close_profit else None,
+            'close_profit_abs': self.close_profit_abs,  # Deprecated
+
+            'profit_ratio': self.close_profit,
+            'profit_pct': round(self.close_profit * 100, 2) if self.close_profit else None,
+            'profit_abs': self.close_profit_abs,
 
             'sell_reason': self.sell_reason,
             'sell_order_status': self.sell_order_status,
