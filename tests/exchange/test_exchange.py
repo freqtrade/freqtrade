@@ -1302,7 +1302,8 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
         raise TimeoutError()
 
     exchange._async_get_candle_history = MagicMock(side_effect=mock_get_candle_hist_error)
-    ret = exchange.get_historic_ohlcv(pair, "5m", int((arrow.utcnow().timestamp - since) * 1000))
+    ret = exchange.get_historic_ohlcv(pair, "5m", int(
+        (arrow.utcnow().int_timestamp - since) * 1000))
     assert log_has_re(r"Async code raised an exception: .*", caplog)
 
 
