@@ -163,16 +163,17 @@ def test_telegram_status(default_conf, update, mocker) -> None:
             'amount': 90.99181074,
             'stake_amount': 90.99181074,
             'close_profit_pct': None,
-            'current_profit': -0.0059,
-            'current_profit_pct': -0.59,
-            'initial_stop_loss': 1.098e-05,
-            'stop_loss': 1.099e-05,
+            'profit': -0.0059,
+            'profit_pct': -0.59,
+            'initial_stop_loss_abs': 1.098e-05,
+            'stop_loss_abs': 1.099e-05,
             'sell_order_status': None,
             'initial_stop_loss_pct': -0.05,
             'stoploss_current_dist': 1e-08,
             'stoploss_current_dist_pct': -0.02,
             'stop_loss_pct': -0.01,
-            'open_order': '(limit buy rem=0.00000000)'
+            'open_order': '(limit buy rem=0.00000000)',
+            'is_open': True
         }]),
         _status_table=status_table,
         _send_msg=msg_mock

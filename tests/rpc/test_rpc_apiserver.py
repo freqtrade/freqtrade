@@ -360,7 +360,6 @@ def test_api_show_config(botclient, mocker):
     assert_response(rc)
     assert 'dry_run' in rc.json
     assert rc.json['exchange'] == 'bittrex'
-    assert rc.json['ticker_interval'] == '5m'
     assert rc.json['timeframe'] == '5m'
     assert rc.json['timeframe_ms'] == 300000
     assert rc.json['timeframe_min'] == 5
@@ -639,6 +638,9 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
                         'current_profit': -0.00408133,
                         'current_profit_pct': -0.41,
                         'current_profit_abs': -4.09e-06,
+                        'profit_ratio': -0.00408133,
+                        'profit_pct': -0.41,
+                        'profit_abs': -4.09e-06,
                         'current_rate': 1.099e-05,
                         'open_date': ANY,
                         'open_date_hum': 'just now',
@@ -647,14 +649,12 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
                         'open_rate': 1.098e-05,
                         'pair': 'ETH/BTC',
                         'stake_amount': 0.001,
-                        'stop_loss': 9.882e-06,
                         'stop_loss_abs': 9.882e-06,
                         'stop_loss_pct': -10.0,
                         'stop_loss_ratio': -0.1,
                         'stoploss_order_id': None,
                         'stoploss_last_update': ANY,
                         'stoploss_last_update_timestamp': ANY,
-                        'initial_stop_loss': 9.882e-06,
                         'initial_stop_loss_abs': 9.882e-06,
                         'initial_stop_loss_pct': -10.0,
                         'initial_stop_loss_ratio': -0.1,
@@ -682,7 +682,6 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
                         'sell_reason': None,
                         'sell_order_status': None,
                         'strategy': 'DefaultStrategy',
-                        'ticker_interval': 5,
                         'timeframe': 5,
                         'exchange': 'bittrex',
                         }]
@@ -779,20 +778,22 @@ def test_api_forcebuy(botclient, mocker, fee):
                        'open_rate': 0.245441,
                        'pair': 'ETH/ETH',
                        'stake_amount': 1,
-                       'stop_loss': None,
                        'stop_loss_abs': None,
                        'stop_loss_pct': None,
                        'stop_loss_ratio': None,
                        'stoploss_order_id': None,
                        'stoploss_last_update': None,
                        'stoploss_last_update_timestamp': None,
-                       'initial_stop_loss': None,
                        'initial_stop_loss_abs': None,
                        'initial_stop_loss_pct': None,
                        'initial_stop_loss_ratio': None,
                        'close_profit': None,
+                       'close_profit_pct': None,
                        'close_profit_abs': None,
                        'close_rate_requested': None,
+                       'profit_ratio': None,
+                       'profit_pct': None,
+                       'profit_abs': None,
                        'fee_close': 0.0025,
                        'fee_close_cost': None,
                        'fee_close_currency': None,
@@ -808,7 +809,6 @@ def test_api_forcebuy(botclient, mocker, fee):
                        'sell_reason': None,
                        'sell_order_status': None,
                        'strategy': None,
-                       'ticker_interval': None,
                        'timeframe': None,
                        'exchange': 'bittrex',
                        }

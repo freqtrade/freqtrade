@@ -110,7 +110,6 @@ class RPC:
             'trailing_stop_positive': config.get('trailing_stop_positive'),
             'trailing_stop_positive_offset': config.get('trailing_stop_positive_offset'),
             'trailing_only_offset_is_reached': config.get('trailing_only_offset_is_reached'),
-            'ticker_interval': config['timeframe'],  # DEPRECATED
             'timeframe': config['timeframe'],
             'timeframe_ms': timeframe_to_msecs(config['timeframe']),
             'timeframe_min': timeframe_to_minutes(config['timeframe']),
@@ -152,17 +151,18 @@ class RPC:
                 stoploss_current_dist = trade.stop_loss - current_rate
                 stoploss_current_dist_ratio = stoploss_current_dist / current_rate
 
-                fmt_close_profit = (f'{round(trade.close_profit * 100, 2):.2f}%'
-                                    if trade.close_profit is not None else None)
                 trade_dict = trade.to_json()
                 trade_dict.update(dict(
                     base_currency=self._freqtrade.config['stake_currency'],
                     close_profit=trade.close_profit if trade.close_profit is not None else None,
-                    close_profit_pct=fmt_close_profit,
                     current_rate=current_rate,
-                    current_profit=current_profit,
-                    current_profit_pct=round(current_profit * 100, 2),
-                    current_profit_abs=current_profit_abs,
+                    current_profit=current_profit,  # Deprectated
+                    current_profit_pct=round(current_profit * 100, 2),  # Deprectated
+                    current_profit_abs=current_profit_abs,  # Deprectated
+                    profit_ratio=current_profit,
+                    profit_pct=round(current_profit * 100, 2),
+                    profit_abs=current_profit_abs,
+
                     stoploss_current_dist=stoploss_current_dist,
                     stoploss_current_dist_ratio=round(stoploss_current_dist_ratio, 8),
                     stoploss_current_dist_pct=round(stoploss_current_dist_ratio * 100, 2),
