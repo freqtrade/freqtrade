@@ -93,7 +93,8 @@ class RPC:
     def send_msg(self, msg: Dict[str, str]) -> None:
         """ Sends a message to all registered rpc modules """
 
-    def _rpc_show_config(self, config) -> Dict[str, Any]:
+    @staticmethod
+    def _rpc_show_config(config, botstate: State) -> Dict[str, Any]:
         """
         Return a dict of config options.
         Explicitly does NOT return the full config to avoid leakage of sensitive
@@ -104,21 +105,24 @@ class RPC:
             'stake_currency': config['stake_currency'],
             'stake_amount': config['stake_amount'],
             'max_open_trades': config['max_open_trades'],
-            'minimal_roi': config['minimal_roi'].copy(),
-            'stoploss': config['stoploss'],
-            'trailing_stop': config['trailing_stop'],
+            'minimal_roi': config['minimal_roi'].copy() if 'minimal_roi' in config else {},
+            'stoploss': config.get('stoploss'),
+            'trailing_stop': config.get('trailing_stop'),
             'trailing_stop_positive': config.get('trailing_stop_positive'),
             'trailing_stop_positive_offset': config.get('trailing_stop_positive_offset'),
             'trailing_only_offset_is_reached': config.get('trailing_only_offset_is_reached'),
-            'timeframe': config['timeframe'],
-            'timeframe_ms': timeframe_to_msecs(config['timeframe']),
-            'timeframe_min': timeframe_to_minutes(config['timeframe']),
+            'timeframe': config.get('timeframe'),
+            'timeframe_ms': timeframe_to_msecs(config['timeframe']
+                                               ) if 'timeframe' in config else '',
+            'timeframe_min': timeframe_to_minutes(config['timeframe']
+                                                  ) if 'timeframe' in config else '',
             'exchange': config['exchange']['name'],
             'strategy': config['strategy'],
             'forcebuy_enabled': config.get('forcebuy_enable', False),
             'ask_strategy': config.get('ask_strategy', {}),
             'bid_strategy': config.get('bid_strategy', {}),
-            'state': str(self._freqtrade.state) if self._freqtrade else '',
+            'state': str(botstate),
+            'runmode': config['runmode'].value
         }
         return val
 

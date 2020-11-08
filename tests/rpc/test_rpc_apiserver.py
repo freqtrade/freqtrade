@@ -14,7 +14,7 @@ from freqtrade.__init__ import __version__
 from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc.api_server import BASE_URI, ApiServer
-from freqtrade.state import State
+from freqtrade.state import RunMode, State
 from tests.conftest import create_mock_trades, get_patched_freqtradebot, log_has, patch_get_signal
 
 
@@ -26,7 +26,7 @@ _TEST_PASS = "SuperSecurePassword1!"
 def botclient(default_conf, mocker):
     setup_logging_pre()
     setup_logging(default_conf)
-
+    default_conf['runmode'] = RunMode.DRY_RUN
     default_conf.update({"api_server": {"enabled": True,
                                         "listen_ip_address": "127.0.0.1",
                                         "listen_port": 8080,

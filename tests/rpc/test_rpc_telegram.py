@@ -21,7 +21,7 @@ from freqtrade.loggers import setup_logging
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.rpc.telegram import Telegram, authorized_only
-from freqtrade.state import State
+from freqtrade.state import RunMode, State
 from freqtrade.strategy.interface import SellType
 from tests.conftest import (create_mock_trades, get_patched_freqtradebot, log_has, patch_exchange,
                             patch_get_signal, patch_whitelist)
@@ -1309,6 +1309,7 @@ def test_show_config_handle(default_conf, update, mocker) -> None:
         _init=MagicMock(),
         _send_msg=msg_mock
     )
+    default_conf['runmode'] = RunMode.DRY_RUN
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     telegram = Telegram(freqtradebot)
 
