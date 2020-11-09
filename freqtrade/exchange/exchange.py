@@ -115,7 +115,7 @@ class Exchange:
 
         logger.info('Using Exchange "%s"', self.name)
 
-        if validate:
+        if validate and not exchange_config.get('skip_validation'):
             # Check if timeframe is available
             self.validate_timeframes(config.get('timeframe'))
 
