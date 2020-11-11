@@ -115,6 +115,56 @@ def test_CooldownPeriod(mocker, default_conf, fee, caplog):
     assert not PairLocks.is_global_lock()
 
 
+@pytest.mark.usefixtures("init_persistence")
+def test_LowProfitPairs(mocker, default_conf, fee, caplog):
+    default_conf['protections'] = [{
+        "method": "LowProfitPairs",
+        "lookback_period": 400,
+        "stopduration": 60,
+        "trade_limit": 2,
+        "required_profit": 0.0,
+    }]
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    message = r"Trading stopped due to .*"
+    assert not freqtrade.protections.global_stop()
+    assert not freqtrade.protections.stop_per_pair('XRP/BTC')
+
+    assert not log_has_re(message, caplog)
+    caplog.clear()
+
+    Trade.session.add(generate_mock_trade(
+        'XRP/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        min_ago_open=800, min_ago_close=450,
+    ))
+
+    # Not locked with 1 trade
+    assert not freqtrade.protections.global_stop()
+    assert not freqtrade.protections.stop_per_pair('XRP/BTC')
+    assert not PairLocks.is_pair_locked('XRP/BTC')
+    assert not PairLocks.is_global_lock()
+
+    Trade.session.add(generate_mock_trade(
+        'XRP/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        min_ago_open=200, min_ago_close=120,
+    ))
+
+    # Not locked with 1 trade (first trade is outside of lookback_period)
+    assert not freqtrade.protections.global_stop()
+    assert not freqtrade.protections.stop_per_pair('XRP/BTC')
+    assert not PairLocks.is_pair_locked('XRP/BTC')
+    assert not PairLocks.is_global_lock()
+
+    Trade.session.add(generate_mock_trade(
+        'XRP/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        min_ago_open=110, min_ago_close=20,
+    ))
+
+    # Locks due to 2nd trade
+    assert not freqtrade.protections.global_stop()
+    assert freqtrade.protections.stop_per_pair('XRP/BTC')
+    assert PairLocks.is_pair_locked('XRP/BTC')
+    assert not PairLocks.is_global_lock()
+
 @pytest.mark.parametrize("protectionconf,desc_expected,exception_expected", [
     ({"method": "StoplossGuard", "lookback_period": 60, "trade_limit": 2},
      "[{'StoplossGuard': 'StoplossGuard - Frequent Stoploss Guard, "
@@ -123,6 +173,11 @@ def test_CooldownPeriod(mocker, default_conf, fee, caplog):
      ),
     ({"method": "CooldownPeriod", "stopduration": 60},
      "[{'CooldownPeriod': 'CooldownPeriod - Cooldown period of 60 min.'}]",
+     None
+     ),
+    ({"method": "LowProfitPairs", "stopduration": 60},
+     "[{'LowProfitPairs': 'LowProfitPairs - Low Profit Protection, locks pairs with "
+     "profit < 0.0 within 60 minutes.'}]",
      None
      ),
 ])

@@ -78,4 +78,4 @@ class LowProfitPairs(IProtection):
         :return: Tuple of [bool, until, reason].
             If true, this pair will be locked with <reason> until <until>
         """
-        return self._low_profit(date_now, pair=None)
+        return self._low_profit(date_now, pair=pair)
