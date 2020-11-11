@@ -207,7 +207,7 @@ CONF_SCHEMA = {
                     'trade_limit': {'type': 'number', 'integer': 1},
                     'lookback_period': {'type': 'number', 'integer': 1},
                 },
-                'required': ['method', 'trade_limit'],
+                'required': ['method'],
             }
         },
         'telegram': {
