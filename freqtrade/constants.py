@@ -203,8 +203,11 @@ CONF_SCHEMA = {
                 'type': 'object',
                 'properties': {
                     'method': {'type': 'string', 'enum': AVAILABLE_PROTECTIONS},
+                    'stop_duration': {'type': 'number', 'minimum': 0.0},
+                    'trade_limit': {'type': 'number', 'integer': 1},
+                    'lookback_period': {'type': 'number', 'integer': 1},
                 },
-                'required': ['method'],
+                'required': ['method', 'trade_limit'],
             }
         },
         'telegram': {

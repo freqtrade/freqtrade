@@ -20,14 +20,7 @@ class StoplossGuard(IProtection):
 
         self._lookback_period = protection_config.get('lookback_period', 60)
         self._trade_limit = protection_config.get('trade_limit', 10)
-        self._stopduration = protection_config.get('stopduration', 60)
-
-    def _reason(self) -> str:
-        """
-        LockReason to use
-        """
-        return (f'{self._trade_limit} stoplosses in {self._lookback_period} min, '
-                f'locking for {self._stopduration} min.')
+        self._stop_duration = protection_config.get('stop_duration', 60)
 
     def short_desc(self) -> str:
         """
@@ -35,6 +28,13 @@ class StoplossGuard(IProtection):
         """
         return (f"{self.name} - Frequent Stoploss Guard, {self._trade_limit} stoplosses "
                 f"within {self._lookback_period} minutes.")
+
+    def _reason(self) -> str:
+        """
+        LockReason to use
+        """
+        return (f'{self._trade_limit} stoplosses in {self._lookback_period} min, '
+                f'locking for {self._stop_duration} min.')
 
     def _stoploss_guard(self, date_now: datetime, pair: str = None) -> ProtectionReturn:
         """
@@ -55,7 +55,7 @@ class StoplossGuard(IProtection):
         if len(trades) > self._trade_limit:
             self.log_on_refresh(logger.info, f"Trading stopped due to {self._trade_limit} "
                                 f"stoplosses within {self._lookback_period} minutes.")
-            until = date_now + timedelta(minutes=self._stopduration)
+            until = date_now + timedelta(minutes=self._stop_duration)
             return True, until, self._reason()
 
         return False, None, None
