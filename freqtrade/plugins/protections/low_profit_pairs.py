@@ -11,7 +11,7 @@ from freqtrade.plugins.protections import IProtection, ProtectionReturn
 logger = logging.getLogger(__name__)
 
 
-class LowProfitpairs(IProtection):
+class LowProfitPairs(IProtection):
 
     def __init__(self, config: Dict[str, Any], protection_config: Dict[str, Any]) -> None:
         super().__init__(config, protection_config)
