@@ -115,7 +115,7 @@ class Exchange:
 
         logger.info('Using Exchange "%s"', self.name)
 
-        if validate and not exchange_config.get('skip_validation'):
+        if validate:
             # Check if timeframe is available
             self.validate_timeframes(config.get('timeframe'))
 
@@ -124,7 +124,8 @@ class Exchange:
 
             # Check if all pairs are available
             self.validate_stakecurrency(config['stake_currency'])
-            self.validate_pairs(config['exchange']['pair_whitelist'])
+            if not exchange_config.get('skip_pair_validation'):
+                self.validate_pairs(config['exchange']['pair_whitelist'])
             self.validate_ordertypes(config.get('order_types', {}))
             self.validate_order_time_in_force(config.get('order_time_in_force', {}))
             self.validate_required_startup_candles(config.get('startup_candle_count', 0))
