@@ -24,6 +24,8 @@ class StaticPairList(IPairList):
             raise OperationalException(f"{self.name} can only be used in the first position "
                                        "in the list of Pairlist Handlers.")
 
+        self._allow_inactive = self._pairlistconfig.get('allow_inactive', False)
+
     @property
     def needstickers(self) -> bool:
         """
@@ -47,7 +49,10 @@ class StaticPairList(IPairList):
         :param tickers: Tickers (from exchange.get_tickers()).
         :return: List of pairs
         """
-        return self._whitelist_for_active_markets(self._config['exchange']['pair_whitelist'])
+        if self._allow_inactive:
+            return self._config['exchange']['pair_whitelist']
+        else:
+            return self._whitelist_for_active_markets(self._config['exchange']['pair_whitelist'])
 
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
