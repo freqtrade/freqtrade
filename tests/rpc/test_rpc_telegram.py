@@ -1041,13 +1041,6 @@ def test_telegram_lock_handle(default_conf, update, ticker, fee, mocker) -> None
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
-    freqtradebot.state = State.STOPPED
-    telegram._locks(update=update, context=MagicMock())
-    assert msg_mock.call_count == 1
-    assert 'not running' in msg_mock.call_args_list[0][0][0]
-    msg_mock.reset_mock()
-    freqtradebot.state = State.RUNNING
-
     PairLocks.lock_pair('ETH/BTC', arrow.utcnow().shift(minutes=4).datetime, 'randreason')
     PairLocks.lock_pair('XRP/BTC', arrow.utcnow().shift(minutes=20).datetime, 'deadbeef')
 

@@ -605,8 +605,6 @@ class RPC:
 
     def _rpc_locks(self) -> Dict[str, Any]:
         """ Returns the  current locks"""
-        if self._freqtrade.state != State.RUNNING:
-            raise RPCException('trader is not running')
 
         locks = PairLocks.get_pair_locks(None)
         return {
