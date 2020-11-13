@@ -282,7 +282,7 @@ class Exchange:
                 asyncio.get_event_loop().run_until_complete(
                     self._api_async.load_markets(reload=reload))
 
-        except ccxt.BaseError as e:
+        except (asyncio.TimeoutError, ccxt.BaseError) as e:
             logger.warning('Could not load async markets. Reason: %s', e)
             return
 
