@@ -23,7 +23,7 @@ Binance has been split into 3, and users must use the correct ccxt exchange ID f
 ## Kraken
 
 !!! Tip "Stoploss on Exchange"
-    Kraken supports `stoploss_on_exchange` and uses stop-loss-market orders. It provides great advantages, so we recommend to benefit from it.
+    Kraken supports `stoploss_on_exchange`. It provides great advantages, so we recommend to benefit from it.
 
 ### Historic Kraken data
 
