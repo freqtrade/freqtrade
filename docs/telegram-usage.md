@@ -36,6 +36,7 @@ Copy the API Token (`22222222:APITOKEN` in the above example) and keep use it fo
 Don't forget to start the conversation with your bot, by clicking `/START` button
 
 ### 2. Telegram user_id
+
 #### Get your user id
 
 Talk to the [userinfobot](https://telegram.me/userinfobot)
@@ -43,7 +44,20 @@ Talk to the [userinfobot](https://telegram.me/userinfobot)
 Get your "Id", you will use it for the config parameter `chat_id`.
 
 #### Use Group id
-You can use bots in telegram groups just adding them to it. You can find the group id by adding a [RawDataBot](https://telegram.me/rawdatabot) to it, group id is the `"chat":{"id":-1001332619709}` in the [RawDataBot](https://telegram.me/rawdatabot) message. Dont forget about "-" (minus symbol) in start of value if it is and use string type in config, for example: `"chat_id":"-1001332619709"`.
+
+You can use bots in telegram groups by just adding them to the group. You can find the group id by first adding a [RawDataBot](https://telegram.me/rawdatabot) to your group. The Group id is shown as id in the `"chat"` section, which the RawDataBot will send to you:
+
+``` json
+"chat":{
+   "id":-1001332619709
+}
+```
+
+For the Freqtrade configuration, you can then use the the full value (including `-` if it's there) as string:
+
+```json
+   "chat_id": "-1001332619709"
+```
 
 ## Control telegram noise
 
