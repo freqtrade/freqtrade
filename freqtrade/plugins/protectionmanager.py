@@ -48,21 +48,22 @@ class ProtectionManager():
 
     def global_stop(self) -> bool:
         now = datetime.now(timezone.utc)
-
+        result = False
         for protection_handler in self._protection_handlers:
             result, until, reason = protection_handler.global_stop(now)
 
             # Early stopping - first positive result blocks further trades
             if result and until:
                 PairLocks.lock_pair('*', until, reason)
-                return True
-        return False
+                result = True
+        return result
 
     def stop_per_pair(self, pair) -> bool:
         now = datetime.now(timezone.utc)
+        result = False
         for protection_handler in self._protection_handlers:
             result, until, reason = protection_handler.stop_per_pair(pair, now)
             if result and until:
                 PairLocks.lock_pair(pair, until, reason)
-                return True
-        return False
+                result = True
+        return result
