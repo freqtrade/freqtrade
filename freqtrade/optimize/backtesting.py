@@ -243,7 +243,7 @@ class Backtesting:
 
             trade.close_date = sell_row[DATE_IDX]
             trade.sell_reason = sell.sell_type
-            trade.close(closerate)
+            trade.close(closerate, show_msg=False)
 
             return BacktestResult(pair=trade.pair,
                                   profit_percent=trade.calc_profit_ratio(rate=closerate),

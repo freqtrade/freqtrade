@@ -411,7 +411,7 @@ class Trade(_DECL_BASE):
             raise ValueError(f'Unknown order type: {order_type}')
         cleanup_db()
 
-    def close(self, rate: float) -> None:
+    def close(self, rate: float, *, show_msg: bool = False) -> None:
         """
         Sets close_rate to the given rate, calculates total profit
         and marks trade as closed
@@ -423,10 +423,11 @@ class Trade(_DECL_BASE):
         self.is_open = False
         self.sell_order_status = 'closed'
         self.open_order_id = None
-        logger.info(
-            'Marking %s as closed as the trade is fulfilled and found no open orders for it.',
-            self
-        )
+        if show_msg:
+            logger.info(
+                'Marking %s as closed as the trade is fulfilled and found no open orders for it.',
+                self
+            )
 
     def update_fee(self, fee_cost: float, fee_currency: Optional[str], fee_rate: Optional[float],
                    side: str) -> None:
