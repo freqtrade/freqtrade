@@ -40,13 +40,15 @@ class LowProfitPairs(IProtection):
         Evaluate recent trades for pair
         """
         look_back_until = date_now - timedelta(minutes=self._lookback_period)
-        filters = [
-            Trade.is_open.is_(False),
-            Trade.close_date > look_back_until,
-        ]
-        if pair:
-            filters.append(Trade.pair == pair)
-        trades = Trade.get_trades(filters).all()
+        # filters = [
+        #     Trade.is_open.is_(False),
+        #     Trade.close_date > look_back_until,
+        # ]
+        # if pair:
+        #     filters.append(Trade.pair == pair)
+
+        trades = Trade.get_trades_proxy(pair=pair, is_open=False, close_date=look_back_until)
+        # trades = Trade.get_trades(filters).all()
         if len(trades) < self._trade_limit:
             # Not enough trades in the relevant period
             return False, None, None

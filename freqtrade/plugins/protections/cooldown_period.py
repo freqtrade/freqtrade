@@ -35,13 +35,16 @@ class CooldownPeriod(IProtection):
         Get last trade for this pair
         """
         look_back_until = date_now - timedelta(minutes=self._stop_duration)
-        filters = [
-            Trade.is_open.is_(False),
-            Trade.close_date > look_back_until,
-            Trade.pair == pair,
-        ]
-        trade = Trade.get_trades(filters).first()
-        if trade:
+        # filters = [
+        #     Trade.is_open.is_(False),
+        #     Trade.close_date > look_back_until,
+        #     Trade.pair == pair,
+        # ]
+        # trade = Trade.get_trades(filters).first()
+        trades = Trade.get_trades_proxy(pair=pair, is_open=False, close_date=look_back_until)
+        if trades:
+            # Get latest trade
+            trade = sorted(trades, key=lambda t: t.close_date)[-1]
             self.log_once(f"Cooldown for {pair} for {self.stop_duration_str}.", logger.info)
             until = self.calculate_lock_end([trade], self._stop_duration)
 

@@ -3,7 +3,7 @@ Protection manager class
 """
 import logging
 from datetime import datetime, timezone
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from freqtrade.persistence import PairLocks
 from freqtrade.plugins.protections import IProtection
@@ -43,8 +43,9 @@ class ProtectionManager():
         """
         return [{p.name: p.short_desc()} for p in self._protection_handlers]
 
-    def global_stop(self) -> bool:
-        now = datetime.now(timezone.utc)
+    def global_stop(self, now: Optional[datetime] = None) -> bool:
+        if not now:
+            now = datetime.now(timezone.utc)
         result = False
         for protection_handler in self._protection_handlers:
             if protection_handler.has_global_stop:
@@ -57,8 +58,9 @@ class ProtectionManager():
                     result = True
         return result
 
-    def stop_per_pair(self, pair) -> bool:
-        now = datetime.now(timezone.utc)
+    def stop_per_pair(self, pair, now: Optional[datetime] = None) -> bool:
+        if not now:
+            now = datetime.now(timezone.utc)
         result = False
         for protection_handler in self._protection_handlers:
             if protection_handler.has_local_stop:

@@ -202,6 +202,10 @@ class Trade(_DECL_BASE):
     """
     __tablename__ = 'trades'
 
+    use_db: bool = True
+    # Trades container for backtesting
+    trades: List['Trade'] = []
+
     id = Column(Integer, primary_key=True)
 
     orders = relationship("Order", order_by="Order.id", cascade="all, delete-orphan")
@@ -561,6 +565,43 @@ class Trade(_DECL_BASE):
             return Trade.query.filter(*trade_filter)
         else:
             return Trade.query
+
+    @staticmethod
+    def get_trades_proxy(*, pair: str = None, is_open: bool = None,
+                         open_date: datetime = None, close_date: datetime = None,
+                         ) -> List['Trade']:
+        """
+        Helper function to query Trades.
+        Returns a List of trades, filtered on the parameters given.
+        In live mode, converts the filter to a database query and returns all rows
+        In Backtest mode, uses filters on Trade.trades to get the result.
+
+        :return: unsorted List[Trade]
+        """
+        if Trade.use_db:
+            trade_filter = []
+            if pair:
+                trade_filter.append(Trade.pair == pair)
+            if open_date:
+                trade_filter.append(Trade.open_date > open_date)
+            if close_date:
+                trade_filter.append(Trade.close_date > close_date)
+            if is_open is not None:
+                trade_filter.append(Trade.is_open.is_(is_open))
+            return Trade.get_trades(trade_filter).all()
+        else:
+            # Offline mode - without database
+            sel_trades = [trade for trade in Trade.trades]
+            if pair:
+                sel_trades = [trade for trade in sel_trades if trade.pair == pair]
+            if open_date:
+                sel_trades = [trade for trade in sel_trades if trade.open_date > open_date]
+            if close_date:
+                sel_trades = [trade for trade in sel_trades if trade.close_date
+                              and trade.close_date > close_date]
+            if is_open is not None:
+                sel_trades = [trade for trade in sel_trades if trade.is_open == is_open]
+            return sel_trades
 
     @staticmethod
     def get_open_trades() -> List[Any]:

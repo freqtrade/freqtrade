@@ -44,11 +44,8 @@ class MaxDrawdown(IProtection):
         Evaluate recent trades for drawdown ...
         """
         look_back_until = date_now - timedelta(minutes=self._lookback_period)
-        filters = [
-            Trade.is_open.is_(False),
-            Trade.close_date > look_back_until,
-        ]
-        trades = Trade.get_trades(filters).all()
+
+        trades = Trade.get_trades_proxy(is_open=False, close_date=look_back_until)
 
         trades_df = pd.DataFrame([trade.to_json() for trade in trades])
 
