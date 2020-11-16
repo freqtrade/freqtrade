@@ -21,7 +21,8 @@ from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, show_backtest_results,
                                                  store_backtest_stats)
 from freqtrade.pairlist.pairlistmanager import PairListManager
-from freqtrade.persistence import Trade
+from freqtrade.persistence import PairLocks, Trade
+from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy.interface import IStrategy, SellCheckTuple, SellType
 
@@ -114,6 +115,11 @@ class Backtesting:
             self.fee = config['fee']
         else:
             self.fee = self.exchange.get_fee(symbol=self.pairlists.whitelist[0])
+
+        Trade.use_db = False
+        PairLocks.timeframe = self.config['timeframe']
+        PairLocks.use_db = False
+        self.protections = ProtectionManager(self.config)
 
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
@@ -235,6 +241,10 @@ class Backtesting:
             trade_dur = int((sell_row[DATE_IDX] - trade.open_date).total_seconds() // 60)
             closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
 
+            trade.close_date = sell_row[DATE_IDX]
+            trade.sell_reason = sell.sell_type
+            trade.close(closerate)
+
             return BacktestResult(pair=trade.pair,
                                   profit_percent=trade.calc_profit_ratio(rate=closerate),
                                   profit_abs=trade.calc_profit(rate=closerate),
@@ -261,6 +271,7 @@ class Backtesting:
             if len(open_trades[pair]) > 0:
                 for trade in open_trades[pair]:
                     sell_row = data[pair][-1]
+
                     trade_entry = BacktestResult(pair=trade.pair,
                                                  profit_percent=trade.calc_profit_ratio(
                                                      rate=sell_row[OPEN_IDX]),
@@ -320,6 +331,8 @@ class Backtesting:
         while tmp <= end_date:
             open_trade_count_start = open_trade_count
 
+            self.protections.global_stop(tmp)
+
             for i, pair in enumerate(data):
                 if pair not in indexes:
                     indexes[pair] = 0
@@ -342,7 +355,8 @@ class Backtesting:
                 if ((position_stacking or len(open_trades[pair]) == 0)
                         and (max_open_trades <= 0 or open_trade_count_start < max_open_trades)
                         and tmp != end_date
-                        and row[BUY_IDX] == 1 and row[SELL_IDX] != 1):
+                        and row[BUY_IDX] == 1 and row[SELL_IDX] != 1
+                        and not PairLocks.is_pair_locked(pair, row[DATE_IDX])):
                     # Enter trade
                     trade = Trade(
                         pair=pair,
@@ -361,6 +375,7 @@ class Backtesting:
                     open_trade_count += 1
                     # logger.debug(f"{pair} - Backtesting emulates creation of new trade: {trade}.")
                     open_trades[pair].append(trade)
+                    Trade.trades.append(trade)
 
                 for trade in open_trades[pair]:
                     # since indexes has been incremented before, we need to go one step back to
@@ -372,6 +387,7 @@ class Backtesting:
                         open_trade_count -= 1
                         open_trades[pair].remove(trade)
                         trades.append(trade_entry)
+                        self.protections.stop_per_pair(pair, row[DATE_IDX])
 
             # Move time one configured time_interval ahead.
             tmp += timedelta(minutes=self.timeframe_min)
