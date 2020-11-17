@@ -3,7 +3,6 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict
 
-
 from freqtrade.persistence import Trade
 from freqtrade.plugins.protections import IProtection, ProtectionReturn
 
@@ -57,7 +56,8 @@ class LowProfitPairs(IProtection):
                 logger.info,
                 f"Trading for {pair} stopped due to {profit} < {self._required_profit} "
                 f"within {self._lookback_period} minutes.")
-            until = date_now + timedelta(minutes=self._stop_duration)
+            until = self.calculate_lock_end(trades, self._stop_duration)
+
             return True, until, self._reason(profit)
 
         return False, None, None

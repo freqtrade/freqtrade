@@ -1,10 +1,11 @@
 
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
-from typing import Any, Dict, Optional, Tuple
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional, Tuple
 
 from freqtrade.mixins import LoggingMixin
+from freqtrade.persistence import Trade
 
 
 logger = logging.getLogger(__name__)
@@ -45,3 +46,17 @@ class IProtection(LoggingMixin, ABC):
         :return: Tuple of [bool, until, reason].
             If true, this pair will be locked with <reason> until <until>
         """
+
+    @staticmethod
+    def calculate_lock_end(trades: List[Trade], stop_minutes: int) -> datetime:
+        """
+        Get lock end time
+        """
+        max_date: datetime = max([trade.close_date for trade in trades])
+        # comming from Database, tzinfo is not set.
+        if max_date.tzinfo is None:
+            max_date = max_date.replace(tzinfo=timezone.utc)
+
+        until = max_date + timedelta(minutes=stop_minutes)
+
+        return until
