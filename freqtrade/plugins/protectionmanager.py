@@ -65,6 +65,7 @@ class ProtectionManager():
         for protection_handler in self._protection_handlers:
             result, until, reason = protection_handler.stop_per_pair(pair, now)
             if result and until:
-                PairLocks.lock_pair(pair, until, reason)
+                if not PairLocks.is_pair_locked(pair, until):
+                    PairLocks.lock_pair(pair, until, reason, now=now)
                 result = True
         return result
