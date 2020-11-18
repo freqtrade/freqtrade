@@ -55,7 +55,7 @@ class ProtectionManager():
             # Early stopping - first positive result blocks further trades
             if result and until:
                 if not PairLocks.is_global_lock(until):
-                    PairLocks.lock_pair('*', until, reason)
+                    PairLocks.lock_pair('*', until, reason, now=now)
                 result = True
         return result
 

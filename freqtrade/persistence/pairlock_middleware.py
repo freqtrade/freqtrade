@@ -22,10 +22,19 @@ class PairLocks():
     timeframe: str = ''
 
     @staticmethod
-    def lock_pair(pair: str, until: datetime, reason: str = None) -> None:
+    def lock_pair(pair: str, until: datetime, reason: str = None, *, now: datetime = None) -> None:
+        """
+        Create PairLock from now to "until".
+        Uses database by default, unless PairLocks.use_db is set to False,
+        in which case a list is maintained.
+        :param pair: pair to lock. use '*' to lock all pairs
+        :param until: End time of the lock. Will be rounded up to the next candle.
+        :param reason: Reason string that will be shown as reason for the lock
+        :param now: Current timestamp. Used to determine lock start time.
+        """
         lock = PairLock(
             pair=pair,
-            lock_time=datetime.now(timezone.utc),
+            lock_time=now or datetime.now(timezone.utc),
             lock_end_time=timeframe_to_next_date(PairLocks.timeframe, until),
             reason=reason,
             active=True
