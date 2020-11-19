@@ -53,8 +53,8 @@ class StoplossGuard(IProtection):
         trades = Trade.get_trades(filters).all()
 
         if len(trades) > self._trade_limit:
-            self.log_on_refresh(logger.info, f"Trading stopped due to {self._trade_limit} "
-                                f"stoplosses within {self._lookback_period} minutes.")
+            self.log_once(logger.info, f"Trading stopped due to {self._trade_limit} "
+                                       f"stoplosses within {self._lookback_period} minutes.")
             until = self.calculate_lock_end(trades, self._stop_duration)
             return True, until, self._reason()
 

@@ -64,9 +64,9 @@ class PriceFilter(IPairList):
         :return: True if the pair can stay, false if it should be removed
         """
         if ticker['last'] is None or ticker['last'] == 0:
-            self.log_on_refresh(logger.info,
-                                f"Removed {ticker['symbol']} from whitelist, because "
-                                "ticker['last'] is empty (Usually no trade in the last 24h).")
+            self.log_once(logger.info,
+                          f"Removed {ticker['symbol']} from whitelist, because "
+                          "ticker['last'] is empty (Usually no trade in the last 24h).")
             return False
 
         # Perform low_price_ratio check.
@@ -74,22 +74,22 @@ class PriceFilter(IPairList):
             compare = self._exchange.price_get_one_pip(ticker['symbol'], ticker['last'])
             changeperc = compare / ticker['last']
             if changeperc > self._low_price_ratio:
-                self.log_on_refresh(logger.info, f"Removed {ticker['symbol']} from whitelist, "
-                                                 f"because 1 unit is {changeperc * 100:.3f}%")
+                self.log_once(logger.info, f"Removed {ticker['symbol']} from whitelist, "
+                                           f"because 1 unit is {changeperc * 100:.3f}%")
                 return False
 
         # Perform min_price check.
         if self._min_price != 0:
             if ticker['last'] < self._min_price:
-                self.log_on_refresh(logger.info, f"Removed {ticker['symbol']} from whitelist, "
-                                                 f"because last price < {self._min_price:.8f}")
+                self.log_once(logger.info, f"Removed {ticker['symbol']} from whitelist, "
+                                           f"because last price < {self._min_price:.8f}")
                 return False
 
         # Perform max_price check.
         if self._max_price != 0:
             if ticker['last'] > self._max_price:
-                self.log_on_refresh(logger.info, f"Removed {ticker['symbol']} from whitelist, "
-                                                 f"because last price > {self._max_price:.8f}")
+                self.log_once(logger.info, f"Removed {ticker['symbol']} from whitelist, "
+                                           f"because last price > {self._max_price:.8f}")
                 return False
 
         return True

@@ -76,9 +76,9 @@ class AgeFilter(IPairList):
                 self._symbolsChecked[ticker['symbol']] = int(arrow.utcnow().float_timestamp) * 1000
                 return True
             else:
-                self.log_on_refresh(logger.info, f"Removed {ticker['symbol']} from whitelist, "
-                                                 f"because age {len(daily_candles)} is less than "
-                                                 f"{self._min_days_listed} "
-                                                 f"{plural(self._min_days_listed, 'day')}")
+                self.log_once(logger.info,
+                              f"Removed {ticker['symbol']} from whitelist, because age "
+                              f"{len(daily_candles)} is less than {self._min_days_listed} "
+                              f"{plural(self._min_days_listed, 'day')}")
                 return False
         return False

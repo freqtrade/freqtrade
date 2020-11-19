@@ -111,6 +111,6 @@ class VolumePairList(IPairList):
         # Limit pairlist to the requested number of pairs
         pairs = pairs[:self._number_pairs]
 
-        self.log_on_refresh(logger.info, f"Searching {self._number_pairs} pairs: {pairs}")
+        self.log_once(logger.info, f"Searching {self._number_pairs} pairs: {pairs}")
 
         return pairs

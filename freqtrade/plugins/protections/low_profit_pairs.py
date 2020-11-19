@@ -52,7 +52,7 @@ class LowProfitPairs(IProtection):
 
         profit = sum(trade.close_profit for trade in trades)
         if profit < self._required_profit:
-            self.log_on_refresh(
+            self.log_once(
                 logger.info,
                 f"Trading for {pair} stopped due to {profit:.2f} < {self._required_profit} "
                 f"within {self._lookback_period} minutes.")

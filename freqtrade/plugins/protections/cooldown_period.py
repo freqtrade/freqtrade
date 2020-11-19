@@ -41,7 +41,7 @@ class CooldownPeriod(IProtection):
         ]
         trade = Trade.get_trades(filters).first()
         if trade:
-            self.log_on_refresh(logger.info, f"Cooldown for {pair} for {self._stop_duration}.")
+            self.log_once(logger.info, f"Cooldown for {pair} for {self._stop_duration}.")
             until = self.calculate_lock_end([trade], self._stop_duration)
 
             return True, until, self._reason()

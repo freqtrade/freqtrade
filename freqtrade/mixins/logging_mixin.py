@@ -16,7 +16,7 @@ class LoggingMixin():
         self.refresh_period = refresh_period
         self._log_cache: TTLCache = TTLCache(maxsize=1024, ttl=self.refresh_period)
 
-    def log_on_refresh(self, logmethod, message: str) -> None:
+    def log_once(self, logmethod, message: str) -> None:
         """
         Logs message - not more often than "refresh_period" to avoid log spamming
         Logs the log-message as debug as well to simplify debugging.
@@ -25,10 +25,10 @@ class LoggingMixin():
         :return: None.
         """
         @cached(cache=self._log_cache)
-        def _log_on_refresh(message: str):
+        def _log_once(message: str):
             logmethod(message)
 
         # Log as debug first
         self.logger.debug(message)
         # Call hidden function.
-        _log_on_refresh(message)
+        _log_once(message)

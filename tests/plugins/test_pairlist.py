@@ -92,7 +92,7 @@ def static_pl_conf(whitelist_conf):
     return whitelist_conf
 
 
-def test_log_on_refresh(mocker, static_pl_conf, markets, tickers):
+def test_log_cached(mocker, static_pl_conf, markets, tickers):
     mocker.patch.multiple('freqtrade.exchange.Exchange',
                           markets=PropertyMock(return_value=markets),
                           exchange_has=MagicMock(return_value=True),
@@ -102,14 +102,14 @@ def test_log_on_refresh(mocker, static_pl_conf, markets, tickers):
     logmock = MagicMock()
     # Assign starting whitelist
     pl = freqtrade.pairlists._pairlist_handlers[0]
-    pl.log_on_refresh(logmock, 'Hello world')
+    pl.log_once(logmock, 'Hello world')
     assert logmock.call_count == 1
-    pl.log_on_refresh(logmock, 'Hello world')
+    pl.log_once(logmock, 'Hello world')
     assert logmock.call_count == 1
     assert pl._log_cache.currsize == 1
     assert ('Hello world',) in pl._log_cache._Cache__data
 
-    pl.log_on_refresh(logmock, 'Hello world2')
+    pl.log_once(logmock, 'Hello world2')
     assert logmock.call_count == 2
     assert pl._log_cache.currsize == 2
 
