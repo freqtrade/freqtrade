@@ -8,6 +8,9 @@ class LoggingMixin():
     Logging Mixin
     Shows similar messages only once every `refresh_period`.
     """
+    # Disable output completely
+    show_output = True
+
     def __init__(self, logger, refresh_period: int = 3600):
         """
         :param refresh_period: in seconds - Show identical messages in this intervals
@@ -31,4 +34,5 @@ class LoggingMixin():
         # Log as debug first
         self.logger.debug(message)
         # Call hidden function.
-        _log_once(message)
+        if self.show_output:
+            _log_once(message)
