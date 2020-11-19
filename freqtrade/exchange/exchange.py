@@ -282,7 +282,7 @@ class Exchange:
                 asyncio.get_event_loop().run_until_complete(
                     self._api_async.load_markets(reload=reload))
 
-        except ccxt.BaseError as e:
+        except (asyncio.TimeoutError, ccxt.BaseError) as e:
             logger.warning('Could not load async markets. Reason: %s', e)
             return
 
@@ -291,7 +291,7 @@ class Exchange:
         try:
             self._api.load_markets()
             self._load_async_markets()
-            self._last_markets_refresh = arrow.utcnow().timestamp
+            self._last_markets_refresh = arrow.utcnow().int_timestamp
         except ccxt.BaseError as e:
             logger.warning('Unable to initialize markets. Reason: %s', e)
 
@@ -300,14 +300,14 @@ class Exchange:
         # Check whether markets have to be reloaded
         if (self._last_markets_refresh > 0) and (
                 self._last_markets_refresh + self.markets_refresh_interval
-                > arrow.utcnow().timestamp):
+                > arrow.utcnow().int_timestamp):
             return None
         logger.debug("Performing scheduled market reload..")
         try:
             self._api.load_markets(reload=True)
             # Also reload async markets to avoid issues with newly listed pairs
             self._load_async_markets(reload=True)
-            self._last_markets_refresh = arrow.utcnow().timestamp
+            self._last_markets_refresh = arrow.utcnow().int_timestamp
         except ccxt.BaseError:
             logger.exception("Could not reload markets.")
 
@@ -501,7 +501,7 @@ class Exchange:
             'side': side,
             'remaining': _amount,
             'datetime': arrow.utcnow().isoformat(),
-            'timestamp': int(arrow.utcnow().timestamp * 1000),
+            'timestamp': int(arrow.utcnow().int_timestamp * 1000),
             'status': "closed" if ordertype == "market" else "open",
             'fee': None,
             'info': {}
@@ -687,6 +687,9 @@ class Exchange:
     async def _async_get_historic_ohlcv(self, pair: str,
                                         timeframe: str,
                                         since_ms: int) -> List:
+        """
+        Download historic ohlcv
+        """
 
         one_call = timeframe_to_msecs(timeframe) * self._ohlcv_candle_limit
         logger.debug(
@@ -696,15 +699,20 @@ class Exchange:
         )
         input_coroutines = [self._async_get_candle_history(
             pair, timeframe, since) for since in
-            range(since_ms, arrow.utcnow().timestamp * 1000, one_call)]
+            range(since_ms, arrow.utcnow().int_timestamp * 1000, one_call)]
 
         results = await asyncio.gather(*input_coroutines, return_exceptions=True)
 
         # Combine gathered results
         data: List = []
-        for p, timeframe, res in results:
+        for res in results:
+            if isinstance(res, Exception):
+                logger.warning("Async code raised an exception: %s", res.__class__.__name__)
+                continue
+            # Deconstruct tuple if it's not an exception
+            p, _, new_data = res
             if p == pair:
-                data.extend(res)
+                data.extend(new_data)
         # Sort data again after extending the result - above calls return in "async order"
         data = sorted(data, key=lambda x: x[0])
         logger.info("Downloaded data for %s with length %s.", pair, len(data))
@@ -741,9 +749,8 @@ class Exchange:
             if isinstance(res, Exception):
                 logger.warning("Async code raised an exception: %s", res.__class__.__name__)
                 continue
-            pair = res[0]
-            timeframe = res[1]
-            ticks = res[2]
+            # Deconstruct tuple (has 3 elements)
+            pair, timeframe, ticks = res
             # keeping last candle time as last refreshed time of the pair
             if ticks:
                 self._pairs_last_refresh_time[(pair, timeframe)] = ticks[-1][0] // 1000
@@ -759,7 +766,7 @@ class Exchange:
         interval_in_sec = timeframe_to_seconds(timeframe)
 
         return not ((self._pairs_last_refresh_time.get((pair, timeframe), 0)
-                     + interval_in_sec) >= arrow.utcnow().timestamp)
+                     + interval_in_sec) >= arrow.utcnow().int_timestamp)
 
     @retrier_async
     async def _async_get_candle_history(self, pair: str, timeframe: str,

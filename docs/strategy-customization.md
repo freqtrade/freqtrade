@@ -704,7 +704,7 @@ To verify if a pair is currently locked, use `self.is_pair_locked(pair)`.
     Locked pairs will always be rounded up to the next candle. So assuming a `5m` timeframe, a lock with `until` set to 10:18 will lock the pair until the candle from 10:15-10:20 will be finished.
 
 !!! Warning
-    Locking pairs is not functioning during backtesting.
+    Locking pairs is not available during backtesting.
 
 #### Pair locking example
 

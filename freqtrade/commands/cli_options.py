@@ -4,6 +4,7 @@ Definition of cli arguments used in arguments.py
 from argparse import ArgumentTypeError
 
 from freqtrade import __version__, constants
+from freqtrade.constants import HYPEROPT_LOSS_BUILTIN
 
 
 def check_int_positive(value: str) -> int:
@@ -257,8 +258,7 @@ AVAILABLE_CLI_OPTIONS = {
         help='Specify the class name of the hyperopt loss function class (IHyperOptLoss). '
         'Different functions can generate completely different results, '
         'since the target for optimization is different. Built-in Hyperopt-loss-functions are: '
-        'ShortTradeDurHyperOptLoss, OnlyProfitHyperOptLoss, SharpeHyperOptLoss, '
-        'SharpeHyperOptLossDaily, SortinoHyperOptLoss, SortinoHyperOptLossDaily.',
+        f'{", ".join(HYPEROPT_LOSS_BUILTIN)}',
         metavar='NAME',
     ),
     "hyperoptexportfilename": Arg(
@@ -354,13 +354,11 @@ AVAILABLE_CLI_OPTIONS = {
         '--data-format-ohlcv',
         help='Storage format for downloaded candle (OHLCV) data. (default: `%(default)s`).',
         choices=constants.AVAILABLE_DATAHANDLERS,
-        default='json'
     ),
     "dataformat_trades": Arg(
         '--data-format-trades',
         help='Storage format for downloaded trades data. (default: `%(default)s`).',
         choices=constants.AVAILABLE_DATAHANDLERS,
-        default='jsongz'
     ),
     "exchange": Arg(
         '--exchange',

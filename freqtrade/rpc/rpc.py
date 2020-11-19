@@ -19,7 +19,7 @@ from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
 from freqtrade.misc import shorten_date
-from freqtrade.persistence import PairLock, Trade
+from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType
@@ -93,7 +93,8 @@ class RPC:
     def send_msg(self, msg: Dict[str, str]) -> None:
         """ Sends a message to all registered rpc modules """
 
-    def _rpc_show_config(self, config) -> Dict[str, Any]:
+    @staticmethod
+    def _rpc_show_config(config, botstate: State) -> Dict[str, Any]:
         """
         Return a dict of config options.
         Explicitly does NOT return the full config to avoid leakage of sensitive
@@ -104,22 +105,24 @@ class RPC:
             'stake_currency': config['stake_currency'],
             'stake_amount': config['stake_amount'],
             'max_open_trades': config['max_open_trades'],
-            'minimal_roi': config['minimal_roi'].copy(),
-            'stoploss': config['stoploss'],
-            'trailing_stop': config['trailing_stop'],
+            'minimal_roi': config['minimal_roi'].copy() if 'minimal_roi' in config else {},
+            'stoploss': config.get('stoploss'),
+            'trailing_stop': config.get('trailing_stop'),
             'trailing_stop_positive': config.get('trailing_stop_positive'),
             'trailing_stop_positive_offset': config.get('trailing_stop_positive_offset'),
             'trailing_only_offset_is_reached': config.get('trailing_only_offset_is_reached'),
-            'ticker_interval': config['timeframe'],  # DEPRECATED
-            'timeframe': config['timeframe'],
-            'timeframe_ms': timeframe_to_msecs(config['timeframe']),
-            'timeframe_min': timeframe_to_minutes(config['timeframe']),
+            'timeframe': config.get('timeframe'),
+            'timeframe_ms': timeframe_to_msecs(config['timeframe']
+                                               ) if 'timeframe' in config else '',
+            'timeframe_min': timeframe_to_minutes(config['timeframe']
+                                                  ) if 'timeframe' in config else '',
             'exchange': config['exchange']['name'],
             'strategy': config['strategy'],
             'forcebuy_enabled': config.get('forcebuy_enable', False),
             'ask_strategy': config.get('ask_strategy', {}),
             'bid_strategy': config.get('bid_strategy', {}),
-            'state': str(self._freqtrade.state) if self._freqtrade else '',
+            'state': str(botstate),
+            'runmode': config['runmode'].value
         }
         return val
 
@@ -152,17 +155,18 @@ class RPC:
                 stoploss_current_dist = trade.stop_loss - current_rate
                 stoploss_current_dist_ratio = stoploss_current_dist / current_rate
 
-                fmt_close_profit = (f'{round(trade.close_profit * 100, 2):.2f}%'
-                                    if trade.close_profit is not None else None)
                 trade_dict = trade.to_json()
                 trade_dict.update(dict(
                     base_currency=self._freqtrade.config['stake_currency'],
                     close_profit=trade.close_profit if trade.close_profit is not None else None,
-                    close_profit_pct=fmt_close_profit,
                     current_rate=current_rate,
-                    current_profit=current_profit,
-                    current_profit_pct=round(current_profit * 100, 2),
-                    current_profit_abs=current_profit_abs,
+                    current_profit=current_profit,  # Deprectated
+                    current_profit_pct=round(current_profit * 100, 2),  # Deprectated
+                    current_profit_abs=current_profit_abs,  # Deprectated
+                    profit_ratio=current_profit,
+                    profit_pct=round(current_profit * 100, 2),
+                    profit_abs=current_profit_abs,
+
                     stoploss_current_dist=stoploss_current_dist,
                     stoploss_current_dist_ratio=round(stoploss_current_dist_ratio, 8),
                     stoploss_current_dist_pct=round(stoploss_current_dist_ratio * 100, 2),
@@ -601,10 +605,8 @@ class RPC:
 
     def _rpc_locks(self) -> Dict[str, Any]:
         """ Returns the  current locks"""
-        if self._freqtrade.state != State.RUNNING:
-            raise RPCException('trader is not running')
 
-        locks = PairLock.get_pair_locks(None)
+        locks = PairLocks.get_pair_locks(None)
         return {
             'lock_count': len(locks),
             'locks': [lock.to_json() for lock in locks]

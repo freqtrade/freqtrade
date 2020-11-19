@@ -18,10 +18,10 @@ from freqtrade.constants import CANCEL_REASON
 from freqtrade.edge import PairInfo
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.loggers import setup_logging
-from freqtrade.persistence import PairLock, Trade
+from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.rpc.telegram import Telegram, authorized_only
-from freqtrade.state import State
+from freqtrade.state import RunMode, State
 from freqtrade.strategy.interface import SellType
 from tests.conftest import (create_mock_trades, get_patched_freqtradebot, log_has, patch_exchange,
                             patch_get_signal, patch_whitelist)
@@ -164,16 +164,17 @@ def test_telegram_status(default_conf, update, mocker) -> None:
             'amount': 90.99181074,
             'stake_amount': 90.99181074,
             'close_profit_pct': None,
-            'current_profit': -0.0059,
-            'current_profit_pct': -0.59,
-            'initial_stop_loss': 1.098e-05,
-            'stop_loss': 1.099e-05,
+            'profit': -0.0059,
+            'profit_pct': -0.59,
+            'initial_stop_loss_abs': 1.098e-05,
+            'stop_loss_abs': 1.099e-05,
             'sell_order_status': None,
             'initial_stop_loss_pct': -0.05,
             'stoploss_current_dist': 1e-08,
             'stoploss_current_dist_pct': -0.02,
             'stop_loss_pct': -0.01,
-            'open_order': '(limit buy rem=0.00000000)'
+            'open_order': '(limit buy rem=0.00000000)',
+            'is_open': True
         }]),
         _status_table=status_table,
         _send_msg=msg_mock
@@ -1041,15 +1042,8 @@ def test_telegram_lock_handle(default_conf, update, ticker, fee, mocker) -> None
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
-    freqtradebot.state = State.STOPPED
-    telegram._locks(update=update, context=MagicMock())
-    assert msg_mock.call_count == 1
-    assert 'not running' in msg_mock.call_args_list[0][0][0]
-    msg_mock.reset_mock()
-    freqtradebot.state = State.RUNNING
-
-    PairLock.lock_pair('ETH/BTC', arrow.utcnow().shift(minutes=4).datetime, 'randreason')
-    PairLock.lock_pair('XRP/BTC', arrow.utcnow().shift(minutes=20).datetime, 'deadbeef')
+    PairLocks.lock_pair('ETH/BTC', arrow.utcnow().shift(minutes=4).datetime, 'randreason')
+    PairLocks.lock_pair('XRP/BTC', arrow.utcnow().shift(minutes=20).datetime, 'deadbeef')
 
     telegram._locks(update=update, context=MagicMock())
 
@@ -1309,6 +1303,7 @@ def test_show_config_handle(default_conf, update, mocker) -> None:
         _init=MagicMock(),
         _send_msg=msg_mock
     )
+    default_conf['runmode'] = RunMode.DRY_RUN
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     telegram = Telegram(freqtradebot)
 

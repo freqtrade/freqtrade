@@ -329,7 +329,7 @@ class ApiServer(RPC):
         """
         Prints the bot's version
         """
-        return jsonify(self._rpc_show_config(self._config))
+        return jsonify(RPC._rpc_show_config(self._config, self._freqtrade.state))
 
     @require_login
     @rpc_catch_errors

@@ -435,6 +435,16 @@ def test_list_markets(mocker, markets, capsys):
     assert re.search(r"^BLK/BTC$", captured.out, re.MULTILINE)
     assert re.search(r"^LTC/USD$", captured.out, re.MULTILINE)
 
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(side_effect=ValueError))
+    # Test --one-column
+    args = [
+        "list-markets",
+        '--config', 'config.json.example',
+        "--one-column"
+    ]
+    with pytest.raises(OperationalException, match=r"Cannot get markets.*"):
+        start_list_markets(get_args(args), False)
+
 
 def test_create_datadir_failed(caplog):
 
@@ -476,6 +486,12 @@ def test_start_new_strategy(mocker, caplog):
     assert "CoolNewStrategy" in wt_mock.call_args_list[0][0][0]
     assert log_has_re("Writing strategy to .*", caplog)
 
+    mocker.patch('freqtrade.commands.deploy_commands.setup_utils_configuration')
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    with pytest.raises(OperationalException,
+                       match=r".* already exists. Please choose another Strategy Name\."):
+        start_new_strategy(get_args(args))
+
 
 def test_start_new_strategy_DefaultStrat(mocker, caplog):
     args = [
@@ -511,6 +527,12 @@ def test_start_new_hyperopt(mocker, caplog):
     assert wt_mock.call_count == 1
     assert "CoolNewhyperopt" in wt_mock.call_args_list[0][0][0]
     assert log_has_re("Writing hyperopt to .*", caplog)
+
+    mocker.patch('freqtrade.commands.deploy_commands.setup_utils_configuration')
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    with pytest.raises(OperationalException,
+                       match=r".* already exists. Please choose another Hyperopt Name\."):
+        start_new_hyperopt(get_args(args))
 
 
 def test_start_new_hyperopt_DefaultHyperopt(mocker, caplog):
@@ -579,7 +601,7 @@ def test_download_data_timerange(mocker, caplog, markets):
     start_download_data(get_args(args))
     assert dl_mock.call_count == 1
     # 20days ago
-    days_ago = arrow.get(arrow.utcnow().shift(days=-20).date()).timestamp
+    days_ago = arrow.get(arrow.utcnow().shift(days=-20).date()).int_timestamp
     assert dl_mock.call_args_list[0][1]['timerange'].startts == days_ago
 
     dl_mock.reset_mock()
@@ -592,7 +614,8 @@ def test_download_data_timerange(mocker, caplog, markets):
     start_download_data(get_args(args))
     assert dl_mock.call_count == 1
 
-    assert dl_mock.call_args_list[0][1]['timerange'].startts == arrow.Arrow(2020, 1, 1).timestamp
+    assert dl_mock.call_args_list[0][1]['timerange'].startts == arrow.Arrow(
+        2020, 1, 1).int_timestamp
 
 
 def test_download_data_no_markets(mocker, caplog):
@@ -695,6 +718,7 @@ def test_start_list_strategies(mocker, caplog, capsys):
         "list-strategies",
         "--strategy-path",
         str(Path(__file__).parent.parent / "strategy" / "strats"),
+        '--no-color',
     ]
     pargs = get_args(args)
     # pargs['config'] = None
@@ -768,6 +792,25 @@ def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
     captured = capsys.readouterr()
     assert re.match(r"Pairs for .*", captured.out)
     assert re.match("['ETH/BTC', 'TKN/BTC', 'BLK/BTC', 'LTC/BTC', 'XRP/BTC']", captured.out)
+
+    args = [
+        'test-pairlist',
+        '-c', 'config.json.example',
+        '--one-column',
+    ]
+    start_test_pairlist(get_args(args))
+    captured = capsys.readouterr()
+    assert re.match(r"ETH/BTC\nTKN/BTC\nBLK/BTC\nLTC/BTC\nXRP/BTC\n", captured.out)
+
+    args = [
+        'test-pairlist',
+        '-c', 'config.json.example',
+        '--print-json',
+    ]
+    start_test_pairlist(get_args(args))
+    captured = capsys.readouterr()
+    assert re.match(r'Pairs for BTC: \n\["ETH/BTC","TKN/BTC","BLK/BTC","LTC/BTC","XRP/BTC"\]\n',
+                    captured.out)
 
 
 def test_hyperopt_list(mocker, capsys, caplog, hyperopt_results):
