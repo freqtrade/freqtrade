@@ -25,6 +25,7 @@ from freqtrade.persistence import PairLocks, Trade
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy.interface import IStrategy, SellCheckTuple, SellType
+from freqtrade.mixins import LoggingMixin
 
 
 logger = logging.getLogger(__name__)
@@ -68,6 +69,8 @@ class Backtesting:
     """
 
     def __init__(self, config: Dict[str, Any]) -> None:
+
+        LoggingMixin.show_output = False
         self.config = config
 
         # Reset keys for backtesting
