@@ -35,6 +35,10 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
     ],
 ```
 
+By default, only currently enabled pairs are allowed.
+To skip pair validation against active markets, set `"allow_inactive": true` within the `StaticPairList` configuration.
+This can be useful for backtesting expired pairs (like quarterly spot-markets).
+
 #### Volume Pair List
 
 `VolumePairList` employs sorting/filtering of pairs by their trading volume. It selects `number_assets` top pairs with sorting based on the `sort_key` (which can only be `quoteVolume`).
