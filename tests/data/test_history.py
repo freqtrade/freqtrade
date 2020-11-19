@@ -724,6 +724,8 @@ def test_hdf5datahandler_trades_load(testdatadir):
 
     trades2 = dh._trades_load('XRP/ETH', timerange)
     assert len(trades) > len(trades2)
+    # Check that ID is None (If it's nan, it's wrong)
+    assert trades2[0][2] is None
 
     # unfiltered load has trades before starttime
     assert len([t for t in trades if t[0] < timerange.startts * 1000]) >= 0
