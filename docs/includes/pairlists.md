@@ -38,6 +38,7 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 By default, only currently enabled pairs are allowed.
 To skip pair validation against active markets, set `"allow_inactive": true` within the `StaticPairList` configuration.
 This can be useful for backtesting expired pairs (like quarterly spot-markets).
+This option must be configured along with `exchange.skip_pair_validation` in the exchange configuration.
 
 #### Volume Pair List
 
