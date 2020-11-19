@@ -15,6 +15,11 @@ logger = logging.getLogger(__name__)
 
 class StoplossGuard(IProtection):
 
+    # Can globally stop the bot
+    has_global_stop: bool = True
+    # Can stop trading for one pair
+    has_local_stop: bool = True
+
     def __init__(self, config: Dict[str, Any], protection_config: Dict[str, Any]) -> None:
         super().__init__(config, protection_config)
 
@@ -67,7 +72,7 @@ class StoplossGuard(IProtection):
         :return: Tuple of [bool, until, reason].
             If true, all pairs will be locked with <reason> until <until>
         """
-        return self._stoploss_guard(date_now, pair=None)
+        return self._stoploss_guard(date_now, None)
 
     def stop_per_pair(self, pair: str, date_now: datetime) -> ProtectionReturn:
         """
@@ -76,4 +81,4 @@ class StoplossGuard(IProtection):
         :return: Tuple of [bool, until, reason].
             If true, this pair will be locked with <reason> until <until>
         """
-        return False, None, None
+        return self._stoploss_guard(date_now, pair)

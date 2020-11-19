@@ -1,6 +1,6 @@
 
 import logging
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, abstractproperty
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -14,6 +14,11 @@ ProtectionReturn = Tuple[bool, Optional[datetime], Optional[str]]
 
 
 class IProtection(LoggingMixin, ABC):
+
+    # Can globally stop the bot
+    has_global_stop: bool = False
+    # Can stop trading for one pair
+    has_local_stop: bool = False
 
     def __init__(self, config: Dict[str, Any], protection_config: Dict[str, Any]) -> None:
         self._config = config
