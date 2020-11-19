@@ -3,6 +3,7 @@ import re
 from pathlib import Path
 from typing import List, Optional
 
+import numpy as np
 import pandas as pd
 
 from freqtrade import misc
@@ -175,7 +176,8 @@ class HDF5DataHandler(IDataHandler):
             if timerange.stoptype == 'date':
                 where.append(f"timestamp < {timerange.stopts * 1e3}")
 
-        trades = pd.read_hdf(filename, key=key, mode="r", where=where)
+        trades: pd.DataFrame = pd.read_hdf(filename, key=key, mode="r", where=where)
+        trades[['id', 'type']] = trades[['id', 'type']].replace({np.nan: None})
         return trades.values.tolist()
 
     def trades_purge(self, pair: str) -> bool:
