@@ -314,21 +314,20 @@ Configuration:
 }
 ```
 
-!!! Note
+!!! Note "Market order support"
     Not all exchanges support "market" orders.
     The following message will be shown if your exchange does not support market orders:
-    `"Exchange <yourexchange>  does not support market orders."`
+    `"Exchange <yourexchange> does not support market orders."` and the bot will refuse to start.
 
-!!! Note
-    Stoploss on exchange interval is not mandatory. Do not change its value if you are
+!!! Warning "Using market orders"
+    Please carefully read the section [Market order pricing](#market-order-pricing) section when using market orders.
+
+!!! Note "Stoploss on exchange"
+    `stoploss_on_exchange_interval` is not mandatory. Do not change its value if you are
     unsure of what you are doing. For more information about how stoploss works please
     refer to [the stoploss documentation](stoploss.md).
 
-!!! Note
     If `stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new stoploss order.
-
-!!! Warning "Using market orders"
-    Please read the section [Market order pricing](#market-order-pricing) section when using market orders.
 
 !!! Warning "Warning: stoploss_on_exchange failures"
     If stoploss on exchange creation fails for some reason, then an "emergency sell" is initiated. By default, this will sell the asset using a market order. The order-type for the emergency-sell can be changed by setting the `emergencysell` value in the `order_types` dictionary - however this is not advised.
