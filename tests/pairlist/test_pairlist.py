@@ -340,6 +340,10 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 20, "sort_key": "quoteVolume"},
       {"method": "PriceFilter", "low_price_ratio": 0.02}],
         "USDT", ['ETH/USDT', 'NANO/USDT']),
+    ([{"method": "StaticPairList"},
+      {"method": "VolatilityFilter", "volatility_over_days": 10,
+       "min_volatility": 0.01, "refresh_period": 1440}],
+     "BTC", ['ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
 ])
 def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, tickers,
                                       ohlcv_history_list, pairlists, base_currency,
@@ -617,6 +621,11 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_3, tickers, ohlcv_his
      None,
      "PriceFilter requires max_price to be >= 0"
      ),  # OperationalException expected
+    ({"method": "VolatilityFilter", "volatility_over_days": 10, "min_volatility": 0.01},
+     "[{'VolatilityFilter': 'VolatilityFilter - Filtering pairs with volatility below 0.01 "
+     "over the last days.'}]",
+        None
+     ),
 ])
 def test_pricefilter_desc(mocker, whitelist_conf, markets, pairlistconfig,
                           desc_expected, exception_expected):
