@@ -132,15 +132,13 @@ The project is currently setup in two main branches:
 
 ## Support
 
-### Help / Slack / Discord
+### Help / Discord / Slack
 
-For any questions not covered by the documentation or for further information about the bot, we encourage you to join our slack channel.
+For any questions not covered by the documentation or for further information about the bot, or to simply engage with like-minded individuals, we encourage you to join our slack channel.
 
-- [Click here to join Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE).
+Please check out our [discord server](https://discord.gg/MA9v74M).
 
-Alternatively, check out the newly created [discord server](https://discord.gg/MA9v74M).
-
-*Note*: Since the discord server is relatively new, answers to questions might be slightly delayed as currently the user base quite small.
+You can also join our [Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/zt-jaut7r4m-Y17k4x5mcQES9a9swKuxbg).
 
 ### [Bugs / Issues](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue)
 
