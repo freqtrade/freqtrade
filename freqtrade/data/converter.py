@@ -183,7 +183,7 @@ def trades_to_ohlcv(trades: TradeList, timeframe: str) -> DataFrame:
     :param trades: List of trades, as returned by ccxt.fetch_trades.
     :param timeframe: Timeframe to resample data to
     :return: OHLCV Dataframe.
-    :raises: Valueerror if no trades are provided
+    :raises: ValueError if no trades are provided
     """
     from freqtrade.exchange import timeframe_to_minutes
     timeframe_minutes = timeframe_to_minutes(timeframe)
