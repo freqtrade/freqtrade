@@ -29,9 +29,9 @@ class VolatilityFilter(IPairList):
         self._pair_cache: TTLCache = TTLCache(maxsize=100, ttl=self._refresh_period)
 
         if self._days < 1:
-            raise OperationalException("VolatilityFilter requires min_days_listed to be >= 1")
+            raise OperationalException("VolatilityFilter requires volatility_over_days to be >= 1")
         if self._days > exchange.ohlcv_candle_limit:
-            raise OperationalException("VolatilityFilter requires min_days_listed to not exceed "
+            raise OperationalException("VolatilityFilter requires volatility_over_days to not exceed "
                                        "exchange max request size "
                                        f"({exchange.ohlcv_candle_limit})")
 
