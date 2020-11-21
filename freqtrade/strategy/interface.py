@@ -312,7 +312,7 @@ class IStrategy(ABC):
 
         if not candle_date:
             # Simple call ...
-            return PairLocks.is_pair_locked(pair, candle_date)
+            return PairLocks.is_pair_locked(pair)
         else:
             lock_time = timeframe_to_next_date(self.timeframe, candle_date)
             return PairLocks.is_pair_locked(pair, lock_time)
