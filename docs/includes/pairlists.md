@@ -19,6 +19,7 @@ Inactive markets are always removed from the resulting pairlist. Explicitly blac
 * [`PriceFilter`](#pricefilter)
 * [`ShuffleFilter`](#shufflefilter)
 * [`SpreadFilter`](#spreadfilter)
+* [`VolatilityFilter`](#volatilityfilter)
 
 !!! Tip "Testing pairlists"
     Pairlist configurations can be quite tricky to get right. Best use the [`test-pairlist`](utils.md#test-pairlist) utility sub-command to test your configuration quickly.
@@ -118,6 +119,27 @@ Example:
 
 If `DOGE/BTC` maximum bid is 0.00000026 and minimum ask is 0.00000027, the ratio is calculated as: `1 - bid/ask ~= 0.037` which is `> 0.005` and this pair will be filtered out.
 
+#### VolatilityFilter
+
+Removes pairs where the difference between lowest low and highest high over `volatility_over_days` days is below `min_volatility`. Since this is a filter that requires additional data, the results are cached for `refresh_period`.
+
+In the below example:
+If volatility over the last 10 days is <1%, remove the pair from the whitelist.
+
+```json
+"pairlists": [
+    {
+        "method": "VolatilityFilter",
+        "volatility_over_days": 10,
+        "min_volatility": 0.01,
+        "refresh_period": 1440
+    }
+]
+```
+
+!!! Tip
+    This Filter can be used to automatically remove stable coin pairs, which have a very low volatility, and are therefore extremely hard to trade with profit.
+
 ### Full example of Pairlist Handlers
 
 The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, sorting pairs by `quoteVolume` and applies both [`PrecisionFilter`](#precisionfilter) and [`PriceFilter`](#price-filter), filtering all assets where 1 price unit is > 1%. Then the `SpreadFilter` is applied and pairs are finally shuffled with the random seed set to some predefined value.
@@ -137,6 +159,12 @@ The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, 
     {"method": "PrecisionFilter"},
     {"method": "PriceFilter", "low_price_ratio": 0.01},
     {"method": "SpreadFilter", "max_spread_ratio": 0.005},
+    {
+        "method": "VolatilityFilter",
+        "volatility_over_days": 10,
+        "min_volatility": 0.01,
+        "refresh_period": 1440
+    },
     {"method": "ShuffleFilter", "seed": 42}
     ],
 ```
