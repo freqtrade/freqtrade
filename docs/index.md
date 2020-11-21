@@ -63,7 +63,7 @@ Alternatively
 
 For any questions not covered by the documentation or for further information about the bot, we encourage you to join our passionate  Slack community.
 
-Click [here](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE) to join the Freqtrade Slack channel.
+Click [here](https://join.slack.com/t/highfrequencybot/shared_invite/zt-jaut7r4m-Y17k4x5mcQES9a9swKuxbg) to join the Freqtrade Slack channel.
 
 Alternatively, check out the newly created [discord server](https://discord.gg/MA9v74M).
 
