@@ -609,6 +609,39 @@ def test_volatilityfilter_checks(mocker, default_conf, markets, tickers):
         get_patched_freqtradebot(mocker, default_conf)
 
 
+@pytest.mark.parametrize('min_volatility,expected_length', [
+    (0.01, 5),
+    (0.05, 0),  # Setting volatility to 5% removes all pairs from the whitelist.
+])
+def test_volatilityfilter_caching(mocker, markets, default_conf, tickers, ohlcv_history_list,
+                                  min_volatility, expected_length):
+    default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
+                                 {'method': 'VolatilityFilter', 'volatility_over_days': 2,
+                                  'min_volatility': min_volatility}]
+
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          markets=PropertyMock(return_value=markets),
+                          exchange_has=MagicMock(return_value=True),
+                          get_tickers=tickers
+                          )
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_historic_ohlcv=MagicMock(return_value=ohlcv_history_list),
+    )
+
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    assert freqtrade.exchange.get_historic_ohlcv.call_count == 0
+    freqtrade.pairlists.refresh_pairlist()
+    assert len(freqtrade.pairlists.whitelist) == expected_length
+    assert freqtrade.exchange.get_historic_ohlcv.call_count > 0
+
+    previous_call_count = freqtrade.exchange.get_historic_ohlcv.call_count
+    freqtrade.pairlists.refresh_pairlist()
+    assert len(freqtrade.pairlists.whitelist) == expected_length
+    # Should not have increased since first call.
+    assert freqtrade.exchange.get_historic_ohlcv.call_count == previous_call_count
+
+
 @pytest.mark.parametrize("pairlistconfig,desc_expected,exception_expected", [
     ({"method": "PriceFilter", "low_price_ratio": 0.001, "min_price": 0.00000010,
       "max_price": 1.0},

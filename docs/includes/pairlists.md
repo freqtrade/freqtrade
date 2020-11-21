@@ -138,7 +138,7 @@ If volatility over the last 10 days is <1%, remove the pair from the whitelist.
 ```
 
 !!! Tip
-    This Filter can be used to automatically remove stable coin pairs, which have a very low volatility, and are therefore extremely hard to trade with profit.
+    This Filter can be used to automatically remove stable coin pairs, which have a very low volatility, and are therefore extremely difficult to trade with profit.
 
 ### Full example of Pairlist Handlers
 

@@ -31,8 +31,8 @@ class VolatilityFilter(IPairList):
         if self._days < 1:
             raise OperationalException("VolatilityFilter requires volatility_over_days to be >= 1")
         if self._days > exchange.ohlcv_candle_limit:
-            raise OperationalException("VolatilityFilter requires volatility_over_days to not exceed "
-                                       "exchange max request size "
+            raise OperationalException("VolatilityFilter requires volatility_over_days to not "
+                                       "exceed exchange max request size "
                                        f"({exchange.ohlcv_candle_limit})")
 
     @property
