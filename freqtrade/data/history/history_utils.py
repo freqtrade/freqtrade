@@ -356,9 +356,12 @@ def convert_trades_to_ohlcv(pairs: List[str], timeframes: List[str],
             if erase:
                 if data_handler_ohlcv.ohlcv_purge(pair, timeframe):
                     logger.info(f'Deleting existing data for pair {pair}, interval {timeframe}.')
-            ohlcv = trades_to_ohlcv(trades, timeframe)
-            # Store ohlcv
-            data_handler_ohlcv.ohlcv_store(pair, timeframe, data=ohlcv)
+            try:
+                ohlcv = trades_to_ohlcv(trades, timeframe)
+                # Store ohlcv
+                data_handler_ohlcv.ohlcv_store(pair, timeframe, data=ohlcv)
+            except ValueError:
+                logger.exception(f'Could not convert {pair} to OHLCV.')
 
 
 def get_timerange(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:

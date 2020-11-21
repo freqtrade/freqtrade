@@ -9,9 +9,9 @@ import pandas as pd
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import (DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS,
-                                 ListPairsWithTimeframes)
+                                 ListPairsWithTimeframes, TradeList)
 
-from .idatahandler import IDataHandler, TradeList
+from .idatahandler import IDataHandler
 
 
 logger = logging.getLogger(__name__)

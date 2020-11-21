@@ -620,6 +620,12 @@ def test_convert_trades_to_ohlcv(mocker, default_conf, testdatadir, caplog):
     _clean_test_file(file1)
     _clean_test_file(file5)
 
+    assert not log_has('Could not convert NoDatapair to OHLCV.', caplog)
+
+    convert_trades_to_ohlcv(['NoDatapair'], timeframes=['1m', '5m'],
+                            datadir=testdatadir, timerange=tr, erase=True)
+    assert log_has('Could not convert NoDatapair to OHLCV.', caplog)
+
 
 def test_datahandler_ohlcv_get_pairs(testdatadir):
     pairs = JsonDataHandler.ohlcv_get_pairs(testdatadir, '5m')
