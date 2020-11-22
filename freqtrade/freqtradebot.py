@@ -19,8 +19,9 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
-from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
+from freqtrade.mixins import LoggingMixin
 from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.persistence import Order, PairLocks, Trade, cleanup_db, init_db
 from freqtrade.plugins.protectionmanager import ProtectionManager
@@ -35,7 +36,7 @@ from freqtrade.wallets import Wallets
 logger = logging.getLogger(__name__)
 
 
-class FreqtradeBot:
+class FreqtradeBot(LoggingMixin):
     """
     Freqtrade is the main class of the bot.
     This is from here the bot start its logic.
@@ -104,6 +105,7 @@ class FreqtradeBot:
         self.rpc: RPCManager = RPCManager(self)
         # Protect sell-logic from forcesell and viceversa
         self._sell_lock = Lock()
+        LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
     def notify_status(self, msg: str) -> None:
         """
@@ -365,7 +367,7 @@ class FreqtradeBot:
                         "but checking to sell open trades.")
             return trades_created
         if PairLocks.is_global_lock():
-            logger.info("Global pairlock active. Not creating new trades.")
+            self.log_once(logger.info, "Global pairlock active. Not creating new trades.")
             return trades_created
         # Create entity and execute trade for each pair from whitelist
         for pair in whitelist:
@@ -551,7 +553,7 @@ class FreqtradeBot:
         analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(pair, self.strategy.timeframe)
         if self.strategy.is_pair_locked(
                 pair, analyzed_df.iloc[-1]['date'] if len(analyzed_df) > 0 else None):
-            logger.info(f"Pair {pair} is currently locked.")
+            self.log_once(logger.info, f"Pair {pair} is currently locked.")
             return False
 
         # get_free_open_trades is checked before create_trade is called
