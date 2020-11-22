@@ -367,7 +367,7 @@ class FreqtradeBot(LoggingMixin):
                         "but checking to sell open trades.")
             return trades_created
         if PairLocks.is_global_lock():
-            self.log_once(logger.info, "Global pairlock active. Not creating new trades.")
+            self.log_once("Global pairlock active. Not creating new trades.", logger.info)
             return trades_created
         # Create entity and execute trade for each pair from whitelist
         for pair in whitelist:
@@ -553,7 +553,7 @@ class FreqtradeBot(LoggingMixin):
         analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(pair, self.strategy.timeframe)
         if self.strategy.is_pair_locked(
                 pair, analyzed_df.iloc[-1]['date'] if len(analyzed_df) > 0 else None):
-            self.log_once(logger.info, f"Pair {pair} is currently locked.")
+            self.log_once(f"Pair {pair} is currently locked.", logger.info)
             return False
 
         # get_free_open_trades is checked before create_trade is called

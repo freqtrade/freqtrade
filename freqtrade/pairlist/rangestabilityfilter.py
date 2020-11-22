@@ -78,10 +78,10 @@ class RangeStabilityFilter(IPairList):
             if pct_change >= self._min_rate_of_change:
                 result = True
             else:
-                self.log_once(logger.info,
-                              f"Removed {pair} from whitelist, because rate of change "
+                self.log_once(f"Removed {pair} from whitelist, because rate of change "
                               f"over {plural(self._days, 'day')} is {pct_change:.3f}, "
-                              f"which is below the threshold of {self._min_rate_of_change}.")
+                              f"which is below the threshold of {self._min_rate_of_change}.",
+                              logger.info)
                 result = False
             self._pair_cache[pair] = result
 

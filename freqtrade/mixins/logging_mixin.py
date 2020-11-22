@@ -1,5 +1,6 @@
 
 
+from typing import Callable
 from cachetools import TTLCache, cached
 
 
@@ -19,12 +20,12 @@ class LoggingMixin():
         self.refresh_period = refresh_period
         self._log_cache: TTLCache = TTLCache(maxsize=1024, ttl=self.refresh_period)
 
-    def log_once(self, logmethod, message: str) -> None:
+    def log_once(self, message: str, logmethod: Callable) -> None:
         """
         Logs message - not more often than "refresh_period" to avoid log spamming
         Logs the log-message as debug as well to simplify debugging.
-        :param logmethod: Function that'll be called. Most likely `logger.info`.
         :param message: String containing the message to be sent to the function.
+        :param logmethod: Function that'll be called. Most likely `logger.info`.
         :return: None.
         """
         @cached(cache=self._log_cache)

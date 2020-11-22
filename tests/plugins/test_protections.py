@@ -165,6 +165,7 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog):
     assert PairLocks.is_pair_locked('XRP/BTC')
     assert not PairLocks.is_global_lock()
 
+
 @pytest.mark.parametrize("protectionconf,desc_expected,exception_expected", [
     ({"method": "StoplossGuard", "lookback_period": 60, "trade_limit": 2},
      "[{'StoplossGuard': 'StoplossGuard - Frequent Stoploss Guard, "

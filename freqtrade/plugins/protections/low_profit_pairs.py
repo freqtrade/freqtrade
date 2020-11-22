@@ -58,9 +58,8 @@ class LowProfitPairs(IProtection):
         profit = sum(trade.close_profit for trade in trades)
         if profit < self._required_profit:
             self.log_once(
-                logger.info,
                 f"Trading for {pair} stopped due to {profit:.2f} < {self._required_profit} "
-                f"within {self._lookback_period} minutes.")
+                f"within {self._lookback_period} minutes.", logger.info)
             until = self.calculate_lock_end(trades, self._stop_duration)
 
             return True, until, self._reason(profit)
