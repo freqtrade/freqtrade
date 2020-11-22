@@ -689,7 +689,7 @@ class Exchange:
                                  since_ms: int) -> DataFrame:
         """
         Minimal wrapper around get_historic_ohlcv - converting the result into a dataframe
-                :param pair: Pair to download
+        :param pair: Pair to download
         :param timeframe: Timeframe to get data for
         :param since_ms: Timestamp in milliseconds to get history from
         :return: OHLCV DataFrame

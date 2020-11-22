@@ -71,7 +71,7 @@
         {
             "method": "RangeStabilityFilter",
             "lookback_days": 10,
-            "min_volatility": 0.01,
+            "min_rate_of_change": 0.01,
             "refresh_period": 1440
         }
     ],

@@ -1,5 +1,5 @@
 """
-Minimum age (days listed) pair list filter
+Rate of change pairlist filter
 """
 import logging
 from typing import Any, Dict
