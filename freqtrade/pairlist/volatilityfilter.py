@@ -74,7 +74,7 @@ class VolatilityFilter(IPairList):
         if daily_candles is not None:
             highest_high = daily_candles['high'].max()
             lowest_low = daily_candles['low'].min()
-            pct_change = (highest_high - lowest_low) / lowest_low
+            pct_change = ((highest_high - lowest_low) / lowest_low) if lowest_low > 0 else 0
             if pct_change >= self._min_volatility:
                 result = True
             else:
