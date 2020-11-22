@@ -341,8 +341,8 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
       {"method": "PriceFilter", "low_price_ratio": 0.02}],
         "USDT", ['ETH/USDT', 'NANO/USDT']),
     ([{"method": "StaticPairList"},
-      {"method": "VolatilityFilter", "volatility_over_days": 10,
-       "min_volatility": 0.01, "refresh_period": 1440}],
+      {"method": "RangeStabilityFilter", "lookback_days": 10,
+       "min_rate_of_change": 0.01, "refresh_period": 1440}],
      "BTC", ['ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
 ])
 def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, tickers,
@@ -586,9 +586,9 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, o
     assert freqtrade.exchange.get_historic_ohlcv.call_count == previous_call_count
 
 
-def test_volatilityfilter_checks(mocker, default_conf, markets, tickers):
+def test_rangestabilityfilter_checks(mocker, default_conf, markets, tickers):
     default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
-                                 {'method': 'VolatilityFilter', 'volatility_over_days': 99999}]
+                                 {'method': 'RangeStabilityFilter', 'lookback_days': 99999}]
 
     mocker.patch.multiple('freqtrade.exchange.Exchange',
                           markets=PropertyMock(return_value=markets),
@@ -597,27 +597,27 @@ def test_volatilityfilter_checks(mocker, default_conf, markets, tickers):
                           )
 
     with pytest.raises(OperationalException,
-                       match=r'VolatilityFilter requires volatility_over_days to not exceed '
+                       match=r'RangeStabilityFilter requires lookback_days to not exceed '
                              r'exchange max request size \([0-9]+\)'):
         get_patched_freqtradebot(mocker, default_conf)
 
     default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
-                                 {'method': 'VolatilityFilter', 'volatility_over_days': 0}]
+                                 {'method': 'RangeStabilityFilter', 'lookback_days': 0}]
 
     with pytest.raises(OperationalException,
-                       match='VolatilityFilter requires volatility_over_days to be >= 1'):
+                       match='RangeStabilityFilter requires lookback_days to be >= 1'):
         get_patched_freqtradebot(mocker, default_conf)
 
 
-@pytest.mark.parametrize('min_volatility,expected_length', [
+@pytest.mark.parametrize('min_rate_of_change,expected_length', [
     (0.01, 5),
-    (0.05, 0),  # Setting volatility to 5% removes all pairs from the whitelist.
+    (0.05, 0),  # Setting rate_of_change to 5% removes all pairs from the whitelist.
 ])
-def test_volatilityfilter_caching(mocker, markets, default_conf, tickers, ohlcv_history_list,
-                                  min_volatility, expected_length):
+def test_rangestabilityfilter_caching(mocker, markets, default_conf, tickers, ohlcv_history_list,
+                                      min_rate_of_change, expected_length):
     default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
-                                 {'method': 'VolatilityFilter', 'volatility_over_days': 2,
-                                  'min_volatility': min_volatility}]
+                                 {'method': 'RangeStabilityFilter', 'lookback_days': 2,
+                                  'min_rate_of_change': min_rate_of_change}]
 
     mocker.patch.multiple('freqtrade.exchange.Exchange',
                           markets=PropertyMock(return_value=markets),
@@ -677,9 +677,9 @@ def test_volatilityfilter_caching(mocker, markets, default_conf, tickers, ohlcv_
      None,
      "PriceFilter requires max_price to be >= 0"
      ),  # OperationalException expected
-    ({"method": "VolatilityFilter", "volatility_over_days": 10, "min_volatility": 0.01},
-     "[{'VolatilityFilter': 'VolatilityFilter - Filtering pairs with volatility below 0.01 "
-     "over the last days.'}]",
+    ({"method": "RangeStabilityFilter", "lookback_days": 10, "min_rate_of_change": 0.01},
+     "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate of change below "
+     "0.01 over the last days.'}]",
         None
      ),
 ])
