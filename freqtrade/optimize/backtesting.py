@@ -297,7 +297,8 @@ class Backtesting:
 
     def backtest(self, processed: Dict, stake_amount: float,
                  start_date: datetime, end_date: datetime,
-                 max_open_trades: int = 0, position_stacking: bool = False) -> DataFrame:
+                 max_open_trades: int = 0, position_stacking: bool = False,
+                 enable_protections: bool = False) -> DataFrame:
         """
         Implement backtesting functionality
 
@@ -311,6 +312,7 @@ class Backtesting:
         :param end_date: backtesting timerange end datetime
         :param max_open_trades: maximum number of concurrent trades, <= 0 means unlimited
         :param position_stacking: do we allow position stacking?
+        :param enable_protections: Should protections be enabled?
         :return: DataFrame with trades (results of backtesting)
         """
         logger.debug(f"Run backtest, stake_amount: {stake_amount}, "
@@ -334,7 +336,8 @@ class Backtesting:
         while tmp <= end_date:
             open_trade_count_start = open_trade_count
 
-            self.protections.global_stop(tmp)
+            if enable_protections:
+                self.protections.global_stop(tmp)
 
             for i, pair in enumerate(data):
                 if pair not in indexes:
@@ -390,7 +393,8 @@ class Backtesting:
                         open_trade_count -= 1
                         open_trades[pair].remove(trade)
                         trades.append(trade_entry)
-                        self.protections.stop_per_pair(pair, row[DATE_IDX])
+                        if enable_protections:
+                            self.protections.stop_per_pair(pair, row[DATE_IDX])
 
             # Move time one configured time_interval ahead.
             tmp += timedelta(minutes=self.timeframe_min)
@@ -446,6 +450,7 @@ class Backtesting:
                 end_date=max_date.datetime,
                 max_open_trades=max_open_trades,
                 position_stacking=position_stacking,
+                enable_protections=self.config.get('enable_protections'),
             )
             all_results[self.strategy.get_strategy_name()] = {
                 'results': results,
