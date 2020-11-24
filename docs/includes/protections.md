@@ -12,6 +12,9 @@ All protection end times are rounded up to the next candle to avoid sudden, unex
 !!! Tip
     Each Protection can be configured multiple times with different parameters, to allow different levels of protection (short-term / long-term).
 
+!!! Note "Backtesting"
+    Protections are supported by backtesting and hyperopt, but must be enabled by using the `--enable-protections` flag.
+
 ### Available Protections
 
 * [`StoplossGuard`](#stoploss-guard) Stop trading if a certain amount of stoploss occurred within a certain time window.
