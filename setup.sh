@@ -11,6 +11,20 @@ function check_installed_pip() {
 
 # Check which python version is installed
 function check_installed_python() {
+    if [ -n "${VIRTUAL_ENV}" ]; then
+        echo "Please deactivate your virtual environment before running setup.sh."
+        echo "You can do this by running 'deactivate'."
+        exit 2
+    fi
+
+    which python3.8
+    if [ $? -eq 0 ]; then
+        echo "using Python 3.8"
+        PYTHON=python3.8
+        check_installed_pip
+        return
+    fi
+
     which python3.7
     if [ $? -eq 0 ]; then
         echo "using Python 3.7"
@@ -37,17 +51,19 @@ function updateenv() {
     echo "-------------------------"
     echo "Updating your virtual env"
     echo "-------------------------"
+    if [ ! -f .env/bin/activate ]; then
+        echo "Something went wrong, no virtual environment found."
+        exit 1
+    fi
     source .env/bin/activate
     echo "pip install in-progress. Please wait..."
-    # Install numpy first to have py_find_1st install clean
-    ${PYTHON} -m pip install --upgrade pip numpy
-    ${PYTHON} -m pip install --upgrade -r requirements.txt
-
+    ${PYTHON} -m pip install --upgrade pip
     read -p "Do you want to install dependencies for dev [y/N]? "
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
         ${PYTHON} -m pip install --upgrade -r requirements-dev.txt
     else
+        ${PYTHON} -m pip install --upgrade -r requirements.txt
         echo "Dev dependencies ignored."
     fi
 
@@ -70,6 +86,10 @@ function install_talib() {
     ./configure --prefix=/usr/local
     make
     sudo make install
+    if [ -x "$(command -v apt-get)" ]; then
+        echo "Updating library path using ldconfig"
+        sudo ldconfig
+    fi
     cd .. && rm -rf ./ta-lib/
     cd ..
 }
@@ -90,7 +110,7 @@ function install_macos() {
 # Install bot Debian_ubuntu
 function install_debian() {
     sudo apt-get update
-    sudo apt-get install build-essential autoconf libtool pkg-config make wget git
+    sudo apt-get install -y build-essential autoconf libtool pkg-config make wget git
     install_talib
 }
 
@@ -100,35 +120,44 @@ function update() {
     updateenv
 }
 
-# Reset Develop or Master branch
+# Reset Develop or Stable branch
 function reset() {
     echo "----------------------------"
     echo "Reseting branch and virtual env"
     echo "----------------------------"
-    if [ "1" == $(git branch -vv |grep -cE "\* develop|\* master") ]
+
+    if [ "1" == $(git branch -vv |grep -cE "\* develop|\* stable") ]
     then
-        if [ -d ".env" ]; then
-          echo "- Delete your previous virtual env"
-          rm -rf .env
-        fi
 
-        git fetch -a
+        read -p "Reset git branch? (This will remove all changes you made!) [y/N]? "
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
 
-        if [ "1" == $(git branch -vv |grep -c "* develop") ]
-        then
-          echo "- Hard resetting of 'develop' branch."
-          git reset --hard origin/develop
-        elif [ "1" == $(git branch -vv |grep -c "* master") ]
-        then
-          echo "- Hard resetting of 'master' branch."
-          git reset --hard origin/master
+            git fetch -a
+
+            if [ "1" == $(git branch -vv |grep -c "* develop") ]
+            then
+                echo "- Hard resetting of 'develop' branch."
+                git reset --hard origin/develop
+            elif [ "1" == $(git branch -vv |grep -c "* stable") ]
+            then
+                echo "- Hard resetting of 'stable' branch."
+                git reset --hard origin/stable
+            fi
         fi
     else
-        echo "Reset ignored because you are not on 'master' or 'develop'."
+        echo "Reset ignored because you are not on 'stable' or 'develop'."
     fi
 
+    if [ -d ".env" ]; then
+        echo "- Delete your previous virtual env"
+        rm -rf .env
+    fi
     echo
     ${PYTHON} -m venv .env
+    if [ $? -ne 0 ]; then
+        echo "Could not create virtual environment. Leaving now"
+        exit 1
+    fi
     updateenv
 }
 
@@ -194,27 +223,8 @@ function config_generator() {
 function config() {
 
     echo "-------------------------"
-    echo "Generating config file"
+    echo "Please use 'freqtrade new-config -c config.json' to generate a new configuration file."
     echo "-------------------------"
-    if [ -f config.json ]
-    then
-    read -p "A config file already exist, do you want to override it [y/N]? "
-    if [[ $REPLY =~ ^[Yy]$ ]]
-    then
-        config_generator
-    else
-        echo "Configuration of config.json ignored."
-    fi
-    else
-        config_generator
-    fi
-
-    echo
-    echo "-------------------------"
-    echo "Config file generated"
-    echo "-------------------------"
-    echo "Edit ./config.json to modify Pair and other configurations."
-    echo
 }
 
 function install() {
@@ -242,7 +252,9 @@ function install() {
     echo "-------------------------"
     echo "Run the bot !"
     echo "-------------------------"
-    echo "You can now use the bot by executing 'source .env/bin/activate; freqtrade'."
+    echo "You can now use the bot by executing 'source .env/bin/activate; freqtrade <subcommand>'."
+    echo "You can see the list of available bot subcommands by executing 'source .env/bin/activate; freqtrade --help'."
+    echo "You verify that freqtrade is installed successfully by running 'source .env/bin/activate; freqtrade --version'."
 }
 
 function plot() {
@@ -258,7 +270,7 @@ function help() {
     echo "usage:"
     echo "	-i,--install    Install freqtrade from scratch"
     echo "	-u,--update     Command git pull to update."
-    echo "	-r,--reset      Hard reset your develop/master branch."
+    echo "	-r,--reset      Hard reset your develop/stable branch."
     echo "	-c,--config     Easy config generator (Will override your existing file)."
     echo "	-p,--plot       Install dependencies for Plotting scripts."
 }

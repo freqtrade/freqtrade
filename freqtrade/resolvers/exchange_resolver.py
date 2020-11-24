@@ -3,9 +3,10 @@ This module loads custom exchanges
 """
 import logging
 
-from freqtrade.exchange import Exchange
 import freqtrade.exchange as exchanges
+from freqtrade.exchange import MAP_EXCHANGE_CHILDCLASS, Exchange
 from freqtrade.resolvers import IResolver
+
 
 logger = logging.getLogger(__name__)
 
@@ -14,25 +15,31 @@ class ExchangeResolver(IResolver):
     """
     This class contains all the logic to load a custom exchange class
     """
+    object_type = Exchange
 
-    __slots__ = ['exchange']
-
-    def __init__(self, exchange_name: str, config: dict) -> None:
+    @staticmethod
+    def load_exchange(exchange_name: str, config: dict, validate: bool = True) -> Exchange:
         """
         Load the custom class from config parameter
         :param config: configuration dictionary
         """
+        # Map exchange name to avoid duplicate classes for identical exchanges
+        exchange_name = MAP_EXCHANGE_CHILDCLASS.get(exchange_name, exchange_name)
         exchange_name = exchange_name.title()
+        exchange = None
         try:
-            self.exchange = self._load_exchange(exchange_name, kwargs={'config': config})
+            exchange = ExchangeResolver._load_exchange(exchange_name,
+                                                       kwargs={'config': config,
+                                                               'validate': validate})
         except ImportError:
             logger.info(
                 f"No {exchange_name} specific subclass found. Using the generic class instead.")
-        if not hasattr(self, "exchange"):
-            self.exchange = Exchange(config)
+        if not exchange:
+            exchange = Exchange(config, validate=validate)
+        return exchange
 
-    def _load_exchange(
-            self, exchange_name: str, kwargs: dict) -> Exchange:
+    @staticmethod
+    def _load_exchange(exchange_name: str, kwargs: dict) -> Exchange:
         """
         Loads the specified exchange.
         Only checks for exchanges exported in freqtrade.exchanges
@@ -43,7 +50,7 @@ class ExchangeResolver(IResolver):
         try:
             ex_class = getattr(exchanges, exchange_name)
 
-            exchange = ex_class(kwargs['config'])
+            exchange = ex_class(**kwargs)
             if exchange:
                 logger.info(f"Using resolved exchange '{exchange_name}'...")
                 return exchange

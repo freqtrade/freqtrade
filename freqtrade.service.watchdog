@@ -6,7 +6,7 @@ After=network.target
 # Set WorkingDirectory and ExecStart to your file paths accordingly
 # NOTE: %h will be resolved to /home/<username>
 WorkingDirectory=%h/freqtrade
-ExecStart=/usr/bin/freqtrade --sd-notify
+ExecStart=/usr/bin/freqtrade trade --sd-notify
 
 Restart=always
 #Restart=on-failure

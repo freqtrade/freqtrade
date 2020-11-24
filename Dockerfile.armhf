@@ -1,0 +1,29 @@
+FROM --platform=linux/arm/v7 python:3.7.7-slim-buster
+
+RUN apt-get update \
+  && apt-get -y install curl build-essential libssl-dev libffi-dev libatlas3-base libgfortran5 sqlite3 \
+  && apt-get clean \
+  && pip install --upgrade pip \
+  && echo "[global]\nextra-index-url=https://www.piwheels.org/simple" > /etc/pip.conf
+
+# Prepare environment
+RUN mkdir /freqtrade
+WORKDIR /freqtrade
+
+# Install TA-lib
+COPY build_helpers/* /tmp/
+RUN cd /tmp && /tmp/install_ta-lib.sh && rm -r /tmp/*ta-lib*
+
+ENV LD_LIBRARY_PATH /usr/local/lib
+
+# Install dependencies
+COPY requirements.txt /freqtrade/
+RUN pip install numpy --no-cache-dir \
+  && pip install -r requirements.txt --no-cache-dir
+
+# Install and execute
+COPY . /freqtrade/
+RUN pip install -e . --no-cache-dir
+ENTRYPOINT ["freqtrade"]
+# Default to trade mode
+CMD [ "trade" ]

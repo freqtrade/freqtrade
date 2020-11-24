@@ -9,81 +9,107 @@ from base64 import urlsafe_b64decode
 from collections import OrderedDict
 from inspect import getfullargspec
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
-from freqtrade import constants, OperationalException
+from freqtrade.constants import REQUIRED_ORDERTIF, REQUIRED_ORDERTYPES, USERPATH_STRATEGIES
+from freqtrade.exceptions import OperationalException
 from freqtrade.resolvers import IResolver
-from freqtrade.strategy import import_strategy
 from freqtrade.strategy.interface import IStrategy
+
 
 logger = logging.getLogger(__name__)
 
 
 class StrategyResolver(IResolver):
     """
-    This class contains all the logic to load custom strategy class
+    This class contains the logic to load custom strategy class
     """
+    object_type = IStrategy
+    object_type_str = "Strategy"
+    user_subdir = USERPATH_STRATEGIES
+    initial_search_path = None
 
-    __slots__ = ['strategy']
-
-    def __init__(self, config: Optional[Dict] = None) -> None:
+    @staticmethod
+    def load_strategy(config: Dict[str, Any] = None) -> IStrategy:
         """
         Load the custom class from config parameter
         :param config: configuration dictionary or None
         """
         config = config or {}
 
-        # Verify the strategy is in the configuration, otherwise fallback to the default strategy
-        strategy_name = config.get('strategy') or constants.DEFAULT_STRATEGY
-        self.strategy: IStrategy = self._load_strategy(strategy_name,
-                                                       config=config,
-                                                       extra_dir=config.get('strategy_path'))
+        if not config.get('strategy'):
+            raise OperationalException("No strategy set. Please use `--strategy` to specify "
+                                       "the strategy class to use.")
 
-        # make sure experimental dict is available
-        if 'experimental' not in config:
-            config['experimental'] = {}
+        strategy_name = config['strategy']
+        strategy: IStrategy = StrategyResolver._load_strategy(
+            strategy_name, config=config,
+            extra_dir=config.get('strategy_path'))
+
+        # make sure ask_strategy dict is available
+        if 'ask_strategy' not in config:
+            config['ask_strategy'] = {}
+
+        if hasattr(strategy, 'ticker_interval') and not hasattr(strategy, 'timeframe'):
+            # Assign ticker_interval to timeframe to keep compatibility
+            if 'timeframe' not in config:
+                logger.warning(
+                    "DEPRECATED: Please migrate to using 'timeframe' instead of 'ticker_interval'."
+                    )
+                strategy.timeframe = strategy.ticker_interval
 
         # Set attributes
         # Check if we need to override configuration
-        # (Attribute name,                              default, experimental)
-        attributes = [("minimal_roi",                     {"0": 10.0}, False),
-                      ("ticker_interval",                 None,        False),
-                      ("stoploss",                        None,        False),
-                      ("trailing_stop",                   None,        False),
-                      ("trailing_stop_positive",          None,        False),
-                      ("trailing_stop_positive_offset",   0.0,         False),
-                      ("trailing_only_offset_is_reached", None,        False),
-                      ("process_only_new_candles",        None,        False),
-                      ("order_types",                     None,        False),
-                      ("order_time_in_force",             None,        False),
-                      ("stake_currency",                  None,        False),
-                      ("stake_amount",                    None,        False),
-                      ("use_sell_signal",                 False,       True),
-                      ("sell_profit_only",                False,       True),
-                      ("ignore_roi_if_buy_signal",        False,       True),
+        #             (Attribute name,                    default,     subkey)
+        attributes = [("minimal_roi",                     {"0": 10.0}, None),
+                      ("timeframe",                       None,        None),
+                      ("stoploss",                        None,        None),
+                      ("trailing_stop",                   None,        None),
+                      ("trailing_stop_positive",          None,        None),
+                      ("trailing_stop_positive_offset",   0.0,         None),
+                      ("trailing_only_offset_is_reached", None,        None),
+                      ("process_only_new_candles",        None,        None),
+                      ("order_types",                     None,        None),
+                      ("order_time_in_force",             None,        None),
+                      ("stake_currency",                  None,        None),
+                      ("stake_amount",                    None,        None),
+                      ("startup_candle_count",            None,        None),
+                      ("unfilledtimeout",                 None,        None),
+                      ("use_sell_signal",                 True,        'ask_strategy'),
+                      ("sell_profit_only",                False,       'ask_strategy'),
+                      ("ignore_roi_if_buy_signal",        False,       'ask_strategy'),
+                      ("disable_dataframe_checks",        False,       None),
                       ]
-        for attribute, default, experimental in attributes:
-            if experimental:
-                self._override_attribute_helper(config['experimental'], attribute, default)
+        for attribute, default, subkey in attributes:
+            if subkey:
+                StrategyResolver._override_attribute_helper(strategy, config.get(subkey, {}),
+                                                            attribute, default)
             else:
-                self._override_attribute_helper(config, attribute, default)
+                StrategyResolver._override_attribute_helper(strategy, config,
+                                                            attribute, default)
+
+        # Assign deprecated variable - to not break users code relying on this.
+        strategy.ticker_interval = strategy.timeframe
 
         # Loop this list again to have output combined
-        for attribute, _, exp in attributes:
-            if exp and attribute in config['experimental']:
-                logger.info("Strategy using %s: %s", attribute, config['experimental'][attribute])
+        for attribute, _, subkey in attributes:
+            if subkey and attribute in config[subkey]:
+                logger.info("Strategy using %s: %s", attribute, config[subkey][attribute])
             elif attribute in config:
                 logger.info("Strategy using %s: %s", attribute, config[attribute])
 
         # Sort and apply type conversions
-        self.strategy.minimal_roi = OrderedDict(sorted(
-            {int(key): value for (key, value) in self.strategy.minimal_roi.items()}.items(),
+        strategy.minimal_roi = OrderedDict(sorted(
+            {int(key): value for (key, value) in strategy.minimal_roi.items()}.items(),
             key=lambda t: t[0]))
-        self.strategy.stoploss = float(self.strategy.stoploss)
+        strategy.stoploss = float(strategy.stoploss)
 
-        self._strategy_sanity_validations()
+        StrategyResolver._strategy_sanity_validations(strategy)
+        return strategy
 
-    def _override_attribute_helper(self, config, attribute: str, default):
+    @staticmethod
+    def _override_attribute_helper(strategy, config: Dict[str, Any],
+                                   attribute: str, default: Any):
         """
         Override attributes in the strategy.
         Prevalence:
@@ -92,27 +118,32 @@ class StrategyResolver(IResolver):
         - default (if not None)
         """
         if attribute in config:
-            setattr(self.strategy, attribute, config[attribute])
+            setattr(strategy, attribute, config[attribute])
             logger.info("Override strategy '%s' with value in config file: %s.",
                         attribute, config[attribute])
-        elif hasattr(self.strategy, attribute):
-            config[attribute] = getattr(self.strategy, attribute)
+        elif hasattr(strategy, attribute):
+            val = getattr(strategy, attribute)
+            # None's cannot exist in the config, so do not copy them
+            if val is not None:
+                config[attribute] = val
         # Explicitly check for None here as other "falsy" values are possible
         elif default is not None:
-            setattr(self.strategy, attribute, default)
+            setattr(strategy, attribute, default)
             config[attribute] = default
 
-    def _strategy_sanity_validations(self):
-        if not all(k in self.strategy.order_types for k in constants.REQUIRED_ORDERTYPES):
-            raise ImportError(f"Impossible to load Strategy '{self.strategy.__class__.__name__}'. "
+    @staticmethod
+    def _strategy_sanity_validations(strategy):
+        if not all(k in strategy.order_types for k in REQUIRED_ORDERTYPES):
+            raise ImportError(f"Impossible to load Strategy '{strategy.__class__.__name__}'. "
                               f"Order-types mapping is incomplete.")
 
-        if not all(k in self.strategy.order_time_in_force for k in constants.REQUIRED_ORDERTIF):
-            raise ImportError(f"Impossible to load Strategy '{self.strategy.__class__.__name__}'. "
+        if not all(k in strategy.order_time_in_force for k in REQUIRED_ORDERTIF):
+            raise ImportError(f"Impossible to load Strategy '{strategy.__class__.__name__}'. "
                               f"Order-time-in-force mapping is incomplete.")
 
-    def _load_strategy(
-            self, strategy_name: str, config: dict, extra_dir: Optional[str] = None) -> IStrategy:
+    @staticmethod
+    def _load_strategy(strategy_name: str,
+                       config: dict, extra_dir: Optional[str] = None) -> IStrategy:
         """
         Search and loads the specified strategy.
         :param strategy_name: name of the module to import
@@ -120,16 +151,10 @@ class StrategyResolver(IResolver):
         :param extra_dir: additional directory to search for the given strategy
         :return: Strategy instance or None
         """
-        current_path = Path(__file__).parent.parent.joinpath('strategy').resolve()
 
-        abs_paths = [
-            Path.cwd().joinpath('user_data/strategies'),
-            current_path,
-        ]
-
-        if extra_dir:
-            # Add extra strategy directory on top of search paths
-            abs_paths.insert(0, Path(extra_dir).resolve())
+        abs_paths = StrategyResolver.build_search_paths(config,
+                                                        user_subdir=USERPATH_STRATEGIES,
+                                                        extra_dir=extra_dir)
 
         if ":" in strategy_name:
             logger.info("loading base64 encoded strategy")
@@ -147,19 +172,21 @@ class StrategyResolver(IResolver):
                 # register temp path with the bot
                 abs_paths.insert(0, temp.resolve())
 
-        strategy = self._load_object(paths=abs_paths, object_type=IStrategy,
-                                     object_name=strategy_name, kwargs={'config': config})
+        strategy = StrategyResolver._load_object(paths=abs_paths,
+                                                 object_name=strategy_name,
+                                                 add_source=True,
+                                                 kwargs={'config': config},
+                                                 )
         if strategy:
             strategy._populate_fun_len = len(getfullargspec(strategy.populate_indicators).args)
             strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
             strategy._sell_fun_len = len(getfullargspec(strategy.populate_sell_trend).args)
+            if any([x == 2 for x in [strategy._populate_fun_len,
+                                     strategy._buy_fun_len,
+                                     strategy._sell_fun_len]]):
+                strategy.INTERFACE_VERSION = 1
 
-            try:
-                return import_strategy(strategy, config=config)
-            except TypeError as e:
-                logger.warning(
-                    f"Impossible to load strategy '{strategy_name}'. "
-                    f"Error: {e}")
+            return strategy
 
         raise OperationalException(
             f"Impossible to load Strategy '{strategy_name}'. This class does not exist "

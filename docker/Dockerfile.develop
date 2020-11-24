@@ -1,0 +1,10 @@
+FROM freqtradeorg/freqtrade:develop
+
+# Install dependencies
+COPY requirements-dev.txt /freqtrade/
+
+RUN pip install numpy --no-cache-dir \
+  && pip install -r requirements-dev.txt --no-cache-dir
+
+# Empty the ENTRYPOINT to allow all commands
+ENTRYPOINT []

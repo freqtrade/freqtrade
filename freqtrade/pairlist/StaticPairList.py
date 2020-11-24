@@ -1,30 +1,65 @@
 """
-Static List provider
+Static Pair List provider
 
-Provides lists as configured in config.json
-
- """
+Provides pair white list as it configured in config
+"""
 import logging
+from typing import Any, Dict, List
 
+from freqtrade.exceptions import OperationalException
 from freqtrade.pairlist.IPairList import IPairList
+
 
 logger = logging.getLogger(__name__)
 
 
 class StaticPairList(IPairList):
 
-    def __init__(self, freqtrade, config: dict) -> None:
-        super().__init__(freqtrade, config)
+    def __init__(self, exchange, pairlistmanager,
+                 config: Dict[str, Any], pairlistconfig: Dict[str, Any],
+                 pairlist_pos: int) -> None:
+        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
+
+        if self._pairlist_pos != 0:
+            raise OperationalException(f"{self.name} can only be used in the first position "
+                                       "in the list of Pairlist Handlers.")
+
+        self._allow_inactive = self._pairlistconfig.get('allow_inactive', False)
+
+    @property
+    def needstickers(self) -> bool:
+        """
+        Boolean property defining if tickers are necessary.
+        If no Pairlist requires tickers, an empty List is passed
+        as tickers argument to filter_pairlist
+        """
+        return False
 
     def short_desc(self) -> str:
         """
         Short whitelist method description - used for startup-messages
         -> Please overwrite in subclasses
         """
-        return f"{self.name}: {self.whitelist}"
+        return f"{self.name}"
 
-    def refresh_pairlist(self) -> None:
+    def gen_pairlist(self, cached_pairlist: List[str], tickers: Dict) -> List[str]:
         """
-        Refreshes pairlists and assigns them to self._whitelist and self._blacklist respectively
+        Generate the pairlist
+        :param cached_pairlist: Previously generated pairlist (cached)
+        :param tickers: Tickers (from exchange.get_tickers()).
+        :return: List of pairs
         """
-        self._whitelist = self._validate_whitelist(self._config['exchange']['pair_whitelist'])
+        if self._allow_inactive:
+            return self._config['exchange']['pair_whitelist']
+        else:
+            return self._whitelist_for_active_markets(self._config['exchange']['pair_whitelist'])
+
+    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
+        """
+        Filters and sorts pairlist and returns the whitelist again.
+        Called on each bot iteration - please use internal caching if necessary
+        :param pairlist: pairlist to filter or sort
+        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
+        :return: new whitelist
+        """
+        return pairlist

@@ -4,25 +4,38 @@
 This module contains the backtesting logic
 """
 import logging
+from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 from pandas import DataFrame
-from tabulate import tabulate
 
-from freqtrade.configuration import Arguments
+from freqtrade.configuration import TimeRange, remove_credentials, validate_config_consistency
+from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data import history
+from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.exchange import timeframe_to_minutes
-from freqtrade.misc import file_dump_json
+from freqtrade.exceptions import OperationalException
+from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
+from freqtrade.optimize.optimize_reports import (generate_backtest_stats, show_backtest_results,
+                                                 store_backtest_stats)
+from freqtrade.pairlist.pairlistmanager import PairListManager
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
-from freqtrade.state import RunMode
-from freqtrade.strategy.interface import IStrategy, SellType
+from freqtrade.strategy.interface import IStrategy, SellCheckTuple, SellType
+
 
 logger = logging.getLogger(__name__)
+
+# Indexes for backtest tuples
+DATE_IDX = 0
+BUY_IDX = 1
+OPEN_IDX = 2
+CLOSE_IDX = 3
+SELL_IDX = 4
+LOW_IDX = 5
+HIGH_IDX = 6
 
 
 class BacktestResult(NamedTuple):
@@ -32,18 +45,19 @@ class BacktestResult(NamedTuple):
     pair: str
     profit_percent: float
     profit_abs: float
-    open_time: datetime
-    close_time: datetime
-    open_index: int
-    close_index: int
+    open_date: datetime
+    open_rate: float
+    open_fee: float
+    close_date: datetime
+    close_rate: float
+    close_fee: float
+    amount: float
     trade_duration: float
     open_at_end: bool
-    open_rate: float
-    close_rate: float
     sell_reason: SellType
 
 
-class Backtesting(object):
+class Backtesting:
     """
     Backtesting class, this class contains all the logic to run a backtest
 
@@ -56,30 +70,53 @@ class Backtesting(object):
         self.config = config
 
         # Reset keys for backtesting
-        self.config['exchange']['key'] = ''
-        self.config['exchange']['secret'] = ''
-        self.config['exchange']['password'] = ''
-        self.config['exchange']['uid'] = ''
-        self.config['dry_run'] = True
+        remove_credentials(self.config)
         self.strategylist: List[IStrategy] = []
+        self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
 
-        self.exchange = ExchangeResolver(self.config['exchange']['name'], self.config).exchange
-        self.fee = self.exchange.get_fee()
-
-        if self.config.get('runmode') != RunMode.HYPEROPT:
-            self.dataprovider = DataProvider(self.config, self.exchange)
-            IStrategy.dp = self.dataprovider
+        dataprovider = DataProvider(self.config, self.exchange)
+        IStrategy.dp = dataprovider
 
         if self.config.get('strategy_list', None):
             for strat in list(self.config['strategy_list']):
                 stratconf = deepcopy(self.config)
                 stratconf['strategy'] = strat
-                self.strategylist.append(StrategyResolver(stratconf).strategy)
+                self.strategylist.append(StrategyResolver.load_strategy(stratconf))
+                validate_config_consistency(stratconf)
 
         else:
             # No strategy list specified, only one strategy
-            self.strategylist.append(StrategyResolver(self.config).strategy)
+            self.strategylist.append(StrategyResolver.load_strategy(self.config))
+            validate_config_consistency(self.config)
 
+        if "timeframe" not in self.config:
+            raise OperationalException("Timeframe (ticker interval) needs to be set in either "
+                                       "configuration or as cli argument `--timeframe 5m`")
+        self.timeframe = str(self.config.get('timeframe'))
+        self.timeframe_min = timeframe_to_minutes(self.timeframe)
+
+        self.pairlists = PairListManager(self.exchange, self.config)
+        if 'VolumePairList' in self.pairlists.name_list:
+            raise OperationalException("VolumePairList not allowed for backtesting.")
+
+        if len(self.strategylist) > 1 and 'PrecisionFilter' in self.pairlists.name_list:
+            raise OperationalException(
+                "PrecisionFilter not allowed for backtesting multiple strategies."
+            )
+
+        dataprovider.add_pairlisthandler(self.pairlists)
+        self.pairlists.refresh_pairlist()
+
+        if len(self.pairlists.whitelist) == 0:
+            raise OperationalException("No pair in whitelist.")
+
+        if config.get('fee', None) is not None:
+            self.fee = config['fee']
+        else:
+            self.fee = self.exchange.get_fee(symbol=self.pairlists.whitelist[0])
+
+        # Get maximum required startup period
+        self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
         # Load one (first) strategy
         self._set_strategy(self.strategylist[0])
 
@@ -87,386 +124,319 @@ class Backtesting(object):
         """
         Load strategy into backtesting
         """
-        self.strategy = strategy
-
-        self.ticker_interval = self.config.get('ticker_interval')
-        self.ticker_interval_mins = timeframe_to_minutes(self.ticker_interval)
-        self.advise_buy = strategy.advise_buy
-        self.advise_sell = strategy.advise_sell
+        self.strategy: IStrategy = strategy
         # Set stoploss_on_exchange to false for backtesting,
         # since a "perfect" stoploss-sell is assumed anyway
         # And the regular "stoploss" function would not apply to that case
         self.strategy.order_types['stoploss_on_exchange'] = False
 
-    def _generate_text_table(self, data: Dict[str, Dict], results: DataFrame,
-                             skip_nan: bool = False) -> str:
+    def load_bt_data(self) -> Tuple[Dict[str, DataFrame], TimeRange]:
+        timerange = TimeRange.parse_timerange(None if self.config.get(
+            'timerange') is None else str(self.config.get('timerange')))
+
+        data = history.load_data(
+            datadir=self.config['datadir'],
+            pairs=self.pairlists.whitelist,
+            timeframe=self.timeframe,
+            timerange=timerange,
+            startup_candles=self.required_startup,
+            fail_without_data=True,
+            data_format=self.config.get('dataformat_ohlcv', 'json'),
+        )
+
+        min_date, max_date = history.get_timerange(data)
+
+        logger.info(f'Loading data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
+                    f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
+                    f'({(max_date - min_date).days} days)..')
+
+        # Adjust startts forward if not enough data is available
+        timerange.adjust_start_if_necessary(timeframe_to_seconds(self.timeframe),
+                                            self.required_startup, min_date)
+
+        return data, timerange
+
+    def _get_ohlcv_as_lists(self, processed: Dict[str, DataFrame]) -> Dict[str, Tuple]:
         """
-        Generates and returns a text table for the given backtest data and the results dataframe
-        :return: pretty printed table with tabulate as str
-        """
-        stake_currency = str(self.config.get('stake_currency'))
-        max_open_trades = self.config.get('max_open_trades')
-
-        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.2f', 'd', '.1f', '.1f')
-        tabular_data = []
-        headers = ['pair', 'buy count', 'avg profit %', 'cum profit %',
-                   'tot profit ' + stake_currency, 'tot profit %', 'avg duration',
-                   'profit', 'loss']
-        for pair in data:
-            result = results[results.pair == pair]
-            if skip_nan and result.profit_abs.isnull().all():
-                continue
-
-            tabular_data.append([
-                pair,
-                len(result.index),
-                result.profit_percent.mean() * 100.0,
-                result.profit_percent.sum() * 100.0,
-                result.profit_abs.sum(),
-                result.profit_percent.sum() * 100.0 / max_open_trades,
-                str(timedelta(
-                    minutes=round(result.trade_duration.mean()))) if not result.empty else '0:00',
-                len(result[result.profit_abs > 0]),
-                len(result[result.profit_abs < 0])
-            ])
-
-        # Append Total
-        tabular_data.append([
-            'TOTAL',
-            len(results.index),
-            results.profit_percent.mean() * 100.0,
-            results.profit_percent.sum() * 100.0,
-            results.profit_abs.sum(),
-            results.profit_percent.sum() * 100.0 / max_open_trades,
-            str(timedelta(
-                minutes=round(results.trade_duration.mean()))) if not results.empty else '0:00',
-            len(results[results.profit_abs > 0]),
-            len(results[results.profit_abs < 0])
-        ])
-        # Ignore type as floatfmt does allow tuples but mypy does not know that
-        return tabulate(tabular_data, headers=headers,  # type: ignore
-                        floatfmt=floatfmt, tablefmt="pipe")
-
-    def _generate_text_table_sell_reason(self, data: Dict[str, Dict], results: DataFrame) -> str:
-        """
-        Generate small table outlining Backtest results
-        """
-        tabular_data = []
-        headers = ['Sell Reason', 'Count']
-        for reason, count in results['sell_reason'].value_counts().iteritems():
-            tabular_data.append([reason.value,  count])
-        return tabulate(tabular_data, headers=headers, tablefmt="pipe")
-
-    def _generate_text_table_strategy(self, all_results: dict) -> str:
-        """
-        Generate summary table per strategy
-        """
-        stake_currency = str(self.config.get('stake_currency'))
-        max_open_trades = self.config.get('max_open_trades')
-
-        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.2f', 'd', '.1f', '.1f')
-        tabular_data = []
-        headers = ['Strategy', 'buy count', 'avg profit %', 'cum profit %',
-                   'tot profit ' + stake_currency, 'tot profit %', 'avg duration',
-                   'profit', 'loss']
-        for strategy, results in all_results.items():
-            tabular_data.append([
-                strategy,
-                len(results.index),
-                results.profit_percent.mean() * 100.0,
-                results.profit_percent.sum() * 100.0,
-                results.profit_abs.sum(),
-                results.profit_percent.sum() * 100.0 / max_open_trades,
-                str(timedelta(
-                    minutes=round(results.trade_duration.mean()))) if not results.empty else '0:00',
-                len(results[results.profit_abs > 0]),
-                len(results[results.profit_abs < 0])
-            ])
-        # Ignore type as floatfmt does allow tuples but mypy does not know that
-        return tabulate(tabular_data, headers=headers,  # type: ignore
-                        floatfmt=floatfmt, tablefmt="pipe")
-
-    def _store_backtest_result(self, recordfilename: str, results: DataFrame,
-                               strategyname: Optional[str] = None) -> None:
-
-        records = [(t.pair, t.profit_percent, t.open_time.timestamp(),
-                    t.close_time.timestamp(), t.open_index - 1, t.trade_duration,
-                    t.open_rate, t.close_rate, t.open_at_end, t.sell_reason.value)
-                   for index, t in results.iterrows()]
-
-        if records:
-            if strategyname:
-                # Inject strategyname to filename
-                recname = Path(recordfilename)
-                recordfilename = str(Path.joinpath(
-                    recname.parent, f'{recname.stem}-{strategyname}').with_suffix(recname.suffix))
-            logger.info('Dumping backtest results to %s', recordfilename)
-            file_dump_json(recordfilename, records)
-
-    def _get_ticker_list(self, processed) -> Dict[str, DataFrame]:
-        """
-        Helper function to convert a processed tickerlist into a list for performance reasons.
+        Helper function to convert a processed dataframes into lists for performance reasons.
 
         Used by backtest() - so keep this optimized for performance.
         """
+        # Every change to this headers list must evaluate further usages of the resulting tuple
+        # and eventually change the constants for indexes at the top
         headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
-        ticker: Dict = {}
-        # Create ticker dict
+        data: Dict = {}
+        # Create dict with data
         for pair, pair_data in processed.items():
-            pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
+            pair_data.loc[:, 'buy'] = 0  # cleanup from previous run
+            pair_data.loc[:, 'sell'] = 0  # cleanup from previous run
 
-            ticker_data = self.advise_sell(
-                self.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
+            df_analyzed = self.strategy.advise_sell(
+                self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
 
-            # to avoid using data from future, we buy/sell with signal from previous candle
-            ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)
-            ticker_data.loc[:, 'sell'] = ticker_data['sell'].shift(1)
+            # To avoid using data from future, we use buy/sell signals shifted
+            # from the previous candle
+            df_analyzed.loc[:, 'buy'] = df_analyzed.loc[:, 'buy'].shift(1)
+            df_analyzed.loc[:, 'sell'] = df_analyzed.loc[:, 'sell'].shift(1)
 
-            ticker_data.drop(ticker_data.head(1).index, inplace=True)
+            df_analyzed.drop(df_analyzed.head(1).index, inplace=True)
 
             # Convert from Pandas to list for performance reasons
             # (Looping Pandas is slow.)
-            ticker[pair] = [x for x in ticker_data.itertuples()]
-        return ticker
+            data[pair] = [x for x in df_analyzed.itertuples(index=False, name=None)]
+        return data
 
-    def _get_sell_trade_entry(
-            self, pair: str, buy_row: DataFrame,
-            partial_ticker: List, trade_count_lock: Dict,
-            stake_amount: float, max_open_trades: int) -> Optional[BacktestResult]:
+    def _get_close_rate(self, sell_row: Tuple, trade: Trade, sell: SellCheckTuple,
+                        trade_dur: int) -> float:
+        """
+        Get close rate for backtesting result
+        """
+        # Special handling if high or low hit STOP_LOSS or ROI
+        if sell.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
+            # Set close_rate to stoploss
+            return trade.stop_loss
+        elif sell.sell_type == (SellType.ROI):
+            roi_entry, roi = self.strategy.min_roi_reached_entry(trade_dur)
+            if roi is not None and roi_entry is not None:
+                if roi == -1 and roi_entry % self.timeframe_min == 0:
+                    # When forceselling with ROI=-1, the roi time will always be equal to trade_dur.
+                    # If that entry is a multiple of the timeframe (so on candle open)
+                    # - we'll use open instead of close
+                    return sell_row[OPEN_IDX]
 
-        trade = Trade(
-            open_rate=buy_row.open,
-            open_date=buy_row.date,
-            stake_amount=stake_amount,
-            amount=stake_amount / buy_row.open,
-            fee_open=self.fee,
-            fee_close=self.fee
-        )
+                # - (Expected abs profit + open_rate + open_fee) / (fee_close -1)
+                close_rate = - (trade.open_rate * roi + trade.open_rate *
+                                (1 + trade.fee_open)) / (trade.fee_close - 1)
 
-        # calculate win/lose forwards from buy point
-        for sell_row in partial_ticker:
-            if max_open_trades > 0:
-                # Increase trade_count_lock for every iteration
-                trade_count_lock[sell_row.date] = trade_count_lock.get(sell_row.date, 0) + 1
+                if (trade_dur > 0 and trade_dur == roi_entry
+                        and roi_entry % self.timeframe_min == 0
+                        and sell_row[OPEN_IDX] > close_rate):
+                    # new ROI entry came into effect.
+                    # use Open rate if open_rate > calculated sell rate
+                    return sell_row[OPEN_IDX]
 
-            sell = self.strategy.should_sell(trade, sell_row.open, sell_row.date, sell_row.buy,
-                                             sell_row.sell, low=sell_row.low, high=sell_row.high)
-            if sell.sell_flag:
-                trade_dur = int((sell_row.date - buy_row.date).total_seconds() // 60)
-                # Special handling if high or low hit STOP_LOSS or ROI
-                if sell.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
-                    # Set close_rate to stoploss
-                    closerate = trade.stop_loss
-                elif sell.sell_type == (SellType.ROI):
-                    roi = self.strategy.min_roi_reached_entry(trade_dur)
-                    if roi is not None:
-                        # - (Expected abs profit + open_rate + open_fee) / (fee_close -1)
-                        closerate = - (trade.open_rate * roi + trade.open_rate *
-                                       (1 + trade.fee_open)) / (trade.fee_close - 1)
-                    else:
-                        # This should not be reached...
-                        closerate = sell_row.open
-                else:
-                    closerate = sell_row.open
+                # Use the maximum between close_rate and low as we
+                # cannot sell outside of a candle.
+                # Applies when a new ROI setting comes in place and the whole candle is above that.
+                return max(close_rate, sell_row[LOW_IDX])
 
-                return BacktestResult(pair=pair,
-                                      profit_percent=trade.calc_profit_percent(rate=closerate),
-                                      profit_abs=trade.calc_profit(rate=closerate),
-                                      open_time=buy_row.date,
-                                      close_time=sell_row.date,
-                                      trade_duration=trade_dur,
-                                      open_index=buy_row.Index,
-                                      close_index=sell_row.Index,
-                                      open_at_end=False,
-                                      open_rate=buy_row.open,
-                                      close_rate=closerate,
-                                      sell_reason=sell.sell_type
-                                      )
-        if partial_ticker:
-            # no sell condition found - trade stil open at end of backtest period
-            sell_row = partial_ticker[-1]
-            btr = BacktestResult(pair=pair,
-                                 profit_percent=trade.calc_profit_percent(rate=sell_row.open),
-                                 profit_abs=trade.calc_profit(rate=sell_row.open),
-                                 open_time=buy_row.date,
-                                 close_time=sell_row.date,
-                                 trade_duration=int((
-                                     sell_row.date - buy_row.date).total_seconds() // 60),
-                                 open_index=buy_row.Index,
-                                 close_index=sell_row.Index,
-                                 open_at_end=True,
-                                 open_rate=buy_row.open,
-                                 close_rate=sell_row.open,
-                                 sell_reason=SellType.FORCE_SELL
-                                 )
-            logger.debug('Force_selling still open trade %s with %s perc - %s', btr.pair,
-                         btr.profit_percent, btr.profit_abs)
-            return btr
+            else:
+                # This should not be reached...
+                return sell_row[OPEN_IDX]
+        else:
+            return sell_row[OPEN_IDX]
+
+    def _get_sell_trade_entry(self, trade: Trade, sell_row: Tuple) -> Optional[BacktestResult]:
+
+        sell = self.strategy.should_sell(trade, sell_row[OPEN_IDX], sell_row[DATE_IDX],
+                                         sell_row[BUY_IDX], sell_row[SELL_IDX],
+                                         low=sell_row[LOW_IDX], high=sell_row[HIGH_IDX])
+        if sell.sell_flag:
+            trade_dur = int((sell_row[DATE_IDX] - trade.open_date).total_seconds() // 60)
+            closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
+
+            return BacktestResult(pair=trade.pair,
+                                  profit_percent=trade.calc_profit_ratio(rate=closerate),
+                                  profit_abs=trade.calc_profit(rate=closerate),
+                                  open_date=trade.open_date,
+                                  open_rate=trade.open_rate,
+                                  open_fee=self.fee,
+                                  close_date=sell_row[DATE_IDX],
+                                  close_rate=closerate,
+                                  close_fee=self.fee,
+                                  amount=trade.amount,
+                                  trade_duration=trade_dur,
+                                  open_at_end=False,
+                                  sell_reason=sell.sell_type
+                                  )
         return None
 
-    def backtest(self, args: Dict) -> DataFrame:
+    def handle_left_open(self, open_trades: Dict[str, List[Trade]],
+                         data: Dict[str, List[Tuple]]) -> List[BacktestResult]:
         """
-        Implements backtesting functionality
+        Handling of left open trades at the end of backtesting
+        """
+        trades = []
+        for pair in open_trades.keys():
+            if len(open_trades[pair]) > 0:
+                for trade in open_trades[pair]:
+                    sell_row = data[pair][-1]
+                    trade_entry = BacktestResult(pair=trade.pair,
+                                                 profit_percent=trade.calc_profit_ratio(
+                                                     rate=sell_row[OPEN_IDX]),
+                                                 profit_abs=trade.calc_profit(sell_row[OPEN_IDX]),
+                                                 open_date=trade.open_date,
+                                                 open_rate=trade.open_rate,
+                                                 open_fee=self.fee,
+                                                 close_date=sell_row[DATE_IDX],
+                                                 close_rate=sell_row[OPEN_IDX],
+                                                 close_fee=self.fee,
+                                                 amount=trade.amount,
+                                                 trade_duration=int((
+                                                     sell_row[DATE_IDX] - trade.open_date
+                                                 ).total_seconds() // 60),
+                                                 open_at_end=True,
+                                                 sell_reason=SellType.FORCE_SELL
+                                                 )
+                    trades.append(trade_entry)
+        return trades
+
+    def backtest(self, processed: Dict, stake_amount: float,
+                 start_date: datetime, end_date: datetime,
+                 max_open_trades: int = 0, position_stacking: bool = False) -> DataFrame:
+        """
+        Implement backtesting functionality
 
         NOTE: This method is used by Hyperopt at each iteration. Please keep it optimized.
         Of course try to not have ugly code. By some accessor are sometime slower than functions.
-        Avoid, logging on this method
+        Avoid extensive logging in this method and functions it calls.
 
-        :param args: a dict containing:
-            stake_amount: btc amount to use for each trade
-            processed: a processed dictionary with format {pair, data}
-            max_open_trades: maximum number of concurrent trades (default: 0, disabled)
-            position_stacking: do we allow position stacking? (default: False)
-        :return: DataFrame
+        :param processed: a processed dictionary with format {pair, data}
+        :param stake_amount: amount to use for each trade
+        :param start_date: backtesting timerange start datetime
+        :param end_date: backtesting timerange end datetime
+        :param max_open_trades: maximum number of concurrent trades, <= 0 means unlimited
+        :param position_stacking: do we allow position stacking?
+        :return: DataFrame with trades (results of backtesting)
         """
-        # Arguments are long and noisy, so this is commented out.
-        # Uncomment if you need to debug the backtest() method.
-#        logger.debug(f"Start backtest, args: {args}")
-        processed = args['processed']
-        stake_amount = args['stake_amount']
-        max_open_trades = args.get('max_open_trades', 0)
-        position_stacking = args.get('position_stacking', False)
-        start_date = args['start_date']
-        end_date = args['end_date']
+        logger.debug(f"Run backtest, stake_amount: {stake_amount}, "
+                     f"start_date: {start_date}, end_date: {end_date}, "
+                     f"max_open_trades: {max_open_trades}, position_stacking: {position_stacking}"
+                     )
         trades = []
-        trade_count_lock: Dict = {}
 
-        # Dict of ticker-lists for performance (looping lists is a lot faster than dataframes)
-        ticker: Dict = self._get_ticker_list(processed)
+        # Use dict of lists with data for performance
+        # (looping lists is a lot faster than pandas DataFrames)
+        data: Dict = self._get_ohlcv_as_lists(processed)
 
-        lock_pair_until: Dict = {}
         # Indexes per pair, so some pairs are allowed to have a missing start.
         indexes: Dict = {}
-        tmp = start_date + timedelta(minutes=self.ticker_interval_mins)
+        tmp = start_date + timedelta(minutes=self.timeframe_min)
+
+        open_trades: Dict[str, List] = defaultdict(list)
+        open_trade_count = 0
 
         # Loop timerange and get candle for each pair at that point in time
-        while tmp < end_date:
+        while tmp <= end_date:
+            open_trade_count_start = open_trade_count
 
-            for i, pair in enumerate(ticker):
+            for i, pair in enumerate(data):
                 if pair not in indexes:
                     indexes[pair] = 0
 
                 try:
-                    row = ticker[pair][indexes[pair]]
+                    row = data[pair][indexes[pair]]
                 except IndexError:
                     # missing Data for one pair at the end.
                     # Warnings for this are shown during data loading
                     continue
 
                 # Waits until the time-counter reaches the start of the data for this pair.
-                if row.date > tmp.datetime:
+                if row[DATE_IDX] > tmp:
                     continue
-
                 indexes[pair] += 1
 
-                if row.buy == 0 or row.sell == 1:
-                    continue  # skip rows where no buy signal or that would immediately sell off
+                # without positionstacking, we can only have one open trade per pair.
+                # max_open_trades must be respected
+                # don't open on the last row
+                if ((position_stacking or len(open_trades[pair]) == 0)
+                        and (max_open_trades <= 0 or open_trade_count_start < max_open_trades)
+                        and tmp != end_date
+                        and row[BUY_IDX] == 1 and row[SELL_IDX] != 1):
+                    # Enter trade
+                    trade = Trade(
+                        pair=pair,
+                        open_rate=row[OPEN_IDX],
+                        open_date=row[DATE_IDX],
+                        stake_amount=stake_amount,
+                        amount=round(stake_amount / row[OPEN_IDX], 8),
+                        fee_open=self.fee,
+                        fee_close=self.fee,
+                        is_open=True,
+                    )
+                    # TODO: hacky workaround to avoid opening > max_open_trades
+                    # This emulates previous behaviour - not sure if this is correct
+                    # Prevents buying if the trade-slot was freed in this candle
+                    open_trade_count_start += 1
+                    open_trade_count += 1
+                    # logger.debug(f"{pair} - Backtesting emulates creation of new trade: {trade}.")
+                    open_trades[pair].append(trade)
 
-                if (not position_stacking and pair in lock_pair_until
-                        and row.date <= lock_pair_until[pair]):
-                    # without positionstacking, we can only have one open trade per pair.
-                    continue
-
-                if max_open_trades > 0:
-                    # Check if max_open_trades has already been reached for the given date
-                    if not trade_count_lock.get(row.date, 0) < max_open_trades:
-                        continue
-                    trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
-
-                trade_entry = self._get_sell_trade_entry(pair, row, ticker[pair][indexes[pair]:],
-                                                         trade_count_lock, stake_amount,
-                                                         max_open_trades)
-
-                if trade_entry:
-                    lock_pair_until[pair] = trade_entry.close_time
-                    trades.append(trade_entry)
-                else:
-                    # Set lock_pair_until to end of testing period if trade could not be closed
-                    lock_pair_until[pair] = end_date.datetime
+                for trade in open_trades[pair]:
+                    # since indexes has been incremented before, we need to go one step back to
+                    # also check the buying candle for sell conditions.
+                    trade_entry = self._get_sell_trade_entry(trade, row)
+                    # Sell occured
+                    if trade_entry:
+                        # logger.debug(f"{pair} - Backtesting sell {trade}")
+                        open_trade_count -= 1
+                        open_trades[pair].remove(trade)
+                        trades.append(trade_entry)
 
             # Move time one configured time_interval ahead.
-            tmp += timedelta(minutes=self.ticker_interval_mins)
+            tmp += timedelta(minutes=self.timeframe_min)
+
+        trades += self.handle_left_open(open_trades, data=data)
+
         return DataFrame.from_records(trades, columns=BacktestResult._fields)
 
     def start(self) -> None:
         """
-        Run a backtesting end-to-end
+        Run backtesting end-to-end
         :return: None
         """
         data: Dict[str, Any] = {}
-        pairs = self.config['exchange']['pair_whitelist']
+
         logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
         logger.info('Using stake_amount: %s ...', self.config['stake_amount'])
 
-        timerange = Arguments.parse_timerange(None if self.config.get(
-            'timerange') is None else str(self.config.get('timerange')))
-        data = history.load_data(
-            datadir=Path(self.config['datadir']) if self.config.get('datadir') else None,
-            pairs=pairs,
-            ticker_interval=self.ticker_interval,
-            refresh_pairs=self.config.get('refresh_pairs', False),
-            exchange=self.exchange,
-            timerange=timerange,
-            live=self.config.get('live', False)
-        )
+        position_stacking = self.config.get('position_stacking', False)
 
-        if not data:
-            logger.critical("No data found. Terminating.")
-            return
-        # Use max_open_trades in backtesting, except --disable-max-market-positions is set
-        if self.config.get('use_max_market_positions', True):
-            max_open_trades = self.config['max_open_trades']
-        else:
-            logger.info('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
-            max_open_trades = 0
+        data, timerange = self.load_bt_data()
+
         all_results = {}
-
-        min_date, max_date = history.get_timeframe(data)
-
-        logger.info(
-            'Backtesting with data from %s up to %s (%s days)..',
-            min_date.isoformat(),
-            max_date.isoformat(),
-            (max_date - min_date).days
-        )
-
         for strat in self.strategylist:
             logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
             self._set_strategy(strat)
 
+            # Use max_open_trades in backtesting, except --disable-max-market-positions is set
+            if self.config.get('use_max_market_positions', True):
+                # Must come from strategy config, as the strategy may modify this setting.
+                max_open_trades = self.strategy.config['max_open_trades']
+            else:
+                logger.info(
+                    'Ignoring max_open_trades (--disable-max-market-positions was used) ...')
+                max_open_trades = 0
+
             # need to reprocess data every time to populate signals
-            preprocessed = self.strategy.tickerdata_to_dataframe(data)
+            preprocessed = self.strategy.ohlcvdata_to_dataframe(data)
 
+            # Trim startup period from analyzed dataframe
+            for pair, df in preprocessed.items():
+                preprocessed[pair] = trim_dataframe(df, timerange)
+            min_date, max_date = history.get_timerange(preprocessed)
+
+            logger.info(f'Backtesting with data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
+                        f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
+                        f'({(max_date - min_date).days} days)..')
             # Execute backtest and print results
-            all_results[self.strategy.get_strategy_name()] = self.backtest(
-                {
-                    'stake_amount': self.config.get('stake_amount'),
-                    'processed': preprocessed,
-                    'max_open_trades': max_open_trades,
-                    'position_stacking': self.config.get('position_stacking', False),
-                    'start_date': min_date,
-                    'end_date': max_date,
-                }
+            results = self.backtest(
+                processed=preprocessed,
+                stake_amount=self.config['stake_amount'],
+                start_date=min_date.datetime,
+                end_date=max_date.datetime,
+                max_open_trades=max_open_trades,
+                position_stacking=position_stacking,
             )
+            all_results[self.strategy.get_strategy_name()] = {
+                'results': results,
+                'config': self.strategy.config,
+            }
 
-        for strategy, results in all_results.items():
+        stats = generate_backtest_stats(data, all_results, min_date=min_date, max_date=max_date)
 
-            if self.config.get('export', False):
-                self._store_backtest_result(self.config['exportfilename'], results,
-                                            strategy if len(self.strategylist) > 1 else None)
+        if self.config.get('export', False):
+            store_backtest_stats(self.config['exportfilename'], stats)
 
-            print(f"Result for strategy {strategy}")
-            print(' BACKTESTING REPORT '.center(133, '='))
-            print(self._generate_text_table(data, results))
-
-            print(' SELL REASON STATS '.center(133, '='))
-            print(self._generate_text_table_sell_reason(data, results))
-
-            print(' LEFT OPEN TRADES REPORT '.center(133, '='))
-            print(self._generate_text_table(data, results.loc[results.open_at_end], True))
-            print()
-        if len(all_results) > 1:
-            # Print Strategy summary table
-            print(' Strategy Summary '.center(133, '='))
-            print(self._generate_text_table_strategy(all_results))
-            print('\nFor more details, please look at the detail tables above')
+        # Show backtest results
+        show_backtest_results(self.config, stats)

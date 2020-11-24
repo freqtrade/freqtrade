@@ -1,118 +1,225 @@
 # Configure the bot
 
-This page explains how to configure your `config.json` file.
+Freqtrade has many configurable features and possibilities.
+By default, these settings are configured via the configuration file (see below).
 
-## Setup config.json
+## The Freqtrade configuration file
 
-We recommend to copy and use the `config.json.example` as a template
+The bot uses a set of configuration parameters during its operation that all together conform the bot configuration. It normally reads its configuration from a file (Freqtrade configuration file).
+
+Per default, the bot loads the configuration from the `config.json` file, located in the current working directory.
+
+You can specify a different configuration file used by the bot with the `-c/--config` command line option.
+
+In some advanced use cases, multiple configuration files can be specified and used by the bot or the bot can read its configuration parameters from the process standard input stream.
+
+If you used the [Quick start](installation.md/#quick-start) method for installing 
+the bot, the installation script should have already created the default configuration file (`config.json`) for you.
+
+If default configuration file is not created we recommend you to copy and use the `config.json.example` as a template
 for your bot configuration.
 
-The table below will list all configuration parameters.
+The Freqtrade configuration file is to be written in the JSON format.
 
-Mandatory Parameters are marked as **Required**.
+Additionally to the standard JSON syntax, you may use one-line `// ...` and multi-line `/* ... */` comments in your configuration files and trailing commas in the lists of parameters.
 
-|  Command | Default | Description |
-|----------|---------|-------------|
-| `max_open_trades` | 3 | **Required.** Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades)
-| `stake_currency` | BTC | **Required.** Crypto-currency used for trading. [Strategy Override](#parameters-in-the-strategy).
-| `stake_amount` | 0.05 | **Required.** Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to `"unlimited"` to allow the bot to use all available balance. [Strategy Override](#parameters-in-the-strategy).
-| `amount_reserve_percent` | 0.05 | Reserve some amount in min pair stake amount. Default is 5%. The bot will reserve `amount_reserve_percent` + stop-loss value when calculating min pair stake amount in order to avoid possible trade refusals.
-| `ticker_interval` | [1m, 5m, 15m, 30m, 1h, 1d, ...] | The ticker interval to use (1min, 5 min, 15 min, 30 min, 1 hour or 1 day). Default is 5 minutes. [Strategy Override](#parameters-in-the-strategy).
-| `fiat_display_currency` | USD | **Required.** Fiat currency used to show your profits. More information below.
-| `dry_run` | true | **Required.** Define if the bot must be in Dry-run or production mode.
-| `dry_run_wallet` | 999.9 | Overrides the default amount of 999.9 stake currency units in the wallet used by the bot running in the Dry Run mode if you need it for any reason.
-| `process_only_new_candles` | false | If set to true indicators are processed only once a new candle arrives. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. [Strategy Override](#parameters-in-the-strategy).
-| `minimal_roi` | See below | Set the threshold in percent the bot will use to sell a trade. More information below. [Strategy Override](#parameters-in-the-strategy).
-| `stoploss` | -0.10 | Value of the stoploss in percent used by the bot. More information below. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy).
-| `trailing_stop` | false | Enables trailing stop-loss (based on `stoploss` in either configuration or strategy file). More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy).
-| `trailing_stop_positive` | 0 | Changes stop-loss once profit has been reached. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy).
-| `trailing_stop_positive_offset` | 0 | Offset on when to apply `trailing_stop_positive`. Percentage value which should be positive. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy).
-| `trailing_only_offset_is_reached` | false | Only apply trailing stoploss when the offset is reached. [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy).
-| `unfilledtimeout.buy` | 10 | **Required.** How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled.
-| `unfilledtimeout.sell` | 10 | **Required.** How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled.
-| `bid_strategy.ask_last_balance` | 0.0 | **Required.** Set the bidding price. More information [below](#understand-ask_last_balance).
-| `bid_strategy.use_order_book` | false | Allows buying of pair using the rates in Order Book Bids.
-| `bid_strategy.order_book_top` | 0 | Bot will use the top N rate in Order Book Bids. Ie. a value of 2 will allow the bot to pick the 2nd bid rate in Order Book Bids.
-| `bid_strategy. check_depth_of_market.enabled` | false | Does not buy if the % difference of buy orders and sell orders is met in Order Book.
-| `bid_strategy. check_depth_of_market.bids_to_ask_delta` | 0 | The % difference of buy orders and sell orders found in Order Book. A value lesser than 1 means sell orders is greater, while value greater than 1 means buy orders is higher.
-| `ask_strategy.use_order_book` | false | Allows selling of open traded pair using the rates in Order Book Asks.
-| `ask_strategy.order_book_min` | 0 | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
-| `ask_strategy.order_book_max` | 0 | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
-| `order_types` | None | Configure order-types depending on the action (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`). [More information below](#understand-order_types). [Strategy Override](#parameters-in-the-strategy).
-| `order_time_in_force` | None | Configure time in force for buy and sell orders. [More information below](#understand-order_time_in_force). [Strategy Override](#parameters-in-the-strategy).
-| `exchange.name` |  | **Required.** Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename).
-| `exchange.sandbox` | false | Use the 'sandbox' version of the exchange, where the exchange provides a sandbox for risk-free integration. See [here](sandbox-testing.md) in more details.
-| `exchange.key` | '' | API key to use for the exchange. Only required when you are in production mode.
-| `exchange.secret` | '' | API secret to use for the exchange. Only required when you are in production mode.
-| `exchange.pair_whitelist` | [] | List of pairs to use by the bot for trading and to check for potential trades during backtesting. Can be overriden by dynamic pairlists (see [below](#dynamic-pairlists)).
-| `exchange.pair_blacklist` | [] | List of pairs the bot must absolutely avoid for trading and backtesting. Can be overriden by dynamic pairlists (see [below](#dynamic-pairlists)).
-| `exchange.ccxt_config` | None | Additional CCXT parameters passed to the regular ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
-| `exchange.ccxt_async_config` | None | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
-| `exchange.markets_refresh_interval` | 60 | The interval in minutes in which markets are reloaded.
-| `edge` | false | Please refer to [edge configuration document](edge.md) for detailed explanation.
-| `experimental.use_sell_signal` | false | Use your sell strategy in addition of the `minimal_roi`. [Strategy Override](#parameters-in-the-strategy).
-| `experimental.sell_profit_only` | false | Waits until you have made a positive profit before taking a sell decision. [Strategy Override](#parameters-in-the-strategy).
-| `experimental.ignore_roi_if_buy_signal` | false | Does not sell if the buy-signal is still active. Takes preference over `minimal_roi` and `use_sell_signal`. [Strategy Override](#parameters-in-the-strategy).
-| `pairlist.method` | StaticPairList | Use static or dynamic volume-based pairlist. [More information below](#dynamic-pairlists).
-| `pairlist.config` | None | Additional configuration for dynamic pairlists. [More information below](#dynamic-pairlists).
-| `telegram.enabled` | true | **Required.** Enable or not the usage of Telegram.
-| `telegram.token` | token | Your Telegram bot token. Only required if `telegram.enabled` is `true`.
-| `telegram.chat_id` | chat_id | Your personal Telegram account id. Only required if `telegram.enabled` is `true`.
-| `webhook.enabled` | false | Enable usage of Webhook notifications
-| `webhook.url` | false | URL for the webhook. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details.
-| `webhook.webhookbuy` | false | Payload to send on buy. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details.
-| `webhook.webhooksell` | false | Payload to send on sell. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details.
-| `webhook.webhookstatus` | false | Payload to send on status calls. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details.
-| `db_url` | `sqlite:///tradesv3.sqlite`| Declares database URL to use. NOTE: This defaults to `sqlite://` if `dry_run` is `True`.
-| `initial_state` | running | Defines the initial application state. More information below.
-| `forcebuy_enable` | false | Enables the RPC Commands to force a buy. More information below.
-| `strategy` | DefaultStrategy | Defines Strategy class to use.
-| `strategy_path` | null | Adds an additional strategy lookup path (must be a directory).
-| `internals.process_throttle_secs` | 5 | **Required.** Set the process throttle. Value in second.
-| `internals.sd_notify` | false | Enables use of the sd_notify protocol to tell systemd service manager about changes in the bot state and issue keep-alive pings. See [here](installation.md#7-optional-configure-freqtrade-as-a-systemd-service) for more details.
-| `logfile` | | Specify Logfile. Uses a rolling strategy of 10 files, with 1Mb per file.
+Do not worry if you are not familiar with JSON format -- simply open the configuration file with an editor of your choice, make some changes to the parameters you need, save your changes and, finally, restart the bot or, if it was previously stopped, run it again with the changes you made to the configuration. The bot validates syntax of the configuration file at startup and will warn you if you made any errors editing it, pointing out problematic lines.
+
+## Configuration parameters
+
+The table below will list all configuration parameters available.
+
+Freqtrade can also load many options via command line (CLI) arguments (check out the commands `--help` output for details).
+The prevelance for all Options is as follows:
+
+- CLI arguments override any other option
+- Configuration files are used in sequence (last file wins), and override Strategy configurations.
+- Strategy configurations are only used if they are not set via configuration or via command line arguments. These options are marked with [Strategy Override](#parameters-in-the-strategy) in the below table.
+
+Mandatory parameters are marked as **Required**, which means that they are required to be set in one of the possible ways.
+
+|  Parameter | Description |
+|------------|-------------|
+| `max_open_trades` | **Required.** Number of open trades your bot is allowed to have. Only one open trade per pair is possible, so the length of your pairlist is another limitation which can apply. If -1 then it is ignored (i.e. potentially unlimited open trades, limited by the pairlist). [More information below](#configuring-amount-per-trade).<br> **Datatype:** Positive integer or -1.
+| `stake_currency` | **Required.** Crypto-currency used for trading. [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** String
+| `stake_amount` | **Required.** Amount of crypto-currency your bot will use for each trade. Set it to `"unlimited"` to allow the bot to use all available balance. [More information below](#configuring-amount-per-trade). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Positive float or `"unlimited"`.
+| `tradable_balance_ratio` | Ratio of the total account balance the bot is allowed to trade. [More information below](#configuring-amount-per-trade). <br>*Defaults to `0.99` 99%).*<br> **Datatype:** Positive float between `0.1` and `1.0`.
+| `amend_last_stake_amount` | Use reduced last stake amount if necessary. [More information below](#configuring-amount-per-trade). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
+| `last_stake_amount_min_ratio` | Defines minimum stake amount that has to be left and executed. Applies only to the last stake amount when it's amended to a reduced value (i.e. if `amend_last_stake_amount` is set to `true`). [More information below](#configuring-amount-per-trade). <br>*Defaults to `0.5`.* <br> **Datatype:** Float (as ratio)
+| `amount_reserve_percent` | Reserve some amount in min pair stake amount. The bot will reserve `amount_reserve_percent` + stoploss value when calculating min pair stake amount in order to avoid possible trade refusals. <br>*Defaults to `0.05` (5%).* <br> **Datatype:** Positive Float as ratio.
+| `timeframe` | The timeframe (former ticker interval) to use (e.g `1m`, `5m`, `15m`, `30m`, `1h` ...). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** String
+| `fiat_display_currency` | Fiat currency used to show your profits. [More information below](#what-values-can-be-used-for-fiat_display_currency). <br> **Datatype:** String
+| `dry_run` | **Required.** Define if the bot must be in Dry Run or production mode. <br>*Defaults to `true`.* <br> **Datatype:** Boolean
+| `dry_run_wallet` | Define the starting amount in stake currency for the simulated wallet used by the bot running in the Dry Run mode.<br>*Defaults to `1000`.* <br> **Datatype:** Float
+| `cancel_open_orders_on_exit` | Cancel open orders when the `/stop` RPC command is issued, `Ctrl+C` is pressed or the bot dies unexpectedly. When set to `true`, this allows you to use `/stop` to cancel unfilled and partially filled orders in the event of a market crash. It does not impact open positions. <br>*Defaults to `false`.* <br> **Datatype:** Boolean
+| `process_only_new_candles` | Enable processing of indicators only when new candles arrive. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*  <br> **Datatype:** Boolean
+| `minimal_roi` | **Required.** Set the threshold as ratio the bot will use to sell a trade. [More information below](#understand-minimal_roi). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Dict
+| `stoploss` |  **Required.** Value as ratio of the stoploss used by the bot. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy).  <br> **Datatype:** Float (as ratio)
+| `trailing_stop` | Enables trailing stoploss (based on `stoploss` in either configuration or strategy file). More details in the [stoploss documentation](stoploss.md#trailing-stop-loss). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Boolean
+| `trailing_stop_positive` | Changes stoploss once profit has been reached. More details in the [stoploss documentation](stoploss.md#trailing-stop-loss-custom-positive-loss). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Float
+| `trailing_stop_positive_offset` | Offset on when to apply `trailing_stop_positive`. Percentage value which should be positive. More details in the [stoploss documentation](stoploss.md#trailing-stop-loss-only-once-the-trade-has-reached-a-certain-offset). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `0.0` (no offset).* <br> **Datatype:** Float
+| `trailing_only_offset_is_reached` | Only apply trailing stoploss when the offset is reached. [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*  <br> **Datatype:** Boolean
+| `unfilledtimeout.buy` | **Required.** How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled and repeated at current (new) price, as long as there is a signal. [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Integer
+| `unfilledtimeout.sell` | **Required.** How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled and repeated at current (new) price, as long as there is a signal. [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Integer
+| `bid_strategy.price_side` | Select the side of the spread the bot should look at to get the buy rate. [More information below](#buy-price-side).<br> *Defaults to `bid`.* <br> **Datatype:** String (either `ask` or `bid`).
+| `bid_strategy.ask_last_balance` | **Required.** Set the bidding price. More information [below](#buy-price-without-orderbook-enabled).
+| `bid_strategy.use_order_book` | Enable buying using the rates in [Order Book Bids](#buy-price-with-orderbook-enabled). <br> **Datatype:** Boolean
+| `bid_strategy.order_book_top` | Bot will use the top N rate in Order Book Bids to buy. I.e. a value of 2 will allow the bot to pick the 2nd bid rate in [Order Book Bids](#buy-price-with-orderbook-enabled). <br>*Defaults to `1`.*  <br> **Datatype:** Positive Integer
+| `bid_strategy. check_depth_of_market.enabled` | Do not buy if the difference of buy orders and sell orders is met in Order Book. [Check market depth](#check-depth-of-market). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
+| `bid_strategy. check_depth_of_market.bids_to_ask_delta` | The difference ratio of buy orders and sell orders found in Order Book. A value below 1 means sell order size is greater, while value greater than 1 means buy order size is higher. [Check market depth](#check-depth-of-market) <br> *Defaults to `0`.*  <br> **Datatype:** Float (as ratio)
+| `ask_strategy.price_side` | Select the side of the spread the bot should look at to get the sell rate. [More information below](#sell-price-side).<br> *Defaults to `ask`.* <br> **Datatype:** String (either `ask` or `bid`).
+| `ask_strategy.use_order_book` | Enable selling of open trades using [Order Book Asks](#sell-price-with-orderbook-enabled). <br> **Datatype:** Boolean
+| `ask_strategy.order_book_min` | Bot will scan from the top min to max Order Book Asks searching for a profitable rate. <br>*Defaults to `1`.* <br> **Datatype:** Positive Integer
+| `ask_strategy.order_book_max` | Bot will scan from the top min to max Order Book Asks searching for a profitable rate. <br>*Defaults to `1`.* <br> **Datatype:** Positive Integer
+| `ask_strategy.use_sell_signal` | Use sell signals produced by the strategy in addition to the `minimal_roi`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `true`.* <br> **Datatype:** Boolean
+| `ask_strategy.sell_profit_only` | Wait until the bot makes a positive profit before taking a sell decision. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
+| `ask_strategy.ignore_roi_if_buy_signal` | Do not sell if the buy signal is still active. This setting takes preference over `minimal_roi` and `use_sell_signal`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
+| `order_types` | Configure order-types depending on the action (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`). [More information below](#understand-order_types). [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Dict
+| `order_time_in_force` | Configure time in force for buy and sell orders. [More information below](#understand-order_time_in_force). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Dict
+| `exchange.name` | **Required.** Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename). <br> **Datatype:** String
+| `exchange.sandbox` | Use the 'sandbox' version of the exchange, where the exchange provides a sandbox for risk-free integration. See [here](sandbox-testing.md) in more details.<br> **Datatype:** Boolean
+| `exchange.key` | API key to use for the exchange. Only required when you are in production mode.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
+| `exchange.secret` | API secret to use for the exchange. Only required when you are in production mode.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
+| `exchange.password` | API password to use for the exchange. Only required when you are in production mode and for exchanges that use password for API requests.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
+| `exchange.pair_whitelist` | List of pairs to use by the bot for trading and to check for potential trades during backtesting. Not used by VolumePairList (see [below](#pairlists-and-pairlist-handlers)). <br> **Datatype:** List
+| `exchange.pair_blacklist` | List of pairs the bot must absolutely avoid for trading and backtesting (see [below](#pairlists-and-pairlist-handlers)). <br> **Datatype:** List
+| `exchange.ccxt_config` | Additional CCXT parameters passed to both ccxt instances (sync and async). This is usually the correct place for ccxt configurations. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> **Datatype:** Dict
+| `exchange.ccxt_sync_config` | Additional CCXT parameters passed to the regular (sync) ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> **Datatype:** Dict
+| `exchange.ccxt_async_config` | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> **Datatype:** Dict
+| `exchange.markets_refresh_interval` | The interval in minutes in which markets are reloaded. <br>*Defaults to `60` minutes.* <br> **Datatype:** Positive Integer
+| `exchange.skip_pair_validation` | Skip pairlist validation on startup.<br>*Defaults to `false`<br> **Datatype:** Boolean
+| `edge.*` | Please refer to [edge configuration document](edge.md) for detailed explanation.
+| `experimental.block_bad_exchanges` | Block exchanges known to not work with freqtrade. Leave on default unless you want to test if that exchange works now. <br>*Defaults to `true`.* <br> **Datatype:** Boolean
+| `pairlists` | Define one or more pairlists to be used. [More information below](#pairlists-and-pairlist-handlers). <br>*Defaults to `StaticPairList`.*  <br> **Datatype:** List of Dicts
+| `telegram.enabled` | Enable the usage of Telegram. <br> **Datatype:** Boolean
+| `telegram.token` | Your Telegram bot token. Only required if `telegram.enabled` is `true`. <br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
+| `telegram.chat_id` | Your personal Telegram account id. Only required if `telegram.enabled` is `true`. <br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
+| `webhook.enabled` | Enable usage of Webhook notifications <br> **Datatype:** Boolean
+| `webhook.url` | URL for the webhook. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
+| `webhook.webhookbuy` | Payload to send on buy. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
+| `webhook.webhookbuycancel` | Payload to send on buy order cancel. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
+| `webhook.webhooksell` | Payload to send on sell. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
+| `webhook.webhooksellcancel` | Payload to send on sell order cancel. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
+| `webhook.webhookstatus` | Payload to send on status calls. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
+| `api_server.enabled` | Enable usage of API Server. See the [API Server documentation](rest-api.md) for more details. <br> **Datatype:** Boolean
+| `api_server.listen_ip_address` | Bind IP address. See the [API Server documentation](rest-api.md) for more details. <br> **Datatype:** IPv4
+| `api_server.listen_port` | Bind Port. See the [API Server documentation](rest-api.md) for more details. <br>**Datatype:** Integer between 1024 and 65535
+| `api_server.verbosity` | Logging verbosity. `info` will print all RPC Calls, while "error" will only display errors. <br>**Datatype:** Enum, either `info` or `error`. Defaults to `info`.
+| `api_server.username` | Username for API server. See the [API Server documentation](rest-api.md) for more details. <br>**Keep it in secret, do not disclose publicly.**<br> **Datatype:** String
+| `api_server.password` | Password for API server. See the [API Server documentation](rest-api.md) for more details. <br>**Keep it in secret, do not disclose publicly.**<br> **Datatype:** String
+| `db_url` | Declares database URL to use. NOTE: This defaults to `sqlite:///tradesv3.dryrun.sqlite` if `dry_run` is `true`, and to `sqlite:///tradesv3.sqlite` for production instances. <br> **Datatype:** String, SQLAlchemy connect string
+| `initial_state` | Defines the initial application state. More information below. <br>*Defaults to `stopped`.* <br> **Datatype:** Enum, either `stopped` or `running`
+| `forcebuy_enable` | Enables the RPC Commands to force a buy. More information below. <br> **Datatype:** Boolean
+| `disable_dataframe_checks` | Disable checking the OHLCV dataframe returned from the strategy methods for correctness. Only use when intentionally changing the dataframe and understand what you are doing. [Strategy Override](#parameters-in-the-strategy).<br> *Defaults to `False`*. <br> **Datatype:** Boolean
+| `strategy` | **Required** Defines Strategy class to use. Recommended to be set via `--strategy NAME`. <br> **Datatype:** ClassName
+| `strategy_path` | Adds an additional strategy lookup path (must be a directory). <br> **Datatype:** String
+| `internals.process_throttle_secs` | Set the process throttle. Value in second. <br>*Defaults to `5` seconds.* <br> **Datatype:** Positive Integer
+| `internals.heartbeat_interval` | Print heartbeat message every N seconds. Set to 0 to disable heartbeat messages. <br>*Defaults to `60` seconds.* <br> **Datatype:** Positive Integer or 0
+| `internals.sd_notify` | Enables use of the sd_notify protocol to tell systemd service manager about changes in the bot state and issue keep-alive pings. See [here](installation.md#7-optional-configure-freqtrade-as-a-systemd-service) for more details. <br> **Datatype:** Boolean
+| `logfile` | Specifies logfile name. Uses a rolling strategy for log file rotation for 10 files with the 1MB limit per file. <br> **Datatype:** String
+| `user_data_dir` | Directory containing user data. <br> *Defaults to `./user_data/`*. <br> **Datatype:** String
+| `dataformat_ohlcv` | Data format to use to store historical candle (OHLCV) data. <br> *Defaults to `json`*. <br> **Datatype:** String
+| `dataformat_trades` | Data format to use to store historical trades data. <br> *Defaults to `jsongz`*. <br> **Datatype:** String
 
 ### Parameters in the strategy
 
 The following parameters can be set in either configuration file or strategy.
 Values set in the configuration file always overwrite values set in the strategy.
 
-* `stake_currency`
-* `stake_amount`
-* `ticker_interval`
 * `minimal_roi`
+* `timeframe`
 * `stoploss`
 * `trailing_stop`
 * `trailing_stop_positive`
 * `trailing_stop_positive_offset`
+* `trailing_only_offset_is_reached`
 * `process_only_new_candles`
 * `order_types`
 * `order_time_in_force`
-* `use_sell_signal` (experimental)
-* `sell_profit_only` (experimental)
-* `ignore_roi_if_buy_signal` (experimental)
+* `stake_currency`
+* `stake_amount`
+* `unfilledtimeout`
+* `disable_dataframe_checks`
+* `use_sell_signal` (ask_strategy)
+* `sell_profit_only` (ask_strategy)
+* `ignore_roi_if_buy_signal` (ask_strategy)
 
-### Understand stake_amount
+### Configuring amount per trade
 
-The `stake_amount` configuration parameter is an amount of crypto-currency your bot will use for each trade.
-The minimal value is 0.0005. If there is not enough crypto-currency in
-the account an exception is generated.
-To allow the bot to trade all the available `stake_currency` in your account set
+There are several methods to configure how much of the stake currency the bot will use to enter a trade. All methods respect the [available balance configuration](#available-balance) as explained below.
+
+#### Available balance
+
+By default, the bot assumes that the `complete amount - 1%` is at it's disposal, and when using [dynamic stake amount](#dynamic-stake-amount), it will split the complete balance into `max_open_trades` buckets per trade.
+Freqtrade will reserve 1% for eventual fees when entering a trade and will therefore not touch that by default.
+
+You can configure the "untouched" amount by using the `tradable_balance_ratio` setting.
+
+For example, if you have 10 ETH available in your wallet on the exchange and `tradable_balance_ratio=0.5` (which is 50%), then the bot will use a maximum amount of 5 ETH for trading and considers this as available balance. The rest of the wallet is untouched by the trades.
+
+!!! Warning
+    The `tradable_balance_ratio` setting applies to the current balance (free balance + tied up in trades). Therefore, assuming the starting balance of 1000, a configuration with `tradable_balance_ratio=0.99` will not guarantee that 10 currency units will always remain available on the exchange. For example, the free amount may reduce to 5 units if the total balance is reduced to 500 (either by a losing streak, or by withdrawing balance).
+
+#### Amend last stake amount
+
+Assuming we have the tradable balance of 1000 USDT, `stake_amount=400`, and `max_open_trades=3`.
+The bot would open 2 trades, and will be unable to fill the last trading slot, since the requested 400 USDT are no longer available, since 800 USDT are already tied in other trades.
+
+To overcome this, the option `amend_last_stake_amount` can be set to `True`, which will enable the bot to reduce stake_amount to the available balance in order to fill the last trade slot.
+
+In the example above this would mean:
+
+- Trade1: 400 USDT
+- Trade2: 400 USDT
+- Trade3: 200 USDT
+
+!!! Note
+    This option only applies with [Static stake amount](#static-stake-amount) - since [Dynamic stake amount](#dynamic-stake-amount) divides the balances evenly.
+
+!!! Note
+    The minimum last stake amount can be configured using `amend_last_stake_amount` - which defaults to 0.5 (50%). This means that the minimum stake amount that's ever used is `stake_amount * 0.5`. This avoids very low stake amounts, that are close to the minimum tradable amount for the pair and can be refused by the exchange.
+
+#### Static stake amount
+
+The `stake_amount` configuration statically configures the amount of stake-currency your bot will use for each trade.
+
+The minimal configuration value is 0.0001, however, please check your exchange's trading minimums for the stake currency you're using to avoid problems.
+
+This setting works in combination with `max_open_trades`. The maximum capital engaged in trades is `stake_amount * max_open_trades`.
+For example, the bot will at most use (0.05 BTC x 3) = 0.15 BTC, assuming a configuration of `max_open_trades=3` and `stake_amount=0.05`.
+
+!!! Note
+    This setting respects the [available balance configuration](#available-balance).
+
+#### Dynamic stake amount
+
+Alternatively, you can use a dynamic stake amount, which will use the available balance on the exchange, and divide that equally by the amount of allowed trades (`max_open_trades`).
+
+To configure this, set `stake_amount="unlimited"`. We also recommend to set `tradable_balance_ratio=0.99` (99%) - to keep a minimum balance for eventual fees.
+
+In this case a trade amount is calculated as:
+
+```python
+currency_balance / (max_open_trades - current_open_trades)
+```
+
+To allow the bot to trade all the available `stake_currency` in your account (minus `tradable_balance_ratio`) set
 
 ```json
 "stake_amount" : "unlimited",
+"tradable_balance_ratio": 0.99,
 ```
 
-In this case a trade amount is calclulated as:
+!!! Note
+    This configuration will allow increasing / decreasing stakes depending on the performance of the bot (lower stake if bot is loosing, higher stakes if the bot has a winning record, since higher balances are available).
 
-```python
-currency_balanse / (max_open_trades - current_open_trades)
-```
+!!! Note "When using Dry-Run Mode"
+    When using `"stake_amount" : "unlimited",` in combination with Dry-Run, the balance will be simulated starting with a stake of `dry_run_wallet` which will evolve over time. It is therefore important to set `dry_run_wallet` to a sensible value (like 0.05 or 0.01 for BTC and 1000 or 100 for USDT, for example), otherwise it may simulate trades with 100 BTC (or more) or 0.05 USDT (or less) at once - which may not correspond to your real available balance or is less than the exchange minimal limit for the order amount for the stake currency.
 
 ### Understand minimal_roi
 
 The `minimal_roi` configuration parameter is a JSON object where the key is a duration
-in minutes and the value is the minimum ROI in percent.
+in minutes and the value is the minimum ROI as ratio.
 See the example below:
 
 ```json
@@ -128,6 +235,9 @@ Most of the strategy files already include the optimal `minimal_roi` value.
 This parameter can be set in either Strategy or Configuration file. If you use it in the configuration file, it will override the
 `minimal_roi` value from the strategy file.
 If it is not set in either Strategy or Configuration, a default of 1000% `{"0": 10}` is used, and minimal roi is disabled unless your trade generates 1000% profit.
+
+!!! Note "Special case to forcesell after a specific time"
+    A special case presents using `"<N>": -1` as ROI. This forces the bot to sell a trade after N Minutes, no matter if it's positive or negative, so represents a time-limited force-sell.
 
 ### Understand stoploss
 
@@ -161,29 +271,21 @@ before asking the strategy if we should buy or a sell an asset. After each wait 
 every opened trade wether or not we should sell, and for all the remaining pairs (either the dynamic list of pairs or
 the static list of pairs) if we should buy.
 
-### Understand ask_last_balance
-
-The `ask_last_balance` configuration parameter sets the bidding price. Value `0.0` will use `ask` price, `1.0` will
-use the `last` price and values between those interpolate between ask and last
-price. Using `ask` price will guarantee quick success in bid, but bot will also
-end up paying more then would probably have been necessary.
-
 ### Understand order_types
 
-The `order_types` configuration parameter contains a dict mapping order-types to
-market-types as well as stoploss on or off exchange type and stoploss on exchange
-update interval in seconds. This allows to buy using limit orders, sell using
-limit-orders, and create stoploss orders using market. It also allows to set the
-stoploss "on exchange" which means stoploss order would be placed immediately once
-the buy order is fulfilled. In case stoploss on exchange and `trailing_stop` are
-both set, then the bot will use `stoploss_on_exchange_interval` to check it periodically
-and update it if necessary (e.x. in case of trailing stoploss).
-This can be set in the configuration file or in the strategy.
-Values set in the configuration file  overwrites values set in the strategy.
+The `order_types` configuration parameter maps actions (`buy`, `sell`, `stoploss`, `emergencysell`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
 
-If this is configured, all 4 values (`buy`, `sell`, `stoploss` and
-`stoploss_on_exchange`) need to be present, otherwise the bot will warn about it and fail to start.
-The below is the default which is used if this is not configured in either strategy or configuration file.
+This allows to buy using limit orders, sell using
+limit-orders, and create stoplosses using market orders. It also allows to set the
+stoploss "on exchange" which means stoploss order would be placed immediately once
+the buy order is fulfilled.
+    
+`order_types` set in the configuration file overwrites values set in the strategy as a whole, so you need to configure the whole `order_types` dictionary in one place.
+
+If this is configured, the following 4 values (`buy`, `sell`, `stoploss` and
+`stoploss_on_exchange`) need to be present, otherwise the bot will fail to start.
+
+For information on (`emergencysell`,`stoploss_on_exchange`,`stoploss_on_exchange_interval`,`stoploss_on_exchange_limit_ratio`) please see stop loss documentation [stop loss on exchange](stoploss.md)
 
 Syntax for Strategy:
 
@@ -191,9 +293,11 @@ Syntax for Strategy:
 order_types = {
     "buy": "limit",
     "sell": "limit",
+    "emergencysell": "market",
     "stoploss": "market",
     "stoploss_on_exchange": False,
-    "stoploss_on_exchange_interval": 60
+    "stoploss_on_exchange_interval": 60,
+    "stoploss_on_exchange_limit_ratio": 0.99,
 }
 ```
 
@@ -203,25 +307,30 @@ Configuration:
 "order_types": {
     "buy": "limit",
     "sell": "limit",
+    "emergencysell": "market",
     "stoploss": "market",
     "stoploss_on_exchange": false,
     "stoploss_on_exchange_interval": 60
 }
 ```
 
-!!! Note
+!!! Note "Market order support"
     Not all exchanges support "market" orders.
     The following message will be shown if your exchange does not support market orders:
-    `"Exchange <yourexchange>  does not support market orders."`
+    `"Exchange <yourexchange> does not support market orders."` and the bot will refuse to start.
 
-!!! Note
-    Stoploss on exchange interval is not mandatory. Do not change its value if you are
+!!! Warning "Using market orders"
+    Please carefully read the section [Market order pricing](#market-order-pricing) section when using market orders.
+
+!!! Note "Stoploss on exchange"
+    `stoploss_on_exchange_interval` is not mandatory. Do not change its value if you are
     unsure of what you are doing. For more information about how stoploss works please
-    read [the stoploss documentation](stoploss.md).
+    refer to [the stoploss documentation](stoploss.md).
 
-!!! Note
-    In case of stoploss on exchange if the stoploss is cancelled manually then
-    the bot would recreate one.
+    If `stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new stoploss order.
+
+!!! Warning "Warning: stoploss_on_exchange failures"
+    If stoploss on exchange creation fails for some reason, then an "emergency sell" is initiated. By default, this will sell the asset using a market order. The order-type for the emergency-sell can be changed by setting the `emergencysell` value in the `order_types` dictionary - however this is not advised.
 
 ### Understand order_time_in_force
 
@@ -234,7 +343,7 @@ This is most of the time the default time in force. It means the order will rema
 on exchange till it is canceled by user. It can be fully or partially fulfilled.
 If partially fulfilled, the remaining will stay on the exchange till cancelled.
 
-**FOK (Full Or Kill):**
+**FOK (Fill Or Kill):**
 
 It means if the order is not executed immediately AND fully then it is canceled by the exchange.
 
@@ -264,15 +373,17 @@ The possible values are: `gtc` (default), `fok` or `ioc`.
 
 Freqtrade is based on [CCXT library](https://github.com/ccxt/ccxt) that supports over 100 cryptocurrency
 exchange markets and trading APIs. The complete up-to-date list can be found in the
-[CCXT repo homepage](https://github.com/ccxt/ccxt/tree/master/python). However, the bot was tested
-with only Bittrex and Binance.
-
-The bot was tested with the following exchanges:
+[CCXT repo homepage](https://github.com/ccxt/ccxt/tree/master/python).
+ However, the bot was tested by the development team with only Bittrex, Binance and Kraken,
+ so the these are the only officially supported exchanges:
 
 - [Bittrex](https://bittrex.com/): "bittrex"
 - [Binance](https://www.binance.com/): "binance"
+- [Kraken](https://kraken.com/): "kraken"
 
 Feel free to test other exchanges and submit your PR to improve the bot.
+
+Some exchanges require special configuration, which can be found on the [Exchange-specific Notes](exchanges.md) documentation page.
 
 #### Sample exchange configuration
 
@@ -297,13 +408,13 @@ This configuration enables binance, as well as rate limiting to avoid bans from 
     Optimal settings for rate limiting depend on the exchange and the size of the whitelist, so an ideal parameter will vary on many other settings.
     We try to provide sensible defaults per exchange where possible, if you encounter bans please make sure that `"enableRateLimit"` is enabled and increase the `"rateLimit"` parameter step by step.
 
-#### Advanced FreqTrade Exchange configuration
+#### Advanced Freqtrade Exchange configuration
 
 Advanced options can be configured using the `_ft_has_params` setting, which will override Defaults and exchange-specific behaviours.
 
 Available options are listed in the exchange-class as `_ft_has_default`.
 
-For example, to test the order type `FOK` with Kraken, and modify candle_limit to 200 (so you only get 200 candles per call):
+For example, to test the order type `FOK` with Kraken, and modify candle limit to 200 (so you only get 200 candles per API call):
 
 ```json
 "exchange": {
@@ -336,6 +447,135 @@ The valid values are:
 "BTC", "ETH", "XRP", "LTC", "BCH", "USDT"
 ```
 
+## Prices used for orders
+
+Prices for regular orders can be controlled via the parameter structures `bid_strategy` for buying and `ask_strategy` for selling.
+Prices are always retrieved right before an order is placed, either by querying the exchange tickers or by using the orderbook data.
+
+!!! Note
+    Orderbook data used by Freqtrade are the data retrieved from exchange by the ccxt's function `fetch_order_book()`, i.e. are usually data from the L2-aggregated orderbook, while the ticker data are the structures returned by the ccxt's `fetch_ticker()`/`fetch_tickers()` functions. Refer to the ccxt library [documentation](https://github.com/ccxt/ccxt/wiki/Manual#market-data) for more details.
+
+!!! Warning "Using market orders"
+    Please read the section [Market order pricing](#market-order-pricing) section when using market orders.
+
+### Buy price
+
+#### Check depth of market
+
+When check depth of market is enabled (`bid_strategy.check_depth_of_market.enabled=True`), the buy signals are filtered based on the orderbook depth (sum of all amounts) for each orderbook side.
+
+Orderbook `bid` (buy) side depth is then divided by the orderbook `ask` (sell) side depth and the resulting delta is compared to the value of the `bid_strategy.check_depth_of_market.bids_to_ask_delta` parameter. The buy order is only executed if the orderbook delta is greater than or equal to the configured delta value.
+
+!!! Note
+    A delta value below 1 means that `ask` (sell) orderbook side depth is greater than the depth of the `bid` (buy) orderbook side, while a value greater than 1 means opposite (depth of the buy side is higher than the depth of the sell side).
+
+#### Buy price side
+
+The configuration setting `bid_strategy.price_side` defines the side of the spread the bot looks for when buying.
+
+The following displays an orderbook.
+
+``` explanation
+...
+103
+102
+101  # ask
+-------------Current spread
+99   # bid
+98
+97
+...
+```
+
+If `bid_strategy.price_side` is set to `"bid"`, then the bot will use 99 as buying price.  
+In line with that, if `bid_strategy.price_side` is set to `"ask"`, then the bot will use 101 as buying price.
+
+Using `ask` price often guarantees quicker filled orders, but the bot can also end up paying more than what would have been necessary.
+Taker fees instead of maker fees will most likely apply even when using limit buy orders.
+Also, prices at the "ask" side of the spread are higher than prices at the "bid" side in the orderbook, so the order behaves similar to a market order (however with a maximum price).
+
+#### Buy price with Orderbook enabled
+
+When buying with the orderbook enabled (`bid_strategy.use_order_book=True`), Freqtrade fetches the `bid_strategy.order_book_top` entries from the orderbook and then uses the entry specified as `bid_strategy.order_book_top` on the configured side (`bid_strategy.price_side`) of the orderbook. 1 specifies the topmost entry in the orderbook, while 2 would use the 2nd entry in the orderbook, and so on.
+
+#### Buy price without Orderbook enabled
+
+The following section uses `side` as the configured `bid_strategy.price_side`.
+
+When not using orderbook (`bid_strategy.use_order_book=False`), Freqtrade uses the best `side` price from the ticker if it's below the `last` traded price from the ticker. Otherwise (when the `side` price is above the `last` price), it calculates a rate between `side` and `last` price.
+
+The `bid_strategy.ask_last_balance` configuration parameter controls this. A value of `0.0` will use `side` price, while `1.0` will use the `last` price and values between those interpolate between ask and last price.
+
+### Sell price
+
+#### Sell price side
+
+The configuration setting `ask_strategy.price_side` defines the side of the spread the bot looks for when selling.
+
+The following displays an orderbook:
+
+``` explanation
+...
+103
+102
+101  # ask
+-------------Current spread
+99   # bid
+98
+97
+...
+```
+
+If `ask_strategy.price_side` is set to `"ask"`, then the bot will use 101 as selling price.  
+In line with that, if `ask_strategy.price_side` is set to `"bid"`, then the bot will use 99 as selling price.
+
+#### Sell price with Orderbook enabled
+
+When selling with the orderbook enabled (`ask_strategy.use_order_book=True`), Freqtrade fetches the `ask_strategy.order_book_max` entries in the orderbook. Then each of the orderbook steps between `ask_strategy.order_book_min` and `ask_strategy.order_book_max` on the configured orderbook side are validated for a profitable sell-possibility based on the strategy configuration (`minimal_roi` conditions) and the sell order is placed at the first profitable spot.
+
+!!! Note
+    Using `order_book_max` higher than `order_book_min` only makes sense when ask_strategy.price_side is set to `"ask"`.
+
+The idea here is to place the sell order early, to be ahead in the queue.
+
+A fixed slot (mirroring `bid_strategy.order_book_top`) can be defined by setting `ask_strategy.order_book_min` and `ask_strategy.order_book_max` to the same number.
+
+!!! Warning "Order_book_max > 1 - increased risks for stoplosses!"
+    Using `ask_strategy.order_book_max` higher than 1 will increase the risk the stoploss on exchange is cancelled too early, since an eventual [stoploss on exchange](#understand-order_types) will be cancelled as soon as the order is placed.
+    Also, the sell order will remain on the exchange for `unfilledtimeout.sell` (or until it's filled) - which can lead to missed stoplosses (with or without using stoploss on exchange).
+
+!!! Warning "Order_book_max > 1 in dry-run"
+    Using `ask_strategy.order_book_max` higher than 1 will result in improper dry-run results (significantly better than real orders executed on exchange), since dry-run assumes orders to be filled almost instantly.
+    It is therefore advised to not use this setting for dry-runs.
+
+#### Sell price without Orderbook enabled
+
+When not using orderbook (`ask_strategy.use_order_book=False`), the price at the `ask_strategy.price_side` side (defaults to `"ask"`) from the ticker will be used as the sell price.
+
+### Market order pricing
+
+When using market orders, prices should be configured to use the "correct" side of the orderbook to allow realistic pricing detection.
+Assuming both buy and sell are using market orders, a configuration similar to the following might be used
+
+``` jsonc
+  "order_types": {
+    "buy": "market",
+    "sell": "market"
+    // ...
+  },
+  "bid_strategy": {
+    "price_side": "ask",
+    // ...
+  },
+  "ask_strategy":{
+    "price_side": "bid",
+    // ...
+  },
+```
+
+Obviously, if only one side is using limit orders, different pricing combinations can be used.
+--8<-- "includes/pairlists.md"
+
 ## Switch to Dry-run mode
 
 We recommend starting the bot in the Dry-run mode to see how your bot will
@@ -351,7 +591,7 @@ creating trades on the exchange.
 "db_url": "sqlite:///tradesv3.dryrun.sqlite",
 ```
 
-3. Remove your Exchange API key and secrete (change them by empty values or fake credentials):
+3. Remove your Exchange API key and secret (change them by empty values or fake credentials):
 
 ```json
 "exchange": {
@@ -362,47 +602,29 @@ creating trades on the exchange.
 }
 ```
 
-Once you will be happy with your bot performance running in the Dry-run mode,
-you can switch it to production mode.
+Once you will be happy with your bot performance running in the Dry-run mode, you can switch it to production mode.
 
-### Dynamic Pairlists
+!!! Note
+    A simulated wallet is available during dry-run mode, and will assume a starting capital of `dry_run_wallet` (defaults to 1000).
 
-Dynamic pairlists select pairs for you based on the logic configured.
-The bot runs against all pairs (with that stake) on the exchange, and a number of assets
-(`number_assets`) is selected based on the selected criteria.
+### Considerations for dry-run
 
-By default, the `StaticPairList` method is used.
-The Pairlist method is configured as `pair_whitelist` parameter under the `exchange`
-section of the configuration.
-
-**Available Pairlist methods:**
-
-* `StaticPairList`
-  * It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklist`.
-* `VolumePairList`
-  * It selects `number_assets` top pairs based on `sort_key`, which can be one of
-`askVolume`, `bidVolume` and `quoteVolume`, defaults to `quoteVolume`.
-  * There is a possibility to filter low-value coins that would not allow setting a stop loss
-(set `precision_filter` parameter to `true` for this).
-
-Example:
-
-```json
-"pairlist": {
-        "method": "VolumePairList",
-        "config": {
-            "number_assets": 20,
-            "sort_key": "quoteVolume",
-            "precision_filter": false
-        }
-    },
-```
+* API-keys may or may not be provided. Only Read-Only operations (i.e. operations that do not alter account state) on the exchange are performed in the dry-run mode.
+* Wallets (`/balance`) are simulated.
+* Orders are simulated, and will not be posted to the exchange.
+* In combination with `stoploss_on_exchange`, the stop_loss price is assumed to be filled.
+* Open orders (not trades, which are stored in the database) are reset on bot restart.
 
 ## Switch to production mode
 
 In production mode, the bot will engage your money. Be careful, since a wrong
 strategy can lose all your money. Be aware of what you are doing when
 you run it in production mode.
+
+### Setup your exchange account
+
+You will need to create API Keys (usually you get `key` and `secret`, some exchanges require an additional `password`) from the Exchange website and you'll need to insert this into the appropriate fields in the configuration or when asked by the `freqtrade new-config` command.
+API Keys are usually only required for live trading (trading for real money, bot running in "production mode", executing real orders on the exchange) and are not required for the bot running in dry-run (trade simulation) mode. When you setup the bot in dry-run mode, you may fill these fields with empty values.
 
 ### To switch your bot in production mode
 
@@ -423,12 +645,11 @@ you run it in production mode.
         "secret": "08a9dc6db3d7b53e1acebd9275677f4b0a04f1a5",
         ...
 }
-
 ```
-!!! Note
-    If you have an exchange API key yet, [see our tutorial](/pre-requisite).
 
-### Using proxy with FreqTrade
+You should also make sure to read the [Exchanges](exchanges.md) section of the documentation to be aware of potential configuration details specific to your exchange.
+
+### Using proxy with Freqtrade
 
 To use a proxy with freqtrade, add the kwarg `"aiohttp_trust_env"=true` to the `"ccxt_async_kwargs"` dict in the exchange section of the configuration.
 
@@ -448,14 +669,13 @@ export HTTPS_PROXY="http://addr:port"
 freqtrade
 ```
 
+## Embedding Strategies
 
-### Embedding Strategies
-
-FreqTrade provides you with with an easy way to embed the strategy into your configuration file.
+Freqtrade provides you with with an easy way to embed the strategy into your configuration file.
 This is done by utilizing BASE64 encoding and providing this string at the strategy configuration field,
 in your chosen config file.
 
-#### Encoding a string as BASE64
+### Encoding a string as BASE64
 
 This is a quick example, how to generate the BASE64 string in python
 

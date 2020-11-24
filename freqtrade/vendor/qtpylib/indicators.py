@@ -19,13 +19,14 @@
 # limitations under the License.
 #
 
-import warnings
 import sys
+import warnings
 from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
 from pandas.core.base import PandasObject
+
 
 # =============================================
 # check min, python version
@@ -222,7 +223,7 @@ def crossed(series1, series2, direction=None):
     if isinstance(series1, np.ndarray):
         series1 = pd.Series(series1)
 
-    if isinstance(series2, (float, int, np.ndarray)):
+    if isinstance(series2, (float, int, np.ndarray, np.integer, np.floating)):
         series2 = pd.Series(index=series1.index, data=series2)
 
     if direction is None or direction == "above":
@@ -288,9 +289,9 @@ def rolling_min(series, window=14, min_periods=None):
 def rolling_max(series, window=14, min_periods=None):
     min_periods = window if min_periods is None else min_periods
     try:
-        return series.rolling(window=window, min_periods=min_periods).min()
+        return series.rolling(window=window, min_periods=min_periods).max()
     except Exception as e:  # noqa: F841
-        return pd.Series(series).rolling(window=window, min_periods=min_periods).min()
+        return pd.Series(series).rolling(window=window, min_periods=min_periods).max()
 
 
 # ---------------------------------------------

@@ -9,7 +9,7 @@ Telegram user id.
 
 Start a chat with the [Telegram BotFather](https://telegram.me/BotFather)
 
-Send the message `/newbot`. 
+Send the message `/newbot`.
 
 *BotFather response:*
 
@@ -35,11 +35,57 @@ Copy the API Token (`22222222:APITOKEN` in the above example) and keep use it fo
 
 Don't forget to start the conversation with your bot, by clicking `/START` button
 
-### 2. Get your user id
+### 2. Telegram user_id
+
+#### Get your user id
 
 Talk to the [userinfobot](https://telegram.me/userinfobot)
 
 Get your "Id", you will use it for the config parameter `chat_id`.
+
+#### Use Group id
+
+You can use bots in telegram groups by just adding them to the group. You can find the group id by first adding a [RawDataBot](https://telegram.me/rawdatabot) to your group. The Group id is shown as id in the `"chat"` section, which the RawDataBot will send to you:
+
+``` json
+"chat":{
+   "id":-1001332619709
+}
+```
+
+For the Freqtrade configuration, you can then use the the full value (including `-` if it's there) as string:
+
+```json
+   "chat_id": "-1001332619709"
+```
+
+## Control telegram noise
+
+Freqtrade provides means to control the verbosity of your telegram bot.
+Each setting has the following possible values:
+
+* `on` - Messages will be sent, and user will be notified.
+* `silent` - Message will be sent, Notification will be without sound / vibration.
+* `off` - Skip sending a message-type all together.
+
+Example configuration showing the different settings:
+
+``` json
+"telegram": {
+      "enabled": true,
+      "token": "your_telegram_token",
+      "chat_id": "your_telegram_chat_id",
+      "notification_settings": {
+         "status": "silent",
+         "warning": "on",
+         "startup": "off",
+         "buy": "silent",
+         "sell": "on",
+         "buy_cancel": "silent",
+         "sell_cancel": "on"
+      }
+   },
+```
 
 ## Telegram commands
 
@@ -47,27 +93,31 @@ Per default, the Telegram bot shows predefined commands. Some commands
 are only available by sending them to the bot. The table below list the
 official commands. You can ask at any moment for help with `/help`.
 
-|  Command | Default | Description |
-|----------|---------|-------------|
-| `/start` | | Starts the trader
-| `/stop` | | Stops the trader
-| `/stopbuy` | | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
-| `/reload_conf` | | Reloads the configuration file
-| `/status` | | Lists all open trades
-| `/status table` | | List all open trades in a table format
-| `/count` | | Displays number of trades used and available
-| `/profit` | | Display a summary of your profit/loss from close trades and some stats about your performance
-| `/forcesell <trade_id>` | | Instantly sells the given trade  (Ignoring `minimum_roi`).
-| `/forcesell all` | | Instantly sells all open trades (Ignoring `minimum_roi`).
-| `/forcebuy <pair> [rate]` | | Instantly buys the given pair. Rate is optional. (`forcebuy_enable` must be set to True)
-| `/performance` | | Show performance of each finished trade grouped by pair
-| `/balance` | | Show account balance per currency
-| `/daily <n>` | 7 | Shows profit or loss per day, over the last n days
-| `/whitelist` | | Show the current whitelist
-| `/blacklist [pair]` | | Show the current blacklist, or adds a pair to the blacklist.
-| `/edge` | | Show validated pairs by Edge if it is enabled.
-| `/help` | | Show help message
-| `/version` | | Show version
+|  Command | Description |
+|----------|-------------|
+| `/start` | Starts the trader
+| `/stop` | Stops the trader
+| `/stopbuy` | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
+| `/reload_config` | Reloads the configuration file
+| `/show_config` | Shows part of the current configuration with relevant settings to operation
+| `/logs [limit]` | Show last log messages.
+| `/status` | Lists all open trades
+| `/status table` | List all open trades in a table format. Pending buy orders are marked with an asterisk (*) Pending sell orders are marked with a double asterisk (**)
+| `/trades [limit]` | List all recently closed trades in a table format.
+| `/delete <trade_id>` | Delete a specific trade from the Database. Tries to close open orders. Requires manual handling of this trade on the exchange.
+| `/count` | Displays number of trades used and available
+| `/profit` | Display a summary of your profit/loss from close trades and some stats about your performance
+| `/forcesell <trade_id>` | Instantly sells the given trade  (Ignoring `minimum_roi`).
+| `/forcesell all` | Instantly sells all open trades (Ignoring `minimum_roi`).
+| `/forcebuy <pair> [rate]` | Instantly buys the given pair. Rate is optional. (`forcebuy_enable` must be set to True)
+| `/performance` | Show performance of each finished trade grouped by pair
+| `/balance` | Show account balance per currency
+| `/daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7)
+| `/whitelist` | Show the current whitelist
+| `/blacklist [pair]` | Show the current blacklist, or adds a pair to the blacklist.
+| `/edge` | Show validated pairs by Edge if it is enabled.
+| `/help` | Show help message
+| `/version` | Show version
 
 ## Telegram commands in action
 
@@ -84,16 +134,16 @@ Below, example of Telegram message you will receive for each command.
 
 ### /stopbuy
 
-> **status:** `Setting max_open_trades to 0. Run /reload_conf to reset.`
+> **status:** `Setting max_open_trades to 0. Run /reload_config to reset.`
 
 Prevents the bot from opening new trades by temporarily setting "max_open_trades" to 0. Open trades will be handled via their regular rules (ROI / Sell-signal, stoploss, ...).
 
 After this, give the bot time to close off open trades (can be checked via `/status table`).
 Once all positions are sold, run `/stop` to completely stop the bot.
 
-`/reload_conf` resets "max_open_trades" to the value set in the configuration and resets this command. 
+`/reload_config` resets "max_open_trades" to the value set in the configuration and resets this command.
 
-!!! warning
+!!! Warning
    The stop-buy signal is ONLY active while the bot is running, and is not persisted anyway, so restarting the bot will cause this to reset.
 
 ### /status
@@ -112,6 +162,7 @@ For each open trade, the bot will send you the following message.
 ### /status table
 
 Return the status of all open trades in a table format.
+
 ```
    ID  Pair      Since    Profit
 ----  --------  -------  --------
@@ -122,6 +173,7 @@ Return the status of all open trades in a table format.
 ### /count
 
 Return the number of trades used and available.
+
 ```
 current    max
 ---------  -----
@@ -207,15 +259,15 @@ Shows the current whitelist
 
 Shows the current blacklist.
 If Pair is set, then this pair will be added to the pairlist.
-Also supports multiple pairs, seperated by a space.
-Use `/reload_conf` to reset the blacklist.
+Also supports multiple pairs, separated by a space.
+Use `/reload_config` to reset the blacklist.
 
 > Using blacklist `StaticPairList` with 2 pairs  
 >`DODGE/BTC`, `HOT/BTC`.
 
 ### /edge
 
-Shows pairs validated by Edge along with their corresponding winrate, expectancy and stoploss values.
+Shows pairs validated by Edge along with their corresponding win-rate, expectancy and stoploss values.
 
 > **Edge only validated following pairs:**
 ```

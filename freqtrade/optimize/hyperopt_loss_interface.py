@@ -1,6 +1,6 @@
 """
 IHyperOptLoss interface
-This module defines the interface for the loss-function for hyperopts
+This module defines the interface for the loss-function for hyperopt
 """
 
 from abc import ABC, abstractmethod
@@ -11,10 +11,10 @@ from pandas import DataFrame
 
 class IHyperOptLoss(ABC):
     """
-    Interface for freqtrade hyperopts Loss functions.
+    Interface for freqtrade hyperopt Loss functions.
     Defines the custom loss function (`hyperopt_loss_function()` which is evaluated every epoch.)
     """
-    ticker_interval: str
+    timeframe: str
 
     @staticmethod
     @abstractmethod

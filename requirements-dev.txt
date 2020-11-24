@@ -1,14 +1,19 @@
 # Include all requirements to run the bot.
 -r requirements.txt
 -r requirements-plot.txt
+-r requirements-hyperopt.txt
 
-flake8==3.7.7
+coveralls==2.2.0
+flake8==3.8.4
 flake8-type-annotations==0.1.0
-flake8-tidy-imports==2.0.0
-pytest==5.0.0
-pytest-mock==1.10.4
-pytest-asyncio==0.10.0
-pytest-cov==2.7.1
+flake8-tidy-imports==4.1.0
+mypy==0.790
+pytest==6.1.2
+pytest-asyncio==0.14.0
+pytest-cov==2.10.1
+pytest-mock==3.3.1
 pytest-random-order==1.0.4
-coveralls==1.8.1
-mypy==0.711
+isort==5.6.4
+
+# Convert jupyter notebooks to markdown documents
+nbconvert==6.0.7

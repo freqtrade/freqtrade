@@ -2,10 +2,14 @@
     "max_open_trades": 3,
     "stake_currency": "BTC",
     "stake_amount": 0.05,
+    "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "USD",
-    "amount_reserve_percent" : 0.05,
-    "dry_run": false,
-    "ticker_interval": "5m",
+    "amount_reserve_percent": 0.05,
+    "amend_last_stake_amount": false,
+    "last_stake_amount_min_ratio": 0.5,
+    "dry_run": true,
+    "cancel_open_orders_on_exit": false,
+    "timeframe": "5m",
     "trailing_stop": false,
     "trailing_stop_positive": 0.005,
     "trailing_stop_positive_offset": 0.0051,
@@ -22,6 +26,7 @@
         "sell": 30
     },
     "bid_strategy": {
+        "price_side": "bid",
         "use_order_book": false,
         "ask_last_balance": 0.0,
         "order_book_top": 1,
@@ -31,13 +36,18 @@
         }
     },
     "ask_strategy":{
+        "price_side": "ask",
         "use_order_book": false,
         "order_book_min": 1,
-        "order_book_max": 9
+        "order_book_max": 1,
+        "use_sell_signal": true,
+        "sell_profit_only": false,
+        "ignore_roi_if_buy_signal": false
     },
     "order_types": {
         "buy": "limit",
         "sell": "limit",
+        "emergencysell": "market",
         "stoploss": "market",
         "stoploss_on_exchange": false,
         "stoploss_on_exchange_interval": 60
@@ -46,14 +56,19 @@
         "buy": "gtc",
         "sell": "gtc"
     },
-    "pairlist": {
-        "method": "VolumePairList",
-        "config": {
+    "pairlists": [
+        {"method": "StaticPairList"},
+        {
+            "method": "VolumePairList",
             "number_assets": 20,
             "sort_key": "quoteVolume",
-            "precision_filter": false
-        }
-    },
+            "refresh_period": 1800
+        },
+        {"method": "AgeFilter", "min_days_listed": 10},
+        {"method": "PrecisionFilter"},
+        {"method": "PriceFilter", "low_price_ratio": 0.01, "min_price": 0.00000010},
+        {"method": "SpreadFilter", "max_spread_ratio": 0.005}
+    ],
     "exchange": {
         "name": "bittrex",
         "sandbox": false,
@@ -74,7 +89,7 @@
             "ZEC/BTC",
             "XLM/BTC",
             "NXT/BTC",
-            "POWR/BTC",
+            "TRX/BTC",
             "ADA/BTC",
             "XMR/BTC"
         ],
@@ -88,7 +103,6 @@
         "enabled": false,
         "process_throttle_secs": 3600,
         "calculate_since_number_of_days": 7,
-        "capital_available_percentage": 0.5,
         "allowed_risk": 0.01,
         "stoploss_range_min": -0.01,
         "stoploss_range_max": -0.1,
@@ -99,20 +113,27 @@
         "max_trade_duration_minute": 1440,
         "remove_pumps": false
     },
-    "experimental": {
-        "use_sell_signal": false,
-        "sell_profit_only": false,
-        "ignore_roi_if_buy_signal": false
-    },
     "telegram": {
         "enabled": true,
         "token": "your_telegram_token",
-        "chat_id": "your_telegram_chat_id"
+        "chat_id": "your_telegram_chat_id",
+        "notification_settings": {
+            "status": "on",
+            "warning": "on",
+            "startup": "on",
+            "buy": "on",
+            "sell": "on",
+            "buy_cancel": "on",
+            "sell_cancel": "on"
+        }
     },
     "api_server": {
         "enabled": false,
         "listen_ip_address": "127.0.0.1",
         "listen_port": 8080,
+        "verbosity": "info",
+        "jwt_secret_key": "somethingrandom",
+        "CORS_origins": [],
         "username": "freqtrader",
         "password": "SuperSecurePassword"
     },
@@ -120,8 +141,12 @@
     "initial_state": "running",
     "forcebuy_enable": false,
     "internals": {
-        "process_throttle_secs": 5
+        "process_throttle_secs": 5,
+        "heartbeat_interval": 60
     },
+    "disable_dataframe_checks": false,
     "strategy": "DefaultStrategy",
-    "strategy_path": "user_data/strategies/"
+    "strategy_path": "user_data/strategies/",
+    "dataformat_ohlcv": "json",
+    "dataformat_trades": "jsongz"
 }

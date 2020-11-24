@@ -12,7 +12,10 @@ class State(Enum):
     """
     RUNNING = 1
     STOPPED = 2
-    RELOAD_CONF = 3
+    RELOAD_CONFIG = 3
+
+    def __str__(self):
+        return f"{self.name.lower()}"
 
 
 class RunMode(Enum):
@@ -25,4 +28,12 @@ class RunMode(Enum):
     BACKTEST = "backtest"
     EDGE = "edge"
     HYPEROPT = "hyperopt"
-    OTHER = "other"  # Used for plotting scripts and test
+    UTIL_EXCHANGE = "util_exchange"
+    UTIL_NO_EXCHANGE = "util_no_exchange"
+    PLOT = "plot"
+    OTHER = "other"
+
+
+TRADING_MODES = [RunMode.LIVE, RunMode.DRY_RUN]
+OPTIMIZE_MODES = [RunMode.BACKTEST, RunMode.EDGE, RunMode.HYPEROPT]
+NON_UTIL_MODES = TRADING_MODES + OPTIMIZE_MODES

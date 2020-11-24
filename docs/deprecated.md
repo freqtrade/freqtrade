@@ -4,31 +4,32 @@ This page contains description of the command line arguments, configuration para
 and the bot features that were declared as DEPRECATED by the bot development team
 and are no longer supported. Please avoid their usage in your configuration.
 
+## Removed features
+
+### the `--refresh-pairs-cached` command line option
+
+`--refresh-pairs-cached` in the context of backtesting, hyperopt and edge allows to refresh candle data for backtesting.
+Since this leads to much confusion, and slows down backtesting (while not being part of backtesting) this has been singled out as a separate freqtrade sub-command `freqtrade download-data`.
+
+This command line option was deprecated in 2019.7-dev (develop branch) and removed in 2019.9.
+
 ### The **--dynamic-whitelist** command line option
 
 This command line option was deprecated in 2018 and removed freqtrade 2019.6-dev (develop branch)
-and in freqtrade 2019.7 (master branch).
+and in freqtrade 2019.7.
 
-Per default `--dynamic-whitelist` will retrieve the 20 currencies based
-on BaseVolume. This value can be changed when you run the script.
+### the `--live` command line option
 
-**By Default**
-Get the 20 currencies based on BaseVolume.
+`--live` in the context of backtesting allowed to download the latest tick data for backtesting.
+Did only download the latest 500 candles, so was ineffective in getting good backtest data.
+Removed in 2019-7-dev (develop branch) and in freqtrade 2019.8.
 
-```bash
-freqtrade --dynamic-whitelist
-```
+### Allow running multiple pairlists in sequence
 
-**Customize the number of currencies to retrieve**
-Get the 30 currencies based on BaseVolume.
+The former `"pairlist"` section in the configuration has been removed, and is replaced by `"pairlists"` - being a list to specify a sequence of pairlists.
 
-```bash
-freqtrade --dynamic-whitelist 30
-```
+The old section of configuration parameters (`"pairlist"`) has been deprecated in 2019.11 and has been removed in 2020.4.
 
-**Exception**
-`--dynamic-whitelist` must be greater than 0. If you enter 0 or a
-negative value (e.g -2), `--dynamic-whitelist` will use the default
-value (20).
+### deprecation of bidVolume and askVolume from volume-pairlist
 
-
+Since only quoteVolume can be compared between assets, the other options (bidVolume, askVolume) have been deprecated in 2020.4, and have been removed in 2020.9.

@@ -1,4 +1,3 @@
-sudo: true
 os:
 - linux
 dist: xenial
@@ -10,15 +9,11 @@ services:
 env:
   global:
     - IMAGE_NAME=freqtradeorg/freqtrade
-addons:
-  apt:
-    packages:
-    - libelf-dev
-    - libdw-dev
-    - binutils-dev
 install:
-- cd build_helpers && ./install_ta-lib.sh; cd ..
-- export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+- cd build_helpers && ./install_ta-lib.sh ${HOME}/dependencies; cd ..
+- export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
+- export TA_LIBRARY_PATH=${HOME}/dependencies/lib
+- export TA_INCLUDE_PATH=${HOME}/dependencies/include
 - pip install -r requirements-dev.txt
 - pip install -e .
 jobs:
@@ -26,28 +21,36 @@ jobs:
   include:
     - stage: tests
       script:
-      - pytest --random-order --cov=freqtrade --cov-config=.coveragerc freqtrade/tests/
+      - pytest --random-order --cov=freqtrade --cov-config=.coveragerc
       # Allow failure for coveralls
-      - coveralls || true
+      # - coveralls || true
       name: pytest
     - script:
       - cp config.json.example config.json
-      - freqtrade --datadir freqtrade/tests/testdata backtesting
+      - freqtrade create-userdir --userdir user_data
+      - freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
       name: backtest
     - script:
       - cp config.json.example config.json
-      - freqtrade --datadir freqtrade/tests/testdata hyperopt -e 5
+      - freqtrade create-userdir --userdir user_data
+      - freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily
       name: hyperopt
-    - script: flake8 freqtrade scripts
+    - script: flake8
       name: flake8
+    - script:
+      # Test Documentation boxes -
+      # !!! <TYPE>: is not allowed!
+      # !!! <TYPE> "title" - Title needs to be quoted!
+      - grep -Er '^!{3}\s\S+:|^!{3}\s\S+\s[^"]' docs/*; test $? -ne 0
+      name: doc syntax
     - script: mypy freqtrade scripts
       name: mypy
 
-    - stage: docker
-      if: branch in (master, develop, feat/improve_travis) AND (type in (push, cron))
-      script:
-        - build_helpers/publish_docker.sh
-      name: "Build and test and push docker image"
+    # - stage: docker
+    #   if: branch in (master, develop, feat/improve_travis) AND (type in (push, cron))
+    #   script:
+    #     - build_helpers/publish_docker.sh
+    #   name: "Build and test and push docker image"
 
 notifications:
   slack:
@@ -55,4 +58,4 @@ notifications:
 cache:
   pip: True
   directories:
-    - /usr/local/lib/
+    - $HOME/dependencies

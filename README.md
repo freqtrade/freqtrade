@@ -1,6 +1,6 @@
 # Freqtrade
 
-[![Build Status](https://travis-ci.org/freqtrade/freqtrade.svg?branch=develop)](https://travis-ci.org/freqtrade/freqtrade)
+[![Freqtrade CI](https://github.com/freqtrade/freqtrade/workflows/Freqtrade%20CI/badge.svg)](https://github.com/freqtrade/freqtrade/actions/)
 [![Coverage Status](https://coveralls.io/repos/github/freqtrade/freqtrade/badge.svg?branch=develop&service=github)](https://coveralls.io/github/freqtrade/freqtrade?branch=develop)
 [![Documentation](https://readthedocs.org/projects/freqtrade/badge/)](https://www.freqtrade.io)
 [![Maintainability](https://api.codeclimate.com/v1/badges/5737e6d668200b7518ff/maintainability)](https://codeclimate.com/github/freqtrade/freqtrade/maintainability)
@@ -25,7 +25,8 @@ hesitate to read the source code and understand the mechanism of this bot.
 ## Exchange marketplaces supported
 
 - [X] [Bittrex](https://bittrex.com/)
-- [X] [Binance](https://www.binance.com/) ([*Note for binance users](#a-note-on-binance))
+- [X] [Binance](https://www.binance.com/) ([*Note for binance users](docs/exchanges.md#blacklists))
+- [X] [Kraken](https://kraken.com/)
 - [ ] [113 others to tests](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
 ## Documentation
@@ -54,94 +55,90 @@ Please find the complete documentation on our [website](https://www.freqtrade.io
 Freqtrade provides a Linux/macOS script to install all dependencies and help you to configure the bot.
 
 ```bash
-git clone git@github.com:freqtrade/freqtrade.git
+git clone -b develop https://github.com/freqtrade/freqtrade.git 
 cd freqtrade
-git checkout develop
 ./setup.sh --install
 ```
 
 For any other type of installation please refer to [Installation doc](https://www.freqtrade.io/en/latest/installation/).
-
 
 ## Basic Usage
 
 ### Bot commands
 
 ```
-usage: freqtrade [-h] [-v] [--logfile FILE] [--version] [-c PATH] [-d PATH]
-                 [-s NAME] [--strategy-path PATH] [--dynamic-whitelist [INT]]
-                 [--db-url PATH] [--sd-notify]
-                 {backtesting,edge,hyperopt} ...
+usage: freqtrade [-h] [-V]
+                 {trade,create-userdir,new-config,new-hyperopt,new-strategy,download-data,convert-data,convert-trade-data,backtesting,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-hyperopts,list-markets,list-pairs,list-strategies,list-timeframes,show-trades,test-pairlist,plot-dataframe,plot-profit}
+                 ...
 
 Free, open source crypto trading bot
 
 positional arguments:
-  {backtesting,edge,hyperopt}
+  {trade,create-userdir,new-config,new-hyperopt,new-strategy,download-data,convert-data,convert-trade-data,backtesting,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-hyperopts,list-markets,list-pairs,list-strategies,list-timeframes,show-trades,test-pairlist,plot-dataframe,plot-profit}
+    trade               Trade module.
+    create-userdir      Create user-data directory.
+    new-config          Create new config
+    new-hyperopt        Create new hyperopt
+    new-strategy        Create new strategy
+    download-data       Download backtesting data.
+    convert-data        Convert candle (OHLCV) data from one format to
+                        another.
+    convert-trade-data  Convert trade data from one format to another.
     backtesting         Backtesting module.
     edge                Edge module.
     hyperopt            Hyperopt module.
+    hyperopt-list       List Hyperopt results
+    hyperopt-show       Show details of Hyperopt results
+    list-exchanges      Print available exchanges.
+    list-hyperopts      Print available hyperopt classes.
+    list-markets        Print markets on exchange.
+    list-pairs          Print pairs on exchange.
+    list-strategies     Print available strategies.
+    list-timeframes     Print available timeframes for the exchange.
+    show-trades         Show trades.
+    test-pairlist       Test your pairlist configuration.
+    plot-dataframe      Plot candles with indicators.
+    plot-profit         Generate plot showing profits.
 
 optional arguments:
   -h, --help            show this help message and exit
-  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified
-  --version             show program's version number and exit
-  -c PATH, --config PATH
-                        Specify configuration file (default: None). Multiple
-                        --config options may be used.
-  -d PATH, --datadir PATH
-                        Path to backtest data.
-  -s NAME, --strategy NAME
-                        Specify strategy class name (default:
-                        DefaultStrategy).
-  --strategy-path PATH  Specify additional strategy lookup path.
-  --dynamic-whitelist [INT]
-                        Dynamically generate and update whitelist based on 24h
-                        BaseVolume (default: 20). DEPRECATED.
-  --db-url PATH         Override trades database URL, this is useful if
-                        dry_run is enabled or in custom deployments (default:
-                        None).
-  --sd-notify           Notify systemd service manager.
+  -V, --version         show program's version number and exit
+
 ```
 
 ### Telegram RPC commands
 
-Telegram is not mandatory. However, this is a great way to control your bot. More details on our [documentation](https://www.freqtrade.io/en/latest/telegram-usage/)
+Telegram is not mandatory. However, this is a great way to control your bot. More details and the full command list on our [documentation](https://www.freqtrade.io/en/latest/telegram-usage/)
 
-- `/start`: Starts the trader
-- `/stop`: Stops the trader
-- `/status [table]`: Lists all open trades
-- `/count`: Displays number of open trades
+- `/start`: Starts the trader.
+- `/stop`: Stops the trader.
+- `/stopbuy`: Stop entering new trades.
+- `/status [table]`: Lists all open trades.
 - `/profit`: Lists cumulative profit from all finished trades
 - `/forcesell <trade_id>|all`: Instantly sells the given trade (Ignoring `minimum_roi`).
 - `/performance`: Show performance of each finished trade grouped by pair
-- `/balance`: Show account balance per currency
-- `/daily <n>`: Shows profit or loss per day, over the last n days
-- `/help`: Show help message
-- `/version`: Show version
-
+- `/balance`: Show account balance per currency.
+- `/daily <n>`: Shows profit or loss per day, over the last n days.
+- `/help`: Show help message.
+- `/version`: Show version.
 
 ## Development branches
 
 The project is currently setup in two main branches:
 
-- `develop` - This branch has often new features, but might also cause breaking changes.
-- `master` - This branch contains the latest stable release. The bot 'should' be stable on this branch, and is generally well tested.
+- `develop` - This branch has often new features, but might also contain breaking changes. We try hard to keep this branch as stable as possible.
+- `stable` - This branch contains the latest stable release. This branch is generally well tested.
 - `feat/*` - These are feature branches, which are being worked on heavily. Please don't use these unless you want to test a specific feature.
-
-## A note on Binance
-
-For Binance, please add `"BNB/<STAKE>"` to your blacklist to avoid issues.
-Accounts having BNB accounts use this to pay for fees - if your first trade happens to be on `BNB`, further trades will consume this position and make the initial BNB order unsellable as the expected amount is not there anymore.
 
 ## Support
 
-### Help / Slack
+### Help / Discord / Slack
 
-For any questions not covered by the documentation or for further
-information about the bot, we encourage you to join our slack channel.
+For any questions not covered by the documentation or for further information about the bot, or to simply engage with like-minded individuals, we encourage you to join our slack channel.
 
-- [Click here to join Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LWEyODBiNzkzNzcyNzU0MWYyYzE5NjIyOTQxMzBmMGUxOTIzM2YyN2Y4NWY1YTEwZDgwYTRmMzE2NmM5ZmY2MTg).
+Please check out our [discord server](https://discord.gg/MA9v74M).
+
+You can also join our [Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/zt-jaut7r4m-Y17k4x5mcQES9a9swKuxbg).
 
 ### [Bugs / Issues](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue)
 
@@ -169,18 +166,18 @@ Please read our
 [Contributing document](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)
 to understand the requirements before sending your pull-requests.
 
-Coding is not a neccessity to contribute - maybe start with improving our documentation?
+Coding is not a necessity to contribute - maybe start with improving our documentation?
 Issues labeled [good first issue](https://github.com/freqtrade/freqtrade/labels/good%20first%20issue) can be good first contributions, and will help get you familiar with the codebase.
 
-**Note** before starting any major new feature work, *please open an issue describing what you are planning to do* or talk to us on [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LWEyODBiNzkzNzcyNzU0MWYyYzE5NjIyOTQxMzBmMGUxOTIzM2YyN2Y4NWY1YTEwZDgwYTRmMzE2NmM5ZmY2MTg). This will ensure that interested parties can give valuable feedback on the feature, and let others know that you are working on it.
+**Note** before starting any major new feature work, *please open an issue describing what you are planning to do* or talk to us on [discord](https://discord.gg/MA9v74M) or [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/zt-jaut7r4m-Y17k4x5mcQES9a9swKuxbg). This will ensure that interested parties can give valuable feedback on the feature, and let others know that you are working on it.
 
-**Important:** Always create your PR against the `develop` branch, not `master`.
+**Important:** Always create your PR against the `develop` branch, not `stable`.
 
 ## Requirements
 
-### Uptodate clock
+### Up-to-date clock
 
-The clock must be accurate, syncronized to a NTP server very frequently to avoid problems with communication to the exchanges.
+The clock must be accurate, synchronized to a NTP server very frequently to avoid problems with communication to the exchanges.
 
 ### Min hardware required
 

@@ -1,8 +1,12 @@
 site_name: Freqtrade
 nav:
-    - About: index.md
-    - Installation: installation.md
-    - Installation Docker: docker.md
+    - Home: index.md
+    - Quickstart with Docker: docker_quickstart.md
+    - Installation:
+        - Docker without docker-compose: docker.md
+        - Linux/MacOS/Raspberry: installation.md
+        - Windows: windows_installation.md
+    - Freqtrade Basics: bot-basics.md
     - Configuration: configuration.md
     - Strategy Customization: strategy-customization.md
     - Stoploss: stoploss.md
@@ -11,16 +15,24 @@ nav:
         - Telegram: telegram-usage.md
         - Web Hook: webhook-config.md
         - REST API: rest-api.md
+    - Data Downloading: data-download.md
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
-    - Edge positioning: edge.md
-    - Plotting: plotting.md
-    - Deprecated features: deprecated.md
+    - Edge Positioning: edge.md
+    - Utility Subcommands: utils.md
+    - Exchange-specific Notes: exchanges.md
     - FAQ: faq.md
-    - Data Analysis: data-analysis.md
+    - Data Analysis:
+        - Jupyter Notebooks: data-analysis.md
+        - Strategy analysis: strategy_analysis_example.md
+        - Plotting: plotting.md
     - SQL Cheatsheet: sql_cheatsheet.md
-    - Sandbox testing: sandbox-testing.md
-    - Contributors guide: developer.md
+    - Advanced Post-installation Tasks: advanced-setup.md
+    - Advanced Strategy: strategy-advanced.md
+    - Advanced Hyperopt: advanced-hyperopt.md
+    - Sandbox Testing: sandbox-testing.md
+    - Deprecated Features: deprecated.md
+    - Contributors Guide: developer.md
 theme:
   name: material
   logo: 'images/logo.png'
@@ -28,21 +40,31 @@ theme:
   palette:
     primary: 'blue grey'
     accent: 'tear'
+extra_css:
+  - 'stylesheets/ft.extra.css'
+extra_javascript:
+  - javascripts/config.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 markdown_extensions:
     - admonition
+    - footnotes
     - codehilite:
         guess_lang: false
     - toc:
         permalink: true
-    - pymdownx.arithmatex
-    - pymdownx.caret
-    - pymdownx.critic
+    - pymdownx.arithmatex:
+        generic: true
     - pymdownx.details
     - pymdownx.inlinehilite
     - pymdownx.magiclink
-    - pymdownx.mark
+    - pymdownx.pathconverter
     - pymdownx.smartsymbols
+    - pymdownx.snippets:
+        base_path: docs
+        check_paths: true
+    - pymdownx.tabbed
     - pymdownx.superfences
     - pymdownx.tasklist:
         custom_checkbox: true
-    - pymdownx.tilde
+    - mdx_truly_sane_lists

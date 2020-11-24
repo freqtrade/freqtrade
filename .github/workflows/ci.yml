@@ -1,0 +1,317 @@
+name: Freqtrade CI
+
+on:
+  push:
+    branches:
+      - master
+      - stable
+      - develop
+    tags:
+  release:
+    types: [published]
+  pull_request:
+  schedule:
+    - cron:  '0 5 * * 4'
+
+jobs:
+  build:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-18.04, ubuntu-20.04, macos-latest ]
+        python-version: [3.7, 3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache_dependencies
+      uses: actions/cache@v1
+      id: cache
+      with:
+        path: ~/dependencies/
+        key: ${{ runner.os }}-dependencies
+
+    - name: pip cache (linux)
+      uses: actions/cache@preview
+      if: startsWith(matrix.os, 'ubuntu')
+      with:
+        path: ~/.cache/pip
+        key: test-${{ matrix.os }}-${{ matrix.python-version }}-pip
+
+    - name: pip cache (macOS)
+      uses: actions/cache@preview
+      if: startsWith(matrix.os, 'macOS')
+      with:
+        path: ~/Library/Caches/pip
+        key: test-${{ matrix.os }}-${{ matrix.python-version }}-pip
+
+    - name: TA binary *nix
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        cd build_helpers && ./install_ta-lib.sh ${HOME}/dependencies/; cd ..
+
+    - name: Installation - *nix
+      run: |
+        python -m pip install --upgrade pip
+        export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
+        export TA_LIBRARY_PATH=${HOME}/dependencies/lib
+        export TA_INCLUDE_PATH=${HOME}/dependencies/include
+        pip install -r requirements-dev.txt
+        pip install -e .
+
+    - name: Tests
+      run: |
+        pytest --random-order --cov=freqtrade --cov-config=.coveragerc
+
+    - name: Coveralls
+      if: (startsWith(matrix.os, 'ubuntu-20') && matrix.python-version == '3.8')
+      env:
+        # Coveralls token. Not used as secret due to github not providing secrets to forked repositories
+        COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
+      run: |
+        # Allow failure for coveralls
+        coveralls -v  || true
+
+    - name: Backtesting
+      run: |
+        cp config.json.example config.json
+        freqtrade create-userdir --userdir user_data
+        freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
+
+    - name: Hyperopt
+      run: |
+        cp config.json.example config.json
+        freqtrade create-userdir --userdir user_data
+        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily --print-all
+
+    - name: Flake8
+      run: |
+        flake8
+
+    - name: Sort imports (isort)
+      run: |
+        isort --check .
+
+    - name: Mypy
+      run: |
+        mypy freqtrade scripts
+
+    - name: Slack Notification
+      uses: homoluctus/slatify@v1.8.0
+      if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+      with:
+        type: ${{ job.status }}
+        job_name: '*Freqtrade CI ${{ matrix.os }}*'
+        mention: 'here'
+        mention_if: 'failure'
+        channel: '#notifications'
+        url: ${{ secrets.SLACK_WEBHOOK }}
+
+  build_windows:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ windows-latest ]
+        python-version: [3.7, 3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Pip cache (Windows)
+      uses: actions/cache@preview
+      if: startsWith(runner.os, 'Windows')
+      with:
+        path: ~\AppData\Local\pip\Cache
+        key: ${{ matrix.os }}-${{ matrix.python-version }}-pip
+
+    - name: Installation
+      run: |
+        ./build_helpers/install_windows.ps1
+
+    - name: Tests
+      run: |
+        pytest --random-order --cov=freqtrade --cov-config=.coveragerc
+
+    - name: Backtesting
+      run: |
+        cp config.json.example config.json
+        freqtrade create-userdir --userdir user_data
+        freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
+
+    - name: Hyperopt
+      run: |
+        cp config.json.example config.json
+        freqtrade create-userdir --userdir user_data
+        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily --print-all
+
+    - name: Flake8
+      run: |
+        flake8
+
+    - name: Mypy
+      run: |
+        mypy freqtrade scripts
+
+    - name: Slack Notification
+      uses: homoluctus/slatify@v1.8.0
+      if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+      with:
+        type: ${{ job.status }}
+        job_name: '*Freqtrade CI windows*'
+        mention: 'here'
+        mention_if: 'failure'
+        channel: '#notifications'
+        url: ${{ secrets.SLACK_WEBHOOK }}
+
+  docs_check:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Documentation syntax
+      run: |
+        ./tests/test_docs.sh
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+
+    - name: Documentation build
+      run: |
+        pip install -r docs/requirements-docs.txt
+        pip install mkdocs
+        mkdocs build
+
+    - name: Slack Notification
+      uses: homoluctus/slatify@v1.8.0
+      if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+      with:
+        type: ${{ job.status }}
+        job_name: '*Freqtrade Docs*'
+        channel: '#notifications'
+        url: ${{ secrets.SLACK_WEBHOOK }}
+
+  cleanup-prior-runs:
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Cleanup previous runs on this branch
+      uses: rokroskar/workflow-run-cleanup-action@v0.2.2
+      if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/stable' && github.repository == 'freqtrade/freqtrade'"
+      env:
+        GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
+  # Notify on slack only once - when CI completes (and after deploy) in case it's successfull
+  notify-complete:
+    needs: [ build, build_windows, docs_check ]
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Slack Notification
+      uses: homoluctus/slatify@v1.8.0
+      if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+      with:
+        type: ${{ job.status }}
+        job_name: '*Freqtrade CI*'
+        channel: '#notifications'
+        url: ${{ secrets.SLACK_WEBHOOK }}
+
+  deploy:
+    needs: [ build, build_windows, docs_check ]
+    runs-on: ubuntu-20.04
+    if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+
+    - name: Extract branch name
+      shell: bash
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF##*/})"
+      id: extract_branch
+
+    - name: Build distribution
+      run: |
+        pip install -U setuptools wheel
+        python setup.py sdist bdist_wheel
+
+    - name: Publish to PyPI (Test)
+      uses: pypa/gh-action-pypi-publish@master
+      if: (github.event_name == 'release')
+      with:
+        user: __token__
+        password: ${{ secrets.pypi_test_password }}
+        repository_url: https://test.pypi.org/legacy/
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@master
+      if: (github.event_name == 'release')
+      with:
+        user: __token__
+        password: ${{ secrets.pypi_password }}
+
+    - name: Dockerhub login
+      env:
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      run: |
+        echo "${DOCKER_PASSWORD}" | docker login --username ${DOCKER_USERNAME} --password-stdin
+
+    - name: Build and test and push docker image
+      env:
+        IMAGE_NAME: freqtradeorg/freqtrade
+        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
+      run: |
+        build_helpers/publish_docker.sh
+
+    # We need docker experimental to pull the ARM image.
+    - name: Switch docker to experimental
+      run: |
+          docker version -f '{{.Server.Experimental}}'
+          echo $'{\n    "experimental": true\n}' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
+          docker version -f '{{.Server.Experimental}}'
+
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: crazy-max/ghaction-docker-buildx@v1
+      with:
+        buildx-version: latest
+        qemu-version: latest
+
+    - name: Available platforms
+      run: echo ${{ steps.buildx.outputs.platforms }}
+
+    - name: Build Raspberry docker image
+      env:
+        IMAGE_NAME: freqtradeorg/freqtrade
+        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}_pi
+      run: |
+        build_helpers/publish_docker_pi.sh
+
+
+    - name: Slack Notification
+      uses: homoluctus/slatify@v1.8.0
+      if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+      with:
+        type: ${{ job.status }}
+        job_name: '*Freqtrade CI Deploy*'
+        mention: 'here'
+        mention_if: 'failure'
+        channel: '#notifications'
+        url: ${{ secrets.SLACK_WEBHOOK }}
+

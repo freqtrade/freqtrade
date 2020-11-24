@@ -4,40 +4,41 @@ Main Freqtrade worker class.
 import logging
 import time
 import traceback
-from argparse import Namespace
-from typing import Any, Callable, Optional
+from os import getpid
+from typing import Any, Callable, Dict, Optional
+
 import sdnotify
 
-from freqtrade import (constants, OperationalException, TemporaryError,
-                       __version__)
+from freqtrade import __version__, constants
 from freqtrade.configuration import Configuration
+from freqtrade.exceptions import OperationalException, TemporaryError
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.state import State
-from freqtrade.rpc import RPCMessageType
 
 
 logger = logging.getLogger(__name__)
 
 
-class Worker(object):
+class Worker:
     """
     Freqtradebot worker class
     """
 
-    def __init__(self, args: Namespace, config=None) -> None:
+    def __init__(self, args: Dict[str, Any], config: Dict[str, Any] = None) -> None:
         """
         Init all variables and objects the bot needs to work
         """
-        logger.info('Starting worker %s', __version__)
+        logger.info(f"Starting worker {__version__}")
 
         self._args = args
         self._config = config
         self._init(False)
 
+        self.last_throttle_start_time: float = 0
+        self._heartbeat_msg: float = 0
+
         # Tell systemd that we completed initialization phase
-        if self._sd_notify:
-            logger.debug("sd_notify: READY=1")
-            self._sd_notify.notify("READY=1")
+        self._notify("READY=1")
 
     def _init(self, reconfig: bool) -> None:
         """
@@ -50,103 +51,109 @@ class Worker(object):
         # Init the instance of the bot
         self.freqtrade = FreqtradeBot(self._config)
 
-        self._throttle_secs = self._config.get('internals', {}).get(
-            'process_throttle_secs',
-            constants.PROCESS_THROTTLE_SECS
-        )
+        internals_config = self._config.get('internals', {})
+        self._throttle_secs = internals_config.get('process_throttle_secs',
+                                                   constants.PROCESS_THROTTLE_SECS)
+        self._heartbeat_interval = internals_config.get('heartbeat_interval', 60)
 
         self._sd_notify = sdnotify.SystemdNotifier() if \
             self._config.get('internals', {}).get('sd_notify', False) else None
 
-    @property
-    def state(self) -> State:
-        return self.freqtrade.state
-
-    @state.setter
-    def state(self, value: State) -> None:
-        self.freqtrade.state = value
+    def _notify(self, message: str) -> None:
+        """
+        Removes the need to verify in all occurances if sd_notify is enabled
+        :param message: Message to send to systemd if it's enabled.
+        """
+        if self._sd_notify:
+            logger.debug(f"sd_notify: {message}")
+            self._sd_notify.notify(message)
 
     def run(self) -> None:
         state = None
         while True:
             state = self._worker(old_state=state)
-            if state == State.RELOAD_CONF:
+            if state == State.RELOAD_CONFIG:
                 self._reconfigure()
 
-    def _worker(self, old_state: Optional[State], throttle_secs: Optional[float] = None) -> State:
+    def _worker(self, old_state: Optional[State]) -> State:
         """
-        Trading routine that must be run at each loop
+        The main routine that runs each throttling iteration and handles the states.
         :param old_state: the previous service state from the previous call
         :return: current service state
         """
         state = self.freqtrade.state
-        if throttle_secs is None:
-            throttle_secs = self._throttle_secs
 
         # Log state transition
         if state != old_state:
-            self.freqtrade.rpc.send_msg({
-                'type': RPCMessageType.STATUS_NOTIFICATION,
-                'status': f'{state.name.lower()}'
-            })
-            logger.info('Changing state to: %s', state.name)
+            self.freqtrade.notify_status(f'{state.name.lower()}')
+
+            logger.info(f"Changing state to: {state.name}")
             if state == State.RUNNING:
                 self.freqtrade.startup()
 
+            if state == State.STOPPED:
+                self.freqtrade.check_for_open_trades()
+
+            # Reset heartbeat timestamp to log the heartbeat message at
+            # first throttling iteration when the state changes
+            self._heartbeat_msg = 0
+
         if state == State.STOPPED:
             # Ping systemd watchdog before sleeping in the stopped state
-            if self._sd_notify:
-                logger.debug("sd_notify: WATCHDOG=1\\nSTATUS=State: STOPPED.")
-                self._sd_notify.notify("WATCHDOG=1\nSTATUS=State: STOPPED.")
+            self._notify("WATCHDOG=1\nSTATUS=State: STOPPED.")
 
-            time.sleep(throttle_secs)
+            self._throttle(func=self._process_stopped, throttle_secs=self._throttle_secs)
 
         elif state == State.RUNNING:
             # Ping systemd watchdog before throttling
-            if self._sd_notify:
-                logger.debug("sd_notify: WATCHDOG=1\\nSTATUS=State: RUNNING.")
-                self._sd_notify.notify("WATCHDOG=1\nSTATUS=State: RUNNING.")
+            self._notify("WATCHDOG=1\nSTATUS=State: RUNNING.")
 
-            self._throttle(func=self._process, min_secs=throttle_secs)
+            self._throttle(func=self._process_running, throttle_secs=self._throttle_secs)
+
+        if self._heartbeat_interval:
+            now = time.time()
+            if (now - self._heartbeat_msg) > self._heartbeat_interval:
+                logger.info(f"Bot heartbeat. PID={getpid()}, "
+                            f"version='{__version__}', state='{state.name}'")
+                self._heartbeat_msg = now
 
         return state
 
-    def _throttle(self, func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
+    def _throttle(self, func: Callable[..., Any], throttle_secs: float, *args, **kwargs) -> Any:
         """
         Throttles the given callable that it
         takes at least `min_secs` to finish execution.
         :param func: Any callable
-        :param min_secs: minimum execution time in seconds
-        :return: Any
+        :param throttle_secs: throttling interation execution time limit in seconds
+        :return: Any (result of execution of func)
         """
-        start = time.time()
+        self.last_throttle_start_time = time.time()
+        logger.debug("========================================")
         result = func(*args, **kwargs)
-        end = time.time()
-        duration = max(min_secs - (end - start), 0.0)
-        logger.debug('Throttling %s for %.2f seconds', func.__name__, duration)
-        time.sleep(duration)
+        time_passed = time.time() - self.last_throttle_start_time
+        sleep_duration = max(throttle_secs - time_passed, 0.0)
+        logger.debug(f"Throttling with '{func.__name__}()': sleep for {sleep_duration:.2f} s, "
+                     f"last iteration took {time_passed:.2f} s.")
+        time.sleep(sleep_duration)
         return result
 
-    def _process(self) -> bool:
-        state_changed = False
+    def _process_stopped(self) -> None:
+        self.freqtrade.process_stopped()
+
+    def _process_running(self) -> None:
         try:
-            state_changed = self.freqtrade.process()
+            self.freqtrade.process()
         except TemporaryError as error:
             logger.warning(f"Error: {error}, retrying in {constants.RETRY_TIMEOUT} seconds...")
             time.sleep(constants.RETRY_TIMEOUT)
         except OperationalException:
             tb = traceback.format_exc()
             hint = 'Issue `/start` if you think it is safe to restart.'
-            self.freqtrade.rpc.send_msg({
-                'type': RPCMessageType.STATUS_NOTIFICATION,
-                'status': f'OperationalException:\n```\n{tb}```{hint}'
-            })
+
+            self.freqtrade.notify_status(f'OperationalException:\n```\n{tb}```{hint}')
+
             logger.exception('OperationalException. Stopping trader ...')
             self.freqtrade.state = State.STOPPED
-            # TODO: The return value of _process() is not used apart tests
-            # and should (could) be eliminated later. See PR #1689.
-#            state_changed = True
-        return state_changed
 
     def _reconfigure(self) -> None:
         """
@@ -154,9 +161,7 @@ class Worker(object):
         replaces it with the new instance
         """
         # Tell systemd that we initiated reconfiguration
-        if self._sd_notify:
-            logger.debug("sd_notify: RELOADING=1")
-            self._sd_notify.notify("RELOADING=1")
+        self._notify("RELOADING=1")
 
         # Clean up current freqtrade modules
         self.freqtrade.cleanup()
@@ -164,25 +169,15 @@ class Worker(object):
         # Load and validate config and create new instance of the bot
         self._init(True)
 
-        self.freqtrade.rpc.send_msg({
-            'type': RPCMessageType.STATUS_NOTIFICATION,
-            'status': 'config reloaded'
-        })
+        self.freqtrade.notify_status('config reloaded')
 
         # Tell systemd that we completed reconfiguration
-        if self._sd_notify:
-            logger.debug("sd_notify: READY=1")
-            self._sd_notify.notify("READY=1")
+        self._notify("READY=1")
 
     def exit(self) -> None:
         # Tell systemd that we are exiting now
-        if self._sd_notify:
-            logger.debug("sd_notify: STOPPING=1")
-            self._sd_notify.notify("STOPPING=1")
+        self._notify("STOPPING=1")
 
         if self.freqtrade:
-            self.freqtrade.rpc.send_msg({
-                'type': RPCMessageType.STATUS_NOTIFICATION,
-                'status': 'process died'
-            })
+            self.freqtrade.notify_status('process died')
             self.freqtrade.cleanup()

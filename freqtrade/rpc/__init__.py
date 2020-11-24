@@ -1,2 +1,3 @@
-from .rpc import RPC, RPCMessageType, RPCException  # noqa
-from .rpc_manager import RPCManager  # noqa
+# flake8: noqa: F401
+from .rpc import RPC, RPCException, RPCMessageType
+from .rpc_manager import RPCManager
