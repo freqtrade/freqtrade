@@ -122,7 +122,8 @@ class Backtesting:
         Trade.use_db = False
         PairLocks.timeframe = self.config['timeframe']
         PairLocks.use_db = False
-        self.protections = ProtectionManager(self.config)
+        if self.config.get('enable_protections', False):
+            self.protections = ProtectionManager(self.config)
 
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
@@ -450,7 +451,7 @@ class Backtesting:
                 end_date=max_date.datetime,
                 max_open_trades=max_open_trades,
                 position_stacking=position_stacking,
-                enable_protections=self.config.get('enable_protections'),
+                enable_protections=self.config.get('enable_protections', False),
             )
             all_results[self.strategy.get_strategy_name()] = {
                 'results': results,
