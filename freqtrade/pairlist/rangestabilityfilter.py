@@ -71,7 +71,7 @@ class RangeStabilityFilter(IPairList):
                                                                 timeframe='1d',
                                                                 since_ms=since_ms)
         result = False
-        if daily_candles is not None:
+        if daily_candles is not None and not daily_candles.empty:
             highest_high = daily_candles['high'].max()
             lowest_low = daily_candles['low'].min()
             pct_change = ((highest_high - lowest_low) / lowest_low) if lowest_low > 0 else 0
