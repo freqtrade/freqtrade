@@ -2,6 +2,8 @@
 
 This page explains how to prepare your environment for running the bot.
 
+Please consider using the prebuilt [docker images](docker.md) to get started quickly while trying out freqtrade evaluating how it operates.
+
 ## Prerequisite
 
 ### Requirements
@@ -11,70 +13,78 @@ Click each one for install guide:
 * [Python >= 3.6.x](http://docs.python-guide.org/en/latest/starting/installation/)
 * [pip](https://pip.pypa.io/en/stable/installing/)
 * [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
-* [virtualenv](https://virtualenv.pypa.io/en/stable/installation/) (Recommended)
+* [virtualenv](https://virtualenv.pypa.io/en/stable/installation.html) (Recommended)
 * [TA-Lib](https://mrjbq7.github.io/ta-lib/install.html) (install instructions below)
 
-### API keys
+ We also recommend a [Telegram bot](telegram-usage.md#setup-your-telegram-bot), which is optional but recommended.
 
-Before running your bot in production you will need to setup few
-external API. In production mode, the bot will require valid Exchange API
-credentials. We also recommend a [Telegram bot](telegram-usage.md#setup-your-telegram-bot) (optional but recommended).
-
-### Setup your exchange account
-
-You will need to create API Keys (Usually you get `key` and `secret`) from the Exchange website and insert this into the appropriate fields in the configuration or when asked by the installation script.
+!!! Warning "Up-to-date clock"
+    The clock on the system running the bot must be accurate, synchronized to a NTP server frequently enough to avoid problems with communication to the exchanges.
 
 ## Quick start
 
-Freqtrade provides a Linux/MacOS script to install all dependencies and help you to configure the bot.
-
-!!! Note
-    Python3.6 or higher and the corresponding pip are assumed to be available. The install-script will warn and stop if that's not the case.
-
-```bash
-git clone git@github.com:freqtrade/freqtrade.git
-cd freqtrade
-git checkout develop
-./setup.sh --install
-```
+Freqtrade provides the Linux/MacOS Easy Installation script to install all dependencies and help you configure the bot.
 
 !!! Note
     Windows installation is explained [here](#windows).
 
-## Easy Installation - Linux Script
+The easiest way to install and run Freqtrade is to clone the bot Github repository and then run the Easy Installation script, if it's available for your platform.
 
-If you are on Debian, Ubuntu or MacOS freqtrade provides a script to Install, Update, Configure, and Reset your bot.
+!!! Note "Version considerations"
+    When cloning the repository the default working branch has the name `develop`. This branch contains all last features (can be considered as relatively stable, thanks to automated tests). The `stable` branch contains the code of the last release (done usually once per month on an approximately one week old snapshot of the `develop` branch to prevent packaging bugs, so potentially it's more stable).
+
+!!! Note
+    Python3.6 or higher and the corresponding `pip` are assumed to be available. The install-script will warn you and stop if that's not the case. `git` is also needed to clone the Freqtrade repository.
+
+This can be achieved with the following commands:
+
+```bash
+git clone https://github.com/freqtrade/freqtrade.git
+cd freqtrade
+# git checkout stable  # Optional, see (1)
+./setup.sh --install
+```
+
+(1) This command switches the cloned repository to the use of the `stable` branch. It's not needed if you wish to stay on the `develop` branch. You may later switch between branches at any time with the `git checkout stable`/`git checkout develop` commands.
+
+## Easy Installation Script (Linux/MacOS)
+
+If you are on Debian, Ubuntu or MacOS Freqtrade provides the script to install, update, configure and reset the codebase of your bot.
 
 ```bash
 $ ./setup.sh
 usage:
 	-i,--install    Install freqtrade from scratch
 	-u,--update     Command git pull to update.
-	-r,--reset      Hard reset your develop/master branch.
+	-r,--reset      Hard reset your develop/stable branch.
 	-c,--config     Easy config generator (Will override your existing file).
 ```
 
 ** --install **
 
-This script will install everything you need to run the bot:
+With this option, the script will install the bot and most dependencies:
+You will need to have git and python3.6+ installed beforehand for this to work.
 
 * Mandatory software as: `ta-lib`
-* Setup your virtualenv
-* Configure your `config.json` file
+* Setup your virtualenv under `.env/`
 
-This script is a combination of `install script` `--reset`, `--config`
+This option is a combination of installation tasks, `--reset` and `--config`.
 
 ** --update **
 
-Update parameter will pull the last version of your current branch and update your virtualenv.
+This option will pull the last version of your current branch and update your virtualenv. Run the script with this option periodically to update your bot.
 
 ** --reset **
 
-Reset parameter will hard reset your branch (only if you are on `master` or `develop`) and recreate your virtualenv.
+This option will hard reset your branch (only if you are on either `stable` or `develop`) and recreate your virtualenv.
 
 ** --config **
 
-Config parameter is a `config.json` configurator. This script will ask you questions to setup your bot and create your `config.json`.
+DEPRECATED - use `freqtrade new-config -c config.json` instead.
+
+### Activate your virtual environment
+
+Each time you open a new terminal, you must run `source .env/bin/activate`.
 
 ------
 
@@ -86,39 +96,49 @@ OS Specific steps are listed first, the [Common](#common) section below is neces
 !!! Note
     Python3.6 or higher and the corresponding pip are assumed to be available.
 
-### Linux - Ubuntu 16.04
+=== "Ubuntu 16.04"
+    #### Install necessary dependencies
 
-#### Install necessary dependencies
+    ```bash
+    sudo apt-get update
+    sudo apt-get install build-essential git
+    ```
 
-```bash
-sudo apt-get update
-sudo apt-get install build-essential git
-```
+=== "RaspberryPi/Raspbian"
+    The following assumes the latest [Raspbian Buster lite image](https://www.raspberrypi.org/downloads/raspbian/) from at least September 2019.
+    This image comes with python3.7 preinstalled, making it easy to get freqtrade up and running.
 
-#### Raspberry Pi / Raspbian
+    Tested using a Raspberry Pi 3 with the Raspbian Buster lite image, all updates applied.
 
-Before installing FreqTrade on a Raspberry Pi running the official Raspbian Image, make sure you have at least Python 3.6 installed. The default image only provides Python 3.5. Probably the easiest way to get a recent version of python is [miniconda](https://repo.continuum.io/miniconda/).
+    ``` bash
+    sudo apt-get install python3-venv libatlas-base-dev
+    git clone https://github.com/freqtrade/freqtrade.git
+    cd freqtrade
 
-The following assumes that miniconda3 is installed and available in your environment. Last miniconda3 installation file use python 3.4, we will update to python 3.6 on this installation.
-It's recommended to use (mini)conda for this as installation/compilation of `numpy`, `scipy` and `pandas` takes a long time.
+    bash setup.sh -i
+    ```
 
-Additional package to install on your Raspbian, `libffi-dev` required by cryptography (from python-telegram-bot).
+    !!! Note "Installation duration"
+        Depending on your internet speed and the Raspberry Pi version, installation can take multiple hours to complete.
 
-``` bash
-conda config --add channels rpi
-conda install python=3.6
-conda create -n freqtrade python=3.6
-conda activate freqtrade
-conda install scipy pandas numpy
-
-sudo apt install libffi-dev
-python3 -m pip install -r requirements-common.txt
-python3 -m pip install -e .
-```
+    !!! Note
+        The above does not install hyperopt dependencies. To install these, please use `python3 -m pip install -e .[hyperopt]`.
+        We do not advise to run hyperopt on a Raspberry Pi, since this is a very resource-heavy operation, which should be done on powerful machine.
 
 ### Common
 
 #### 1. Install TA-Lib
+
+Use the provided ta-lib installation script
+
+```bash
+sudo ./build_helpers/install_ta-lib.sh
+```
+
+!!! Note
+    This will use the ta-lib tar.gz included in this repository.
+
+##### TA-Lib manual installation
 
 Official webpage: https://mrjbq7.github.io/ta-lib/install.html
 
@@ -147,126 +167,79 @@ python3 -m venv .env
 source .env/bin/activate
 ```
 
-#### 3. Install FreqTrade
+#### 3. Install Freqtrade
 
 Clone the git repository:
 
 ```bash
 git clone https://github.com/freqtrade/freqtrade.git
-
-```
-
-Optionally checkout the master branch to get the latest stable release:
-
-```bash
-git checkout master
-```
-
-#### 4. Initialize the configuration
-
-```bash
 cd freqtrade
-cp config.json.example config.json
+git checkout stable
 ```
 
-> *To edit the config please refer to [Bot Configuration](configuration.md).*
-
-#### 5. Install python dependencies
+#### 4. Install python dependencies
 
 ``` bash
 python3 -m pip install --upgrade pip
-pip install numpy
-python3 -m pip install -r requirements.txt
 python3 -m pip install -e .
 ```
+
+#### 5. Initialize the configuration
+
+```bash
+# Initialize the user_directory
+freqtrade create-userdir --userdir user_data/
+
+# Create a new configuration file
+freqtrade new-config --config config.json
+```
+
+> *To edit the config please refer to [Bot Configuration](configuration.md).*
 
 #### 6. Run the Bot
 
 If this is the first time you run the bot, ensure you are running it in Dry-run `"dry_run": true,` otherwise it will start to buy and sell coins.
 
 ```bash
-freqtrade -c config.json
+freqtrade trade -c config.json
 ```
 
 *Note*: If you run the bot on a server, you should consider using [Docker](docker.md) or a terminal multiplexer like `screen` or [`tmux`](https://en.wikipedia.org/wiki/Tmux) to avoid that the bot is stopped on logout.
 
-#### 7. [Optional] Configure `freqtrade` as a `systemd` service
+#### 7. (Optional) Post-installation Tasks
 
-From the freqtrade repo... copy `freqtrade.service` to your systemd user directory (usually `~/.config/systemd/user`) and update `WorkingDirectory` and `ExecStart` to match your setup.
-
-After that you can start the daemon with:
-
-```bash
-systemctl --user start freqtrade
-```
-
-For this to be persistent (run when user is logged out) you'll need to enable `linger` for your freqtrade user.
-
-```bash
-sudo loginctl enable-linger "$USER"
-```
-
-If you run the bot as a service, you can use systemd service manager as a software watchdog monitoring freqtrade bot 
-state and restarting it in the case of failures. If the `internals.sd_notify` parameter is set to true in the 
-configuration or the `--sd-notify` command line option is used, the bot will send keep-alive ping messages to systemd 
-using the sd_notify (systemd notifications) protocol and will also tell systemd its current state (Running or Stopped) 
-when it changes. 
-
-The `freqtrade.service.watchdog` file contains an example of the service unit configuration file which uses systemd 
-as the watchdog.
-
-!!! Note
-  The sd_notify communication between the bot and the systemd service manager will not work if the bot runs in a Docker container.
+On Linux, as an optional post-installation task, you may wish to setup the bot to run as a `systemd` service or configure it to send the log messages to the `syslog`/`rsyslog` or `journald` daemons. See [Advanced Logging](advanced-setup.md#advanced-logging) for details.
 
 ------
 
-## Windows
+### Anaconda
 
-We recommend that Windows users use [Docker](docker.md) as this will work much easier and smoother (also more secure).
+Freqtrade can also be installed using Anaconda (or Miniconda).
 
-If that is not possible, try using the Windows Linux subsystem (WSL) - for which the Ubuntu instructions should work.
-If that is not available on your system, feel free to try the instructions below, which led to success for some.
-
-### Install freqtrade manually
-
-#### Clone the git repository
-
-```bash
-git clone https://github.com/freqtrade/freqtrade.git
-```
-
-#### Install ta-lib
-
-Install ta-lib according to the [ta-lib documentation](https://github.com/mrjbq7/ta-lib#windows).
-
-As compiling from source on windows has heavy dependencies (requires a partial visual studio installation), there is also a repository of unofficial precompiled windows Wheels [here](https://www.lfd.uci.edu/~gohlke/pythonlibs/#ta-lib), which needs to be downloaded and installed using `pip install TA_Lib‑0.4.17‑cp36‑cp36m‑win32.whl` (make sure to use the version matching your python version)
-
-```cmd
->cd \path\freqtrade-develop
->python -m venv .env
->cd .env\Scripts
->activate.bat
->cd \path\freqtrade-develop
-REM optionally install ta-lib from wheel
-REM >pip install TA_Lib‑0.4.17‑cp36‑cp36m‑win32.whl
->pip install -r requirements.txt
->pip install -e .
->python freqtrade\main.py
-```
-
-> Thanks [Owdr](https://github.com/Owdr) for the commands. Source: [Issue #222](https://github.com/freqtrade/freqtrade/issues/222)
-
-#### Error during installation under Windows
+!!! Note
+    This requires the [ta-lib](#1-install-ta-lib) C-library to be installed first. See below.
 
 ``` bash
-error: Microsoft Visual C++ 14.0 is required. Get it with "Microsoft Visual C++ Build Tools": http://landinghub.visualstudio.com/visual-cpp-build-tools
+conda env create -f environment.yml
 ```
 
-Unfortunately, many packages requiring compilation don't provide a pre-build wheel. It is therefore mandatory to have a C/C++ compiler installed and available for your python environment to use.
+-----
+## Troubleshooting 
 
-The easiest way is to download install Microsoft Visual Studio Community [here](https://visualstudio.microsoft.com/downloads/) and make sure to install "Common Tools for Visual C++" to enable building c code on Windows. Unfortunately, this is a heavy download / dependency (~4Gb) so you might want to consider WSL or [docker](docker.md) first.
+### MacOS installation error
 
----
+Newer versions of MacOS may have installation failed with errors like `error: command 'g++' failed with exit status 1`.
+
+This error will require explicit installation of the SDK Headers, which are not installed by default in this version of MacOS.
+For MacOS 10.14, this can be accomplished with the below command.
+
+``` bash
+open /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg
+```
+
+If this file is inexistent, then you're probably on a different version of MacOS, so you may need to consult the internet for specific resolution details.
+
+-----
 
 Now you have an environment ready, the next step is
 [Bot Configuration](configuration.md).
