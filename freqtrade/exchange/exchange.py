@@ -524,7 +524,7 @@ class Exchange:
                     'rate': self.get_fee(pair)
                 }
             })
-        if closed_order["type"] in ["stop_loss_limit"]:
+        if closed_order["type"] in ["stop_loss_limit", "stop-loss-limit"]:
             closed_order["info"].update({"stopPrice": closed_order["price"]})
         self._dry_run_open_orders[closed_order["id"]] = closed_order
 
