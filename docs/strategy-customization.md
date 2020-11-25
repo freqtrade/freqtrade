@@ -770,8 +770,6 @@ To get additional Ideas for strategies, head over to our [strategy repository](h
 Feel free to use any of them as inspiration for your own strategies.
 We're happy to accept Pull Requests containing new Strategies to that repo.
 
-We also got a *strategy-sharing* channel in our [Slack community](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE) which is a great place to get and/or share ideas.
-
 ## Next step
 
 Now you have a perfect strategy you probably want to backtest it.

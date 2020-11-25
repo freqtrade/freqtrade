@@ -868,7 +868,8 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order_open) ->
     assert trade.open_rate == 0.0001
 
     # Test buy pair not with stakes
-    with pytest.raises(RPCException, match=r'Wrong pair selected. Please pairs with stake.*'):
+    with pytest.raises(RPCException,
+                       match=r'Wrong pair selected. Only pairs with stake-currency.*'):
         rpc._rpc_forcebuy('LTC/ETH', 0.0001)
     pair = 'XRP/BTC'
 

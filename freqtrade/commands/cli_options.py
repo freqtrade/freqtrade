@@ -354,13 +354,11 @@ AVAILABLE_CLI_OPTIONS = {
         '--data-format-ohlcv',
         help='Storage format for downloaded candle (OHLCV) data. (default: `%(default)s`).',
         choices=constants.AVAILABLE_DATAHANDLERS,
-        default='json'
     ),
     "dataformat_trades": Arg(
         '--data-format-trades',
         help='Storage format for downloaded trades data. (default: `%(default)s`).',
         choices=constants.AVAILABLE_DATAHANDLERS,
-        default='jsongz'
     ),
     "exchange": Arg(
         '--exchange',

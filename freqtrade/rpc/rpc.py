@@ -524,7 +524,7 @@ class RPC:
         stake_currency = self._freqtrade.config.get('stake_currency')
         if not self._freqtrade.exchange.get_pair_quote_currency(pair) == stake_currency:
             raise RPCException(
-                f'Wrong pair selected. Please pairs with stake {stake_currency} pairs only')
+                f'Wrong pair selected. Only pairs with stake-currency {stake_currency} allowed.')
         # check if valid pair
 
         # check if pair already has an open pair

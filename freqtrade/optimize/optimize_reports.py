@@ -396,6 +396,8 @@ def text_table_add_metrics(strat_results: Dict) -> str:
         metrics = [
             ('Backtesting from', strat_results['backtest_start'].strftime(DATETIME_PRINT_FORMAT)),
             ('Backtesting to', strat_results['backtest_end'].strftime(DATETIME_PRINT_FORMAT)),
+            ('Max open trades', strat_results['max_open_trades']),
+            ('', ''),  # Empty line to improve readability
             ('Total trades', strat_results['total_trades']),
             ('First trade', min_trade['open_date'].strftime(DATETIME_PRINT_FORMAT)),
             ('First trade Pair', min_trade['pair']),

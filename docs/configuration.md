@@ -87,6 +87,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `exchange.ccxt_sync_config` | Additional CCXT parameters passed to the regular (sync) ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> **Datatype:** Dict
 | `exchange.ccxt_async_config` | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> **Datatype:** Dict
 | `exchange.markets_refresh_interval` | The interval in minutes in which markets are reloaded. <br>*Defaults to `60` minutes.* <br> **Datatype:** Positive Integer
+| `exchange.skip_pair_validation` | Skip pairlist validation on startup.<br>*Defaults to `false`<br> **Datatype:** Boolean
 | `edge.*` | Please refer to [edge configuration document](edge.md) for detailed explanation.
 | `experimental.block_bad_exchanges` | Block exchanges known to not work with freqtrade. Leave on default unless you want to test if that exchange works now. <br>*Defaults to `true`.* <br> **Datatype:** Boolean
 | `pairlists` | Define one or more pairlists to be used. [More information below](#pairlists-and-pairlist-handlers). <br>*Defaults to `StaticPairList`.*  <br> **Datatype:** List of Dicts
@@ -313,21 +314,20 @@ Configuration:
 }
 ```
 
-!!! Note
+!!! Note "Market order support"
     Not all exchanges support "market" orders.
     The following message will be shown if your exchange does not support market orders:
-    `"Exchange <yourexchange>  does not support market orders."`
+    `"Exchange <yourexchange> does not support market orders."` and the bot will refuse to start.
 
-!!! Note
-    Stoploss on exchange interval is not mandatory. Do not change its value if you are
+!!! Warning "Using market orders"
+    Please carefully read the section [Market order pricing](#market-order-pricing) section when using market orders.
+
+!!! Note "Stoploss on exchange"
+    `stoploss_on_exchange_interval` is not mandatory. Do not change its value if you are
     unsure of what you are doing. For more information about how stoploss works please
     refer to [the stoploss documentation](stoploss.md).
 
-!!! Note
     If `stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new stoploss order.
-
-!!! Warning "Using market orders"
-    Please read the section [Market order pricing](#market-order-pricing) section when using market orders.
 
 !!! Warning "Warning: stoploss_on_exchange failures"
     If stoploss on exchange creation fails for some reason, then an "emergency sell" is initiated. By default, this will sell the asset using a market order. The order-type for the emergency-sell can be changed by setting the `emergencysell` value in the `order_types` dictionary - however this is not advised.

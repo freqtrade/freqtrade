@@ -312,10 +312,7 @@ def test_download_backtesting_data_exception(ohlcv_history, mocker, caplog,
     # clean files freshly downloaded
     _clean_test_file(file1_1)
     _clean_test_file(file1_5)
-    assert log_has(
-        'Failed to download history data for pair: "MEME/BTC", timeframe: 1m. '
-        'Error: File Error', caplog
-    )
+    assert log_has('Failed to download history data for pair: "MEME/BTC", timeframe: 1m.', caplog)
 
 
 def test_load_partial_missing(testdatadir, caplog) -> None:
@@ -620,6 +617,12 @@ def test_convert_trades_to_ohlcv(mocker, default_conf, testdatadir, caplog):
     _clean_test_file(file1)
     _clean_test_file(file5)
 
+    assert not log_has('Could not convert NoDatapair to OHLCV.', caplog)
+
+    convert_trades_to_ohlcv(['NoDatapair'], timeframes=['1m', '5m'],
+                            datadir=testdatadir, timerange=tr, erase=True)
+    assert log_has('Could not convert NoDatapair to OHLCV.', caplog)
+
 
 def test_datahandler_ohlcv_get_pairs(testdatadir):
     pairs = JsonDataHandler.ohlcv_get_pairs(testdatadir, '5m')
@@ -724,6 +727,8 @@ def test_hdf5datahandler_trades_load(testdatadir):
 
     trades2 = dh._trades_load('XRP/ETH', timerange)
     assert len(trades) > len(trades2)
+    # Check that ID is None (If it's nan, it's wrong)
+    assert trades2[0][2] is None
 
     # unfiltered load has trades before starttime
     assert len([t for t in trades if t[0] < timerange.startts * 1000]) >= 0

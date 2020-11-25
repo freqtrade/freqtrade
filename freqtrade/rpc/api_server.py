@@ -508,6 +508,8 @@ class ApiServer(RPC):
         """
         asset = request.json.get("pair")
         price = request.json.get("price", None)
+        price = float(price) if price is not None else price
+
         trade = self._rpc_forcebuy(asset, price)
         if trade:
             return jsonify(trade.to_json())

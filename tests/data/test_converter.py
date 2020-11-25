@@ -1,10 +1,13 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
 
+import pytest
+
 from freqtrade.configuration.timerange import TimeRange
 from freqtrade.data.converter import (convert_ohlcv_format, convert_trades_format,
                                       ohlcv_fill_up_missing_data, ohlcv_to_dataframe,
-                                      trades_dict_to_list, trades_remove_duplicates, trim_dataframe)
+                                      trades_dict_to_list, trades_remove_duplicates,
+                                      trades_to_ohlcv, trim_dataframe)
 from freqtrade.data.history import (get_timerange, load_data, load_pair_history,
                                     validate_backtest_data)
 from tests.conftest import log_has
@@ -24,6 +27,28 @@ def test_ohlcv_to_dataframe(ohlcv_history_list, caplog):
                                    fill_missing=True)
     assert dataframe.columns.tolist() == columns
     assert log_has('Converting candle (OHLCV) data to dataframe for pair UNITTEST/BTC.', caplog)
+
+
+def test_trades_to_ohlcv(ohlcv_history_list, caplog):
+
+    caplog.set_level(logging.DEBUG)
+    with pytest.raises(ValueError, match="Trade-list empty."):
+        trades_to_ohlcv([], '1m')
+
+    trades = [
+        [1570752011620, "13519807", None, "sell", 0.00141342, 23.0, 0.03250866],
+        [1570752011620, "13519808", None, "sell", 0.00141266, 54.0, 0.07628364],
+        [1570752017964, "13519809", None, "sell", 0.00141266, 8.0, 0.01130128]]
+
+    df = trades_to_ohlcv(trades, '1m')
+    assert not df.empty
+    assert len(df) == 1
+    assert 'open' in df.columns
+    assert 'high' in df.columns
+    assert 'low' in df.columns
+    assert 'close' in df.columns
+    assert df.loc[:, 'high'][0] == 0.00141342
+    assert df.loc[:, 'low'][0] == 0.00141266
 
 
 def test_ohlcv_fill_up_missing_data(testdatadir, caplog):

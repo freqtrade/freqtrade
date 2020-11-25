@@ -145,7 +145,7 @@ freqtrade hyperopt --hyperop SampleHyperopt --hyperopt-loss SharpeHyperOptLossDa
 
 ### Why does it take a long time to run hyperopt?
 
-* Discovering a great strategy with Hyperopt takes time. Study www.freqtrade.io, the Freqtrade Documentation page, join the Freqtrade [Slack community](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE) - or the Freqtrade [discord community](https://discord.gg/X89cVG). While you patiently wait for the most advanced, free crypto bot in the world, to hand you a possible golden strategy specially designed just for you.
+* Discovering a great strategy with Hyperopt takes time. Study www.freqtrade.io, the Freqtrade Documentation page, join the Freqtrade [Slack community](https://join.slack.com/t/highfrequencybot/shared_invite/zt-jaut7r4m-Y17k4x5mcQES9a9swKuxbg) - or the Freqtrade [discord community](https://discord.gg/X89cVG). While you patiently wait for the most advanced, free crypto bot in the world, to hand you a possible golden strategy specially designed just for you.
 
 * If you wonder why it can take from 20 minutes to days to do 1000 epochs here are some answers:
 

@@ -8,10 +8,10 @@ from pandas import DataFrame, read_json, to_datetime
 
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, ListPairsWithTimeframes
+from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, ListPairsWithTimeframes, TradeList
 from freqtrade.data.converter import trades_dict_to_list
 
-from .idatahandler import IDataHandler, TradeList
+from .idatahandler import IDataHandler
 
 
 logger = logging.getLogger(__name__)
