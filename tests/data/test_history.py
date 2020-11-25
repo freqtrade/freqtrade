@@ -312,10 +312,7 @@ def test_download_backtesting_data_exception(ohlcv_history, mocker, caplog,
     # clean files freshly downloaded
     _clean_test_file(file1_1)
     _clean_test_file(file1_5)
-    assert log_has(
-        'Failed to download history data for pair: "MEME/BTC", timeframe: 1m. '
-        'Error: File Error', caplog
-    )
+    assert log_has('Failed to download history data for pair: "MEME/BTC", timeframe: 1m.', caplog)
 
 
 def test_load_partial_missing(testdatadir, caplog) -> None:
