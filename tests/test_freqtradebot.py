@@ -692,16 +692,16 @@ def test_enter_positions_global_pairlock(default_conf, ticker, limit_buy_order, 
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     n = freqtrade.enter_positions()
-    message = "Global pairlock active. Not creating new trades."
+    message = r"Global pairlock active until.* Not creating new trades."
     n = freqtrade.enter_positions()
     # 0 trades, but it's not because of pairlock.
     assert n == 0
-    assert not log_has(message, caplog)
+    assert not log_has_re(message, caplog)
 
     PairLocks.lock_pair('*', arrow.utcnow().shift(minutes=20).datetime, 'Just because')
     n = freqtrade.enter_positions()
     assert n == 0
-    assert log_has(message, caplog)
+    assert log_has_re(message, caplog)
 
 
 def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
@@ -3289,7 +3289,7 @@ def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down, mocker, caplo
     caplog.clear()
     freqtrade.enter_positions()
 
-    assert log_has(f"Pair {trade.pair} is currently locked.", caplog)
+    assert log_has_re(f"Pair {trade.pair} is still locked.*", caplog)
 
 
 def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, limit_buy_order_open,

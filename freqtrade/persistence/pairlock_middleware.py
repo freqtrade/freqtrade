@@ -46,7 +46,7 @@ class PairLocks():
             PairLocks.locks.append(lock)
 
     @staticmethod
-    def get_pair_locks(pair: Optional[str], now: Optional[datetime] = None) -> List[PairLock]:
+    def get_pair_locks(pair: str, now: Optional[datetime] = None) -> List[PairLock]:
         """
         Get all currently active locks for this pair
         :param pair: Pair to check for. Returns all current locks if pair is empty
@@ -65,6 +65,15 @@ class PairLocks():
                 and (pair is None or lock.pair == pair)
             )]
             return locks
+
+    @staticmethod
+    def get_pair_longest_lock(pair: str, now: Optional[datetime] = None) -> Optional[PairLock]:
+        """
+        Get the lock that expires the latest for the pair given.
+        """
+        locks = PairLocks.get_pair_locks(pair, now)
+        locks = sorted(locks, key=lambda l: l.lock_end_time, reverse=True)
+        return locks[0] if locks else None
 
     @staticmethod
     def unlock_pair(pair: str, now: Optional[datetime] = None) -> None:
