@@ -5,6 +5,7 @@ import pytest
 
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.strategy.interface import SellType
+from freqtrade import constants
 from tests.conftest import get_patched_freqtradebot, log_has_re
 
 
@@ -33,6 +34,19 @@ def generate_mock_trade(pair: str, fee: float, is_open: bool,
         trade.sell_reason = sell_reason
 
     return trade
+
+
+def test_protectionmanager(mocker, default_conf):
+    default_conf['protections'] = [{'method': protection}
+                                   for protection in constants.AVAILABLE_PROTECTIONS]
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+
+    for handler in freqtrade.protections._protection_handlers:
+        assert handler.name in constants.AVAILABLE_PROTECTIONS
+        if not handler.has_global_stop:
+            assert handler.global_stop(datetime.utcnow()) == (False, None, None)
+        if not handler.has_local_stop:
+            assert handler.local_stop('XRP/BTC', datetime.utcnow()) == (False, None, None)
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -174,7 +188,6 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog):
     assert freqtrade.protections.stop_per_pair('XRP/BTC')
     assert PairLocks.is_pair_locked('XRP/BTC')
     assert not PairLocks.is_global_lock()
-
 
 
 @pytest.mark.parametrize("protectionconf,desc_expected,exception_expected", [
