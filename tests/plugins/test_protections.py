@@ -95,6 +95,64 @@ def test_stoploss_guard(mocker, default_conf, fee, caplog):
     assert PairLocks.is_global_lock()
 
 
+@pytest.mark.parametrize('only_per_pair', [False, True])
+@pytest.mark.usefixtures("init_persistence")
+def test_stoploss_guard_perpair(mocker, default_conf, fee, caplog, only_per_pair):
+    default_conf['protections'] = [{
+        "method": "StoplossGuard",
+        "lookback_period": 60,
+        "trade_limit": 1,
+        "only_per_pair": only_per_pair
+    }]
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    message = r"Trading stopped due to .*"
+    pair = 'XRP/BTC'
+    assert not freqtrade.protections.stop_per_pair(pair)
+    assert not freqtrade.protections.global_stop()
+    assert not log_has_re(message, caplog)
+    caplog.clear()
+
+    Trade.session.add(generate_mock_trade(
+        pair, fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        min_ago_open=200, min_ago_close=30, profit_rate=0.9,
+        ))
+
+    assert not freqtrade.protections.stop_per_pair(pair)
+    assert not freqtrade.protections.global_stop()
+    assert not log_has_re(message, caplog)
+    caplog.clear()
+    # This trade does not count, as it's closed too long ago
+    Trade.session.add(generate_mock_trade(
+        pair, fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        min_ago_open=250, min_ago_close=100, profit_rate=0.9,
+    ))
+    # Trade does not count for per pair stop as it's the wrong pair.
+    Trade.session.add(generate_mock_trade(
+        'ETH/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        min_ago_open=240, min_ago_close=30, profit_rate=0.9,
+    ))
+    # 3 Trades closed - but the 2nd has been closed too long ago.
+    assert not freqtrade.protections.stop_per_pair(pair)
+    assert freqtrade.protections.global_stop() != only_per_pair
+    if not only_per_pair:
+        assert log_has_re(message, caplog)
+    else:
+        assert not log_has_re(message, caplog)
+
+    caplog.clear()
+
+    # 2nd Trade that counts with correct pair
+    Trade.session.add(generate_mock_trade(
+        pair, fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        min_ago_open=180, min_ago_close=30, profit_rate=0.9,
+    ))
+
+    assert freqtrade.protections.stop_per_pair(pair)
+    assert freqtrade.protections.global_stop() != only_per_pair
+    assert PairLocks.is_pair_locked(pair)
+    assert PairLocks.is_global_lock() != only_per_pair
+
+
 @pytest.mark.usefixtures("init_persistence")
 def test_CooldownPeriod(mocker, default_conf, fee, caplog):
     default_conf['protections'] = [{

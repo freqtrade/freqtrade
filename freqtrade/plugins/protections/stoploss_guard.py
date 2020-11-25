@@ -26,6 +26,7 @@ class StoplossGuard(IProtection):
         self._lookback_period = protection_config.get('lookback_period', 60)
         self._trade_limit = protection_config.get('trade_limit', 10)
         self._stop_duration = protection_config.get('stop_duration', 60)
+        self._disable_global_stop = protection_config.get('only_per_pair', False)
 
     def short_desc(self) -> str:
         """
@@ -72,6 +73,8 @@ class StoplossGuard(IProtection):
         :return: Tuple of [bool, until, reason].
             If true, all pairs will be locked with <reason> until <until>
         """
+        if self._disable_global_stop:
+            return False, None, None
         return self._stoploss_guard(date_now, None)
 
     def stop_per_pair(self, pair: str, date_now: datetime) -> ProtectionReturn:

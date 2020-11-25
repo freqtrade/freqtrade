@@ -17,6 +17,7 @@ Protections will protect your strategy from unexpected events and market conditi
 #### Stoploss Guard
 
 `StoplossGuard` selects all trades within a `lookback_period` (in minutes), and determines if the amount of trades that resulted in stoploss are above `trade_limit` - in which case trading will stop for `stop_duration`.
+This applies across all pairs, unless `only_per_pair` is set to true, which will then only look at one pair at a time.
 
 ```json
 "protections": [
@@ -24,7 +25,8 @@ Protections will protect your strategy from unexpected events and market conditi
         "method": "StoplossGuard",
         "lookback_period": 60,
         "trade_limit": 4,
-        "stop_duration": 60
+        "stop_duration": 60,
+        "only_per_pair": false
     }
 ],
 ```
