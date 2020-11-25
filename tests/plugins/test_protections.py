@@ -11,6 +11,7 @@ from tests.conftest import get_patched_freqtradebot, log_has_re
 def generate_mock_trade(pair: str, fee: float, is_open: bool,
                         sell_reason: str = SellType.SELL_SIGNAL,
                         min_ago_open: int = None, min_ago_close: int = None,
+                        profit_rate: float = 0.9
                         ):
     open_rate = random.random()
 
@@ -28,8 +29,9 @@ def generate_mock_trade(pair: str, fee: float, is_open: bool,
     )
     trade.recalc_open_trade_price()
     if not is_open:
-        trade.close(open_rate * (1 - 0.9))
+        trade.close(open_rate * profit_rate)
         trade.sell_reason = sell_reason
+
     return trade
 
 
@@ -134,7 +136,7 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog):
 
     Trade.session.add(generate_mock_trade(
         'XRP/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
-        min_ago_open=800, min_ago_close=450,
+        min_ago_open=800, min_ago_close=450, profit_rate=0.9,
     ))
 
     # Not locked with 1 trade
@@ -145,7 +147,7 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog):
 
     Trade.session.add(generate_mock_trade(
         'XRP/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
-        min_ago_open=200, min_ago_close=120,
+        min_ago_open=200, min_ago_close=120, profit_rate=0.9,
     ))
 
     # Not locked with 1 trade (first trade is outside of lookback_period)
@@ -154,9 +156,17 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog):
     assert not PairLocks.is_pair_locked('XRP/BTC')
     assert not PairLocks.is_global_lock()
 
+    # Add positive trade
+    Trade.session.add(generate_mock_trade(
+        'XRP/BTC', fee.return_value, False, sell_reason=SellType.ROI.value,
+        min_ago_open=20, min_ago_close=10, profit_rate=1.15,
+    ))
+    assert not freqtrade.protections.stop_per_pair('XRP/BTC')
+    assert not PairLocks.is_pair_locked('XRP/BTC')
+
     Trade.session.add(generate_mock_trade(
         'XRP/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
-        min_ago_open=110, min_ago_close=20,
+        min_ago_open=110, min_ago_close=20, profit_rate=0.8,
     ))
 
     # Locks due to 2nd trade
@@ -164,6 +174,7 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog):
     assert freqtrade.protections.stop_per_pair('XRP/BTC')
     assert PairLocks.is_pair_locked('XRP/BTC')
     assert not PairLocks.is_global_lock()
+
 
 
 @pytest.mark.parametrize("protectionconf,desc_expected,exception_expected", [
