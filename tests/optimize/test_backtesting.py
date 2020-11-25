@@ -95,6 +95,7 @@ def simple_backtest(config, contour, num_results, mocker, testdatadir) -> None:
         end_date=max_date,
         max_open_trades=1,
         position_stacking=False,
+        enable_protections=config.get('enable_protections', False),
     )
     # results :: <class 'pandas.core.frame.DataFrame'>
     assert len(results) == num_results
@@ -532,10 +533,39 @@ def test_processed(default_conf, mocker, testdatadir) -> None:
 
 
 def test_backtest_pricecontours(default_conf, fee, mocker, testdatadir) -> None:
-    # TODO: Evaluate usefullness of this, the patterns and buy-signls are unrealistic
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    tests = [['raise', 19], ['lower', 0], ['sine', 35]]
+    tests = [
+        ['sine', 35],
+        ['raise', 19],
+        ['lower', 0],
+        ['sine', 35],
+        ['raise', 19]
+        ]
+    # While buy-signals are unrealistic, running backtesting
+    # over and over again should not cause different results
+    for [contour, numres] in tests:
+        simple_backtest(default_conf, contour, numres, mocker, testdatadir)
 
+
+def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatadir) -> None:
+    # TODO: Evaluate usefullness of this, the patterns and buy-signls are unrealistic
+    default_conf['protections'] = [
+        {
+            "method": "CooldownPeriod",
+            "stop_duration": 3,
+        }]
+
+    default_conf['enable_protections'] = True
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    tests = [
+        ['sine', 9],
+        ['raise', 10],
+        ['lower', 0],
+        ['sine', 9],
+        ['raise', 10],
+    ]
+    # While buy-signals are unrealistic, running backtesting
+    # over and over again should not cause different results
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres, mocker, testdatadir)
 

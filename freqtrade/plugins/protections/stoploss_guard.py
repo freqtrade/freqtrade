@@ -55,8 +55,8 @@ class StoplossGuard(IProtection):
         # trades = Trade.get_trades(filters).all()
 
         trades1 = Trade.get_trades_proxy(pair=pair, is_open=False, close_date=look_back_until)
-        trades = [trade for trade in trades1 if trade.sell_reason == SellType.STOP_LOSS
-                  or (trade.sell_reason == SellType.TRAILING_STOP_LOSS
+        trades = [trade for trade in trades1 if str(trade.sell_reason) == SellType.STOP_LOSS.value
+                  or (str(trade.sell_reason) == SellType.TRAILING_STOP_LOSS.value
                       and trade.close_profit < 0)]
 
         if len(trades) > self._trade_limit:

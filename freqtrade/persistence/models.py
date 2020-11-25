@@ -327,6 +327,14 @@ class Trade(_DECL_BASE):
             'open_order_id': self.open_order_id,
         }
 
+    @staticmethod
+    def reset_trades() -> None:
+        """
+        Resets all trades. Only active for backtesting mode.
+        """
+        if not Trade.use_db:
+            Trade.trades = []
+
     def adjust_min_max_rates(self, current_price: float) -> None:
         """
         Adjust the max_rate and min_rate.

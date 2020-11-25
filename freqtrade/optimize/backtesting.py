@@ -120,8 +120,10 @@ class Backtesting:
             self.fee = self.exchange.get_fee(symbol=self.pairlists.whitelist[0])
 
         Trade.use_db = False
+        Trade.reset_trades()
         PairLocks.timeframe = self.config['timeframe']
         PairLocks.use_db = False
+        PairLocks.reset_locks()
         if self.config.get('enable_protections', False):
             self.protections = ProtectionManager(self.config)
 
@@ -129,6 +131,11 @@ class Backtesting:
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
         # Load one (first) strategy
         self._set_strategy(self.strategylist[0])
+
+    def __del__(self):
+        LoggingMixin.show_output = True
+        PairLocks.use_db = True
+        Trade.use_db = True
 
     def _set_strategy(self, strategy):
         """
@@ -321,6 +328,13 @@ class Backtesting:
                      f"max_open_trades: {max_open_trades}, position_stacking: {position_stacking}"
                      )
         trades = []
+        PairLocks.use_db = False
+        Trade.use_db = False
+        if enable_protections:
+            # Reset persisted data - used for protections only
+
+            PairLocks.reset_locks()
+            Trade.reset_trades()
 
         # Use dict of lists with data for performance
         # (looping lists is a lot faster than pandas DataFrames)

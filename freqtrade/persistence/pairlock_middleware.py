@@ -22,6 +22,14 @@ class PairLocks():
     timeframe: str = ''
 
     @staticmethod
+    def reset_locks() -> None:
+        """
+        Resets all locks. Only active for backtesting mode.
+        """
+        if not PairLocks.use_db:
+            PairLocks.locks = []
+
+    @staticmethod
     def lock_pair(pair: str, until: datetime, reason: str = None, *, now: datetime = None) -> None:
         """
         Create PairLock from now to "until".
