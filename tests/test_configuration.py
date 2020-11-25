@@ -685,6 +685,7 @@ def test_set_loggers_syslog():
     logger.handlers = orig_handlers
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_set_loggers_Filehandler(tmpdir):
     logger = logging.getLogger()
     orig_handlers = logger.handlers
