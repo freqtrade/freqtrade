@@ -663,7 +663,7 @@ def test_set_loggers() -> None:
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
-def test_set_loggers_syslog(mocker):
+def test_set_loggers_syslog():
     logger = logging.getLogger()
     orig_handlers = logger.handlers
     logger.handlers = []
@@ -682,6 +682,30 @@ def test_set_loggers_syslog(mocker):
     setup_logging(config)
     assert len(logger.handlers) == 3
     # reset handlers to not break pytest
+    logger.handlers = orig_handlers
+
+
+def test_set_loggers_Filehandler(tmpdir):
+    logger = logging.getLogger()
+    orig_handlers = logger.handlers
+    logger.handlers = []
+    logfile = Path(tmpdir) / 'ft_logfile.log'
+    config = {'verbosity': 2,
+              'logfile': str(logfile),
+              }
+
+    setup_logging_pre()
+    setup_logging(config)
+    assert len(logger.handlers) == 3
+    assert [x for x in logger.handlers if type(x) == logging.handlers.RotatingFileHandler]
+    assert [x for x in logger.handlers if type(x) == logging.StreamHandler]
+    assert [x for x in logger.handlers if type(x) == logging.handlers.BufferingHandler]
+    # setting up logging again should NOT cause the loggers to be added a second time.
+    setup_logging(config)
+    assert len(logger.handlers) == 3
+    # reset handlers to not break pytest
+    if logfile.exists:
+        logfile.unlink()
     logger.handlers = orig_handlers
 
 
