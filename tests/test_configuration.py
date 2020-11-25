@@ -678,6 +678,9 @@ def test_set_loggers_syslog(mocker):
     assert [x for x in logger.handlers if type(x) == logging.handlers.SysLogHandler]
     assert [x for x in logger.handlers if type(x) == logging.StreamHandler]
     assert [x for x in logger.handlers if type(x) == logging.handlers.BufferingHandler]
+    # setting up logging again should NOT cause the loggers to be added a second time.
+    setup_logging(config)
+    assert len(logger.handlers) == 3
     # reset handlers to not break pytest
     logger.handlers = orig_handlers
 
