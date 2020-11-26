@@ -69,7 +69,8 @@ class Kraken(Exchange):
         Verify stop_loss against stoploss-order value (limit or price)
         Returns True if adjustment is necessary.
         """
-        return order['type'] == 'stop-loss' and stop_loss > float(order['price'])
+        return (order['type'] in ('stop-loss', 'stop-loss-limit')
+                and stop_loss > float(order['price']))
 
     @retrier(retries=0)
     def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
