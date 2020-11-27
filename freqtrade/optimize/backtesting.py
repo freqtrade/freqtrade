@@ -173,6 +173,17 @@ class Backtesting:
 
         return data, timerange
 
+    def prepare_backtest(self, enable_protections):
+        """
+        Backtesting setup method - called once for every call to "backtest()".
+        """
+        PairLocks.use_db = False
+        Trade.use_db = False
+        if enable_protections:
+            # Reset persisted data - used for protections only
+            PairLocks.reset_locks()
+            Trade.reset_trades()
+
     def _get_ohlcv_as_lists(self, processed: Dict[str, DataFrame]) -> Dict[str, Tuple]:
         """
         Helper function to convert a processed dataframes into lists for performance reasons.
@@ -328,13 +339,7 @@ class Backtesting:
                      f"max_open_trades: {max_open_trades}, position_stacking: {position_stacking}"
                      )
         trades = []
-        PairLocks.use_db = False
-        Trade.use_db = False
-        if enable_protections:
-            # Reset persisted data - used for protections only
-
-            PairLocks.reset_locks()
-            Trade.reset_trades()
+        self.prepare_backtest(enable_protections)
 
         # Use dict of lists with data for performance
         # (looping lists is a lot faster than pandas DataFrames)
@@ -350,9 +355,6 @@ class Backtesting:
         # Loop timerange and get candle for each pair at that point in time
         while tmp <= end_date:
             open_trade_count_start = open_trade_count
-
-            if enable_protections:
-                self.protections.global_stop(tmp)
 
             for i, pair in enumerate(data):
                 if pair not in indexes:
@@ -410,6 +412,7 @@ class Backtesting:
                         trades.append(trade_entry)
                         if enable_protections:
                             self.protections.stop_per_pair(pair, row[DATE_IDX])
+                            self.protections.global_stop(tmp)
 
             # Move time one configured time_interval ahead.
             tmp += timedelta(minutes=self.timeframe_min)
