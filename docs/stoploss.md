@@ -36,8 +36,8 @@ If `stoploss_on_exchange` uses limit orders, the exchange needs 2 prices, the st
 `stoploss` defines the stop-price where the limit order is placed - and limit should be slightly below this.  
 If an exchange supports both limit and market stoploss orders, then the value of `stoploss` will be used to determine the stoploss type.  
 
-Calculation example: we bought the asset at 100$.  
-Stop-price is 95$, then limit would be `95 * 0.99 = 94.05$` - so the limit order fill can happen between 95$ and 94.05$.  
+Calculation example: we bought the asset at 100\$.  
+Stop-price is 95\$, then limit would be `95 * 0.99 = 94.05$` - so the limit order fill can happen between 95$ and 94.05$.  
 
 For example, assuming the stoploss is on exchange, and trailing stoploss is enabled, and the market is going up, then the bot automatically cancels the previous stoploss order and puts a new one with a stop value higher than the previous stoploss order.
 
@@ -90,6 +90,7 @@ Example of stop loss:
 ```
 
 For example, simplified math:
+
 * the bot buys an asset at a price of 100$
 * the stop loss is defined at -10%
 * the stop loss would get triggered once the asset drops below 90$
@@ -113,7 +114,7 @@ For example, simplified math:
 * the stop loss would get triggered once the asset drops below 90$
 * assuming the asset now increases to 102$
 * the stop loss will now be -10% of 102$ = 91.8$
-* now the asset drops in value to 101$, the stop loss will still be 91.8$ and would trigger at 91.8$.
+* now the asset drops in value to 101\$, the stop loss will still be 91.8$ and would trigger at 91.8$.
 
 In summary: The stoploss will be adjusted to be always be -10% of the highest observed price.
 
@@ -139,8 +140,8 @@ For example, simplified math:
 * the stop loss is defined at -10%
 * the stop loss would get triggered once the asset drops below 90$
 * assuming the asset now increases to 102$
-* the stop loss will now be -2% of 102$ = 99.96$ (99.96$ stop loss will be locked in and will follow asset price increasements with -2%)
-* now the asset drops in value to 101$, the stop loss will still be 99.96$ and would trigger at 99.96$
+* the stop loss will now be -2% of 102$ = 99.96$ (99.96$ stop loss will be locked in and will follow asset price increments with -2%)
+* now the asset drops in value to 101\$, the stop loss will still be 99.96$ and would trigger at 99.96$
 
 The 0.02 would translate to a -2% stop loss.
 Before this, `stoploss` is used for the trailing stoploss.
@@ -157,7 +158,7 @@ This option can be used with or without `trailing_stop_positive`, but uses `trai
     trailing_only_offset_is_reached = True
 ```
 
-Configuration (offset is buyprice + 3%):
+Configuration (offset is buy-price + 3%):
 
 ``` python
     stoploss = -0.10
@@ -175,7 +176,7 @@ For example, simplified math:
 * stoploss will remain at 90$ unless asset increases to or above our configured offset
 * assuming the asset now increases to 103$ (where we have the offset configured)
 * the stop loss will now be -2% of 103$ = 100.94$
-* now the asset drops in value to 101$, the stop loss will still be 100.94$ and would trigger at 100.94$
+* now the asset drops in value to 101\$, the stop loss will still be 100.94$ and would trigger at 100.94$
 
 !!! Tip
     Make sure to have this value (`trailing_stop_positive_offset`) lower than minimal ROI, otherwise minimal ROI will apply first and sell the trade.
