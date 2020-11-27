@@ -182,9 +182,6 @@ class FreqtradeBot(LoggingMixin):
             # First process current opened trades (positions)
             self.exit_positions(trades)
 
-        # Evaluate if protections should apply
-        self.protections.global_stop()
-
         # Then looking for buy opportunities
         if self.get_free_open_trades():
             self.enter_positions()
@@ -1431,8 +1428,7 @@ class FreqtradeBot(LoggingMixin):
         # Updating wallets when order is closed
         if not trade.is_open:
             self.protections.stop_per_pair(trade.pair)
-            # Evaluate if protections should apply
-            # self.protections.global_stop()
+            self.protections.global_stop()
             self.wallets.update()
         return False
 

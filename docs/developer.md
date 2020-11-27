@@ -213,13 +213,13 @@ Protections can have 2 different ways to stop trading for a limited :
 ##### Protections - per pair
 
 Protections that implement the per pair approach must set `has_local_stop=True`.
-The method `stop_per_pair()` will be called once, whenever a sell order is closed, and the trade is therefore closed.
+The method `stop_per_pair()` will be called whenever a trade closed (sell order completed).
 
 ##### Protections - global protection
 
 These Protections should do their evaluation across all pairs, and consequently will also lock all pairs from trading (called a global PairLock).
 Global protection must set `has_global_stop=True` to be evaluated for global stops.
-The method `global_stop()` will be called on every iteration, so they should not do too heavy calculations (or should cache the calculations across runs).
+The method `global_stop()` will be called whenever a trade closed (sell order completed).
 
 ## Implement a new Exchange (WIP)
 
