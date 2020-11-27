@@ -278,6 +278,7 @@ Since backtesting lacks some detailed information about what happens within a ca
 - Trailing stoploss
   - High happens first - adjusting stoploss
   - Low uses the adjusted stoploss (so sells with large high-low difference are backtested correctly)
+  - ROI applies before trailing-stop, ensuring profits are "top-capped" at ROI if both ROI and trailing stop applies
 - Sell-reason does not explain if a trade was positive or negative, just what triggered the sell (this can look odd if negative ROI values are used)
 - Stoploss (and trailing stoploss) is evaluated before ROI within one candle. So you can often see more trades with the `stoploss` and/or `trailing_stop` sell reason comparing to the results obtained with the same strategy in the Dry Run/Live Trade modes.
 
