@@ -481,45 +481,38 @@ class IStrategy(ABC):
         current_profit = trade.calc_profit_ratio(current_rate)
         config_ask_strategy = self.config.get('ask_strategy', {})
 
-        roi_reached = self.min_roi_reached(trade=trade, current_profit=current_profit,
-                                           current_time=date)
+        # if buy signal and ignore_roi is set, we don't need to evaluate min_roi.
+        roi_reached = (not (buy and config_ask_strategy.get('ignore_roi_if_buy_signal', False))
+                       and self.min_roi_reached(trade=trade, current_profit=current_profit,
+                                                current_time=date))
 
-        if stoplossflag.sell_flag:
+        if config_ask_strategy.get('sell_profit_only', False) and trade.calc_profit(rate=rate) <= 0:
+            # Negative profits and sell_profit_only - ignore sell signal
+            sell_signal = False
+        else:
+            sell_signal = sell and not buy and config_ask_strategy.get('use_sell_signal', True)
+            # TODO: return here if sell-signal should be favored over ROI
 
-            # When backtesting, in the case of trailing_stop_loss,
-            # make sure we don't make a profit higher than ROI.
-            if stoplossflag.sell_type == SellType.TRAILING_STOP_LOSS and roi_reached:
-                logger.debug(f"{trade.pair} - Required profit reached. sell_flag=True, "
-                             f"sell_type=SellType.ROI")
-                return SellCheckTuple(sell_flag=True, sell_type=SellType.ROI)
-
-            logger.debug(f"{trade.pair} - Stoploss hit. sell_flag=True, "
-                         f"sell_type={stoplossflag.sell_type}")
-            return stoplossflag
-
-        if buy and config_ask_strategy.get('ignore_roi_if_buy_signal', False):
-            # This one is noisy, commented out
-            # logger.debug(f"{trade.pair} - Buy signal still active. sell_flag=False")
-            return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
-
-        # Check if minimal roi has been reached and no longer in buy conditions (avoiding a fee)
-        if roi_reached:
+        # Start evaluations
+        # Sequence:
+        # ROI (if not stoploss)
+        # Sell-signal
+        # Stoploss
+        if roi_reached and stoplossflag.sell_type != SellType.STOP_LOSS:
             logger.debug(f"{trade.pair} - Required profit reached. sell_flag=True, "
                          f"sell_type=SellType.ROI")
             return SellCheckTuple(sell_flag=True, sell_type=SellType.ROI)
 
-        if config_ask_strategy.get('sell_profit_only', False):
-            # This one is noisy, commented out
-            # logger.debug(f"{trade.pair} - Checking if trade is profitable...")
-            if trade.calc_profit(rate=rate) <= 0:
-                # This one is noisy, commented out
-                # logger.debug(f"{trade.pair} - Trade is not profitable. sell_flag=False")
-                return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
-
-        if sell and not buy and config_ask_strategy.get('use_sell_signal', True):
+        if sell_signal:
             logger.debug(f"{trade.pair} - Sell signal received. sell_flag=True, "
                          f"sell_type=SellType.SELL_SIGNAL")
             return SellCheckTuple(sell_flag=True, sell_type=SellType.SELL_SIGNAL)
+
+        if stoplossflag.sell_flag:
+
+            logger.debug(f"{trade.pair} - Stoploss hit. sell_flag=True, "
+                         f"sell_type={stoplossflag.sell_type}")
+            return stoplossflag
 
         # This one is noisy, commented out...
         # logger.debug(f"{trade.pair} - No sell signal. sell_flag=False")
