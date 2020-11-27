@@ -94,7 +94,7 @@ Below is an outline of exception inheritance hierarchy:
 +---+ StrategyError
 ```
 
-## Modules
+## Plugins
 
 ### Pairlists
 
@@ -172,6 +172,51 @@ In `VolumePairList`, this implements different methods of sorting, does early va
         pairs = self._calculate_pairlist(pairlist, tickers)
         return pairs
 ```
+
+### Protections
+
+Best read the [Protection documentation](configuration.md#protections) to understand protections.
+This Guide is directed towards Developers who want to develop a new protection.
+
+No protection should use datetime directly, but use the provided `date_now` variable for date calculations. This preserves the ability to backtest protections.
+
+!!! Tip "Writing a new Protection"
+    Best copy one of the existing Protections to have a good example.
+
+#### Implementation of a new protection
+
+All Protection implementations must have `IProtection` as parent class.
+For that reason, they must implement the following methods:
+
+* `short_desc()`
+* `global_stop()`
+* `stop_per_pair()`.
+
+`global_stop()` and `stop_per_pair()` must return a ProtectionReturn tuple, which consists of:
+
+* lock pair - boolean
+* lock until - datetime - until when should the pair be locked (will be rounded up to the next new candle)
+* reason - string, used for logging and storage in the database
+
+The `until` portion should be calculated using the provided `calculate_lock_end()` method.
+
+#### Global vs. local stops
+
+Protections can have 2 different ways to stop trading for a limited :
+
+* Per pair (local)
+* For all Pairs (globally)
+
+##### Protections - per pair
+
+Protections that implement the per pair approach must set `has_local_stop=True`.
+The method `stop_per_pair()` will be called once, whenever a sell order is closed, and the trade is therefore closed.
+
+##### Protections - global protection
+
+These Protections should do their evaluation across all pairs, and consequently will also lock all pairs from trading (called a global PairLock).
+Global protection must set `has_global_stop=True` to be evaluated for global stops.
+The method `global_stop()` will be called on every iteration, so they should not do too heavy calculations (or should cache the calculations across runs).
 
 ## Implement a new Exchange (WIP)
 
