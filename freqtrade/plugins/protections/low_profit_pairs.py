@@ -22,7 +22,6 @@ class LowProfitPairs(IProtection):
 
         self._lookback_period = protection_config.get('lookback_period', 60)
         self._trade_limit = protection_config.get('trade_limit', 1)
-        self._stop_duration = protection_config.get('stop_duration', 60)
         self._required_profit = protection_config.get('required_profit', 0.0)
 
     def short_desc(self) -> str:

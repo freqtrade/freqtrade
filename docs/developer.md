@@ -200,6 +200,9 @@ For that reason, they must implement the following methods:
 
 The `until` portion should be calculated using the provided `calculate_lock_end()` method.
 
+All Protections should use `"stop_duration"` to define how long a a pair (or all pairs) should be locked.
+The content of this is made available as `self._stop_duration` to the each Protection.
+
 #### Global vs. local stops
 
 Protections can have 2 different ways to stop trading for a limited :

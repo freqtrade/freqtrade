@@ -20,8 +20,6 @@ class CooldownPeriod(IProtection):
     def __init__(self, config: Dict[str, Any], protection_config: Dict[str, Any]) -> None:
         super().__init__(config, protection_config)
 
-        self._stop_duration = protection_config.get('stop_duration', 60)
-
     def _reason(self) -> str:
         """
         LockReason to use

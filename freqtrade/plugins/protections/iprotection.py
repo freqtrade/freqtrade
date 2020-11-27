@@ -23,6 +23,8 @@ class IProtection(LoggingMixin, ABC):
     def __init__(self, config: Dict[str, Any], protection_config: Dict[str, Any]) -> None:
         self._config = config
         self._protection_config = protection_config
+        self._stop_duration = protection_config.get('stop_duration', 60)
+
         LoggingMixin.__init__(self, logger)
 
     @property

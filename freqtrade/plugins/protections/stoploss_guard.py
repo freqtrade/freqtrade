@@ -25,7 +25,6 @@ class StoplossGuard(IProtection):
 
         self._lookback_period = protection_config.get('lookback_period', 60)
         self._trade_limit = protection_config.get('trade_limit', 10)
-        self._stop_duration = protection_config.get('stop_duration', 60)
         self._disable_global_stop = protection_config.get('only_per_pair', False)
 
     def short_desc(self) -> str:
