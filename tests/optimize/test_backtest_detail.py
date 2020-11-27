@@ -328,6 +328,58 @@ tc20 = BTContainer(data=[
     trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=3)]
 )
 
+# Test 21: trailing_stop ROI collision.
+# Roi should trigger before Trailing stop - otherwise Trailing stop profits can be > ROI
+# which cannot happen in reality
+# stop-loss: 10%, ROI: 4%, Trailing stop adjusted at the sell candle
+tc21 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5050, 4950, 5100, 6172, 0, 0],
+    [2, 5100, 5251, 4650, 5100, 6172, 0, 0],
+    [3, 4850, 5050, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.04}, profit_perc=0.04, trailing_stop=True,
+    trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
+    trailing_stop_positive=0.03,
+    trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=2)]
+)
+
+# Test 22: trailing_stop Raises in candle 2 - but ROI applies at the same time.
+# applying a positive trailing stop of 3% - ROI should apply before trailing stop.
+# stop-loss: 10%, ROI: 4%, stoploss adjusted candle 2
+tc22 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5050, 4950, 5100, 6172, 0, 0],
+    [2, 5100, 5251, 5100, 5100, 6172, 0, 0],
+    [3, 4850, 5050, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.04}, profit_perc=0.04, trailing_stop=True,
+    trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
+    trailing_stop_positive=0.03,
+    trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=2)]
+)
+
+# Test 23: trailing_stop Raises in candle 2 (does not trigger)
+# applying a positive trailing stop of 3% since stop_positive_offset is reached.
+# ROI is changed after this to 4%, dropping ROI below trailing_stop_positive, causing a sell
+# in the candle after the raised stoploss candle with ROI reason.
+# Stoploss would trigger in this candle too, but it's no longer relevant.
+# stop-loss: 10%, ROI: 4%, stoploss adjusted candle 2, ROI adjusted in candle 3 (causing the sell)
+tc23 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5050, 4950, 5100, 6172, 0, 0],
+    [2, 5100, 5251, 5100, 5100, 6172, 0, 0],
+    [3, 4850, 5251, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.1, "119": 0.03}, profit_perc=0.03, trailing_stop=True,
+    trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
+    trailing_stop_positive=0.03,
+    trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=3)]
+)
+
 
 TESTS = [
     tc0,
@@ -351,6 +403,9 @@ TESTS = [
     tc18,
     tc19,
     tc20,
+    tc21,
+    tc22,
+    tc23,
 ]
 
 

@@ -475,24 +475,24 @@ class IStrategy(ABC):
         stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
                                               current_time=date, current_profit=current_profit,
                                               force_stoploss=force_stoploss, high=high)
-        
+
         # Set current rate to high for backtesting sell
         current_rate = high or rate
         current_profit = trade.calc_profit_ratio(current_rate)
         config_ask_strategy = self.config.get('ask_strategy', {})
-        
+
         roi_reached = self.min_roi_reached(trade=trade, current_profit=current_profit,
-                                                current_time=date)
-        
+                                           current_time=date)
+
         if stoplossflag.sell_flag:
-            
+
             # When backtesting, in the case of trailing_stop_loss,
             # make sure we don't make a profit higher than ROI.
             if stoplossflag.sell_type == SellType.TRAILING_STOP_LOSS and roi_reached:
                 logger.debug(f"{trade.pair} - Required profit reached. sell_flag=True, "
                              f"sell_type=SellType.ROI")
                 return SellCheckTuple(sell_flag=True, sell_type=SellType.ROI)
-            
+
             logger.debug(f"{trade.pair} - Stoploss hit. sell_flag=True, "
                          f"sell_type={stoplossflag.sell_type}")
             return stoplossflag
