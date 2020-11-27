@@ -108,13 +108,13 @@ class Wallets:
         for trading operations, the latest balance is needed.
         :param require_update: Allow skipping an update if balances were recently refreshed
         """
-        if (require_update or (self._last_wallet_refresh + 3600 < arrow.utcnow().timestamp)):
+        if (require_update or (self._last_wallet_refresh + 3600 < arrow.utcnow().int_timestamp)):
             if self._config['dry_run']:
                 self._update_dry()
             else:
                 self._update_live()
             logger.info('Wallets synced.')
-            self._last_wallet_refresh = arrow.utcnow().timestamp
+            self._last_wallet_refresh = arrow.utcnow().int_timestamp
 
     def get_all_balances(self) -> Dict[str, Any]:
         return self._wallets

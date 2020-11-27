@@ -69,7 +69,8 @@ class Kraken(Exchange):
         Verify stop_loss against stoploss-order value (limit or price)
         Returns True if adjustment is necessary.
         """
-        return order['type'] == 'stop-loss' and stop_loss > float(order['price'])
+        return (order['type'] in ('stop-loss', 'stop-loss-limit')
+                and stop_loss > float(order['price']))
 
     @retrier(retries=0)
     def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
@@ -77,8 +78,15 @@ class Kraken(Exchange):
         Creates a stoploss market order.
         Stoploss market orders is the only stoploss type supported by kraken.
         """
+        params = self._params.copy()
 
-        ordertype = "stop-loss"
+        if order_types.get('stoploss', 'market') == 'limit':
+            ordertype = "stop-loss-limit"
+            limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
+            limit_rate = stop_price * limit_price_pct
+            params['price2'] = self.price_to_precision(pair, limit_rate)
+        else:
+            ordertype = "stop-loss"
 
         stop_price = self.price_to_precision(pair, stop_price)
 
@@ -88,8 +96,6 @@ class Kraken(Exchange):
             return dry_order
 
         try:
-            params = self._params.copy()
-
             amount = self.amount_to_precision(pair, amount)
 
             order = self._api.create_order(symbol=pair, type=ordertype, side='sell',

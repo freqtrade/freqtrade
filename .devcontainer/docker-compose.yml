@@ -7,8 +7,8 @@ services:
       dockerfile: ".devcontainer/Dockerfile"
     volumes:
       # Allow git usage within container
-      - "/home/${USER}/.ssh:/home/ftuser/.ssh:ro"
-      - "/home/${USER}/.gitconfig:/home/ftuser/.gitconfig:ro"
+      - "${HOME}/.ssh:/home/ftuser/.ssh:ro"
+      - "${HOME}/.gitconfig:/home/ftuser/.gitconfig:ro"
       - ..:/freqtrade:cached
       # Persist bash-history
       - freqtrade-vscode-server:/home/ftuser/.vscode-server

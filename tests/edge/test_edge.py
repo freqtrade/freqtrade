@@ -50,7 +50,7 @@ def _build_dataframe(buy_ohlc_sell_matrice):
             'date': tests_start_time.shift(
                 minutes=(
                     ohlc[0] *
-                    timeframe_in_minute)).timestamp *
+                    timeframe_in_minute)).int_timestamp *
             1000,
             'buy': ohlc[1],
             'open': ohlc[2],
@@ -71,7 +71,7 @@ def _build_dataframe(buy_ohlc_sell_matrice):
 
 def _time_on_candle(number):
     return np.datetime64(tests_start_time.shift(
-        minutes=(number * timeframe_in_minute)).timestamp * 1000, 'ms')
+        minutes=(number * timeframe_in_minute)).int_timestamp * 1000, 'ms')
 
 
 # End helper functions
@@ -251,7 +251,7 @@ def test_edge_heartbeat_calculate(mocker, edge_conf):
     heartbeat = edge_conf['edge']['process_throttle_secs']
 
     # should not recalculate if heartbeat not reached
-    edge._last_updated = arrow.utcnow().timestamp - heartbeat + 1
+    edge._last_updated = arrow.utcnow().int_timestamp - heartbeat + 1
 
     assert edge.calculate() is False
 
@@ -263,7 +263,7 @@ def mocked_load_data(datadir, pairs=[], timeframe='0m',
 
     NEOBTC = [
         [
-            tests_start_time.shift(minutes=(x * timeframe_in_minute)).timestamp * 1000,
+            tests_start_time.shift(minutes=(x * timeframe_in_minute)).int_timestamp * 1000,
             math.sin(x * hz) / 1000 + base,
             math.sin(x * hz) / 1000 + base + 0.0001,
             math.sin(x * hz) / 1000 + base - 0.0001,
@@ -275,7 +275,7 @@ def mocked_load_data(datadir, pairs=[], timeframe='0m',
     base = 0.002
     LTCBTC = [
         [
-            tests_start_time.shift(minutes=(x * timeframe_in_minute)).timestamp * 1000,
+            tests_start_time.shift(minutes=(x * timeframe_in_minute)).int_timestamp * 1000,
             math.sin(x * hz) / 1000 + base,
             math.sin(x * hz) / 1000 + base + 0.0001,
             math.sin(x * hz) / 1000 + base - 0.0001,
@@ -299,7 +299,7 @@ def test_edge_process_downloaded_data(mocker, edge_conf):
 
     assert edge.calculate()
     assert len(edge._cached_pairs) == 2
-    assert edge._last_updated <= arrow.utcnow().timestamp + 2
+    assert edge._last_updated <= arrow.utcnow().int_timestamp + 2
 
 
 def test_edge_process_no_data(mocker, edge_conf, caplog):

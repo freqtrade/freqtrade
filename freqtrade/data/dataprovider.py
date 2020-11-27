@@ -8,7 +8,6 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from arrow import Arrow
 from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes, PairWithTimeframe
@@ -38,7 +37,7 @@ class DataProvider:
         :param timeframe: Timeframe to get data for
         :param dataframe: analyzed dataframe
         """
-        self.__cached_pairs[(pair, timeframe)] = (dataframe, Arrow.utcnow().datetime)
+        self.__cached_pairs[(pair, timeframe)] = (dataframe, datetime.now(timezone.utc))
 
     def add_pairlisthandler(self, pairlists) -> None:
         """
@@ -88,7 +87,8 @@ class DataProvider:
         """
         return load_pair_history(pair=pair,
                                  timeframe=timeframe or self._config['timeframe'],
-                                 datadir=self._config['datadir']
+                                 datadir=self._config['datadir'],
+                                 data_format=self._config.get('dataformat_ohlcv', 'json')
                                  )
 
     def get_pair_dataframe(self, pair: str, timeframe: str = None) -> DataFrame:

@@ -268,9 +268,9 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
             'profit_total': results['profit_percent'].sum(),
             'profit_total_abs': results['profit_abs'].sum(),
             'backtest_start': min_date.datetime,
-            'backtest_start_ts': min_date.timestamp * 1000,
+            'backtest_start_ts': min_date.int_timestamp * 1000,
             'backtest_end': max_date.datetime,
-            'backtest_end_ts': max_date.timestamp * 1000,
+            'backtest_end_ts': max_date.int_timestamp * 1000,
             'backtest_days': backtest_days,
 
             'trades_per_day': round(len(results) / backtest_days, 2) if backtest_days > 0 else 0,
@@ -396,6 +396,8 @@ def text_table_add_metrics(strat_results: Dict) -> str:
         metrics = [
             ('Backtesting from', strat_results['backtest_start'].strftime(DATETIME_PRINT_FORMAT)),
             ('Backtesting to', strat_results['backtest_end'].strftime(DATETIME_PRINT_FORMAT)),
+            ('Max open trades', strat_results['max_open_trades']),
+            ('', ''),  # Empty line to improve readability
             ('Total trades', strat_results['total_trades']),
             ('First trade', min_trade['open_date'].strftime(DATETIME_PRINT_FORMAT)),
             ('First trade Pair', min_trade['pair']),

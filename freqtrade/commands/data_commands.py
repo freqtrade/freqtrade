@@ -1,9 +1,8 @@
 import logging
 import sys
 from collections import defaultdict
+from datetime import datetime, timedelta
 from typing import Any, Dict, List
-
-import arrow
 
 from freqtrade.configuration import TimeRange, setup_utils_configuration
 from freqtrade.data.converter import convert_ohlcv_format, convert_trades_format
@@ -29,7 +28,7 @@ def start_download_data(args: Dict[str, Any]) -> None:
                                    "You can only specify one or the other.")
     timerange = TimeRange()
     if 'days' in config:
-        time_since = arrow.utcnow().shift(days=-config['days']).strftime("%Y%m%d")
+        time_since = (datetime.now() - timedelta(days=config['days'])).strftime("%Y%m%d")
         timerange = TimeRange.parse_timerange(f'{time_since}-')
 
     if 'timerange' in config:

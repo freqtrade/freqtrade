@@ -69,8 +69,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'min_rate': ANY,
         'max_rate': ANY,
         'strategy': ANY,
-        'ticker_interval': ANY,
-        'timeframe': ANY,
+        'timeframe': 5,
         'open_order_id': ANY,
         'close_date': None,
         'close_date_hum': None,
@@ -87,14 +86,15 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'current_profit': -0.00408133,
         'current_profit_pct': -0.41,
         'current_profit_abs': -4.09e-06,
-        'stop_loss': 9.882e-06,
+        'profit_ratio': -0.00408133,
+        'profit_pct': -0.41,
+        'profit_abs': -4.09e-06,
         'stop_loss_abs': 9.882e-06,
         'stop_loss_pct': -10.0,
         'stop_loss_ratio': -0.1,
         'stoploss_order_id': None,
         'stoploss_last_update': ANY,
         'stoploss_last_update_timestamp': ANY,
-        'initial_stop_loss': 9.882e-06,
         'initial_stop_loss_abs': 9.882e-06,
         'initial_stop_loss_pct': -10.0,
         'initial_stop_loss_ratio': -0.1,
@@ -134,7 +134,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'min_rate': ANY,
         'max_rate': ANY,
         'strategy': ANY,
-        'ticker_interval': ANY,
         'timeframe': ANY,
         'open_order_id': ANY,
         'close_date': None,
@@ -152,14 +151,15 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'current_profit': ANY,
         'current_profit_pct': ANY,
         'current_profit_abs': ANY,
-        'stop_loss': 9.882e-06,
+        'profit_ratio': ANY,
+        'profit_pct': ANY,
+        'profit_abs': ANY,
         'stop_loss_abs': 9.882e-06,
         'stop_loss_pct': -10.0,
         'stop_loss_ratio': -0.1,
         'stoploss_order_id': None,
         'stoploss_last_update': ANY,
         'stoploss_last_update_timestamp': ANY,
-        'initial_stop_loss': 9.882e-06,
         'initial_stop_loss_abs': 9.882e-06,
         'initial_stop_loss_pct': -10.0,
         'initial_stop_loss_ratio': -0.1,
@@ -868,7 +868,8 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order_open) ->
     assert trade.open_rate == 0.0001
 
     # Test buy pair not with stakes
-    with pytest.raises(RPCException, match=r'Wrong pair selected. Please pairs with stake.*'):
+    with pytest.raises(RPCException,
+                       match=r'Wrong pair selected. Only pairs with stake-currency.*'):
         rpc._rpc_forcebuy('LTC/ETH', 0.0001)
     pair = 'XRP/BTC'
 

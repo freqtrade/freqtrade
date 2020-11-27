@@ -663,7 +663,7 @@ def test_set_loggers() -> None:
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
-def test_set_loggers_syslog(mocker):
+def test_set_loggers_syslog():
     logger = logging.getLogger()
     orig_handlers = logger.handlers
     logger.handlers = []
@@ -678,7 +678,35 @@ def test_set_loggers_syslog(mocker):
     assert [x for x in logger.handlers if type(x) == logging.handlers.SysLogHandler]
     assert [x for x in logger.handlers if type(x) == logging.StreamHandler]
     assert [x for x in logger.handlers if type(x) == logging.handlers.BufferingHandler]
+    # setting up logging again should NOT cause the loggers to be added a second time.
+    setup_logging(config)
+    assert len(logger.handlers) == 3
     # reset handlers to not break pytest
+    logger.handlers = orig_handlers
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
+def test_set_loggers_Filehandler(tmpdir):
+    logger = logging.getLogger()
+    orig_handlers = logger.handlers
+    logger.handlers = []
+    logfile = Path(tmpdir) / 'ft_logfile.log'
+    config = {'verbosity': 2,
+              'logfile': str(logfile),
+              }
+
+    setup_logging_pre()
+    setup_logging(config)
+    assert len(logger.handlers) == 3
+    assert [x for x in logger.handlers if type(x) == logging.handlers.RotatingFileHandler]
+    assert [x for x in logger.handlers if type(x) == logging.StreamHandler]
+    assert [x for x in logger.handlers if type(x) == logging.handlers.BufferingHandler]
+    # setting up logging again should NOT cause the loggers to be added a second time.
+    setup_logging(config)
+    assert len(logger.handlers) == 3
+    # reset handlers to not break pytest
+    if logfile.exists:
+        logfile.unlink()
     logger.handlers = orig_handlers
 
 
@@ -810,6 +838,21 @@ def test_validate_edge(edge_conf):
         "method": "StaticPairList",
     }})
     validate_config_consistency(edge_conf)
+
+
+def test_validate_edge2(edge_conf):
+    edge_conf.update({"ask_strategy": {
+        "use_sell_signal": True,
+    }})
+    # Passes test
+    validate_config_consistency(edge_conf)
+
+    edge_conf.update({"ask_strategy": {
+        "use_sell_signal": False,
+    }})
+    with pytest.raises(OperationalException, match="Edge requires `use_sell_signal` to be True, "
+                       "otherwise no sells will happen."):
+        validate_config_consistency(edge_conf)
 
 
 def test_validate_whitelist(default_conf):

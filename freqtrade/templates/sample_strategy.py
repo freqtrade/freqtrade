@@ -64,7 +64,7 @@ class SampleStrategy(IStrategy):
     ignore_roi_if_buy_signal = False
 
     # Number of candles the strategy requires before producing valid signals
-    startup_candle_count: int = 20
+    startup_candle_count: int = 30
 
     # Optional order type mapping.
     order_types = {
@@ -184,6 +184,8 @@ class SampleStrategy(IStrategy):
         dataframe['fastk'] = stoch_fast['fastk']
 
         # # Stochastic RSI
+        # Please read https://github.com/freqtrade/freqtrade/issues/2961 before using this.
+        # STOCHRSI is NOT aligned with tradingview, which may result in non-expected results.
         # stoch_rsi = ta.STOCHRSI(dataframe)
         # dataframe['fastd_rsi'] = stoch_rsi['fastd']
         # dataframe['fastk_rsi'] = stoch_rsi['fastk']

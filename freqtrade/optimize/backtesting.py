@@ -340,7 +340,7 @@ class Backtesting:
                 # max_open_trades must be respected
                 # don't open on the last row
                 if ((position_stacking or len(open_trades[pair]) == 0)
-                        and max_open_trades > 0 and open_trade_count_start < max_open_trades
+                        and (max_open_trades <= 0 or open_trade_count_start < max_open_trades)
                         and tmp != end_date
                         and row[BUY_IDX] == 1 and row[SELL_IDX] != 1):
                     # Enter trade
