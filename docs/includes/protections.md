@@ -1,5 +1,8 @@
 ## Protections
 
+!!! Warning "Beta feature"
+    This feature is still in it's testing phase. Should you notice something you think is wrong please let us know via Discord, Slack or via Issue.
+
 Protections will protect your strategy from unexpected events and market conditions by temporarily stop trading for either one pair, or for all pairs.
 All protection end times are rounded up to the next candle to avoid sudden, unexpected intra-candle buys.
 
