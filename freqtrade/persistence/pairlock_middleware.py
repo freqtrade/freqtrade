@@ -46,7 +46,7 @@ class PairLocks():
             PairLocks.locks.append(lock)
 
     @staticmethod
-    def get_pair_locks(pair: str, now: Optional[datetime] = None) -> List[PairLock]:
+    def get_pair_locks(pair: Optional[str], now: Optional[datetime] = None) -> List[PairLock]:
         """
         Get all currently active locks for this pair
         :param pair: Pair to check for. Returns all current locks if pair is empty
