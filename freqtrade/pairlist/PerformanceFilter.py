@@ -49,7 +49,7 @@ class PerformanceFilter(IPairList):
         # Skip performance-based sorting if no performance data is available
         if len(performance) == 0:
             return pairlist
-        
+
         # Get pairlist from performance dataframe values
         list_df = pd.DataFrame({'pair': pairlist})
 
@@ -60,7 +60,7 @@ class PerformanceFilter(IPairList):
         #  - then pair name alphametically
         sorted_df = list_df.merge(performance, on='pair', how='left')\
             .fillna(0).sort_values(by=['count', 'pair'], ascending=True)\
-                .sort_values(by=['profit'], ascending=False)
+            .sort_values(by=['profit'], ascending=False)
         pairlist = sorted_df['pair'].tolist()
 
         return pairlist
