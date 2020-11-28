@@ -2,16 +2,13 @@
 Performance pair list filter
 """
 import logging
-import random
 from typing import Any, Dict, List
 
 import pandas as pd
-from pandas import DataFrame, Series
 
 from freqtrade.pairlist.IPairList import IPairList
 
 from freqtrade.persistence import Trade
-from datetime import timedelta, datetime, timezone
 
 logger = logging.getLogger(__name__)
 
