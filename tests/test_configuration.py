@@ -1101,7 +1101,7 @@ def test_process_temporary_deprecated_settings(mocker, default_conf, setting, ca
         ("experimental", "sell_profit_only", True),
         ("experimental", "ignore_roi_if_buy_signal", True),
     ])
-def test_process_removed_settings(mocker, default_conf, setting, caplog):
+def test_process_removed_settings(mocker, default_conf, setting):
     patched_configuration_load_config_file(mocker, default_conf)
 
     # Create sections for new and deprecated settings
@@ -1115,7 +1115,8 @@ def test_process_removed_settings(mocker, default_conf, setting, caplog):
                        match=r'Setting .* has been moved'):
         process_temporary_deprecated_settings(default_conf)
 
-def test_process_deprecated_setting_edge(mocker, edge_conf, caplog):
+
+def test_process_deprecated_setting_edge(mocker, edge_conf):
     patched_configuration_load_config_file(mocker, edge_conf)
     edge_conf.update({'edge': {
         'enabled': True,
