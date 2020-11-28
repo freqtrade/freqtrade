@@ -173,6 +173,11 @@ one we call `trigger` and use it to decide which buy trigger we want to use.
 So let's write the buy strategy using these values:
 
 ```python
+    @staticmethod
+    def buy_strategy_generator(params: Dict[str, Any]) -> Callable:
+        """
+        Define the buy strategy parameters to be used by Hyperopt.
+        """
         def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
             conditions = []
             # GUARDS AND TRENDS
