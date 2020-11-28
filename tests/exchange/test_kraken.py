@@ -10,6 +10,7 @@ from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
 
 STOPLOSS_ORDERTYPE = 'stop-loss'
+STOPLOSS_LIMIT_ORDERTYPE = 'stop-loss-limit'
 
 
 def test_buy_kraken_trading_agreement(default_conf, mocker):
@@ -156,7 +157,8 @@ def test_get_balances_prod(default_conf, mocker):
                            "get_balances", "fetch_balance")
 
 
-def test_stoploss_order_kraken(default_conf, mocker):
+@pytest.mark.parametrize('ordertype', ['market', 'limit'])
+def test_stoploss_order_kraken(default_conf, mocker, ordertype):
     api_mock = MagicMock()
     order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
 
@@ -173,24 +175,26 @@ def test_stoploss_order_kraken(default_conf, mocker):
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'kraken')
 
-    # stoploss_on_exchange_limit_ratio is irrelevant for kraken market orders
-    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=190,
-                              order_types={'stoploss_on_exchange_limit_ratio': 1.05})
-    assert api_mock.create_order.call_count == 1
-
-    api_mock.create_order.reset_mock()
-
-    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={})
+    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220,
+                              order_types={'stoploss': ordertype,
+                                           'stoploss_on_exchange_limit_ratio': 0.99
+                                           })
 
     assert 'id' in order
     assert 'info' in order
     assert order['id'] == order_id
     assert api_mock.create_order.call_args_list[0][1]['symbol'] == 'ETH/BTC'
-    assert api_mock.create_order.call_args_list[0][1]['type'] == STOPLOSS_ORDERTYPE
+    if ordertype == 'limit':
+        assert api_mock.create_order.call_args_list[0][1]['type'] == STOPLOSS_LIMIT_ORDERTYPE
+        assert api_mock.create_order.call_args_list[0][1]['params'] == {
+            'trading_agreement': 'agree', 'price2': 217.8}
+    else:
+        assert api_mock.create_order.call_args_list[0][1]['type'] == STOPLOSS_ORDERTYPE
+        assert api_mock.create_order.call_args_list[0][1]['params'] == {
+            'trading_agreement': 'agree'}
     assert api_mock.create_order.call_args_list[0][1]['side'] == 'sell'
     assert api_mock.create_order.call_args_list[0][1]['amount'] == 1
     assert api_mock.create_order.call_args_list[0][1]['price'] == 220
-    assert api_mock.create_order.call_args_list[0][1]['params'] == {'trading_agreement': 'agree'}
 
     # test exception handling
     with pytest.raises(DependencyException):
