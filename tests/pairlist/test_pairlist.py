@@ -383,8 +383,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
 
     # Provide for PerformanceFilter's dependency
     mocker.patch.multiple('freqtrade.persistence.Trade',
-                          get_overall_performance=MagicMock(
-                              return_value=[{'pair': 'ETH/BTC', 'profit': 5, 'count': 3}]),
+                          get_overall_performance=MagicMock(return_value=[])
                           )
 
     # Set whitelist_result to None if pairlist is invalid and should produce exception
@@ -729,7 +728,10 @@ def test_pairlistmanager_no_pairlist(mocker, whitelist_conf):
 
 
 @pytest.mark.parametrize("pairlists,pair_allowlist,overall_performance,allowlist_result", [
-    # Happy path, descending order, all values filled
+    # No trades yet
+    ([{"method": "StaticPairList"}, {"method": "PerformanceFilter"}],
+     ['ETH/BTC', 'TKN/BTC', 'LTC/BTC'], [], ['ETH/BTC', 'TKN/BTC', 'LTC/BTC']),
+    # Happy path: Descending order, all values filled
     ([{"method": "StaticPairList"}, {"method": "PerformanceFilter"}],
      ['ETH/BTC', 'TKN/BTC'],
      [{'pair': 'TKN/BTC', 'profit': 5, 'count': 3}, {'pair': 'ETH/BTC', 'profit': 4, 'count': 2}],
