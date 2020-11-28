@@ -333,7 +333,7 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     # PerformanceFilter after StaticPairList
     ([{"method": "StaticPairList"},
       {"method": "PerformanceFilter"}],
-     "BTC", ['ETH/BTC', 'TKN/BTC', 'HOT/BTC']), # Order matches order of appearance in whitelist_conf > exchange > pair_whitelist
+     "BTC", ['ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
     # PerformanceFilter only
     ([{"method": "PerformanceFilter"}],
      "BTC", 'filter_at_the_beginning'),  # OperationalException expected
@@ -383,7 +383,8 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
 
     # Provide for PerformanceFilter's dependency
     mocker.patch.multiple('freqtrade.persistence.Trade',
-        get_overall_performance=MagicMock(return_value=[{'pair':'ETH/BTC','profit':5,'count':3}]),
+        get_overall_performance=MagicMock(
+            return_value=[{'pair': 'ETH/BTC', 'profit': 5, 'count' :3}]),
     )
 
     # Set whitelist_result to None if pairlist is invalid and should produce exception
