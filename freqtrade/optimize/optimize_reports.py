@@ -411,12 +411,13 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Total Profit %', f"{round(strat_results['profit_total'] * 100, 2)}%"),
             ('Trades per day', strat_results['trades_per_day']),
             ('', ''),  # Empty line to improve readability
-            ('Best Pair', f"{strat_results['best_pair']['key']} - "
+            ('Best Pair', f"{strat_results['best_pair']['key']} "
                           f"{round(strat_results['best_pair']['profit_sum_pct'], 2)}%"),
-            ('Worst Pair', f"{strat_results['worst_pair']['key']} - "
+            ('Worst Pair', f"{strat_results['worst_pair']['key']} "
                            f"{round(strat_results['worst_pair']['profit_sum_pct'], 2)}%"),
             ('Best trade', f"{best_trade['pair']} {round(best_trade['profit_percent'] * 100, 2)}%"),
-            ('Worst trade', f"{worst_trade['pair']} {round(worst_trade['profit_percent'] * 100, 2)}%"),
+            ('Worst trade', f"{worst_trade['pair']} "
+                            f"{round(worst_trade['profit_percent'] * 100, 2)}%"),
 
             ('Best day', f"{round(strat_results['backtest_best_day'] * 100, 2)}%"),
             ('Worst day', f"{round(strat_results['backtest_worst_day'] * 100, 2)}%"),

@@ -168,10 +168,10 @@ A backtesting result will look like that:
 | Total Profit %        | 152.41%             |
 | Trades per day        | 3.575               |
 |                       |                     |
-| Best Pair             | LSK/BTC - 26.26%    |
-| Worst Pair            | ZEC/BTC - -10.18%   |
-| Best Trade            | LSK/BTC - 4.25%     |
-| Worst Trade           | ZEC/BTC - -10.25%   |
+| Best Pair             | LSK/BTC 26.26%      |
+| Worst Pair            | ZEC/BTC -10.18%     |
+| Best Trade            | LSK/BTC 4.25%       |
+| Worst Trade           | ZEC/BTC -10.25%     |
 | Best day              | 25.27%              |
 | Worst day             | -30.67%             |
 | Avg. Duration Winners | 4:23:00             |
@@ -244,10 +244,10 @@ It contains some useful key metrics about performance of your strategy on backte
 | Total Profit %        | 152.41%             |
 | Trades per day        | 3.575               |
 |                       |                     |
-| Best Pair             | LSK/BTC - 26.26%    |
-| Worst Pair            | ZEC/BTC - -10.18%   |
-| Best Trade            | LSK/BTC - 4.25%     |
-| Worst Trade           | ZEC/BTC - -10.25%   |
+| Best Pair             | LSK/BTC 26.26%      |
+| Worst Pair            | ZEC/BTC -10.18%     |
+| Best Trade            | LSK/BTC 4.25%       |
+| Worst Trade           | ZEC/BTC -10.25%     |
 | Best day              | 25.27%              |
 | Worst day             | -30.67%             |
 | Avg. Duration Winners | 4:23:00             |
