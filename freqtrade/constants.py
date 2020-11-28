@@ -182,9 +182,6 @@ CONF_SCHEMA = {
         'experimental': {
             'type': 'object',
             'properties': {
-                'use_sell_signal': {'type': 'boolean'},
-                'sell_profit_only': {'type': 'boolean'},
-                'ignore_roi_if_buy_signal': {'type': 'boolean'},
                 'block_bad_exchanges': {'type': 'boolean'}
             }
         },
