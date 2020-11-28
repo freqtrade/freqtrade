@@ -400,6 +400,8 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
 
 def text_table_add_metrics(strat_results: Dict) -> str:
     if len(strat_results['trades']) > 0:
+        best_trade = max(strat_results['trades'], key=lambda x: x['profit_percent'])
+        worst_trade = min(strat_results['trades'], key=lambda x: x['profit_percent'])
         metrics = [
             ('Backtesting from', strat_results['backtest_start'].strftime(DATETIME_PRINT_FORMAT)),
             ('Backtesting to', strat_results['backtest_end'].strftime(DATETIME_PRINT_FORMAT)),
@@ -413,6 +415,9 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                           f"{round(strat_results['best_pair']['profit_sum_pct'], 2)}%"),
             ('Worst Pair', f"{strat_results['worst_pair']['key']} - "
                            f"{round(strat_results['worst_pair']['profit_sum_pct'], 2)}%"),
+            ('Best trade', f"{best_trade['pair']} {round(best_trade['profit_percent'] * 100, 2)}%"),
+            ('Worst trade', f"{worst_trade['pair']} {round(worst_trade['profit_percent'] * 100, 2)}%"),
+
             ('Best day', f"{round(strat_results['backtest_best_day'] * 100, 2)}%"),
             ('Worst day', f"{round(strat_results['backtest_worst_day'] * 100, 2)}%"),
             ('Days win/draw/lose', f"{strat_results['winning_days']} / "
