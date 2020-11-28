@@ -64,9 +64,9 @@ Depending on the space you want to optimize, only some of the below are required
 
 Optional in hyperopt - can also be loaded from a strategy (recommended):
 
-* copy `populate_indicators` from your strategy - otherwise default-strategy will be used
-* copy `populate_buy_trend` from your strategy - otherwise default-strategy will be used
-* copy `populate_sell_trend` from your strategy - otherwise default-strategy will be used
+* `populate_indicators` - fallback to create indicators
+* `populate_buy_trend` - fallback if not optimizing for buy space. should come from strategy
+* `populate_sell_trend` - fallback if not optimizing for sell space. should come from strategy
 
 !!! Note
     You always have to provide a strategy to Hyperopt, even if your custom Hyperopt class contains all methods.
@@ -104,7 +104,7 @@ This command will create a new hyperopt file from a template, allowing you to ge
 There are two places you need to change in your hyperopt file to add a new buy hyperopt for testing:
 
 * Inside `indicator_space()` - the parameters hyperopt shall be optimizing.
-* Inside `populate_buy_trend()` - applying the parameters.
+* Within `buy_strategy_generator()` - populate the nested `populate_buy_trend()` to apply the parameters.
 
 There you have two different types of indicators: 1. `guards` and 2. `triggers`.
 
@@ -128,7 +128,7 @@ Similar to the buy-signal above, sell-signals can also be optimized.
 Place the corresponding settings into the following methods
 
 * Inside `sell_indicator_space()` - the parameters hyperopt shall be optimizing.
-* Inside `populate_sell_trend()` - applying the parameters.
+* Within `sell_strategy_generator()` - populate the nested method `populate_sell_trend()` to apply the parameters.
 
 The configuration and rules are the same than for buy signals.
 To avoid naming collisions in the search-space, please prefix all sell-spaces with `sell-`.
