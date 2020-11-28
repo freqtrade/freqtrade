@@ -58,16 +58,19 @@ def _generate_result_line(result: DataFrame, max_open_trades: int, first_column:
     """
     Generate one result dict, with "first_column" as key.
     """
+    profit_sum = result['profit_percent'].sum()
+    profit_total = profit_sum / max_open_trades
+
     return {
         'key': first_column,
         'trades': len(result),
         'profit_mean': result['profit_percent'].mean() if len(result) > 0 else 0.0,
         'profit_mean_pct': result['profit_percent'].mean() * 100.0 if len(result) > 0 else 0.0,
-        'profit_sum': result['profit_percent'].sum(),
-        'profit_sum_pct': result['profit_percent'].sum() * 100.0,
+        'profit_sum': profit_sum,
+        'profit_sum_pct': round(profit_sum * 100.0, 2),
         'profit_total_abs': result['profit_abs'].sum(),
-        'profit_total': result['profit_percent'].sum() / max_open_trades,
-        'profit_total_pct': result['profit_percent'].sum() * 100.0 / max_open_trades,
+        'profit_total': profit_total,
+        'profit_total_pct': round(profit_total * 100.0, 2),
         'duration_avg': str(timedelta(
                             minutes=round(result['trade_duration'].mean()))
                             ) if not result.empty else '0:00',
@@ -122,8 +125,8 @@ def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List
         result = results.loc[results['sell_reason'] == reason]
 
         profit_mean = result['profit_percent'].mean()
-        profit_sum = result["profit_percent"].sum()
-        profit_percent_tot = result['profit_percent'].sum() / max_open_trades
+        profit_sum = result['profit_percent'].sum()
+        profit_total = profit_sum / max_open_trades
 
         tabular_data.append(
             {
@@ -137,8 +140,8 @@ def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List
                 'profit_sum': profit_sum,
                 'profit_sum_pct': round(profit_sum * 100, 2),
                 'profit_total_abs': result['profit_abs'].sum(),
-                'profit_total': profit_percent_tot,
-                'profit_total_pct': round(profit_percent_tot * 100, 2),
+                'profit_total': profit_total,
+                'profit_total_pct': round(profit_total * 100, 2),
             }
         )
     return tabular_data
