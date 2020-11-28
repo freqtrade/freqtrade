@@ -302,14 +302,10 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "ShuffleFilter"}],
      "USDT", 3),  # whitelist_result is integer -- check only length of randomized pairlist
-    # PerformanceFilter
+    # PerformanceFilter, unneeded seed provided
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "PerformanceFilter", "seed": 77}],
      "USDT", ['ADADOUBLE/USDT', 'ETH/USDT', 'NANO/USDT', 'ADAHALF/USDT']),
-    # PerformanceFilter, other seed
-    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
-      {"method": "PerformanceFilter", "seed": 42}],
-     "USDT", ['ADAHALF/USDT', 'NANO/USDT', 'ADADOUBLE/USDT', 'ETH/USDT']),
     # PerformanceFilter, no seed
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "PerformanceFilter"}],
