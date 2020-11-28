@@ -31,17 +31,17 @@ class PerformanceFilter(IPairList):
 
     def short_desc(self) -> str:
         """
-        Short whitelist method description - used for startup-messages
+        Short allowlist method description - used for startup-messages
         """
         return f"{self.name} - Sorting pairs by performance."
 
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
-        Filters and sorts pairlist and returns the whitelist again.
+        Filters and sorts pairlist and returns the allowlist again.
         Called on each bot iteration - please use internal caching if necessary
         :param pairlist: pairlist to filter or sort
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
-        :return: new whitelist
+        :return: new allowlist
         """
         # Get the trading performance for pairs from database
         performance = pd.DataFrame(Trade.get_overall_performance())
@@ -49,13 +49,18 @@ class PerformanceFilter(IPairList):
         # Skip performance-based sorting if no performance data is available
         if len(performance) == 0:
             return pairlist
-
-        # get pairlist from performance dataframe values
+        
+        # Get pairlist from performance dataframe values
         list_df = pd.DataFrame({'pair': pairlist})
-        # set initial value for pairs with no trades to 0
-        # and sort the list using performance and count
+
+        # Set initial value for pairs with no trades to 0
+        # Sort the list using:
+        #  - primarily performance (high to low)
+        #  - then count (low to high, so as to favor same performance with fewer trades)
+        #  - then pair name alphametically
         sorted_df = list_df.merge(performance, on='pair', how='left')\
-            .fillna(0).sort_values(by=['profit', 'count', 'pair'], ascending=False)
+            .fillna(0).sort_values(by=['count', 'pair'], ascending=True)\
+                .sort_values(by=['profit'], ascending=False)
         pairlist = sorted_df['pair'].tolist()
 
         return pairlist

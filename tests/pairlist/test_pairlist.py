@@ -748,13 +748,20 @@ def test_pairlistmanager_no_pairlist(mocker, whitelist_conf):
      [{'pair': 'ETH/BTC', 'profit': -5, 'count': 100},
       {'pair': 'TKN/BTC', 'profit': 4, 'count': 2}],
      ['TKN/BTC', 'LTC/BTC', 'ETH/BTC']),
-    # Tie in performance data broken by count
+    # Tie in performance data broken by count (ascending)
     ([{"method": "StaticPairList"}, {"method": "PerformanceFilter"}],
      ['ETH/BTC', 'TKN/BTC', 'LTC/BTC'],
-     [{'pair': 'LTC/BTC', 'profit': -5, 'count': 101},
-      {'pair': 'TKN/BTC', 'profit': -5, 'count': 2},
-      {'pair': 'ETH/BTC', 'profit': -5, 'count': 100}],
-     ['LTC/BTC', 'ETH/BTC', 'TKN/BTC']),
+     [{'pair': 'LTC/BTC', 'profit': -5.01, 'count': 101},
+      {'pair': 'TKN/BTC', 'profit': -5.01, 'count': 2},
+      {'pair': 'ETH/BTC', 'profit': -5.01, 'count': 100}],
+     ['TKN/BTC', 'ETH/BTC', 'LTC/BTC']),
+    # Tie in performance and count, broken by alphabetical sort
+    ([{"method": "StaticPairList"}, {"method": "PerformanceFilter"}],
+     ['ETH/BTC', 'TKN/BTC', 'LTC/BTC'],
+     [{'pair': 'LTC/BTC', 'profit': -5.01, 'count': 1},
+      {'pair': 'TKN/BTC', 'profit': -5.01, 'count': 1},
+      {'pair': 'ETH/BTC', 'profit': -5.01, 'count': 1}],
+     ['ETH/BTC', 'LTC/BTC', 'TKN/BTC']),
 ])
 def test_performance_filter(mocker, whitelist_conf, pairlists, pair_allowlist, overall_performance,
                             allowlist_result, tickers, markets, ohlcv_history_list):
