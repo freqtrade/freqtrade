@@ -729,27 +729,32 @@ def test_pairlistmanager_no_pairlist(mocker, whitelist_conf):
 
 @pytest.mark.parametrize("pairlists,pair_allowlist,overall_performance,allowlist_result", [
     # Happy path, descending order, all values filled
-    ([{"method": "StaticPairList"},{"method": "PerformanceFilter"}],
-    ['ETH/BTC','TKN/BTC'],
-    [{'pair':'TKN/BTC','profit':5,'count':3}, {'pair':'ETH/BTC','profit':4,'count':2}],
-    ['TKN/BTC','ETH/BTC']),
+    ([{"method": "StaticPairList"}, {"method": "PerformanceFilter"}],
+     ['ETH/BTC', 'TKN/BTC'],
+     [{'pair': 'TKN/BTC', 'profit': 5, 'count': 3}, {'pair': 'ETH/BTC', 'profit': 4, 'count': 2}],
+     ['TKN/BTC', 'ETH/BTC']),
     # Performance data outside allow list ignored
-    ([{"method": "StaticPairList"},{"method": "PerformanceFilter"}],
-    ['ETH/BTC','TKN/BTC'],
-    [{'pair':'OTHER/BTC','profit':5,'count':3}, {'pair':'ETH/BTC','profit':4,'count':2}],
-    ['ETH/BTC','TKN/BTC']),
+    ([{"method": "StaticPairList"}, {"method": "PerformanceFilter"}],
+     ['ETH/BTC', 'TKN/BTC'],
+     [{'pair': 'OTHER/BTC', 'profit': 5, 'count': 3}, 
+      {'pair': 'ETH/BTC', 'profit': 4, 'count': 2}],
+     ['ETH/BTC', 'TKN/BTC']),
     # Partial performance data missing and sorted between positive and negative profit
-    ([{"method": "StaticPairList"},{"method": "PerformanceFilter"}],
-    ['ETH/BTC','TKN/BTC','LTC/BTC'],
-    [{'pair':'ETH/BTC','profit':-5,'count':100}, {'pair':'TKN/BTC','profit':4,'count':2}],
-    ['TKN/BTC','LTC/BTC','ETH/BTC']),
+    ([{"method": "StaticPairList"}, {"method": "PerformanceFilter"}],
+     ['ETH/BTC', 'TKN/BTC', 'LTC/BTC'],
+     [{'pair': 'ETH/BTC', 'profit': -5, 'count': 100},
+      {'pair': 'TKN/BTC', 'profit': 4, 'count': 2}],
+     ['TKN/BTC', 'LTC/BTC', 'ETH/BTC']),
     # Tie in performance data broken by count
-    ([{"method": "StaticPairList"},{"method": "PerformanceFilter"}],
-    ['ETH/BTC','TKN/BTC','LTC/BTC'],
-    [{'pair':'LTC/BTC','profit':-5,'count':101}, {'pair':'TKN/BTC','profit':-5,'count':2}, {'pair':'ETH/BTC','profit':-5,'count':100}, ],
-    ['LTC/BTC','ETH/BTC','TKN/BTC']),
+    ([{"method": "StaticPairList"}, {"method": "PerformanceFilter"}],
+     ['ETH/BTC', 'TKN/BTC', 'LTC/BTC'],
+     [{'pair': 'LTC/BTC', 'profit': -5, 'count': 101},
+      {'pair': 'TKN/BTC', 'profit': -5, 'count': 2},
+      {'pair': 'ETH/BTC', 'profit': -5, 'count': 100}],
+     ['LTC/BTC', 'ETH/BTC', 'TKN/BTC']),
 ])
-def test_performance_filter(mocker, whitelist_conf, pairlists, pair_allowlist, overall_performance, allowlist_result, tickers, markets, ohlcv_history_list):
+def test_performance_filter(mocker, whitelist_conf, pairlists, pair_allowlist, overall_performance,
+                            allowlist_result, tickers, markets, ohlcv_history_list):
     allowlist_conf = whitelist_conf
     allowlist_conf['pairlists'] = pairlists
     allowlist_conf['exchange']['pair_whitelist'] = pair_allowlist
@@ -761,14 +766,12 @@ def test_performance_filter(mocker, whitelist_conf, pairlists, pair_allowlist, o
                           get_tickers=tickers,
                           markets=PropertyMock(return_value=markets)
                           )
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        get_historic_ohlcv=MagicMock(return_value=ohlcv_history_list),
-    )
-    
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          get_historic_ohlcv=MagicMock(return_value=ohlcv_history_list),
+                          )    
     mocker.patch.multiple('freqtrade.persistence.Trade',
-        get_overall_performance=MagicMock(return_value=overall_performance),
-    )
+                          get_overall_performance=MagicMock(return_value=overall_performance),
+                          )
     freqtrade.pairlists.refresh_pairlist()
     allowlist = freqtrade.pairlists.whitelist
     assert allowlist == allowlist_result
