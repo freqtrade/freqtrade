@@ -302,14 +302,10 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "ShuffleFilter"}],
      "USDT", 3),  # whitelist_result is integer -- check only length of randomized pairlist
-    # PerformanceFilter, unneeded seed provided
-    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
-      {"method": "PerformanceFilter", "seed": 77}],
-     "USDT", ['ADADOUBLE/USDT', 'ETH/USDT', 'NANO/USDT', 'ADAHALF/USDT']),
-    # PerformanceFilter, no seed
+    # PerformanceFilter
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "PerformanceFilter"}],
-     "USDT", 3),  # whitelist_result is integer -- check only length of randomized pairlist
+     "USDT", ['ETH/USDT', 'NANO/USDT', 'ADAHALF/USDT', 'ADADOUBLE/USDT']),
     # AgeFilter only
     ([{"method": "AgeFilter", "min_days_listed": 2}],
      "BTC", 'filter_at_the_beginning'),  # OperationalException expected
@@ -381,6 +377,11 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
         get_historic_ohlcv=MagicMock(return_value=ohlcv_history_list),
     )
 
+    # Provide for PerformanceFilter's dependency
+    mocker.patch.multiple('freqtrade.persistence.Trade',
+        get_overall_performance=MagicMock(return_value=[{'pair':'ETH/BTC','profit':5,'count':3}]),
+    )
+
     # Set whitelist_result to None if pairlist is invalid and should produce exception
     if whitelist_result == 'filter_at_the_beginning':
         with pytest.raises(OperationalException,
@@ -394,7 +395,6 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
         assert isinstance(whitelist, list)
 
         # Verify length of pairlist matches (used for ShuffleFilter without seed)
-        # TBD if this applies to PerformanceFilter
         if type(whitelist_result) is list:
             assert whitelist == whitelist_result
         else:
@@ -544,7 +544,7 @@ def test_volumepairlist_caching(mocker, markets, whitelist_conf, tickers):
     assert freqtrade.pairlists._pairlist_handlers[0]._last_refresh == lrf
 
 
-def test_agefilter_min_days_listed_too_small(mocker, default_conf, markets, tickers, caplog):
+def test_agefilter_min_days_listed_too_small(mocker, default_conf, markets, tickers):
     default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
                                  {'method': 'AgeFilter', 'min_days_listed': -1}]
 
@@ -559,7 +559,7 @@ def test_agefilter_min_days_listed_too_small(mocker, default_conf, markets, tick
         get_patched_freqtradebot(mocker, default_conf)
 
 
-def test_agefilter_min_days_listed_too_large(mocker, default_conf, markets, tickers, caplog):
+def test_agefilter_min_days_listed_too_large(mocker, default_conf, markets, tickers):
     default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
                                  {'method': 'AgeFilter', 'min_days_listed': 99999}]
 
@@ -660,3 +660,31 @@ def test_pairlistmanager_no_pairlist(mocker, whitelist_conf):
     with pytest.raises(OperationalException,
                        match=r"No Pairlist Handlers defined"):
         get_patched_freqtradebot(mocker, whitelist_conf)
+
+
+@pytest.mark.parametrize("pairlists,base_currency,overall_performance,expected", [
+    # Happy path, descening order, all values filled
+    ([{"method": "StaticPairList"},{"method": "PerformanceFilter"}],'BTC',[{'pair':'ETH/BTC','profit':5,'count':3}, {'pair':'ETC/BTC','profit':4,'count':2}],['ETC/BTC']),
+])
+def test_performance_filter(mocker, whitelist_conf, base_currency, pairlists, overall_performance, expected, tickers, markets, ohlcv_history_list):
+    whitelist_conf['pairlists'] = pairlists
+    whitelist_conf['stake_currency'] = base_currency
+
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+
+    freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          get_tickers=tickers,
+                          markets=PropertyMock(return_value=markets)
+                          )
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_historic_ohlcv=MagicMock(return_value=ohlcv_history_list),
+    )
+    
+    mocker.patch.multiple('freqtrade.persistence.Trade',
+        get_overall_performance=MagicMock(return_value=overall_performance),
+    )
+    freqtrade.pairlists.refresh_pairlist()
+    whitelist = freqtrade.pairlists.whitelist
+    assert whitelist == expected
