@@ -45,10 +45,10 @@ class PerformanceFilter(IPairList):
         """
         # Get the trading performance for pairs from database
         perf = pd.DataFrame(Trade.get_overall_performance())
-        # update pairlist with values from performance dataframe
+        # get pairlist from performance dataframe values
+        list_df = pd.DataFrame({'pair':pairlist})
         # set initial value for pairs with no trades to 0
         # and sort the list using performance and count
-        list_df = pd.DataFrame({'pair':pairlist})
         sorted_df = list_df.join(perf.set_index('pair'), on='pair')\
             .fillna(0).sort_values(by=['profit', 'count'], ascending=False)
         pairlist = sorted_df['pair'].tolist()
