@@ -397,7 +397,7 @@ class Trade(_DECL_BASE):
             if self.is_open:
                 logger.info(f'{order_type.upper()}_SELL has been fulfilled for {self}.')
             self.close(safe_value_fallback(order, 'average', 'price'))
-        elif order_type in ('stop_loss_limit', 'stop-loss', 'stop'):
+        elif order_type in ('stop_loss_limit', 'stop-loss', 'stop-loss-limit', 'stop'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
             if self.is_open:

@@ -58,7 +58,7 @@ def whitelist_conf_2(default_conf):
 
 
 @pytest.fixture(scope="function")
-def whitelist_conf_3(default_conf):
+def whitelist_conf_agefilter(default_conf):
     default_conf['stake_currency'] = 'BTC'
     default_conf['exchange']['pair_whitelist'] = [
         'ETH/BTC', 'TKN/BTC', 'BLK/BTC', 'LTC/BTC',
@@ -351,6 +351,10 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 20, "sort_key": "quoteVolume"},
       {"method": "PriceFilter", "low_price_ratio": 0.02}],
         "USDT", ['ETH/USDT', 'NANO/USDT']),
+    ([{"method": "StaticPairList"},
+      {"method": "RangeStabilityFilter", "lookback_days": 10,
+       "min_rate_of_change": 0.01, "refresh_period": 1440}],
+     "BTC", ['ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
 ])
 def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, tickers,
                                       ohlcv_history_list, pairlists, base_currency,
@@ -575,7 +579,7 @@ def test_agefilter_min_days_listed_too_large(mocker, default_conf, markets, tick
         get_patched_freqtradebot(mocker, default_conf)
 
 
-def test_agefilter_caching(mocker, markets, whitelist_conf_3, tickers, ohlcv_history_list):
+def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, ohlcv_history_list):
 
     mocker.patch.multiple('freqtrade.exchange.Exchange',
                           markets=PropertyMock(return_value=markets),
@@ -587,13 +591,69 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_3, tickers, ohlcv_his
         get_historic_ohlcv=MagicMock(return_value=ohlcv_history_list),
     )
 
-    freqtrade = get_patched_freqtradebot(mocker, whitelist_conf_3)
+    freqtrade = get_patched_freqtradebot(mocker, whitelist_conf_agefilter)
     assert freqtrade.exchange.get_historic_ohlcv.call_count == 0
     freqtrade.pairlists.refresh_pairlist()
     assert freqtrade.exchange.get_historic_ohlcv.call_count > 0
 
     previous_call_count = freqtrade.exchange.get_historic_ohlcv.call_count
     freqtrade.pairlists.refresh_pairlist()
+    # Should not have increased since first call.
+    assert freqtrade.exchange.get_historic_ohlcv.call_count == previous_call_count
+
+
+def test_rangestabilityfilter_checks(mocker, default_conf, markets, tickers):
+    default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
+                                 {'method': 'RangeStabilityFilter', 'lookback_days': 99999}]
+
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          markets=PropertyMock(return_value=markets),
+                          exchange_has=MagicMock(return_value=True),
+                          get_tickers=tickers
+                          )
+
+    with pytest.raises(OperationalException,
+                       match=r'RangeStabilityFilter requires lookback_days to not exceed '
+                             r'exchange max request size \([0-9]+\)'):
+        get_patched_freqtradebot(mocker, default_conf)
+
+    default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
+                                 {'method': 'RangeStabilityFilter', 'lookback_days': 0}]
+
+    with pytest.raises(OperationalException,
+                       match='RangeStabilityFilter requires lookback_days to be >= 1'):
+        get_patched_freqtradebot(mocker, default_conf)
+
+
+@pytest.mark.parametrize('min_rate_of_change,expected_length', [
+    (0.01, 5),
+    (0.05, 0),  # Setting rate_of_change to 5% removes all pairs from the whitelist.
+])
+def test_rangestabilityfilter_caching(mocker, markets, default_conf, tickers, ohlcv_history_list,
+                                      min_rate_of_change, expected_length):
+    default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
+                                 {'method': 'RangeStabilityFilter', 'lookback_days': 2,
+                                  'min_rate_of_change': min_rate_of_change}]
+
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          markets=PropertyMock(return_value=markets),
+                          exchange_has=MagicMock(return_value=True),
+                          get_tickers=tickers
+                          )
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_historic_ohlcv=MagicMock(return_value=ohlcv_history_list),
+    )
+
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    assert freqtrade.exchange.get_historic_ohlcv.call_count == 0
+    freqtrade.pairlists.refresh_pairlist()
+    assert len(freqtrade.pairlists.whitelist) == expected_length
+    assert freqtrade.exchange.get_historic_ohlcv.call_count > 0
+
+    previous_call_count = freqtrade.exchange.get_historic_ohlcv.call_count
+    freqtrade.pairlists.refresh_pairlist()
+    assert len(freqtrade.pairlists.whitelist) == expected_length
     # Should not have increased since first call.
     assert freqtrade.exchange.get_historic_ohlcv.call_count == previous_call_count
 
@@ -633,6 +693,11 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_3, tickers, ohlcv_his
      None,
      "PriceFilter requires max_price to be >= 0"
      ),  # OperationalException expected
+    ({"method": "RangeStabilityFilter", "lookback_days": 10, "min_rate_of_change": 0.01},
+     "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate of change below "
+     "0.01 over the last days.'}]",
+        None
+     ),
 ])
 def test_pricefilter_desc(mocker, whitelist_conf, markets, pairlistconfig,
                           desc_expected, exception_expected):
