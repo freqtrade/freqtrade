@@ -332,7 +332,7 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
      "BTC", ['ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
     # PerformanceFilter only
     ([{"method": "PerformanceFilter"}],
-     "BTC", 'filter_at_the_beginning'),  # OperationalException expected
+     "BTC", 'filter_at_the_beginning'), # OperationalException expected
     # SpreadFilter after StaticPairList
     ([{"method": "StaticPairList"},
       {"method": "SpreadFilter", "max_spread_ratio": 0.005}],
