@@ -43,7 +43,6 @@ class PerformanceFilter(IPairList):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
-
         # Get the trading performance for pairs from database
         perf = pd.DataFrame(Trade.get_overall_performance())
         # update pairlist with values from performance dataframe
@@ -53,6 +52,5 @@ class PerformanceFilter(IPairList):
         sorted_df = list_df.join(perf.set_index('pair'), on='pair')\
             .fillna(0).sort_values(by=['profit', 'count'], ascending=False)
         pairlist = sorted_df['pair'].tolist()
-        
 
         return pairlist

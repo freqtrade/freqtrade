@@ -425,7 +425,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
                     assert not log_has(logmsg, caplog)
 
 
-def test_PrecisionFilter_error(mocker, whitelist_conf, tickers) -> None:
+def test_PrecisionFilter_error(mocker, whitelist_conf) -> None:
     whitelist_conf['pairlists'] = [{"method": "StaticPairList"}, {"method": "PrecisionFilter"}]
     del whitelist_conf['stoploss']
 
@@ -498,7 +498,7 @@ def test__whitelist_for_active_markets(mocker, whitelist_conf, markets, pairlist
 
 
 @pytest.mark.parametrize("pairlist", AVAILABLE_PAIRLISTS)
-def test__whitelist_for_active_markets_empty(mocker, whitelist_conf, markets, pairlist, tickers):
+def test__whitelist_for_active_markets_empty(mocker, whitelist_conf, pairlist, tickers):
     whitelist_conf['pairlists'][0]['method'] = pairlist
 
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
@@ -514,7 +514,7 @@ def test__whitelist_for_active_markets_empty(mocker, whitelist_conf, markets, pa
         pairlist_handler._whitelist_for_active_markets(['ETH/BTC'])
 
 
-def test_volumepairlist_invalid_sortvalue(mocker, markets, whitelist_conf):
+def test_volumepairlist_invalid_sortvalue(mocker, whitelist_conf):
     whitelist_conf['pairlists'][0].update({"sort_key": "asdf"})
 
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
@@ -652,7 +652,7 @@ def test_pricefilter_desc(mocker, whitelist_conf, markets, pairlistconfig,
             freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
 
 
-def test_pairlistmanager_no_pairlist(mocker, markets, whitelist_conf, caplog):
+def test_pairlistmanager_no_pairlist(mocker, whitelist_conf):
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
 
     whitelist_conf['pairlists'] = []
