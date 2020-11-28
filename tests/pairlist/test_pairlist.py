@@ -383,9 +383,9 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
 
     # Provide for PerformanceFilter's dependency
     mocker.patch.multiple('freqtrade.persistence.Trade',
-                          get_overall_performance=MagicMock(return_value=\
-                              [{'pair': 'ETH/BTC', 'profit': 5, 'count': 3}]),
-    )
+                          get_overall_performance=MagicMock(
+                              return_value=[{'pair': 'ETH/BTC', 'profit': 5, 'count': 3}]),
+                          )
 
     # Set whitelist_result to None if pairlist is invalid and should produce exception
     if whitelist_result == 'filter_at_the_beginning':
