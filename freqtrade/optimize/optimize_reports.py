@@ -256,13 +256,18 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
                                                   results=results.loc[results['open_at_end']],
                                                   skip_nan=True)
         daily_stats = generate_daily_stats(results)
-
+        best_pair = max([pair for pair in pair_results if pair['key'] != 'TOTAL'],
+                        key=lambda x: x['profit_sum']) if len(pair_results) > 1 else None
+        worst_pair = min([pair for pair in pair_results if pair['key'] != 'TOTAL'],
+                         key=lambda x: x['profit_sum']) if len(pair_results) > 1 else None
         results['open_timestamp'] = results['open_date'].astype(int64) // 1e6
         results['close_timestamp'] = results['close_date'].astype(int64) // 1e6
 
         backtest_days = (max_date - min_date).days
         strat_stats = {
             'trades': results.to_dict(orient='records'),
+            'best_pair': best_pair,
+            'worst_pair': worst_pair,
             'results_per_pair': pair_results,
             'sell_reason_summary': sell_reason_stats,
             'left_open_trades': left_open_results,
@@ -395,17 +400,19 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
 
 def text_table_add_metrics(strat_results: Dict) -> str:
     if len(strat_results['trades']) > 0:
-        min_trade = min(strat_results['trades'], key=lambda x: x['open_date'])
         metrics = [
             ('Backtesting from', strat_results['backtest_start'].strftime(DATETIME_PRINT_FORMAT)),
             ('Backtesting to', strat_results['backtest_end'].strftime(DATETIME_PRINT_FORMAT)),
             ('Max open trades', strat_results['max_open_trades']),
             ('', ''),  # Empty line to improve readability
             ('Total trades', strat_results['total_trades']),
-            ('First trade', min_trade['open_date'].strftime(DATETIME_PRINT_FORMAT)),
-            ('First trade Pair', min_trade['pair']),
             ('Total Profit %', f"{round(strat_results['profit_total'] * 100, 2)}%"),
             ('Trades per day', strat_results['trades_per_day']),
+            ('', ''),  # Empty line to improve readability
+            ('Best Pair', f"{strat_results['best_pair']['key']} - "
+                          f"{round(strat_results['best_pair']['profit_sum_pct'], 2)}%"),
+            ('Worst Pair', f"{strat_results['worst_pair']['key']} - "
+                           f"{round(strat_results['worst_pair']['profit_sum_pct'], 2)}%"),
             ('Best day', f"{round(strat_results['backtest_best_day'] * 100, 2)}%"),
             ('Worst day', f"{round(strat_results['backtest_worst_day'] * 100, 2)}%"),
             ('Days win/draw/lose', f"{strat_results['winning_days']} / "

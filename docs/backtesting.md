@@ -165,8 +165,8 @@ A backtesting result will look like that:
 | Max open trades       | 3                   |
 |                       |                     |
 | Total trades          | 429                 |
-| First trade           | 2019-01-01 18:30:00 |
-| First trade Pair      | EOS/USDT            |
+| Best Pair             | LSK/BTC - 26.26%    |
+| Worst Pair            | ZEC/BTC - -10.18%   |
 | Total Profit %        | 152.41%             |
 | Trades per day        | 3.575               |
 | Best day              | 25.27%              |
@@ -238,8 +238,8 @@ It contains some useful key metrics about performance of your strategy on backte
 | Max open trades       | 3                   |
 |                       |                     |
 | Total trades          | 429                 |
-| First trade           | 2019-01-01 18:30:00 |
-| First trade Pair      | EOS/USDT            |
+| Best Pair             | LSK/BTC - 26.26%    |
+| Worst Pair            | ZEC/BTC - -10.18%   |
 | Total Profit %        | 152.41%             |
 | Trades per day        | 3.575               |
 | Best day              | 25.27%              |
@@ -258,8 +258,8 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Backtesting from` / `Backtesting to`: Backtesting range (usually defined with the `--timerange` option).
 - `Max open trades`: Setting of `max_open_trades` (or `--max-open-trades`) - to clearly see settings for this.
 - `Total trades`: Identical to the total trades of the backtest output table.
-- `First trade`: First trade entered.
-- `First trade pair`: Which pair was part of the first trade.
+- `Best Pair`: Which pair performed best, and it's corresponding `Cum Profit %`.
+- `Worst pair`: Which pair performed worst and it's corresponding `Cum Profit %`.
 - `Total Profit %`: Total profit per stake amount. Aligned to the TOTAL column of the first table.
 - `Trades per day`: Total trades divided by the backtesting duration in days (this will give you information about how many trades to expect from the strategy).
 - `Best day` / `Worst day`: Best and worst day based on daily profit.
