@@ -246,7 +246,7 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
       {"method": "PrecisionFilter"},
       {"method": "PriceFilter", "low_price_ratio": 0.03},
       {"method": "SpreadFilter", "max_spread_ratio": 0.005},
-      {"method": "ShuffleFilter"}],
+      {"method": "ShuffleFilter"}, {"method": "PerformanceFilter"}],
      "ETH", []),
     # AgeFilter and VolumePairList (require 2 days only, all should pass age test)
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
@@ -302,6 +302,18 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "ShuffleFilter"}],
      "USDT", 3),  # whitelist_result is integer -- check only length of randomized pairlist
+    # PerformanceFilter
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
+      {"method": "PerformanceFilter", "seed": 77}],
+     "USDT", ['ADADOUBLE/USDT', 'ETH/USDT', 'NANO/USDT', 'ADAHALF/USDT']),
+    # PerformanceFilter, other seed
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
+      {"method": "PerformanceFilter", "seed": 42}],
+     "USDT", ['ADAHALF/USDT', 'NANO/USDT', 'ADADOUBLE/USDT', 'ETH/USDT']),
+    # PerformanceFilter, no seed
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
+      {"method": "PerformanceFilter"}],
+     "USDT", 3),  # whitelist_result is integer -- check only length of randomized pairlist
     # AgeFilter only
     ([{"method": "AgeFilter", "min_days_listed": 2}],
      "BTC", 'filter_at_the_beginning'),  # OperationalException expected
@@ -325,6 +337,13 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
      "BTC", ['TKN/BTC', 'ETH/BTC', 'HOT/BTC']),
     # ShuffleFilter only
     ([{"method": "ShuffleFilter", "seed": 42}],
+     "BTC", 'filter_at_the_beginning'),  # OperationalException expected
+    # PrecisionFilter after StaticPairList
+    ([{"method": "StaticPairList"},
+      {"method": "PrecisionFilter", "seed": 42}],
+     "BTC", ['TKN/BTC', 'ETH/BTC', 'HOT/BTC']),
+    # PrecisionFilter only
+    ([{"method": "PrecisionFilter", "seed": 42}],
      "BTC", 'filter_at_the_beginning'),  # OperationalException expected
     # SpreadFilter after StaticPairList
     ([{"method": "StaticPairList"},
@@ -379,6 +398,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
         assert isinstance(whitelist, list)
 
         # Verify length of pairlist matches (used for ShuffleFilter without seed)
+        # TBD if this applies to PerformanceFilter
         if type(whitelist_result) is list:
             assert whitelist == whitelist_result
         else:
