@@ -55,7 +55,7 @@ class PerformanceFilter(IPairList):
         # set initial value for pairs with no trades to 0
         # and sort the list using performance and count
         sorted_df = list_df.merge(performance, on='pair', how='left')\
-            .fillna(0).sort_values(by=['profit', 'count'], ascending=False)
+            .fillna(0).sort_values(by=['profit', 'count', 'pair'], ascending=False)
         pairlist = sorted_df['pair'].tolist()
 
         return pairlist
