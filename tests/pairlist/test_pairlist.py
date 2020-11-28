@@ -302,10 +302,6 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "ShuffleFilter"}],
      "USDT", 3),  # whitelist_result is integer -- check only length of randomized pairlist
-    # PerformanceFilter
-    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
-      {"method": "PerformanceFilter"}],
-     "USDT", ['ETH/USDT', 'NANO/USDT', 'ADAHALF/USDT', 'ADADOUBLE/USDT']),
     # AgeFilter only
     ([{"method": "AgeFilter", "min_days_listed": 2}],
      "BTC", 'filter_at_the_beginning'),  # OperationalException expected
