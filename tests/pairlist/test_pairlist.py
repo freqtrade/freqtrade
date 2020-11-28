@@ -383,8 +383,8 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
 
     # Provide for PerformanceFilter's dependency
     mocker.patch.multiple('freqtrade.persistence.Trade',
-        get_overall_performance=MagicMock(
-            return_value=[{'pair': 'ETH/BTC', 'profit': 5, 'count' :3}]),
+                          get_overall_performance=MagicMock(return_value=\
+                              [{'pair': 'ETH/BTC', 'profit': 5, 'count': 3}]),
     )
 
     # Set whitelist_result to None if pairlist is invalid and should produce exception
@@ -737,7 +737,7 @@ def test_pairlistmanager_no_pairlist(mocker, whitelist_conf):
     # Performance data outside allow list ignored
     ([{"method": "StaticPairList"}, {"method": "PerformanceFilter"}],
      ['ETH/BTC', 'TKN/BTC'],
-     [{'pair': 'OTHER/BTC', 'profit': 5, 'count': 3}, 
+     [{'pair': 'OTHER/BTC', 'profit': 5, 'count': 3},
       {'pair': 'ETH/BTC', 'profit': 4, 'count': 2}],
      ['ETH/BTC', 'TKN/BTC']),
     # Partial performance data missing and sorted between positive and negative profit
@@ -769,7 +769,7 @@ def test_performance_filter(mocker, whitelist_conf, pairlists, pair_allowlist, o
                           )
     mocker.patch.multiple('freqtrade.exchange.Exchange',
                           get_historic_ohlcv=MagicMock(return_value=ohlcv_history_list),
-                          )    
+                          )
     mocker.patch.multiple('freqtrade.persistence.Trade',
                           get_overall_performance=MagicMock(return_value=overall_performance),
                           )
