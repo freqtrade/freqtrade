@@ -15,6 +15,7 @@ Inactive markets are always removed from the resulting pairlist. Explicitly blac
 * [`StaticPairList`](#static-pair-list) (default, if not configured differently)
 * [`VolumePairList`](#volume-pair-list)
 * [`AgeFilter`](#agefilter)
+* [`PerformanceFilter`](#performancefilter)
 * [`PrecisionFilter`](#precisionfilter)
 * [`PriceFilter`](#pricefilter)
 * [`ShuffleFilter`](#shufflefilter)
@@ -72,6 +73,10 @@ in the first few days while the pair goes through its price-discovery period. Bo
 be caught out buying before the pair has finished dropping in price.
 
 This filter allows freqtrade to ignore pairs until they have been listed for at least `min_days_listed` days.
+
+#### PerformanceFilter
+
+Lorem ipsum.
 
 #### PrecisionFilter
 
