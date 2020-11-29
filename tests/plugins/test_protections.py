@@ -54,6 +54,7 @@ def test_stoploss_guard(mocker, default_conf, fee, caplog):
     default_conf['protections'] = [{
         "method": "StoplossGuard",
         "lookback_period": 60,
+        "stop_duration": 40,
         "trade_limit": 2
     }]
     freqtrade = get_patched_freqtradebot(mocker, default_conf)

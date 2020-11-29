@@ -94,6 +94,8 @@ Below is an outline of exception inheritance hierarchy:
 +---+ StrategyError
 ```
 
+---
+
 ## Plugins
 
 ### Pairlists
@@ -203,6 +205,8 @@ The `until` portion should be calculated using the provided `calculate_lock_end(
 All Protections should use `"stop_duration"` to define how long a a pair (or all pairs) should be locked.
 The content of this is made available as `self._stop_duration` to the each Protection.
 
+If your protection requires a look-back period, please use `"lookback_period"` to keep different protections aligned.
+
 #### Global vs. local stops
 
 Protections can have 2 different ways to stop trading for a limited :
@@ -220,6 +224,13 @@ The method `stop_per_pair()` will be called whenever a trade closed (sell order 
 These Protections should do their evaluation across all pairs, and consequently will also lock all pairs from trading (called a global PairLock).
 Global protection must set `has_global_stop=True` to be evaluated for global stops.
 The method `global_stop()` will be called whenever a trade closed (sell order completed).
+
+##### Protections - calculating lock end time
+
+Protections should calculate the lock end time based on the last trade it considers.
+This avoids relocking should the lookback-period be longer than the actual lock period.
+
+---
 
 ## Implement a new Exchange (WIP)
 
