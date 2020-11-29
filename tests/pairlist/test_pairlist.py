@@ -326,7 +326,7 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     # ShuffleFilter only
     ([{"method": "ShuffleFilter", "seed": 42}],
      "BTC", 'filter_at_the_beginning'),  # OperationalException expected
-    # PerformanceFilter after StaticPairList 
+    # PerformanceFilter after StaticPairList
     ([{"method": "StaticPairList"},
       {"method": "PerformanceFilter"}],
      "BTC", ['ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
