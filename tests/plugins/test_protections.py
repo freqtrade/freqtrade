@@ -1,5 +1,5 @@
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -122,6 +122,12 @@ def test_stoploss_guard(mocker, default_conf, fee, caplog):
     assert freqtrade.protections.global_stop()
     assert log_has_re(message, caplog)
     assert PairLocks.is_global_lock()
+
+    # Test 5m after lock-period - this should try and relock the pair, but end-time
+    # should be the previous end-time
+    end_time = PairLocks.get_pair_longest_lock('*').lock_end_time + timedelta(minutes=5)
+    assert freqtrade.protections.global_stop(end_time)
+    assert not PairLocks.is_global_lock(end_time)
 
 
 @pytest.mark.parametrize('only_per_pair', [False, True])
