@@ -77,7 +77,7 @@ This filter allows freqtrade to ignore pairs until they have been listed for at 
 
 #### PerformanceFilter
 
-Sorts pairs by performance, as follows:
+Sorts pairs by past trade performance, as follows:
 1. Positive performance.
 2. No closed trades yet.
 3. Negative performance.
