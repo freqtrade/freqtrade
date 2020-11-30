@@ -67,20 +67,25 @@ function updateenv() {
         REQUIREMENTS=requirements.txt
     fi
     REQUIREMENTS_HYPEROPT=""
-    if [ "${SYS_ARCH}" != "armv7l" ]; then
+    REQUIREMENTS_PLOT=""
+     read -p "Do you want to install plotting dependencies (plotly) [y/N]? "
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        REQUIREMENTS_PLOT="-r requirements-plot.txt"
+    fi
+    if [ "${SYS_ARCH}" == "armv7l" ]; then
+        echo "Detected Raspberry, installing cython, skipping hyperopt installation."
+        ${PYTHON} -m pip install --upgrade cython
+    else
         # Is not Raspberry
-        read -p "Do you want to install hyperopt dependencies for dev [y/N]? "
+        read -p "Do you want to install hyperopt dependencies [y/N]? "
         if [[ $REPLY =~ ^[Yy]$ ]]
         then
             REQUIREMENTS_HYPEROPT="-r requirements-hyperopt.txt"
         fi
     fi
 
-    if [ "${SYS_ARCH}" == "armv7l" ]; then
-        echo "Detected Raspberry, installing cython."
-        ${PYTHON} -m pip install --upgrade cython
-    fi
-    ${PYTHON} -m pip install --upgrade -r ${REQUIREMENTS} ${REQUIREMENTS_HYPEROPT}
+    ${PYTHON} -m pip install --upgrade -r ${REQUIREMENTS} ${REQUIREMENTS_HYPEROPT} ${REQUIREMENTS_PLOT}
     if [ $? -ne 0 ]; then
         echo "Failed installing dependencies"
         exit 1
