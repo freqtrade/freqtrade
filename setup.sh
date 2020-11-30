@@ -56,6 +56,7 @@ function updateenv() {
         exit 1
     fi
     source .env/bin/activate
+    SYS_ARCH=$(uname -m)
     echo "pip install in-progress. Please wait..."
     ${PYTHON} -m pip install --upgrade pip
     read -p "Do you want to install dependencies for dev [y/N]? "
@@ -65,12 +66,21 @@ function updateenv() {
     else
         REQUIREMENTS=requirements.txt
     fi
-    SYS_ARCH=$(uname -m)
+    REQUIREMENTS_HYPEROPT=""
+    if [ "${SYS_ARCH}" != "armv7l" ]; then
+        # Is not Raspberry
+        read -p "Do you want to install hyperopt dependencies for dev [y/N]? "
+        if [[ $REPLY =~ ^[Yy]$ ]]
+        then
+            REQUIREMENTS_HYPEROPT="-r requirements-hyperopt.txt"
+        fi
+    fi
+
     if [ "${SYS_ARCH}" == "armv7l" ]; then
         echo "Detected Raspberry, installing cython."
         ${PYTHON} -m pip install --upgrade cython
     fi
-    ${PYTHON} -m pip install --upgrade -r ${REQUIREMENTS}
+    ${PYTHON} -m pip install --upgrade -r ${REQUIREMENTS} ${REQUIREMENTS_HYPEROPT}
     if [ $? -ne 0 ]; then
         echo "Failed installing dependencies"
         exit 1

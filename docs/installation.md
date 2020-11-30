@@ -114,7 +114,7 @@ OS Specific steps are listed first, the [Common](#common) section below is neces
     ``` bash
     sudo apt-get install python3-venv libatlas-base-dev
     # Use pywheels.org to speed up installation
-    sudo echo "[global]\nextra-index-url=https://www.piwheels.org/simple" > sudo tee /etc/pip.conf
+    sudo echo "[global]\nextra-index-url=https://www.piwheels.org/simple" > tee /etc/pip.conf
 
     git clone https://github.com/freqtrade/freqtrade.git
     cd freqtrade
