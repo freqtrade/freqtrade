@@ -15,9 +15,7 @@ logger = logging.getLogger(__name__)
 
 class StoplossGuard(IProtection):
 
-    # Can globally stop the bot
     has_global_stop: bool = True
-    # Can stop trading for one pair
     has_local_stop: bool = True
 
     def __init__(self, config: Dict[str, Any], protection_config: Dict[str, Any]) -> None:

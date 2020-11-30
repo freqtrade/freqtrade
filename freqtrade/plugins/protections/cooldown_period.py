@@ -12,9 +12,7 @@ logger = logging.getLogger(__name__)
 
 class CooldownPeriod(IProtection):
 
-    # Can globally stop the bot
     has_global_stop: bool = False
-    # Can stop trading for one pair
     has_local_stop: bool = True
 
     def __init__(self, config: Dict[str, Any], protection_config: Dict[str, Any]) -> None:
