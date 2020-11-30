@@ -46,7 +46,7 @@ def test_protectionmanager(mocker, default_conf):
         if not handler.has_global_stop:
             assert handler.global_stop(datetime.utcnow()) == (False, None, None)
         if not handler.has_local_stop:
-            assert handler.local_stop('XRP/BTC', datetime.utcnow()) == (False, None, None)
+            assert handler.stop_per_pair('XRP/BTC', datetime.utcnow()) == (False, None, None)
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -249,6 +249,71 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog):
     assert not PairLocks.is_global_lock()
 
 
+@pytest.mark.usefixtures("init_persistence")
+def test_MaxDrawdown(mocker, default_conf, fee, caplog):
+    default_conf['protections'] = [{
+        "method": "MaxDrawdown",
+        "lookback_period": 1000,
+        "stopduration": 60,
+        "trade_limit": 3,
+        "max_allowed_drawdown": 0.15
+    }]
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    message = r"Trading stopped due to Max.*"
+
+    assert not freqtrade.protections.global_stop()
+    assert not freqtrade.protections.stop_per_pair('XRP/BTC')
+    caplog.clear()
+
+    Trade.session.add(generate_mock_trade(
+        'XRP/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        min_ago_open=1000, min_ago_close=900, profit_rate=1.1,
+    ))
+    Trade.session.add(generate_mock_trade(
+        'XRP/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        min_ago_open=500, min_ago_close=400, profit_rate=0.9,
+    ))
+    # Not locked with one trade
+    assert not freqtrade.protections.global_stop()
+    assert not freqtrade.protections.stop_per_pair('XRP/BTC')
+    assert not PairLocks.is_pair_locked('XRP/BTC')
+    assert not PairLocks.is_global_lock()
+
+    Trade.session.add(generate_mock_trade(
+        'XRP/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        min_ago_open=1200, min_ago_close=1100, profit_rate=0.5,
+    ))
+
+    # Not locked with 1 trade (2nd trade is outside of lookback_period)
+    assert not freqtrade.protections.global_stop()
+    assert not freqtrade.protections.stop_per_pair('XRP/BTC')
+    assert not PairLocks.is_pair_locked('XRP/BTC')
+    assert not PairLocks.is_global_lock()
+    assert not log_has_re(message, caplog)
+
+    # Winning trade ... (should not lock, does not change drawdown!)
+    Trade.session.add(generate_mock_trade(
+        'XRP/BTC', fee.return_value, False, sell_reason=SellType.ROI.value,
+        min_ago_open=320, min_ago_close=410, profit_rate=1.5,
+    ))
+    assert not freqtrade.protections.global_stop()
+    assert not PairLocks.is_global_lock()
+
+    caplog.clear()
+
+    # Add additional negative trade, causing a loss of > 15%
+    Trade.session.add(generate_mock_trade(
+        'XRP/BTC', fee.return_value, False, sell_reason=SellType.ROI.value,
+        min_ago_open=20, min_ago_close=10, profit_rate=0.8,
+    ))
+    assert not freqtrade.protections.stop_per_pair('XRP/BTC')
+    # local lock not supported
+    assert not PairLocks.is_pair_locked('XRP/BTC')
+    assert freqtrade.protections.global_stop()
+    assert PairLocks.is_global_lock()
+    assert log_has_re(message, caplog)
+
+
 @pytest.mark.parametrize("protectionconf,desc_expected,exception_expected", [
     ({"method": "StoplossGuard", "lookback_period": 60, "trade_limit": 2},
      "[{'StoplossGuard': 'StoplossGuard - Frequent Stoploss Guard, "
@@ -262,6 +327,11 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog):
     ({"method": "LowProfitPairs", "stopduration": 60},
      "[{'LowProfitPairs': 'LowProfitPairs - Low Profit Protection, locks pairs with "
      "profit < 0.0 within 60 minutes.'}]",
+     None
+     ),
+    ({"method": "MaxDrawdown", "stopduration": 60},
+     "[{'MaxDrawdown': 'MaxDrawdown - Max drawdown protection, stop trading if drawdown is > 0.0 "
+     "within 60 minutes.'}]",
      None
      ),
 ])

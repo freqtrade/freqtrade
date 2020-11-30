@@ -40,7 +40,7 @@ class MaxDrawdown(IProtection):
         return (f'{drawdown} > {self._max_allowed_drawdown} in {self._lookback_period} min, '
                 f'locking for {self._stop_duration} min.')
 
-    def _max_drawdown(self, date_now: datetime, pair: str) -> ProtectionReturn:
+    def _max_drawdown(self, date_now: datetime) -> ProtectionReturn:
         """
         Evaluate recent trades for drawdown ...
         """
@@ -49,23 +49,21 @@ class MaxDrawdown(IProtection):
             Trade.is_open.is_(False),
             Trade.close_date > look_back_until,
         ]
-        if pair:
-            filters.append(Trade.pair == pair)
         trades = Trade.get_trades(filters).all()
 
-        trades_df = pd.DataFrame(trades)
+        trades_df = pd.DataFrame([trade.to_json() for trade in trades])
 
         if len(trades) < self._trade_limit:
             # Not enough trades in the relevant period
             return False, None, None
 
         # Drawdown is always positive
-        drawdown, _, _ = calculate_max_drawdown(trades_df)
+        drawdown, _, _ = calculate_max_drawdown(trades_df, value_col='close_profit')
 
         if drawdown > self._max_allowed_drawdown:
             self.log_once(
-                f"Trading for {pair} stopped due to {drawdown:.2f} < {self._max_allowed_drawdown} "
-                f"within {self._lookback_period} minutes.", logger.info)
+                f"Trading stopped due to Max Drawdown {drawdown:.2f} < {self._max_allowed_drawdown}"
+                f" within {self._lookback_period} minutes.", logger.info)
             until = self.calculate_lock_end(trades, self._stop_duration)
 
             return True, until, self._reason(drawdown)
