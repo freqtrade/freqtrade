@@ -61,13 +61,25 @@ function updateenv() {
     read -p "Do you want to install dependencies for dev [y/N]? "
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
-        ${PYTHON} -m pip install --upgrade -r requirements-dev.txt
+        REQUIREMENTS=requirements-dev.txt
     else
-        ${PYTHON} -m pip install --upgrade -r requirements.txt
-        echo "Dev dependencies ignored."
+        REQUIREMENTS=requirements.txt
     fi
-
+    SYS_ARCH=$(uname -m)
+    if [ "${SYS_ARCH}" == "armv7l" ]; then
+        echo "Detected Raspberry, installing cython."
+        ${PYTHON} -m pip install --upgrade cython
+    fi
+    ${PYTHON} -m pip install --upgrade -r ${REQUIREMENTS}
+    if [ $? -ne 0 ]; then
+        echo "Failed installing dependencies"
+        exit 1
+    fi
     ${PYTHON} -m pip install -e .
+    if [ $? -ne 0 ]; then
+        echo "Failed installing Freqtrade"
+        exit 1
+    fi
     echo "pip install completed"
     echo
 }
@@ -134,11 +146,11 @@ function reset() {
 
             git fetch -a
 
-            if [ "1" == $(git branch -vv |grep -c "* develop") ]
+            if [ "1" == $(git branch -vv | grep -c "* develop") ]
             then
                 echo "- Hard resetting of 'develop' branch."
                 git reset --hard origin/develop
-            elif [ "1" == $(git branch -vv |grep -c "* stable") ]
+            elif [ "1" == $(git branch -vv | grep -c "* stable") ]
             then
                 echo "- Hard resetting of 'stable' branch."
                 git reset --hard origin/stable
@@ -149,7 +161,7 @@ function reset() {
     fi
 
     if [ -d ".env" ]; then
-        echo "- Delete your previous virtual env"
+        echo "- Deleting your previous virtual env"
         rm -rf .env
     fi
     echo
@@ -253,7 +265,7 @@ function install() {
     echo "Run the bot !"
     echo "-------------------------"
     echo "You can now use the bot by executing 'source .env/bin/activate; freqtrade <subcommand>'."
-    echo "You can see the list of available bot subcommands by executing 'source .env/bin/activate; freqtrade --help'."
+    echo "You can see the list of available bot sub-commands by executing 'source .env/bin/activate; freqtrade --help'."
     echo "You verify that freqtrade is installed successfully by running 'source .env/bin/activate; freqtrade --version'."
 }
 

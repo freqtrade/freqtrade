@@ -90,13 +90,13 @@ Each time you open a new terminal, you must run `source .env/bin/activate`.
 
 ## Custom Installation
 
-We've included/collected install instructions for Ubuntu 16.04, MacOS, and Windows. These are guidelines and your success may vary with other distros.
+We've included/collected install instructions for Ubuntu, MacOS, and Windows. These are guidelines and your success may vary with other distros.
 OS Specific steps are listed first, the [Common](#common) section below is necessary for all systems.
 
 !!! Note
     Python3.6 or higher and the corresponding pip are assumed to be available.
 
-=== "Ubuntu 16.04"
+=== "Ubuntu/Debian"
     #### Install necessary dependencies
 
     ```bash
