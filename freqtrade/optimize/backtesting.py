@@ -473,6 +473,7 @@ class Backtesting:
             all_results[self.strategy.get_strategy_name()] = {
                 'results': results,
                 'config': self.strategy.config,
+                'locks': PairLocks.locks,
             }
 
         stats = generate_backtest_stats(data, all_results, min_date=min_date, max_date=max_date)
