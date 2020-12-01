@@ -85,6 +85,20 @@
         {
             "method": "CooldownPeriod",
             "stopduration": 20
+        },
+        {
+            "method": "MaxDrawdown",
+            "lookback_period": 2000,
+            "trade_limit": 20,
+            "stop_duration": 10,
+            "max_allowed_drawdown": 0.2
+        },
+        {
+            "method": "LowProfitPairs",
+            "lookback_period": 360,
+            "trade_limit": 1,
+            "stop_duration": 2,
+            "required_profit": 0.02
         }
     ],
     "exchange": {
