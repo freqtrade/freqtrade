@@ -90,13 +90,13 @@ Each time you open a new terminal, you must run `source .env/bin/activate`.
 
 ## Custom Installation
 
-We've included/collected install instructions for Ubuntu 16.04, MacOS, and Windows. These are guidelines and your success may vary with other distros.
+We've included/collected install instructions for Ubuntu, MacOS, and Windows. These are guidelines and your success may vary with other distros.
 OS Specific steps are listed first, the [Common](#common) section below is necessary for all systems.
 
 !!! Note
     Python3.6 or higher and the corresponding pip are assumed to be available.
 
-=== "Ubuntu 16.04"
+=== "Ubuntu/Debian"
     #### Install necessary dependencies
 
     ```bash
@@ -105,13 +105,17 @@ OS Specific steps are listed first, the [Common](#common) section below is neces
     ```
 
 === "RaspberryPi/Raspbian"
-    The following assumes the latest [Raspbian Buster lite image](https://www.raspberrypi.org/downloads/raspbian/) from at least September 2019.
+    The following assumes the latest [Raspbian Buster lite image](https://www.raspberrypi.org/downloads/raspbian/).
     This image comes with python3.7 preinstalled, making it easy to get freqtrade up and running.
 
     Tested using a Raspberry Pi 3 with the Raspbian Buster lite image, all updates applied.
+    
 
     ``` bash
     sudo apt-get install python3-venv libatlas-base-dev
+    # Use pywheels.org to speed up installation
+    sudo echo "[global]\nextra-index-url=https://www.piwheels.org/simple" > tee /etc/pip.conf
+
     git clone https://github.com/freqtrade/freqtrade.git
     cd freqtrade
 
@@ -120,6 +124,7 @@ OS Specific steps are listed first, the [Common](#common) section below is neces
 
     !!! Note "Installation duration"
         Depending on your internet speed and the Raspberry Pi version, installation can take multiple hours to complete.
+        Due to this, we recommend to use the prebuild docker-image for Raspberry, by following the [Docker quickstart documentation](docker_quickstart.md)
 
     !!! Note
         The above does not install hyperopt dependencies. To install these, please use `python3 -m pip install -e .[hyperopt]`.
