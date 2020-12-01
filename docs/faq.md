@@ -12,7 +12,7 @@ Running the bot with `freqtrade trade --config config.json` shows the output `fr
 
 This could be caused by the following reasons:
 
-* The virtual environment is not active
+* The virtual environment is not active.
   * run `source .env/bin/activate` to activate the virtual environment
 * The installation did not work correctly.
   * Please check the [Installation documentation](installation.md).
