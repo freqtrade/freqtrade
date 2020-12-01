@@ -542,7 +542,7 @@ class RPC:
         else:
             return None
 
-    def _rpc_delete(self, trade_id: str) -> Dict[str, Union[str, int]]:
+    def _rpc_delete(self, trade_id: int) -> Dict[str, Union[str, int]]:
         """
         Handler for delete <id>.
         Delete the given trade and close eventually existing open orders.
