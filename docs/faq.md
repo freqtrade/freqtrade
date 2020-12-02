@@ -2,30 +2,30 @@
 
 ## Beginner Tips & Tricks
 
-* When you work with your strategy & hyperopt file you should use a proper code editor like VScode or Pycharm. A good code editor will provide syntax highlighting as well as line numbers, making it easy to find syntax errors (most likely, pointed out by Freqtrade during startup).
+* When you work with your strategy & hyperopt file you should use a proper code editor like VSCode or PyCharm. A good code editor will provide syntax highlighting as well as line numbers, making it easy to find syntax errors (most likely pointed out by Freqtrade during startup).
 
 ## Freqtrade common issues
 
 ### The bot does not start
 
-Running the bot with `freqtrade trade --config config.json` does show the output `freqtrade: command not found`.
+Running the bot with `freqtrade trade --config config.json` shows the output `freqtrade: command not found`.
 
-This could have the following reasons:
+This could be caused by the following reasons:
 
-* The virtual environment is not active
-  * run `source .env/bin/activate` to activate the virtual environment
+* The virtual environment is not active.
+  * Run `source .env/bin/activate` to activate the virtual environment.
 * The installation did not work correctly.
   * Please check the [Installation documentation](installation.md).
 
 ### I have waited 5 minutes, why hasn't the bot made any trades yet?
 
 * Depending on the buy strategy, the amount of whitelisted coins, the
-situation of the market etc, it can take up to hours to find good entry
+situation of the market etc, it can take up to hours to find a good entry
 position for a trade. Be patient!
 
-* Or it may because of a configuration error? Best check the logs, it's usually telling you if the bot is simply not getting buy signals (only heartbeat messages), or if there is something wrong (errors / exceptions in the log).
+* It may be because of a configuration error. It's best check the logs, they usually tell you if the bot is simply not getting buy signals (only heartbeat messages), or if there is something wrong (errors / exceptions in the log).
 
-### I have made 12 trades already, why is my total profit negative?!
+### I have made 12 trades already, why is my total profit negative?
 
 I understand your disappointment but unfortunately 12 trades is just
 not enough to say anything. If you run backtesting, you can see that our
@@ -36,20 +36,18 @@ of course constantly aim to improve the bot but it will _always_ be a
 gamble, which should leave you with modest wins on monthly basis but
 you can't say much from few trades.
 
-### I’d like to change the stake amount. Can I just stop the bot with /stop and then change the config.json and run it again?
+### I’d like to make changes to the config. Can I do that without having to kill the bot?
 
-Not quite. Trades are persisted to a database but the configuration is
-currently only read when the bot is killed and restarted. `/stop` more
-like pauses. You can stop your bot, adjust settings and start it again.
+Yes. You can edit your config, use the `/stop` command in Telegram, followed by `/reload_config` and the bot will run with the new config.
 
 ### I want to improve the bot with a new strategy
 
 That's great. We have a nice backtesting and hyperoptimization setup. See
 the tutorial [here|Testing-new-strategies-with-Hyperopt](bot-usage.md#hyperopt-commands).
 
-### Is there a setting to only Buys the coins being held and not perform anymore Buys?
+### Is there a setting to only SELL the coins being held and not perform anymore BUYS?
 
-You can use the `/stopbuy` to prevent future buys, followed `/forcesell all` (sell all open trades) command from Telegram.
+You can use the `/stopbuy` command in Telegram to prevent future buys, followed by `/forcesell all` (sell all open trades).
 
 ### I want to run multiple bots on the same machine
 
@@ -73,7 +71,7 @@ Read [the Bittrex section about restricted markets](exchanges.md#restricted-mark
 
 ### I'm getting the "Exchange Bittrex does not support market orders." message and cannot run my strategy
 
-As the message says, Bittrex does not support market orders and you have one of the [order types](configuration.md/#understand-order_types) set to "market". Probably your strategy was written with other exchanges in mind and sets "market" orders for "stoploss" orders, which is correct and preferable for most of the exchanges supporting market orders (but not for Bittrex).
+As the message says, Bittrex does not support market orders and you have one of the [order types](configuration.md/#understand-order_types) set to "market". Your strategy was probably written with other exchanges in mind and sets "market" orders for "stoploss" orders, which is correct and preferable for most of the exchanges supporting market orders (but not for Bittrex).
 
 To fix it for Bittrex, redefine order types in the strategy to use "limit" instead of "market":
 
@@ -85,7 +83,7 @@ To fix it for Bittrex, redefine order types in the strategy to use "limit" inste
     }
 ```
 
-Same fix should be done in the configuration file, if order types are defined in your custom config rather than in the strategy.
+The same fix should be applied in the configuration file, if order types are defined in your custom config rather than in the strategy.
 
 ### How do I search the bot logs for something?
 
@@ -127,7 +125,7 @@ On Windows, the `--logfile` option is also supported by Freqtrade and you can us
 
 ## Hyperopt module
 
-### How many epoch do I need to get a good Hyperopt result?
+### How many epochs do I need to get a good Hyperopt result?
 
 Per default Hyperopt called without the `-e`/`--epochs` command line option will only
 run 100 epochs, means 100 evaluations of your triggers, guards, ... Too few
