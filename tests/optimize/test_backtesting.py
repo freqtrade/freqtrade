@@ -79,7 +79,7 @@ def load_data_test(what, testdatadir):
                                                   fill_missing=True)}
 
 
-def simple_backtest(config, contour, num_results, mocker, testdatadir) -> None:
+def simple_backtest(config, contour, mocker, testdatadir) -> None:
     patch_exchange(mocker)
     config['timeframe'] = '1m'
     backtesting = Backtesting(config)
@@ -98,7 +98,7 @@ def simple_backtest(config, contour, num_results, mocker, testdatadir) -> None:
         enable_protections=config.get('enable_protections', False),
     )
     # results :: <class 'pandas.core.frame.DataFrame'>
-    assert len(results) == num_results
+    return results
 
 
 # FIX: fixturize this?
@@ -532,23 +532,9 @@ def test_processed(default_conf, mocker, testdatadir) -> None:
         assert col in cols
 
 
-def test_backtest_pricecontours(default_conf, fee, mocker, testdatadir) -> None:
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    tests = [
-        ['sine', 35],
-        ['raise', 19],
-        ['lower', 0],
-        ['sine', 35],
-        ['raise', 19]
-        ]
-    # While buy-signals are unrealistic, running backtesting
-    # over and over again should not cause different results
-    for [contour, numres] in tests:
-        simple_backtest(default_conf, contour, numres, mocker, testdatadir)
-
-
 def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatadir) -> None:
-    # TODO: Evaluate usefullness of this, the patterns and buy-signls are unrealistic
+    # While this test IS a copy of test_backtest_pricecontours, it's needed to ensure
+    # results do not carry-over to the next run, which is not given by using parametrize.
     default_conf['protections'] = [
         {
             "method": "CooldownPeriod",
@@ -567,7 +553,31 @@ def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatad
     # While buy-signals are unrealistic, running backtesting
     # over and over again should not cause different results
     for [contour, numres] in tests:
-        simple_backtest(default_conf, contour, numres, mocker, testdatadir)
+        assert len(simple_backtest(default_conf, contour, mocker, testdatadir)) == numres
+
+
+@pytest.mark.parametrize('protections,contour,expected', [
+    (None, 'sine', 35),
+    (None, 'raise', 19),
+    (None, 'lower', 0),
+    (None, 'sine', 35),
+    (None, 'raise', 19),
+    ([{"method": "CooldownPeriod", "stop_duration": 3}], 'sine', 9),
+    ([{"method": "CooldownPeriod", "stop_duration": 3}], 'raise', 10),
+    ([{"method": "CooldownPeriod", "stop_duration": 3}], 'lower', 0),
+    ([{"method": "CooldownPeriod", "stop_duration": 3}], 'sine', 9),
+    ([{"method": "CooldownPeriod", "stop_duration": 3}], 'raise', 10),
+])
+def test_backtest_pricecontours(default_conf, fee, mocker, testdatadir,
+                                protections, contour, expected) -> None:
+    if protections:
+        default_conf['protections'] = protections
+        default_conf['enable_protections'] = True
+
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    # While buy-signals are unrealistic, running backtesting
+    # over and over again should not cause different results
+    assert len(simple_backtest(default_conf, contour, mocker, testdatadir)) == expected
 
 
 def test_backtest_clash_buy_sell(mocker, default_conf, testdatadir):

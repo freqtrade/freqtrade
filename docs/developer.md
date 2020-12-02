@@ -121,8 +121,8 @@ The base-class provides an instance of the exchange (`self._exchange`) the pairl
         self._pairlist_pos = pairlist_pos
 ```
 
-!!! Note
-    You'll need to register your pairlist in `constants.py` under the variable `AVAILABLE_PAIRLISTS` - otherwise it will not be selectable.
+!!! Tip
+    Don't forget to register your pairlist in `constants.py` under the variable `AVAILABLE_PAIRLISTS` - otherwise it will not be selectable.
 
 Now, let's step through the methods which require actions:
 
@@ -184,6 +184,7 @@ No protection should use datetime directly, but use the provided `date_now` vari
 
 !!! Tip "Writing a new Protection"
     Best copy one of the existing Protections to have a good example.
+    Don't forget to register your protection in `constants.py` under the variable `AVAILABLE_PROTECTIONS` - otherwise it will not be selectable.
 
 #### Implementation of a new protection
 
