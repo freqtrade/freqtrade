@@ -470,7 +470,7 @@ class ApiServer(RPC):
 
     @require_login
     @rpc_catch_errors
-    def _trades_delete(self, tradeid):
+    def _trades_delete(self, tradeid: int):
         """
         Handler for DELETE /trades/<tradeid> endpoint.
         Removes the trade from the database (tries to cancel open orders first!)
