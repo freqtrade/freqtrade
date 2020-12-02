@@ -1222,8 +1222,14 @@ def test_telegram_trades(mocker, update, default_conf, fee):
     telegram._trades(update=update, context=context)
     assert "<b>0 recent trades</b>:" in msg_mock.call_args_list[0][0][0]
     assert "<pre>" not in msg_mock.call_args_list[0][0][0]
-
     msg_mock.reset_mock()
+
+    context.args = ['hello']
+    telegram._trades(update=update, context=context)
+    assert "<b>0 recent trades</b>:" in msg_mock.call_args_list[0][0][0]
+    assert "<pre>" not in msg_mock.call_args_list[0][0][0]
+    msg_mock.reset_mock()
+
     create_mock_trades(fee)
 
     context = MagicMock()
