@@ -23,7 +23,7 @@ This could be caused by the following reasons:
 situation of the market etc, it can take up to hours to find a good entry
 position for a trade. Be patient!
 
-* It may be because of a configuration error. It's best check the logs, they usually tell you if the bot is simply not getting buy signals (only heartbeat messages), or if there is something wrong (errors / exceptions in the log).
+* It may be because of a configuration error. It's best to check the logs, they usually tell you if the bot is simply not getting buy signals (only heartbeat messages), or if there is something wrong (errors / exceptions in the log).
 
 ### I have made 12 trades already, why is my total profit negative?
 
