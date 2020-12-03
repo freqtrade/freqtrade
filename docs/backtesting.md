@@ -279,18 +279,24 @@ It contains some useful key metrics about performance of your strategy on backte
 Since backtesting lacks some detailed information about what happens within a candle, it needs to take a few assumptions:
 
 - Buys happen at open-price
-- Sell signal sells happen at open-price of the following candle
-- Low happens before high for stoploss, protecting capital first
+- Sell-signal sells happen at open-price of the consecutive candle
+- Sell-signal is favored over Stoploss, because sell-signals are assumed to trigger on candle's open
 - ROI
   - sells are compared to high - but the ROI value is used (e.g. ROI = 2%, high=5% - so the sell will be at 2%)
   - sells are never "below the candle", so a ROI of 2% may result in a sell at 2.4% if low was at 2.4% profit
   - Forcesells caused by `<N>=-1` ROI entries use low as sell value, unless N falls on the candle open (e.g. `120: -1` for 1h candles)
 - Stoploss sells happen exactly at stoploss price, even if low was lower
+- Stoploss is evaluated before ROI within one candle. So you can often see more trades with the `stoploss` sell reason comparing to the results obtained with the same strategy in the Dry Run/Live Trade modes
+- Low happens before high for stoploss, protecting capital first
 - Trailing stoploss
   - High happens first - adjusting stoploss
   - Low uses the adjusted stoploss (so sells with large high-low difference are backtested correctly)
+  - ROI applies before trailing-stop, ensuring profits are "top-capped" at ROI if both ROI and trailing stop applies
 - Sell-reason does not explain if a trade was positive or negative, just what triggered the sell (this can look odd if negative ROI values are used)
-- Stoploss (and trailing stoploss) is evaluated before ROI within one candle. So you can often see more trades with the `stoploss` and/or `trailing_stop` sell reason comparing to the results obtained with the same strategy in the Dry Run/Live Trade modes.
+- Evaluation sequence (if multiple signals happen on the same candle)
+  - ROI (if not stoploss)
+  - Sell-signal
+  - Stoploss
 
 Taking these assumptions, backtesting tries to mirror real trading as closely as possible. However, backtesting will **never** replace running a strategy in dry-run mode.
 Also, keep in mind that past results don't guarantee future success.

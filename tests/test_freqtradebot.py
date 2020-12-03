@@ -3556,7 +3556,7 @@ def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order, limit_b
     # Test if buy-signal is absent
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
-    assert trade.sell_reason == SellType.STOP_LOSS.value
+    assert trade.sell_reason == SellType.SELL_SIGNAL.value
 
 
 def test_get_real_amount_quote(default_conf, trades_for_order, buy_order_fee, fee, caplog, mocker):
