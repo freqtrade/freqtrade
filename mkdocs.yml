@@ -31,6 +31,7 @@ nav:
     - Advanced Strategy: strategy-advanced.md
     - Advanced Hyperopt: advanced-hyperopt.md
     - Sandbox Testing: sandbox-testing.md
+    - Updating Freqtrade: updating.md
     - Deprecated Features: deprecated.md
     - Contributors Guide: developer.md
 theme:
