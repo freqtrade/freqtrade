@@ -1074,6 +1074,12 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
     mocker.patch('freqtrade.exchange.Exchange.buy', MagicMock(return_value=limit_buy_order))
     assert not freqtrade.execute_buy(pair, stake_amount)
 
+    # Fail to get price...
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_buy_rate', MagicMock(return_value=0.0))
+
+    with pytest.raises(PricingError, match="Could not determine buy price."):
+        freqtrade.execute_buy(pair, stake_amount)
+
 
 def test_execute_buy_confirm_error(mocker, default_conf, fee, limit_buy_order) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
