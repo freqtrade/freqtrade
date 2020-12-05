@@ -124,7 +124,8 @@ class Exchange:
 
             # Check if all pairs are available
             self.validate_stakecurrency(config['stake_currency'])
-            self.validate_pairs(config['exchange']['pair_whitelist'])
+            if not exchange_config.get('skip_pair_validation'):
+                self.validate_pairs(config['exchange']['pair_whitelist'])
             self.validate_ordertypes(config.get('order_types', {}))
             self.validate_order_time_in_force(config.get('order_time_in_force', {}))
             self.validate_required_startup_candles(config.get('startup_candle_count', 0))
@@ -523,7 +524,7 @@ class Exchange:
                     'rate': self.get_fee(pair)
                 }
             })
-        if closed_order["type"] in ["stop_loss_limit"]:
+        if closed_order["type"] in ["stop_loss_limit", "stop-loss-limit"]:
             closed_order["info"].update({"stopPrice": closed_order["price"]})
         self._dry_run_open_orders[closed_order["id"]] = closed_order
 
@@ -678,11 +679,24 @@ class Exchange:
         :param pair: Pair to download
         :param timeframe: Timeframe to get data for
         :param since_ms: Timestamp in milliseconds to get history from
-        :returns List with candle (OHLCV) data
+        :return: List with candle (OHLCV) data
         """
         return asyncio.get_event_loop().run_until_complete(
             self._async_get_historic_ohlcv(pair=pair, timeframe=timeframe,
                                            since_ms=since_ms))
+
+    def get_historic_ohlcv_as_df(self, pair: str, timeframe: str,
+                                 since_ms: int) -> DataFrame:
+        """
+        Minimal wrapper around get_historic_ohlcv - converting the result into a dataframe
+        :param pair: Pair to download
+        :param timeframe: Timeframe to get data for
+        :param since_ms: Timestamp in milliseconds to get history from
+        :return: OHLCV DataFrame
+        """
+        ticks = self.get_historic_ohlcv(pair, timeframe, since_ms=since_ms)
+        return ohlcv_to_dataframe(ticks, timeframe, pair=pair, fill_missing=True,
+                                  drop_incomplete=self._ohlcv_partial_candle)
 
     async def _async_get_historic_ohlcv(self, pair: str,
                                         timeframe: str,

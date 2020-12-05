@@ -616,6 +616,9 @@ class FreqtradeBot:
             # Calculate price
             buy_limit_requested = self.get_buy_rate(pair, True)
 
+        if not buy_limit_requested:
+            raise PricingError('Could not determine buy price.')
+
         min_stake_amount = self._get_min_pair_stake_amount(pair, buy_limit_requested)
         if min_stake_amount is not None and min_stake_amount > stake_amount:
             logger.warning(

@@ -37,6 +37,13 @@ def _set_loggers(verbosity: int = 0, api_verbosity: str = 'info') -> None:
     )
 
 
+def get_existing_handlers(handlertype):
+    """
+    Returns Existing handler or None (if the handler has not yet been added to the root handlers).
+    """
+    return next((h for h in logging.root.handlers if isinstance(h, handlertype)), None)
+
+
 def setup_logging_pre() -> None:
     """
     Early setup for logging.
@@ -71,18 +78,24 @@ def setup_logging(config: Dict[str, Any]) -> None:
             # config['logfilename']), which defaults to '/dev/log', applicable for most
             # of the systems.
             address = (s[1], int(s[2])) if len(s) > 2 else s[1] if len(s) > 1 else '/dev/log'
-            handler = SysLogHandler(address=address)
+            handler_sl = get_existing_handlers(SysLogHandler)
+            if handler_sl:
+                logging.root.removeHandler(handler_sl)
+            handler_sl = SysLogHandler(address=address)
             # No datetime field for logging into syslog, to allow syslog
             # to perform reduction of repeating messages if this is set in the
             # syslog config. The messages should be equal for this.
-            handler.setFormatter(Formatter('%(name)s - %(levelname)s - %(message)s'))
-            logging.root.addHandler(handler)
+            handler_sl.setFormatter(Formatter('%(name)s - %(levelname)s - %(message)s'))
+            logging.root.addHandler(handler_sl)
         elif s[0] == 'journald':
             try:
                 from systemd.journal import JournaldLogHandler
             except ImportError:
                 raise OperationalException("You need the systemd python package be installed in "
                                            "order to use logging to journald.")
+            handler_jd = get_existing_handlers(JournaldLogHandler)
+            if handler_jd:
+                logging.root.removeHandler(handler_jd)
             handler_jd = JournaldLogHandler()
             # No datetime field for logging into journald, to allow syslog
             # to perform reduction of repeating messages if this is set in the
@@ -90,6 +103,9 @@ def setup_logging(config: Dict[str, Any]) -> None:
             handler_jd.setFormatter(Formatter('%(name)s - %(levelname)s - %(message)s'))
             logging.root.addHandler(handler_jd)
         else:
+            handler_rf = get_existing_handlers(RotatingFileHandler)
+            if handler_rf:
+                logging.root.removeHandler(handler_rf)
             handler_rf = RotatingFileHandler(logfile,
                                              maxBytes=1024 * 1024 * 10,  # 10Mb
                                              backupCount=10)

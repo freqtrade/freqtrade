@@ -524,7 +524,7 @@ class RPC:
         stake_currency = self._freqtrade.config.get('stake_currency')
         if not self._freqtrade.exchange.get_pair_quote_currency(pair) == stake_currency:
             raise RPCException(
-                f'Wrong pair selected. Please pairs with stake {stake_currency} pairs only')
+                f'Wrong pair selected. Only pairs with stake-currency {stake_currency} allowed.')
         # check if valid pair
 
         # check if pair already has an open pair
@@ -542,7 +542,7 @@ class RPC:
         else:
             return None
 
-    def _rpc_delete(self, trade_id: str) -> Dict[str, Union[str, int]]:
+    def _rpc_delete(self, trade_id: int) -> Dict[str, Union[str, int]]:
         """
         Handler for delete <id>.
         Delete the given trade and close eventually existing open orders.

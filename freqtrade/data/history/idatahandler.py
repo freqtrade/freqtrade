@@ -13,15 +13,12 @@ from typing import List, Optional, Type
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import ListPairsWithTimeframes
+from freqtrade.constants import ListPairsWithTimeframes, TradeList
 from freqtrade.data.converter import clean_ohlcv_dataframe, trades_remove_duplicates, trim_dataframe
 from freqtrade.exchange import timeframe_to_seconds
 
 
 logger = logging.getLogger(__name__)
-
-# Type for trades list
-TradeList = List[List]
 
 
 class IDataHandler(ABC):

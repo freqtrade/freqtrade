@@ -58,7 +58,6 @@ def test__init__(default_conf, mocker) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
 
     telegram = Telegram(get_patched_freqtradebot(mocker, default_conf))
-    assert telegram._updater is None
     assert telegram._config == default_conf
 
 
@@ -330,6 +329,18 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
     # /daily 2
     context = MagicMock()
     context.args = ["2"]
+    telegram._daily(update=update, context=context)
+    assert msg_mock.call_count == 1
+    assert 'Daily' in msg_mock.call_args_list[0][0][0]
+    assert str(datetime.utcnow().date()) in msg_mock.call_args_list[0][0][0]
+    assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
+    assert str('  0.933 USD') in msg_mock.call_args_list[0][0][0]
+    assert str('  1 trade') in msg_mock.call_args_list[0][0][0]
+    assert str('  0 trade') in msg_mock.call_args_list[0][0][0]
+
+    # Reset msg_mock
+    msg_mock.reset_mock()
+    context.args = []
     telegram._daily(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'Daily' in msg_mock.call_args_list[0][0][0]
@@ -882,7 +893,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     context.args = []
     telegram._forcesell(update=update, context=context)
     assert msg_mock.call_count == 1
-    assert 'invalid argument' in msg_mock.call_args_list[0][0][0]
+    assert "You must specify a trade-id or 'all'." in msg_mock.call_args_list[0][0][0]
 
     # Invalid argument
     msg_mock.reset_mock()
@@ -1224,8 +1235,14 @@ def test_telegram_trades(mocker, update, default_conf, fee):
     telegram._trades(update=update, context=context)
     assert "<b>0 recent trades</b>:" in msg_mock.call_args_list[0][0][0]
     assert "<pre>" not in msg_mock.call_args_list[0][0][0]
-
     msg_mock.reset_mock()
+
+    context.args = ['hello']
+    telegram._trades(update=update, context=context)
+    assert "<b>0 recent trades</b>:" in msg_mock.call_args_list[0][0][0]
+    assert "<pre>" not in msg_mock.call_args_list[0][0][0]
+    msg_mock.reset_mock()
+
     create_mock_trades(fee)
 
     context = MagicMock()
@@ -1252,7 +1269,7 @@ def test_telegram_delete_trade(mocker, update, default_conf, fee):
     context.args = []
 
     telegram._delete_trade(update=update, context=context)
-    assert "invalid argument" in msg_mock.call_args_list[0][0][0]
+    assert "Trade-id not set." in msg_mock.call_args_list[0][0][0]
 
     msg_mock.reset_mock()
     create_mock_trades(fee)

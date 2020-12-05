@@ -37,7 +37,7 @@ class AgeFilter(IPairList):
     def needstickers(self) -> bool:
         """
         Boolean property defining if tickers are necessary.
-        If no Pairlist requires tickers, an empty List is passed
+        If no Pairlist requires tickers, an empty Dict is passed
         as tickers argument to filter_pairlist
         """
         return True
@@ -49,7 +49,7 @@ class AgeFilter(IPairList):
         return (f"{self.name} - Filtering pairs with age less than "
                 f"{self._min_days_listed} {plural(self._min_days_listed, 'day')}.")
 
-    def _validate_pair(self, ticker: dict) -> bool:
+    def _validate_pair(self, ticker: Dict) -> bool:
         """
         Validate age for the ticker
         :param ticker: ticker dict as returned from ccxt.load_markets()

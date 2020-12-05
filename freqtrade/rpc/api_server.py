@@ -470,7 +470,7 @@ class ApiServer(RPC):
 
     @require_login
     @rpc_catch_errors
-    def _trades_delete(self, tradeid):
+    def _trades_delete(self, tradeid: int):
         """
         Handler for DELETE /trades/<tradeid> endpoint.
         Removes the trade from the database (tries to cancel open orders first!)
@@ -508,6 +508,8 @@ class ApiServer(RPC):
         """
         asset = request.json.get("pair")
         price = request.json.get("price", None)
+        price = float(price) if price is not None else price
+
         trade = self._rpc_forcebuy(asset, price)
         if trade:
             return jsonify(trade.to_json())
