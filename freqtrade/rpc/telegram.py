@@ -305,7 +305,7 @@ class Telegram(RPC):
         stake_cur = self._config['stake_currency']
         fiat_disp_cur = self._config.get('fiat_display_currency', '')
         try:
-            timescale = int(context.args[0]) if context.args else 0
+            timescale = int(context.args[0]) if context.args else 7
         except (TypeError, ValueError, IndexError):
             timescale = 7
         try:

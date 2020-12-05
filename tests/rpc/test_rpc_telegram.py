@@ -339,6 +339,18 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
 
     # Reset msg_mock
     msg_mock.reset_mock()
+    context.args = []
+    telegram._daily(update=update, context=context)
+    assert msg_mock.call_count == 1
+    assert 'Daily' in msg_mock.call_args_list[0][0][0]
+    assert str(datetime.utcnow().date()) in msg_mock.call_args_list[0][0][0]
+    assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
+    assert str('  0.933 USD') in msg_mock.call_args_list[0][0][0]
+    assert str('  1 trade') in msg_mock.call_args_list[0][0][0]
+    assert str('  0 trade') in msg_mock.call_args_list[0][0][0]
+
+    # Reset msg_mock
+    msg_mock.reset_mock()
     freqtradebot.config['max_open_trades'] = 2
     # Add two other trades
     n = freqtradebot.enter_positions()
