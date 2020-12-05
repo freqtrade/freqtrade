@@ -275,6 +275,10 @@ class RPC:
             "trades_count": len(output)
         }
 
+    def _rpc_stats(self):
+        trades = trades = Trade.get_trades([Trade.is_open.is_(False)])
+        return trades
+
     def _rpc_trade_statistics(
             self, stake_currency: str, fiat_display_currency: str) -> Dict[str, Any]:
         """ Returns cumulative profit statistics """

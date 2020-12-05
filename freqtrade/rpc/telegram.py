@@ -782,22 +782,22 @@ class Telegram(RPC):
         """
         # TODO: self._send_msg(...)
         def trade_win_loss(trade):
-            if trade['profit_abs'] > 0:
+            if trade.close_profit_abs > 0:
                 return 'Wins'
-            elif trade['profit_abs'] < 0:
+            elif trade.close_profit_abs < 0:
                 return 'Losses'
             else:
                 return 'Draws'
 
-        trades = self._rpc_trade_history(-1)
-        trades_closed = [trade for trade in trades if not trade['is_open']]
+        trades = self._rpc_stats()
+        trades_closed = [trade for trade in trades if not trade.is_open]
 
         # Sell reason
         sell_reasons = {}
         for trade in trades_closed:
-            if trade['sell_reason'] not in sell_reasons:
-                sell_reasons[trade['sell_reason']] = {'Wins': 0, 'Losses': 0, 'Draws': 0}
-            sell_reasons[trade['sell_reason']][trade_win_loss(trade)] += 1
+            if trade.sell_reason not in sell_reasons:
+                sell_reasons[trade.sell_reason] = {'Wins': 0, 'Losses': 0, 'Draws': 0}
+            sell_reasons[trade.sell_reason][trade_win_loss(trade)] += 1
         sell_reasons_tabulate = []
         for reason, count in sell_reasons.items():
             sell_reasons_tabulate.append([
@@ -814,8 +814,8 @@ class Telegram(RPC):
         # Duration
         dur: Dict[str, List[int]] = {'Wins': [], 'Draws': [], 'Losses': []}
         for trade in trades_closed:
-            if trade['close_date'] is not None and trade['open_date'] is not None:
-                trade_dur = arrow.get(trade['close_date']) - arrow.get(trade['open_date'])
+            if trade.close_date is not None and trade.open_date is not None:
+                trade_dur = (trade.close_date - trade.open_date).total_seconds()
                 dur[trade_win_loss(trade)].append(trade_dur)
         wins_dur = sum(dur['Wins']) / len(dur['Wins']) if len(dur['Wins']) > 0 else 'N/A'
         draws_dur = sum(dur['Draws']) / len(dur['Draws']) if len(dur['Draws']) > 0 else 'N/A'
@@ -824,8 +824,9 @@ class Telegram(RPC):
             [['Wins', str(wins_dur)], ['Draws', str(draws_dur)], ['Losses', str(losses_dur)]],
             headers=['', 'Duration']
         )
+        msg = (f"""```{sell_reasons_msg}```\n```{duration_msg}```""")
 
-        self._send_msg('\n'.join([sell_reasons_msg, duration_msg]))
+        self._send_msg(msg, ParseMode.MARKDOWN)
 
     @authorized_only
     def _show_config(self, update: Update, context: CallbackContext) -> None:
