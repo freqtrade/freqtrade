@@ -391,6 +391,51 @@ class Telegram(RPC):
         self._send_msg(markdown_msg)
 
     @authorized_only
+    def _stats(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /stats
+        Show stats of recent trades
+        :return: None
+        """
+        sell_reasons, durations = self._rpc_stats()
+
+        sell_reasons_tabulate = []
+        reason_map = {
+            'roi': 'ROI',
+            'stop_loss': 'Stoploss',
+            'trailing_stop_loss': 'Trail. Stop',
+            'stoploss_on_exchange': 'Stoploss',
+            'sell_signal': 'Sell Signal',
+            'force_sell': 'Forcesell',
+            'emergency_sell': 'Emergency Sell',
+        }
+        for reason, count in sell_reasons.items():
+            sell_reasons_tabulate.append([
+                reason_map.get(reason, reason),
+                sum(count.values()),
+                count['Wins'],
+                # count['Draws'],
+                count['Losses']
+            ])
+        sell_reasons_msg = tabulate(
+            sell_reasons_tabulate,
+            headers=['Sell Reason', 'Sells', 'Wins', 'Losses']
+            )
+
+        duration_msg = tabulate([
+            ['Wins', str(timedelta(seconds=durations['wins']))
+             if durations['wins'] != 'N/A' else 'N/A'],
+            #  ['Draws', str(timedelta(seconds=durations['draws']))],
+            ['Losses', str(timedelta(seconds=durations['losses']))
+             if durations['losses'] != 'N/A' else 'N/A']
+             ],
+            headers=['', 'Avg. Duration']
+        )
+        msg = (f"""```\n{sell_reasons_msg}```\n```\n{duration_msg}```""")
+
+        self._send_msg(msg, ParseMode.MARKDOWN)
+
+    @authorized_only
     def _balance(self, update: Update, context: CallbackContext) -> None:
         """ Handler for /balance """
         try:
@@ -771,51 +816,6 @@ class Telegram(RPC):
         :return: None
         """
         self._send_msg('*Version:* `{}`'.format(__version__))
-
-    @authorized_only
-    def _stats(self, update: Update, context: CallbackContext) -> None:
-        """
-        Handler for /stats
-        Show stats of recent trades
-        :return: None
-        """
-        sell_reasons, durations = self._rpc_stats()
-
-        sell_reasons_tabulate = []
-        reason_map = {
-            'roi': 'ROI',
-            'stop_loss': 'Stoploss',
-            'trailing_stop_loss': 'Trail. Stop',
-            'stoploss_on_exchange': 'Stoploss',
-            'sell_signal': 'Sell Signal',
-            'force_sell': 'Forcesell',
-            'emergency_sell': 'Emergency Sell',
-        }
-        for reason, count in sell_reasons.items():
-            sell_reasons_tabulate.append([
-                reason_map.get(reason, reason),
-                sum(count.values()),
-                count['Wins'],
-                # count['Draws'],
-                count['Losses']
-            ])
-        sell_reasons_msg = tabulate(
-            sell_reasons_tabulate,
-            headers=['Sell Reason', 'Sells', 'Wins', 'Losses']
-            )
-
-        duration_msg = tabulate([
-            ['Wins', str(timedelta(seconds=durations['wins']))
-             if durations['wins'] != 'N/A' else 'N/A'],
-            #  ['Draws', str(timedelta(seconds=durations['draws']))],
-            ['Losses', str(timedelta(seconds=durations['losses']))
-             if durations['losses'] != 'N/A' else 'N/A']
-             ],
-            headers=['', 'Avg. Duration']
-        )
-        msg = (f"""```\n{sell_reasons_msg}```\n```\n{duration_msg}```""")
-
-        self._send_msg(msg, ParseMode.MARKDOWN)
 
     @authorized_only
     def _show_config(self, update: Update, context: CallbackContext) -> None:
