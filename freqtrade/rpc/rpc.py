@@ -276,8 +276,37 @@ class RPC:
         }
 
     def _rpc_stats(self):
+        """
+        Generate generic stats for trades in database
+        """
+        def trade_win_loss(trade):
+            if trade.close_profit_abs > 0:
+                return 'Wins'
+            elif trade.close_profit_abs < 0:
+                return 'Losses'
+            else:
+                return 'Draws'
         trades = trades = Trade.get_trades([Trade.is_open.is_(False)])
-        return trades
+        # Sell reason
+        sell_reasons = {}
+        for trade in trades:
+            if trade.sell_reason not in sell_reasons:
+                sell_reasons[trade.sell_reason] = {'Wins': 0, 'Losses': 0, 'Draws': 0}
+            sell_reasons[trade.sell_reason][trade_win_loss(trade)] += 1
+
+        # Duration
+        dur: Dict[str, List[int]] = {'Wins': [], 'Draws': [], 'Losses': []}
+        for trade in trades:
+            if trade.close_date is not None and trade.open_date is not None:
+                trade_dur = (trade.close_date - trade.open_date).total_seconds()
+                dur[trade_win_loss(trade)].append(trade_dur)
+
+        wins_dur = sum(dur['Wins']) / len(dur['Wins']) if len(dur['Wins']) > 0 else 'N/A'
+        draws_dur = sum(dur['Draws']) / len(dur['Draws']) if len(dur['Draws']) > 0 else 'N/A'
+        losses_dur = sum(dur['Losses']) / len(dur['Losses']) if len(dur['Losses']) > 0 else 'N/A'
+
+        durations = {'wins': wins_dur, 'draws': draws_dur, 'losses': losses_dur}
+        return sell_reasons, durations
 
     def _rpc_trade_statistics(
             self, stake_currency: str, fiat_display_currency: str) -> Dict[str, Any]:

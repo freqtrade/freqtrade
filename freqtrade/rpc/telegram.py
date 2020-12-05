@@ -3,6 +3,7 @@
 """
 This module manage Telegram communication
 """
+from datetime import timedelta
 import json
 import logging
 from typing import Any, Callable, Dict, List, Union
@@ -775,56 +776,44 @@ class Telegram(RPC):
     def _stats(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /stats
-        https://github.com/freqtrade/freqtrade/issues/3783
         Show stats of recent trades
-        :param update: message update
         :return: None
         """
-        # TODO: self._send_msg(...)
-        def trade_win_loss(trade):
-            if trade.close_profit_abs > 0:
-                return 'Wins'
-            elif trade.close_profit_abs < 0:
-                return 'Losses'
-            else:
-                return 'Draws'
+        sell_reasons, durations = self._rpc_stats()
 
-        trades = self._rpc_stats()
-        trades_closed = [trade for trade in trades if not trade.is_open]
-
-        # Sell reason
-        sell_reasons = {}
-        for trade in trades_closed:
-            if trade.sell_reason not in sell_reasons:
-                sell_reasons[trade.sell_reason] = {'Wins': 0, 'Losses': 0, 'Draws': 0}
-            sell_reasons[trade.sell_reason][trade_win_loss(trade)] += 1
         sell_reasons_tabulate = []
+        reason_map = {
+            'roi': 'ROI',
+            'stop_loss': 'Stoploss',
+            'trailing_stop_loss': 'Trail. Stop',
+            'stoploss_on_exchange': 'Stoploss',
+            'sell_signal': 'Sell Signal',
+            'force_sell': 'Forcesell',
+            'emergency_sell': 'Emergency Sell',
+        }
         for reason, count in sell_reasons.items():
             sell_reasons_tabulate.append([
-                reason, sum(count.values()),
+                reason_map.get(reason, reason),
+                sum(count.values()),
                 count['Wins'],
-                count['Draws'],
+                # count['Draws'],
                 count['Losses']
             ])
         sell_reasons_msg = tabulate(
             sell_reasons_tabulate,
-            headers=['Sell Reason', 'Sells', 'Wins', 'Draws', 'Losses']
+            headers=['Sell Reason', 'Sells', 'Wins', 'Losses']
             )
 
-        # Duration
-        dur: Dict[str, List[int]] = {'Wins': [], 'Draws': [], 'Losses': []}
-        for trade in trades_closed:
-            if trade.close_date is not None and trade.open_date is not None:
-                trade_dur = (trade.close_date - trade.open_date).total_seconds()
-                dur[trade_win_loss(trade)].append(trade_dur)
-        wins_dur = sum(dur['Wins']) / len(dur['Wins']) if len(dur['Wins']) > 0 else 'N/A'
-        draws_dur = sum(dur['Draws']) / len(dur['Draws']) if len(dur['Draws']) > 0 else 'N/A'
-        losses_dur = sum(dur['Losses']) / len(dur['Losses']) if len(dur['Losses']) > 0 else 'N/A'
-        duration_msg = tabulate(
-            [['Wins', str(wins_dur)], ['Draws', str(draws_dur)], ['Losses', str(losses_dur)]],
-            headers=['', 'Duration']
+        duration_msg = tabulate([
+            ['Wins', str(timedelta(seconds=durations['wins']))
+             if durations['wins'] != 'N/A' else 'N/A'],
+            #  ['Draws', str(timedelta(seconds=durations['draws']))],
+            ['Losses', str(timedelta(seconds=durations['losses']))
+             if durations['losses'] != 'N/A' else 'N/A']
+             ],
+            headers=['', 'Avg. Duration']
         )
-        msg = (f"""```{sell_reasons_msg}```\n```{duration_msg}```""")
+        msg = (f"""```\n{sell_reasons_msg}```\n```\n{duration_msg}```""")
 
         self._send_msg(msg, ParseMode.MARKDOWN)
 
