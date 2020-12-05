@@ -280,9 +280,9 @@ class RPC:
         Generate generic stats for trades in database
         """
         def trade_win_loss(trade):
-            if trade.close_profit_abs > 0:
+            if trade.close_profit > 0:
                 return 'Wins'
-            elif trade.close_profit_abs < 0:
+            elif trade.close_profit < 0:
                 return 'Losses'
             else:
                 return 'Draws'
