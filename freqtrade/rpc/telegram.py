@@ -683,7 +683,7 @@ class Telegram(RPC):
                 limit = int(context.args[0]) if context.args else 10
             except (TypeError, ValueError, IndexError):
                 limit = 10
-            logs = self._rpc_get_logs(limit)['logs']
+            logs = RPC._rpc_get_logs(limit)['logs']
             msgs = ''
             msg_template = "*{}* {}: {} \\- `{}`"
             for logrec in logs:

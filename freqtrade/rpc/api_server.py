@@ -388,7 +388,7 @@ class ApiServer(RPC):
             limit: Only get a certain number of records
         """
         limit = int(request.args.get('limit', 0)) or None
-        return jsonify(self._rpc_get_logs(limit))
+        return jsonify(RPC._rpc_get_logs(limit))
 
     @require_login
     @rpc_catch_errors

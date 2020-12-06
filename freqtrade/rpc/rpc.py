@@ -645,7 +645,8 @@ class RPC:
                }
         return res
 
-    def _rpc_get_logs(self, limit: Optional[int]) -> Dict[str, Any]:
+    @staticmethod
+    def _rpc_get_logs(limit: Optional[int]) -> Dict[str, Any]:
         """Returns the last X logs"""
         if limit:
             buffer = bufferHandler.buffer[-limit:]
