@@ -305,6 +305,18 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
         min_ago_open=1000, min_ago_close=900, profit_rate=1.1,
     ))
     Trade.session.add(generate_mock_trade(
+        'ETH/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        min_ago_open=1000, min_ago_close=900, profit_rate=1.1,
+    ))
+    Trade.session.add(generate_mock_trade(
+        'NEO/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        min_ago_open=1000, min_ago_close=900, profit_rate=1.1,
+    ))
+    # No losing trade yet ... so max_drawdown will raise exception
+    assert not freqtrade.protections.global_stop()
+    assert not freqtrade.protections.stop_per_pair('XRP/BTC')
+
+    Trade.session.add(generate_mock_trade(
         'XRP/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
         min_ago_open=500, min_ago_close=400, profit_rate=0.9,
     ))

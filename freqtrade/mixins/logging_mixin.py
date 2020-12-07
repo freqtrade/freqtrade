@@ -1,4 +1,5 @@
 from typing import Callable
+
 from cachetools import TTLCache, cached
 
 

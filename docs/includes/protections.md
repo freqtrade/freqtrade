@@ -7,7 +7,7 @@ Protections will protect your strategy from unexpected events and market conditi
 All protection end times are rounded up to the next candle to avoid sudden, unexpected intra-candle buys.
 
 !!! Note
-    Not all Protections will work for all strategies, and parameters will need to be tuned for your strategy.
+    Not all Protections will work for all strategies, and parameters will need to be tuned for your strategy to improve performance.
 
 !!! Tip
     Each Protection can be configured multiple times with different parameters, to allow different levels of protection (short-term / long-term).

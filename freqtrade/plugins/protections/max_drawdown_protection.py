@@ -54,7 +54,10 @@ class MaxDrawdown(IProtection):
             return False, None, None
 
         # Drawdown is always positive
-        drawdown, _, _ = calculate_max_drawdown(trades_df, value_col='close_profit')
+        try:
+            drawdown, _, _ = calculate_max_drawdown(trades_df, value_col='close_profit')
+        except ValueError:
+            return False, None, None
 
         if drawdown > self._max_allowed_drawdown:
             self.log_once(
