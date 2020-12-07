@@ -170,7 +170,7 @@ def _validate_protections(conf: Dict[str, Any]) -> None:
                 f"Please fix the protection {prot.get('method')}"
                 )
 
-        if ('lookback_period' in prot and 'lookback_period_candle' in prot):
+        if ('lookback_period' in prot and 'lookback_period_candles' in prot):
             raise OperationalException(
                 "Protections must specify either `lookback_period` or `lookback_period_candles`.\n"
                 f"Please fix the protection {prot.get('method')}"

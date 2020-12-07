@@ -3,9 +3,10 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from freqtrade.persistence import PairLocks, Trade
-from freqtrade.strategy.interface import SellType
 from freqtrade import constants
+from freqtrade.persistence import PairLocks, Trade
+from freqtrade.plugins.protectionmanager import ProtectionManager
+from freqtrade.strategy.interface import SellType
 from tests.conftest import get_patched_freqtradebot, log_has_re
 
 
@@ -47,6 +48,33 @@ def test_protectionmanager(mocker, default_conf):
             assert handler.global_stop(datetime.utcnow()) == (False, None, None)
         if not handler.has_local_stop:
             assert handler.stop_per_pair('XRP/BTC', datetime.utcnow()) == (False, None, None)
+
+
+@pytest.mark.parametrize('timeframe,expected,protconf', [
+    ('1m', [20, 10],
+     [{"method": "StoplossGuard", "lookback_period_candles": 20, "stop_duration": 10}]),
+    ('5m', [100, 15],
+     [{"method": "StoplossGuard", "lookback_period_candles": 20, "stop_duration": 15}]),
+    ('1h', [1200, 40],
+     [{"method": "StoplossGuard", "lookback_period_candles": 20, "stop_duration": 40}]),
+    ('1d', [1440, 5],
+     [{"method": "StoplossGuard", "lookback_period_candles": 1, "stop_duration": 5}]),
+    ('1m', [20, 5],
+     [{"method": "StoplossGuard", "lookback_period": 20, "stop_duration_candles": 5}]),
+    ('5m', [15, 25],
+     [{"method": "StoplossGuard", "lookback_period": 15, "stop_duration_candles": 5}]),
+    ('1h', [50, 600],
+     [{"method": "StoplossGuard", "lookback_period": 50, "stop_duration_candles": 10}]),
+    ('1h', [60, 540],
+     [{"method": "StoplossGuard", "lookback_period_candles": 1, "stop_duration_candles": 9}]),
+])
+def test_protections_init(mocker, default_conf, timeframe, expected, protconf):
+    default_conf['timeframe'] = timeframe
+    default_conf['protections'] = protconf
+    man = ProtectionManager(default_conf)
+    assert len(man._protection_handlers) == len(protconf)
+    assert man._protection_handlers[0]._lookback_period == expected[0]
+    assert man._protection_handlers[0]._stop_duration == expected[1]
 
 
 @pytest.mark.usefixtures("init_persistence")

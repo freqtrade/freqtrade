@@ -30,20 +30,24 @@ All protection end times are rounded up to the next candle to avoid sudden, unex
 | lookback_period | Only trades that completed after `current_time - lookback_period` will be considered. <br>Cannot be used together with `lookback_period_candles`. <br>This setting may be ignored by some Protections. <br> **Datatype:**  Float (in minutes)
 | trade_limit | Number of trades required at minimum (not used by all Protections). <br> **Datatype:** Positive integer
 
+!!! Note "Durations"
+    Durations (`stop_duration*` and `lookback_period*` can be defined in either minutes or candles).
+    For more flexibility when testing different timeframes, all below examples will use the "candle" definition.
+
 #### Stoploss Guard
 
-`StoplossGuard` selects all trades within `lookback_period` (in minutes), and determines if the amount of trades that resulted in stoploss are above `trade_limit` - in which case trading will stop for `stop_duration`.
+`StoplossGuard` selects all trades within `lookback_period`, and determines if the amount of trades that resulted in stoploss are above `trade_limit` - in which case trading will stop for `stop_duration`.
 This applies across all pairs, unless `only_per_pair` is set to true, which will then only look at one pair at a time.
 
-The below example stops trading for all pairs for 2 hours (120min) after the last trade if the bot hit stoploss 4 times within the last 24h.
+The below example stops trading for all pairs for 4 candles after the last trade if the bot hit stoploss 4 times within the last 24 candles.
 
 ```json
 "protections": [
     {
         "method": "StoplossGuard",
-        "lookback_period": 1440,
+        "lookback_period_candles": 24,
         "trade_limit": 4,
-        "stop_duration": 120,
+        "stop_duration_candles": 4,
         "only_per_pair": false
     }
 ],
@@ -57,15 +61,15 @@ The below example stops trading for all pairs for 2 hours (120min) after the las
 
 `MaxDrawdown` uses all trades within `lookback_period` (in minutes) to determine the maximum drawdown. If the drawdown is below `max_allowed_drawdown`, trading will stop for `stop_duration` (in minutes) after the last trade - assuming that the bot needs some time to let markets recover.
 
-The below sample stops trading for 12 hours (720min) if max-drawdown is > 20% considering all trades within the last 2 days (2880min).
+The below sample stops trading for 12 candles if max-drawdown is > 20% considering all trades within the last 48 candles.
 
 ```json
 "protections": [
       {
         "method": "MaxDrawdown",
-        "lookback_period": 2880,
+        "lookback_period_candles": 48,
         "trade_limit": 20,
-        "stop_duration": 720,
+        "stop_duration_candles": 12,
         "max_allowed_drawdown": 0.2
       },
 ],
@@ -77,13 +81,13 @@ The below sample stops trading for 12 hours (720min) if max-drawdown is > 20% co
 `LowProfitPairs` uses all trades for a pair within `lookback_period` (in minutes) to determine the overall profit ratio.
 If that ratio is below `required_profit`, that pair will be locked for `stop_duration` (in minutes).
 
-The below example will stop trading a pair for 60 minutes if the pair does not have a required profit of 2% (and a minimum of 2 trades) within the last 6 hours (360min).
+The below example will stop trading a pair for 60 minutes if the pair does not have a required profit of 2% (and a minimum of 2 trades) within the last 6 candles.
 
 ```json
 "protections": [
     {
         "method": "LowProfitPairs",
-        "lookback_period": 360,
+        "lookback_period_candles": 6,
         "trade_limit": 2,
         "stop_duration": 60,
         "required_profit": 0.02
@@ -95,11 +99,13 @@ The below example will stop trading a pair for 60 minutes if the pair does not h
 
 `CooldownPeriod` locks a pair for `stop_duration` (in minutes) after selling, avoiding a re-entry for this pair for `stop_duration` minutes.
 
+The below example will stop trading a pair for 2 candles after closing a trade, allowing this pair to "cool down".
+
 ```json
 "protections": [
     {
         "method": "CooldownPeriod",
-        "stop_duration": 60
+        "stop_duration_candle": 2
     }
 ],
 ```
@@ -113,46 +119,47 @@ The below example will stop trading a pair for 60 minutes if the pair does not h
 All protections can be combined at will, also with different parameters, creating a increasing wall for under-performing pairs.
 All protections are evaluated in the sequence they are defined.
 
-The below example:
+The below example assumes a timeframe of 1 hour:
 
-* Locks each pair after selling for an additional 10 minutes (`CooldownPeriod`), giving other pairs a chance to get filled.
-* Stops trading if the last 2 days had 20 trades, which caused a max-drawdown of more than 20%. (`MaxDrawdown`).
-* Stops trading if more than 4 stoploss occur for all pairs within a 1 day (1440min) limit (`StoplossGuard`).
-* Locks all pairs that had 4 Trades within the last 6 hours (`60 * 6 = 360`) with a combined profit ratio of below 0.02 (<2%) (`LowProfitPairs`).
-* Locks all pairs for 120 minutes that had a profit of below 0.01 (<1%) within the last 24h (`60 * 24 = 1440`), a minimum of 4 trades.
+* Locks each pair after selling for an additional 5 candles (`CooldownPeriod`), giving other pairs a chance to get filled.
+* Stops trading for 4 hours (`4 * 1h candles`) if the last 2 days (`48 * 1h candles`) had 20 trades, which caused a max-drawdown of more than 20%. (`MaxDrawdown`).
+* Stops trading if more than 4 stoploss occur for all pairs within a 1 day (`24 * 1h candles`) limit (`StoplossGuard`).
+* Locks all pairs that had 4 Trades within the last 6 hours (`6 * 1h candles`) with a combined profit ratio of below 0.02 (<2%) (`LowProfitPairs`).
+* Locks all pairs for 2 candles that had a profit of below 0.01 (<1%) within the last 24h (`24 * 1h candles`), a minimum of 4 trades.
 
 ```json
+"timeframe": "1h",
 "protections": [
     {
         "method": "CooldownPeriod",
-        "stop_duration": 10
+        "stop_duration_candles": 5
     },
     {
         "method": "MaxDrawdown",
-        "lookback_period": 2880,
+        "lookback_period_candles": 48,
         "trade_limit": 20,
-        "stop_duration": 720,
+        "stop_duration_candles": 4,
         "max_allowed_drawdown": 0.2
     },
     {
         "method": "StoplossGuard",
-        "lookback_period": 1440,
+        "lookback_period_candles": 24,
         "trade_limit": 4,
-        "stop_duration": 120,
+        "stop_duration_candles": 2,
         "only_per_pair": false
     },
     {
         "method": "LowProfitPairs",
-        "lookback_period": 360,
+        "lookback_period_candles": 6,
         "trade_limit": 2,
-        "stop_duration": 60,
+        "stop_duration_candles": 60,
         "required_profit": 0.02
     },
     {
         "method": "LowProfitPairs",
-        "lookback_period": 1440,
+        "lookback_period_candles": 24,
         "trade_limit": 4,
-        "stop_duration": 120,
+        "stop_duration_candles": 2,
         "required_profit": 0.01
     }
     ],
