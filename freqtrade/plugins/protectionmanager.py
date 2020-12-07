@@ -20,9 +20,6 @@ class ProtectionManager():
 
         self._protection_handlers: List[IProtection] = []
         for protection_handler_config in self._config.get('protections', []):
-            if 'method' not in protection_handler_config:
-                logger.warning(f"No method found in {protection_handler_config}, ignoring.")
-                continue
             protection_handler = ProtectionResolver.load_protection(
                 protection_handler_config['method'],
                 config=config,

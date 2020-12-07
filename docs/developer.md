@@ -202,10 +202,10 @@ For that reason, they must implement the following methods:
 
 The `until` portion should be calculated using the provided `calculate_lock_end()` method.
 
-All Protections should use `"stop_duration"` to define how long a a pair (or all pairs) should be locked.
+All Protections should use `"stop_duration"` / `"stop_duration_candles"` to define how long a a pair (or all pairs) should be locked.
 The content of this is made available as `self._stop_duration` to the each Protection.
 
-If your protection requires a look-back period, please use `"lookback_period"` to keep different protections aligned.
+If your protection requires a look-back period, please use `"lookback_period"` / `"lockback_period_candles"` to keep all protections aligned.
 
 #### Global vs. local stops
 
@@ -229,6 +229,8 @@ The method `global_stop()` will be called whenever a trade closed (sell order co
 
 Protections should calculate the lock end time based on the last trade it considers.
 This avoids relocking should the lookback-period be longer than the actual lock period.
+
+The `IProtection` parent class provides a helper method for this in `calculate_lock_end()`.
 
 ---
 
