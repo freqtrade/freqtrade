@@ -21,7 +21,6 @@ class MaxDrawdown(IProtection):
     def __init__(self, config: Dict[str, Any], protection_config: Dict[str, Any]) -> None:
         super().__init__(config, protection_config)
 
-        self._lookback_period = protection_config.get('lookback_period', 60)
         self._trade_limit = protection_config.get('trade_limit', 1)
         self._max_allowed_drawdown = protection_config.get('max_allowed_drawdown', 0.0)
         # TODO: Implement checks to limit max_drawdown to sensible values

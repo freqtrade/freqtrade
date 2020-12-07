@@ -18,7 +18,6 @@ class LowProfitPairs(IProtection):
     def __init__(self, config: Dict[str, Any], protection_config: Dict[str, Any]) -> None:
         super().__init__(config, protection_config)
 
-        self._lookback_period = protection_config.get('lookback_period', 60)
         self._trade_limit = protection_config.get('trade_limit', 1)
         self._required_profit = protection_config.get('required_profit', 0.0)
 

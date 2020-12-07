@@ -24,6 +24,7 @@ class IProtection(LoggingMixin, ABC):
         self._config = config
         self._protection_config = protection_config
         self._stop_duration = protection_config.get('stop_duration', 60)
+        self._lookback_period = protection_config.get('lookback_period', 60)
 
         LoggingMixin.__init__(self, logger)
 

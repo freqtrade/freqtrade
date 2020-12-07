@@ -21,7 +21,6 @@ class StoplossGuard(IProtection):
     def __init__(self, config: Dict[str, Any], protection_config: Dict[str, Any]) -> None:
         super().__init__(config, protection_config)
 
-        self._lookback_period = protection_config.get('lookback_period', 60)
         self._trade_limit = protection_config.get('trade_limit', 10)
         self._disable_global_stop = protection_config.get('only_per_pair', False)
 

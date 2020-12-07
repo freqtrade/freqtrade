@@ -21,8 +21,10 @@ All protection end times are rounded up to the next candle to avoid sudden, unex
 
 ### Common settings to all Protections
 
+* `method` - Protection name to use.
 * `stop_duration` (minutes) - how long should protections be locked.
 * `lookback_period` (minutes) - Only trades that completed after `current_time - lookback_period` will be considered (may be ignored by some Protections).
+* `trade_limit` - How many trades are required at minimum (not used by all Protections).
 
 #### Stoploss Guard
 
