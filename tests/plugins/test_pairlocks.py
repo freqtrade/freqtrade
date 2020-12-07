@@ -79,6 +79,7 @@ def test_PairLocks(use_db):
         # Nothing was pushed to the database
         assert len(PairLock.query.all()) == 0
     # Reset use-db variable
+    PairLocks.reset_locks()
     PairLocks.use_db = True
 
 
@@ -111,4 +112,5 @@ def test_PairLocks_getlongestlock(use_db):
     # Must be longer than above
     assert lock.lock_end_time.replace(tzinfo=timezone.utc) > arrow.utcnow().shift(minutes=14)
 
+    PairLocks.reset_locks()
     PairLocks.use_db = True
