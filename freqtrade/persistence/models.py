@@ -419,7 +419,7 @@ class Trade(_DECL_BASE):
             raise ValueError(f'Unknown order type: {order_type}')
         cleanup_db()
 
-    def close(self, rate: float, *, show_msg: bool = False) -> None:
+    def close(self, rate: float, *, show_msg: bool = True) -> None:
         """
         Sets close_rate to the given rate, calculates total profit
         and marks trade as closed

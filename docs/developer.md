@@ -229,7 +229,7 @@ The method `global_stop()` will be called whenever a trade closed (sell order co
 ##### Protections - calculating lock end time
 
 Protections should calculate the lock end time based on the last trade it considers.
-This avoids relocking should the lookback-period be longer than the actual lock period.
+This avoids re-locking should the lookback-period be longer than the actual lock period.
 
 The `IProtection` parent class provides a helper method for this in `calculate_lock_end()`.
 
