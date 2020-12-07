@@ -3,9 +3,9 @@
 """
 This module manage Telegram communication
 """
-from datetime import timedelta
 import json
 import logging
+from datetime import timedelta
 from typing import Any, Callable, Dict, List, Union
 
 import arrow
@@ -395,9 +395,8 @@ class Telegram(RPC):
         """
         Handler for /stats
         Show stats of recent trades
-        :return: None
         """
-        sell_reasons, durations = self._rpc_stats()
+        stats = self._rpc_stats()
 
         sell_reasons_tabulate = []
         reason_map = {
@@ -409,26 +408,24 @@ class Telegram(RPC):
             'force_sell': 'Forcesell',
             'emergency_sell': 'Emergency Sell',
         }
-        for reason, count in sell_reasons.items():
+        for reason, count in stats['sell_reasons'].items():
             sell_reasons_tabulate.append([
                 reason_map.get(reason, reason),
                 sum(count.values()),
-                count['Wins'],
-                # count['Draws'],
-                count['Losses']
+                count['wins'],
+                count['losses']
             ])
         sell_reasons_msg = tabulate(
             sell_reasons_tabulate,
             headers=['Sell Reason', 'Sells', 'Wins', 'Losses']
             )
-
+        durations = stats['durations']
         duration_msg = tabulate([
             ['Wins', str(timedelta(seconds=durations['wins']))
              if durations['wins'] != 'N/A' else 'N/A'],
-            #  ['Draws', str(timedelta(seconds=durations['draws']))],
             ['Losses', str(timedelta(seconds=durations['losses']))
              if durations['losses'] != 'N/A' else 'N/A']
-             ],
+            ],
             headers=['', 'Avg. Duration']
         )
         msg = (f"""```\n{sell_reasons_msg}```\n```\n{duration_msg}```""")
