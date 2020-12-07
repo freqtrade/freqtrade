@@ -12,16 +12,21 @@ All protection end times are rounded up to the next candle to avoid sudden, unex
 !!! Tip
     Each Protection can be configured multiple times with different parameters, to allow different levels of protection (short-term / long-term).
 
-### Available Protection Handlers
+### Available Protections
 
 * [`StoplossGuard`](#stoploss-guard) Stop trading if a certain amount of stoploss occurred within a certain time window.
 * [`MaxDrawdown`](#maxdrawdown) Stop trading if max-drawdown is reached.
 * [`LowProfitPairs`](#low-profit-pairs) Lock pairs with low profits
 * [`CooldownPeriod`](#cooldown-period) Don't enter a trade right after selling a trade.
 
+### Common settings to all Protections
+
+* `stop_duration` (minutes) - how long should protections be locked.
+* `lookback_period` (minutes) - Only trades that completed after `current_time - lookback_period` will be considered (may be ignored by some Protections).
+
 #### Stoploss Guard
 
-`StoplossGuard` selects all trades within a `lookback_period` (in minutes), and determines if the amount of trades that resulted in stoploss are above `trade_limit` - in which case trading will stop for `stop_duration`.
+`StoplossGuard` selects all trades within `lookback_period` (in minutes), and determines if the amount of trades that resulted in stoploss are above `trade_limit` - in which case trading will stop for `stop_duration`.
 This applies across all pairs, unless `only_per_pair` is set to true, which will then only look at one pair at a time.
 
 The below example stops trading for all pairs for 2 hours (120min) after the last trade if the bot hit stoploss 4 times within the last 24h.
@@ -63,7 +68,7 @@ The below sample stops trading for 12 hours (720min) if max-drawdown is > 20% co
 
 #### Low Profit Pairs
 
-`LowProfitPairs` uses all trades for a pair within a `lookback_period` (in minutes) to determine the overall profit ratio.
+`LowProfitPairs` uses all trades for a pair within `lookback_period` (in minutes) to determine the overall profit ratio.
 If that ratio is below `required_profit`, that pair will be locked for `stop_duration` (in minutes).
 
 The below example will stop trading a pair for 60 minutes if the pair does not have a required profit of 2% (and a minimum of 2 trades) within the last 6 hours (360min).
@@ -93,8 +98,9 @@ The below example will stop trading a pair for 60 minutes if the pair does not h
 ],
 ```
 
-!!! Note:
+!!! Note
     This Protection applies only at pair-level, and will never lock all pairs globally.
+    This Protection does not consider `lookback_period` as it only looks at the latest trade.
 
 ### Full example of Protections
 
