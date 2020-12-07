@@ -78,26 +78,26 @@
     "protections": [
         {
             "method": "StoplossGuard",
-            "lookback_period": 60,
+            "lookback_period_candles": 60,
             "trade_limit": 4,
-            "stopduration": 60
+            "stop_duration_candles": 60
         },
         {
             "method": "CooldownPeriod",
-            "stopduration": 20
+            "stop_duration_candles": 20
         },
         {
             "method": "MaxDrawdown",
-            "lookback_period": 2000,
+            "lookback_period_candles": 200,
             "trade_limit": 20,
-            "stop_duration": 10,
+            "stop_duration_candles": 10,
             "max_allowed_drawdown": 0.2
         },
         {
             "method": "LowProfitPairs",
-            "lookback_period": 360,
+            "lookback_period_candles": 360,
             "trade_limit": 1,
-            "stop_duration": 2,
+            "stop_duration_candles": 2,
             "required_profit": 0.02
         }
     ],
