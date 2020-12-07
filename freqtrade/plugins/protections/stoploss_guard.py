@@ -29,7 +29,7 @@ class StoplossGuard(IProtection):
         Short method description - used for startup-messages
         """
         return (f"{self.name} - Frequent Stoploss Guard, {self._trade_limit} stoplosses "
-                f"within {self._lookback_period} minutes.")
+                f"within {self.lookback_period_str}.")
 
     def _reason(self) -> str:
         """

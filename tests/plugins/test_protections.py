@@ -350,7 +350,7 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
      None
      ),
     ({"method": "CooldownPeriod", "stop_duration": 60},
-     "[{'CooldownPeriod': 'CooldownPeriod - Cooldown period of 60 min.'}]",
+     "[{'CooldownPeriod': 'CooldownPeriod - Cooldown period of 60 minutes.'}]",
      None
      ),
     ({"method": "LowProfitPairs", "lookback_period": 60, "stop_duration": 60},
@@ -361,6 +361,26 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
     ({"method": "MaxDrawdown", "lookback_period": 60, "stop_duration": 60},
      "[{'MaxDrawdown': 'MaxDrawdown - Max drawdown protection, stop trading if drawdown is > 0.0 "
      "within 60 minutes.'}]",
+     None
+     ),
+    ({"method": "StoplossGuard", "lookback_period_candles": 12, "trade_limit": 2,
+      "stop_duration": 60},
+     "[{'StoplossGuard': 'StoplossGuard - Frequent Stoploss Guard, "
+     "2 stoplosses within 12 candles.'}]",
+     None
+     ),
+    ({"method": "CooldownPeriod", "stop_duration_candles": 5},
+     "[{'CooldownPeriod': 'CooldownPeriod - Cooldown period of 5 candles.'}]",
+     None
+     ),
+    ({"method": "LowProfitPairs", "lookback_period_candles": 11, "stop_duration": 60},
+     "[{'LowProfitPairs': 'LowProfitPairs - Low Profit Protection, locks pairs with "
+     "profit < 0.0 within 11 candles.'}]",
+     None
+     ),
+    ({"method": "MaxDrawdown", "lookback_period_candles": 20, "stop_duration": 60},
+     "[{'MaxDrawdown': 'MaxDrawdown - Max drawdown protection, stop trading if drawdown is > 0.0 "
+     "within 20 candles.'}]",
      None
      ),
 ])

@@ -30,14 +30,14 @@ class MaxDrawdown(IProtection):
         Short method description - used for startup-messages
         """
         return (f"{self.name} - Max drawdown protection, stop trading if drawdown is > "
-                f"{self._max_allowed_drawdown} within {self._lookback_period} minutes.")
+                f"{self._max_allowed_drawdown} within {self.lookback_period_str}.")
 
     def _reason(self, drawdown: float) -> str:
         """
         LockReason to use
         """
-        return (f'{drawdown} > {self._max_allowed_drawdown} in {self._lookback_period} min, '
-                f'locking for {self._stop_duration} min.')
+        return (f'{drawdown} > {self._max_allowed_drawdown} in {self.lookback_period_str}, '
+                f'locking for {self.stop_duration_str}.')
 
     def _max_drawdown(self, date_now: datetime) -> ProtectionReturn:
         """
@@ -62,7 +62,7 @@ class MaxDrawdown(IProtection):
         if drawdown > self._max_allowed_drawdown:
             self.log_once(
                 f"Trading stopped due to Max Drawdown {drawdown:.2f} < {self._max_allowed_drawdown}"
-                f" within {self._lookback_period} minutes.", logger.info)
+                f" within {self.lookback_period_str}.", logger.info)
             until = self.calculate_lock_end(trades, self._stop_duration)
 
             return True, until, self._reason(drawdown)

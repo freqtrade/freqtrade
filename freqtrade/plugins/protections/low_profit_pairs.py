@@ -26,14 +26,14 @@ class LowProfitPairs(IProtection):
         Short method description - used for startup-messages
         """
         return (f"{self.name} - Low Profit Protection, locks pairs with "
-                f"profit < {self._required_profit} within {self._lookback_period} minutes.")
+                f"profit < {self._required_profit} within {self.lookback_period_str}.")
 
     def _reason(self, profit: float) -> str:
         """
         LockReason to use
         """
-        return (f'{profit} < {self._required_profit} in {self._lookback_period} min, '
-                f'locking for {self._stop_duration} min.')
+        return (f'{profit} < {self._required_profit} in {self.lookback_period_str}, '
+                f'locking for {self.stop_duration_str}.')
 
     def _low_profit(self, date_now: datetime, pair: str) -> ProtectionReturn:
         """
