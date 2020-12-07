@@ -103,6 +103,7 @@ def test_stoploss_guard_perpair(mocker, default_conf, fee, caplog, only_per_pair
         "method": "StoplossGuard",
         "lookback_period": 60,
         "trade_limit": 1,
+        "stop_duration": 60,
         "only_per_pair": only_per_pair
     }]
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
@@ -158,7 +159,7 @@ def test_stoploss_guard_perpair(mocker, default_conf, fee, caplog, only_per_pair
 def test_CooldownPeriod(mocker, default_conf, fee, caplog):
     default_conf['protections'] = [{
         "method": "CooldownPeriod",
-        "stopduration": 60,
+        "stop_duration": 60,
     }]
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     message = r"Trading stopped due to .*"
@@ -195,7 +196,7 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog):
     default_conf['protections'] = [{
         "method": "LowProfitPairs",
         "lookback_period": 400,
-        "stopduration": 60,
+        "stop_duration": 60,
         "trade_limit": 2,
         "required_profit": 0.0,
     }]
@@ -254,7 +255,7 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
     default_conf['protections'] = [{
         "method": "MaxDrawdown",
         "lookback_period": 1000,
-        "stopduration": 60,
+        "stop_duration": 60,
         "trade_limit": 3,
         "max_allowed_drawdown": 0.15
     }]
@@ -315,21 +316,21 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
 
 
 @pytest.mark.parametrize("protectionconf,desc_expected,exception_expected", [
-    ({"method": "StoplossGuard", "lookback_period": 60, "trade_limit": 2},
+    ({"method": "StoplossGuard", "lookback_period": 60, "trade_limit": 2, "stop_duration": 60},
      "[{'StoplossGuard': 'StoplossGuard - Frequent Stoploss Guard, "
      "2 stoplosses within 60 minutes.'}]",
      None
      ),
-    ({"method": "CooldownPeriod", "stopduration": 60},
+    ({"method": "CooldownPeriod", "stop_duration": 60},
      "[{'CooldownPeriod': 'CooldownPeriod - Cooldown period of 60 min.'}]",
      None
      ),
-    ({"method": "LowProfitPairs", "stopduration": 60},
+    ({"method": "LowProfitPairs", "lookback_period": 60, "stop_duration": 60},
      "[{'LowProfitPairs': 'LowProfitPairs - Low Profit Protection, locks pairs with "
      "profit < 0.0 within 60 minutes.'}]",
      None
      ),
-    ({"method": "MaxDrawdown", "stopduration": 60},
+    ({"method": "MaxDrawdown", "lookback_period": 60, "stop_duration": 60},
      "[{'MaxDrawdown': 'MaxDrawdown - Max drawdown protection, stop trading if drawdown is > 0.0 "
      "within 60 minutes.'}]",
      None

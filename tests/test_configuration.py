@@ -879,6 +879,24 @@ def test_validate_whitelist(default_conf):
 
     validate_config_consistency(conf)
 
+@pytest.mark.parametrize('protconf,expected', [
+    ([], None),
+    ([{"method": "StoplossGuard", "lookback_period": 2000, "stop_duration_candles": 10}], None),
+    ([{"method": "StoplossGuard", "lookback_period_candle": 20, "stop_duration": 10}], None),
+    ([{"method": "StoplossGuard", "lookback_period_candle": 20, "lookback_period": 2000,
+       "stop_duration": 10}], r'Protections must specify either `lookback_period`.*'),
+    ([{"method": "StoplossGuard", "lookback_period": 20, "stop_duration": 10,
+       "stop_duration_candles": 10}], r'Protections must specify either `stop_duration`.*'),
+])
+def test_validate_protections(default_conf, protconf, expected):
+    conf = deepcopy(default_conf)
+    conf['protections'] = protconf
+    if expected:
+        with pytest.raises(OperationalException, match=expected):
+            validate_config_consistency(conf)
+    else:
+        validate_config_consistency(conf)
+
 
 def test_load_config_test_comments() -> None:
     """

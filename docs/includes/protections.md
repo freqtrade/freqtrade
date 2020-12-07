@@ -21,10 +21,14 @@ All protection end times are rounded up to the next candle to avoid sudden, unex
 
 ### Common settings to all Protections
 
-* `method` - Protection name to use.
-* `stop_duration` (minutes) - how long should protections be locked.
-* `lookback_period` (minutes) - Only trades that completed after `current_time - lookback_period` will be considered (may be ignored by some Protections).
-* `trade_limit` - How many trades are required at minimum (not used by all Protections).
+|  Parameter| Description |
+|------------|-------------|
+| method | Protection name to use. <br> **Datatype:** String, selected from [available Protections](#available-protections)
+| stop_duration_candles | For how many candles should the lock be set? <br> **Datatype:** Positive integer (in candles)
+| stop_duration | how many minutes should protections be locked. <br>Cannot be used together with `stop_duration_candles`. <br> **Datatype:** Float (in minutes)
+| `lookback_period_candles` | Only trades that completed within the last `lookback_period_candles` candles will be considered. This setting may be ignored by some Protections. <br> **Datatype:** Positive integer (in candles).
+| lookback_period | Only trades that completed after `current_time - lookback_period` will be considered. <br>Cannot be used together with `lookback_period_candles`. <br>This setting may be ignored by some Protections. <br> **Datatype:**  Float (in minutes)
+| trade_limit | Number of trades required at minimum (not used by all Protections). <br> **Datatype:** Positive integer
 
 #### Stoploss Guard
 
