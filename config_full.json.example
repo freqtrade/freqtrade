@@ -80,7 +80,8 @@
             "method": "StoplossGuard",
             "lookback_period_candles": 60,
             "trade_limit": 4,
-            "stop_duration_candles": 60
+            "stop_duration_candles": 60,
+            "only_per_pair": false
         },
         {
             "method": "CooldownPeriod",
