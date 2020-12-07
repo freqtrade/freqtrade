@@ -137,7 +137,7 @@ class FreqtradeBot(LoggingMixin):
         Called on startup and after reloading the bot - triggers notifications and
         performs startup tasks
         """
-        self.rpc.startup_messages(self.config, self.pairlists)
+        self.rpc.startup_messages(self.config, self.pairlists, self.protections)
         if not self.edge:
             # Adjust stoploss if it was changed
             Trade.stoploss_reinitialization(self.strategy.stoploss)
