@@ -8,7 +8,7 @@ If no additional parameter is specified, freqtrade will download data for `"1m"`
 Exchange and pairs will come from `config.json` (if specified using `-c/--config`).
 Otherwise `--exchange` becomes mandatory.
 
-You can use a relative timerange (`--days 20`) or an absolute starting point (`--timerange 20200101`). For incremental downloads, the relative approach should be used.
+You can use a relative timerange (`--days 20`) or an absolute starting point (`--timerange 20200101-`). For incremental downloads, the relative approach should be used.
 
 !!! Tip "Tip: Updating existing data"
     If you already have backtesting data available in your data-directory and would like to refresh this data up to today, use `--days xx` with a number slightly higher than the missing number of days. Freqtrade will keep the available data and only download the missing data.
