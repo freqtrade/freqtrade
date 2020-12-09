@@ -551,8 +551,7 @@ class IStrategy(ABC):
         # evaluate if the stoploss was hit if stoploss is not on exchange
         # in Dry-Run, this handles stoploss logic as well, as the logic will not be different to
         # regular stoploss handling.
-        if ((self.stoploss is not None) and
-            (trade.stop_loss >= current_rate) and
+        if ((trade.stop_loss >= current_rate) and
                 (not self.order_types.get('stoploss_on_exchange') or self.config['dry_run'])):
 
             sell_type = SellType.STOP_LOSS
