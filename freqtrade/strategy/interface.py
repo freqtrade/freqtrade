@@ -254,6 +254,24 @@ class IStrategy(ABC):
         """
         return True
 
+    def stoploss_value(self, pair: str, trade: Trade, rate: float, **kwargs) -> float:
+        """
+        Define custom stoploss logic
+        The custom stoploss can never be below self.stoploss, which serves as a hard maximum loss.
+
+
+        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+        When not implemented by a strategy, returns the initial stoploss value
+
+        :param pair: Pair that's about to be sold.
+        :param trade: trade object.
+        :param rate: Rate that's going to be used when using limit orders
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: New stoploss value, relative to the open price
+        """
+        return self.stoploss
+
     def informative_pairs(self) -> ListPairsWithTimeframes:
         """
         Define additional, informative pair/interval combinations to be cached from the exchange.

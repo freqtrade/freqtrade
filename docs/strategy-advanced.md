@@ -8,6 +8,11 @@ If you're just getting started, please be familiar with the methods described in
 !!! Note
     All callback methods described below should only be implemented in a strategy if they are actually used.
 
+## Custom stoploss logic
+
+// TODO: Complete this section
+
+
 ## Custom order timeout rules
 
 Simple, timebased order-timeouts can be configured either via strategy or in the configuration in the `unfilledtimeout` section.
