@@ -99,6 +99,7 @@ class Telegram(RPC):
             CommandHandler('trades', self._trades),
             CommandHandler('delete', self._delete_trade),
             CommandHandler('performance', self._performance),
+            CommandHandler('stats', self._stats),
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
             CommandHandler('locks', self._locks),
@@ -111,7 +112,6 @@ class Telegram(RPC):
             CommandHandler('edge', self._edge),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
-            CommandHandler('stats', self._stats),
         ]
         for handle in handles:
             self._updater.dispatcher.add_handler(handle)

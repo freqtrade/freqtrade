@@ -74,10 +74,10 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
 
     message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
                    "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], ['trades'], "
-                   "['delete'], ['performance'], ['daily'], ['count'], ['locks'], "
+                   "['delete'], ['performance'], ['stats'], ['daily'], ['count'], ['locks'], "
                    "['reload_config', 'reload_conf'], ['show_config', 'show_conf'], ['stopbuy'], "
-                   "['whitelist'], ['blacklist'], ['logs'], ['edge'], ['help'], ['version'], "
-                   "['stats']]")
+                   "['whitelist'], ['blacklist'], ['logs'], ['edge'], ['help'], ['version']"
+                   "]")
 
     assert log_has(message_str, caplog)
 
