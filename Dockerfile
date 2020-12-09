@@ -5,6 +5,7 @@ ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONFAULTHANDLER 1
+ENV PATH=/root/.local/bin:$PATH
 
 # Prepare environment
 RUN mkdir /freqtrade
@@ -13,7 +14,7 @@ WORKDIR /freqtrade
 # Install dependencies
 FROM base as python-deps
 RUN apt-get update \
-    && apt-get -y install git curl build-essential libssl-dev \
+    && apt-get -y install curl build-essential libssl-dev \
     && apt-get clean \
     && pip install --upgrade pip
 
@@ -33,7 +34,7 @@ COPY --from=python-deps /usr/local/lib /usr/local/lib
 ENV LD_LIBRARY_PATH /usr/local/lib
 
 COPY --from=python-deps /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
+
 
 
 # Install and execute
