@@ -285,7 +285,7 @@ Since backtesting lacks some detailed information about what happens within a ca
   - sells are compared to high - but the ROI value is used (e.g. ROI = 2%, high=5% - so the sell will be at 2%)
   - sells are never "below the candle", so a ROI of 2% may result in a sell at 2.4% if low was at 2.4% profit
   - Forcesells caused by `<N>=-1` ROI entries use low as sell value, unless N falls on the candle open (e.g. `120: -1` for 1h candles)
-- Stoploss sells happen exactly at stoploss price, even if low was lower, but the loss will be 0.32% lower than the stoploss price.
+- Stoploss sells happen exactly at stoploss price, even if low was lower, but the loss will be 0.32% lower than the stoploss price
 - Stoploss is evaluated before ROI within one candle. So you can often see more trades with the `stoploss` sell reason comparing to the results obtained with the same strategy in the Dry Run/Live Trade modes
 - Low happens before high for stoploss, protecting capital first
 - Trailing stoploss
