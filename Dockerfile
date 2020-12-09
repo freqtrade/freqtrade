@@ -14,7 +14,7 @@ WORKDIR /freqtrade
 # Install dependencies
 FROM base as python-deps
 RUN apt-get update \
-    && apt-get -y install curl build-essential libssl-dev \
+    && apt-get -y install curl build-essential libssl-dev git \
     && apt-get clean \
     && pip install --upgrade pip
 
