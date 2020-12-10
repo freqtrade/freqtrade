@@ -398,7 +398,6 @@ class Telegram(RPC):
         """
         stats = self._rpc_stats()
 
-        sell_reasons_tabulate = []
         reason_map = {
             'roi': 'ROI',
             'stop_loss': 'Stoploss',
@@ -408,13 +407,14 @@ class Telegram(RPC):
             'force_sell': 'Forcesell',
             'emergency_sell': 'Emergency Sell',
         }
-        for reason, count in stats['sell_reasons'].items():
-            sell_reasons_tabulate.append([
+        sell_reasons_tabulate = [
+            [
                 reason_map.get(reason, reason),
                 sum(count.values()),
                 count['wins'],
                 count['losses']
-            ])
+            ] for reason, count in stats['sell_reasons'].items()
+        ]
         sell_reasons_msg = tabulate(
             sell_reasons_tabulate,
             headers=['Sell Reason', 'Sells', 'Wins', 'Losses']
