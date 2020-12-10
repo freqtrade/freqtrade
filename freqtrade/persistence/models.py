@@ -217,8 +217,8 @@ class Trade(_DECL_BASE):
     fee_close_currency = Column(String, nullable=True)
     open_rate = Column(Float)
     open_rate_requested = Column(Float)
-    # open_trade_price - calculated via _calc_open_trade_value
-    open_trade_price = Column(Float)
+    # open_trade_value - calculated via _calc_open_trade_value
+    open_trade_value = Column(Float)
     close_rate = Column(Float)
     close_rate_requested = Column(Float)
     close_profit = Column(Float)
@@ -284,7 +284,7 @@ class Trade(_DECL_BASE):
             'open_timestamp': int(self.open_date.replace(tzinfo=timezone.utc).timestamp() * 1000),
             'open_rate': self.open_rate,
             'open_rate_requested': self.open_rate_requested,
-            'open_trade_value': round(self.open_trade_price, 8),
+            'open_trade_value': round(self.open_trade_value, 8),
 
             'close_date_hum': (arrow.get(self.close_date).humanize()
                                if self.close_date else None),
@@ -478,7 +478,7 @@ class Trade(_DECL_BASE):
         Recalculate open_trade_value.
         Must be called whenever open_rate or fee_open is changed.
         """
-        self.open_trade_price = self._calc_open_trade_value()
+        self.open_trade_value = self._calc_open_trade_value()
 
     def calc_close_trade_value(self, rate: Optional[float] = None,
                                fee: Optional[float] = None) -> float:
@@ -507,11 +507,11 @@ class Trade(_DECL_BASE):
             If rate is not set self.close_rate will be used
         :return:  profit in stake currency as float
         """
-        close_trade_price = self.calc_close_trade_value(
+        close_trade_value = self.calc_close_trade_value(
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
-        profit = close_trade_price - self.open_trade_price
+        profit = close_trade_value - self.open_trade_value
         return float(f"{profit:.8f}")
 
     def calc_profit_ratio(self, rate: Optional[float] = None,
@@ -523,11 +523,11 @@ class Trade(_DECL_BASE):
         :param fee: fee to use on the close rate (optional).
         :return: profit ratio as float
         """
-        close_trade_price = self.calc_close_trade_value(
+        close_trade_value = self.calc_close_trade_value(
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
-        profit_ratio = (close_trade_price / self.open_trade_price) - 1
+        profit_ratio = (close_trade_value / self.open_trade_value) - 1
         return float(f"{profit_ratio:.8f}")
 
     def select_order(self, order_side: str, is_open: Optional[bool]) -> Optional[Order]:

@@ -499,7 +499,7 @@ def test_migrate_old(mocker, default_conf, fee):
     assert trade.max_rate == 0.0
     assert trade.stop_loss == 0.0
     assert trade.initial_stop_loss == 0.0
-    assert trade.open_trade_price == trade._calc_open_trade_value()
+    assert trade.open_trade_value == trade._calc_open_trade_value()
     assert trade.close_profit_abs is None
     assert trade.fee_open_cost is None
     assert trade.fee_open_currency is None
@@ -607,7 +607,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert log_has("trying trades_bak1", caplog)
     assert log_has("trying trades_bak2", caplog)
     assert log_has("Running database migration for trades - backup: trades_bak2", caplog)
-    assert trade.open_trade_price == trade._calc_open_trade_value()
+    assert trade.open_trade_value == trade._calc_open_trade_value()
     assert trade.close_profit_abs is None
 
     assert log_has("Moving open orders to Orders table.", caplog)
@@ -677,7 +677,7 @@ def test_migrate_mid_state(mocker, default_conf, fee, caplog):
     assert trade.max_rate == 0.0
     assert trade.stop_loss == 0.0
     assert trade.initial_stop_loss == 0.0
-    assert trade.open_trade_price == trade._calc_open_trade_value()
+    assert trade.open_trade_value == trade._calc_open_trade_value()
     assert log_has("trying trades_bak0", caplog)
     assert log_has("Running database migration for trades - backup: trades_bak0", caplog)
 
