@@ -5,6 +5,7 @@ This module manage Telegram communication
 """
 import json
 import logging
+from datetime import timedelta
 from typing import Any, Callable, Dict, List, Union
 
 import arrow
@@ -98,6 +99,7 @@ class Telegram(RPC):
             CommandHandler('trades', self._trades),
             CommandHandler('delete', self._delete_trade),
             CommandHandler('performance', self._performance),
+            CommandHandler('stats', self._stats),
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
             CommandHandler('locks', self._locks),
@@ -387,6 +389,48 @@ class Telegram(RPC):
                 markdown_msg += (f"\n*Avg. Duration:* `{avg_duration}`\n"
                                  f"*Best Performing:* `{best_pair}: {best_rate:.2f}%`")
         self._send_msg(markdown_msg)
+
+    @authorized_only
+    def _stats(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /stats
+        Show stats of recent trades
+        """
+        stats = self._rpc_stats()
+
+        reason_map = {
+            'roi': 'ROI',
+            'stop_loss': 'Stoploss',
+            'trailing_stop_loss': 'Trail. Stop',
+            'stoploss_on_exchange': 'Stoploss',
+            'sell_signal': 'Sell Signal',
+            'force_sell': 'Forcesell',
+            'emergency_sell': 'Emergency Sell',
+        }
+        sell_reasons_tabulate = [
+            [
+                reason_map.get(reason, reason),
+                sum(count.values()),
+                count['wins'],
+                count['losses']
+            ] for reason, count in stats['sell_reasons'].items()
+        ]
+        sell_reasons_msg = tabulate(
+            sell_reasons_tabulate,
+            headers=['Sell Reason', 'Sells', 'Wins', 'Losses']
+            )
+        durations = stats['durations']
+        duration_msg = tabulate([
+            ['Wins', str(timedelta(seconds=durations['wins']))
+             if durations['wins'] != 'N/A' else 'N/A'],
+            ['Losses', str(timedelta(seconds=durations['losses']))
+             if durations['losses'] != 'N/A' else 'N/A']
+            ],
+            headers=['', 'Avg. Duration']
+        )
+        msg = (f"""```\n{sell_reasons_msg}```\n```\n{duration_msg}```""")
+
+        self._send_msg(msg, ParseMode.MARKDOWN)
 
     @authorized_only
     def _balance(self, update: Update, context: CallbackContext) -> None:
@@ -743,6 +787,8 @@ class Telegram(RPC):
                    "*/delete <trade_id>:* `Instantly delete the given trade in the database`\n"
                    "*/performance:* `Show performance of each finished trade grouped by pair`\n"
                    "*/daily <n>:* `Shows profit or loss per day, over the last n days`\n"
+                   "*/stats:* `Shows Wins / losses by Sell reason as well as "
+                   "Avg. holding durationsfor buys and sells.`\n"
                    "*/count:* `Show number of active trades compared to allowed number of trades`\n"
                    "*/locks:* `Show currently locked pairs`\n"
                    "*/balance:* `Show account balance per currency`\n"
