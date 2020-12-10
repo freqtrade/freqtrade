@@ -217,7 +217,7 @@ class Trade(_DECL_BASE):
     fee_close_currency = Column(String, nullable=True)
     open_rate = Column(Float)
     open_rate_requested = Column(Float)
-    # open_trade_price - calculated via _calc_open_trade_price
+    # open_trade_price - calculated via _calc_open_trade_value
     open_trade_price = Column(Float)
     close_rate = Column(Float)
     close_rate_requested = Column(Float)
@@ -252,7 +252,7 @@ class Trade(_DECL_BASE):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.recalc_open_trade_price()
+        self.recalc_open_trade_value()
 
     def __repr__(self):
         open_since = self.open_date.strftime(DATETIME_PRINT_FORMAT) if self.is_open else 'closed'
@@ -284,7 +284,7 @@ class Trade(_DECL_BASE):
             'open_timestamp': int(self.open_date.replace(tzinfo=timezone.utc).timestamp() * 1000),
             'open_rate': self.open_rate,
             'open_rate_requested': self.open_rate_requested,
-            'open_trade_price': round(self.open_trade_price, 8),
+            'open_trade_value': round(self.open_trade_price, 8),
 
             'close_date_hum': (arrow.get(self.close_date).humanize()
                                if self.close_date else None),
@@ -389,7 +389,7 @@ class Trade(_DECL_BASE):
             # Update open rate and actual amount
             self.open_rate = Decimal(safe_value_fallback(order, 'average', 'price'))
             self.amount = Decimal(safe_value_fallback(order, 'filled', 'amount'))
-            self.recalc_open_trade_price()
+            self.recalc_open_trade_value()
             if self.is_open:
                 logger.info(f'{order_type.upper()}_BUY has been fulfilled for {self}.')
             self.open_order_id = None
@@ -464,7 +464,7 @@ class Trade(_DECL_BASE):
         Trade.session.delete(self)
         Trade.session.flush()
 
-    def _calc_open_trade_price(self) -> float:
+    def _calc_open_trade_value(self) -> float:
         """
         Calculate the open_rate including open_fee.
         :return: Price in of the open trade incl. Fees
@@ -473,14 +473,14 @@ class Trade(_DECL_BASE):
         fees = buy_trade * Decimal(self.fee_open)
         return float(buy_trade + fees)
 
-    def recalc_open_trade_price(self) -> None:
+    def recalc_open_trade_value(self) -> None:
         """
-        Recalculate open_trade_price.
+        Recalculate open_trade_value.
         Must be called whenever open_rate or fee_open is changed.
         """
-        self.open_trade_price = self._calc_open_trade_price()
+        self.open_trade_price = self._calc_open_trade_value()
 
-    def calc_close_trade_price(self, rate: Optional[float] = None,
+    def calc_close_trade_value(self, rate: Optional[float] = None,
                                fee: Optional[float] = None) -> float:
         """
         Calculate the close_rate including fee
@@ -507,7 +507,7 @@ class Trade(_DECL_BASE):
             If rate is not set self.close_rate will be used
         :return:  profit in stake currency as float
         """
-        close_trade_price = self.calc_close_trade_price(
+        close_trade_price = self.calc_close_trade_value(
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
@@ -523,7 +523,7 @@ class Trade(_DECL_BASE):
         :param fee: fee to use on the close rate (optional).
         :return: profit ratio as float
         """
-        close_trade_price = self.calc_close_trade_price(
+        close_trade_price = self.calc_close_trade_value(
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
