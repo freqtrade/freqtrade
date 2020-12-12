@@ -89,6 +89,7 @@ class IStrategy(ABC):
     trailing_stop_positive: Optional[float] = None
     trailing_stop_positive_offset: float = 0.0
     trailing_only_offset_is_reached = False
+    custom_stoploss: bool = False
 
     # associated timeframe
     ticker_interval: str  # DEPRECATED
@@ -254,11 +255,11 @@ class IStrategy(ABC):
         """
         return True
 
-    def stoploss_value(self, pair: str, trade: Trade, rate: float, **kwargs) -> float:
+    def stoploss_value(self, pair: str, trade: Trade, current_rate: float, current_profit: float,
+                       **kwargs) -> float:
         """
         Define custom stoploss logic
         The custom stoploss can never be below self.stoploss, which serves as a hard maximum loss.
-
 
         For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
 
@@ -266,9 +267,10 @@ class IStrategy(ABC):
 
         :param pair: Pair that's about to be sold.
         :param trade: trade object.
-        :param rate: Rate that's going to be used when using limit orders
+        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_profit: Current profit (as ratio), calculated based on current_rate.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return float: New stoploss value, relative to the open price
+        :return float: New stoploss value, relative to the currentrate
         """
         return self.stoploss
 
@@ -548,6 +550,18 @@ class IStrategy(ABC):
 
         # Initiate stoploss with open_rate. Does nothing if stoploss is already set.
         trade.adjust_stop_loss(trade.open_rate, stop_loss_value, initial=True)
+
+        if self.custom_stoploss:
+            stop_loss_value = strategy_safe_wrapper(self.stoploss_value, default_retval=None
+                                                    )(pair=trade.pair, trade=trade,
+                                                      current_rate=current_rate,
+                                                      current_profit=current_profit)
+            # Sanity check - error cases will return None
+            if stop_loss_value:
+                # logger.info(f"{trade.pair} {stop_loss_value=} {current_profit=}")
+                trade.adjust_stop_loss(current_rate, stop_loss_value)
+            else:
+                logger.warning("CustomStoploss function did not return valid stoploss")
 
         if self.trailing_stop:
             # trailing stoploss handling
