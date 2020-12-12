@@ -3718,6 +3718,48 @@ def test_get_real_amount_multi(default_conf, trades_for_order2, buy_order_fee, c
                    'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.992).',
                    caplog)
 
+    assert trade.fee_open == 0.001
+    assert trade.fee_close == 0.001
+    assert trade.fee_open_cost is not None
+    assert trade.fee_open_currency is not None
+    assert trade.fee_close_cost is None
+    assert trade.fee_close_currency is None
+
+
+def test_get_real_amount_multi2(default_conf, trades_for_order3, buy_order_fee, caplog, fee,
+                                mocker, markets):
+    # Different fee currency on both trades
+    mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order3)
+    amount = float(sum(x['amount'] for x in trades_for_order3))
+    default_conf['stake_currency'] = 'ETH'
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=amount,
+        exchange='binance',
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_rate=0.245441,
+        open_order_id="123456"
+    )
+    # Fake markets entry to enable fee parsing
+    markets['BNB/ETH'] = markets['ETH/BTC']
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
+                 return_value={'ask': 0.19, 'last': 0.2})
+
+    # Amount is reduced by "fee"
+    assert freqtrade.get_real_amount(trade, buy_order_fee) == amount - (amount * 0.0005)
+    assert log_has('Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
+                   'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.996).',
+                   caplog)
+    # Overall fee is average of both trade's fee
+    assert trade.fee_open == 0.001518575
+    assert trade.fee_open_cost is not None
+    assert trade.fee_open_currency is not None
+    assert trade.fee_close_cost is None
+    assert trade.fee_close_currency is None
+
 
 def test_get_real_amount_fromorder(default_conf, trades_for_order, buy_order_fee, fee,
                                    caplog, mocker):
@@ -4264,7 +4306,7 @@ def test_update_closed_trades_without_assigned_fees(mocker, default_conf, fee):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     def patch_with_fee(order):
-        order.update({'fee': {'cost': 0.1, 'rate': 0.2,
+        order.update({'fee': {'cost': 0.1, 'rate': 0.01,
                       'currency': order['symbol'].split('/')[0]}})
         return order
 

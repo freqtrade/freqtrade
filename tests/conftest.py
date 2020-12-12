@@ -1614,6 +1614,14 @@ def trades_for_order2():
              'fee': {'cost': 0.004, 'currency': 'LTC'}}]
 
 
+@pytest.fixture(scope="function")
+def trades_for_order3(trades_for_order2):
+    # Different fee currencies for each trade
+    trades_for_order = deepcopy(trades_for_order2)
+    trades_for_order[0]['fee'] = {'cost': 0.02, 'currency': 'BNB'}
+    return trades_for_order
+
+
 @pytest.fixture
 def buy_order_fee():
     return {
