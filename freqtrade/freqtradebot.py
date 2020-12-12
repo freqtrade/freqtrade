@@ -1448,13 +1448,16 @@ class FreqtradeBot:
             fee_cost, fee_currency, fee_rate = self.exchange.extract_cost_curr_rate(order)
             logger.info(f"Fee for Trade {trade} [{order.get('side')}]: "
                         f"{fee_cost:.8g} {fee_currency} - rate: {fee_rate}")
-
-            trade.update_fee(fee_cost, fee_currency, fee_rate, order.get('side', ''))
-            if trade_base_currency == fee_currency:
-                # Apply fee to amount
-                return self.apply_fee_conditional(trade, trade_base_currency,
-                                                  amount=order_amount, fee_abs=fee_cost)
-            return order_amount
+            if fee_rate is None or fee_rate < 0.02:
+                # Reject all fees that report as > 2%.
+                # These are most likely caused by a parsing bug in ccxt
+                # due to multiple trades (https://github.com/ccxt/ccxt/issues/8025)
+                trade.update_fee(fee_cost, fee_currency, fee_rate, order.get('side', ''))
+                if trade_base_currency == fee_currency:
+                    # Apply fee to amount
+                    return self.apply_fee_conditional(trade, trade_base_currency,
+                                                      amount=order_amount, fee_abs=fee_cost)
+                return order_amount
         return self.fee_detection_from_trades(trade, order, order_amount)
 
     def fee_detection_from_trades(self, trade: Trade, order: Dict, order_amount: float) -> float:
