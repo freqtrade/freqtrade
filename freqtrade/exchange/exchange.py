@@ -658,7 +658,8 @@ class Exchange:
     @retrier
     def fetch_ticker(self, pair: str) -> dict:
         try:
-            if pair not in self._api.markets or not self._api.markets[pair].get('active'):
+            if (pair not in self._api.markets or
+                    self._api.markets[pair].get('active', False) is False):
                 raise ExchangeError(f"Pair {pair} not available")
             data = self._api.fetch_ticker(pair)
             return data
