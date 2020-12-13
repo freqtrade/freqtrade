@@ -26,12 +26,12 @@ All protection end times are rounded up to the next candle to avoid sudden, unex
 
 |  Parameter| Description |
 |------------|-------------|
-| method | Protection name to use. <br> **Datatype:** String, selected from [available Protections](#available-protections)
-| stop_duration_candles | For how many candles should the lock be set? <br> **Datatype:** Positive integer (in candles)
-| stop_duration | how many minutes should protections be locked. <br>Cannot be used together with `stop_duration_candles`. <br> **Datatype:** Float (in minutes)
+| `method` | Protection name to use. <br> **Datatype:** String, selected from [available Protections](#available-protections)
+| `stop_duration_candles` | For how many candles should the lock be set? <br> **Datatype:** Positive integer (in candles)
+| `stop_duration` | how many minutes should protections be locked. <br>Cannot be used together with `stop_duration_candles`. <br> **Datatype:** Float (in minutes)
 | `lookback_period_candles` | Only trades that completed within the last `lookback_period_candles` candles will be considered. This setting may be ignored by some Protections. <br> **Datatype:** Positive integer (in candles).
-| lookback_period | Only trades that completed after `current_time - lookback_period` will be considered. <br>Cannot be used together with `lookback_period_candles`. <br>This setting may be ignored by some Protections. <br> **Datatype:**  Float (in minutes)
-| trade_limit | Number of trades required at minimum (not used by all Protections). <br> **Datatype:** Positive integer
+| `lookback_period` | Only trades that completed after `current_time - lookback_period` will be considered. <br>Cannot be used together with `lookback_period_candles`. <br>This setting may be ignored by some Protections. <br> **Datatype:**  Float (in minutes)
+| `trade_limit` | Number of trades required at minimum (not used by all Protections). <br> **Datatype:** Positive integer
 
 !!! Note "Durations"
     Durations (`stop_duration*` and `lookback_period*` can be defined in either minutes or candles).
@@ -108,7 +108,7 @@ The below example will stop trading a pair for 2 candles after closing a trade, 
 "protections": [
     {
         "method": "CooldownPeriod",
-        "stop_duration_candle": 2
+        "stop_duration_candles": 2
     }
 ],
 ```

@@ -1,5 +1,3 @@
-# pragma pylint: disable=attribute-defined-outside-init
-
 """
 This module load custom pairlists
 """
