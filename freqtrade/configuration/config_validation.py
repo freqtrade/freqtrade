@@ -74,6 +74,7 @@ def validate_config_consistency(conf: Dict[str, Any]) -> None:
     _validate_trailing_stoploss(conf)
     _validate_edge(conf)
     _validate_whitelist(conf)
+    _validate_protections(conf)
     _validate_unlimited_amount(conf)
 
     # validate configuration before returning
@@ -155,3 +156,22 @@ def _validate_whitelist(conf: Dict[str, Any]) -> None:
         if (pl.get('method') == 'StaticPairList'
                 and not conf.get('exchange', {}).get('pair_whitelist')):
             raise OperationalException("StaticPairList requires pair_whitelist to be set.")
+
+
+def _validate_protections(conf: Dict[str, Any]) -> None:
+    """
+    Validate protection configuration validity
+    """
+
+    for prot in conf.get('protections', []):
+        if ('stop_duration' in prot and 'stop_duration_candles' in prot):
+            raise OperationalException(
+                "Protections must specify either `stop_duration` or `stop_duration_candles`.\n"
+                f"Please fix the protection {prot.get('method')}"
+                )
+
+        if ('lookback_period' in prot and 'lookback_period_candles' in prot):
+            raise OperationalException(
+                "Protections must specify either `lookback_period` or `lookback_period_candles`.\n"
+                f"Please fix the protection {prot.get('method')}"
+            )

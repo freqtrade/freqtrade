@@ -144,6 +144,14 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_false',
         default=True,
     ),
+    "enable_protections": Arg(
+        '--enable-protections', '--enableprotections',
+        help='Enable protections for backtesting.'
+        'Will slow backtesting down by a considerable amount, but will include '
+        'configured protections',
+        action='store_true',
+        default=False,
+    ),
     "strategy_list": Arg(
         '--strategy-list',
         help='Provide a space-separated list of strategies to backtest. '

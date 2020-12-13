@@ -137,7 +137,7 @@ def test_startupmessages_telegram_enabled(mocker, default_conf, caplog) -> None:
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     rpc_manager = RPCManager(freqtradebot)
-    rpc_manager.startup_messages(default_conf, freqtradebot.pairlists)
+    rpc_manager.startup_messages(default_conf, freqtradebot.pairlists, freqtradebot.protections)
 
     assert telegram_mock.call_count == 3
     assert "*Exchange:* `bittrex`" in telegram_mock.call_args_list[1][0][0]['status']
@@ -147,10 +147,14 @@ def test_startupmessages_telegram_enabled(mocker, default_conf, caplog) -> None:
     default_conf['whitelist'] = {'method': 'VolumePairList',
                                  'config': {'number_assets': 20}
                                  }
+    default_conf['protections'] = [{"method": "StoplossGuard",
+                                    "lookback_period": 60, "trade_limit": 2, "stop_duration": 60}]
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
 
-    rpc_manager.startup_messages(default_conf,  freqtradebot.pairlists)
-    assert telegram_mock.call_count == 3
+    rpc_manager.startup_messages(default_conf,  freqtradebot.pairlists, freqtradebot.protections)
+    assert telegram_mock.call_count == 4
     assert "Dry run is enabled." in telegram_mock.call_args_list[0][0][0]['status']
+    assert 'StoplossGuard' in telegram_mock.call_args_list[-1][0][0]['status']
 
 
 def test_init_apiserver_disabled(mocker, default_conf, caplog) -> None:

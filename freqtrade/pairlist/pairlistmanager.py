@@ -26,9 +26,6 @@ class PairListManager():
         self._pairlist_handlers: List[IPairList] = []
         self._tickers_needed = False
         for pairlist_handler_config in self._config.get('pairlists', None):
-            if 'method' not in pairlist_handler_config:
-                logger.warning(f"No method found in {pairlist_handler_config}, ignoring.")
-                continue
             pairlist_handler = PairListResolver.load_pairlist(
                     pairlist_handler_config['method'],
                     exchange=exchange,

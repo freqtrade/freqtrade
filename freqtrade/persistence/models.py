@@ -202,6 +202,10 @@ class Trade(_DECL_BASE):
     """
     __tablename__ = 'trades'
 
+    use_db: bool = True
+    # Trades container for backtesting
+    trades: List['Trade'] = []
+
     id = Column(Integer, primary_key=True)
 
     orders = relationship("Order", order_by="Order.id", cascade="all, delete-orphan")
@@ -323,6 +327,14 @@ class Trade(_DECL_BASE):
             'open_order_id': self.open_order_id,
         }
 
+    @staticmethod
+    def reset_trades() -> None:
+        """
+        Resets all trades. Only active for backtesting mode.
+        """
+        if not Trade.use_db:
+            Trade.trades = []
+
     def adjust_min_max_rates(self, current_price: float) -> None:
         """
         Adjust the max_rate and min_rate.
@@ -407,7 +419,7 @@ class Trade(_DECL_BASE):
             raise ValueError(f'Unknown order type: {order_type}')
         cleanup_db()
 
-    def close(self, rate: float) -> None:
+    def close(self, rate: float, *, show_msg: bool = True) -> None:
         """
         Sets close_rate to the given rate, calculates total profit
         and marks trade as closed
@@ -419,10 +431,11 @@ class Trade(_DECL_BASE):
         self.is_open = False
         self.sell_order_status = 'closed'
         self.open_order_id = None
-        logger.info(
-            'Marking %s as closed as the trade is fulfilled and found no open orders for it.',
-            self
-        )
+        if show_msg:
+            logger.info(
+                'Marking %s as closed as the trade is fulfilled and found no open orders for it.',
+                self
+            )
 
     def update_fee(self, fee_cost: float, fee_currency: Optional[str], fee_rate: Optional[float],
                    side: str) -> None:
@@ -563,6 +576,43 @@ class Trade(_DECL_BASE):
             return Trade.query
 
     @staticmethod
+    def get_trades_proxy(*, pair: str = None, is_open: bool = None,
+                         open_date: datetime = None, close_date: datetime = None,
+                         ) -> List['Trade']:
+        """
+        Helper function to query Trades.
+        Returns a List of trades, filtered on the parameters given.
+        In live mode, converts the filter to a database query and returns all rows
+        In Backtest mode, uses filters on Trade.trades to get the result.
+
+        :return: unsorted List[Trade]
+        """
+        if Trade.use_db:
+            trade_filter = []
+            if pair:
+                trade_filter.append(Trade.pair == pair)
+            if open_date:
+                trade_filter.append(Trade.open_date > open_date)
+            if close_date:
+                trade_filter.append(Trade.close_date > close_date)
+            if is_open is not None:
+                trade_filter.append(Trade.is_open.is_(is_open))
+            return Trade.get_trades(trade_filter).all()
+        else:
+            # Offline mode - without database
+            sel_trades = [trade for trade in Trade.trades]
+            if pair:
+                sel_trades = [trade for trade in sel_trades if trade.pair == pair]
+            if open_date:
+                sel_trades = [trade for trade in sel_trades if trade.open_date > open_date]
+            if close_date:
+                sel_trades = [trade for trade in sel_trades if trade.close_date
+                              and trade.close_date > close_date]
+            if is_open is not None:
+                sel_trades = [trade for trade in sel_trades if trade.is_open == is_open]
+            return sel_trades
+
+    @staticmethod
     def get_open_trades() -> List[Any]:
         """
         Query trades from persistence layer
@@ -688,7 +738,7 @@ class PairLock(_DECL_BASE):
     @staticmethod
     def query_pair_locks(pair: Optional[str], now: datetime) -> Query:
         """
-        Get all locks for this pair
+        Get all currently active locks for this pair
         :param pair: Pair to check for. Returns all current locks if pair is empty
         :param now: Datetime object (generated via datetime.now(timezone.utc)).
         """

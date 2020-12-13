@@ -19,6 +19,7 @@ nav:
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
     - Edge Positioning: edge.md
+    - Plugins: plugins.md
     - Utility Subcommands: utils.md
     - FAQ: faq.md
     - Data Analysis:

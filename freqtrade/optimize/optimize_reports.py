@@ -266,6 +266,7 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
         backtest_days = (max_date - min_date).days
         strat_stats = {
             'trades': results.to_dict(orient='records'),
+            'locks': [lock.to_json() for lock in content['locks']],
             'best_pair': best_pair,
             'worst_pair': worst_pair,
             'results_per_pair': pair_results,
