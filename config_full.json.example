@@ -67,7 +67,40 @@
         {"method": "AgeFilter", "min_days_listed": 10},
         {"method": "PrecisionFilter"},
         {"method": "PriceFilter", "low_price_ratio": 0.01, "min_price": 0.00000010},
-        {"method": "SpreadFilter", "max_spread_ratio": 0.005}
+        {"method": "SpreadFilter", "max_spread_ratio": 0.005},
+        {
+            "method": "RangeStabilityFilter",
+            "lookback_days": 10,
+            "min_rate_of_change": 0.01,
+            "refresh_period": 1440
+        }
+    ],
+    "protections": [
+        {
+            "method": "StoplossGuard",
+            "lookback_period_candles": 60,
+            "trade_limit": 4,
+            "stop_duration_candles": 60,
+            "only_per_pair": false
+        },
+        {
+            "method": "CooldownPeriod",
+            "stop_duration_candles": 20
+        },
+        {
+            "method": "MaxDrawdown",
+            "lookback_period_candles": 200,
+            "trade_limit": 20,
+            "stop_duration_candles": 10,
+            "max_allowed_drawdown": 0.2
+        },
+        {
+            "method": "LowProfitPairs",
+            "lookback_period_candles": 360,
+            "trade_limit": 1,
+            "stop_duration_candles": 2,
+            "required_profit": 0.02
+        }
     ],
     "exchange": {
         "name": "bittrex",

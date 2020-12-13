@@ -559,6 +559,35 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
                        }
 
 
+@pytest.mark.usefixtures("init_persistence")
+def test_api_stats(botclient, mocker, ticker, fee, markets,):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, (True, False))
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_balances=MagicMock(return_value=ticker),
+        fetch_ticker=ticker,
+        get_fee=fee,
+        markets=PropertyMock(return_value=markets)
+    )
+
+    rc = client_get(client, f"{BASE_URI}/stats")
+    assert_response(rc, 200)
+    assert 'durations' in rc.json
+    assert 'sell_reasons' in rc.json
+
+    create_mock_trades(fee)
+
+    rc = client_get(client, f"{BASE_URI}/stats")
+    assert_response(rc, 200)
+    assert 'durations' in rc.json
+    assert 'sell_reasons' in rc.json
+
+    assert 'wins' in rc.json['durations']
+    assert 'losses' in rc.json['durations']
+    assert 'draws' in rc.json['durations']
+
+
 def test_api_performance(botclient, mocker, ticker, fee):
     ftbot, client = botclient
     patch_get_signal(ftbot, (True, False))
@@ -678,7 +707,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
                         'min_rate': 1.098e-05,
                         'open_order_id': None,
                         'open_rate_requested': 1.098e-05,
-                        'open_trade_price': 0.0010025,
+                        'open_trade_value': 0.0010025,
                         'sell_reason': None,
                         'sell_order_status': None,
                         'strategy': 'DefaultStrategy',
@@ -805,7 +834,7 @@ def test_api_forcebuy(botclient, mocker, fee):
                        'min_rate': None,
                        'open_order_id': '123456',
                        'open_rate_requested': None,
-                       'open_trade_price': 0.24605460,
+                       'open_trade_value': 0.24605460,
                        'sell_reason': None,
                        'sell_order_status': None,
                        'strategy': None,

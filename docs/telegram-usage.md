@@ -113,6 +113,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/performance` | Show performance of each finished trade grouped by pair
 | `/balance` | Show account balance per currency
 | `/daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7)
+| `/stats` | Shows Wins / losses by Sell reason as well as Avg. holding durations for buys and sells
 | `/whitelist` | Show the current whitelist
 | `/blacklist [pair]` | Show the current blacklist, or adds a pair to the blacklist.
 | `/edge` | Show validated pairs by Edge if it is enabled.
@@ -207,7 +208,7 @@ Return a summary of your profit/loss and performance.
 
 Note that for this to work, `forcebuy_enable` needs to be set to true.
 
-[More details](configuration.md/#understand-forcebuy_enable)
+[More details](configuration.md#understand-forcebuy_enable)
 
 ### /performance
 

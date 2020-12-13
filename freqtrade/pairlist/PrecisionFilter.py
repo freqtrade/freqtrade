@@ -32,7 +32,7 @@ class PrecisionFilter(IPairList):
     def needstickers(self) -> bool:
         """
         Boolean property defining if tickers are necessary.
-        If no Pairlist requires tickers, an empty List is passed
+        If no Pairlist requires tickers, an empty Dict is passed
         as tickers argument to filter_pairlist
         """
         return True
@@ -59,9 +59,8 @@ class PrecisionFilter(IPairList):
         logger.debug(f"{ticker['symbol']} - {sp} : {stop_gap_price}")
 
         if sp <= stop_gap_price:
-            self.log_on_refresh(logger.info,
-                                f"Removed {ticker['symbol']} from whitelist, "
-                                f"because stop price {sp} would be <= stop limit {stop_gap_price}")
+            self.log_once(f"Removed {ticker['symbol']} from whitelist, because "
+                          f"stop price {sp} would be <= stop limit {stop_gap_price}", logger.info)
             return False
 
         return True

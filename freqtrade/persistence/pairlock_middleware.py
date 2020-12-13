@@ -22,10 +22,27 @@ class PairLocks():
     timeframe: str = ''
 
     @staticmethod
-    def lock_pair(pair: str, until: datetime, reason: str = None) -> None:
+    def reset_locks() -> None:
+        """
+        Resets all locks. Only active for backtesting mode.
+        """
+        if not PairLocks.use_db:
+            PairLocks.locks = []
+
+    @staticmethod
+    def lock_pair(pair: str, until: datetime, reason: str = None, *, now: datetime = None) -> None:
+        """
+        Create PairLock from now to "until".
+        Uses database by default, unless PairLocks.use_db is set to False,
+        in which case a list is maintained.
+        :param pair: pair to lock. use '*' to lock all pairs
+        :param until: End time of the lock. Will be rounded up to the next candle.
+        :param reason: Reason string that will be shown as reason for the lock
+        :param now: Current timestamp. Used to determine lock start time.
+        """
         lock = PairLock(
             pair=pair,
-            lock_time=datetime.now(timezone.utc),
+            lock_time=now or datetime.now(timezone.utc),
             lock_end_time=timeframe_to_next_date(PairLocks.timeframe, until),
             reason=reason,
             active=True
@@ -56,6 +73,15 @@ class PairLocks():
                 and (pair is None or lock.pair == pair)
             )]
             return locks
+
+    @staticmethod
+    def get_pair_longest_lock(pair: str, now: Optional[datetime] = None) -> Optional[PairLock]:
+        """
+        Get the lock that expires the latest for the pair given.
+        """
+        locks = PairLocks.get_pair_locks(pair, now)
+        locks = sorted(locks, key=lambda l: l.lock_end_time, reverse=True)
+        return locks[0] if locks else None
 
     @staticmethod
     def unlock_pair(pair: str, now: Optional[datetime] = None) -> None:

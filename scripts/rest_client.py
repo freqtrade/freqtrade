@@ -139,6 +139,13 @@ class FtRestClient():
         """
         return self._get("profit")
 
+    def stats(self):
+        """Return the stats report (durations, sell-reasons).
+
+        :return: json object
+        """
+        return self._get("stats")
+
     def performance(self):
         """Return the performance of the different coins.
 

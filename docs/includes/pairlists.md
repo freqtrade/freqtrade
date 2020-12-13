@@ -15,10 +15,12 @@ Inactive markets are always removed from the resulting pairlist. Explicitly blac
 * [`StaticPairList`](#static-pair-list) (default, if not configured differently)
 * [`VolumePairList`](#volume-pair-list)
 * [`AgeFilter`](#agefilter)
+* [`PerformanceFilter`](#performancefilter)
 * [`PrecisionFilter`](#precisionfilter)
 * [`PriceFilter`](#pricefilter)
 * [`ShuffleFilter`](#shufflefilter)
 * [`SpreadFilter`](#spreadfilter)
+* [`RangeStabilityFilter`](#rangestabilityfilter)
 
 !!! Tip "Testing pairlists"
     Pairlist configurations can be quite tricky to get right. Best use the [`test-pairlist`](utils.md#test-pairlist) utility sub-command to test your configuration quickly.
@@ -34,6 +36,11 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
     {"method": "StaticPairList"}
     ],
 ```
+
+By default, only currently enabled pairs are allowed.
+To skip pair validation against active markets, set `"allow_inactive": true` within the `StaticPairList` configuration.
+This can be useful for backtesting expired pairs (like quarterly spot-markets).
+This option must be configured along with `exchange.skip_pair_validation` in the exchange configuration.
 
 #### Volume Pair List
 
@@ -54,7 +61,7 @@ The `refresh_period` setting allows to define the period (in seconds), at which 
         "method": "VolumePairList",
         "number_assets": 20,
         "sort_key": "quoteVolume",
-        "refresh_period": 1800,
+        "refresh_period": 1800
 }],
 ```
 
@@ -67,6 +74,15 @@ in the first few days while the pair goes through its price-discovery period. Bo
 be caught out buying before the pair has finished dropping in price.
 
 This filter allows freqtrade to ignore pairs until they have been listed for at least `min_days_listed` days.
+
+#### PerformanceFilter
+
+Sorts pairs by past trade performance, as follows:
+1. Positive performance.
+2. No closed trades yet.
+3. Negative performance.
+
+Trade count is used as a tie breaker.
 
 #### PrecisionFilter
 
@@ -113,6 +129,27 @@ Example:
 
 If `DOGE/BTC` maximum bid is 0.00000026 and minimum ask is 0.00000027, the ratio is calculated as: `1 - bid/ask ~= 0.037` which is `> 0.005` and this pair will be filtered out.
 
+#### RangeStabilityFilter
+
+Removes pairs where the difference between lowest low and highest high over `lookback_days` days is below `min_rate_of_change`. Since this is a filter that requires additional data, the results are cached for `refresh_period`.
+
+In the below example:
+If the trading range over the last 10 days is <1%, remove the pair from the whitelist.
+
+```json
+"pairlists": [
+    {
+        "method": "RangeStabilityFilter",
+        "lookback_days": 10,
+        "min_rate_of_change": 0.01,
+        "refresh_period": 1440
+    }
+]
+```
+
+!!! Tip
+    This Filter can be used to automatically remove stable coin pairs, which have a very low trading range, and are therefore extremely difficult to trade with profit.
+
 ### Full example of Pairlist Handlers
 
 The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, sorting pairs by `quoteVolume` and applies both [`PrecisionFilter`](#precisionfilter) and [`PriceFilter`](#price-filter), filtering all assets where 1 price unit is > 1%. Then the `SpreadFilter` is applied and pairs are finally shuffled with the random seed set to some predefined value.
@@ -132,6 +169,12 @@ The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, 
     {"method": "PrecisionFilter"},
     {"method": "PriceFilter", "low_price_ratio": 0.01},
     {"method": "SpreadFilter", "max_spread_ratio": 0.005},
+    {
+        "method": "RangeStabilityFilter",
+        "lookback_days": 10,
+        "min_rate_of_change": 0.01,
+        "refresh_period": 1440
+    },
     {"method": "ShuffleFilter", "seed": 42}
     ],
 ```

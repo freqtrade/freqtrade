@@ -62,7 +62,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'fee_close_cost': ANY,
         'fee_close_currency': ANY,
         'open_rate_requested': ANY,
-        'open_trade_price': 0.0010025,
+        'open_trade_value': 0.0010025,
         'close_rate_requested': ANY,
         'sell_reason': ANY,
         'sell_order_status': ANY,
@@ -127,7 +127,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'fee_close_cost': ANY,
         'fee_close_currency': ANY,
         'open_rate_requested': ANY,
-        'open_trade_price': ANY,
+        'open_trade_value': ANY,
         'close_rate_requested': ANY,
         'sell_reason': ANY,
         'sell_order_status': ANY,
@@ -868,7 +868,8 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order_open) ->
     assert trade.open_rate == 0.0001
 
     # Test buy pair not with stakes
-    with pytest.raises(RPCException, match=r'Wrong pair selected. Please pairs with stake.*'):
+    with pytest.raises(RPCException,
+                       match=r'Wrong pair selected. Only pairs with stake-currency.*'):
         rpc._rpc_forcebuy('LTC/ETH', 0.0001)
     pair = 'XRP/BTC'
 

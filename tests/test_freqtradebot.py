@@ -15,7 +15,7 @@ from freqtrade.exceptions import (DependencyException, ExchangeError, Insufficie
                                   InvalidOrderException, OperationalException, PricingError,
                                   TemporaryError)
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.persistence import Order, Trade
+from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.rpc import RPCMessageType
 from freqtrade.state import RunMode, State
@@ -678,6 +678,32 @@ def test_enter_positions_no_pairs_in_whitelist(default_conf, ticker, limit_buy_o
     assert log_has("Active pair whitelist is empty.", caplog)
 
 
+@pytest.mark.usefixtures("init_persistence")
+def test_enter_positions_global_pairlock(default_conf, ticker, limit_buy_order, fee,
+                                         mocker, caplog) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker,
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
+    )
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+    n = freqtrade.enter_positions()
+    message = r"Global pairlock active until.* Not creating new trades."
+    n = freqtrade.enter_positions()
+    # 0 trades, but it's not because of pairlock.
+    assert n == 0
+    assert not log_has_re(message, caplog)
+
+    PairLocks.lock_pair('*', arrow.utcnow().shift(minutes=20).datetime, 'Just because')
+    n = freqtrade.enter_positions()
+    assert n == 0
+    assert log_has_re(message, caplog)
+
+
 def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
     default_conf['dry_run'] = True
 
@@ -1073,6 +1099,12 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
     limit_buy_order['id'] = '66'
     mocker.patch('freqtrade.exchange.Exchange.buy', MagicMock(return_value=limit_buy_order))
     assert not freqtrade.execute_buy(pair, stake_amount)
+
+    # Fail to get price...
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_buy_rate', MagicMock(return_value=0.0))
+
+    with pytest.raises(PricingError, match="Could not determine buy price."):
+        freqtrade.execute_buy(pair, stake_amount)
 
 
 def test_execute_buy_confirm_error(mocker, default_conf, fee, limit_buy_order) -> None:
@@ -3257,7 +3289,7 @@ def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down, mocker, caplo
     caplog.clear()
     freqtrade.enter_positions()
 
-    assert log_has(f"Pair {trade.pair} is currently locked.", caplog)
+    assert log_has_re(f"Pair {trade.pair} is still locked.*", caplog)
 
 
 def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, limit_buy_order_open,
@@ -3556,7 +3588,7 @@ def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order, limit_b
     # Test if buy-signal is absent
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
-    assert trade.sell_reason == SellType.STOP_LOSS.value
+    assert trade.sell_reason == SellType.SELL_SIGNAL.value
 
 
 def test_get_real_amount_quote(default_conf, trades_for_order, buy_order_fee, fee, caplog, mocker):
@@ -3711,6 +3743,48 @@ def test_get_real_amount_multi(default_conf, trades_for_order2, buy_order_fee, c
     assert log_has('Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
                    'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.992).',
                    caplog)
+
+    assert trade.fee_open == 0.001
+    assert trade.fee_close == 0.001
+    assert trade.fee_open_cost is not None
+    assert trade.fee_open_currency is not None
+    assert trade.fee_close_cost is None
+    assert trade.fee_close_currency is None
+
+
+def test_get_real_amount_multi2(default_conf, trades_for_order3, buy_order_fee, caplog, fee,
+                                mocker, markets):
+    # Different fee currency on both trades
+    mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order3)
+    amount = float(sum(x['amount'] for x in trades_for_order3))
+    default_conf['stake_currency'] = 'ETH'
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=amount,
+        exchange='binance',
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_rate=0.245441,
+        open_order_id="123456"
+    )
+    # Fake markets entry to enable fee parsing
+    markets['BNB/ETH'] = markets['ETH/BTC']
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
+                 return_value={'ask': 0.19, 'last': 0.2})
+
+    # Amount is reduced by "fee"
+    assert freqtrade.get_real_amount(trade, buy_order_fee) == amount - (amount * 0.0005)
+    assert log_has('Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
+                   'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.996).',
+                   caplog)
+    # Overall fee is average of both trade's fee
+    assert trade.fee_open == 0.001518575
+    assert trade.fee_open_cost is not None
+    assert trade.fee_open_currency is not None
+    assert trade.fee_close_cost is None
+    assert trade.fee_close_currency is None
 
 
 def test_get_real_amount_fromorder(default_conf, trades_for_order, buy_order_fee, fee,
@@ -4258,7 +4332,7 @@ def test_update_closed_trades_without_assigned_fees(mocker, default_conf, fee):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     def patch_with_fee(order):
-        order.update({'fee': {'cost': 0.1, 'rate': 0.2,
+        order.update({'fee': {'cost': 0.1, 'rate': 0.01,
                       'currency': order['symbol'].split('/')[0]}})
         return order
 

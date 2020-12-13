@@ -6,16 +6,15 @@ from abc import ABC, abstractmethod, abstractproperty
 from copy import deepcopy
 from typing import Any, Dict, List
 
-from cachetools import TTLCache, cached
-
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import market_is_active
+from freqtrade.mixins import LoggingMixin
 
 
 logger = logging.getLogger(__name__)
 
 
-class IPairList(ABC):
+class IPairList(LoggingMixin, ABC):
 
     def __init__(self, exchange, pairlistmanager,
                  config: Dict[str, Any], pairlistconfig: Dict[str, Any],
@@ -36,7 +35,7 @@ class IPairList(ABC):
         self._pairlist_pos = pairlist_pos
         self.refresh_period = self._pairlistconfig.get('refresh_period', 1800)
         self._last_refresh = 0
-        self._log_cache: TTLCache = TTLCache(maxsize=1024, ttl=self.refresh_period)
+        LoggingMixin.__init__(self, logger, self.refresh_period)
 
     @property
     def name(self) -> str:
@@ -46,29 +45,11 @@ class IPairList(ABC):
         """
         return self.__class__.__name__
 
-    def log_on_refresh(self, logmethod, message: str) -> None:
-        """
-        Logs message - not more often than "refresh_period" to avoid log spamming
-        Logs the log-message as debug as well to simplify debugging.
-        :param logmethod: Function that'll be called. Most likely `logger.info`.
-        :param message: String containing the message to be sent to the function.
-        :return: None.
-        """
-
-        @cached(cache=self._log_cache)
-        def _log_on_refresh(message: str):
-            logmethod(message)
-
-        # Log as debug first
-        logger.debug(message)
-        # Call hidden function.
-        _log_on_refresh(message)
-
     @abstractproperty
     def needstickers(self) -> bool:
         """
         Boolean property defining if tickers are necessary.
-        If no Pairlist requires tickers, an empty List is passed
+        If no Pairlist requires tickers, an empty Dict is passed
         as tickers argument to filter_pairlist
         """
 

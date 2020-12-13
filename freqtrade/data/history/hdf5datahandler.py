@@ -3,14 +3,15 @@ import re
 from pathlib import Path
 from typing import List, Optional
 
+import numpy as np
 import pandas as pd
 
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import (DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS,
-                                 ListPairsWithTimeframes)
+                                 ListPairsWithTimeframes, TradeList)
 
-from .idatahandler import IDataHandler, TradeList
+from .idatahandler import IDataHandler
 
 
 logger = logging.getLogger(__name__)
@@ -175,7 +176,8 @@ class HDF5DataHandler(IDataHandler):
             if timerange.stoptype == 'date':
                 where.append(f"timestamp < {timerange.stopts * 1e3}")
 
-        trades = pd.read_hdf(filename, key=key, mode="r", where=where)
+        trades: pd.DataFrame = pd.read_hdf(filename, key=key, mode="r", where=where)
+        trades[['id', 'type']] = trades[['id', 'type']].replace({np.nan: None})
         return trades.values.tolist()
 
     def trades_purge(self, pair: str) -> bool:

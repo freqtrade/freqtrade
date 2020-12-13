@@ -20,11 +20,13 @@ ARGS_COMMON_OPTIMIZE = ["timeframe", "timerange", "dataformat_ohlcv",
                         "max_open_trades", "stake_amount", "fee"]
 
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
+                                        "enable_protections",
                                         "strategy_list", "export", "exportfilename"]
 
 ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
-                                        "position_stacking", "epochs", "spaces",
-                                        "use_max_market_positions", "print_all",
+                                        "position_stacking", "use_max_market_positions",
+                                        "enable_protections",
+                                        "epochs", "spaces", "print_all",
                                         "print_colorized", "print_json", "hyperopt_jobs",
                                         "hyperopt_random_state", "hyperopt_min_trades",
                                         "hyperopt_loss"]

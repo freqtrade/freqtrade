@@ -87,9 +87,11 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `exchange.ccxt_sync_config` | Additional CCXT parameters passed to the regular (sync) ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> **Datatype:** Dict
 | `exchange.ccxt_async_config` | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> **Datatype:** Dict
 | `exchange.markets_refresh_interval` | The interval in minutes in which markets are reloaded. <br>*Defaults to `60` minutes.* <br> **Datatype:** Positive Integer
+| `exchange.skip_pair_validation` | Skip pairlist validation on startup.<br>*Defaults to `false`<br> **Datatype:** Boolean
 | `edge.*` | Please refer to [edge configuration document](edge.md) for detailed explanation.
 | `experimental.block_bad_exchanges` | Block exchanges known to not work with freqtrade. Leave on default unless you want to test if that exchange works now. <br>*Defaults to `true`.* <br> **Datatype:** Boolean
 | `pairlists` | Define one or more pairlists to be used. [More information below](#pairlists-and-pairlist-handlers). <br>*Defaults to `StaticPairList`.*  <br> **Datatype:** List of Dicts
+| `protections` | Define one or more protections to be used. [More information below](#protections). <br> **Datatype:** List of Dicts
 | `telegram.enabled` | Enable the usage of Telegram. <br> **Datatype:** Boolean
 | `telegram.token` | Your Telegram bot token. Only required if `telegram.enabled` is `true`. <br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
 | `telegram.chat_id` | Your personal Telegram account id. Only required if `telegram.enabled` is `true`. <br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
@@ -176,7 +178,7 @@ In the example above this would mean:
     This option only applies with [Static stake amount](#static-stake-amount) - since [Dynamic stake amount](#dynamic-stake-amount) divides the balances evenly.
 
 !!! Note
-    The minimum last stake amount can be configured using `amend_last_stake_amount` - which defaults to 0.5 (50%). This means that the minimum stake amount that's ever used is `stake_amount * 0.5`. This avoids very low stake amounts, that are close to the minimum tradable amount for the pair and can be refused by the exchange.
+    The minimum last stake amount can be configured using `last_stake_amount_min_ratio` - which defaults to 0.5 (50%). This means that the minimum stake amount that's ever used is `stake_amount * 0.5`. This avoids very low stake amounts, that are close to the minimum tradable amount for the pair and can be refused by the exchange.
 
 #### Static stake amount
 
@@ -313,21 +315,20 @@ Configuration:
 }
 ```
 
-!!! Note
+!!! Note "Market order support"
     Not all exchanges support "market" orders.
     The following message will be shown if your exchange does not support market orders:
-    `"Exchange <yourexchange>  does not support market orders."`
+    `"Exchange <yourexchange> does not support market orders."` and the bot will refuse to start.
 
-!!! Note
-    Stoploss on exchange interval is not mandatory. Do not change its value if you are
+!!! Warning "Using market orders"
+    Please carefully read the section [Market order pricing](#market-order-pricing) section when using market orders.
+
+!!! Note "Stoploss on exchange"
+    `stoploss_on_exchange_interval` is not mandatory. Do not change its value if you are
     unsure of what you are doing. For more information about how stoploss works please
     refer to [the stoploss documentation](stoploss.md).
 
-!!! Note
     If `stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new stoploss order.
-
-!!! Warning "Using market orders"
-    Please read the section [Market order pricing](#market-order-pricing) section when using market orders.
 
 !!! Warning "Warning: stoploss_on_exchange failures"
     If stoploss on exchange creation fails for some reason, then an "emergency sell" is initiated. By default, this will sell the asset using a market order. The order-type for the emergency-sell can be changed by setting the `emergencysell` value in the `order_types` dictionary - however this is not advised.
@@ -575,6 +576,7 @@ Assuming both buy and sell are using market orders, a configuration similar to t
 
 Obviously, if only one side is using limit orders, different pricing combinations can be used.
 --8<-- "includes/pairlists.md"
+--8<-- "includes/protections.md"
 
 ## Switch to Dry-run mode
 
