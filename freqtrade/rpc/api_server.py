@@ -198,6 +198,8 @@ class ApiServer(RPC):
         self.app.add_url_rule(f'{BASE_URI}/logs', 'log', view_func=self._get_logs, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/profit', 'profit',
                               view_func=self._profit, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/stats', 'stats',
+                              view_func=self._stats, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/performance', 'performance',
                               view_func=self._performance, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/status', 'status',
@@ -414,6 +416,18 @@ class ApiServer(RPC):
         stats = self._rpc_trade_statistics(self._config['stake_currency'],
                                            self._config.get('fiat_display_currency')
                                            )
+
+        return jsonify(stats)
+
+    @require_login
+    @rpc_catch_errors
+    def _stats(self):
+        """
+        Handler for /stats.
+        Returns a Object with "durations" and "sell_reasons" as keys.
+        """
+
+        stats = self._rpc_stats()
 
         return jsonify(stats)
 

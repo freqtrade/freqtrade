@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 from freqtrade.persistence.models import Order, Trade
 
 
@@ -82,6 +84,9 @@ def mock_trade_2(fee):
         is_open=False,
         open_order_id='dry_run_sell_12345',
         strategy='DefaultStrategy',
+        sell_reason='sell_signal',
+        open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=20),
+        close_date=datetime.now(tz=timezone.utc),
     )
     o = Order.parse_from_ccxt_object(mock_order_2(), 'ETC/BTC', 'buy')
     trade.orders.append(o)
@@ -134,6 +139,9 @@ def mock_trade_3(fee):
         close_profit=0.01,
         exchange='bittrex',
         is_open=False,
+        sell_reason='roi',
+        open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=20),
+        close_date=datetime.now(tz=timezone.utc),
     )
     o = Order.parse_from_ccxt_object(mock_order_3(), 'XRP/BTC', 'buy')
     trade.orders.append(o)

@@ -532,8 +532,7 @@ class FreqtradeBot(LoggingMixin):
         # reserve some percent defined in config (5% default) + stoploss
         amount_reserve_percent = 1.0 - self.config.get('amount_reserve_percent',
                                                        constants.DEFAULT_AMOUNT_RESERVE_PERCENT)
-        if self.strategy.stoploss is not None:
-            amount_reserve_percent += self.strategy.stoploss
+        amount_reserve_percent += self.strategy.stoploss
         # it should not be more than 50%
         amount_reserve_percent = max(amount_reserve_percent, 0.5)
 
@@ -1415,7 +1414,7 @@ class FreqtradeBot(LoggingMixin):
                            abs_tol=constants.MATH_CLOSE_PREC):
                 order['amount'] = new_amount
                 order.pop('filled', None)
-                trade.recalc_open_trade_price()
+                trade.recalc_open_trade_value()
         except DependencyException as exception:
             logger.warning("Could not update trade amount: %s", exception)
 
@@ -1470,13 +1469,16 @@ class FreqtradeBot(LoggingMixin):
             fee_cost, fee_currency, fee_rate = self.exchange.extract_cost_curr_rate(order)
             logger.info(f"Fee for Trade {trade} [{order.get('side')}]: "
                         f"{fee_cost:.8g} {fee_currency} - rate: {fee_rate}")
-
-            trade.update_fee(fee_cost, fee_currency, fee_rate, order.get('side', ''))
-            if trade_base_currency == fee_currency:
-                # Apply fee to amount
-                return self.apply_fee_conditional(trade, trade_base_currency,
-                                                  amount=order_amount, fee_abs=fee_cost)
-            return order_amount
+            if fee_rate is None or fee_rate < 0.02:
+                # Reject all fees that report as > 2%.
+                # These are most likely caused by a parsing bug in ccxt
+                # due to multiple trades (https://github.com/ccxt/ccxt/issues/8025)
+                trade.update_fee(fee_cost, fee_currency, fee_rate, order.get('side', ''))
+                if trade_base_currency == fee_currency:
+                    # Apply fee to amount
+                    return self.apply_fee_conditional(trade, trade_base_currency,
+                                                      amount=order_amount, fee_abs=fee_cost)
+                return order_amount
         return self.fee_detection_from_trades(trade, order, order_amount)
 
     def fee_detection_from_trades(self, trade: Trade, order: Dict, order_amount: float) -> float:

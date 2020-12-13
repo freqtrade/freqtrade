@@ -112,7 +112,7 @@ OS Specific steps are listed first, the [Common](#common) section below is neces
     
 
     ``` bash
-    sudo apt-get install python3-venv libatlas-base-dev
+    sudo apt-get install python3-venv libatlas-base-dev cmake
     # Use pywheels.org to speed up installation
     sudo echo "[global]\nextra-index-url=https://www.piwheels.org/simple" > tee /etc/pip.conf
 
