@@ -29,7 +29,7 @@ def generate_mock_trade(pair: str, fee: float, is_open: bool,
         amount=0.01 / open_rate,
         exchange='bittrex',
     )
-    trade.recalc_open_trade_price()
+    trade.recalc_open_trade_value()
     if not is_open:
         trade.close(open_rate * profit_rate)
         trade.sell_reason = sell_reason
