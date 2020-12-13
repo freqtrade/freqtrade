@@ -223,8 +223,8 @@ def init_persistence(default_conf):
 
 
 @pytest.fixture(scope="function")
-def default_conf():
-    return get_default_conf()
+def default_conf(testdatadir):
+    return get_default_conf(testdatadir)
 
 
 def get_default_conf(testdatadir):

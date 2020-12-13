@@ -88,12 +88,13 @@ class TestCCXTExchange():
 
     def test_ccxt_fetch_l2_orderbook(self, exchange):
         exchange, exchangename = exchange
-        l2 = exchange.fetch_l2_order_book('BTC/USDT')
+        pair = EXCHANGES[exchangename]['pair']
+        l2 = exchange.fetch_l2_order_book(pair)
         assert 'asks' in l2
         assert 'bids' in l2
 
         for val in [1, 2, 5, 25, 100]:
-            l2 = exchange.fetch_l2_order_book('BTC/USDT', val)
+            l2 = exchange.fetch_l2_order_book(pair, val)
             if not exchange._ft_has['l2_limit_range'] or val in exchange._ft_has['l2_limit_range']:
                 assert len(l2['asks']) == val
                 assert len(l2['bids']) == val
