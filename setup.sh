@@ -25,6 +25,14 @@ function check_installed_python() {
         return
     fi
 
+    which python3.9
+    if [ $? -eq 0 ]; then
+        echo "using Python 3.9"
+        PYTHON=python3.9
+        check_installed_pip
+        return
+    fi
+
     which python3.7
     if [ $? -eq 0 ]; then
         echo "using Python 3.7"
@@ -33,16 +41,9 @@ function check_installed_python() {
         return
     fi
 
-    which python3.6
-    if [ $? -eq 0 ]; then
-        echo "using Python 3.6"
-        PYTHON=python3.6
-        check_installed_pip
-        return
-   fi
 
    if [ -z ${PYTHON} ]; then
-        echo "No usable python found. Please make sure to have python3.6, python3.7 or python3.8 installed"
+        echo "No usable python found. Please make sure to have python3.7 or newer installed"
         exit 1
    fi
 }
@@ -302,7 +303,7 @@ function help() {
     echo "	-p,--plot       Install dependencies for Plotting scripts."
 }
 
-# Verify if 3.6 or 3.7 is installed
+# Verify if 3.7 or 3.8 is installed
 check_installed_python
 
 case $* in
