@@ -22,7 +22,7 @@ blosc==1.9.2
 py_find_1st==1.1.4
 
 # Load ticker files 30% faster
-python-rapidjson==0.9.4
+python-rapidjson==1.0
 
 # Notify systemd
 sdnotify==0.3.2
