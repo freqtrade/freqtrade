@@ -10,7 +10,7 @@ Please consider using the prebuilt [docker images](docker.md) to get started qui
 
 Click each one for install guide:
 
-* [Python >= 3.6.x](http://docs.python-guide.org/en/latest/starting/installation/)
+* [Python >= 3.7.x](http://docs.python-guide.org/en/latest/starting/installation/)
 * [pip](https://pip.pypa.io/en/stable/installing/)
 * [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 * [virtualenv](https://virtualenv.pypa.io/en/stable/installation.html) (Recommended)
@@ -34,7 +34,7 @@ The easiest way to install and run Freqtrade is to clone the bot Github reposito
     When cloning the repository the default working branch has the name `develop`. This branch contains all last features (can be considered as relatively stable, thanks to automated tests). The `stable` branch contains the code of the last release (done usually once per month on an approximately one week old snapshot of the `develop` branch to prevent packaging bugs, so potentially it's more stable).
 
 !!! Note
-    Python3.6 or higher and the corresponding `pip` are assumed to be available. The install-script will warn you and stop if that's not the case. `git` is also needed to clone the Freqtrade repository.
+    Python3.7 or higher and the corresponding `pip` are assumed to be available. The install-script will warn you and stop if that's not the case. `git` is also needed to clone the Freqtrade repository.
 
 This can be achieved with the following commands:
 
@@ -63,7 +63,7 @@ usage:
 ** --install **
 
 With this option, the script will install the bot and most dependencies:
-You will need to have git and python3.6+ installed beforehand for this to work.
+You will need to have git and python3.7+ installed beforehand for this to work.
 
 * Mandatory software as: `ta-lib`
 * Setup your virtualenv under `.env/`
@@ -94,7 +94,7 @@ We've included/collected install instructions for Ubuntu, MacOS, and Windows. Th
 OS Specific steps are listed first, the [Common](#common) section below is necessary for all systems.
 
 !!! Note
-    Python3.6 or higher and the corresponding pip are assumed to be available.
+    Python3.7 or higher and the corresponding pip are assumed to be available.
 
 === "Ubuntu/Debian"
     #### Install necessary dependencies

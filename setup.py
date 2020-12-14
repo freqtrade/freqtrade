@@ -3,9 +3,9 @@ from sys import version_info
 from setuptools import setup
 
 
-if version_info.major == 3 and version_info.minor < 6 or \
+if version_info.major == 3 and version_info.minor < 7 or \
         version_info.major < 3:
-    print('Your Python interpreter must be 3.6 or greater!')
+    print('Your Python interpreter must be 3.7 or greater!')
     exit(1)
 
 from pathlib import Path  # noqa: E402
@@ -109,7 +109,6 @@ setup(name='freqtrade',
           'Environment :: Console',
           'Intended Audience :: Science/Research',
           'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
-          'Programming Language :: Python :: 3.6',
           'Programming Language :: Python :: 3.7',
           'Programming Language :: Python :: 3.8',
           'Operating System :: MacOS',
