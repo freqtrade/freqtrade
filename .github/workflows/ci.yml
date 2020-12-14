@@ -14,12 +14,103 @@ on:
     - cron:  '0 5 * * 4'
 
 jobs:
-  build:
+  build_linux:
 
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-18.04, ubuntu-20.04, macos-latest ]
+        os: [ ubuntu-18.04, ubuntu-20.04 ]
+        python-version: [3.7, 3.8, 3.9]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache_dependencies
+      uses: actions/cache@v2
+      id: cache
+      with:
+        path: ~/dependencies/
+        key: ${{ runner.os }}-dependencies
+
+    - name: pip cache (linux)
+      uses: actions/cache@v2
+      if: startsWith(matrix.os, 'ubuntu')
+      with:
+        path: ~/.cache/pip
+        key: test-${{ matrix.os }}-${{ matrix.python-version }}-pip
+
+    - name: TA binary *nix
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        cd build_helpers && ./install_ta-lib.sh ${HOME}/dependencies/; cd ..
+
+    - name: Installation - *nix
+      run: |
+        python -m pip install --upgrade pip
+        export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
+        export TA_LIBRARY_PATH=${HOME}/dependencies/lib
+        export TA_INCLUDE_PATH=${HOME}/dependencies/include
+        pip install -r requirements-dev.txt
+        pip install -e .
+
+    - name: Tests
+      run: |
+        pytest --random-order --cov=freqtrade --cov-config=.coveragerc
+
+    - name: Coveralls
+      if: (startsWith(matrix.os, 'ubuntu-20') && matrix.python-version == '3.8')
+      env:
+        # Coveralls token. Not used as secret due to github not providing secrets to forked repositories
+        COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
+      run: |
+        # Allow failure for coveralls
+        coveralls -v  || true
+
+    - name: Backtesting
+      run: |
+        cp config.json.example config.json
+        freqtrade create-userdir --userdir user_data
+        freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
+
+    - name: Hyperopt
+      run: |
+        cp config.json.example config.json
+        freqtrade create-userdir --userdir user_data
+        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily --print-all
+
+    - name: Flake8
+      run: |
+        flake8
+
+    - name: Sort imports (isort)
+      run: |
+        isort --check .
+
+    - name: Mypy
+      run: |
+        mypy freqtrade scripts
+
+    - name: Slack Notification
+      uses: homoluctus/slatify@v1.8.0
+      if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+      with:
+        type: ${{ job.status }}
+        job_name: '*Freqtrade CI ${{ matrix.os }}*'
+        mention: 'here'
+        mention_if: 'failure'
+        channel: '#notifications'
+        url: ${{ secrets.SLACK_WEBHOOK }}
+
+  build_macos:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ macos-latest ]
         python-version: [3.7, 3.8]
 
     steps:
@@ -31,21 +122,14 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Cache_dependencies
-      uses: actions/cache@v1
+      uses: actions/cache@v2
       id: cache
       with:
         path: ~/dependencies/
         key: ${{ runner.os }}-dependencies
 
-    - name: pip cache (linux)
-      uses: actions/cache@preview
-      if: startsWith(matrix.os, 'ubuntu')
-      with:
-        path: ~/.cache/pip
-        key: test-${{ matrix.os }}-${{ matrix.python-version }}-pip
-
     - name: pip cache (macOS)
-      uses: actions/cache@preview
+      uses: actions/cache@v2
       if: startsWith(matrix.os, 'macOS')
       with:
         path: ~/Library/Caches/pip
@@ -112,6 +196,7 @@ jobs:
         mention_if: 'failure'
         channel: '#notifications'
         url: ${{ secrets.SLACK_WEBHOOK }}
+
 
   build_windows:
 
@@ -215,7 +300,7 @@ jobs:
 
   # Notify on slack only once - when CI completes (and after deploy) in case it's successfull
   notify-complete:
-    needs: [ build, build_windows, docs_check ]
+    needs: [ build_linux, build_macos, build_windows, docs_check ]
     runs-on: ubuntu-20.04
     steps:
     - name: Slack Notification
@@ -228,8 +313,9 @@ jobs:
         url: ${{ secrets.SLACK_WEBHOOK }}
 
   deploy:
-    needs: [ build, build_windows, docs_check ]
+    needs: [ build_linux, build_macos, build_windows, docs_check ]
     runs-on: ubuntu-20.04
+
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
     steps:
     - uses: actions/checkout@v2
