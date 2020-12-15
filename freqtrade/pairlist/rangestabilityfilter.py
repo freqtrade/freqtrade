@@ -1,8 +1,9 @@
 """
 Rate of change pairlist filter
 """
+from copy import deepcopy
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import arrow
 from cachetools.ttl import TTLCache
@@ -51,7 +52,33 @@ class RangeStabilityFilter(IPairList):
         return (f"{self.name} - Filtering pairs with rate of change below "
                 f"{self._min_rate_of_change} over the last {plural(self._days, 'day')}.")
 
-    def _validate_pair(self, pair: str, ticker: Dict[str, Any]) -> bool:
+    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
+        """
+        Validate trading range
+        :param pairlist: pairlist to filter or sort
+        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
+        :return: new allowlist
+        """
+        needed_pairs = [(p, '1d') for p in pairlist if p not in self._pair_cache]
+
+        since_ms = int(arrow.utcnow()
+                       .floor('day')
+                       .shift(days=-self._days - 1)
+                       .float_timestamp) * 1000
+        # Get all candles
+        candles = {}
+        if needed_pairs:
+            candles = self._exchange.refresh_latest_ohlcv(needed_pairs, since_ms=since_ms,
+                                                          cache=False)
+
+        if self._enabled:
+            for p in deepcopy(pairlist):
+                daily_candles = candles[(p, '1d')] if (p, '1d') in candles else None
+                if not self._validate_pair_loc(p, daily_candles):
+                    pairlist.remove(p)
+        return pairlist
+
+    def _validate_pair_loc(self, pair: str, daily_candles: Dict[str, Any]) -> bool:
         """
         Validate trading range
         :param pair: Pair that's currently validated
@@ -62,14 +89,6 @@ class RangeStabilityFilter(IPairList):
         if pair in self._pair_cache:
             return self._pair_cache[pair]
 
-        since_ms = int(arrow.utcnow()
-                       .floor('day')
-                       .shift(days=-self._days)
-                       .float_timestamp) * 1000
-
-        daily_candles = self._exchange.get_historic_ohlcv_as_df(pair=pair,
-                                                                timeframe='1d',
-                                                                since_ms=since_ms)
         result = False
         if daily_candles is not None and not daily_candles.empty:
             highest_high = daily_candles['high'].max()
@@ -79,7 +98,7 @@ class RangeStabilityFilter(IPairList):
                 result = True
             else:
                 self.log_once(f"Removed {pair} from whitelist, because rate of change "
-                              f"over {plural(self._days, 'day')} is {pct_change:.3f}, "
+                              f"over {self._days} {plural(self._days, 'day')} is {pct_change:.3f}, "
                               f"which is below the threshold of {self._min_rate_of_change}.",
                               logger.info)
                 result = False
