@@ -42,7 +42,7 @@ class RangeStabilityFilter(IPairList):
         If no Pairlist requires tickers, an empty List is passed
         as tickers argument to filter_pairlist
         """
-        return True
+        return False
 
     def short_desc(self) -> str:
         """
@@ -51,13 +51,13 @@ class RangeStabilityFilter(IPairList):
         return (f"{self.name} - Filtering pairs with rate of change below "
                 f"{self._min_rate_of_change} over the last {plural(self._days, 'day')}.")
 
-    def _validate_pair(self, ticker: Dict) -> bool:
+    def _validate_pair(self, pair: str, ticker: Dict[str, Any]) -> bool:
         """
         Validate trading range
+        :param pair: Pair that's currently validated
         :param ticker: ticker dict as returned from ccxt.load_markets()
-        :return: True if the pair can stay, False if it should be removed
+        :return: True if the pair can stay, false if it should be removed
         """
-        pair = ticker['symbol']
         # Check symbol in cache
         if pair in self._pair_cache:
             return self._pair_cache[pair]

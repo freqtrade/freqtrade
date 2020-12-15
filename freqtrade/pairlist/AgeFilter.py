@@ -49,11 +49,12 @@ class AgeFilter(IPairList):
         return (f"{self.name} - Filtering pairs with age less than "
                 f"{self._min_days_listed} {plural(self._min_days_listed, 'day')}.")
 
-    def _validate_pair(self, ticker: Dict) -> bool:
+    def _validate_pair(self, pair: str, ticker: Dict[str, Any]) -> bool:
         """
         Validate age for the ticker
+        :param pair: Pair that's currently validated
         :param ticker: ticker dict as returned from ccxt.load_markets()
-        :return: True if the pair can stay, False if it should be removed
+        :return: True if the pair can stay, false if it should be removed
         """
 
         # Check symbol in cache

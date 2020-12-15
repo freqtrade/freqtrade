@@ -57,31 +57,32 @@ class PriceFilter(IPairList):
 
         return f"{self.name} - No price filters configured."
 
-    def _validate_pair(self, ticker) -> bool:
+    def _validate_pair(self, pair: str, ticker: Dict[str, Any]) -> bool:
         """
         Check if if one price-step (pip) is > than a certain barrier.
+        :param pair: Pair that's currently validated
         :param ticker: ticker dict as returned from ccxt.load_markets()
         :return: True if the pair can stay, false if it should be removed
         """
         if ticker['last'] is None or ticker['last'] == 0:
-            self.log_once(f"Removed {ticker['symbol']} from whitelist, because "
+            self.log_once(f"Removed {pair} from whitelist, because "
                           "ticker['last'] is empty (Usually no trade in the last 24h).",
                           logger.info)
             return False
 
         # Perform low_price_ratio check.
         if self._low_price_ratio != 0:
-            compare = self._exchange.price_get_one_pip(ticker['symbol'], ticker['last'])
+            compare = self._exchange.price_get_one_pip(pair, ticker['last'])
             changeperc = compare / ticker['last']
             if changeperc > self._low_price_ratio:
-                self.log_once(f"Removed {ticker['symbol']} from whitelist, "
+                self.log_once(f"Removed {pair} from whitelist, "
                               f"because 1 unit is {changeperc * 100:.3f}%", logger.info)
                 return False
 
         # Perform min_price check.
         if self._min_price != 0:
             if ticker['last'] < self._min_price:
-                self.log_once(f"Removed {ticker['symbol']} from whitelist, "
+                self.log_once(f"Removed {pair} from whitelist, "
                               f"because last price < {self._min_price:.8f}", logger.info)
                 return False
 

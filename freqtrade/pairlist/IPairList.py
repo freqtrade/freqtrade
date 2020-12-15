@@ -60,13 +60,14 @@ class IPairList(LoggingMixin, ABC):
         -> Please overwrite in subclasses
         """
 
-    def _validate_pair(self, ticker) -> bool:
+    def _validate_pair(self, pair: str, ticker: Dict[str, Any]) -> bool:
         """
         Check one pair against Pairlist Handler's specific conditions.
 
         Either implement it in the Pairlist Handler or override the generic
         filter_pairlist() method.
 
+        :param pair: Pair that's currently validated
         :param ticker: ticker dict as returned from ccxt.load_markets()
         :return: True if the pair can stay, false if it should be removed
         """
@@ -109,7 +110,7 @@ class IPairList(LoggingMixin, ABC):
             # Copy list since we're modifying this list
             for p in deepcopy(pairlist):
                 # Filter out assets
-                if not self._validate_pair(tickers[p]):
+                if not self._validate_pair(p, tickers[p] if p in tickers else {}):
                     pairlist.remove(p)
 
         return pairlist
