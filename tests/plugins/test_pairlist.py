@@ -353,10 +353,18 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
      "BTC", ['ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
 ])
 def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, tickers,
-                                      ohlcv_history_list, pairlists, base_currency,
+                                      ohlcv_history, pairlists, base_currency,
                                       whitelist_result, caplog) -> None:
     whitelist_conf['pairlists'] = pairlists
     whitelist_conf['stake_currency'] = base_currency
+
+    ohlcv_data = {
+        ('ETH/BTC', '1d'): ohlcv_history,
+        ('TKN/BTC', '1d'): ohlcv_history,
+        ('LTC/BTC', '1d'): ohlcv_history,
+        ('XRP/BTC', '1d'): ohlcv_history,
+        ('HOT/BTC', '1d'): ohlcv_history,
+    }
 
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
 
@@ -374,7 +382,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
                           )
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_historic_ohlcv=MagicMock(return_value=ohlcv_history_list),
+        refresh_latest_ohlcv=MagicMock(return_value=ohlcv_data),
     )
 
     # Provide for PerformanceFilter's dependency
@@ -402,7 +410,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
 
         for pairlist in pairlists:
             if pairlist['method'] == 'AgeFilter' and pairlist['min_days_listed'] and \
-                    len(ohlcv_history_list) <= pairlist['min_days_listed']:
+                    len(ohlcv_history) <= pairlist['min_days_listed']:
                 assert log_has_re(r'^Removed .* from whitelist, because age .* is less than '
                                   r'.* day.*', caplog)
             if pairlist['method'] == 'PrecisionFilter' and whitelist_result:
@@ -575,8 +583,13 @@ def test_agefilter_min_days_listed_too_large(mocker, default_conf, markets, tick
         get_patched_freqtradebot(mocker, default_conf)
 
 
-def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, ohlcv_history_list):
-
+def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, ohlcv_history):
+    ohlcv_data = {
+        ('ETH/BTC', '1d'): ohlcv_history,
+        ('TKN/BTC', '1d'): ohlcv_history,
+        ('LTC/BTC', '1d'): ohlcv_history,
+        ('XRP/BTC', '1d'): ohlcv_history,
+    }
     mocker.patch.multiple('freqtrade.exchange.Exchange',
                           markets=PropertyMock(return_value=markets),
                           exchange_has=MagicMock(return_value=True),
@@ -584,18 +597,18 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, o
                           )
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_historic_ohlcv=MagicMock(return_value=ohlcv_history_list),
+        refresh_latest_ohlcv=MagicMock(return_value=ohlcv_data),
     )
 
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf_agefilter)
-    assert freqtrade.exchange.get_historic_ohlcv.call_count == 0
+    assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 0
     freqtrade.pairlists.refresh_pairlist()
-    assert freqtrade.exchange.get_historic_ohlcv.call_count > 0
+    assert freqtrade.exchange.refresh_latest_ohlcv.call_count > 0
 
-    previous_call_count = freqtrade.exchange.get_historic_ohlcv.call_count
+    previous_call_count = freqtrade.exchange.refresh_latest_ohlcv.call_count
     freqtrade.pairlists.refresh_pairlist()
     # Should not have increased since first call.
-    assert freqtrade.exchange.get_historic_ohlcv.call_count == previous_call_count
+    assert freqtrade.exchange.refresh_latest_ohlcv.call_count == previous_call_count
 
 
 def test_rangestabilityfilter_checks(mocker, default_conf, markets, tickers):
@@ -625,7 +638,7 @@ def test_rangestabilityfilter_checks(mocker, default_conf, markets, tickers):
     (0.01, 5),
     (0.05, 0),  # Setting rate_of_change to 5% removes all pairs from the whitelist.
 ])
-def test_rangestabilityfilter_caching(mocker, markets, default_conf, tickers, ohlcv_history_list,
+def test_rangestabilityfilter_caching(mocker, markets, default_conf, tickers, ohlcv_history,
                                       min_rate_of_change, expected_length):
     default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
                                  {'method': 'RangeStabilityFilter', 'lookback_days': 2,
@@ -636,22 +649,30 @@ def test_rangestabilityfilter_caching(mocker, markets, default_conf, tickers, oh
                           exchange_has=MagicMock(return_value=True),
                           get_tickers=tickers
                           )
+    ohlcv_data = {
+        ('ETH/BTC', '1d'): ohlcv_history,
+        ('TKN/BTC', '1d'): ohlcv_history,
+        ('LTC/BTC', '1d'): ohlcv_history,
+        ('XRP/BTC', '1d'): ohlcv_history,
+        ('HOT/BTC', '1d'): ohlcv_history,
+        ('BLK/BTC', '1d'): ohlcv_history,
+    }
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_historic_ohlcv=MagicMock(return_value=ohlcv_history_list),
+        refresh_latest_ohlcv=MagicMock(return_value=ohlcv_data),
     )
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    assert freqtrade.exchange.get_historic_ohlcv.call_count == 0
+    assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 0
     freqtrade.pairlists.refresh_pairlist()
     assert len(freqtrade.pairlists.whitelist) == expected_length
-    assert freqtrade.exchange.get_historic_ohlcv.call_count > 0
+    assert freqtrade.exchange.refresh_latest_ohlcv.call_count > 0
 
-    previous_call_count = freqtrade.exchange.get_historic_ohlcv.call_count
+    previous_call_count = freqtrade.exchange.refresh_latest_ohlcv.call_count
     freqtrade.pairlists.refresh_pairlist()
     assert len(freqtrade.pairlists.whitelist) == expected_length
     # Should not have increased since first call.
-    assert freqtrade.exchange.get_historic_ohlcv.call_count == previous_call_count
+    assert freqtrade.exchange.refresh_latest_ohlcv.call_count == previous_call_count
 
 
 @pytest.mark.parametrize("pairlistconfig,desc_expected,exception_expected", [

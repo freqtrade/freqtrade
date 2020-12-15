@@ -1084,7 +1084,7 @@ def ohlcv_history_list():
 @pytest.fixture
 def ohlcv_history(ohlcv_history_list):
     return ohlcv_to_dataframe(ohlcv_history_list, "5m", pair="UNITTEST/BTC",
-                              fill_missing=True)
+                              fill_missing=True, drop_incomplete=False)
 
 
 @pytest.fixture
