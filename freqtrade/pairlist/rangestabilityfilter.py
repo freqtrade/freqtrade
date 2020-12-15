@@ -1,12 +1,13 @@
 """
 Rate of change pairlist filter
 """
-from copy import deepcopy
 import logging
-from typing import Any, Dict, List
+from copy import deepcopy
+from typing import Any, Dict, List, Optional
 
 import arrow
 from cachetools.ttl import TTLCache
+from pandas import DataFrame
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import plural
@@ -78,7 +79,7 @@ class RangeStabilityFilter(IPairList):
                     pairlist.remove(p)
         return pairlist
 
-    def _validate_pair_loc(self, pair: str, daily_candles: Dict[str, Any]) -> bool:
+    def _validate_pair_loc(self, pair: str, daily_candles: Optional[DataFrame]) -> bool:
         """
         Validate trading range
         :param pair: Pair that's currently validated

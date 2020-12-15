@@ -140,7 +140,8 @@ def test_assert_df(default_conf, mocker, ohlcv_history, caplog):
     with pytest.raises(StrategyError,
                        match=r"Dataframe returned from strategy.*last close price\."):
         _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
-                            ohlcv_history.loc[df_len, 'close'] + 0.01, ohlcv_history.loc[df_len, 'date'])
+                            ohlcv_history.loc[df_len, 'close'] + 0.01,
+                            ohlcv_history.loc[df_len, 'date'])
     with pytest.raises(StrategyError,
                        match=r"Dataframe returned from strategy.*last date\."):
         _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),

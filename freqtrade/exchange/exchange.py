@@ -735,7 +735,7 @@ class Exchange:
 
     def refresh_latest_ohlcv(self, pair_list: ListPairsWithTimeframes, *,
                              since_ms: Optional[int] = None, cache: bool = True
-                             ) -> Dict[str, DataFrame]:
+                             ) -> Dict[Tuple[str, str], DataFrame]:
         """
         Refresh in-memory OHLCV asynchronously and set `_klines` with the result
         Loops asynchronously over pair_list and downloads all pairs async (semi-parallel).
