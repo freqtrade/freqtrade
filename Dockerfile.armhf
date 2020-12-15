@@ -11,10 +11,13 @@ ENV PATH=/root/.local/bin:$PATH
 RUN mkdir /freqtrade
 WORKDIR /freqtrade
 
+RUN  apt-get update \
+  && apt-get -y install libatlas3-base curl sqlite3 \
+  && apt-get clean
+
 # Install dependencies
 FROM base as python-deps
-RUN apt-get update \
-  && apt-get -y install curl build-essential libssl-dev libffi-dev libatlas3-base libgfortran5 sqlite3 \
+RUN  apt-get -y install build-essential libssl-dev libffi-dev libgfortran5 \
   && apt-get clean \
   && pip install --upgrade pip \
   && echo "[global]\nextra-index-url=https://www.piwheels.org/simple" > /etc/pip.conf
