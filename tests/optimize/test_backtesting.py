@@ -430,6 +430,11 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
     with pytest.raises(OperationalException, match='VolumePairList not allowed for backtesting.'):
         Backtesting(default_conf)
 
+    default_conf['pairlists'] = [{"method": "StaticPairList"}, {"method": "PerformanceFilter"}]
+    with pytest.raises(OperationalException,
+                       match='PerformanceFilter not allowed for backtesting.'):
+        Backtesting(default_conf)
+
     default_conf['pairlists'] = [{"method": "StaticPairList"}, {"method": "PrecisionFilter"}, ]
     Backtesting(default_conf)
 

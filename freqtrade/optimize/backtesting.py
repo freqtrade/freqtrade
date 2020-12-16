@@ -102,6 +102,8 @@ class Backtesting:
         self.pairlists = PairListManager(self.exchange, self.config)
         if 'VolumePairList' in self.pairlists.name_list:
             raise OperationalException("VolumePairList not allowed for backtesting.")
+        if 'PerformanceFilter' in self.pairlists.name_list:
+            raise OperationalException("PerformanceFilter not allowed for backtesting.")
 
         if len(self.strategylist) > 1 and 'PrecisionFilter' in self.pairlists.name_list:
             raise OperationalException(

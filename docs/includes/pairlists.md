@@ -65,6 +65,9 @@ The `refresh_period` setting allows to define the period (in seconds), at which 
 }],
 ```
 
+!!! Note
+    `VolumePairList` does not support backtesting mode.
+
 #### AgeFilter
 
 Removes pairs that have been listed on the exchange for less than `min_days_listed` days (defaults to `10`).
@@ -83,6 +86,9 @@ Sorts pairs by past trade performance, as follows:
 3. Negative performance.
 
 Trade count is used as a tie breaker.
+
+!!! Note
+    `PerformanceFilter` does not support backtesting mode.
 
 #### PrecisionFilter
 
